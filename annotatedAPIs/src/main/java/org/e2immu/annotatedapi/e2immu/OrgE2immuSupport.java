@@ -21,7 +21,7 @@ public class OrgE2immuSupport {
 
     final static String PACKAGE_NAME = "org.e2immu.support";
 
-    @ERContainer(after = "frozen")
+    @ImmutableContainer(after = "frozen")
     public static class Freezable$ {
 
         @Mark("frozen")
@@ -50,7 +50,7 @@ public class OrgE2immuSupport {
         }
     }
 
-    @E2Container(after = "isFinal")
+    @ImmutableContainer(after = "isFinal")
     interface EventuallyFinal$<T> {
 
         @Mark("isFinal")
@@ -60,7 +60,7 @@ public class OrgE2immuSupport {
         void setVariable(T value);
     }
 
-    @E2Container(after = "t")
+    @ImmutableContainer(after = "t")
     interface SetOnce$<T> {
 
         @Mark("t")

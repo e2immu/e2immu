@@ -20,7 +20,7 @@ import org.e2immu.annotation.*;
 public class OrgSlf4j {
     public static final String PACKAGE_NAME = "org.slf4j";
 
-    @ERContainer
+    @ImmutableContainer
     interface Logger$ {
 
         @NotModified

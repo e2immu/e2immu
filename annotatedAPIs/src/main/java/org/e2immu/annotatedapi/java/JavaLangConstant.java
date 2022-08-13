@@ -23,13 +23,13 @@ import java.util.Optional;
 class JavaLangConstant {
     final static String PACKAGE_NAME = "java.lang.constant";
 
-    @ERContainer
+    @ImmutableContainer
     interface ConstantDesc$ {
         @NotNull
         Object resolveConstantDesc(MethodHandles.Lookup lookup);
     }
 
-    @ERContainer
+    @ImmutableContainer
     interface Constable$ {
 
         // E2Container wrapping an ERContainer, result is ERContainer

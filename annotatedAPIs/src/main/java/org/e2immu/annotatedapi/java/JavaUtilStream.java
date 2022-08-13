@@ -69,7 +69,7 @@ public class JavaUtilStream {
         static <T> Collector<T,?,Set<T>> toUnmodifiableSet() { return null; }
     }
 
-    @E2Container
+    @ImmutableContainer
     interface IntStream$ {
         long count();
 
@@ -79,39 +79,39 @@ public class JavaUtilStream {
         IntStream sorted();
     }
 
-    @E2Container
+    @ImmutableContainer
     interface Stream$<T> {
 
         @NotNull
         <TT> Stream<TT> concat(@NotNull Stream<? extends TT> s1, @NotNull Stream<? extends TT> s2);
 
         @NotNull
-        @ERContainer
+        @Constant
         <TT> Stream<TT> empty();
 
         @NotNull
-        <TT> Stream<TT> of(@NotNull @Independent1 TT t);
+        <TT> Stream<TT> of(@NotNull @Independent TT t);
 
         @NotNull
-        <TT> Stream<TT> of(@NotNull @Independent1 TT... t);
+        <TT> Stream<TT> of(@NotNull @Independent TT... t);
 
         @NotNull
-        <R> Stream<R> map(@Independent1 @NotNull Function<? super T, ? extends R> mapper);
+        <R> Stream<R> map(@Independent @NotNull Function<? super T, ? extends R> mapper);
 
         @NotNull
-        <R> Stream<R> flatMap(@Independent1 @NotNull Function<? super T, ? extends Stream<? extends R>> mapper);
+        <R> Stream<R> flatMap(@Independent @NotNull Function<? super T, ? extends Stream<? extends R>> mapper);
 
         @NotNull
-        <R, A> R collect(@Independent1 @NotNull Collector<? super T, A, R> collector);
+        <R, A> R collect(@Independent @NotNull Collector<? super T, A, R> collector);
 
         @NotNull
-        Stream<T> filter(@Independent1 @NotNull Predicate<? super T> predicate);
+        Stream<T> filter(@Independent @NotNull Predicate<? super T> predicate);
 
         @NotNull
-        IntStream mapToInt(@Independent1 @NotNull ToIntFunction<? super T> mapper);
+        IntStream mapToInt(@Independent @NotNull ToIntFunction<? super T> mapper);
 
         @NotNull
-        Optional<T> min(@Independent1 @NotNull Comparator<? super T> comparator);
+        Optional<T> min(@Independent @NotNull Comparator<? super T> comparator);
 
         @NotNull
         Stream<T> sorted();
@@ -127,13 +127,13 @@ public class JavaUtilStream {
 
         @NotNull
         @NotModified
-        void forEach(@Independent1 @NotNull Consumer<? super T> action);
+        void forEach(@Independent @NotNull Consumer<? super T> action);
 
         @NotNull
         List<T> toList();
     }
 
-    @E2Container
+    @ImmutableContainer
     interface BaseStream$ {
 
     }

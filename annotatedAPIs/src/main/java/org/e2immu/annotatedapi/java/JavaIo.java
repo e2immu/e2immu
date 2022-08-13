@@ -16,22 +16,24 @@ package org.e2immu.annotatedapi.java;
 
 import org.e2immu.annotation.*;
 
+import java.io.File;
 import java.io.OutputStream;
 import java.io.Writer;
 import java.net.URI;
 import java.net.URL;
+import java.nio.CharBuffer;
 
 public class JavaIo {
     final static String PACKAGE_NAME = "java.io";
 
 
-    @ERContainer
+    @ImmutableContainer
     interface Serializable$ {
 
     }
 
     // throws IOException rather than Exception (in AutoCloseable)
-    @Independent
+    @NotLinked
     @Container
     interface Closeable$ {
 
@@ -39,7 +41,9 @@ public class JavaIo {
         void close();
     }
 
-
+    // the print(Object) ensures that we cannot have @NotLinked
+    // @Dependent is only possible when implementations start casting, and making modifications. That is forbidden
+    // by the @Container rule which implies that the object argument cannot be modified.
     @Independent
     @Container
     interface PrintStream$ {
@@ -104,15 +108,15 @@ public class JavaIo {
         void println(Object obj);
     }
 
-    @Independent
+    @NotLinked
     @Container
     interface OutputStream$ {
 
         @Modified
-        void write(@Independent @NotNull byte[] b);
+        void write(@NotNull byte[] b);
 
         @Modified
-        void write(@Independent @NotNull byte[] b, int off, int len);
+        void write(@NotNull byte[] b, int off, int len);
 
         @Modified
         void flush();
@@ -121,20 +125,20 @@ public class JavaIo {
         void write(int b);
     }
 
-    @Independent
+    @NotLinked
     @Container
     interface FilterOutputStream$ {
 
     }
 
-    @Independent
+    @NotLinked
     @Container
     interface Writer$ {
         @Modified
-        void write(@Independent char[] cbuf);
+        void write(char[] cbuf);
 
         @Modified
-        void write(@Independent char[] cbuf, int off, int len);
+        void write(char[] cbuf, int off, int len);
     }
 
     @Independent
@@ -147,23 +151,42 @@ public class JavaIo {
         void append(CharSequence csq);
 
         @Modified
-        void write(@Independent char[] cbuf);
+        void write(char[] cbuf);
 
         @Modified
-        void write(@Independent char[] cbuf, int off, int len);
+        void write(char[] cbuf, int off, int len);
     }
 
+    // this implies that the reader will not keep a dependent copy of the CharBuffer or Writer...
+    @Independent
     interface Reader$ {
+        @Modified
+        int read(@Modified CharBuffer target);
+
         @Modified
         long transferTo(@Modified Writer out);
     }
 
+    // implying that the input stream will not keep a copy of the outputStream 'out'
+    @Independent
     interface InputStream$ {
         @Modified
         long transferTo(@Modified OutputStream out);
     }
 
+    /*
+    .exists() .delete() .exists(), when true first, must return false after the removal.
+    Cannot be independent because getCanonicalFile() can return a File which "points to the same underlying file",
+    which has implications for .exists(), .delete()
+     */
+    @Container
     interface File$ {
+        boolean canRead();
+
+        boolean exists();
+
+        File getCanonicalFile();
+
         @NotNull
         String getName();
 
@@ -175,5 +198,14 @@ public class JavaIo {
 
         @NotNull
         URL toURL();
+
+        @Modified
+        boolean createNewFile();
+
+        @Modified
+        boolean delete();
+
+        @Modified
+        void deleteOnExit();
     }
 }

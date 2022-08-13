@@ -22,6 +22,10 @@ import java.util.Spliterator;
 import java.util.function.Consumer;
 import java.util.stream.IntStream;
 
+/*
+Important: for efficiency reasons, the analysis of AnnotatedAPI types proceeds in the order type - fields - methods.
+Annotations on the type need to be given -- the analyser does not compute them from the methods.
+ */
 class JavaLang {
 
     final static String PACKAGE_NAME = "java.lang";
@@ -30,18 +34,18 @@ class JavaLang {
     @Container
     interface Iterable$<T> {
         @NotModified
-        void forEach(@NotNull @Independent1 Consumer<? super T> action);
+        void forEach(@NotNull @Independent Consumer<? super T> action);
 
         // implicitly @Dependent, has `remove()`
         @NotNull
         Iterator<T> iterator();
 
         @NotNull
-        @Independent1
+        @Independent
         Spliterator<T> spliterator();
     }
 
-    @ERContainer
+    @ImmutableContainer
     interface Object$ {
         @NotNull
         Object clone();
@@ -65,15 +69,16 @@ class JavaLang {
         String toString();
     }
 
-    @ERContainer
+    @ImmutableContainer
     interface Enum$ {
 
     }
 
-    @E2Container
+    @ImmutableContainer
     interface StackTraceElement$ {
     }
 
+    // not a container, modifying, dependent
     interface Throwable$ {
 
         String getMessage();
@@ -98,9 +103,11 @@ class JavaLang {
 
         @Modified
         void setStackTrace(@NotNull StackTraceElement[] stackTrace);
+
+        void printStackTrace(@Modified PrintStream s);
     }
 
-    @ERContainer
+    @ConstantContainer
     interface Class$ {
         @NotNull
         String getCanonicalName();
@@ -117,7 +124,7 @@ class JavaLang {
         ClassLoader getClassLoader();
     }
 
-    @ERContainer
+    @ImmutableContainer
     interface CharSequence$ {
         char charAt(int index);
 
@@ -131,7 +138,7 @@ class JavaLang {
         int length();
     }
 
-    @Independent
+    @Independent // because of CharSequence being immutable, other types are constant
     @Container
     interface Appendable$ {
         @Fluent
@@ -144,7 +151,7 @@ class JavaLang {
         Appendable append(CharSequence charSequence, int start, int end);
     }
 
-    @Independent
+    @NotLinked
     @Container
     interface AutoCloseable$ {
 
@@ -154,7 +161,7 @@ class JavaLang {
 
     // a class, because we need to annotate the constructor
 
-    @ERContainer
+    @ConstantContainer
     static abstract class String$ implements CharSequence {
 
         boolean String$Modification$Len(int post) {
@@ -211,8 +218,11 @@ class JavaLang {
             return false;
         }
 
-        @NotNull // could have been @NN1
-        byte[] getBytes() { return null; }
+        @NotNull
+            // could have been @NN1
+        byte[] getBytes() {
+            return null;
+        }
 
         boolean isEmpty$Value$Len(int l) {
             return l == 0;
@@ -237,7 +247,9 @@ class JavaLang {
         }
 
         @NotNull
-        static String join(CharSequence delimiter, CharSequence... elements) { return null; }
+        static String join(CharSequence delimiter, CharSequence... elements) {
+            return null;
+        }
 
         int lastIndexOf(int ch) {
             return 0;
@@ -253,10 +265,14 @@ class JavaLang {
         }
 
         @NotNull
-        String replaceAll(String regex, String replacement) { return null; }
+        String replaceAll(String regex, String replacement) {
+            return null;
+        }
 
         @NotNull
-        String[] split(String regex) { return null; }
+        String[] split(String regex) {
+            return null;
+        }
 
         boolean startsWith$Value$Len(int len, String s, boolean retVal) {
             return s.length() <= len && retVal;
@@ -335,8 +351,8 @@ class JavaLang {
     }
 
     // a class, because we want to annotate the constructor
-
-    @Independent
+    // not linked: we're not storing any of the objects communicated to us.
+    @NotLinked
     @Container
     static abstract class StringBuilder$ implements CharSequence {
 
@@ -355,25 +371,21 @@ class JavaLang {
         }
 
         @Fluent
-        @Modified
         StringBuilder append(boolean b) {
             return null;
         }
 
         @Fluent
-        @Modified
         StringBuilder append(char c) {
             return null;
         }
 
         @Fluent
-        @Modified
         StringBuilder append(float f) {
             return null;
         }
 
         @Fluent
-        @Modified
         StringBuilder append(long l) {
             return null;
         }
@@ -383,13 +395,11 @@ class JavaLang {
         }
 
         @Fluent
-        @Modified
         StringBuilder append(int i) {
             return null;
         }
 
         @Fluent
-        @Modified
         StringBuilder append(char[] chars) {
             return null;
         }
@@ -399,13 +409,11 @@ class JavaLang {
         }
 
         @Fluent
-        @Modified
         StringBuilder append(String str) {
             return null;
         }
 
         @Fluent
-        @Modified
         StringBuilder append(Object o) {
             return null;
         }
@@ -420,13 +428,13 @@ class JavaLang {
         }
     }
 
-    @Independent
+    @NotLinked
     @Container
     static abstract class StringBuffer$ implements CharSequence {
 
     }
 
-    @ERContainer
+    @ConstantContainer
     interface Integer$ {
 
         @NotNull
@@ -434,35 +442,35 @@ class JavaLang {
     }
 
 
-    @ERContainer
+    @ConstantContainer
     interface Float$ {
 
         @NotNull
         String toString(float f);
     }
 
-    @ERContainer
+    @ConstantContainer
     interface Byte$ {
 
         @NotNull
         String toString(byte b);
     }
 
-    @ERContainer
+    @ConstantContainer
     interface Character$ {
 
         @NotNull
         String toString(char c);
     }
 
-    @ERContainer
+    @ConstantContainer
     interface Short$ {
 
         @NotNull
         String toString(short s);
     }
 
-    @ERContainer
+    @ConstantContainer
     interface Boolean$ {
         boolean parseBoolean(@NotNull String string);
     }
@@ -486,12 +494,12 @@ class JavaLang {
 
         void arraycopy(@NotNull @NotModified Object src,
                        int srcPos,
-                       @NotNull @Modified @Independent1(parameters = {0}) Object dest,
+                       @NotNull @Modified @Independent(parameters = {0}) Object dest,
                        int destPos,
                        int length);
     }
 
-    @ERContainer
+    @ImmutableContainer
     interface Comparable$<T> {
         default int compareTo$Value(T t, int retVal) {
             return equals(t) || t.equals(this) ? 0 : retVal;
@@ -500,12 +508,13 @@ class JavaLang {
         int compareTo(@NotNull T t);
     }
 
-    @ERContainer
+    // note: even though it is not formally "final", we'll treat it as such
+    @ConstantContainer
     interface Package$ {
 
     }
 
-    @ERContainer
+    @ConstantContainer
     interface Module$ {
 
     }

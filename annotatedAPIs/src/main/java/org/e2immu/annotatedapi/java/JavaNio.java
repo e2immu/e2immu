@@ -14,20 +14,33 @@
 
 package org.e2immu.annotatedapi.java;
 
+import org.e2immu.annotation.Container;
+import org.e2immu.annotation.Fluent;
+import org.e2immu.annotation.Modified;
+import org.e2immu.annotation.NotModified;
 
-import org.e2immu.annotation.ImmutableContainer;
+import java.nio.Buffer;
+import java.nio.CharBuffer;
 
-public class JavaLangInvoke {
+public class JavaNio {
 
-    final static String PACKAGE_NAME = "java.lang.invoke";
+    // is an abstract class
+    @Container
+    interface Buffer$ {
 
-    @ImmutableContainer
-    static class TypeDescriptor$ {
+        @Fluent
+        Buffer reset();
 
-        @ImmutableContainer
-        static class OfField {
+        @NotModified
+            // and @Dependent!
+        Buffer slice();
+    }
 
-        }
+    // concrete implementation of Buffer, not @Container, cannot be @Independent anymore since Buffer is not
+    interface CharBuffer$ {
 
+        @Fluent
+        @Modified
+        CharBuffer get(@Modified char[] dst);
     }
 }

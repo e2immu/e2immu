@@ -14,12 +14,14 @@
 
 package org.e2immu.annotatedapi.java;
 
-import org.e2immu.annotation.ERContainer;
+
+import org.e2immu.annotation.Constant;
+import org.e2immu.annotation.Container;
 
 public class JavaUtilConcurrent {
     final static String PACKAGE_NAME = "java.util.concurrent";
 
-    @ERContainer
+    @Constant @Container
     interface TimeUnit$ {
 
     }

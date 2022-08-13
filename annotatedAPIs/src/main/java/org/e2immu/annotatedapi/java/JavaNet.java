@@ -14,29 +14,54 @@
 
 package org.e2immu.annotatedapi.java;
 
-import org.e2immu.annotation.NotNull;
+import org.e2immu.annotation.*;
 
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.net.URL;
 import java.net.URLConnection;
+import java.net.URLStreamHandlerFactory;
 import java.util.jar.JarFile;
 
 public class JavaNet {
     final static String PACKAGE_NAME = "java.net";
 
+    /*
+    we take the view that a URL is immutable
+     */
+    @ImmutableContainer
     interface URL$ {
         @NotNull
         InputStream openStream();
 
+        // not modifying!!
         @NotNull
         URLConnection openConnection();
+
+        // static method setting some info regarding the runtime system, to be ignored by us.
+        @StaticSideEffects
+        void setURLStreamHandlerFactory(URLStreamHandlerFactory fac);
     }
 
+    @ImmutableContainer
     interface URI$ {
         @NotNull
         URL toURL();
     }
 
+    @Container
+    interface URLConnection$ {
+        @Modified
+        void addRequestProperty(String key, String value);
+
+        @Modified
+        void connect();
+
+        // dependent!! the output stream writes to this connection
+        OutputStream getOutputStream();
+    }
+
+    @Container
     interface JarURLConnection$ {
         String getEntryName();
 
