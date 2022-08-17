@@ -21,15 +21,12 @@ import org.e2immu.analyser.model.impl.BaseExpression;
 import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.Symbol;
 import org.e2immu.analyser.parser.InspectionProvider;
-import org.e2immu.annotation.E2Container;
 
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
-import java.util.function.Consumer;
 import java.util.function.Predicate;
 
-@E2Container
 public class EnclosedExpression extends BaseExpression implements Expression {
 
     private final Expression inner;

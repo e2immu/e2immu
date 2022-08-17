@@ -23,7 +23,6 @@ import org.e2immu.analyser.output.Text;
 import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.util.UpgradableBooleanMap;
-import org.e2immu.annotation.E2Container;
 
 import java.util.List;
 import java.util.Objects;
@@ -31,7 +30,6 @@ import java.util.Objects;
 /**
  * Represents an expression like String.class
  */
-@E2Container
 public class ClassExpression extends BaseExpression implements ConstantExpression<ParameterizedType> {
 
     private final Primitives primitives;

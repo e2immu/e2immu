@@ -15,6 +15,7 @@
 package org.e2immu.annotatedapi.java;
 
 import org.e2immu.annotation.*;
+import org.e2immu.annotation.rare.AllowsInterrupt;
 
 import java.io.File;
 import java.io.OutputStream;
@@ -27,23 +28,39 @@ public class JavaIo {
     final static String PACKAGE_NAME = "java.io";
 
 
+    /*
+    No methods, so @ImmutableContainer is the only option. The current implementation of the
+    analyser requires you to add immutability information.
+     */
     @ImmutableContainer
     interface Serializable$ {
 
     }
 
-    // throws IOException rather than Exception (in AutoCloseable)
-    @NotLinked
-    @Container
+    /*
+     Note: the type throws IOException rather than Exception (in AutoCloseable).
+     No need to write @Independent, there are no parameters nor return values.
+     No need to write @Container, there are no parameters.
+     */
     interface Closeable$ {
 
         @Modified
         void close();
     }
 
-    // the print(Object) ensures that we cannot have @NotLinked
-    // @Dependent is only possible when implementations start casting, and making modifications. That is forbidden
-    // by the @Container rule which implies that the object argument cannot be modified.
+    /*
+     The print(Object) method causes us to consider independence: all the other parameters are primitives or
+     deeply immutable, there are no return values. @Dependent would only possible when implementations start casting,
+     and store parts of the cast object into the object graph of the fields. This we will not allow for a PrintStream.
+
+     The second consideration is whether we add @Independent(hc=true) to the parameter of this method. If so,
+     we allow the implementation to store the argument. In general, this seems unnecessary, and we will assume that
+     only the deeply immutable string representation of the object is stored.
+     Mark the parameter, as commented out below, if your implementation needs to store the object.
+
+     The @AllowsInterrupt annotation marks that these methods present the JVM with an opportunity to interrupt
+     the current thread, allowing non-final fields to be modified in the background.
+     */
     @Independent
     @Container
     interface PrintStream$ {
@@ -73,7 +90,7 @@ public class JavaIo {
 
         @Modified
         @AllowsInterrupt
-        void print(Object obj);
+        void print(/*@Independent(hc=true)*/ Object obj);
 
         @Modified
         @AllowsInterrupt
@@ -105,10 +122,14 @@ public class JavaIo {
 
         @Modified
         @AllowsInterrupt
-        void println(Object obj);
+        void println(/*@Independent(hc=true)*/ Object obj);
     }
 
-    @NotLinked
+    /*
+     The @Independent annotation prevents the implementation from storing the byte arrays it receives in the
+     write methods. The @Container annotation prevents the implementation from modifying them.
+     */
+    @Independent
     @Container
     interface OutputStream$ {
 
@@ -125,13 +146,13 @@ public class JavaIo {
         void write(int b);
     }
 
-    @NotLinked
+    @Independent
     @Container
     interface FilterOutputStream$ {
-
+        // there are methods, but there's nothing at the moment...
     }
 
-    @NotLinked
+    @Independent
     @Container
     interface Writer$ {
         @Modified
@@ -141,6 +162,10 @@ public class JavaIo {
         void write(char[] cbuf, int off, int len);
     }
 
+    /*
+     The @Independent here implies that the StringWriter will not keep a copy of the CharSequence it has to append.
+     The @Container enforces that the char arrays in the parameters are not modified.
+     */
     @Independent
     @Container
     interface StringWriter$ {
@@ -157,7 +182,9 @@ public class JavaIo {
         void write(char[] cbuf, int off, int len);
     }
 
-    // this implies that the reader will not keep a dependent copy of the CharBuffer or Writer...
+    /*
+     The @Independent here implies that the Reader will not keep a dependent copy of the CharBuffer or Writer.
+     */
     @Independent
     interface Reader$ {
         @Modified
@@ -167,7 +194,10 @@ public class JavaIo {
         long transferTo(@Modified Writer out);
     }
 
-    // implying that the input stream will not keep a copy of the outputStream 'out'
+    /*
+    The @Independent here implies that the InputStream will not keep a dependent copy of the CharBuffer or Writer.
+    This type is obviously not a @Container, the 'transferTo' method modifies its arguments.
+    */
     @Independent
     interface InputStream$ {
         @Modified

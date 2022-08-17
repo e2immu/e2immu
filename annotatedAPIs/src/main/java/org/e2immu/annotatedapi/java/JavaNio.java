@@ -24,19 +24,25 @@ import java.nio.CharBuffer;
 
 public class JavaNio {
 
-    // is an abstract class
+    /*
+     Note: is an abstract class
+     */
     @Container
     interface Buffer$ {
 
         @Fluent
         Buffer reset();
 
+        /*
+         @Dependent!!
+         */
         @NotModified
-            // and @Dependent!
         Buffer slice();
     }
 
-    // concrete implementation of Buffer, not @Container, cannot be @Independent anymore since Buffer is not
+    /*
+     Concrete implementation of Buffer, not @Container, cannot be @Independent anymore since Buffer is not
+     */
     interface CharBuffer$ {
 
         @Fluent

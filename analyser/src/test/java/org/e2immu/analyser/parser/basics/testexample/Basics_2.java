@@ -23,7 +23,9 @@ there is competition between the @NotNull implied on string in the add method,
 and the empty initialiser on the variable field.
 The result must be that string is @Nullable.
  */
-@MutableModifiesArguments
+@Container(absent = true)
+@Constant(absent = true)
+@Immutable(absent = true)
 public class Basics_2 {
 
     @Variable

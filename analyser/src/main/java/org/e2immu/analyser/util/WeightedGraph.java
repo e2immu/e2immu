@@ -27,7 +27,7 @@ import java.util.function.BiConsumer;
  *
  * @param <T>
  */
-@E2Container(after = "frozen")
+@ImmutableContainer(after = "frozen")
 public class WeightedGraph<T extends Comparable<? super T>, W extends WeightedGraph.Weight> extends Freezable {
     public interface WeightType<W extends Weight> {
         W neutral();

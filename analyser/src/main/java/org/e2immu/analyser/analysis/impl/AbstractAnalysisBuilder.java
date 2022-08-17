@@ -137,7 +137,6 @@ abstract class AbstractAnalysisBuilder implements Analysis {
     protected void doImmutableContainer(E2ImmuAnnotationExpressions e2, DV immutable, DV container, boolean betterThanFormal) {
         String eventualFieldNames;
         boolean isType = this instanceof TypeAnalysis;
-        boolean isInterface = isType && ((TypeAnalysis) this).getTypeInfo().isInterface();
         boolean showFieldNames = isType && ((TypeAnalysis) this).isEventual()
                 || immutable.isDone() && MultiLevel.effective(immutable) == MultiLevel.Effective.EVENTUAL;
         if (showFieldNames) {
@@ -146,7 +145,7 @@ abstract class AbstractAnalysisBuilder implements Analysis {
             eventualFieldNames = "";
         }
         Map<Class<?>, Map<String, Object>> map = GenerateAnnotationsImmutable.generate(immutable, container,
-                isType, isInterface, eventualFieldNames, betterThanFormal);
+                isType, eventualFieldNames, betterThanFormal);
         MemberValuePair inconclusive = immutable.isInconclusive() || container.isInconclusive() ?
                 new MemberValuePair("inconclusive", new BooleanConstant(primitives, true)) : null;
         for (Map.Entry<Class<?>, Map<String, Object>> entry : map.entrySet()) {
@@ -181,18 +180,18 @@ abstract class AbstractAnalysisBuilder implements Analysis {
                 return; // default value
             }
         } else if (independent.equals(MultiLevel.INDEPENDENT_DV)) {
-            expression = potentiallyInconclusive(e2.independent, independent);
+            expression = potentiallyInconclusive(e2.notLinked, independent);
         } else if (independent.equals(MultiLevel.INDEPENDENT_1_DV)) {
-            expression = potentiallyInconclusive(e2.independent1, independent);
+            expression = potentiallyInconclusive(e2.independent, independent);
         } else {
             int level = MultiLevel.level(independent) + 1;
             MemberValuePair mvp = new MemberValuePair("level", new IntConstant(primitives, level));
             if (independent.isInconclusive()) {
                 MemberValuePair mvp2 = new MemberValuePair("inconclusive",
                         new BooleanConstant(primitives, true));
-                expression = new AnnotationExpressionImpl(e2.independent1.typeInfo(), List.of(mvp, mvp2));
+                expression = new AnnotationExpressionImpl(e2.independent.typeInfo(), List.of(mvp, mvp2));
             } else {
-                expression = new AnnotationExpressionImpl(e2.independent1.typeInfo(), List.of(mvp));
+                expression = new AnnotationExpressionImpl(e2.independent.typeInfo(), List.of(mvp));
             }
         }
         annotations.put(expression, true);
@@ -248,26 +247,19 @@ abstract class AbstractAnalysisBuilder implements Analysis {
                 DV falseTrue = !parameters.absent() ? DV.FALSE_DV : DV.TRUE_DV;
 
                 TypeInfo t = annotationExpression.typeInfo();
-                if (e2ImmuAnnotationExpressions.e1Immutable.typeInfo() == t) {
+                if (e2ImmuAnnotationExpressions.finalFields.typeInfo() == t) {
                     levelImmutable = MultiLevel.Level.IMMUTABLE_1.max(levelImmutable);
                     eventual = isEventual(annotationExpression);
-                } else if (e2ImmuAnnotationExpressions.mutableModifiesArguments.typeInfo() == t) {
-                    levelImmutable = MultiLevel.Level.ABSENT;
-                    container = false;
-                } else if (e2ImmuAnnotationExpressions.e2Immutable.typeInfo() == t) {
+                } else if (e2ImmuAnnotationExpressions.immutable.typeInfo() == t) {
                     levelImmutable = MultiLevel.Level.IMMUTABLE_2.max(levelImmutable);
                     levelIndependent = MultiLevel.Level.INDEPENDENT_1.max(levelIndependent);
                     eventual = isEventual(annotationExpression);
-                } else if (e2ImmuAnnotationExpressions.e2Container.typeInfo() == t) {
+                } else if (e2ImmuAnnotationExpressions.immutableContainer.typeInfo() == t) {
                     levelImmutable = MultiLevel.Level.IMMUTABLE_2.max(levelImmutable);
                     levelIndependent = MultiLevel.Level.INDEPENDENT_1.max(levelIndependent);
                     eventual = isEventual(annotationExpression);
                     container = true;
-                } else if (e2ImmuAnnotationExpressions.e1Container.typeInfo() == t) {
-                    levelImmutable = MultiLevel.Level.IMMUTABLE_1.max(levelImmutable);
-                    eventual = isEventual(annotationExpression);
-                    container = true;
-                } else if (e2ImmuAnnotationExpressions.eRContainer.typeInfo() == t) {
+                } else if (e2ImmuAnnotationExpressions.constantContainer.typeInfo() == t) {
                     levelImmutable = MultiLevel.Level.IMMUTABLE_R;
                     levelIndependent = MultiLevel.Level.INDEPENDENT_R;
                     eventual = isEventual(annotationExpression);
@@ -303,7 +295,7 @@ abstract class AbstractAnalysisBuilder implements Analysis {
                 } else if (e2ImmuAnnotationExpressions.ignoreModifications.typeInfo() == t) {
                     DV trueFalseMulti = parameters.absent() ? MultiLevel.NOT_IGNORE_MODS_DV : MultiLevel.IGNORE_MODS_DV;
                     setProperty(Property.IGNORE_MODIFICATIONS, trueFalseMulti);
-                } else if (e2ImmuAnnotationExpressions.independent.typeInfo() == t) {
+                } else if (e2ImmuAnnotationExpressions.notLinked.typeInfo() == t) {
                     levelIndependent = MultiLevel.Level.INDEPENDENT_R;
                 } else {
                     if (e2ImmuAnnotationExpressions.dependent.typeInfo() == t) {
@@ -312,7 +304,7 @@ abstract class AbstractAnalysisBuilder implements Analysis {
                             linkLevel = LinkedVariables.LINK_DEPENDENT;
                             linkParameters = annotationExpression.extract("parameters", INT_ARRAY);
                         }
-                    } else if (e2ImmuAnnotationExpressions.independent1.typeInfo() == t) {
+                    } else if (e2ImmuAnnotationExpressions.independent.typeInfo() == t) {
                         levelIndependent = MultiLevel.Level.INDEPENDENT_1;
                         if (analyserIdentification == Analyser.AnalyserIdentification.PARAMETER) {
                             linkLevel = LinkedVariables.LINK_INDEPENDENT1;
@@ -330,10 +322,6 @@ abstract class AbstractAnalysisBuilder implements Analysis {
                         setProperty(Property.UTILITY_CLASS, trueFalse);
                         levelImmutable = MultiLevel.Level.IMMUTABLE_2.max(levelImmutable);
                         levelIndependent = MultiLevel.Level.INDEPENDENT_1.max(levelIndependent);
-                    } else if (e2ImmuAnnotationExpressions.linked.typeInfo() == t) {
-                        LOGGER.debug("Ignoring informative annotation @Linked");
-                    } else if (e2ImmuAnnotationExpressions.linked1.typeInfo() == t) {
-                        LOGGER.debug("Ignoring informative annotation @Linked1");
                     } else if (e2ImmuAnnotationExpressions.allowsInterrupt.typeInfo() != t) {
                         // @AllowsInterrupt caught earlier on in the code, can be ignored here
                         throw new UnsupportedOperationException("? " + t.fullyQualifiedName);

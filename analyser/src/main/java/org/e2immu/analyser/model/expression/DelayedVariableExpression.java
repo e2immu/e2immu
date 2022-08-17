@@ -26,7 +26,6 @@ import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.Text;
 import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.util.ListUtil;
-import org.e2immu.annotation.E2Container;
 import org.e2immu.support.Either;
 
 import java.util.List;
@@ -38,7 +37,6 @@ import java.util.stream.Stream;
 import static org.e2immu.analyser.model.expression.ArrayAccess.ARRAY_VARIABLE;
 import static org.e2immu.analyser.model.expression.ArrayAccess.INDEX_VARIABLE;
 
-@E2Container
 public class DelayedVariableExpression extends BaseExpression implements IsVariableExpression {
     public final String msg;
     public final String fqn;

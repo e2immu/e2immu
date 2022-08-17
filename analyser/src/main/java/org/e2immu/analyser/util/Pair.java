@@ -14,7 +14,7 @@
 
 package org.e2immu.analyser.util;
 
-import org.e2immu.annotation.E2Container;
+import org.e2immu.annotation.ImmutableContainer;
 
 /**
  * Classic key-value object, typical example of level 2 immutable class.
@@ -22,7 +22,7 @@ import org.e2immu.annotation.E2Container;
  * @param <K> type of key
  * @param <V> type of value
  */
-@E2Container
+@ImmutableContainer
 public class Pair<K, V> {
 
     public final K k;

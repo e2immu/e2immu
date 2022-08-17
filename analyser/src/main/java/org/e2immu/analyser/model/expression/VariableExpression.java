@@ -29,7 +29,6 @@ import org.e2immu.analyser.output.Text;
 import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.util.ListUtil;
 import org.e2immu.analyser.util.UpgradableBooleanMap;
-import org.e2immu.annotation.E2Container;
 import org.e2immu.support.Either;
 
 import java.util.List;
@@ -41,7 +40,6 @@ import java.util.function.Predicate;
 import static org.e2immu.analyser.model.expression.ArrayAccess.ARRAY_VARIABLE;
 import static org.e2immu.analyser.model.expression.ArrayAccess.INDEX_VARIABLE;
 
-@E2Container
 public class VariableExpression extends BaseExpression implements IsVariableExpression {
 
     public interface Suffix extends Comparable<Suffix> {

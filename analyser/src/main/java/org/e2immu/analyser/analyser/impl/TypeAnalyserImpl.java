@@ -16,7 +16,6 @@ package org.e2immu.analyser.analyser.impl;
 
 import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.analyser.check.CheckImmutable;
-import org.e2immu.analyser.analyser.check.CheckIndependent;
 import org.e2immu.analyser.analyser.nonanalyserimpl.ExpandableAnalyserContextImpl;
 import org.e2immu.analyser.analysis.Analysis;
 import org.e2immu.analyser.analysis.impl.TypeAnalysisImpl;
@@ -131,14 +130,13 @@ public abstract class TypeAnalyserImpl extends AbstractAnalyser implements TypeA
 
             check(typeInfo, Independent.class, e2.independent);
             check(typeInfo, Dependent.class, e2.dependent);
-            analyserResultBuilder.add(CheckIndependent.checkLevel(typeInfo, Independent1.class, e2.independent1, typeAnalysis));
+            check(typeInfo, NotLinked.class, e2.notLinked);
 
-            check(typeInfo, MutableModifiesArguments.class, e2.mutableModifiesArguments);
-            analyserResultBuilder.add(CheckImmutable.check(typeInfo, E1Immutable.class, e2.e1Immutable, typeAnalysis, false, false));
-            analyserResultBuilder.add(CheckImmutable.check(typeInfo, E1Container.class, e2.e1Container, typeAnalysis, false, false));
-            analyserResultBuilder.add(CheckImmutable.check(typeInfo, E2Immutable.class, e2.e2Immutable, typeAnalysis, true, true));
-            analyserResultBuilder.add(CheckImmutable.check(typeInfo, E2Container.class, e2.e2Container, typeAnalysis, true, false));
-            analyserResultBuilder.add(CheckImmutable.check(typeInfo, ERContainer.class, e2.eRContainer, typeAnalysis, false, false));
+            analyserResultBuilder.add(CheckImmutable.check(typeInfo, FinalFields.class, e2.finalFields, typeAnalysis, null));
+            analyserResultBuilder.add(CheckImmutable.check(typeInfo, Immutable.class, e2.immutable, typeAnalysis, null));
+            analyserResultBuilder.add(CheckImmutable.check(typeInfo, ImmutableContainer.class, e2.immutableContainer, typeAnalysis, null));
+            analyserResultBuilder.add(CheckImmutable.check(typeInfo, Constant.class, e2.constant, typeAnalysis, null));
+            analyserResultBuilder.add(CheckImmutable.check(typeInfo, ConstantContainer.class, e2.constantContainer, typeAnalysis, null));
         }
     }
 

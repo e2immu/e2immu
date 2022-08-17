@@ -42,7 +42,7 @@ public class CheckIndependent {
         Function<AnnotationExpression, String> extractInspected = ae -> ae.extract("level", null);
         String levelString = levelString(analysis, property);
 
-        return CheckLinks.checkAnnotationWithValue(analysis,
+        return CheckHelper.checkAnnotationWithValue(analysis,
                 annotation.getName(),
                 "@" + annotation.getSimpleName(),
                 annotationExpression.typeInfo(),

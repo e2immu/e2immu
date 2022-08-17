@@ -15,7 +15,6 @@
 package org.e2immu.analyser.config;
 
 import org.e2immu.annotation.Container;
-import org.e2immu.annotation.E2Immutable;
 import org.e2immu.annotation.Fluent;
 
 import java.nio.charset.Charset;

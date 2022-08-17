@@ -15,7 +15,9 @@
 package org.e2immu.analyser.analyser.impl;
 
 import org.e2immu.analyser.analyser.*;
-import org.e2immu.analyser.analyser.check.*;
+import org.e2immu.analyser.analyser.check.CheckEventual;
+import org.e2immu.analyser.analyser.check.CheckImmutable;
+import org.e2immu.analyser.analyser.check.CheckPrecondition;
 import org.e2immu.analyser.analysis.Analysis;
 import org.e2immu.analyser.analysis.ParameterAnalysis;
 import org.e2immu.analyser.analysis.StatementAnalysis;
@@ -45,7 +47,6 @@ public abstract class MethodAnalyserImpl extends AbstractAnalyser implements Met
     public final List<ParameterAnalysis> parameterAnalyses;
     public final Map<CompanionMethodName, CompanionAnalyser> companionAnalysers;
     public final Map<CompanionMethodName, CompanionAnalysis> companionAnalyses;
-    public final CheckConstant checkConstant;
 
     MethodAnalyserImpl(MethodInfo methodInfo,
                        MethodAnalysisImpl.Builder methodAnalysis,
@@ -55,7 +56,6 @@ public abstract class MethodAnalyserImpl extends AbstractAnalyser implements Met
                        boolean isSAM,
                        AnalyserContext analyserContextInput) {
         super("Method " + methodInfo.name, analyserContextInput);
-        this.checkConstant = new CheckConstant(analyserContext.getPrimitives(), analyserContext.getE2ImmuAnnotationExpressions());
         this.methodInfo = methodInfo;
         methodInspection = methodInfo.methodInspection.get();
         this.parameterAnalysers = parameterAnalysers;
@@ -161,20 +161,18 @@ public abstract class MethodAnalyserImpl extends AbstractAnalyser implements Met
                     check(Identity.class, e2.identity);
                     check(Container.class, e2.container);
 
-                    analyserResultBuilder.add(CheckImmutable.check(methodInfo, E1Immutable.class, e2.e1Immutable, methodAnalysis, false, false));
-                    analyserResultBuilder.add(CheckImmutable.check(methodInfo, E1Container.class, e2.e1Container, methodAnalysis, false, false));
-                    analyserResultBuilder.add(CheckImmutable.check(methodInfo, E2Immutable.class, e2.e2Immutable, methodAnalysis, true, true));
-                    analyserResultBuilder.add(CheckImmutable.check(methodInfo, E2Container.class, e2.e2Container, methodAnalysis, true, false));
-                    analyserResultBuilder.add(CheckImmutable.check(methodInfo, ERContainer.class, e2.eRContainer, methodAnalysis, false, false));
+                    analyserResultBuilder.add(CheckImmutable.check(methodInfo, FinalFields.class, e2.finalFields, methodAnalysis, null));
+                    analyserResultBuilder.add(CheckImmutable.check(methodInfo, Immutable.class, e2.immutable, methodAnalysis, null));
+                    analyserResultBuilder.add(CheckImmutable.check(methodInfo, ImmutableContainer.class, e2.immutableContainer, methodAnalysis, null));
+                    Expression srv = methodAnalysis.getSingleReturnValue();
+                    analyserResultBuilder.add(CheckImmutable.check(methodInfo, Constant.class, e2.constant, methodAnalysis, srv));
+                    analyserResultBuilder.add(CheckImmutable.check(methodInfo, ConstantContainer.class, e2.constantContainer, methodAnalysis, srv));
+
                     check(BeforeMark.class, e2.beforeMark);
-
-                    analyserResultBuilder.add(checkConstant.checkConstantForMethods(methodInfo, methodAnalysis));
-
                     check(Nullable.class, e2.nullable);
-
                     check(Dependent.class, e2.dependent);
                     check(Independent.class, e2.independent);
-                    analyserResultBuilder.add(CheckIndependent.checkLevel(methodInfo, Independent1.class, e2.independent1, methodAnalysis));
+                    check(NotLinked.class, e2.notLinked);
                 }
 
                 check(NotModified.class, e2.notModified);

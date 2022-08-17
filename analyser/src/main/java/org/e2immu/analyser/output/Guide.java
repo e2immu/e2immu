@@ -14,13 +14,13 @@
 
 package org.e2immu.analyser.output;
 
-import org.e2immu.annotation.E1Container;
-import org.e2immu.annotation.ERContainer;
+import org.e2immu.annotation.ConstantContainer;
 
 import java.util.concurrent.atomic.AtomicInteger;
 
-@E1Container
-public record Guide(int index, Position position,
+@ConstantContainer
+public record Guide(int index,
+                    Position position,
                     int tabs,
                     boolean prioritySplit,
                     boolean startWithNewLine,
@@ -72,7 +72,7 @@ public record Guide(int index, Position position,
         return new GuideGenerator(0, false, false, false, false);
     }
 
-    @ERContainer
+    @ConstantContainer
     public static class GuideGenerator {
         public final int index;
         private final int tabs;

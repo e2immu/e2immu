@@ -14,7 +14,11 @@
 
 package org.e2immu.annotatedapi.java;
 
-import org.e2immu.annotation.*;
+import org.e2immu.annotation.Container;
+import org.e2immu.annotation.ImmutableContainer;
+import org.e2immu.annotation.Modified;
+import org.e2immu.annotation.NotNull;
+import org.e2immu.annotation.rare.StaticSideEffects;
 
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -27,7 +31,7 @@ public class JavaNet {
     final static String PACKAGE_NAME = "java.net";
 
     /*
-    we take the view that a URL is immutable
+     We take the view that a URL is (deeply) immutable.
      */
     @ImmutableContainer
     interface URL$ {
@@ -38,11 +42,16 @@ public class JavaNet {
         @NotNull
         URLConnection openConnection();
 
-        // static method setting some info regarding the runtime system, to be ignored by us.
+        /*
+         Static method setting some info regarding the runtime system, to be ignored by us.
+         */
         @StaticSideEffects
         void setURLStreamHandlerFactory(URLStreamHandlerFactory fac);
     }
 
+    /*
+     Deeply immutable class.
+     */
     @ImmutableContainer
     interface URI$ {
         @NotNull
@@ -57,7 +66,9 @@ public class JavaNet {
         @Modified
         void connect();
 
-        // dependent!! the output stream writes to this connection
+        /*
+         @Dependent!! the output stream writes to this connection
+         */
         OutputStream getOutputStream();
     }
 

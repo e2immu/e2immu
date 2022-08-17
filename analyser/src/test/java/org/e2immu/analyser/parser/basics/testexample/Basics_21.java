@@ -20,7 +20,7 @@ import org.e2immu.annotation.*;
 Minimal clone of SetOnce; to detect infinite loops when there are self-references.
 All is green until the copy() method comes into play.
  */
-@E2Container(after = "t")
+@ImmutableContainer(after = "t")
 public class Basics_21<T> {
 
     @Final(after = "t")

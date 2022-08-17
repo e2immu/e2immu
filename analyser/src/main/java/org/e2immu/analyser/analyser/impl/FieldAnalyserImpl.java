@@ -16,10 +16,9 @@ package org.e2immu.analyser.analyser.impl;
 
 import org.e2immu.analyser.analyser.Properties;
 import org.e2immu.analyser.analyser.*;
-import org.e2immu.analyser.analyser.check.CheckConstant;
 import org.e2immu.analyser.analyser.check.CheckFinalNotModified;
 import org.e2immu.analyser.analyser.check.CheckImmutable;
-import org.e2immu.analyser.analyser.check.CheckLinks;
+import org.e2immu.analyser.analyser.check.CheckHelper;
 import org.e2immu.analyser.analyser.delay.DelayFactory;
 import org.e2immu.analyser.analyser.delay.Inconclusive;
 import org.e2immu.analyser.analyser.delay.SimpleCause;
@@ -91,8 +90,7 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
     public final EventuallyFinal<PrimaryTypeAnalyser> anonymousTypeAnalyser = new EventuallyFinal<>();
     private final boolean fieldCanBeWrittenFromOutsideThisPrimaryType;
     private final AnalyserComponents<String, SharedState> analyserComponents;
-    private final CheckConstant checkConstant;
-    private final CheckLinks checkLinks;
+    private final CheckHelper checkHelper;
     private final boolean haveInitialiser;
     private final boolean acrossAllMethods;
 
@@ -106,8 +104,7 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
                              TypeAnalysis ownerTypeAnalysis,
                              AnalyserContext nonExpandableAnalyserContext) {
         super("Field " + fieldInfo.name, new ExpandableAnalyserContextImpl(nonExpandableAnalyserContext));
-        this.checkConstant = new CheckConstant(analyserContext.getPrimitives(), analyserContext.getE2ImmuAnnotationExpressions());
-        this.checkLinks = new CheckLinks(analyserContext, analyserContext.getE2ImmuAnnotationExpressions());
+        this.checkHelper = new CheckHelper(analyserContext, analyserContext.getE2ImmuAnnotationExpressions());
 
         this.acrossAllMethods = analyserContext.getConfiguration().analyserConfiguration().computeFieldAnalyserAcrossAllMethods();
 
@@ -1365,11 +1362,7 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
         }
 
         if (recursivelyConstant.valueIsTrue()) {
-            // directly adding the annotation; it will not be used for inspection
-            E2ImmuAnnotationExpressions e2 = analyserContext.getE2ImmuAnnotationExpressions();
-            AnnotationExpression constantAnnotation = checkConstant.createConstantAnnotation(e2, value);
-            fieldAnalysis.annotations.put(constantAnnotation, true);
-            LOGGER.debug("Added @Constant annotation on field {}", fqn);
+
         }
         fieldAnalysis.setProperty(Property.CONSTANT, recursivelyConstant);
         return DONE;
@@ -1439,17 +1432,6 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
         LinkedVariables linkedVariables = LinkedVariables.of(map);
         fieldAnalysis.setLinkedVariables(linkedVariables);
         LOGGER.debug("FA: Set links of {} to [{}]", fqn, linkedVariables);
-
-        // explicitly adding the annotation here; it will not be inspected.
-        E2ImmuAnnotationExpressions e2 = analyserContext.getE2ImmuAnnotationExpressions();
-        Set<Variable> dependent = linkedVariables.variablesAssignedOrDependent().collect(Collectors.toUnmodifiableSet());
-        AnnotationExpression linkAnnotation = checkLinks.createLinkAnnotation(e2.linked.typeInfo(), dependent);
-        fieldAnalysis.annotations.put(linkAnnotation, !dependent.isEmpty());
-
-        Set<Variable> independent1 = linkedVariables.independent1Variables().collect(Collectors.toUnmodifiableSet());
-        AnnotationExpression link1Annotation = checkLinks.createLinkAnnotation(e2.linked1.typeInfo(), independent1);
-        fieldAnalysis.annotations.put(link1Annotation, !independent1.isEmpty());
-
         return DONE;
     }
 
@@ -1658,20 +1640,17 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
             // dynamic type annotations
             check(Container.class, e2.container);
 
-            analyserResultBuilder.add(CheckImmutable.check(fieldInfo, E1Immutable.class, e2.e1Immutable, fieldAnalysis, false, false));
-            analyserResultBuilder.add(CheckImmutable.check(fieldInfo, E1Container.class, e2.e1Container, fieldAnalysis, false, false));
-            analyserResultBuilder.add(CheckImmutable.check(fieldInfo, E2Immutable.class, e2.e2Immutable, fieldAnalysis, true, true));
-            analyserResultBuilder.add(CheckImmutable.check(fieldInfo, E2Container.class, e2.e2Container, fieldAnalysis, true, false));
-            analyserResultBuilder.add(CheckImmutable.check(fieldInfo, ERContainer.class, e2.eRContainer, fieldAnalysis, false, false));
+            analyserResultBuilder.add(CheckImmutable.check(fieldInfo, FinalFields.class, e2.finalFields, fieldAnalysis, null));
+            analyserResultBuilder.add(CheckImmutable.check(fieldInfo, Immutable.class, e2.immutable, fieldAnalysis, null));
+            analyserResultBuilder.add(CheckImmutable.check(fieldInfo, ImmutableContainer.class, e2.immutableContainer, fieldAnalysis, null));
+            Expression singleReturnValue = fieldAnalysis.getValue() != null ?
+                    fieldAnalysis.getValue() : EmptyExpression.EMPTY_EXPRESSION;
+            analyserResultBuilder.add(CheckImmutable.check(fieldInfo, Constant.class, e2.constant, fieldAnalysis, singleReturnValue));
+            analyserResultBuilder.add(CheckImmutable.check(fieldInfo, ConstantContainer.class, e2.constantContainer, fieldAnalysis, singleReturnValue));
 
             check(Modified.class, e2.modified);
             check(Nullable.class, e2.nullable);
             check(BeforeMark.class, e2.beforeMark);
-
-            analyserResultBuilder.add(checkLinks.checkLinksForFields(fieldInfo, fieldAnalysis));
-            analyserResultBuilder.add(checkLinks.checkLink1sForFields(fieldInfo, fieldAnalysis));
-
-            analyserResultBuilder.add(checkConstant.checkConstantForFields(fieldInfo, fieldAnalysis));
         }
     }
 

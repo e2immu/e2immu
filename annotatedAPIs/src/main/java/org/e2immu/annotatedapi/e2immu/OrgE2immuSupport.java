@@ -15,12 +15,16 @@
 package org.e2immu.annotatedapi.e2immu;
 
 import org.e2immu.annotation.*;
+import org.e2immu.annotation.eventual.Mark;
+import org.e2immu.annotation.eventual.Only;
+import org.e2immu.annotation.eventual.TestMark;
 import org.e2immu.support.SetOnce;
 
 public class OrgE2immuSupport {
 
     final static String PACKAGE_NAME = "org.e2immu.support";
 
+    // hc=true added by analyser, type is abstract
     @ImmutableContainer(after = "frozen")
     public static class Freezable$ {
 
@@ -50,7 +54,7 @@ public class OrgE2immuSupport {
         }
     }
 
-    @ImmutableContainer(after = "isFinal")
+    @ImmutableContainer(hc = true, after = "isFinal")
     interface EventuallyFinal$<T> {
 
         @Mark("isFinal")
@@ -60,7 +64,7 @@ public class OrgE2immuSupport {
         void setVariable(T value);
     }
 
-    @ImmutableContainer(after = "t")
+    @ImmutableContainer(hc = true, after = "t")
     interface SetOnce$<T> {
 
         @Mark("t")

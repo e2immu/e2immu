@@ -15,11 +15,9 @@
 package org.e2immu.analyser.parser;
 
 import org.e2immu.analyser.model.Location;
-import org.e2immu.annotation.E2Container;
 
 import java.util.Objects;
 
-@E2Container
 public record Message(Location location, Label message, String extra) {
 
     public static int SORT(Message m1, Message m2) {

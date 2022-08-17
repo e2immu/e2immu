@@ -17,7 +17,6 @@ package org.e2immu.analyser.annotationxml;
 import org.e2immu.analyser.annotationxml.model.*;
 import org.e2immu.analyser.config.AnnotationXmlConfiguration;
 import org.e2immu.analyser.util.Resources;
-import org.e2immu.annotation.E2Immutable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.w3c.dom.Document;

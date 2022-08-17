@@ -27,7 +27,6 @@ import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.Symbol;
 import org.e2immu.analyser.parser.InspectionProvider;
-import org.e2immu.annotation.E2Container;
 
 import java.util.Arrays;
 import java.util.List;
@@ -38,7 +37,6 @@ import java.util.function.Predicate;
 A final field can have been initialised with multiple different values; in some situations
 it pays to keep track of all of them.
  */
-@E2Container
 public class MultiValue extends BaseExpression implements Expression {
 
     public final MultiExpression multiExpression;

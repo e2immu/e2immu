@@ -15,7 +15,7 @@
 package org.e2immu.analyser.annotationxml.model;
 
 import org.e2immu.analyser.model.AnnotationExpression;
-import org.e2immu.annotation.E2Immutable;
+import org.e2immu.annotation.Immutable;
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -36,7 +36,7 @@ public abstract class HasAnnotations {
     protected void addAnnotations(List<AnnotationExpression> inspected, List<AnnotationExpression> analysed) {
         Set<String> e2immuAnnotationsWritten = new HashSet<>();
         for (AnnotationExpression ae : inspected) {
-            boolean accept = ae.typeInfo().fullyQualifiedName.startsWith(E2Immutable.class.getPackageName())
+            boolean accept = ae.typeInfo().fullyQualifiedName.startsWith(Immutable.class.getPackageName())
                     && !ae.e2ImmuAnnotationParameters().isVerifyAbsent();
             if (accept) {
                 e2immuAnnotationsWritten.add(ae.typeInfo().fullyQualifiedName);

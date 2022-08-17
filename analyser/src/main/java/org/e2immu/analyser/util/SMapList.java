@@ -24,7 +24,7 @@ import java.util.Map.Entry;
 
 // extension class: implies @NotNull on first argument
 @ExtensionClass(of = Map.class)
-@E2Immutable // not container, addAll modifies argument
+@Immutable // not container, addAll modifies argument
 public class SMapList {
 
     private static final String NULL_KEY = "Adding null key to map-list";
@@ -89,7 +89,7 @@ public class SMapList {
     }
 
     @NotNull
-    @E2Container
+    @ImmutableContainer
     public static <A, B> Map<A, List<B>> immutable(@NotModified @NotNull1 Map<A, List<B>> map) {
         Map<A, List<B>> tmp = new HashMap<>();
         for (Entry<A, List<B>> e : map.entrySet()) {

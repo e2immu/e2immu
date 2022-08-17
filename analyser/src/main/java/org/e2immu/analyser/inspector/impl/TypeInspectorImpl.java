@@ -327,7 +327,7 @@ public class TypeInspectorImpl implements TypeInspector {
         return typeParameter.getAnnotations().stream()
                 .map(ae -> AnnotationInspector.inspect(expressionContext, ae))
                 .anyMatch(ae -> ae.equals(
-                        expressionContext.typeContext().typeMap.getE2ImmuAnnotationExpressions().independent));
+                        expressionContext.typeContext().typeMap.getE2ImmuAnnotationExpressions().notLinked));
     }
 
     private void doImplementedTypes(ExpressionContext expressionContext,

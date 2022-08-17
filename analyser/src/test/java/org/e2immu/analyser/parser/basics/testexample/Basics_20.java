@@ -39,7 +39,7 @@ public class Basics_20 {
     }
 
     // T is transparent, but List<T> is not
-    @E1Container
+    @FinalFields @Container
     static class C1<T> {
         private final List<T> list;
 
@@ -70,7 +70,7 @@ public class Basics_20 {
     }
 
     // T is transparent, but List<T> is not
-    @E2Container
+    @ImmutableContainer
     static class C2<T> {
         private final List<T> list;
 
@@ -78,7 +78,7 @@ public class Basics_20 {
             this.list = new ArrayList<>(list);
         }
 
-        @Independent1
+        @Independent
         public List<T> getListC2() {
             return new ArrayList<>(list);
         }

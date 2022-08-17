@@ -180,9 +180,9 @@ public class ParameterAnalysisImpl extends AnalysisImpl implements ParameterAnal
             DV independentType = analysisProvider.defaultIndependent(parameterInfo.parameterizedType);
             DV independent = getProperty(Property.INDEPENDENT);
             if (independent.equals(MultiLevel.INDEPENDENT_DV) && independentType.lt(MultiLevel.INDEPENDENT_DV)) {
-                annotations.put(e2ImmuAnnotationExpressions.independent, true);
+                annotations.put(e2ImmuAnnotationExpressions.notLinked, true);
             } else if (independent.equals(MultiLevel.INDEPENDENT_1_DV) && independentType.lt(MultiLevel.INDEPENDENT_1_DV)) {
-                annotations.put(e2ImmuAnnotationExpressions.independent1, true);
+                annotations.put(e2ImmuAnnotationExpressions.independent, true);
             }
 
             DV formallyImmutable = analysisProvider.getProperty(parameterInfo.parameterizedType, Property.IMMUTABLE, false);

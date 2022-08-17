@@ -15,6 +15,8 @@
 package org.e2immu.annotatedapi.java;
 
 import org.e2immu.annotation.*;
+import org.e2immu.annotation.rare.IgnoreModifications;
+import org.e2immu.annotation.type.UtilityClass;
 
 import java.io.PrintStream;
 import java.util.Iterator;
@@ -30,22 +32,36 @@ class JavaLang {
 
     final static String PACKAGE_NAME = "java.lang";
 
-    // implicitly @Dependent
+    /*
+     Implicitly @Dependent, because the iterator can change the iterable via the remove() method.
+     */
     @Container
     interface Iterable$<T> {
+        /*
+         Because action is of functional interface type in java.util.function, it is @IgnoreModifications by default.
+         The forEach method communicates hidden content to the outside world.
+         Finally, we do not allow action to be null, but obviously action's single abstract method (accept()) is allowed
+         to return null values.
+         */
         @NotModified
-        void forEach(@NotNull @Independent Consumer<? super T> action);
+        void forEach(@NotNull @Independent(hc = true) Consumer<? super T> action);
 
         // implicitly @Dependent, has `remove()`
         @NotNull
         Iterator<T> iterator();
 
+        /*
+        The spliterator cannot change the iterable, but it does communicate hidden content.
+         */
         @NotNull
-        @Independent
+        @Independent(hc = true)
         Spliterator<T> spliterator();
     }
 
-    @ImmutableContainer
+    /*
+    The archetype for a non-abstract type with hidden content.
+     */
+    @ImmutableContainer(hc = true)
     interface Object$ {
         @NotNull
         Object clone();
@@ -69,6 +85,9 @@ class JavaLang {
         String toString();
     }
 
+    /*
+    The analyser adds hc=true for an interface.
+     */
     @ImmutableContainer
     interface Enum$ {
 
@@ -78,7 +97,9 @@ class JavaLang {
     interface StackTraceElement$ {
     }
 
-    // not a container, modifying, dependent
+    /*
+     Not a container, modifying, dependent.
+     */
     interface Throwable$ {
 
         String getMessage();
@@ -107,7 +128,10 @@ class JavaLang {
         void printStackTrace(@Modified PrintStream s);
     }
 
-    @ConstantContainer
+    /*
+    Deeply immutable, no hidden content.
+     */
+    @ImmutableContainer
     interface Class$ {
         @NotNull
         String getCanonicalName();
@@ -118,8 +142,10 @@ class JavaLang {
         @NotNull
         String getSimpleName();
 
-        // Technically, a class loader cannot be immutable: the load method changes its content.
-        // Semantically, to the application, this does not matter
+        /*
+         Technically, a class loader cannot be immutable: the load method changes its content.
+         Semantically, to the application, this does not matter.
+         */
         @NotNull
         ClassLoader getClassLoader();
     }
@@ -138,30 +164,39 @@ class JavaLang {
         int length();
     }
 
-    @Independent // because of CharSequence being immutable, other types are constant
-    @Container
+    /*
+     @Container and @Independent implicit, all parameters are immutable.
+     As explained in PrintStream, we disallow implementations of this interface to store the CharSequences,
+     and force them to copy the chars in their own sequence.
+     Override this choice by uncommenting the @Independent(hc=true).
+     */
+    @Independent
     interface Appendable$ {
         @Fluent
         Appendable append(char c);
 
         @Fluent
-        Appendable append(CharSequence charSequence);
+        Appendable append(/*@Independent(hc=true)*/CharSequence charSequence);
 
         @Fluent
-        Appendable append(CharSequence charSequence, int start, int end);
+        Appendable append(/*@Independent(hc=true)*/CharSequence charSequence, int start, int end);
     }
 
-    @NotLinked
-    @Container
+    /*
+     @Container and @Independent implicit.
+     */
     interface AutoCloseable$ {
 
         @Modified
         void close();
     }
 
-    // a class, because we need to annotate the constructor
+    /*
+    Deeply immutable, no hidden content.
 
-    @ConstantContainer
+    Note that we use a class instead of an interface to annotate, because we need to annotate a constructor.
+     */
+    @ImmutableContainer
     static abstract class String$ implements CharSequence {
 
         boolean String$Modification$Len(int post) {
@@ -350,9 +385,10 @@ class JavaLang {
         }
     }
 
-    // a class, because we want to annotate the constructor
-    // not linked: we're not storing any of the objects communicated to us.
-    @NotLinked
+    /*
+    @Independent forces the string representation to be stored, rather than the object itself in append(Object).
+     */
+    @Independent
     @Container
     static abstract class StringBuilder$ implements CharSequence {
 
@@ -428,13 +464,20 @@ class JavaLang {
         }
     }
 
-    @NotLinked
+    /*
+     See StringBuilder for an explanation of the annotations.
+     TODO expand!
+     */
+    @Independent
     @Container
     static abstract class StringBuffer$ implements CharSequence {
 
     }
 
-    @ConstantContainer
+    /*
+    no hidden content, deeply immutable.
+     */
+    @ImmutableContainer
     interface Integer$ {
 
         @NotNull
@@ -442,35 +485,35 @@ class JavaLang {
     }
 
 
-    @ConstantContainer
+    @ImmutableContainer
     interface Float$ {
 
         @NotNull
         String toString(float f);
     }
 
-    @ConstantContainer
+    @ImmutableContainer
     interface Byte$ {
 
         @NotNull
         String toString(byte b);
     }
 
-    @ConstantContainer
+    @ImmutableContainer
     interface Character$ {
 
         @NotNull
         String toString(char c);
     }
 
-    @ConstantContainer
+    @ImmutableContainer
     interface Short$ {
 
         @NotNull
         String toString(short s);
     }
 
-    @ConstantContainer
+    @ImmutableContainer
     interface Boolean$ {
         boolean parseBoolean(@NotNull String string);
     }
@@ -482,6 +525,11 @@ class JavaLang {
         }
     }
 
+    /*
+     Cannot be @Container, see arraycopy.
+     Modifications to System are outside the scope of the semantics of the application: the output and error streams
+     have @IgnoreModifications.
+     */
     @UtilityClass
     interface System$ {
         @IgnoreModifications
@@ -499,6 +547,9 @@ class JavaLang {
                        int length);
     }
 
+    /*
+    hc=true automatically added.
+     */
     @ImmutableContainer
     interface Comparable$<T> {
         default int compareTo$Value(T t, int retVal) {
@@ -508,13 +559,18 @@ class JavaLang {
         int compareTo(@NotNull T t);
     }
 
-    // note: even though it is not formally "final", we'll treat it as such
-    @ConstantContainer
+    /*
+     Note: even though it is not formally "final", we'll treat it as such, and make this class deeply immutable.
+     */
+    @ImmutableContainer
     interface Package$ {
 
     }
 
-    @ConstantContainer
+    /*
+     Deeply immutable class.
+     */
+    @ImmutableContainer
     interface Module$ {
 
     }

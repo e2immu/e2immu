@@ -25,7 +25,6 @@ import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.Text;
 import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.parser.Primitives;
-import org.e2immu.annotation.E2Container;
 
 import java.util.*;
 import java.util.function.Predicate;
@@ -37,7 +36,6 @@ import static org.e2immu.analyser.model.MultiLevel.EFFECTIVELY_NOT_NULL_DV;
 A delayed expression stores the original expression, rather than the variables needed to generate (delayed) linked variables,
 because the translation needs to work for ExplicitConstructorInvocations. See e.g. ECI_7 where there are explicit tests.
  */
-@E2Container
 public final class DelayedExpression extends BaseExpression implements Expression {
     private final String msg;
     private final ParameterizedType parameterizedType;

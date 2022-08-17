@@ -14,12 +14,12 @@
 
 package org.e2immu.analyser.parser.basics.testexample;
 
-import org.e2immu.annotation.ERContainer;
+import org.e2immu.annotation.ConstantContainer;
 import org.e2immu.annotation.ExtensionClass;
 
 import java.util.stream.Stream;
 
-@ERContainer
+@ConstantContainer
 @ExtensionClass(of = String.class)
 public class Basics_5 {
 

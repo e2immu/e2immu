@@ -626,21 +626,9 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
             valueIsConstantField = constantField.valueIsTrue();
         } else valueIsConstantField = false;
 
-        boolean isConstant = value.isConstant() || valueIsConstantField;
-
         methodAnalysis.setSingleReturnValue(value);
-        E2ImmuAnnotationExpressions e2 = analyserContext.getE2ImmuAnnotationExpressions();
-        if (isConstant) {
-            AnnotationExpression constantAnnotation = checkConstant.createConstantAnnotation(e2, value);
-            methodAnalysis.annotations.put(constantAnnotation, true);
-        } else {
-            methodAnalysis.annotations.put(e2.constant, false);
-        }
-        methodAnalysis.setProperty(Property.CONSTANT, DV.fromBoolDv(isConstant));
-        LOGGER.debug("Mark method {} as @Constant? {}", methodInfo.fullyQualifiedName(), isConstant);
 
         setFluent(valueBeforeInlining);
-
 
         DV currentIdentity = methodAnalysis.getProperty(IDENTITY);
         if (currentIdentity.isDelayed()) {

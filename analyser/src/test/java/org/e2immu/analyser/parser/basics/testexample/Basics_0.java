@@ -16,19 +16,17 @@ package org.e2immu.analyser.parser.basics.testexample;
 
 import org.e2immu.annotation.*;
 
-@ERContainer
+@ImmutableContainer
 @Independent(absent = true)
 public class Basics_0 {
 
     // we don't want @Final here, because it is explicitly so...
     @Final(absent = true)
-    @E2Container(absent = true)
-    @ERContainer(absent = true)
+    @Immutable(absent = true)
     @Constant("abc")
     private final String explicitlyFinal = "abc";
 
-    @E2Container(absent = true)
-    @ERContainer(absent = true)
+    @Immutable(absent = true)
     @Independent(absent = true)
 
     @NotNull

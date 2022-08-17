@@ -35,12 +35,11 @@ public class GenerateAnnotationsImmutable {
 
     // for testing
     public static Map<Class<?>, Map<String, Object>> generate(DV immutable, DV container, boolean isType) {
-        return generate(immutable, container, isType, false, "abc", false);
+        return generate(immutable, container, isType, "abc", false);
     }
 
     public static Map<Class<?>, Map<String, Object>> generate(DV immutable, DV container,
                                                               boolean isType,
-                                                              boolean isInterface,
                                                               String mark, boolean betterThanFormal) {
         if (immutable.isDelayed()) return Map.of();
         boolean haveContainer = container.equals(MultiLevel.CONTAINER_DV);
@@ -81,8 +80,6 @@ public class GenerateAnnotationsImmutable {
         Map<Class<?>, Map<String, Object>> res = new HashMap<>();
         if (haveContainer) {
             res.put(Container.class, TRUE);
-        } else if (isType && (!isInterface || container.equals(MultiLevel.NOT_CONTAINER_DV))) {
-            res.put(MutableModifiesArguments.class, TRUE);
         }
         return res;
     }
@@ -91,19 +88,18 @@ public class GenerateAnnotationsImmutable {
         Map<String, Object> params = new HashMap<>(add);
         Class<?> clazz;
         if (level == MultiLevel.Level.IMMUTABLE_1.level) {
-            clazz = container ? E1Container.class : E1Immutable.class;
+            clazz = FinalFields.class;
+            if (container) return Map.of(clazz, params, Container.class, TRUE);
         } else if (level == MultiLevel.Level.IMMUTABLE_2.level) {
-            clazz = container ? E2Container.class : E2Immutable.class;
+            clazz = container ? ImmutableContainer.class : Immutable.class;
         } else if (level == MultiLevel.Level.IMMUTABLE_R.level) {
             if (container) {
-                clazz = ERContainer.class;
+                clazz = ConstantContainer.class;
             } else {
-                params.put("recursive", true);
-                clazz = E2Immutable.class;
+                clazz = Constant.class;
             }
         } else {
-            clazz = container ? E2Container.class : E2Immutable.class;
-            params.put("level", Integer.toString(level + 1));
+            throw new UnsupportedOperationException();
         }
         return Map.of(clazz, params);
     }

@@ -24,7 +24,6 @@ import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.Symbol;
 import org.e2immu.analyser.parser.InspectionProvider;
-import org.e2immu.annotation.E2Container;
 
 import java.util.Arrays;
 import java.util.List;
@@ -32,7 +31,6 @@ import java.util.Objects;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
-@E2Container
 public class ArrayInitializer extends BaseExpression implements Expression {
 
     public final MultiExpression multiExpression;

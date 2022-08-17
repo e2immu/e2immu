@@ -14,7 +14,9 @@
 
 package org.e2immu.analyser.output;
 
-import org.e2immu.annotation.E1Container;
+
+import org.e2immu.annotation.Container;
+import org.e2immu.annotation.FinalFields;
 
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -22,7 +24,8 @@ import java.util.function.*;
 import java.util.stream.Collector;
 import java.util.stream.Collectors;
 
-@E1Container
+@FinalFields
+@Container
 public class OutputBuilder implements Comparable<OutputBuilder> {
     final List<OutputElement> list = new LinkedList<>();
 

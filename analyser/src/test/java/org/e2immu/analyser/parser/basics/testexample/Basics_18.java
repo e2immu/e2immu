@@ -14,7 +14,7 @@
 
 package org.e2immu.analyser.parser.basics.testexample;
 
-import org.e2immu.annotation.ERContainer;
+import org.e2immu.annotation.ConstantContainer;
 import org.e2immu.annotation.NotNull;
 import org.e2immu.annotation.Variable;
 
@@ -23,7 +23,7 @@ import org.e2immu.annotation.Variable;
 // field is variable
 public class Basics_18 {
 
-    @ERContainer
+    @ConstantContainer
     record A(int i) {
     }
 

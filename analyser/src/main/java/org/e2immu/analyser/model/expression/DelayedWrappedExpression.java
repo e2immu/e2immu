@@ -23,7 +23,6 @@ import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.Text;
 import org.e2immu.analyser.parser.InspectionProvider;
-import org.e2immu.annotation.E2Container;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -36,7 +35,6 @@ Purpose: when facing an infinite loop in determining the values of a field, in s
 is replaced by this delayed expression, effectively eliminating, for one iteration, a delayed field value.
 See ConditionalInitialization_1.
  */
-@E2Container
 public final class DelayedWrappedExpression extends BaseExpression implements Expression {
     private static final Logger LOGGER = LoggerFactory.getLogger(DelayedWrappedExpression.class);
 

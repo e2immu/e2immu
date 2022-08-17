@@ -65,7 +65,7 @@ public class EnumMethods {
 
         var notNullContract = E2ImmuAnnotationExpressions.createContract(primitives, e2.notNull);
         var notModifiedContract = E2ImmuAnnotationExpressions.createContract(primitives, e2.notModified);
-        var eRContainer = E2ImmuAnnotationExpressions.createContract(primitives, e2.eRContainer);
+        var eRContainer = E2ImmuAnnotationExpressions.createContract(primitives, e2.constantContainer);
 
         // name()
 

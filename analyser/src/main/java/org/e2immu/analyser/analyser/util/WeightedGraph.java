@@ -31,7 +31,7 @@ import static org.e2immu.analyser.analyser.LinkedVariables.LINK_STATICALLY_ASSIG
  * In-house implementation of a directed graph that is used to model the links between objects.
  * A distance of 0 (STATICALLY_ASSIGNED) is always kept, even across delays.
  */
-@E2Container(after = "frozen")
+@ImmutableContainer(after = "frozen")
 public class WeightedGraph extends Freezable {
 
 

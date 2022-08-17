@@ -27,10 +27,8 @@ import org.e2immu.analyser.model.impl.BaseExpression;
 import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.Text;
 import org.e2immu.analyser.parser.Message;
-import org.e2immu.annotation.E2Container;
 import org.e2immu.annotation.NotNull;
 
-@E2Container
 public class NullConstant extends BaseExpression implements ConstantExpression<Object> {
     public static final NullConstant NULL_CONSTANT = new NullConstant();
 

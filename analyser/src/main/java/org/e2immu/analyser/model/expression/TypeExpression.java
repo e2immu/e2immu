@@ -25,12 +25,10 @@ import org.e2immu.analyser.model.impl.BaseExpression;
 import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.util.UpgradableBooleanMap;
-import org.e2immu.annotation.E2Container;
 
 import java.util.Objects;
 import java.util.function.Predicate;
 
-@E2Container
 public class TypeExpression extends BaseExpression implements Expression {
     public final ParameterizedType parameterizedType;
     public final Diamond diamond;

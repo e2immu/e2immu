@@ -15,7 +15,6 @@
 package org.e2immu.analyser.annotationxml.model;
 
 import org.e2immu.analyser.model.ParameterInfo;
-import org.e2immu.annotation.E2Immutable;
 
 import java.util.List;
 import java.util.Map;

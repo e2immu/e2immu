@@ -14,79 +14,17 @@
 
 package org.e2immu.analyser.analyser.check;
 
-import org.e2immu.analyser.analyser.LinkedVariables;
 import org.e2immu.analyser.analysis.Analysis;
-import org.e2immu.analyser.analysis.FieldAnalysis;
 import org.e2immu.analyser.model.*;
-import org.e2immu.analyser.model.expression.ArrayInitializer;
-import org.e2immu.analyser.model.expression.MemberValuePair;
-import org.e2immu.analyser.model.expression.StringConstant;
 import org.e2immu.analyser.model.impl.AnnotationExpressionImpl;
-import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
 import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.parser.Message;
-import org.e2immu.annotation.Linked;
-import org.e2immu.annotation.Linked1;
 
 import java.util.*;
 import java.util.function.Function;
-import java.util.stream.Collectors;
 
-public record CheckLinks(InspectionProvider inspectionProvider, E2ImmuAnnotationExpressions e2) {
-
-    public AnnotationExpression createLinkAnnotation(TypeInfo typeInfo, Set<Variable> links) {
-        List<Expression> linkNameList = links.stream().map(variable -> new StringConstant(inspectionProvider.getPrimitives(),
-                variable.nameInLinkedAnnotation())).collect(Collectors.toList());
-        MemberValuePair linksStringArray = new MemberValuePair("to",
-                new ArrayInitializer(Identifier.generate("link annot"),
-                        inspectionProvider, linkNameList, inspectionProvider.getPrimitives().stringParameterizedType()));
-        List<MemberValuePair> expressions = List.of(linksStringArray);
-        return new AnnotationExpressionImpl(typeInfo, expressions);
-    }
-
-    public Message checkLinksForFields(FieldInfo fieldInfo, FieldAnalysis fieldAnalysis) {
-        Function<AnnotationExpression, String> extractInspected = ae -> {
-            String[] inspected = ae.extract("to", new String[]{});
-            return Arrays.stream(inspected).sorted().collect(Collectors.joining(","));
-        };
-        LinkedVariables linkedVariables = fieldAnalysis.getLinkedVariables();
-        String computedString = linkedVariables.variablesAssignedOrDependent()
-                .map(Variable::nameInLinkedAnnotation)
-                .sorted().collect(Collectors.joining(","));
-
-        return checkAnnotationWithValue(
-                fieldAnalysis,
-                Linked.class.getName(),
-                "@Linked",
-                e2.linked.typeInfo(),
-                extractInspected,
-                computedString,
-                fieldInfo.fieldInspection.get().getAnnotations(),
-                fieldInfo.newLocation());
-    }
-
-
-    public Message checkLink1sForFields(FieldInfo fieldInfo, FieldAnalysis fieldAnalysis) {
-        Function<AnnotationExpression, String> extractInspected = ae -> {
-            String[] inspected = ae.extract("to", new String[]{});
-            return Arrays.stream(inspected).sorted().collect(Collectors.joining(","));
-        };
-        LinkedVariables linkedVariables = fieldAnalysis.getLinkedVariables();
-        String computedString = linkedVariables.independent1Variables()
-                .map(Variable::nameInLinkedAnnotation)
-                .sorted().collect(Collectors.joining(","));
-
-        return checkAnnotationWithValue(
-                fieldAnalysis,
-                Linked1.class.getName(),
-                "@Linked1",
-                e2.linked1.typeInfo(),
-                extractInspected,
-                computedString.isEmpty() ? null : computedString,
-                fieldInfo.fieldInspection.get().getAnnotations(),
-                fieldInfo.newLocation());
-    }
+public record CheckHelper(InspectionProvider inspectionProvider, E2ImmuAnnotationExpressions e2) {
 
     public static Message checkAnnotationWithValue(Analysis analysis,
                                                    String annotationFqn,

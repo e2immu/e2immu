@@ -16,7 +16,6 @@ package org.e2immu.analyser.config;
 
 import ch.qos.logback.classic.Level;
 import org.e2immu.annotation.Container;
-import org.e2immu.annotation.E2Immutable;
 import org.e2immu.annotation.Fluent;
 import org.slf4j.LoggerFactory;
 

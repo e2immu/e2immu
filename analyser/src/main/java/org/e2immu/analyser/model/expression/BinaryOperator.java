@@ -26,7 +26,6 @@ import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.util.ListUtil;
-import org.e2immu.annotation.E2Container;
 import org.e2immu.annotation.NotModified;
 import org.e2immu.annotation.NotNull;
 
@@ -55,7 +54,6 @@ import static org.e2immu.analyser.model.expression.Precedence.*;
  * precedence 4: && logical AND
  * precedence 3: || logical OR
  */
-@E2Container
 public class BinaryOperator extends BaseExpression implements Expression {
     protected final Primitives primitives;
     public final Expression lhs;

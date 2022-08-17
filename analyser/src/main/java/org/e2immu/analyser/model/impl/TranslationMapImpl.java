@@ -21,7 +21,6 @@ import org.e2immu.analyser.model.variable.LocalVariableReference;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.annotation.Container;
-import org.e2immu.annotation.E2Container;
 
 import java.util.HashMap;
 import java.util.List;
@@ -56,7 +55,6 @@ import java.util.stream.Collectors;
  *
  *
  */
-@E2Container
 public class TranslationMapImpl implements TranslationMap {
 
     public final Map<? extends Variable, ? extends Variable> variables;

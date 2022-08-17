@@ -26,7 +26,7 @@ import java.util.function.Consumer;
  *
  * @param <T>
  */
-@E2Container(after = "frozen")
+@ImmutableContainer(after = "frozen")
 public class DependencyGraph<T> extends Freezable {
 
     private static class Node<T> {
@@ -197,7 +197,7 @@ public class DependencyGraph<T> extends Freezable {
         }
     }
 
-    @Independent1
+    @Independent
     public List<T> sorted() {
         return sorted(null, null, null);
     }
@@ -217,7 +217,7 @@ public class DependencyGraph<T> extends Freezable {
         };
     }
 
-    @Independent1
+    @Independent
     public List<T> sorted(Consumer<List<T>> reportPartOfCycle,
                           Consumer<T> reportIndependent,
                           Comparator<T> backupComparator) {

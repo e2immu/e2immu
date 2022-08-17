@@ -16,10 +16,11 @@ package org.e2immu.analyser.parser.conditional.testexample;
 
 import org.e2immu.annotation.*;
 
-@ERContainer
+@ConstantContainer
 public class IfStatement_2 {
 
     @NotNull
+    @ConstantContainer(absent = true)
     @Constant(absent = true)
     public static String method3(String c) {
         if (c != null) return c;

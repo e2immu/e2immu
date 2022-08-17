@@ -25,12 +25,10 @@ import org.e2immu.analyser.model.impl.BaseExpression;
 import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.Text;
 import org.e2immu.analyser.parser.Primitives;
-import org.e2immu.annotation.E2Container;
 import org.e2immu.annotation.NotNull;
 
 import java.util.Objects;
 
-@E2Container
 public class BooleanConstant extends BaseExpression implements ConstantExpression<Boolean>, Negatable {
 
     private final Primitives primitives;

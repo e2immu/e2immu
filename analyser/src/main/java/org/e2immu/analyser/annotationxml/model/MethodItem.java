@@ -19,7 +19,6 @@ import org.e2immu.analyser.model.expression.EmptyExpression;
 import org.e2immu.analyser.model.statement.Block;
 import org.e2immu.analyser.model.statement.ReturnStatement;
 import org.e2immu.analyser.parser.InspectionProvider;
-import org.e2immu.annotation.E2Immutable;
 
 import java.util.*;
 import java.util.stream.Collectors;

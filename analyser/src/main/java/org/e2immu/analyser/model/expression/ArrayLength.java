@@ -23,7 +23,6 @@ import org.e2immu.analyser.output.Symbol;
 import org.e2immu.analyser.output.Text;
 import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.parser.Primitives;
-import org.e2immu.annotation.E2Container;
 import org.e2immu.annotation.NotNull;
 
 import java.util.List;
@@ -32,7 +31,6 @@ import java.util.function.Predicate;
 
 import static org.e2immu.analyser.model.expression.util.ExpressionComparator.ORDER_ARRAY_LENGTH;
 
-@E2Container
 public class ArrayLength extends BaseExpression implements Expression {
     private final Primitives primitives;
     private final Expression scope;

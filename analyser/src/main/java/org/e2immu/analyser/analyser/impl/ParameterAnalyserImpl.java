@@ -86,17 +86,18 @@ public abstract class ParameterAnalyserImpl extends AbstractAnalyser implements 
             check(NotNull1.class, e2.notNull1);
             check(Nullable.class, e2.nullable);
 
-            check(Independent.class, e2.independent);
-            check(Independent1.class, e2.independent1);
             check(Dependent.class, e2.dependent);
+            check(Independent.class, e2.independent);
+            check(NotLinked.class, e2.notLinked);
 
             check(BeforeMark.class, e2.beforeMark);
-            check(E1Immutable.class, e2.e1Immutable);
-            check(E1Container.class, e2.e1Container);
-            check(E2Immutable.class, e2.e2Immutable);
-            check(E2Container.class, e2.e2Container);
 
             check(Container.class, e2.container);
+            check(FinalFields.class, e2.finalFields);
+            check(Immutable.class, e2.independent);
+            check(ImmutableContainer.class, e2.immutableContainer);
+            check(Constant.class, e2.constant);
+            check(ConstantContainer.class, e2.constantContainer);
             checkWorseThanParent();
         }
     }

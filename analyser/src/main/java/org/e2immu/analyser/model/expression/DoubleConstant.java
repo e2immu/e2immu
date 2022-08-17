@@ -24,12 +24,10 @@ import org.e2immu.analyser.model.impl.BaseExpression;
 import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.Text;
 import org.e2immu.analyser.parser.Primitives;
-import org.e2immu.annotation.E2Container;
 import org.e2immu.annotation.NotNull;
 
 import java.util.Objects;
 
-@E2Container
 public final class DoubleConstant extends BaseExpression implements ConstantExpression<Double>, Numeric {
     private final Primitives primitives;
     private final double constant;

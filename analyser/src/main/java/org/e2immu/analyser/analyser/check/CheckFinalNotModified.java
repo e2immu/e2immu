@@ -35,7 +35,7 @@ public class CheckFinalNotModified {
         Map.Entry<AnnotationExpression, Boolean> inAnalysis = fieldAnalysis.findAnnotation(annotation.getCanonicalName());
         String mark = inAnalysis == null ? null : inAnalysis.getKey().extract("after", null);
 
-        return CheckLinks.checkAnnotationWithValue(fieldAnalysis,
+        return CheckHelper.checkAnnotationWithValue(fieldAnalysis,
                 annotation.getName(),
                 "@" + annotation.getSimpleName(),
                 annotationExpression.typeInfo(),

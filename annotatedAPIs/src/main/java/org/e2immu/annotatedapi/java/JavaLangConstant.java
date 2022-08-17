@@ -32,7 +32,6 @@ class JavaLangConstant {
     @ImmutableContainer
     interface Constable$ {
 
-        // E2Container wrapping an ERContainer, result is ERContainer
         @NotNull
         Optional<? extends ConstantDesc> describeConstable();
     }

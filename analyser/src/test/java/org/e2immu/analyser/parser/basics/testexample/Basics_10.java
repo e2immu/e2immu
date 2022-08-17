@@ -19,7 +19,7 @@ import org.e2immu.annotation.*;
 /*
 tests the contract=true on the parameter annotation (also in Enum_ tests)
  */
-@ERContainer
+@ConstantContainer
 public class Basics_10 {
 
     @Final

@@ -22,7 +22,7 @@ import java.util.List;
  * IMPORTANT: scope variables, so line numbers in the test; do not add lines except at end. Example of array+field combo
  */
 
-@E1Container
+@FinalFields @Container
 public class NotNull_5 {
 
     // effectively not null eventually content not null, but we cannot mark before or after

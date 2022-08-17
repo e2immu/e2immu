@@ -26,15 +26,12 @@ import org.e2immu.analyser.output.Symbol;
 import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.util.UpgradableBooleanMap;
-import org.e2immu.annotation.E2Container;
 import org.e2immu.annotation.NotNull;
 
 import java.util.List;
 import java.util.Objects;
 import java.util.function.Predicate;
 
-
-@E2Container
 public class InstanceOf extends BaseExpression implements Expression {
 
     private final Primitives primitives;
