@@ -17,6 +17,7 @@ package org.e2immu.annotatedapi.log;
 import org.e2immu.annotation.Modified;
 import org.e2immu.annotation.NotModified;
 import ch.qos.logback.classic.Level;
+import org.e2immu.annotation.NotNull;
 
 public class ChQosLogbackClassic {
 
@@ -25,6 +26,6 @@ public class ChQosLogbackClassic {
     interface Logger$ {
 
         @Modified
-        void setLevel(@NotModified Level level);
+        void setLevel(@NotModified @NotNull Level level);
     }
 }

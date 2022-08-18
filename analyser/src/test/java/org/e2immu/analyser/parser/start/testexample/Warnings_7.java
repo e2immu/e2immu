@@ -15,7 +15,7 @@
 package org.e2immu.analyser.parser.start.testexample;
 
 import org.e2immu.annotation.Container;
-import org.e2immu.annotation.E2Immutable;
+import org.e2immu.annotation.Immutable;
 import org.e2immu.annotation.Modified;
 
 import java.util.Set;
@@ -27,10 +27,11 @@ public class Warnings_7 {
 
     @Container
     interface MustBeContainer {
+        // @Modified by default
         void addToSet(Set<Integer> setInInterface);
     }
 
-    @E2Immutable(recursive = true)
+    @Immutable
     static class IsNotAContainer implements MustBeContainer {
 
         public final int i;

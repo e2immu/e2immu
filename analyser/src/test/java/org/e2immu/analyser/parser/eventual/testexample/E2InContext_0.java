@@ -15,6 +15,9 @@
 package org.e2immu.analyser.parser.eventual.testexample;
 
 import org.e2immu.annotation.*;
+import org.e2immu.annotation.eventual.BeforeMark;
+import org.e2immu.annotation.eventual.Mark;
+import org.e2immu.annotation.eventual.TestMark;
 
 /*
 Testing the immutability properties as statements progress: create an eventually immutable object,
@@ -22,7 +25,7 @@ modify it, and cause an error by modifying again.
  */
 public class E2InContext_0 {
 
-    @E2Container(after = "t")
+    @ImmutableContainer(after = "t", hc = true)
     public static class Eventually<T> {
         private T t;
 
@@ -45,7 +48,7 @@ public class E2InContext_0 {
     }
 
     @BeforeMark(absent = true)
-    @ERContainer // because better than E2; no after= because in AFTER state
+    @ImmutableContainer // no hidden content; no "after=" because in AFTER state
     public static Eventually<String> error() {
         Eventually<String> eventually = new Eventually<>();
         eventually.set("hello");

@@ -14,7 +14,8 @@
 
 package org.e2immu.analyser.parser.start.testexample;
 
-import org.e2immu.annotation.Constant;
+
+import org.e2immu.annotation.ImmutableContainer;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -24,7 +25,7 @@ Tests the $Remove companion method
  */
 public class BasicCompanionMethods_9 {
 
-    @Constant("1")
+    @ImmutableContainer("1")
     static int test() {
         Set<String> set = new HashSet<>();
         boolean added = set.add("a");

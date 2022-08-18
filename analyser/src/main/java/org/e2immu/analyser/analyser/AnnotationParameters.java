@@ -14,6 +14,9 @@
 
 package org.e2immu.analyser.analyser;
 
+import org.e2immu.annotation.ImmutableContainer;
+
+@ImmutableContainer
 public record AnnotationParameters(boolean absent, boolean contract) {
 
     public static final AnnotationParameters DEFAULT = new AnnotationParameters(false, false);

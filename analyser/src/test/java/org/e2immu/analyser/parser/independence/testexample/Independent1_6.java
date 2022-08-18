@@ -14,8 +14,8 @@
 
 package org.e2immu.analyser.parser.independence.testexample;
 
-import org.e2immu.annotation.E2Container;
-import org.e2immu.annotation.Independent1;
+import org.e2immu.annotation.ImmutableContainer;
+import org.e2immu.annotation.Independent;
 import org.e2immu.annotation.NotModified;
 
 import java.util.Arrays;
@@ -23,16 +23,17 @@ import java.util.function.Consumer;
 import java.util.function.Supplier;
 
 public class Independent1_6 {
-    @E2Container
-    record One<T>(T t) {}
+    @ImmutableContainer(hc = true)
+    record One<T>(T t) {
+    }
 
-    @E2Container
+    @ImmutableContainer(hc = true)
     static class ImmutableArrayOfOnes<T> {
 
         private final One<T>[] ones;
 
         @SuppressWarnings("unchecked")
-        public ImmutableArrayOfOnes(int size, @Independent1 Supplier<One<T>> generator) {
+        public ImmutableArrayOfOnes(int size, @Independent(hc = true) Supplier<One<T>> generator) {
             ones = new One[size]; // makes One explicit
             Arrays.setAll(ones, i -> generator.get());
         }
@@ -46,7 +47,7 @@ public class Independent1_6 {
             return ones[index];
         }
 
-        public void visit(@Independent1 Consumer<One<T>> consumer) {
+        public void visit(@Independent(hc = true) Consumer<One<T>> consumer) {
             for (One<T> one : ones) consumer.accept(one);
         }
     }

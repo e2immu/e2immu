@@ -15,7 +15,11 @@
 package org.e2immu.analyser.model;
 
 import org.e2immu.analyser.model.variable.Variable;
-
+import org.e2immu.annotation.ImmutableContainer;
+/*
+hidden content because variable is an immutable interface.
+ */
+@ImmutableContainer(hc = true)
 public record VariableIdentifier(Variable variable, String index) implements Identifier {
     public static Identifier variable(Variable variable) {
         return new VariableIdentifier(variable, "-");

@@ -14,8 +14,7 @@
 
 package org.e2immu.analyser.parser.independence.testexample;
 
-import org.e2immu.annotation.E2Container;
-import org.e2immu.annotation.Modified;
+import org.e2immu.annotation.ImmutableContainer;
 
 import java.util.List;
 
@@ -24,10 +23,10 @@ public class Independent_1 {
     /*
     StringBuilder is a modifiable @Container;
     the builder in the for-each is content linked to the "builders" argument.
-    A modification on builder propagates to builders, which is contracted to be @E2Container,
+    A modification on builder propagates to builders, which is contracted to be @ImmutableContainer,
     which causes a warning/error.
      */
-    public static void modifyImmutableList(@E2Container(contract = true) List<StringBuilder> builders) {
+    public static void modifyImmutableList(@ImmutableContainer(contract = true) List<StringBuilder> builders) {
         for (StringBuilder builder : builders) {
             builder.append("!");
         }

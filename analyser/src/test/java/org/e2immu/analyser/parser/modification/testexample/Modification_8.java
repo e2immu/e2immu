@@ -32,10 +32,11 @@ import java.util.stream.Stream;
  * For <code>input</code> to be marked <code>@Modified</code>, xx
  * has to link an already known to be <code>@Modified</code> field <code>set</code> to the parameter.
  */
-@E1Immutable
+@FinalFields
+@Container(absent = true)
 public class Modification_8 {
 
-    @E2Immutable(absent = true)
+    @Immutable(absent = true)
     @NotNull
     @Modified
     private final Set<String> set;

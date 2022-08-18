@@ -24,6 +24,9 @@ import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.annotation.*;
+import org.e2immu.annotation.type.ExtensionClass;
+import org.e2immu.annotation.type.Singleton;
+import org.e2immu.annotation.type.UtilityClass;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -128,16 +131,14 @@ public abstract class TypeAnalyserImpl extends AbstractAnalyser implements TypeA
             check(typeInfo, Container.class, e2.container);
             check(typeInfo, Singleton.class, e2.singleton);
 
+            // FIXME hc true, false
             check(typeInfo, Independent.class, e2.independent);
-            check(typeInfo, Dependent.class, e2.dependent);
-            check(typeInfo, NotLinked.class, e2.notLinked);
 
             analyserResultBuilder.add(CheckImmutable.check(typeInfo, FinalFields.class, e2.finalFields, typeAnalysis, null));
+            // FIXME hc = true, false
             analyserResultBuilder.add(CheckImmutable.check(typeInfo, Immutable.class, e2.immutable, typeAnalysis, null));
             analyserResultBuilder.add(CheckImmutable.check(typeInfo, ImmutableContainer.class, e2.immutableContainer, typeAnalysis, null));
-            analyserResultBuilder.add(CheckImmutable.check(typeInfo, Constant.class, e2.constant, typeAnalysis, null));
-            analyserResultBuilder.add(CheckImmutable.check(typeInfo, ConstantContainer.class, e2.constantContainer, typeAnalysis, null));
-        }
+         }
     }
 
     private void internalCheckImmutableIndependent() {

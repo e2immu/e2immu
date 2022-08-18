@@ -14,10 +14,7 @@
 
 package org.e2immu.analyser.parser.modification.testexample;
 
-import org.e2immu.annotation.E1Immutable;
-import org.e2immu.annotation.Final;
-import org.e2immu.annotation.Modified;
-import org.e2immu.annotation.NotModified;
+import org.e2immu.annotation.*;
 
 import java.util.Set;
 import java.util.stream.Stream;
@@ -28,7 +25,8 @@ import java.util.stream.Stream;
  * <p>
  * At the same time, the not-null property travels along.
  */
-@E1Immutable
+@FinalFields
+@Container(absent = true)
 public class Modification_7 {
 
     @Modified

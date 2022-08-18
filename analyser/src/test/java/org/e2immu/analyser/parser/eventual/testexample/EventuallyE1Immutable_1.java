@@ -15,11 +15,13 @@
 package org.e2immu.analyser.parser.eventual.testexample;
 
 import org.e2immu.annotation.Container;
+import org.e2immu.annotation.FinalFields;
 
 /**
- * the goal is to show that there is no Eventual Level 2 container, because there are no preconditions on j
+ * the goal is to show that there are no eventually final fields, because there are no preconditions on j
  */
 @Container
+@FinalFields(absent = true)
 public class EventuallyE1Immutable_1 {
 
     private int i;

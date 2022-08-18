@@ -21,6 +21,7 @@ import org.e2immu.analyser.model.expression.DelayedVariableExpression;
 import org.e2immu.analyser.model.expression.util.OneVariable;
 import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.util.UpgradableBooleanMap;
+import org.e2immu.annotation.ImmutableContainer;
 import org.e2immu.annotation.NotNull;
 
 import java.util.Set;
@@ -31,7 +32,7 @@ import java.util.stream.Collectors;
  * groups: FieldInfo, ParameterInfo, LocalVariable
  */
 
-// at some point: @E2Container
+@ImmutableContainer
 public interface Variable extends OneVariable, Comparable<Variable> {
 
     @Override

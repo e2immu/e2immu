@@ -19,11 +19,9 @@ import org.e2immu.annotation.*;
 import java.util.HashMap;
 import java.util.Map;
 
-@ERContainer
+@ImmutableContainer
 public class E2Immutable_4 {
 
-    @Linked1(absent = true)
-    @Linked(absent = true)
     private final Map<String, String> map4;
 
     public E2Immutable_4(Map<String, String> map4Param) {
@@ -34,7 +32,7 @@ public class E2Immutable_4 {
         return map4.get(input);
     }
 
-    @ERContainer
+    @ImmutableContainer
     public Map<String, String> getMap4() {
         return Map.copyOf(map4);
     }

@@ -24,11 +24,12 @@ and the empty initialiser on the variable field.
 The result must be that string is @Nullable.
  */
 @Container(absent = true)
-@Constant(absent = true)
+@ImmutableContainer
 @Immutable(absent = true)
+@FinalFields(absent = true)
 public class Basics_2 {
 
-    @Variable
+    @Final(absent = true)
     @Nullable
     @Modified(absent = true)
     @NotModified

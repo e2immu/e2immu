@@ -14,16 +14,15 @@
 
 package org.e2immu.analyser.parser.start.testexample;
 
-import org.e2immu.annotation.E2Container;
-import org.e2immu.annotation.ERContainer;
 import org.e2immu.annotation.Final;
+import org.e2immu.annotation.ImmutableContainer;
 
 /*
 
 Check for unread field
 
  */
-@ERContainer
+@ImmutableContainer
 public class Warnings_0 {
 
     // ERROR 1: private field b is not read outside constructors

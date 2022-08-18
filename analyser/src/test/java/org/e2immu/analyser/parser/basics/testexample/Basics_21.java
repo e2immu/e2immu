@@ -15,12 +15,15 @@
 package org.e2immu.analyser.parser.basics.testexample;
 
 import org.e2immu.annotation.*;
+import org.e2immu.annotation.eventual.Mark;
+import org.e2immu.annotation.eventual.Only;
+import org.e2immu.annotation.eventual.TestMark;
 
 /*
 Minimal clone of SetOnce; to detect infinite loops when there are self-references.
 All is green until the copy() method comes into play.
  */
-@ImmutableContainer(after = "t")
+@ImmutableContainer(after = "t", hc = true)
 public class Basics_21<T> {
 
     @Final(after = "t")

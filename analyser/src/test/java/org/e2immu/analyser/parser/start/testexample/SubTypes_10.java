@@ -14,14 +14,16 @@
 
 package org.e2immu.analyser.parser.start.testexample;
 
-import org.e2immu.annotation.ERContainer;
+
+import org.e2immu.annotation.ImmutableContainer;
 
 /*
 An anonymous subtype created in the constructor.
  */
-@ERContainer
+@ImmutableContainer
 public class SubTypes_10 {
 
+    @ImmutableContainer // hc=true
     interface External {
     }
 

@@ -15,13 +15,15 @@
 package org.e2immu.analyser.parser.eventual.testexample;
 
 import org.e2immu.annotation.*;
+import org.e2immu.annotation.eventual.Mark;
+import org.e2immu.annotation.eventual.Only;
 import org.e2immu.support.EventuallyFinal;
 
 // complication of _12, precursor to Finalizer_1
 // test whether the guarding of variables (making use of the constraints on eventuallyFinal to restrict the
 // use of "count") works
 
-@ERContainer(after = "eventuallyFinal")
+@ImmutableContainer(after = "eventuallyFinal")
 public class EventuallyImmutableUtil_13 {
 
     @Final(after = "eventuallyFinal")
@@ -35,7 +37,7 @@ public class EventuallyImmutableUtil_13 {
         count++;
     }
 
-    @ERContainer
+    @ImmutableContainer
     @Mark("eventuallyFinal")
     public EventuallyFinal<String> done(String last) {
         eventuallyFinal.setFinal(last + "; tried " + count);

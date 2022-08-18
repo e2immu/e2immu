@@ -15,8 +15,8 @@
 package org.e2immu.analyser.parser.modification.testexample;
 
 import org.e2immu.annotation.Container;
+import org.e2immu.annotation.Final;
 import org.e2immu.annotation.Modified;
-import org.e2immu.annotation.Variable;
 import org.junit.jupiter.api.Test;
 
 /*
@@ -26,7 +26,7 @@ public class ReturnValue_1 {
 
     @Container
     static class Random {
-        @Variable
+        @Final(absent = true)
         private int seed;
 
         public Random(int seed) {

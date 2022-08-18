@@ -24,11 +24,14 @@ import org.e2immu.analyser.output.Symbol;
 import org.e2immu.analyser.output.Text;
 import org.e2immu.analyser.util.UpgradableBooleanMap;
 import org.e2immu.annotation.NotNull;
-import org.e2immu.annotation.NotNull1;
+
 
 import java.util.*;
 import java.util.stream.Stream;
+/*
+Cyclic dependency between TypeInfo and WithInspectionAndAnalysis, and between AnnotationExpression and WIAA.
 
+ */
 public interface WithInspectionAndAnalysis {
 
     @NotNull
@@ -42,7 +45,7 @@ public interface WithInspectionAndAnalysis {
     @NotNull
     String name();
 
-    @NotNull1
+    @NotNull(content = true)
     Optional<AnnotationExpression> hasInspectedAnnotation(Class<?> annotation);
 
     @NotNull

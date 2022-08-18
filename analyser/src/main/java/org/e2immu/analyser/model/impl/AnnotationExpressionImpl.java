@@ -22,14 +22,16 @@ import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.Symbol;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.util.UpgradableBooleanMap;
-import org.e2immu.annotation.Finalizer;
-import org.e2immu.annotation.IgnoreModifications;
+import org.e2immu.annotation.ImmutableContainer;
+import org.e2immu.annotation.rare.Finalizer;
+import org.e2immu.annotation.rare.IgnoreModifications;
 
 import java.lang.reflect.Array;
 import java.util.*;
 
 
 public record AnnotationExpressionImpl(TypeInfo typeInfo,
+                                       @ImmutableContainer
                                        List<MemberValuePair> expressions) implements AnnotationExpression {
 
     public static final String ORG_E_2_IMMU_ANNOTATION = "org.e2immu.annotation";
@@ -94,21 +96,6 @@ public record AnnotationExpressionImpl(TypeInfo typeInfo,
     public Set<String> imports() {
         if (typeInfo.isNotJavaLang()) return Set.of(typeInfo.fullyQualifiedName);
         return Set.of();
-    }
-
-    @Override
-    public int[] extractIntArray(String fieldName) {
-        for (Expression expression : expressions) {
-            if (expression instanceof MemberValuePair mvp) {
-                if (mvp.name().equals(fieldName)) {
-                    if (mvp.value().get() instanceof ArrayInitializer ai) {
-                        return Arrays.stream(ai.multiExpression.expressions())
-                                .mapToInt(e -> ((IntConstant) e).constant()).toArray();
-                    } else throw new UnsupportedOperationException();
-                }
-            }
-        }
-        return new int[0];
     }
 
     @Override

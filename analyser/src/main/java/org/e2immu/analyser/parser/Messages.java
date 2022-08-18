@@ -25,7 +25,7 @@ public class Messages {
 
     public static final Messages EMPTY = new Messages(Set.of());
 
-    @NotNull1
+    @NotNull(content = true)
     private final Set<Message> messages;
 
     public Messages() {
@@ -37,12 +37,12 @@ public class Messages {
     }
 
     @Modified
-    public void addAll(@NotNull1 @NotModified Messages messages) {
+    public void addAll(@NotNull(content = true) @NotModified Messages messages) {
         this.messages.addAll(messages.messages);
     }
 
     @Modified
-    public void addAll(@NotNull1 @NotModified Stream<Message> messageStream) {
+    public void addAll(@NotNull(content = true) @NotModified Stream<Message> messageStream) {
         messageStream.forEach(messages::add);
     }
 
@@ -51,7 +51,7 @@ public class Messages {
         this.messages.add(message);
     }
 
-    @NotNull1
+    @NotNull(content = true)
     public Stream<Message> getMessageStream() {
         return messages.stream();
     }

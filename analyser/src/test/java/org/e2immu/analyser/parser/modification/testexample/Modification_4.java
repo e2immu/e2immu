@@ -14,7 +14,10 @@
 
 package org.e2immu.analyser.parser.modification.testexample;
 
-import org.e2immu.annotation.*;
+import org.e2immu.annotation.Container;
+import org.e2immu.annotation.FinalFields;
+import org.e2immu.annotation.Modified;
+import org.e2immu.annotation.NotNull;
 
 import java.util.Set;
 
@@ -33,7 +36,7 @@ The field analyser declares set4 as effectively final, and assigns the value in4
 In iteration 1, therefore, set4 will have a value, and local4 can be assigned to set4
 
  */
-@E1Immutable
+@FinalFields
 @Container(absent = true)
 public class Modification_4 {
 

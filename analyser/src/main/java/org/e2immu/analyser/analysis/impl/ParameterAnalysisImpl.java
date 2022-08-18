@@ -21,6 +21,7 @@ import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
 import org.e2immu.analyser.parser.Primitives;
+import org.e2immu.annotation.Independent;
 import org.e2immu.support.EventuallyFinal;
 import org.e2immu.support.SetOnce;
 import org.e2immu.support.SetOnceMap;
@@ -180,9 +181,11 @@ public class ParameterAnalysisImpl extends AnalysisImpl implements ParameterAnal
             DV independentType = analysisProvider.defaultIndependent(parameterInfo.parameterizedType);
             DV independent = getProperty(Property.INDEPENDENT);
             if (independent.equals(MultiLevel.INDEPENDENT_DV) && independentType.lt(MultiLevel.INDEPENDENT_DV)) {
-                annotations.put(e2ImmuAnnotationExpressions.notLinked, true);
-            } else if (independent.equals(MultiLevel.INDEPENDENT_1_DV) && independentType.lt(MultiLevel.INDEPENDENT_1_DV)) {
                 annotations.put(e2ImmuAnnotationExpressions.independent, true);
+            } else if (independent.equals(MultiLevel.INDEPENDENT_1_DV) && independentType.lt(MultiLevel.INDEPENDENT_1_DV)) {
+                AnnotationExpression independentHC = E2ImmuAnnotationExpressions.create(primitives, Independent.class,
+                        "hc", true);
+                annotations.put(independentHC, true);
             }
 
             DV formallyImmutable = analysisProvider.getProperty(parameterInfo.parameterizedType, Property.IMMUTABLE, false);

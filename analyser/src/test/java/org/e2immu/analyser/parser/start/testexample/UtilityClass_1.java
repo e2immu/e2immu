@@ -15,7 +15,7 @@
 package org.e2immu.analyser.parser.start.testexample;
 
 import org.e2immu.annotation.NotModified;
-import org.e2immu.annotation.UtilityClass;
+import org.e2immu.annotation.type.UtilityClass;
 
 @UtilityClass(absent = true)
 public class UtilityClass_1 {

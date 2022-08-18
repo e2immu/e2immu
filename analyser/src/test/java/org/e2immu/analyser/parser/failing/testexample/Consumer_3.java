@@ -15,12 +15,12 @@
 package org.e2immu.analyser.parser.failing.testexample;
 
 import org.e2immu.annotation.Container;
+import org.e2immu.annotation.Independent;
 import org.e2immu.annotation.Modified;
 import org.e2immu.annotation.NotModified;
 
 /*
-change wrt ForEachMethod_0..2: not calling the abstract method,
-so we have no @Dependent2.
+change wrt Consumer_0,_1,_2: not calling the abstract method, so no hidden content is communicated.
  */
 public class Consumer_3<S> {
 
@@ -59,7 +59,7 @@ public class Consumer_3<S> {
      */
 
     @NotModified
-    public String forEach(@Modified ClassWithConsumer<S> myConsumer) {
+    public String forEach(@Modified @Independent ClassWithConsumer<S> myConsumer) {
         return s + ": Consumer is " + myConsumer.getName() + ", count " + myConsumer.increment();
     }
 }

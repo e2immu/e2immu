@@ -14,7 +14,7 @@
 
 package org.e2immu.analyser.parser.conditional.testexample;
 
-import org.e2immu.annotation.Constant;
+import org.e2immu.annotation.ImmutableContainer;
 import org.e2immu.annotation.NotNull;
 
 public class SwitchExpression_1 {
@@ -22,7 +22,7 @@ public class SwitchExpression_1 {
     // should raise a warning that the condition is always false, plus that b is never used
     // as a consequence, default always returns "c" so we have @NotNull
     @NotNull
-    @Constant(absent = true)
+    @ImmutableContainer
     public static String method(char c, String b) {
         return switch (c) {
             case 'a' -> "a";

@@ -19,7 +19,6 @@ import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.annotation.NotNull;
-import org.e2immu.annotation.NotNull1;
 import org.e2immu.annotation.Nullable;
 
 import java.util.HashSet;
@@ -58,10 +57,10 @@ public interface TypeAnalysis extends Analysis {
 
     boolean approvedPreconditionsIsNotEmpty(boolean e2);
 
-    @NotNull1
+    @NotNull(content = true)
     Set<FieldInfo> getEventuallyImmutableFields();
 
-    @NotNull1
+    @NotNull(content = true)
     Set<FieldInfo> getGuardedByEventuallyImmutableFields();
 
     FieldInfo translateToVisibleField(FieldReference fieldReference);

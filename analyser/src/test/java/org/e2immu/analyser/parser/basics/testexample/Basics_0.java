@@ -23,14 +23,14 @@ public class Basics_0 {
     // we don't want @Final here, because it is explicitly so...
     @Final(absent = true)
     @Immutable(absent = true)
-    @Constant("abc")
+    @ImmutableContainer("abc")
     private final String explicitlyFinal = "abc";
 
     @Immutable(absent = true)
     @Independent(absent = true)
 
     @NotNull
-    @Constant("abc")
+    @ImmutableContainer("abc")
     public String getExplicitlyFinal() {
         return explicitlyFinal;
     }

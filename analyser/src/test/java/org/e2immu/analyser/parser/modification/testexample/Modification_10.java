@@ -16,37 +16,34 @@ package org.e2immu.analyser.parser.modification.testexample;
 
 import org.e2immu.annotation.*;
 
-import java.util.*;
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 
-@E1Container
+@FinalFields
+@Container
 public class Modification_10 {
     @NotModified
-    @Linked(to = { "Modification_10:list", "Modification_10.c1" })
     final Collection<String> c0;
 
     @NotModified
-    @Linked(to = { "Modification_10:list", "Modification_10.c0" })
     final Collection<String> c1;
 
     @NotModified
-    @Linked(to = {"Modification_10:set3"})
     final Set<String> s0;
 
     @NotModified
     @Modified(absent = true)
-    @Linked(absent = true)
     final Set<String> s1;
 
-    @Linked(absent = true)
     final int l0;
 
-    @Linked(absent = true)
     final int l1;
 
-    @Linked(absent = true)
     final int l2;
 
-    public Modification_10(@NotModified @NotNull1 List<String> list,
+    public Modification_10(@NotModified @NotNull(content = true) List<String> list,
                            @NotModified Set<String> set3) {
         c0 = list;
         c1 = list.subList(0, list.size() / 2);
@@ -63,7 +60,7 @@ public class Modification_10 {
     }
 
     // this is an extension function on Set
-    private static boolean addAll(@NotNull @Modified Set<String> c, @NotNull1 @NotModified Set<String> d) {
+    private static boolean addAll(@NotNull @Modified Set<String> c, @NotNull(content = true) @NotModified Set<String> d) {
         return c.addAll(d);
     }
 }

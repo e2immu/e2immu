@@ -14,11 +14,14 @@
 
 package org.e2immu.analyser.parser.start.testexample;
 
-import org.e2immu.annotation.*;
+import org.e2immu.annotation.Container;
+import org.e2immu.annotation.FinalFields;
+import org.e2immu.annotation.Independent;
+import org.e2immu.annotation.Nullable;
 
-// tests LinkedVariables on ArrayAccess; X is transparent in XS
-// so XS becomes an E2Container
-
+/*
+as of 202208, transparent types simply produce a warning
+ */
 public class DependentVariables_1 {
 
     @Container
@@ -35,16 +38,18 @@ public class DependentVariables_1 {
         }
     }
 
-    @E2Container
+    @FinalFields
+    @Container
     static class XS {
         private final X[] xs;
 
-        public XS(@Independent1 X[] p, X[] source) {
+        // dependent, because X is mutable
+        public XS(X[] p, X[] source) {
             this.xs = source.clone();
             System.arraycopy(p, 0, this.xs, 0, p.length);
         }
 
-        @E2Container // X transparent in XS
+        // dependent!
         @Nullable
         public X getX(int index) {
             return xs[index];

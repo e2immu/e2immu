@@ -19,7 +19,6 @@ import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.util.UpgradableBooleanMap;
 import org.e2immu.annotation.NotNull;
-import org.e2immu.annotation.NotNull1;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -34,7 +33,7 @@ public interface Element {
 
     // definition
 
-    @NotNull1
+    @NotNull(content = true)
     default List<? extends Element> subElements() {
         return List.of();
     }
@@ -60,7 +59,7 @@ public interface Element {
         });
     }
 
-    @NotNull1
+    @NotNull(content = true)
     default <E extends Element> List<E> collect(Class<E> clazz) {
         List<E> result = new ArrayList<>();
         visit(result::add, clazz);
@@ -82,7 +81,7 @@ public interface Element {
     }
 
     // variables, in order of appearance
-    @NotNull1
+    @NotNull(content = true)
     default List<Variable> variables(boolean descendIntoFieldReferences) {
         return subElements().stream()
                 .flatMap(e -> e.variables(descendIntoFieldReferences).stream())

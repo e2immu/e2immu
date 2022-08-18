@@ -14,11 +14,10 @@
 
 package org.e2immu.analyser.parser.independence.testexample;
 
-import org.e2immu.annotation.ERContainer;
+import org.e2immu.annotation.ImmutableContainer;
 import org.e2immu.annotation.Independent;
 
 import java.util.Arrays;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -26,7 +25,7 @@ import java.util.stream.Collectors;
 /*
 just to show that things work already without the linking between parameters
  */
-@ERContainer
+@ImmutableContainer
 public class Independent1_2_2 {
     private final String[] ts;
 

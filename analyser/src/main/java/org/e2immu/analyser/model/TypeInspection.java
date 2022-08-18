@@ -23,7 +23,6 @@ import org.e2immu.analyser.util.ListUtil;
 import org.e2immu.analyser.util.UpgradableBooleanMap;
 import org.e2immu.annotation.Fluent;
 import org.e2immu.annotation.NotNull;
-import org.e2immu.annotation.NotNull1;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -43,25 +42,25 @@ public interface TypeInspection extends Inspection {
     ParameterizedType parentClass();
 
     //@Immutable(level = 2, after="TypeAnalyser.analyse()")
-    @NotNull1
+    @NotNull(content = true)
     List<MethodInfo> constructors();
 
-    @NotNull1
+    @NotNull(content = true)
     List<MethodInfo> methods();
 
-    @NotNull1
+    @NotNull(content = true)
     List<FieldInfo> fields();
 
-    @NotNull1
+    @NotNull(content = true)
     Set<TypeModifier> modifiers();
 
-    @NotNull1
+    @NotNull(content = true)
     List<TypeInfo> subTypes();
 
-    @NotNull1
+    @NotNull(content = true)
     List<TypeParameter> typeParameters();
 
-    @NotNull1
+    @NotNull(content = true)
     List<ParameterizedType> interfacesImplemented();
 
     @NotNull
@@ -73,7 +72,7 @@ public interface TypeInspection extends Inspection {
      * @return The types permitted to extend from this type. Note that this list is not empty
      * if and only if the type is sealed.
      */
-    @NotNull1
+    @NotNull(content = true)
     List<TypeInfo> permittedWhenSealed();
 
     boolean isFunctionalInterface();

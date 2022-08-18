@@ -14,7 +14,7 @@
 
 package org.e2immu.analyser.parser.start.testexample;
 
-import org.e2immu.annotation.Singleton;
+import org.e2immu.annotation.type.Singleton;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;

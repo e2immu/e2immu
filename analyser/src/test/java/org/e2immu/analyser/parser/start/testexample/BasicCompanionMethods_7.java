@@ -14,7 +14,7 @@
 
 package org.e2immu.analyser.parser.start.testexample;
 
-import org.e2immu.annotation.Constant;
+import org.e2immu.annotation.ImmutableContainer;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -24,7 +24,7 @@ Tests the $Clear companion method on clear
  */
 public class BasicCompanionMethods_7 {
 
-    @Constant("1")
+    @ImmutableContainer("1")
     static int test(Set<String> strings) {
         Set<String> set = new HashSet<>(strings);
         assert !set.contains("a"); // no idea, does not cause a warning

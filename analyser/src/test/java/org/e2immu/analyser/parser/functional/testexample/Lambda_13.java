@@ -14,8 +14,8 @@
 
 package org.e2immu.analyser.parser.functional.testexample;
 
+import org.e2immu.annotation.Final;
 import org.e2immu.annotation.NotModified;
-import org.e2immu.annotation.Variable;
 
 import java.util.function.Predicate;
 
@@ -24,7 +24,7 @@ import java.util.function.Predicate;
 public class Lambda_13 {
 
     static class I {
-        @Variable
+        @Final(absent = true)
         private int i;
 
         public int getI() {

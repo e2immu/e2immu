@@ -30,8 +30,10 @@ public class JavaUtilFunction {
         T get();
     }
 
-    // implicitly @MutableModifiesArguments
     interface Consumer$<T> {
+        /*
+        t is @Modified implicitly
+         */
         @Modified
         void accept(T t);
 
@@ -40,11 +42,17 @@ public class JavaUtilFunction {
     }
 
     interface Predicate$<T> {
+        /*
+         t is @Modified implicitly
+         */
         @Modified
         boolean test(T t);
     }
 
     interface Function$<T, R> {
+        /*
+         t is @Modified implicitly
+         */
         @Modified
         R apply(T t);
 

@@ -15,10 +15,8 @@
 package org.e2immu.analyser.parser.eventual.testexample;
 
 import org.e2immu.annotation.Container;
+import org.e2immu.annotation.eventual.TestMark;
 import org.e2immu.support.SetOnce;
-import org.e2immu.annotation.E2Container;
-import org.e2immu.annotation.TestMark;
-import org.junit.jupiter.api.Test;
 
 /*
 Obviously, when one field does not play along...

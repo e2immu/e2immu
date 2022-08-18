@@ -20,7 +20,7 @@ import java.util.Set;
 
 // example 6 is direct modification, but indirectly on an instance variable of the class
 
-@E1Immutable
+@FinalFields
 @Container(absent = true)
 public class Modification_6 {
 
@@ -33,7 +33,8 @@ public class Modification_6 {
     }
 
     @NotModified
-    public static void add6(@NotNull @Modified Modification_6 example6, @NotNull1 @NotModified Set<String> values6) {
+    public static void add6(@NotNull @Modified Modification_6 example6,
+                            @NotNull(content = true) @NotModified Set<String> values6) {
         example6.set6.addAll(values6);
     }
 

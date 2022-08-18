@@ -14,7 +14,10 @@
 
 package org.e2immu.analyser.parser.modification.testexample;
 
-import org.e2immu.annotation.*;
+import org.e2immu.annotation.Container;
+import org.e2immu.annotation.FinalFields;
+import org.e2immu.annotation.NotModified;
+import org.e2immu.annotation.NotNull;
 
 import java.util.Collection;
 import java.util.List;
@@ -23,11 +26,11 @@ import java.util.List;
 // we explicitly use methods of the List type, so that it does not become transparent.
 // then, immutable is between the extremes (MUTABLE, Level 2), this causes the delay
 
-@E1Container
+@FinalFields
+@Container
 public class Modification_22 {
 
     @NotModified
-    @Linked(to = {"Modification_22:list"})
     final Collection<String> c1;
 
     public Modification_22(@NotModified @NotNull List<String> list) {

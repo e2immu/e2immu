@@ -28,6 +28,7 @@ import org.e2immu.analyser.model.WithInspectionAndAnalysis;
 import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.annotation.*;
+import org.e2immu.annotation.eventual.BeforeMark;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -83,12 +84,9 @@ public abstract class ParameterAnalyserImpl extends AbstractAnalyser implements 
             check(Modified.class, e2.modified);
 
             check(NotNull.class, e2.notNull);
-            check(NotNull1.class, e2.notNull1);
             check(Nullable.class, e2.nullable);
 
-            check(Dependent.class, e2.dependent);
             check(Independent.class, e2.independent);
-            check(NotLinked.class, e2.notLinked);
 
             check(BeforeMark.class, e2.beforeMark);
 
@@ -96,8 +94,6 @@ public abstract class ParameterAnalyserImpl extends AbstractAnalyser implements 
             check(FinalFields.class, e2.finalFields);
             check(Immutable.class, e2.independent);
             check(ImmutableContainer.class, e2.immutableContainer);
-            check(Constant.class, e2.constant);
-            check(ConstantContainer.class, e2.constantContainer);
             checkWorseThanParent();
         }
     }

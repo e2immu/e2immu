@@ -15,6 +15,7 @@
 package org.e2immu.analyser.util;
 
 import org.e2immu.annotation.*;
+import org.e2immu.annotation.eventual.Only;
 import org.e2immu.support.Freezable;
 
 import java.util.*;
@@ -35,11 +36,6 @@ public class DependencyGraph<T> extends Freezable {
 
         private Node(T t) {
             this.t = t;
-        }
-
-        private Node(T t, List<T> dependsOn) {
-            this.t = t;
-            this.dependsOn = dependsOn;
         }
     }
 
@@ -62,7 +58,7 @@ public class DependencyGraph<T> extends Freezable {
     }
 
     // return all transitive dependencies
-    @Independent
+    @Independent(hc = true)
     public Set<T> dependencies(@NotNull T t) {
         Set<T> result = new HashSet<>();
         recursivelyComputeDependencies(t, result);
@@ -85,13 +81,12 @@ public class DependencyGraph<T> extends Freezable {
         }
     }
 
-    @Independent
+    @Independent(hc = true)
     public Set<T> dependenciesWithoutStartingPoint(@NotNull T t) {
         Set<T> result = new HashSet<>();
         recursivelyComputeDependenciesWithoutStartingPoint(t, result);
         return result;
     }
-
 
     @NotModified
     private void recursivelyComputeDependenciesWithoutStartingPoint(@NotNull T t, @NotNull Set<T> result) {
@@ -159,7 +154,7 @@ public class DependencyGraph<T> extends Freezable {
     @NotNull
     @Modified
     @Only(before = "frozen")
-    private Node<T> getOrCreate(@NotNull T t) {
+    private Node<T> getOrCreate(@NotNull @Independent(hc = true) T t) {
         ensureNotFrozen();
         Objects.requireNonNull(t);
         Node<T> node = nodeMap.get(t);
@@ -171,19 +166,22 @@ public class DependencyGraph<T> extends Freezable {
     }
 
     @NotModified(contract = true)
-    public void visit(@NotNull BiConsumer<T, List<T>> consumer) {
+    public void visit(@NotNull @Independent(hc = true) BiConsumer<T, List<T>> consumer) {
         nodeMap.values().forEach(n -> consumer.accept(n.t, n.dependsOn));
     }
 
     @Only(before = "frozen")
     @Modified
-    public void addNode(@NotNull T t, @NotNull1 Collection<T> dependsOn) {
+    public void addNode(@NotNull @Independent(hc = true) T t,
+                        @NotNull(content = true) @Independent(hc = true) Collection<T> dependsOn) {
         addNode(t, dependsOn, false);
     }
 
     @Only(before = "frozen")
     @Modified
-    public void addNode(@NotNull T t, @NotNull1 Collection<T> dependsOn, boolean bidirectional) {
+    public void addNode(@NotNull @Independent(hc = true) T t,
+                        @NotNull(content = true) @Independent(hc = true) Collection<T> dependsOn,
+                        boolean bidirectional) {
         ensureNotFrozen();
         Node<T> node = getOrCreate(t);
         for (T d : dependsOn) {
@@ -197,7 +195,8 @@ public class DependencyGraph<T> extends Freezable {
         }
     }
 
-    @Independent
+    @Independent(hc = true)
+    @NotModified
     public List<T> sorted() {
         return sorted(null, null, null);
     }
@@ -217,7 +216,8 @@ public class DependencyGraph<T> extends Freezable {
         };
     }
 
-    @Independent
+    @Independent(hc = true)
+    @NotModified
     public List<T> sorted(Consumer<List<T>> reportPartOfCycle,
                           Consumer<T> reportIndependent,
                           Comparator<T> backupComparator) {

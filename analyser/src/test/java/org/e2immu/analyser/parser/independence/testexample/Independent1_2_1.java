@@ -14,7 +14,7 @@
 
 package org.e2immu.analyser.parser.independence.testexample;
 
-import org.e2immu.annotation.ERContainer;
+import org.e2immu.annotation.ImmutableContainer;
 import org.e2immu.annotation.Independent;
 
 import java.util.Arrays;
@@ -24,10 +24,9 @@ import java.util.Set;
 import java.util.function.IntFunction;
 
 /*
-variant, using Strings... should NOT be Independent1, but Independent
-because String is @ERContainer
+variant, using Strings... no hidden content!
  */
-@ERContainer
+@ImmutableContainer
 public class Independent1_2_1 {
     private final String[] ts;
 

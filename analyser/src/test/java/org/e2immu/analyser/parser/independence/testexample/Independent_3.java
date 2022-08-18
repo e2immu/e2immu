@@ -14,22 +14,20 @@
 
 package org.e2immu.analyser.parser.independence.testexample;
 
-import org.e2immu.annotation.E2Container;
-import org.e2immu.annotation.NotNull1;
+import org.e2immu.annotation.ImmutableContainer;
 
 import java.util.stream.Stream;
 
 public class Independent_3 {
 
-    @E2Container
+    @ImmutableContainer // hc=true default
     interface Expression {
 
         String get(int key);
     }
 
     interface HasSwitchLabels {
-        // will be @E3Container
-        @NotNull1
+        @ImmutableContainer(hc = true)
         Stream<Expression> labels();
     }
 

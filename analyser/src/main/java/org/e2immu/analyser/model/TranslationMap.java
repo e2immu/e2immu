@@ -18,7 +18,6 @@ import org.e2immu.analyser.model.statement.Block;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.annotation.NotNull;
-import org.e2immu.annotation.NotNull1;
 
 import java.util.List;
 
@@ -39,7 +38,7 @@ public interface TranslationMap {
     @NotNull
     Variable translateVariable(Variable variable);
 
-    @NotNull1
+    @NotNull(content = true)
     List<Statement> translateStatement(InspectionProvider inspectionProvider, Statement statement);
 
     @NotNull

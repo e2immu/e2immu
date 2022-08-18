@@ -14,6 +14,9 @@
 
 package org.e2immu.analyser.model;
 
+import org.e2immu.annotation.ImmutableContainer;
+
+@ImmutableContainer
 public interface NamedType {
     String simpleName();
 }

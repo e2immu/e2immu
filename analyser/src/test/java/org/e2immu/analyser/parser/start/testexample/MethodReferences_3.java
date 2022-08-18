@@ -14,17 +14,16 @@
 
 package org.e2immu.analyser.parser.start.testexample;
 
-import org.e2immu.annotation.E2Container;
-import org.e2immu.annotation.ERContainer;
-import org.e2immu.annotation.NotModified;
-import org.e2immu.annotation.NotNull1;
+import org.e2immu.annotation.*;
 
 import java.util.HashMap;
 import java.util.Map;
 import java.util.stream.Stream;
 
-// and not ERContainer, because the entries in the stream have a set method
-@E2Container
+// not immutable, the entries have a 'set' method which makes them modifiable
+@FinalFields
+@Container
+@ImmutableContainer(absent = true)
 public class MethodReferences_3 {
 
     @NotModified
@@ -39,9 +38,9 @@ public class MethodReferences_3 {
         input.keySet().forEach(map::get); // will cause potential null ptr exception, get
     }
 
-    @NotNull1
+    // dependent!
+    @NotNull(content = true)
     @NotModified
-    @E2Container(absent = true)  // because stream IS level 2, it is not needed. Not level=3, because the entrySet's result is @Dependent @Container
     public Stream<Map.Entry<String, Integer>> stream() {
         return map.entrySet().stream();
     }

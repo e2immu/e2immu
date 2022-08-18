@@ -14,14 +14,14 @@
 
 package org.e2immu.analyser.parser.basics.testexample;
 
-import org.e2immu.annotation.Variable;
+import org.e2immu.annotation.Final;
 
 import java.util.ArrayList;
 import java.util.List;
 
 public class Basics_6 {
 
-    @Variable
+    @Final(absent = true)
     private String field;
 
     public void test1() {

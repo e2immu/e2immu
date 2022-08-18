@@ -20,7 +20,6 @@ import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.FieldInfo;
 import org.e2immu.analyser.model.MethodInfo;
 import org.e2immu.annotation.NotNull;
-import org.e2immu.annotation.NotNull1;
 
 import java.util.List;
 import java.util.Map;
@@ -48,7 +47,7 @@ public interface MethodAnalysis extends Analysis {
         return null;
     }
 
-    @NotNull1
+    @NotNull(content = true)
     List<ParameterAnalysis> getParameterAnalyses();
 
     /**

@@ -255,7 +255,7 @@ public class FieldAnalysisImpl extends AnalysisImpl implements FieldAnalysis {
                     annotations.put(e2ImmuAnnotationExpressions.effectivelyFinal, true);
                 }
                 if (effectivelyFinal.valueIsFalse()) {
-                    annotations.put(e2ImmuAnnotationExpressions.variableField, true);
+                    annotations.put(e2ImmuAnnotationExpressions.effectivelyFinal, false);
                 }
             }
 

@@ -27,7 +27,6 @@ import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.annotation.NotModified;
 import org.e2immu.annotation.NotNull;
-import org.e2immu.annotation.NotNull1;
 import org.e2immu.support.Either;
 
 import java.util.List;
@@ -61,7 +60,7 @@ public interface Expression extends Element, Comparable<Expression> {
     EvaluationResult evaluate(EvaluationResult context, ForwardEvaluationInfo forwardEvaluationInfo);
 
     @NotModified
-    @NotNull1
+    @NotNull(content = true)
     default List<LocalVariableReference> newLocalVariables() {
         return List.of();
     }
@@ -219,7 +218,7 @@ public interface Expression extends Element, Comparable<Expression> {
         return causesOfDelay().isDone();
     }
 
-    @NotNull1
+    @NotNull(content = true)
     default Set<ParameterizedType> erasureTypes(TypeContext typeContext) {
         return Set.of(returnType());
     }

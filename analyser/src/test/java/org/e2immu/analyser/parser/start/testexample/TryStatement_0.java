@@ -14,7 +14,7 @@
 
 package org.e2immu.analyser.parser.start.testexample;
 
-import org.e2immu.annotation.Constant;
+import org.e2immu.annotation.ImmutableContainer;
 import org.e2immu.annotation.NotNull;
 
 public class TryStatement_0 {
@@ -24,7 +24,7 @@ public class TryStatement_0 {
      */
 
     @NotNull
-    @Constant(absent = true)
+    @ImmutableContainer // but not constant
     public static String method(String s) {
         try {
             return "Hi" + Integer.parseInt(s);

@@ -47,6 +47,7 @@ import org.e2immu.analyser.resolver.impl.SortedType;
 import org.e2immu.analyser.util.StreamUtil;
 import org.e2immu.analyser.visitor.FieldAnalyserVisitor;
 import org.e2immu.annotation.*;
+import org.e2immu.annotation.eventual.BeforeMark;
 import org.e2immu.support.Either;
 import org.e2immu.support.EventuallyFinal;
 import org.slf4j.Logger;
@@ -1627,13 +1628,12 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
         AnalyserProgram analyserProgram = analyserContext.getAnalyserProgram();
         if (analyserProgram.accepts(FIELD_FINAL)) {
             analyserResultBuilder.add(CheckFinalNotModified.check(fieldInfo, Final.class, e2.effectivelyFinal, fieldAnalysis));
-            check(org.e2immu.annotation.Variable.class, e2.variableField);
         }
         if (analyserProgram.accepts(ALL)) {
             LOGGER.debug("Checking field {}", fqn);
 
+            // FIXME content
             check(NotNull.class, e2.notNull);
-            check(NotNull1.class, e2.notNull1);
 
             analyserResultBuilder.add(CheckFinalNotModified.check(fieldInfo, NotModified.class, e2.notModified, fieldAnalysis));
 
@@ -1645,8 +1645,6 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
             analyserResultBuilder.add(CheckImmutable.check(fieldInfo, ImmutableContainer.class, e2.immutableContainer, fieldAnalysis, null));
             Expression singleReturnValue = fieldAnalysis.getValue() != null ?
                     fieldAnalysis.getValue() : EmptyExpression.EMPTY_EXPRESSION;
-            analyserResultBuilder.add(CheckImmutable.check(fieldInfo, Constant.class, e2.constant, fieldAnalysis, singleReturnValue));
-            analyserResultBuilder.add(CheckImmutable.check(fieldInfo, ConstantContainer.class, e2.constantContainer, fieldAnalysis, singleReturnValue));
 
             check(Modified.class, e2.modified);
             check(Nullable.class, e2.nullable);

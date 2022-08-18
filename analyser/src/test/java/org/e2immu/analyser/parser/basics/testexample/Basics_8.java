@@ -14,13 +14,13 @@
 
 package org.e2immu.analyser.parser.basics.testexample;
 
-import org.e2immu.annotation.Constant;
+import org.e2immu.annotation.ImmutableContainer;
 
 public class Basics_8 {
 
     // the first test isn't that interesting, in that v always gets substituted for a value
 
-    @Constant("true")
+    @ImmutableContainer("true")
     static boolean test1(int l) {
         int v = l;
         int w = v + 1; // == l+1
@@ -36,7 +36,7 @@ public class Basics_8 {
 
     // statement time doesn't advance because of the synchronization
 
-    @Constant("true")
+    @ImmutableContainer("true")
     synchronized boolean test2(int q) {
         int j = i; // some value
         int i2 = i + q; // some value + q
@@ -44,7 +44,7 @@ public class Basics_8 {
         return k == j + q;
     }
 
-    @Constant("true")
+    @ImmutableContainer("true")
     synchronized boolean test3(int q) {
         int j = i; // some value
         i = i + q; // some value + q

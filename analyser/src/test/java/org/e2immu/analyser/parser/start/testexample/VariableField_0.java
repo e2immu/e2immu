@@ -14,11 +14,12 @@
 
 package org.e2immu.analyser.parser.start.testexample;
 
-import org.e2immu.annotation.Variable;
+
+import org.e2immu.annotation.Final;
 
 public class VariableField_0 {
 
-    @Variable
+    @Final(absent = true)
     private String string;
 
     public void setString(String string) {

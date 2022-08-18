@@ -14,7 +14,7 @@
 
 package org.e2immu.analyser.parser.start.testexample;
 
-import org.e2immu.annotation.Singleton;
+import org.e2immu.annotation.type.Singleton;
 
 // relies on the precondition on created to be picked up
 @Singleton

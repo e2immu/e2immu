@@ -14,7 +14,7 @@
 
 package org.e2immu.analyser.util;
 
-import org.e2immu.annotation.UtilityClass;
+import org.e2immu.annotation.type.UtilityClass;
 
 @UtilityClass
 public class IntUtil {

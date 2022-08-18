@@ -38,7 +38,7 @@ public class JavaUtilJar {
 
     interface JarFile$ {
 
-        @NotNull1
+        @NotNull(content = true)
         Stream<JarEntry> stream();
     }
 }

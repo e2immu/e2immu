@@ -15,7 +15,7 @@
 package org.e2immu.analyser.parser.start.testexample;
 
 import org.e2immu.annotation.Container;
-import org.e2immu.annotation.E2Immutable;
+import org.e2immu.annotation.Immutable;
 import org.e2immu.annotation.Modified;
 
 import java.util.List;
@@ -33,7 +33,7 @@ public class Warnings_6 {
         void print(List<String> strings);
     }
 
-    @E2Immutable(recursive = true) // still, will cause an error because we had expected @ERContainer
+    @Immutable // still, will cause an error because we had expected @ERContainer
     static class IsNotAContainer implements MustBeContainer {
 
         public final int i;

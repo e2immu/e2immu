@@ -14,8 +14,8 @@
 
 package org.e2immu.analyser.parser.independence.testexample;
 
-import org.e2immu.annotation.E2Container;
-import org.e2immu.annotation.Independent1;
+import org.e2immu.annotation.ImmutableContainer;
+import org.e2immu.annotation.Independent;
 
 import java.util.*;
 import java.util.function.Consumer;
@@ -23,7 +23,7 @@ import java.util.function.Consumer;
 /*
 tests the Arrays.setAll(...) method, now with a lambda
  */
-@E2Container
+@ImmutableContainer(hc = true)
 public class Independent1_4<T> {
     private final T[] ts;
 
@@ -32,7 +32,7 @@ public class Independent1_4<T> {
     of 'ts' will be linked copied into the content of 'set'.
      */
     @SuppressWarnings("unchecked")
-    public Independent1_4(@Independent1 List<T> content) {
+    public Independent1_4(@Independent(hc = true) List<T> content) {
         this.ts = (T[]) new Object[content.size()];
         // the modulo is here to ensure that the lambda is not automatically transformed to a method reference
         Arrays.setAll(this.ts, i -> content.get(i % 10));
@@ -44,7 +44,7 @@ public class Independent1_4<T> {
         return set;
     }
 
-    public void visit(@Independent1 Consumer<T> consumer) {
+    public void visit(@Independent(hc = true) Consumer<T> consumer) {
         for (T t : ts) consumer.accept(t);
     }
 }

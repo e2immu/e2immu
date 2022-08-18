@@ -15,13 +15,16 @@
 package org.e2immu.analyser.parser.eventual.testexample;
 
 import org.e2immu.annotation.*;
+import org.e2immu.annotation.eventual.BeforeMark;
+import org.e2immu.annotation.eventual.Mark;
+import org.e2immu.annotation.eventual.TestMark;
 
 /*
 Slight variant on _1, the field is public
  */
 public class E2InContext_3 {
 
-    @E2Container(after = "t")
+    @ImmutableContainer(after = "t", hc = true)
     public static class Eventually<T> {
         private T t;
 
@@ -38,17 +41,14 @@ public class E2InContext_3 {
         }
     }
 
-    @Constant(absent = true) // because eventual
     @BeforeMark(absent = true)
-    @ERContainer(after = "eventually")
+    @ImmutableContainer(after = "eventually")
     // @ERContainer because better than @E2Container; the "after=" signifies that it is plainly eventual
     public final Eventually<String> eventually = new Eventually<>();
 
     // whilst correct the very first time around, the state of eventually can be changed outside this class
     @BeforeMark(absent = true)
-    @ERContainer(after = "eventually")
-    @E2Container(absent = true)
-    @Constant(absent = true)
+    @ImmutableContainer(after = "eventually")
     public Eventually<String> getEventually() {
         return eventually;
     }

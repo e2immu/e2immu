@@ -20,11 +20,9 @@ import com.github.javaparser.ast.expr.Expression;
 import com.github.javaparser.ast.expr.ObjectCreationExpr;
 import com.github.javaparser.ast.expr.SimpleName;
 import com.github.javaparser.ast.expr.StringLiteralExpr;
-import com.github.javaparser.ast.stmt.SwitchEntry;
 import org.e2immu.annotation.Fluent;
 import org.e2immu.annotation.Modified;
 import org.e2immu.annotation.NotNull;
-import org.e2immu.annotation.NotNull1;
 
 import java.util.Optional;
 
@@ -48,7 +46,7 @@ public class ComGithubJavaparserAstExpr {
 
     interface MethodCallExpr$ {
 
-        @NotNull1
+        @NotNull(content = true)
         NodeList<Expression> getArguments();
 
         @NotNull
@@ -66,7 +64,7 @@ public class ComGithubJavaparserAstExpr {
 
     interface LambdaExpr$ {
 
-        @NotNull1
+        @NotNull(content = true)
         NodeList<Parameter> getParameters();
 
         @NotNull

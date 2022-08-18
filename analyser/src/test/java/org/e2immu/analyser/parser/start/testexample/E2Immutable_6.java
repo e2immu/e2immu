@@ -15,17 +15,20 @@
 package org.e2immu.analyser.parser.start.testexample;
 
 import org.e2immu.annotation.Container;
-import org.e2immu.annotation.E2Container;
-import org.e2immu.annotation.ERContainer;
+import org.e2immu.annotation.FinalFields;
 import org.e2immu.annotation.Independent;
 
 import java.util.HashMap;
 import java.util.Map;
 
-@E2Container
+@FinalFields
+@Container
 public class E2Immutable_6 {
 
-    // SimpleContainer can be replaced by an unbound parameter type in this example
+    /*
+     SimpleContainer can be replaced by an unbound parameter type in this example, but as of 202208 we're
+     ignoring transparent types, simply produce a warning
+     */
 
     @Independent
     @Container
@@ -47,11 +50,12 @@ public class E2Immutable_6 {
         map6 = new HashMap<>(map6Param); // not linked
     }
 
+    // dependent
     public SimpleContainer get6(String input) {
         return map6.get(input);
     }
 
-    @ERContainer // because simpleContainer is transparent, and result of copyOf is E2Immutable
+    // dependent, because map6 is mutable
     public Map<String, SimpleContainer> getMap6() {
         return Map.copyOf(map6);
     }

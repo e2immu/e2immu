@@ -14,7 +14,7 @@
 
 package org.e2immu.analyser.parser.modification.testexample;
 
-import org.e2immu.annotation.Constant;
+import org.e2immu.annotation.ImmutableContainer;
 import org.e2immu.annotation.NotModified;
 
 /*
@@ -32,7 +32,7 @@ public class ReturnValue_0 {
         return square(i) * i;
     }
 
-    @Constant("27")
+    @ImmutableContainer("27")
     public static int cube3() {
         return cube(3);
     }

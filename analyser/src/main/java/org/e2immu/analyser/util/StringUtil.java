@@ -16,7 +16,7 @@ package org.e2immu.analyser.util;
 
 import org.e2immu.annotation.NotModified;
 import org.e2immu.annotation.NotNull;
-import org.e2immu.annotation.UtilityClass;
+import org.e2immu.annotation.type.UtilityClass;
 
 import java.util.Collection;
 import java.util.function.Function;

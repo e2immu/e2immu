@@ -20,6 +20,17 @@ import org.e2immu.analyser.model.expression.BooleanConstant;
 import org.e2immu.analyser.model.expression.MemberValuePair;
 import org.e2immu.analyser.model.impl.AnnotationExpressionImpl;
 import org.e2immu.annotation.*;
+import org.e2immu.annotation.eventual.BeforeMark;
+import org.e2immu.annotation.eventual.Mark;
+import org.e2immu.annotation.eventual.Only;
+import org.e2immu.annotation.eventual.TestMark;
+import org.e2immu.annotation.rare.AllowsInterrupt;
+import org.e2immu.annotation.rare.Finalizer;
+import org.e2immu.annotation.rare.IgnoreModifications;
+import org.e2immu.annotation.rare.StaticSideEffects;
+import org.e2immu.annotation.type.ExtensionClass;
+import org.e2immu.annotation.type.Singleton;
+import org.e2immu.annotation.type.UtilityClass;
 
 import java.util.HashMap;
 import java.util.List;
@@ -28,17 +39,17 @@ import java.util.Objects;
 import java.util.stream.Stream;
 
 /*
-  See discussion in manual for why the type is eventually an @E2Container.
+Why is this type an immutable container?
+1. the non-private fields are immutable themselves: OK, because AnnotationExpression is immutable.
+2. there are no modifying methods: OK
+3. no accessible content leaks; this is not a problem because TypeInfo is immutable.
  */
-
+@ImmutableContainer
 public class E2ImmuAnnotationExpressions {
 
     public final AnnotationExpression allowsInterrupt = create(AllowsInterrupt.class);
     public final AnnotationExpression beforeMark = create(BeforeMark.class);
-    public final AnnotationExpression constant = create(Constant.class);
-    public final AnnotationExpression constantContainer = create(ConstantContainer.class);
     public final AnnotationExpression container = create(Container.class);
-    public final AnnotationExpression dependent = create(Dependent.class);
     public final AnnotationExpression extensionClass = create(ExtensionClass.class);
     public final AnnotationExpression effectivelyFinal = create(Final.class);
     public final AnnotationExpression finalFields = create(FinalFields.class);
@@ -51,28 +62,25 @@ public class E2ImmuAnnotationExpressions {
     public final AnnotationExpression independent = create(Independent.class);
     public final AnnotationExpression mark = create(Mark.class);
     public final AnnotationExpression modified = create(Modified.class);
-    public final AnnotationExpression notLinked = create(NotLinked.class);
     public final AnnotationExpression notModified = create(NotModified.class);
     public final AnnotationExpression notNull = create(NotNull.class);
-    public final AnnotationExpression notNull1 = create(NotNull1.class);
     public final AnnotationExpression nullable = create(Nullable.class);
     public final AnnotationExpression only = create(Only.class);
     public final AnnotationExpression singleton = create(Singleton.class);
     public final AnnotationExpression staticSideEffects = create(StaticSideEffects.class);
     public final AnnotationExpression testMark = create(TestMark.class);
     public final AnnotationExpression utilityClass = create(UtilityClass.class);
-    public final AnnotationExpression variableField = create(Variable.class);
 
+    @ImmutableContainer // result of Map.copyOf
     private final Map<String, TypeInfo> annotationTypes;
 
     public E2ImmuAnnotationExpressions() {
         Map<String, TypeInfo> builder = new HashMap<>();
-        add(builder, allowsInterrupt, beforeMark, constant, container, dependent, independent,
-                immutableContainer, constantContainer, extensionClass, finalFields, immutable,
-                effectivelyFinal, fluent, finalizer, identity, ignoreModifications, notLinked,
-                mark, modified);
-        add(builder, notModified, notNull, notNull1, nullable, only, singleton, staticSideEffects, testMark,
-                utilityClass, variableField);
+        add(builder, allowsInterrupt, beforeMark, container, independent,
+                immutableContainer, extensionClass, finalFields, immutable,
+                effectivelyFinal, fluent, finalizer, identity, ignoreModifications, mark, modified);
+        add(builder, notModified, notNull, nullable, only, singleton, staticSideEffects, testMark,
+                utilityClass);
         annotationTypes = Map.copyOf(builder);
     }
 
@@ -91,6 +99,11 @@ public class E2ImmuAnnotationExpressions {
     @NotModified
     private AnnotationExpression create(Class<?> clazz) {
         return new AnnotationExpressionImpl(new TypeInfo(clazz.getPackageName(), clazz.getSimpleName()), List.of());
+    }
+
+    public static AnnotationExpression create(Primitives primitives, Class<?> clazz, String key, boolean value) {
+        return new AnnotationExpressionImpl(new TypeInfo(clazz.getPackageName(), clazz.getSimpleName()),
+                List.of(new MemberValuePair(key, new BooleanConstant(primitives, value))));
     }
 
     /*

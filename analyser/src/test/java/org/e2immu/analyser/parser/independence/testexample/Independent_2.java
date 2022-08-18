@@ -14,13 +14,18 @@
 
 package org.e2immu.analyser.parser.independence.testexample;
 
-import org.e2immu.annotation.*;
+import org.e2immu.annotation.Container;
+import org.e2immu.annotation.ImmutableContainer;
+import org.e2immu.annotation.Independent;
 
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+/*
+the set is immutable, but its contents is mutable, and exposed.
+ */
 public class Independent_2 {
 
     @Container
@@ -41,7 +46,7 @@ public class Independent_2 {
         }
     }
 
-    @E2Container
+    @Container
     static class ISet {
         private final Set<I> set;
 
@@ -53,15 +58,17 @@ public class Independent_2 {
             set = is.stream().map(I::new).collect(Collectors.toUnmodifiableSet());
         }
 
+        @Container // dependent, as "I" is mutable
         public Stream<I> stream() {
             return set.stream();
         }
 
+        @Container // dependent, as "I" is mutable
         public static ISet of(int i) {
             return new ISet(List.of(i));
         }
 
-        @ERContainer(contract = true)
+        @ImmutableContainer
         public static ISet of() {
             return new ISet();
         }

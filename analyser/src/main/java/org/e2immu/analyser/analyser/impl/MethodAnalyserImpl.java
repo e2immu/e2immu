@@ -28,6 +28,7 @@ import org.e2immu.analyser.model.expression.DelayedExpression;
 import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.annotation.*;
+import org.e2immu.annotation.eventual.BeforeMark;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -156,7 +157,6 @@ public abstract class MethodAnalyserImpl extends AbstractAnalyser implements Met
                     internalCheckImmutableIndependent();
 
                     check(NotNull.class, e2.notNull);
-                    check(NotNull1.class, e2.notNull1);
                     check(Fluent.class, e2.fluent);
                     check(Identity.class, e2.identity);
                     check(Container.class, e2.container);
@@ -165,14 +165,12 @@ public abstract class MethodAnalyserImpl extends AbstractAnalyser implements Met
                     analyserResultBuilder.add(CheckImmutable.check(methodInfo, Immutable.class, e2.immutable, methodAnalysis, null));
                     analyserResultBuilder.add(CheckImmutable.check(methodInfo, ImmutableContainer.class, e2.immutableContainer, methodAnalysis, null));
                     Expression srv = methodAnalysis.getSingleReturnValue();
-                    analyserResultBuilder.add(CheckImmutable.check(methodInfo, Constant.class, e2.constant, methodAnalysis, srv));
-                    analyserResultBuilder.add(CheckImmutable.check(methodInfo, ConstantContainer.class, e2.constantContainer, methodAnalysis, srv));
+
+                    // FIXME complete code
 
                     check(BeforeMark.class, e2.beforeMark);
                     check(Nullable.class, e2.nullable);
-                    check(Dependent.class, e2.dependent);
                     check(Independent.class, e2.independent);
-                    check(NotLinked.class, e2.notLinked);
                 }
 
                 check(NotModified.class, e2.notModified);

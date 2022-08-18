@@ -14,7 +14,8 @@
 
 package org.e2immu.analyser.parser.basics.testexample;
 
-import org.e2immu.annotation.Constant;
+
+import org.e2immu.annotation.ImmutableContainer;
 
 /*
 Statement time stands still in constructors and synchronization blocks,
@@ -34,7 +35,7 @@ public class Basics_7 {
         }
     }
 
-    @Constant("true")
+    @ImmutableContainer("true")
     synchronized boolean increment(int q) {
         int k = i;
         System.out.println("q is " + q);
@@ -53,7 +54,7 @@ public class Basics_7 {
         }
     }
 
-    @Constant("true")
+    @ImmutableContainer("true")
     boolean increment3() {
         System.out.println("i is " + i);
         synchronized (this) {

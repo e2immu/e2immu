@@ -14,7 +14,8 @@
 
 package org.e2immu.analyser.parser.modification.testexample;
 
-import org.e2immu.annotation.E1Container;
+import org.e2immu.annotation.Container;
+import org.e2immu.annotation.FinalFields;
 import org.e2immu.annotation.Modified;
 import org.e2immu.annotation.NotModified;
 
@@ -23,7 +24,8 @@ import java.util.Set;
 
 // example 5 shows the same indirect modification; this time construction is not linked to the set
 
-@E1Container
+@FinalFields
+@Container
 public class Modification_5 {
     @Modified
     private final Set<String> set5;

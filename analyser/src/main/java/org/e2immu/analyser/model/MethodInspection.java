@@ -19,6 +19,7 @@ import org.e2immu.analyser.analyser.AnnotationParameters;
 import org.e2immu.analyser.model.statement.Block;
 import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.annotation.*;
+import org.e2immu.annotation.rare.Finalizer;
 
 import java.util.List;
 import java.util.Map;
@@ -42,7 +43,7 @@ public interface MethodInspection extends Inspection {
     @NotNull
     Block getMethodBody();
 
-    @NotNull1
+    @NotNull(content = true)
     List<ParameterInfo> getParameters();
 
     /*
@@ -50,13 +51,13 @@ public interface MethodInspection extends Inspection {
     compute essential properties of the method! E.g., an abstract method in an interface may not contain
     the ABSTRACT method modifier.
      */
-    @NotNull1
+    @NotNull(content = true)
     Set<MethodModifier> getParsedModifiers();
 
-    @NotNull1
+    @NotNull(content = true)
     List<TypeParameter> getTypeParameters();
 
-    @NotNull1
+    @NotNull(content = true)
     List<ParameterizedType> getExceptionTypes();
 
     @NotNull

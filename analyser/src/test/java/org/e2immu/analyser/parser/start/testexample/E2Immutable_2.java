@@ -14,16 +14,17 @@
 
 package org.e2immu.analyser.parser.start.testexample;
 
-import org.e2immu.annotation.*;
+import org.e2immu.annotation.ImmutableContainer;
+import org.e2immu.annotation.Independent;
+import org.e2immu.annotation.NotModified;
+import org.e2immu.annotation.NotNull;
 
 import java.util.HashSet;
 import java.util.Set;
 
-@ERContainer
+@ImmutableContainer
 public class E2Immutable_2 {
 
-    @Linked(absent = true)
-    @Linked1(absent = true)
     @NotModified
     private final Set<String> set3;
 
@@ -31,8 +32,8 @@ public class E2Immutable_2 {
         set3 = new HashSet<>(set3Param); // not linked
     }
 
-    @NotNull1
-    @ERContainer
+    @NotNull(content = true)
+    @ImmutableContainer
     public Set<String> copy() {
         return Set.copyOf(set3);
     }

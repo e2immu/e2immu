@@ -17,7 +17,7 @@ package org.e2immu.analyser.parser.start.testexample;
 import org.e2immu.analyser.parser.start.testexample.a.IFluent_3;
 import org.e2immu.annotation.*;
 
-@ERContainer
+@ImmutableContainer
 public class Fluent_3 implements IFluent_3 {
 
     public final int value;

@@ -19,8 +19,12 @@ import org.e2immu.annotation.*;
 import java.util.HashMap;
 import java.util.Map;
 
-// here, SimpleContainer cannot be replaced by T or Object, but there are no fields linked to parameters
-@E2Container
+/*
+here, SimpleContainer cannot be replaced by T or Object; there are no fields linked to parameters
+yet, the SimpleContainer returned by get7 is modifiable, and hence dependent.
+ */
+@FinalFields
+@Container
 public class E2Immutable_7 {
 
     @Independent
@@ -44,12 +48,12 @@ public class E2Immutable_7 {
         map7 = new HashMap<>(map7Param); // not linked
     }
 
-    @Independent1
+    // dependent! SimpleContainer is mutable
     public SimpleContainer get7(String input) {
         return map7.get(input);
     }
 
-    @Independent1
+    // dependent, even if the map is independent, and its content is independent
     public Map<String, SimpleContainer> getMap7() {
         Map<String, SimpleContainer> incremented = new HashMap<>(map7);
         incremented.values().forEach(sc -> sc.setI(sc.getI() + 1));

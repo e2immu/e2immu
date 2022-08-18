@@ -15,12 +15,15 @@
 package org.e2immu.analyser.parser.eventual.testexample;
 
 import org.e2immu.annotation.*;
+import org.e2immu.annotation.eventual.Mark;
+import org.e2immu.annotation.eventual.Only;
+import org.e2immu.annotation.eventual.TestMark;
 
 /*
 Like EventuallyE2Immutable_3, with different types of errors.
 The two "error" methods currently do not stop the type from becoming eventually E2Container.
  */
-@E2Container(after = "t")
+@ImmutableContainer(after = "t", hc = true)
 public class EventuallyE2Immutable_11<T> {
 
     private T t;

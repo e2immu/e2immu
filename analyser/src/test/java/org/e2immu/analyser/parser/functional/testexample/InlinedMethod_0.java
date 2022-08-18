@@ -14,7 +14,7 @@
 
 package org.e2immu.analyser.parser.functional.testexample;
 
-import org.e2immu.annotation.Constant;
+import org.e2immu.annotation.ImmutableContainer;
 
 public class InlinedMethod_0 {
 
@@ -31,11 +31,11 @@ public class InlinedMethod_0 {
         return sum * diff;
     }
 
-    @Constant("6")
+    @ImmutableContainer("6")
     public static final int m1 = product(2, 3);
-    @Constant("16")
+    @ImmutableContainer("16")
     public static final int m2 = square(4);
 
-    @Constant("-24")
+    @ImmutableContainer("-24")
     public static final int m3 = withIntermediateVariables(5, 7);
 }

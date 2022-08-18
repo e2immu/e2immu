@@ -14,10 +14,10 @@
 
 package org.e2immu.analyser.parser.eventual.testexample;
 
-import org.e2immu.annotation.E2Container;
-import org.e2immu.annotation.Mark;
-import org.e2immu.annotation.Only;
-import org.e2immu.annotation.TestMark;
+import org.e2immu.annotation.ImmutableContainer;
+import org.e2immu.annotation.eventual.Mark;
+import org.e2immu.annotation.eventual.Only;
+import org.e2immu.annotation.eventual.TestMark;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -29,7 +29,7 @@ and test6, which relies on substitution of .isEmpty() to .size()==0.
 
 This intermediary step will rely on the size() invariant (size()>=0) to be injected.
  */
-@E2Container(after = "set")
+@ImmutableContainer(after = "set", hc = true)
 public class EventuallyE2Immutable_8<T> {
 
     private final Set<T> set = new HashSet<>();

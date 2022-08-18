@@ -16,7 +16,7 @@ package org.e2immu.analyser.parser.start.testexample;
 
 import org.e2immu.annotation.*;
 
-@ERContainer
+@ImmutableContainer
 public class E2Immutable_1 {
 
     @Nullable

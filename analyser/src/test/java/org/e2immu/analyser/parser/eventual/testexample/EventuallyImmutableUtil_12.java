@@ -15,11 +15,13 @@
 package org.e2immu.analyser.parser.eventual.testexample;
 
 import org.e2immu.annotation.*;
+import org.e2immu.annotation.eventual.Mark;
+import org.e2immu.annotation.eventual.Only;
 import org.e2immu.support.EventuallyFinal;
 
 // simply wrap EventuallyFinal; test propagation of @Only and @Mark
 
-@ERContainer(after = "eventuallyFinal")
+@ImmutableContainer(after = "eventuallyFinal")
 public class EventuallyImmutableUtil_12 {
 
     private final EventuallyFinal<String> eventuallyFinal = new EventuallyFinal<>();

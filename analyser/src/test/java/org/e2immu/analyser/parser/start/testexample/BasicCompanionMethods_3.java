@@ -14,11 +14,12 @@
 
 package org.e2immu.analyser.parser.start.testexample;
 
-import org.e2immu.annotation.Constant;
+
+import org.e2immu.annotation.ImmutableContainer;
 
 public class BasicCompanionMethods_3 {
 
-    @Constant("true")
+    @ImmutableContainer("true")
     static boolean test() {
         StringBuilder sb = new StringBuilder("abc").append(3).append("-");
         if (sb.length() == 3) { //evaluates to constant

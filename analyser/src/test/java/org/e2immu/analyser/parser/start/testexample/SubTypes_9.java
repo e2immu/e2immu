@@ -14,12 +14,14 @@
 
 package org.e2immu.analyser.parser.start.testexample;
 
-import org.e2immu.annotation.E1Container;
+import org.e2immu.annotation.Container;
+import org.e2immu.annotation.FinalFields;
 import org.e2immu.annotation.Modified;
 
 public class SubTypes_9 {
 
-    @E1Container
+    @FinalFields
+    @Container
     static class HoldsStringBuilder {
 
         @Modified // break2

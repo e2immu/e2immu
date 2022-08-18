@@ -17,7 +17,6 @@ package org.e2immu.analyser.model;
 import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.annotation.NotNull;
-import org.e2immu.annotation.NotNull1;
 import org.e2immu.support.Either;
 
 import java.util.List;
@@ -34,7 +33,7 @@ public interface TypeParameter extends NamedType {
 
     int getIndex();
 
-    @NotNull1
+    @NotNull(content = true)
     List<ParameterizedType> getTypeBounds();
 
     /**

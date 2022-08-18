@@ -24,7 +24,8 @@ import java.util.Set;
 // the @NotNull on the local copy must be on the field's value as well
 
 @Container(absent = true)
-@MutableModifiesArguments
+@Immutable(absent = true)
+@FinalFields(absent = true)
 public class Container_0 {
 
     @Nullable

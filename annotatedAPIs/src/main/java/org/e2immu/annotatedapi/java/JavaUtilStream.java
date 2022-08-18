@@ -15,6 +15,7 @@
 package org.e2immu.annotatedapi.java;
 
 import org.e2immu.annotation.*;
+import org.e2immu.annotation.type.UtilityClass;
 
 import java.util.Comparator;
 import java.util.List;
@@ -30,7 +31,7 @@ public class JavaUtilStream {
     static final String PACKAGE_NAME = "java.util.stream";
 
     interface Collector$<T, A, R> {
-        @NotNull1
+        @NotNull(content = true)
         @Modified
         Supplier<A> supplier();
 
@@ -38,11 +39,11 @@ public class JavaUtilStream {
         @Modified
         BiConsumer<A, T> accumulator();
 
-        @NotNull1
+        @NotNull(content = true)
         @Modified
         BinaryOperator<A> combiner();
 
-        @NotNull1
+        @NotNull(content = true)
         @Modified
         Function<A, R> finisher();
     }
@@ -50,25 +51,40 @@ public class JavaUtilStream {
     @UtilityClass
     @Container
     static class Collectors$ {
-        @NotNull1
-        Collector<CharSequence, ?, String> joining() { return null; }
+        @NotNull(content = true)
+        Collector<CharSequence, ?, String> joining() {
+            return null;
+        }
 
-        @NotNull1
-        Collector<CharSequence, ?, String> joining(@NotNull CharSequence delimiter) { return null; }
+        @NotNull(content = true)
+        Collector<CharSequence, ?, String> joining(@NotNull CharSequence delimiter) {
+            return null;
+        }
 
-        @NotNull1
-        <T> Collector<T, ?, Set<T>> toSet() { return null; };
+        @NotNull(content = true)
+        <T> Collector<T, ?, Set<T>> toSet() {
+            return null;
+        }
 
-        @NotNull1
-        <T> Collector<T, ?, List<T>> toList() { return null; }
+        @NotNull(content = true)
+        <T> Collector<T, ?, List<T>> toList() {
+            return null;
+        }
 
-        @NotNull1
-        static <T> Collector<T,?,List<T>> toUnmodifiableList() { return null; }
+        @NotNull(content = true)
+        static <T> Collector<T, ?, List<T>> toUnmodifiableList() {
+            return null;
+        }
 
-        @NotNull1
-        static <T> Collector<T,?,Set<T>> toUnmodifiableSet() { return null; }
+        @NotNull(content = true)
+        static <T> Collector<T, ?, Set<T>> toUnmodifiableSet() {
+            return null;
+        }
     }
 
+    /*
+     Analyser adds hc=true, because IntStream is an interface.
+     */
     @ImmutableContainer
     interface IntStream$ {
         long count();
@@ -79,57 +95,98 @@ public class JavaUtilStream {
         IntStream sorted();
     }
 
+    /*
+     Analyser adds hc=true, because Stream is an interface.
+     */
     @ImmutableContainer
     interface Stream$<T> {
 
+        /*
+         Factory method, the hidden content in the result comes from the parameters
+         */
         @NotNull
+        @ImmutableContainer(hc = true)
         <TT> Stream<TT> concat(@NotNull Stream<? extends TT> s1, @NotNull Stream<? extends TT> s2);
 
+        /*
+         Independent!
+         */
         @NotNull
-        @Constant
         <TT> Stream<TT> empty();
 
+        /*
+         Factory method, the hidden content in the result comes from the parameter
+         */
         @NotNull
+        @ImmutableContainer(hc = true)
         <TT> Stream<TT> of(@NotNull @Independent TT t);
 
+        /*
+         Factory method, the hidden content in the result comes from the parameter
+         */
         @NotNull
+        @ImmutableContainer(hc = true)
         <TT> Stream<TT> of(@NotNull @Independent TT... t);
 
+        /*
+         The mapper is not supposed to modify the hidden content presented to it.
+         For that reason, we do not add @Independent(hc=true).
+         */
         @NotNull
-        <R> Stream<R> map(@Independent @NotNull Function<? super T, ? extends R> mapper);
+        @Independent(hc = true)
+        <R> Stream<R> map(@NotNull Function<? super T, ? extends R> mapper);
+
+        /*
+         The mapper is not supposed to modify the hidden content presented to it.
+         For that reason, we do not add @Independent(hc=true).
+         */
+        @NotNull
+        @Independent(hc = true)
+        <R> Stream<R> flatMap(@NotNull Function<? super T, ? extends Stream<? extends R>> mapper);
 
         @NotNull
-        <R> Stream<R> flatMap(@Independent @NotNull Function<? super T, ? extends Stream<? extends R>> mapper);
+        @Independent(hc = true)
+        <R, A> R collect(@NotNull Collector<? super T, A, R> collector);
 
         @NotNull
-        <R, A> R collect(@Independent @NotNull Collector<? super T, A, R> collector);
+        @Independent(hc = true)
+        Stream<T> filter(@NotNull Predicate<? super T> predicate);
+
+        /*
+         @Independent!
+         */
+        @NotNull
+        IntStream mapToInt(@NotNull ToIntFunction<? super T> mapper);
 
         @NotNull
-        Stream<T> filter(@Independent @NotNull Predicate<? super T> predicate);
+        @Independent(hc = true)
+        Optional<T> min(@NotNull Comparator<? super T> comparator);
 
         @NotNull
-        IntStream mapToInt(@Independent @NotNull ToIntFunction<? super T> mapper);
-
-        @NotNull
-        Optional<T> min(@Independent @NotNull Comparator<? super T> comparator);
-
-        @NotNull
+        @Independent(hc = true)
         Stream<T> sorted();
 
         @NotNull
+        @Independent(hc = true)
         Stream<T> sorted(@NotNull Comparator<? super T> comparator);
 
         @NotNull
+        @Independent(hc = true)
         Optional<T> findAny();
 
         @NotNull
+        @Independent(hc = true)
         Optional<T> findFirst();
 
+        /*
+         The action is perfectly allowed to modify the hidden content presented to it, as opposed to the mappers.
+         */
         @NotNull
         @NotModified
-        void forEach(@Independent @NotNull Consumer<? super T> action);
+        void forEach(@Independent(hc = true) @NotNull Consumer<? super T> action);
 
         @NotNull
+        @Independent(hc = true)
         List<T> toList();
     }
 

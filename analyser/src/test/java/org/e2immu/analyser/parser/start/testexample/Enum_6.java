@@ -15,7 +15,7 @@
 package org.e2immu.analyser.parser.start.testexample;
 
 import org.e2immu.annotation.Container;
-import org.e2immu.annotation.E2Container;
+import org.e2immu.annotation.ImmutableContainer;
 
 @Container
 public enum Enum_6 {
@@ -35,7 +35,7 @@ public enum Enum_6 {
         return cnt;
     }
 
-    @E2Container(absent = true)
+    @ImmutableContainer(absent = true)
     public static Enum_6 returnTwo() {
         return Enum_6.valueOf("TWO");
     }

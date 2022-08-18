@@ -14,7 +14,7 @@
 
 package org.e2immu.analyser.parser.start.testexample;
 
-import org.e2immu.annotation.Constant;
+import org.e2immu.annotation.ImmutableContainer;
 
 import java.util.List;
 
@@ -26,7 +26,7 @@ public class VariableScope_11 {
     record X(int i) {
     }
 
-    @Constant(absent = true)
+    @ImmutableContainer // but not constant
     public static int method(List<X> xs, String s) {
         for (X x : xs) {
             if (x.i == s.length()) {

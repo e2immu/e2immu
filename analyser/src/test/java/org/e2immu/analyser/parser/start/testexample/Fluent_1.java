@@ -18,12 +18,11 @@ import org.e2immu.analyser.parser.start.testexample.a.IFluent_1;
 import org.e2immu.annotation.*;
 
 import javax.annotation.processing.Generated;
-import java.util.Objects;
 
 /*
 Identical to Fluent_0 apart from the @Generated annotation; and referring to IFluent_1
  */
-@ERContainer
+@ImmutableContainer
 @Generated("org.e2immu.analyser.parser.start.testexample.a.IFluent_1")
 public class Fluent_1 implements IFluent_1 {
 
@@ -90,7 +89,7 @@ public class Fluent_1 implements IFluent_1 {
 
     @Identity
     public static Fluent_1 identity(IFluent_1 instance) {
-       return (Fluent_1) instance;
+        return (Fluent_1) instance;
     }
 
 
@@ -107,7 +106,7 @@ public class Fluent_1 implements IFluent_1 {
         @Fluent
         @Modified
         public final IFluent_1.Builder from(IFluent_1 instance) {
-            if(instance == null) throw new NullPointerException();
+            if (instance == null) throw new NullPointerException();
             value(instance.value());
             return (IFluent_1.Builder) this;
         }

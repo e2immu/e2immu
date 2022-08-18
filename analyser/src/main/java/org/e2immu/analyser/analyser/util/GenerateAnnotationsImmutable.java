@@ -16,7 +16,12 @@ package org.e2immu.analyser.analyser.util;
 
 import org.e2immu.analyser.analyser.DV;
 import org.e2immu.analyser.model.MultiLevel;
-import org.e2immu.annotation.*;
+import org.e2immu.annotation.Container;
+import org.e2immu.annotation.FinalFields;
+import org.e2immu.annotation.Immutable;
+import org.e2immu.annotation.ImmutableContainer;
+import org.e2immu.annotation.eventual.BeforeMark;
+import org.e2immu.annotation.type.UtilityClass;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -86,21 +91,20 @@ public class GenerateAnnotationsImmutable {
 
     private static Map<Class<?>, Map<String, Object>> map(int level, boolean container, Map<String, Object> add) {
         Map<String, Object> params = new HashMap<>(add);
-        Class<?> clazz;
+
         if (level == MultiLevel.Level.IMMUTABLE_1.level) {
-            clazz = FinalFields.class;
-            if (container) return Map.of(clazz, params, Container.class, TRUE);
-        } else if (level == MultiLevel.Level.IMMUTABLE_2.level) {
-            clazz = container ? ImmutableContainer.class : Immutable.class;
-        } else if (level == MultiLevel.Level.IMMUTABLE_R.level) {
-            if (container) {
-                clazz = ConstantContainer.class;
-            } else {
-                clazz = Constant.class;
-            }
-        } else {
-            throw new UnsupportedOperationException();
+            if (container) return Map.of(FinalFields.class, params, Container.class, TRUE);
+            return Map.of(FinalFields.class, params);
         }
-        return Map.of(clazz, params);
+        if (level == MultiLevel.Level.IMMUTABLE_2.level) {
+            params.put("hc", "true");
+            if (container) return Map.of(ImmutableContainer.class, params);
+            return Map.of(Immutable.class, params);
+        }
+        if (level == MultiLevel.Level.IMMUTABLE_R.level) {
+            if (container) return Map.of(ImmutableContainer.class, params);
+            return Map.of(Immutable.class, params);
+        }
+        throw new UnsupportedOperationException();
     }
 }

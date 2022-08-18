@@ -19,7 +19,8 @@ import org.e2immu.annotation.*;
 import java.util.HashSet;
 import java.util.Set;
 
-@E1Container
+@FinalFields
+@Container
 public class Modification_3 {
     @NotNull
     @Modified

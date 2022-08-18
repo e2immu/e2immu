@@ -98,7 +98,7 @@ public class ParameterInspectionImpl extends InspectionImpl implements Parameter
         }
 
         @Fluent
-        public Builder addAnnotations(@NotNull1 List<AnnotationExpression> annotations) {
+        public Builder addAnnotations(@NotNull(content = true) List<AnnotationExpression> annotations) {
             annotations.forEach(super.annotations::add);
             return this;
         }

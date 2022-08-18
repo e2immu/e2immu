@@ -18,7 +18,7 @@ package org.e2immu.analyser.model;
 import org.e2immu.annotation.Container;
 import org.e2immu.annotation.Fluent;
 import org.e2immu.annotation.Modified;
-import org.e2immu.annotation.NotNull1;
+import org.e2immu.annotation.NotNull;
 
 import java.util.List;
 
@@ -64,7 +64,7 @@ public interface Inspection {
         return getAccess() == Access.PACKAGE;
     }
 
-    @NotNull1
+    @NotNull(content = true)
     List<AnnotationExpression> getAnnotations();
 
     interface InspectionBuilder<B> {

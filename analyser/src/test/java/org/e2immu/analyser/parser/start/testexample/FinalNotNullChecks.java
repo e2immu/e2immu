@@ -14,12 +14,12 @@
 
 package org.e2immu.analyser.parser.start.testexample;
 
-import org.e2immu.annotation.ERContainer;
+import org.e2immu.annotation.ImmutableContainer;
 import org.e2immu.annotation.NotNull;
 
 import java.util.Objects;
 
-@ERContainer
+@ImmutableContainer
 public class FinalNotNullChecks {
 
     @NotNull

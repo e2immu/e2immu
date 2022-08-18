@@ -19,7 +19,6 @@ import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.util.StringUtil;
 import org.e2immu.annotation.NotNull;
-import org.e2immu.annotation.NotNull1;
 
 import java.util.HashMap;
 import java.util.List;
@@ -54,7 +53,7 @@ public interface VariableInfo {
         return !valueIsSet();
     }
 
-    @NotNull1
+    @NotNull(content = true)
     Set<Integer> getReadAtStatementTimes();
 
     boolean valueIsSet();
@@ -76,7 +75,7 @@ public interface VariableInfo {
     @NotNull
     VariableInfo freeze();
 
-    @NotNull1
+    @NotNull(content = true)
     Stream<Map.Entry<Property, DV>> propertyStream();
 
     /**

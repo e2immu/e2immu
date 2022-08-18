@@ -70,7 +70,7 @@ public class Basics_20 {
     }
 
     // T is transparent, but List<T> is not
-    @ImmutableContainer
+    @ImmutableContainer(hc = true)
     static class C2<T> {
         private final List<T> list;
 

@@ -21,13 +21,13 @@ import java.util.function.Consumer;
 import java.util.function.Supplier;
 
 public class Independent1_6_1 {
-    @E2Container
+    @ImmutableContainer(hc = true)
     record One<T>(T t) {}
 
-    @ERContainer
+    @ImmutableContainer
     static class ImmutableArrayOfOnes {
 
-        // One<Integer> is @ERContainer, because Integer is @ERContainer and One is @E2Container
+        // One<Integer> is immutable without hidden content
         private final One<Integer>[] ones;
 
         @SuppressWarnings("unchecked")
@@ -41,7 +41,7 @@ public class Independent1_6_1 {
         }
 
         @NotModified
-        @ERContainer
+        @ImmutableContainer
         public One<Integer> get(int index) {
             return ones[index];
         }

@@ -21,7 +21,6 @@ import com.github.javaparser.ast.expr.SimpleName;
 import com.github.javaparser.ast.type.Type;
 import com.github.javaparser.ast.type.TypeParameter;
 import org.e2immu.annotation.NotNull;
-import org.e2immu.annotation.NotNull1;
 
 public class ComGithubJavaparserAstBody {
 
@@ -29,14 +28,14 @@ public class ComGithubJavaparserAstBody {
 
     interface CallableDeclaration$ {
 
-        @NotNull1
+        @NotNull(content = true)
         NodeList<TypeParameter> getTypeParameters();
 
     }
 
     interface TypeDeclaration$ {
 
-        @NotNull1
+        @NotNull(content = true)
         NodeList<BodyDeclaration<?>> getMembers();
 
         @NotNull
@@ -50,7 +49,7 @@ public class ComGithubJavaparserAstBody {
     }
     interface Parameter$ {
 
-        @NotNull1
+        @NotNull(content = true)
         NodeList<AnnotationExpr> getAnnotations();
     }
 }

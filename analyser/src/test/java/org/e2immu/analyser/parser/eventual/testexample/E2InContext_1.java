@@ -15,6 +15,9 @@
 package org.e2immu.analyser.parser.eventual.testexample;
 
 import org.e2immu.annotation.*;
+import org.e2immu.annotation.eventual.BeforeMark;
+import org.e2immu.annotation.eventual.Mark;
+import org.e2immu.annotation.eventual.TestMark;
 
 /*
 Distinction between eventually immutable and eventually immutable before the mark.
@@ -22,7 +25,7 @@ Here we cannot decide on before or after for eventually, because it is exposed t
  */
 public class E2InContext_1 {
 
-    @E2Container(after = "t")
+    @ImmutableContainer(after = "t", hc = true)
     public static class Eventually<T> {
         private T t;
 
@@ -39,16 +42,14 @@ public class E2InContext_1 {
         }
     }
 
-    @Constant(absent = true) // because eventual
     @BeforeMark(absent = true)
-    @ERContainer(after = "eventually")
+    @ImmutableContainer(after = "eventually")
     // @ERContainer because better than @E2Container; the "after=" signifies that it is plainly eventual
     private final Eventually<String> eventually = new Eventually<>();
 
     // whilst correct the very first time around, the state of eventually can be changed outside this class
     @BeforeMark(absent = true)
-    @ERContainer(after = "eventually")
-    @Constant(absent = true)
+    @ImmutableContainer(after = "eventually")
     public Eventually<String> getEventually() {
         return eventually;
     }

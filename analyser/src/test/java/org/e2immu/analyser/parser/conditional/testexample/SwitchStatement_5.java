@@ -14,13 +14,13 @@
 
 package org.e2immu.analyser.parser.conditional.testexample;
 
-import org.e2immu.annotation.Constant;
+import org.e2immu.annotation.ImmutableContainer;
 import org.e2immu.annotation.NotNull;
 
 public class SwitchStatement_5 {
 
     @NotNull
-    @Constant("c")
+    @ImmutableContainer("c")
     public static String method(char c) {
         String res;
         switch (c) {

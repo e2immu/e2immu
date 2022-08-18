@@ -14,15 +14,15 @@
 
 package org.e2immu.analyser.parser.eventual.testexample;
 
-import org.e2immu.annotation.ERContainer;
+import org.e2immu.annotation.ImmutableContainer;
+import org.e2immu.annotation.eventual.TestMark;
 import org.e2immu.support.FlipSwitch;
-import org.e2immu.annotation.TestMark;
 
 /*
-Use types in util to become an eventually immutable type
-
+Use types in util to become an eventually immutable type.
+No hidden content.
  */
-@ERContainer(after = "flipSwitch")
+@ImmutableContainer(after = "flipSwitch")
 public class EventuallyImmutableUtil_0 {
 
     public final FlipSwitch flipSwitch = new FlipSwitch();

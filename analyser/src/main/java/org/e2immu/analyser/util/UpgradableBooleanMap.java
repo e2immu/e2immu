@@ -14,6 +14,8 @@
 
 package org.e2immu.analyser.util;
 
+import org.e2immu.annotation.*;
+
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
@@ -24,9 +26,15 @@ import java.util.function.Supplier;
 import java.util.stream.Collector;
 import java.util.stream.Stream;
 
+/*
+While this type has modifying methods (put, putAll), these methods are only used in factory methods.
+The 'map' object itself is effectively immutable: its hidden content is returned by 'get', 'stream'.
+ */
+@ImmutableContainer(hc = true)
 public class UpgradableBooleanMap<T> {
     private static final UpgradableBooleanMap<?> EMPTY = new UpgradableBooleanMap<>();
 
+    @NotNull
     public static <T> Collector<? super Map.Entry<T, Boolean>, UpgradableBooleanMap<T>, UpgradableBooleanMap<T>> collector() {
         return new Collector<>() {
             @Override
@@ -58,12 +66,16 @@ public class UpgradableBooleanMap<T> {
 
     private final Map<T, Boolean> map = new HashMap<>();
 
+    @Independent(hc = true)
+    @NotNull
     public static <T> UpgradableBooleanMap<T> of(T t, boolean b) {
         UpgradableBooleanMap<T> upgradableBooleanMap = new UpgradableBooleanMap<>();
         upgradableBooleanMap.put(t, b);
         return upgradableBooleanMap;
     }
 
+    @Independent(hc = true)
+    @NotNull
     public static <T> UpgradableBooleanMap<T> of(T t1, boolean b1, T t2, boolean b2) {
         UpgradableBooleanMap<T> upgradableBooleanMap = new UpgradableBooleanMap<>();
         upgradableBooleanMap.put(t1, b1);
@@ -72,11 +84,13 @@ public class UpgradableBooleanMap<T> {
     }
 
     @SuppressWarnings("unchecked")
+    @Independent
     public static <T> UpgradableBooleanMap<T> of() {
         return (UpgradableBooleanMap<T>) EMPTY;
     }
 
     @SafeVarargs
+    @Independent(hc = true)
     public static <T> UpgradableBooleanMap<T> of(UpgradableBooleanMap<T>... maps) {
         UpgradableBooleanMap<T> result = new UpgradableBooleanMap<>();
         if (maps != null) {
@@ -87,21 +101,27 @@ public class UpgradableBooleanMap<T> {
         return result;
     }
 
-    private void put(T t, boolean b) {
+    @Modified(construction = true)
+    private void put(@Independent(hc = true) @NotNull T t, boolean b) {
         if (b || !map.containsKey(t)) {
             map.put(t, b);
         }
     }
 
-    private UpgradableBooleanMap<T> putAll(UpgradableBooleanMap<T> other) {
+    @Modified(construction = true)
+    @Fluent
+    private UpgradableBooleanMap<T> putAll(@Independent(hc = true) UpgradableBooleanMap<T> other) {
         other.stream().forEach(e -> this.put(e.getKey(), e.getValue()));
         return this;
     }
 
+    @NotNull(content = true)
+    @Independent(hc = true)
     public Stream<Map.Entry<T, Boolean>> stream() {
         return map.entrySet().stream();
     }
 
+    @Independent(hc = true)
     public Boolean get(T t) {
         return map.get(t);
     }

@@ -17,6 +17,7 @@ package org.e2immu.analyser.analyser.util;
 import org.e2immu.analyser.analyser.DV;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.annotation.*;
+import org.e2immu.annotation.eventual.Only;
 import org.e2immu.support.Freezable;
 
 import java.util.Map;
@@ -30,10 +31,11 @@ import static org.e2immu.analyser.analyser.LinkedVariables.LINK_STATICALLY_ASSIG
 /**
  * In-house implementation of a directed graph that is used to model the links between objects.
  * A distance of 0 (STATICALLY_ASSIGNED) is always kept, even across delays.
+ * <p>
+ * Hidden content: Variable, DV are interfaces with different implementations.
  */
-@ImmutableContainer(after = "frozen")
+@ImmutableContainer(after = "frozen", hc = true)
 public class WeightedGraph extends Freezable {
-
 
     private static class Node {
         Map<Variable, DV> dependsOn;
@@ -57,7 +59,8 @@ public class WeightedGraph extends Freezable {
         return nodeMap.isEmpty();
     }
 
-    @Independent
+    @Independent(hc = true)
+    @NotModified
     public Map<Variable, DV> links(@NotNull Variable v, DV maxWeight, boolean followDelayed) {
         Map<Variable, DV> result = new TreeMap<>();
         result.put(v, LINK_STATICALLY_ASSIGNED);
@@ -81,7 +84,7 @@ public class WeightedGraph extends Freezable {
 
             // yes, opportunity (1) to improve distance computations, (2) to visit them
             node.dependsOn.forEach((n, d) -> {
-                if (d.isDelayed() && followDelayed || d.isDone() && (maxValueIncl == null ||  d.le(maxValueIncl))) {
+                if (d.isDelayed() && followDelayed || d.isDone() && (maxValueIncl == null || d.le(maxValueIncl))) {
                     DV distanceToN = max(currentDistanceToV, d);
                     DV currentDistanceToN = distanceToStartingPoint.get(n);
                     if (currentDistanceToN == null) {
@@ -116,7 +119,7 @@ public class WeightedGraph extends Freezable {
     }
 
     @NotModified(contract = true)
-    public void visit(@NotNull BiConsumer<Variable, Map<Variable, DV>> consumer) {
+    public void visit(@NotNull @Independent(hc = true) BiConsumer<Variable, Map<Variable, DV>> consumer) {
         nodeMap.values().forEach(n -> consumer.accept(n.variable, n.dependsOn));
     }
 
@@ -136,13 +139,15 @@ public class WeightedGraph extends Freezable {
 
     @Only(before = "frozen")
     @Modified
-    public void addNode(@NotNull Variable v, @NotNull Map<Variable, DV> dependsOn) {
+    public void addNode(@NotNull @Independent(hc = true) Variable v,
+                        @NotNull @Independent(hc = true) Map<Variable, DV> dependsOn) {
         addNode(v, dependsOn, false, (o, n) -> o);
     }
 
     @Only(before = "frozen")
     @Modified
-    public void addNode(@NotNull Variable v, @NotNull Map<Variable, DV> dependsOn, boolean bidirectional, BinaryOperator<DV> merger) {
+    public void addNode(@NotNull @Independent(hc = true) Variable v,
+                        @NotNull @Independent(hc = true) Map<Variable, DV> dependsOn, boolean bidirectional, BinaryOperator<DV> merger) {
         ensureNotFrozen();
         Node node = getOrCreate(v);
         for (Map.Entry<Variable, DV> e : dependsOn.entrySet()) {

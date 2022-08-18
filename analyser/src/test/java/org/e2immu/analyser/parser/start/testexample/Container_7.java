@@ -23,7 +23,7 @@ import java.util.Map;
 Test to catch a @Container going from 0 to 1 error in intelliJ highlighter
 The "put" method modifies its first parameter!
  */
-@E2Immutable(recursive = true)
+@Immutable
 public class Container_7 {
 
     private static final String XYZ = "xyz";
@@ -32,7 +32,7 @@ public class Container_7 {
     private static final int nineEightSeven = 987;
 
     // NOTE! this one is not a container, because it is not static
-    @E2Immutable(recursive = true)
+    @Immutable
     public class Complex {
         final int i, j;
 
@@ -49,7 +49,7 @@ public class Container_7 {
         return map;
     }
 
-    @ERContainer
+    @ImmutableContainer
     @NotNull
     @NotModified
     public final Map<String, Complex> MAP2 = Map.copyOf(put(put(new HashMap<>(), ABC, new Complex(oneTwoThree, nineEightSeven)),

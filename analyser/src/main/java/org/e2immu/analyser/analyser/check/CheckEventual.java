@@ -20,9 +20,9 @@ import org.e2immu.analyser.analysis.MethodAnalysis;
 import org.e2immu.analyser.model.AnnotationExpression;
 import org.e2immu.analyser.model.MethodInfo;
 import org.e2immu.analyser.parser.Message;
-import org.e2immu.annotation.Mark;
-import org.e2immu.annotation.Only;
-import org.e2immu.annotation.TestMark;
+import org.e2immu.annotation.eventual.Mark;
+import org.e2immu.annotation.eventual.Only;
+import org.e2immu.annotation.eventual.TestMark;
 
 public class CheckEventual {
 

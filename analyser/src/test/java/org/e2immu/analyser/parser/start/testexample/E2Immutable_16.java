@@ -15,7 +15,7 @@
 package org.e2immu.analyser.parser.start.testexample;
 
 
-import org.e2immu.annotation.ERContainer;
+import org.e2immu.annotation.ImmutableContainer;
 import org.e2immu.annotation.Modified;
 
 import java.util.List;
@@ -24,17 +24,20 @@ import java.util.List;
  * Adding e.g. @E2Immutable via a contract will restrict implementations. Not adding it leaves implementations
  * free to choose. However, if you do not add @Modified on the method (variable()), your implementation cannot be modifying!
  */
-@ERContainer
+@ImmutableContainer
 public class E2Immutable_16 {
 
+    @ImmutableContainer(hc = true)
     interface OneVariable {
         Variable variable();
     }
 
+    @ImmutableContainer(hc = true)
     interface Variable extends OneVariable {
 
     }
 
+    @ImmutableContainer
     record Record(OneVariable x) {
 
         @Override
@@ -43,6 +46,10 @@ public class E2Immutable_16 {
         }
     }
 
+    /*
+     No hidden content, because this type is the only implementation known, so all Variables must be LocalVariable.
+     */
+    @ImmutableContainer
     record LocalVariable(List<String> readIds, Variable variable) implements Variable {
 
         @Modified // computed, causes error!

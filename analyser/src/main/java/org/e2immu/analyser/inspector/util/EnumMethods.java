@@ -65,7 +65,7 @@ public class EnumMethods {
 
         var notNullContract = E2ImmuAnnotationExpressions.createContract(primitives, e2.notNull);
         var notModifiedContract = E2ImmuAnnotationExpressions.createContract(primitives, e2.notModified);
-        var eRContainer = E2ImmuAnnotationExpressions.createContract(primitives, e2.constantContainer);
+        var immContainer = E2ImmuAnnotationExpressions.createContract(primitives, e2.immutableContainer);
 
         // name()
 
@@ -75,7 +75,7 @@ public class EnumMethods {
                 .setAccess(Inspection.Access.PUBLIC)
                 .setAbstractMethod()
                 .addAnnotation(notNullContract)
-                .addAnnotation(eRContainer)
+                .addAnnotation(immContainer)
                 .addAnnotation(notModifiedContract);
         nameBuilder.readyToComputeFQN(typeContext);
         typeContext.typeMap.registerMethodInspection(nameBuilder);
@@ -115,7 +115,7 @@ public class EnumMethods {
         var valueOfP0B = valueOfBuilder.newParameterInspectionBuilder(
                         Identifier.generate("enum valueOf parameter"),
                         primitives.stringParameterizedType(), "name", 0)
-                .addAnnotation(eRContainer)
+                .addAnnotation(immContainer)
                 .addAnnotation(notNullContract);
         valueOfBuilder.addParameter(valueOfP0B);
         valueOfBuilder.readyToComputeFQN(typeContext);

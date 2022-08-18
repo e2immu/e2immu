@@ -14,18 +14,15 @@
 
 package org.e2immu.analyser.parser.start.testexample;
 
-import org.e2immu.annotation.E2Container;
-import org.e2immu.annotation.Linked;
-import org.e2immu.annotation.Linked1;
+
+import org.e2immu.annotation.ImmutableContainer;
 
 import java.util.HashMap;
 import java.util.Map;
 
-@E2Container
+@ImmutableContainer(hc = true)
 public class E2Immutable_5<T> {
 
-    @Linked1(to = {"E2Immutable_5:map5Param"})
-    @Linked(absent = true)
     private final Map<String, T> map5;
 
     public E2Immutable_5(Map<String, T> map5Param) {
@@ -36,7 +33,7 @@ public class E2Immutable_5<T> {
         return map5.get(input);
     }
 
-    @E2Container
+    @ImmutableContainer(hc = true)
     public Map<String, T> getMap5() {
         return Map.copyOf(map5);
     }

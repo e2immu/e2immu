@@ -19,12 +19,13 @@ import org.e2immu.annotation.*;
 import java.util.List;
 import java.util.stream.Collectors;
 
-@E1Container
+@FinalFields
+@Container
 public class MethodReferences_0 {
 
     private List<C> strings;
 
-    @ERContainer
+    @ImmutableContainer
     static class C {
         final String s;
 

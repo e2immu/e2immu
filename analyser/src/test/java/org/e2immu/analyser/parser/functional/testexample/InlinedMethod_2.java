@@ -14,7 +14,7 @@
 
 package org.e2immu.analyser.parser.functional.testexample;
 
-import org.e2immu.annotation.Constant;
+import org.e2immu.annotation.ImmutableContainer;
 import org.e2immu.annotation.NotModified;
 
 public class InlinedMethod_2 {
@@ -29,12 +29,12 @@ public class InlinedMethod_2 {
         return i + r;
     }
 
-    @Constant("2")
+    @ImmutableContainer("2")
     public int difference31() {
         return plus(3) - plus(1);
     }
 
-    @Constant("0")
+    @ImmutableContainer("0")
     public int difference11() {
         return plus(1) - plus(1);
     }

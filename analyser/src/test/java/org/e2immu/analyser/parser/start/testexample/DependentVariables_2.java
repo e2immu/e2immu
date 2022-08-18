@@ -34,10 +34,8 @@ public class DependentVariables_2 {
         }
     }
 
-    @E1Container
+    @FinalFields @Container
     static class XS {
-        @E1Container
-        @Linked1(to = {"XS:xs"})
         @NotModified
         @NotNull
         private final X[] xs;

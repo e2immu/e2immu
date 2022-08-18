@@ -14,8 +14,8 @@
 
 package org.e2immu.analyser.parser.independence.testexample;
 
-import org.e2immu.annotation.E2Container;
-import org.e2immu.annotation.Independent1;
+import org.e2immu.annotation.ImmutableContainer;
+import org.e2immu.annotation.Independent;
 
 import java.util.Collections;
 import java.util.HashSet;
@@ -24,19 +24,20 @@ import java.util.Set;
 /*
 tests the Collections.addAll(...) method
  */
-@E2Container
+@ImmutableContainer(hc = true)
 public class Independent1_1<T> {
     private final Set<T> set;
 
     /*
-    we expect @Independent1 rather than @Independent, as the content
-    of 'ts' will be linked copied into the content of 'set'.
+    we expect hc = true, as the content
+    of 'ts' will be copied into the content of 'set'.
      */
-    public Independent1_1(@Independent1 T... ts) {
+    public Independent1_1(@Independent(hc = true) T... ts) {
         set = new HashSet<>();
         Collections.addAll(set, ts);
     }
 
+    @Independent(hc = true)
     public Set<T> getSet() {
         return new HashSet<>(set);
     }

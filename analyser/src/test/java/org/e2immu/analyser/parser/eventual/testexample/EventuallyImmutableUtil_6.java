@@ -14,16 +14,15 @@
 
 package org.e2immu.analyser.parser.eventual.testexample;
 
-import org.e2immu.annotation.ERContainer;
+import org.e2immu.annotation.ImmutableContainer;
+import org.e2immu.annotation.eventual.TestMark;
 import org.e2immu.support.AddOnceSet;
-import org.e2immu.annotation.E2Container;
-import org.e2immu.annotation.TestMark;
 
 /*
 Use types in util to become an eventually immutable type;
 this one also tests the companion objects.
  */
-@ERContainer(after = "set")
+@ImmutableContainer(after = "set")
 public class EventuallyImmutableUtil_6 {
 
     public final AddOnceSet<String> set = new AddOnceSet<>();

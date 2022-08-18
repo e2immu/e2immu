@@ -14,13 +14,16 @@
 
 package org.e2immu.analyser.parser.start.testexample;
 
-import org.e2immu.annotation.*;
+import org.e2immu.annotation.Container;
+import org.e2immu.annotation.FinalFields;
+import org.e2immu.annotation.Modified;
+import org.e2immu.annotation.NotModified;
 
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
-@E1Container
+@FinalFields
+@Container
 public class MethodReferences_2 {
 
     protected final Map<String, Integer> map = new HashMap<>();

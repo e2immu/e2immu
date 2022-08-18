@@ -14,7 +14,7 @@
 
 package org.e2immu.analyser.parser.conditional.testexample;
 
-import org.e2immu.annotation.Constant;
+import org.e2immu.annotation.ImmutableContainer;
 import org.e2immu.annotation.NotNull;
 
 /*
@@ -23,7 +23,7 @@ variant, with throws statement
 public class NewSwitchStatement_2 {
 
     @NotNull(absent = true)
-    @Constant(absent = true)
+    @ImmutableContainer
     public static String method(char c, String b) {
         switch (c) {
             case 'a' -> {

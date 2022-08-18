@@ -14,14 +14,18 @@
 
 package org.e2immu.analyser.parser.eventual.testexample;
 
+import org.e2immu.annotation.ImmutableContainer;
+import org.e2immu.annotation.NotModified;
+import org.e2immu.annotation.eventual.Mark;
+import org.e2immu.annotation.eventual.Only;
+import org.e2immu.annotation.eventual.TestMark;
 import org.e2immu.support.SetOnce;
-import org.e2immu.annotation.*;
 
 /*
 Use types in util to become an eventually immutable type
-
+No hidden content.
  */
-@ERContainer(after = "value")
+@ImmutableContainer(after = "value")
 public class EventuallyImmutableUtil_2 {
 
     private final SetOnce<String> value = new SetOnce<>();

@@ -16,7 +16,7 @@ package org.e2immu.analyser.parser.conditional.testexample;
 
 // differs from _1 in the assert statement in test
 
-import org.e2immu.annotation.Constant;
+import org.e2immu.annotation.ImmutableContainer;
 import org.e2immu.annotation.Modified;
 import org.e2immu.annotation.NotModified;
 
@@ -25,7 +25,7 @@ import java.util.Set;
 
 public class Assert_2 {
 
-    @Constant(absent = true)
+    @ImmutableContainer
     static boolean test(@Modified Set<String> strings) {
         assert containsA(strings);
 
@@ -33,7 +33,7 @@ public class Assert_2 {
         return set.size() == strings.size();
     }
 
-    @Constant("true")
+    @ImmutableContainer("true")
     static boolean containsA(@NotModified Set<String> set) {
         assert !set.contains("a");
         return true;

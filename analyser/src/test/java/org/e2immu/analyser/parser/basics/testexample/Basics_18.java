@@ -14,20 +14,20 @@
 
 package org.e2immu.analyser.parser.basics.testexample;
 
-import org.e2immu.annotation.ConstantContainer;
+import org.e2immu.annotation.Final;
+import org.e2immu.annotation.ImmutableContainer;
 import org.e2immu.annotation.NotNull;
-import org.e2immu.annotation.Variable;
 
 // more complicated version of Basics_6
 // showing that local variable copies are needed in the scope of fields, when that
 // field is variable
 public class Basics_18 {
 
-    @ConstantContainer
+    @ImmutableContainer
     record A(int i) {
     }
 
-    @Variable
+    @Final(absent = true)
     @NotNull
     private A a = new A(3);
 
