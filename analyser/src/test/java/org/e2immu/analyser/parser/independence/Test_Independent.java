@@ -45,7 +45,7 @@ public class Test_Independent extends CommonTestRunner {
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("ISet".equals(d.typeInfo().simpleName)) {
                 // The type "I" is not transparent in "ISet", because of the "I::new" method reference!!!
-                assertEquals("", d.typeAnalysis().getTransparentTypes().toString());
+                assertEquals("", d.typeAnalysis().getHiddenContentTypes().toString());
             }
         };
         testClass("Independent_2", 0, 0, new DebugConfiguration.Builder()

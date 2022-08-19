@@ -103,7 +103,7 @@ public class Test_16_Modification_10 extends CommonTestRunner {
 
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("Modification_10".equals(d.typeInfo().simpleName)) {
-                assertTrue(d.typeAnalysis().getTransparentTypes().isEmpty());
+                assertTrue(d.typeAnalysis().getHiddenContentTypes().isEmpty());
             }
         };
 

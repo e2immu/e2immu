@@ -91,29 +91,37 @@ public class TestDefaultAnnotations {
 
     // hardcoded
     @Test
-    public void testObjectEquals() {
+    public void testObject() {
         TypeInfo object = typeContext.getFullyQualified(Object.class);
         TypeAnalysis typeAnalysis = object.typeAnalysis.get();
         assertEquals(MultiLevel.CONTAINER_DV, typeAnalysis.getProperty(Property.CONTAINER));
-        assertEquals(MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, typeAnalysis.getProperty(Property.IMMUTABLE));
-        assertEquals(MultiLevel.INDEPENDENT_DV, typeAnalysis.getProperty(Property.INDEPENDENT));
+        assertEquals(MultiLevel.EFFECTIVELY_E2IMMUTABLE_DV, typeAnalysis.getProperty(Property.IMMUTABLE));
+        assertEquals(MultiLevel.INDEPENDENT_1_DV, typeAnalysis.getProperty(Property.INDEPENDENT));
+    }
 
+    @Test
+    public void testObjectEquals() {
+        TypeInfo object = typeContext.getFullyQualified(Object.class);
         MethodInfo equals = object.findUniqueMethod("equals", 1);
         MethodAnalysis methodAnalysis = equals.methodAnalysis.get();
         assertEquals(DV.FALSE_DV, methodAnalysis.getProperty(Property.MODIFIED_METHOD));
         assertEquals(MultiLevel.INDEPENDENT_DV, methodAnalysis.getProperty(Property.INDEPENDENT));
     }
 
-
     // not hardcoded
     @Test
-    public void testOptionalEquals() {
+    public void testOptional() {
         TypeInfo optional = typeContext.getFullyQualified(Optional.class);
         TypeAnalysis typeAnalysis = optional.typeAnalysis.get();
         assertEquals(MultiLevel.NOT_CONTAINER_DV, typeAnalysis.getProperty(Property.CONTAINER));
         assertEquals(MultiLevel.MUTABLE_DV, typeAnalysis.getProperty(Property.IMMUTABLE));
         assertEquals(MultiLevel.DEPENDENT_DV, typeAnalysis.getProperty(Property.INDEPENDENT));
+    }
 
+    // not hardcoded
+    @Test
+    public void testOptionalEquals() {
+        TypeInfo optional = typeContext.getFullyQualified(Optional.class);
         MethodInfo equals = optional.findUniqueMethod("equals", 1);
         MethodAnalysis methodAnalysis = equals.methodAnalysis.get();
         assertEquals(DV.FALSE_DV, methodAnalysis.getProperty(Property.MODIFIED_METHOD));

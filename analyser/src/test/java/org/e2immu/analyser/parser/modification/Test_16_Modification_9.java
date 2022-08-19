@@ -104,7 +104,7 @@ public class Test_16_Modification_9 extends CommonTestRunner {
         // can never be @Dependent1 (even if it weren't of immutable type String)
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("Modification_9".equals(d.typeInfo().simpleName)) {
-                assertEquals("", d.typeAnalysis().getTransparentTypes().toString());
+                assertTrue(d.typeAnalysis().getHiddenContentTypes().isEmpty());
             }
         };
 

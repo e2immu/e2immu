@@ -182,7 +182,7 @@ public class Test_56_Fluent extends CommonTestRunner {
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("Fluent_0".equals(d.typeInfo().simpleName)) {
 
-                assertEquals("", d.typeAnalysis().getTransparentTypes().toString());
+                assertTrue(d.typeAnalysis().getHiddenContentTypes().isEmpty());
 
                 assertFalse(d.typeInfo().typePropertiesAreContracted());
             }
@@ -221,8 +221,8 @@ public class Test_56_Fluent extends CommonTestRunner {
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("IFluent_1".equals(d.typeInfo().simpleName)) {
                 assertFalse(d.typeInfo().typePropertiesAreContracted()); // they are aggregated!
-                assertEquals("", d.typeAnalysis().transparentAndExplicitTypeComputationDelays().toString());
-                assertEquals("", d.typeAnalysis().getTransparentTypes().toString());
+                assertEquals("", d.typeAnalysis().hiddenContentAndExplicitTypeComputationDelays().toString());
+                assertTrue(d.typeAnalysis().getHiddenContentTypes().isEmpty());
                 assertEquals(16, d.typeAnalysis().getExplicitTypes(null).size());
 
                 assertTrue(d.typeInfo().typeResolution.get().hasOneKnownGeneratedImplementation());
@@ -231,8 +231,8 @@ public class Test_56_Fluent extends CommonTestRunner {
             if ("Fluent_1".equals(d.typeInfo().simpleName)) {
                 assertDv(d, 1, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
                 assertFalse(d.typeInfo().typePropertiesAreContracted());
-                assertEquals("", d.typeAnalysis().transparentAndExplicitTypeComputationDelays().toString());
-                assertEquals("", d.typeAnalysis().getTransparentTypes().toString());
+                assertEquals("", d.typeAnalysis().hiddenContentAndExplicitTypeComputationDelays().toString());
+                assertTrue(d.typeAnalysis().getHiddenContentTypes().isEmpty());
                 assertEquals(16, d.typeAnalysis().getExplicitTypes(null).size());
             }
         };

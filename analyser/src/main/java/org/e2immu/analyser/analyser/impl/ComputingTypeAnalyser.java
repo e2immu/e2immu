@@ -284,7 +284,7 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
 
      */
     private AnalysisStatus analyseTransparentTypes() {
-        if (typeAnalysis.transparentAndExplicitTypeComputationDelays().isDone()) return DONE;
+        if (typeAnalysis.hiddenContentAndExplicitTypeComputationDelays().isDone()) return DONE;
 
         // STEP 1: Ensure all my static sub-types have been processed, but wait if that's not possible
 
@@ -294,11 +294,11 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
                     .filter(TypeInfo::isStatic)
                     .map(st -> {
                         TypeAnalysisImpl.Builder stAna = (TypeAnalysisImpl.Builder) analyserContext.getTypeAnalysis(st);
-                        if (stAna.transparentAndExplicitTypeComputationDelays().isDelayed()) {
+                        if (stAna.hiddenContentAndExplicitTypeComputationDelays().isDelayed()) {
                             ComputingTypeAnalyser typeAnalyser = (ComputingTypeAnalyser) analyserContext.getTypeAnalyser(st);
                             typeAnalyser.analyseTransparentTypes();
                         }
-                        return stAna.transparentAndExplicitTypeComputationDelays();
+                        return stAna.hiddenContentAndExplicitTypeComputationDelays();
                     })
                     .reduce(CausesOfDelay.EMPTY, CausesOfDelay::merge);
             if (delays.isDelayed()) {
@@ -316,9 +316,8 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
                 staticEnclosing = staticEnclosing.packageNameOrEnclosingType.getRight();
             }
             TypeAnalysisImpl.Builder typeAnalysisStaticEnclosing = (TypeAnalysisImpl.Builder) analyserContext.getTypeAnalysis(staticEnclosing);
-            CausesOfDelay delays = typeAnalysisStaticEnclosing.transparentAndExplicitTypeComputationDelays();
+            CausesOfDelay delays = typeAnalysisStaticEnclosing.hiddenContentAndExplicitTypeComputationDelays();
             if (delays.isDone()) {
-                typeAnalysis.setTransparentTypes(typeAnalysisStaticEnclosing.getTransparentTypes());
                 typeAnalysis.setHiddenContentTypes(typeAnalysisStaticEnclosing.getHiddenContentTypes());
                 typeAnalysis.copyExplicitTypes(typeAnalysisStaticEnclosing);
             } else {
@@ -350,13 +349,13 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
                 explicitTypesFromParent = analyserContext.getPrimitives().explicitTypesOfJLO();
             } else {
                 TypeAnalysis typeAnalysis = analyserContext.getTypeAnalysis(parentClass);
-                CausesOfDelay delays = typeAnalysis.transparentAndExplicitTypeComputationDelays();
+                CausesOfDelay delays = typeAnalysis.hiddenContentAndExplicitTypeComputationDelays();
                 // third clause to avoid cycles
                 if (delays.isDelayed() && typeInfo.primaryType() == parentClass.primaryType() && !typeInfo.isEnclosedIn(parentClass)) {
                     ComputingTypeAnalyser typeAnalyser = (ComputingTypeAnalyser) analyserContext.getTypeAnalyser(parentClass);
                     typeAnalyser.analyseTransparentTypes();
                 }
-                CausesOfDelay delays2 = typeAnalysis.transparentAndExplicitTypeComputationDelays();
+                CausesOfDelay delays2 = typeAnalysis.hiddenContentAndExplicitTypeComputationDelays();
                 if (delays2.isDone()) {
                     explicitTypesFromParent = typeAnalysis.getExplicitTypes(analyserContext);
                 } else {
@@ -376,13 +375,13 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
                 // 2nd clause to avoid cycles
                 if (!ifTypeInfo.isAggregated() && !typeInfo.isEnclosedIn(ifTypeInfo)) {
                     TypeAnalysis typeAnalysis = analyserContext.getTypeAnalysis(ifTypeInfo);
-                    CausesOfDelay delays = typeAnalysis.transparentAndExplicitTypeComputationDelays();
+                    CausesOfDelay delays = typeAnalysis.hiddenContentAndExplicitTypeComputationDelays();
                     if (delays.isDelayed() && typeInfo.primaryType() == ifTypeInfo.primaryType()) {
                         ComputingTypeAnalyser typeAnalyser = (ComputingTypeAnalyser) analyserContext.getTypeAnalyser(ifTypeInfo);
                         typeAnalyser.analyseTransparentTypes();
                         causes = causes.merge(delays);
                     }
-                    CausesOfDelay delays2 = typeAnalysis.transparentAndExplicitTypeComputationDelays();
+                    CausesOfDelay delays2 = typeAnalysis.hiddenContentAndExplicitTypeComputationDelays();
                     if (delays2.isDelayed()) {
                         LOGGER.debug("Wait for hidden content types to arrive {}, interface {}", typeInfo.fullyQualifiedName,
                                 ifTypeInfo.simpleName);
@@ -437,32 +436,9 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
         typeAnalysis.setExplicitTypes(new SetOfTypes(allExplicitTypes));
 
         /*
-        Now for the computation of transparent and hidden content types.
-
-        The transparent types are those types that remain after removing the explicit types, and any recursively
-        immutable types.
-
-        The hidden content types are the transparent types, plus the hidden content types of the fields.
-        This is a recursive definition, which we need to be careful to apply!
-         */
-
-        SetOfTypes transparentTypes;
-        if (typeInfo.isInterface()) {
-            Set<ParameterizedType> typeParametersAsParameterizedTypes = typeInspection.typeParameters().stream()
-                    .filter(TypeParameter::isUnbound)
-                    .map(tp -> new ParameterizedType(tp, 0, ParameterizedType.WildCard.NONE)).collect(Collectors.toSet());
-            transparentTypes = new SetOfTypes(typeParametersAsParameterizedTypes);
-        } else {
-            allTypes.removeAll(allExplicitTypes);
-            allTypes.removeIf(pt -> pt.isPrimitiveExcludingVoid() || pt.isBoxedExcludingVoid()
-                    || pt.typeInfo == typeInfo || pt.isUnboundWildcard() ||
-                    MultiLevel.isAtLeastEventuallyRecursivelyImmutable(analyserContext.defaultImmutable(pt, true, null)));
-
-            transparentTypes = new SetOfTypes(allTypes);
-        }
-        typeAnalysis.setTransparentTypes(transparentTypes);
-
-        SetOfTypes hiddenContentTypes = new HiddenContentTypes(typeInfo, analyserContext).go(transparentTypes).build();
+        Now for the computation of hidden content types.
+        */
+        SetOfTypes hiddenContentTypes = new HiddenContentTypes(typeInfo, analyserContext).go(SetOfTypes.EMPTY).build();
         typeAnalysis.setHiddenContentTypes(hiddenContentTypes);
 
         LOGGER.debug("Transparent data types for {} are: [{}]", typeInfo.fullyQualifiedName, allTypes);

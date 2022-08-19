@@ -153,8 +153,7 @@ public class Test_E2ImmutableComposition extends CommonTestRunner {
                 assertDv(d, MultiLevel.CONTAINER_DV, Property.CONTAINER);
             }
             if ("ImmutableArrayOfTransparentOnes".equals(d.typeInfo().simpleName)) {
-                assertEquals("Type org.e2immu.analyser.parser.independence.testexample.E2ImmutableComposition_0.One",
-                        d.typeAnalysis().getTransparentTypes().toString());
+                assertTrue(d.typeAnalysis().getHiddenContentTypes().isEmpty());
             }
         };
 

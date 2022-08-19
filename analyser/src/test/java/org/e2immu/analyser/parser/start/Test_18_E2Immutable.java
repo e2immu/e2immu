@@ -173,7 +173,7 @@ public class Test_18_E2Immutable extends CommonTestRunner {
 
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("E2Immutable_1".equals(d.typeInfo().simpleName)) {
-                assertEquals("", d.typeAnalysis().getTransparentTypes().toString());
+                assertTrue(d.typeAnalysis().getHiddenContentTypes().isEmpty());
                 assertDv(d, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, IMMUTABLE);
             }
         };
@@ -211,7 +211,7 @@ public class Test_18_E2Immutable extends CommonTestRunner {
 
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("E2Immutable_2".equals(d.typeInfo().simpleName)) {
-                assertTrue(d.typeAnalysis().getTransparentTypes().isEmpty());
+                assertTrue(d.typeAnalysis().getHiddenContentTypes().isEmpty());
             }
         };
 
@@ -352,7 +352,7 @@ public class Test_18_E2Immutable extends CommonTestRunner {
 
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("E2Immutable_5".equals(d.typeInfo().simpleName)) {
-                assertEquals("Type param T", d.typeAnalysis().getTransparentTypes().toString());
+                assertEquals("Type param T", d.typeAnalysis().getHiddenContentTypes().toString());
             }
         };
 
@@ -520,7 +520,7 @@ public class Test_18_E2Immutable extends CommonTestRunner {
 
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("E2Immutable_11".equals(d.typeInfo().simpleName)) {
-                assertEquals("", d.typeAnalysis().getTransparentTypes().toString());
+                assertTrue(d.typeAnalysis().getHiddenContentTypes().isEmpty());
             }
         };
 
@@ -554,7 +554,7 @@ public class Test_18_E2Immutable extends CommonTestRunner {
 
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("E2Immutable_12".equals(d.typeInfo().simpleName)) {
-                assertEquals("Type param T", d.typeAnalysis().getTransparentTypes().toString());
+                assertEquals("Type param T", d.typeAnalysis().getHiddenContentTypes().toString());
             }
         };
 
@@ -573,7 +573,7 @@ public class Test_18_E2Immutable extends CommonTestRunner {
 
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("E2Immutable_13".equals(d.typeInfo().simpleName)) {
-                assertEquals("", d.typeAnalysis().getTransparentTypes().toString());
+                assertTrue(d.typeAnalysis().getHiddenContentTypes().isEmpty());
             }
         };
 
@@ -589,7 +589,7 @@ public class Test_18_E2Immutable extends CommonTestRunner {
 
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("E2Immutable_14".equals(d.typeInfo().simpleName)) {
-                assertEquals("Type param T", d.typeAnalysis().getTransparentTypes().toString());
+                assertEquals("Type param T", d.typeAnalysis().getHiddenContentTypes().toString());
             }
         };
 

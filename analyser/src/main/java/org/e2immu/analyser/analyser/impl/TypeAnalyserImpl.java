@@ -165,18 +165,19 @@ public abstract class TypeAnalyserImpl extends AbstractAnalyser implements TypeA
 
 
     protected AnalysisStatus analyseImmutableCanBeIncreasedByTypeParameters() {
-        CausesOfDelay hiddenContentStatus = typeAnalysis.transparentAndExplicitTypeComputationDelays();
-        DV dv = typeAnalysis.immutableCanBeIncreasedByTypeParameters();
+        CausesOfDelay hiddenContentStatus = typeAnalysis.hiddenContentAndExplicitTypeComputationDelays();
+        DV dv = typeAnalysis.immutableDeterminedByTypeParameters();
         if (dv.isDone()) {
             typeAnalysis.setImmutableCanBeIncreasedByTypeParameters(dv.valueIsTrue());
             return DONE;
         }
         if (hiddenContentStatus.isDelayed()) {
-            typeAnalysis.setImmutableCanBeIncreasedByTypeParameters(hiddenContentStatus);
+            typeAnalysis.setImmutableDeterminedByTypeParameters(hiddenContentStatus);
             return hiddenContentStatus;
         }
 
-        boolean res = typeAnalysis.getTransparentTypes().types()
+        // those hidden content types that are type parameters
+        boolean res = typeAnalysis.getHiddenContentTypes().types()
                 .stream().anyMatch(t -> t.bestTypeInfo(analyserContext) == null);
 
         LOGGER.debug("Immutable can be increased for {}? {}", typeInfo.fullyQualifiedName, res);

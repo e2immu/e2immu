@@ -66,7 +66,7 @@ public class Test_Support_07_EventuallyFinal extends CommonTestRunner {
                             map2.entrySet().stream().sorted(Comparator.comparing(e -> e.getKey().toString()))
                                     .map(Object::toString).collect(Collectors.joining(",")));
                 }
-                assertEquals("Type param T", d.typeAnalysis().getTransparentTypes().toString());
+                assertEquals("Type param T", d.typeAnalysis().getHiddenContentTypes().toString());
                 assertDv(d, 2, MultiLevel.EVENTUALLY_E2IMMUTABLE_DV, Property.IMMUTABLE);
             }
         };

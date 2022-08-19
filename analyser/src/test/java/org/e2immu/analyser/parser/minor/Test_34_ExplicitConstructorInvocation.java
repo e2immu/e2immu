@@ -494,7 +494,7 @@ public class Test_34_ExplicitConstructorInvocation extends CommonTestRunner {
             }
             if ("ElementImpl".equals(d.typeInfo().simpleName)) {
                 assertEquals("Type org.e2immu.analyser.parser.minor.testexample.ExplicitConstructorInvocation_11.Identifier",
-                        d.typeAnalysis().getTransparentTypes().toString());
+                        d.typeAnalysis().getHiddenContentTypes().toString());
             }
         };
         testClass("ExplicitConstructorInvocation_11", 0, 1, new DebugConfiguration.Builder()

@@ -21,7 +21,7 @@ public class TestOrgE2ImmuSupport extends CommonAnnotatedAPI {
 
         assertEquals(MultiLevel.INDEPENDENT_1_DV, typeAnalysis.getProperty(Property.INDEPENDENT));
         assertEquals(MultiLevel.EVENTUALLY_E2IMMUTABLE_DV, typeAnalysis.getProperty(Property.IMMUTABLE));
-        assertEquals(DV.TRUE_DV, typeAnalysis.immutableCanBeIncreasedByTypeParameters());
+        assertEquals(DV.TRUE_DV, typeAnalysis.immutableDeterminedByTypeParameters());
     }
 
     @Test

@@ -1288,7 +1288,7 @@ public class Test_51_InstanceOf extends CommonTestRunner {
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("InstanceOf".equals(d.typeInfo().simpleName)) {
                 if (d.iteration() > 0) {
-                    assertEquals("Type java.lang.Class<?>", d.typeAnalysis().getTransparentTypes().toString());
+                    assertTrue(d.typeAnalysis().getHiddenContentTypes().isEmpty());
                 }
                 // without Annotated APIs, Class is mutable
                 assertDv(d, 1, MultiLevel.EFFECTIVELY_E1IMMUTABLE_DV, Property.IMMUTABLE);

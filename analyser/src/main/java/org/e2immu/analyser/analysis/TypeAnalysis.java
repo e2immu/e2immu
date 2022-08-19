@@ -19,7 +19,6 @@ import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.annotation.NotNull;
-import org.e2immu.annotation.Nullable;
 
 import java.util.HashSet;
 import java.util.Map;
@@ -123,39 +122,32 @@ public interface TypeAnalysis extends Analysis {
         throw new UnsupportedOperationException();
     }
 
-    /* ******* methods dealing with explicit and transparent types in the object graph of the fields *************** */
+    /* ******* methods dealing with explicit and hidden content types in the object graph of the fields *************** */
 
     /*
-    Optional<T> is @E2Immutable. In general T can be mutable; it is part of the hidden content of Optional.
-    Optional<Integer> is @ERImmutable, because Integer is so.
-     */
-    DV immutableCanBeIncreasedByTypeParameters();
+    Optional<T> is @Immutable with hidden content of type T.
+    Optional<Integer> is @Immutable without hidden content, because Integer has these immutability properties.
+    Optional<StringBuilder> is not immutable, because StringBuilder is not.
 
-    /**
-     * Returns the transparent types: types in the object graph of the fields that are never accessed.
-     * Any unbound type parameter is always transparent as a type in the object graph.
-     * Ensure that none of 'this' and 'super' types are transparent!
-     *
-     * @return null when not yet set, use transparentAndExplicitTypeComputationDelays to check
+    This method returns DV.TRUE when the immutable property varies with its type parameters,
+    DV.FALSE when not, and a delay when we don't know yet.
      */
-    @Nullable
-    SetOfTypes getTransparentTypes();
+    DV immutableDeterminedByTypeParameters();
 
     /**
      * The explicit types are those types in the object graph of the fields that are accessed.
-     * By definition, the sets of explicit types and transparent types are disjoint.
      *
-     * @return null when not yet set, use transparentAndExplicitTypeComputationDelays to check
+     * @return null when not yet set, use hiddenContentAndExplicitTypeComputationDelays to check
      */
     SetOfTypes getExplicitTypes(InspectionProvider inspectionProvider);
 
     /**
-     * The hidden content of a type as computed. Contains all the transparent types, and those
-     * explicit types that are at least level 2 immutable, but not recursively immutable.
-     * As a result, this set does not contain any primitives or JLO.
+     * The hidden content of a type as computed. Contains all the types of the fields
+     * that are immutable, but not recursively immutable.
+     * As a result, this set does not contain any primitives, or java.lang.String, for example.
      * By convention, neither does it contain the type itself, nor any of the types in its hierarchy.
      *
-     * @return null when not yet set, use transparentAndExplicitTypeComputationDelays to check
+     * @return null when not yet set, use hiddenContentAndExplicitTypeComputationDelays to check
      */
     SetOfTypes getHiddenContentTypes();
 
@@ -163,21 +155,7 @@ public interface TypeAnalysis extends Analysis {
         return getHiddenContentTypes().applyTypeParameters(b);
     }
 
-    /**
-     * Helper method, but does not do the whole job
-     *
-     * @param type is this type transparent? look at implementations on how to trim it down
-     * @return a delay when the computation is not done yet
-     */
-    default DV isTransparent(ParameterizedType type) {
-        CausesOfDelay status = transparentAndExplicitTypeComputationDelays();
-        if (status.isDone()) {
-            return DV.fromBoolDv(getTransparentTypes().contains(type.withoutTypeParameters()));
-        }
-        return status;
-    }
-
     @NotNull
-    CausesOfDelay transparentAndExplicitTypeComputationDelays();
+    CausesOfDelay hiddenContentAndExplicitTypeComputationDelays();
 
 }

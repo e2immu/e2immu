@@ -143,7 +143,7 @@ public interface AnalysisProvider {
         DV baseValue = typeAnalysis.getProperty(Property.INDEPENDENT);
         if (baseValue.isDelayed()) return baseValue;
         if (MultiLevel.isAtLeastE2Immutable(baseValue) && !parameterizedType.parameters.isEmpty()) {
-            DV doSum = typeAnalysis.immutableCanBeIncreasedByTypeParameters();
+            DV doSum = typeAnalysis.immutableDeterminedByTypeParameters();
             if (doSum.valueIsTrue()) {
                 DV paramValue = parameterizedType.parameters.stream()
                         .map(this::defaultIndependent)
@@ -178,16 +178,6 @@ public interface AnalysisProvider {
             // unbound type parameter, null constant
             return dynamicValue.max(unboundIsMutable ? MultiLevel.NOT_INVOLVED_DV : MultiLevel.EFFECTIVELY_E2IMMUTABLE_DV);
         }
-        if (currentType != null) {
-            TypeAnalysis typeAnalysisOfCurrentType = getTypeAnalysis(currentType);
-            DV transparent = typeAnalysisOfCurrentType.isTransparent(parameterizedType);
-            if (transparent.valueIsTrue()) {
-                return unboundIsMutable ? MultiLevel.MUTABLE_DV : MultiLevel.EFFECTIVELY_E2IMMUTABLE_DV;
-            }
-            if (transparent.isDelayed()) {
-                return transparent;
-            }
-        }
         TypeAnalysis typeAnalysis = getTypeAnalysisNullWhenAbsent(bestType);
         if (typeAnalysis == null) {
             return typeAnalysisNotAvailable(bestType);
@@ -198,7 +188,7 @@ public interface AnalysisProvider {
         }
         DV dynamicBaseValue = dynamicValue.max(baseValue);
         if (MultiLevel.isAtLeastE2Immutable(dynamicBaseValue) && !parameterizedType.parameters.isEmpty()) {
-            DV doSum = typeAnalysis.immutableCanBeIncreasedByTypeParameters();
+            DV doSum = typeAnalysis.immutableDeterminedByTypeParameters();
             if (doSum.isDelayed()) {
                 assert typeAnalysis.isNotContracted();
                 return doSum;

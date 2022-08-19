@@ -122,7 +122,7 @@ public class E2ImmuAnnotationExpressions {
     }
 
     public TypeInfo get(String name) {
-        return Objects.requireNonNull(annotationTypes.get(name));
+        return Objects.requireNonNull(annotationTypes.get(name), name);
     }
 
     public Stream<TypeInfo> streamTypes() {

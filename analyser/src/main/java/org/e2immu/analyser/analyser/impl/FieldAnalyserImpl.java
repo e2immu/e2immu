@@ -127,7 +127,6 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
 
         analyserComponents = new AnalyserComponents.Builder<String, SharedState>(analyserProgram)
                 .add(ANONYMOUS_TYPE_ANALYSER, INITIALISE, anonymousTypeAnalyser)
-                .add(COMPUTE_TRANSPARENT_TYPE, TRANSPARENT, sharedState -> computeTransparentType())
                 .add(EVALUATE_INITIALISER, FIELD_FINAL, this::evaluateInitializer)
                 .add(ANALYSE_FINAL, FIELD_FINAL, this::analyseFinal)
                 .add(ANALYSE_VALUES, sharedState -> analyseValues())
@@ -417,17 +416,6 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
             }
             context = context.getParent();
         }
-    }
-
-    private AnalysisStatus computeTransparentType() {
-        assert fieldAnalysis.isTransparentType().isDelayed();
-        CausesOfDelay causes = myTypeAnalyser.getTypeAnalysis().transparentAndExplicitTypeComputationDelays();
-        if (causes.isDelayed()) {
-            return causes; //DELAY EXIT POINT
-        }
-        boolean transparent = myTypeAnalyser.getTypeAnalysis().getTransparentTypes().contains(fieldInfo.type);
-        fieldAnalysis.setTransparentType(DV.fromBoolDv(transparent));
-        return DONE;
     }
 
     /*

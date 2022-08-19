@@ -48,7 +48,7 @@ public class Test_Support_08_SetOnceMap extends CommonTestRunner {
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("SetOnceMap".equals(d.typeInfo().simpleName)) {
                 assertEquals("Type param K, Type param V",
-                        d.typeAnalysis().getTransparentTypes().toString());
+                        d.typeAnalysis().getHiddenContentTypes().toString());
                 assertDv(d, 4, MultiLevel.CONTAINER_DV, Property.CONTAINER);
             }
         };

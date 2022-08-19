@@ -85,7 +85,7 @@ public class ComputeIndependent {
                 SetOfTypes hiddenContent = typeAnalysis.getHiddenContentTypes();
                 assert !hiddenContent.isEmpty();
 
-                DV canIncrease = typeAnalysis.immutableCanBeIncreasedByTypeParameters();
+                DV canIncrease = typeAnalysis.immutableDeterminedByTypeParameters();
                 if (canIncrease.isDelayed()) return canIncrease;
                 if (canIncrease.valueIsTrue()) {
                     DV immutable = analyserContext.immutableOfHiddenContentInTypeParameters(oneType, currentType);
@@ -122,8 +122,8 @@ public class ComputeIndependent {
         TypeAnalysis ta = analyserContext.getTypeAnalysisNullWhenAbsent(a.bestTypeInfo());
         TypeAnalysis tb = analyserContext.getTypeAnalysisNullWhenAbsent(b.bestTypeInfo());
         if (ta == null || tb == null) return MultiLevel.INDEPENDENT_DV;
-        CausesOfDelay causes = ta.transparentAndExplicitTypeComputationDelays().causesOfDelay()
-                .merge(tb.transparentAndExplicitTypeComputationDelays().causesOfDelay());
+        CausesOfDelay causes = ta.hiddenContentAndExplicitTypeComputationDelays().causesOfDelay()
+                .merge(tb.hiddenContentAndExplicitTypeComputationDelays().causesOfDelay());
         if (causes.isDelayed()) return causes;
         SetOfTypes hiddenA = ta.getHiddenContentTypes(a);
         SetOfTypes hiddenB = tb.getHiddenContentTypes(b);
@@ -141,7 +141,7 @@ public class ComputeIndependent {
         }
         TypeAnalysis typeAnalysis = analyserContext.getTypeAnalysisNullWhenAbsent(typeInfo);
         if (typeAnalysis == null) return MultiLevel.INDEPENDENT_DV;
-        CausesOfDelay causes = typeAnalysis.transparentAndExplicitTypeComputationDelays();
+        CausesOfDelay causes = typeAnalysis.hiddenContentAndExplicitTypeComputationDelays();
         if (causes.isDelayed()) {
             return causes;
         }

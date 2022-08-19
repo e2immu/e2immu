@@ -36,7 +36,7 @@ public class TestGenerics extends CommonAnnotatedAPI {
         TypeAnalysis streamAnalysis = stream.typeAnalysis.get();
         assertEquals(MultiLevel.INDEPENDENT_1_DV, streamAnalysis.getProperty(Property.INDEPENDENT));
         assertEquals(MultiLevel.EFFECTIVELY_E2IMMUTABLE_DV, streamAnalysis.getProperty(Property.IMMUTABLE));
-        assertEquals(DV.TRUE_DV, streamAnalysis.immutableCanBeIncreasedByTypeParameters());
+        assertEquals(DV.TRUE_DV, streamAnalysis.immutableDeterminedByTypeParameters());
 
         TypeInfo integer = typeContext.getFullyQualified(Integer.class);
         TypeAnalysis integerAnalysis = integer.typeAnalysis.get();
@@ -61,7 +61,7 @@ public class TestGenerics extends CommonAnnotatedAPI {
         TypeAnalysis optionalAnalysis = optional.typeAnalysis.get();
         assertEquals(MultiLevel.INDEPENDENT_1_DV, optionalAnalysis.getProperty(Property.INDEPENDENT));
         assertEquals(MultiLevel.EFFECTIVELY_E2IMMUTABLE_DV, optionalAnalysis.getProperty(Property.IMMUTABLE));
-        assertEquals(DV.TRUE_DV, optionalAnalysis.immutableCanBeIncreasedByTypeParameters());
+        assertEquals(DV.TRUE_DV, optionalAnalysis.immutableDeterminedByTypeParameters());
 
         ParameterizedType integerPt = new ParameterizedType(integer, 0);
         ParameterizedType optionalIntegerPt = new ParameterizedType(optional, List.of(integerPt));
@@ -92,7 +92,7 @@ public class TestGenerics extends CommonAnnotatedAPI {
         TypeAnalysis entryAnalysis = entry.typeAnalysis.get();
         assertEquals(MultiLevel.INDEPENDENT_1_DV, entryAnalysis.getProperty(Property.INDEPENDENT));
         assertEquals(MultiLevel.MUTABLE_DV, entryAnalysis.getProperty(Property.IMMUTABLE));
-        assertEquals(DV.TRUE_DV, entryAnalysis.immutableCanBeIncreasedByTypeParameters());
+        assertEquals(DV.TRUE_DV, entryAnalysis.immutableDeterminedByTypeParameters());
 
         ParameterizedType integerPt = new ParameterizedType(integer, 0);
         ParameterizedType stringPt = new ParameterizedType(string, 0);

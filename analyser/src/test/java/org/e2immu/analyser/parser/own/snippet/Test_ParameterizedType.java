@@ -410,7 +410,7 @@ public class Test_ParameterizedType extends CommonTestRunner {
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("ParameterizedType_2".equals(d.typeInfo().simpleName)) {
                 assertDv(d, 13, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
-                assertEquals("", d.typeAnalysis().getTransparentTypes().toString());
+                assertTrue(d.typeAnalysis().getHiddenContentTypes().isEmpty());
             }
             if ("IterativeParsing".equals(d.typeInfo().simpleName)) {
                 assertDv(d, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
@@ -418,7 +418,7 @@ public class Test_ParameterizedType extends CommonTestRunner {
             if ("Result".equals(d.typeInfo().simpleName)) {
                 assertDv(d, 1, MultiLevel.EFFECTIVELY_E2IMMUTABLE_DV, Property.IMMUTABLE);
                 assertEquals("Type org.e2immu.analyser.parser.own.snippet.testexample.ParameterizedType_2.ParameterizedType",
-                        d.typeAnalysis().getTransparentTypes().toString());
+                        d.typeAnalysis().getHiddenContentTypes().toString());
                 assertDv(d, 1, MultiLevel.INDEPENDENT_1_DV, Property.INDEPENDENT);
             }
             if ("NamedType".equals(d.typeInfo().simpleName)) {

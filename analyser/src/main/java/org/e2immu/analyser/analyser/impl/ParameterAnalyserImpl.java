@@ -107,8 +107,6 @@ public abstract class ParameterAnalyserImpl extends AbstractAnalyser implements 
             CONTAINER, INDEPENDENT, IMMUTABLE);
 
     private void checkWorseThanParent() {
-        DV parameterTypeIsHidden = analyserContext.getTypeAnalysis(parameterInfo.getTypeInfo())
-                .isTransparent(parameterInfo.parameterizedType);
         for (Property property : CHECK_WORSE_THAN_PARENT) {
             DV valueFromOverrides = computeValueFromOverrides(property, true);
             DV value = parameterAnalysis.getProperty(property);
@@ -117,14 +115,7 @@ public abstract class ParameterAnalyserImpl extends AbstractAnalyser implements 
                 if (property == Property.MODIFIED_VARIABLE) {
                     complain = value.gt(valueFromOverrides);
                 } else {
-                    if ((property == INDEPENDENT || property == IMMUTABLE) && parameterTypeIsHidden.valueIsTrue()) {
-                        /* see e.g. parameter of type FormattingOptions in TypeName.length(): type is @ERContainer,
-                        but because it is transparent in TypeName, it becomes @E2Container
-                         */
-                        complain = false;
-                    } else {
-                        complain = value.lt(valueFromOverrides);
-                    }
+                    complain = value.lt(valueFromOverrides);
                 }
                 if (complain) {
                     String msg;

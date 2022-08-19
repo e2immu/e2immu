@@ -283,13 +283,6 @@ public class ConstructorCall extends BaseExpression implements HasParameterExpre
         CausesOfDelay causes = immutableOfValue.causesOfDelay().merge(independentOnParameter.causesOfDelay());
         if (causes.isDelayed()) return causes;
 
-
-        DV typeTransparent = context.getAnalyserContext().getTypeAnalysis(context.getCurrentType())
-                .isTransparent(parameterInfo.parameterizedType);
-        if (typeTransparent.isDelayed()) return typeTransparent;
-        if (typeTransparent.valueIsTrue()) {
-            return MultiLevel.INDEPENDENT_1_DV;
-        }
         int immutableLevel = MultiLevel.level(immutableOfValue);
 
         if (independentOnParameter.ge(MultiLevel.INDEPENDENT_1_DV)

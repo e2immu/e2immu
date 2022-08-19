@@ -122,8 +122,8 @@ public class TestJavaUtil {
         TypeParameter e = typeInspection.typeParameters().get(0);
         assertEquals("E", e.getName());
         assertTrue(e.isAnnotatedWithIndependent());
-        assertEquals(DV.FALSE_DV, collection.typeAnalysis.get().immutableCanBeIncreasedByTypeParameters());
+        assertEquals(DV.FALSE_DV, collection.typeAnalysis.get().immutableDeterminedByTypeParameters());
         TypeInfo list = typeContext.getFullyQualified(List.class);
-        assertEquals(DV.TRUE_DV, list.typeAnalysis.get().immutableCanBeIncreasedByTypeParameters());
+        assertEquals(DV.TRUE_DV, list.typeAnalysis.get().immutableDeterminedByTypeParameters());
     }
 }

@@ -105,7 +105,7 @@ public class Test_Independent1 extends CommonTestRunner {
     public void test_2() throws IOException {
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("Independent1_2".equals(d.typeInfo().simpleName)) {
-                assertEquals("Type param T", d.typeAnalysis().getTransparentTypes().toString());
+                assertEquals("Type param T", d.typeAnalysis().getHiddenContentTypes().toString());
             }
         };
         testClass("Independent1_2", 0, 0, new DebugConfiguration.Builder()
@@ -119,7 +119,7 @@ public class Test_Independent1 extends CommonTestRunner {
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("Independent1_2_1".equals(d.typeInfo().simpleName)) {
                 // String is not transparent (new String[])
-                assertEquals("", d.typeAnalysis().getTransparentTypes().toString());
+                assertEquals("", d.typeAnalysis().getHiddenContentTypes().toString());
             }
         };
         testClass("Independent1_2_1", 0, 0, new DebugConfiguration.Builder()
@@ -132,7 +132,7 @@ public class Test_Independent1 extends CommonTestRunner {
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("Independent1_2_2".equals(d.typeInfo().simpleName)) {
                 // String is not transparent (new String[])
-                assertEquals("", d.typeAnalysis().getTransparentTypes().toString());
+                assertEquals("", d.typeAnalysis().getHiddenContentTypes().toString());
             }
         };
         testClass("Independent1_2_2", 0, 0, new DebugConfiguration.Builder()
@@ -220,8 +220,9 @@ public class Test_Independent1 extends CommonTestRunner {
             if ("ImmutableArrayOfTransparentOnes".equals(d.typeInfo().simpleName)) {
                 // we're using One[].clone() to avoid making One explicit
                 // calling methods in java.lang.Object do not make an object explicit
-                assertEquals("Type org.e2immu.analyser.parser.independence.testexample.Independent1_5.One",
-                        d.typeAnalysis().getTransparentTypes().toString());
+
+                // the "transparent" concept is not implemented (202208)
+                assertTrue(d.typeAnalysis().getHiddenContentTypes().isEmpty());
             }
         };
         testClass("Independent1_5", 0, 0, new DebugConfiguration.Builder()
@@ -276,7 +277,6 @@ public class Test_Independent1 extends CommonTestRunner {
             }
             if ("ImmutableArrayOfOnes".equals(d.typeInfo().simpleName)) {
                 // new One[size] makes One explicit, however, T remains transparent
-                assertEquals("Type param T", d.typeAnalysis().getTransparentTypes().toString());
                 assertEquals("Type param T", d.typeAnalysis().getHiddenContentTypes().toString());
             }
         };
@@ -293,7 +293,7 @@ public class Test_Independent1 extends CommonTestRunner {
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("ImmutableArrayOfOnes".equals(d.typeInfo().simpleName)) {
                 // new One[size] makes One explicit
-                assertEquals("", d.typeAnalysis().getTransparentTypes().toString());
+                assertEquals("", d.typeAnalysis().getHiddenContentTypes().toString());
             }
         };
         testClass("Independent1_6_1", 0, 0, new DebugConfiguration.Builder()
@@ -306,7 +306,7 @@ public class Test_Independent1 extends CommonTestRunner {
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("Data".equals(d.typeInfo().simpleName)) {
                 // new One[size] makes One explicit
-                assertEquals("Type param X", d.typeAnalysis().getTransparentTypes().toString());
+                assertEquals("Type param X", d.typeAnalysis().getHiddenContentTypes().toString());
             }
         };
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {

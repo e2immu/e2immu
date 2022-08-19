@@ -529,7 +529,7 @@ public class Test_63_TrieSimplified extends CommonTestRunner {
                 assertDv(d, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
             }
             if ("TrieSimplified_3".equals(d.typeInfo().simpleName)) {
-                assertEquals("Type param T", d.typeAnalysis().getTransparentTypes().toString());
+                assertEquals("Type param T", d.typeAnalysis().getHiddenContentTypes().toString());
             }
         };
 
@@ -1046,7 +1046,7 @@ public class Test_63_TrieSimplified extends CommonTestRunner {
                 assertDv(d, MultiLevel.MUTABLE_DV, Property.IMMUTABLE);
             }
             if ("TrieSimplified_5".equals(d.typeInfo().simpleName)) {
-                assertEquals("Type param T", d.typeAnalysis().getTransparentTypes().toString());
+                assertEquals("Type param T", d.typeAnalysis().getHiddenContentTypes().toString());
             }
         };
 

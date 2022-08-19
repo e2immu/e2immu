@@ -207,7 +207,7 @@ public class Test_00_Basics_20 extends CommonTestRunner {
         }
         if ("C2".equals(d.typeInfo().simpleName)) {
             assertDv(d, 1, MultiLevel.EFFECTIVELY_E2IMMUTABLE_DV, IMMUTABLE);
-            assertEquals(DV.TRUE_DV, d.typeAnalysis().immutableCanBeIncreasedByTypeParameters());
+            assertEquals(DV.TRUE_DV, d.typeAnalysis().immutableDeterminedByTypeParameters());
         }
     };
 

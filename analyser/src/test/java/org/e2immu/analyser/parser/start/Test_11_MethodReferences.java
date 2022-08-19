@@ -31,8 +31,7 @@ import java.io.IOException;
 import java.util.Collection;
 import java.util.Map;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.*;
 
 public class Test_11_MethodReferences extends CommonTestRunner {
     public Test_11_MethodReferences() {
@@ -112,7 +111,7 @@ public class Test_11_MethodReferences extends CommonTestRunner {
     public void test_4() throws IOException {
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("MethodReferences_4".equals(d.typeInfo().simpleName)) {
-                assertEquals("", d.typeAnalysis().getTransparentTypes().toString());
+                assertTrue(d.typeAnalysis().getHiddenContentTypes().isEmpty());
             }
         };
         testClass("MethodReferences_4", 0, 0, new DebugConfiguration.Builder()

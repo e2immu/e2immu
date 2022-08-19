@@ -190,7 +190,7 @@ public class Test_Support_05_Lazy extends CommonTestRunner {
 
     TypeAnalyserVisitor typeAnalyserVisitor = d -> {
         if ("Lazy".equals(d.typeInfo().simpleName)) {
-            assertEquals("Type param T", d.typeAnalysis().getTransparentTypes().toString());
+            assertEquals("Type param T", d.typeAnalysis().getHiddenContentTypes().toString());
         }
     };
 

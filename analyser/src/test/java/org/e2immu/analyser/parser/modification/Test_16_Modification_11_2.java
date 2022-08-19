@@ -175,7 +175,7 @@ public class Test_16_Modification_11_2 extends CommonTestRunner {
 
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("Modification_11".equals(d.typeInfo().simpleName)) {
-                assertTrue(d.typeAnalysis().getTransparentTypes().isEmpty());
+                assertTrue(d.typeAnalysis().getHiddenContentTypes().isEmpty());
             }
             if ("C1".equals(d.typeInfo().simpleName)) {
                 assertDv(d, 2, MultiLevel.NOT_CONTAINER_DV, Property.CONTAINER);

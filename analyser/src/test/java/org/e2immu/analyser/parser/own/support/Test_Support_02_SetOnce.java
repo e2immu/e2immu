@@ -52,7 +52,7 @@ public class Test_Support_02_SetOnce extends CommonTestRunner {
     public void test() throws IOException {
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("SetOnce".equals(d.typeInfo().simpleName)) {
-                assertEquals("Type param T", d.typeAnalysis().getTransparentTypes().toString());
+                assertEquals("Type param T", d.typeAnalysis().getHiddenContentTypes().toString());
                 String expectE1 = d.iteration() <= 1 ? "{}" : "{t=null==t}";
                 assertEquals(expectE1, d.typeAnalysis().getApprovedPreconditionsE1().toString());
                 String expectE2 = d.iteration() <= 1 ? "{}" : "{t=null==t}";

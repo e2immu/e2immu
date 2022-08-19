@@ -139,20 +139,20 @@ public class AggregatingTypeAnalyser extends TypeAnalyserImpl {
     }
 
     private AnalysisStatus aggregateTransparent() {
-        if (typeAnalysis.transparentAndExplicitTypeComputationDelays().isDone()) return DONE;
-        CausesOfDelay delays = implementingAnalyses.get().stream().map(a -> a.transparentAndExplicitTypeComputationDelays().causesOfDelay())
+        if (typeAnalysis.hiddenContentAndExplicitTypeComputationDelays().isDone()) return DONE;
+        CausesOfDelay delays = implementingAnalyses.get().stream().map(a -> a.hiddenContentAndExplicitTypeComputationDelays().causesOfDelay())
                 .reduce(CausesOfDelay.EMPTY, CausesOfDelay::merge);
         if (delays.isDelayed()) {
             typeAnalysis.setHiddenContentTypesDelay(delays);
             return delays;
         }
-        SetOfTypes union = implementingAnalyses.get().stream()
+        SetOfTypes unionExplicit = implementingAnalyses.get().stream()
                 .map(a -> a.getExplicitTypes(analyserContext))
                 .reduce(SetOfTypes.EMPTY, SetOfTypes::union);
-        typeAnalysis.setExplicitTypes(union);
-        SetOfTypes intersection = implementingAnalyses.get().stream()
-                .map(TypeAnalysis::getTransparentTypes).reduce(SetOfTypes.EMPTY, SetOfTypes::intersection);
-        typeAnalysis.setTransparentTypes(intersection);
+        typeAnalysis.setExplicitTypes(unionExplicit);
+        SetOfTypes unionHiddenContent = implementingAnalyses.get().stream()
+                .map(TypeAnalysis::getHiddenContentTypes).reduce(SetOfTypes.EMPTY, SetOfTypes::union);
+        typeAnalysis.setHiddenContentTypes(unionHiddenContent);
         return DONE;
     }
 

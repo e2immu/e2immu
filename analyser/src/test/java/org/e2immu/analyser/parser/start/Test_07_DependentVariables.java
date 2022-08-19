@@ -192,7 +192,7 @@ public class Test_07_DependentVariables extends CommonTestRunner {
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("XS".equals(d.typeInfo().simpleName)) {
                 assertEquals("Type org.e2immu.analyser.parser.start.testexample.DependentVariables_1.X",
-                        d.typeAnalysis().getTransparentTypes().toString());
+                        d.typeAnalysis().getHiddenContentTypes().toString());
             }
         };
 
@@ -260,7 +260,7 @@ public class Test_07_DependentVariables extends CommonTestRunner {
 
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("XS".equals(d.typeInfo().simpleName)) {
-                assertEquals("", d.typeAnalysis().getTransparentTypes().toString());
+                assertTrue(d.typeAnalysis().getHiddenContentTypes().isEmpty());
             }
         };
 

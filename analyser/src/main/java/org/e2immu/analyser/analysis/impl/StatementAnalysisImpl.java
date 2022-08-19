@@ -1703,22 +1703,14 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
     }
 
     /*
-  if the array base type is transparent, the independence of the elements in INDEPENDENT_1
-  If the array base type is not E2, we should return DEPENDENT.
-  See DependentVariables_1,_2
-   */
+     If the array base type is not E2, we should return DEPENDENT.
+     See DependentVariables_1,_2
+     */
     private static DV determineIndependentOfArrayBase(EvaluationResult context, Expression value) {
         ParameterizedType arrayBaseType = value.returnType().copyWithoutArrays();
 
         TypeInfo currentType = context.getCurrentType();
         TypeAnalysis typeAnalysis = context.getAnalyserContext().getTypeAnalysis(currentType);
-        DV partOfHiddenContent = typeAnalysis.isTransparent(arrayBaseType);
-        if (partOfHiddenContent.isDelayed()) {
-            return partOfHiddenContent;
-        }
-        if (partOfHiddenContent.valueIsTrue()) {
-            return MultiLevel.INDEPENDENT_1_DV;
-        }
 
         if (context.evaluationContext().isMyself(arrayBaseType))
             return MultiLevel.NOT_INVOLVED_DV; // BREAK INFINITE LOOP

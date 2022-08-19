@@ -331,7 +331,7 @@ public class Test_14_Warnings extends CommonTestRunner {
         };
 
         TypeAnalyserVisitor typeAnalyserVisitor = d ->
-                assertEquals("", d.typeAnalysis().getTransparentTypes().toString());
+                assertTrue(d.typeAnalysis().getHiddenContentTypes().isEmpty());
 
         testClass("Warnings_4", 1, 0, new DebugConfiguration.Builder()
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
@@ -454,7 +454,7 @@ public class Test_14_Warnings extends CommonTestRunner {
 
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("Warnings_5".equals(d.typeInfo().simpleName)) {
-                assertTrue(d.typeAnalysis().getTransparentTypes().isEmpty());
+                assertTrue(d.typeAnalysis().getHiddenContentTypes().isEmpty());
             }
         };
 

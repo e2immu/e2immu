@@ -79,7 +79,7 @@ public class AnnotatedAPIAnalyser implements AnalyserContext {
     private final E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions;
     private final ShallowFieldAnalyser shallowFieldAnalyser;
 
-    private final Map<TypeInfo, TypeAnalysis> typeAnalyses;
+    private final Map<TypeInfo, TypeAnalysisImpl.Builder> typeAnalyses;
     private final Map<MethodInfo, MethodAnalyser> methodAnalysers;
     private final TypeMap typeMap;
     private final AnalyserProgram analyserProgram;
@@ -207,7 +207,7 @@ public class AnnotatedAPIAnalyser implements AnalyserContext {
         // do the types first,
         typeAnalyses.forEach((typeInfo, typeAnalysis) -> {
             try {
-                shallowTypeAnalysis(typeInfo, (TypeAnalysisImpl.Builder) typeAnalysis, e2ImmuAnnotationExpressions);
+                shallowTypeAnalysis(typeInfo, typeAnalysis, e2ImmuAnnotationExpressions);
             } catch (RuntimeException runtimeException) {
                 LOGGER.error("Caught exception while shallowly analysing type " + typeInfo.fullyQualifiedName);
                 throw runtimeException;
@@ -251,7 +251,7 @@ public class AnnotatedAPIAnalyser implements AnalyserContext {
         if (!nonShallowOrWithCompanions.isEmpty()) {
             iterativeMethodAnalysis(nonShallowOrWithCompanions);
         }
-        validateIndependence();
+        validateOrComputeIndependenceAndContainer();
 
         return Stream.concat(methodAnalysers.values().stream().flatMap(MethodAnalyser::getMessageStream),
                 Stream.concat(shallowFieldAnalyser.getMessageStream(), messages.getMessageStream()));
@@ -262,7 +262,7 @@ public class AnnotatedAPIAnalyser implements AnalyserContext {
                 Annotation.class, // every annotation derives from Annotation
                 Enum.class}) {// every enum type derives from Enum
             TypeInfo typeInfo = typeMap.get(clazz);
-            TypeAnalysisImpl.Builder typeAnalysis = (TypeAnalysisImpl.Builder) typeAnalyses.get(typeInfo);
+            TypeAnalysisImpl.Builder typeAnalysis = typeAnalyses.get(typeInfo);
             typeAnalysis.setProperty(Property.INDEPENDENT, MultiLevel.INDEPENDENT_1_DV);
             typeAnalysis.setProperty(Property.IMMUTABLE, MultiLevel.EFFECTIVELY_E2IMMUTABLE_DV);
             typeAnalysis.setProperty(Property.CONTAINER, MultiLevel.CONTAINER_DV);
@@ -275,7 +275,7 @@ public class AnnotatedAPIAnalyser implements AnalyserContext {
                 Void.class, Byte.class,
                 Long.class}) {
             TypeInfo typeInfo = typeMap.get(clazz);
-            TypeAnalysisImpl.Builder typeAnalysis = (TypeAnalysisImpl.Builder) typeAnalyses.get(typeInfo);
+            TypeAnalysisImpl.Builder typeAnalysis = typeAnalyses.get(typeInfo);
             typeAnalysis.setProperty(Property.INDEPENDENT, MultiLevel.INDEPENDENT_DV);
             typeAnalysis.setProperty(Property.IMMUTABLE, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV);
             typeAnalysis.setProperty(Property.CONTAINER, MultiLevel.CONTAINER_DV);
@@ -283,18 +283,24 @@ public class AnnotatedAPIAnalyser implements AnalyserContext {
         }
     }
 
-    private void validateIndependence() {
+    private void validateOrComputeIndependenceAndContainer() {
         typeAnalyses.forEach(((typeInfo, typeAnalysis) -> {
             try {
-                DV inMap = typeAnalysis.getPropertyFromMapNeverDelay(Property.INDEPENDENT);
-                ValueExplanation computed = computeIndependent(typeInfo);
-                // some "Type @Independent lower than its methods allow"-errors (a.o. java.lang.String)
-                if (inMap.gt(computed.value)) {
-                    Message message = Message.newMessage(typeInfo.newLocation(),
-                            Message.Label.TYPE_HAS_HIGHER_VALUE_FOR_INDEPENDENT,
-                            "Found " + inMap + ", computed maximally " + computed.value
-                                    + " in " + computed.explanation);
-                    messages.add(message);
+                {
+                    DV inMap = typeAnalysis.getPropertyFromMapDelayWhenAbsent(Property.INDEPENDENT);
+                    ValueExplanation computed = computeIndependent(typeInfo);
+                    if (inMap.isDelayed()) {
+                        typeAnalysis.setProperty(Property.INDEPENDENT, computed.value);
+                    } else {
+                        validateIndependent(typeInfo, inMap, computed);
+                    }
+                }
+                {
+                    DV inMap = typeAnalysis.getPropertyFromMapDelayWhenAbsent(Property.CONTAINER);
+                    if (inMap.isDelayed()) {
+                        DV computed = computeContainer(typeAnalysis);
+                        typeAnalysis.setProperty(Property.CONTAINER, computed);
+                    }
                 }
             } catch (IllegalStateException ise) {
                 LOGGER.error("Caught exception while validating independence of {}", typeInfo);
@@ -303,27 +309,19 @@ public class AnnotatedAPIAnalyser implements AnalyserContext {
         }));
     }
 
-    private record ValueExplanation(DV value, String explanation) {
+    private void validateIndependent(TypeInfo typeInfo, DV inMap, ValueExplanation computed) {
+        // some "Type @Independent lower than its methods allow"-errors (a.o. java.lang.String)
+        if (inMap.gt(computed.value)) {
+            Message message = Message.newMessage(typeInfo.newLocation(),
+                    Message.Label.TYPE_HAS_HIGHER_VALUE_FOR_INDEPENDENT,
+                    "Found " + inMap + ", computed maximally " + computed.value
+                            + " in " + computed.explanation);
+            messages.add(message);
+        }
+
     }
 
-    private ValueExplanation computeIndependent(TypeInfo typeInfo) {
-        ValueExplanation myMethods =
-                typeInfo.typeInspection.get().methodStream(TypeInspection.Methods.THIS_TYPE_ONLY)
-                        .filter(m -> m.methodInspection.get().isPubliclyAccessible())
-                        .map(m -> new ValueExplanation(getMethodAnalysis(m).getProperty(Property.INDEPENDENT),
-                                m.fullyQualifiedName))
-                        .min(Comparator.comparing(p -> p.value.value()))
-                        .orElse(new ValueExplanation(Property.INDEPENDENT.bestDv, "none"));
-        Stream<TypeInfo> superTypes = typeInfo.typeResolution.get().superTypesExcludingJavaLangObject()
-                .stream();
-        ValueExplanation fromSuperTypes = superTypes
-                .filter(t -> t.typeInspection.get().isPublic())
-                .map(this::getTypeAnalysis)
-                .map(ta -> new ValueExplanation(ta.getProperty(Property.INDEPENDENT),
-                        ta.getTypeInfo().fullyQualifiedName))
-                .min(Comparator.comparing(p -> p.value.value()))
-                .orElse(new ValueExplanation(Property.INDEPENDENT.bestDv, "none"));
-        return myMethods.value.lt(fromSuperTypes.value) ? myMethods : fromSuperTypes;
+    private record ValueExplanation(DV value, String explanation) {
     }
 
     // dedicated method exactly for this "isFact" method
@@ -562,26 +560,25 @@ public class AnnotatedAPIAnalyser implements AnalyserContext {
         typeAnalysisBuilder.freezeApprovedPreconditionsE2();
 
         /*
-        The computation of transparent and hidden content types proceeds as follows:
-        1. all unbound type parameters are transparent and hidden content
+        The computation of hidden content types proceeds as follows:
+        1. all unbound type parameters are hidden content
         2. to the hidden content we add all public field types, method return types and method parameter types
-           that are at least level 2 immutable or. We exclude the type itself, any primitives, and JLO.
+           that are immutable with hidden content.
 
-        This computation does not make a difference between interfaces (which provide a specification only) and classes
+        This computation does not differentiate between interfaces (which provide a specification only) and classes
         which provide specification and implementation: we cannot see inside the class anyway in this analyser.
          */
         Set<ParameterizedType> typeParametersAsParameterizedTypes = typeInspection.typeParameters().stream()
                 .filter(TypeParameter::isUnbound)
                 .map(tp -> new ParameterizedType(tp, 0, ParameterizedType.WildCard.NONE)).collect(Collectors.toSet());
-        SetOfTypes transparentTypes = new SetOfTypes(typeParametersAsParameterizedTypes);
-        typeAnalysisBuilder.setTransparentTypes(transparentTypes);
-        SetOfTypes immutableTypes = new HiddenContentTypes(typeInfo, this).go(transparentTypes).build();
-        typeAnalysisBuilder.setHiddenContentTypes(transparentTypes.union(immutableTypes));
+        SetOfTypes typeParameters = new SetOfTypes(typeParametersAsParameterizedTypes);
+        SetOfTypes hiddenContentTypes = new HiddenContentTypes(typeInfo, this).go(typeParameters).build();
+        typeAnalysisBuilder.setHiddenContentTypes(hiddenContentTypes);
 
         ensureImmutableAndContainerInShallowTypeAnalysis(typeAnalysisBuilder);
         simpleComputeIndependent(typeAnalysisBuilder);
 
-        determineImmutableCanBeIncreasedByTypeParameters(typeInspection, typeAnalysisBuilder);
+        determineImmutableDeterminedByTypeParameters(typeInspection, typeAnalysisBuilder);
 
         // and close!
         TypeAnalysis typeAnalysis = typeAnalysisBuilder.build();
@@ -599,13 +596,49 @@ public class AnnotatedAPIAnalyser implements AnalyserContext {
         }
     }
 
-    private void determineImmutableCanBeIncreasedByTypeParameters(TypeInspection typeInspection,
-                                                                  TypeAnalysisImpl.Builder typeAnalysisBuilder) {
-        if (typeAnalysisBuilder.immutableCanBeIncreasedByTypeParameters().isDelayed()) {
+    private void determineImmutableDeterminedByTypeParameters(TypeInspection typeInspection,
+                                                              TypeAnalysisImpl.Builder typeAnalysisBuilder) {
+        if (typeAnalysisBuilder.immutableDeterminedByTypeParameters().isDelayed()) {
             boolean res = typeInspection.typeParameters().stream()
                     .anyMatch(tp -> Boolean.TRUE != tp.isAnnotatedWithIndependent());
             typeAnalysisBuilder.setImmutableCanBeIncreasedByTypeParameters(res);
         }
+    }
+
+    private DV computeContainer(TypeAnalysisImpl.Builder builder) {
+        boolean noModifyingParameters =
+                builder.getTypeInfo().typeInspection.get()
+                        .methodsAndConstructors(TypeInspection.Methods.INCLUDE_SUPERTYPES)
+                        .filter(m -> m.methodInspection.get().isPubliclyAccessible())
+                        .allMatch(this::noModifyingParameters);
+        return DV.fromBoolDv(noModifyingParameters);
+    }
+
+    private boolean noModifyingParameters(MethodInfo methodInfo) {
+        MethodAnalysis methodAnalysis = getMethodAnalysis(methodInfo);
+        return methodAnalysis.getParameterAnalyses().stream()
+                .allMatch(pa -> pa.getPropertyFromMapNeverDelay(Property.MODIFIED_VARIABLE).equals(DV.FALSE_DV));
+    }
+
+
+    private ValueExplanation computeIndependent(TypeInfo typeInfo) {
+        ValueExplanation myMethods =
+                typeInfo.typeInspection.get().methodStream(TypeInspection.Methods.THIS_TYPE_ONLY)
+                        .filter(m -> m.methodInspection.get().isPubliclyAccessible())
+                        .map(m -> new ValueExplanation(getMethodAnalysis(m).getProperty(Property.INDEPENDENT),
+                                m.fullyQualifiedName))
+                        .min(Comparator.comparing(p -> p.value.value()))
+                        .orElse(new ValueExplanation(Property.INDEPENDENT.bestDv, "none"));
+        Stream<TypeInfo> superTypes = typeInfo.typeResolution.get().superTypesExcludingJavaLangObject()
+                .stream();
+        ValueExplanation fromSuperTypes = superTypes
+                .filter(t -> t.typeInspection.get().isPublic())
+                .map(this::getTypeAnalysis)
+                .map(ta -> new ValueExplanation(ta.getProperty(Property.INDEPENDENT),
+                        ta.getTypeInfo().fullyQualifiedName))
+                .min(Comparator.comparing(p -> p.value.value()))
+                .orElse(new ValueExplanation(Property.INDEPENDENT.bestDv, "none"));
+        return myMethods.value.lt(fromSuperTypes.value) ? myMethods : fromSuperTypes;
     }
 
     private void simpleComputeIndependent(TypeAnalysisImpl.Builder builder) {

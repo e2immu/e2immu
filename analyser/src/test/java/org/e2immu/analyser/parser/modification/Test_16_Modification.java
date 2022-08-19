@@ -89,7 +89,7 @@ public class Test_16_Modification extends CommonTestRunner {
         };
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("Modification_13".equals(d.typeInfo().simpleName)) {
-                assertTrue(d.typeAnalysis().getTransparentTypes().isEmpty());
+                assertTrue(d.typeAnalysis().getHiddenContentTypes().isEmpty());
             }
         };
         testClass("Modification_13", 0, 0, new DebugConfiguration.Builder()
@@ -255,7 +255,7 @@ public class Test_16_Modification extends CommonTestRunner {
 
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("FaultyImplementation".equals(d.typeInfo().simpleName)) {
-                assertTrue(d.typeAnalysis().getTransparentTypes().isEmpty());
+                assertTrue(d.typeAnalysis().getHiddenContentTypes().isEmpty());
             }
         };
 
@@ -287,10 +287,10 @@ public class Test_16_Modification extends CommonTestRunner {
     public void test21() throws IOException {
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("C1".equals(d.typeInfo().simpleName)) {
-                assertEquals("Type java.util.Set<java.lang.String>", d.typeAnalysis().getTransparentTypes().toString());
+                assertTrue(d.typeAnalysis().getHiddenContentTypes().isEmpty());
             }
             if ("Modification_21".equals(d.typeInfo().simpleName)) {
-                assertEquals("", d.typeAnalysis().getTransparentTypes().toString());
+                assertTrue(d.typeAnalysis().getHiddenContentTypes().isEmpty());
             }
         };
 

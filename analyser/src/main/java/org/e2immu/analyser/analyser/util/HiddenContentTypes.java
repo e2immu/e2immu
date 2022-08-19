@@ -98,7 +98,7 @@ public class HiddenContentTypes {
         } else {
             // so we end up with a mutable/E1 type...
             TypeAnalysis typeAnalysis = analyserContext.getTypeAnalysisNullWhenAbsent(bestType);
-            if (typeAnalysis == null || typeAnalysis.transparentAndExplicitTypeComputationDelays().isDelayed()) {
+            if (typeAnalysis == null || typeAnalysis.hiddenContentAndExplicitTypeComputationDelays().isDelayed()) {
                 //?
             } else {
                 /*

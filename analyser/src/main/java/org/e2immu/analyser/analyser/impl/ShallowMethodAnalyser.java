@@ -122,7 +122,7 @@ public class ShallowMethodAnalyser extends MethodAnalyserImpl {
             causes = c1.merge(c2);
         } else {
             CausesOfDelay c1 = computeMethodPropertyIfNecessary(Property.FLUENT, () -> bestOfOverridesOrWorstValue(Property.FLUENT));
-            CausesOfDelay c2 = computeMethodPropertyIfNecessary(Property.MODIFIED_METHOD, this::computeModifiedMethod);
+            CausesOfDelay c2 = computeMethodPropertyIfNecessary(Property.MODIFIED_METHOD, this::computeMethodModified);
 
             CausesOfDelay c3 = parameterAnalyses.stream()
                     .map(pa -> computeParameterProperties((ParameterAnalysisImpl.Builder) pa))
@@ -224,8 +224,8 @@ public class ShallowMethodAnalyser extends MethodAnalyserImpl {
         CausesOfDelay c1 = computeParameterModified(builder);
         CausesOfDelay c2 = computeParameterPropertyIfNecessary(builder, Property.IMMUTABLE, this::computeParameterImmutable);
         CausesOfDelay c3 = computeParameterPropertyIfNecessary(builder, Property.INDEPENDENT, this::computeParameterIndependent);
-        CausesOfDelay c4 = computeParameterPropertyIfNecessary(builder, Property.NOT_NULL_PARAMETER, this::computeNotNullParameter);
-        CausesOfDelay c5 = computeParameterPropertyIfNecessary(builder, Property.CONTAINER, this::computeContainerParameter);
+        CausesOfDelay c4 = computeParameterPropertyIfNecessary(builder, Property.NOT_NULL_PARAMETER, this::computeParameterNotNull);
+        CausesOfDelay c5 = computeParameterPropertyIfNecessary(builder, Property.CONTAINER, this::computeParameterContainer);
         CausesOfDelay c6 = computeParameterPropertyIfNecessary(builder, Property.IGNORE_MODIFICATIONS,
                 this::computeParameterIgnoreModification);
         return c1.merge(c2).merge(c3).merge(c4).merge(c5).merge(c6);
@@ -236,7 +236,7 @@ public class ShallowMethodAnalyser extends MethodAnalyserImpl {
                 MultiLevel.IGNORE_MODS_DV : MultiLevel.NOT_IGNORE_MODS_DV;
     }
 
-    private DV computeNotNullParameter(ParameterAnalysisImpl.Builder builder) {
+    private DV computeParameterNotNull(ParameterAnalysisImpl.Builder builder) {
         ParameterizedType pt = builder.getParameterInfo().parameterizedType;
         if (pt.isPrimitiveExcludingVoid()) return MultiLevel.EFFECTIVELY_NOT_NULL_DV;
         DV override = bestOfParameterOverrides(builder.getParameterInfo(), Property.NOT_NULL_PARAMETER);
@@ -246,7 +246,7 @@ public class ShallowMethodAnalyser extends MethodAnalyserImpl {
     /*
     @Container on parameters needs to be contracted; but it does inherit
      */
-    private DV computeContainerParameter(ParameterAnalysisImpl.Builder builder) {
+    private DV computeParameterContainer(ParameterAnalysisImpl.Builder builder) {
         return MultiLevel.NOT_CONTAINER_DV.maxIgnoreDelay(bestOfParameterOverrides(builder.getParameterInfo(), Property.CONTAINER));
     }
 
@@ -327,7 +327,7 @@ public class ShallowMethodAnalyser extends MethodAnalyserImpl {
     }
 
     // in a @Container type, @Fluent or void ==> @Modified, unless otherwise specified
-    private DV computeModifiedMethod() {
+    private DV computeMethodModified() {
         if (methodInfo.isConstructor) return DV.TRUE_DV;
         DV fluent = methodAnalysis.getProperty(Property.FLUENT);
         DV typeContainer = analyserContext.getTypeAnalysis(methodInfo.typeInfo).getProperty(Property.CONTAINER);

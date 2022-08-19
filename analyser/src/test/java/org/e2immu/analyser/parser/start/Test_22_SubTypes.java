@@ -220,7 +220,7 @@ public class Test_22_SubTypes extends CommonTestRunner {
 
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("SubTypes_6".equals(d.typeInfo().simpleName)) {
-                assertEquals("", d.typeAnalysis().getTransparentTypes().toString());
+                assertTrue(d.typeAnalysis().getHiddenContentTypes().isEmpty());
             }
         };
 
@@ -254,8 +254,7 @@ public class Test_22_SubTypes extends CommonTestRunner {
             }
 
             if ("Example8".equals(d.typeInfo().simpleName)) {
-                assertEquals("Type param T",
-                        d.typeAnalysis().getTransparentTypes().toString());
+                assertEquals("Type param T", d.typeAnalysis().getHiddenContentTypes().toString());
                 assertDv(d, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
             }
             // nested in Example8
