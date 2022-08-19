@@ -14,7 +14,8 @@
 
 package org.e2immu.analyser.parser.minor.testexample;
 
-import org.e2immu.annotation.ERContainer;
+
+import org.e2immu.annotation.ImmutableContainer;
 
 import java.util.Set;
 
@@ -23,14 +24,14 @@ public class ExternalImmutable_0 {
     //boolean DynamicTypeAnnotation$Invariant() { return set1.size() == 2; }
     public ExternalImmutable_0() {}
     
-    @ERContainer
+    @ImmutableContainer
     private final Set<String> set1 = Set.of("a", "b");
 
     public void modifySet1() {
         set1.add("b"); // ERROR
     }
 
-    @ERContainer
+    @ImmutableContainer
     public static Set<String> createSet(String a) {
         return Set.of(a);
     }

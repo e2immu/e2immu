@@ -14,11 +14,12 @@
 
 package org.e2immu.analyser.parser.loops.testexample;
 
-import org.e2immu.annotation.Constant;
+
+import org.e2immu.annotation.ImmutableContainer;
 
 public class ConstantRange_1 {
 
-    @Constant("false")
+    @ImmutableContainer("false")
     public static boolean method() {
         for (String s : new String[]{"a", "b"}) {
             if (s.equals("c")) { // should raise error "never true"

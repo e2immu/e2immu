@@ -15,12 +15,14 @@
 package org.e2immu.analyser.parser.failing.testexample;
 
 import org.e2immu.annotation.*;
+import org.e2immu.annotation.eventual.Mark;
+import org.e2immu.annotation.eventual.Only;
 
 import java.util.HashSet;
 import java.util.Set;
 import java.util.stream.Stream;
 
-@E2Container(after = "frozen")
+@ImmutableContainer(after = "frozen")
 public class FreezableSet1 {
 
     private final Set<String> set = new HashSet<>();
@@ -33,7 +35,7 @@ public class FreezableSet1 {
 
     @Only(after = "frozen")
     @NotModified
-    @NotNull1
+    @NotNull(content = true)
     public Stream<String> stream() {
         if (!frozen) throw new UnsupportedOperationException();
         return set.stream();
@@ -41,7 +43,7 @@ public class FreezableSet1 {
 
     @Only(before = "frozen")
     @NotModified
-    @NotNull1
+    @NotNull(content = true)
     public Stream<String> streamEarly() {
         if (frozen) throw new UnsupportedOperationException();
         return set.stream();

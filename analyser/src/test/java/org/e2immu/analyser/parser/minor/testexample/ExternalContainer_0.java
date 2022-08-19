@@ -15,6 +15,7 @@
 package org.e2immu.analyser.parser.minor.testexample;
 
 import org.e2immu.annotation.*;
+import org.e2immu.annotation.rare.IgnoreModifications;
 
 import java.util.function.Consumer;
 
@@ -40,7 +41,7 @@ public class ExternalContainer_0 {
         }
     }
 
-    @E2Immutable(recursive = true) // one method that modifies its parameter!
+    @Immutable // one method that modifies its parameter!
     record MyNonContainer(int value) implements Consumer<I> {
 
         @Override
@@ -64,15 +65,15 @@ public class ExternalContainer_0 {
         }
     }
 
-    @E2Immutable(recursive = true)
+    @Immutable
     private final Consumer<I> myNonContainer = new MyNonContainer(3);
     @Container // computed from the assignment
     private final Consumer<I> myContainer = new MyContainer();
-    @E2Container // computed
+    @ImmutableContainer(hc = true) // computed
     private final Consumer<I> myContainerLinkedToParameter;
 
     // not contracted but computed: the @E2Container property, travels from @E2Container on the field
-    public ExternalContainer_0(@E2Container Consumer<I> consumer) {
+    public ExternalContainer_0(@ImmutableContainer(hc = true) Consumer<I> consumer) {
         this.myContainerLinkedToParameter = consumer;
     }
 

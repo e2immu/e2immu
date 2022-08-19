@@ -25,8 +25,7 @@ Tests transfer of @Modified from method to field to parameter of setter
 @Container(absent = true)
 public class Container_1 {
 
-    @Linked(to = {"setS:p"})
-    @Variable // which trumps @Modified (we only show modification on @Final fields)
+    @Final(absent = true) // which trumps @Modified (we only show modification on @Final fields)
     @Nullable
     private Set<String> s;
 

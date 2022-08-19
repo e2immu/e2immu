@@ -14,7 +14,10 @@
 
 package org.e2immu.analyser.shallow.testexample;
 
-import org.e2immu.annotation.*;
+import org.e2immu.annotation.Container;
+import org.e2immu.annotation.Independent;
+import org.e2immu.annotation.Modified;
+import org.e2immu.annotation.NotNull;
 
 // should raise an error: @Independent versus @Dependent1
 
@@ -27,7 +30,7 @@ public class JavaUtil_0 {
     interface Collection$<E> {
 
         @Modified
-        boolean add(@Independent1 @NotNull E e);
+        boolean add(@Independent(hc = true) @NotNull E e);
 
     }
 }

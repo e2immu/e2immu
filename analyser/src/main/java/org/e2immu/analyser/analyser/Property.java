@@ -167,6 +167,7 @@ public enum Property {
     FLUENT("@Fluent", CauseOfDelay.Cause.FLUENT),
     IDENTITY("@Identity", DV.FALSE_DV, DV.TRUE_DV, DV.FALSE_DV, CauseOfDelay.Cause.IDENTITY, PropertyType.VALUE),
     SINGLETON("@Singleton", CauseOfDelay.Cause.SINGLETON),
+    STATIC_SIDE_EFFECTS("@SSE", CauseOfDelay.Cause.STATIC_SIDE_EFFECTS),
     UTILITY_CLASS("@UtilityClass", CauseOfDelay.Cause.UTILITY_CLASS),
     EXTENSION_CLASS("@ExtensionClass", CauseOfDelay.Cause.EXTENSION_CLASS),
 

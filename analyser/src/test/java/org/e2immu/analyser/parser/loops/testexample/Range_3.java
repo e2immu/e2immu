@@ -14,7 +14,7 @@
 
 package org.e2immu.analyser.parser.loops.testexample;
 
-import org.e2immu.annotation.Constant;
+import org.e2immu.annotation.ImmutableContainer;
 
 // normal ranges, 2nd method: loop variable already exists
 public class Range_3 {
@@ -38,7 +38,7 @@ public class Range_3 {
         }
     }
 
-    @Constant("12")
+    @ImmutableContainer("12")
     public static int method3() {
         int i = 0;
         for (; i < 12; ++i) {
@@ -47,7 +47,7 @@ public class Range_3 {
         return i;
     }
 
-    @Constant("0")
+    @ImmutableContainer("0")
     public static int method4() {
         int i;
         for (i = 13; i >= 0; i--) {
@@ -56,7 +56,7 @@ public class Range_3 {
         return i;
     }
 
-    @Constant("16")
+    @ImmutableContainer("16")
     public static int method5() {
         int i;
         for (i = 0; i < 14; i = i + 4) {

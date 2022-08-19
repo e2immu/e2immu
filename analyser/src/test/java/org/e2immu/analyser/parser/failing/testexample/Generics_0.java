@@ -21,6 +21,8 @@ import java.util.List;
 
 public class Generics_0 {
 
+    // X mutable!
+
     @Container
     @Independent
     static class X {
@@ -42,38 +44,31 @@ public class Generics_0 {
         }
     }
 
-    @E2Container
+    @Container
+    @FinalFields
     static class XSTransparent {
 
-        @Linked1(to = "collection")
-        @E2Container
         private final List<X> list;
 
         public XSTransparent(@Independent Collection<X> collection) {
             list = List.copyOf(collection);
         }
 
-        @E2Container
-        @Independent1
         public List<X> getList() {
             return list;
         }
     }
 
-    @E1Container // @Dependent
+    @FinalFields // @Dependent
     static class XSRead {
 
-        @Linked(to = "collection")
-        @E2Container
         @Modified
         private final List<X> list;
 
-        public XSRead(@Dependent Collection<X> collection) {
+        public XSRead(Collection<X> collection) {
             list = List.copyOf(collection);
         }
 
-        @E2Container
-        @Dependent
         public List<X> getList() {
             return list;
         }
@@ -85,20 +80,16 @@ public class Generics_0 {
         }
     }
 
-    @E1Container // @Dependent
+    @FinalFields // @Dependent
     static class XSWrite {
 
-        @Linked(to = "collection")
-        @E2Container
         @Modified
         private final List<X> list;
 
-        public XSWrite(@Dependent Collection<X> collection) {
+        public XSWrite(Collection<X> collection) {
             list = List.copyOf(collection);
         }
 
-        @E2Container
-        @Dependent
         public List<X> getList() {
             return list;
         }

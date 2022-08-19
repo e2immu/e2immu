@@ -14,14 +14,14 @@
 
 package org.e2immu.analyser.parser.failing.testexample;
 
-import org.e2immu.annotation.E2Container;
+import org.e2immu.annotation.ImmutableContainer;
 import org.e2immu.annotation.NotNull;
 
 // causes scope equality problems (expands into Extended.this.name and ClassWithConsumer.this.name)
 
 public class PropagateModification_7 {
 
-    @E2Container
+    @ImmutableContainer(hc = true)
     abstract static class ClassWithConsumer<T> {
         private final String name;
 

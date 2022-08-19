@@ -89,6 +89,7 @@ public interface CauseOfDelay extends Comparable<CauseOfDelay> {
         SINGLE_RETURN_VALUE("srv", "single return value not yet set", HIGH),
         SINGLETON("singleton", ""),
         STATE_DELAYED("state", "variable cannot get value because state is delayed", HIGH),
+        STATIC_SIDE_EFFECTS("sse", "static side effects to be determined"),
         TEMP_MM("temp_mm", "Temporary modified method"),
         TO_IMPLEMENT("to_implement", "Temporary; needs implementation"),
         TYPE_ANALYSIS("type_analysis", "Type analysis missing", HIGH),

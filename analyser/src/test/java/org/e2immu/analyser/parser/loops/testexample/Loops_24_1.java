@@ -14,7 +14,7 @@
 
 package org.e2immu.analyser.parser.loops.testexample;
 
-import org.e2immu.annotation.NotNull1;
+import org.e2immu.annotation.NotNull;
 
 import java.util.Set;
 
@@ -23,10 +23,10 @@ import java.util.Set;
 
 public class Loops_24_1 {
 
-    @NotNull1
+    @NotNull(content = true)
     private final Set<String> set;
 
-    public Loops_24_1(@NotNull1 Set<String> set) {
+    public Loops_24_1(@NotNull(content = true) Set<String> set) {
         this.set = set;
     }
 

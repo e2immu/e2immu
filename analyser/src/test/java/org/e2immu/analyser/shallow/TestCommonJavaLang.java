@@ -39,7 +39,7 @@ public class TestCommonJavaLang extends CommonAnnotatedAPI {
     public void testClass() {
         TypeInfo typeInfo = typeContext.getFullyQualified(Class.class);
         TypeAnalysis objectAnalysis = typeInfo.typeAnalysis.get();
-        testERContainerType(objectAnalysis);
+        testImmutableContainerType(objectAnalysis, false);
 
         MethodInfo methodInfo = typeInfo.findUniqueMethod("getAnnotatedInterfaces", 0);
         MethodAnalysis methodAnalysis = methodInfo.methodAnalysis.get();
@@ -55,14 +55,14 @@ public class TestCommonJavaLang extends CommonAnnotatedAPI {
     public void testObject() {
         TypeInfo object = typeContext.getFullyQualified(Object.class);
         TypeAnalysis objectAnalysis = object.typeAnalysis.get();
-        testERContainerType(objectAnalysis);
+        testImmutableContainerType(objectAnalysis, true);
     }
 
     @Test
     public void testString() {
         TypeInfo string = typeContext.getFullyQualified(String.class);
         TypeAnalysis typeAnalysis = string.typeAnalysis.get();
-        testERContainerType(typeAnalysis);
+        testImmutableContainerType(typeAnalysis, false);
     }
 
     @Test
@@ -98,6 +98,7 @@ public class TestCommonJavaLang extends CommonAnnotatedAPI {
         TypeInfo sb = typeContext.getFullyQualified(StringBuilder.class);
         TypeAnalysis typeAnalysis = sb.typeAnalysis.get();
 
+        // append(boolean)
         {
             MethodInfo appendBoolean = sb.typeInspection.get().methodStream(TypeInspection.Methods.THIS_TYPE_ONLY)
                     .filter(m -> "append".equals(m.name))
@@ -118,6 +119,8 @@ public class TestCommonJavaLang extends CommonAnnotatedAPI {
             assertEquals(DV.FALSE_DV, p0.getProperty(Property.MODIFIED_VARIABLE));
             assertThrows(PropertyException.class, () -> p0.getProperty(Property.MODIFIED_METHOD));
         }
+
+        // append(String)
         {
             MethodInfo appendString = sb.findUniqueMethod("append",
                     typeContext.getPrimitives().stringTypeInfo());
@@ -156,16 +159,16 @@ public class TestCommonJavaLang extends CommonAnnotatedAPI {
 
     @Test
     public void testCharSequence() {
-        TypeInfo string = typeContext.getFullyQualified(String.class);
-        TypeAnalysis typeAnalysis = string.typeAnalysis.get();
-        testERContainerType(typeAnalysis);
+        TypeInfo charSequence = typeContext.getFullyQualified(CharSequence.class);
+        TypeAnalysis typeAnalysis = charSequence.typeAnalysis.get();
+        testImmutableContainerType(typeAnalysis, true);
     }
 
     @Test
     public void testComparable() {
         TypeInfo typeInfo = typeContext.getFullyQualified(Comparable.class);
         TypeAnalysis typeAnalysis = typeInfo.typeAnalysis.get();
-        testERContainerType(typeAnalysis);
+        testImmutableContainerType(typeAnalysis, true);
 
         MethodInfo compareTo = typeInfo.findUniqueMethod("compareTo", 1);
         MethodAnalysis methodAnalysis = compareTo.methodAnalysis.get();
@@ -191,7 +194,15 @@ public class TestCommonJavaLang extends CommonAnnotatedAPI {
     public void testSerializable() {
         TypeInfo typeInfo = typeContext.getFullyQualified(Serializable.class);
         TypeAnalysis typeAnalysis = typeInfo.typeAnalysis.get();
-        testERContainerType(typeAnalysis);
+        testImmutableContainerType(typeAnalysis, true);
+    }
+
+    @Test
+    public void testAutoCloseable() {
+        TypeInfo typeInfo = typeContext.getFullyQualified(AutoCloseable.class);
+        TypeAnalysis typeAnalysis = typeInfo.typeAnalysis.get();
+        assertEquals(MultiLevel.INDEPENDENT_DV, typeAnalysis.getProperty(Property.INDEPENDENT));
+        assertEquals(DV.TRUE_DV, typeAnalysis.getProperty(Property.CONTAINER));
     }
 
     @Test
@@ -202,7 +213,15 @@ public class TestCommonJavaLang extends CommonAnnotatedAPI {
     }
 
     @Test
-    public void testCollectionForEach() {
+    public void testAppendableAppend() {
+        TypeInfo typeInfo = typeContext.getFullyQualified(Appendable.class);
+        MethodInfo methodInfo = typeInfo.findUniqueMethod("append", 3);
+        ParameterAnalysis p0 = methodInfo.methodAnalysis.get().getParameterAnalyses().get(0);
+        assertEquals(MultiLevel.INDEPENDENT_DV, p0.getProperty(Property.INDEPENDENT));
+    }
+
+    @Test
+    public void testIterableForEach() {
         TypeInfo typeInfo = typeContext.getFullyQualified(Iterable.class);
         MethodInfo methodInfo = typeInfo.findUniqueMethod("forEach", 1);
         assertEquals("java.lang.Iterable.forEach(java.util.function.Consumer<? super T>)",

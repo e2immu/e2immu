@@ -22,7 +22,8 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Stream;
 
-@E1Immutable // not a container, see "add"'s parameter; getBase is dependent
+@FinalFields
+@Container(absent = true) // not a container, see "add"'s parameter; getBase is dependent
 public class InstanceOf_3 {
 
     @NotModified

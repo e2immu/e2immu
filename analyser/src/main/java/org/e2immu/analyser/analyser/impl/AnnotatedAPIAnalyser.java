@@ -260,8 +260,16 @@ public class AnnotatedAPIAnalyser implements AnalyserContext {
     private void hardcodedCrucialClasses() {
         for (Class<?> clazz : new Class[]{Object.class,  // every class derives from Object
                 Annotation.class, // every annotation derives from Annotation
-                Enum.class, // every enum type derives from Enum
-                String.class, // every toString method
+                Enum.class}) {// every enum type derives from Enum
+            TypeInfo typeInfo = typeMap.get(clazz);
+            TypeAnalysisImpl.Builder typeAnalysis = (TypeAnalysisImpl.Builder) typeAnalyses.get(typeInfo);
+            typeAnalysis.setProperty(Property.INDEPENDENT, MultiLevel.INDEPENDENT_1_DV);
+            typeAnalysis.setProperty(Property.IMMUTABLE, MultiLevel.EFFECTIVELY_E2IMMUTABLE_DV);
+            typeAnalysis.setProperty(Property.CONTAINER, MultiLevel.CONTAINER_DV);
+            typeAnalysis.setImmutableCanBeIncreasedByTypeParameters(false);
+        }
+        for (Class<?> clazz : new Class[]{
+                String.class,
                 Double.class, Boolean.class, Character.class,
                 Integer.class, Short.class, Float.class,
                 Void.class, Byte.class,
@@ -543,7 +551,10 @@ public class AnnotatedAPIAnalyser implements AnalyserContext {
                                      TypeAnalysisImpl.Builder typeAnalysisBuilder,
                                      E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions) {
         TypeInspection typeInspection = typeInfo.typeInspection.get();
-        messages.addAll(typeAnalysisBuilder.fromAnnotationsIntoProperties(Analyser.AnalyserIdentification.TYPE,
+        Analyser.AnalyserIdentification identification = typeInfo.isAbstract()
+                ? Analyser.AnalyserIdentification.ABSTRACT_TYPE
+                : Analyser.AnalyserIdentification.TYPE;
+        messages.addAll(typeAnalysisBuilder.fromAnnotationsIntoProperties(identification,
                 true, typeInspection.getAnnotations(), e2ImmuAnnotationExpressions));
 
         ComputingTypeAnalyser.findAspects(typeAnalysisBuilder, typeInfo);

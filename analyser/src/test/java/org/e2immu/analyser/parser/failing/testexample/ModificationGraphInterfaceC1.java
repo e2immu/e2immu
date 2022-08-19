@@ -15,14 +15,14 @@
 package org.e2immu.analyser.parser.failing.testexample;
 
 import org.e2immu.annotation.Container;
+import org.e2immu.annotation.Final;
 import org.e2immu.annotation.Modified;
 import org.e2immu.annotation.NotModified;
-import org.e2immu.annotation.Variable;
 
 @Container
 class ModificationGraphInterfaceC1 {
 
-    @Variable
+    @Final(absent = true)
     private int i;
 
     @Modified

@@ -20,7 +20,7 @@ import java.util.function.Consumer;
 
 @Container
 public class Independent1_0<T> {
-    @Variable
+    @Final(absent = true)
     @NotModified
     private T t;
 
@@ -39,7 +39,7 @@ public class Independent1_0<T> {
     }
 
     @NotModified
-    public void visit(@Independent1 Consumer<T> consumer) {
+    public void visit(@Independent(hc = true) Consumer<T> consumer) {
         consumer.accept(t);
     }
 }

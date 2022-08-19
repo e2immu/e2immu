@@ -44,14 +44,14 @@ public class DynamicContainer_0 {
      * the parameters in the implicit accept method.
      */
     @NotModified
-    @E2Immutable
+    @Immutable
     private static final Consumer<Counter> incrementer = Counter::increment;
 
     /**
      * In its explicit form, the annotation @Modified is visible.
      */
     @NotModified
-    @E2Immutable
+    @Immutable
     private static final Consumer<Counter> explicitIncrementer = new Consumer<Counter>() {
         @Override
         @NotModified
@@ -64,14 +64,14 @@ public class DynamicContainer_0 {
      * Again invisible; but now there is no change to the parameter of accept, so the anonymous type is a container.
      */
     @NotModified
-    @E2Container
+    @ImmutableContainer
     private static final Consumer<Counter> printer = counter -> System.out.println("Have " + counter.getCounter());
 
     /**
      * ... and now visible. The concrete implementation makes no changes, the anonymous type is a container.
      */
     @NotModified
-    @E2Container
+    @ImmutableContainer
     private static final Consumer<Counter> explicitPrinter = new Consumer<Counter>() {
         @Override
         @NotModified

@@ -14,7 +14,7 @@
 
 package org.e2immu.analyser.parser.loops.testexample;
 
-import org.e2immu.annotation.NotNull1;
+import org.e2immu.annotation.NotNull;
 
 import java.util.List;
 
@@ -23,10 +23,10 @@ import java.util.List;
 
 public class Loops_24_2 {
 
-    @NotNull1
+    @NotNull(content = true)
     private final List<String> list;
 
-    public Loops_24_2(@NotNull1 List<String> list) {
+    public Loops_24_2(@NotNull(content = true) List<String> list) {
         this.list = list;
     }
 

@@ -14,9 +14,9 @@
 
 package org.e2immu.analyser.parser.minor.testexample;
 
+import org.e2immu.annotation.Final;
 import org.e2immu.annotation.NotModified;
 import org.e2immu.annotation.Nullable;
-import org.e2immu.annotation.Variable;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -26,7 +26,7 @@ import java.util.Map;
 
 public class StaticBlock_3 {
 
-    @Variable
+    @Final(absent = true)
     @Nullable
     private static Map<String, String> map;
 

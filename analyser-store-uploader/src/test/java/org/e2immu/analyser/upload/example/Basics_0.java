@@ -18,13 +18,13 @@ import org.e2immu.annotation.*;
 
 import java.util.Set;
 
-@E1Immutable
+@FinalFields
 public class Basics_0 {
 
     private final Set<String> strings;
     private final String explicitlyFinal = "abc";
 
-    @Dependent
+    @Independent(absent = true)
     public Basics_0(@Modified Set<String> in) {
         strings = in;
     }

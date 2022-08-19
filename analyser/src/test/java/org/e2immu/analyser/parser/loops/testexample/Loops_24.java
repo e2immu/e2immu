@@ -14,7 +14,7 @@
 
 package org.e2immu.analyser.parser.loops.testexample;
 
-import org.e2immu.annotation.NotNull1;
+import org.e2immu.annotation.NotNull;
 
 import java.util.Map;
 
@@ -25,10 +25,10 @@ import java.util.Map;
 // there is no mechanism yet (2022 05 28) for Map.Entry to become @NotNull1
 public class Loops_24 {
 
-    @NotNull1
+    @NotNull(content = true)
     private final Map<String, Integer> map;
 
-    public Loops_24(@NotNull1 Map<String, Integer> map) {
+    public Loops_24(@NotNull(content = true) Map<String, Integer> map) {
         this.map = map;
     }
 

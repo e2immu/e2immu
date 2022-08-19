@@ -123,8 +123,10 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
         }
 
         analyserComponents = builder.setLimitCausesOfDelay(true).build();
-
-        analyserResultBuilder.addMessages(typeAnalysis.fromAnnotationsIntoProperties(AnalyserIdentification.TYPE,
+        Analyser.AnalyserIdentification identification = typeInfo.isAbstract()
+                ? Analyser.AnalyserIdentification.ABSTRACT_TYPE
+                : Analyser.AnalyserIdentification.TYPE;
+        analyserResultBuilder.addMessages(typeAnalysis.fromAnnotationsIntoProperties(identification,
                 typeInfo.isInterface(),
                 typeInspection.getAnnotations(),
                 analyserContext.getE2ImmuAnnotationExpressions()));

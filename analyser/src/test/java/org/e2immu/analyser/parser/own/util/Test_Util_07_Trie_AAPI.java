@@ -25,7 +25,7 @@ import org.e2immu.analyser.parser.CommonTestRunner;
 import org.e2immu.analyser.util.Trie;
 import org.e2immu.analyser.visitor.MethodAnalyserVisitor;
 import org.e2immu.analyser.visitor.TypeMapVisitor;
-import org.e2immu.annotation.Only;
+import org.e2immu.annotation.eventual.Only;
 import org.e2immu.support.Freezable;
 import org.junit.jupiter.api.Test;
 

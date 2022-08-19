@@ -27,7 +27,7 @@ public class FunctionalInterface_5<T> {
     @NotModified
     private final Set<T> ts;
 
-    @Variable
+    @Final(absent = true)
     private int counter;
 
     @Modified

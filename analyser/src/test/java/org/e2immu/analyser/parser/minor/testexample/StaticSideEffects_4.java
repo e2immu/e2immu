@@ -14,13 +14,13 @@
 
 package org.e2immu.analyser.parser.minor.testexample;
 
-import org.e2immu.annotation.E2Container;
-import org.e2immu.annotation.IgnoreModifications;
+import org.e2immu.annotation.ImmutableContainer;
+import org.e2immu.annotation.rare.IgnoreModifications;
 import org.e2immu.annotation.NotModified;
 
 import java.util.concurrent.atomic.AtomicInteger;
 
-@E2Container
+@ImmutableContainer(hc = true)
 public class StaticSideEffects_4<K> {
     private final K k;
 

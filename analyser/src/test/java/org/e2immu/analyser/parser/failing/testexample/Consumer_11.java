@@ -15,6 +15,7 @@
 package org.e2immu.analyser.parser.failing.testexample;
 
 import org.e2immu.annotation.*;
+import org.e2immu.annotation.rare.IgnoreModifications;
 import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
@@ -33,23 +34,21 @@ public class Consumer_11 {
         void accept(T t);
     }
 
-    @E1Container
+    @FinalFields
+    @Container
     static class MyList<T> {
 
-        @Linked1(to = {"MyList:0:collection", "MyList:0:list", "add:0:t"})
         private final List<T> list;
 
         public MyList() {
             list = new ArrayList<>();
         }
 
-        @Independent
-        public MyList(@Independent1 Collection<? extends T> collection) { // inherited from ArrayList constructor
+        public MyList(@Independent(hc = true) Collection<? extends T> collection) { // inherited from ArrayList constructor
             list = new ArrayList<>(collection);
         }
 
-        @Independent
-        public MyList(@Independent1 List<? extends T> list) {
+        public MyList(@Independent(hc = true) List<? extends T> list) {
             this.list = new ArrayList<>();
             for (T t : list) { // t tied to list
                 add(t);  // and t tied to this.list, so implies @Dependent2 on list
@@ -67,14 +66,14 @@ public class Consumer_11 {
         }
 
         @NotModified
-        public void forEach(@IgnoreModifications @Independent1 MyConsumer<T> consumer) {
+        public void forEach(@IgnoreModifications @Independent(hc = true) MyConsumer<T> consumer) {
             for (T t : list) { // t tied to list
                 consumer.accept(t); // and tied to consumer, so @Dep2
             }
         }
 
         @NotModified
-        @Independent1
+        @Independent(hc = true)
         public Stream<T> stream() {
             return list.stream();
         }

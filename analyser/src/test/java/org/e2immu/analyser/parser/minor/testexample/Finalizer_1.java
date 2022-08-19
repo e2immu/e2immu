@@ -14,10 +14,15 @@
 
 package org.e2immu.analyser.parser.minor.testexample;
 
-import org.e2immu.annotation.*;
+import org.e2immu.annotation.ImmutableContainer;
+import org.e2immu.annotation.Modified;
+import org.e2immu.annotation.eventual.BeforeMark;
+import org.e2immu.annotation.eventual.Mark;
+import org.e2immu.annotation.eventual.Only;
+import org.e2immu.annotation.rare.Finalizer;
 import org.e2immu.support.EventuallyFinal;
 
-@E2Immutable(recursive = true, after = "eventuallyFinal")
+@ImmutableContainer(after = "eventuallyFinal")
 public class Finalizer_1 {
 
     /*
@@ -47,7 +52,7 @@ public class Finalizer_1 {
     }
 
     @Finalizer
-    @ERContainer
+    @ImmutableContainer
     @Mark("eventuallyFinal")
     public EventuallyFinal<String> done(String last) {
         eventuallyFinal.setFinal(last + "; tried " + count);

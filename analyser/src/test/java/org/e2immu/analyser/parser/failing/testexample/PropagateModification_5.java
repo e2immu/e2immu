@@ -22,20 +22,19 @@ Type T[] is not -> ts part of support data
 myFunction sits somewhere in between
 
  */
-@E1Container
+@FinalFields
 public class PropagateModification_5<T, S> {
 
-    @Independent1
+    @Independent(hc = true)
     private final MyFunction<T, S> myFunction;
-    @Linked(to = {"PropagateModification:0:ts"})
     private final T[] ts;
 
     interface MyFunction<T, S> {
         S apply(T t);
     }
 
-    @Dependent // because of ts
-    public PropagateModification_5(T[] ts, @Independent1 MyFunction<T, S> myFunction) {
+    @Independent(absent = true) // because of ts
+    public PropagateModification_5(T[] ts, @Independent(hc = true) MyFunction<T, S> myFunction) {
         this.myFunction = myFunction;
         this.ts = ts;
     }

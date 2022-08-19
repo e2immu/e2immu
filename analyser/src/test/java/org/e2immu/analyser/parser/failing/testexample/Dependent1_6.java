@@ -14,7 +14,7 @@
 
 package org.e2immu.analyser.parser.failing.testexample;
 
-import org.e2immu.annotation.E2Container;
+import org.e2immu.annotation.ImmutableContainer;
 import org.e2immu.annotation.Independent;
 
 import java.util.ArrayList;
@@ -25,7 +25,7 @@ Test the dependency graph in content linking: works across statically assigned v
 and linked variables.
  */
 
-@E2Container
+@ImmutableContainer(hc = true)
 public class Dependent1_6<T> {
 
     private final List<T> list;

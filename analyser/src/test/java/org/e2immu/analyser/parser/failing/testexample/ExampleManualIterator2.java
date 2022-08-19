@@ -31,7 +31,7 @@ public class ExampleManualIterator2<E> {
     @NotModified
     private final List<E> list = new ArrayList<>();
 
-    @Variable
+    @Final(absent = true)
     private int someCounter;
 
     public int incrementAndGet() {

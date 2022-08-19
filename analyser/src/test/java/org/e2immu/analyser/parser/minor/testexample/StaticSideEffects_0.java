@@ -14,13 +14,15 @@
 
 package org.e2immu.analyser.parser.minor.testexample;
 
-import org.e2immu.annotation.E1Container;
+import org.e2immu.annotation.Container;
+import org.e2immu.annotation.FinalFields;
 import org.e2immu.annotation.Modified;
 
 import java.util.concurrent.atomic.AtomicInteger;
 
 // no static side effects: inside type; modification inside constructor
-@E1Container
+@FinalFields
+@Container
 public class StaticSideEffects_0<K> {
     public final K k;
     public final int count;

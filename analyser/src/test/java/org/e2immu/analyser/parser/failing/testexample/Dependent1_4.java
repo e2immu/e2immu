@@ -14,9 +14,9 @@
 
 package org.e2immu.analyser.parser.failing.testexample;
 
-import org.e2immu.annotation.E1Container;
+import org.e2immu.annotation.Container;
+import org.e2immu.annotation.FinalFields;
 import org.e2immu.annotation.Independent;
-import org.e2immu.annotation.Independent1;
 import org.e2immu.annotation.Modified;
 
 /*
@@ -25,14 +25,16 @@ Variant on Dependent1_3, but now mutable.
 Note that get() is modified! Ignoring the modification of the method can only be done
 in the case of parameters (see ForEachMethod examples).
  */
-@E1Container
+@FinalFields
+@Container
 public class Dependent1_4<T> {
 
     @Modified
     private final MySupplier<T> mySupplier;
 
     // both type annotations are or can be computed
-    @E1Container
+    @FinalFields
+    @Container
     @Independent
     interface MySupplier<T> {
         // we mark that get is @Modified, and returns content linked to the fields of the implementation
@@ -50,7 +52,7 @@ public class Dependent1_4<T> {
 
     // modified because get() is a modifying method
     @Modified
-    @Independent1 // because returns immutable content of a field, using a method
+    @Independent(hc = true) // because returns immutable content of a field, using a method
     public T get() {
         return mySupplier.get();
     }

@@ -14,7 +14,7 @@
 
 package org.e2immu.analyser.parser.minor.testexample;
 
-import org.e2immu.annotation.E1Immutable;
+import org.e2immu.annotation.FinalFields;
 import org.e2immu.annotation.Modified;
 import org.e2immu.annotation.NotModified;
 
@@ -22,7 +22,7 @@ import org.e2immu.annotation.NotModified;
 so while T is an unbound type parameter, the transparency promise is broken by the use
 of a cast in the incrementedT method
  */
-@E1Immutable
+@FinalFields
 public class Cast_1<T> {
 
     static class Counter {

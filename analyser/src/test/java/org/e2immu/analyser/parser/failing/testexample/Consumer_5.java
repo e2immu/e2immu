@@ -14,15 +14,16 @@
 
 package org.e2immu.analyser.parser.failing.testexample;
 
-import org.e2immu.annotation.E2Container;
-import org.e2immu.annotation.Independent1;
+
+import org.e2immu.annotation.ImmutableContainer;
+import org.e2immu.annotation.Independent;
 import org.e2immu.annotation.Modified;
 import org.e2immu.annotation.NotModified;
 
 /*
 Exact copy of ForEachMethod_0, but with other names.
  */
-@E2Container // computed
+@ImmutableContainer(hc = true) // computed
 public class Consumer_5<S> {
 
     // implicitly: @E1Container
@@ -39,7 +40,7 @@ public class Consumer_5<S> {
 
     // set is @Modified, the normal way of working.
     @NotModified
-    public void addToSet(@Modified @Independent1 Set<S> set) {
+    public void addToSet(@Modified @Independent(hc = true) Set<S> set) {
         set.add(s);
     }
 

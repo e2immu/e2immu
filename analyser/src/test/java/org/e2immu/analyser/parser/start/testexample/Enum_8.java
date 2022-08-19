@@ -14,7 +14,7 @@
 
 package org.e2immu.analyser.parser.start.testexample;
 
-import org.e2immu.annotation.Constant;
+import org.e2immu.annotation.ImmutableContainer;
 
 public class Enum_8 {
     public enum Position {
@@ -27,7 +27,7 @@ public class Enum_8 {
         }
     }
 
-    @Constant("S")
+    @ImmutableContainer("S")
     public static String getMessage() {
         return Position.START.msg;
     }

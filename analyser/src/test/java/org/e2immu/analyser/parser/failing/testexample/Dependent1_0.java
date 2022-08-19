@@ -14,7 +14,8 @@
 
 package org.e2immu.analyser.parser.failing.testexample;
 
-import org.e2immu.annotation.*;
+import org.e2immu.annotation.Final;
+import org.e2immu.annotation.Independent;
 
 /*
 first test, direct assignment to fields
@@ -22,18 +23,14 @@ first test, direct assignment to fields
 public class Dependent1_0<T> {
 
     // and not @Linked, because T is unbound in this type
-    @Linked1(to = {"Dependent1_0:t"})
     @Final
     private T t;
 
-    // @Independent1 implicitly on t
-    public Dependent1_0(T t) {
+    public Dependent1_0(@Independent(hc = true) T t) {
         this.t = t;
     }
 
-    //@Independent1 implicitly
-    @Independent(absent = true)
-    @Dependent(absent = true)
+    @Independent(hc = true)
     public T getT() {
         return t;
     }

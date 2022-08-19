@@ -23,7 +23,7 @@ import java.util.function.*;
 import java.util.stream.Collector;
 import java.util.stream.Collectors;
 
-@E1Container
+@ImmutableContainer
 public class OutputBuilderSimplified_7 {
     interface OutputElement {
         default String debug() {
@@ -31,7 +31,7 @@ public class OutputBuilderSimplified_7 {
         }
     }
 
-    @ERContainer
+    @ImmutableContainer
     static class Space implements OutputElement {
         static final Space NONE = new Space();
     }

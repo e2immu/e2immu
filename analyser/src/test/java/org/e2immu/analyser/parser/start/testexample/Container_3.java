@@ -26,14 +26,13 @@ public class Container_3 {
     // this is not a @Container @Final @NotModified, because strings can be set multiple times, and can be modified
 
     // important: not linked to p
-    @Linked(absent = true)
     @NotModified(absent = true)
-    @Variable
+    @Final(absent = true)
     @Nullable
     private Set<String> s;
 
     @Modified
-    public void setS(@NotModified @NotNull1 Set<String> p) {
+    public void setS(@NotModified @NotNull(content = true) Set<String> p) {
         this.s = new HashSet<>(p);
     }
 

@@ -40,15 +40,18 @@ public interface Analyser extends Comparable<Analyser> {
     }
 
     enum AnalyserIdentification {
-        TYPE(null), // type does not have notNull
-        FIELD(Property.EXTERNAL_NOT_NULL),
-        PARAMETER(Property.NOT_NULL_PARAMETER),
-        METHOD(Property.NOT_NULL_EXPRESSION);
+        TYPE(null, false), // type does not have notNull
+        ABSTRACT_TYPE(null, true), // type does not have notNull
+        FIELD(Property.EXTERNAL_NOT_NULL, false),
+        PARAMETER(Property.NOT_NULL_PARAMETER, false),
+        METHOD(Property.NOT_NULL_EXPRESSION, false);
 
         public final Property notNull;
+        public final boolean isAbstract;
 
-        AnalyserIdentification(Property notNull) {
+        AnalyserIdentification(Property notNull, boolean isAbstract) {
             this.notNull = notNull;
+            this.isAbstract = isAbstract;
         }
     }
 

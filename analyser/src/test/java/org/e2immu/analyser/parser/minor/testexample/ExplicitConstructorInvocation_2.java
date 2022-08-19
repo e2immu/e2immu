@@ -14,13 +14,13 @@
 
 package org.e2immu.analyser.parser.minor.testexample;
 
-import org.e2immu.annotation.Constant;
 import org.e2immu.annotation.Final;
+import org.e2immu.annotation.ImmutableContainer;
 import org.e2immu.annotation.NotNull;
 
 public class ExplicitConstructorInvocation_2 {
 
-    @Constant("abc")
+    @ImmutableContainer("abc")
     @NotNull
     @Final
     private String s;
@@ -33,7 +33,7 @@ public class ExplicitConstructorInvocation_2 {
         s = sp;
     }
 
-    @Constant("abc")
+    @ImmutableContainer("abc")
     public String getS() {
         return s;
     }

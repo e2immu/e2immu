@@ -15,6 +15,8 @@
 package org.e2immu.analyser.parser.minor.testexample;
 
 import org.e2immu.annotation.*;
+import org.e2immu.annotation.eventual.BeforeMark;
+import org.e2immu.annotation.rare.Finalizer;
 import org.e2immu.support.EventuallyFinal;
 
 public class Finalizer_3 {
@@ -45,14 +47,14 @@ public class Finalizer_3 {
         }
     }
 
-    @E2Container
+    @ImmutableContainer
     public static EventuallyFinal<String> fluent() {
         EventuallyFinal<String> d = new OpenEventual().set("a").doSomething().set("b").doSomething().getData();
         d.setFinal("x");
         return d;
     }
 
-    @E2Container
+    @ImmutableContainer
     public static EventuallyFinal<String> stepWise() {
         OpenEventual o = new OpenEventual();
         o.set("a");
@@ -87,7 +89,7 @@ public class Finalizer_3 {
 
         /* we can only call the finalizer in a finalizer */
         @Finalizer
-        @E2Container
+        @ImmutableContainer
         public EventuallyFinal<String> getDataOfOpenEventual() {
             return openEventual.getData();
         }

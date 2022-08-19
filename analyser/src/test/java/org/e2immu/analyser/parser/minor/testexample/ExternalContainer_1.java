@@ -15,7 +15,7 @@
 package org.e2immu.analyser.parser.minor.testexample;
 
 import org.e2immu.annotation.Container;
-import org.e2immu.annotation.E2Immutable;
+import org.e2immu.annotation.Immutable;
 import org.e2immu.annotation.Modified;
 import org.e2immu.annotation.NotModified;
 
@@ -45,7 +45,7 @@ public class ExternalContainer_1 {
         }
     }
 
-    @E2Immutable(recursive = true)
+    @Immutable
     record MyNonContainer(int value) implements Consumer<I> {
 
         @Override

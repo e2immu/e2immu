@@ -15,6 +15,9 @@
 package org.e2immu.analyser.parser.failing.testexample;
 
 import org.e2immu.annotation.*;
+import org.e2immu.annotation.eventual.BeforeMark;
+import org.e2immu.annotation.eventual.Mark;
+import org.e2immu.annotation.eventual.Only;
 
 import java.util.Collection;
 import java.util.HashSet;
@@ -76,10 +79,10 @@ import java.util.Set;
  */
 
 
-@E2Immutable
+@Immutable
 public class ImmutabilityAnnotations {
 
-    @E1Immutable(after = "frozen")
+    @FinalFields(after = "frozen")
     static class FreezableSet {
         @Final(after = "frozen")
         private boolean frozen;
@@ -91,7 +94,6 @@ public class ImmutabilityAnnotations {
             this.strings = new HashSet<>(list);
         }
 
-        @Dependent
         public FreezableSet(Set<String> set) {
             this.strings = set;
         }
@@ -115,14 +117,14 @@ public class ImmutabilityAnnotations {
             this.strings.addAll(input);
         }
 
-        @Dependent
+        @Independent(absent = true)
         public Set<String> mix(@Modified Set<String> mixer) {
             mixer.addAll(strings);
             return strings;
         }
 
         @Independent
-        @E2Container
+        @ImmutableContainer
         public Set<String> copy() {
             return Set.copyOf(strings);
         }
@@ -136,7 +138,7 @@ public class ImmutabilityAnnotations {
         return new FreezableSet(list);
     }
 
-    @E1Immutable
+    @FinalFields
     @NotModified
     @NotNull
     private static FreezableSet generateAfter() {
@@ -150,9 +152,9 @@ public class ImmutabilityAnnotations {
         set.add(1);
     }
 
-    @MutableModifiesArguments
+    @FinalFields(absent = true)
     private static class VariableType<T> {
-        @Variable
+        @Final(absent = true)
         T t;
 
         @Modified
@@ -166,7 +168,7 @@ public class ImmutabilityAnnotations {
         }
     }
 
-    @E1Immutable
+    @FinalFields
     static class ManyTs<T> {
         @NotNull
         @NotModified

@@ -14,7 +14,8 @@
 
 package org.e2immu.analyser.parser.own.util.testexample;
 
-import org.e2immu.annotation.E1Container;
+import org.e2immu.annotation.Container;
+import org.e2immu.annotation.FinalFields;
 import org.e2immu.annotation.NotNull;
 
 import java.util.HashMap;
@@ -26,7 +27,8 @@ subtype for initialisation, 1.0.1 evaluates to Boolean TRUE, as node.map is neve
 assigned the new HashMap value...
 This means that 1.0.1.1.0 is never executed!
  */
-@E1Container
+@FinalFields
+@Container
 public class TrieSimplified_0<T> {
 
     private final TrieNode<T> root = new TrieNode<>();

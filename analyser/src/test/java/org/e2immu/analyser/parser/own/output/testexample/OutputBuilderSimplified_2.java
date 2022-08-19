@@ -14,7 +14,9 @@
 
 package org.e2immu.analyser.parser.own.output.testexample;
 
-import org.e2immu.annotation.E1Container;
+
+import org.e2immu.annotation.Container;
+import org.e2immu.annotation.FinalFields;
 
 import java.util.LinkedList;
 import java.util.List;
@@ -22,7 +24,7 @@ import java.util.List;
 /*
 infinite loop on IMMUTABLE (but that was not what we're looking for)
  */
-@E1Container
+@FinalFields @Container
 public class OutputBuilderSimplified_2 {
 
     final List<String> list = new LinkedList<>();

@@ -14,35 +14,33 @@
 
 package org.e2immu.analyser.parser.failing.testexample;
 
-import org.e2immu.annotation.E2Container;
+import org.e2immu.annotation.ImmutableContainer;
 import org.e2immu.annotation.Independent;
-import org.e2immu.annotation.Independent1;
 import org.e2immu.annotation.NotModified;
 
 /*
 In this example, the type holds an abstract type (a Supplier).
 As opposed to example 4, this Supplier is level 2 immutable.
  */
-@E2Container
+@ImmutableContainer(hc = true)
 public class Dependent1_3<T> {
 
     @NotModified
     private final MySupplier<T> mySupplier;
 
-    @E2Container // contracted, implies that get is @NotModified, @Independent
+    @ImmutableContainer // contracted, hc=true automatic, implies that get is @NotModified, @Independent
     interface MySupplier<T> {
         // we go a little further here, and stipulate that T is content-linked to the fields of the supplier
-        // @Independent1 implicitly
+        // @Independent(hc=true implicitly
         T get();
     }
 
-    @Independent // not @Dependent1 because mySupplier is not transparent!
     public Dependent1_3(MySupplier<T> mySupplier) {
         this.mySupplier = mySupplier;
     }
 
     @NotModified
-    @Independent1 // because returns immutable content of a field, using a method
+    @Independent(hc = true) // because returns immutable content of a field, using a method
     public T get() {
         return mySupplier.get();
     }

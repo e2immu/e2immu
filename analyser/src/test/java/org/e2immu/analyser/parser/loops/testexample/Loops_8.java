@@ -14,7 +14,7 @@
 
 package org.e2immu.analyser.parser.loops.testexample;
 
-import org.e2immu.annotation.NotNull1;
+import org.e2immu.annotation.NotNull;
 
 import java.util.HashSet;
 import java.util.List;
@@ -24,7 +24,7 @@ import java.util.Set;
 Erasing the companion info in the loop
  */
 public class Loops_8 {
-    public static Set<String> method(@NotNull1 List<String> list) {
+    public static Set<String> method(@NotNull(content = true) List<String> list) {
         Set<String> set = new HashSet<>();
         for (String s : list) {
             set.add(s);

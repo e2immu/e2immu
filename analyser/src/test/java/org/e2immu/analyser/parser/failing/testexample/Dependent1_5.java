@@ -14,10 +14,10 @@
 
 package org.e2immu.analyser.parser.failing.testexample;
 
-import org.e2immu.annotation.Dependent;
-import org.e2immu.annotation.E2Container;
+
+
+import org.e2immu.annotation.ImmutableContainer;
 import org.e2immu.annotation.Independent;
-import org.e2immu.annotation.Independent1;
 
 import java.util.Collection;
 import java.util.HashSet;
@@ -27,12 +27,12 @@ public class Dependent1_5<T> {
 
     private final Set<T> set;
 
-    @Independent
+    @Independent(hc = true)
     public Dependent1_5(Collection<? extends T> collection) {
         set = new HashSet<>(collection);
     }
 
-    @Dependent
+    @Independent(absent = true)
     public Dependent1_5(Set<T> set) {
         this.set = set;
     }
@@ -41,21 +41,20 @@ public class Dependent1_5<T> {
         set.add(t); // trivial propagation
     }
 
-    public void addAll(@Independent1 Collection<? extends T> ts) {
+    public void addAll(@Independent(hc = true) Collection<? extends T> ts) {
         this.set.addAll(ts); // trivial propagation
     }
 
-    public void addAll2(@Independent1 Collection<? extends T> ts) {
+    public void addAll2(@Independent(hc = true) Collection<? extends T> ts) {
         for (T t : ts) add(t); // other type of propagation
     }
 
-    @Dependent
+    @Independent(absent = true)
     public Set<T> getSet() {
         return set;
     }
 
-    @Independent1
-    @E2Container
+    @ImmutableContainer(hc = true)
     public Set<T> getCopy() {
         return Set.copyOf(set);
     }

@@ -14,7 +14,8 @@
 
 package org.e2immu.annotatedapi.testexample;
 
-import org.e2immu.annotation.Constant;
+
+import org.e2immu.annotation.ImmutableContainer;
 
 import java.util.*;
 
@@ -23,7 +24,7 @@ test example which renders no errors/warnings IF used correctly with AnnotatedAP
  */
 public class List_0 {
 
-    @Constant("4")
+    @ImmutableContainer("4")
     static int test() {
         List<String> list = new ArrayList<>();
         if (list.size() > 0) { // evaluates to constant

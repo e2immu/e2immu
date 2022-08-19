@@ -32,7 +32,8 @@ public class Consumer_8 {
         void accept(T t); // parameter t implicitly @Modified
     }
 
-    @E1Container
+    @FinalFields
+    @Container
     static class MySet<X> {
         private final Set<X> set = new HashSet<>();
 
@@ -42,7 +43,7 @@ public class Consumer_8 {
         }
 
         @NotModified
-        public void forEach(@Container @Independent1 MyConsumer<X> consumer) {
+        public void forEach(@Container @Independent(hc = true) MyConsumer<X> consumer) {
             for (X x : set) consumer.accept(x);
         }
 

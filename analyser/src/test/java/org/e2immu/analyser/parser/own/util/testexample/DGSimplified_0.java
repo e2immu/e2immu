@@ -15,6 +15,7 @@
 package org.e2immu.analyser.parser.own.util.testexample;
 
 import org.e2immu.annotation.*;
+import org.e2immu.annotation.eventual.Only;
 import org.e2immu.support.Freezable;
 
 import java.util.*;
@@ -24,7 +25,7 @@ import java.util.function.Consumer;
 import java.util.function.Predicate;
 
 // comment out copyRemove, and things work out!
-@E2Container(after = "frozen")
+@ImmutableContainer(after = "frozen", hc = true)
 public class DGSimplified_0<T> extends Freezable {
 
     private static class Node<T> {
