@@ -290,7 +290,12 @@ public class Parser {
         AnnotatedAPIAnalyser annotatedAPIAnalyser = new AnnotatedAPIAnalyser(types, configuration,
                 getTypeContext().getPrimitives(), new ImportantClassesImpl(getTypeContext()),
                 typeMap.getE2ImmuAnnotationExpressions(), typeMap);
-        messages.addAll(annotatedAPIAnalyser.analyse());
+        Stream<Message> analyse = annotatedAPIAnalyser.analyse();
+
+        // only complain if we have annotated APIs to correct
+        if (!annotatedAPITypes.isEmpty()) {
+            messages.addAll(analyse);
+        }
 
         assert types.stream()
                 .filter(t -> t.typeInspection.get().isPublic())

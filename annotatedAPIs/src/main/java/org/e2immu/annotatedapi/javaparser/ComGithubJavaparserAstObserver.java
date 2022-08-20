@@ -14,28 +14,14 @@
 
 package org.e2immu.annotatedapi.javaparser;
 
-import com.github.javaparser.Problem;
 import org.e2immu.annotation.Independent;
-import org.e2immu.annotation.NotNull;
 
-import java.util.List;
-import java.util.Optional;
+public class ComGithubJavaparserAstObserver {
 
-public class ComGithubJavaparser {
+    public static final String PACKAGE_NAME = "com.github.javaparser.ast.observer";
 
-    public static final String PACKAGE_NAME = "com.github.javaparser";
+    @Independent
+    interface Observable$ {
 
-    interface ParseResult$<T> {
-
-        @NotNull
-        Optional<T> getResult();
-
-        @NotNull(content = true)
-        List<Problem> getProblems();
-
-        @Independent
-        interface PostProcessor {
-
-        }
     }
 }

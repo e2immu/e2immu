@@ -21,6 +21,7 @@ import com.github.javaparser.ast.PackageDeclaration;
 import com.github.javaparser.ast.body.TypeDeclaration;
 import com.github.javaparser.ast.expr.Name;
 import org.e2immu.annotation.Fluent;
+import org.e2immu.annotation.Independent;
 import org.e2immu.annotation.Modified;
 import org.e2immu.annotation.NotNull;
 import org.w3c.dom.Node;
@@ -62,5 +63,10 @@ public class ComGithubJavaparserAst {
 
         @NotNull
         Name getName();
+    }
+
+    @Independent
+    interface DataKey$ {
+
     }
 }

@@ -96,7 +96,7 @@ public class TestDefaultAnnotations {
         TypeAnalysis typeAnalysis = object.typeAnalysis.get();
         assertEquals(MultiLevel.CONTAINER_DV, typeAnalysis.getProperty(Property.CONTAINER));
         assertEquals(MultiLevel.EFFECTIVELY_E2IMMUTABLE_DV, typeAnalysis.getProperty(Property.IMMUTABLE));
-        assertEquals(MultiLevel.INDEPENDENT_1_DV, typeAnalysis.getProperty(Property.INDEPENDENT));
+        assertEquals(MultiLevel.INDEPENDENT_DV, typeAnalysis.getProperty(Property.INDEPENDENT));
     }
 
     @Test
@@ -196,7 +196,7 @@ public class TestDefaultAnnotations {
         // not @Container because of unbound parameter type
         assertEquals(MultiLevel.NOT_CONTAINER_DV, getAnalysis.getProperty(Property.CONTAINER));
         assertEquals(DV.FALSE_DV, getAnalysis.getProperty(Property.MODIFIED_METHOD));
-        assertEquals(MultiLevel.NOT_INVOLVED_DV, getAnalysis.getProperty(Property.IMMUTABLE));
+        assertEquals(MultiLevel.EFFECTIVELY_E2IMMUTABLE_DV, getAnalysis.getProperty(Property.IMMUTABLE));
 
         // an unbound type parameter cannot be DEPENDENT
         assertEquals(MultiLevel.INDEPENDENT_1_DV, getAnalysis.getProperty(Property.INDEPENDENT));
@@ -218,7 +218,7 @@ public class TestDefaultAnnotations {
 
         ParameterAnalysis paramAnalysis = add.parameterAnalysis(0);
 
-        assertEquals(MultiLevel.NOT_INVOLVED_DV, paramAnalysis.getProperty(Property.IMMUTABLE), "In " + add.fullyQualifiedName);
+        assertEquals(MultiLevel.EFFECTIVELY_E2IMMUTABLE_DV, paramAnalysis.getProperty(Property.IMMUTABLE), "In " + add.fullyQualifiedName);
         assertEquals(MultiLevel.NULLABLE_DV, paramAnalysis.getProperty(Property.NOT_NULL_PARAMETER));
         // not a container!
         assertEquals(DV.TRUE_DV, paramAnalysis.getProperty(Property.MODIFIED_VARIABLE));
@@ -267,7 +267,8 @@ public class TestDefaultAnnotations {
 
         assertEquals(MultiLevel.NULLABLE_DV, toArrayAnalysis.getProperty(Property.NOT_NULL_EXPRESSION));
         assertEquals(MultiLevel.EFFECTIVELY_E1IMMUTABLE_DV, toArrayAnalysis.getProperty(Property.IMMUTABLE));
-        assertEquals(MultiLevel.INDEPENDENT_1_DV, toArrayAnalysis.getProperty(Property.INDEPENDENT));
+        // AAPI will be @Independent(hc=true), but without, the default is dependent (the list could be backed by this array)
+        assertEquals(MultiLevel.DEPENDENT_DV, toArrayAnalysis.getProperty(Property.INDEPENDENT));
     }
 
     @Test
@@ -365,7 +366,7 @@ public class TestDefaultAnnotations {
 
     /**
      * {@link IllegalFormatException} has no methods or constructors of its own, but it does share those of
-     * {@link Throwable} and {@link Object}. As a consequence, it is {@link org.e2immu.annotation.Dependent}.
+     * {@link Throwable} and {@link Object}. As a consequence, it is dependent
      */
     @Test
     public void testIllegalFormatException() {
@@ -393,7 +394,7 @@ public class TestDefaultAnnotations {
         assertEquals(MultiLevel.NULLABLE_DV, p0.getProperty(Property.NOT_NULL_PARAMETER));
         assertEquals(DV.TRUE_DV, p0.getProperty(Property.MODIFIED_VARIABLE));
         assertEquals(MultiLevel.INDEPENDENT_DV, p0.getProperty(Property.INDEPENDENT));
-        assertEquals(MultiLevel.NOT_INVOLVED_DV, p0.getProperty(Property.IMMUTABLE));
+        assertEquals(MultiLevel.EFFECTIVELY_E2IMMUTABLE_DV, p0.getProperty(Property.IMMUTABLE));
     }
 
 

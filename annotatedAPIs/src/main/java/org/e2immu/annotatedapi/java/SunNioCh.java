@@ -12,30 +12,15 @@
  * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.e2immu.annotatedapi.javaparser;
+package org.e2immu.annotatedapi.java;
 
-import com.github.javaparser.Problem;
 import org.e2immu.annotation.Independent;
-import org.e2immu.annotation.NotNull;
 
-import java.util.List;
-import java.util.Optional;
+public class SunNioCh {
+    static final String PACKAGE_NAME = "sun.nio.ch";
 
-public class ComGithubJavaparser {
+    @Independent
+    interface Interruptible$ {
 
-    public static final String PACKAGE_NAME = "com.github.javaparser";
-
-    interface ParseResult$<T> {
-
-        @NotNull
-        Optional<T> getResult();
-
-        @NotNull(content = true)
-        List<Problem> getProblems();
-
-        @Independent
-        interface PostProcessor {
-
-        }
     }
 }
