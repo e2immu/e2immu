@@ -307,11 +307,12 @@ public class AnnotatedAPIAnalyser implements AnalyserContext {
     private void validateIndependent(TypeInfo typeInfo, DV inMap, ValueExplanation computed) {
         if (computed.value.isDone()) {
             if (!inMap.equals(computed.value)) {
-                if ("none".equals(computed.explanation)) {
-                    // type outside scope
-                    LOGGER.warn("Independence value for {} differs from computed one: {} != {}",
-                            typeInfo, inMap, computed);
-                } else if (typeInfo.typeInspection.get().isPublic()) {
+                // if ("none".equals(computed.explanation)) {
+                // type outside scope
+                //    LOGGER.warn("Independence value for {} differs from computed one: {} != {}",
+                //             typeInfo, inMap, computed);
+                // } else
+                if (typeInfo.typeInspection.get().isPublic() && typeInfo.isNotJDKInternal()) {
                     Message message = Message.newMessage(typeInfo.newLocation(),
                             Message.Label.TYPE_HAS_DIFFERENT_VALUE_FOR_INDEPENDENT,
                             "Found " + inMap + ", computed " + computed.value
@@ -616,11 +617,13 @@ public class AnnotatedAPIAnalyser implements AnalyserContext {
      */
 
     private ValueExplanation computeIndependent(TypeInfo typeInfo) {
-        Stream<ValueExplanation> methodStream = typeInfo.typeInspection.get().methodStream(TypeInspection.Methods.THIS_TYPE_ONLY)
+        Stream<ValueExplanation> methodStream = typeInfo.typeInspection.get()
+                .methodsAndConstructors(TypeInspection.Methods.THIS_TYPE_ONLY)
                 .filter(m -> m.methodInspection.get().isPubliclyAccessible())
                 .map(m -> new ValueExplanation(getMethodAnalysis(m).getProperty(Property.INDEPENDENT),
                         m.fullyQualifiedName));
-        Stream<ValueExplanation> parameterStream = typeInfo.typeInspection.get().methodStream(TypeInspection.Methods.THIS_TYPE_ONLY)
+        Stream<ValueExplanation> parameterStream = typeInfo.typeInspection.get()
+                .methodsAndConstructors(TypeInspection.Methods.THIS_TYPE_ONLY)
                 .filter(m -> m.methodInspection.get().isPubliclyAccessible())
                 .flatMap(m -> getMethodAnalysis(m).getParameterAnalyses().stream())
                 .map(p -> new ValueExplanation(p.getProperty(Property.INDEPENDENT), p.getParameterInfo().fullyQualifiedName));

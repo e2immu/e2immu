@@ -27,6 +27,7 @@ import org.e2immu.analyser.model.TypeInfo;
 import org.junit.jupiter.api.Test;
 
 import java.io.Closeable;
+import java.io.FilterOutputStream;
 import java.io.PrintStream;
 import java.io.Writer;
 
@@ -49,9 +50,9 @@ public class TestCommonJavaIO extends CommonAnnotatedAPI {
         TypeInfo typeInfo = typeContext.getFullyQualified(PrintStream.class);
         TypeAnalysis typeAnalysis = typeInfo.typeAnalysis.get();
 
-        assertEquals(MultiLevel.INDEPENDENT_DV, typeAnalysis.getProperty(Property.INDEPENDENT));
+        assertEquals(MultiLevel.DEPENDENT_DV, typeAnalysis.getProperty(Property.INDEPENDENT));
         assertEquals(MultiLevel.MUTABLE_DV, typeAnalysis.getProperty(Property.IMMUTABLE));
-        assertEquals(MultiLevel.CONTAINER_DV, typeAnalysis.getProperty(Property.CONTAINER));
+        assertEquals(MultiLevel.NOT_CONTAINER_DV, typeAnalysis.getProperty(Property.CONTAINER));
     }
 
     @Test
@@ -104,5 +105,26 @@ public class TestCommonJavaIO extends CommonAnnotatedAPI {
 
         assertEquals(MultiLevel.INDEPENDENT_DV, methodAnalysis.getProperty(Property.INDEPENDENT));
 
+    }
+
+    @Test
+    public void testFilterOutputStream() {
+        TypeInfo typeInfo = typeContext.getFullyQualified(FilterOutputStream.class);
+        TypeAnalysis typeAnalysis = typeInfo.typeAnalysis.get();
+
+        assertEquals(MultiLevel.DEPENDENT_DV, typeAnalysis.getProperty(Property.INDEPENDENT));
+        assertEquals(MultiLevel.MUTABLE_DV, typeAnalysis.getProperty(Property.IMMUTABLE));
+        assertEquals(MultiLevel.NOT_CONTAINER_DV, typeAnalysis.getProperty(Property.CONTAINER));
+    }
+
+    @Test
+    public void testFilterOutputStreamConstructor() {
+        TypeInfo typeInfo = typeContext.getFullyQualified(FilterOutputStream.class);
+        MethodInfo methodInfo = typeInfo.findConstructor(1);
+
+        ParameterAnalysis p0 = methodInfo.parameterAnalysis(0);
+        assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, p0.getProperty(Property.NOT_NULL_PARAMETER));
+        assertEquals(DV.TRUE_DV, p0.getProperty(Property.MODIFIED_VARIABLE));
+        assertEquals(MultiLevel.DEPENDENT_DV, p0.getProperty(Property.INDEPENDENT));
     }
 }

@@ -14,27 +14,13 @@
 
 package org.e2immu.annotatedapi.java;
 
-import org.e2immu.annotation.ImmutableContainer;
 import org.e2immu.annotation.Independent;
 
-public class JavaLangReflect {
-
-    final static String PACKAGE_NAME = "java.lang.reflect";
-
-    @ImmutableContainer
-    interface GenericDeclaration$ {
-    }
-
-    @ImmutableContainer
-    interface AnnotatedElement$ {
-    }
-
-    @ImmutableContainer
-    interface Type$ {
-    }
+public class JavaSecurity {
+    final static String PACKAGE_NAME = "java.security";
 
     @Independent(hc = true)
-    interface AccessibleObject$ {
+    interface PrivilegedAction$<T> {
 
     }
 }

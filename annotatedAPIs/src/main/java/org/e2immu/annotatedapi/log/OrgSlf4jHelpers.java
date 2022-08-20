@@ -12,29 +12,19 @@
  * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.e2immu.annotatedapi.java;
+package org.e2immu.annotatedapi.log;
 
+import org.e2immu.annotation.Container;
 import org.e2immu.annotation.ImmutableContainer;
 import org.e2immu.annotation.Independent;
 
-public class JavaLangReflect {
+public class OrgSlf4jHelpers {
+    final static String PACKAGE_NAME = "org.slf4j.helpers";
 
-    final static String PACKAGE_NAME = "java.lang.reflect";
-
-    @ImmutableContainer
-    interface GenericDeclaration$ {
-    }
-
-    @ImmutableContainer
-    interface AnnotatedElement$ {
-    }
-
-    @ImmutableContainer
-    interface Type$ {
-    }
-
-    @Independent(hc = true)
-    interface AccessibleObject$ {
+    // implements ILoggerFactory
+    @Independent
+    @Container
+    interface NOPLoggerFactory$ {
 
     }
 }

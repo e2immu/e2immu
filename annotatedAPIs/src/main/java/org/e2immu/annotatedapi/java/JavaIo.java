@@ -32,7 +32,8 @@ public class JavaIo {
     No methods, so @ImmutableContainer is the only option. The current implementation of the
     analyser requires you to add immutability information.
      */
-    @ImmutableContainer
+    @ImmutableContainer(hc = true)
+    @Independent
     interface Serializable$ {
 
     }
@@ -48,20 +49,11 @@ public class JavaIo {
     }
 
     /*
-     The print(Object) method causes us to consider independence: all the other parameters are primitives or
-     deeply immutable, there are no return values. @Dependent would only possible when implementations start casting,
-     and store parts of the cast object into the object graph of the fields. This we will not allow for a PrintStream.
-
-     The second consideration is whether we add @Independent(hc=true) to the parameter of this method. If so,
-     we allow the implementation to store the argument. In general, this seems unnecessary, and we will assume that
-     only the deeply immutable string representation of the object is stored.
-     Mark the parameter, as commented out below, if your implementation needs to store the object.
+     Extending FilterOutputStream, PrintStream cannot be container, cannot be independent.
 
      The @AllowsInterrupt annotation marks that these methods present the JVM with an opportunity to interrupt
      the current thread, allowing non-final fields to be modified in the background.
      */
-    @Independent
-    @Container
     interface PrintStream$ {
         @Modified
         @AllowsInterrupt
@@ -145,14 +137,18 @@ public class JavaIo {
         void write(int b);
     }
 
-    interface BufferedOutputStream$ {
+    // obviously not a container, it wraps an object it will modify
+    @Independent(absent = true)
+    static class FilterOutputStream$ {
+
+        FilterOutputStream$(@Modified @Independent(absent = true) @NotNull OutputStream out) {
+
+        }
 
     }
 
-    @Independent
-    @Container
-    interface FilterOutputStream$ {
-        // there are methods, but there's nothing at the moment...
+    interface BufferedOutputStream$ {
+
     }
 
     @Independent
@@ -163,6 +159,12 @@ public class JavaIo {
 
         @Modified
         void write(char[] cbuf, int off, int len);
+    }
+
+    @Independent
+    @Container
+    interface OutputStreamWriter$ {
+
     }
 
     @Independent // because of Closeable, we can't do less
@@ -217,6 +219,11 @@ public class JavaIo {
 
     }
 
+    @Independent
+    interface BufferedInputStream${
+
+    }
+
     /*
     .exists() .delete() .exists(), when true first, must return false after the removal.
     Cannot be independent because getCanonicalFile() can return a File which "points to the same underlying file",
@@ -250,5 +257,13 @@ public class JavaIo {
 
         @Modified
         void deleteOnExit();
+    }
+
+    @Container
+    @Independent
+    interface ObjectStreamField$ {
+
+        @Modified
+        void setOffset(int offset);
     }
 }

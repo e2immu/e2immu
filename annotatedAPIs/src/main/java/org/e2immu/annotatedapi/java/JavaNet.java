@@ -19,6 +19,7 @@ import org.e2immu.annotation.ImmutableContainer;
 import org.e2immu.annotation.Modified;
 import org.e2immu.annotation.NotNull;
 import org.e2immu.annotation.rare.StaticSideEffects;
+import org.e2immu.annotation.type.UtilityClass;
 
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -78,5 +79,16 @@ public class JavaNet {
 
         @NotNull
         JarFile getJarFile();
+    }
+
+    // abstract class
+    @ImmutableContainer(hc = true)
+    interface ContentHandler$ {
+
+    }
+
+    @UtilityClass
+    interface ContentHandlerFactory$ {
+
     }
 }

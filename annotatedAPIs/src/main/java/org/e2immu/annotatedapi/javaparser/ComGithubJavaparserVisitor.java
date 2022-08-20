@@ -12,29 +12,19 @@
  * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.e2immu.annotatedapi.java;
+package org.e2immu.annotatedapi.javaparser;
 
-import org.e2immu.annotation.ImmutableContainer;
+import com.github.javaparser.ast.NodeList;
+import com.github.javaparser.ast.type.ClassOrInterfaceType;
 import org.e2immu.annotation.Independent;
+import org.e2immu.annotation.NotNull;
 
-public class JavaLangReflect {
+public class ComGithubJavaparserVisitor {
 
-    final static String PACKAGE_NAME = "java.lang.reflect";
-
-    @ImmutableContainer
-    interface GenericDeclaration$ {
-    }
-
-    @ImmutableContainer
-    interface AnnotatedElement$ {
-    }
-
-    @ImmutableContainer
-    interface Type$ {
-    }
+    public static final String PACKAGE_NAME = "com.github.javaparser.ast.visitor";
 
     @Independent(hc = true)
-    interface AccessibleObject$ {
+    interface Visitable$ {
 
     }
 }

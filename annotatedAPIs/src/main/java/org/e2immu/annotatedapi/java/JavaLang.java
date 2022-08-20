@@ -505,6 +505,11 @@ class JavaLang {
 
         @NotNull
         String toString(char c);
+
+        @ImmutableContainer
+        interface Subset {
+
+        }
     }
 
     @ImmutableContainer
@@ -520,6 +525,7 @@ class JavaLang {
     }
 
     @UtilityClass
+    @Independent
     interface Math$ {
         static int max(int a, int b) {
             return 0;
@@ -532,6 +538,7 @@ class JavaLang {
      have @IgnoreModifications.
      */
     @UtilityClass
+    @Independent
     interface System$ {
         @IgnoreModifications
         @NotNull
@@ -552,6 +559,7 @@ class JavaLang {
     hc=true automatically added.
      */
     @ImmutableContainer
+    @Independent // implementations will NOT store the object being compared to
     interface Comparable$<T> {
         default int compareTo$Value(T t, int retVal) {
             return equals(t) || t.equals(this) ? 0 : retVal;
@@ -610,4 +618,24 @@ class JavaLang {
         @Modified
         int read(@NotNull CharBuffer cb);
     }
+
+    @ImmutableContainer
+    @Independent
+    interface Record$ {
+
+    }
+
+    @UtilityClass
+    @Independent
+    interface Compiler$ {
+
+    }
+
+    interface Thread$ {
+
+        interface UncaughtExceptionHandler {
+
+        }
+    }
+
 }

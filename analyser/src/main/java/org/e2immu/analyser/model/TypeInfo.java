@@ -85,8 +85,7 @@ public final class TypeInfo implements NamedType, WithInspectionAndAnalysis, Com
 
     public boolean needsParent() {
         return this.fullyQualifiedName.indexOf('.') > 0 &&
-                !this.fullyQualifiedName.startsWith("java.lang") &&
-                !this.fullyQualifiedName.startsWith("jdk.internal");
+                !this.fullyQualifiedName.startsWith("java.lang") && isNotJDKInternal();
     }
 
     public boolean isJavaLangObject() {
@@ -718,5 +717,9 @@ public final class TypeInfo implements NamedType, WithInspectionAndAnalysis, Com
         ParameterizedType iterablePt = analyserContext.importantClasses().iterable();
         ParameterizedType concreteIterable = concreteType.concreteSuperType(analyserContext, iterablePt);
         return concreteIterable == null ? null : concreteIterable.parameters.get(0);
+    }
+
+    public boolean isNotJDKInternal() {
+        return !fullyQualifiedName.startsWith("jdk.internal");
     }
 }
