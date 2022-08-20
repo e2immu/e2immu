@@ -90,6 +90,6 @@ public class TestCommonJavaUtilStream extends CommonAnnotatedAPI {
         assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, p0.getProperty(Property.NOT_NULL_PARAMETER));
         assertEquals(DV.FALSE_DV, p0.getProperty(Property.MODIFIED_VARIABLE));
         assertEquals(MultiLevel.INDEPENDENT_1_DV, p0.getProperty(Property.INDEPENDENT));
-        assertEquals(MultiLevel.NOT_INVOLVED_DV, p0.getProperty(Property.IMMUTABLE));
+        assertEquals(MultiLevel.EFFECTIVELY_E2IMMUTABLE_DV, p0.getProperty(Property.IMMUTABLE));
     }
 }

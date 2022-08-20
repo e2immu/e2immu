@@ -23,7 +23,6 @@ import org.e2immu.analyser.config.Configuration;
 import org.e2immu.analyser.config.InputConfiguration;
 import org.e2immu.analyser.inspector.TypeContext;
 import org.e2immu.analyser.model.MultiLevel;
-import org.e2immu.analyser.model.impl.LocationImpl;
 import org.e2immu.analyser.parser.Input;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.Parser;
@@ -70,9 +69,7 @@ public abstract class CommonAnnotatedAPI {
                 .toList();
         LOGGER.info("Have {} error messages", errors.size());
         errors.forEach(e -> LOGGER.info("Error: " + e));
-        // we do expect some
-        long ownErrors = errors.size();
-//        assertEquals(0L, ownErrors);
+        // not stopping here if there's errors, TestAnnotatedAPIErrors will fail
     }
 
     protected void testImmutableContainerType(TypeAnalysis typeAnalysis, boolean hcImmutable, boolean hcIndependent) {

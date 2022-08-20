@@ -30,15 +30,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 public class TestCommonJavaLangConstant extends CommonAnnotatedAPI {
 
     @Test
-    public void testConstableDescribeConstable() {
-        TypeInfo typeInfo = typeContext.getFullyQualified(Constable.class);
-        MethodInfo methodInfo = typeInfo.findUniqueMethod("describeConstable", 0);
-        MethodAnalysis methodAnalysis = methodInfo.methodAnalysis.get();
-        assertEquals(DV.FALSE_DV, methodAnalysis.getProperty(Property.MODIFIED_METHOD));
-        assertEquals(MultiLevel.INDEPENDENT_DV, methodAnalysis.getProperty(Property.INDEPENDENT));
-    }
-
-    @Test
     public void testConstable() {
         TypeInfo typeInfo = typeContext.getFullyQualified(Constable.class);
         TypeAnalysis typeAnalysis = typeInfo.typeAnalysis.get();
@@ -46,5 +37,14 @@ public class TestCommonJavaLangConstant extends CommonAnnotatedAPI {
         assertEquals(MultiLevel.INDEPENDENT_1_DV, typeAnalysis.getProperty(Property.INDEPENDENT));
         assertEquals(MultiLevel.EFFECTIVELY_E2IMMUTABLE_DV, typeAnalysis.getProperty(Property.IMMUTABLE));
         assertEquals(MultiLevel.CONTAINER_DV, typeAnalysis.getProperty(Property.CONTAINER));
+    }
+
+    @Test
+    public void testConstableDescribeConstable() {
+        TypeInfo typeInfo = typeContext.getFullyQualified(Constable.class);
+        MethodInfo methodInfo = typeInfo.findUniqueMethod("describeConstable", 0);
+        MethodAnalysis methodAnalysis = methodInfo.methodAnalysis.get();
+        assertEquals(DV.FALSE_DV, methodAnalysis.getProperty(Property.MODIFIED_METHOD));
+        assertEquals(MultiLevel.INDEPENDENT_1_DV, methodAnalysis.getProperty(Property.INDEPENDENT));
     }
 }

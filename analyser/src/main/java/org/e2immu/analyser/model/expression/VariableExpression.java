@@ -303,7 +303,7 @@ public class VariableExpression extends BaseExpression implements IsVariableExpr
                     && !forwardEvaluationInfo.isAssignmentTarget()) {
                 // methodCall()[index] as a value rather than the target of an assignment
                 Properties properties = context.evaluationContext().getAnalyserContext()
-                        .defaultValueProperties(dv.parameterizedType, context.getCurrentType());
+                        .defaultValueProperties(dv.parameterizedType);
                 CausesOfDelay delays = properties.delays();
                 Expression replacement;
                 if (delays.isDelayed()) {

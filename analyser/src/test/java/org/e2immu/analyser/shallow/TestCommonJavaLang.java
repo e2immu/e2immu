@@ -202,7 +202,7 @@ public class TestCommonJavaLang extends CommonAnnotatedAPI {
         TypeInfo typeInfo = typeContext.getFullyQualified(AutoCloseable.class);
         TypeAnalysis typeAnalysis = typeInfo.typeAnalysis.get();
         assertEquals(MultiLevel.INDEPENDENT_DV, typeAnalysis.getProperty(Property.INDEPENDENT));
-        assertEquals(DV.TRUE_DV, typeAnalysis.getProperty(Property.CONTAINER));
+        assertEquals(MultiLevel.CONTAINER_DV, typeAnalysis.getProperty(Property.CONTAINER));
     }
 
     @Test
@@ -328,5 +328,29 @@ public class TestCommonJavaLang extends CommonAnnotatedAPI {
         assertEquals(MultiLevel.DEPENDENT_DV, typeAnalysis.getProperty(Property.INDEPENDENT));
         assertEquals(MultiLevel.MUTABLE_DV, typeAnalysis.getProperty(Property.IMMUTABLE));
         assertEquals(MultiLevel.CONTAINER_DV, typeAnalysis.getProperty(Property.CONTAINER));
+    }
+
+
+    @Test
+    public void testReadable() {
+        TypeInfo typeInfo = typeContext.getFullyQualified(Readable.class);
+        TypeAnalysis typeAnalysis = typeInfo.typeAnalysis.get();
+        assertEquals(MultiLevel.INDEPENDENT_DV, typeAnalysis.getProperty(Property.INDEPENDENT));
+        assertEquals(MultiLevel.MUTABLE_DV, typeAnalysis.getProperty(Property.IMMUTABLE));
+        assertEquals(MultiLevel.NOT_CONTAINER_DV, typeAnalysis.getProperty(Property.CONTAINER));
+    }
+
+    @Test
+    public void testReadableRead() {
+        TypeInfo typeInfo = typeContext.getFullyQualified(Readable.class);
+        MethodInfo method = typeInfo.findUniqueMethod("read", 1);
+        MethodAnalysis methodAnalysis = method.methodAnalysis.get();
+        assertEquals(DV.TRUE_DV, methodAnalysis.getProperty(Property.MODIFIED_METHOD));
+        assertEquals(MultiLevel.INDEPENDENT_DV, methodAnalysis.getProperty(Property.INDEPENDENT));
+
+        ParameterAnalysis p0 = method.parameterAnalysis(0);
+        assertEquals(DV.TRUE_DV, p0.getProperty(Property.MODIFIED_VARIABLE));
+        assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, p0.getProperty(Property.NOT_NULL_PARAMETER));
+        assertEquals(MultiLevel.INDEPENDENT_DV, p0.getProperty(Property.INDEPENDENT));
     }
 }

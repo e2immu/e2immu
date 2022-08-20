@@ -86,6 +86,33 @@ public class JavaUtil extends AnnotatedAPI {
         void remove();
     }
 
+    @Container
+    @Independent(hc = true)
+    interface ListIterator$<T> {
+
+    }
+
+    @Container
+    @Independent
+    interface PrimitiveIterator$<T> {
+
+        @Container
+        @Independent
+        interface OfInt {
+
+        }
+        @Container
+        @Independent
+        interface OfLong {
+
+        }
+        @Container
+        @Independent
+        interface OfDouble {
+
+        }
+    }
+
     /*
      This is not in line with the JDK, but we will block null keys!
      Dependent because of remove() in iterator.
@@ -870,10 +897,16 @@ public class JavaUtil extends AnnotatedAPI {
         }
     }
 
+    @Container
     interface AbstractMap$<K, V> {
 
         @Independent(hc = true)
         interface SimpleEntry<K, V> {
+
+        }
+
+        @ImmutableContainer
+        interface SimpleImmutableEntry<K, V> {
 
         }
     }
@@ -928,7 +961,7 @@ public class JavaUtil extends AnnotatedAPI {
          This particular Entry does not support modification!
          */
         // returns null when the map is empty TODO add correct companions
-        @ImmutableContainer
+        @ImmutableContainer(hc = true)
         Map.Entry<K, V> firstEntry() {
             return null;
         }
@@ -945,11 +978,6 @@ public class JavaUtil extends AnnotatedAPI {
 
         @Modified
         int nextInt();
-    }
-
-    @Container
-    interface AbstractMap$ {
-
     }
 
     @Container

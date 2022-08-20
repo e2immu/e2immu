@@ -19,6 +19,7 @@ import org.e2immu.annotation.rare.IgnoreModifications;
 import org.e2immu.annotation.type.UtilityClass;
 
 import java.io.PrintStream;
+import java.nio.CharBuffer;
 import java.util.Iterator;
 import java.util.Spliterator;
 import java.util.function.Consumer;
@@ -184,9 +185,7 @@ class JavaLang {
         Appendable append(/*@Independent(hc=true)*/CharSequence charSequence, int start, int end);
     }
 
-    /*
-     @Container and @Independent implicit.
-     */
+    @Container
     interface AutoCloseable$ {
 
         @Modified
@@ -601,5 +600,14 @@ class JavaLang {
 
         @Modified
         void remove(Class<?> type);
+    }
+
+    /*
+    the implementation of Readable will not store the CharBuffer in its fields, nor link to it
+     */
+    @Independent
+    interface Readable$ {
+        @Modified
+        int read(@NotNull CharBuffer cb);
     }
 }

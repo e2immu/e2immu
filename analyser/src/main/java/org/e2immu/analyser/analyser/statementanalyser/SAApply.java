@@ -573,7 +573,7 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
             valueProperties = valuePropertiesIn;
         } else {
             valueProperties = sharedState.evaluationContext().getAnalyserContext()
-                    .defaultValueProperties(variable.parameterizedType(), methodInfo().typeInfo);
+                    .defaultValueProperties(variable.parameterizedType());
         }
         CausesOfDelay causes = valueProperties.delays();
         Expression value;

@@ -250,7 +250,7 @@ public class AnnotatedAPIAnalyser implements AnalyserContext {
         if (!nonShallowOrWithCompanions.isEmpty()) {
             iterativeMethodAnalysis(nonShallowOrWithCompanions);
         }
-        validateIndependenceAndComputeContainer();
+        validateIndependence();
 
         return Stream.concat(methodAnalysers.values().stream().flatMap(MethodAnalyser::getMessageStream),
                 Stream.concat(shallowFieldAnalyser.getMessageStream(), messages.getMessageStream()));
@@ -282,21 +282,12 @@ public class AnnotatedAPIAnalyser implements AnalyserContext {
         }
     }
 
-    private void validateIndependenceAndComputeContainer() {
+    private void validateIndependence() {
         typeAnalyses.forEach(((typeInfo, typeAnalysis) -> {
             try {
-                {
-                    DV inMap = typeAnalysis.getPropertyFromMapNeverDelay(Property.INDEPENDENT);
-                    ValueExplanation computed = computeIndependent(typeInfo);
-                    validateIndependent(typeInfo, inMap, computed);
-                }
-                {
-                    DV inMap = typeAnalysis.getPropertyFromMapDelayWhenAbsent(Property.CONTAINER);
-                    if (inMap.isDelayed()) {
-                        DV computed = computeContainer(typeAnalysis);
-                        typeAnalysis.setProperty(Property.CONTAINER, computed);
-                    }
-                }
+                DV inMap = typeAnalysis.getPropertyFromMapNeverDelay(Property.INDEPENDENT);
+                ValueExplanation computed = computeIndependent(typeInfo);
+                validateIndependent(typeInfo, inMap, computed);
             } catch (IllegalStateException ise) {
                 LOGGER.error("Caught exception while validating independence of {}", typeInfo);
                 throw ise;
@@ -320,7 +311,7 @@ public class AnnotatedAPIAnalyser implements AnalyserContext {
                     // type outside scope
                     LOGGER.warn("Independence value for {} differs from computed one: {} != {}",
                             typeInfo, inMap, computed);
-                } else if(typeInfo.typeInspection.get().isPublic()) {
+                } else if (typeInfo.typeInspection.get().isPublic()) {
                     Message message = Message.newMessage(typeInfo.newLocation(),
                             Message.Label.TYPE_HAS_DIFFERENT_VALUE_FOR_INDEPENDENT,
                             "Found " + inMap + ", computed " + computed.value
@@ -616,21 +607,6 @@ public class AnnotatedAPIAnalyser implements AnalyserContext {
         }
     }
 
-    private DV computeContainer(TypeAnalysisImpl.Builder builder) {
-        boolean noModifyingParameters =
-                builder.getTypeInfo().typeInspection.get()
-                        .methodsAndConstructors(TypeInspection.Methods.INCLUDE_SUPERTYPES)
-                        .filter(m -> m.methodInspection.get().isPubliclyAccessible())
-                        .allMatch(this::noModifyingParameters);
-        return DV.fromBoolDv(noModifyingParameters);
-    }
-
-    private boolean noModifyingParameters(MethodInfo methodInfo) {
-        MethodAnalysis methodAnalysis = getMethodAnalysis(methodInfo);
-        return methodAnalysis.getParameterAnalyses().stream()
-                .allMatch(pa -> pa.getPropertyFromMapNeverDelay(Property.MODIFIED_VARIABLE).equals(DV.FALSE_DV));
-    }
-
     /*
     relations to super-type:
 
@@ -680,6 +656,7 @@ public class AnnotatedAPIAnalyser implements AnalyserContext {
                 builder.setProperty(Property.INDEPENDENT, independent);
                 return;
             }
+
             boolean allMethodsOnlyPrimitives =
                     builder.getTypeInfo().typeInspection.get()
                             .methodsAndConstructors(TypeInspection.Methods.THIS_TYPE_ONLY)

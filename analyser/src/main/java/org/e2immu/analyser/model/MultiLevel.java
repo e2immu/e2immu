@@ -328,17 +328,6 @@ public class MultiLevel {
         return composeImmutable(effective, newLevel);
     }
 
-    // ImmutableSet<T>. If T is E2, then combination is E3
-    // ImmutableSet<Integer> -> MAX
-    public static DV sumImmutableLevels(DV base, DV parameters) {
-        assert base.isDone();
-        assert parameters.isDone();
-        int levelBase = level(base);
-        int levelParams = level(parameters);
-        if (levelBase == MAX_LEVEL || levelParams == MAX_LEVEL) return composeImmutable(effective(base), MAX_LEVEL);
-        return composeImmutable(effective(base), levelBase + levelParams);
-    }
-
     public static DV independentCorrespondingToImmutableLevelDv(int immutableLevel) {
         if (immutableLevel == 0) return DEPENDENT_DV;
         assert immutableLevel > 0;

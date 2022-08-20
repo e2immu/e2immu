@@ -99,8 +99,7 @@ public class ComputedParameterAnalyser extends ParameterAnalyserImpl {
         // NOTE: a shortcut on immutable to set modification to false is not possible because of casts, see Cast_1
         // NOTE: contractImmutable only has this meaning in iteration 0; once the other two components have been
         // computed, the property IMMUTABLE is not "contract" anymore
-        DV formallyImmutable = analyserContext.defaultImmutable(parameterInfo.parameterizedType, false,
-                parameterInfo.getTypeInfo());
+        DV formallyImmutable = analyserContext.defaultImmutable(parameterInfo.parameterizedType);
         DV contractBefore = parameterAnalysis.getProperty(IMMUTABLE_BEFORE_CONTRACTED);
         DV contractImmutable = parameterAnalysis.getProperty(IMMUTABLE);
         if ((contractImmutable.isDone() || contractBefore.isDone()) && formallyImmutable.isDone()
@@ -206,8 +205,7 @@ public class ComputedParameterAnalyser extends ParameterAnalyserImpl {
 
     private AnalysisStatus analyseIndependentNoAssignment(SharedState sharedState) {
         if (parameterAnalysis.properties.isDone(INDEPENDENT)) return DONE;
-        DV immutable = analyserContext.defaultImmutable(parameterInfo.parameterizedType, true,
-                NOT_INVOLVED_DV, parameterInfo.owner.typeInfo);
+        DV immutable = analyserContext.defaultImmutable(parameterInfo.parameterizedType);
         // there is no restriction on immutable, because the link could have been STATICALLY_ASSIGNED
         if (EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV.equals(immutable)) {
             LOGGER.debug("Assign INDEPENDENT to parameter {}: type is recursively immutable", parameterInfo);
@@ -393,7 +391,7 @@ public class ComputedParameterAnalyser extends ParameterAnalyserImpl {
 
         if (!parameterAnalysis.properties.isDone(INDEPENDENT) && !map.isEmpty()
                 && map.values().stream().allMatch(LinkedVariables::isAssigned)) {
-            DV immutable = analyserContext.defaultImmutable(parameterInfo.parameterizedType, false, parameterInfo.owner.typeInfo);
+            DV immutable = analyserContext.defaultImmutable(parameterInfo.parameterizedType);
             DV independent = independentFromFields(immutable, map);
             parameterAnalysis.setProperty(INDEPENDENT, independent);
             if (independent.isDelayed()) {
@@ -412,7 +410,7 @@ public class ComputedParameterAnalyser extends ParameterAnalyserImpl {
                 if (property == EXTERNAL_CONTAINER || property == EXTERNAL_NOT_NULL || property == EXTERNAL_IGNORE_MODIFICATIONS) {
                     v = property.valueWhenAbsent();
                 } else if (property == EXTERNAL_IMMUTABLE) {
-                    v = analyserContext.defaultImmutable(parameterInfo.parameterizedType, false, parameterInfo.getTypeInfo());
+                    v = analyserContext.defaultImmutable(parameterInfo.parameterizedType);
                     // do not let this stop "resolve field delays"; we're not linked to a field so no worries
                     // followExternalImmutable will ensure that a value is given at some point
                 } else {
@@ -448,7 +446,7 @@ public class ComputedParameterAnalyser extends ParameterAnalyserImpl {
             return DONE;
         }
         if (parameterAnalysis.isAssignedToFieldDelaysResolved()) {
-            DV dv = analyserContext.defaultImmutable(parameterInfo.parameterizedType, false, parameterInfo.getTypeInfo());
+            DV dv = analyserContext.defaultImmutable(parameterInfo.parameterizedType);
             parameterAnalysis.setProperty(EXTERNAL_IMMUTABLE, dv);
             return AnalysisStatus.of(dv);
         }

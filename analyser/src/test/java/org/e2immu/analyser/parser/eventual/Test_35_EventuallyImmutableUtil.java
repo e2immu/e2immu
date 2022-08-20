@@ -312,8 +312,7 @@ public class Test_35_EventuallyImmutableUtil extends CommonTestRunner {
             DV concrete = initializerValue.getProperty(EvaluationResult.from(d.evaluationContext()), Property.IMMUTABLE, true);
             assertEquals(MultiLevel.EVENTUALLY_ERIMMUTABLE_BEFORE_MARK_DV, concrete);
 
-            DV formally = d.evaluationContext().getAnalyserContext().defaultImmutable(initializerValue.returnType(),
-                    false, null);
+            DV formally = d.evaluationContext().getAnalyserContext().defaultImmutable(initializerValue.returnType());
             assertEquals(MultiLevel.EVENTUALLY_RECURSIVELY_IMMUTABLE_DV, formally);
 
             assertEquals("instance type EventuallyFinal<String>", d.fieldAnalysis().getValue().toString());

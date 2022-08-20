@@ -314,7 +314,7 @@ public class ConstructorCall extends BaseExpression implements HasParameterExpre
         }
         return switch (property) {
             case NOT_NULL_EXPRESSION -> notNullValue();
-            case IDENTITY, IGNORE_MODIFICATIONS -> analyserContext.defaultValueProperty(property, pt, null);
+            case IDENTITY, IGNORE_MODIFICATIONS -> analyserContext.defaultValueProperty(property, pt);
             case IMMUTABLE, IMMUTABLE_BREAK -> immutableValue(pt, analyserContext, context.getCurrentType());
             case CONTAINER -> analyserContext.defaultContainer(pt);
             case INDEPENDENT -> independentValue(pt, analyserContext, context.getCurrentType());
@@ -338,11 +338,11 @@ public class ConstructorCall extends BaseExpression implements HasParameterExpre
             if (immutable.isDelayed()) return immutable;
             return MultiLevel.DEPENDENT_DV;
         }
-        return analyserContext.defaultValueProperty(Property.INDEPENDENT, pt, currentType);
+        return analyserContext.defaultValueProperty(Property.INDEPENDENT, pt);
     }
 
     private DV immutableValue(ParameterizedType pt, AnalyserContext analyserContext, TypeInfo currentType) {
-        DV dv = analyserContext.defaultImmutable(pt, false, currentType);
+        DV dv = analyserContext.defaultImmutable(pt);
         if (dv.isDone() && MultiLevel.effective(dv) == MultiLevel.Effective.EVENTUAL) {
             return MultiLevel.beforeImmutableDv(MultiLevel.level(dv));
         }

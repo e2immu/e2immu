@@ -243,7 +243,7 @@ public class EvaluateMethodCall {
             assert modified.valueIsTrue();
             DV notNull = methodAnalysis.getProperty(NOT_NULL_EXPRESSION)
                     .max(AnalysisProvider.defaultNotNull(concreteReturnType));
-            Properties valueProperties = analyserContext.defaultValueProperties(concreteReturnType, notNull, context.getCurrentType());
+            Properties valueProperties = analyserContext.defaultValueProperties(concreteReturnType, notNull);
             CausesOfDelay delays = valueProperties.delays();
             if (delays.isDelayed()) {
                 return delay(builder, methodInfo, concreteReturnType, objectValue, delays,
@@ -342,7 +342,7 @@ public class EvaluateMethodCall {
         // no implementation, we'll provide something (we could actually implement the method, but why?)
         ParameterizedType parameterizedType = objectValue.returnType();
         Properties valueProperties = analyserContext.defaultValueProperties(parameterizedType,
-                MultiLevel.EFFECTIVELY_NOT_NULL_DV, context.getCurrentType());
+                MultiLevel.EFFECTIVELY_NOT_NULL_DV);
         CausesOfDelay delayed = valueProperties.delays();
         if (delayed.isDelayed()) {
             return DelayedExpression.forValueOf(parameterizedType, methodCall, delayed);

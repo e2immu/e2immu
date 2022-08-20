@@ -39,9 +39,8 @@ public class JavaIo {
 
     /*
      Note: the type throws IOException rather than Exception (in AutoCloseable).
-     No need to write @Independent, there are no parameters nor return values.
-     No need to write @Container, there are no parameters.
      */
+    @Container
     interface Closeable$ {
 
         @Modified
@@ -146,6 +145,10 @@ public class JavaIo {
         void write(int b);
     }
 
+    interface BufferedOutputStream$ {
+
+    }
+
     @Independent
     @Container
     interface FilterOutputStream$ {
@@ -160,6 +163,11 @@ public class JavaIo {
 
         @Modified
         void write(char[] cbuf, int off, int len);
+    }
+
+    @Independent // because of Closeable, we can't do less
+    interface BufferedWriter$ {
+
     }
 
     /*
@@ -202,6 +210,11 @@ public class JavaIo {
     interface InputStream$ {
         @Modified
         long transferTo(@Modified OutputStream out);
+    }
+
+    @Independent
+    interface FilterInputStream$ {
+
     }
 
     /*

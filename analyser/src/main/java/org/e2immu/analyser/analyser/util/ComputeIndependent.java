@@ -65,8 +65,7 @@ public class ComputeIndependent {
             assert oneType != null : "Assignment?";
 
             // the 'defaultImmutable' call contains the transparent check
-            DV immutable = immutableOneType != null ? immutableOneType
-                    : analyserContext.defaultImmutable(oneType, false, currentType);
+            DV immutable = immutableOneType != null ? immutableOneType : analyserContext.defaultImmutable(oneType);
             if (immutable.isDelayed()) return immutable;
             int immutableLevel = MultiLevel.level(immutable);
             return MultiLevel.independentCorrespondingToImmutableLevelDv(immutableLevel);
@@ -88,7 +87,7 @@ public class ComputeIndependent {
                 DV canIncrease = typeAnalysis.immutableDeterminedByTypeParameters();
                 if (canIncrease.isDelayed()) return canIncrease;
                 if (canIncrease.valueIsTrue()) {
-                    DV immutable = analyserContext.immutableOfHiddenContentInTypeParameters(oneType, currentType);
+                    DV immutable = analyserContext.immutableOfHiddenContentInTypeParameters(oneType);
                     if (immutable.isDelayed()) return immutable;
                     if (MultiLevel.isAtLeastEventuallyRecursivelyImmutable(immutable)) {
                         return MultiLevel.INDEPENDENT_DV;

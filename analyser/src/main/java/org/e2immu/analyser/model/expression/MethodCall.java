@@ -454,8 +454,8 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
     }
 
     private CausesOfDelay incrementStatementTime(MethodAnalysis methodAnalysis,
-                                                    EvaluationResult.Builder builder,
-                                                    DV modified) {
+                                                 EvaluationResult.Builder builder,
+                                                 DV modified) {
         boolean increment;
         switch (methodAnalysis.analysisMode()) {
             case COMPUTED -> {
@@ -627,8 +627,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
                                                ParameterizedType typeOfHiddenContent,
                                                List<Expression> parameterValues,
                                                List<LinkedVariables> linkedVariables) {
-        DV immutableOfHiddenContent = context.getAnalyserContext().defaultImmutable(typeOfHiddenContent,
-                true, context.getCurrentType());
+        DV immutableOfHiddenContent = context.getAnalyserContext().defaultImmutable(typeOfHiddenContent);
         DV correctedLevel = LinkedVariables.LINK_INDEPENDENT1.equals(level)
                 && MultiLevel.isAtLeastEffectivelyE2Immutable(immutableOfHiddenContent)
                 ? LinkedVariables.fromImmutableToLinkedVariableLevel(immutableOfHiddenContent)
@@ -848,7 +847,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         if (createInstanceBasedOn != null) {
             ParameterizedType returnType = createInstanceBasedOn.returnType();
             Properties valueProperties = context.getAnalyserContext().defaultValueProperties(returnType,
-                    MultiLevel.EFFECTIVELY_NOT_NULL_DV, context.getCurrentType());
+                    MultiLevel.EFFECTIVELY_NOT_NULL_DV);
             CausesOfDelay causesOfDelay = valueProperties.delays();
             if (causesOfDelay.isDelayed()) {
                 if (context.evaluationContext().isMyself(returnType)) {
@@ -1154,8 +1153,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
             }
             // formal can be a @NotNull contracted annotation on the method; we cannot dismiss it
             // problem is that it may have to be computed, which introduces an unresolved delay in the case of cyclic calls.
-            DV fromConcrete = context.getAnalyserContext().defaultValueProperty(property, concreteReturnType,
-                    context.getCurrentType());
+            DV fromConcrete = context.getAnalyserContext().defaultValueProperty(property, concreteReturnType);
             boolean internalCycle = methodInfo.methodResolution.get().ignoreMeBecauseOfPartOfCallCycle();
             if (internalCycle) return fromConcrete.maxIgnoreDelay(adjusted).max(property.falseDv);
             return fromConcrete.max(adjusted);
@@ -1201,7 +1199,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
             Formal can be E2Immutable for Map.Entry<K, V>, because the removal method has gone.
             It can still upgrade to ERImmutable when the K and V become ER themselves
              */
-            return analyserContext.defaultImmutable(returnType(), true, formal, context.getCurrentType());
+            return analyserContext.defaultImmutable(returnType(), formal);
         }
         return formal;
     }
@@ -1219,7 +1217,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
                 causesOfDelay = causesOfDelay.merge(concreteHiddenTypes.causesOfDelay());
             } else {
                 DV hiddenImmutable = concreteHiddenTypes.hiddenTypes().stream()
-                        .map(pt -> context.getAnalyserContext().defaultImmutable(pt, true, context.getCurrentType()))
+                        .map(pt -> context.getAnalyserContext().defaultImmutable(pt))
                         .reduce(MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, DV::min);
                 minParams = minParams.min(hiddenImmutable);
             }
@@ -1227,7 +1225,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         if (minParams == DV.MAX_INT_DV) return formal;
         if (causesOfDelay.isDelayed()) return causesOfDelay;
         if (minParams.isDelayed()) return minParams;
-        return MultiLevel.sumImmutableLevels(formal, minParams);
+        return minParams;
     }
 
     /*

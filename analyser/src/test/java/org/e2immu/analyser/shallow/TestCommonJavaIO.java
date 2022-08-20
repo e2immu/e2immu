@@ -26,12 +26,23 @@ import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.TypeInfo;
 import org.junit.jupiter.api.Test;
 
+import java.io.Closeable;
 import java.io.PrintStream;
 import java.io.Writer;
 
 import static org.junit.jupiter.api.Assertions.*;
 
 public class TestCommonJavaIO extends CommonAnnotatedAPI {
+
+    @Test
+    public void testCloseable() {
+        TypeInfo typeInfo = typeContext.getFullyQualified(Closeable.class);
+        TypeAnalysis typeAnalysis = typeInfo.typeAnalysis.get();
+
+        assertEquals(MultiLevel.INDEPENDENT_DV, typeAnalysis.getProperty(Property.INDEPENDENT));
+        assertEquals(MultiLevel.MUTABLE_DV, typeAnalysis.getProperty(Property.IMMUTABLE));
+        assertEquals(MultiLevel.CONTAINER_DV, typeAnalysis.getProperty(Property.CONTAINER));
+    }
 
     @Test
     public void testPrintStream() {

@@ -277,8 +277,7 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
             if (MultiLevel.isAtLeastEffectivelyE2Immutable(imm)) return DV.TRUE_DV;
             DV extImm = variableInfo.getProperty(EXTERNAL_IMMUTABLE);
             if (MultiLevel.isAtLeastEffectivelyE2Immutable(extImm)) return DV.TRUE_DV;
-            DV formal = analyserContext.defaultImmutable(variableInfo.variable().parameterizedType(), false,
-                    getCurrentType());
+            DV formal = analyserContext.defaultImmutable(variableInfo.variable().parameterizedType());
             return DV.fromBoolDv(MultiLevel.isAtLeastEffectivelyE2Immutable(formal));
         }
         DV valueProperty = getProperty(value, IMMUTABLE, true, false);
@@ -659,7 +658,7 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
             Properties valueProperties;
             if (bestValue.isInstanceOf(NullConstant.class) || bestValue.isInstanceOf(UnknownExpression.class)
                     || bestValue.isDelayed()) {
-                valueProperties = analyserContext.defaultValueProperties(variable.parameterizedType(), getCurrentType());
+                valueProperties = analyserContext.defaultValueProperties(variable.parameterizedType());
             } else {
                 valueProperties = getValueProperties(bestValue);
             }
@@ -743,16 +742,6 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
     public Stream<Map.Entry<String, VariableInfoContainer>> variablesFromClosure() {
         return statementAnalysis.rawVariableStream()
                 .filter(e -> !(e.getValue().current().variable() instanceof ReturnVariable));
-    }
-
-    @Override
-    public CausesOfDelay variableIsDelayed(Variable variable) {
-        VariableInfo vi = statementAnalysis.findOrNull(variable, INITIAL);
-        if (vi == null) {
-            return DelayFactory.createDelay(new VariableCause(variable,
-                    getLocation(INITIAL), CauseOfDelay.Cause.VARIABLE_DOES_NOT_EXIST));
-        }
-        return vi.getValue().causesOfDelay();
     }
 
     @Override

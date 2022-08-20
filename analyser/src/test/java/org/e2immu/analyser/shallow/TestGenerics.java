@@ -49,7 +49,7 @@ public class TestGenerics extends CommonAnnotatedAPI {
         assertEquals("Type java.util.stream.Stream<java.lang.Integer>", streamOfIntegers.toString());
 
         assertEquals(MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, AnalysisProvider.DEFAULT_PROVIDER
-                .defaultImmutable(streamOfIntegers, false, null));
+                .defaultImmutable(streamOfIntegers));
     }
 
     @Test
@@ -71,15 +71,15 @@ public class TestGenerics extends CommonAnnotatedAPI {
                 streamOfOptionalIntegers.toString());
 
         assertEquals(MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV,
-                AnalysisProvider.DEFAULT_PROVIDER.defaultImmutable(streamOfOptionalIntegers, false, null));
+                AnalysisProvider.DEFAULT_PROVIDER.defaultImmutable(streamOfOptionalIntegers));
         assertEquals(MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV,
-                AnalysisProvider.DEFAULT_PROVIDER.defaultImmutable(streamOfOptionalIntegers, true, null));
+                AnalysisProvider.DEFAULT_PROVIDER.defaultImmutable(streamOfOptionalIntegers));
     }
 
     /*
      Stream is E2Immutable.
      Entry is E2Immutable when the result from floorEntry in TreeMap, but not when returned as Set<Entry<...>> in Map.entrySet.
-     Map.entrySet() is Set<Entry<>> is @Dependent/@Container, therefore increasing doesn't work
+     Map.entrySet() is Set<Entry<>> is dependent/@Container, therefore increasing doesn't work
      */
 
     @Test
@@ -102,8 +102,8 @@ public class TestGenerics extends CommonAnnotatedAPI {
         assertEquals("Type java.util.stream.Stream<java.util.Map.Entry<java.lang.String,java.lang.Integer>>",
                 streamOfEntryStringIntegers.toString());
 
-        assertEquals(MultiLevel.EFFECTIVELY_E2IMMUTABLE_DV,
-                AnalysisProvider.DEFAULT_PROVIDER.defaultImmutable(streamOfEntryStringIntegers, false, null));
+        assertEquals(MultiLevel.MUTABLE_DV,
+                AnalysisProvider.DEFAULT_PROVIDER.defaultImmutable(streamOfEntryStringIntegers));
     }
 
 }

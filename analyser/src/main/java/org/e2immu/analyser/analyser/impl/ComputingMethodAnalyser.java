@@ -693,7 +693,7 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
     }
 
     private DV computeImmutableValue(boolean allowBreakDelay) {
-        DV formalImmutable = analyserContext.defaultImmutable(methodInfo.returnType(), true, methodInfo.typeInfo);
+        DV formalImmutable = analyserContext.defaultImmutable(methodInfo.returnType());
         if (formalImmutable.equals(MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV)) {
             return formalImmutable;
         }

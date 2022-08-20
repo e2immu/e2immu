@@ -789,7 +789,7 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
             return DONE;
         }
 
-        DV staticallyImmutable = analyserContext.defaultImmutable(fieldInfo.type, false, fieldInfo.owner);
+        DV staticallyImmutable = analyserContext.defaultImmutable(fieldInfo.type);
         if (staticallyImmutable.isDelayed()) {
             LOGGER.debug("Delaying @Immutable on {} until we know about statically immutable", fqn);
             fieldAnalysis.setProperty(Property.EXTERNAL_IMMUTABLE, staticallyImmutable);
@@ -1205,7 +1205,7 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
         // NOTE: commenting out this situation introduces an extra delay round into many tests, e.g. Precondition_1
         // which is good for stress testing the BREAK_INIT delay system
         boolean forceExtraDelayForTesting = analyserContext.getConfiguration().analyserConfiguration().forceExtraDelayForTesting();
-        DV formalType = analyserContext.defaultImmutable(fieldInfo.type, false, fieldInfo.owner);
+        DV formalType = analyserContext.defaultImmutable(fieldInfo.type);
         if (formalType.isDone() && MultiLevel.isAtLeastEffectivelyE2Immutable(formalType) && !forceExtraDelayForTesting) {
             LOGGER.debug("Set @IgnoreModifications to NOT_IGNORE_MODS for field e2immutable field {}", fqn);
             fieldAnalysis.setProperty(EXTERNAL_IGNORE_MODIFICATIONS, MultiLevel.NOT_IGNORE_MODS_DV);

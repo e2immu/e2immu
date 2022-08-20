@@ -110,8 +110,7 @@ public class TypeExpression extends BaseExpression implements Expression {
         if (property == Property.NOT_NULL_EXPRESSION) return MultiLevel.EFFECTIVELY_NOT_NULL_DV;
         if (property == Property.IMMUTABLE) {
             // used by EvaluationContext.extractHiddenContent
-            return context.getAnalyserContext().defaultImmutable(parameterizedType, false,
-                    context.getCurrentType());
+            return context.getAnalyserContext().defaultImmutable(parameterizedType);
         }
         return property.falseDv;
     }

@@ -338,7 +338,7 @@ public class ShallowMethodAnalyser extends MethodAnalyserImpl {
 
     private DV computeMethodImmutable() {
         ParameterizedType returnType = methodInspection.getReturnType();
-        DV immutable = analyserContext.defaultImmutable(returnType, true, methodInfo.typeInfo);
+        DV immutable = analyserContext.defaultImmutable(returnType);
         if (immutable.containsCauseOfDelay(CauseOfDelay.Cause.TYPE_ANALYSIS)) {
             analyserResultBuilder.add(Message.newMessage(methodInfo.newLocation(), Message.Label.TYPE_ANALYSIS_NOT_AVAILABLE,
                     returnType.typeInfo == null ? "Return type of " + methodInfo.fullyQualifiedName :
@@ -363,7 +363,7 @@ public class ShallowMethodAnalyser extends MethodAnalyserImpl {
                 value = override;
             } else {
                 ParameterizedType type = builder.getParameterInfo().parameterizedType;
-                if (type.isPrimitiveExcludingVoid() || type.isJavaLangString()) {
+                if (type.isPrimitiveStringClass()) {
                     value = DV.FALSE_DV;
                 } else {
                     DV typeIndependent = analyserContext.defaultIndependent(type);
@@ -387,8 +387,7 @@ public class ShallowMethodAnalyser extends MethodAnalyserImpl {
     }
 
     private DV computeParameterImmutable(ParameterAnalysisImpl.Builder builder) {
-        return analyserContext.defaultImmutable(builder.getParameterInfo().parameterizedType, false,
-                builder.getParameterInfo().getTypeInfo());
+        return analyserContext.defaultImmutable(builder.getParameterInfo().parameterizedType);
     }
 
     private DV computeParameterIndependent(ParameterAnalysisImpl.Builder builder) {

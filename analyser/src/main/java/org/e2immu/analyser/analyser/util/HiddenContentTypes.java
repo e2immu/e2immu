@@ -91,7 +91,7 @@ public class HiddenContentTypes {
         if (hierarchyToAvoid.contains(bestType)) {
             return;
         }
-        DV immutable = analyserContext.defaultImmutable(type, false, typeInfo);
+        DV immutable = analyserContext.defaultImmutable(type);
         if (MultiLevel.isAtLeastEventuallyRecursivelyImmutable(immutable)) return;
         if (MultiLevel.isAtLeastEventuallyE2Immutable(immutable)) {
             types.add(type);
