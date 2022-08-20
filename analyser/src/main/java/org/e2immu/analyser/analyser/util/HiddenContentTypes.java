@@ -36,8 +36,8 @@ public class HiddenContentTypes {
         this.typeInfo = typeInfo;
     }
 
-    public HiddenContentTypes go(SetOfTypes transparentTypes) {
-        types.addAll(transparentTypes.types()); // these are the unbound type parameters of the type
+    public HiddenContentTypes go(SetOfTypes typeParameters) {
+        types.addAll(typeParameters.types()); // these are the unbound type parameters of the type
         if (!typeInfo.isJavaLangObject()) {
             recurse(typeInfo);
         }

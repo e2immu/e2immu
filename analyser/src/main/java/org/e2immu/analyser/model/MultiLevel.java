@@ -368,4 +368,9 @@ public class MultiLevel {
     public static boolean isAtLeastEventuallyRecursivelyImmutable(DV immutable) {
         return immutable.ge(EVENTUALLY_RECURSIVELY_IMMUTABLE_DV);
     }
+
+    public static DV dropHiddenContentOfIndependent(DV dv) {
+        if (dv.ge(MultiLevel.INDEPENDENT_1_DV)) return MultiLevel.INDEPENDENT_DV;
+        return dv;
+    }
 }

@@ -23,6 +23,10 @@ import java.util.function.*;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
+/*
+TODO Implementation issue: JavaUtil must be public, and marked @Independent as a consequence.
+ */
+@Independent
 public class JavaUtil extends AnnotatedAPI {
     final static String PACKAGE_NAME = "java.util";
 
@@ -62,9 +66,10 @@ public class JavaUtil extends AnnotatedAPI {
      Because iterating without removal can, in many cases, be replaced by a for-each loop or a stream,
      we believe we can live with this at the moment.
      
-     Implicitly @Independent(hc=true): the purpose of an iterator is to expose the content of a type!!
+     @Independent(hc=true): the purpose of an iterator is to expose the content of a type!!
      */
     @Container
+    @Independent(hc = true)
     interface Iterator$<T> {
         @Modified
         default void forEachRemaining(@NotNull @Independent(hc = true) Consumer<? super T> action) {
@@ -657,9 +662,9 @@ public class JavaUtil extends AnnotatedAPI {
     }
 
     /*
-     Analyser will add hc=true to ImmutableContainer
+     Analyser does not add hc=true automatically, Optional is not abstract
      */
-    @ImmutableContainer
+    @ImmutableContainer(hc = true)
     interface Optional$<T> {
         /*
          no hidden content here
@@ -717,19 +722,21 @@ public class JavaUtil extends AnnotatedAPI {
         @NotNull
         <T> List<T> asList(T... ts);
 
-        <T> void setAll(@NotNull T[] array, @NotNull @Independent(parameters = {0}) IntFunction<? extends T> generator);
+        <T> void setAll(@NotNull T[] array, @NotNull @Independent(parameters = {0}, hc = true) IntFunction<? extends T> generator);
     }
 
     @UtilityClass
     interface Collections$ {
 
-        <T> boolean addAll(@NotNull @Modified @Independent(parameters = {1}) Collection<? super T> c, @NotModified T... elements);
+        <T> boolean addAll(@NotNull @Modified @Independent(parameters = {1}, hc = true) Collection<? super T> c, @NotModified T... elements);
     }
 
     /*
-     @Dependent, because of entrySet, which has an iterator with remove()
+     dependent, because of entrySet, which has an iterator with remove()
+     explicitly marked because of circular dependencies
      */
     @Container
+    @Independent(absent = true)
     interface Map$<K, V> {
 
         default boolean clear$Clear$Size(int i) {
@@ -847,6 +854,7 @@ public class JavaUtil extends AnnotatedAPI {
          in TreeMap.
          */
         @Container
+        @Independent(hc = true)
         interface Entry<K, V> {
             @NotNull
             @Independent(hc = true)
@@ -859,6 +867,14 @@ public class JavaUtil extends AnnotatedAPI {
             @Modified
             @Independent(hc = true)
             V setValue(@Independent(hc = true) @NotNull V v);
+        }
+    }
+
+    interface AbstractMap$<K, V> {
+
+        @Independent(hc = true)
+        interface SimpleEntry<K, V> {
+
         }
     }
 

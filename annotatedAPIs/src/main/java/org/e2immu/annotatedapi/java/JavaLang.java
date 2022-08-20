@@ -62,6 +62,7 @@ class JavaLang {
     The archetype for a non-abstract type with hidden content.
      */
     @ImmutableContainer(hc = true)
+    @Independent
     interface Object$ {
         @NotNull
         Object clone();
@@ -89,6 +90,7 @@ class JavaLang {
     The analyser adds hc=true for an interface.
      */
     @ImmutableContainer
+    @Independent
     interface Enum$ {
 
     }
@@ -573,5 +575,31 @@ class JavaLang {
     @ImmutableContainer
     interface Module$ {
 
+    }
+
+    @Container
+    interface ProcessHandle$ {
+
+        @Modified
+        boolean destroy();
+
+        boolean isAlive();
+
+        @ImmutableContainer // no hidden content
+        interface Info {
+
+        }
+    }
+
+    @Container
+    @Independent(hc = true)
+    interface ClassValue$<T> {
+        @Modified
+        T computeValue(Class<?> type);
+
+        T get(Class<?> type);
+
+        @Modified
+        void remove(Class<?> type);
     }
 }

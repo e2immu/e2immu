@@ -106,6 +106,10 @@ public class ParameterizedType {
         return arrays == 0 && typeInfo != null && typeInfo.isPrimitiveExcludingVoid();
     }
 
+    public boolean isPrimitiveStringClass() {
+        return arrays == 0 && typeInfo != null && (typeInfo.isPrimitiveExcludingVoid() || typeInfo.isJavaLangString() || typeInfo.isJavaLangClass());
+    }
+
     private boolean checkParametersForPrimitives() {
         assert parameters.stream().noneMatch(ParameterizedType::isPrimitiveExcludingVoid) : "Type parameters contain primitives: " + parameters;
         return true;

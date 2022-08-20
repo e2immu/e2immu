@@ -15,21 +15,27 @@
 package org.e2immu.annotatedapi.java;
 
 import org.e2immu.annotation.Container;
+import org.e2immu.annotation.Independent;
 import org.e2immu.annotation.Modified;
 import org.e2immu.annotation.NotNull;
 
 import java.util.Comparator;
+import java.util.function.Consumer;
 
 public class JavaUtilFunction {
 
     public static final String PACKAGE_NAME = "java.util.function";
 
+    // implicitly @Dependent, computed @Independent(hc = true)
+    @Independent(hc = true)
     @Container
     interface Supplier$<T> {
         @Modified
         T get();
     }
 
+    // without the annotation: implicitly @Dependent, computed @Dependent because of andThen
+    @Independent(hc = true)
     interface Consumer$<T> {
         /*
         t is @Modified implicitly
@@ -37,10 +43,12 @@ public class JavaUtilFunction {
         @Modified
         void accept(T t);
 
+        // default method, calling accept first, then "after"
         @NotNull
-        java.util.function.Consumer<T> andThen(@NotNull java.util.function.Consumer<? super T> after);
+        Consumer<T> andThen(@NotNull Consumer<? super T> after);
     }
 
+    @Independent(hc = true)
     interface Predicate$<T> {
         /*
          t is @Modified implicitly
@@ -49,6 +57,7 @@ public class JavaUtilFunction {
         boolean test(T t);
     }
 
+    @Independent(hc = true)
     interface Function$<T, R> {
         /*
          t is @Modified implicitly
@@ -66,6 +75,7 @@ public class JavaUtilFunction {
         <T> java.util.function.Function<T, T> identity();
     }
 
+    @Independent(hc = true)
     interface BiFunction$<T, U, R> {
 
         @Modified
@@ -75,6 +85,7 @@ public class JavaUtilFunction {
         <V> java.util.function.BiFunction<T, U, V> andThen(@NotNull java.util.function.Function<? super R, ? extends V> after);
     }
 
+    @Independent(hc = true)
     interface BinaryOperator$<T> extends java.util.function.BiFunction<T, T, T> {
 
         @NotNull
@@ -84,6 +95,7 @@ public class JavaUtilFunction {
         <TT> java.util.function.BinaryOperator<T> minBy(@NotNull Comparator<? super TT> comparator);
     }
 
+    @Independent(hc = true)
     interface BiConsumer$<T, U> {
         @Modified
         void accept(T t, U u);
@@ -92,13 +104,30 @@ public class JavaUtilFunction {
         java.util.function.BiConsumer<T, U> andThen(@NotNull java.util.function.BiConsumer<? super T, ? super U> after);
     }
 
+    @Independent(hc = true)
     interface ToIntFunction$<R> {
         @Modified
         int applyAsInt(R value);
     }
 
+    @Independent(hc = true)
     interface IntFunction$<R> {
         @Modified
         R apply(int value);
+    }
+
+    @Independent(hc = true)
+    interface DoubleFunction$<R> {
+
+    }
+
+    @Independent(hc = true)
+    interface LongFunction$<R> {
+
+    }
+
+    @Independent(hc = true)
+    interface UnaryOperator$<R> {
+
     }
 }

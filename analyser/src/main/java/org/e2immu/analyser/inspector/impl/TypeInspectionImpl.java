@@ -321,7 +321,8 @@ public class TypeInspectionImpl extends InspectionImpl implements TypeInspection
         public TypeInspectionImpl build(InspectionProvider inspectionProvider) {
             Objects.requireNonNull(typeNature);
             if (typeInfo.needsParent() && parentClass == null) {
-                throw new UnsupportedOperationException("Need a parent class for " + typeInfo.fullyQualifiedName);
+                throw new UnsupportedOperationException("Need a parent class for " + typeInfo.fullyQualifiedName
+                        + ". If this error occurs during annotated API inspection, check that the class name is spelled correctly!");
             }
             assert permittedWhenSealed.isEmpty() || modifiers.contains(TypeModifier.SEALED);
             assert !modifiers.contains(TypeModifier.SEALED) || !permittedWhenSealed.isEmpty();

@@ -387,7 +387,7 @@ public class ShallowMethodAnalyser extends MethodAnalyserImpl {
     }
 
     private DV computeParameterImmutable(ParameterAnalysisImpl.Builder builder) {
-        return analyserContext.defaultImmutable(builder.getParameterInfo().parameterizedType, true,
+        return analyserContext.defaultImmutable(builder.getParameterInfo().parameterizedType, false,
                 builder.getParameterInfo().getTypeInfo());
     }
 
@@ -405,7 +405,12 @@ public class ShallowMethodAnalyser extends MethodAnalyserImpl {
                 // note that an unbound type parameter is by default @Dependent, not @Independent1!!
                 if (immutable.isDelayed()) return immutable;
                 int immutableLevel = MultiLevel.level(immutable);
-                value = MultiLevel.independentCorrespondingToImmutableLevelDv(immutableLevel);
+                DV maxImmutable = MultiLevel.independentCorrespondingToImmutableLevelDv(immutableLevel);
+                TypeAnalysis ownerAnalysis = analyserContext.getTypeAnalysis(builder.getParameterInfo().owner.typeInfo);
+                DV independentType = ownerAnalysis.getProperty(Property.INDEPENDENT);
+                assert independentType.isDone()
+                        : "Do not have an @Independent value for type when computing that of " + builder.getParameterInfo();
+                value = independentType.max(maxImmutable);
             } else {
                 value = MultiLevel.INDEPENDENT_DV;
             }
@@ -451,7 +456,14 @@ public class ShallowMethodAnalyser extends MethodAnalyserImpl {
         if (identity.valueIsTrue() && modified.valueIsFalse()) {
             return MultiLevel.INDEPENDENT_DV; // @Identity + @NotModified -> must be @Independent
         }
-        TypeInfo bestType = methodInfo.returnType().bestTypeInfo();
+        // from here on we're assuming the result is linked to the fields.
+
+        ParameterizedType pt = methodInfo.returnType();
+        if (pt.arrays > 0) {
+            // array type, like int[]
+            return MultiLevel.DEPENDENT_DV;
+        }
+        TypeInfo bestType = pt.bestTypeInfo();
         if (ParameterizedType.isUnboundTypeParameterOrJLO(bestType)) {
             // unbound type parameter T, or unbound with array T[], T[][]
             return MultiLevel.INDEPENDENT_1_DV;

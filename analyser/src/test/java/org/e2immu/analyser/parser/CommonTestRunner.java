@@ -177,7 +177,7 @@ public abstract class CommonTestRunner extends VisitorTestSupport {
             filteredMessages = messages;
         } else {
             filteredMessages = messages.stream()
-                    .filter(m -> m.message() != Message.Label.TYPE_HAS_HIGHER_VALUE_FOR_INDEPENDENT ||
+                    .filter(m -> m.message() != Message.Label.TYPE_HAS_DIFFERENT_VALUE_FOR_INDEPENDENT ||
                             ((LocationImpl) m.location()).info == null ||
                             !((LocationImpl) m.location()).info.getTypeInfo().packageName().startsWith("java."))
                     .toList();

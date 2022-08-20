@@ -38,7 +38,7 @@ public class TestCommonJavaUtilFunction extends CommonAnnotatedAPI {
         TypeInfo typeInfo = typeContext.getFullyQualified(Consumer.class);
         TypeAnalysis typeAnalysis = typeInfo.typeAnalysis.get();
         assertEquals(MultiLevel.MUTABLE_DV, typeAnalysis.getProperty(Property.IMMUTABLE));
-        assertEquals(MultiLevel.DEPENDENT_DV, typeAnalysis.getProperty(Property.INDEPENDENT));
+        assertEquals(MultiLevel.INDEPENDENT_1_DV, typeAnalysis.getProperty(Property.INDEPENDENT));
         assertEquals(MultiLevel.NOT_CONTAINER_DV, typeAnalysis.getProperty(Property.CONTAINER));
 
         assertEquals("Type param T", typeAnalysis.getHiddenContentTypes().toString());
@@ -57,9 +57,11 @@ public class TestCommonJavaUtilFunction extends CommonAnnotatedAPI {
         // key
         ParameterAnalysis p0 = methodInfo.parameterAnalysis(0);
         assertEquals(DV.TRUE_DV, p0.getProperty(Property.MODIFIED_VARIABLE), "in " + methodInfo.fullyQualifiedName);
-        assertEquals(MultiLevel.NOT_INVOLVED_DV, p0.getProperty(Property.IMMUTABLE)); // could be MUTABLE
-        // default would be @Independent1 here, but we do not want to add any restriction on implementations
-        assertEquals(MultiLevel.DEPENDENT_DV, p0.getProperty(Property.INDEPENDENT));
+        /*
+        from the point of view of the interface, hidden content is passed on; this hidden content can be modified by implementations.
+         */
+        assertEquals(MultiLevel.EFFECTIVELY_E2IMMUTABLE_DV, p0.getProperty(Property.IMMUTABLE));
+        assertEquals(MultiLevel.INDEPENDENT_1_DV, p0.getProperty(Property.INDEPENDENT));
     }
 
     @Test
@@ -92,7 +94,7 @@ public class TestCommonJavaUtilFunction extends CommonAnnotatedAPI {
         assertTrue(typeInfo.typeInspection.get().isFunctionalInterface());
         TypeAnalysis typeAnalysis = typeInfo.typeAnalysis.get();
         assertEquals(MultiLevel.MUTABLE_DV, typeAnalysis.getProperty(Property.IMMUTABLE));
-        assertEquals(MultiLevel.DEPENDENT_DV, typeAnalysis.getProperty(Property.INDEPENDENT));
+        assertEquals(MultiLevel.INDEPENDENT_1_DV, typeAnalysis.getProperty(Property.INDEPENDENT));
 
         assertEquals("Type param T", typeAnalysis.getHiddenContentTypes().toString());
     }

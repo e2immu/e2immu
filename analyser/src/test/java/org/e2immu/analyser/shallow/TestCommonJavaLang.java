@@ -39,7 +39,7 @@ public class TestCommonJavaLang extends CommonAnnotatedAPI {
     public void testClass() {
         TypeInfo typeInfo = typeContext.getFullyQualified(Class.class);
         TypeAnalysis objectAnalysis = typeInfo.typeAnalysis.get();
-        testImmutableContainerType(objectAnalysis, false);
+        testImmutableContainerType(objectAnalysis, false, false);
 
         MethodInfo methodInfo = typeInfo.findUniqueMethod("getAnnotatedInterfaces", 0);
         MethodAnalysis methodAnalysis = methodInfo.methodAnalysis.get();
@@ -55,14 +55,14 @@ public class TestCommonJavaLang extends CommonAnnotatedAPI {
     public void testObject() {
         TypeInfo object = typeContext.getFullyQualified(Object.class);
         TypeAnalysis objectAnalysis = object.typeAnalysis.get();
-        testImmutableContainerType(objectAnalysis, true);
+        testImmutableContainerType(objectAnalysis, true, false);
     }
 
     @Test
     public void testString() {
         TypeInfo string = typeContext.getFullyQualified(String.class);
         TypeAnalysis typeAnalysis = string.typeAnalysis.get();
-        testImmutableContainerType(typeAnalysis, false);
+        testImmutableContainerType(typeAnalysis, false, false);
     }
 
     @Test
@@ -161,14 +161,14 @@ public class TestCommonJavaLang extends CommonAnnotatedAPI {
     public void testCharSequence() {
         TypeInfo charSequence = typeContext.getFullyQualified(CharSequence.class);
         TypeAnalysis typeAnalysis = charSequence.typeAnalysis.get();
-        testImmutableContainerType(typeAnalysis, true);
+        testImmutableContainerType(typeAnalysis, true, true);
     }
 
     @Test
-    public void testComparable() {
+    public void testComparableCompareTo() {
         TypeInfo typeInfo = typeContext.getFullyQualified(Comparable.class);
         TypeAnalysis typeAnalysis = typeInfo.typeAnalysis.get();
-        testImmutableContainerType(typeAnalysis, true);
+        testImmutableContainerType(typeAnalysis, true, true);
 
         MethodInfo compareTo = typeInfo.findUniqueMethod("compareTo", 1);
         MethodAnalysis methodAnalysis = compareTo.methodAnalysis.get();
@@ -180,7 +180,7 @@ public class TestCommonJavaLang extends CommonAnnotatedAPI {
 
         ParameterAnalysis p0 = compareTo.parameterAnalysis(0);
         assertEquals(MultiLevel.INDEPENDENT_DV, p0.getProperty(Property.INDEPENDENT));
-        assertEquals(MultiLevel.NOT_INVOLVED_DV, p0.getProperty(Property.IMMUTABLE));
+        assertEquals(MultiLevel.EFFECTIVELY_E2IMMUTABLE_DV, p0.getProperty(Property.IMMUTABLE));
         assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, p0.getProperty(Property.NOT_NULL_PARAMETER));
         assertEquals(DV.FALSE_DV, p0.getProperty(Property.MODIFIED_VARIABLE));
 
@@ -194,7 +194,7 @@ public class TestCommonJavaLang extends CommonAnnotatedAPI {
     public void testSerializable() {
         TypeInfo typeInfo = typeContext.getFullyQualified(Serializable.class);
         TypeAnalysis typeAnalysis = typeInfo.typeAnalysis.get();
-        testImmutableContainerType(typeAnalysis, true);
+        testImmutableContainerType(typeAnalysis, true, true);
     }
 
     @Test
@@ -319,5 +319,14 @@ public class TestCommonJavaLang extends CommonAnnotatedAPI {
         MethodInfo method = number.findUniqueMethod("doubleValue", 0);
         MethodAnalysis methodAnalysis = method.methodAnalysis.get();
         assertEquals(DV.FALSE_DV, methodAnalysis.getProperty(Property.MODIFIED_METHOD));
+    }
+
+    @Test
+    public void testProcessHandle() {
+        TypeInfo typeInfo = typeContext.getFullyQualified(ProcessHandle.class);
+        TypeAnalysis typeAnalysis = typeInfo.typeAnalysis.get();
+        assertEquals(MultiLevel.DEPENDENT_DV, typeAnalysis.getProperty(Property.INDEPENDENT));
+        assertEquals(MultiLevel.MUTABLE_DV, typeAnalysis.getProperty(Property.IMMUTABLE));
+        assertEquals(MultiLevel.CONTAINER_DV, typeAnalysis.getProperty(Property.CONTAINER));
     }
 }

@@ -1189,7 +1189,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
             TypeAnalysis typeAnalysis = analyserContext.getTypeAnalysis(context.getCurrentType());
             MethodInspection methodInspection = analyserContext.getMethodInspection(methodInfo);
 
-            if (methodInspection.isStatic() && methodInspection.isFactoryMethod()) {
+            if (methodInspection.isFactoryMethod()) {
                 if (typeAnalysis.hiddenContentAndExplicitTypeComputationDelays().isDelayed()) {
                     return typeAnalysis.hiddenContentAndExplicitTypeComputationDelays();
                 }
@@ -1280,7 +1280,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
 
         // RULE 3: in a factory method, the result links to the parameters, directly
         MethodInspection methodInspection = context.getAnalyserContext().getMethodInspection(methodInfo);
-        if (methodInspection.isStatic() && methodInspection.isFactoryMethod()) {
+        if (methodInspection.isFactoryMethod()) {
             List<LinkedVariables> linkedVariables = ConstructorCall.computeLinkedVariablesOfParameters(context, parameterExpressions, parameterExpressions);
             // FIXME parameterValues needed
             // content link to the parameters, and all variables normally linked to them

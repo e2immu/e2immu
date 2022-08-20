@@ -235,7 +235,7 @@ abstract class AbstractAnalysisBuilder implements Analysis {
         Messages messages = new Messages();
         DV notNull = null;
         boolean container = false;
-        MultiLevel.Level levelIndependent = MultiLevel.Level.ABSENT;
+        DV independent = DV.MIN_INT_DV;
         DV linkLevel = null;
         int[] linkParameters = null;
 
@@ -253,7 +253,7 @@ abstract class AbstractAnalysisBuilder implements Analysis {
 
         for (AnnotationExpression annotationExpression : annotations) {
             AnnotationParameters parameters = annotationExpression.e2ImmuAnnotationParameters();
-            if (parameters != null && (parameters.contract() || acceptVerifyAsContracted && !parameters.absent())) {
+            if (parameters != null && (parameters.contract() || acceptVerifyAsContracted)) {
                 DV trueFalse = parameters.absent() ? DV.FALSE_DV : DV.TRUE_DV;
                 DV falseTrue = !parameters.absent() ? DV.FALSE_DV : DV.TRUE_DV;
 
@@ -272,8 +272,8 @@ abstract class AbstractAnalysisBuilder implements Analysis {
                     boolean hiddenContent = analyserIdentification.isAbstract || annotationExpression.extract("hc", false);
                     MultiLevel.Level immutable = hiddenContent ? MultiLevel.Level.IMMUTABLE_2 : MultiLevel.Level.IMMUTABLE_R;
                     levelImmutable = parameters.absent() ? MultiLevel.Level.ABSENT : levelImmutable.max(immutable);
-                    MultiLevel.Level independent = hiddenContent ? MultiLevel.Level.INDEPENDENT_1 : MultiLevel.Level.INDEPENDENT_R;
-                    levelIndependent = parameters.absent() ? levelIndependent : levelIndependent.max(independent);
+                    DV independentHc = hiddenContent ? MultiLevel.INDEPENDENT_1_DV : MultiLevel.INDEPENDENT_DV;
+                    independent = parameters.absent() ? MultiLevel.DEPENDENT_DV : independent.maxIgnoreDelay(independentHc);
                     eventual = isEventual(annotationExpression);
                     String constantValue = annotationExpression.extract("value", "");
                     isConstant = constantValue == null || !constantValue.isEmpty();
@@ -282,8 +282,8 @@ abstract class AbstractAnalysisBuilder implements Analysis {
                 } else if (e2ImmuAnnotationExpressions.independent.typeInfo() == t) {
                     // @Independent
                     boolean hc = annotationExpression.extract("hc", false);
-                    levelIndependent = parameters.absent() ? MultiLevel.Level.ABSENT :
-                            hc ? MultiLevel.Level.INDEPENDENT_1 : MultiLevel.Level.INDEPENDENT_R;
+                    independent = parameters.absent() ? MultiLevel.DEPENDENT_DV :
+                            hc ? MultiLevel.INDEPENDENT_1_DV : MultiLevel.INDEPENDENT_DV;
                     if (analyserIdentification == Analyser.AnalyserIdentification.PARAMETER) {
                         linkLevel = parameters.absent() ? LinkedVariables.LINK_DEPENDENT :
                                 hc ? LinkedVariables.LINK_INDEPENDENT1 : LinkedVariables.LINK_NONE;
@@ -338,7 +338,7 @@ abstract class AbstractAnalysisBuilder implements Analysis {
                     // @UtilityClass
                     setProperty(Property.UTILITY_CLASS, trueFalse);
                     levelImmutable = MultiLevel.Level.IMMUTABLE_2.max(levelImmutable);
-                    levelIndependent = MultiLevel.Level.INDEPENDENT_1.max(levelIndependent);
+                    independent = MultiLevel.INDEPENDENT_1_DV.maxIgnoreDelay(independent);
                 } else if (e2ImmuAnnotationExpressions.extensionClass.typeInfo() == t) {
                     // @ExtensionClass
                     setProperty(Property.EXTENSION_CLASS, trueFalse);
@@ -360,9 +360,8 @@ abstract class AbstractAnalysisBuilder implements Analysis {
                 }
             }
         }
-        if (levelIndependent != MultiLevel.Level.ABSENT) {
-            DV value = MultiLevel.composeIndependent(MultiLevel.Effective.EFFECTIVE, levelIndependent);
-            setProperty(Property.INDEPENDENT, value);
+        if (independent != DV.MIN_INT_DV) {
+            setProperty(Property.INDEPENDENT, independent);
         }
         if (container) {
             setProperty(Property.CONTAINER, MultiLevel.CONTAINER_DV);

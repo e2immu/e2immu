@@ -60,7 +60,8 @@ public class TestCommonJavaUtilStream extends CommonAnnotatedAPI {
         ParameterAnalysis p0 = methodInfo.parameterAnalysis(0);
         assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, p0.getProperty(Property.NOT_NULL_PARAMETER));
         assertEquals(DV.FALSE_DV, p0.getProperty(Property.MODIFIED_VARIABLE));
-        assertEquals(MultiLevel.INDEPENDENT_1_DV, p0.getProperty(Property.INDEPENDENT));
+        assertEquals(MultiLevel.INDEPENDENT_DV, p0.getProperty(Property.INDEPENDENT));
+        assertEquals(MultiLevel.IGNORE_MODS_DV, p0.getProperty(Property.IGNORE_MODIFICATIONS));
         assertEquals(MultiLevel.MUTABLE_DV, p0.getProperty(Property.IMMUTABLE));
     }
 
@@ -77,6 +78,7 @@ public class TestCommonJavaUtilStream extends CommonAnnotatedAPI {
         TypeInfo typeInfo = typeContext.getFullyQualified(Stream.class);
         MethodInfo methodInfo = typeInfo.findUniqueMethod("of", 1);
         assertTrue(methodInfo.methodInspection.get().isStatic());
+        assertTrue(methodInfo.methodInspection.get().isFactoryMethod());
 
         MethodAnalysis methodAnalysis = methodInfo.methodAnalysis.get();
         assertEquals(DV.FALSE_DV, methodAnalysis.getProperty(Property.MODIFIED_METHOD));

@@ -16,7 +16,6 @@ package org.e2immu.analyser.analyser.impl;
 
 import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.analyser.util.AnalyserResult;
-import org.e2immu.analyser.analyser.util.HiddenContentTypes;
 import org.e2immu.analyser.analysis.MethodAnalysis;
 import org.e2immu.analyser.analysis.ParameterAnalysis;
 import org.e2immu.analyser.analysis.TypeAnalysis;
@@ -251,7 +250,7 @@ public class AnnotatedAPIAnalyser implements AnalyserContext {
         if (!nonShallowOrWithCompanions.isEmpty()) {
             iterativeMethodAnalysis(nonShallowOrWithCompanions);
         }
-        validateOrComputeIndependenceAndContainer();
+        validateIndependenceAndComputeContainer();
 
         return Stream.concat(methodAnalysers.values().stream().flatMap(MethodAnalyser::getMessageStream),
                 Stream.concat(shallowFieldAnalyser.getMessageStream(), messages.getMessageStream()));
@@ -263,7 +262,7 @@ public class AnnotatedAPIAnalyser implements AnalyserContext {
                 Enum.class}) {// every enum type derives from Enum
             TypeInfo typeInfo = typeMap.get(clazz);
             TypeAnalysisImpl.Builder typeAnalysis = typeAnalyses.get(typeInfo);
-            typeAnalysis.setProperty(Property.INDEPENDENT, MultiLevel.INDEPENDENT_1_DV);
+            typeAnalysis.setProperty(Property.INDEPENDENT, MultiLevel.INDEPENDENT_DV);
             typeAnalysis.setProperty(Property.IMMUTABLE, MultiLevel.EFFECTIVELY_E2IMMUTABLE_DV);
             typeAnalysis.setProperty(Property.CONTAINER, MultiLevel.CONTAINER_DV);
             typeAnalysis.setImmutableCanBeIncreasedByTypeParameters(false);
@@ -283,17 +282,13 @@ public class AnnotatedAPIAnalyser implements AnalyserContext {
         }
     }
 
-    private void validateOrComputeIndependenceAndContainer() {
+    private void validateIndependenceAndComputeContainer() {
         typeAnalyses.forEach(((typeInfo, typeAnalysis) -> {
             try {
                 {
-                    DV inMap = typeAnalysis.getPropertyFromMapDelayWhenAbsent(Property.INDEPENDENT);
+                    DV inMap = typeAnalysis.getPropertyFromMapNeverDelay(Property.INDEPENDENT);
                     ValueExplanation computed = computeIndependent(typeInfo);
-                    if (inMap.isDelayed()) {
-                        typeAnalysis.setProperty(Property.INDEPENDENT, computed.value);
-                    } else {
-                        validateIndependent(typeInfo, inMap, computed);
-                    }
+                    validateIndependent(typeInfo, inMap, computed);
                 }
                 {
                     DV inMap = typeAnalysis.getPropertyFromMapDelayWhenAbsent(Property.CONTAINER);
@@ -309,16 +304,31 @@ public class AnnotatedAPIAnalyser implements AnalyserContext {
         }));
     }
 
-    private void validateIndependent(TypeInfo typeInfo, DV inMap, ValueExplanation computed) {
-        // some "Type @Independent lower than its methods allow"-errors (a.o. java.lang.String)
-        if (inMap.gt(computed.value)) {
-            Message message = Message.newMessage(typeInfo.newLocation(),
-                    Message.Label.TYPE_HAS_HIGHER_VALUE_FOR_INDEPENDENT,
-                    "Found " + inMap + ", computed maximally " + computed.value
-                            + " in " + computed.explanation);
-            messages.add(message);
-        }
+    /*
+    Either the user has hinted a value, or simpleComputeIndependent has provided one.
+    This value then affects the independence values of methods and parameters.
+    The end result is computed again using computeIndependent.
 
+    If the computed value differs from the initial one, we raise an error.
+    If the computed value is HIGHER, we have made a programming error
+    If the computed value is LOWER, the user should put a higher one
+     */
+    private void validateIndependent(TypeInfo typeInfo, DV inMap, ValueExplanation computed) {
+        if (computed.value.isDone()) {
+            if (!inMap.equals(computed.value)) {
+                if ("none".equals(computed.explanation)) {
+                    // type outside scope
+                    LOGGER.warn("Independence value for {} differs from computed one: {} != {}",
+                            typeInfo, inMap, computed);
+                } else if(typeInfo.typeInspection.get().isPublic()) {
+                    Message message = Message.newMessage(typeInfo.newLocation(),
+                            Message.Label.TYPE_HAS_DIFFERENT_VALUE_FOR_INDEPENDENT,
+                            "Found " + inMap + ", computed " + computed.value
+                                    + " in " + computed.explanation);
+                    messages.add(message);
+                }
+            }
+        } // else: we're at the edge of the known/analysed types, we're not exploring further and rely on the value
     }
 
     private record ValueExplanation(DV value, String explanation) {
@@ -562,6 +572,8 @@ public class AnnotatedAPIAnalyser implements AnalyserContext {
         /*
         The computation of hidden content types proceeds as follows:
         1. all unbound type parameters are hidden content
+
+        IMPROVE currently not implementing 2.
         2. to the hidden content we add all public field types, method return types and method parameter types
            that are immutable with hidden content.
 
@@ -571,8 +583,7 @@ public class AnnotatedAPIAnalyser implements AnalyserContext {
         Set<ParameterizedType> typeParametersAsParameterizedTypes = typeInspection.typeParameters().stream()
                 .filter(TypeParameter::isUnbound)
                 .map(tp -> new ParameterizedType(tp, 0, ParameterizedType.WildCard.NONE)).collect(Collectors.toSet());
-        SetOfTypes typeParameters = new SetOfTypes(typeParametersAsParameterizedTypes);
-        SetOfTypes hiddenContentTypes = new HiddenContentTypes(typeInfo, this).go(typeParameters).build();
+        SetOfTypes hiddenContentTypes = new SetOfTypes(typeParametersAsParameterizedTypes);
         typeAnalysisBuilder.setHiddenContentTypes(hiddenContentTypes);
 
         ensureImmutableAndContainerInShallowTypeAnalysis(typeAnalysisBuilder);
@@ -620,45 +631,73 @@ public class AnnotatedAPIAnalyser implements AnalyserContext {
                 .allMatch(pa -> pa.getPropertyFromMapNeverDelay(Property.MODIFIED_VARIABLE).equals(DV.FALSE_DV));
     }
 
+    /*
+    relations to super-type:
+
+    if the super-type is @Independent with hidden content, we can go anywhere (e.g. Serializable)
+    if the super-type is @Independent without hidden content, we can go anywhere (minimum works well)
+    if the super-type is @Dependent, we must have dependent
+     */
 
     private ValueExplanation computeIndependent(TypeInfo typeInfo) {
+        Stream<ValueExplanation> methodStream = typeInfo.typeInspection.get().methodStream(TypeInspection.Methods.THIS_TYPE_ONLY)
+                .filter(m -> m.methodInspection.get().isPubliclyAccessible())
+                .map(m -> new ValueExplanation(getMethodAnalysis(m).getProperty(Property.INDEPENDENT),
+                        m.fullyQualifiedName));
+        Stream<ValueExplanation> parameterStream = typeInfo.typeInspection.get().methodStream(TypeInspection.Methods.THIS_TYPE_ONLY)
+                .filter(m -> m.methodInspection.get().isPubliclyAccessible())
+                .flatMap(m -> getMethodAnalysis(m).getParameterAnalyses().stream())
+                .map(p -> new ValueExplanation(p.getProperty(Property.INDEPENDENT), p.getParameterInfo().fullyQualifiedName));
         ValueExplanation myMethods =
-                typeInfo.typeInspection.get().methodStream(TypeInspection.Methods.THIS_TYPE_ONLY)
-                        .filter(m -> m.methodInspection.get().isPubliclyAccessible())
-                        .map(m -> new ValueExplanation(getMethodAnalysis(m).getProperty(Property.INDEPENDENT),
-                                m.fullyQualifiedName))
+                Stream.concat(methodStream, parameterStream)
                         .min(Comparator.comparing(p -> p.value.value()))
                         .orElse(new ValueExplanation(Property.INDEPENDENT.bestDv, "none"));
+
         Stream<TypeInfo> superTypes = typeInfo.typeResolution.get().superTypesExcludingJavaLangObject()
                 .stream();
         ValueExplanation fromSuperTypes = superTypes
                 .filter(t -> t.typeInspection.get().isPublic())
                 .map(this::getTypeAnalysis)
-                .map(ta -> new ValueExplanation(ta.getProperty(Property.INDEPENDENT),
+                .map(ta -> new ValueExplanation(MultiLevel.dropHiddenContentOfIndependent(ta.getProperty(Property.INDEPENDENT)),
                         ta.getTypeInfo().fullyQualifiedName))
                 .min(Comparator.comparing(p -> p.value.value()))
                 .orElse(new ValueExplanation(Property.INDEPENDENT.bestDv, "none"));
         return myMethods.value.lt(fromSuperTypes.value) ? myMethods : fromSuperTypes;
     }
 
+    /*
+     In some situations, the INDEPENDENT value is easy to compute.
+     Because we have a chicken-and-egg problem (the independent value can be computed from the methods, but the
+     parameters may require an independent value, it is better to assign a value when obviously possible.
+     */
     private void simpleComputeIndependent(TypeAnalysisImpl.Builder builder) {
         DV immutable = builder.getPropertyFromMapDelayWhenAbsent(Property.IMMUTABLE);
         DV inMap = builder.getPropertyFromMapDelayWhenAbsent(Property.INDEPENDENT);
-        DV independent = MultiLevel.composeOneLevelLessIndependent(immutable);
+        DV independent = MultiLevel.independentCorrespondingToImmutableLevelDv(MultiLevel.level(immutable));
         if (inMap.isDelayed()) {
-            boolean allMethodsOnlyPrimitives =
-                    builder.getTypeInfo().typeInspection.get()
-                            .methodsAndConstructors(TypeInspection.Methods.INCLUDE_SUPERTYPES)
-                            .filter(m -> m.methodInspection.get().isPubliclyAccessible())
-                            .allMatch(m -> (m.isConstructor || m.isVoid() || m.returnType().isPrimitiveExcludingVoid())
-                                    && m.methodInspection.get().getParameters().stream().allMatch(p -> p.parameterizedType.isPrimitiveExcludingVoid()));
-            if (allMethodsOnlyPrimitives) {
-                builder.setProperty(Property.INDEPENDENT, MultiLevel.INDEPENDENT_DV);
-                return;
-            }
             if (immutable.ge(MultiLevel.EFFECTIVELY_E2IMMUTABLE_DV)) {
                 // minimal value; we'd have an inconsistency otherwise
                 builder.setProperty(Property.INDEPENDENT, independent);
+                return;
+            }
+            boolean allMethodsOnlyPrimitives =
+                    builder.getTypeInfo().typeInspection.get()
+                            .methodsAndConstructors(TypeInspection.Methods.THIS_TYPE_ONLY)
+                            .filter(m -> m.methodInspection.get().isPubliclyAccessible())
+                            .allMatch(m -> (m.isConstructor || m.isVoid() || m.returnType().isPrimitiveStringClass())
+                                    && m.methodInspection.get().getParameters().stream().allMatch(p -> p.parameterizedType.isPrimitiveStringClass()));
+            if (allMethodsOnlyPrimitives) {
+                Stream<TypeInfo> superTypes = builder.typeInfo.typeResolution.get().superTypesExcludingJavaLangObject()
+                        .stream();
+                DV fromSuperTypes = superTypes
+                        .filter(t -> t.typeInspection.get().isPublic())
+                        .map(this::getTypeAnalysis)
+                        .map(ta -> MultiLevel.dropHiddenContentOfIndependent(ta.getProperty(Property.INDEPENDENT)))
+                        .reduce(MultiLevel.INDEPENDENT_DV, DV::min);
+                if (fromSuperTypes.isDone()) {
+                    builder.setProperty(Property.INDEPENDENT, fromSuperTypes);
+                    return;
+                }
             }
             // fallback
             builder.setProperty(Property.INDEPENDENT, MultiLevel.DEPENDENT_DV);

@@ -76,14 +76,19 @@ public class TypeInspectorImpl implements TypeInspector {
     private final boolean fullInspection; // !fullInspection == isDollarType
     private final boolean dollarTypesAreNormalTypes;
 
-    public TypeInspectorImpl(TypeMap.Builder typeMapBuilder, TypeInfo typeInfo, boolean fullInspection,
+    public TypeInspectorImpl(TypeMap.Builder typeMapBuilder,
+                             TypeInfo typeInfo,
+                             boolean fullInspection,
                              boolean dollarTypesAreNormalTypes) {
         this.typeInfo = typeInfo;
         this.dollarTypesAreNormalTypes = dollarTypesAreNormalTypes;
 
         TypeInspection typeInspection = typeMapBuilder.getTypeInspection(typeInfo);
-        if (typeInspection == null || typeInspection.getInspectionState().ge(FINISHED_JAVA_PARSER)) {
-            throw new UnsupportedOperationException();
+        if (typeInspection == null) {
+            throw new UnsupportedOperationException("No typeInspection for " + typeInfo);
+        }
+        if (typeInspection.getInspectionState().ge(FINISHED_JAVA_PARSER)) {
+            throw new UnsupportedOperationException("Already finished inspection for " + typeInfo);
         }
         this.fullInspection = fullInspection;
         builder = (TypeInspectionImpl.Builder) typeInspection;

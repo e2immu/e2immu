@@ -71,7 +71,7 @@ public class TestJavaUtil {
         List<Message> ms = messages.stream().filter(m -> m.location().equals(location)).toList();
         ms.forEach(m -> LOGGER.info("Error: {}", m));
         assertEquals(1, ms.size());
-        assertSame(Message.Label.TYPE_HAS_HIGHER_VALUE_FOR_INDEPENDENT, ms.get(0).message());
+        assertSame(Message.Label.TYPE_HAS_DIFFERENT_VALUE_FOR_INDEPENDENT, ms.get(0).message());
     }
 
     // error on the type has gone

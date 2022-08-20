@@ -26,6 +26,7 @@ public class OrgE2immuSupport {
 
     // hc=true added by analyser, type is abstract
     @ImmutableContainer(after = "frozen")
+    @Independent
     public static class Freezable$ {
 
         @Mark("frozen")

@@ -14,41 +14,21 @@
 
 package org.e2immu.annotatedapi.java;
 
-import org.e2immu.annotation.Container;
-import org.e2immu.annotation.Fluent;
-import org.e2immu.annotation.Modified;
-import org.e2immu.annotation.NotModified;
+import org.e2immu.annotation.*;
 
 import java.nio.Buffer;
 import java.nio.CharBuffer;
 
-public class JavaNio {
+public class JavaNioCharset {
 
-    final static String PACKAGE_NAME = "java.nio";
+    final static String PACKAGE_NAME = "java.nio.charset";
 
     /*
      Note: is an abstract class
      */
-    @Container
-    interface Buffer$ {
+    @ImmutableContainer
+    interface Charset$ {
 
-        @Fluent
-        Buffer reset();
-
-        /*
-         @Dependent!!
-         */
-        @NotModified
-        Buffer slice();
     }
 
-    /*
-     Concrete implementation of Buffer, not @Container, cannot be @Independent anymore since Buffer is not
-     */
-    interface CharBuffer$ {
-
-        @Fluent
-        @Modified
-        CharBuffer get(@Modified char[] dst);
-    }
 }

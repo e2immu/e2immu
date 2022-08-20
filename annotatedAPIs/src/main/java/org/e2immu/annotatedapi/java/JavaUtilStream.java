@@ -119,18 +119,19 @@ public class JavaUtilStream {
          */
         @NotNull
         @ImmutableContainer(hc = true)
-        <TT> Stream<TT> of(@NotNull @Independent TT t);
+        <TT> Stream<TT> of(@NotNull TT t);
 
         /*
          Factory method, the hidden content in the result comes from the parameter
          */
         @NotNull
         @ImmutableContainer(hc = true)
-        <TT> Stream<TT> of(@NotNull @Independent TT... t);
+        <TT> Stream<TT> of(@NotNull TT... t);
 
         /*
-         The mapper is not supposed to modify the hidden content presented to it.
-         For that reason, we do not add @Independent(hc=true).
+         The mapper is not supposed to modify the hidden content received as argument in the "apply()" method.
+         For that reason, we add @Independent rather than @Independent(hc=true).
+         Note that the functional interface implies @IgnoreModifications, which allows modifications external to the type,
          */
         @NotNull
         @Independent(hc = true)
@@ -138,7 +139,7 @@ public class JavaUtilStream {
 
         /*
          The mapper is not supposed to modify the hidden content presented to it.
-         For that reason, we do not add @Independent(hc=true).
+         For that reason, we do not add @Independent(hc=true). FIXME independent means we can access but not modify
          */
         @NotNull
         @Independent(hc = true)

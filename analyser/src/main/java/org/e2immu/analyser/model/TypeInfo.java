@@ -97,6 +97,10 @@ public final class TypeInfo implements NamedType, WithInspectionAndAnalysis, Com
         return "java.lang.String".equals(this.fullyQualifiedName);
     }
 
+    boolean isJavaLangClass() {
+        return "java.lang.Class".equals(this.fullyQualifiedName);
+    }
+
     boolean isJavaLangVoid() {
         return "java.lang.Void".equals(this.fullyQualifiedName);
     }
