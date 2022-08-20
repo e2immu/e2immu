@@ -17,18 +17,48 @@ package org.e2immu.annotatedapi.java;
 import org.e2immu.annotation.ImmutableContainer;
 import org.e2immu.annotation.Independent;
 
-public class JavaSecurity {
-    final static String PACKAGE_NAME = "java.security";
+public class JavaUtilConcurrentLocks {
+    final static String PACKAGE_NAME = "java.util.concurrent.locks";
 
-    @Independent(hc = true)
-    interface PrivilegedAction$<T> {
+    // none of the method are modified, see initial assumptions: synchronisation is outside the scope
+    @ImmutableContainer
+    @Independent
+    interface Condition$ {
 
     }
 
     @ImmutableContainer
     @Independent
-    interface Guard$ {
-        // non-modifying, throws security exception
-        void checkGuard(Object object);
+    interface Lock$ {
+
+    }
+
+    @ImmutableContainer
+    @Independent
+    interface ReentrantLock$ {
+
+    }
+
+    @ImmutableContainer
+    @Independent
+    interface ReadWriteLock$ {
+
+    }
+
+    @ImmutableContainer
+    @Independent
+    interface ReentrantReadWriteLock$ {
+
+        @ImmutableContainer
+        @Independent
+        interface ReadLock {
+
+        }
+
+        @ImmutableContainer
+        @Independent
+        interface WriteLock {
+
+        }
     }
 }

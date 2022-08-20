@@ -14,16 +14,11 @@
 
 package org.e2immu.annotatedapi.java;
 
-import org.e2immu.annotation.*;
+import org.e2immu.annotation.ImmutableContainer;
+import org.e2immu.annotation.Independent;
+import org.e2immu.annotation.NotNull;
 
-import java.util.Comparator;
-import java.util.List;
-import java.util.Optional;
-import java.util.Set;
-import java.util.function.*;
 import java.util.jar.JarEntry;
-import java.util.stream.Collector;
-import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 public class JavaUtilJar {
@@ -40,5 +35,13 @@ public class JavaUtilJar {
 
         @NotNull(content = true)
         Stream<JarEntry> stream();
+    }
+
+    interface Attributes$ {
+        @ImmutableContainer
+        @Independent
+        interface Name {
+
+        }
     }
 }

@@ -17,6 +17,7 @@ package org.e2immu.annotatedapi.java;
 import org.e2immu.annotation.Container;
 import org.e2immu.annotation.ImmutableContainer;
 import org.e2immu.annotation.Independent;
+import org.e2immu.annotation.Modified;
 
 public class JavaUtilConcurrent {
     final static String PACKAGE_NAME = "java.util.concurrent";
@@ -33,5 +34,10 @@ public class JavaUtilConcurrent {
     @Independent(hc = true)
     interface Future$<V> {
 
+    }
+
+    interface Executor${
+        @Modified
+        void execute(Runnable runnable);
     }
 }

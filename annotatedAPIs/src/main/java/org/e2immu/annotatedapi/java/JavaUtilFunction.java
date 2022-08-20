@@ -111,6 +111,36 @@ public class JavaUtilFunction {
     }
 
     @Independent(hc = true)
+    interface ToIntBiFunction$<T, U> {
+        @Modified
+        int applyAsInt(T t, U u);
+    }
+
+    @Independent(hc = true)
+    interface ToLongBiFunction$<T, U> {
+        @Modified
+        long applyAsLong(T t, U u);
+    }
+
+    @Independent(hc = true)
+    interface ToDoubleBiFunction$<T, U> {
+        @Modified
+        double applyAsDouble(T t, U u);
+    }
+
+    @Independent(hc = true)
+    interface ToLongFunction$<R> {
+        @Modified
+        long applyAsLong(R value);
+    }
+
+    @Independent(hc = true)
+    interface ToDoubleFunction$<R> {
+        @Modified
+        double applyAsDouble(R value);
+    }
+
+    @Independent(hc = true)
     interface IntFunction$<R> {
         @Modified
         R apply(int value);
@@ -118,16 +148,37 @@ public class JavaUtilFunction {
 
     @Independent(hc = true)
     interface DoubleFunction$<R> {
-
+        @Modified
+        R apply(double value);
     }
 
     @Independent(hc = true)
     interface LongFunction$<R> {
-
+        @Modified
+        R apply(long value);
     }
 
     @Independent(hc = true)
     interface UnaryOperator$<R> {
 
     }
+
+    @Independent(hc = true)
+    interface ObjIntConsumer$<T> {
+        @Modified
+        void accept(T t, int i);
+    }
+
+    @Independent(hc = true)
+    interface ObjLongConsumer$<T> {
+        @Modified
+        void accept(T t, long i);
+    }
+
+    @Independent(hc = true)
+    interface ObjDoubleConsumer$<T> {
+        @Modified
+        void accept(T t, double i);
+    }
+
 }

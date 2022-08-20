@@ -168,7 +168,7 @@ public class TestCommonJavaLang extends CommonAnnotatedAPI {
     public void testComparableCompareTo() {
         TypeInfo typeInfo = typeContext.getFullyQualified(Comparable.class);
         TypeAnalysis typeAnalysis = typeInfo.typeAnalysis.get();
-        testImmutableContainerType(typeAnalysis, true, true);
+        testImmutableContainerType(typeAnalysis, true, false);
 
         MethodInfo compareTo = typeInfo.findUniqueMethod("compareTo", 1);
         MethodAnalysis methodAnalysis = compareTo.methodAnalysis.get();
@@ -194,7 +194,7 @@ public class TestCommonJavaLang extends CommonAnnotatedAPI {
     public void testSerializable() {
         TypeInfo typeInfo = typeContext.getFullyQualified(Serializable.class);
         TypeAnalysis typeAnalysis = typeInfo.typeAnalysis.get();
-        testImmutableContainerType(typeAnalysis, true, true);
+        testImmutableContainerType(typeAnalysis, true, false);
     }
 
     @Test

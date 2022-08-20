@@ -307,11 +307,6 @@ public class AnnotatedAPIAnalyser implements AnalyserContext {
     private void validateIndependent(TypeInfo typeInfo, DV inMap, ValueExplanation computed) {
         if (computed.value.isDone()) {
             if (!inMap.equals(computed.value)) {
-                // if ("none".equals(computed.explanation)) {
-                // type outside scope
-                //    LOGGER.warn("Independence value for {} differs from computed one: {} != {}",
-                //             typeInfo, inMap, computed);
-                // } else
                 if (typeInfo.typeInspection.get().isPublic() && typeInfo.isNotJDKInternal()) {
                     Message message = Message.newMessage(typeInfo.newLocation(),
                             Message.Label.TYPE_HAS_DIFFERENT_VALUE_FOR_INDEPENDENT,

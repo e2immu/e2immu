@@ -22,9 +22,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.*;
-import java.util.stream.Collector;
-import java.util.stream.IntStream;
-import java.util.stream.Stream;
+import java.util.stream.*;
 
 public class JavaUtilStream {
 
@@ -50,6 +48,7 @@ public class JavaUtilStream {
 
     @UtilityClass
     @Container
+    @Independent
     static class Collectors$ {
         @NotNull(content = true)
         Collector<CharSequence, ?, String> joining() {
@@ -82,10 +81,8 @@ public class JavaUtilStream {
         }
     }
 
-    /*
-     Analyser adds hc=true, because IntStream is an interface.
-     */
     @ImmutableContainer
+    @Independent
     interface IntStream$ {
         long count();
 
@@ -93,6 +90,43 @@ public class JavaUtilStream {
 
         @NotNull
         IntStream sorted();
+
+        interface IntMapMultiConsumer {
+            @Modified
+            void accept(int i, IntConsumer ic);
+        }
+    }
+
+    @ImmutableContainer
+    @Independent
+    interface DoubleStream$ {
+        long count();
+
+        double sum();
+
+        @NotNull
+        DoubleStream sorted();
+
+        interface DoubleMapMultiConsumer {
+            @Modified
+            void accept(double d, DoubleConsumer dc);
+        }
+    }
+
+    @ImmutableContainer
+    @Independent
+    interface LongStream$ {
+        long count();
+
+        long sum();
+
+        @NotNull
+        LongStream sorted();
+
+        interface LongMapMultiConsumer {
+            @Modified
+            void accept(long l, LongConsumer lc);
+        }
     }
 
     /*
@@ -195,4 +229,6 @@ public class JavaUtilStream {
     interface BaseStream$ {
 
     }
+
+
 }

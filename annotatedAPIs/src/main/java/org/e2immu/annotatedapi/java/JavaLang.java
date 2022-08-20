@@ -553,6 +553,12 @@ class JavaLang {
                        @NotNull @Modified @Independent(parameters = {0}) Object dest,
                        int destPos,
                        int length);
+
+        @Independent
+        @Container
+        interface Logger {
+
+        }
     }
 
     /*
@@ -634,8 +640,14 @@ class JavaLang {
     interface Thread$ {
 
         interface UncaughtExceptionHandler {
-
+            @Modified
+            void uncaughtException(Thread t, Throwable e);
         }
+
+        @Modified
+        void setName(String name);
+
+        int enumerate(@Modified Thread[] tArray);
     }
 
 }

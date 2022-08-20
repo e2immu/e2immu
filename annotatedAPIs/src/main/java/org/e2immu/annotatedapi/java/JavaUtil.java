@@ -101,16 +101,25 @@ public class JavaUtil extends AnnotatedAPI {
         interface OfInt {
 
         }
+
         @Container
         @Independent
         interface OfLong {
 
         }
+
         @Container
         @Independent
         interface OfDouble {
 
         }
+    }
+
+    @UtilityClass
+    interface Spliterators$ {
+
+        @Independent(hc = true)
+        <T> Spliterator<T> spliterator(Object[] array, int additionalCharacteristics);
     }
 
     /*
@@ -651,6 +660,7 @@ public class JavaUtil extends AnnotatedAPI {
 
     @UtilityClass
     @Container
+    @Independent
     interface Objects$ {
         @NotNull
         @Identity
