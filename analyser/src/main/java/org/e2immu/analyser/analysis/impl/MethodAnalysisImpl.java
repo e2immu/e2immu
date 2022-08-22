@@ -281,7 +281,7 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
             super(primitives, methodInfo.name);
             this.inspectionProvider = inspectionProvider;
             this.analysisMode = analysisMode;
-            this.typeAnalysisOfOwner = typeAnalysisOfOwner;
+            this.typeAnalysisOfOwner = typeAnalysisOfOwner; // can be null in special situations
             this.parameterAnalyses = parameterAnalyses;
             this.methodInfo = methodInfo;
             this.returnType = methodInfo.returnType();
@@ -377,7 +377,8 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
             if (methodInfo.isConstructor) return;
 
             // @NotModified, @Modified
-            DV ownerImmutable = typeAnalysisOfOwner.getProperty(Property.IMMUTABLE);
+            DV ownerImmutable = typeAnalysisOfOwner == null ? MultiLevel.MUTABLE_INCONCLUSIVE
+                    : typeAnalysisOfOwner.getProperty(Property.IMMUTABLE);
             boolean implied = MultiLevel.isEffectivelyImmutable(ownerImmutable);
             AnnotationExpression ae;
             if (implied) {

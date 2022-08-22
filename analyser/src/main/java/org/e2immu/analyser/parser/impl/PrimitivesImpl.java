@@ -698,10 +698,9 @@ public class PrimitivesImpl implements Primitives {
         List<ParameterAnalysis> parameterAnalyses = methodInfo.methodInspection.get().getParameters().stream()
                 .map(p -> (ParameterAnalysis) new ParameterAnalysisImpl.Builder(this, AnalysisProvider.DEFAULT_PROVIDER, p).build())
                 .collect(Collectors.toList());
-        TypeAnalysis typeAnalysis = AnalysisProvider.DEFAULT_PROVIDER.getTypeAnalysis(methodInfo.typeInfo);
         MethodAnalysisImpl.Builder builder = new MethodAnalysisImpl.Builder(Analysis.AnalysisMode.CONTRACTED,
                 this, AnalysisProvider.DEFAULT_PROVIDER, InspectionProvider.DEFAULT,
-                methodInfo, typeAnalysis, parameterAnalyses);
+                methodInfo, null, parameterAnalyses);
         builder.ensureIsNotEventualUnlessOtherwiseAnnotated();
         return (MethodAnalysis) builder.build();
     }

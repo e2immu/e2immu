@@ -57,6 +57,10 @@ public class MultiLevel {
         return level(immutable) >= IMMUTABLE_2.level && effective(immutable) == EFFECTIVE;
     }
 
+    public static boolean isIndependent(DV independent) {
+        return independent.ge(MultiLevel.INDEPENDENT_1_DV);
+    }
+
     public enum Effective {
         DELAY(0, "delay"),
         FALSE(1, "false"),

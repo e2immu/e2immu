@@ -22,6 +22,8 @@ import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
 import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.parser.Primitives;
+import org.e2immu.annotation.FinalFields;
+import org.e2immu.annotation.Independent;
 import org.e2immu.support.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -401,7 +403,28 @@ public class TypeAnalysisImpl extends AnalysisImpl implements TypeAnalysis {
 
             // @Independent
             DV independent = getProperty(Property.INDEPENDENT);
-            doIndependent(e2ImmuAnnotationExpressions, independent, MultiLevel.NOT_INVOLVED_DV, immutable);
+            boolean addedIndependent = doIndependent(e2ImmuAnnotationExpressions, independent,
+                    MultiLevel.NOT_INVOLVED_DV, immutable);
+
+            DV modified = getProperty(Property.MODIFIED_METHOD);
+
+            /*
+            if 2 of the 3 key properties of an immutable type are present, but not the third, add it in "absent" mode
+             */
+            if (MultiLevel.EFFECTIVELY_E1IMMUTABLE_DV.equals(immutable) && modified.valueIsFalse()
+                    && independent.equals(MultiLevel.DEPENDENT_DV) && !addedIndependent) {
+                addAnnotation(E2ImmuAnnotationExpressions.create(primitives,
+                        Independent.class, E2ImmuAnnotationExpressions.ABSENT, true));
+            }
+            if (modified.valueIsFalse() && MultiLevel.isIndependent(independent)
+                    && immutable.equals(MultiLevel.MUTABLE_DV)) {
+                addAnnotation(E2ImmuAnnotationExpressions.create(primitives,
+                        FinalFields.class, E2ImmuAnnotationExpressions.ABSENT, true));
+            }
+            if (MultiLevel.isIndependent(independent) && MultiLevel.EFFECTIVELY_E1IMMUTABLE_DV.equals(immutable)
+                    && modified.valueIsTrue()) {
+                addAnnotation(e2ImmuAnnotationExpressions.modified);
+            }
         }
 
         // this implementation is a bit of a hack -- explicit types are not set directly for shallowly
@@ -484,7 +507,8 @@ public class TypeAnalysisImpl extends AnalysisImpl implements TypeAnalysis {
 
         private static final Set<Property> ACCEPTED = Set.of(Property.IMMUTABLE, Property.PARTIAL_IMMUTABLE,
                 Property.CONTAINER, Property.PARTIAL_CONTAINER, Property.FINALIZER,
-                Property.INDEPENDENT, Property.EXTENSION_CLASS, Property.UTILITY_CLASS, Property.SINGLETON);
+                Property.INDEPENDENT, Property.EXTENSION_CLASS, Property.UTILITY_CLASS, Property.SINGLETON,
+                Property.MODIFIED_METHOD);
 
         @Override
         public void setProperty(Property property, DV i) {

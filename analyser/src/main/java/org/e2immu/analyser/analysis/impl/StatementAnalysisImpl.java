@@ -1643,7 +1643,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
         // an assignment may be difficult.
         // we should not worry about them
         ParameterizedType parameterizedType = variable.parameterizedType();
-        Properties valueProperties = analyserContext.defaultValueProperties(parameterizedType);
+        Properties valueProperties = analyserContext.defaultValueProperties(parameterizedType, true);
         valueProperties.replaceDelaysByMinimalValue();
         Identifier identifier = Identifier.forVariableOutOfScope(variable, index);
         Instance instance = Instance.forLoopVariable(identifier, variable, valueProperties);

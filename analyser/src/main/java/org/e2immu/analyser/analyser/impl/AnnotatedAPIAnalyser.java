@@ -207,7 +207,12 @@ public class AnnotatedAPIAnalyser implements AnalyserContext {
         // do the types first,
         typeAnalyses.forEach((typeInfo, typeAnalysis) -> {
             try {
-                shallowTypeAnalysis(typeInfo, typeAnalysis, e2ImmuAnnotationExpressions);
+                if (typeInfo.packageNameOrEnclosingType.isLeft() &&
+                        Primitives.INTERNAL.equals(typeInfo.packageNameOrEnclosingType.getLeft())) {
+                    hardcodedSyntheticFunctionalInterfaces(typeInfo, typeAnalysis);
+                } else {
+                    shallowTypeAnalysis(typeInfo, typeAnalysis, e2ImmuAnnotationExpressions);
+                }
             } catch (RuntimeException runtimeException) {
                 LOGGER.error("Caught exception while shallowly analysing type " + typeInfo.fullyQualifiedName);
                 throw runtimeException;
@@ -255,6 +260,19 @@ public class AnnotatedAPIAnalyser implements AnalyserContext {
 
         return Stream.concat(methodAnalysers.values().stream().flatMap(MethodAnalyser::getMessageStream),
                 Stream.concat(shallowFieldAnalyser.getMessageStream(), messages.getMessageStream()));
+    }
+
+    // see also JavaUtilFunction.java, Annotated APIs
+    private void hardcodedSyntheticFunctionalInterfaces(TypeInfo typeInfo, TypeAnalysisImpl.Builder typeAnalysis) {
+        typeAnalysis.setProperty(Property.INDEPENDENT, MultiLevel.INDEPENDENT_1_DV);
+        boolean isContainer = typeInfo.simpleName.equals(Primitives.SYNTHETIC_FUNCTION_0);
+        typeAnalysis.setProperty(Property.CONTAINER, isContainer ? MultiLevel.CONTAINER_DV : MultiLevel.NOT_CONTAINER_DV);
+        typeAnalysis.setProperty(Property.IMMUTABLE, MultiLevel.MUTABLE_DV);
+        typeAnalysis.setProperty(Property.MODIFIED_METHOD, DV.TRUE_DV);
+        typeAnalysis.setImmutableCanBeIncreasedByTypeParameters(false);
+        typeAnalysis.freezeApprovedPreconditionsE1();
+        typeAnalysis.freezeApprovedPreconditionsE2();
+        typeInfo.typeAnalysis.set(typeAnalysis);
     }
 
     private void hardcodedCrucialClasses() {

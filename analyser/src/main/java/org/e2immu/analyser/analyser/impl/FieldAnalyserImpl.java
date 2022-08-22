@@ -16,10 +16,7 @@ package org.e2immu.analyser.analyser.impl;
 
 import org.e2immu.analyser.analyser.Properties;
 import org.e2immu.analyser.analyser.*;
-import org.e2immu.analyser.analyser.check.CheckFinalNotModified;
-import org.e2immu.analyser.analyser.check.CheckHelper;
-import org.e2immu.analyser.analyser.check.CheckImmutable;
-import org.e2immu.analyser.analyser.check.CheckIndependent;
+import org.e2immu.analyser.analyser.check.*;
 import org.e2immu.analyser.analyser.delay.DelayFactory;
 import org.e2immu.analyser.analyser.delay.Inconclusive;
 import org.e2immu.analyser.analyser.delay.SimpleCause;
@@ -1618,9 +1615,7 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
         if (analyserProgram.accepts(ALL)) {
             LOGGER.debug("Checking field {}", fqn);
 
-            // FIXME content
-            check(e2.notNull);
-
+            analyserResultBuilder.add(CheckNotNull.check(fieldInfo, e2.notNull, fieldAnalysis, EXTERNAL_NOT_NULL));
             analyserResultBuilder.add(CheckFinalNotModified.check(fieldInfo, e2.notModified, fieldAnalysis));
 
             // dynamic type annotations

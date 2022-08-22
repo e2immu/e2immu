@@ -43,7 +43,7 @@ public class CheckImmutable {
         AnnotationExpression inAnalysis = analysis.annotationGetOrDefaultNull(annotationKey);
         String value1 = inAnalysis == null ? "" : inAnalysis.extract(AFTER, "");
         // do not use the after=""... as a marker to check the presence (see test E2InContext_3)
-        kvs.add(new CheckHelper.AnnotationKV(extractInspected1, value1, false));
+        kvs.add(new CheckHelper.AnnotationKV(AFTER, extractInspected1, value1, false));
 
         String computedUnquotedValue = constantValue == null ? null :
                 constantValue instanceof StringConstant sc ? sc.getValue() :
@@ -51,7 +51,7 @@ public class CheckImmutable {
         Function<AnnotationExpression, String> extractInspected = ae -> ae.extract(VALUE, "");
 
         if (constantValue != null) {
-            kvs.add(new CheckHelper.AnnotationKV(extractInspected, computedUnquotedValue));
+            kvs.add(new CheckHelper.AnnotationKV(VALUE, extractInspected, computedUnquotedValue));
         }
 
         return CheckHelper.checkAnnotationWithValue(

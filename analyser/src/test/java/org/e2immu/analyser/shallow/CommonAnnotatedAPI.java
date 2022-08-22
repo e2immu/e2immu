@@ -83,10 +83,11 @@ public abstract class CommonAnnotatedAPI {
         assertEquals(DV.FALSE_DV, typeAnalysis.getProperty(Property.UTILITY_CLASS));
         assertEquals(DV.FALSE_DV, typeAnalysis.getProperty(Property.SINGLETON));
         assertEquals(DV.FALSE_DV, typeAnalysis.getProperty(Property.FINALIZER));
+        assertEquals(DV.FALSE_DV, typeAnalysis.getProperty(Property.MODIFIED_METHOD));
 
         assertThrows(PropertyException.class, () -> typeAnalysis.getProperty(Property.FLUENT));
         assertThrows(PropertyException.class, () -> typeAnalysis.getProperty(Property.IDENTITY));
         assertThrows(PropertyException.class, () -> typeAnalysis.getProperty(Property.NOT_NULL_EXPRESSION));
-        assertThrows(PropertyException.class, () -> typeAnalysis.getProperty(Property.MODIFIED_METHOD));
+        assertThrows(PropertyException.class, () -> typeAnalysis.getProperty(Property.MODIFIED_VARIABLE));
     }
 }

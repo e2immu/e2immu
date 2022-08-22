@@ -98,7 +98,7 @@ public interface TypeAnalysis extends Analysis {
                 return doNotDelay ? getPropertyFromMapNeverDelay(property)
                         : getPropertyFromMapDelayWhenAbsent(property);
             }
-            case EXTENSION_CLASS, UTILITY_CLASS, SINGLETON, FINALIZER -> {
+            case EXTENSION_CLASS, UTILITY_CLASS, SINGLETON, FINALIZER, MODIFIED_METHOD -> {
                 // ensure that we do not throw an exception
                 boolean doNotDelay = getTypeInfo().typePropertiesAreContracted() || getTypeInfo().shallowAnalysis();
                 return doNotDelay ? getPropertyFromMapNeverDelay(property)

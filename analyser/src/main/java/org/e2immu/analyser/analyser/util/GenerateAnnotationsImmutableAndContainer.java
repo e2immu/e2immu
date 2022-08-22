@@ -65,6 +65,9 @@ public class GenerateAnnotationsImmutableAndContainer {
                                                               boolean immutableBetterThanFormal,
                                                               boolean containerBetterThanFormal,
                                                               String constantValue) {
+        if (immutable.isDelayed()) {
+            return Map.of();
+        }
         boolean haveContainer = container.equals(MultiLevel.CONTAINER_DV);
         boolean containerInconclusive = container.isDelayed();
 

@@ -26,7 +26,6 @@ public class JavaUtilFunction {
 
     public static final String PACKAGE_NAME = "java.util.function";
 
-    // implicitly @Dependent, computed @Independent(hc = true)
     @Independent(hc = true)
     @Container
     interface Supplier$<T> {
@@ -34,7 +33,6 @@ public class JavaUtilFunction {
         T get();
     }
 
-    // without the annotation: implicitly @Dependent, computed @Dependent because of andThen
     @Independent(hc = true)
     interface Consumer$<T> {
         /*

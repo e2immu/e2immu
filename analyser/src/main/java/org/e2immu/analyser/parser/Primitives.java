@@ -27,6 +27,10 @@ public interface Primitives extends PrimitivesWithoutParameterizedType {
     String JAVA_LANG = "java.lang";
     String JAVA_PRIMITIVE = "__java.lang__PRIMITIVE"; // special string, caught by constructor
     String ORG_E2IMMU_ANNOTATION = "org.e2immu.annotation";
+    String INTERNAL = "_internal_";
+    String SYNTHETIC_FUNCTION = "SyntheticFunction";
+    String SYNTHETIC_FUNCTION_0 = "SyntheticFunction0";
+    String SYNTHETIC_CONSUMER = "SyntheticConsumer";
 
     ParameterizedType stringParameterizedType();
 

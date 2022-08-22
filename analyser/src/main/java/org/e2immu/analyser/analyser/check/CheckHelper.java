@@ -32,20 +32,24 @@ public record CheckHelper(InspectionProvider inspectionProvider, E2ImmuAnnotatio
 
     public static Message checkAnnotationWithValue(Analysis analysis,
                                                    AnnotationExpression annotationKey,
+                                                   String parameterName,
                                                    Function<AnnotationExpression, String> extractInspected,
                                                    String computedValue,
                                                    List<AnnotationExpression> annotations,
                                                    Location where) {
         return checkAnnotationWithValue(analysis, annotationKey,
-                List.of(new AnnotationKV(extractInspected, computedValue)), annotations, where);
+                List.of(new AnnotationKV(parameterName, extractInspected, computedValue)), annotations, where);
     }
 
-    public record AnnotationKV(Function<AnnotationExpression, String> extractInspected,
+    public record AnnotationKV(String parameterName,
+                               Function<AnnotationExpression, String> extractInspected,
                                String computedValue,
                                boolean haveComputedValueCheckPresence) {
-        public AnnotationKV(Function<AnnotationExpression, String> extractInspected,
+        public AnnotationKV(String parameterName,
+                            Function<AnnotationExpression, String> extractInspected,
                             String computedValue) {
-            this(extractInspected, computedValue, computedValue != null && !computedValue.isBlank());
+            this(parameterName, extractInspected, computedValue,
+                    computedValue != null && !computedValue.isBlank());
         }
     }
 
@@ -101,8 +105,8 @@ public record CheckHelper(InspectionProvider inspectionProvider, E2ImmuAnnotatio
                     kv.computedValue != null && !kv.computedValue.equals(requiredValue)) {
                 analysis.putAnnotationCheck(inAnalysis, WRONG);
                 return Message.newMessage(where, Message.Label.WRONG_ANNOTATION_PARAMETER,
-                        "Annotation " + annotationSimpleName + ", required " +
-                                requiredValue + ", found " + kv.computedValue);
+                        "Annotation " + annotationSimpleName + ", parameter " + kv.parameterName + ", required "
+                                + requiredValue + ", found " + kv.computedValue);
             }
         }
         analysis.putAnnotationCheck(inAnalysis, implied ? IMPLIED : OK);

@@ -19,6 +19,7 @@ import org.e2immu.analyser.analyser.DV;
 import org.e2immu.analyser.analyser.ParameterAnalyser;
 import org.e2immu.analyser.analyser.Property;
 import org.e2immu.analyser.analyser.check.CheckIndependent;
+import org.e2immu.analyser.analyser.check.CheckNotNull;
 import org.e2immu.analyser.analysis.Analysis;
 import org.e2immu.analyser.analysis.ParameterAnalysis;
 import org.e2immu.analyser.analysis.impl.ParameterAnalysisImpl;
@@ -82,7 +83,8 @@ public abstract class ParameterAnalyserImpl extends AbstractAnalyser implements 
             check(e2.notModified);
             check(e2.modified);
 
-            check(e2.notNull);
+            analyserResultBuilder.add(CheckNotNull.check(parameterInfo, e2.notNull,
+                    parameterAnalysis, NOT_NULL_PARAMETER));
             check(e2.nullable);
 
             analyserResultBuilder.add(CheckIndependent.check(parameterInfo, e2.independent, parameterAnalysis));

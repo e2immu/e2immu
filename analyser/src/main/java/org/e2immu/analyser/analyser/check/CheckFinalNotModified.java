@@ -37,6 +37,7 @@ public class CheckFinalNotModified {
 
         return CheckHelper.checkAnnotationWithValue(fieldAnalysis,
                 annotationKey,
+                AFTER,
                 extractInspected,
                 mark,
                 fieldInfo.fieldInspection.get().getAnnotations(),

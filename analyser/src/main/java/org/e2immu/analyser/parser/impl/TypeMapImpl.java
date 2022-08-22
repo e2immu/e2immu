@@ -462,12 +462,12 @@ public class TypeMapImpl implements TypeMap {
         }
 
         public TypeInfo syntheticFunction(int numberOfParameters, boolean isVoid) {
-            String name = (isVoid ? "SyntheticConsumer" : "SyntheticFunction") + numberOfParameters;
+            String name = (isVoid ? Primitives.SYNTHETIC_CONSUMER : Primitives.SYNTHETIC_FUNCTION) + numberOfParameters;
             String fqn = "_internal_." + name;
             TypeInfo existing = get(fqn);
             if (existing != null) return existing;
 
-            TypeInfo typeInfo = new TypeInfo("_internal_", name);
+            TypeInfo typeInfo = new TypeInfo(Primitives.INTERNAL, name);
             TypeInspection.Builder builder = add(typeInfo, BY_HAND_WITHOUT_STATEMENTS);
 
             builder.setParentClass(primitives.objectParameterizedType);

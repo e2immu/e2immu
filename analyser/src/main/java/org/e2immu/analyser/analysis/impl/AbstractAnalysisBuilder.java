@@ -160,7 +160,8 @@ abstract class AbstractAnalysisBuilder implements Analysis {
         generate(e2, map);
     }
 
-    private void generate(E2ImmuAnnotationExpressions e2, Map<Class<?>, Map<String, Object>> map) {
+    private boolean generate(E2ImmuAnnotationExpressions e2, Map<Class<?>, Map<String, Object>> map) {
+        boolean added = false;
         for (Map.Entry<Class<?>, Map<String, Object>> entry : map.entrySet()) {
             Stream<MemberValuePair> stream;
             if (entry.getValue() == GenerateAnnotationsImmutableAndContainer.NO_PARAMS) {
@@ -172,14 +173,16 @@ abstract class AbstractAnalysisBuilder implements Analysis {
             AnnotationExpression expression = new AnnotationExpressionImpl(e2.immutableAnnotation(entry.getKey()),
                     stream.toList());
             addAnnotation(expression);
+            added = true;
         }
+        return added;
     }
 
-    protected void doIndependent(E2ImmuAnnotationExpressions e2, DV independent, DV formallyIndependent, DV immutable) {
+    protected boolean doIndependent(E2ImmuAnnotationExpressions e2, DV independent, DV formallyIndependent, DV immutable) {
         boolean implied = independent.equals(formallyIndependent)
                 || MultiLevel.independentConsistentWithImmutable(independent, immutable);
         Map<Class<?>, Map<String, Object>> map = GenerateAnnotationsIndependent.map(independent, implied);
-        generate(e2, map);
+        return generate(e2, map);
     }
 
     private static final int[] INT_ARRAY = {};
