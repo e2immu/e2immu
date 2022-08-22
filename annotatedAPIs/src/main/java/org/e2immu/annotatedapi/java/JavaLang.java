@@ -525,7 +525,6 @@ class JavaLang {
     }
 
     @UtilityClass
-    @Independent
     interface Math$ {
         static int max(int a, int b) {
             return 0;
@@ -538,7 +537,6 @@ class JavaLang {
      have @IgnoreModifications.
      */
     @UtilityClass
-    @Independent
     interface System$ {
         @IgnoreModifications
         @NotNull
@@ -632,7 +630,6 @@ class JavaLang {
     }
 
     @UtilityClass
-    @Independent
     interface Compiler$ {
 
     }

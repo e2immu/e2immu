@@ -133,12 +133,12 @@ public class Test_00_Basics_0 extends CommonTestRunner {
         };
 
         testClass("Basics_0", 0, 0, new DebugConfiguration.Builder()
-                .addAfterFieldAnalyserVisitor(afterFieldAnalyserVisitor)
-                .addStatementAnalyserVisitor(statementAnalyserVisitor)
-                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+           //     .addAfterFieldAnalyserVisitor(afterFieldAnalyserVisitor)
+           //     .addStatementAnalyserVisitor(statementAnalyserVisitor)
+           //     .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .addTypeMapVisitor(typeMapVisitor)
-                .addEvaluationResultVisitor(evaluationResultVisitor)
-                .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
+            //    .addEvaluationResultVisitor(evaluationResultVisitor)
+            //    .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
                 .build());
     }
 

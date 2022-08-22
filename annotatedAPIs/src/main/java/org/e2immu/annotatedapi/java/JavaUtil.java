@@ -660,7 +660,6 @@ public class JavaUtil extends AnnotatedAPI {
 
     @UtilityClass
     @Container
-    @Independent
     interface Objects$ {
         @NotNull
         @Identity

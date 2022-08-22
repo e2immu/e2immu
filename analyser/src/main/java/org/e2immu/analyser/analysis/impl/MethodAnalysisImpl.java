@@ -399,7 +399,8 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
             }
 
             // @NotNull
-            doNotNull(e2ImmuAnnotationExpressions, getProperty(Property.NOT_NULL_EXPRESSION));
+            doNotNull(e2ImmuAnnotationExpressions, getProperty(Property.NOT_NULL_EXPRESSION),
+                    methodInfo.returnType().isPrimitiveExcludingVoid());
 
             // @Dependent @Independent
             DV independent = getProperty(Property.INDEPENDENT);

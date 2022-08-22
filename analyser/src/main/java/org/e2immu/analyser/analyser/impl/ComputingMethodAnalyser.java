@@ -374,17 +374,14 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
                 break;
             }
 
-            // THIRD CRITERION: is there a field whose content can change? Non-primitive, not transparent, not E2
+            // THIRD CRITERION: is there a field whose content can change? Not immutable
 
             DV haveContentChangeableField = fieldAnalysesOfTypeInfo.stream()
                     .map(fa -> {
-                        DV transparent = fa.isTransparentType();
-                        if (transparent.isDelayed()) return transparent;
                         DV immutable = fa.getProperty(Property.EXTERNAL_IMMUTABLE);
 
                         boolean contentChangeable = !MultiLevel.isAtLeastEventuallyE2Immutable(immutable)
-                                && !fa.getFieldInfo().type.isPrimitiveExcludingVoid()
-                                && !fa.isTransparentType().valueIsTrue();
+                                && !fa.getFieldInfo().type.isPrimitiveExcludingVoid();
                         return DV.fromBoolDv(contentChangeable);
                     })
                     .reduce(DV.FALSE_DV, DV::max);

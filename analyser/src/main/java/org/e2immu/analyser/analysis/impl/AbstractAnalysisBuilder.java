@@ -17,28 +17,24 @@ package org.e2immu.analyser.analysis.impl;
 import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.analyser.delay.DelayFactory;
 import org.e2immu.analyser.analyser.util.GenerateAnnotationsImmutable;
+import org.e2immu.analyser.analyser.util.GenerateAnnotationsIndependent;
 import org.e2immu.analyser.analysis.Analysis;
 import org.e2immu.analyser.analysis.TypeAnalysis;
-import org.e2immu.analyser.model.AnnotationExpression;
-import org.e2immu.analyser.model.MultiLevel;
-import org.e2immu.analyser.model.Qualification;
-import org.e2immu.analyser.model.TypeInfo;
+import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.BooleanConstant;
 import org.e2immu.analyser.model.expression.ConstantExpression;
-import org.e2immu.analyser.model.expression.IntConstant;
 import org.e2immu.analyser.model.expression.MemberValuePair;
 import org.e2immu.analyser.model.impl.AnnotationExpressionImpl;
 import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
 import org.e2immu.analyser.parser.Messages;
 import org.e2immu.analyser.parser.Primitives;
-import org.e2immu.annotation.Independent;
 import org.e2immu.annotation.NotNull;
+import org.e2immu.annotation.Nullable;
 import org.e2immu.support.SetOnceMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Collection;
-import java.util.List;
 import java.util.Map;
 import java.util.stream.Stream;
 
@@ -110,35 +106,43 @@ abstract class AbstractAnalysisBuilder implements Analysis {
         return annotationChecks.get(annotationExpression);
     }
 
-    protected void doNotNull(E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions, DV notNull) {
-        // not null
-        if (notNull.ge(MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL_DV)) {
-            AnnotationExpression nn1 = E2ImmuAnnotationExpressions.create(primitives, NotNull.class, "content", true);
-            annotations.put(nn1, true);
-            annotations.put(e2ImmuAnnotationExpressions.nullable, false);
-        } else {
-            if (notNull.isDone()) {
-                AnnotationExpression nn1 = E2ImmuAnnotationExpressions.create(primitives, NotNull.class, "content", true);
-                annotations.put(nn1, false);
-            }
-            if (notNull.ge(MultiLevel.EFFECTIVELY_NOT_NULL_DV)) {
-                annotations.put(e2ImmuAnnotationExpressions.notNull, true);
-            } else if (notNull.isDone()) {
-                annotations.put(e2ImmuAnnotationExpressions.notNull, false);
-            }
-            // a delay on notNull0 on a non-primitive will get nullable present
-            annotations.put(e2ImmuAnnotationExpressions.nullable, notNull.equals(MultiLevel.NULLABLE_DV));
+    protected void doNotNull(E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions, DV notNull, boolean isPrimitive) {
+        if (isPrimitive) {
+            AnnotationExpression nullable = E2ImmuAnnotationExpressions.create(primitives, NotNull.class, "implicit", true);
+            annotations.put(nullable, true);
+            return;
         }
+        // content not null
+        if (notNull.ge(MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL_DV)) {
+            AnnotationExpression nn = E2ImmuAnnotationExpressions.create(primitives, NotNull.class, "content", true);
+            annotations.put(nn, true);
+            return;
+        }
+        if (notNull.ge(MultiLevel.EFFECTIVELY_NOT_NULL_DV)) {
+            annotations.put(e2ImmuAnnotationExpressions.notNull, true);
+            return;
+        }
+        if (notNull.isDone()) {
+            AnnotationExpression nullable = E2ImmuAnnotationExpressions.create(primitives, Nullable.class, "implicit", true);
+            annotations.put(nullable, true);
+            return;
+        }
+        // a delay
+        AnnotationExpression nullable = E2ImmuAnnotationExpressions.create(primitives, Nullable.class, "inconclusive", true);
+        annotations.put(nullable, true);
     }
 
     /*
     Convention:
-    - when better than formal, we show the immutability value.
+    - we show the immutability value, adding "implied=true" when not better than formal
     - when eventual, we show @BeforeMark for the before state, after="" for the eventual state (but only
       if better than formal), and no extra info for the after state.
      */
 
-    protected void doImmutableContainer(E2ImmuAnnotationExpressions e2, DV immutable, DV container, boolean betterThanFormal) {
+    protected void doImmutableContainer(E2ImmuAnnotationExpressions e2,
+                                        DV immutable,
+                                        DV container,
+                                        boolean betterThanFormal) {
         String eventualFieldNames;
         boolean isType = this instanceof TypeAnalysis;
         boolean showFieldNames = isType && ((TypeAnalysis) this).isEventual()
@@ -148,18 +152,20 @@ abstract class AbstractAnalysisBuilder implements Analysis {
         } else {
             eventualFieldNames = "";
         }
+        boolean inconclusive = immutable.isInconclusive() || container.isInconclusive();
         Map<Class<?>, Map<String, Object>> map = GenerateAnnotationsImmutable.generate(immutable, container,
-                isType, eventualFieldNames, betterThanFormal);
-        MemberValuePair inconclusive = immutable.isInconclusive() || container.isInconclusive() ?
-                new MemberValuePair("inconclusive", new BooleanConstant(primitives, true)) : null;
+                isType, eventualFieldNames, betterThanFormal, inconclusive);
+        generate(e2, map);
+    }
+
+    private void generate(E2ImmuAnnotationExpressions e2, Map<Class<?>, Map<String, Object>> map) {
         for (Map.Entry<Class<?>, Map<String, Object>> entry : map.entrySet()) {
             Stream<MemberValuePair> stream;
             if (entry.getValue() == GenerateAnnotationsImmutable.TRUE) {
-                stream = inconclusive != null ? Stream.of(inconclusive) : Stream.of();
+                stream = Stream.of();
             } else {
-                Stream<MemberValuePair> s1 = entry.getValue().entrySet().stream().map(e -> new MemberValuePair(e.getKey(),
+                stream = entry.getValue().entrySet().stream().map(e -> new MemberValuePair(e.getKey(),
                         ConstantExpression.create(primitives, e.getValue())));
-                stream = inconclusive != null ? Stream.concat(s1, Stream.of(inconclusive)) : s1;
             }
             AnnotationExpression expression = new AnnotationExpressionImpl(e2.immutableAnnotation(entry.getKey()),
                     stream.toList());
@@ -168,51 +174,11 @@ abstract class AbstractAnalysisBuilder implements Analysis {
     }
 
     protected void doIndependent(E2ImmuAnnotationExpressions e2, DV independent, DV formallyIndependent, DV immutable) {
-        AnnotationExpression expression;
-
-        if (independent.equals(formallyIndependent)) {
-            // no annotation needed
-            return;
-        }
-        if (MultiLevel.isAtLeastE2Immutable(immutable)) {
-            return; // no annotation needed, @Immutable series will be there
-        }
-        if (independent.equals(MultiLevel.DEPENDENT_DV)) {
-            if (independent.isInconclusive()) {
-                expression = new AnnotationExpressionImpl(e2.independent.typeInfo(),
-                        List.of(new MemberValuePair("inconclusive",
-                                        new BooleanConstant(primitives, true)),
-                                new MemberValuePair("absent", new BooleanConstant(primitives, true))));
-            } else {
-                return; // default value
-            }
-        } else if (independent.equals(MultiLevel.INDEPENDENT_DV)) {
-            expression = potentiallyInconclusive(e2.independent, independent);
-        } else if (independent.equals(MultiLevel.INDEPENDENT_1_DV)) {
-            AnnotationExpression independentHC = E2ImmuAnnotationExpressions.create(primitives, Independent.class,
-                    "hc", true);
-            expression = potentiallyInconclusive(independentHC, independent);
-        } else {
-            int level = MultiLevel.level(independent) + 1;
-            MemberValuePair mvp = new MemberValuePair("level", new IntConstant(primitives, level));
-            if (independent.isInconclusive()) {
-                MemberValuePair mvp2 = new MemberValuePair("inconclusive",
-                        new BooleanConstant(primitives, true));
-                expression = new AnnotationExpressionImpl(e2.independent.typeInfo(), List.of(mvp, mvp2));
-            } else {
-                expression = new AnnotationExpressionImpl(e2.independent.typeInfo(), List.of(mvp));
-            }
-        }
-        annotations.put(expression, true);
-    }
-
-    private AnnotationExpression potentiallyInconclusive(AnnotationExpression ae, DV dv) {
-        if (dv.isInconclusive()) {
-            return new AnnotationExpressionImpl(ae.typeInfo(),
-                    List.of(new MemberValuePair("inconclusive",
-                            new BooleanConstant(primitives, true))));
-        }
-        return ae;
+        Expression booleanTrue = new BooleanConstant(primitives, true);
+        boolean implied = independent.equals(formallyIndependent)
+                || MultiLevel.independentConsistentWithImmutable(independent, immutable);
+        Map<Class<?>, Map<String, Object>> map = GenerateAnnotationsIndependent.map(independent, implied);
+        generate(e2, map);
     }
 
     private static final int[] INT_ARRAY = {};
@@ -337,8 +303,8 @@ abstract class AbstractAnalysisBuilder implements Analysis {
                 } else if (e2ImmuAnnotationExpressions.utilityClass.typeInfo() == t) {
                     // @UtilityClass
                     setProperty(Property.UTILITY_CLASS, trueFalse);
-                    levelImmutable = MultiLevel.Level.IMMUTABLE_2.max(levelImmutable);
-                    independent = MultiLevel.INDEPENDENT_1_DV.maxIgnoreDelay(independent);
+                    levelImmutable = MultiLevel.Level.IMMUTABLE_R;
+                    independent = MultiLevel.INDEPENDENT_DV;
                 } else if (e2ImmuAnnotationExpressions.extensionClass.typeInfo() == t) {
                     // @ExtensionClass
                     setProperty(Property.EXTENSION_CLASS, trueFalse);

@@ -328,8 +328,6 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
             return DONE;
         }
 
-        LOGGER.debug("Computing transparent types for type {}", typeInfo.fullyQualifiedName);
-
         // STEP 3: collect from static nested types; we have ensured their presence
 
         Set<ParameterizedType> explicitTypesFromSubTypes = typeInspection.subTypes().stream()
@@ -390,7 +388,7 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
                 }
             }
             if (causes.isDelayed()) {
-                LOGGER.debug("Delaying transparent type computation of {}, delays: {}", typeInfo.fullyQualifiedName,
+                LOGGER.debug("Delaying hidden content type computation of {}, delays: {}", typeInfo.fullyQualifiedName,
                         causes);
                 return causes;
             }
@@ -1011,7 +1009,7 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
      * <p>
      * RULE 1: All fields must be @NotModified.
      * <p>
-     * RULE 2: All fields must be private, or their types must be level 2 immutable (incl. unbound, transparent)
+     * RULE 2: All fields must be private, or their types must be immutable (incl. unbound type parameter)
      * <p>
      * RULE 3: All methods and constructors must be independent of the non-level 2 immutable fields
      *
@@ -1165,16 +1163,10 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
             FieldReference thisFieldInfo = new FieldReference(analyserContext, fieldInfo);
             String fieldFQN = fieldInfo.fullyQualifiedName();
 
-            DV transparentType = fieldAnalysis.isTransparentType();
-            if (transparentType.isDelayed()) {
-                LOGGER.debug("Field {} not yet known if of transparent type, delaying @E2Immutable on type", fieldFQN);
-                causesFields = causesFields.merge(transparentType.causesOfDelay());
-                continue;
-            }
             // RULE 1: ALL FIELDS MUST BE NOT MODIFIED
 
             // this follows automatically if they are primitive or E2+Immutable themselves
-            // because of down-casts on non-primitives, e.g. from transparent type to explicit, we cannot rely on the static type
+            // because of down-casts on non-primitives, e.g. from java.lang.Object to explicit, we cannot rely on the static type
             DV fieldImmutable = fieldAnalysis.getProperty(Property.EXTERNAL_IMMUTABLE);
             MultiLevel.Effective fieldE2Immutable = MultiLevel.effectiveAtLevel2PlusImmutable(fieldImmutable);
             if (fieldImmutable.isDelayed()) {
@@ -1239,10 +1231,9 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
                     }
                 }
 
-                // RULE 2: ALL NON-TRANSPARENT NON-PRIMITIVE NON-E2IMMUTABLE MUST HAVE ACCESS MODIFIER PRIVATE
+                // RULE 2: ALL NON-IMMUTABLE TYPES MUST HAVE ACCESS MODIFIER PRIVATE
                 if (fieldInfo.type.typeInfo != typeInfo) {
-                    boolean fieldRequiresRules = fieldAnalysis.isTransparentType().valueIsFalse()
-                            && fieldImmutable.isDone() && fieldE2Immutable != MultiLevel.Effective.EFFECTIVE;
+                    boolean fieldRequiresRules = fieldImmutable.isDone() && fieldE2Immutable != MultiLevel.Effective.EFFECTIVE;
                     if (!fieldInfo.fieldInspection.get().isPrivate() && fieldRequiresRules) {
                         throw new UnsupportedOperationException("Already in negative");
                     }
@@ -1436,8 +1427,7 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
                     typeAnalysis.addEventuallyImmutableField(fieldInfo);
                 }
             } else if (!isPrimitive && !typeAnalysis.getGuardedByEventuallyImmutableFields().contains(fieldInfo)) {
-                boolean fieldRequiresRules = fieldAnalysis.isTransparentType().valueIsFalse()
-                        && fieldImmutable.isDone() && fieldE2Immutable != MultiLevel.Effective.EFFECTIVE;
+                boolean fieldRequiresRules = fieldImmutable.isDone() && fieldE2Immutable != MultiLevel.Effective.EFFECTIVE;
                 if (fieldInfo.type.typeInfo != typeInfo) {
                     if (!fieldInfo.fieldInspection.get().isPrivate() && fieldRequiresRules) {
                         LOGGER.debug("{} is not an E2Immutable class, because field {} is not primitive, " +
@@ -1780,60 +1770,64 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
         return DONE;
     }
 
+    /*
+    two criteria implemented:
+    1- recursively immutable
+    2- no public means of generating instances through constructors or methods
+     */
     private AnalysisStatus analyseUtilityClass() {
         DV utilityClass = typeAnalysis.getProperty(Property.UTILITY_CLASS);
         if (utilityClass.isDone()) return DONE;
 
-        DV e2Immutable = typeAnalysis.getProperty(Property.IMMUTABLE);
-        if (e2Immutable.isDelayed()) {
-            LOGGER.debug("Utility class: Don't know yet about @E2Immutable on {}, delaying", typeInfo.fullyQualifiedName);
-            return e2Immutable.causesOfDelay();
+        DV immutable = typeAnalysis.getProperty(Property.IMMUTABLE);
+        if (immutable.isDelayed()) {
+            LOGGER.debug("Utility class: Don't know yet about @Immutable on {}, delaying", typeInfo);
+            return immutable.causesOfDelay();
         }
-        if (e2Immutable.lt(MultiLevel.EVENTUALLY_E2IMMUTABLE_DV)) {
-            LOGGER.debug("Type {} is not a @UtilityClass, not (eventually) @E2Immutable", typeInfo.fullyQualifiedName);
+        if (MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV.equals(immutable)) {
+            LOGGER.debug("Type {} is not a @UtilityClass, not recursively @Immutable", typeInfo);
             typeAnalysis.setProperty(Property.UTILITY_CLASS, DV.FALSE_DV);
             return DONE;
         }
 
-        for (MethodInfo methodInfo : typeInspection.methods()) {
-            if (!methodInfo.methodInspection.get().isStatic()) {
-                LOGGER.debug("Type " + typeInfo.fullyQualifiedName +
-                        " is not a @UtilityClass, method {} is not static", methodInfo.name);
-                typeAnalysis.setProperty(Property.UTILITY_CLASS, DV.FALSE_DV);
-                return DONE;
-            }
-        }
         // this is technically enough, but we'll verify the constructors (should be private)
         for (MethodInfo constructor : typeInspection.constructors()) {
             if (!constructor.methodInspection.get().isPrivate()) {
-                LOGGER.debug("Type " + typeInfo.fullyQualifiedName +
-                        " looks like a @UtilityClass, but its constructors are not all private");
+                LOGGER.debug("Type {} looks like a @UtilityClass, but its constructors are not all private", typeInfo);
                 typeAnalysis.setProperty(Property.UTILITY_CLASS, DV.FALSE_DV);
                 return DONE;
             }
         }
 
         if (typeInspection.constructors().isEmpty()) {
-            LOGGER.debug("Type " + typeInfo.fullyQualifiedName +
-                    " is not a @UtilityClass: it has no private constructors");
+            LOGGER.debug("Type {} is not a @UtilityClass: it has no private constructors", typeInfo);
             typeAnalysis.setProperty(Property.UTILITY_CLASS, DV.FALSE_DV);
             return DONE;
         }
 
-        // and there should be no means of generating an object
+        // and there should be no means of generating an object: these private constructors are never called!
         for (MethodAnalyser methodAnalyser : myMethodAnalysersExcludingSAMs) {
             if (methodAnalyser.getMethodInfo().methodResolution.get()
                     .methodsOfOwnClassReached().stream().anyMatch(m -> m.isConstructor && m.typeInfo == typeInfo)) {
-                LOGGER.debug("Type " + typeInfo.fullyQualifiedName +
-                        " looks like a @UtilityClass, but an object of the class is created in method "
-                        + methodAnalyser.getMethodInfo().fullyQualifiedName());
+                LOGGER.debug("Type {} looks like a @UtilityClass, but an object of the class is created in method {}",
+                        typeInfo, methodAnalyser.getMethodInfo());
+                typeAnalysis.setProperty(Property.UTILITY_CLASS, DV.FALSE_DV);
+                return DONE;
+            }
+        }
+        for (FieldAnalyser fieldAnalyser : myFieldAnalysers) {
+            FieldInspection.FieldInitialiser fieldInitialiser = fieldAnalyser.getFieldInfo().fieldInspection.get()
+                    .getFieldInitialiser();
+            if (fieldInitialiser.initialiser() instanceof ConstructorCall cc && cc.constructor().typeInfo == this.typeInfo) {
+                LOGGER.debug("Type {} looks like a @UtilityClass, but an object of the class is created in field {}",
+                        typeInfo, fieldAnalyser.getFieldInfo().name);
                 typeAnalysis.setProperty(Property.UTILITY_CLASS, DV.FALSE_DV);
                 return DONE;
             }
         }
 
         typeAnalysis.setProperty(Property.UTILITY_CLASS, DV.TRUE_DV);
-        LOGGER.debug("Type {} marked @UtilityClass", typeInfo.fullyQualifiedName);
+        LOGGER.debug("Type {} marked @UtilityClass", typeInfo);
         return DONE;
     }
 

@@ -27,7 +27,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 /*
-in a separate class to make this unit testable; there's too many cases...
+in a separate class to make this unit testable; there's quite a few cases...
  */
 
 @UtilityClass
@@ -40,12 +40,15 @@ public class GenerateAnnotationsImmutable {
 
     // for testing
     public static Map<Class<?>, Map<String, Object>> generate(DV immutable, DV container, boolean isType) {
-        return generate(immutable, container, isType, "abc", false);
+        return generate(immutable, container, isType, "abc", false, false);
     }
 
-    public static Map<Class<?>, Map<String, Object>> generate(DV immutable, DV container,
+    public static Map<Class<?>, Map<String, Object>> generate(DV immutable,
+                                                              DV container,
                                                               boolean isType,
-                                                              String mark, boolean betterThanFormal) {
+                                                              String mark,
+                                                              boolean betterThanFormal,
+                                                              boolean inconclusive) {
         if (immutable.isDelayed()) return Map.of();
         boolean haveContainer = container.equals(MultiLevel.CONTAINER_DV);
         MultiLevel.Effective effective = MultiLevel.effective(immutable);
@@ -54,12 +57,12 @@ public class GenerateAnnotationsImmutable {
         // EVENTUAL
         if (effective == MultiLevel.Effective.EVENTUAL) {
             if (isType || betterThanFormal && !mark.isBlank()) {
-                return map(level, haveContainer, Map.of("after", mark));
+                return map(level, haveContainer, Map.of("after", mark), inconclusive);
             }
             if (betterThanFormal) {
-                return map(level, haveContainer, Map.of());
+                return map(level, haveContainer, Map.of(), inconclusive);
             }
-            return Map.of();
+            return map(level, haveContainer, Map.of("implied", true), inconclusive);
         }
 
         // BEFORE
@@ -71,33 +74,42 @@ public class GenerateAnnotationsImmutable {
         // AFTER
         if (effective == MultiLevel.Effective.EVENTUAL_AFTER) {
             if (isType) throw new UnsupportedOperationException(); // cannot have this on a type
-            return map(level, haveContainer, TRUE);
+            return map(level, haveContainer, TRUE, inconclusive);
         }
 
         // EFFECTIVE
         if (effective == MultiLevel.Effective.EFFECTIVE) {
             if (isType || betterThanFormal) {
-                return map(level, haveContainer, TRUE);
+                return map(level, haveContainer, TRUE, inconclusive);
             }
-            return Map.of();
+            return map(level, haveContainer, Map.of("implied", true), inconclusive);
         }
 
         Map<Class<?>, Map<String, Object>> res = new HashMap<>();
         if (haveContainer) {
-            res.put(Container.class, TRUE);
+            if (isType || betterThanFormal) {
+                res.put(Container.class, TRUE);
+            } else {
+                res.put(Container.class, Map.of("implied", true));
+            }
         }
         return res;
     }
 
-    private static Map<Class<?>, Map<String, Object>> map(int level, boolean container, Map<String, Object> add) {
+    private static Map<Class<?>, Map<String, Object>> map(int level,
+                                                          boolean container,
+                                                          Map<String, Object> add,
+                                                          boolean inconclusive) {
         Map<String, Object> params = new HashMap<>(add);
-
+        if (inconclusive) {
+            params.put("inconclusive", true);
+        }
         if (level == MultiLevel.Level.IMMUTABLE_1.level) {
             if (container) return Map.of(FinalFields.class, params, Container.class, TRUE);
             return Map.of(FinalFields.class, params);
         }
         if (level == MultiLevel.Level.IMMUTABLE_2.level) {
-            params.put("hc", "true");
+            params.put("hc", true);
             if (container) return Map.of(ImmutableContainer.class, params);
             return Map.of(Immutable.class, params);
         }

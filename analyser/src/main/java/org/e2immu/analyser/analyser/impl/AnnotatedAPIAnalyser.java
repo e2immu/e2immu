@@ -286,7 +286,7 @@ public class AnnotatedAPIAnalyser implements AnalyserContext {
         typeAnalyses.forEach(((typeInfo, typeAnalysis) -> {
             try {
                 DV inMap = typeAnalysis.getPropertyFromMapNeverDelay(Property.INDEPENDENT);
-                ValueExplanation computed = computeIndependent(typeInfo);
+                ValueExplanation computed = computeIndependent(typeInfo, typeAnalysis);
                 validateIndependent(typeInfo, inMap, computed);
             } catch (IllegalStateException ise) {
                 LOGGER.error("Caught exception while validating independence of {}", typeInfo);
@@ -611,7 +611,11 @@ public class AnnotatedAPIAnalyser implements AnalyserContext {
     if the super-type is @Dependent, we must have dependent
      */
 
-    private ValueExplanation computeIndependent(TypeInfo typeInfo) {
+    private ValueExplanation computeIndependent(TypeInfo typeInfo, TypeAnalysis typeAnalysis) {
+        DV immutable = typeAnalysis.getProperty(Property.IMMUTABLE);
+        if (MultiLevel.isAtLeastEventuallyRecursivelyImmutable(immutable)) {
+            return new ValueExplanation(MultiLevel.INDEPENDENT_DV, "immutable");
+        }
         Stream<ValueExplanation> methodStream = typeInfo.typeInspection.get()
                 .methodsAndConstructors(TypeInspection.Methods.THIS_TYPE_ONLY)
                 .filter(m -> m.methodInspection.get().isPubliclyAccessible())

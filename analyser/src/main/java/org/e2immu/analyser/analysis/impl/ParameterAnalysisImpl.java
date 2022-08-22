@@ -175,7 +175,8 @@ public class ParameterAnalysisImpl extends AnalysisImpl implements ParameterAnal
             }
 
             // @NotNull
-            doNotNull(e2ImmuAnnotationExpressions, getProperty(Property.NOT_NULL_PARAMETER));
+            doNotNull(e2ImmuAnnotationExpressions, getProperty(Property.NOT_NULL_PARAMETER),
+                    parameterInfo.parameterizedType.isPrimitiveExcludingVoid());
 
             // @Independent1; @Independent, @Dependent not shown
             DV independentType = analysisProvider.defaultIndependent(parameterInfo.parameterizedType);

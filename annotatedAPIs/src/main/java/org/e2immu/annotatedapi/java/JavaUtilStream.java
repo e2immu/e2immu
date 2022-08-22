@@ -48,7 +48,6 @@ public class JavaUtilStream {
 
     @UtilityClass
     @Container
-    @Independent
     static class Collectors$ {
         @NotNull(content = true)
         Collector<CharSequence, ?, String> joining() {

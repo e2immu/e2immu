@@ -35,13 +35,11 @@ import java.util.stream.Collectors;
 public class FieldAnalysisImpl extends AnalysisImpl implements FieldAnalysis {
 
     private final FieldInfo fieldInfo;
-    public final boolean isOfTransparentType;
     public final LinkedVariables variablesLinkedToMe;
     public final Expression value;
     public final Expression initialValue;  // value from the initialiser
 
     private FieldAnalysisImpl(FieldInfo fieldInfo,
-                              boolean isOfTransparentType,
                               LinkedVariables variablesLinkedToMe,
                               Expression value,
                               Expression initialValue,
@@ -49,7 +47,6 @@ public class FieldAnalysisImpl extends AnalysisImpl implements FieldAnalysis {
                               Map<AnnotationExpression, AnnotationCheck> annotations) {
         super(properties, annotations);
         this.fieldInfo = fieldInfo;
-        this.isOfTransparentType = isOfTransparentType;
         this.variablesLinkedToMe = variablesLinkedToMe;
         this.value = value;
         this.initialValue = initialValue;
@@ -77,11 +74,6 @@ public class FieldAnalysisImpl extends AnalysisImpl implements FieldAnalysis {
     @Override
     public LinkedVariables getLinkedVariables() {
         return variablesLinkedToMe;
-    }
-
-    @Override
-    public DV isTransparentType() {
-        return isOfTransparentType ? DV.TRUE_DV : DV.FALSE_DV;
     }
 
     @Override
@@ -125,8 +117,6 @@ public class FieldAnalysisImpl extends AnalysisImpl implements FieldAnalysis {
         // or parameters
         public final EventuallyFinal<LinkedVariables> linkedVariables = new EventuallyFinal<>();
 
-        private final EventuallyFinal<DV> isOfTransparentType = new EventuallyFinal<>();
-
         @Override
         public void internalAllDoneCheck() {
             super.internalAllDoneCheck();
@@ -134,7 +124,6 @@ public class FieldAnalysisImpl extends AnalysisImpl implements FieldAnalysis {
             assert values.isSet();
             assert value.isFinal();
             assert linkedVariables.isFinal();
-            assert isOfTransparentType.isFinal();
         }
 
         public Builder(Primitives primitives, AnalysisProvider analysisProvider, @NotModified FieldInfo fieldInfo, TypeAnalysis typeAnalysisOfOwner) {
@@ -153,7 +142,6 @@ public class FieldAnalysisImpl extends AnalysisImpl implements FieldAnalysis {
             setValue(dve);
             linkedVariables.setVariable(dve.linkedVariables(null));
             this.values = new VariableFirstThen<>(initialDelay);
-            isOfTransparentType.setVariable(initialDelay);
         }
 
         @Override
@@ -199,15 +187,6 @@ public class FieldAnalysisImpl extends AnalysisImpl implements FieldAnalysis {
             return fieldInfo.newLocation();
         }
 
-
-        public void setTransparentType(DV value) {
-            if (value.isDelayed()) {
-                isOfTransparentType.setVariable(value);
-            } else {
-                isOfTransparentType.setFinal(value);
-            }
-        }
-
         @Override
         public DV getProperty(Property property) {
             return getFieldProperty(analysisProvider, fieldInfo, bestType, property);
@@ -224,14 +203,8 @@ public class FieldAnalysisImpl extends AnalysisImpl implements FieldAnalysis {
         }
 
         @Override
-        public DV isTransparentType() {
-            return isOfTransparentType.get();
-        }
-
-        @Override
         public Analysis build() {
             return new FieldAnalysisImpl(fieldInfo,
-                    !isOfTransparentType.isVariable() && isOfTransparentType.get().valueIsTrue(),
                     linkedVariables.isVariable() ? LinkedVariables.EMPTY : linkedVariables.get(),
                     getValue(),
                     getInitializerValue(),
@@ -281,7 +254,7 @@ public class FieldAnalysisImpl extends AnalysisImpl implements FieldAnalysis {
             }
 
             // @NotNull
-            doNotNull(e2ImmuAnnotationExpressions, getProperty(Property.EXTERNAL_NOT_NULL));
+            doNotNull(e2ImmuAnnotationExpressions, getProperty(Property.EXTERNAL_NOT_NULL), fieldInfo.type.isPrimitiveExcludingVoid());
 
             // dynamic type annotations: @E1Immutable, @E1Container, @E2Immutable, @E2Container
             if (dynamicallyImmutable.gt(formallyImmutable) || dynamicallyContainer.gt(formallyContainer)) {

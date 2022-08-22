@@ -418,13 +418,6 @@ public class Test_37_EventuallyE2Immutable extends CommonTestRunner {
             }
         };
 
-        FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
-            if ("set".equals(d.fieldInfo().name)) {
-                assertFalse(d.fieldAnalysis().isTransparentType().isDelayed());
-                assertEquals(DV.FALSE_DV, d.fieldAnalysis().isTransparentType());
-            }
-        };
-
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("EventuallyE2Immutable_6".equals(d.typeInfo().simpleName)) {
                 // E1 approved preconditions is empty: all fields explicitly final
@@ -442,7 +435,6 @@ public class Test_37_EventuallyE2Immutable extends CommonTestRunner {
 
         testClass("EventuallyE2Immutable_6", 0, 0, new DebugConfiguration.Builder()
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
-                .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                 .addStatementAnalyserVisitor(statementAnalyserVisitor)
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)

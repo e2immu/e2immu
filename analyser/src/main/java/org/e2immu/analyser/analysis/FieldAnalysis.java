@@ -48,8 +48,6 @@ public interface FieldAnalysis extends Analysis {
     @NotNull
     LinkedVariables getLinkedVariables();
 
-    DV isTransparentType();
-
     @NotNull
     FieldInfo getFieldInfo();
 

@@ -35,7 +35,6 @@ public class JavaLangInvoke {
     }
 
     @UtilityClass
-    @Independent
     interface MethodHandles$ {
 
     }
