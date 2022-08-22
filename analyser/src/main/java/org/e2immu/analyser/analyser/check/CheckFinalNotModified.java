@@ -19,8 +19,9 @@ import org.e2immu.analyser.model.AnnotationExpression;
 import org.e2immu.analyser.model.FieldInfo;
 import org.e2immu.analyser.parser.Message;
 
-import java.util.Map;
 import java.util.function.Function;
+
+import static org.e2immu.analyser.parser.E2ImmuAnnotationExpressions.AFTER;
 
 public class CheckFinalNotModified {
 
@@ -28,17 +29,14 @@ public class CheckFinalNotModified {
     creation of the @Final(after = ) annotations is in AbstractAnalysisBuilder
      */
     public static Message check(FieldInfo fieldInfo,
-                                Class<?> annotation,
-                                AnnotationExpression annotationExpression,
+                                AnnotationExpression annotationKey,
                                 FieldAnalysis fieldAnalysis) {
-        Function<AnnotationExpression, String> extractInspected = ae -> ae.extract("after", null);
-        Map.Entry<AnnotationExpression, Boolean> inAnalysis = fieldAnalysis.findAnnotation(annotation.getCanonicalName());
-        String mark = inAnalysis == null ? null : inAnalysis.getKey().extract("after", null);
+        Function<AnnotationExpression, String> extractInspected = ae -> ae.extract(AFTER, null);
+        AnnotationExpression inAnalysis = fieldAnalysis.annotationGetOrDefaultNull(annotationKey);
+        String mark = inAnalysis == null ? null : inAnalysis.extract(AFTER, null);
 
         return CheckHelper.checkAnnotationWithValue(fieldAnalysis,
-                annotation.getName(),
-                "@" + annotation.getSimpleName(),
-                annotationExpression.typeInfo(),
+                annotationKey,
                 extractInspected,
                 mark,
                 fieldInfo.fieldInspection.get().getAnnotations(),

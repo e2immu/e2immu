@@ -53,6 +53,10 @@ public class MultiLevel {
         return level == MAX_LEVEL ? MAX_LEVEL : level + 1;
     }
 
+    public static boolean isEffectivelyImmutable(DV immutable) {
+        return level(immutable) >= IMMUTABLE_2.level && effective(immutable) == EFFECTIVE;
+    }
+
     public enum Effective {
         DELAY(0, "delay"),
         FALSE(1, "false"),

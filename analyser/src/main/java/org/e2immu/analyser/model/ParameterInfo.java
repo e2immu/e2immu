@@ -205,23 +205,9 @@ public class ParameterInfo implements Variable, WithInspectionAndAnalysis {
         return outputBuilder;
     }
 
-
     @Override
     public boolean isStatic() {
         return false;
-    }
-
-    @Override
-    public Optional<AnnotationExpression> hasInspectedAnnotation(Class<?> annotation) {
-        String annotationFQN = annotation.getName();
-        Optional<AnnotationExpression> fromParameter = getInspection().getAnnotations().stream()
-                .filter(ae -> ae.typeInfo().fullyQualifiedName.equals(annotationFQN))
-                .findFirst();
-        if (fromParameter.isPresent()) return fromParameter;
-        if (NotNull.class.equals(annotation)) {
-            return owner.typeInfo.hasInspectedAnnotation(annotation);
-        }
-        return Optional.empty();
     }
 
     @Override

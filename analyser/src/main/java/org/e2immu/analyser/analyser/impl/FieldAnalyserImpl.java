@@ -17,8 +17,9 @@ package org.e2immu.analyser.analyser.impl;
 import org.e2immu.analyser.analyser.Properties;
 import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.analyser.check.CheckFinalNotModified;
-import org.e2immu.analyser.analyser.check.CheckImmutable;
 import org.e2immu.analyser.analyser.check.CheckHelper;
+import org.e2immu.analyser.analyser.check.CheckImmutable;
+import org.e2immu.analyser.analyser.check.CheckIndependent;
 import org.e2immu.analyser.analyser.delay.DelayFactory;
 import org.e2immu.analyser.analyser.delay.Inconclusive;
 import org.e2immu.analyser.analyser.delay.SimpleCause;
@@ -37,7 +38,6 @@ import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.*;
 import org.e2immu.analyser.model.expression.util.MultiExpression;
 import org.e2immu.analyser.model.impl.LocationImpl;
-import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.model.variable.*;
 import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
 import org.e2immu.analyser.parser.InspectionProvider;
@@ -46,8 +46,6 @@ import org.e2immu.analyser.resolver.impl.ListOfSortedTypes;
 import org.e2immu.analyser.resolver.impl.SortedType;
 import org.e2immu.analyser.util.StreamUtil;
 import org.e2immu.analyser.visitor.FieldAnalyserVisitor;
-import org.e2immu.annotation.*;
-import org.e2immu.annotation.eventual.BeforeMark;
 import org.e2immu.support.Either;
 import org.e2immu.support.EventuallyFinal;
 import org.slf4j.Logger;
@@ -1615,36 +1613,37 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
 
         AnalyserProgram analyserProgram = analyserContext.getAnalyserProgram();
         if (analyserProgram.accepts(FIELD_FINAL)) {
-            analyserResultBuilder.add(CheckFinalNotModified.check(fieldInfo, Final.class, e2.effectivelyFinal, fieldAnalysis));
+            analyserResultBuilder.add(CheckFinalNotModified.check(fieldInfo, e2.effectivelyFinal, fieldAnalysis));
         }
         if (analyserProgram.accepts(ALL)) {
             LOGGER.debug("Checking field {}", fqn);
 
             // FIXME content
-            check(NotNull.class, e2.notNull);
+            check(e2.notNull);
 
-            analyserResultBuilder.add(CheckFinalNotModified.check(fieldInfo, NotModified.class, e2.notModified, fieldAnalysis));
+            analyserResultBuilder.add(CheckFinalNotModified.check(fieldInfo, e2.notModified, fieldAnalysis));
 
             // dynamic type annotations
-            check(Container.class, e2.container);
+            check(e2.container);
 
-            analyserResultBuilder.add(CheckImmutable.check(fieldInfo, FinalFields.class, e2.finalFields, fieldAnalysis, null));
-            analyserResultBuilder.add(CheckImmutable.check(fieldInfo, Immutable.class, e2.immutable, fieldAnalysis, null));
-            analyserResultBuilder.add(CheckImmutable.check(fieldInfo, ImmutableContainer.class, e2.immutableContainer, fieldAnalysis, null));
-            Expression singleReturnValue = fieldAnalysis.getValue() != null ?
+            Expression srv = fieldAnalysis.getValue() != null ?
                     fieldAnalysis.getValue() : EmptyExpression.EMPTY_EXPRESSION;
+            analyserResultBuilder.add(CheckImmutable.check(fieldInfo, e2.finalFields, fieldAnalysis, null));
+            analyserResultBuilder.add(CheckImmutable.check(fieldInfo, e2.immutable, fieldAnalysis, null));
+            analyserResultBuilder.add(CheckImmutable.check(fieldInfo, e2.immutableContainer, fieldAnalysis, srv));
 
-            check(Modified.class, e2.modified);
-            check(Nullable.class, e2.nullable);
-            check(BeforeMark.class, e2.beforeMark);
+            analyserResultBuilder.add(CheckIndependent.check(fieldInfo, e2.independent, fieldAnalysis));
+            check(e2.modified);
+            check(e2.nullable);
+            check(e2.beforeMark);
         }
     }
 
-    private void check(Class<?> annotation, AnnotationExpression annotationExpression) {
-        fieldInfo.error(fieldAnalysis, annotation, annotationExpression).ifPresent(mustBeAbsent ->
+    private void check(AnnotationExpression annotationKey) {
+        fieldInfo.error(fieldAnalysis, annotationKey).ifPresent(mustBeAbsent ->
                 analyserResultBuilder.add(Message.newMessage(fieldInfo.newLocation(),
                         mustBeAbsent ? Message.Label.ANNOTATION_UNEXPECTEDLY_PRESENT
-                                : Message.Label.ANNOTATION_ABSENT, annotation.getSimpleName())));
+                                : Message.Label.ANNOTATION_ABSENT, annotationKey.typeInfo().simpleName)));
     }
 
     private class EvaluationContextImpl extends AbstractEvaluationContextImpl {

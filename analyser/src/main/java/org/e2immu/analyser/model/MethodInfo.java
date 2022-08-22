@@ -202,12 +202,6 @@ public class MethodInfo implements WithInspectionAndAnalysis {
     }
 
     @Override
-    public Optional<AnnotationExpression> hasInspectedAnnotation(Class<?> annotation) {
-        String annotationFQN = annotation.getName();
-        return hasInspectedAnnotation(annotationFQN);
-    }
-
-    @Override
     public String name() {
         return name;
     }

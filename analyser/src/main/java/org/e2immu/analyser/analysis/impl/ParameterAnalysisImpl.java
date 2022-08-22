@@ -171,7 +171,7 @@ public class ParameterAnalysisImpl extends AnalysisImpl implements ParameterAnal
                     !ignoreModifications.equals(MultiLevel.IGNORE_MODS_DV)) {
                 AnnotationExpression ae = modified.valueIsFalse() ? e2ImmuAnnotationExpressions.notModified :
                         e2ImmuAnnotationExpressions.modified;
-                annotations.put(ae, true);
+               addAnnotation(ae);
             }
 
             // @NotNull
@@ -182,20 +182,21 @@ public class ParameterAnalysisImpl extends AnalysisImpl implements ParameterAnal
             DV independentType = analysisProvider.defaultIndependent(parameterInfo.parameterizedType);
             DV independent = getProperty(Property.INDEPENDENT);
             if (independent.equals(MultiLevel.INDEPENDENT_DV) && independentType.lt(MultiLevel.INDEPENDENT_DV)) {
-                annotations.put(e2ImmuAnnotationExpressions.independent, true);
+               addAnnotation(e2ImmuAnnotationExpressions.independent);
             } else if (independent.equals(MultiLevel.INDEPENDENT_1_DV) && independentType.lt(MultiLevel.INDEPENDENT_1_DV)) {
                 AnnotationExpression independentHC = E2ImmuAnnotationExpressions.create(primitives, Independent.class,
                         "hc", true);
-                annotations.put(independentHC, true);
+               addAnnotation(independentHC);
             }
 
             DV formallyImmutable = analysisProvider.getProperty(parameterInfo.parameterizedType, Property.IMMUTABLE, false);
             DV dynamicallyImmutable = getProperty(Property.IMMUTABLE);
             DV formallyContainer = analysisProvider.getProperty(parameterInfo.parameterizedType, Property.CONTAINER, false);
             DV dynamicallyContainer = getProperty(Property.CONTAINER);
-            if (dynamicallyImmutable.gt(formallyImmutable) || dynamicallyContainer.gt(formallyContainer)) {
-                doImmutableContainer(e2ImmuAnnotationExpressions, dynamicallyImmutable, dynamicallyContainer, true);
-            }
+            boolean immutableBetterThanFormal = dynamicallyImmutable.gt(formallyImmutable);
+            boolean containerBetterThanFormal = dynamicallyContainer.gt(formallyContainer);
+            doImmutableContainer(e2ImmuAnnotationExpressions, dynamicallyImmutable, dynamicallyContainer,
+                    immutableBetterThanFormal, containerBetterThanFormal, null);
         }
 
         public boolean addAssignedToField(FieldInfo fieldInfo, DV assignedOrLinked) {

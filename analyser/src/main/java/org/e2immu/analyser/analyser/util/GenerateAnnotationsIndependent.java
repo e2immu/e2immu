@@ -22,6 +22,8 @@ import org.e2immu.annotation.type.UtilityClass;
 import java.util.HashMap;
 import java.util.Map;
 
+import static org.e2immu.analyser.parser.E2ImmuAnnotationExpressions.*;
+
 /*
 in a separate class to make this unit testable; there's quite a few cases...
  */
@@ -37,16 +39,15 @@ public class GenerateAnnotationsIndependent {
     public static Map<Class<?>, Map<String, Object>> map(DV independent, boolean implied) {
         Map<String, Object> params = new HashMap<>();
         if (independent.isInconclusive()) {
-            params.put("inconclusive", true);
-        }
-        if (implied) {
-            params.put("implied", true);
+            params.put(INCONCLUSIVE, true);
+        } else if (implied) {
+            params.put(IMPLIED, true);
         }
         if (MultiLevel.INDEPENDENT_1_DV.equals(independent)) {
-            params.put("hc", true);
+            params.put(HIDDEN_CONTENT, true);
         } else if (MultiLevel.DEPENDENT_DV.equals(independent)) {
-            params.put("absent", true);
-            params.put("implied", true);
+            params.put(ABSENT, true);
+            params.put(IMPLIED, true);
         } else {
             assert MultiLevel.INDEPENDENT_DV.equals(independent);
         }

@@ -20,6 +20,7 @@ import org.e2immu.analyser.model.expression.*;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.Symbol;
+import org.e2immu.analyser.output.Text;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.util.UpgradableBooleanMap;
 import org.e2immu.annotation.ImmutableContainer;
@@ -28,6 +29,8 @@ import org.e2immu.annotation.rare.IgnoreModifications;
 
 import java.lang.reflect.Array;
 import java.util.*;
+
+import static org.e2immu.analyser.parser.E2ImmuAnnotationExpressions.*;
 
 
 public record AnnotationExpressionImpl(TypeInfo typeInfo,
@@ -80,11 +83,18 @@ public record AnnotationExpressionImpl(TypeInfo typeInfo,
                 .add(typeInfo.typeName(qualification.qualifierRequired(typeInfo)));
         if (!expressions.isEmpty()) {
             outputBuilder.add(Symbol.LEFT_PARENTHESIS)
-                    .add(expressions.stream().map(expression -> expression.output(qualification))
+                    .add(expressions.stream().map(expression -> unquote(qualification, expression))
                             .collect(OutputBuilder.joining(Symbol.COMMA)))
                     .add(Symbol.RIGHT_PARENTHESIS);
         }
         return outputBuilder;
+    }
+
+    private OutputBuilder unquote(Qualification qualification, MemberValuePair expression) {
+        if (expression.value().get() instanceof StringConstant sc) {
+            return new OutputBuilder().add(new Text(sc.getValue()));
+        }
+        return expression.output(qualification);
     }
 
     @Override
@@ -226,9 +236,10 @@ public record AnnotationExpressionImpl(TypeInfo typeInfo,
     @Override
     public AnnotationParameters e2ImmuAnnotationParameters() {
         if (!typeInfo.fullyQualifiedName.startsWith(ORG_E_2_IMMU_ANNOTATION)) return null;
-        boolean absent = extract("absent", false);
-        boolean contract = extract("contract", false) || FQN_ALWAYS_CONTRACT.contains(typeInfo.fullyQualifiedName);
-        return new AnnotationParameters(absent, contract);
+        boolean absent = extract(ABSENT, false);
+        boolean contract = extract(CONTRACT, false) || FQN_ALWAYS_CONTRACT.contains(typeInfo.fullyQualifiedName);
+        boolean implied = extract(IMPLIED, false);
+        return new AnnotationParameters(absent, contract, implied);
     }
 
 }

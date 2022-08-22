@@ -125,6 +125,7 @@ public class Test_00_Basics_0 extends CommonTestRunner {
                 assertDv(d, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, IMMUTABLE);
             }
         };
+
         TypeMapVisitor typeMapVisitor = typeMap -> {
             // quick check that the XML annotations have been read properly, and copied into the correct place
             TypeInfo stringType = typeMap.getPrimitives().stringTypeInfo();
@@ -133,12 +134,12 @@ public class Test_00_Basics_0 extends CommonTestRunner {
         };
 
         testClass("Basics_0", 0, 0, new DebugConfiguration.Builder()
-           //     .addAfterFieldAnalyserVisitor(afterFieldAnalyserVisitor)
-           //     .addStatementAnalyserVisitor(statementAnalyserVisitor)
-           //     .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addAfterFieldAnalyserVisitor(afterFieldAnalyserVisitor)
+                .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .addTypeMapVisitor(typeMapVisitor)
-            //    .addEvaluationResultVisitor(evaluationResultVisitor)
-            //    .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
+                .addEvaluationResultVisitor(evaluationResultVisitor)
+                .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
                 .build());
     }
 

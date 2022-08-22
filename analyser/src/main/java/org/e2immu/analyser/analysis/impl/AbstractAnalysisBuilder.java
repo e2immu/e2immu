@@ -16,12 +16,11 @@ package org.e2immu.analyser.analysis.impl;
 
 import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.analyser.delay.DelayFactory;
-import org.e2immu.analyser.analyser.util.GenerateAnnotationsImmutable;
+import org.e2immu.analyser.analyser.util.GenerateAnnotationsImmutableAndContainer;
 import org.e2immu.analyser.analyser.util.GenerateAnnotationsIndependent;
 import org.e2immu.analyser.analysis.Analysis;
 import org.e2immu.analyser.analysis.TypeAnalysis;
 import org.e2immu.analyser.model.*;
-import org.e2immu.analyser.model.expression.BooleanConstant;
 import org.e2immu.analyser.model.expression.ConstantExpression;
 import org.e2immu.analyser.model.expression.MemberValuePair;
 import org.e2immu.analyser.model.impl.AnnotationExpressionImpl;
@@ -38,10 +37,15 @@ import java.util.Collection;
 import java.util.Map;
 import java.util.stream.Stream;
 
+import static org.e2immu.analyser.parser.E2ImmuAnnotationExpressions.*;
+
 abstract class AbstractAnalysisBuilder implements Analysis {
     private static final Logger LOGGER = LoggerFactory.getLogger(AbstractAnalysisBuilder.class);
 
-    public final SetOnceMap<AnnotationExpression, Boolean> annotations = new SetOnceMap<>();
+    /*
+    always add key+value the same, so that we can get the expression with parameters using a key that doesn't have them
+     */
+    public final SetOnceMap<AnnotationExpression, AnnotationExpression> annotations = new SetOnceMap<>();
     public final SetOnceMap<AnnotationExpression, AnnotationCheck> annotationChecks = new SetOnceMap<>();
 
     public final Properties properties = Properties.writable();
@@ -59,15 +63,8 @@ abstract class AbstractAnalysisBuilder implements Analysis {
     }
 
     @Override
-    public Boolean annotationGetOrDefaultNull(AnnotationExpression expression) {
+    public AnnotationExpression annotationGetOrDefaultNull(AnnotationExpression expression) {
         return annotations.getOrDefaultNull(expression);
-    }
-
-    @Override
-    public Map.Entry<AnnotationExpression, Boolean> findAnnotation(String annotationFqn) {
-        return annotations.stream()
-                .filter(e -> e.getKey().typeInfo().fullyQualifiedName.equals(annotationFqn)
-                        && e.getValue() == Boolean.TRUE).findFirst().orElse(null);
     }
 
     public DV getPropertyFromMapDelayWhenAbsent(Property property) {
@@ -106,30 +103,34 @@ abstract class AbstractAnalysisBuilder implements Analysis {
         return annotationChecks.get(annotationExpression);
     }
 
+    public void addAnnotation(AnnotationExpression annotationExpression) {
+        this.annotations.put(annotationExpression, annotationExpression);
+    }
+
     protected void doNotNull(E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions, DV notNull, boolean isPrimitive) {
         if (isPrimitive) {
-            AnnotationExpression nullable = E2ImmuAnnotationExpressions.create(primitives, NotNull.class, "implicit", true);
-            annotations.put(nullable, true);
+            AnnotationExpression nullable = E2ImmuAnnotationExpressions.create(primitives, NotNull.class, IMPLIED, true);
+            addAnnotation(nullable);
             return;
         }
         // content not null
         if (notNull.ge(MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL_DV)) {
-            AnnotationExpression nn = E2ImmuAnnotationExpressions.create(primitives, NotNull.class, "content", true);
-            annotations.put(nn, true);
+            AnnotationExpression nn = E2ImmuAnnotationExpressions.create(primitives, NotNull.class, CONTENT, true);
+            addAnnotation(nn);
             return;
         }
         if (notNull.ge(MultiLevel.EFFECTIVELY_NOT_NULL_DV)) {
-            annotations.put(e2ImmuAnnotationExpressions.notNull, true);
+            addAnnotation(e2ImmuAnnotationExpressions.notNull);
             return;
         }
         if (notNull.isDone()) {
-            AnnotationExpression nullable = E2ImmuAnnotationExpressions.create(primitives, Nullable.class, "implicit", true);
-            annotations.put(nullable, true);
+            AnnotationExpression nullable = E2ImmuAnnotationExpressions.create(primitives, Nullable.class, IMPLIED, true);
+            addAnnotation(nullable);
             return;
         }
         // a delay
-        AnnotationExpression nullable = E2ImmuAnnotationExpressions.create(primitives, Nullable.class, "inconclusive", true);
-        annotations.put(nullable, true);
+        AnnotationExpression nullable = E2ImmuAnnotationExpressions.create(primitives, Nullable.class, INCONCLUSIVE, true);
+        addAnnotation(nullable);
     }
 
     /*
@@ -142,7 +143,9 @@ abstract class AbstractAnalysisBuilder implements Analysis {
     protected void doImmutableContainer(E2ImmuAnnotationExpressions e2,
                                         DV immutable,
                                         DV container,
-                                        boolean betterThanFormal) {
+                                        boolean immutableBetterThanFormal,
+                                        boolean containerBetterThanFormal,
+                                        String constantValue) {
         String eventualFieldNames;
         boolean isType = this instanceof TypeAnalysis;
         boolean showFieldNames = isType && ((TypeAnalysis) this).isEventual()
@@ -152,16 +155,15 @@ abstract class AbstractAnalysisBuilder implements Analysis {
         } else {
             eventualFieldNames = "";
         }
-        boolean inconclusive = immutable.isInconclusive() || container.isInconclusive();
-        Map<Class<?>, Map<String, Object>> map = GenerateAnnotationsImmutable.generate(immutable, container,
-                isType, eventualFieldNames, betterThanFormal, inconclusive);
+        Map<Class<?>, Map<String, Object>> map = GenerateAnnotationsImmutableAndContainer.generate(immutable, container,
+                isType, eventualFieldNames, immutableBetterThanFormal, containerBetterThanFormal, constantValue);
         generate(e2, map);
     }
 
     private void generate(E2ImmuAnnotationExpressions e2, Map<Class<?>, Map<String, Object>> map) {
         for (Map.Entry<Class<?>, Map<String, Object>> entry : map.entrySet()) {
             Stream<MemberValuePair> stream;
-            if (entry.getValue() == GenerateAnnotationsImmutable.TRUE) {
+            if (entry.getValue() == GenerateAnnotationsImmutableAndContainer.NO_PARAMS) {
                 stream = Stream.of();
             } else {
                 stream = entry.getValue().entrySet().stream().map(e -> new MemberValuePair(e.getKey(),
@@ -169,12 +171,11 @@ abstract class AbstractAnalysisBuilder implements Analysis {
             }
             AnnotationExpression expression = new AnnotationExpressionImpl(e2.immutableAnnotation(entry.getKey()),
                     stream.toList());
-            annotations.put(expression, true);
+            addAnnotation(expression);
         }
     }
 
     protected void doIndependent(E2ImmuAnnotationExpressions e2, DV independent, DV formallyIndependent, DV immutable) {
-        Expression booleanTrue = new BooleanConstant(primitives, true);
         boolean implied = independent.equals(formallyIndependent)
                 || MultiLevel.independentConsistentWithImmutable(independent, immutable);
         Map<Class<?>, Map<String, Object>> map = GenerateAnnotationsIndependent.map(independent, implied);
@@ -235,25 +236,26 @@ abstract class AbstractAnalysisBuilder implements Analysis {
 
                 } else if (isImmutable) {
                     // @Immutable
-                    boolean hiddenContent = analyserIdentification.isAbstract || annotationExpression.extract("hc", false);
+                    boolean hiddenContent = analyserIdentification.isAbstract ||
+                            annotationExpression.extract(HIDDEN_CONTENT, false);
                     MultiLevel.Level immutable = hiddenContent ? MultiLevel.Level.IMMUTABLE_2 : MultiLevel.Level.IMMUTABLE_R;
                     levelImmutable = parameters.absent() ? MultiLevel.Level.ABSENT : levelImmutable.max(immutable);
                     DV independentHc = hiddenContent ? MultiLevel.INDEPENDENT_1_DV : MultiLevel.INDEPENDENT_DV;
                     independent = parameters.absent() ? MultiLevel.DEPENDENT_DV : independent.maxIgnoreDelay(independentHc);
                     eventual = isEventual(annotationExpression);
-                    String constantValue = annotationExpression.extract("value", "");
+                    String constantValue = annotationExpression.extract(VALUE, "");
                     isConstant = constantValue == null || !constantValue.isEmpty();
                     container = isImmutableContainer;
 
                 } else if (e2ImmuAnnotationExpressions.independent.typeInfo() == t) {
                     // @Independent
-                    boolean hc = annotationExpression.extract("hc", false);
+                    boolean hc = annotationExpression.extract(HIDDEN_CONTENT, false);
                     independent = parameters.absent() ? MultiLevel.DEPENDENT_DV :
                             hc ? MultiLevel.INDEPENDENT_1_DV : MultiLevel.INDEPENDENT_DV;
                     if (analyserIdentification == Analyser.AnalyserIdentification.PARAMETER) {
                         linkLevel = parameters.absent() ? LinkedVariables.LINK_DEPENDENT :
                                 hc ? LinkedVariables.LINK_INDEPENDENT1 : LinkedVariables.LINK_NONE;
-                        linkParameters = annotationExpression.extract("parameters", INT_ARRAY);
+                        linkParameters = annotationExpression.extract(PARAMETERS, INT_ARRAY);
                     }
                 } else if (e2ImmuAnnotationExpressions.container.typeInfo() == t) {
                     // @Container, allowing absent
@@ -263,7 +265,7 @@ abstract class AbstractAnalysisBuilder implements Analysis {
                     notNull = MultiLevel.NULLABLE_DV;
                 } else if (e2ImmuAnnotationExpressions.notNull.typeInfo() == t) {
                     // @NotNull, allowing absent
-                    boolean content = annotationExpression.extract("content", false);
+                    boolean content = annotationExpression.extract(CONTENT, false);
                     notNull = parameters.absent() ? MultiLevel.NULLABLE_DV :
                             content ? MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL_DV : MultiLevel.EFFECTIVELY_NOT_NULL_DV;
                 } else if (e2ImmuAnnotationExpressions.notModified.typeInfo() == t) {
@@ -350,14 +352,14 @@ abstract class AbstractAnalysisBuilder implements Analysis {
             setProperty(analyserIdentification.notNull, notNull);
         }
         if (mark != null && only == null) {
-            String markValue = mark.extract("value", "");
+            String markValue = mark.extract(VALUE, "");
             writeEventual(markValue, true, null, null);
         } else if (only != null) {
-            String before = only.extract("before", "");
-            String after = only.extract("after", "");
+            String before = only.extract(BEFORE, "");
+            String after = only.extract(AFTER, "");
             boolean isAfter = before.isEmpty();
             String onlyMark = isAfter ? after : before;
-            String markValue = mark == null ? null : mark.extract("value", "");
+            String markValue = mark == null ? null : mark.extract(VALUE, "");
             if (markValue != null && !onlyMark.equals(markValue)) {
                 LOGGER.warn("Have both @Only and @Mark, with different values? {} vs {}", onlyMark, markValue);
             }
@@ -367,8 +369,8 @@ abstract class AbstractAnalysisBuilder implements Analysis {
                 writeEventual(onlyMark, false, isAfter, null);
             }
         } else if (testMark != null) {
-            String markValue = testMark.extract("value", "");
-            boolean before = testMark.extract("before", false);
+            String markValue = testMark.extract(VALUE, "");
+            boolean before = testMark.extract(BEFORE, false);
             boolean test = !before; // default == after==true == before==false
             writeEventual(markValue, false, null, test);
         }
@@ -383,7 +385,7 @@ abstract class AbstractAnalysisBuilder implements Analysis {
     }
 
     private String isEventual(AnnotationExpression annotationExpression) {
-        String after = annotationExpression.extract("after", "");
+        String after = annotationExpression.extract(AFTER, "");
         return after == null || after.isBlank() ? null : after.trim();
     }
 

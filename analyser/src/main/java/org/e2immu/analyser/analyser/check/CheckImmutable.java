@@ -22,43 +22,41 @@ import org.e2immu.analyser.model.FieldInfo;
 import org.e2immu.analyser.model.WithInspectionAndAnalysis;
 import org.e2immu.analyser.model.expression.StringConstant;
 import org.e2immu.analyser.parser.Message;
-import org.e2immu.analyser.util.StringUtil;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.function.Function;
+
+import static org.e2immu.analyser.parser.E2ImmuAnnotationExpressions.AFTER;
+import static org.e2immu.analyser.parser.E2ImmuAnnotationExpressions.VALUE;
 
 public class CheckImmutable {
 
     public static Message check(WithInspectionAndAnalysis info,
-                                Class<?> annotation,
-                                AnnotationExpression annotationExpression,
+                                AnnotationExpression annotationKey,
                                 Analysis analysis,
                                 Expression constantValue) {
         List<CheckHelper.AnnotationKV> kvs = new ArrayList<>(3);
         Property property = info instanceof FieldInfo ? Property.EXTERNAL_IMMUTABLE : Property.IMMUTABLE;
 
-        Function<AnnotationExpression, String> extractInspected1 = ae -> ae.extract("after", "");
-        Map.Entry<AnnotationExpression, Boolean> inAnalysis = analysis.findAnnotation(annotation.getCanonicalName());
-        String value1 = inAnalysis == null ? "" : inAnalysis.getKey().extract("after", "");
+        Function<AnnotationExpression, String> extractInspected1 = ae -> ae.extract(AFTER, "");
+        AnnotationExpression inAnalysis = analysis.annotationGetOrDefaultNull(annotationKey);
+        String value1 = inAnalysis == null ? "" : inAnalysis.extract(AFTER, "");
         // do not use the after=""... as a marker to check the presence (see test E2InContext_3)
         kvs.add(new CheckHelper.AnnotationKV(extractInspected1, value1, false));
 
-        String computedValue = constantValue == null ? null : constantValue.toString();
-        Function<AnnotationExpression, String> extractInspected = ae -> {
-            String value = ae.extract("value", "");
-            return constantValue instanceof StringConstant ? StringUtil.quote(value) : value;
-        };
+        String computedUnquotedValue = constantValue == null ? null :
+                constantValue instanceof StringConstant sc ? sc.getValue() :
+                        constantValue.toString();
+        Function<AnnotationExpression, String> extractInspected = ae -> ae.extract(VALUE, "");
+
         if (constantValue != null) {
-            kvs.add(new CheckHelper.AnnotationKV(extractInspected, computedValue));
+            kvs.add(new CheckHelper.AnnotationKV(extractInspected, computedUnquotedValue));
         }
 
         return CheckHelper.checkAnnotationWithValue(
                 analysis,
-                annotation.getName(),
-                "@" + annotation.getSimpleName(),
-                annotationExpression.typeInfo(),
+                annotationKey,
                 kvs,
                 info.getInspection().getAnnotations(),
                 info.newLocation());

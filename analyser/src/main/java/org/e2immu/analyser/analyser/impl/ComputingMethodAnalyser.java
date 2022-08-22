@@ -309,7 +309,7 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
 
         LOGGER.debug("Marking {} with only data {}", methodInfo.distinguishingName(), eventual);
         AnnotationExpression annotation = detectEventual.makeAnnotation(eventual);
-        methodAnalysis.annotations.put(annotation, true);
+        methodAnalysis.addAnnotation(annotation);
         return DONE;
     }
 
@@ -623,7 +623,13 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
             valueIsConstantField = constantField.valueIsTrue();
         } else valueIsConstantField = false;
 
+        boolean isConstant = value.isConstant() || valueIsConstantField;
+
         methodAnalysis.setSingleReturnValue(value);
+        methodAnalysis.setProperty(Property.CONSTANT, DV.fromBoolDv(isConstant));
+
+        LOGGER.debug("Mark method {} as @Constant? {}", methodInfo.fullyQualifiedName(), isConstant);
+
 
         setFluent(valueBeforeInlining);
 

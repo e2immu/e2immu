@@ -43,7 +43,7 @@ public class MethodAnalyserFactory {
                 allowComputed);
 
         return switch (analysisMode) {
-            case CONTRACTED -> createShallowMethodAnalyser(methodInfo, analyserContextInput, true);
+            case CONTRACTED -> createShallowMethodAnalyser(methodInfo, typeAnalysis, analyserContextInput, true);
             case AGGREGATED -> {
                 assert !isSAM;
                 List<? extends ParameterAnalyser> parameterAnalysers = methodInspection.getParameters().stream()
@@ -52,7 +52,7 @@ public class MethodAnalyserFactory {
                         .map(ParameterAnalyser::getParameterAnalysis).toList();
                 MethodAnalysisImpl.Builder methodAnalysis = new MethodAnalysisImpl.Builder(analysisMode,
                         analyserContextInput.getPrimitives(), analyserContextInput, analyserContextInput,
-                        methodInfo, parameterAnalyses);
+                        methodInfo, typeAnalysis, parameterAnalyses);
                 yield new AggregatingMethodAnalyser(methodInfo, methodAnalysis, parameterAnalysers,
                         parameterAnalyses, analyserContextInput);
             }
@@ -63,12 +63,13 @@ public class MethodAnalyserFactory {
                 List<ParameterAnalysis> parameterAnalyses = parameterAnalysers.stream()
                         .map(ParameterAnalyser::getParameterAnalysis).toList();
                 MethodAnalysisImpl.Builder methodAnalysis = new MethodAnalysisImpl.Builder(analysisMode,
-                        analyserContext.getPrimitives(), analyserContext, analyserContext, methodInfo, parameterAnalyses);
+                        analyserContext.getPrimitives(), analyserContext, analyserContext, methodInfo,
+                        typeAnalysis, parameterAnalyses);
                 Map<CompanionMethodName, CompanionAnalyser> companionAnalysers = createCompanionAnalysers(methodInfo,
                         analyserContext, typeAnalysis);
                 companionAnalysers.forEach((cmn, ca) -> {
                     methodAnalysis.companionAnalyses.put(cmn, ca.companionAnalysis);
-                    if(cmn.aspect() != null && cmn.action()== CompanionMethodName.Action.ASPECT
+                    if (cmn.aspect() != null && cmn.action() == CompanionMethodName.Action.ASPECT
                             && !typeAnalysis.getAspects().containsKey(cmn.aspect())) {
                         typeAnalysis.setAspect(cmn.aspect(), methodInfo);
                     }
@@ -79,7 +80,9 @@ public class MethodAnalyserFactory {
         };
     }
 
-    public static ShallowMethodAnalyser createShallowMethodAnalyser(MethodInfo methodInfo, AnalyserContext analyserContext,
+    public static ShallowMethodAnalyser createShallowMethodAnalyser(MethodInfo methodInfo,
+                                                                    TypeAnalysis typeAnalysis,
+                                                                    AnalyserContext analyserContext,
                                                                     boolean enableVisitors) {
         MethodInspection methodInspection = methodInfo.methodInspection.get();
         List<ParameterAnalysis> parameterAnalyses = methodInspection.getParameters().stream()
@@ -88,7 +91,7 @@ public class MethodAnalyserFactory {
                 .toList();
         MethodAnalysisImpl.Builder methodAnalysis = new MethodAnalysisImpl.Builder(Analysis.AnalysisMode.CONTRACTED,
                 analyserContext.getPrimitives(), analyserContext, analyserContext,
-                methodInfo, parameterAnalyses);
+                methodInfo, typeAnalysis, parameterAnalyses);
         return new ShallowMethodAnalyser(methodInfo, methodAnalysis, parameterAnalyses, analyserContext, enableVisitors);
     }
 
@@ -104,7 +107,7 @@ public class MethodAnalyserFactory {
             }
             return Analysis.AnalysisMode.CONTRACTED;
         }
-        if(methodInspection.getMethodBody().isEmpty()) return Analysis.AnalysisMode.CONTRACTED;
+        if (methodInspection.getMethodBody().isEmpty()) return Analysis.AnalysisMode.CONTRACTED;
 
         return allowComputed ? Analysis.AnalysisMode.COMPUTED : Analysis.AnalysisMode.CONTRACTED;
     }

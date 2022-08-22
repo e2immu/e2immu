@@ -16,6 +16,7 @@ package org.e2immu.analyser.analyser.impl;
 
 import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.analyser.check.CheckImmutable;
+import org.e2immu.analyser.analyser.check.CheckIndependent;
 import org.e2immu.analyser.analyser.nonanalyserimpl.ExpandableAnalyserContextImpl;
 import org.e2immu.analyser.analysis.Analysis;
 import org.e2immu.analyser.analysis.impl.TypeAnalysisImpl;
@@ -23,10 +24,7 @@ import org.e2immu.analyser.config.AnalyserProgram;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
 import org.e2immu.analyser.parser.Message;
-import org.e2immu.annotation.*;
-import org.e2immu.annotation.type.ExtensionClass;
-import org.e2immu.annotation.type.Singleton;
-import org.e2immu.annotation.type.UtilityClass;
+import org.e2immu.annotation.NotModified;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -126,19 +124,17 @@ public abstract class TypeAnalyserImpl extends AbstractAnalyser implements TypeA
         if (analyserProgram.accepts(ALL)) {
             internalCheckImmutableIndependent(); // do not run when program is partial, some data may not be available
 
-            check(typeInfo, UtilityClass.class, e2.utilityClass);
-            check(typeInfo, ExtensionClass.class, e2.extensionClass);
-            check(typeInfo, Container.class, e2.container);
-            check(typeInfo, Singleton.class, e2.singleton);
+            check(typeInfo, e2.utilityClass);
+            check(typeInfo, e2.extensionClass);
+            check(typeInfo, e2.container);
+            check(typeInfo, e2.singleton);
 
-            // FIXME hc true, false
-            check(typeInfo, Independent.class, e2.independent);
+            analyserResultBuilder.add(CheckIndependent.check(typeInfo, e2.independent, typeAnalysis));
 
-            analyserResultBuilder.add(CheckImmutable.check(typeInfo, FinalFields.class, e2.finalFields, typeAnalysis, null));
-            // FIXME hc = true, false
-            analyserResultBuilder.add(CheckImmutable.check(typeInfo, Immutable.class, e2.immutable, typeAnalysis, null));
-            analyserResultBuilder.add(CheckImmutable.check(typeInfo, ImmutableContainer.class, e2.immutableContainer, typeAnalysis, null));
-         }
+            analyserResultBuilder.add(CheckImmutable.check(typeInfo, e2.finalFields, typeAnalysis, null));
+            analyserResultBuilder.add(CheckImmutable.check(typeInfo, e2.immutable, typeAnalysis, null));
+            analyserResultBuilder.add(CheckImmutable.check(typeInfo, e2.immutableContainer, typeAnalysis, null));
+        }
     }
 
     private void internalCheckImmutableIndependent() {
@@ -148,11 +144,11 @@ public abstract class TypeAnalyserImpl extends AbstractAnalyser implements TypeA
                 : "Have type %s, independent %s, immutable %s".formatted(typeInfo.fullyQualifiedName, independent, immutable);
     }
 
-    private void check(TypeInfo typeInfo, Class<?> annotation, AnnotationExpression annotationExpression) {
-        typeInfo.error(typeAnalysis, annotation, annotationExpression).ifPresent(mustBeAbsent -> {
+    private void check(TypeInfo typeInfo, AnnotationExpression annotationKey) {
+        typeInfo.error(typeAnalysis, annotationKey).ifPresent(mustBeAbsent -> {
             Message error = Message.newMessage(typeInfo.newLocation(),
                     mustBeAbsent ? Message.Label.ANNOTATION_UNEXPECTEDLY_PRESENT
-                            : Message.Label.ANNOTATION_ABSENT, annotation.getSimpleName());
+                            : Message.Label.ANNOTATION_ABSENT, annotationKey.typeInfo().simpleName);
             analyserResultBuilder.add(error);
         });
     }

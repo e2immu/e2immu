@@ -24,6 +24,8 @@ import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
 import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.parser.Primitives;
+import org.e2immu.annotation.Final;
+import org.e2immu.annotation.Modified;
 import org.e2immu.annotation.NotModified;
 import org.e2immu.support.EventuallyFinal;
 import org.e2immu.support.VariableFirstThen;
@@ -31,6 +33,8 @@ import org.e2immu.support.VariableFirstThen;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+
+import static org.e2immu.analyser.parser.E2ImmuAnnotationExpressions.IMPLIED;
 
 public class FieldAnalysisImpl extends AnalysisImpl implements FieldAnalysis {
 
@@ -212,7 +216,7 @@ public class FieldAnalysisImpl extends AnalysisImpl implements FieldAnalysis {
                     annotationChecks.toImmutableMap());
         }
 
-        public void transferPropertiesToAnnotations(E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions) {
+        public void transferPropertiesToAnnotations(E2ImmuAnnotationExpressions e2) {
             DV effectivelyFinal = getProperty(Property.FINAL);
             DV ownerImmutable = typeAnalysisOfOwner.getProperty(Property.IMMUTABLE);
             DV modified = getProperty(Property.MODIFIED_OUTSIDE_METHOD);
@@ -222,13 +226,12 @@ public class FieldAnalysisImpl extends AnalysisImpl implements FieldAnalysis {
                     && !ownerImmutable.isDelayed()
                     && MultiLevel.effective(ownerImmutable) == MultiLevel.Effective.EVENTUAL) {
                 String labels = typeAnalysisOfOwner.markLabel();
-                annotations.put(e2ImmuAnnotationExpressions.effectivelyFinal.copyWith(primitives, "after", labels), true);
-            } else {
-                if (effectivelyFinal.valueIsTrue() && !isExplicitlyFinal) {
-                    annotations.put(e2ImmuAnnotationExpressions.effectivelyFinal, true);
-                }
-                if (effectivelyFinal.valueIsFalse()) {
-                    annotations.put(e2ImmuAnnotationExpressions.effectivelyFinal, false);
+                addAnnotation(e2.effectivelyFinal.copyWith(primitives, "after", labels));
+            } else if (effectivelyFinal.valueIsTrue()) {
+                if (isExplicitlyFinal) {
+                    addAnnotation(E2ImmuAnnotationExpressions.create(primitives, Final.class, IMPLIED, true));
+                } else {
+                    addAnnotation(e2.effectivelyFinal);
                 }
             }
 
@@ -245,31 +248,49 @@ public class FieldAnalysisImpl extends AnalysisImpl implements FieldAnalysis {
                     && MultiLevel.effective(ownerImmutable) == MultiLevel.Effective.EVENTUAL) {
                 if (MultiLevel.level(dynamicallyImmutable) <= MultiLevel.Level.IMMUTABLE_1.level) {
                     String labels = typeAnalysisOfOwner.markLabel();
-                    annotations.put(e2ImmuAnnotationExpressions.notModified.copyWith(primitives, "after", labels), true);
+                    addAnnotation(e2.notModified.copyWith(primitives, "after", labels));
                 }// else don't bother, we'll have an immutable annotation (see e.g. eventuallyFinal in EventuallyImmutableUtil_14)
             } else {
-                AnnotationExpression ae = modified.valueIsFalse() ? e2ImmuAnnotationExpressions.notModified :
-                        e2ImmuAnnotationExpressions.modified;
-                annotations.put(ae, true);
+                boolean implied = MultiLevel.isEffectivelyImmutable(ownerImmutable);
+                AnnotationExpression ae;
+                if (implied) {
+                    Class<?> clazz = modified.valueIsFalse() ? NotModified.class : Modified.class;
+                    ae = E2ImmuAnnotationExpressions.create(primitives, clazz, IMPLIED, true);
+                } else {
+                    ae = modified.valueIsFalse() ? e2.notModified : e2.modified;
+                }
+                addAnnotation(ae);
             }
-
             // @NotNull
-            doNotNull(e2ImmuAnnotationExpressions, getProperty(Property.EXTERNAL_NOT_NULL), fieldInfo.type.isPrimitiveExcludingVoid());
+            doNotNull(e2, getProperty(Property.EXTERNAL_NOT_NULL), fieldInfo.type.isPrimitiveExcludingVoid());
 
-            // dynamic type annotations: @E1Immutable, @E1Container, @E2Immutable, @E2Container
-            if (dynamicallyImmutable.gt(formallyImmutable) || dynamicallyContainer.gt(formallyContainer)) {
-                doImmutableContainer(e2ImmuAnnotationExpressions, dynamicallyImmutable, dynamicallyContainer, true);
-            }
+            // dynamic type annotations: @Immutable, @Container
+            boolean immutableBetterThanFormal = dynamicallyImmutable.gt(formallyImmutable);
+            boolean containerBetterThanFormal = dynamicallyContainer.gt(formallyContainer);
+            DV constant = getProperty(Property.CONSTANT);
+            String constantValue = constant.valueIsTrue() ? getValue().toString() : null;
+            doImmutableContainer(e2, dynamicallyImmutable, dynamicallyContainer,
+                    immutableBetterThanFormal, containerBetterThanFormal, constantValue);
+
+            // @Independent
+            DV formallyIndependent = typeIndependent();
+            DV dynamicallyIndependent = getProperty(Property.INDEPENDENT);
+            doIndependent(e2, dynamicallyIndependent, formallyIndependent, dynamicallyImmutable);
 
             DV beforeMark = getProperty(Property.BEFORE_MARK);
             if (beforeMark.valueIsTrue()) {
-                annotations.put(e2ImmuAnnotationExpressions.beforeMark, true);
+                addAnnotation(e2.beforeMark);
             }
         }
 
         private DV typeImmutable() {
             return fieldInfo.owner == bestType || bestType == null ? MultiLevel.MUTABLE_DV :
                     analysisProvider.getTypeAnalysis(bestType).getProperty(Property.IMMUTABLE);
+        }
+
+        private DV typeIndependent() {
+            return fieldInfo.owner == bestType || bestType == null ? MultiLevel.DEPENDENT_DV :
+                    analysisProvider.getTypeAnalysis(bestType).getProperty(Property.INDEPENDENT);
         }
 
         private DV typeContainer() {

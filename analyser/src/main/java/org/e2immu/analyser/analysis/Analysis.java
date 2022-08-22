@@ -23,9 +23,7 @@ import org.e2immu.annotation.Modified;
 import org.e2immu.annotation.NotNull;
 
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.Map;
-import java.util.Set;
 import java.util.stream.Stream;
 
 /*
@@ -47,13 +45,7 @@ public interface Analysis {
         throw new UnsupportedOperationException("Only in builder!");
     }
 
-    default Boolean annotationGetOrDefaultNull(AnnotationExpression expression) {
-        throw new UnsupportedOperationException("Only in builder!");
-    }
-
-    default Map.Entry<AnnotationExpression, Boolean> findAnnotation(String annotationFqn) {
-        throw new UnsupportedOperationException("Only in builder!");
-    }
+    AnnotationExpression annotationGetOrDefaultNull(AnnotationExpression expression);
 
     void internalAllDoneCheck();
 
@@ -71,6 +63,7 @@ public interface Analysis {
         WRONG, // expected present, computed, but not correctly
         MISSING, // expected present, not computed or explicitly absent
         PRESENT, // expected absent, but still computed (correctly or not, we cannot know)
+        IMPLIED, // expect nothing, but don't complain if it is there
 
         CONTRACTED, // demanded to be present, no point in computing
         CONTRACTED_ABSENT, // demanded to be absent, no point in computing
@@ -133,13 +126,6 @@ public interface Analysis {
 
     default Analysis build() {
         throw new UnsupportedOperationException();
-    }
-
-    /*
-    Has to return a (new) modifiable map for efficiency reasons
-     */
-    default Map<Property, Integer> getProperties(Set<Property> forwardPropertiesOnParameters) {
-        return new HashMap<>();
     }
 
     enum AnalysisMode {

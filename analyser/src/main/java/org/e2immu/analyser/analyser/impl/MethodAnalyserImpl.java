@@ -17,6 +17,7 @@ package org.e2immu.analyser.analyser.impl;
 import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.analyser.check.CheckEventual;
 import org.e2immu.analyser.analyser.check.CheckImmutable;
+import org.e2immu.analyser.analyser.check.CheckIndependent;
 import org.e2immu.analyser.analyser.check.CheckPrecondition;
 import org.e2immu.analyser.analysis.Analysis;
 import org.e2immu.analyser.analysis.ParameterAnalysis;
@@ -27,8 +28,8 @@ import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.DelayedExpression;
 import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
 import org.e2immu.analyser.parser.Message;
-import org.e2immu.annotation.*;
-import org.e2immu.annotation.eventual.BeforeMark;
+import org.e2immu.annotation.Modified;
+import org.e2immu.annotation.NotModified;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -156,31 +157,29 @@ public abstract class MethodAnalyserImpl extends AbstractAnalyser implements Met
                 if (!methodInfo.isVoid()) {
                     internalCheckImmutableIndependent();
 
-                    check(NotNull.class, e2.notNull);
-                    check(Fluent.class, e2.fluent);
-                    check(Identity.class, e2.identity);
-                    check(Container.class, e2.container);
+                    check(e2.notNull);
+                    check(e2.fluent);
+                    check(e2.identity);
+                    check(e2.container);
 
-                    analyserResultBuilder.add(CheckImmutable.check(methodInfo, FinalFields.class, e2.finalFields, methodAnalysis, null));
-                    analyserResultBuilder.add(CheckImmutable.check(methodInfo, Immutable.class, e2.immutable, methodAnalysis, null));
-                    analyserResultBuilder.add(CheckImmutable.check(methodInfo, ImmutableContainer.class, e2.immutableContainer, methodAnalysis, null));
                     Expression srv = methodAnalysis.getSingleReturnValue();
+                    analyserResultBuilder.add(CheckImmutable.check(methodInfo, e2.finalFields, methodAnalysis, null));
+                    analyserResultBuilder.add(CheckImmutable.check(methodInfo, e2.immutable, methodAnalysis, null));
+                    analyserResultBuilder.add(CheckImmutable.check(methodInfo, e2.immutableContainer, methodAnalysis, srv));
 
-                    // FIXME complete code
-
-                    check(BeforeMark.class, e2.beforeMark);
-                    check(Nullable.class, e2.nullable);
-                    check(Independent.class, e2.independent);
+                    check(e2.beforeMark);
+                    check(e2.nullable);
+                    analyserResultBuilder.add(CheckIndependent.check(methodInfo, e2.independent, methodAnalysis));
                 }
 
-                check(NotModified.class, e2.notModified);
-                check(Modified.class, e2.modified);
+                check(e2.notModified);
+                check(e2.modified);
             }
 
             analyserResultBuilder.add(CheckPrecondition.checkPrecondition(methodInfo, methodAnalysis, companionAnalyses));
-            analyserResultBuilder.add(CheckEventual.checkOnly(methodInfo, methodAnalysis));
-            analyserResultBuilder.add(CheckEventual.checkMark(methodInfo, methodAnalysis));
-            analyserResultBuilder.add(CheckEventual.checkTestMark(methodInfo, methodAnalysis));
+            analyserResultBuilder.add(CheckEventual.checkOnly(methodInfo, e2.only, methodAnalysis));
+            analyserResultBuilder.add(CheckEventual.checkMark(methodInfo, e2.mark, methodAnalysis));
+            analyserResultBuilder.add(CheckEventual.checkTestMark(methodInfo, e2.testMark, methodAnalysis));
 
             checkWorseThanOverriddenMethod();
         }
@@ -217,11 +216,11 @@ public abstract class MethodAnalyserImpl extends AbstractAnalyser implements Met
         }
     }
 
-    private void check(Class<?> annotation, AnnotationExpression annotationExpression) {
-        methodInfo.error(methodAnalysis, annotation, annotationExpression).ifPresent(mustBeAbsent ->
+    private void check(AnnotationExpression annotationKey) {
+        methodInfo.error(methodAnalysis, annotationKey).ifPresent(mustBeAbsent ->
                 analyserResultBuilder.add(Message.newMessage(methodInfo.newLocation(),
                         mustBeAbsent ? Message.Label.ANNOTATION_UNEXPECTEDLY_PRESENT
-                                : Message.Label.ANNOTATION_ABSENT, annotation.getSimpleName())));
+                                : Message.Label.ANNOTATION_ABSENT, annotationKey.typeInfo().simpleName)));
     }
 
     @Override

@@ -315,22 +315,6 @@ public final class TypeInfo implements NamedType, WithInspectionAndAnalysis, Com
         return Objects.hash(fullyQualifiedName);
     }
 
-    @Override
-    public Optional<AnnotationExpression> hasInspectedAnnotation(Class<?> annotation) {
-        if (!typeInspection.isSet()) return Optional.empty();
-        String annotationFQN = annotation.getName();
-        Optional<AnnotationExpression> fromType = (getInspection().getAnnotations().stream()
-                .filter(ae -> ae.typeInfo().fullyQualifiedName.equals(annotationFQN)))
-                .findFirst();
-        if (fromType.isPresent()) return fromType;
-        if (parentIsNotJavaLangObject()) {
-            Optional<AnnotationExpression> fromParent = Objects.requireNonNull(typeInspection.get().parentClass().typeInfo)
-                    .hasInspectedAnnotation(annotation);
-            if (fromParent.isPresent()) return fromParent;
-        }
-        return Optional.empty();
-    }
-
     public boolean parentIsNotJavaLangObject() {
         ParameterizedType parentClass = typeInspection.get().parentClass();
         return parentClass != null && !parentClass.isJavaLangObject();

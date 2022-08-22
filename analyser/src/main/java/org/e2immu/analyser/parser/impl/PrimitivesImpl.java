@@ -20,6 +20,7 @@ import org.e2immu.analyser.analyser.SetOfTypes;
 import org.e2immu.analyser.analysis.Analysis;
 import org.e2immu.analyser.analysis.MethodAnalysis;
 import org.e2immu.analyser.analysis.ParameterAnalysis;
+import org.e2immu.analyser.analysis.TypeAnalysis;
 import org.e2immu.analyser.analysis.impl.MethodAnalysisImpl;
 import org.e2immu.analyser.analysis.impl.ParameterAnalysisImpl;
 import org.e2immu.analyser.analysis.impl.TypeAnalysisImpl;
@@ -697,9 +698,10 @@ public class PrimitivesImpl implements Primitives {
         List<ParameterAnalysis> parameterAnalyses = methodInfo.methodInspection.get().getParameters().stream()
                 .map(p -> (ParameterAnalysis) new ParameterAnalysisImpl.Builder(this, AnalysisProvider.DEFAULT_PROVIDER, p).build())
                 .collect(Collectors.toList());
+        TypeAnalysis typeAnalysis = AnalysisProvider.DEFAULT_PROVIDER.getTypeAnalysis(methodInfo.typeInfo);
         MethodAnalysisImpl.Builder builder = new MethodAnalysisImpl.Builder(Analysis.AnalysisMode.CONTRACTED,
                 this, AnalysisProvider.DEFAULT_PROVIDER, InspectionProvider.DEFAULT,
-                methodInfo, parameterAnalyses);
+                methodInfo, typeAnalysis, parameterAnalyses);
         builder.ensureIsNotEventualUnlessOtherwiseAnnotated();
         return (MethodAnalysis) builder.build();
     }

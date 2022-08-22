@@ -133,9 +133,9 @@ public class AnnotatedAPIAnalyser implements AnalyserContext {
                     .forEach(methodInfo -> {
                         try {
                             if (TypeInfo.IS_FACT_FQN.equals(methodInfo.fullyQualifiedName())) {
-                                analyseIsFact(methodInfo);
+                                analyseIsFact(methodInfo, typeAnalysis);
                             } else if (TypeInfo.IS_KNOWN_FQN.equals(methodInfo.fullyQualifiedName())) {
-                                analyseIsKnown(methodInfo);
+                                analyseIsKnown(methodInfo, typeAnalysis);
                             } else {
                                 MethodAnalyser methodAnalyser = createAnalyser(methodInfo, typeAnalysis);
                                 MethodInspection methodInspection = methodInfo.methodInspection.get();
@@ -190,7 +190,8 @@ public class AnnotatedAPIAnalyser implements AnalyserContext {
                     false, true, this);
         }
         // shallow method analysis, potentially with companion analysis
-        return MethodAnalyserFactory.createShallowMethodAnalyser(methodInfo, this, false);
+        return MethodAnalyserFactory.createShallowMethodAnalyser(methodInfo, typeAnalysis,
+                this, false);
     }
 
     /**
@@ -322,7 +323,7 @@ public class AnnotatedAPIAnalyser implements AnalyserContext {
     }
 
     // dedicated method exactly for this "isFact" method
-    private void analyseIsFact(MethodInfo methodInfo) {
+    private void analyseIsFact(MethodInfo methodInfo, TypeAnalysis typeAnalysis) {
         ParameterInfo parameterInfo = methodInfo.methodInspection.get().getParameters().get(0);
         ParameterAnalysisImpl.Builder parameterAnalysis = new ParameterAnalysisImpl.Builder(
                 getPrimitives(), this, parameterInfo);
@@ -335,7 +336,7 @@ public class AnnotatedAPIAnalyser implements AnalyserContext {
 
         List<ParameterAnalysis> parameterAnalyses = List.of((ParameterAnalysis) parameterAnalysis.build());
         MethodAnalysisImpl.Builder builder = new MethodAnalysisImpl.Builder(CONTRACTED, getPrimitives(),
-                this, this, methodInfo, parameterAnalyses);
+                this, this, methodInfo, typeAnalysis, parameterAnalyses);
         builder.ensureIsNotEventualUnlessOtherwiseAnnotated();
         builder.setProperty(Property.IDENTITY, Property.IDENTITY.falseDv);
         builder.setProperty(Property.IGNORE_MODIFICATIONS, Property.IGNORE_MODIFICATIONS.falseDv);
@@ -357,7 +358,7 @@ public class AnnotatedAPIAnalyser implements AnalyserContext {
 
 
     // dedicated method exactly for this "isKnown" method
-    private void analyseIsKnown(MethodInfo methodInfo) {
+    private void analyseIsKnown(MethodInfo methodInfo, TypeAnalysis typeAnalysis) {
         ParameterInfo parameterInfo = methodInfo.methodInspection.get().getParameters().get(0);
         ParameterAnalysisImpl.Builder parameterAnalysis = new ParameterAnalysisImpl.Builder(
                 getPrimitives(), this, parameterInfo);
@@ -370,7 +371,7 @@ public class AnnotatedAPIAnalyser implements AnalyserContext {
 
         List<ParameterAnalysis> parameterAnalyses = List.of((ParameterAnalysis) parameterAnalysis.build());
         MethodAnalysisImpl.Builder builder = new MethodAnalysisImpl.Builder(CONTRACTED, getPrimitives(),
-                this, this, methodInfo, parameterAnalyses);
+                this, this, methodInfo, typeAnalysis, parameterAnalyses);
         builder.ensureIsNotEventualUnlessOtherwiseAnnotated();
         builder.setProperty(Property.IDENTITY, Property.IDENTITY.falseDv);
         builder.setProperty(Property.IGNORE_MODIFICATIONS, Property.IGNORE_MODIFICATIONS.falseDv);

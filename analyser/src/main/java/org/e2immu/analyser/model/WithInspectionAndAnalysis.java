@@ -25,9 +25,11 @@ import org.e2immu.analyser.output.Text;
 import org.e2immu.analyser.util.UpgradableBooleanMap;
 import org.e2immu.annotation.NotNull;
 
-
 import java.util.*;
 import java.util.stream.Stream;
+
+import static org.e2immu.analyser.analysis.Analysis.AnnotationCheck.*;
+
 /*
 Cyclic dependency between TypeInfo and WithInspectionAndAnalysis, and between AnnotationExpression and WIAA.
 
@@ -46,7 +48,12 @@ public interface WithInspectionAndAnalysis {
     String name();
 
     @NotNull(content = true)
-    Optional<AnnotationExpression> hasInspectedAnnotation(Class<?> annotation);
+    default Optional<AnnotationExpression> hasInspectedAnnotation(AnnotationExpression annotationKey) {
+        if (!hasBeenInspected()) return Optional.empty();
+        String annotationFQN = annotationKey.typeInfo().fullyQualifiedName;
+        return getInspection().getAnnotations().stream()
+                .filter(ae -> ae.typeInfo().fullyQualifiedName.equals(annotationFQN)).findFirst();
+    }
 
     @NotNull
     UpgradableBooleanMap<TypeInfo> typesReferenced();
@@ -54,35 +61,40 @@ public interface WithInspectionAndAnalysis {
     @NotNull
     TypeInfo primaryType();
 
-    default Optional<Boolean> error(Analysis analysisBuilder, Class<?> annotation, AnnotationExpression expression) {
-        Optional<AnnotationParameters> optAp = hasInspectedAnnotation(annotation)
+    default Optional<Boolean> error(Analysis analysisBuilder, AnnotationExpression annotationKey) {
+        Optional<AnnotationParameters> optAp = hasInspectedAnnotation(annotationKey)
                 .map(AnnotationExpression::e2ImmuAnnotationParameters);
         if (optAp.isPresent()) {
             AnnotationParameters ap = optAp.get();
             if (ap.contract()) return Optional.empty(); // DO NOTHING, CONTRACTED
         }
         Optional<Boolean> mustBeAbsent = optAp.map(AnnotationParameters::isVerifyAbsent);
-        Boolean actual = analysisBuilder.annotationGetOrDefaultNull(expression);
+        AnnotationExpression actual = analysisBuilder.annotationGetOrDefaultNull(annotationKey);
+        boolean implied = actual != null && actual.e2ImmuAnnotationParameters().implied();
+
         if (mustBeAbsent.isEmpty()) {
-            analysisBuilder.putAnnotationCheck(expression, actual == Boolean.TRUE ? Analysis.AnnotationCheck.COMPUTED :
-                    Analysis.AnnotationCheck.OK_ABSENT);
+            // not in inspection
+            if (!implied) {
+                analysisBuilder.putAnnotationCheck(annotationKey, actual != null ? COMPUTED : OK_ABSENT);
+            }
             return Optional.empty(); // no error, because no check!
         }
         if (!mustBeAbsent.get()) {
             // we expect the annotation to be present
-            if (actual == null || !actual) {
-                analysisBuilder.putAnnotationCheck(expression, Analysis.AnnotationCheck.MISSING);
+            if (actual == null || actual.e2ImmuAnnotationParameters().absent()) {
+                analysisBuilder.putAnnotationCheck(annotationKey, MISSING);
                 return mustBeAbsent; // error!!!
             }
-            analysisBuilder.putAnnotationCheck(expression, Analysis.AnnotationCheck.OK);
+            // annotation is there
+            analysisBuilder.putAnnotationCheck(annotationKey, implied ? IMPLIED : OK);
             return Optional.empty(); // no error
         }
         // we expect the annotation to be absent
-        if (actual == Boolean.TRUE) {
-            analysisBuilder.putAnnotationCheck(expression, Analysis.AnnotationCheck.PRESENT);
+        if (actual != null && !actual.e2ImmuAnnotationParameters().absent()) {
+            analysisBuilder.putAnnotationCheck(annotationKey, PRESENT);
             return mustBeAbsent; // error
         }
-        analysisBuilder.putAnnotationCheck(expression, Analysis.AnnotationCheck.OK_ABSENT);
+        analysisBuilder.putAnnotationCheck(annotationKey, OK_ABSENT);
         return Optional.empty(); // no error, annotation is not there
     }
 
@@ -119,7 +131,7 @@ public interface WithInspectionAndAnalysis {
         if (hasBeenAnalysed()) {
             for (AnnotationExpression annotation : annotations) {
                 Analysis.AnnotationCheck annotationCheck = getAnalysis().getAnnotation(annotation);
-                if (annotationCheck == Analysis.AnnotationCheck.MISSING) {
+                if (annotationCheck == MISSING) {
                     OutputBuilder outputBuilder = new OutputBuilder()
                             .add(Symbol.LEFT_BLOCK_COMMENT)
                             .add(annotation.output(qualification))
@@ -127,7 +139,7 @@ public interface WithInspectionAndAnalysis {
                             .add(new Text(annotationCheck.toString()))
                             .add(Symbol.RIGHT_BLOCK_COMMENT);
                     perAnnotation.add(outputBuilder);
-                } else if (annotationCheck != Analysis.AnnotationCheck.ABSENT) {
+                } else if (annotationCheck.isVisible()) {
                     OutputBuilder outputBuilder = new OutputBuilder().add(annotation.output(qualification));
                     if (annotationCheck.writeComment()) {
                         outputBuilder.add(Symbol.LEFT_BLOCK_COMMENT).add(new Text(annotationCheck.toString()))

@@ -46,6 +46,16 @@ Why is this type an immutable container?
  */
 @ImmutableContainer
 public class E2ImmuAnnotationExpressions {
+    public final static String IMPLIED = "implied";
+    public final static String ABSENT = "absent";
+    public final static String AFTER = "after";
+    public final static String BEFORE = "before";
+    public final static String CONTENT = "content";
+    public final static String CONTRACT = "contract";
+    public final static String HIDDEN_CONTENT = "hc";
+    public final static String INCONCLUSIVE = "inconclusive";
+    public final static String PARAMETERS = "parameters";
+    public final static String VALUE = "value";
 
     public final AnnotationExpression allowsInterrupt = create(AllowsInterrupt.class);
     public final AnnotationExpression beforeMark = create(BeforeMark.class);

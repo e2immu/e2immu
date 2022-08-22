@@ -22,6 +22,8 @@ import org.e2immu.analyser.model.expression.*;
 import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
 import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.parser.Primitives;
+import org.e2immu.annotation.Modified;
+import org.e2immu.annotation.NotModified;
 import org.e2immu.support.EventuallyFinal;
 import org.e2immu.support.FlipSwitch;
 import org.e2immu.support.SetOnce;
@@ -34,6 +36,8 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
+
+import static org.e2immu.analyser.parser.E2ImmuAnnotationExpressions.IMPLIED;
 
 public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
     private static final Logger LOGGER = LoggerFactory.getLogger(MethodAnalysisImpl.class);
@@ -178,6 +182,7 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
         public final MethodInfo methodInfo;
         private final SetOnce<StatementAnalysis> firstStatement = new SetOnce<>();
         public final List<ParameterAnalysis> parameterAnalyses;
+        public final TypeAnalysis typeAnalysisOfOwner;
         private final AnalysisProvider analysisProvider;
         private final InspectionProvider inspectionProvider;
 
@@ -271,10 +276,12 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
                        AnalysisProvider analysisProvider,
                        InspectionProvider inspectionProvider,
                        MethodInfo methodInfo,
+                       TypeAnalysis typeAnalysisOfOwner,
                        List<ParameterAnalysis> parameterAnalyses) {
             super(primitives, methodInfo.name);
             this.inspectionProvider = inspectionProvider;
             this.analysisMode = analysisMode;
+            this.typeAnalysisOfOwner = typeAnalysisOfOwner;
             this.parameterAnalyses = parameterAnalyses;
             this.methodInfo = methodInfo;
             this.returnType = methodInfo.returnType();
@@ -354,7 +361,7 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
             return getMethodProperty(property);
         }
 
-        public void transferPropertiesToAnnotations(AnalyserContext analyserContext, E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions) {
+        public void transferPropertiesToAnnotations(AnalyserContext analyserContext, E2ImmuAnnotationExpressions e2) {
             DV modified = getProperty(Property.MODIFIED_METHOD);
 
             // @Precondition
@@ -370,24 +377,35 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
             if (methodInfo.isConstructor) return;
 
             // @NotModified, @Modified
-            AnnotationExpression ae = modified.valueIsFalse() ? e2ImmuAnnotationExpressions.notModified :
-                    e2ImmuAnnotationExpressions.modified;
-            annotations.put(ae, true);
+            DV ownerImmutable = typeAnalysisOfOwner.getProperty(Property.IMMUTABLE);
+            boolean implied = MultiLevel.isEffectivelyImmutable(ownerImmutable);
+            AnnotationExpression ae;
+            if (implied) {
+                Class<?> clazz = modified.valueIsFalse() ? NotModified.class : Modified.class;
+                ae = E2ImmuAnnotationExpressions.create(primitives, clazz, IMPLIED, true);
+            } else {
+                ae = modified.valueIsFalse() ? e2.notModified : e2.modified;
+            }
+            addAnnotation(ae);
 
             // dynamic type annotations: @E1Immutable, @E1Container, @E2Immutable, @E2Container
             DV formallyImmutable = analysisProvider.getProperty(returnType, Property.IMMUTABLE, false);
             DV dynamicallyImmutable = getProperty(Property.IMMUTABLE);
             DV formallyContainer = analysisProvider.getProperty(returnType, Property.CONTAINER, false);
             DV dynamicallyContainer = getProperty(Property.CONTAINER);
-            if (dynamicallyImmutable.gt(formallyImmutable) || dynamicallyContainer.gt(formallyContainer)) {
-                doImmutableContainer(e2ImmuAnnotationExpressions, dynamicallyImmutable, dynamicallyContainer, true);
-            }
+            boolean immutableBetterThanFormal = dynamicallyImmutable.gt(formallyImmutable);
+            boolean containerBetterThanFormal = dynamicallyContainer.gt(formallyContainer);
+            DV constant = getProperty(Property.CONSTANT);
+            String constantValue = constant.valueIsTrue() ? getSingleReturnValue().toString() : null;
+
+            doImmutableContainer(e2, dynamicallyImmutable, dynamicallyContainer, immutableBetterThanFormal,
+                    containerBetterThanFormal, constantValue);
 
             if (returnType.isVoidOrJavaLangVoid()) return;
 
             // @Identity
             if (getProperty(Property.IDENTITY).valueIsTrue()) {
-                annotations.put(e2ImmuAnnotationExpressions.identity, true);
+                addAnnotation(e2.identity);
             }
 
             // all other annotations cannot be added to primitives
@@ -395,17 +413,16 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
 
             // @Fluent
             if (getProperty(Property.FLUENT).valueIsTrue()) {
-                annotations.put(e2ImmuAnnotationExpressions.fluent, true);
+                addAnnotation(e2.fluent);
             }
 
             // @NotNull
-            doNotNull(e2ImmuAnnotationExpressions, getProperty(Property.NOT_NULL_EXPRESSION),
-                    methodInfo.returnType().isPrimitiveExcludingVoid());
+            doNotNull(e2, getProperty(Property.NOT_NULL_EXPRESSION), methodInfo.returnType().isPrimitiveExcludingVoid());
 
             // @Dependent @Independent
             DV independent = getProperty(Property.INDEPENDENT);
             DV formallyIndependent = analyserContext.defaultIndependent(methodInfo.returnType());
-            doIndependent(e2ImmuAnnotationExpressions, independent, formallyIndependent, dynamicallyImmutable);
+            doIndependent(e2, independent, formallyIndependent, dynamicallyImmutable);
         }
 
         protected void writeEventual(Eventual eventual) {

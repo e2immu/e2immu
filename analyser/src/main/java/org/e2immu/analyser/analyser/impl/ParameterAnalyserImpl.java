@@ -18,6 +18,7 @@ import org.e2immu.analyser.analyser.AnalyserContext;
 import org.e2immu.analyser.analyser.DV;
 import org.e2immu.analyser.analyser.ParameterAnalyser;
 import org.e2immu.analyser.analyser.Property;
+import org.e2immu.analyser.analyser.check.CheckIndependent;
 import org.e2immu.analyser.analysis.Analysis;
 import org.e2immu.analyser.analysis.ParameterAnalysis;
 import org.e2immu.analyser.analysis.impl.ParameterAnalysisImpl;
@@ -27,8 +28,6 @@ import org.e2immu.analyser.model.ParameterInfo;
 import org.e2immu.analyser.model.WithInspectionAndAnalysis;
 import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
 import org.e2immu.analyser.parser.Message;
-import org.e2immu.annotation.*;
-import org.e2immu.annotation.eventual.BeforeMark;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -80,20 +79,19 @@ public abstract class ParameterAnalyserImpl extends AbstractAnalyser implements 
         if (analyserProgram.accepts(ALL)) {
             LOGGER.debug("Checking parameter {}", parameterInfo.fullyQualifiedName());
             E2ImmuAnnotationExpressions e2 = analyserContext.getE2ImmuAnnotationExpressions();
-            check(NotModified.class, e2.notModified);
-            check(Modified.class, e2.modified);
+            check(e2.notModified);
+            check(e2.modified);
 
-            check(NotNull.class, e2.notNull);
-            check(Nullable.class, e2.nullable);
+            check(e2.notNull);
+            check(e2.nullable);
 
-            check(Independent.class, e2.independent);
+            analyserResultBuilder.add(CheckIndependent.check(parameterInfo, e2.independent, parameterAnalysis));
+            check(e2.beforeMark);
 
-            check(BeforeMark.class, e2.beforeMark);
+            check(e2.container);
+            check(e2.immutableContainer);
+            check(e2.immutable);
 
-            check(Container.class, e2.container);
-            check(FinalFields.class, e2.finalFields);
-            check(Immutable.class, e2.independent);
-            check(ImmutableContainer.class, e2.immutableContainer);
             checkWorseThanParent();
         }
     }
@@ -142,11 +140,11 @@ public abstract class ParameterAnalyserImpl extends AbstractAnalyser implements 
                 .reduce(DV.MIN_INT_DV, DV::max);
     }
 
-    private void check(Class<?> annotation, AnnotationExpression annotationExpression) {
-        parameterInfo.error(parameterAnalysis, annotation, annotationExpression).ifPresent(mustBeAbsent -> {
+    private void check(AnnotationExpression annotationKey) {
+        parameterInfo.error(parameterAnalysis, annotationKey).ifPresent(mustBeAbsent -> {
             Message error = Message.newMessage(parameterInfo.newLocation(),
                     mustBeAbsent ? Message.Label.ANNOTATION_UNEXPECTEDLY_PRESENT
-                            : Message.Label.ANNOTATION_ABSENT, annotation.getSimpleName());
+                            : Message.Label.ANNOTATION_ABSENT, annotationKey.typeInfo().simpleName);
             analyserResultBuilder.add(error);
         });
     }

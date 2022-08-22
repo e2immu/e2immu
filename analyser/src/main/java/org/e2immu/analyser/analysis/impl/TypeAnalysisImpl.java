@@ -376,27 +376,28 @@ public class TypeAnalysisImpl extends AnalysisImpl implements TypeAnalysis {
 
             // @ExtensionClass
             if (getProperty(Property.EXTENSION_CLASS).valueIsTrue()) {
-                annotations.put(e2ImmuAnnotationExpressions.extensionClass, true);
+                addAnnotation(e2ImmuAnnotationExpressions.extensionClass);
             }
 
             // @Finalizer
             if (getProperty(Property.FINALIZER).valueIsTrue()) {
-                annotations.put(e2ImmuAnnotationExpressions.finalizer, true);
+                addAnnotation(e2ImmuAnnotationExpressions.finalizer);
             }
 
             // @UtilityClass
             if (getProperty(Property.UTILITY_CLASS).valueIsTrue()) {
-                annotations.put(e2ImmuAnnotationExpressions.utilityClass, true);
+                addAnnotation(e2ImmuAnnotationExpressions.utilityClass);
             }
 
             // @Singleton
             if (getProperty(Property.SINGLETON).valueIsTrue()) {
-                annotations.put(e2ImmuAnnotationExpressions.singleton, true);
+                addAnnotation(e2ImmuAnnotationExpressions.singleton);
             }
 
             DV immutable = getProperty(Property.IMMUTABLE);
             DV container = getProperty(Property.CONTAINER);
-            doImmutableContainer(e2ImmuAnnotationExpressions, immutable, container, false);
+            doImmutableContainer(e2ImmuAnnotationExpressions, immutable, container, false,
+                    false, null);
 
             // @Independent
             DV independent = getProperty(Property.INDEPENDENT);

@@ -23,7 +23,6 @@ import org.e2immu.analyser.model.expression.EmptyExpression;
 import org.e2immu.analyser.model.impl.LocationImpl;
 import org.e2immu.analyser.output.*;
 import org.e2immu.analyser.util.UpgradableBooleanMap;
-import org.e2immu.annotation.NotNull;
 import org.e2immu.support.SetOnce;
 
 import java.util.*;
@@ -162,7 +161,7 @@ public class FieldInfo implements WithInspectionAndAnalysis {
         /*
         if the owner access is private, we don't write any modifier
          */
-        if(access.le(ownerAccess) && access != Inspection.Access.PACKAGE && ownerAccess != Inspection.Access.PRIVATE) {
+        if (access.le(ownerAccess) && access != Inspection.Access.PACKAGE && ownerAccess != Inspection.Access.PRIVATE) {
             list.add(toFieldModifier(access));
         }
         for (FieldModifier fm : FieldModifier.NON_ACCESS_SORTED) {
@@ -172,24 +171,12 @@ public class FieldInfo implements WithInspectionAndAnalysis {
     }
 
     private static FieldModifier toFieldModifier(Inspection.Access access) {
-        return switch(access) {
+        return switch (access) {
             case PUBLIC -> FieldModifier.PUBLIC;
             case PRIVATE -> FieldModifier.PRIVATE;
             case PROTECTED -> FieldModifier.PROTECTED;
             default -> throw new UnsupportedOperationException();
         };
-    }
-
-    @Override
-    public Optional<AnnotationExpression> hasInspectedAnnotation(Class<?> annotation) {
-        if (!fieldInspection.isSet()) return Optional.empty();
-        String annotationFQN = annotation.getName();
-        Optional<AnnotationExpression> fromField = getInspection().getAnnotations().stream()
-                .filter(ae -> ae.typeInfo().fullyQualifiedName.equals(annotationFQN)).findFirst();
-        if (fromField.isPresent()) return fromField;
-        if (annotation.equals(NotNull.class)) return owner.hasInspectedAnnotation(annotation);
-        // TODO check "where" on @NotNull
-        return Optional.empty();
     }
 
     public String fullyQualifiedName() {
