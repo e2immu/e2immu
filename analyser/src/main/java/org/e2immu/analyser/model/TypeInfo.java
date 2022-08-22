@@ -495,8 +495,43 @@ public final class TypeInfo implements NamedType, WithInspectionAndAnalysis, Com
 
     @Override
     public UpgradableBooleanMap<TypeInfo> typesReferenced() {
-        if (!typeInspection.isSet()) return UpgradableBooleanMap.of(); // dangerous?
-        return typeInspection.get("type inspection of " + fullyQualifiedName).typesReferenced();
+        if (!typeInspection.isSet()) return UpgradableBooleanMap.of();
+        TypeInspection inspection = typeInspection.get();
+
+        UpgradableBooleanMap<TypeInfo> fromParent = inspection.parentClass() == null ? UpgradableBooleanMap.of()
+                : inspection.parentClass().typesReferenced(true);
+
+        UpgradableBooleanMap<TypeInfo> enclosingType = packageNameOrEnclosingType.isRight() && !isStatic() && !isInterface() ?
+                UpgradableBooleanMap.of(packageNameOrEnclosingType.getRight(), false) : UpgradableBooleanMap.of();
+
+        UpgradableBooleanMap<TypeInfo> fromInterfaces = inspection.interfacesImplemented().stream()
+                .flatMap(i -> i.typesReferenced(true).stream()).collect(UpgradableBooleanMap.collector());
+
+        UpgradableBooleanMap<TypeInfo> inspectedAnnotations = inspection.getAnnotations().stream()
+                .flatMap(a -> a.typesReferenced().stream()).collect(UpgradableBooleanMap.collector());
+
+        UpgradableBooleanMap<TypeInfo> analysedAnnotations = hasBeenAnalysed() ? typeAnalysis.get().getAnnotationStream()
+                .flatMap(entry -> entry.getKey().typesReferenced().stream()).collect(UpgradableBooleanMap.collector())
+                : UpgradableBooleanMap.of();
+
+        return UpgradableBooleanMap.of(
+                fromParent,
+                enclosingType,
+                fromInterfaces,
+                inspectedAnnotations,
+                analysedAnnotations,
+                
+                // types from methods and constructors and their parameters
+                inspection.methodsAndConstructors(TypeInspection.Methods.THIS_TYPE_ONLY)
+                        .flatMap(a -> a.typesReferenced().stream()).collect(UpgradableBooleanMap.collector()),
+
+                // types from fields
+                inspection.fields().stream().flatMap(a -> a.typesReferenced().stream()).collect(UpgradableBooleanMap.collector()),
+
+                // types from subTypes
+                inspection.subTypes().stream().flatMap(a -> a.typesReferenced().stream()).collect(UpgradableBooleanMap.collector())
+
+        );
     }
 
     public Map<NamedType, ParameterizedType> mapInTermsOfParametersOfSuperType(InspectionProvider inspectionProvider, ParameterizedType superType) {

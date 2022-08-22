@@ -74,8 +74,8 @@ public interface WithInspectionAndAnalysis {
 
         if (mustBeAbsent.isEmpty()) {
             // not in inspection
-            if (!implied) {
-                analysisBuilder.putAnnotationCheck(annotationKey, actual != null ? COMPUTED : OK_ABSENT);
+            if (!implied && actual != null) {
+                analysisBuilder.putAnnotationCheck(annotationKey, COMPUTED);
             }
             return Optional.empty(); // no error, because no check!
         }
@@ -94,7 +94,9 @@ public interface WithInspectionAndAnalysis {
             analysisBuilder.putAnnotationCheck(annotationKey, PRESENT);
             return mustBeAbsent; // error
         }
-        analysisBuilder.putAnnotationCheck(annotationKey, OK_ABSENT);
+        if (actual != null) {
+            analysisBuilder.putAnnotationCheck(annotationKey, OK_ABSENT);
+        } // else: no need to add anything
         return Optional.empty(); // no error, annotation is not there
     }
 

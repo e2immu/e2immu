@@ -25,12 +25,10 @@ import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.output.*;
 import org.e2immu.analyser.util.UpgradableBooleanMap;
 import org.e2immu.annotation.Container;
-import org.e2immu.annotation.NotNull;
 import org.e2immu.support.SetOnce;
 
 import java.util.HashSet;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.Set;
 
 /**
@@ -217,10 +215,17 @@ public class ParameterInfo implements Variable, WithInspectionAndAnalysis {
 
     @Override
     public UpgradableBooleanMap<TypeInfo> typesReferenced(boolean explicit) {
-        return UpgradableBooleanMap.of(parameterizedType.typesReferenced(explicit),
-                hasBeenInspected() ?
-                        parameterInspection.get().getAnnotations().stream().flatMap(ae -> ae.typesReferenced().stream()).collect(UpgradableBooleanMap.collector())
-                        : UpgradableBooleanMap.of());
+        UpgradableBooleanMap<TypeInfo> inspectedAnnotations =
+                parameterInspection.get().getAnnotations().stream()
+                        .flatMap(ae -> ae.typesReferenced().stream())
+                        .collect(UpgradableBooleanMap.collector());
+        UpgradableBooleanMap<TypeInfo> analysedAnnotations = hasBeenAnalysed()
+                ? parameterAnalysis.get().getAnnotationStream()
+                .flatMap(ae -> ae.getKey().typesReferenced().stream())
+                .collect(UpgradableBooleanMap.collector())
+                : UpgradableBooleanMap.of();
+
+        return UpgradableBooleanMap.of(parameterizedType.typesReferenced(explicit), analysedAnnotations, inspectedAnnotations);
     }
 
     // as variable

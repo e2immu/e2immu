@@ -333,7 +333,7 @@ public class ResolverImpl implements Resolver {
 
             // dependencies of the type
 
-            Set<TypeInfo> typeDependencies = typeInspection.typesReferenced().stream()
+            Set<TypeInfo> typeDependencies = typeInfo.typesReferenced().stream()
                     .map(Map.Entry::getKey).collect(Collectors.toCollection(HashSet::new));
             typeDependencies.retainAll(restrictToType);
             methodFieldSubTypeGraph.addNode(typeInfo, List.copyOf(typeDependencies));

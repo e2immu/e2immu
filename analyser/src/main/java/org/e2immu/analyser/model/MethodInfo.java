@@ -148,24 +148,32 @@ public class MethodInfo implements WithInspectionAndAnalysis {
     public UpgradableBooleanMap<TypeInfo> typesReferenced() {
         if (!hasBeenInspected()) return UpgradableBooleanMap.of();
         MethodInspection inspection = methodInspection.get();
+
         UpgradableBooleanMap<TypeInfo> constructorTypes = isConstructor ? UpgradableBooleanMap.of() :
                 inspection.getReturnType().typesReferenced(true);
+
         UpgradableBooleanMap<TypeInfo> parameterTypes =
                 inspection.getParameters().stream()
                         .flatMap(p -> p.typesReferenced(true).stream()).collect(UpgradableBooleanMap.collector());
+
         UpgradableBooleanMap<TypeInfo> annotationTypes =
                 inspection.getAnnotations().stream().flatMap(ae -> ae.typesReferenced().stream()).collect(UpgradableBooleanMap.collector());
+
         UpgradableBooleanMap<TypeInfo> analysedAnnotationTypes =
                 hasBeenAnalysed() ? methodAnalysis.get().getAnnotationStream()
                         .filter(e -> e.getValue().isVisible())
                         .flatMap(e -> e.getKey().typesReferenced().stream())
                         .collect(UpgradableBooleanMap.collector()) : UpgradableBooleanMap.of();
+
         UpgradableBooleanMap<TypeInfo> exceptionTypes =
                 inspection.getExceptionTypes().stream().flatMap(et -> et.typesReferenced(true).stream()).collect(UpgradableBooleanMap.collector());
+
         UpgradableBooleanMap<TypeInfo> bodyTypes = hasBeenInspected() ?
                 inspection.getMethodBody().typesReferenced() : UpgradableBooleanMap.of();
+
         UpgradableBooleanMap<TypeInfo> companionMethodTypes = inspection.getCompanionMethods().values().stream()
                 .flatMap(cm -> cm.typesReferenced().stream()).collect(UpgradableBooleanMap.collector());
+
         return UpgradableBooleanMap.of(constructorTypes, parameterTypes, analysedAnnotationTypes,
                 annotationTypes, exceptionTypes, companionMethodTypes, bodyTypes);
     }

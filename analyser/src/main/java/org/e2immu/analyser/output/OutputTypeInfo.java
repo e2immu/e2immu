@@ -30,7 +30,7 @@ public class OutputTypeInfo {
         Set<String> imports;
         Qualification insideType;
         if (typeInfo.isPrimaryType() && typeInfo.hasBeenInspected()) {
-            ResultOfImportComputation res = imports(typeInfo.packageName(), typeInfo.typeInspection.get());
+            ResultOfImportComputation res = imports(typeInfo.packageName(), typeInfo);
             imports = res.imports;
             insideType = res.qualification;
         } else {
@@ -273,20 +273,20 @@ public class OutputTypeInfo {
         boolean allowStar = true;
     }
 
-    private static ResultOfImportComputation imports(String myPackage, TypeInspection typeInspection) {
-        Set<TypeInfo> typesReferenced = typeInspection.typesReferenced().stream().filter(Map.Entry::getValue)
+    private static ResultOfImportComputation imports(String myPackage, TypeInfo typeInfo) {
+        Set<TypeInfo> typesReferenced = typeInfo.typesReferenced().stream().filter(Map.Entry::getValue)
                 .map(Map.Entry::getKey)
                 .filter(TypeInfo::allowInImport)
                 .collect(Collectors.toSet());
         Map<String, PerPackage> typesPerPackage = new HashMap<>();
         QualificationImpl qualification = new QualificationImpl();
-        typesReferenced.forEach(typeInfo -> {
-            String packageName = typeInfo.packageName();
+        typesReferenced.forEach(ti -> {
+            String packageName = ti.packageName();
             if (packageName != null && !myPackage.equals(packageName)) {
-                boolean doImport = qualification.addTypeReturnImport(typeInfo);
+                boolean doImport = qualification.addTypeReturnImport(ti);
                 PerPackage perPackage = typesPerPackage.computeIfAbsent(packageName, p -> new PerPackage());
                 if (doImport) {
-                    perPackage.types.add(typeInfo);
+                    perPackage.types.add(ti);
                 } else {
                     perPackage.allowStar = false; // because we don't want to play with complicated ordering
                 }
@@ -299,8 +299,8 @@ public class OutputTypeInfo {
             if (perPackage.types.size() >= 4 && perPackage.allowStar) {
                 imports.add(e.getKey() + ".*");
             } else {
-                for (TypeInfo typeInfo : perPackage.types) {
-                    imports.add(typeInfo.fullyQualifiedName);
+                for (TypeInfo ti : perPackage.types) {
+                    imports.add(ti.fullyQualifiedName);
                 }
             }
         }

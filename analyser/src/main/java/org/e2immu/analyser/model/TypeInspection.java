@@ -204,27 +204,6 @@ public interface TypeInspection extends Inspection {
         return ShallowMethodResolver.sameParameters(inspectionProvider, inSubType.getParameters(), inSuperType.getParameters(), map);
     }
 
-    /**
-     * This is the starting place to compute all types that are referred to in any way.
-     *
-     * @return a map of all types referenced, with the boolean indicating explicit reference somewhere
-     */
-    default UpgradableBooleanMap<TypeInfo> typesReferenced() {
-        return UpgradableBooleanMap.of(
-                parentClass() == null ? UpgradableBooleanMap.of() : parentClass().typesReferenced(true),
-                typeInfo().packageNameOrEnclosingType.isRight() && !isStatic() && !isInterface() ?
-                        UpgradableBooleanMap.of(typeInfo().packageNameOrEnclosingType.getRight(), false) :
-                        UpgradableBooleanMap.of(),
-                interfacesImplemented().stream().flatMap(i -> i.typesReferenced(true).stream()).collect(UpgradableBooleanMap.collector()),
-                getAnnotations().stream().flatMap(a -> a.typesReferenced().stream()).collect(UpgradableBooleanMap.collector()),
-                //ti.subTypes.stream().flatMap(a -> a.typesReferenced().stream()).collect(UpgradableBooleanMap.collector()),
-                methodsAndConstructors(TypeInspection.Methods.THIS_TYPE_ONLY)
-                        .flatMap(a -> a.typesReferenced().stream()).collect(UpgradableBooleanMap.collector()),
-                fields().stream().flatMap(a -> a.typesReferenced().stream()).collect(UpgradableBooleanMap.collector()),
-                subTypes().stream().flatMap(a -> a.typesReferenced().stream()).collect(UpgradableBooleanMap.collector())
-        );
-    }
-
     default boolean isStatic() {
         if (typeInfo().packageNameOrEnclosingType.isLeft()) return true; // independent type
         return typeNature() != TypeNature.CLASS || modifiers().contains(TypeModifier.STATIC); // static sub type
