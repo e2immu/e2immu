@@ -45,7 +45,8 @@ public class GenerateAnnotationsIndependent {
         }
         if (MultiLevel.INDEPENDENT_1_DV.equals(independent)) {
             params.put(HIDDEN_CONTENT, true);
-        } else if (MultiLevel.DEPENDENT_DV.equals(independent)) {
+        } else if (MultiLevel.DEPENDENT_DV.ge(independent)) {
+            // dependent, not involved
             params.put(ABSENT, true);
             params.put(IMPLIED, true);
         } else {
