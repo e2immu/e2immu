@@ -51,6 +51,11 @@ public class ParameterAnalysisImpl extends AnalysisImpl implements ParameterAnal
     }
 
     @Override
+    public String toString() {
+        return parameterInfo.toString();
+    }
+
+    @Override
     public DV getProperty(Property property) {
         return getParameterProperty(AnalysisProvider.DEFAULT_PROVIDER, parameterInfo, property);
     }
@@ -171,7 +176,7 @@ public class ParameterAnalysisImpl extends AnalysisImpl implements ParameterAnal
                     !ignoreModifications.equals(MultiLevel.IGNORE_MODS_DV)) {
                 AnnotationExpression ae = modified.valueIsFalse() ? e2ImmuAnnotationExpressions.notModified :
                         e2ImmuAnnotationExpressions.modified;
-               addAnnotation(ae);
+                addAnnotation(ae);
             }
 
             // @NotNull
@@ -182,11 +187,11 @@ public class ParameterAnalysisImpl extends AnalysisImpl implements ParameterAnal
             DV independentType = analysisProvider.defaultIndependent(parameterInfo.parameterizedType);
             DV independent = getProperty(Property.INDEPENDENT);
             if (independent.equals(MultiLevel.INDEPENDENT_DV) && independentType.lt(MultiLevel.INDEPENDENT_DV)) {
-               addAnnotation(e2ImmuAnnotationExpressions.independent);
+                addAnnotation(e2ImmuAnnotationExpressions.independent);
             } else if (independent.equals(MultiLevel.INDEPENDENT_1_DV) && independentType.lt(MultiLevel.INDEPENDENT_1_DV)) {
                 AnnotationExpression independentHC = E2ImmuAnnotationExpressions.create(primitives, Independent.class,
                         "hc", true);
-               addAnnotation(independentHC);
+                addAnnotation(independentHC);
             }
 
             DV formallyImmutable = analysisProvider.getProperty(parameterInfo.parameterizedType, Property.IMMUTABLE, false);
@@ -218,6 +223,11 @@ public class ParameterAnalysisImpl extends AnalysisImpl implements ParameterAnal
         @Override
         public LinkedVariables getLinksToOtherParameters() {
             return linksToParameters.getOrDefault(LinkedVariables.EMPTY);
+        }
+
+        @Override
+        public String toString() {
+            return parameterInfo.toString();
         }
     }
 

@@ -92,7 +92,7 @@ public class Test_37_EventuallyE2Immutable extends CommonTestRunner {
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("EventuallyE2Immutable_0".equals(d.typeInfo().simpleName)) {
                 String expect = d.iteration() <= 1 ? "{}" : "{t=null==t}";
-                assertEquals(expect, d.typeAnalysis().getApprovedPreconditionsE2().toString());
+                assertEquals(expect, d.typeAnalysis().getApprovedPreconditionsImmutable().toString());
                 assertEquals(d.iteration() >= 2, d.typeAnalysis().approvedPreconditionsStatus(true).isDone());
                 assertDv(d, 2, MultiLevel.EVENTUALLY_E2IMMUTABLE_DV, Property.IMMUTABLE);
                 assertDv(d, 2, MultiLevel.INDEPENDENT_1_DV, Property.INDEPENDENT);
@@ -170,8 +170,8 @@ public class Test_37_EventuallyE2Immutable extends CommonTestRunner {
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("EventuallyE2Immutable_1".equals(d.typeInfo().simpleName)) {
                 String expected = d.iteration() <= 1 ? "{}" : "{t=null==t}";
-                assertEquals(expected, d.typeAnalysis().getApprovedPreconditionsE1().toString());
-                assertEquals(expected, d.typeAnalysis().getApprovedPreconditionsE2().toString());
+                assertEquals(expected, d.typeAnalysis().getApprovedPreconditionsFinalFields().toString());
+                assertEquals(expected, d.typeAnalysis().getApprovedPreconditionsImmutable().toString());
                 assertEquals(d.iteration() > 1, d.typeAnalysis().approvedPreconditionsStatus(true).isDone());
                 assertDv(d, 2, MultiLevel.EVENTUALLY_E2IMMUTABLE_DV, Property.IMMUTABLE);
                 assertDv(d, 2, MultiLevel.INDEPENDENT_1_DV, Property.INDEPENDENT);

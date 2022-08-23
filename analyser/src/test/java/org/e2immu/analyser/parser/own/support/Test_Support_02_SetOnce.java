@@ -54,9 +54,9 @@ public class Test_Support_02_SetOnce extends CommonTestRunner {
             if ("SetOnce".equals(d.typeInfo().simpleName)) {
                 assertEquals("Type param T", d.typeAnalysis().getHiddenContentTypes().toString());
                 String expectE1 = d.iteration() <= 1 ? "{}" : "{t=null==t}";
-                assertEquals(expectE1, d.typeAnalysis().getApprovedPreconditionsE1().toString());
+                assertEquals(expectE1, d.typeAnalysis().getApprovedPreconditionsFinalFields().toString());
                 String expectE2 = d.iteration() <= 1 ? "{}" : "{t=null==t}";
-                assertEquals(expectE2, d.typeAnalysis().getApprovedPreconditionsE2().toString());
+                assertEquals(expectE2, d.typeAnalysis().getApprovedPreconditionsImmutable().toString());
             }
         };
 

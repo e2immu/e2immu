@@ -66,6 +66,11 @@ public abstract class MethodAnalyserImpl extends AbstractAnalyser implements Met
     }
 
     @Override
+    public String toString() {
+        return methodInfo.fullyQualifiedName;
+    }
+
+    @Override
     public MethodAnalysisImpl.Builder getMethodAnalysis() {
         return methodAnalysis;
     }

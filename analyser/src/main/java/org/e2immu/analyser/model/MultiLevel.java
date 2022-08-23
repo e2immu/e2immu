@@ -42,7 +42,7 @@ public class MultiLevel {
         return MultiLevel.effective(dv);
     }
 
-    public static Effective effectiveAtLevel2PlusImmutable(DV dv) {
+    public static Effective effectiveAtImmutableLevel(DV dv) {
         int level = MultiLevel.level(dv);
         if (level < IMMUTABLE_2.level) return FALSE;
         return MultiLevel.effective(dv);

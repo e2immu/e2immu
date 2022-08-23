@@ -20,7 +20,6 @@ import org.e2immu.analyser.analyser.SetOfTypes;
 import org.e2immu.analyser.analysis.Analysis;
 import org.e2immu.analyser.analysis.MethodAnalysis;
 import org.e2immu.analyser.analysis.ParameterAnalysis;
-import org.e2immu.analyser.analysis.TypeAnalysis;
 import org.e2immu.analyser.analysis.impl.MethodAnalysisImpl;
 import org.e2immu.analyser.analysis.impl.ParameterAnalysisImpl;
 import org.e2immu.analyser.analysis.impl.TypeAnalysisImpl;
@@ -262,8 +261,8 @@ public class PrimitivesImpl implements Primitives {
             TypeAnalysisImpl.Builder builder = new TypeAnalysisImpl.Builder(CONTRACTED, this, ti, null);
             builder.setProperty(Property.CONTAINER, MultiLevel.CONTAINER_DV);
             builder.setProperty(Property.IMMUTABLE, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV);
-            builder.freezeApprovedPreconditionsE2(); // cannot change these anymore; will never be eventual
-            builder.freezeApprovedPreconditionsE1(); // cannot change these anymore; will never be eventual
+            builder.freezeApprovedPreconditionsImmutable(); // cannot change these anymore; will never be eventual
+            builder.freezeApprovedPreconditionsFinalFields(); // cannot change these anymore; will never be eventual
             builder.setProperty(Property.INDEPENDENT, MultiLevel.INDEPENDENT_DV);
             builder.setHiddenContentTypes(SetOfTypes.EMPTY);
             builder.setImmutableCanBeIncreasedByTypeParameters(false);
@@ -285,8 +284,8 @@ public class PrimitivesImpl implements Primitives {
             builder.setProperty(Property.CONTAINER, MultiLevel.CONTAINER_DV);
             builder.setProperty(Property.IMMUTABLE, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV);
             builder.setProperty(Property.INDEPENDENT, MultiLevel.INDEPENDENT_DV);
-            builder.freezeApprovedPreconditionsE2(); // cannot change these anymore; will never be eventual
-            builder.freezeApprovedPreconditionsE1(); // cannot change these anymore; will never be eventual
+            builder.freezeApprovedPreconditionsImmutable(); // cannot change these anymore; will never be eventual
+            builder.freezeApprovedPreconditionsFinalFields(); // cannot change these anymore; will never be eventual
             builder.setHiddenContentTypes(SetOfTypes.EMPTY);
             builder.setImmutableCanBeIncreasedByTypeParameters(false);
         }

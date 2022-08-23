@@ -32,20 +32,20 @@ public interface TypeAnalysis extends Analysis {
     TypeInfo getTypeInfo();
 
     @NotNull
-    Map<FieldReference, Expression> getApprovedPreconditionsE1();
+    Map<FieldReference, Expression> getApprovedPreconditionsFinalFields();
 
     @NotNull
-    Map<FieldReference, Expression> getApprovedPreconditionsE2();
+    Map<FieldReference, Expression> getApprovedPreconditionsImmutable();
 
-    boolean containsApprovedPreconditionsE2(FieldReference fieldReference);
+    boolean containsApprovedPreconditionsImmutable(FieldReference fieldReference);
 
-    boolean approvedPreconditionsE2IsEmpty();
+    boolean approvedPreconditionsImmutableIsEmpty();
 
     @NotNull
     Expression getApprovedPreconditions(boolean e2, FieldReference fieldInfo);
 
     default Map<FieldReference, Expression> getApprovedPreconditions(boolean e2) {
-        return e2 ? getApprovedPreconditionsE2() : getApprovedPreconditionsE1();
+        return e2 ? getApprovedPreconditionsImmutable() : getApprovedPreconditionsFinalFields();
     }
 
     @NotNull
@@ -69,7 +69,7 @@ public interface TypeAnalysis extends Analysis {
     }
 
     default boolean isEventual() {
-        return !getApprovedPreconditionsE1().isEmpty() || !getApprovedPreconditionsE2().isEmpty() ||
+        return !getApprovedPreconditionsFinalFields().isEmpty() || !getApprovedPreconditionsImmutable().isEmpty() ||
                 !getEventuallyImmutableFields().isEmpty();
     }
 
@@ -79,9 +79,9 @@ public interface TypeAnalysis extends Analysis {
      */
     default Set<FieldInfo> marksRequiredForImmutable() {
         Set<FieldInfo> res = new HashSet<>(getEventuallyImmutableFields());
-        getApprovedPreconditionsE1().keySet().stream()
+        getApprovedPreconditionsFinalFields().keySet().stream()
                 .map(this::translateToVisibleField).filter(Objects::nonNull).forEach(res::add);
-        getApprovedPreconditionsE2().keySet().stream()
+        getApprovedPreconditionsImmutable().keySet().stream()
                 .map(this::translateToVisibleField).filter(Objects::nonNull).forEach(res::add);
         return res;
     }

@@ -73,6 +73,11 @@ public class TypeAnalysisImpl extends AnalysisImpl implements TypeAnalysis {
     }
 
     @Override
+    public String toString() {
+        return typeInfo.fullyQualifiedName;
+    }
+
+    @Override
     public DV immutableDeterminedByTypeParameters() {
         return DV.fromBoolDv(immutableDeterminedByTypeParameters);
     }
@@ -83,12 +88,12 @@ public class TypeAnalysisImpl extends AnalysisImpl implements TypeAnalysis {
     }
 
     @Override
-    public boolean approvedPreconditionsE2IsEmpty() {
+    public boolean approvedPreconditionsImmutableIsEmpty() {
         return approvedPreconditionsE2.isEmpty();
     }
 
     @Override
-    public boolean containsApprovedPreconditionsE2(FieldReference fieldReference) {
+    public boolean containsApprovedPreconditionsImmutable(FieldReference fieldReference) {
         return approvedPreconditionsE2.containsKey(fieldReference);
     }
 
@@ -118,12 +123,12 @@ public class TypeAnalysisImpl extends AnalysisImpl implements TypeAnalysis {
     }
 
     @Override
-    public Map<FieldReference, Expression> getApprovedPreconditionsE1() {
+    public Map<FieldReference, Expression> getApprovedPreconditionsFinalFields() {
         return approvedPreconditionsE1;
     }
 
     @Override
-    public Map<FieldReference, Expression> getApprovedPreconditionsE2() {
+    public Map<FieldReference, Expression> getApprovedPreconditionsImmutable() {
         return approvedPreconditionsE2;
     }
 
@@ -242,6 +247,11 @@ public class TypeAnalysisImpl extends AnalysisImpl implements TypeAnalysis {
         }
 
         @Override
+        public String toString() {
+            return typeInfo.fullyQualifiedName;
+        }
+
+        @Override
         protected void writeTypeEventualFields(String after) {
             for (String fieldName : after.split(",")) {
                 FieldInfo fieldInfo = getTypeInfo().getFieldByName(fieldName.trim(), false);
@@ -270,12 +280,12 @@ public class TypeAnalysisImpl extends AnalysisImpl implements TypeAnalysis {
         }
 
         @Override
-        public boolean approvedPreconditionsE2IsEmpty() {
+        public boolean approvedPreconditionsImmutableIsEmpty() {
             return approvedPreconditionsE2.isEmpty();
         }
 
         @Override
-        public boolean containsApprovedPreconditionsE2(FieldReference fieldReference) {
+        public boolean containsApprovedPreconditionsImmutable(FieldReference fieldReference) {
             return approvedPreconditionsE2.isSet(fieldReference);
         }
 
@@ -304,7 +314,7 @@ public class TypeAnalysisImpl extends AnalysisImpl implements TypeAnalysis {
                     : (approvedPreconditionsE1.isFrozen() ? CausesOfDelay.EMPTY : approvedPreconditionsE1Delays);
         }
 
-        public void freezeApprovedPreconditionsE1() {
+        public void freezeApprovedPreconditionsFinalFields() {
             approvedPreconditionsE1.freeze();
         }
 
@@ -319,11 +329,11 @@ public class TypeAnalysisImpl extends AnalysisImpl implements TypeAnalysis {
             approvedPreconditionsE1.put(fieldReference, expression);
         }
 
-        public void freezeApprovedPreconditionsE2() {
+        public void freezeApprovedPreconditionsImmutable() {
             approvedPreconditionsE2.freeze();
         }
 
-        public void putInApprovedPreconditionsE2(FieldReference fieldReference, Expression expression) {
+        public void putInApprovedPreconditionsImmutable(FieldReference fieldReference, Expression expression) {
             assert fieldReference != null;
             assert expression != null;
             approvedPreconditionsE2.put(fieldReference, expression);
@@ -350,12 +360,12 @@ public class TypeAnalysisImpl extends AnalysisImpl implements TypeAnalysis {
         }
 
         @Override
-        public Map<FieldReference, Expression> getApprovedPreconditionsE1() {
+        public Map<FieldReference, Expression> getApprovedPreconditionsFinalFields() {
             return approvedPreconditionsE1.toImmutableMap();
         }
 
         @Override
-        public Map<FieldReference, Expression> getApprovedPreconditionsE2() {
+        public Map<FieldReference, Expression> getApprovedPreconditionsImmutable() {
             return approvedPreconditionsE2.toImmutableMap();
         }
 
@@ -501,7 +511,7 @@ public class TypeAnalysisImpl extends AnalysisImpl implements TypeAnalysis {
             approvedPreconditionsE1Delays = causes;
         }
 
-        public void setApprovedPreconditionsE2Delays(CausesOfDelay causes) {
+        public void setApprovedPreconditionsImmutableDelays(CausesOfDelay causes) {
             approvedPreconditionsE2Delays = causes;
         }
 

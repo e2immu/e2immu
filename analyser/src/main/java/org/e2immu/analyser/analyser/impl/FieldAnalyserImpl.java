@@ -141,6 +141,11 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
     }
 
     @Override
+    public String toString() {
+        return fieldInfo.fullyQualifiedName;
+    }
+
+    @Override
     public String fullyQualifiedAnalyserName() {
         return "FA " + fieldInfo.fullyQualifiedName;
     }

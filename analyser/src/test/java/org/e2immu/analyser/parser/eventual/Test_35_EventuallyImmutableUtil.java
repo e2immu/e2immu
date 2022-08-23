@@ -124,10 +124,10 @@ public class Test_35_EventuallyImmutableUtil extends CommonTestRunner {
         };
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("EventuallyImmutableUtil_2".equals(d.typeInfo().simpleName)) {
-                assertTrue(d.typeAnalysis().getApprovedPreconditionsE1().isEmpty());
+                assertTrue(d.typeAnalysis().getApprovedPreconditionsFinalFields().isEmpty());
                 String expectEvImm = d.iteration() == 0 ? "[]" : "[value]";
                 assertEquals(expectEvImm, d.typeAnalysis().getEventuallyImmutableFields().toString());
-                assertEquals("{}", d.typeAnalysis().getApprovedPreconditionsE2().toString());
+                assertEquals("{}", d.typeAnalysis().getApprovedPreconditionsImmutable().toString());
             }
         };
 

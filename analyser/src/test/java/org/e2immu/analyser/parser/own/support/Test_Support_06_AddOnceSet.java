@@ -54,9 +54,9 @@ public class Test_Support_06_AddOnceSet extends CommonTestRunner {
             if ("AddOnceSet".equals(d.typeInfo().simpleName)) {
                 assertEquals("Type param V", d.typeAnalysis().getHiddenContentTypes().toString());
 
-                assertEquals("{frozen=!frozen}", d.typeAnalysis().getApprovedPreconditionsE1().toString());
+                assertEquals("{frozen=!frozen}", d.typeAnalysis().getApprovedPreconditionsFinalFields().toString());
                 if (d.iteration() >= 2) {
-                    assertEquals("{frozen=!frozen}", d.typeAnalysis().getApprovedPreconditionsE2().toString());
+                    assertEquals("{frozen=!frozen}", d.typeAnalysis().getApprovedPreconditionsImmutable().toString());
                     assertEquals("[set]", d.typeAnalysis().getGuardedByEventuallyImmutableFields().toString());
                 }
             }

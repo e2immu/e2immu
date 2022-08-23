@@ -51,8 +51,8 @@ public class AggregatingTypeAnalyser extends TypeAnalyserImpl {
         super(typeInfo, primaryType, analyserContextInput, Analysis.AnalysisMode.AGGREGATED);
 
         // IMPROVE but we have not thought yet about how to deal with eventual immutability and sealed types
-        typeAnalysis.freezeApprovedPreconditionsE1();
-        typeAnalysis.freezeApprovedPreconditionsE2();
+        typeAnalysis.freezeApprovedPreconditionsFinalFields();
+        typeAnalysis.freezeApprovedPreconditionsImmutable();
         AnalyserProgram analyserProgram = analyserContextInput.getAnalyserProgram();
         AnalyserComponents.Builder<String, Integer> builder = new AnalyserComponents.Builder<String, Integer>(analyserProgram)
                 .add(IMMUTABLE, iteration -> this.aggregate(Property.IMMUTABLE))

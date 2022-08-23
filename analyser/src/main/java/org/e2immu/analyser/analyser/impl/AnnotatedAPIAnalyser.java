@@ -270,8 +270,8 @@ public class AnnotatedAPIAnalyser implements AnalyserContext {
         typeAnalysis.setProperty(Property.IMMUTABLE, MultiLevel.MUTABLE_DV);
         typeAnalysis.setProperty(Property.MODIFIED_METHOD, DV.TRUE_DV);
         typeAnalysis.setImmutableCanBeIncreasedByTypeParameters(false);
-        typeAnalysis.freezeApprovedPreconditionsE1();
-        typeAnalysis.freezeApprovedPreconditionsE2();
+        typeAnalysis.freezeApprovedPreconditionsFinalFields();
+        typeAnalysis.freezeApprovedPreconditionsImmutable();
         typeInfo.typeAnalysis.set(typeAnalysis);
     }
 
@@ -572,8 +572,8 @@ public class AnnotatedAPIAnalyser implements AnalyserContext {
                 true, typeInspection.getAnnotations(), e2ImmuAnnotationExpressions));
 
         ComputingTypeAnalyser.findAspects(typeAnalysisBuilder, typeInfo);
-        typeAnalysisBuilder.freezeApprovedPreconditionsE1();
-        typeAnalysisBuilder.freezeApprovedPreconditionsE2();
+        typeAnalysisBuilder.freezeApprovedPreconditionsFinalFields();
+        typeAnalysisBuilder.freezeApprovedPreconditionsImmutable();
 
         /*
         The computation of hidden content types proceeds as follows:

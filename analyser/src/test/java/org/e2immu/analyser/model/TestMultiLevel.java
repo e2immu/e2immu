@@ -65,13 +65,13 @@ public class TestMultiLevel {
 
     @Test
     public void testEffectiveL2() {
-        assertEquals(EFFECTIVE, effectiveAtLevel2PlusImmutable(EFFECTIVELY_E2IMMUTABLE_DV));
-        assertEquals(FALSE, effectiveAtLevel2PlusImmutable(EFFECTIVELY_E1IMMUTABLE_DV));
-        assertEquals(EFFECTIVE, effectiveAtLevel2PlusImmutable(EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV));
-        assertEquals(FALSE, effectiveAtLevel2PlusImmutable(EVENTUALLY_E1IMMUTABLE_DV));
-        assertEquals(EVENTUAL, effectiveAtLevel2PlusImmutable(EVENTUALLY_E2IMMUTABLE_DV));
-        assertEquals(FALSE, effectiveAtLevel2PlusImmutable(MUTABLE_DV));
-        assertEquals(EVENTUAL, effectiveAtLevel2PlusImmutable(EVENTUALLY_RECURSIVELY_IMMUTABLE_DV));
+        assertEquals(EFFECTIVE, effectiveAtImmutableLevel(EFFECTIVELY_E2IMMUTABLE_DV));
+        assertEquals(FALSE, effectiveAtImmutableLevel(EFFECTIVELY_E1IMMUTABLE_DV));
+        assertEquals(EFFECTIVE, effectiveAtImmutableLevel(EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV));
+        assertEquals(FALSE, effectiveAtImmutableLevel(EVENTUALLY_E1IMMUTABLE_DV));
+        assertEquals(EVENTUAL, effectiveAtImmutableLevel(EVENTUALLY_E2IMMUTABLE_DV));
+        assertEquals(FALSE, effectiveAtImmutableLevel(MUTABLE_DV));
+        assertEquals(EVENTUAL, effectiveAtImmutableLevel(EVENTUALLY_RECURSIVELY_IMMUTABLE_DV));
     }
 
     @Test
