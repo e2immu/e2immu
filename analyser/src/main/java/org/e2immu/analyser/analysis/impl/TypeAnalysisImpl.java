@@ -481,7 +481,7 @@ public class TypeAnalysisImpl extends AnalysisImpl implements TypeAnalysis {
             immutableDeterminedByTypeParameters.setFirst(causes);
         }
 
-        public void setImmutableCanBeIncreasedByTypeParameters(Boolean b) {
+        public void setImmutableDeterminedByTypeParameters(Boolean b) {
             immutableDeterminedByTypeParameters.set(b);
         }
 

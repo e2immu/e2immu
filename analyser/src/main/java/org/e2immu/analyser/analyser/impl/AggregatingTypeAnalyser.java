@@ -59,7 +59,7 @@ public class AggregatingTypeAnalyser extends TypeAnalyserImpl {
                 .add(INDEPENDENT, iteration -> this.aggregate(Property.INDEPENDENT))
                 .add(CONTAINER, iteration -> this.aggregate(Property.CONTAINER))
                 .add(TRANSPARENT, iteration -> this.aggregateTransparent())
-                .add(IMMUTABLE_CAN_BE_INCREASED, iteration -> super.analyseImmutableCanBeIncreasedByTypeParameters());
+                .add(IMMUTABLE_CAN_BE_INCREASED, iteration -> super.analyseImmutableDeterminedByTypeParameters());
 
         analyserComponents = builder.build();
     }

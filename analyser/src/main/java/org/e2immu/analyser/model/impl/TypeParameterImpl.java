@@ -59,6 +59,16 @@ public class TypeParameterImpl implements TypeParameter {
     }
 
     @Override
+    public ParameterizedType toParameterizedType() {
+        assert typeBounds.isSet();
+        List<ParameterizedType> tbs = typeBounds.get();
+        //if (tbs.isEmpty()) {
+            return new ParameterizedType(this, 0, ParameterizedType.WildCard.NONE);
+        //}
+        //FIXME throw new UnsupportedOperationException("IMPLEMENT!");
+    }
+
+    @Override
     public String toString() {
         String where = owner.isSet() ? (owner.get().isLeft() ? owner.get().getLeft().fullyQualifiedName :
                 owner.get().getRight().fullyQualifiedName()) : "<no owner yet>";

@@ -322,7 +322,7 @@ public final class TypeInfo implements NamedType, WithInspectionAndAnalysis, Com
 
     public ParameterizedType asParameterizedType(InspectionProvider inspectionProvider) {
         List<ParameterizedType> typeParameters = inspectionProvider.getTypeInspection(this).typeParameters()
-                .stream().map(tp -> new ParameterizedType(tp, 0, ParameterizedType.WildCard.NONE))
+                .stream().map(TypeParameter::toParameterizedType)
                 .collect(Collectors.toList());
         return new ParameterizedType(this, typeParameters);
     }
@@ -520,7 +520,7 @@ public final class TypeInfo implements NamedType, WithInspectionAndAnalysis, Com
                 fromInterfaces,
                 inspectedAnnotations,
                 analysedAnnotations,
-                
+
                 // types from methods and constructors and their parameters
                 inspection.methodsAndConstructors(TypeInspection.Methods.THIS_TYPE_ONLY)
                         .flatMap(a -> a.typesReferenced().stream()).collect(UpgradableBooleanMap.collector()),

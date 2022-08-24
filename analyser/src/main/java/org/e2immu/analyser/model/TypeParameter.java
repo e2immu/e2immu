@@ -64,4 +64,6 @@ public interface TypeParameter extends NamedType {
     default boolean isUnbound() {
         return getTypeBounds().isEmpty();
     }
+
+    ParameterizedType toParameterizedType();
 }

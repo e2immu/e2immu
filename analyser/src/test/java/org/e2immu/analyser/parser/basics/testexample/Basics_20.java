@@ -38,7 +38,6 @@ public class Basics_20 {
         }
     }
 
-    // T is transparent, but List<T> is not
     @FinalFields @Container
     static class C1<T> {
         private final List<T> list;
@@ -47,12 +46,12 @@ public class Basics_20 {
             this.list = list;
         }
 
-        // implicitly @Dependent
+        // implicitly dependent
         public List<T> getListC1() {
             return list;
         }
 
-        // implicitly @Independent1
+        // implicitly @Independent(hc=true)
         public T getFirstC1() {
             return list.get(0);
         }
@@ -69,7 +68,6 @@ public class Basics_20 {
         System.out.println(ci + ", " + ci2);
     }
 
-    // T is transparent, but List<T> is not
     @ImmutableContainer(hc = true)
     static class C2<T> {
         private final List<T> list;
@@ -78,12 +76,12 @@ public class Basics_20 {
             this.list = new ArrayList<>(list);
         }
 
-        @Independent
+        @Independent(hc = true)
         public List<T> getListC2() {
             return new ArrayList<>(list);
         }
 
-        // implicitly @Independent1
+        // implicitly @Independent(hc=true)
         public T getFirstC2() {
             return list.get(0);
         }

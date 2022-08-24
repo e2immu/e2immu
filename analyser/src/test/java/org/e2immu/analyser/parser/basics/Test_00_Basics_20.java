@@ -200,13 +200,14 @@ public class Test_00_Basics_20 extends CommonTestRunner {
 
     TypeAnalyserVisitor typeAnalyserVisitor = d -> {
         if ("I".equals(d.typeInfo().simpleName)) {
-            assertDv(d, 1, MultiLevel.INDEPENDENT_DV, INDEPENDENT);
+            assertDv(d, MultiLevel.INDEPENDENT_DV, INDEPENDENT);
         }
         if ("C1".equals(d.typeInfo().simpleName)) {
             assertDv(d, 1, MultiLevel.EFFECTIVELY_E1IMMUTABLE_DV, IMMUTABLE);
         }
         if ("C2".equals(d.typeInfo().simpleName)) {
             assertDv(d, 1, MultiLevel.EFFECTIVELY_E2IMMUTABLE_DV, IMMUTABLE);
+            assertEquals("Type param T", d.typeAnalysis().getHiddenContentTypes().toString());
             assertEquals(DV.TRUE_DV, d.typeAnalysis().immutableDeterminedByTypeParameters());
         }
     };

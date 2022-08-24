@@ -107,7 +107,7 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
         AnalyserComponents.Builder<String, SharedState> builder = new AnalyserComponents.Builder<String, SharedState>(analyserProgram)
                 .add(FIND_ASPECTS, iteration -> findAspects())
                 .add(ANALYSE_TRANSPARENT_TYPES, iteration -> analyseExplicitAndHiddenTypes())
-                .add(ANALYSE_IMMUTABLE_CAN_BE_INCREASED, iteration -> analyseImmutableCanBeIncreasedByTypeParameters());
+                .add(ANALYSE_IMMUTABLE_CAN_BE_INCREASED, iteration -> analyseImmutableDeterminedByTypeParameters());
 
         if (typeInfo.isInterface()) {
             typeAnalysis.freezeApprovedPreconditionsFinalFields();
@@ -447,7 +447,9 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
         /*
         Now for the computation of hidden content types.
         */
-        SetOfTypes hiddenContentTypes = new HiddenContentTypes(typeInfo, analyserContext).go(SetOfTypes.EMPTY).build();
+        SetOfTypes typeParameters = new SetOfTypes(typeInspection.typeParameters().stream()
+                .map(TypeParameter::toParameterizedType).collect(Collectors.toUnmodifiableSet()));
+        SetOfTypes hiddenContentTypes = new HiddenContentTypes(typeInfo, analyserContext).go(typeParameters).build();
         typeAnalysis.setHiddenContentTypes(hiddenContentTypes);
 
         LOGGER.debug("Transparent data types for {} are: [{}]", typeInfo, allTypes);

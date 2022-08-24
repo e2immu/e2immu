@@ -281,21 +281,19 @@ public class ConstructorCall extends BaseExpression implements HasParameterExpre
         // shortcut: either is at max value, then there is no discussion
         if (independentOnParameter.equals(INDEPENDENT_DV)
                 || MultiLevel.isAtLeastEventuallyRecursivelyImmutable(immutableOfValue)) {
-            return INDEPENDENT_DV;
+            return LinkedVariables.LINK_INDEPENDENT;
         }
 
         // any delay: wait!
         CausesOfDelay causes = immutableOfValue.causesOfDelay().merge(independentOnParameter.causesOfDelay());
         if (causes.isDelayed()) return causes;
 
-        int immutableLevel = MultiLevel.level(immutableOfValue);
-
         if (independentOnParameter.ge(MultiLevel.INDEPENDENT_1_DV)
-                && immutableLevel < MultiLevel.Level.IMMUTABLE_2.level) {
+                && !MultiLevel.isAtLeastEventuallyE2Immutable(immutableOfValue)) {
             // mutable, but linked content-wise
-            return MultiLevel.INDEPENDENT_1_DV;
+            return LinkedVariables.LINK_INDEPENDENT_HC;
         }
-        return MultiLevel.independentCorrespondingToImmutableLevelDv(immutableLevel);
+        return LinkedVariables.fromImmutableToLinkedVariableLevel(immutableOfValue);
     }
 
     @Override

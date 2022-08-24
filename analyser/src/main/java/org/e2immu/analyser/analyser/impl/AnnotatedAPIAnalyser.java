@@ -269,7 +269,7 @@ public class AnnotatedAPIAnalyser implements AnalyserContext {
         typeAnalysis.setProperty(Property.CONTAINER, isContainer ? MultiLevel.CONTAINER_DV : MultiLevel.NOT_CONTAINER_DV);
         typeAnalysis.setProperty(Property.IMMUTABLE, MultiLevel.MUTABLE_DV);
         typeAnalysis.setProperty(Property.MODIFIED_METHOD, DV.TRUE_DV);
-        typeAnalysis.setImmutableCanBeIncreasedByTypeParameters(false);
+        typeAnalysis.setImmutableDeterminedByTypeParameters(false);
         typeAnalysis.freezeApprovedPreconditionsFinalFields();
         typeAnalysis.freezeApprovedPreconditionsImmutable();
         typeInfo.typeAnalysis.set(typeAnalysis);
@@ -284,7 +284,7 @@ public class AnnotatedAPIAnalyser implements AnalyserContext {
             typeAnalysis.setProperty(Property.INDEPENDENT, MultiLevel.INDEPENDENT_DV);
             typeAnalysis.setProperty(Property.IMMUTABLE, MultiLevel.EFFECTIVELY_E2IMMUTABLE_DV);
             typeAnalysis.setProperty(Property.CONTAINER, MultiLevel.CONTAINER_DV);
-            typeAnalysis.setImmutableCanBeIncreasedByTypeParameters(false);
+            typeAnalysis.setImmutableDeterminedByTypeParameters(false);
         }
         for (Class<?> clazz : new Class[]{
                 String.class,
@@ -297,7 +297,7 @@ public class AnnotatedAPIAnalyser implements AnalyserContext {
             typeAnalysis.setProperty(Property.INDEPENDENT, MultiLevel.INDEPENDENT_DV);
             typeAnalysis.setProperty(Property.IMMUTABLE, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV);
             typeAnalysis.setProperty(Property.CONTAINER, MultiLevel.CONTAINER_DV);
-            typeAnalysis.setImmutableCanBeIncreasedByTypeParameters(false);
+            typeAnalysis.setImmutableDeterminedByTypeParameters(false);
         }
     }
 
@@ -595,7 +595,7 @@ public class AnnotatedAPIAnalyser implements AnalyserContext {
         ensureImmutableAndContainerInShallowTypeAnalysis(typeAnalysisBuilder);
         simpleComputeIndependent(typeAnalysisBuilder);
 
-        determineImmutableDeterminedByTypeParameters(typeInspection, typeAnalysisBuilder);
+        computeImmutableDeterminedByTypeParameters(typeInspection, typeAnalysisBuilder);
 
         // and close!
         TypeAnalysis typeAnalysis = typeAnalysisBuilder.build();
@@ -613,12 +613,12 @@ public class AnnotatedAPIAnalyser implements AnalyserContext {
         }
     }
 
-    private void determineImmutableDeterminedByTypeParameters(TypeInspection typeInspection,
-                                                              TypeAnalysisImpl.Builder typeAnalysisBuilder) {
+    private void computeImmutableDeterminedByTypeParameters(TypeInspection typeInspection,
+                                                            TypeAnalysisImpl.Builder typeAnalysisBuilder) {
         if (typeAnalysisBuilder.immutableDeterminedByTypeParameters().isDelayed()) {
             boolean res = typeInspection.typeParameters().stream()
                     .anyMatch(tp -> Boolean.TRUE != tp.isAnnotatedWithIndependent());
-            typeAnalysisBuilder.setImmutableCanBeIncreasedByTypeParameters(res);
+            typeAnalysisBuilder.setImmutableDeterminedByTypeParameters(res);
         }
     }
 
