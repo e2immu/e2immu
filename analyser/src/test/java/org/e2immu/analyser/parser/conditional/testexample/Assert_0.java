@@ -14,6 +14,8 @@
 
 package org.e2immu.analyser.parser.conditional.testexample;
 
+import org.e2immu.annotation.*;
+
 import java.util.Set;
 
 /*
@@ -21,6 +23,7 @@ Grabs a problem in statement 2 of combine(), assert isDelayed();
  */
 public class Assert_0 {
 
+    @ImmutableContainer(hc = true)
     interface AnalysisStatus {
         boolean isDelayed();
 
@@ -31,14 +34,18 @@ public class Assert_0 {
         boolean isProgress();
     }
 
+    @ImmutableContainer(hc = true)
     interface CausesOfDelay extends AnalysisStatus {
         int LIMIT = 10;
 
+        // non-modifying!
         CausesOfDelay addProgress(boolean progress);
     }
 
+    @ImmutableContainer(hc = true)
     interface CauseOfDelay{}
 
+    @ImmutableContainer
     record NotDelayed() implements AnalysisStatus {
         @Override
         public boolean isDelayed() {
@@ -61,7 +68,10 @@ public class Assert_0 {
         }
     }
 
+    @FinalFields // because 'causes' is dependent!
     static class SimpleSet implements CausesOfDelay {
+        // should be @ImmutableContainer
+        @Independent
         private static final SimpleSet EMPTY = new SimpleSet(Set.of());
         private final Set<CauseOfDelay> causes;
 
@@ -82,6 +92,8 @@ public class Assert_0 {
             return merge.addProgress(other.isProgress());
         }
 
+        @Fluent
+        @NotModified
         public CausesOfDelay merge(CausesOfDelay other) {
             return this;
         }

@@ -12,10 +12,13 @@
  * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.e2immu.analyser.resolver.testexample;
+package org.e2immu.analyser.parser.minor.testexample;
+
+import org.e2immu.annotation.ImmutableContainer;
 
 public class Generics_0 {
 
+    @ImmutableContainer(hc = true)
     static class NaturalNumber<T extends Integer> {
 
         private final T n;

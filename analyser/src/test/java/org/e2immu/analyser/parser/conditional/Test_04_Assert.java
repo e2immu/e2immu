@@ -121,21 +121,40 @@ public class Test_04_Assert extends CommonTestRunner {
                 }
             }
         };
+
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("addProgress".equals(d.methodInfo().name) && "CausesOfDelay".equals(d.methodInfo().typeInfo.simpleName)) {
                 assertDv(d, DV.FALSE_DV, Property.MODIFIED_METHOD);
             }
-        };
-        TypeAnalyserVisitor typeAnalyserVisitor = d -> {
-            if ("CausesOfDelay".equals(d.typeInfo().simpleName)) {
-                assertDv(d, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
+            if ("merge".equals(d.methodInfo().name)) {
+                assertEquals("SimpleSet", d.methodInfo().typeInfo.simpleName);
+                assertDv(d, DV.TRUE_DV, Property.FLUENT);
+                assertDv(d, DV.FALSE_DV, Property.MODIFIED_METHOD);
+                // returns self, so independent
+                assertDv(d, BIG, MultiLevel.INDEPENDENT_DV, Property.INDEPENDENT);
             }
         };
+
+        TypeAnalyserVisitor typeAnalyserVisitor = d -> {
+            if ("CausesOfDelay".equals(d.typeInfo().simpleName)) {
+                assertDv(d, MultiLevel.EFFECTIVELY_E2IMMUTABLE_DV, Property.IMMUTABLE);
+            }
+        };
+
+        FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
+            if ("EMPTY".equals(d.fieldInfo().name)) {
+                assertDv(d, BIG, MultiLevel.EFFECTIVELY_E1IMMUTABLE_DV, Property.IMMUTABLE);
+                // as a final field, it is not linked to the parameters of the constructor
+                assertDv(d, MultiLevel.INDEPENDENT_DV, Property.INDEPENDENT);
+            }
+        };
+
         testClass("Assert_0", 0, 3, new DebugConfiguration.Builder()
                 .addEvaluationResultVisitor(evaluationResultVisitor)
                 .addStatementAnalyserVisitor(statementAnalyserVisitor)
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                 .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
                 .build(), new AnalyserConfiguration.Builder().setForceAlphabeticAnalysisInPrimaryType(true).build());
     }

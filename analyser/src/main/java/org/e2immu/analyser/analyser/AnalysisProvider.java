@@ -24,6 +24,8 @@ import org.e2immu.annotation.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static org.e2immu.analyser.model.MultiLevel.Level.IMMUTABLE_2;
+
 public interface AnalysisProvider {
     Logger LOGGER = LoggerFactory.getLogger(AnalysisProvider.class);
 
@@ -170,11 +172,13 @@ public interface AnalysisProvider {
         if (parameterizedType.arrays > 0) {
             return MultiLevel.EFFECTIVELY_E1IMMUTABLE_DV;
         }
-        TypeInfo bestType = parameterizedType.bestTypeInfo();
-        if (bestType == null) {
-            // unbound type parameter, null constant
+        if (parameterizedType == ParameterizedType.NULL_CONSTANT) {
+            return dynamicValue;
+        }
+        if (parameterizedType.isUnboundTypeParameter()) {
             return dynamicValue.max(MultiLevel.EFFECTIVELY_E2IMMUTABLE_DV);
         }
+        TypeInfo bestType = parameterizedType.bestTypeInfo();
         TypeAnalysis typeAnalysis = getTypeAnalysisNullWhenAbsent(bestType);
         if (typeAnalysis == null) {
             return typeAnalysisNotAvailable(bestType);
@@ -198,6 +202,9 @@ public interface AnalysisProvider {
                 if (paramValue.isDelayed()) return paramValue;
                 return paramValue;
             }
+        }
+        if (MultiLevel.isAtLeastEventuallyRecursivelyImmutable(dynamicBaseValue) && parameterizedType.isTypeParameter()) {
+            return MultiLevel.composeImmutable(MultiLevel.effective(dynamicBaseValue), IMMUTABLE_2.level);
         }
         return dynamicBaseValue;
     }
