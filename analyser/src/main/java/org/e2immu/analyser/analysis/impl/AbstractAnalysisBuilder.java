@@ -257,7 +257,7 @@ abstract class AbstractAnalysisBuilder implements Analysis {
                             hc ? MultiLevel.INDEPENDENT_1_DV : MultiLevel.INDEPENDENT_DV;
                     if (analyserIdentification == Analyser.AnalyserIdentification.PARAMETER) {
                         linkLevel = parameters.absent() ? LinkedVariables.LINK_DEPENDENT :
-                                hc ? LinkedVariables.LINK_INDEPENDENT1 : LinkedVariables.LINK_NONE;
+                                hc ? LinkedVariables.LINK_INDEPENDENT_HC : LinkedVariables.LINK_INDEPENDENT;
                         linkParameters = annotationExpression.extract(PARAMETERS, INT_ARRAY);
                     }
                 } else if (e2ImmuAnnotationExpressions.container.typeInfo() == t) {

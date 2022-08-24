@@ -53,24 +53,24 @@ public class LinkedVariables implements Comparable<LinkedVariables> {
 
     public static DV fromIndependentToLinkedVariableLevel(DV independent) {
         if (independent.isDelayed()) return independent;
-        if (MultiLevel.INDEPENDENT_DV.equals(independent)) return LinkedVariables.LINK_NONE;
+        if (MultiLevel.INDEPENDENT_DV.equals(independent)) return LinkedVariables.LINK_INDEPENDENT;
         if (MultiLevel.DEPENDENT_DV.equals(independent)) return LinkedVariables.LINK_DEPENDENT;
-        return LINK_INDEPENDENT1;
+        return LINK_INDEPENDENT_HC;
     }
 
     public static DV fromImmutableToLinkedVariableLevel(DV immutable) {
         if (immutable.isDelayed()) return immutable;
         // REC IMM -> NO_LINKING
-        if (MultiLevel.isAtLeastEventuallyRecursivelyImmutable(immutable)) return LinkedVariables.LINK_NONE;
+        if (MultiLevel.isAtLeastEventuallyRecursivelyImmutable(immutable)) return LinkedVariables.LINK_INDEPENDENT;
         int level = MultiLevel.level(immutable);
         if (level == 0) return LINK_DEPENDENT;
-        return LINK_INDEPENDENT1;
+        return LINK_INDEPENDENT_HC;
     }
 
     public static DV fromLinkedVariableToIndependent(DV linked) {
         int value = linked.value();
         if (value <= 2) return LINK_DEPENDENT;
-        return LINK_INDEPENDENT1;
+        return LINK_INDEPENDENT_HC;
     }
 
     public boolean isDelayed() {
@@ -81,8 +81,8 @@ public class LinkedVariables implements Comparable<LinkedVariables> {
     public static final DV LINK_STATICALLY_ASSIGNED = new NoDelay(0, "statically_assigned");
     public static final DV LINK_ASSIGNED = new NoDelay(1, "assigned");
     public static final DV LINK_DEPENDENT = new NoDelay(2, "dependent");
-    public static final DV LINK_INDEPENDENT1 = new NoDelay(3, "independent1");
-    public static final DV LINK_NONE = new NoDelay(MultiLevel.MAX_LEVEL, "no");
+    public static final DV LINK_INDEPENDENT_HC = new NoDelay(3, "independent1");
+    public static final DV LINK_INDEPENDENT = new NoDelay(MultiLevel.MAX_LEVEL, "independent");
 
     public static LinkedVariables of(Variable variable, DV value) {
         return new LinkedVariables(Map.of(variable, value));
@@ -97,7 +97,7 @@ public class LinkedVariables implements Comparable<LinkedVariables> {
     }
 
     public static boolean isNotIndependent(DV assignedOrLinked) {
-        return assignedOrLinked.ge(LINK_STATICALLY_ASSIGNED) && assignedOrLinked.lt(LINK_NONE);
+        return assignedOrLinked.ge(LINK_STATICALLY_ASSIGNED) && assignedOrLinked.lt(LINK_INDEPENDENT);
     }
 
     public static boolean isAssigned(DV level) {
@@ -334,10 +334,10 @@ public class LinkedVariables implements Comparable<LinkedVariables> {
                             if (immutableHidden.isDelayed()) {
                                 result.put(target, immutableHidden);
                             } else if (!MultiLevel.isAtLeastEventuallyRecursivelyImmutable(immutableHidden)) {
-                                result.put(target, LINK_INDEPENDENT1);
+                                result.put(target, LINK_INDEPENDENT_HC);
                             }
                         } else {
-                            result.put(target, LINK_INDEPENDENT1);
+                            result.put(target, LINK_INDEPENDENT_HC);
                         }
                     }
                 }

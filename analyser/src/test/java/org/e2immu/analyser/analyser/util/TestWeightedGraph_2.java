@@ -38,7 +38,7 @@ public class TestWeightedGraph_2 {
     Variable first, next, sa, rv;
     CausesOfDelay delay;
     final DV v0 = LINK_STATICALLY_ASSIGNED;
-    final DV v3 = LINK_INDEPENDENT1;
+    final DV v3 = LINK_INDEPENDENT_HC;
     WeightedGraph wg;
 
     @BeforeEach

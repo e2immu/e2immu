@@ -33,7 +33,6 @@ import org.e2immu.analyser.model.statement.ReturnStatement;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.This;
 import org.e2immu.analyser.model.variable.Variable;
-import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.visitor.MethodAnalyserVisitor;
@@ -153,7 +152,7 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
                 .add(DETECT_MISSING_STATIC_MODIFIER, (iteration) -> methodInfo.isConstructor ? DONE : detectMissingStaticModifier())
                 .add(EVENTUAL_PREP_WORK, this::eventualPrepWork)
                 .add(ANNOTATE_EVENTUAL, this::annotateEventual)
-                .add(COMPUTE_INDEPENDENT, this::computeIndependent);
+                .add(COMPUTE_INDEPENDENT, this::analyseIndependent);
 
         analyserComponents = builder.setLimitCausesOfDelay(true).build();
     }
@@ -202,7 +201,7 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
         assert !isUnreachable();
         int iteration = sharedState.iteration();
 
-        LOGGER.info("Analysing method {} it {}", methodInfo.fullyQualifiedName(), iteration);
+        LOGGER.info("Analysing method {} it {}", methodInfo, iteration);
         EvaluationContext evaluationContext = new EvaluationContextImpl(iteration, sharedState.allowBreakDelay(),
                 ConditionManager.initialConditionManager(analyserContext.getPrimitives()), sharedState.closure());
         SharedState state = new SharedState(sharedState.allowBreakDelay(), evaluationContext);
@@ -225,7 +224,7 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
             }
             return analyserResultBuilder.build();
         } catch (RuntimeException rte) {
-            LOGGER.warn("Caught exception in method analyser: {}", methodInfo.distinguishingName());
+            LOGGER.warn("Caught exception in method analyser: {}", methodInfo);
             throw rte;
         }
     }
@@ -307,7 +306,7 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
             return DONE;
         }
 
-        LOGGER.debug("Marking {} with only data {}", methodInfo.distinguishingName(), eventual);
+        LOGGER.debug("Marking {} with only data {}", methodInfo, eventual);
         AnnotationExpression annotation = detectEventual.makeAnnotation(eventual);
         methodAnalysis.addAnnotation(annotation);
         return DONE;
@@ -386,8 +385,7 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
                     })
                     .reduce(DV.FALSE_DV, DV::max);
             if (haveContentChangeableField.isDelayed()) {
-                LOGGER.debug("Delaying eventual in {} until we know about transparent types of fields",
-                        methodInfo.fullyQualifiedName);
+                LOGGER.debug("Delaying eventual in {} until we know about transparent types of fields", methodInfo);
                 methodAnalysis.setPreconditionForEventual(Precondition.forDelayed(methodInfo.identifier,
                         EmptyExpression.EMPTY_EXPRESSION, haveContentChangeableField.causesOfDelay(), primitives));
                 return haveContentChangeableField.causesOfDelay();
@@ -400,7 +398,7 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
 
             ParameterizedType parentClass = typeInfo.typeInspection.get().parentClass();
             if (parentClass.isJavaLangObject()) {
-                LOGGER.debug("No eventual annotation in {}: found no non-final fields", methodInfo.distinguishingName());
+                LOGGER.debug("No eventual annotation in {}: found no non-final fields", methodInfo);
                 methodAnalysis.setPreconditionForEventual(Precondition.empty(methodAnalysis.primitives));
                 return DONE;
             }
@@ -430,7 +428,7 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
             if (mc != null) {
                 MethodAnalysis analysis = analyserContext.getMethodAnalysis(mc.methodCall().methodInfo);
                 if (analysis.getEventual() != MethodAnalysis.NOT_EVENTUAL) {
-                    LOGGER.debug("Precondition for eventual copied from precondition: companion cause: {}", methodInfo.fullyQualifiedName);
+                    LOGGER.debug("Precondition for eventual copied from precondition: companion cause: {}", methodInfo);
                     methodAnalysis.setPreconditionForEventual(precondition);
                     return DONE;
                 }
@@ -446,13 +444,13 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
                 filter.individualFieldClause(analyserContext));
         if (filterResult.accepted().isEmpty()) {
             LOGGER.debug("No @Mark/@Only annotation in {}: found no individual field preconditions",
-                    methodInfo.distinguishingName());
+                    methodInfo);
             methodAnalysis.setPreconditionForEventual(Precondition.empty(methodAnalysis.primitives));
             return DONE;
         }
         Expression[] preconditionExpressions = filterResult.accepted().values().toArray(Expression[]::new);
         LOGGER.debug("Did prep work for @Only, @Mark, found precondition {} on variables {} in {}", precondition,
-                filterResult.accepted().keySet(), methodInfo.distinguishingName());
+                filterResult.accepted().keySet(), methodInfo);
 
         Expression and = And.and(context, preconditionExpressions);
         methodAnalysis.setPreconditionForEventual(new Precondition(and, precondition.causes()));
@@ -470,7 +468,7 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
                     ConditionManager cm = beforeAssignment.stateData().getConditionManagerForNextStatement();
                     if (cm.state().isDelayed()) {
                         LOGGER.debug("Delaying compute @Only, @Mark, delay in state {} {}", beforeAssignment.index(),
-                                methodInfo.fullyQualifiedName);
+                                methodInfo);
                         methodAnalysis.setPreconditionForEventual(Precondition.forDelayed(methodInfo.identifier,
                                 cm.state(), cm.state().causesOfDelay(), primitives));
                         return cm.state().causesOfDelay();
@@ -490,7 +488,7 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
             }
         }
         LOGGER.debug("No @Mark @Only annotation in {} from precondition, found {} from assignment",
-                methodInfo.distinguishingName(), combinedPrecondition);
+                methodInfo, combinedPrecondition);
         methodAnalysis.setPreconditionForEventual(combinedPrecondition);
         return DONE;
     }
@@ -557,7 +555,7 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
                 return DONE;
             }
             LOGGER.debug("It {} method {} has return value {}, delaying", sharedState.evaluationContext.getIteration(),
-                    methodInfo.distinguishingName(), value.minimalOutput());
+                    methodInfo, value.minimalOutput());
             if (value.isDelayed()) {
                 return delayedSrv(concreteReturnType, value, variableInfo.getValue().causesOfDelay(), true);
             }
@@ -570,7 +568,7 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
         if (!value.isConstant()) {
             DV modified = methodAnalysis.getProperty(MODIFIED_METHOD_ALT_TEMP);
             if (modified.isDelayed()) {
-                LOGGER.debug("Delaying return value of {}, waiting for MODIFIED (we may try to inline!)", methodInfo.distinguishingName);
+                LOGGER.debug("Delaying return value of {}, waiting for MODIFIED (we may try to inline!)", methodInfo);
                 return delayedSrv(concreteReturnType, value, modified.causesOfDelay(), false);
             }
             if (modified.valueIsFalse()) {
@@ -597,7 +595,7 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
                 methodInfo.inConstruction()) && valueBeforeInlining.isInstanceOf(VariableExpression.class)) {
             externalNotNull = variableInfo.getProperty(EXTERNAL_NOT_NULL);
             if (externalNotNull.isDelayed()) {
-                LOGGER.debug("Delaying return value of {}, waiting for NOT_NULL", methodInfo.fullyQualifiedName);
+                LOGGER.debug("Delaying return value of {}, waiting for NOT_NULL", methodInfo);
                 return delayedSrv(concreteReturnType, value, externalNotNull.causesOfDelay(), false);
             }
         } else {
@@ -617,7 +615,7 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
             DV constantField = fieldAnalysis.getProperty(Property.CONSTANT);
             if (constantField.isDelayed()) {
                 LOGGER.debug("Delaying return value of {}, waiting for effectively final value's @Constant designation",
-                        methodInfo.distinguishingName);
+                        methodInfo);
                 return delayedSrv(concreteReturnType, value, constantField.causesOfDelay(), false);
             }
             valueIsConstantField = constantField.valueIsTrue();
@@ -628,7 +626,7 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
         methodAnalysis.setSingleReturnValue(value);
         methodAnalysis.setProperty(Property.CONSTANT, DV.fromBoolDv(isConstant));
 
-        LOGGER.debug("Mark method {} as @Constant? {}", methodInfo.fullyQualifiedName(), isConstant);
+        LOGGER.debug("Mark method {} as @Constant? {}", methodInfo, isConstant);
 
 
         setFluent(valueBeforeInlining);
@@ -654,7 +652,7 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
                 vv.variable() instanceof This thisVar &&
                 thisVar.typeInfo == methodInfo.typeInfo;
         methodAnalysis.setProperty(Property.FLUENT, DV.fromBoolDv(isFluent));
-        LOGGER.debug("Mark method {} as @Fluent? {}", methodInfo.fullyQualifiedName(), isFluent);
+        LOGGER.debug("Mark method {} as @Fluent? {}", methodInfo, isFluent);
     }
 
     private AnalysisStatus computeImmutable(SharedState sharedState) {
@@ -662,7 +660,7 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
         DV immutable = computeImmutableValue(sharedState.allowBreakDelay());
         methodAnalysis.setProperty(IMMUTABLE, immutable);
         if (immutable.isDelayed()) return immutable.causesOfDelay();
-        LOGGER.debug("Set @Immutable to {} on {}", immutable, methodInfo.fullyQualifiedName);
+        LOGGER.debug("Set @Immutable to {} on {}", immutable, methodInfo);
         return DONE;
     }
 
@@ -671,7 +669,7 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
         DV container = computeContainerValue(sharedState.allowBreakDelay());
         if (container.isDelayed()) return container.causesOfDelay();
         methodAnalysis.setProperty(CONTAINER, container);
-        LOGGER.debug("Set @Container to {} on {}", container, methodInfo.fullyQualifiedName);
+        LOGGER.debug("Set @Container to {} on {}", container, methodInfo);
         return DONE;
     }
 
@@ -815,11 +813,10 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
         }
         // wait
         if (modified.valueIsFalse()) {
-            LOGGER.debug("Delaying @Modified of method {}, cycle: {} out of {}", methodInfo.fullyQualifiedName, cycleInfo,
-                    cycle);
+            LOGGER.debug("Delaying @Modified of method {}, cycle: {} out of {}", methodInfo, cycleInfo, cycle);
             return methodInfo.delay(CauseOfDelay.Cause.MODIFIED_CYCLE);
         }
-        LOGGER.debug("Delaying @Modified of method {}, modified", methodInfo.fullyQualifiedName);
+        LOGGER.debug("Delaying @Modified of method {}, modified", methodInfo);
         return modified.causesOfDelay();
     }
 
@@ -841,7 +838,7 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
                 .reduce(CausesOfDelay.EMPTY, DV::max);
         if (scopeDelays.isDelayed()) {
             methodAnalysis.setProperty(property, scopeDelays);
-            LOGGER.debug("Delaying @Modified of method {}, scope is delayed", methodInfo.fullyQualifiedName);
+            LOGGER.debug("Delaying @Modified of method {}, scope is delayed", methodInfo);
             return scopeDelays.causesOfDelay();
         }
 
@@ -853,7 +850,7 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
         // first step, check (my) field assignments
         boolean fieldAssignments = relevantVariableInfos.stream().anyMatch(VariableInfo::isAssigned);
         if (fieldAssignments) {
-            LOGGER.debug("Method {} is @Modified: fields are being assigned", methodInfo.distinguishingName());
+            LOGGER.debug("Method {} is @Modified: fields are being assigned", methodInfo);
             methodAnalysis.setProperty(property, DV.TRUE_DV);
             return DONE;
         }
@@ -864,7 +861,7 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
         DV contextModified = relevantVariableInfos.stream().map(vi -> vi.getProperty(CONTEXT_MODIFIED))
                 .reduce(DV.FALSE_DV, DV::max);
         if (contextModified.isDelayed()) {
-            LOGGER.debug("Method {}: Not deciding on @Modified yet: no context modified", methodInfo.distinguishingName());
+            LOGGER.debug("Method {}: Not deciding on @Modified yet: no context modified", methodInfo);
             methodAnalysis.setProperty(property, contextModified);
             return contextModified.causesOfDelay();
         }
@@ -874,7 +871,7 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
             if (thisVariable != null) {
                 DV thisModified = thisVariable.getProperty(Property.CONTEXT_MODIFIED);
                 if (thisModified.isDelayed()) {
-                    LOGGER.debug("In {}: CONTEXT_MODIFIED of this is delayed", methodInfo.distinguishingName());
+                    LOGGER.debug("In {}: CONTEXT_MODIFIED of this is delayed", methodInfo);
                     methodAnalysis.setProperty(property, thisModified);
                     return thisModified.causesOfDelay();
                 }
@@ -888,15 +885,14 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
                     .reduce(DV.MIN_INT_DV, DV::max);
             if (maxModified != DV.MIN_INT_DV) {
                 if (maxModified.isDelayed()) {
-                    LOGGER.debug("Delaying modification on method {}, waiting to copy", methodInfo.distinguishingName());
+                    LOGGER.debug("Delaying modification on method {}, waiting to copy", methodInfo);
                     methodAnalysis.setProperty(property, maxModified);
                     return maxModified.causesOfDelay();
                 }
                 contextModified = maxModified;
             }
         }
-        LOGGER.debug("Mark method {} as {}", methodInfo.distinguishingName(),
-                contextModified.valueIsTrue() ? "@Modified" : "@NotModified");
+        LOGGER.debug("Mark method {} as {}", methodInfo, contextModified.valueIsTrue() ? "@Modified" : "@NotModified");
         // (we could call non-@NM methods on parameters or local variables, but that does not influence this annotation)
         methodAnalysis.setProperty(property, contextModified);
         return DONE;
@@ -934,16 +930,22 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
         return typeInfo.primaryType() == fieldInfo.owner.primaryType();
     }
 
-    private AnalysisStatus computeIndependent(SharedState sharedState) {
+    /*
+     Independence of a method is always with respect to the return value, NOT the parameters.
+     As a consequence, void methods, constructors, and methods that always throw an exception,
+     are always INDEPENDENT without hidden content.
+     */
+    private AnalysisStatus analyseIndependent(SharedState sharedState) {
         if (methodAnalysis.getProperty(INDEPENDENT).isDone()) {
             return DONE;
         }
 
+        // e.g. constructors
         if (methodInfo.noReturnValue()) {
             methodAnalysis.setProperty(INDEPENDENT, MultiLevel.INDEPENDENT_DV);
             return DONE;
         }
-        // here, we compute the independence of the return value
+
         StatementAnalysis lastStatement = methodAnalysis.getLastStatement();
         if (lastStatement == null) {
             // the method always throws an exception
@@ -954,13 +956,17 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
         DV immutable = methodAnalysis.getPropertyFromMapDelayWhenAbsent(IMMUTABLE);
         DV independent;
         if (MultiLevel.isAtLeastEventuallyRecursivelyImmutable(immutable)) {
+            // computational shortcut: a recursively immutable type cannot be dependent, or have changes to hidden content
             independent = MultiLevel.INDEPENDENT_DV;
         } else {
+            // normal computation
             VariableInfo variableInfo = getReturnAsVariable();
             ParameterizedType returnType = methodInfo.returnType();
             LinkedVariables linkedVariables = variableInfo.getLinkedVariables();
-            if (linkedVariables.isDelayed()) return linkedVariables.causesOfDelay();
-            ComputeIndependent computeIndependent = new ComputeIndependent(analyserContext, methodInfo.typeInfo);
+            if (linkedVariables.isDelayed()) {
+                return linkedVariables.causesOfDelay();
+            }
+            ComputeIndependent computeIndependent = new ComputeIndependent(analyserContext);
             independent = linkedVariables.stream()
                     .filter(e -> e.getKey() instanceof FieldReference fr && fr.scopeIsRecursivelyThis()
                             || e.getKey() instanceof This)
@@ -991,15 +997,13 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
             assert statement != null;
             AnalyserComponents<String, StatementAnalyserSharedState> analyserComponentsOfStatement = statement.getAnalyserComponents();
             LOGGER.warn("Analyser components of first statement with delays {} of {}:\n{}", statement.index(),
-                    methodInfo.fullyQualifiedName(),
-                    analyserComponentsOfStatement.details());
+                    methodInfo, analyserComponentsOfStatement.details());
             AnalysisStatus statusOfMethodLevelData = analyserComponentsOfStatement.getStatus(StatementAnalyserImpl.ANALYSE_METHOD_LEVEL_DATA);
             if (statusOfMethodLevelData.isDelayed()) {
                 AnalyserComponents<String, MethodLevelData.SharedState> analyserComponentsOfMethodLevelData =
                         statement.getStatementAnalysis().methodLevelData().analyserComponents;
                 LOGGER.warn("Analyser components of method level data of last statement {} of {}:\n{}", statement.index(),
-                        methodInfo.fullyQualifiedName(),
-                        analyserComponentsOfMethodLevelData.details());
+                        methodInfo, analyserComponentsOfMethodLevelData.details());
             }
         }
     }

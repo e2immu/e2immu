@@ -134,11 +134,6 @@ public class EnclosedExpression extends BaseExpression implements Expression {
     }
 
     @Override
-    public LinkedVariables linked1VariablesScope(EvaluationResult context) {
-        return inner.linked1VariablesScope(context);
-    }
-
-    @Override
     public LinkedVariables linkedVariables(EvaluationResult context) {
         return inner.linkedVariables(context);
     }

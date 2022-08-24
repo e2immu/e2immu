@@ -27,13 +27,13 @@ public class ReturnVariable implements Variable {
     public final ParameterizedType returnType;
     public final String simpleName;
     public final String fqn;
-    private final TypeInfo owningType;
+    private final MethodInfo methodInfo;
 
     public ReturnVariable(MethodInfo methodInfo) {
         this.returnType = methodInfo.returnType();
         simpleName = methodInfo.name;
         fqn = methodInfo.fullyQualifiedName();
-        owningType = methodInfo.typeInfo;
+        this.methodInfo = methodInfo;
     }
 
     @Override
@@ -47,7 +47,7 @@ public class ReturnVariable implements Variable {
 
     @Override
     public TypeInfo getOwningType() {
-        return owningType;
+        return methodInfo.typeInfo;
     }
 
     @Override
@@ -83,5 +83,9 @@ public class ReturnVariable implements Variable {
     @Override
     public boolean isStatic() {
         return false;
+    }
+
+    public MethodInfo getMethodInfo() {
+        return methodInfo;
     }
 }

@@ -22,31 +22,33 @@ import org.e2immu.analyser.model.TypeInfo;
 
 import static org.e2immu.analyser.analyser.LinkedVariables.*;
 
-public class ComputeIndependent {
-
-    private final AnalyserContext analyserContext;
-    private final TypeInfo currentType;
-
-    public ComputeIndependent(AnalyserContext analyserContext, TypeInfo currentType) {
-        this.analyserContext = analyserContext;
-        this.currentType = currentType;
-    }
+public record ComputeIndependent(AnalyserContext analyserContext) {
 
     /**
-     * @param linkLevel any of STATICALLY_ASSIGNED, ASSIGNED, DEPENDENT, INDEPENDENT1, NO
-     * @param a         one of the two types
-     * @param b         one of the two types, can be equal to a
+     * Variables of two types are linked to each other, at a given <code>linkLevel</code>.
+     * Assuming that one of them is a field, and the other a parameter, or a return value,
+     * return the value of the INDEPENDENT property given this linking.
+     * <p>
+     * The types can be identical, assignable to each other, or completely different.
+     * In the latter case, they may share a common subtype.
+     *
+     * @param linkLevel  any of STATICALLY_ASSIGNED, ASSIGNED, DEPENDENT, INDEPENDENT1, NO
+     * @param a          one of the two types
+     * @param immutableA not null if you already know the immutable value of <code>a</code>
+     * @param b          one of the two types, can be equal to <code>a</code>
      * @return the value for the INDEPENDENT property
      */
     public DV compute(DV linkLevel, ParameterizedType a, DV immutableA, ParameterizedType b) {
-        if (LinkedVariables.LINK_NONE.equals(linkLevel)) return MultiLevel.INDEPENDENT_DV;
+        if (LinkedVariables.LINK_INDEPENDENT.equals(linkLevel)) return MultiLevel.INDEPENDENT_DV;
 
+        // when not null, the types are identical or assignable to each other
         ParameterizedType oneType;
+        // when not null, the types are identical or assignable to each other
         DV immutableOneType;
         boolean aUnboundTypeParameter = a.isUnboundTypeParameter();
         boolean bUnboundTypeParameter = b.isUnboundTypeParameter();
 
-        if (a == b || a.equals(b)) {
+        if (a.equals(b)) {
             oneType = a;
             immutableOneType = immutableA;
         } else if (!aUnboundTypeParameter && a.isAssignableFrom(analyserContext, b)) {
@@ -61,37 +63,31 @@ public class ComputeIndependent {
         }
 
         if (LINK_STATICALLY_ASSIGNED.equals(linkLevel) || LINK_ASSIGNED.equals(linkLevel)) {
-            // types a and b are either equal or assignable
+            // types a and b are either equal or assignable, otherwise one cannot assign
             assert oneType != null : "Assignment?";
 
-            // the 'defaultImmutable' call contains the transparent check
             DV immutable = immutableOneType != null ? immutableOneType : analyserContext.defaultImmutable(oneType);
-            if (immutable.isDelayed()) return immutable;
-            int immutableLevel = MultiLevel.level(immutable);
-            return MultiLevel.independentCorrespondingToImmutableLevelDv(immutableLevel);
+            return MultiLevel.independentCorrespondingToImmutable(immutable);
         }
 
         if (oneType != null) {
             if (LINK_DEPENDENT.equals(linkLevel)) {
                 return MultiLevel.DEPENDENT_DV;
             }
-            if (LINK_INDEPENDENT1.equals(linkLevel)) {
+            if (LINK_INDEPENDENT_HC.equals(linkLevel)) {
                 // e.g. set1.addAll(set2) -- content of set2 added to set1, same type
-                // result is INDEPENDENT1 unless the common type is recursively immutable
+                // result is INDEPENDENT_HC unless the common type is recursively immutable
                 TypeInfo bestTypeInfo = oneType.bestTypeInfo();
                 assert bestTypeInfo != null;
                 TypeAnalysis typeAnalysis = analyserContext.getTypeAnalysis(bestTypeInfo);
                 SetOfTypes hiddenContent = typeAnalysis.getHiddenContentTypes();
                 assert !hiddenContent.isEmpty();
 
-                DV canIncrease = typeAnalysis.immutableDeterminedByTypeParameters();
-                if (canIncrease.isDelayed()) return canIncrease;
-                if (canIncrease.valueIsTrue()) {
+                DV determinedByTypeParameters = typeAnalysis.immutableDeterminedByTypeParameters();
+                if (determinedByTypeParameters.isDelayed()) return determinedByTypeParameters;
+                if (determinedByTypeParameters.valueIsTrue()) {
                     DV immutable = analyserContext.immutableOfHiddenContentInTypeParameters(oneType);
-                    if (immutable.isDelayed()) return immutable;
-                    if (MultiLevel.isAtLeastEventuallyRecursivelyImmutable(immutable)) {
-                        return MultiLevel.INDEPENDENT_DV;
-                    }
+                    return MultiLevel.independentCorrespondingToImmutable(immutable);
                 }
                 return MultiLevel.INDEPENDENT_1_DV;
             }

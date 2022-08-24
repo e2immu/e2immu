@@ -1685,7 +1685,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
             }
             Properties valueProperties = context.evaluationContext().getValueProperties(arrayValue);
             DV lvIndependent = LinkedVariables.fromIndependentToLinkedVariableLevel(independent);
-            if (lvIndependent.equals(LinkedVariables.LINK_NONE)) {
+            if (lvIndependent.equals(LinkedVariables.LINK_INDEPENDENT)) {
                 linkedVariables = vic.initialLinkedVariables();
                 initialValue = arrayValue;
             } else {
@@ -2173,7 +2173,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
         (when the loopVar is recursively IMMUTABLE)
          */
         DV minLinking = minimumLinking(evaluationContext, loopVar.parameterizedType());
-        LinkedVariables linked1 = minLinking == LinkedVariables.LINK_NONE ? LinkedVariables.EMPTY :
+        LinkedVariables linked1 = minLinking == LinkedVariables.LINK_INDEPENDENT ? LinkedVariables.EMPTY :
                 linked.minimum(minLinking);
         EvaluationResult.Builder builder = new EvaluationResult.Builder(evaluationResult);
         builder.assignment(loopVar, value, linked1);

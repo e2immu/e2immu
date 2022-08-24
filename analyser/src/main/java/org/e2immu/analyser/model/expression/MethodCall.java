@@ -339,18 +339,14 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
                 objectValue, parameterValues);
         builder.addPrecondition(precondition);
 
-        LinkedVariables linkedVariables = objectValue.linkedVariables(context);
-        if (object instanceof IsVariableExpression ive) {
-            linkedVariables = linkedVariables.merge(LinkedVariables.of(ive.variable(),
-                    LinkedVariables.LINK_STATICALLY_ASSIGNED));
-        }
+        LinkedVariables linkedVariablesOfObject = linkedVariablesOfObject(context, objectValue);
         List<LinkedVariables> linkedVariablesOfParameters = ConstructorCall.computeLinkedVariablesOfParameters(context,
                 parameterExpressions, parameterValues);
-        LinkedVariables linked1Scope = firstInCallCycle ? LinkedVariables.EMPTY :
-                ConstructorCall.linkedVariablesFromParameters(context,
+        LinkedVariables linkedToObject = firstInCallCycle ? LinkedVariables.EMPTY :
+                ConstructorCall.combineArgumentIndependenceWithFormalParameterIndependence(context,
                         context.getAnalyserContext().getMethodInspection(methodInfo), parameterValues,
                         linkedVariablesOfParameters);
-        linkedVariables.variables().forEach((v, level) -> linked1Scope.variables().forEach((v2, level2) -> {
+        linkedVariablesOfObject.variables().forEach((v, level) -> linkedToObject.variables().forEach((v2, level2) -> {
             DV combined = object.isDelayed() ? object.causesOfDelay() : level.max(level2);
             builder.link(v, v2, combined);
         }));
@@ -382,8 +378,8 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
             if (modReturn.expression != null) {
                 // delay in expression
                 // for now the only test that uses this wrapped linked variables is Finalizer_0; but it is really pertinent.
-                modifiedInstance = linkedVariables.isEmpty() ? modReturn.expression
-                        : PropertyWrapper.propertyWrapper(modReturn.expression, linkedVariables);
+                modifiedInstance = linkedVariablesOfObject.isEmpty() ? modReturn.expression
+                        : PropertyWrapper.propertyWrapper(modReturn.expression, linkedVariablesOfObject);
             } else {
                 // delay in separate causes
                 modifiedInstance = null;
@@ -408,6 +404,15 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         checkCommonErrors(builder, context, concreteMethod, objectValue);
 
         return builder.build();
+    }
+
+    private LinkedVariables linkedVariablesOfObject(EvaluationResult context, Expression objectValue) {
+        LinkedVariables linkedVariables = objectValue.linkedVariables(context);
+        if (object instanceof IsVariableExpression ive) {
+            return linkedVariables.merge(LinkedVariables.of(ive.variable(),
+                    LinkedVariables.LINK_STATICALLY_ASSIGNED));
+        }
+        return linkedVariables;
     }
 
     private MethodInfo concreteMethod(EvaluationResult context, ForwardEvaluationInfo forwardEvaluationInfo) {
@@ -541,10 +546,10 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
                                           int targetIndex,
                                           boolean targetIsVarArgs,
                                           DV level,
-                                          Expression expression,
+                                          Expression source,
                                           List<Expression> parameterValues,
                                           List<LinkedVariables> linkedVariables) {
-        IsVariableExpression vSource = expression.asInstanceOf(IsVariableExpression.class);
+        IsVariableExpression vSource = source.asInstanceOf(IsVariableExpression.class);
         if (vSource != null) {
             // Independent1_2
             ParameterizedType typeOfHiddenContent = findHiddenContentType(context.getAnalyserContext(),
@@ -552,7 +557,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
             linksBetweenParametersVarArgs(builder, context, targetIndex, targetIsVarArgs, level, vSource,
                     typeOfHiddenContent, parameterValues, linkedVariables);
         }
-        MethodReference methodReference = expression.asInstanceOf(MethodReference.class);
+        MethodReference methodReference = source.asInstanceOf(MethodReference.class);
         if (methodReference != null) {
             // Independent1_3
             IsVariableExpression mrSource = methodReference.scope.asInstanceOf(IsVariableExpression.class);
@@ -563,7 +568,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
                         typeOfHiddenContent, parameterValues, linkedVariables);
             }
         }
-        InlinedMethod inlinedMethod = expression.asInstanceOf(InlinedMethod.class);
+        InlinedMethod inlinedMethod = source.asInstanceOf(InlinedMethod.class);
         if (inlinedMethod != null) {
             // Independent1_4 TODO written to fit exactly this situation, needs expanding
             // we decide between the first argument of the lambda and the return type
@@ -584,7 +589,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         }
         // we must have both lambda and inline: lambda to provide the correct delays in LV, and inline to provide the
         // final value. Code is very similar
-        Lambda lambda = expression.asInstanceOf(Lambda.class);
+        Lambda lambda = source.asInstanceOf(Lambda.class);
         if (lambda != null) {
             ParameterizedType typeOfHiddenContent = lambda.concreteReturnType().erased();
             ParameterizedType typeOfTarget = target.parameterizedType().erased();
@@ -628,11 +633,11 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
                                                List<Expression> parameterValues,
                                                List<LinkedVariables> linkedVariables) {
         DV immutableOfHiddenContent = context.getAnalyserContext().defaultImmutable(typeOfHiddenContent);
-        DV correctedLevel = LinkedVariables.LINK_INDEPENDENT1.equals(level)
+        DV correctedLevel = LinkedVariables.LINK_INDEPENDENT_HC.equals(level)
                 && MultiLevel.isAtLeastEffectivelyE2Immutable(immutableOfHiddenContent)
                 ? LinkedVariables.fromImmutableToLinkedVariableLevel(immutableOfHiddenContent)
                 : level;
-        if (!LinkedVariables.LINK_NONE.equals(correctedLevel)) {
+        if (!LinkedVariables.LINK_INDEPENDENT.equals(correctedLevel)) {
             linksBetweenParameters(builder, vSource, targetIndex, level, parameterValues, linkedVariables);
             if (targetIsVarArgs) {
                 for (int i = targetIndex + 1; i < parameterExpressions.size(); i++) {
@@ -1229,27 +1234,23 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
     }
 
     /*
-    In general, the method result a, in a = b.method(c, d), can link to b, c and/or d.
-    Independence and level 2+ immutability restrict the ability to link.
+    In general, the method result 'a', in 'a = b.method(c, d)', can link to 'b', 'c' and/or 'd'.
+    Independence and immutability restrict the ability to link.
 
     The current implementation is heavily focused on understanding links towards the fields of a type,
     i.e., in sub = list.subList(0, 10), we want to link sub to list.
 
-    links from the parameters to the result (from c to a, from d to a) have currently only
-    been implemented for @Identity methods (i.e., between a and c).
+    Links from the parameters to the result (from 'c' to 'a', from 'd' to 'a') have currently only
+    been implemented for @Identity methods (i.e., between 'a' and 'c').
 
     So we implement
     1/ void methods cannot link
-    2/ if the method is @Identity, the result is linked to the 1st parameter c
+    2/ if the method is @Identity, the result is linked to the 1st parameter 'c'
+    3/ if the method is a factory method, the result is linked to the parameter values
 
-    all other rules now determine whether we return an empty set, or the set {a}.
+    all other rules now determine whether we return an empty set, or the set {'a'}.
 
-    3/ In case that a == this, we're calling methods of our own type.
-       If they are non-modifying, the method result can be substituted, sometimes in terms of fields.
-       In our implementation, linking to 'this' is not needed, we catch modifying methods on this directly
-    4/ if the return type of the method is dependent1 or higher, there is no linking.
-    5/ if the return type of the method is transparent in the type, there is no linking.
-
+    4/ independence is determined by the independence value of the method, and the independence value of the object 'a'
      */
 
     @Override
@@ -1280,31 +1281,24 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         MethodInspection methodInspection = context.getAnalyserContext().getMethodInspection(methodInfo);
         if (methodInspection.isFactoryMethod()) {
             List<LinkedVariables> linkedVariables = ConstructorCall.computeLinkedVariablesOfParameters(context, parameterExpressions, parameterExpressions);
-            // FIXME parameterValues needed
+            // IMPROVE use parameterValues (evaluated expressions), will that make a difference?
             // content link to the parameters, and all variables normally linked to them
-            return ConstructorCall.linkedVariablesFromParameters(context, methodInspection, parameterExpressions,
+            return ConstructorCall.combineArgumentIndependenceWithFormalParameterIndependence(context, methodInspection, parameterExpressions,
                     linkedVariables);
         }
 
-        // RULE 4: otherwise, we link to the scope, even if the scope is 'this'
-        // note the minimum() call: 0 is only used for static, direct assignments
-        LinkedVariables linkedVariablesOfScope = object.linkedVariables(context).minimum(LinkedVariables.LINK_ASSIGNED);
+        // RULE 4: otherwise, we link to the object, even if the object is 'this'
+        // note that we cannot use STATICALLY_ASSIGNED here
+        // IMPROVE should be objectValue rather than object?
+        LinkedVariables linkedVariablesOfObject = object.linkedVariables(context).minimum(LinkedVariables.LINK_ASSIGNED);
 
         DV methodIndependent = methodAnalysis.getPropertyFromMapDelayWhenAbsent(Property.INDEPENDENT);
         if (methodIndependent.isDelayed()) {
-            return linkedVariablesOfScope.changeToDelay(methodIndependent);
+            return linkedVariablesOfObject.changeToDelay(methodIndependent);
         }
         if (methodIndependent.equals(MultiLevel.INDEPENDENT_DV)) return LinkedVariables.EMPTY;
         DV level = LinkedVariables.fromIndependentToLinkedVariableLevel(methodIndependent);
-        return LinkedVariables.EMPTY.merge(linkedVariablesOfScope, level);
-    }
-
-    @Override
-    public LinkedVariables linked1VariablesScope(EvaluationResult context) {
-        List<LinkedVariables> linkedVariables = ConstructorCall.computeLinkedVariablesOfParameters(context, parameterExpressions, parameterExpressions);
-        // FIXME parameterValues needed
-        return ConstructorCall.linkedVariablesFromParameters(context,
-                methodInfo.methodInspection.get(), parameterExpressions, linkedVariables);
+        return LinkedVariables.EMPTY.merge(linkedVariablesOfObject, level);
     }
 
     @Override

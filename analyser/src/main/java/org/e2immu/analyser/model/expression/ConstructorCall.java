@@ -191,9 +191,9 @@ public class ConstructorCall extends BaseExpression implements HasParameterExpre
         // instance, no constructor parameter expressions
         if (constructor == null) return LinkedVariables.EMPTY;
         List<LinkedVariables> linkedVariables = computeLinkedVariablesOfParameters(context, parameterExpressions,
-                // FIXME!!!
+                // IMPROVE use parameterValues (evaluated expressions), will that make a difference?
                 parameterExpressions);
-        return linkedVariablesFromParameters(context, constructor.methodInspection.get(),
+        return combineArgumentIndependenceWithFormalParameterIndependence(context, constructor.methodInspection.get(),
                 parameterExpressions, linkedVariables);
     }
 
@@ -204,11 +204,18 @@ public class ConstructorCall extends BaseExpression implements HasParameterExpre
         int i = 0;
         List<LinkedVariables> result = new ArrayList<>(parameterExpressions.size());
         for (Expression expression : parameterExpressions) {
-            LinkedVariables lvExpression = expression.linkedVariables(context);
-            Expression value = parameterValues.get(i++);
-            LinkedVariables lvValue = value.linkedVariables(context);
-            LinkedVariables merged = lvExpression.merge(lvValue);
+            // assigned is only for @Identity, and that is captured earlier in MethodCall.linkedVariables()
+            LinkedVariables lvExpression = expression.linkedVariables(context).minimum(LinkedVariables.LINK_DEPENDENT);
+            LinkedVariables merged;
+            Expression value = parameterValues.get(i);
+            if (value != expression) {
+                LinkedVariables lvValue = value.linkedVariables(context);
+                merged = lvExpression.merge(lvValue);
+            } else {
+                merged = lvExpression;
+            }
             result.add(merged);
+            i++;
         }
         return result;
     }
@@ -218,10 +225,10 @@ public class ConstructorCall extends BaseExpression implements HasParameterExpre
     parameters of the constructor/method.
 
      */
-    static LinkedVariables linkedVariablesFromParameters(EvaluationResult evaluationContext,
-                                                         MethodInspection methodInspection,
-                                                         List<Expression> parameterExpressions,
-                                                         List<LinkedVariables> linkedVariables) {
+    static LinkedVariables combineArgumentIndependenceWithFormalParameterIndependence(EvaluationResult evaluationContext,
+                                                                                      MethodInspection methodInspection,
+                                                                                      List<Expression> parameterExpressions,
+                                                                                      List<LinkedVariables> linkedVariables) {
         // quick shortcut
         if (parameterExpressions.isEmpty()) {
             return LinkedVariables.EMPTY;
@@ -237,34 +244,32 @@ public class ConstructorCall extends BaseExpression implements HasParameterExpre
                 parameterInfo = methodInspection.getParameters().get(methodInspection.getParameters().size() - 1);
                 assert parameterInfo.parameterInspection.get().isVarArgs();
             }
-            DV independent = computeIndependentFromComponents(evaluationContext, value, parameterInfo);
+            DV link = computeIndependentFromComponents(evaluationContext, value, parameterInfo);
             LinkedVariables sub = linkedVariables.get(i);
-            if (independent.isDelayed()) {
-                result = result.mergeDelay(sub, independent);
-            } else if (independent.ge(MultiLevel.DEPENDENT_DV) && independent.lt(INDEPENDENT_DV)) {
-                result = result.merge(sub, LinkedVariables.fromIndependentToLinkedVariableLevel(independent));
+            if (link.isDelayed()) {
+                result = result.mergeDelay(sub, link);
+            } else if (link.ge(LinkedVariables.LINK_ASSIGNED) && link.lt(LinkedVariables.LINK_INDEPENDENT)) {
+                result = result.merge(sub, link);
             }
-
             i++;
         }
         return result.minimum(LinkedVariables.LINK_ASSIGNED);
     }
 
     /*
-    important: the result has to be independence with respect to the fields!!
+     Combine the formal independence value of the parameter with the dynamic independence of a evaluated expression.
 
-    Example 1: parameterInfo = java.util.List.add(E):0:e, which is @Independent1.
-    This means that the argument will be part of the list's hidden content.
-    If the argument is MUTABLE, result should be Independent1, if it is E2_IMMUTABLE, the result should be Independent_2, etc.
-    See e.g. Modification_16
+     The result is interpreted as independence with respect to the fields of the (newly created) object!!
 
-    Example 2: parameterInfo = java.util.function.Consumer.accept(T):0:t, which is @Dependent
-    See e.g. E2ImmutableComposition_0.ExposedArrayOfHasSize
-    If we feed in an array of recursively immutable elements, like HasSize[], we want @Dependent as an outcome.
-    If we feed in the recursively immutable element HasSize, we remain independent
+     Example 1: parameterInfo = java.util.List.add(E):0:e, which is INDEPENDENT_HC.
+     This means that the argument will become part of the list's hidden content.
+     Unless the argument is recursively immutable, result should be LINK_INDEPENDENT_HC.
+     See e.g. Modification_16
 
-    Code similar to computeIndependent in ComputingMethodAnalyser; see also analyseIndependentNoAssignment
-    in ComputingParameterAnalyser.
+     Example 2: parameterInfo = java.util.function.Consumer.accept(T):0:t, which is DEPENDENT.
+     See e.g. E2ImmutableComposition_0.ExposedArrayOfHasSize
+     If we feed in an array of recursively immutable elements, like HasSize[], we want LINK_DEPENDENT as an outcome.
+     If we feed in the recursively immutable element HasSize, we remain LINK_INDEPENDENT.
      */
     private static DV computeIndependentFromComponents(EvaluationResult context,
                                                        Expression value,
@@ -315,9 +320,9 @@ public class ConstructorCall extends BaseExpression implements HasParameterExpre
         return switch (property) {
             case NOT_NULL_EXPRESSION -> notNullValue();
             case IDENTITY, IGNORE_MODIFICATIONS -> analyserContext.defaultValueProperty(property, pt);
-            case IMMUTABLE, IMMUTABLE_BREAK -> immutableValue(pt, analyserContext, context.getCurrentType());
+            case IMMUTABLE, IMMUTABLE_BREAK -> immutableValue(pt, analyserContext);
             case CONTAINER -> analyserContext.defaultContainer(pt);
-            case INDEPENDENT -> independentValue(pt, analyserContext, context.getCurrentType());
+            case INDEPENDENT -> independentValue(pt, analyserContext);
             case CONTEXT_MODIFIED -> DV.FALSE_DV;
             default -> throw new UnsupportedOperationException("ConstructorCall has no value for " + property);
         };
@@ -329,9 +334,9 @@ public class ConstructorCall extends BaseExpression implements HasParameterExpre
         return MultiLevel.EFFECTIVELY_CONTENT2_NOT_NULL_DV;
     }
 
-    private DV independentValue(ParameterizedType pt, AnalyserContext analyserContext, TypeInfo currentType) {
+    private DV independentValue(ParameterizedType pt, AnalyserContext analyserContext) {
         if (anonymousClass != null) {
-            DV immutable = immutableValue(pt, analyserContext, currentType);
+            DV immutable = immutableValue(pt, analyserContext);
             if (MultiLevel.isAtLeastEventuallyE2Immutable(immutable)) {
                 return MultiLevel.independentCorrespondingToImmutableLevelDv(MultiLevel.level(immutable));
             }
@@ -341,7 +346,7 @@ public class ConstructorCall extends BaseExpression implements HasParameterExpre
         return analyserContext.defaultValueProperty(Property.INDEPENDENT, pt);
     }
 
-    private DV immutableValue(ParameterizedType pt, AnalyserContext analyserContext, TypeInfo currentType) {
+    private DV immutableValue(ParameterizedType pt, AnalyserContext analyserContext) {
         DV dv = analyserContext.defaultImmutable(pt);
         if (dv.isDone() && MultiLevel.effective(dv) == MultiLevel.Effective.EVENTUAL) {
             return MultiLevel.beforeImmutableDv(MultiLevel.level(dv));

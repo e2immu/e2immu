@@ -131,19 +131,6 @@ public interface Expression extends Element, Comparable<Expression> {
         return LinkedVariables.EMPTY;
     }
 
-    /*
-    Primarily used for method call a = b.method(c,d), to potentially content link b to c and or d.
-
-    Method reference can do this too: set::add ~ t -> set.add(t), in context list.forEach(set::add)
-    we need a content link from list to set (via the implicit t)
-    TODO how do we implement the implicit parameter?
-    TODO Lambda's
-     */
-    @NotNull
-    default LinkedVariables linked1VariablesScope(EvaluationResult context) {
-        return LinkedVariables.EMPTY;
-    }
-
     boolean isNotNull();
 
     boolean isNull();

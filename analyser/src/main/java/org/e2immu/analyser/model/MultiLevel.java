@@ -336,6 +336,20 @@ public class MultiLevel {
         return composeImmutable(effective, newLevel);
     }
 
+    public static DV independentCorrespondingToImmutable(DV immutable) {
+        if (immutable.isDelayed()) return immutable;
+        int immutableLevel = level(immutable);
+        if (immutableLevel == 0) return DEPENDENT_DV;
+        assert immutableLevel > 0;
+        int level;
+        if (immutableLevel == MAX_LEVEL) {
+            level = immutableLevel;
+        } else {
+            level = immutableLevel - 1;
+        }
+        return composeIndependent(EFFECTIVE, level);
+    }
+
     public static DV independentCorrespondingToImmutableLevelDv(int immutableLevel) {
         if (immutableLevel == 0) return DEPENDENT_DV;
         assert immutableLevel > 0;

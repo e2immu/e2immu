@@ -817,9 +817,8 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
      * ONE: The minimum independence value of all return values and parameters of non-private methods or constructors
      * is computed.
      * <p>
-     * TWO: any non-private field that is not @Immutable -> @Dependent
-     * any non-private field that is @Immutable with hidden content -> independent with hidden content
-     * otherwise @Independent without.
+     * TWO: any non-private field that is not immutable is dependent; if it is immutable, the hidden content
+     * is transferred.
      * <p>
      * Return the minimum value of ZERO, ONE and TWO.
      *
@@ -828,20 +827,6 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
     private AnalysisStatus analyseIndependent(SharedState sharedState) {
         DV typeIndependent = typeAnalysis.getProperty(Property.INDEPENDENT);
         if (typeIndependent.isDone()) return DONE;
-
-        DV typeImmutable = typeAnalysis.getProperty(Property.IMMUTABLE);
-        if (typeImmutable.ge(MultiLevel.EFFECTIVELY_E2IMMUTABLE_DV)) {
-            int immutableLevel = MultiLevel.level(typeImmutable);
-            DV independent = MultiLevel.independentCorrespondingToImmutableLevelDv(immutableLevel);
-            LOGGER.debug("Type @Independent: have high immutability value, from which independence follows: {}",
-                    independent);
-            typeAnalysis.setProperty(Property.INDEPENDENT, independent);
-            return DONE;
-        }
-        if (typeImmutable.isDelayed()) {
-            LOGGER.debug("Independence of type {} delayed, waiting for type immutability", typeInfo);
-            return delayIndependent(typeImmutable.causesOfDelay());
-        }
 
         MaxValueStatus parentOrEnclosing = parentOrEnclosingMustHaveTheSameProperty(Property.INDEPENDENT);
         if (MARKER != parentOrEnclosing.status) return parentOrEnclosing.status;
@@ -924,24 +909,17 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
                 .min(valueFromFields)
                 .min(valueFromMethodParameters);
         assert finalValue.isDone();
-        assert typeImmutable.isDone();
-        DV alignedWithImmutable = alignIndependentWithImmutable(typeImmutable, finalValue);
+
         DV potentiallyInconclusive;
         if (inconclusive) {
-            potentiallyInconclusive = new Inconclusive(alignedWithImmutable);
+            potentiallyInconclusive = new Inconclusive(finalValue);
             LOGGER.debug("Setting inconclusive INDEPENDENT value for type {}: {}", typeInfo, potentiallyInconclusive);
         } else {
-            potentiallyInconclusive = alignedWithImmutable;
+            potentiallyInconclusive = finalValue;
             LOGGER.debug("Set independence of type {} to {}", typeInfo, potentiallyInconclusive);
         }
         typeAnalysis.setProperty(Property.INDEPENDENT, potentiallyInconclusive);
         return DONE;
-    }
-
-    private static DV alignIndependentWithImmutable(DV immutable, DV independent) {
-        int level = MultiLevel.level(immutable);
-        if (level == 0) return independent;
-        return MultiLevel.independentCorrespondingToImmutableLevelDv(level);
     }
 
     private AnalysisStatus delayIndependent(CausesOfDelay causesOfDelay) {
@@ -949,12 +927,18 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
         return causesOfDelay;
     }
 
+    /*
+    The independence of a non-private field is completely determined by its immutability,
+    no need to look at the INDEPENDENT property, which has a different meaning (i.e., the independence
+    traveling from method or constructor parameters)
+     */
     private DV independenceOfField(FieldAnalysis fieldAnalysis) {
         DV immutable = fieldAnalysis.getProperty(Property.EXTERNAL_IMMUTABLE);
         if (immutable.isDelayed()) return immutable;
         if (immutable.lt(MultiLevel.EFFECTIVELY_E2IMMUTABLE_DV)) return MultiLevel.DEPENDENT_DV;
         TypeInfo bestType = fieldAnalysis.getFieldInfo().type.bestTypeInfo(analyserContext);
         if (bestType == null) {
+            // unbound type parameter
             return MultiLevel.INDEPENDENT_1_DV;
         }
         int immutableLevel = MultiLevel.level(immutable);

@@ -39,7 +39,7 @@ public class TestWeightedGraph_1 {
     Variable thisVar, toDo, nodeMap, cycle, smallerCycle, removed;
     CausesOfDelay delay;
     final DV v0 = LINK_STATICALLY_ASSIGNED;
-    final DV v3 = LINK_INDEPENDENT1;
+    final DV v3 = LINK_INDEPENDENT_HC;
     WeightedGraph wg;
 
     @BeforeEach
@@ -81,7 +81,7 @@ public class TestWeightedGraph_1 {
 
     @Test
     public void test2() {
-        Map<Variable, DV> startAtToDo = wg.links(toDo, LINK_INDEPENDENT1, false);
+        Map<Variable, DV> startAtToDo = wg.links(toDo, LINK_INDEPENDENT_HC, false);
         assertEquals(5, startAtToDo.size());
         assertEquals(v0, startAtToDo.get(toDo));
         assertEquals(v3, startAtToDo.get(cycle));
@@ -92,7 +92,7 @@ public class TestWeightedGraph_1 {
 
     @Test
     public void test3() {
-        Map<Variable, DV> startAtToDo = wg.links(toDo, LINK_INDEPENDENT1, true);
+        Map<Variable, DV> startAtToDo = wg.links(toDo, LINK_INDEPENDENT_HC, true);
         assertEquals(6, startAtToDo.size());
         assertEquals(v0, startAtToDo.get(toDo));
         assertEquals(delay, startAtToDo.get(cycle));
@@ -105,7 +105,7 @@ public class TestWeightedGraph_1 {
 
     @Test
     public void test4() {
-        Map<Variable, DV> startAtRemoved = wg.links(removed, LINK_INDEPENDENT1, true);
+        Map<Variable, DV> startAtRemoved = wg.links(removed, LINK_INDEPENDENT_HC, true);
         assertEquals(6, startAtRemoved.size());
         assertEquals(delay, startAtRemoved.get(thisVar));
         assertEquals(LINK_STATICALLY_ASSIGNED, startAtRemoved.get(removed));

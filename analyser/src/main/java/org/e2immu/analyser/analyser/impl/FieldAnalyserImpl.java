@@ -16,7 +16,10 @@ package org.e2immu.analyser.analyser.impl;
 
 import org.e2immu.analyser.analyser.Properties;
 import org.e2immu.analyser.analyser.*;
-import org.e2immu.analyser.analyser.check.*;
+import org.e2immu.analyser.analyser.check.CheckFinalNotModified;
+import org.e2immu.analyser.analyser.check.CheckImmutable;
+import org.e2immu.analyser.analyser.check.CheckIndependent;
+import org.e2immu.analyser.analyser.check.CheckNotNull;
 import org.e2immu.analyser.analyser.delay.DelayFactory;
 import org.e2immu.analyser.analyser.delay.Inconclusive;
 import org.e2immu.analyser.analyser.delay.SimpleCause;
@@ -24,6 +27,7 @@ import org.e2immu.analyser.analyser.delay.VariableCause;
 import org.e2immu.analyser.analyser.nonanalyserimpl.AbstractEvaluationContextImpl;
 import org.e2immu.analyser.analyser.nonanalyserimpl.ExpandableAnalyserContextImpl;
 import org.e2immu.analyser.analyser.util.AnalyserResult;
+import org.e2immu.analyser.analyser.util.ComputeIndependent;
 import org.e2immu.analyser.analyser.util.VariableAccessReport;
 import org.e2immu.analyser.analysis.Analysis;
 import org.e2immu.analyser.analysis.FieldAnalysis;
@@ -61,7 +65,6 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
     private static final Logger LOGGER = LoggerFactory.getLogger(FieldAnalyserImpl.class);
 
     // analyser components, constants are used in tests and delay debugging
-    public static final String COMPUTE_TRANSPARENT_TYPE = "computeTransparentType";
     public static final String ANONYMOUS_TYPE_ANALYSER = "anonymousTypeAnalyser";
     public static final String EVALUATE_INITIALISER = "evaluateInitialiser";
     public static final String ANALYSE_FINAL = "analyseFinal";
@@ -86,7 +89,6 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
     public final EventuallyFinal<PrimaryTypeAnalyser> anonymousTypeAnalyser = new EventuallyFinal<>();
     private final boolean fieldCanBeWrittenFromOutsideThisPrimaryType;
     private final AnalyserComponents<String, SharedState> analyserComponents;
-    private final CheckHelper checkHelper;
     private final boolean haveInitialiser;
     private final boolean acrossAllMethods;
 
@@ -100,8 +102,6 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
                              TypeAnalysis ownerTypeAnalysis,
                              AnalyserContext nonExpandableAnalyserContext) {
         super("Field " + fieldInfo.name, new ExpandableAnalyserContextImpl(nonExpandableAnalyserContext));
-        this.checkHelper = new CheckHelper(analyserContext, analyserContext.getE2ImmuAnnotationExpressions());
-
         this.acrossAllMethods = analyserContext.getConfiguration().analyserConfiguration().computeFieldAnalyserAcrossAllMethods();
 
         this.fieldInfo = fieldInfo;
@@ -733,36 +733,28 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
     private AnalysisStatus analyseIndependent(SharedState sharedState) {
         if (fieldAnalysis.getProperty(Property.INDEPENDENT).isDone()) return DONE;
 
-        DV staticallyIndependent = analyserContext.defaultIndependent(fieldInfo.type);
-        if (staticallyIndependent.equals(MultiLevel.INDEPENDENT_DV)) {
-            LOGGER.debug("Field {} set to @Independent: static type",
-                    fieldInfo.fullyQualifiedName());
+        DV immutable = fieldAnalysis.getPropertyFromMapDelayWhenAbsent(Property.EXTERNAL_IMMUTABLE);
+        if (MultiLevel.isAtLeastEventuallyRecursivelyImmutable(immutable)) {
+            LOGGER.debug("Field {} set to @Independent: dynamically recursively immutable", fieldInfo);
             fieldAnalysis.setProperty(Property.INDEPENDENT, MultiLevel.INDEPENDENT_DV);
             return DONE;
         }
 
-        DV immutable = fieldAnalysis.getPropertyFromMapDelayWhenAbsent(Property.EXTERNAL_IMMUTABLE);
-        if (immutable.isDelayed()) {
-            LOGGER.debug("Field {} independent delayed: wait for immutable", fieldInfo.fullyQualifiedName());
-            fieldAnalysis.setProperty(Property.INDEPENDENT, immutable);
-            return immutable.causesOfDelay(); //DELAY EXIT POINT
-        }
-        int immutableLevel = MultiLevel.level(immutable);
-        if (immutableLevel >= MultiLevel.Level.IMMUTABLE_2.level) {
-            DV independent = MultiLevel.independentCorrespondingToImmutableLevelDv(immutableLevel);
-            LOGGER.debug("Field {} set to {}, direct correspondence to (dynamically) immutable",
-                    fieldInfo.fullyQualifiedName(), independent);
-            fieldAnalysis.setProperty(Property.INDEPENDENT, independent);
-            return DONE;
+        if (fieldAnalysis.linkedVariables.isVariable()) {
+            LOGGER.debug("Field {} independent delayed: wait for linked variables", fieldInfo);
+            CausesOfDelay delay = fieldAnalysis.linkedVariables.get().causesOfDelay();
+            fieldAnalysis.setProperty(Property.INDEPENDENT, delay);
+            return delay;
         }
 
-        if (staticallyIndependent.isDelayed()) {
-            LOGGER.debug("Field {} independent delayed: wait for type independence of {}",
-                    fieldInfo.fullyQualifiedName(), fieldInfo.type);
-            fieldAnalysis.setProperty(Property.INDEPENDENT, staticallyIndependent);
-            return staticallyIndependent.causesOfDelay(); //DELAY EXIT POINT
-        }
-        fieldAnalysis.setProperty(Property.INDEPENDENT, staticallyIndependent);
+        ComputeIndependent computeIndependent = new ComputeIndependent(analyserContext);
+        DV independent = fieldAnalysis.linkedVariables.get().stream()
+                .filter(e -> e.getKey() instanceof ParameterInfo pi && pi.owner.isAccessibleOutsidePrimaryType()
+                        || e.getKey() instanceof ReturnVariable rv && rv.getMethodInfo().isAccessibleOutsidePrimaryType())
+                .map(e -> computeIndependent.compute(e.getValue(), fieldInfo.type, immutable,
+                        e.getKey().parameterizedType()))
+                .reduce(MultiLevel.INDEPENDENT_DV, DV::min);
+        fieldAnalysis.setProperty(Property.INDEPENDENT, independent);
         return DONE;
     }
 

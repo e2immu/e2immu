@@ -206,6 +206,7 @@ public class ComputedParameterAnalyser extends ParameterAnalyserImpl {
     private AnalysisStatus analyseIndependentNoAssignment(SharedState sharedState) {
         if (parameterAnalysis.properties.isDone(INDEPENDENT)) return DONE;
         DV immutable = analyserContext.defaultImmutable(parameterInfo.parameterizedType);
+
         // there is no restriction on immutable, because the link could have been STATICALLY_ASSIGNED
         if (EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV.equals(immutable)) {
             LOGGER.debug("Assign INDEPENDENT to parameter {}: type is recursively immutable", parameterInfo);
@@ -257,10 +258,7 @@ public class ComputedParameterAnalyser extends ParameterAnalyserImpl {
                         .filter(e -> e.getKey() instanceof FieldReference fr && fr.scopeIsThis())
                         .collect(Collectors.toUnmodifiableMap(e -> ((FieldReference) e.getKey()).fieldInfo, Map.Entry::getValue));
                 if (!fields.isEmpty()) {
-                    /* so we know the parameter is (content) linked to some fields
-                       either it is dependent, or the value of independence (from 1 to infinity) is determined by the size of the
-                       hidden content component inside the field
-                     */
+                    // The parameter is linked to some fields.
                     DV independent = independentFromFields(immutable, fields);
                     parameterAnalysis.setProperty(INDEPENDENT, independent);
                     return AnalysisStatus.of(independent);
@@ -273,10 +271,10 @@ public class ComputedParameterAnalyser extends ParameterAnalyserImpl {
     }
 
     private DV independentFromFields(DV immutable, Map<FieldInfo, DV> fields) {
-        ComputeIndependent computeIndependent = new ComputeIndependent(analyserContext, parameterInfo.owner.typeInfo);
+        ComputeIndependent computeIndependent = new ComputeIndependent(analyserContext);
         DV independent = fields.entrySet().stream()
-                .map(e -> computeIndependent.compute(e.getValue(), parameterInfo.parameterizedType,
-                        immutable, e.getKey().type))
+                .map(e -> computeIndependent.compute(e.getValue(), parameterInfo.parameterizedType, immutable,
+                        e.getKey().type))
                 .reduce(INDEPENDENT_DV, DV::min);
         LOGGER.debug("Assign {} to parameter {}", independent, parameterInfo);
         return independent;
@@ -389,7 +387,8 @@ public class ComputedParameterAnalyser extends ParameterAnalyserImpl {
             }
         }
 
-        if (!parameterAnalysis.properties.isDone(INDEPENDENT) && !map.isEmpty()
+        if (!parameterAnalysis.properties.isDone(INDEPENDENT)
+                && !map.isEmpty()
                 && map.values().stream().allMatch(LinkedVariables::isAssigned)) {
             DV immutable = analyserContext.defaultImmutable(parameterInfo.parameterizedType);
             DV independent = independentFromFields(immutable, map);
@@ -398,8 +397,7 @@ public class ComputedParameterAnalyser extends ParameterAnalyserImpl {
                 LOGGER.debug("Delaying @Independent on parameter {}", parameterInfo);
                 delays = delays.merge(independent.causesOfDelay());
             } else {
-                LOGGER.debug("Set @Independent on parameter {}: linked/assigned to fields {}", parameterInfo,
-                        map.keySet());
+                LOGGER.debug("Set @Independent on parameter {}: linked/assigned to fields {}", parameterInfo, map.keySet());
                 changed = true;
             }
         }
@@ -567,7 +565,7 @@ public class ComputedParameterAnalyser extends ParameterAnalyserImpl {
 
         // variable field, no direct assignment to parameter
         LinkedVariables linked = fieldAnalysis.getLinkedVariables();
-        return linked.variables().getOrDefault(parameterInfo, LinkedVariables.LINK_NONE);
+        return linked.variables().getOrDefault(parameterInfo, LinkedVariables.LINK_INDEPENDENT);
     }
 
     public static final Property[] CONTEXT_PROPERTIES = {Property.CONTEXT_NOT_NULL,

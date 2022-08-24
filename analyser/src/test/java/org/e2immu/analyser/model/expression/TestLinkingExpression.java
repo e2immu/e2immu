@@ -32,8 +32,7 @@ import org.junit.jupiter.api.Test;
 import java.io.IOException;
 import java.util.*;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 public class TestLinkingExpression {
 
@@ -178,9 +177,6 @@ public class TestLinkingExpression {
         MethodCall add12 = new MethodCall(Identifier.constant("add12"), ve, addIndex, List.of(newInt(0), vi));
         LinkedVariables lvAdd12 = add12.linkedVariables(context);
         assertTrue(lvAdd12.isEmpty()); // because void method!
-
-        LinkedVariables lvAdd12Scope = add12.linked1VariablesScope(context);
-        assertEquals("i:3", lvAdd12Scope.toString());
     }
 
     @Test
@@ -211,12 +207,48 @@ public class TestLinkingExpression {
         assertEquals("Collection.addAll(v,i,j)", methodCall.toString());
         EvaluationResult.Builder builder = new EvaluationResult.Builder(context);
         methodCall.linksBetweenParameters(builder, context, methodCall.methodInfo, parameterValues,
-                List.of(LinkedVariables.of(Map.of(i, LinkedVariables.LINK_INDEPENDENT1, j, LinkedVariables.LINK_INDEPENDENT1)),
-                        LinkedVariables.of(Map.of(v, LinkedVariables.LINK_INDEPENDENT1)),
-                        LinkedVariables.of(Map.of(v, LinkedVariables.LINK_INDEPENDENT1))));
-        // v links @Independent1 to i and j
-        assertEquals("i:3,j:3",
-                builder.build().changeData().get(v).linkedVariables().toString());
+                // no prior additional links, not that any would be possible
+                List.of(LinkedVariables.of(Map.of(v, LinkedVariables.LINK_ASSIGNED)),
+                        LinkedVariables.of(Map.of(i, LinkedVariables.LINK_ASSIGNED)),
+                        LinkedVariables.of(Map.of(j, LinkedVariables.LINK_ASSIGNED))));
+        // because v, i and j are integers, there are no links!
+        assertNull(builder.build().changeData().get(v));
+    }
+
+    @Test
+    public void testCollectionsAddAllUnbound() {
+        TypeInfo collections = typeContext.getFullyQualified(Collections.class);
+        MethodInfo addAll = collections.findUniqueMethod("addAll", 2);
+
+        TypeInfo collection = typeContext.getFullyQualified(Collection.class);
+        ParameterizedType unbound = addAll.methodInspection.get().formalParameterType(0);
+        ParameterizedType collectionT = new ParameterizedType(collection, List.of(unbound));
+
+        Variable v = new LocalVariableReference(new LocalVariable("v", collectionT));
+        VariableExpression vv = new VariableExpression(v);
+
+        Variable i = new LocalVariableReference(new LocalVariable("i", collectionT));
+        VariableExpression vi = new VariableExpression(i);
+
+        Variable j = new LocalVariableReference(new LocalVariable("j", collectionT));
+        VariableExpression vj = new VariableExpression(j);
+
+        // Collections.addAll(v, i, j), with a link from param 0 -> param 1
+        List<Expression> parameterValues = List.of(vv, vi, vj);
+        MethodCall methodCall = new MethodCall(Identifier.constant("addAll"),
+                new TypeExpression(Identifier.CONSTANT, collectionT, Diamond.NO), addAll, parameterValues);
+        assertEquals("Collection.addAll(v,i,j)", methodCall.toString());
+
+        EvaluationResult.Builder builder = new EvaluationResult.Builder(context);
+        methodCall.linksBetweenParameters(builder, context, methodCall.methodInfo, parameterValues,
+                // no prior additional links
+                List.of(LinkedVariables.of(Map.of(v, LinkedVariables.LINK_ASSIGNED)),
+                        LinkedVariables.of(Map.of(i, LinkedVariables.LINK_ASSIGNED)),
+                        LinkedVariables.of(Map.of(j, LinkedVariables.LINK_ASSIGNED))));
+
+        assertNull(builder.build().changeData().get(i));
+        assertNull(builder.build().changeData().get(j));
+        assertEquals("i:3,j:3", builder.build().changeData().get(v).linkedVariables().toString());
     }
 
     private IntConstant newInt(int i) {
