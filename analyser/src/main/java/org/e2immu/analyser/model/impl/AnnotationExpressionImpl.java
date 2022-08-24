@@ -83,18 +83,12 @@ public record AnnotationExpressionImpl(TypeInfo typeInfo,
                 .add(typeInfo.typeName(qualification.qualifierRequired(typeInfo)));
         if (!expressions.isEmpty()) {
             outputBuilder.add(Symbol.LEFT_PARENTHESIS)
-                    .add(expressions.stream().map(expression -> unquote(qualification, expression))
+                    .add(expressions.stream()
+                            .map(expression ->  expression.output(qualification))
                             .collect(OutputBuilder.joining(Symbol.COMMA)))
                     .add(Symbol.RIGHT_PARENTHESIS);
         }
         return outputBuilder;
-    }
-
-    private OutputBuilder unquote(Qualification qualification, MemberValuePair expression) {
-        if (expression.value().get() instanceof StringConstant sc) {
-            return new OutputBuilder().add(new Text(sc.getValue()));
-        }
-        return expression.output(qualification);
     }
 
     @Override

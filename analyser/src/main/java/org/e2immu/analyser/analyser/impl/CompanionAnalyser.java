@@ -240,7 +240,7 @@ public class CompanionAnalyser {
                 ParameterizedType type = pre.parameterizedType();
                 return type.isPrimitiveExcludingVoid() ? MultiLevel.EFFECTIVELY_NOT_NULL_DV : MultiLevel.NULLABLE_DV;
             }
-            return analyserContext.getProperty(variable.parameterizedType(), property, true);
+            return analyserContext.getProperty(variable.parameterizedType(), property);
         }
     }
 }

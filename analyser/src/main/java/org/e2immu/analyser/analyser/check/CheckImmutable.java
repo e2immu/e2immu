@@ -35,7 +35,7 @@ public class CheckImmutable {
     public static Message check(WithInspectionAndAnalysis info,
                                 AnnotationExpression annotationKey,
                                 Analysis analysis,
-                                Expression constantValue) {
+                                String constantValue) {
         List<CheckHelper.AnnotationKV> kvs = new ArrayList<>(3);
         Property property = info instanceof FieldInfo ? Property.EXTERNAL_IMMUTABLE : Property.IMMUTABLE;
 
@@ -45,13 +45,10 @@ public class CheckImmutable {
         // do not use the after=""... as a marker to check the presence (see test E2InContext_3)
         kvs.add(new CheckHelper.AnnotationKV(AFTER, extractInspected1, value1, false));
 
-        String computedUnquotedValue = constantValue == null ? null :
-                constantValue instanceof StringConstant sc ? sc.getValue() :
-                        constantValue.toString();
         Function<AnnotationExpression, String> extractInspected = ae -> ae.extract(VALUE, "");
 
         if (constantValue != null) {
-            kvs.add(new CheckHelper.AnnotationKV(VALUE, extractInspected, computedUnquotedValue));
+            kvs.add(new CheckHelper.AnnotationKV(VALUE, extractInspected, constantValue));
         }
 
         return CheckHelper.checkAnnotationWithValue(

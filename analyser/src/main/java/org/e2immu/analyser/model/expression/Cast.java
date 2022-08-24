@@ -115,7 +115,7 @@ public class Cast extends BaseExpression implements Expression {
     @Override
     public DV getProperty(EvaluationResult context, Property property, boolean duringEvaluation) {
         if (property == Property.IMMUTABLE || property == Property.CONTAINER || property == Property.INDEPENDENT) {
-            return context.getAnalyserContext().getProperty(parameterizedType, property, false);
+            return context.getAnalyserContext().getProperty(parameterizedType, property);
         }
         return context.evaluationContext().getProperty(expression, property, duringEvaluation, false);
     }

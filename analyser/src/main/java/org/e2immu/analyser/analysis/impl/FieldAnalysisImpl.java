@@ -268,7 +268,8 @@ public class FieldAnalysisImpl extends AnalysisImpl implements FieldAnalysis {
             boolean immutableBetterThanFormal = dynamicallyImmutable.gt(formallyImmutable);
             boolean containerBetterThanFormal = dynamicallyContainer.gt(formallyContainer);
             DV constant = getProperty(Property.CONSTANT);
-            String constantValue = constant.valueIsTrue() ? getValue().toString() : null;
+            String constantValue = MultiLevel.isAtLeastEventuallyRecursivelyImmutable(ownerImmutable) && constant.valueIsTrue()
+                    ? getValue().unQuotedString() : null;
             doImmutableContainer(e2, dynamicallyImmutable, dynamicallyContainer,
                     immutableBetterThanFormal, containerBetterThanFormal, constantValue);
 

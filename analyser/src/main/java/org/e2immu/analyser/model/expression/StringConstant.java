@@ -94,4 +94,8 @@ public final class StringConstant extends BaseExpression implements ConstantExpr
         return constant;
     }
 
+    @Override
+    public String unQuotedString() {
+        return constant;
+    }
 }

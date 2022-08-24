@@ -262,4 +262,8 @@ public interface Expression extends Element, Comparable<Expression> {
     default TypeInfo typeInfoOfReturnType() {
         return returnType().typeInfo;
     }
+
+    default String unQuotedString() {
+        return toString();
+    }
 }

@@ -389,15 +389,14 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
             }
             addAnnotation(ae);
 
-            // dynamic type annotations: @E1Immutable, @E1Container, @E2Immutable, @E2Container
-            DV formallyImmutable = analysisProvider.getProperty(returnType, Property.IMMUTABLE, false);
+            DV formallyImmutable = analysisProvider.defaultImmutable(returnType);
             DV dynamicallyImmutable = getProperty(Property.IMMUTABLE);
-            DV formallyContainer = analysisProvider.getProperty(returnType, Property.CONTAINER, false);
+            DV formallyContainer = analysisProvider.defaultContainer(returnType);
             DV dynamicallyContainer = getProperty(Property.CONTAINER);
             boolean immutableBetterThanFormal = dynamicallyImmutable.gt(formallyImmutable);
             boolean containerBetterThanFormal = dynamicallyContainer.gt(formallyContainer);
             DV constant = getProperty(Property.CONSTANT);
-            String constantValue = constant.valueIsTrue() ? getSingleReturnValue().toString() : null;
+            String constantValue = constant.valueIsTrue() ? getSingleReturnValue().unQuotedString() : null;
 
             doImmutableContainer(e2, dynamicallyImmutable, dynamicallyContainer, immutableBetterThanFormal,
                     containerBetterThanFormal, constantValue);

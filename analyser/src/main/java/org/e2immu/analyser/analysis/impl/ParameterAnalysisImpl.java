@@ -194,9 +194,9 @@ public class ParameterAnalysisImpl extends AnalysisImpl implements ParameterAnal
                 addAnnotation(independentHC);
             }
 
-            DV formallyImmutable = analysisProvider.getProperty(parameterInfo.parameterizedType, Property.IMMUTABLE, false);
+            DV formallyImmutable = analysisProvider.defaultImmutable(parameterInfo.parameterizedType);
             DV dynamicallyImmutable = getProperty(Property.IMMUTABLE);
-            DV formallyContainer = analysisProvider.getProperty(parameterInfo.parameterizedType, Property.CONTAINER, false);
+            DV formallyContainer = analysisProvider.defaultContainer(parameterInfo.parameterizedType);
             DV dynamicallyContainer = getProperty(Property.CONTAINER);
             boolean immutableBetterThanFormal = dynamicallyImmutable.gt(formallyImmutable);
             boolean containerBetterThanFormal = dynamicallyContainer.gt(formallyContainer);

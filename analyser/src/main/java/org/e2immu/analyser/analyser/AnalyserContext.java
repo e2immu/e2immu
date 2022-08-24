@@ -180,29 +180,6 @@ public interface AnalyserContext extends AnalysisProvider, InspectionProvider {
         return getConfiguration().analyserConfiguration().analyserProgram();
     }
 
-    default DV safeContainer(ParameterizedType parameterizedType) {
-        TypeInfo bestType = parameterizedType.bestTypeInfo();
-        if (parameterizedType.arrays > 0) {
-            return MultiLevel.CONTAINER_DV;
-        }
-        if (bestType == null) {
-            // unbound type parameter, null constant
-            return MultiLevel.NOT_CONTAINER_DV;
-        }
-        TypeAnalysis typeAnalysis = getTypeAnalysisNullWhenAbsent(bestType);
-        if (typeAnalysis == null) {
-            return null;
-        }
-        DV dv = typeAnalysis.getProperty(Property.CONTAINER);
-        if (dv.isDelayed()) {
-            return dv;
-        }
-        if (bestType.isFinal(this) || bestType.isInterface() && dv.equals(MultiLevel.CONTAINER_DV)) {
-            return dv;
-        }
-        return null;
-    }
-
     default DV immutableOfHiddenContentInTypeParameters(ParameterizedType parameterizedType) {
         SetOfTypes hiddenContentTypes = typeParametersOf(parameterizedType);
         return hiddenContentTypes.types().stream()

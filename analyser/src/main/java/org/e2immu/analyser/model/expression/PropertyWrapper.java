@@ -271,7 +271,7 @@ public final class PropertyWrapper extends BaseExpression implements Expression,
         if (castType != null && (
                 property == Property.IMMUTABLE || property == Property.CONTAINER ||
                         property == Property.INDEPENDENT)) {
-            return context.getAnalyserContext().getProperty(castType, property, false);
+            return context.getAnalyserContext().getProperty(castType, property);
         }
         DV inMap = properties == null ? null : properties.getOrDefault(property, null);
         if (inMap != null) return inMap;

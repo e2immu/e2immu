@@ -27,6 +27,7 @@ import org.e2immu.analyser.parser.CommonTestRunner;
 import org.e2immu.analyser.visitor.FieldAnalyserVisitor;
 import org.e2immu.analyser.visitor.MethodAnalyserVisitor;
 import org.e2immu.analyser.visitor.StatementAnalyserVariableVisitor;
+import org.e2immu.analyser.visitor.TypeAnalyserVisitor;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
@@ -120,8 +121,15 @@ public class Test_00_Basics_14 extends CommonTestRunner {
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
             if ("t".equals(d.fieldInfo().name)) {
                 assertDv(d, 1, MultiLevel.NULLABLE_DV, EXTERNAL_NOT_NULL);
-                assertEquals(DV.FALSE_DV, d.fieldAnalysis().getProperty(FINAL));
+                assertDv(d, DV.FALSE_DV, FINAL);
+
+                // the field itself is of unbound type
+                assertDv(d, 0, MultiLevel.CONTAINER_DV, EXTERNAL_CONTAINER);
+                assertDv(d, 1, MultiLevel.EFFECTIVELY_E2IMMUTABLE_DV, EXTERNAL_IMMUTABLE);
+                assertDv(d, 1, MultiLevel.INDEPENDENT_1_DV, INDEPENDENT);
                 assertEquals("<variable value>", d.fieldAnalysis().getValue().toString());
+
+                assertEquals("t:0", d.fieldAnalysis().getLinkedVariables().toString());
             }
         };
 
@@ -129,7 +137,13 @@ public class Test_00_Basics_14 extends CommonTestRunner {
             if ("setT".equals(d.methodInfo().name)) {
                 ParameterAnalysis p0 = d.parameterAnalyses().get(0);
                 // not contracted
-                assertEquals(MultiLevel.NOT_CONTAINER_DV, p0.getProperty(CONTAINER));
+                assertEquals(MultiLevel.CONTAINER_DV, p0.getProperty(CONTAINER));
+            }
+        };
+
+        TypeAnalyserVisitor typeAnalyserVisitor = d -> {
+            if ("Basics_14".equals(d.typeInfo().simpleName)) {
+                assertDv(d, 2, MultiLevel.EVENTUALLY_E2IMMUTABLE_DV, IMMUTABLE);
             }
         };
 
@@ -137,6 +151,7 @@ public class Test_00_Basics_14 extends CommonTestRunner {
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
                 .build());
     }
 }

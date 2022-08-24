@@ -177,8 +177,9 @@ public class Test_00_Basics_1 extends CommonTestRunner {
             assertEquals("p0:0", d.fieldAnalysis().getLinkedVariables().toString());
 
             assertDv(d, FALSE_DV, MODIFIED_OUTSIDE_METHOD);
-            assertEquals(NULLABLE_DV, d.fieldAnalysis().getProperty(EXTERNAL_NOT_NULL));
-            assertEquals(MUTABLE_DV, d.fieldAnalysis().getProperty(EXTERNAL_IMMUTABLE));
+            assertDv(d, NULLABLE_DV, EXTERNAL_NOT_NULL);
+            assertDv(d, MUTABLE_DV, EXTERNAL_IMMUTABLE);
+            assertDv(d, DEPENDENT_DV, INDEPENDENT);
         }
     };
 

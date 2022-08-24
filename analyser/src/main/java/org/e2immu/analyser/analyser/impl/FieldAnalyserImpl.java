@@ -127,12 +127,12 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
                 .add(ANALYSE_VALUES, sharedState -> analyseValues())
                 .add(ANALYSE_IMMUTABLE, this::analyseImmutable)
                 .add(ANALYSE_NOT_NULL, this::analyseNotNull)
-                .add(ANALYSE_INDEPENDENT, this::analyseIndependent)
                 .add(ANALYSE_CONTAINER, this::analyseContainer)
                 .add(ANALYSE_IGNORE_MODIFICATIONS, this::analyseIgnoreModifications)
                 .add(ANALYSE_FINAL_VALUE, sharedState -> analyseFinalValue())
                 .add(ANALYSE_CONSTANT, sharedState -> analyseConstant())
                 .add(ANALYSE_LINKED, sharedState -> analyseLinked())
+                .add(ANALYSE_INDEPENDENT, this::analyseIndependent)
                 .add(ANALYSE_MODIFIED, this::analyseModified)
                 .add(ANALYSE_BEFORE_MARK, sharedState -> analyseBeforeMark())
                 .add(FIELD_ERRORS, this::fieldErrors)
@@ -724,7 +724,7 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
     }
 
     /*
-    Similarly to dynamically level 2+ immutable, a field can be dynamically higher level independent!
+    Similarly to dynamically immutable, a field can be dynamically higher level independent!
 
     If the type of the field is Set<String>, the static independence value is DEPENDENT (there is the iterator.remove())
     But when this field is final and only constructed with Set.copyOf or Set.of, for example, the type will become
@@ -755,7 +755,7 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
                         e.getKey().parameterizedType()))
                 .reduce(MultiLevel.INDEPENDENT_DV, DV::min);
         fieldAnalysis.setProperty(Property.INDEPENDENT, independent);
-        return DONE;
+        return AnalysisStatus.of(independent);
     }
 
     /*
@@ -1329,7 +1329,7 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
         boolean fieldOfOwnType = fieldInfo.type.typeInfo == fieldInfo.owner;
         DV immutable = fieldAnalysis.getProperty(Property.EXTERNAL_IMMUTABLE);
         if (immutable.isDelayed() && !fieldOfOwnType) {
-            LOGGER.debug("Waiting with @Constant until decision on @E2Immutable for {}", fqn);
+            LOGGER.debug("Waiting with @Constant until decision on @Immutable for {}", fqn);
             return immutable.causesOfDelay(); //DELAY EXIT POINT
         }
 
@@ -1343,7 +1343,7 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
         }
 
         if (recursivelyConstant.valueIsTrue()) {
-
+            // FIXME
         }
         fieldAnalysis.setProperty(Property.CONSTANT, recursivelyConstant);
         return DONE;
@@ -1618,11 +1618,12 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
             // dynamic type annotations
             check(e2.container);
 
-            Expression srv = fieldAnalysis.getValue() != null ?
-                    fieldAnalysis.getValue() : EmptyExpression.EMPTY_EXPRESSION;
+            DV typeImmutable = getFieldAnalysis().getProperty(EXTERNAL_IMMUTABLE);
+            String constantValue = fieldAnalysis.getValue() != null && MultiLevel.isAtLeastEventuallyRecursivelyImmutable(typeImmutable)
+                    ? fieldAnalysis.getValue().unQuotedString() : "";
             analyserResultBuilder.add(CheckImmutable.check(fieldInfo, e2.finalFields, fieldAnalysis, null));
             analyserResultBuilder.add(CheckImmutable.check(fieldInfo, e2.immutable, fieldAnalysis, null));
-            analyserResultBuilder.add(CheckImmutable.check(fieldInfo, e2.immutableContainer, fieldAnalysis, srv));
+            analyserResultBuilder.add(CheckImmutable.check(fieldInfo, e2.immutableContainer, fieldAnalysis, constantValue));
 
             analyserResultBuilder.add(CheckIndependent.check(fieldInfo, e2.independent, fieldAnalysis));
             check(e2.modified);

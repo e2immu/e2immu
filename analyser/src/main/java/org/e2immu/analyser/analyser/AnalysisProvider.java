@@ -19,6 +19,7 @@ import org.e2immu.analyser.analysis.MethodAnalysis;
 import org.e2immu.analyser.analysis.ParameterAnalysis;
 import org.e2immu.analyser.analysis.TypeAnalysis;
 import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.annotation.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -100,18 +101,14 @@ public interface AnalysisProvider {
         }
     };
 
-    // at the moment, all calls have unboundIsMutable == false
-    default DV getProperty(ParameterizedType parameterizedType, Property property, boolean unboundIsMutable) {
-        TypeInfo bestType = parameterizedType.bestTypeInfo();
-        if (bestType != null) {
-            TypeAnalysis typeAnalysis = getTypeAnalysisNullWhenAbsent(bestType);
-            return typeAnalysis == null ? property.falseDv : typeAnalysis.getProperty(property);
-        }
-        if (!unboundIsMutable) {
-            if (property == Property.IMMUTABLE) return MultiLevel.EFFECTIVELY_E2IMMUTABLE_DV;
-            if (property == Property.INDEPENDENT) return MultiLevel.INDEPENDENT_1_DV;
-        }
-        return property.falseDv;
+    // convenience method, but rather call defaultXXX immediately
+    default DV getProperty(ParameterizedType parameterizedType, Property property) {
+        return switch (property) {
+            case IMMUTABLE -> defaultImmutable(parameterizedType);
+            case INDEPENDENT -> defaultIndependent(parameterizedType);
+            case CONTAINER -> defaultContainer(parameterizedType);
+            default -> property.falseDv;
+        };
     }
 
     default DV cannotBeModifiedInThisClass(ParameterizedType parameterizedType) {
@@ -206,20 +203,48 @@ public interface AnalysisProvider {
     }
 
     default DV defaultContainer(ParameterizedType parameterizedType) {
-        TypeInfo bestType = parameterizedType.bestTypeInfo();
         if (parameterizedType.arrays > 0) {
             return MultiLevel.CONTAINER_DV;
         }
-        if (bestType == null) {
-            // unbound type parameter, null constant
+        if (parameterizedType == ParameterizedType.NULL_CONSTANT) {
             return MultiLevel.NOT_CONTAINER_DV;
         }
+        if (parameterizedType.isUnboundTypeParameter()) {
+            return MultiLevel.CONTAINER_DV;
+        }
+        TypeInfo bestType = parameterizedType.bestTypeInfo();
         TypeAnalysis typeAnalysis = getTypeAnalysisNullWhenAbsent(bestType);
         if (typeAnalysis == null) {
             return typeAnalysisNotAvailable(bestType);
         }
         return typeAnalysis.getProperty(Property.CONTAINER);
     }
+
+    default DV safeContainer(ParameterizedType parameterizedType) {
+        TypeInfo bestType = parameterizedType.bestTypeInfo();
+        if (parameterizedType.arrays > 0) {
+            return MultiLevel.CONTAINER_DV;
+        }
+        if (parameterizedType == ParameterizedType.NULL_CONSTANT) {
+            return MultiLevel.NOT_CONTAINER_DV;
+        }
+        if (parameterizedType.isUnboundTypeParameter()) {
+            return MultiLevel.CONTAINER_DV;
+        }
+        TypeAnalysis typeAnalysis = getTypeAnalysisNullWhenAbsent(bestType);
+        if (typeAnalysis == null) {
+            return null;
+        }
+        DV dv = typeAnalysis.getProperty(Property.CONTAINER);
+        if (dv.isDelayed()) {
+            return dv;
+        }
+        if (bestType.isFinal(InspectionProvider.DEFAULT) || bestType.isInterface() && dv.equals(MultiLevel.CONTAINER_DV)) {
+            return dv;
+        }
+        return null;
+    }
+
 
     static DV defaultNotNull(ParameterizedType parameterizedType) {
         return parameterizedType.isPrimitiveExcludingVoid() ? MultiLevel.EFFECTIVELY_NOT_NULL_DV : MultiLevel.NULLABLE_DV;
