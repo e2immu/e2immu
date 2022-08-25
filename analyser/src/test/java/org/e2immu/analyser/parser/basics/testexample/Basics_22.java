@@ -30,7 +30,7 @@ public class Basics_22 {
                 throw new RuntimeException("URL = " + url + ", Cannot read? " + e.getMessage());
             }
         }
-        System.out.println("{} not found in class path" + path);
+        System.out.println(path + " not found in class path");
         return null;
     }
 

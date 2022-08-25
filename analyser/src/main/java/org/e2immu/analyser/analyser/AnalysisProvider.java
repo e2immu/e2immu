@@ -106,9 +106,9 @@ public interface AnalysisProvider {
     // convenience method, but rather call defaultXXX immediately
     default DV getProperty(ParameterizedType parameterizedType, Property property) {
         return switch (property) {
-            case IMMUTABLE -> defaultImmutable(parameterizedType);
-            case INDEPENDENT -> defaultIndependent(parameterizedType);
-            case CONTAINER -> defaultContainer(parameterizedType);
+            case IMMUTABLE -> typeImmutable(parameterizedType);
+            case INDEPENDENT -> typeIndependent(parameterizedType);
+            case CONTAINER -> typeContainer(parameterizedType);
             default -> property.falseDv;
         };
     }
@@ -125,7 +125,7 @@ public interface AnalysisProvider {
     }
 
 
-    default DV defaultIndependent(ParameterizedType parameterizedType) {
+    default DV typeIndependent(ParameterizedType parameterizedType) {
         TypeInfo bestType = parameterizedType.bestTypeInfo();
         if (parameterizedType.arrays > 0) {
             // because the "fields" of the array, i.e. the cells, can be mutated
@@ -145,7 +145,7 @@ public interface AnalysisProvider {
             DV useTypeParameters = typeAnalysis.immutableDeterminedByTypeParameters();
             if (useTypeParameters.valueIsTrue()) {
                 DV paramValue = parameterizedType.parameters.stream()
-                        .map(this::defaultIndependent)
+                        .map(this::typeIndependent)
                         .reduce(MultiLevel.INDEPENDENT_DV, DV::min);
                 if (paramValue.isDelayed()) return paramValue;
                 return paramValue;
@@ -157,8 +157,8 @@ public interface AnalysisProvider {
         return baseValue;
     }
 
-    default DV defaultImmutable(ParameterizedType parameterizedType) {
-        return defaultImmutable(parameterizedType, MultiLevel.NOT_INVOLVED_DV);
+    default DV typeImmutable(ParameterizedType parameterizedType) {
+        return typeImmutable(parameterizedType, MultiLevel.NOT_INVOLVED_DV);
     }
 
     /*
@@ -167,7 +167,7 @@ public interface AnalysisProvider {
     to a higher version. See e.g., E2Immutable_11,12
      */
 
-    default DV defaultImmutable(ParameterizedType parameterizedType, DV dynamicValue) {
+    default DV typeImmutable(ParameterizedType parameterizedType, DV dynamicValue) {
         assert dynamicValue.isDone();
         if (parameterizedType.arrays > 0) {
             return MultiLevel.EFFECTIVELY_E1IMMUTABLE_DV;
@@ -188,6 +188,7 @@ public interface AnalysisProvider {
             return baseValue;
         }
         DV dynamicBaseValue = dynamicValue.max(baseValue);
+        MultiLevel.Effective effective = MultiLevel.effective(dynamicBaseValue);
         if (MultiLevel.isAtLeastE2Immutable(dynamicBaseValue) && !parameterizedType.parameters.isEmpty()) {
             DV useTypeParameters = typeAnalysis.immutableDeterminedByTypeParameters();
             if (useTypeParameters.isDelayed()) {
@@ -196,20 +197,21 @@ public interface AnalysisProvider {
             }
             if (useTypeParameters.valueIsTrue()) {
                 DV paramValue = parameterizedType.parameters.stream()
-                        .map(this::defaultImmutable)
+                        .map(this::typeImmutable)
                         .map(v -> v.containsCauseOfDelay(CauseOfDelay.Cause.TYPE_ANALYSIS) ? MultiLevel.MUTABLE_DV : v)
                         .reduce(MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, DV::min);
                 if (paramValue.isDelayed()) return paramValue;
-                return paramValue;
+                // important not to lose the eventual characteristic!
+                return MultiLevel.composeImmutable(effective, MultiLevel.level(paramValue));
             }
         }
         if (MultiLevel.isAtLeastEventuallyRecursivelyImmutable(dynamicBaseValue) && parameterizedType.isTypeParameter()) {
-            return MultiLevel.composeImmutable(MultiLevel.effective(dynamicBaseValue), IMMUTABLE_2.level);
+            return MultiLevel.composeImmutable(effective, IMMUTABLE_2.level);
         }
         return dynamicBaseValue;
     }
 
-    default DV defaultContainer(ParameterizedType parameterizedType) {
+    default DV typeContainer(ParameterizedType parameterizedType) {
         if (parameterizedType.arrays > 0) {
             return MultiLevel.CONTAINER_DV;
         }
@@ -264,10 +266,10 @@ public interface AnalysisProvider {
 
     default DV defaultValueProperty(Property property, ParameterizedType formalType) {
         return switch (property) {
-            case IMMUTABLE -> defaultImmutable(formalType);
-            case INDEPENDENT -> defaultIndependent(formalType);
+            case IMMUTABLE -> typeImmutable(formalType);
+            case INDEPENDENT -> typeIndependent(formalType);
             case IDENTITY, IGNORE_MODIFICATIONS -> property.falseDv;
-            case CONTAINER -> defaultContainer(formalType);
+            case CONTAINER -> typeContainer(formalType);
             case NOT_NULL_EXPRESSION -> defaultNotNull(formalType);
             default -> throw new UnsupportedOperationException("property: " + property);
         };

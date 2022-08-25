@@ -632,7 +632,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
                                                ParameterizedType typeOfHiddenContent,
                                                List<Expression> parameterValues,
                                                List<LinkedVariables> linkedVariables) {
-        DV immutableOfHiddenContent = context.getAnalyserContext().defaultImmutable(typeOfHiddenContent);
+        DV immutableOfHiddenContent = context.getAnalyserContext().typeImmutable(typeOfHiddenContent);
         DV correctedLevel = LinkedVariables.LINK_INDEPENDENT_HC.equals(level)
                 && MultiLevel.isAtLeastEffectivelyE2Immutable(immutableOfHiddenContent)
                 ? LinkedVariables.fromImmutableToLinkedVariableLevel(immutableOfHiddenContent)
@@ -1204,7 +1204,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
             Formal can be E2Immutable for Map.Entry<K, V>, because the removal method has gone.
             It can still upgrade to ERImmutable when the K and V become ER themselves
              */
-            return analyserContext.defaultImmutable(returnType(), formal);
+            return analyserContext.typeImmutable(returnType(), formal);
         }
         return formal;
     }
@@ -1222,7 +1222,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
                 causesOfDelay = causesOfDelay.merge(concreteHiddenTypes.causesOfDelay());
             } else {
                 DV hiddenImmutable = concreteHiddenTypes.hiddenTypes().stream()
-                        .map(pt -> context.getAnalyserContext().defaultImmutable(pt))
+                        .map(pt -> context.getAnalyserContext().typeImmutable(pt))
                         .reduce(MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, DV::min);
                 minParams = minParams.min(hiddenImmutable);
             }

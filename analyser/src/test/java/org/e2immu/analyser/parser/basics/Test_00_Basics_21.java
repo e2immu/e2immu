@@ -22,6 +22,7 @@ import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.ParameterInfo;
 import org.e2immu.analyser.model.variable.FieldReference;
+import org.e2immu.analyser.model.variable.This;
 import org.e2immu.analyser.parser.CommonTestRunner;
 import org.e2immu.analyser.visitor.*;
 import org.junit.jupiter.api.Test;
@@ -117,6 +118,12 @@ public class Test_00_Basics_21 extends CommonTestRunner {
                         assertEquals(expectLinked, d.variableInfo().getLinkedVariables().toString());
 
                         assertDv(d, 2, DV.FALSE_DV, CONTEXT_MODIFIED);
+                    }
+                }
+                if (d.variable() instanceof This) {
+                    if ("0.0.0".equals(d.statementId())) {
+                        assertDv(d, MultiLevel.MUTABLE_DV, IMMUTABLE);
+                        assertDv(d, 3, MultiLevel.EVENTUALLY_E2IMMUTABLE_DV, EXTERNAL_IMMUTABLE);
                     }
                 }
             }

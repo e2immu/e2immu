@@ -109,6 +109,14 @@ public class Test_04_Assert extends CommonTestRunner {
                         String linked = d.iteration() <= 1 ? "other:-1,this:0" : "this:0";
                         assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
                     }
+                    if ("4.1.0".equals(d.statementId())) {
+                        String linked = d.iteration() <= 1 ? "other:-1,this:-1" : "this:1";
+                        /*
+                        The result should definitely not conclude other:3, because other is not linked to the return value!
+                        This value cannot be known until we know of the independence of "merge"
+                         */
+                        assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
+                    }
                     if ("5".equals(d.statementId())) {
                         String value = switch (d.iteration()) {
                             case 0, 1 -> "limit&&(-1+other.numberOfDelays()>=<f:LIMIT>||-1-<f:LIMIT>+<m:numberOfDelays>>=0)?<s:SimpleSet>:<s:CausesOfDelay>";
@@ -126,24 +134,33 @@ public class Test_04_Assert extends CommonTestRunner {
             if ("addProgress".equals(d.methodInfo().name) && "CausesOfDelay".equals(d.methodInfo().typeInfo.simpleName)) {
                 assertDv(d, DV.FALSE_DV, Property.MODIFIED_METHOD);
             }
+            if ("causesOfDelay".equals(d.methodInfo().name)) {
+                if ("SimpleSet".equals(d.methodInfo().typeInfo.simpleName)) {
+                   assertDv(d, 4, MultiLevel.CONTAINER_DV, Property.CONTAINER);
+                }
+                if ("AnalysisStatus".equals(d.methodInfo().typeInfo.simpleName)) {
+                    assertDv(d, MultiLevel.CONTAINER_DV, Property.CONTAINER);
+                }
+            }
             if ("merge".equals(d.methodInfo().name)) {
                 assertEquals("SimpleSet", d.methodInfo().typeInfo.simpleName);
                 assertDv(d, DV.TRUE_DV, Property.FLUENT);
                 assertDv(d, DV.FALSE_DV, Property.MODIFIED_METHOD);
                 // returns self, so independent
-                assertDv(d, BIG, MultiLevel.INDEPENDENT_DV, Property.INDEPENDENT);
+                assertDv(d, MultiLevel.INDEPENDENT_DV, Property.INDEPENDENT);
             }
         };
 
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("CausesOfDelay".equals(d.typeInfo().simpleName)) {
                 assertDv(d, MultiLevel.EFFECTIVELY_E2IMMUTABLE_DV, Property.IMMUTABLE);
+                assertDv(d, MultiLevel.CONTAINER_DV, Property.CONTAINER);
             }
         };
 
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
             if ("EMPTY".equals(d.fieldInfo().name)) {
-                assertDv(d, BIG, MultiLevel.EFFECTIVELY_E1IMMUTABLE_DV, Property.IMMUTABLE);
+                assertDv(d, 3, MultiLevel.EFFECTIVELY_E1IMMUTABLE_DV, Property.EXTERNAL_IMMUTABLE);
                 // as a final field, it is not linked to the parameters of the constructor
                 assertDv(d, MultiLevel.INDEPENDENT_DV, Property.INDEPENDENT);
             }

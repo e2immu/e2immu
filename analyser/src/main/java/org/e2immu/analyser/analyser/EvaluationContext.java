@@ -249,10 +249,10 @@ public interface EvaluationContext {
         assert notNullExpression.isDone();
         AnalyserContext analyserContext = getAnalyserContext();
         Properties properties = Properties.ofWritable(Map.of(
-                IMMUTABLE, analyserContext.defaultImmutable(formalType).maxIgnoreDelay(IMMUTABLE.falseDv),
-                INDEPENDENT, analyserContext.defaultIndependent(formalType).maxIgnoreDelay(INDEPENDENT.falseDv),
+                IMMUTABLE, analyserContext.typeImmutable(formalType).maxIgnoreDelay(IMMUTABLE.falseDv),
+                INDEPENDENT, analyserContext.typeIndependent(formalType).maxIgnoreDelay(INDEPENDENT.falseDv),
                 NOT_NULL_EXPRESSION, notNullExpression,
-                CONTAINER, analyserContext.defaultContainer(formalType).maxIgnoreDelay(CONTAINER.falseDv),
+                CONTAINER, analyserContext.typeContainer(formalType).maxIgnoreDelay(CONTAINER.falseDv),
                 IDENTITY, IDENTITY.falseDv,
                 IGNORE_MODIFICATIONS, IGNORE_MODIFICATIONS.falseDv));
         assert properties.stream().noneMatch(e -> e.getValue().isDelayed());
@@ -262,10 +262,10 @@ public interface EvaluationContext {
     default Properties valuePropertiesOfNullConstant(ParameterizedType formalType) {
         AnalyserContext analyserContext = getAnalyserContext();
         return Properties.ofWritable(Map.of(
-                IMMUTABLE, analyserContext.defaultImmutable(formalType),
-                INDEPENDENT, analyserContext.defaultIndependent(formalType),
+                IMMUTABLE, analyserContext.typeImmutable(formalType),
+                INDEPENDENT, analyserContext.typeIndependent(formalType),
                 NOT_NULL_EXPRESSION, AnalysisProvider.defaultNotNull(formalType).maxIgnoreDelay(NOT_NULL_EXPRESSION.falseDv),
-                CONTAINER, analyserContext.defaultContainer(formalType),
+                CONTAINER, analyserContext.typeContainer(formalType),
                 IDENTITY, IDENTITY.falseDv,
                 IGNORE_MODIFICATIONS, IGNORE_MODIFICATIONS.falseDv));
     }
@@ -273,12 +273,12 @@ public interface EvaluationContext {
     default Properties defaultValuePropertiesAllowMyself(ParameterizedType formalType, DV nne) {
         AnalyserContext analyserContext = getAnalyserContext();
         DV immutable = isMyself(formalType) ? MultiLevel.MUTABLE_DV
-                : analyserContext.defaultImmutable(formalType);
+                : analyserContext.typeImmutable(formalType);
         return Properties.ofWritable(Map.of(
                 IMMUTABLE, immutable,
-                INDEPENDENT, analyserContext.defaultIndependent(formalType),
+                INDEPENDENT, analyserContext.typeIndependent(formalType),
                 NOT_NULL_EXPRESSION, nne,
-                CONTAINER, analyserContext.defaultContainer(formalType),
+                CONTAINER, analyserContext.typeContainer(formalType),
                 IDENTITY, IDENTITY.falseDv,
                 IGNORE_MODIFICATIONS, IGNORE_MODIFICATIONS.falseDv));
     }
@@ -487,7 +487,7 @@ public interface EvaluationContext {
         }
         TypeInfo bestType = concreteType.bestTypeInfo(getAnalyserContext());
         if (bestType == null) return NO_HIDDEN_CONTENT; // method type parameter, but not involved in fields of type
-        DV immutable = getAnalyserContext().defaultImmutable(concreteType);
+        DV immutable = getAnalyserContext().typeImmutable(concreteType);
         if (immutable.equals(MultiLevel.INDEPENDENT_DV)) return NO_HIDDEN_CONTENT;
         if (immutable.isDelayed()) {
             new HiddenContent(List.of(),

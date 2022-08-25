@@ -410,9 +410,9 @@ public class InlinedMethod extends BaseExpression implements Expression {
                         Property.NOT_NULL_EXPRESSION, fieldAnalysis.getProperty(Property.EXTERNAL_NOT_NULL),
                         Property.IGNORE_MODIFICATIONS, fieldAnalysis.getProperty(Property.EXTERNAL_IGNORE_MODIFICATIONS),
                         Property.IDENTITY, DV.FALSE_DV,
-                        Property.IMMUTABLE, analyserContext.defaultImmutable(parameterizedType),
-                        Property.INDEPENDENT, analyserContext.defaultIndependent(parameterizedType),
-                        Property.CONTAINER, analyserContext.defaultContainer(parameterizedType)
+                        Property.IMMUTABLE, analyserContext.typeImmutable(parameterizedType),
+                        Property.INDEPENDENT, analyserContext.typeIndependent(parameterizedType),
+                        Property.CONTAINER, analyserContext.typeContainer(parameterizedType)
                 ));
             }
         } else if (context.evaluationContext().isMyself(parameterizedType)) {

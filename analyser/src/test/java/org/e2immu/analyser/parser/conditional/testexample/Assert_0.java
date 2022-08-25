@@ -21,6 +21,7 @@ import java.util.Set;
 /*
 Grabs a problem in statement 2 of combine(), assert isDelayed();
  */
+@ImmutableContainer
 public class Assert_0 {
 
     @ImmutableContainer(hc = true)
@@ -68,6 +69,7 @@ public class Assert_0 {
         }
     }
 
+    @Container // should be implied
     @FinalFields // because 'causes' is dependent!
     static class SimpleSet implements CausesOfDelay {
         // should be @ImmutableContainer

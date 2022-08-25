@@ -137,6 +137,14 @@ public class JavaIo {
         void write(int b);
     }
 
+    /*
+    Example of a non-annotated type, present here for testing (otherwise inspection hasn't taken place).
+    See TestCommonJavaIO.testByteArrayOutputStreamToByteArray() and Basics_22
+     */
+    interface ByteArrayOutputStream$ {
+
+    }
+
     // obviously not a container, it wraps an object it will modify
     @Independent(absent = true)
     static class FilterOutputStream$ {

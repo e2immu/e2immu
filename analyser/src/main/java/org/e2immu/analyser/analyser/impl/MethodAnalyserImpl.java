@@ -31,8 +31,7 @@ import org.slf4j.LoggerFactory;
 import java.util.*;
 import java.util.stream.Collectors;
 
-import static org.e2immu.analyser.analyser.Property.IMMUTABLE;
-import static org.e2immu.analyser.analyser.Property.NOT_NULL_EXPRESSION;
+import static org.e2immu.analyser.analyser.Property.*;
 import static org.e2immu.analyser.config.AnalyserProgram.Step.ALL;
 
 public abstract class MethodAnalyserImpl extends AbstractAnalyser implements MethodAnalyser {
@@ -165,10 +164,8 @@ public abstract class MethodAnalyserImpl extends AbstractAnalyser implements Met
                     check(e2.identity);
                     check(e2.container);
 
-                    DV typeImmutable = getMethodAnalysis().getProperty(IMMUTABLE);
-                    Expression srv = methodAnalysis.getSingleReturnValue();
-                    String constantValue = srv != null && MultiLevel.isAtLeastEventuallyRecursivelyImmutable(typeImmutable)
-                            ? srv.unQuotedString() : "";
+                    DV constant = getMethodAnalysis().getProperty(CONSTANT);
+                    String constantValue = constant.valueIsTrue() ? methodAnalysis.getSingleReturnValue().unQuotedString() : "";
                     analyserResultBuilder.add(CheckImmutable.check(methodInfo, e2.finalFields, methodAnalysis, null));
                     analyserResultBuilder.add(CheckImmutable.check(methodInfo, e2.immutable, methodAnalysis, null));
                     analyserResultBuilder.add(CheckImmutable.check(methodInfo, e2.immutableContainer, methodAnalysis, constantValue));

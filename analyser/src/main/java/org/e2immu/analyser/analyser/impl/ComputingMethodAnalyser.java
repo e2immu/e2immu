@@ -687,14 +687,21 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
             return MultiLevel.CONTAINER_DV;
         }
         VariableInfo variableInfo = getReturnAsVariable();
-
-        DV dynamic = variableInfo.getProperty(CONTAINER);
+        DV dynamic;
+        if (variableInfo.valueIsSet() && variableInfo.getValue() instanceof VariableExpression ve
+                && ve.variable() instanceof This thisVar) {
+            // read directly from type analyser
+            TypeAnalysis typeAnalysis = analyserContext.getTypeAnalysis(thisVar.typeInfo);
+            dynamic = typeAnalysis.getProperty(CONTAINER);
+        } else {
+            dynamic = variableInfo.getProperty(CONTAINER);
+        }
         DV dynamicExt = variableInfo.getProperty(EXTERNAL_CONTAINER);
         return dynamic.max(dynamicExt);
     }
 
     private DV computeImmutableValue(boolean allowBreakDelay) {
-        DV formalImmutable = analyserContext.defaultImmutable(methodInfo.returnType());
+        DV formalImmutable = analyserContext.typeImmutable(methodInfo.returnType());
         if (formalImmutable.equals(MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV)) {
             return formalImmutable;
         }
@@ -970,7 +977,10 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
             independent = linkedVariables.stream()
                     .filter(e -> e.getKey() instanceof FieldReference fr && fr.scopeIsRecursivelyThis()
                             || e.getKey() instanceof This)
-                    .map(e -> computeIndependent.compute(e.getValue(), returnType, immutable, e.getKey().parameterizedType()))
+                    .map(e -> {
+                        if (e.getKey() instanceof This) return MultiLevel.INDEPENDENT_DV;
+                        return computeIndependent.compute(e.getValue(), returnType, immutable, e.getKey().parameterizedType());
+                    })
                     .reduce(MultiLevel.INDEPENDENT_DV, DV::min);
         }
         methodAnalysis.setProperty(INDEPENDENT, independent);

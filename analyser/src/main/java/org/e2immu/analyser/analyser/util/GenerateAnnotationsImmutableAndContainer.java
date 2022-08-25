@@ -43,7 +43,8 @@ public class GenerateAnnotationsImmutableAndContainer {
 
     // for testing
     public static Map<Class<?>, Map<String, Object>> generate(DV immutable, DV container, boolean isType) {
-        return generate(immutable, container, isType, "abc", true, true, null);
+        return generate(immutable, container, isType, "abc", true,
+                true, null, false);
 
     }
 
@@ -54,7 +55,8 @@ public class GenerateAnnotationsImmutableAndContainer {
                                                               String mark,
                                                               boolean immutableBetterThanFormal,
                                                               boolean containerBetterThanFormal) {
-        return generate(immutable, container, isType, mark, immutableBetterThanFormal, containerBetterThanFormal, null);
+        return generate(immutable, container, isType, mark, immutableBetterThanFormal, containerBetterThanFormal,
+                null, false);
 
     }
 
@@ -64,7 +66,8 @@ public class GenerateAnnotationsImmutableAndContainer {
                                                               String mark,
                                                               boolean immutableBetterThanFormal,
                                                               boolean containerBetterThanFormal,
-                                                              String constantValue) {
+                                                              String constantValue,
+                                                              boolean constantImplied) {
         if (immutable.isDelayed()) {
             return Map.of();
         }
@@ -100,8 +103,9 @@ public class GenerateAnnotationsImmutableAndContainer {
         // EFFECTIVE
         if (effective == MultiLevel.Effective.EFFECTIVE) {
             if (constantValue != null && level == MultiLevel.Level.IMMUTABLE_R.level) {
-                return map(level, true, false, false,
-                        Map.of(VALUE, constantValue));
+                Map<String, Object> map = constantImplied ? Map.of(VALUE, constantValue, IMPLIED, true)
+                        : Map.of(VALUE, constantValue);
+                return map(level, true, false, false, map);
             }
             if (isType || immutableBetterThanFormal || haveContainer && containerBetterThanFormal) {
                 return map(level, haveContainer, containerInconclusive, containerBetterThanFormal, NO_PARAMS);

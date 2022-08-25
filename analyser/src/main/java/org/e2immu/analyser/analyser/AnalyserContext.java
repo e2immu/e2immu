@@ -183,7 +183,7 @@ public interface AnalyserContext extends AnalysisProvider, InspectionProvider {
     default DV immutableOfHiddenContentInTypeParameters(ParameterizedType parameterizedType) {
         SetOfTypes hiddenContentTypes = typeParametersOf(parameterizedType);
         return hiddenContentTypes.types().stream()
-                .map(this::defaultImmutable)
+                .map(this::typeImmutable)
                 .reduce(MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, DV::min);
     }
 

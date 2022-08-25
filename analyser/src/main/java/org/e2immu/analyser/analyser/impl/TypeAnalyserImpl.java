@@ -140,8 +140,7 @@ public abstract class TypeAnalyserImpl extends AbstractAnalyser implements TypeA
     private void internalCheckImmutableIndependent() {
         DV independent = typeAnalysis.getProperty(Property.INDEPENDENT);
         DV immutable = typeAnalysis.getProperty(Property.IMMUTABLE);
-        assert MultiLevel.independentConsistentWithImmutable(independent, immutable)
-                : "Have type %s, independent %s, immutable %s".formatted(typeInfo.fullyQualifiedName, independent, immutable);
+        assert MultiLevel.independentConsistentWithImmutable(independent, immutable);
     }
 
     private void check(TypeInfo typeInfo, AnnotationExpression annotationKey) {

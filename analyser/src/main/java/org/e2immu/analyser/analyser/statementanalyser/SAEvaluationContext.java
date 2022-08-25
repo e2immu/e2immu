@@ -15,7 +15,6 @@
 package org.e2immu.analyser.analyser.statementanalyser;
 
 import org.e2immu.analyser.analyser.*;
-import org.e2immu.analyser.analyser.delay.DelayFactory;
 import org.e2immu.analyser.analyser.delay.VariableCause;
 import org.e2immu.analyser.analyser.nonanalyserimpl.AbstractEvaluationContextImpl;
 import org.e2immu.analyser.analyser.nonanalyserimpl.VariableInfoImpl;
@@ -277,7 +276,7 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
             if (MultiLevel.isAtLeastEffectivelyE2Immutable(imm)) return DV.TRUE_DV;
             DV extImm = variableInfo.getProperty(EXTERNAL_IMMUTABLE);
             if (MultiLevel.isAtLeastEffectivelyE2Immutable(extImm)) return DV.TRUE_DV;
-            DV formal = analyserContext.defaultImmutable(variableInfo.variable().parameterizedType());
+            DV formal = analyserContext.typeImmutable(variableInfo.variable().parameterizedType());
             return DV.fromBoolDv(MultiLevel.isAtLeastEffectivelyE2Immutable(formal));
         }
         DV valueProperty = getProperty(value, IMMUTABLE, true, false);

@@ -365,12 +365,11 @@ public class MultiLevel {
     public static boolean independentConsistentWithImmutable(DV independent, DV immutable) {
         assert independent.isDone();
         assert immutable.isDone();
-        int levelIndependent = MultiLevel.level(independent);
         int levelImmutable = MultiLevel.level(immutable);
-        if (levelImmutable == 0) return true; // @E1, mutable; independent can be anything
-        if (levelImmutable == MAX_LEVEL) return levelIndependent == MAX_LEVEL;
-        Effective effectiveIndependent = MultiLevel.effective(independent);
-        return (levelImmutable == levelIndependent + 1) && effectiveIndependent == EFFECTIVE;
+        if (levelImmutable == 0) return true; // final fields, mutable; independent can be anything
+        if (levelImmutable == MAX_LEVEL) return INDEPENDENT_DV.equals(independent);
+        // immutable, can be with or without hc
+        return INDEPENDENT_1_DV.le(independent);
     }
 
     /*

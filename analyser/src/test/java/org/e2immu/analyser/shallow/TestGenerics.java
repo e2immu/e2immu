@@ -49,7 +49,7 @@ public class TestGenerics extends CommonAnnotatedAPI {
         assertEquals("Type java.util.stream.Stream<java.lang.Integer>", streamOfIntegers.toString());
 
         assertEquals(MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, AnalysisProvider.DEFAULT_PROVIDER
-                .defaultImmutable(streamOfIntegers));
+                .typeImmutable(streamOfIntegers));
     }
 
     @Test
@@ -71,9 +71,9 @@ public class TestGenerics extends CommonAnnotatedAPI {
                 streamOfOptionalIntegers.toString());
 
         assertEquals(MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV,
-                AnalysisProvider.DEFAULT_PROVIDER.defaultImmutable(streamOfOptionalIntegers));
+                AnalysisProvider.DEFAULT_PROVIDER.typeImmutable(streamOfOptionalIntegers));
         assertEquals(MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV,
-                AnalysisProvider.DEFAULT_PROVIDER.defaultImmutable(streamOfOptionalIntegers));
+                AnalysisProvider.DEFAULT_PROVIDER.typeImmutable(streamOfOptionalIntegers));
     }
 
     /*
@@ -103,7 +103,7 @@ public class TestGenerics extends CommonAnnotatedAPI {
                 streamOfEntryStringIntegers.toString());
 
         assertEquals(MultiLevel.MUTABLE_DV,
-                AnalysisProvider.DEFAULT_PROVIDER.defaultImmutable(streamOfEntryStringIntegers));
+                AnalysisProvider.DEFAULT_PROVIDER.typeImmutable(streamOfEntryStringIntegers));
     }
 
 }

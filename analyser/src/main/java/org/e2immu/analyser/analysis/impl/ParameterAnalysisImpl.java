@@ -184,7 +184,7 @@ public class ParameterAnalysisImpl extends AnalysisImpl implements ParameterAnal
                     parameterInfo.parameterizedType.isPrimitiveExcludingVoid());
 
             // @Independent1; @Independent, @Dependent not shown
-            DV independentType = analysisProvider.defaultIndependent(parameterInfo.parameterizedType);
+            DV independentType = analysisProvider.typeIndependent(parameterInfo.parameterizedType);
             DV independent = getProperty(Property.INDEPENDENT);
             if (independent.equals(MultiLevel.INDEPENDENT_DV) && independentType.lt(MultiLevel.INDEPENDENT_DV)) {
                 addAnnotation(e2ImmuAnnotationExpressions.independent);
@@ -194,14 +194,14 @@ public class ParameterAnalysisImpl extends AnalysisImpl implements ParameterAnal
                 addAnnotation(independentHC);
             }
 
-            DV formallyImmutable = analysisProvider.defaultImmutable(parameterInfo.parameterizedType);
+            DV formallyImmutable = analysisProvider.typeImmutable(parameterInfo.parameterizedType);
             DV dynamicallyImmutable = getProperty(Property.IMMUTABLE);
-            DV formallyContainer = analysisProvider.defaultContainer(parameterInfo.parameterizedType);
+            DV formallyContainer = analysisProvider.typeContainer(parameterInfo.parameterizedType);
             DV dynamicallyContainer = getProperty(Property.CONTAINER);
             boolean immutableBetterThanFormal = dynamicallyImmutable.gt(formallyImmutable);
             boolean containerBetterThanFormal = dynamicallyContainer.gt(formallyContainer);
             doImmutableContainer(e2ImmuAnnotationExpressions, dynamicallyImmutable, dynamicallyContainer,
-                    immutableBetterThanFormal, containerBetterThanFormal, null);
+                    immutableBetterThanFormal, containerBetterThanFormal, null, false);
         }
 
         public boolean addAssignedToField(FieldInfo fieldInfo, DV assignedOrLinked) {

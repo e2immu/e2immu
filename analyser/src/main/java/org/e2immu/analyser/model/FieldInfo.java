@@ -25,7 +25,10 @@ import org.e2immu.analyser.output.*;
 import org.e2immu.analyser.util.UpgradableBooleanMap;
 import org.e2immu.support.SetOnce;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Objects;
+import java.util.Set;
 import java.util.stream.Stream;
 
 public class FieldInfo implements WithInspectionAndAnalysis {
@@ -156,7 +159,8 @@ public class FieldInfo implements WithInspectionAndAnalysis {
         Set<FieldModifier> modifiers = fieldInspection.getModifiers();
         List<FieldModifier> list = new ArrayList<>();
         Inspection.Access access = fieldInspection.getAccess();
-        Inspection.Access ownerAccess = owner.typeInspection.get().getAccess();
+        TypeInspection typeInspection = owner.typeInspection.get();
+        Inspection.Access ownerAccess = typeInspection.getAccess();
 
         /*
         if the owner access is private, we don't write any modifier
@@ -164,9 +168,25 @@ public class FieldInfo implements WithInspectionAndAnalysis {
         if (access.le(ownerAccess) && access != Inspection.Access.PACKAGE && ownerAccess != Inspection.Access.PRIVATE) {
             list.add(toFieldModifier(access));
         }
-        for (FieldModifier fm : FieldModifier.NON_ACCESS_SORTED) {
-            if (modifiers.contains(fm)) list.add(fm);
+        // sorting... STATIC, FINAL, VOLATILE, TRANSIENT
+        boolean inInterface = typeInspection.isInterface();
+        if (!inInterface) {
+            if (modifiers.contains(FieldModifier.STATIC)) {
+                list.add(FieldModifier.STATIC);
+            }
+            if (modifiers.contains(FieldModifier.FINAL)) {
+                list.add(FieldModifier.FINAL);
+            }
         }
+        if (modifiers.contains(FieldModifier.VOLATILE)) {
+            assert !inInterface;
+            list.add(FieldModifier.VOLATILE);
+        }
+        if (modifiers.contains(FieldModifier.TRANSIENT)) {
+            assert !inInterface;
+            list.add(FieldModifier.TRANSIENT);
+        }
+
         return list;
     }
 

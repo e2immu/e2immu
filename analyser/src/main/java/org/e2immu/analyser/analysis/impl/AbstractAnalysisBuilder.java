@@ -145,7 +145,8 @@ abstract class AbstractAnalysisBuilder implements Analysis {
                                         DV container,
                                         boolean immutableBetterThanFormal,
                                         boolean containerBetterThanFormal,
-                                        String constantValue) {
+                                        String constantValue,
+                                        boolean constantImplied) {
         String eventualFieldNames;
         boolean isType = this instanceof TypeAnalysis;
         boolean showFieldNames = isType && ((TypeAnalysis) this).isEventual()
@@ -156,7 +157,8 @@ abstract class AbstractAnalysisBuilder implements Analysis {
             eventualFieldNames = "";
         }
         Map<Class<?>, Map<String, Object>> map = GenerateAnnotationsImmutableAndContainer.generate(immutable, container,
-                isType, eventualFieldNames, immutableBetterThanFormal, containerBetterThanFormal, constantValue);
+                isType, eventualFieldNames, immutableBetterThanFormal, containerBetterThanFormal, constantValue,
+                constantImplied);
         generate(e2, map);
     }
 

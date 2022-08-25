@@ -20,6 +20,7 @@ import org.e2immu.analyser.analysis.Analysis;
 import org.e2immu.analyser.analysis.MethodAnalysis;
 import org.e2immu.analyser.analysis.ParameterAnalysis;
 import org.e2immu.analyser.inspector.MethodResolution;
+import org.e2immu.analyser.model.expression.ConstantExpression;
 import org.e2immu.analyser.model.impl.LocationImpl;
 import org.e2immu.analyser.model.statement.Block;
 import org.e2immu.analyser.model.statement.ReturnStatement;
@@ -418,5 +419,15 @@ public class MethodInfo implements WithInspectionAndAnalysis {
             }
         }
         return Map.copyOf(result);
+    }
+
+    // as in "boolean x() { return true };
+    public boolean singleStatementReturnConstant() {
+        if (methodInspection.get().isAbstract() || noReturnValue()) return false;
+        Block block = methodInspection.get().getMethodBody();
+        assert block != null;
+        return block.structure.statements().size() == 1
+                && block.structure.statements().get(0) instanceof ReturnStatement rs
+                && rs.expression instanceof ConstantExpression<?>;
     }
 }

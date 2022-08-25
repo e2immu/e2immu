@@ -192,7 +192,7 @@ public class ComputeLinkedVariables {
 
         Predicate<Variable> computeMyself = evaluationContext::isMyself;
         Function<Variable, DV> computeImmutable = v -> v instanceof This || evaluationContext.isMyself(v) ? MultiLevel.NOT_INVOLVED_DV :
-                analysisProvider.defaultImmutable(v.parameterizedType());
+                analysisProvider.typeImmutable(v.parameterizedType());
         Function<Variable, DV> computeImmutableHiddenContent = v -> v instanceof This ? MultiLevel.NOT_INVOLVED_DV :
                 evaluationContext.getAnalyserContext().immutableOfHiddenContentInTypeParameters(v.parameterizedType());
 

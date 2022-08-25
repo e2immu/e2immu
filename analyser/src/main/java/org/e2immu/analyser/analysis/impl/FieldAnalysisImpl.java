@@ -238,9 +238,9 @@ public class FieldAnalysisImpl extends AnalysisImpl implements FieldAnalysis {
             // all other annotations cannot be added to primitives
             if (type.isPrimitiveExcludingVoid()) return;
 
-            DV formallyImmutable = typeImmutable();
+            DV formallyImmutable = analysisProvider.typeImmutable(fieldInfo.type);
             DV dynamicallyImmutable = getProperty(Property.EXTERNAL_IMMUTABLE);
-            DV formallyContainer = typeContainer();
+            DV formallyContainer = analysisProvider.typeContainer(fieldInfo.type);
             DV dynamicallyContainer = getProperty(Property.EXTERNAL_CONTAINER);
 
             // @NotModified(after=), @NotModified, @Modified
@@ -270,11 +270,14 @@ public class FieldAnalysisImpl extends AnalysisImpl implements FieldAnalysis {
             DV constant = getProperty(Property.CONSTANT);
             String constantValue = MultiLevel.isAtLeastEventuallyRecursivelyImmutable(ownerImmutable) && constant.valueIsTrue()
                     ? getValue().unQuotedString() : null;
+
+            // final boolean x = true; does NOT need an annotation
+            boolean constantImplied = isExplicitlyFinal && fieldInfo.fieldInspection.get().hasFieldInitializer();
             doImmutableContainer(e2, dynamicallyImmutable, dynamicallyContainer,
-                    immutableBetterThanFormal, containerBetterThanFormal, constantValue);
+                    immutableBetterThanFormal, containerBetterThanFormal, constantValue, constantImplied);
 
             // @Independent
-            DV formallyIndependent = typeIndependent();
+            DV formallyIndependent = analysisProvider.typeIndependent(fieldInfo.type);
             DV dynamicallyIndependent = getProperty(Property.INDEPENDENT);
             doIndependent(e2, dynamicallyIndependent, formallyIndependent, dynamicallyImmutable);
 
@@ -285,17 +288,18 @@ public class FieldAnalysisImpl extends AnalysisImpl implements FieldAnalysis {
         }
 
         private DV typeImmutable() {
-            return fieldInfo.owner == bestType || bestType == null ? MultiLevel.MUTABLE_DV :
+            if (bestType == null) return MultiLevel.EFFECTIVELY_E2IMMUTABLE_DV;
+            return// fieldInfo.owner == bestType || bestType == null ? MultiLevel.MUTABLE_DV :
                     analysisProvider.getTypeAnalysis(bestType).getProperty(Property.IMMUTABLE);
         }
 
         private DV typeIndependent() {
-            return fieldInfo.owner == bestType || bestType == null ? MultiLevel.DEPENDENT_DV :
+            return// fieldInfo.owner == bestType || bestType == null ? MultiLevel.DEPENDENT_DV :
                     analysisProvider.getTypeAnalysis(bestType).getProperty(Property.INDEPENDENT);
         }
 
         private DV typeContainer() {
-            return fieldInfo.owner == bestType || bestType == null ? MultiLevel.NOT_CONTAINER_DV :
+            return //fieldInfo.owner == bestType || bestType == null ? MultiLevel.NOT_CONTAINER_DV :
                     analysisProvider.getTypeAnalysis(bestType).getProperty(Property.CONTAINER);
         }
 

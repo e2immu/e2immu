@@ -26,10 +26,7 @@ import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.TypeInfo;
 import org.junit.jupiter.api.Test;
 
-import java.io.Closeable;
-import java.io.FilterOutputStream;
-import java.io.PrintStream;
-import java.io.Writer;
+import java.io.*;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -126,5 +123,18 @@ public class TestCommonJavaIO extends CommonAnnotatedAPI {
         assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, p0.getProperty(Property.NOT_NULL_PARAMETER));
         assertEquals(DV.TRUE_DV, p0.getProperty(Property.MODIFIED_VARIABLE));
         assertEquals(MultiLevel.DEPENDENT_DV, p0.getProperty(Property.INDEPENDENT));
+    }
+
+
+    @Test
+    public void testByteArrayOutputStreamToByteArray() {
+        TypeInfo typeInfo = typeContext.getFullyQualified(ByteArrayOutputStream.class);
+        MethodInfo methodInfo = typeInfo.findUniqueMethod("toByteArray", 0);
+
+        MethodAnalysis methodAnalysis = methodInfo.methodAnalysis.get();
+        assertEquals(DV.FALSE_DV, methodAnalysis.getProperty(Property.MODIFIED_METHOD));
+        assertEquals(MultiLevel.DEPENDENT_DV, methodAnalysis.getProperty(Property.INDEPENDENT));
+
+        assertFalse(methodInfo.methodResolution.get().allowsInterrupts());
     }
 }

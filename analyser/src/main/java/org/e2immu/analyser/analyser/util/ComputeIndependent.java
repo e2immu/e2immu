@@ -66,7 +66,7 @@ public record ComputeIndependent(AnalyserContext analyserContext) {
             // types a and b are either equal or assignable, otherwise one cannot assign
             assert oneType != null : "Assignment?";
 
-            DV immutable = immutableOneType != null ? immutableOneType : analyserContext.defaultImmutable(oneType);
+            DV immutable = immutableOneType != null ? immutableOneType : analyserContext.typeImmutable(oneType);
             return MultiLevel.independentCorrespondingToImmutable(immutable);
         }
 

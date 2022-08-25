@@ -389,17 +389,18 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
             }
             addAnnotation(ae);
 
-            DV formallyImmutable = analysisProvider.defaultImmutable(returnType);
+            DV formallyImmutable = analysisProvider.typeImmutable(returnType);
             DV dynamicallyImmutable = getProperty(Property.IMMUTABLE);
-            DV formallyContainer = analysisProvider.defaultContainer(returnType);
+            DV formallyContainer = analysisProvider.typeContainer(returnType);
             DV dynamicallyContainer = getProperty(Property.CONTAINER);
             boolean immutableBetterThanFormal = dynamicallyImmutable.gt(formallyImmutable);
             boolean containerBetterThanFormal = dynamicallyContainer.gt(formallyContainer);
             DV constant = getProperty(Property.CONSTANT);
             String constantValue = constant.valueIsTrue() ? getSingleReturnValue().unQuotedString() : null;
+            boolean constantImplied = methodInfo.singleStatementReturnConstant();
 
             doImmutableContainer(e2, dynamicallyImmutable, dynamicallyContainer, immutableBetterThanFormal,
-                    containerBetterThanFormal, constantValue);
+                    containerBetterThanFormal, constantValue, constantImplied);
 
             if (returnType.isVoidOrJavaLangVoid()) return;
 
@@ -421,7 +422,7 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
 
             // @Dependent @Independent
             DV independent = getProperty(Property.INDEPENDENT);
-            DV formallyIndependent = analyserContext.defaultIndependent(methodInfo.returnType());
+            DV formallyIndependent = analyserContext.typeIndependent(methodInfo.returnType());
             doIndependent(e2, independent, formallyIndependent, dynamicallyImmutable);
         }
 
