@@ -954,11 +954,11 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
     private DV independenceOfField(FieldAnalysis fieldAnalysis) {
         DV immutable = fieldAnalysis.getProperty(Property.EXTERNAL_IMMUTABLE);
         if (immutable.isDelayed()) return immutable;
-        if (immutable.lt(MultiLevel.EFFECTIVELY_E2IMMUTABLE_DV)) return MultiLevel.DEPENDENT_DV;
+        if (immutable.lt(MultiLevel.EFFECTIVELY_IMMUTABLE_HC_DV)) return MultiLevel.DEPENDENT_DV;
         TypeInfo bestType = fieldAnalysis.getFieldInfo().type.bestTypeInfo(analyserContext);
         if (bestType == null) {
             // unbound type parameter
-            return MultiLevel.INDEPENDENT_1_DV;
+            return MultiLevel.INDEPENDENT_HC_DV;
         }
         int immutableLevel = MultiLevel.level(immutable);
         return MultiLevel.independentCorrespondingToImmutableLevelDv(immutableLevel);
@@ -1094,7 +1094,7 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
             LOGGER.debug("Extension class: don't know yet about @Immutable on {}, delaying", typeInfo);
             return immutable.causesOfDelay();
         }
-        if (immutable.lt(MultiLevel.EVENTUALLY_E2IMMUTABLE_DV)) {
+        if (immutable.lt(MultiLevel.EVENTUALLY_IMMUTABLE_HC_DV)) {
             LOGGER.debug("Type {} is not an @ExtensionClass, not (eventually) @Immutable", typeInfo);
             typeAnalysis.setProperty(Property.EXTENSION_CLASS, DV.FALSE_DV);
             return DONE;
@@ -1165,7 +1165,7 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
             LOGGER.debug("Utility class: Don't know yet about @Immutable on {}, delaying", typeInfo);
             return immutable.causesOfDelay();
         }
-        if (MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV.equals(immutable)) {
+        if (MultiLevel.EFFECTIVELY_IMMUTABLE_DV.equals(immutable)) {
             LOGGER.debug("Type {} is not a @UtilityClass, not recursively @Immutable", typeInfo);
             typeAnalysis.setProperty(Property.UTILITY_CLASS, DV.FALSE_DV);
             return DONE;

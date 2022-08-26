@@ -22,6 +22,7 @@ import org.e2immu.analyser.output.Space;
 import org.e2immu.analyser.output.Symbol;
 import org.e2immu.analyser.output.Text;
 import org.e2immu.analyser.parser.InspectionProvider;
+import org.e2immu.annotation.Fluent;
 import org.e2immu.support.Either;
 import org.e2immu.support.SetOnce;
 import org.slf4j.Logger;
@@ -163,5 +164,12 @@ public class TypeParameterImpl implements TypeParameter {
 
     public void setAnnotatedWithIndependent(boolean b) {
         annotatedWithIndependent.set(b);
+    }
+
+    // mostly for testing
+    @Fluent
+    public TypeParameterImpl noTypeBounds() {
+        setTypeBounds(List.of());
+        return this;
     }
 }

@@ -129,7 +129,7 @@ public class Test_16_Modification_20 extends CommonTestRunner {
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("C1".equals(d.methodInfo().name)) {
                 assertDv(d.p(0), 4, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
-                assertDv(d.p(0), 1, MultiLevel.INDEPENDENT_1_DV, Property.INDEPENDENT);
+                assertDv(d.p(0), 1, MultiLevel.INDEPENDENT_HC_DV, Property.INDEPENDENT);
                 assertDv(d.p(0), 1, MultiLevel.NULLABLE_DV, Property.NOT_NULL_PARAMETER);
             }
             // addAll will not modify its parameters
@@ -173,7 +173,7 @@ public class Test_16_Modification_20 extends CommonTestRunner {
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("C1".equals(d.typeInfo().simpleName)) {
                 assertTrue(d.typeAnalysis().getHiddenContentTypes().isEmpty());
-                assertDv(d, 3, MultiLevel.EFFECTIVELY_E2IMMUTABLE_DV, Property.IMMUTABLE);
+                assertDv(d, 3, MultiLevel.EFFECTIVELY_IMMUTABLE_HC_DV, Property.IMMUTABLE);
             }
             if ("Modification_20".equals(d.typeInfo().simpleName)) {
                 assertTrue(d.typeAnalysis().getHiddenContentTypes().isEmpty());

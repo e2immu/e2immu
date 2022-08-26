@@ -293,7 +293,7 @@ public class Test_14_Warnings extends CommonTestRunner {
         };
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("Warnings_3".equals(d.methodInfo().name)) {
-                assertDv(d.p(1), 1, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, EXTERNAL_IMMUTABLE);
+                assertDv(d.p(1), 1, MultiLevel.EFFECTIVELY_IMMUTABLE_DV, EXTERNAL_IMMUTABLE);
             }
         };
 
@@ -314,7 +314,7 @@ public class Test_14_Warnings extends CommonTestRunner {
                     // because immutableOfHiddenContent = @ERContainer
                     assertTrue(d.variableInfo().getLinkedVariables().isEmpty());
                     // we wait because of hidden content
-                    assertDv(d, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, IMMUTABLE);
+                    assertDv(d, MultiLevel.EFFECTIVELY_IMMUTABLE_DV, IMMUTABLE);
                 }
             }
         };
@@ -326,7 +326,7 @@ public class Test_14_Warnings extends CommonTestRunner {
 
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
             if ("set".equals(d.fieldInfo().name)) {
-                assertDv(d, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, EXTERNAL_IMMUTABLE);
+                assertDv(d, MultiLevel.EFFECTIVELY_IMMUTABLE_DV, EXTERNAL_IMMUTABLE);
             }
         };
 

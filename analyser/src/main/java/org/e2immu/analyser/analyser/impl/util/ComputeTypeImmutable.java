@@ -87,7 +87,7 @@ public record ComputeTypeImmutable(AnalyserContext analyserContext,
         /**
          * with hidden content? or without? starts at "without", can go down
          */
-        int minLevel = MultiLevel.Level.IMMUTABLE_R.level; // can only go down!
+        int minLevel = MultiLevel.Level.IMMUTABLE.level; // can only go down!
     }
 
     public AnalysisStatus analyseImmutable(Analyser.SharedState sharedState) {
@@ -197,11 +197,8 @@ public record ComputeTypeImmutable(AnalyserContext analyserContext,
                     }
                 } else {
                     DV correctedIndependent = correctIndependentFunctionalInterface(parameterAnalysis, independent);
-                    if (correctedIndependent.equals(MultiLevel.DEPENDENT_DV)) {
-                        throw new UnsupportedOperationException("Already in negative");
-                    }
-                    int independentLevel = MultiLevel.oneLevelMoreFrom(correctedIndependent);
-                    w.minLevel = Math.min(w.minLevel, independentLevel);
+                    int correspondingImmutableLevel = MultiLevel.correspondingImmutableLevel(correctedIndependent);
+                    w.minLevel = Math.min(w.minLevel, correspondingImmutableLevel);
                 }
             }
         } else {
@@ -255,8 +252,8 @@ public record ComputeTypeImmutable(AnalyserContext analyserContext,
             if (independent.equals(MultiLevel.DEPENDENT_DV)) {
                 throw new UnsupportedOperationException("Already in negative");
             }
-            int independentLevel = MultiLevel.oneLevelMoreFrom(independent);
-            w.minLevel = Math.min(w.minLevel, independentLevel);
+            int correspondingImmutableLevel = MultiLevel.correspondingImmutableLevel(independent);
+            w.minLevel = Math.min(w.minLevel, correspondingImmutableLevel);
         } else {
             w.minLevel = Math.min(w.minLevel, MultiLevel.level(returnTypeImmutable));
         }
@@ -280,8 +277,8 @@ public record ComputeTypeImmutable(AnalyserContext analyserContext,
                     if (correctedIndependent.equals(MultiLevel.DEPENDENT_DV)) {
                         throw new UnsupportedOperationException("Already in negative");
                     }
-                    int independentLevel = MultiLevel.oneLevelMoreFrom(correctedIndependent);
-                    w.minLevel = Math.min(w.minLevel, independentLevel);
+                    int correspondingImmutableLevel = MultiLevel.correspondingImmutableLevel(correctedIndependent);
+                    w.minLevel = Math.min(w.minLevel, correspondingImmutableLevel);
                 }
             }
         }
@@ -431,7 +428,7 @@ public record ComputeTypeImmutable(AnalyserContext analyserContext,
                 whenImmutableFails = MultiLevel.MUTABLE_DV;
                 w.fieldsThatMustBeGuarded.addAll(fieldsNotE1);
             } else {
-                whenImmutableFails = MultiLevel.EVENTUALLY_E1IMMUTABLE_DV;
+                whenImmutableFails = MultiLevel.EVENTUALLY_FINAL_FIELDS_DV;
             }
             w.eventual = true;
 
@@ -454,7 +451,7 @@ public record ComputeTypeImmutable(AnalyserContext analyserContext,
                         " preconditions to find out if it is eventually level 2 immutable", typeInfo);
                 return delayImmutable(approvedDelays, sharedState.allowBreakDelay(), MultiLevel.MUTABLE_DV);
             }
-            whenImmutableFails = MultiLevel.EFFECTIVELY_E1IMMUTABLE_DV;
+            whenImmutableFails = MultiLevel.EFFECTIVELY_FINAL_FIELDS_DV;
             // it is possible that all fields are final, yet some field's content is used as the precondition
             w.eventual = !typeAnalysis.approvedPreconditionsImmutableIsEmpty();
         }
@@ -512,7 +509,7 @@ public record ComputeTypeImmutable(AnalyserContext analyserContext,
         assert parentClass != null;
         TypeInfo parentType = parentClass.typeInfo;
         DV parentImmutable = analyserContext.getTypeAnalysis(parentType).getProperty(Property.IMMUTABLE);
-        return MultiLevel.effectiveAtLevel1Immutable(parentImmutable);
+        return MultiLevel.effectiveAtFinalFields(parentImmutable);
     }
 
     private AnalysisStatus negativeAndEventuallyImmutableFields(Work w) {
@@ -744,7 +741,7 @@ public record ComputeTypeImmutable(AnalyserContext analyserContext,
                 && parameterAnalysis.getParameterInfo().parameterizedType.isFunctionalInterface()
                 && !parameterAnalysis.getParameterInfo().getMethod().methodInspection.get().isPrivate()) {
             LOGGER.debug("Incoming functional interface on non-private method");
-            correctedIndependent = independent.max(MultiLevel.INDEPENDENT_1_DV);
+            correctedIndependent = independent.max(MultiLevel.INDEPENDENT_HC_DV);
         } else {
             correctedIndependent = independent;
         }

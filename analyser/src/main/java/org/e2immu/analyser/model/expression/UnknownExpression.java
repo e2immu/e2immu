@@ -135,7 +135,7 @@ public class UnknownExpression extends BaseExpression implements Expression {
     public static DV primitiveGetProperty(Property property) {
         switch (property) {
             case IMMUTABLE:
-                return MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV;
+                return MultiLevel.EFFECTIVELY_IMMUTABLE_DV;
             case CONTAINER:
                 return MultiLevel.CONTAINER_DV;
             case NOT_NULL_EXPRESSION:

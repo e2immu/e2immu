@@ -692,7 +692,7 @@ public class Test_01_Loops_6plus extends CommonTestRunner {
 
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("Container".equals(d.typeInfo().simpleName)) {
-                assertDv(d, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, IMMUTABLE);
+                assertDv(d, MultiLevel.EFFECTIVELY_IMMUTABLE_DV, IMMUTABLE);
                 assertDv(d, MultiLevel.INDEPENDENT_DV, INDEPENDENT);
             }
         };

@@ -96,7 +96,7 @@ public class Test_25_FieldReference extends CommonTestRunner {
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("ChangeData".equals(d.typeInfo().simpleName)) {
                 assertDv(d, 1, MultiLevel.CONTAINER_DV, Property.CONTAINER);
-                assertDv(d, 1, MultiLevel.EFFECTIVELY_E1IMMUTABLE_DV, Property.IMMUTABLE);
+                assertDv(d, 1, MultiLevel.EFFECTIVELY_FINAL_FIELDS_DV, Property.IMMUTABLE);
             }
             if ("FieldReference_1".equals(d.typeInfo().simpleName)) {
                 assertDv(d, MultiLevel.CONTAINER_DV, Property.CONTAINER);

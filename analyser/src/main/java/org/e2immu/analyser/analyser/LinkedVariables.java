@@ -43,7 +43,7 @@ public class LinkedVariables implements Comparable<LinkedVariables> {
     private LinkedVariables(Map<Variable, DV> variables) {
         assert variables != null;
         this.variables = variables;
-        assert variables.values().stream().noneMatch(dv -> dv == DV.FALSE_DV || dv == MultiLevel.INDEPENDENT_1_DV);
+        assert variables.values().stream().noneMatch(dv -> dv == DV.FALSE_DV || dv == MultiLevel.INDEPENDENT_HC_DV);
     }
 
     // never use .equals() here, marker
@@ -63,13 +63,7 @@ public class LinkedVariables implements Comparable<LinkedVariables> {
         // REC IMM -> NO_LINKING
         if (MultiLevel.isAtLeastEventuallyRecursivelyImmutable(immutable)) return LinkedVariables.LINK_INDEPENDENT;
         int level = MultiLevel.level(immutable);
-        if (level == 0) return LINK_DEPENDENT;
-        return LINK_INDEPENDENT_HC;
-    }
-
-    public static DV fromLinkedVariableToIndependent(DV linked) {
-        int value = linked.value();
-        if (value <= 2) return LINK_DEPENDENT;
+        if (level == MultiLevel.Level.MUTABLE.level) return LINK_DEPENDENT;
         return LINK_INDEPENDENT_HC;
     }
 
@@ -82,7 +76,7 @@ public class LinkedVariables implements Comparable<LinkedVariables> {
     public static final DV LINK_ASSIGNED = new NoDelay(1, "assigned");
     public static final DV LINK_DEPENDENT = new NoDelay(2, "dependent");
     public static final DV LINK_INDEPENDENT_HC = new NoDelay(3, "independent1");
-    public static final DV LINK_INDEPENDENT = new NoDelay(MultiLevel.MAX_LEVEL, "independent");
+    public static final DV LINK_INDEPENDENT = new NoDelay(4, "independent");
 
     public static LinkedVariables of(Variable variable, DV value) {
         return new LinkedVariables(Map.of(variable, value));
@@ -289,9 +283,9 @@ public class LinkedVariables implements Comparable<LinkedVariables> {
         }
 
         Map<Variable, DV> adjustedSource;
-        if (!variables.isEmpty() && sourceImmutable.ge(MultiLevel.EFFECTIVELY_E2IMMUTABLE_DV)) {
+        if (!variables.isEmpty() && sourceImmutable.ge(MultiLevel.EFFECTIVELY_IMMUTABLE_HC_DV)) {
             // level 2+ -> remove all @Dependent
-            boolean recursivelyImmutable = sourceImmutable.equals(MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV);
+            boolean recursivelyImmutable = sourceImmutable.equals(MultiLevel.EFFECTIVELY_IMMUTABLE_DV);
             adjustedSource = variables.entrySet().stream()
                     .filter(e -> recursivelyImmutable ? e.getValue().le(LINK_ASSIGNED) :
                             !e.getValue().equals(LINK_DEPENDENT))

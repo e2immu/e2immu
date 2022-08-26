@@ -28,7 +28,6 @@ import org.e2immu.analyser.model.variable.ReturnVariable;
 import org.e2immu.analyser.model.variable.This;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.parser.CommonTestRunner;
-import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.parser.failing.testexample.Consumer_0;
 import org.e2immu.analyser.util.SetUtil;
 import org.e2immu.analyser.visitor.*;
@@ -100,7 +99,7 @@ public class Test_39_PropagateModification extends CommonTestRunner {
 
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("ClassWithConsumer".equals(d.typeInfo().simpleName)) {
-                assertDv(d, 1, MultiLevel.EFFECTIVELY_E2IMMUTABLE_DV, Property.IMMUTABLE);
+                assertDv(d, 1, MultiLevel.EFFECTIVELY_IMMUTABLE_HC_DV, Property.IMMUTABLE);
             }
         };
 
@@ -170,7 +169,7 @@ public class Test_39_PropagateModification extends CommonTestRunner {
                 if (d.fieldAnalysis().getValue() instanceof VariableExpression ve) {
                     assertTrue(ve.variable() instanceof ParameterInfo);
                 } else fail();
-                assertEquals(MultiLevel.EFFECTIVELY_E2IMMUTABLE_DV,
+                assertEquals(MultiLevel.EFFECTIVELY_IMMUTABLE_HC_DV,
                         d.fieldAnalysis().getProperty(Property.EXTERNAL_IMMUTABLE));
                 assertEquals(MultiLevel.NULLABLE_DV, d.fieldAnalysis().getProperty(Property.EXTERNAL_NOT_NULL));
             }
@@ -215,7 +214,7 @@ public class Test_39_PropagateModification extends CommonTestRunner {
                     if ("2".equals(d.statementId())) {
                         String expect = d.iteration() <= 1 ? "<m:getName>" : "myConsumer.name";
                         assertEquals(expect, d.currentValue().toString());
-                        assertDv(d, 2, MultiLevel.EFFECTIVELY_E2IMMUTABLE_DV, Property.IMMUTABLE);
+                        assertDv(d, 2, MultiLevel.EFFECTIVELY_IMMUTABLE_HC_DV, Property.IMMUTABLE);
                         assertDv(d, 2, MultiLevel.NULLABLE_DV, Property.NOT_NULL_EXPRESSION);
                     }
                 }

@@ -86,7 +86,7 @@ public class Test_ExternalContainer_0 extends CommonTestRunner {
                 if (d.iteration() > 0) {
                     assertEquals("{myContainerLinkedToParameter=assigned:1}", p0.getAssignedToField().toString());
                 }
-                assertDv(d.p(0), 1, MultiLevel.EFFECTIVELY_E2IMMUTABLE_DV, Property.IMMUTABLE);
+                assertDv(d.p(0), 1, MultiLevel.EFFECTIVELY_IMMUTABLE_HC_DV, Property.IMMUTABLE);
             }
             if ("setI".equals(d.methodInfo().name)) {
                 assertDv(d, DV.TRUE_DV, Property.MODIFIED_METHOD);
@@ -112,7 +112,7 @@ public class Test_ExternalContainer_0 extends CommonTestRunner {
             if ("myContainerLinkedToParameter".equals(d.fieldInfo().name)) {
                 assertDv(d, MultiLevel.CONTAINER_DV, Property.EXTERNAL_CONTAINER);
                 assertDv(d, DV.FALSE_DV, Property.MODIFIED_OUTSIDE_METHOD);
-                assertDv(d, MultiLevel.EFFECTIVELY_E2IMMUTABLE_DV, Property.EXTERNAL_IMMUTABLE);
+                assertDv(d, MultiLevel.EFFECTIVELY_IMMUTABLE_HC_DV, Property.EXTERNAL_IMMUTABLE);
                 assertEquals("consumer:0", d.fieldAnalysis().getLinkedVariables().toString());
             }
             if ("iField".equals(d.fieldInfo().name)) {

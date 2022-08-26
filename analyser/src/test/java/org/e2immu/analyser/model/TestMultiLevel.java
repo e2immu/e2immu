@@ -26,89 +26,81 @@ public class TestMultiLevel {
     @Test
     public void testLookup() {
         assertEquals(1, DEPENDENT_DV.value());
-        assertEquals(5, EFFECTIVELY_E1IMMUTABLE_DV.value());
-        assertEquals(5, INDEPENDENT_1_DV.value());
+        assertEquals(5, EFFECTIVELY_FINAL_FIELDS_DV.value());
+        assertEquals(5, INDEPENDENT_HC_DV.value());
 
-        assertEquals(10, EVENTUALLY_E2IMMUTABLE_DV.value());
-        assertEquals(11, EVENTUALLY_E2IMMUTABLE_BEFORE_MARK_DV.value());
-        assertEquals(12, EVENTUALLY_E2IMMUTABLE_AFTER_MARK_DV.value());
-        assertEquals(13, EFFECTIVELY_E2IMMUTABLE_DV.value());
-        assertEquals(805, EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV.value());
-        assertEquals(805, INDEPENDENT_DV.value());
+        assertEquals(10, EVENTUALLY_IMMUTABLE_HC_DV.value());
+        assertEquals(11, EVENTUALLY_IMMUTABLE_HC_BEFORE_MARK_DV.value());
+        assertEquals(12, EVENTUALLY_IMMUTABLE_HC_AFTER_MARK_DV.value());
+        assertEquals(13, EFFECTIVELY_IMMUTABLE_HC_DV.value());
+        assertEquals(21, EFFECTIVELY_IMMUTABLE_DV.value());
+        assertEquals(21, INDEPENDENT_DV.value());
 
         assertEquals(13, EFFECTIVELY_CONTENT_NOT_NULL_DV.value());
         assertEquals(2, composeImmutable(EVENTUAL, 0).value());
-        assertEquals(2, EVENTUALLY_E1IMMUTABLE_DV.value());
+        assertEquals(2, EVENTUALLY_FINAL_FIELDS_DV.value());
     }
 
     @Test
     public void testLevel() {
-        assertEquals(IMMUTABLE_1.level, level(EFFECTIVELY_E1IMMUTABLE_DV));
+        assertEquals(MUTABLE.level, level(EFFECTIVELY_FINAL_FIELDS_DV));
         assertEquals(NOT_NULL_1.level, level(EFFECTIVELY_CONTENT_NOT_NULL_DV));
-        assertEquals(NOT_NULL_2.level, level(EFFECTIVELY_CONTENT2_NOT_NULL_DV));
-        assertEquals(IMMUTABLE_2.level, level(EVENTUALLY_E2IMMUTABLE_DV));
-        assertEquals(IMMUTABLE_2.level, level(EVENTUALLY_E2IMMUTABLE_BEFORE_MARK_DV));
-        assertEquals(IMMUTABLE_1.level, level(EVENTUALLY_E1IMMUTABLE_DV)); // we know about E2IMMUTABLE: FALSE
+        assertEquals(IMMUTABLE_HC.level, level(EVENTUALLY_IMMUTABLE_HC_DV));
+        assertEquals(IMMUTABLE_HC.level, level(EVENTUALLY_IMMUTABLE_HC_BEFORE_MARK_DV));
+        assertEquals(MUTABLE.level, level(EVENTUALLY_FINAL_FIELDS_DV)); // we know about E2IMMUTABLE: FALSE
 
-        assertEquals(INDEPENDENT_1.level, level(INDEPENDENT_1_DV));
+        assertEquals(INDEPENDENT_HC.level, level(INDEPENDENT_HC_DV));
     }
 
     @Test
     public void testEffectiveL1() {
-        assertEquals(EFFECTIVE, effectiveAtLevel1Immutable(EFFECTIVELY_E2IMMUTABLE_DV));
-        assertEquals(EFFECTIVE, effectiveAtLevel1Immutable(EFFECTIVELY_E1IMMUTABLE_DV));
-        assertEquals(EFFECTIVE, effectiveAtLevel1Immutable(EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV));
-        assertEquals(EVENTUAL, effectiveAtLevel1Immutable(EVENTUALLY_E1IMMUTABLE_DV));
-        assertEquals(EVENTUAL, effectiveAtLevel1Immutable(EVENTUALLY_E2IMMUTABLE_DV));
-        assertEquals(FALSE, effectiveAtLevel1Immutable(MUTABLE_DV));
+        assertEquals(EFFECTIVE, effectiveAtFinalFields(EFFECTIVELY_IMMUTABLE_HC_DV));
+        assertEquals(EFFECTIVE, effectiveAtFinalFields(EFFECTIVELY_FINAL_FIELDS_DV));
+        assertEquals(EFFECTIVE, effectiveAtFinalFields(EFFECTIVELY_IMMUTABLE_DV));
+        assertEquals(EVENTUAL, effectiveAtFinalFields(EVENTUALLY_FINAL_FIELDS_DV));
+        assertEquals(EVENTUAL, effectiveAtFinalFields(EVENTUALLY_IMMUTABLE_HC_DV));
+        assertEquals(FALSE, effectiveAtFinalFields(MUTABLE_DV));
     }
 
     @Test
     public void testEffectiveL2() {
-        assertEquals(EFFECTIVE, effectiveAtImmutableLevel(EFFECTIVELY_E2IMMUTABLE_DV));
-        assertEquals(FALSE, effectiveAtImmutableLevel(EFFECTIVELY_E1IMMUTABLE_DV));
-        assertEquals(EFFECTIVE, effectiveAtImmutableLevel(EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV));
-        assertEquals(FALSE, effectiveAtImmutableLevel(EVENTUALLY_E1IMMUTABLE_DV));
-        assertEquals(EVENTUAL, effectiveAtImmutableLevel(EVENTUALLY_E2IMMUTABLE_DV));
+        assertEquals(EFFECTIVE, effectiveAtImmutableLevel(EFFECTIVELY_IMMUTABLE_HC_DV));
+        assertEquals(FALSE, effectiveAtImmutableLevel(EFFECTIVELY_FINAL_FIELDS_DV));
+        assertEquals(EFFECTIVE, effectiveAtImmutableLevel(EFFECTIVELY_IMMUTABLE_DV));
+        assertEquals(FALSE, effectiveAtImmutableLevel(EVENTUALLY_FINAL_FIELDS_DV));
+        assertEquals(EVENTUAL, effectiveAtImmutableLevel(EVENTUALLY_IMMUTABLE_HC_DV));
         assertEquals(FALSE, effectiveAtImmutableLevel(MUTABLE_DV));
-        assertEquals(EVENTUAL, effectiveAtImmutableLevel(EVENTUALLY_RECURSIVELY_IMMUTABLE_DV));
+        assertEquals(EVENTUAL, effectiveAtImmutableLevel(EVENTUALLY_IMMUTABLE_DV));
     }
 
     @Test
     public void testIsBefore() {
-        assertTrue(isBeforeThrowWhenNotEventual(EVENTUALLY_E2IMMUTABLE_DV));
-        assertTrue(isBeforeThrowWhenNotEventual(EVENTUALLY_E1IMMUTABLE_DV));
-        assertTrue(isBeforeThrowWhenNotEventual(EVENTUALLY_E2IMMUTABLE_BEFORE_MARK_DV));
-        assertTrue(isBeforeThrowWhenNotEventual(EVENTUALLY_E1IMMUTABLE_BEFORE_MARK_DV));
+        assertTrue(isBeforeThrowWhenNotEventual(EVENTUALLY_IMMUTABLE_HC_DV));
+        assertTrue(isBeforeThrowWhenNotEventual(EVENTUALLY_FINAL_FIELDS_DV));
+        assertTrue(isBeforeThrowWhenNotEventual(EVENTUALLY_IMMUTABLE_HC_BEFORE_MARK_DV));
+        assertTrue(isBeforeThrowWhenNotEventual(EVENTUALLY_FINAL_FIELDS_BEFORE_MARK_DV));
 
         assertThrows(UnsupportedOperationException.class,
-                () -> isBeforeThrowWhenNotEventual(EFFECTIVELY_E2IMMUTABLE_DV));
+                () -> isBeforeThrowWhenNotEventual(EFFECTIVELY_IMMUTABLE_HC_DV));
         assertThrows(UnsupportedOperationException.class,
-                () -> isBeforeThrowWhenNotEventual(EFFECTIVELY_E1IMMUTABLE_DV));
-        assertFalse(isBeforeThrowWhenNotEventual(EVENTUALLY_E1IMMUTABLE_AFTER_MARK_DV));
-        assertFalse(isBeforeThrowWhenNotEventual(EVENTUALLY_E2IMMUTABLE_AFTER_MARK_DV));
+                () -> isBeforeThrowWhenNotEventual(EFFECTIVELY_FINAL_FIELDS_DV));
+        assertFalse(isBeforeThrowWhenNotEventual(EVENTUALLY_FINAL_FIELDS_AFTER_MARK_DV));
+        assertFalse(isBeforeThrowWhenNotEventual(EVENTUALLY_IMMUTABLE_HC_AFTER_MARK_DV));
     }
 
     @Test
     public void testIsAfter() {
-        assertTrue(isAfterThrowWhenNotEventual(EVENTUALLY_E2IMMUTABLE_DV));
-        assertTrue(isAfterThrowWhenNotEventual(EVENTUALLY_E1IMMUTABLE_DV));
-        assertFalse(isAfterThrowWhenNotEventual(EVENTUALLY_E2IMMUTABLE_BEFORE_MARK_DV));
-        assertFalse(isAfterThrowWhenNotEventual(EVENTUALLY_E1IMMUTABLE_BEFORE_MARK_DV));
-
-        /*IMPROVE ! assertThrows(UnsupportedOperationException.class,
-                () -> isAfterThrowWhenNotEventual(EFFECTIVELY_E2IMMUTABLE_DV));
-        assertThrows(UnsupportedOperationException.class,
-                () -> isAfterThrowWhenNotEventual(EFFECTIVELY_E1IMMUTABLE_DV));*/
-        assertTrue(isAfterThrowWhenNotEventual(EVENTUALLY_E1IMMUTABLE_AFTER_MARK_DV));
-        assertTrue(isAfterThrowWhenNotEventual(EVENTUALLY_E2IMMUTABLE_AFTER_MARK_DV));
+        assertTrue(isAfterThrowWhenNotEventual(EVENTUALLY_IMMUTABLE_HC_DV));
+        assertTrue(isAfterThrowWhenNotEventual(EVENTUALLY_FINAL_FIELDS_DV));
+        assertFalse(isAfterThrowWhenNotEventual(EVENTUALLY_IMMUTABLE_HC_BEFORE_MARK_DV));
+        assertFalse(isAfterThrowWhenNotEventual(EVENTUALLY_FINAL_FIELDS_BEFORE_MARK_DV));
+        assertTrue(isAfterThrowWhenNotEventual(EVENTUALLY_FINAL_FIELDS_AFTER_MARK_DV));
+        assertTrue(isAfterThrowWhenNotEventual(EVENTUALLY_IMMUTABLE_HC_AFTER_MARK_DV));
     }
 
     @Test
     public void testOneLevelLess() {
-        assertEquals(EFFECTIVELY_CONTENT_NOT_NULL_DV, composeOneLevelLessNotNull(EFFECTIVELY_CONTENT2_NOT_NULL_DV));
         assertEquals(EFFECTIVELY_NOT_NULL_DV, composeOneLevelLessNotNull(EFFECTIVELY_CONTENT_NOT_NULL_DV));
-        assertEquals(INDEPENDENT_1_DV, composeOneLevelLessIndependent(INDEPENDENT_2_DV));
     }
 
     @Test
@@ -117,10 +109,5 @@ public class TestMultiLevel {
         assertEquals(NOT_CONTAINER_DV, NOT_INVOLVED_DV.minIgnoreNotInvolved(NOT_CONTAINER_DV));
         assertEquals(NOT_CONTAINER_DV, NOT_CONTAINER_DV.minIgnoreNotInvolved(CONTAINER_DV));
         assertEquals(CONTAINER_DV, NOT_INVOLVED_DV.minIgnoreNotInvolved(CONTAINER_DV));
-    }
-
-    @Test
-    public void testComposeOneLevelMoreImmutable() {
-        assertEquals(EFFECTIVELY_E2IMMUTABLE_DV, composeOneLevelMoreImmutable(MUTABLE_DV));
     }
 }

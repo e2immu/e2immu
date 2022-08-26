@@ -90,7 +90,7 @@ public class Test_26_Enum extends CommonTestRunner {
                 String expect = d.iteration() <= 2 ? "<m:values>" : "/*inline values*/{Enum_0.ONE,Enum_0.TWO,Enum_0.THREE}";
                 assertEquals(expect, d.methodAnalysis().getSingleReturnValue().toString());
 
-                assertDv(d, 3, MultiLevel.EFFECTIVELY_E1IMMUTABLE_DV, Property.IMMUTABLE);
+                assertDv(d, 3, MultiLevel.EFFECTIVELY_FINAL_FIELDS_DV, Property.IMMUTABLE);
                 assertDv(d, MultiLevel.INDEPENDENT_DV, Property.INDEPENDENT);
             }
         };
@@ -99,14 +99,14 @@ public class Test_26_Enum extends CommonTestRunner {
             if ("ONE".equals(d.fieldInfo().name)) {
                 assertEquals(DV.TRUE_DV, d.fieldAnalysis().getProperty(Property.FINAL));
                 assertEquals("new Enum_0()", d.fieldAnalysis().getValue().toString());
-                assertDv(d, 1, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, Property.EXTERNAL_IMMUTABLE);
+                assertDv(d, 1, MultiLevel.EFFECTIVELY_IMMUTABLE_DV, Property.EXTERNAL_IMMUTABLE);
                 assertDv(d, 2, MultiLevel.CONTAINER_DV, Property.EXTERNAL_CONTAINER);
             }
         };
 
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("Enum_0".equals(d.typeInfo().simpleName)) {
-                assertDv(d, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
+                assertDv(d, MultiLevel.EFFECTIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
                 assertDv(d, MultiLevel.INDEPENDENT_DV, Property.INDEPENDENT);
                 assertDv(d, 1, MultiLevel.CONTAINER_DV, Property.CONTAINER);
             }
@@ -232,7 +232,7 @@ public class Test_26_Enum extends CommonTestRunner {
                     case 2, 4 -> "cm@Parameter_other;srv@Method_values";
                     default -> "";
                 };
-                assertDv(d, delay, 5, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
+                assertDv(d, delay, 5, MultiLevel.EFFECTIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
             }
         };
 
@@ -391,7 +391,7 @@ public class Test_26_Enum extends CommonTestRunner {
 
 
         TypeAnalyserVisitor typeAnalyserVisitor = d ->
-                assertDv(d, 7, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
+                assertDv(d, 7, MultiLevel.EFFECTIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
 
         // expect an "always true" warning on the assert statement
         testClass("Enum_3", 0, 1, new DebugConfiguration.Builder()
@@ -451,7 +451,7 @@ public class Test_26_Enum extends CommonTestRunner {
                     // the result of the hard-coded method call valueOf
                     String expect = d.iteration() == 0 ? "<valueOf:Enum_5>" : "instance type Enum_5";
                     assertEquals(expect, d.currentValue().toString());
-                    assertDv(d, 1, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
+                    assertDv(d, 1, MultiLevel.EFFECTIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
                 }
             }
         };
@@ -517,7 +517,7 @@ public class Test_26_Enum extends CommonTestRunner {
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("Position".equals(d.typeInfo().simpleName)) {
                 assertDv(d, MultiLevel.INDEPENDENT_DV, Property.INDEPENDENT);
-                assertDv(d, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
+                assertDv(d, MultiLevel.EFFECTIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
             }
         };
         // private field not read outside constructors: in default field analyser mode
@@ -542,7 +542,7 @@ public class Test_26_Enum extends CommonTestRunner {
                 assertEquals("new Position(\"S\")", d.fieldAnalysis().getValue().toString());
                 assertDv(d, 0, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.EXTERNAL_NOT_NULL);
                 assertDv(d, 1, MultiLevel.INDEPENDENT_DV, Property.INDEPENDENT);
-                assertDv(d, 1, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, Property.EXTERNAL_IMMUTABLE);
+                assertDv(d, 1, MultiLevel.EFFECTIVELY_IMMUTABLE_DV, Property.EXTERNAL_IMMUTABLE);
                 assertDv(d, 1, MultiLevel.CONTAINER_DV, Property.EXTERNAL_CONTAINER);
             }
 
@@ -553,7 +553,7 @@ public class Test_26_Enum extends CommonTestRunner {
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("Position".equals(d.typeInfo().simpleName)) {
                 assertDv(d, MultiLevel.INDEPENDENT_DV, Property.INDEPENDENT);
-                assertDv(d, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
+                assertDv(d, MultiLevel.EFFECTIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
                 assertDv(d, MultiLevel.CONTAINER_DV, Property.CONTAINER);
             }
         };

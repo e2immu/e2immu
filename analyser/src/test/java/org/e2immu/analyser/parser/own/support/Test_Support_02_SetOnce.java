@@ -76,7 +76,7 @@ public class Test_Support_02_SetOnce extends CommonTestRunner {
                 assertEquals("t:0", d.fieldAnalysis().getLinkedVariables().toString());
 
                 assertDv(d, 6, DV.FALSE_DV, Property.IDENTITY);
-                assertDv(d, 1, MultiLevel.INDEPENDENT_1_DV, Property.INDEPENDENT);
+                assertDv(d, 1, MultiLevel.INDEPENDENT_HC_DV, Property.INDEPENDENT);
             }
         };
 
@@ -183,7 +183,7 @@ public class Test_Support_02_SetOnce extends CommonTestRunner {
                         // identity is computed from the value, which is "<m:get>" in the first iteration
                         // then 't'
                         assertDv(d, 2, DV.FALSE_DV, Property.IDENTITY);
-                        assertDv(d, 2, MultiLevel.INDEPENDENT_1_DV, Property.INDEPENDENT);
+                        assertDv(d, 2, MultiLevel.INDEPENDENT_HC_DV, Property.INDEPENDENT);
                     }
                     if ("0".equals(d.statementId())) {
                         String expect = switch (d.iteration()) {
@@ -357,7 +357,7 @@ public class Test_Support_02_SetOnce extends CommonTestRunner {
                 assertEquals(d.iteration() >= 2, d.methodAnalysis().methodLevelData().linksHaveBeenEstablished());
 
                 assertDv(d, DV.FALSE_DV, Property.IDENTITY);
-                assertDv(d, MultiLevel.INDEPENDENT_1_DV, Property.INDEPENDENT);
+                assertDv(d, MultiLevel.INDEPENDENT_HC_DV, Property.INDEPENDENT);
 
 
                 MethodAnalysis.Eventual eventual = d.methodAnalysis().getEventual();

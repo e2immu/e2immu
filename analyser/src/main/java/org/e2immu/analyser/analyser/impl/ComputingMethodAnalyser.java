@@ -355,8 +355,8 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
                                         fa.getFieldInfo().owner.topOfInterdependentClassHierarchy();
                         DV immutable = fa.getProperty(Property.EXTERNAL_IMMUTABLE);
                         return acceptDelay && immutable.isDelayed() ? immutable :
-                                DV.fromBoolDv(MultiLevel.isEventuallyE1Immutable(immutable)
-                                        || MultiLevel.isEventuallyE2Immutable(immutable));
+                                DV.fromBoolDv(MultiLevel.isEventuallyFinalFields(immutable)
+                                        || MultiLevel.isEventuallyImmutableHC(immutable));
                     })
                     .reduce(DV.TRUE_DV, DV::min);
             if (haveEventuallyImmutableFields.isDelayed()) {
@@ -379,7 +379,7 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
                     .map(fa -> {
                         DV immutable = fa.getProperty(Property.EXTERNAL_IMMUTABLE);
 
-                        boolean contentChangeable = !MultiLevel.isAtLeastEventuallyE2Immutable(immutable)
+                        boolean contentChangeable = !MultiLevel.isAtLeastEventuallyImmutableHC(immutable)
                                 && !fa.getFieldInfo().type.isPrimitiveExcludingVoid();
                         return DV.fromBoolDv(contentChangeable);
                     })
@@ -549,7 +549,7 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
                 methodAnalysis.setProperty(IGNORE_MODIFICATIONS, IGNORE_MODIFICATIONS.falseDv);
                 methodAnalysis.setProperty(Property.FLUENT, DV.FALSE_DV);
                 methodAnalysis.setProperty(Property.NOT_NULL_EXPRESSION, MultiLevel.EFFECTIVELY_NOT_NULL_DV);
-                methodAnalysis.setProperty(Property.IMMUTABLE, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV);
+                methodAnalysis.setProperty(Property.IMMUTABLE, MultiLevel.EFFECTIVELY_IMMUTABLE_DV);
                 methodAnalysis.setProperty(INDEPENDENT, MultiLevel.INDEPENDENT_DV);
                 methodAnalysis.setProperty(Property.CONTAINER, MultiLevel.CONTAINER_DV);
                 return DONE;
@@ -702,7 +702,7 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
 
     private DV computeImmutableValue(boolean allowBreakDelay) {
         DV formalImmutable = analyserContext.typeImmutable(methodInfo.returnType());
-        if (formalImmutable.equals(MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV)) {
+        if (formalImmutable.equals(MultiLevel.EFFECTIVELY_IMMUTABLE_DV)) {
             return formalImmutable;
         }
 
@@ -716,7 +716,7 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
             }
         }
         if (expression.isConstant()) {
-            return MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV;
+            return MultiLevel.EFFECTIVELY_IMMUTABLE_DV;
         }
         VariableInfo variableInfo = getReturnAsVariable();
 

@@ -115,7 +115,7 @@ public class Test_00_Basics_7 extends CommonTestRunner {
                     if ("1".equals(d.statementId())) {
                         assertDv(d, MultiLevel.EFFECTIVELY_NOT_NULL_DV, CONTEXT_NOT_NULL);
                     }
-                    assertDv(d, 1, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, EXTERNAL_IMMUTABLE);
+                    assertDv(d, 1, MultiLevel.EFFECTIVELY_IMMUTABLE_DV, EXTERNAL_IMMUTABLE);
                 }
 
                 if (d.variable() instanceof FieldReference fr && "out".equals(fr.fieldInfo.name)) {

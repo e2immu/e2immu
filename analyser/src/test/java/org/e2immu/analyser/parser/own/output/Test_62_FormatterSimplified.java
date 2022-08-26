@@ -172,7 +172,7 @@ public class Test_62_FormatterSimplified extends CommonTestRunner {
 
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("ElementarySpace".equals(d.typeInfo().simpleName)) {
-                assertDv(d, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
+                assertDv(d, MultiLevel.EFFECTIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
                 assertDv(d, MultiLevel.INDEPENDENT_DV, Property.INDEPENDENT);
                 assertDv(d, MultiLevel.CONTAINER_DV, Property.CONTAINER);
             }
@@ -416,7 +416,7 @@ public class Test_62_FormatterSimplified extends CommonTestRunner {
             if ("pos".equals(d.fieldInfo().name)) {
                 assertEquals("pos", d.fieldAnalysis().getValue().toString());
                 assertTrue(d.fieldAnalysis().getValue() instanceof VariableExpression);
-                assertEquals(MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, d.fieldAnalysis().getProperty(Property.EXTERNAL_IMMUTABLE));
+                assertEquals(MultiLevel.EFFECTIVELY_IMMUTABLE_DV, d.fieldAnalysis().getProperty(Property.EXTERNAL_IMMUTABLE));
             }
             if ("guide".equals(d.fieldInfo().name)) {
                 assertEquals("guide", d.fieldAnalysis().getValue().toString());
@@ -426,19 +426,19 @@ public class Test_62_FormatterSimplified extends CommonTestRunner {
 
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("OutputElement".equals(d.typeInfo().simpleName)) {
-                assertEquals(MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, d.typeAnalysis().getProperty(Property.IMMUTABLE));
+                assertEquals(MultiLevel.EFFECTIVELY_IMMUTABLE_DV, d.typeAnalysis().getProperty(Property.IMMUTABLE));
             }
             if ("Guide".equals(d.typeInfo().simpleName)) {
-                assertEquals(MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, d.typeAnalysis().getProperty(Property.IMMUTABLE));
+                assertEquals(MultiLevel.EFFECTIVELY_IMMUTABLE_DV, d.typeAnalysis().getProperty(Property.IMMUTABLE));
                 MethodInfo index = d.typeInfo().findUniqueMethod("index", 0);
                 MethodAnalysis indexAnalysis = d.analysisProvider().getMethodAnalysis(index);
                 assertEquals(DV.FALSE_DV, indexAnalysis.getProperty(Property.MODIFIED_METHOD));
             }
             if ("ForwardInfo".equals(d.typeInfo().simpleName)) {
-                assertDv(d, 2, MultiLevel.EFFECTIVELY_E2IMMUTABLE_DV, Property.IMMUTABLE);
+                assertDv(d, 2, MultiLevel.EFFECTIVELY_IMMUTABLE_HC_DV, Property.IMMUTABLE);
             }
             if ("GuideOnStack".equals(d.typeInfo().simpleName)) {
-                assertDv(d, 3, MultiLevel.EFFECTIVELY_E2IMMUTABLE_DV, Property.IMMUTABLE);
+                assertDv(d, 3, MultiLevel.EFFECTIVELY_IMMUTABLE_HC_DV, Property.IMMUTABLE);
             }
         };
 

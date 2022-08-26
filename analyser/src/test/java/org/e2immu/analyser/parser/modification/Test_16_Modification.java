@@ -173,7 +173,7 @@ public class Test_16_Modification extends CommonTestRunner {
                     assertDv(d, 3, MultiLevel.MUTABLE_DV, Property.EXTERNAL_IMMUTABLE);
                 } else if (d.variable() instanceof This) {
                     assertDv(d, 0, MultiLevel.NOT_INVOLVED_DV, Property.EXTERNAL_NOT_NULL);
-                    assertDv(d, 4, MultiLevel.EFFECTIVELY_E1IMMUTABLE_DV, Property.EXTERNAL_IMMUTABLE);
+                    assertDv(d, 4, MultiLevel.EFFECTIVELY_FINAL_FIELDS_DV, Property.EXTERNAL_IMMUTABLE);
                 } else {
                     fail("?" + d.variableName());
                 }

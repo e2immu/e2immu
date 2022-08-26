@@ -383,8 +383,8 @@ public class Test_ParameterizedType extends CommonTestRunner {
                 assertDv(d.p(1), 14, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
                 String expected = d.iteration() < 13 ? "<m:from>" : "<undetermined return value>"; // too complex for inline
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
-                assertDv(d, 13, MultiLevel.EFFECTIVELY_E2IMMUTABLE_DV, Property.IMMUTABLE);
-                assertDv(d, 13, MultiLevel.INDEPENDENT_1_DV, Property.INDEPENDENT);
+                assertDv(d, 13, MultiLevel.EFFECTIVELY_IMMUTABLE_HC_DV, Property.IMMUTABLE);
+                assertDv(d, 13, MultiLevel.INDEPENDENT_HC_DV, Property.INDEPENDENT);
             }
             if ("primitive".equals(d.methodInfo().name)) {
                 assertFalse(methodResolution.partOfCallCycle());
@@ -403,26 +403,26 @@ public class Test_ParameterizedType extends CommonTestRunner {
             }
             if ("get".equals(d.methodInfo().name)) {
                 assertEquals("TypeContext", d.methodInfo().typeInfo.simpleName);
-                assertDv(d, 1, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
+                assertDv(d, 1, MultiLevel.EFFECTIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
                 assertDv(d, 1, MultiLevel.INDEPENDENT_DV, Property.INDEPENDENT);
             }
         };
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("ParameterizedType_2".equals(d.typeInfo().simpleName)) {
-                assertDv(d, 13, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
+                assertDv(d, 13, MultiLevel.EFFECTIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
                 assertTrue(d.typeAnalysis().getHiddenContentTypes().isEmpty());
             }
             if ("IterativeParsing".equals(d.typeInfo().simpleName)) {
-                assertDv(d, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
+                assertDv(d, MultiLevel.EFFECTIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
             }
             if ("Result".equals(d.typeInfo().simpleName)) {
-                assertDv(d, 1, MultiLevel.EFFECTIVELY_E2IMMUTABLE_DV, Property.IMMUTABLE);
+                assertDv(d, 1, MultiLevel.EFFECTIVELY_IMMUTABLE_HC_DV, Property.IMMUTABLE);
                 assertEquals("Type org.e2immu.analyser.parser.own.snippet.testexample.ParameterizedType_2.ParameterizedType",
                         d.typeAnalysis().getHiddenContentTypes().toString());
-                assertDv(d, 1, MultiLevel.INDEPENDENT_1_DV, Property.INDEPENDENT);
+                assertDv(d, 1, MultiLevel.INDEPENDENT_HC_DV, Property.INDEPENDENT);
             }
             if ("NamedType".equals(d.typeInfo().simpleName)) {
-                assertDv(d, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
+                assertDv(d, MultiLevel.EFFECTIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
                 assertDv(d, MultiLevel.INDEPENDENT_DV, Property.INDEPENDENT);
             }
         };
@@ -442,13 +442,13 @@ public class Test_ParameterizedType extends CommonTestRunner {
     public void test_2_1() throws IOException {
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("ParameterizedType_2".equals(d.typeInfo().simpleName)) {
-                assertDv(d, 21, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
+                assertDv(d, 21, MultiLevel.EFFECTIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
             }
             if ("IterativeParsing".equals(d.typeInfo().simpleName)) {
                 assertDv(d, MultiLevel.MUTABLE_DV, Property.IMMUTABLE);
             }
             if ("Result".equals(d.typeInfo().simpleName)) {
-                assertDv(d, 16, MultiLevel.EFFECTIVELY_E2IMMUTABLE_DV, Property.IMMUTABLE);
+                assertDv(d, 16, MultiLevel.EFFECTIVELY_IMMUTABLE_HC_DV, Property.IMMUTABLE);
             }
         };
         testClass("ParameterizedType_2", 2, DONT_CARE,
@@ -517,16 +517,16 @@ public class Test_ParameterizedType extends CommonTestRunner {
                 assertDv(d.p(3), 1, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
             }
             if ("find".equals(d.methodInfo().name)) {
-                assertDv(d, 1, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
+                assertDv(d, 1, MultiLevel.EFFECTIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
                 assertDv(d, 1, MultiLevel.INDEPENDENT_DV, Property.INDEPENDENT);
             }
         };
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("ParameterizedType".equals(d.typeInfo().simpleName)) {
-                assertDv(d, 1, MultiLevel.EFFECTIVELY_E2IMMUTABLE_DV, Property.IMMUTABLE);
+                assertDv(d, 1, MultiLevel.EFFECTIVELY_IMMUTABLE_HC_DV, Property.IMMUTABLE);
             }
             if ("TypeInfo".equals(d.typeInfo().simpleName)) {
-                assertDv(d, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
+                assertDv(d, MultiLevel.EFFECTIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
                 assertDv(d, MultiLevel.INDEPENDENT_DV, Property.INDEPENDENT);
             }
         };

@@ -27,7 +27,7 @@ public enum Property {
      */
 
     // only lives in change map
-    IN_NOT_NULL_CONTEXT("in not-null context", MultiLevel.NULLABLE_DV, MultiLevel.EFFECTIVELY_CONTENT2_NOT_NULL_DV,
+    IN_NOT_NULL_CONTEXT("in not-null context", MultiLevel.NULLABLE_DV, MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL_DV,
             MultiLevel.NOT_INVOLVED_DV, CauseOfDelay.Cause.IN_NN_CONTEXT, PropertyType.OTHER),
     CNN_TRAVELS_TO_PRECONDITION("cnn travels to pc", CauseOfDelay.Cause.CONTEXT_NOT_NULL),
     CANDIDATE_FOR_NULL_PTR_WARNING("candidate for null pointer warning", CauseOfDelay.Cause.CANDIDATE_NULL_PTR),
@@ -47,16 +47,16 @@ public enum Property {
     see StatementAnalyser.checkNotNullEscapesAndPreconditions
     and the corresponding code in StatementAnalysis.copyBackLocalCopies
      */
-    NOT_NULL_PARAMETER("@NotNull parameter", MultiLevel.NULLABLE_DV, MultiLevel.EFFECTIVELY_CONTENT2_NOT_NULL_DV,
+    NOT_NULL_PARAMETER("@NotNull parameter", MultiLevel.NULLABLE_DV, MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL_DV,
             MultiLevel.NULLABLE_DV, CauseOfDelay.Cause.NOT_NULL_PARAMETER, PropertyType.OTHER),
-    EXTERNAL_NOT_NULL("external @NotNull", MultiLevel.NULLABLE_DV, MultiLevel.EFFECTIVELY_CONTENT2_NOT_NULL_DV,
+    EXTERNAL_NOT_NULL("external @NotNull", MultiLevel.NULLABLE_DV, MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL_DV,
             MultiLevel.NOT_INVOLVED_DV, CauseOfDelay.Cause.EXTERNAL_NOT_NULL, PropertyType.EXTERNAL),
-    NOT_NULL_EXPRESSION("@NotNull", MultiLevel.NULLABLE_DV, MultiLevel.EFFECTIVELY_CONTENT2_NOT_NULL_DV,
+    NOT_NULL_EXPRESSION("@NotNull", MultiLevel.NULLABLE_DV, MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL_DV,
             MultiLevel.NULLABLE_DV, CauseOfDelay.Cause.VALUE_NOT_NULL, PropertyType.VALUE),
-    CONTEXT_NOT_NULL("not null in context", MultiLevel.NULLABLE_DV, MultiLevel.EFFECTIVELY_CONTENT2_NOT_NULL_DV,
+    CONTEXT_NOT_NULL("not null in context", MultiLevel.NULLABLE_DV, MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL_DV,
             MultiLevel.NULLABLE_DV, CauseOfDelay.Cause.CONTEXT_NOT_NULL, PropertyType.CONTEXT),
 
-    NOT_NULL_BREAK("@NotNull break", MultiLevel.NULLABLE_DV, MultiLevel.EFFECTIVELY_CONTENT2_NOT_NULL_DV,
+    NOT_NULL_BREAK("@NotNull break", MultiLevel.NULLABLE_DV, MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL_DV,
             MultiLevel.NULLABLE_DV, CauseOfDelay.Cause.VALUE_NOT_NULL, PropertyType.OTHER),
     /*
     @E2Immutable, @E1Immutable property.
@@ -74,28 +74,28 @@ public enum Property {
 
     IMMUTABLE_BEFORE_CONTRACTED("immutable before contracted", CauseOfDelay.Cause.IMMUTABLE_BEFORE_CONTRACTED),
     NEXT_CONTEXT_IMMUTABLE("next context @Immutable", MultiLevel.MUTABLE_DV,
-            MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, MultiLevel.MUTABLE_DV, CauseOfDelay.Cause.NEXT_C_IMM,
+            MultiLevel.EFFECTIVELY_IMMUTABLE_DV, MultiLevel.MUTABLE_DV, CauseOfDelay.Cause.NEXT_C_IMM,
             PropertyType.OTHER),
 
-    IMMUTABLE("@Immutable", MultiLevel.MUTABLE_DV, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV,
+    IMMUTABLE("@Immutable", MultiLevel.MUTABLE_DV, MultiLevel.EFFECTIVELY_IMMUTABLE_DV,
             MultiLevel.MUTABLE_DV, CauseOfDelay.Cause.VALUE_IMMUTABLE, PropertyType.VALUE),
-    CONTEXT_IMMUTABLE("context @Immutable", MultiLevel.MUTABLE_DV, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV,
+    CONTEXT_IMMUTABLE("context @Immutable", MultiLevel.MUTABLE_DV, MultiLevel.EFFECTIVELY_IMMUTABLE_DV,
             MultiLevel.MUTABLE_DV, CauseOfDelay.Cause.CONTEXT_IMMUTABLE, PropertyType.CONTEXT),
     EXTERNAL_IMMUTABLE("external @Immutable", MultiLevel.MUTABLE_DV,
-            MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, MultiLevel.NOT_INVOLVED_DV, CauseOfDelay.Cause.EXT_IMM,
+            MultiLevel.EFFECTIVELY_IMMUTABLE_DV, MultiLevel.NOT_INVOLVED_DV, CauseOfDelay.Cause.EXT_IMM,
             PropertyType.EXTERNAL),
 
     // internal, used for enclosing-nested or type-subtype interactions (e.g., in the enclosing we have a field whose
     // type is an anonymous (non-static) subtype)
     PARTIAL_IMMUTABLE("partial @Immutable",
-            MultiLevel.MUTABLE_DV, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, MultiLevel.MUTABLE_DV,
+            MultiLevel.MUTABLE_DV, MultiLevel.EFFECTIVELY_IMMUTABLE_DV, MultiLevel.MUTABLE_DV,
             CauseOfDelay.Cause.PARTIAL_IMM, PropertyType.OTHER),
     // internal, temporary
     PARTIAL_EXTERNAL_IMMUTABLE("partial external @Immutable",
-            MultiLevel.MUTABLE_DV, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, MultiLevel.MUTABLE_DV, null,
+            MultiLevel.MUTABLE_DV, MultiLevel.EFFECTIVELY_IMMUTABLE_DV, MultiLevel.MUTABLE_DV, null,
             PropertyType.OTHER),
 
-    IMMUTABLE_BREAK("@Immutable break", MultiLevel.MUTABLE_DV, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV,
+    IMMUTABLE_BREAK("@Immutable break", MultiLevel.MUTABLE_DV, MultiLevel.EFFECTIVELY_IMMUTABLE_DV,
             MultiLevel.MUTABLE_DV, CauseOfDelay.Cause.VALUE_IMMUTABLE, PropertyType.OTHER),
 
     // separate property for fields, in conjunction with a finalizer

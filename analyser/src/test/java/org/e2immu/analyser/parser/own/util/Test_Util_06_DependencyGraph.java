@@ -275,7 +275,7 @@ public class Test_Util_06_DependencyGraph extends CommonTestRunner {
         };
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("DependencyGraph".equals(d.typeInfo().simpleName)) {
-                assertDv(d, 34, MultiLevel.EVENTUALLY_E1IMMUTABLE_DV, Property.IMMUTABLE);
+                assertDv(d, 34, MultiLevel.EVENTUALLY_FINAL_FIELDS_DV, Property.IMMUTABLE);
                 assertDv(d, 34, MultiLevel.DEPENDENT_INCONCLUSIVE, Property.INDEPENDENT);
             }
             if ("$4".equals(d.typeInfo().simpleName)) {
@@ -292,7 +292,7 @@ public class Test_Util_06_DependencyGraph extends CommonTestRunner {
                 String srv = d.iteration() <= 34 ? "<m:sorted>"
                         : "/*inline sorted*/toDo$3.isEmpty()?new ArrayList<>(nodeMap.size())/*0==this.size()*/:instance type List<T>";
                 assertEquals(srv, d.methodAnalysis().getSingleReturnValue().toString());
-                assertDv(d, 35, MultiLevel.INDEPENDENT_1_DV, Property.INDEPENDENT);
+                assertDv(d, 35, MultiLevel.INDEPENDENT_HC_DV, Property.INDEPENDENT);
                 assertDv(d, 35, DV.FALSE_DV, Property.MODIFIED_METHOD);
             }
             if ("sorted".equals(methodName) && 0 == n) {
@@ -340,7 +340,7 @@ public class Test_Util_06_DependencyGraph extends CommonTestRunner {
                 String pre = d.iteration() == 0 ? "Precondition[expression=<precondition>, causes=[]]"
                         : "Precondition[expression=!frozen, causes=[methodCall:ensureNotFrozen]]";
                 assertEquals(pre, d.methodAnalysis().getPreconditionForEventual().toString());
-                assertDv(d, 2, MultiLevel.INDEPENDENT_1_DV, Property.INDEPENDENT);
+                assertDv(d, 2, MultiLevel.INDEPENDENT_HC_DV, Property.INDEPENDENT);
             }
             if ("removeAsManyAsPossible".equals(methodName)) {
                 String pre = switch (d.iteration()) {

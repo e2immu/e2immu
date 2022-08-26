@@ -18,7 +18,9 @@ import org.e2immu.analyser.analyser.AnalysisProvider;
 import org.e2immu.analyser.analyser.DV;
 import org.e2immu.analyser.analyser.Property;
 import org.e2immu.analyser.analysis.TypeAnalysis;
-import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.model.MultiLevel;
+import org.e2immu.analyser.model.ParameterizedType;
+import org.e2immu.analyser.model.TypeInfo;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
@@ -34,21 +36,21 @@ public class TestGenerics extends CommonAnnotatedAPI {
     public void testStreamInteger() {
         TypeInfo stream = typeContext.getFullyQualified(Stream.class);
         TypeAnalysis streamAnalysis = stream.typeAnalysis.get();
-        assertEquals(MultiLevel.INDEPENDENT_1_DV, streamAnalysis.getProperty(Property.INDEPENDENT));
-        assertEquals(MultiLevel.EFFECTIVELY_E2IMMUTABLE_DV, streamAnalysis.getProperty(Property.IMMUTABLE));
+        assertEquals(MultiLevel.INDEPENDENT_HC_DV, streamAnalysis.getProperty(Property.INDEPENDENT));
+        assertEquals(MultiLevel.EFFECTIVELY_IMMUTABLE_HC_DV, streamAnalysis.getProperty(Property.IMMUTABLE));
         assertEquals(DV.TRUE_DV, streamAnalysis.immutableDeterminedByTypeParameters());
 
         TypeInfo integer = typeContext.getFullyQualified(Integer.class);
         TypeAnalysis integerAnalysis = integer.typeAnalysis.get();
         assertEquals(MultiLevel.INDEPENDENT_DV, integerAnalysis.getProperty(Property.INDEPENDENT));
-        assertEquals(MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, integerAnalysis.getProperty(Property.IMMUTABLE));
+        assertEquals(MultiLevel.EFFECTIVELY_IMMUTABLE_DV, integerAnalysis.getProperty(Property.IMMUTABLE));
 
         ParameterizedType integerPt = new ParameterizedType(integer, 0);
 
         ParameterizedType streamOfIntegers = new ParameterizedType(stream, List.of(integerPt));
         assertEquals("Type java.util.stream.Stream<java.lang.Integer>", streamOfIntegers.toString());
 
-        assertEquals(MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, AnalysisProvider.DEFAULT_PROVIDER
+        assertEquals(MultiLevel.EFFECTIVELY_IMMUTABLE_DV, AnalysisProvider.DEFAULT_PROVIDER
                 .typeImmutable(streamOfIntegers));
     }
 
@@ -59,8 +61,8 @@ public class TestGenerics extends CommonAnnotatedAPI {
 
         TypeInfo optional = typeContext.getFullyQualified(Optional.class);
         TypeAnalysis optionalAnalysis = optional.typeAnalysis.get();
-        assertEquals(MultiLevel.INDEPENDENT_1_DV, optionalAnalysis.getProperty(Property.INDEPENDENT));
-        assertEquals(MultiLevel.EFFECTIVELY_E2IMMUTABLE_DV, optionalAnalysis.getProperty(Property.IMMUTABLE));
+        assertEquals(MultiLevel.INDEPENDENT_HC_DV, optionalAnalysis.getProperty(Property.INDEPENDENT));
+        assertEquals(MultiLevel.EFFECTIVELY_IMMUTABLE_HC_DV, optionalAnalysis.getProperty(Property.IMMUTABLE));
         assertEquals(DV.TRUE_DV, optionalAnalysis.immutableDeterminedByTypeParameters());
 
         ParameterizedType integerPt = new ParameterizedType(integer, 0);
@@ -70,9 +72,9 @@ public class TestGenerics extends CommonAnnotatedAPI {
         assertEquals("Type java.util.stream.Stream<java.util.Optional<java.lang.Integer>>",
                 streamOfOptionalIntegers.toString());
 
-        assertEquals(MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV,
+        assertEquals(MultiLevel.EFFECTIVELY_IMMUTABLE_DV,
                 AnalysisProvider.DEFAULT_PROVIDER.typeImmutable(streamOfOptionalIntegers));
-        assertEquals(MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV,
+        assertEquals(MultiLevel.EFFECTIVELY_IMMUTABLE_DV,
                 AnalysisProvider.DEFAULT_PROVIDER.typeImmutable(streamOfOptionalIntegers));
     }
 
@@ -90,7 +92,7 @@ public class TestGenerics extends CommonAnnotatedAPI {
 
         TypeInfo entry = typeContext.getFullyQualified(Map.Entry.class);
         TypeAnalysis entryAnalysis = entry.typeAnalysis.get();
-        assertEquals(MultiLevel.INDEPENDENT_1_DV, entryAnalysis.getProperty(Property.INDEPENDENT));
+        assertEquals(MultiLevel.INDEPENDENT_HC_DV, entryAnalysis.getProperty(Property.INDEPENDENT));
         assertEquals(MultiLevel.MUTABLE_DV, entryAnalysis.getProperty(Property.IMMUTABLE));
         assertEquals(DV.TRUE_DV, entryAnalysis.immutableDeterminedByTypeParameters());
 
@@ -102,8 +104,7 @@ public class TestGenerics extends CommonAnnotatedAPI {
         assertEquals("Type java.util.stream.Stream<java.util.Map.Entry<java.lang.String,java.lang.Integer>>",
                 streamOfEntryStringIntegers.toString());
 
-        assertEquals(MultiLevel.MUTABLE_DV,
-                AnalysisProvider.DEFAULT_PROVIDER.typeImmutable(streamOfEntryStringIntegers));
+        assertEquals(MultiLevel.MUTABLE_DV, AnalysisProvider.DEFAULT_PROVIDER.typeImmutable(streamOfEntryStringIntegers));
     }
 
 }

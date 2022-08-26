@@ -19,8 +19,8 @@ public class TestOrgE2ImmuSupport extends CommonAnnotatedAPI {
         TypeInfo typeInfo = typeContext.getFullyQualified(EventuallyFinal.class);
         TypeAnalysis typeAnalysis = typeInfo.typeAnalysis.get();
 
-        assertEquals(MultiLevel.INDEPENDENT_1_DV, typeAnalysis.getProperty(Property.INDEPENDENT));
-        assertEquals(MultiLevel.EVENTUALLY_E2IMMUTABLE_DV, typeAnalysis.getProperty(Property.IMMUTABLE));
+        assertEquals(MultiLevel.INDEPENDENT_HC_DV, typeAnalysis.getProperty(Property.INDEPENDENT));
+        assertEquals(MultiLevel.EVENTUALLY_IMMUTABLE_HC_DV, typeAnalysis.getProperty(Property.IMMUTABLE));
         assertEquals(DV.TRUE_DV, typeAnalysis.immutableDeterminedByTypeParameters());
     }
 

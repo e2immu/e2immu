@@ -235,33 +235,33 @@ public class Test_22_SubTypes extends CommonTestRunner {
     public void test_7() throws IOException {
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
             if ("method".equals(d.fieldInfo().name)) {
-                assertDv(d, 1, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, Property.EXTERNAL_IMMUTABLE);
+                assertDv(d, 1, MultiLevel.EFFECTIVELY_IMMUTABLE_DV, Property.EXTERNAL_IMMUTABLE);
             }
         };
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("SubTypes_7".equals(d.typeInfo().simpleName)) {
-                assertDv(d, 0, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
+                assertDv(d, 0, MultiLevel.EFFECTIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
             }
 
             if ("Example7".equals(d.typeInfo().simpleName)) {
-                assertDv(d, 1, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
+                assertDv(d, 1, MultiLevel.EFFECTIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
             }
             // nested in Example7
             if ("$1".equals(d.typeInfo().simpleName)) {
                 assertEquals("Example7", d.typeInfo().packageNameOrEnclosingType.getRight().simpleName);
-                assertDv(d, 0, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, Property.PARTIAL_IMMUTABLE);
-                assertDv(d, 2, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
+                assertDv(d, 0, MultiLevel.EFFECTIVELY_IMMUTABLE_DV, Property.PARTIAL_IMMUTABLE);
+                assertDv(d, 2, MultiLevel.EFFECTIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
             }
 
             if ("Example8".equals(d.typeInfo().simpleName)) {
                 assertEquals("Type param T", d.typeAnalysis().getHiddenContentTypes().toString());
-                assertDv(d, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
+                assertDv(d, MultiLevel.EFFECTIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
             }
             // nested in Example8
             if ("$2".equals(d.typeInfo().simpleName)) {
                 assertEquals("Example8", d.typeInfo().packageNameOrEnclosingType.getRight().simpleName);
-                assertDv(d, 0, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, Property.PARTIAL_IMMUTABLE);
-                assertDv(d, 1, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
+                assertDv(d, 0, MultiLevel.EFFECTIVELY_IMMUTABLE_DV, Property.PARTIAL_IMMUTABLE);
+                assertDv(d, 1, MultiLevel.EFFECTIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
             }
         };
 
@@ -306,15 +306,15 @@ public class Test_22_SubTypes extends CommonTestRunner {
         };
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("External".equals(d.typeInfo().simpleName)) {
-                assertDv(d, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
+                assertDv(d, MultiLevel.EFFECTIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
                 assertDv(d, MultiLevel.INDEPENDENT_DV, Property.INDEPENDENT);
                 assertDv(d, MultiLevel.CONTAINER_DV, Property.CONTAINER);
             }
             // will only see CM in "go" in iteration 2, as it is analysed before "go" and the constructor
             if ("$1".equals(d.typeInfo().simpleName)) {
                 // so we know early on that the anonymous type itself is immutable; however, we must wait for the enclosing type
-                assertDv(d, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, Property.PARTIAL_IMMUTABLE);
-                assertDv(d, 2, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
+                assertDv(d, MultiLevel.EFFECTIVELY_IMMUTABLE_DV, Property.PARTIAL_IMMUTABLE);
+                assertDv(d, 2, MultiLevel.EFFECTIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
                 assertDv(d, 2, MultiLevel.INDEPENDENT_DV, Property.INDEPENDENT);
             }
         };

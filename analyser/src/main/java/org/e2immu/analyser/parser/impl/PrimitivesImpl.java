@@ -260,7 +260,7 @@ public class PrimitivesImpl implements Primitives {
                     .build(null));
             TypeAnalysisImpl.Builder builder = new TypeAnalysisImpl.Builder(CONTRACTED, this, ti, null);
             builder.setProperty(Property.CONTAINER, MultiLevel.CONTAINER_DV);
-            builder.setProperty(Property.IMMUTABLE, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV);
+            builder.setProperty(Property.IMMUTABLE, MultiLevel.EFFECTIVELY_IMMUTABLE_DV);
             builder.freezeApprovedPreconditionsImmutable(); // cannot change these anymore; will never be eventual
             builder.freezeApprovedPreconditionsFinalFields(); // cannot change these anymore; will never be eventual
             builder.setProperty(Property.INDEPENDENT, MultiLevel.INDEPENDENT_DV);
@@ -282,7 +282,7 @@ public class PrimitivesImpl implements Primitives {
             TypeAnalysisImpl.Builder builder = new TypeAnalysisImpl.Builder(CONTRACTED, this, ti, null);
             ti.typeAnalysis.set(builder);
             builder.setProperty(Property.CONTAINER, MultiLevel.CONTAINER_DV);
-            builder.setProperty(Property.IMMUTABLE, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV);
+            builder.setProperty(Property.IMMUTABLE, MultiLevel.EFFECTIVELY_IMMUTABLE_DV);
             builder.setProperty(Property.INDEPENDENT, MultiLevel.INDEPENDENT_DV);
             builder.freezeApprovedPreconditionsImmutable(); // cannot change these anymore; will never be eventual
             builder.freezeApprovedPreconditionsFinalFields(); // cannot change these anymore; will never be eventual

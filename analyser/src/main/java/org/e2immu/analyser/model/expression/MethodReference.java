@@ -151,7 +151,7 @@ public class MethodReference extends ExpressionWithMethodReferenceResolution {
         return switch (property) {
             case NOT_NULL_EXPRESSION -> notNull(context, methodInfo);
             case CONTAINER -> MultiLevel.CONTAINER_DV;
-            case IMMUTABLE -> MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV;
+            case IMMUTABLE -> MultiLevel.EFFECTIVELY_IMMUTABLE_DV;
 
             case IDENTITY, IGNORE_MODIFICATIONS, FLUENT, CONTEXT_MODIFIED -> property.falseDv;
             case INDEPENDENT -> MultiLevel.INDEPENDENT_DV;

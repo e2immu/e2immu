@@ -57,7 +57,8 @@ public class TestTypeInfoStream {
 
         InspectionProvider IP = InspectionProvider.DEFAULT;
         TypeInfo genericContainer = new TypeInfo(MODEL, "GenericContainer");
-        TypeParameter genericContainerTypeParameterT = new TypeParameterImpl(genericContainer, "T", 0);
+        TypeParameter genericContainerTypeParameterT = new TypeParameterImpl(genericContainer, "T", 0)
+                .noTypeBounds();
         ParameterizedType genericContainerT = new ParameterizedType(genericContainerTypeParameterT, 0, ParameterizedType.WildCard.NONE);
 
         genericContainer.typeInspection.set(new TypeInspectionImpl.Builder(genericContainer, BY_HAND)
@@ -69,7 +70,7 @@ public class TestTypeInfoStream {
         TypeInfo loggerTypeInfo = new TypeInfo("org.slf4j", "Logger");
         TypeInfo containerTypeInfo = new TypeInfo(testTypeInfo, "Container");
 
-        TypeParameter typeParameterT = new TypeParameterImpl(containerTypeInfo, "T", 0);
+        TypeParameter typeParameterT = new TypeParameterImpl(containerTypeInfo, "T", 0).noTypeBounds();
 
         FieldInfo logger = new FieldInfo(newId(),
                 loggerTypeInfo.asSimpleParameterizedType(), "LOGGER", testTypeInfo);

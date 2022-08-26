@@ -150,8 +150,8 @@ public class TestParseGenerics {
     @Test
     public void testGenericsAbstractClassLoaderValue() {
         TypeContext newTypeContext = new TypeContext(typeContext);
-        newTypeContext.addToContext(new TypeParameterImpl("V", 0));
-        newTypeContext.addToContext(new TypeParameterImpl("CLV", 1));
+        newTypeContext.addToContext(new TypeParameterImpl("V", 0).noTypeBounds());
+        newTypeContext.addToContext(new TypeParameterImpl("CLV", 1).noTypeBounds());
         FindType findType = (fqn, path) -> newTypeContext.typeMap.getOrCreateFromPath(path, TRIGGER_BYTECODE_INSPECTION);
         TypeInfo typeInfo = new TypeInfo("jdk.internal.loader", "AbstractClassLoaderValue");
         TypeInspection.Builder typeInspectionBuilder = typeContext.typeMap.add(typeInfo, STARTING_BYTECODE);

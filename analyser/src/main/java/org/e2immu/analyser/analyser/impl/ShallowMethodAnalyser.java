@@ -395,7 +395,7 @@ public class ShallowMethodAnalyser extends MethodAnalyserImpl {
         ParameterizedType type = builder.getParameterInfo().parameterizedType;
         DV immutable = builder.getProperty(Property.IMMUTABLE);
 
-        if (type.isPrimitiveExcludingVoid() || MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV.equals(immutable)) {
+        if (type.isPrimitiveExcludingVoid() || MultiLevel.EFFECTIVELY_IMMUTABLE_DV.equals(immutable)) {
             value = MultiLevel.INDEPENDENT_DV;
         } else {
             // @Modified needs to be marked explicitly
@@ -465,7 +465,7 @@ public class ShallowMethodAnalyser extends MethodAnalyserImpl {
         TypeInfo bestType = pt.bestTypeInfo();
         if (ParameterizedType.isUnboundTypeParameterOrJLO(bestType)) {
             // unbound type parameter T, or unbound with array T[], T[][]
-            return MultiLevel.INDEPENDENT_1_DV;
+            return MultiLevel.INDEPENDENT_HC_DV;
         }
         if (bestType.isPrimitiveExcludingVoid()) {
             return MultiLevel.INDEPENDENT_DV;
@@ -474,7 +474,7 @@ public class ShallowMethodAnalyser extends MethodAnalyserImpl {
         if (immutable.isDelayed()) {
             return immutable.causesOfDelay();
         }
-        if (MultiLevel.isAtLeastEffectivelyE2Immutable(immutable)) {
+        if (MultiLevel.isAtLeastEffectivelyImmutableHC(immutable)) {
             int level = MultiLevel.level(immutable);
             return MultiLevel.independentCorrespondingToImmutableLevelDv(level);
         }

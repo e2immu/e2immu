@@ -251,7 +251,7 @@ public class Test_Util_07_Trie extends CommonTestRunner {
             }
             if ("add".equals(d.methodInfo().name)) {
                 assertDv(d, 1, DV.TRUE_DV, Property.MODIFIED_METHOD);
-                assertDv(d.p(1), 2, MultiLevel.INDEPENDENT_1_DV, Property.INDEPENDENT);
+                assertDv(d.p(1), 2, MultiLevel.INDEPENDENT_HC_DV, Property.INDEPENDENT);
 
                 String eventual = switch (d.iteration()) {
                     case 0 -> "[DelayedEventual:initial@Class_Trie]";

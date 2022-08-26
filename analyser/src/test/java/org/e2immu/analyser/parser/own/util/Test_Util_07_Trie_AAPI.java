@@ -62,7 +62,7 @@ public class Test_Util_07_Trie_AAPI extends CommonTestRunner {
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("add".equals(d.methodInfo().name)) {
                 assertDv(d, 1, DV.TRUE_DV, Property.MODIFIED_METHOD);
-                assertDv(d.p(1), 2, MultiLevel.INDEPENDENT_1_DV, Property.INDEPENDENT);
+                assertDv(d.p(1), 2, MultiLevel.INDEPENDENT_HC_DV, Property.INDEPENDENT);
 
                 String pc = "Precondition[expression=!this.isFrozen(), causes=[companionMethod:ensureNotFrozen$Precondition]]";
                 assertEquals(pc, d.methodAnalysis().getPrecondition().toString());

@@ -64,12 +64,12 @@ public class Test_40_Dependent1 extends CommonTestRunner {
             assertEquals(MultiLevel.DEPENDENT_DV, methodIndependent);
             DV paramIndependent = add.methodInspection.get().getParameters().get(0).parameterAnalysis.get()
                     .getProperty(Property.INDEPENDENT);
-            assertEquals(MultiLevel.INDEPENDENT_1_DV, paramIndependent);
+            assertEquals(MultiLevel.INDEPENDENT_HC_DV, paramIndependent);
         };
 
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("add2".equals(d.methodInfo().name)) {
-                assertDv(d.p(0), 2, MultiLevel.INDEPENDENT_1_DV, Property.INDEPENDENT);
+                assertDv(d.p(0), 2, MultiLevel.INDEPENDENT_HC_DV, Property.INDEPENDENT);
             }
         };
 
@@ -85,10 +85,10 @@ public class Test_40_Dependent1 extends CommonTestRunner {
     public void test_2() throws IOException {
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("add".equals(d.methodInfo().name)) {
-                assertDv(d.p(0), 2, MultiLevel.INDEPENDENT_1_DV, Property.INDEPENDENT);
+                assertDv(d.p(0), 2, MultiLevel.INDEPENDENT_HC_DV, Property.INDEPENDENT);
             }
             if ("addWithMessage".equals(d.methodInfo().name)) {
-                assertDv(d.p(0), 3, MultiLevel.INDEPENDENT_1_DV, Property.INDEPENDENT);
+                assertDv(d.p(0), 3, MultiLevel.INDEPENDENT_HC_DV, Property.INDEPENDENT);
             }
         };
 

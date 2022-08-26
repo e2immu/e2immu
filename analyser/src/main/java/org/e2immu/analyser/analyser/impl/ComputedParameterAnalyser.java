@@ -208,7 +208,7 @@ public class ComputedParameterAnalyser extends ParameterAnalyserImpl {
         DV immutable = analyserContext.typeImmutable(parameterInfo.parameterizedType);
 
         // there is no restriction on immutable, because the link could have been STATICALLY_ASSIGNED
-        if (EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV.equals(immutable)) {
+        if (EFFECTIVELY_IMMUTABLE_DV.equals(immutable)) {
             LOGGER.debug("Assign INDEPENDENT to parameter {}: type is recursively immutable", parameterInfo);
             parameterAnalysis.setProperty(INDEPENDENT, INDEPENDENT_DV);
             return DONE;

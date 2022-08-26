@@ -787,7 +787,7 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
             fieldAnalysis.setProperty(Property.EXTERNAL_IMMUTABLE, staticallyImmutable);
             return staticallyImmutable.causesOfDelay(); //DELAY EXIT POINT
         }
-        if (staticallyImmutable.equals(MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV)) {
+        if (staticallyImmutable.equals(MultiLevel.EFFECTIVELY_IMMUTABLE_DV)) {
             LOGGER.debug("Field {} is statically @ERImmutable", fqn);
             fieldAnalysis.setProperty(Property.EXTERNAL_IMMUTABLE, staticallyImmutable);
             return DONE; // cannot be improved
@@ -1076,7 +1076,7 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
                 public DV getProperty(Property property) {
                     if (fieldInfo.type.isFunctionalInterface() && properlyDefinedAnonymousType(fieldAnalysis.getInitializerValue())) {
                         return switch (property) {
-                            case IMMUTABLE, EXTERNAL_IMMUTABLE -> MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV;
+                            case IMMUTABLE, EXTERNAL_IMMUTABLE -> MultiLevel.EFFECTIVELY_IMMUTABLE_DV;
                             case INDEPENDENT -> MultiLevel.INDEPENDENT_DV;
                             case NOT_NULL_EXPRESSION, EXTERNAL_NOT_NULL -> MultiLevel.EFFECTIVELY_NOT_NULL_DV;
                             case IDENTITY, IGNORE_MODIFICATIONS -> property.falseDv;
@@ -1198,7 +1198,7 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
         // which is good for stress testing the BREAK_INIT delay system
         boolean forceExtraDelayForTesting = analyserContext.getConfiguration().analyserConfiguration().forceExtraDelayForTesting();
         DV formalType = analyserContext.typeImmutable(fieldInfo.type);
-        if (formalType.isDone() && MultiLevel.isAtLeastEffectivelyE2Immutable(formalType) && !forceExtraDelayForTesting) {
+        if (formalType.isDone() && MultiLevel.isAtLeastEffectivelyImmutableHC(formalType) && !forceExtraDelayForTesting) {
             LOGGER.debug("Set @IgnoreModifications to NOT_IGNORE_MODS for field e2immutable field {}", fqn);
             fieldAnalysis.setProperty(EXTERNAL_IGNORE_MODIFICATIONS, MultiLevel.NOT_IGNORE_MODS_DV);
             return DONE;
@@ -1334,7 +1334,7 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
         }
 
         DV recursivelyConstant;
-        if (!fieldOfOwnType && !MultiLevel.isAtLeastEffectivelyE2Immutable(immutable))
+        if (!fieldOfOwnType && !MultiLevel.isAtLeastEffectivelyImmutableHC(immutable))
             recursivelyConstant = DV.FALSE_DV;
         else recursivelyConstant = recursivelyConstant(value);
         if (recursivelyConstant.isDelayed()) {

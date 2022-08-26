@@ -264,7 +264,7 @@ public class AnnotatedAPIAnalyser implements AnalyserContext {
 
     // see also JavaUtilFunction.java, Annotated APIs
     private void hardcodedSyntheticFunctionalInterfaces(TypeInfo typeInfo, TypeAnalysisImpl.Builder typeAnalysis) {
-        typeAnalysis.setProperty(Property.INDEPENDENT, MultiLevel.INDEPENDENT_1_DV);
+        typeAnalysis.setProperty(Property.INDEPENDENT, MultiLevel.INDEPENDENT_HC_DV);
         boolean isContainer = typeInfo.simpleName.equals(Primitives.SYNTHETIC_FUNCTION_0);
         typeAnalysis.setProperty(Property.CONTAINER, isContainer ? MultiLevel.CONTAINER_DV : MultiLevel.NOT_CONTAINER_DV);
         typeAnalysis.setProperty(Property.IMMUTABLE, MultiLevel.MUTABLE_DV);
@@ -282,7 +282,7 @@ public class AnnotatedAPIAnalyser implements AnalyserContext {
             TypeInfo typeInfo = typeMap.get(clazz);
             TypeAnalysisImpl.Builder typeAnalysis = typeAnalyses.get(typeInfo);
             typeAnalysis.setProperty(Property.INDEPENDENT, MultiLevel.INDEPENDENT_DV);
-            typeAnalysis.setProperty(Property.IMMUTABLE, MultiLevel.EFFECTIVELY_E2IMMUTABLE_DV);
+            typeAnalysis.setProperty(Property.IMMUTABLE, MultiLevel.EFFECTIVELY_IMMUTABLE_HC_DV);
             typeAnalysis.setProperty(Property.CONTAINER, MultiLevel.CONTAINER_DV);
             typeAnalysis.setImmutableDeterminedByTypeParameters(false);
         }
@@ -295,7 +295,7 @@ public class AnnotatedAPIAnalyser implements AnalyserContext {
             TypeInfo typeInfo = typeMap.get(clazz);
             TypeAnalysisImpl.Builder typeAnalysis = typeAnalyses.get(typeInfo);
             typeAnalysis.setProperty(Property.INDEPENDENT, MultiLevel.INDEPENDENT_DV);
-            typeAnalysis.setProperty(Property.IMMUTABLE, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV);
+            typeAnalysis.setProperty(Property.IMMUTABLE, MultiLevel.EFFECTIVELY_IMMUTABLE_DV);
             typeAnalysis.setProperty(Property.CONTAINER, MultiLevel.CONTAINER_DV);
             typeAnalysis.setImmutableDeterminedByTypeParameters(false);
         }
@@ -364,7 +364,7 @@ public class AnnotatedAPIAnalyser implements AnalyserContext {
         builder.setProperty(Property.INDEPENDENT, MultiLevel.INDEPENDENT_DV);
         builder.setProperty(Property.CONTEXT_NOT_NULL, MultiLevel.EFFECTIVELY_NOT_NULL_DV);
         builder.setProperty(Property.NOT_NULL_EXPRESSION, MultiLevel.EFFECTIVELY_NOT_NULL_DV);
-        builder.setProperty(Property.IMMUTABLE, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV);
+        builder.setProperty(Property.IMMUTABLE, MultiLevel.EFFECTIVELY_IMMUTABLE_DV);
         builder.setProperty(Property.CONTAINER, MultiLevel.CONTAINER_DV);
         builder.companionAnalyses.freeze();
         VariableExpression ve = new VariableExpression(parameterInfo);
@@ -399,7 +399,7 @@ public class AnnotatedAPIAnalyser implements AnalyserContext {
         builder.setProperty(Property.INDEPENDENT, MultiLevel.INDEPENDENT_DV);
         builder.setProperty(Property.CONTEXT_NOT_NULL, MultiLevel.EFFECTIVELY_NOT_NULL_DV);
         builder.setProperty(Property.NOT_NULL_EXPRESSION, MultiLevel.EFFECTIVELY_NOT_NULL_DV);
-        builder.setProperty(Property.IMMUTABLE, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV);
+        builder.setProperty(Property.IMMUTABLE, MultiLevel.EFFECTIVELY_IMMUTABLE_DV);
         builder.setProperty(Property.CONTAINER, MultiLevel.CONTAINER_DV);
 
         builder.companionAnalyses.freeze();
@@ -674,7 +674,7 @@ public class AnnotatedAPIAnalyser implements AnalyserContext {
         DV inMap = builder.getPropertyFromMapDelayWhenAbsent(Property.INDEPENDENT);
         DV independent = MultiLevel.independentCorrespondingToImmutableLevelDv(MultiLevel.level(immutable));
         if (inMap.isDelayed()) {
-            if (immutable.ge(MultiLevel.EFFECTIVELY_E2IMMUTABLE_DV)) {
+            if (immutable.ge(MultiLevel.EFFECTIVELY_IMMUTABLE_HC_DV)) {
                 // minimal value; we'd have an inconsistency otherwise
                 builder.setProperty(Property.INDEPENDENT, independent);
                 return null;
@@ -701,7 +701,7 @@ public class AnnotatedAPIAnalyser implements AnalyserContext {
             }
             // fallback
             builder.setProperty(Property.INDEPENDENT, MultiLevel.DEPENDENT_DV);
-        } else if (immutable.ge(MultiLevel.EFFECTIVELY_E2IMMUTABLE_DV) && inMap.lt(independent)) {
+        } else if (immutable.ge(MultiLevel.EFFECTIVELY_IMMUTABLE_HC_DV) && inMap.lt(independent)) {
             return Message.newMessage(builder.typeInfo.newLocation(), Message.Label.INCONSISTENT_INDEPENDENCE_VALUE);
         }
         return null;

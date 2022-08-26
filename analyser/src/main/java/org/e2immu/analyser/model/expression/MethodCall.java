@@ -634,7 +634,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
                                                List<LinkedVariables> linkedVariables) {
         DV immutableOfHiddenContent = context.getAnalyserContext().typeImmutable(typeOfHiddenContent);
         DV correctedLevel = LinkedVariables.LINK_INDEPENDENT_HC.equals(level)
-                && MultiLevel.isAtLeastEffectivelyE2Immutable(immutableOfHiddenContent)
+                && MultiLevel.isAtLeastEffectivelyImmutableHC(immutableOfHiddenContent)
                 ? LinkedVariables.fromImmutableToLinkedVariableLevel(immutableOfHiddenContent)
                 : level;
         if (!LinkedVariables.LINK_INDEPENDENT.equals(correctedLevel)) {
@@ -1148,7 +1148,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
                 DV immutable = getProperty(context, Property.IMMUTABLE, duringEvaluation);
                 if (immutable.isDelayed()) return immutable;
                 int immutableLevel = MultiLevel.level(immutable);
-                if (immutableLevel >= MultiLevel.Level.IMMUTABLE_2.level) {
+                if (immutableLevel >= MultiLevel.Level.IMMUTABLE_HC.level) {
                     adjusted = MultiLevel.independentCorrespondingToImmutableLevelDv(immutableLevel);
                 } else {
                     adjusted = formal;
@@ -1174,7 +1174,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
                     true, true);
         }
 
-        if (MultiLevel.isAtLeastEventuallyE2Immutable(formal)) {
+        if (MultiLevel.isAtLeastEventuallyImmutableHC(formal)) {
             assert formal.isDone();
             // the independence of the result, and the immutable level of the hidden content, will determine the result
             DV methodIndependent = methodAnalysis.getProperty(Property.INDEPENDENT);
@@ -1223,7 +1223,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
             } else {
                 DV hiddenImmutable = concreteHiddenTypes.hiddenTypes().stream()
                         .map(pt -> context.getAnalyserContext().typeImmutable(pt))
-                        .reduce(MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, DV::min);
+                        .reduce(MultiLevel.EFFECTIVELY_IMMUTABLE_DV, DV::min);
                 minParams = minParams.min(hiddenImmutable);
             }
         }

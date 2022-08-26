@@ -79,7 +79,7 @@ public class TestIsAssignableFromGenerics {
 
         myComparable = new TypeInfo(PACKAGE, "MyComparable");
         {
-            TypeParameter myComparableT = new TypeParameterImpl(myComparable, "T", 0);
+            TypeParameter myComparableT = new TypeParameterImpl(myComparable, "T", 0).noTypeBounds();
 
             TypeInspection.Builder myComparableInspection = new TypeInspectionImpl.Builder(myComparable, BY_HAND)
                     .noParent(primitives)

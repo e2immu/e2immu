@@ -102,7 +102,7 @@ public class GenerateAnnotationsImmutableAndContainer {
 
         // EFFECTIVE
         if (effective == MultiLevel.Effective.EFFECTIVE) {
-            if (constantValue != null && level == MultiLevel.Level.IMMUTABLE_R.level) {
+            if (constantValue != null && level == MultiLevel.Level.IMMUTABLE.level) {
                 Map<String, Object> map = constantImplied ? Map.of(VALUE, constantValue, IMPLIED, true)
                         : Map.of(VALUE, constantValue);
                 return map(level, true, false, false, map);
@@ -136,7 +136,7 @@ public class GenerateAnnotationsImmutableAndContainer {
                                                           Map<String, Object> immutableParams) {
         Map<String, Object> params = new HashMap<>(immutableParams);
 
-        if (level == MultiLevel.Level.IMMUTABLE_1.level) {
+        if (level == MultiLevel.Level.MUTABLE.level) {
             if (container) {
                 if (containerBetterThanFormal) {
                     return Map.of(FinalFields.class, params, Container.class, NO_PARAMS);
@@ -149,10 +149,10 @@ public class GenerateAnnotationsImmutableAndContainer {
             return Map.of(FinalFields.class, params);
         }
         // apart from the parameter HIDDEN_CONTENT, there is no difference between the two immutable states
-        if (level == MultiLevel.Level.IMMUTABLE_2.level) {
+        if (level == MultiLevel.Level.IMMUTABLE_HC.level) {
             params.put(HIDDEN_CONTENT, true);
         }
-        if (level >= MultiLevel.Level.IMMUTABLE_2.level) {
+        if (level >= MultiLevel.Level.IMMUTABLE_HC.level) {
             if (container) {
                 // here, we do not care about containerImplied
                 return Map.of(ImmutableContainer.class, params,

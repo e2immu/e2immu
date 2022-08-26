@@ -91,7 +91,7 @@ public class Test_16_Modification_9 extends CommonTestRunner {
                 assertDv(d, 1, DV.TRUE_DV, Property.MODIFIED_OUTSIDE_METHOD);
             }
             if ("LOGGER".equals(d.fieldInfo().name)) {
-                assertDv(d, MultiLevel.EFFECTIVELY_E2IMMUTABLE_DV, Property.EXTERNAL_IMMUTABLE);
+                assertDv(d, MultiLevel.EFFECTIVELY_IMMUTABLE_HC_DV, Property.EXTERNAL_IMMUTABLE);
                 // important: the logger will not store your objects, will never modify their hidden content
                 assertDv(d, MultiLevel.INDEPENDENT_DV, Property.INDEPENDENT);
             }
@@ -101,7 +101,7 @@ public class Test_16_Modification_9 extends CommonTestRunner {
             TypeInfo set = typeMap.get(Set.class);
             MethodInfo add = set.findUniqueMethod("add", 1);
             ParameterInfo p0Add = add.methodInspection.get().getParameters().get(0);
-            assertEquals(MultiLevel.INDEPENDENT_1_DV, p0Add.parameterAnalysis.get()
+            assertEquals(MultiLevel.INDEPENDENT_HC_DV, p0Add.parameterAnalysis.get()
                     .getProperty(Property.INDEPENDENT));
         };
 

@@ -309,30 +309,30 @@ public class Test_Expressions extends CommonTestRunner {
             if ("x".equals(d.fieldInfo().name) && "LinearInequalityInTwoVariables".equals(d.fieldInfo().owner.simpleName)) {
                 assertEquals("x", d.fieldAnalysis().getValue().toString());
                 assertDv(d, DV.TRUE_DV, FINAL);
-                assertDv(d, 2, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, EXTERNAL_IMMUTABLE);
+                assertDv(d, 2, MultiLevel.EFFECTIVELY_IMMUTABLE_DV, EXTERNAL_IMMUTABLE);
             }
         };
 
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("Interval".equals(d.typeInfo().simpleName)) {
-                assertDv(d, 3, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
+                assertDv(d, 3, MultiLevel.EFFECTIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
             }
             if ("Precondition_11".equals(d.typeInfo().simpleName)) {
                 TypeAnalysisImpl.Builder b = (TypeAnalysisImpl.Builder) d.typeAnalysis();
                 assertEquals(0L, b.nonModifiedCountForMethodCallCycle.stream().count());
             }
             if ("OneVariable".equals(d.typeInfo().simpleName)) {
-                assertDv(d, 1, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, IMMUTABLE);
+                assertDv(d, 1, MultiLevel.EFFECTIVELY_IMMUTABLE_DV, IMMUTABLE);
             }
             if ("Variable".equals(d.typeInfo().simpleName)) {
-                assertDv(d, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, IMMUTABLE);
+                assertDv(d, MultiLevel.EFFECTIVELY_IMMUTABLE_DV, IMMUTABLE);
             }
             if ("LinearInequalityInOneVariable".equals(d.typeInfo().simpleName)) {
-                assertDv(d, 14, MultiLevel.INDEPENDENT_1_DV, INDEPENDENT);
+                assertDv(d, 14, MultiLevel.INDEPENDENT_HC_DV, INDEPENDENT);
                 assertDv(d, 15, MultiLevel.CONTAINER_DV, CONTAINER);
             }
             if ("Term".equals(d.typeInfo().simpleName)) {
-                assertDv(d, 42, MultiLevel.EFFECTIVELY_E2IMMUTABLE_DV, IMMUTABLE);
+                assertDv(d, 42, MultiLevel.EFFECTIVELY_IMMUTABLE_HC_DV, IMMUTABLE);
             }
         };
 

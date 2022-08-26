@@ -73,10 +73,10 @@ public abstract class CommonAnnotatedAPI {
     }
 
     protected void testImmutableContainerType(TypeAnalysis typeAnalysis, boolean hcImmutable, boolean hcIndependent) {
-        DV immutableDv = hcImmutable ? MultiLevel.EFFECTIVELY_E2IMMUTABLE_DV : MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV;
+        DV immutableDv = hcImmutable ? MultiLevel.EFFECTIVELY_IMMUTABLE_HC_DV : MultiLevel.EFFECTIVELY_IMMUTABLE_DV;
         assertEquals(immutableDv, typeAnalysis.getProperty(Property.IMMUTABLE));
         assertEquals(MultiLevel.CONTAINER_DV, typeAnalysis.getProperty(Property.CONTAINER));
-        DV independentDv = hcIndependent ? MultiLevel.INDEPENDENT_1_DV : MultiLevel.INDEPENDENT_DV;
+        DV independentDv = hcIndependent ? MultiLevel.INDEPENDENT_HC_DV : MultiLevel.INDEPENDENT_DV;
         assertEquals(independentDv, typeAnalysis.getProperty(Property.INDEPENDENT));
 
         assertEquals(DV.FALSE_DV, typeAnalysis.getProperty(Property.EXTENSION_CLASS));

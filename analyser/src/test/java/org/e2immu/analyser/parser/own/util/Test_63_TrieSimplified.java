@@ -196,7 +196,7 @@ public class Test_63_TrieSimplified extends CommonTestRunner {
                 if (d.variable() instanceof This) {
                     if ("0".equals(d.statementId())) {
                         assertDv(d, 0, MultiLevel.MUTABLE_DV, Property.IMMUTABLE);
-                        assertDv(d, 3, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, Property.EXTERNAL_IMMUTABLE);
+                        assertDv(d, 3, MultiLevel.EFFECTIVELY_IMMUTABLE_DV, Property.EXTERNAL_IMMUTABLE);
                     }
                 }
                 if (d.variable() instanceof FieldReference fr && "root".equals(fr.fieldInfo.name)) {
@@ -246,7 +246,7 @@ public class Test_63_TrieSimplified extends CommonTestRunner {
             if ("root".equals(d.fieldInfo().name)) {
                 String expected = d.iteration() == 0 ? "<f:root>" : "new TrieNode<>()";
                 assertEquals(expected, d.fieldAnalysis().getValue().toString());
-                assertDv(d, 1, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, Property.EXTERNAL_IMMUTABLE);
+                assertDv(d, 1, MultiLevel.EFFECTIVELY_IMMUTABLE_DV, Property.EXTERNAL_IMMUTABLE);
             }
         };
 
@@ -268,10 +268,10 @@ public class Test_63_TrieSimplified extends CommonTestRunner {
 
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("TrieNode".equals(d.typeInfo().simpleName)) {
-                assertDv(d, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
+                assertDv(d, MultiLevel.EFFECTIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
             }
             if ("TrieSimplified_1_2".equals(d.typeInfo().simpleName)) {
-                assertDv(d, 2, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
+                assertDv(d, 2, MultiLevel.EFFECTIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
             }
         };
 
@@ -299,7 +299,7 @@ public class Test_63_TrieSimplified extends CommonTestRunner {
     public void test_2() throws IOException {
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("TrieNode".equals(d.typeInfo().simpleName)) {
-                assertDv(d, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
+                assertDv(d, MultiLevel.EFFECTIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
             }
         };
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
@@ -526,7 +526,7 @@ public class Test_63_TrieSimplified extends CommonTestRunner {
             if ("TrieNode".equals(d.typeInfo().simpleName)) {
                 // we need to wait at least one iteration on transparent types
                 // iteration 1 delayed because of @Modified of goTo
-                assertDv(d, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
+                assertDv(d, MultiLevel.EFFECTIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
             }
             if ("TrieSimplified_3".equals(d.typeInfo().simpleName)) {
                 assertEquals("Type param T", d.typeAnalysis().getHiddenContentTypes().toString());
@@ -554,7 +554,7 @@ public class Test_63_TrieSimplified extends CommonTestRunner {
     public void test_4() throws IOException {
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("TrieNode".equals(d.typeInfo().simpleName)) {
-                assertDv(d, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
+                assertDv(d, MultiLevel.EFFECTIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
             }
         };
 
@@ -678,7 +678,7 @@ public class Test_63_TrieSimplified extends CommonTestRunner {
                     if ("1".equals(d.statementId()) || "1.0.0".equals(d.statementId())) {
                         assertEquals("nullable instance type String", d.currentValue().toString());
                         assertFalse(d.variableInfoContainer().hasMerge());
-                        assertDv(d, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
+                        assertDv(d, MultiLevel.EFFECTIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
                         assertDv(d, MultiLevel.CONTAINER_DV, Property.CONTAINER);
                         assertDv(d, MultiLevel.INDEPENDENT_DV, Property.INDEPENDENT);
                     }
@@ -695,17 +695,17 @@ public class Test_63_TrieSimplified extends CommonTestRunner {
                             default -> "";
                         };
                         assertEquals(expected, d.currentValue().causesOfDelay().toString());
-                        assertDv(d, 1, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
+                        assertDv(d, 1, MultiLevel.EFFECTIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
                     }
                     if ("1.0.1.1.0".equals(d.statementId())) {
                         String value = d.iteration() == 0 ? "<v:s>" : "nullable instance type String";
                         assertEquals(value, d.currentValue().toString());
-                        assertDv(d, 1, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
+                        assertDv(d, 1, MultiLevel.EFFECTIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
                     }
                     if ("1.0.1".equals(d.statementId())) {
                         String value = d.iteration() == 0 ? "<v:s>" : "nullable instance type String";
                         assertEquals(value, d.currentValue().toString());
-                        assertDv(d, 1, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
+                        assertDv(d, 1, MultiLevel.EFFECTIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
                         assertDv(d, 1, MultiLevel.CONTAINER_DV, Property.CONTAINER);
                         assertDv(d, 1, MultiLevel.INDEPENDENT_DV, Property.INDEPENDENT);
                     }

@@ -112,13 +112,13 @@ public class Test_00_Basics_1 extends CommonTestRunner {
 
                     assertEquals(MUTABLE_DV, d.getProperty(CONTEXT_IMMUTABLE));
                     assertEquals(MUTABLE_DV, d.getProperty(IMMUTABLE));
-                    assertDv(d, 1, EFFECTIVELY_E1IMMUTABLE_DV, EXTERNAL_IMMUTABLE);
+                    assertDv(d, 1, EFFECTIVELY_FINAL_FIELDS_DV, EXTERNAL_IMMUTABLE);
                     assertTrue(d.iteration() <= 1);
                     assertEquals("", d.variableInfo().getLinkedVariables().toString());
                 }
                 if ("1".equals(d.statementId())) {
                     assertEquals(MUTABLE_DV, d.getProperty(IMMUTABLE));
-                    assertDv(d, 1, EFFECTIVELY_E1IMMUTABLE_DV, EXTERNAL_IMMUTABLE);
+                    assertDv(d, 1, EFFECTIVELY_FINAL_FIELDS_DV, EXTERNAL_IMMUTABLE);
                 }
             }
         }
@@ -202,7 +202,7 @@ public class Test_00_Basics_1 extends CommonTestRunner {
     TypeAnalyserVisitor typeAnalyserVisitor = d -> {
         if ("Basics_1".equals(d.typeInfo().simpleName)) {
             assertTrue(d.typeAnalysis().getHiddenContentTypes().isEmpty());
-            assertDv(d, EFFECTIVELY_E1IMMUTABLE_DV, IMMUTABLE);
+            assertDv(d, EFFECTIVELY_FINAL_FIELDS_DV, IMMUTABLE);
         }
     };
 

@@ -93,7 +93,7 @@ public class HiddenContentTypes {
         }
         DV immutable = analyserContext.typeImmutable(type);
         if (MultiLevel.isAtLeastEventuallyRecursivelyImmutable(immutable)) return;
-        if (MultiLevel.isAtLeastEventuallyE2Immutable(immutable)) {
+        if (MultiLevel.isAtLeastEventuallyImmutableHC(immutable)) {
             types.add(type);
         } else {
             // so we end up with a mutable/E1 type...

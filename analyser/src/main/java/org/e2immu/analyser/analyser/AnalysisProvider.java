@@ -24,7 +24,7 @@ import org.e2immu.annotation.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static org.e2immu.analyser.model.MultiLevel.Level.IMMUTABLE_2;
+import static org.e2immu.analyser.model.MultiLevel.Level.IMMUTABLE_HC;
 
 public interface AnalysisProvider {
     Logger LOGGER = LoggerFactory.getLogger(AnalysisProvider.class);
@@ -120,7 +120,7 @@ public interface AnalysisProvider {
         if (typeAnalysis == null) return DV.FALSE_DV;
         DV immutable = typeAnalysis.getProperty(Property.IMMUTABLE);
         if (immutable.isDelayed()) return immutable;
-        boolean cannotBeModified = MultiLevel.isAtLeastEffectivelyE2Immutable(immutable);
+        boolean cannotBeModified = MultiLevel.isAtLeastEffectivelyImmutableHC(immutable);
         return DV.fromBoolDv(cannotBeModified);
     }
 
@@ -133,7 +133,7 @@ public interface AnalysisProvider {
         }
         if (bestType == null) {
             // unbound type parameter, null constant
-            return MultiLevel.INDEPENDENT_1_DV;
+            return MultiLevel.INDEPENDENT_HC_DV;
         }
         TypeAnalysis typeAnalysis = getTypeAnalysisNullWhenAbsent(bestType);
         if (typeAnalysis == null) {
@@ -141,7 +141,7 @@ public interface AnalysisProvider {
         }
         DV baseValue = typeAnalysis.getProperty(Property.INDEPENDENT);
         if (baseValue.isDelayed()) return baseValue;
-        if (MultiLevel.isAtLeastE2Immutable(baseValue) && !parameterizedType.parameters.isEmpty()) {
+        if (MultiLevel.isAtLeastImmutableHC(baseValue) && !parameterizedType.parameters.isEmpty()) {
             DV useTypeParameters = typeAnalysis.immutableDeterminedByTypeParameters();
             if (useTypeParameters.valueIsTrue()) {
                 DV paramValue = parameterizedType.parameters.stream()
@@ -170,13 +170,13 @@ public interface AnalysisProvider {
     default DV typeImmutable(ParameterizedType parameterizedType, DV dynamicValue) {
         assert dynamicValue.isDone();
         if (parameterizedType.arrays > 0) {
-            return MultiLevel.EFFECTIVELY_E1IMMUTABLE_DV;
+            return MultiLevel.EFFECTIVELY_FINAL_FIELDS_DV;
         }
         if (parameterizedType == ParameterizedType.NULL_CONSTANT) {
             return dynamicValue;
         }
         if (parameterizedType.isUnboundTypeParameter()) {
-            return dynamicValue.max(MultiLevel.EFFECTIVELY_E2IMMUTABLE_DV);
+            return dynamicValue.max(MultiLevel.EFFECTIVELY_IMMUTABLE_HC_DV);
         }
         TypeInfo bestType = parameterizedType.bestTypeInfo();
         TypeAnalysis typeAnalysis = getTypeAnalysisNullWhenAbsent(bestType);
@@ -189,7 +189,7 @@ public interface AnalysisProvider {
         }
         DV dynamicBaseValue = dynamicValue.max(baseValue);
         MultiLevel.Effective effective = MultiLevel.effective(dynamicBaseValue);
-        if (MultiLevel.isAtLeastE2Immutable(dynamicBaseValue) && !parameterizedType.parameters.isEmpty()) {
+        if (MultiLevel.isAtLeastImmutableHC(dynamicBaseValue) && !parameterizedType.parameters.isEmpty()) {
             DV useTypeParameters = typeAnalysis.immutableDeterminedByTypeParameters();
             if (useTypeParameters.isDelayed()) {
                 assert typeAnalysis.isNotContracted();
@@ -199,14 +199,18 @@ public interface AnalysisProvider {
                 DV paramValue = parameterizedType.parameters.stream()
                         .map(this::typeImmutable)
                         .map(v -> v.containsCauseOfDelay(CauseOfDelay.Cause.TYPE_ANALYSIS) ? MultiLevel.MUTABLE_DV : v)
-                        .reduce(MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, DV::min);
+                        .reduce(MultiLevel.EFFECTIVELY_IMMUTABLE_DV, DV::min);
                 if (paramValue.isDelayed()) return paramValue;
+                int paramLevel = MultiLevel.level(paramValue);
                 // important not to lose the eventual characteristic!
-                return MultiLevel.composeImmutable(effective, MultiLevel.level(paramValue));
+                if (effective == MultiLevel.Effective.EFFECTIVE && paramLevel == MultiLevel.Level.MUTABLE.level) {
+                    return MultiLevel.MUTABLE_DV; // instead of what would be FINAL_FIELDS
+                }
+                return MultiLevel.composeImmutable(effective, paramLevel);
             }
         }
         if (MultiLevel.isAtLeastEventuallyRecursivelyImmutable(dynamicBaseValue) && parameterizedType.isTypeParameter()) {
-            return MultiLevel.composeImmutable(effective, IMMUTABLE_2.level);
+            return MultiLevel.composeImmutable(effective, IMMUTABLE_HC.level);
         }
         return dynamicBaseValue;
     }

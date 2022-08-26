@@ -57,7 +57,7 @@ public class Test_Util_05_ListUtil extends CommonTestRunner {
             if ("immutableConcat".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof ParameterInfo pi && "lists".equals(pi.name)) {
                     if ("1.0.0.0.0".equals(d.statementId()) || "1.0.0".equals(d.statementId()) || "1".equals(d.statementId())) {
-                        assertDv(d, MultiLevel.EFFECTIVELY_CONTENT2_NOT_NULL_DV, Property.CONTEXT_NOT_NULL);
+                        assertDv(d, MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL_DV, Property.CONTEXT_NOT_NULL);
                     }
                 }
                 if ("list".equals(d.variableName())) {

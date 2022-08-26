@@ -271,16 +271,16 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
             if (ignore.equals(MultiLevel.IGNORE_MODS_DV)) return DV.FALSE_DV;
 
             DV cImm = variableInfo.getProperty(CONTEXT_IMMUTABLE);
-            if (MultiLevel.isAtLeastEffectivelyE2Immutable(cImm)) return DV.TRUE_DV;
+            if (MultiLevel.isAtLeastEffectivelyImmutableHC(cImm)) return DV.TRUE_DV;
             DV imm = variableInfo.getProperty(IMMUTABLE);
-            if (MultiLevel.isAtLeastEffectivelyE2Immutable(imm)) return DV.TRUE_DV;
+            if (MultiLevel.isAtLeastEffectivelyImmutableHC(imm)) return DV.TRUE_DV;
             DV extImm = variableInfo.getProperty(EXTERNAL_IMMUTABLE);
-            if (MultiLevel.isAtLeastEffectivelyE2Immutable(extImm)) return DV.TRUE_DV;
+            if (MultiLevel.isAtLeastEffectivelyImmutableHC(extImm)) return DV.TRUE_DV;
             DV formal = analyserContext.typeImmutable(variableInfo.variable().parameterizedType());
-            return DV.fromBoolDv(MultiLevel.isAtLeastEffectivelyE2Immutable(formal));
+            return DV.fromBoolDv(MultiLevel.isAtLeastEffectivelyImmutableHC(formal));
         }
         DV valueProperty = getProperty(value, IMMUTABLE, true, false);
-        return DV.fromBoolDv(MultiLevel.isAtLeastEffectivelyE2Immutable(valueProperty));
+        return DV.fromBoolDv(MultiLevel.isAtLeastEffectivelyImmutableHC(valueProperty));
     }
 
     private DV getVariableProperty(Variable variable, Property property, boolean duringEvaluation) {

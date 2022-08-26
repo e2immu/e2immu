@@ -246,7 +246,7 @@ public class FieldAnalysisImpl extends AnalysisImpl implements FieldAnalysis {
             // @NotModified(after=), @NotModified, @Modified
             if (modified.valueIsTrue() && !ownerImmutable.isDelayed()
                     && MultiLevel.effective(ownerImmutable) == MultiLevel.Effective.EVENTUAL) {
-                if (MultiLevel.level(dynamicallyImmutable) <= MultiLevel.Level.IMMUTABLE_1.level) {
+                if (MultiLevel.level(dynamicallyImmutable) <= MultiLevel.Level.MUTABLE.level) {
                     String labels = typeAnalysisOfOwner.markLabel();
                     addAnnotation(e2.notModified.copyWith(primitives, "after", labels));
                 }// else don't bother, we'll have an immutable annotation (see e.g. eventuallyFinal in EventuallyImmutableUtil_14)
@@ -288,7 +288,7 @@ public class FieldAnalysisImpl extends AnalysisImpl implements FieldAnalysis {
         }
 
         private DV typeImmutable() {
-            if (bestType == null) return MultiLevel.EFFECTIVELY_E2IMMUTABLE_DV;
+            if (bestType == null) return MultiLevel.EFFECTIVELY_IMMUTABLE_HC_DV;
             return// fieldInfo.owner == bestType || bestType == null ? MultiLevel.MUTABLE_DV :
                     analysisProvider.getTypeAnalysis(bestType).getProperty(Property.IMMUTABLE);
         }

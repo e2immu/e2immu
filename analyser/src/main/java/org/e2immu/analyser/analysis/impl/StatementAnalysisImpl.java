@@ -1872,8 +1872,8 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
         if (ignoreModifications.equals(IGNORE_MODS_DV)
                 && type.isFunctionalInterface()
                 && !parameterAnalysis.getParameterInfo().getMethod().methodInspection.get().isPrivate()) {
-            properties.put(IMMUTABLE, immutable.max(MultiLevel.EFFECTIVELY_E2IMMUTABLE_DV));
-            properties.put(INDEPENDENT, independent.max(MultiLevel.INDEPENDENT_1_DV));
+            properties.put(IMMUTABLE, immutable.max(MultiLevel.EFFECTIVELY_IMMUTABLE_HC_DV));
+            properties.put(INDEPENDENT, independent.max(MultiLevel.INDEPENDENT_HC_DV));
         } else {
             properties.put(IMMUTABLE, immutable);
             properties.put(INDEPENDENT, independent);

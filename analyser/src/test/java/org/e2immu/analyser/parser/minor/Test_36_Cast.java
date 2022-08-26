@@ -60,7 +60,7 @@ public class Test_36_Cast extends CommonTestRunner {
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("Cast_1".equals(d.typeInfo().simpleName)) {
                 assertTrue(d.typeAnalysis().getHiddenContentTypes().isEmpty());
-                assertDv(d, 1, MultiLevel.EFFECTIVELY_E1IMMUTABLE_DV, Property.IMMUTABLE);
+                assertDv(d, 1, MultiLevel.EFFECTIVELY_FINAL_FIELDS_DV, Property.IMMUTABLE);
             }
 
             if ("Counter".equals(d.typeInfo().simpleName)) {
@@ -74,7 +74,7 @@ public class Test_36_Cast extends CommonTestRunner {
                 if (d.variable() instanceof ReturnVariable) {
                     String expectValue = d.iteration() <= 1 ? "<m:increment>" : "instance type int";
                     assertEquals(expectValue, d.currentValue().toString());
-                    assertDv(d, 2, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
+                    assertDv(d, 2, MultiLevel.EFFECTIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
                     String linked = d.iteration() <= 1 ? "this.t:-1,this:-1" : "";
                     assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
                 }

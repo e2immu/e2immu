@@ -327,7 +327,7 @@ public class Test_04_Precondition extends CommonTestRunner {
                             assertEquals("ii", d.currentValue().toString());
                         }
                         assertDv(d, 2, MultiLevel.EFFECTIVELY_NOT_NULL_DV, NOT_NULL_EXPRESSION);
-                        assertDv(d, 2, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, IMMUTABLE);
+                        assertDv(d, 2, MultiLevel.EFFECTIVELY_IMMUTABLE_DV, IMMUTABLE);
                     }
                 }
             }

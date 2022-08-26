@@ -19,7 +19,6 @@ import org.e2immu.analyser.analysis.Analysis;
 import org.e2immu.analyser.model.AnnotationExpression;
 import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.WithInspectionAndAnalysis;
-import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
 import org.e2immu.analyser.parser.Message;
 
 import java.util.function.Function;
@@ -32,7 +31,7 @@ public class CheckIndependent {
                               AnnotationExpression annotationKey,
                               Analysis analysis) {
         Function<AnnotationExpression, String> extract = ae -> ae.extract(HIDDEN_CONTENT, false).toString();
-        boolean hiddenContent = MultiLevel.INDEPENDENT_1_DV.equals(analysis.getProperty(Property.INDEPENDENT));
+        boolean hiddenContent = MultiLevel.INDEPENDENT_HC_DV.equals(analysis.getProperty(Property.INDEPENDENT));
         return CheckHelper.checkAnnotationWithValue(analysis,
                 annotationKey,
                 HIDDEN_CONTENT,

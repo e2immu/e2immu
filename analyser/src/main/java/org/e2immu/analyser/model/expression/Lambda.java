@@ -279,7 +279,7 @@ public class Lambda extends BaseExpression implements Expression {
     private Expression makeInstance(ParameterizedType parameterizedType, DV nne) {
         Expression result;
         Properties valueProperties = Properties.of(Map.of(Property.NOT_NULL_EXPRESSION, nne,
-                Property.IMMUTABLE, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV,
+                Property.IMMUTABLE, MultiLevel.EFFECTIVELY_IMMUTABLE_DV,
                 Property.INDEPENDENT, MultiLevel.INDEPENDENT_DV,
                 Property.CONTAINER, MultiLevel.CONTAINER_DV,
                 Property.IGNORE_MODIFICATIONS, Property.IGNORE_MODIFICATIONS.falseDv,

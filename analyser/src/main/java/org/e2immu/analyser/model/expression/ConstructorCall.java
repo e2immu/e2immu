@@ -288,8 +288,8 @@ public class ConstructorCall extends BaseExpression implements HasParameterExpre
         CausesOfDelay causes = immutableOfValue.causesOfDelay().merge(independentOnParameter.causesOfDelay());
         if (causes.isDelayed()) return causes;
 
-        if (independentOnParameter.ge(MultiLevel.INDEPENDENT_1_DV)
-                && !MultiLevel.isAtLeastEventuallyE2Immutable(immutableOfValue)) {
+        if (independentOnParameter.ge(MultiLevel.INDEPENDENT_HC_DV)
+                && !MultiLevel.isAtLeastEventuallyImmutableHC(immutableOfValue)) {
             // mutable, but linked content-wise
             return LinkedVariables.LINK_INDEPENDENT_HC;
         }
@@ -328,14 +328,13 @@ public class ConstructorCall extends BaseExpression implements HasParameterExpre
 
     private DV notNullValue() {
         if (parameterizedType.arrays <= 1) return MultiLevel.EFFECTIVELY_NOT_NULL_DV;
-        if (parameterizedType.arrays == 2) return MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL_DV;
-        return MultiLevel.EFFECTIVELY_CONTENT2_NOT_NULL_DV;
+        return MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL_DV;
     }
 
     private DV independentValue(ParameterizedType pt, AnalyserContext analyserContext) {
         if (anonymousClass != null) {
             DV immutable = immutableValue(pt, analyserContext);
-            if (MultiLevel.isAtLeastEventuallyE2Immutable(immutable)) {
+            if (MultiLevel.isAtLeastEventuallyImmutableHC(immutable)) {
                 return MultiLevel.independentCorrespondingToImmutableLevelDv(MultiLevel.level(immutable));
             }
             if (immutable.isDelayed()) return immutable;

@@ -168,7 +168,7 @@ public class Test_Util_01_SMapList extends CommonTestRunner {
                 if ("2".equals(d.statementId())) {
                     String expectValue = d.iteration() <= 1 ? "<m:copyOf>" : COPY_OF_TMP;
                     assertEquals(expectValue, d.currentValue().toString());
-                    assertDv(d, 2, MultiLevel.EFFECTIVELY_E2IMMUTABLE_DV, Property.IMMUTABLE);
+                    assertDv(d, 2, MultiLevel.EFFECTIVELY_IMMUTABLE_HC_DV, Property.IMMUTABLE);
                 }
             }
         }
@@ -237,7 +237,7 @@ public class Test_Util_01_SMapList extends CommonTestRunner {
             String expect = d.iteration() <= 1 ? "<m:immutable>" : "/*inline immutable*/" + COPY_OF_TMP;
             assertEquals(expect, d.methodAnalysis().getSingleReturnValue().toString());
 
-            assertDv(d, 2, MultiLevel.EFFECTIVELY_E2IMMUTABLE_DV, Property.IMMUTABLE);
+            assertDv(d, 2, MultiLevel.EFFECTIVELY_IMMUTABLE_HC_DV, Property.IMMUTABLE);
         }
     };
 
@@ -247,7 +247,7 @@ public class Test_Util_01_SMapList extends CommonTestRunner {
         assertEquals(MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL_DV,
                 entrySet.methodAnalysis.get().getProperty(Property.NOT_NULL_EXPRESSION));
         MethodInfo copyOf = map.findUniqueMethod("copyOf", 1);
-        assertEquals(MultiLevel.EFFECTIVELY_E2IMMUTABLE_DV, copyOf.methodAnalysis.get().getProperty(Property.IMMUTABLE));
+        assertEquals(MultiLevel.EFFECTIVELY_IMMUTABLE_HC_DV, copyOf.methodAnalysis.get().getProperty(Property.IMMUTABLE));
     };
 
     @Test

@@ -91,7 +91,7 @@ public class Test_Support_05_Lazy extends CommonTestRunner {
             }
             if (d.variable() instanceof FieldReference t && "supplier".equals(t.fieldInfo.name)) {
                 assertCurrentValue(d, 9, "instance type Supplier<T>/*@IgnoreMods*/");
-                assertDv(d, 9, MultiLevel.EFFECTIVELY_E2IMMUTABLE_DV, Property.IMMUTABLE);
+                assertDv(d, 9, MultiLevel.EFFECTIVELY_IMMUTABLE_HC_DV, Property.IMMUTABLE);
             }
 
             if (d.variable() instanceof FieldReference t && "t".equals(t.fieldInfo.name)) {
@@ -167,12 +167,12 @@ public class Test_Support_05_Lazy extends CommonTestRunner {
             assertEquals(d.iteration() > 6, d.fieldAnalysis().valuesDelayed().isDone());
 
             assertDv(d, 7, MultiLevel.NULLABLE_DV, Property.EXTERNAL_NOT_NULL);
-            assertDv(d, 8, MultiLevel.EFFECTIVELY_E2IMMUTABLE_DV, Property.EXTERNAL_IMMUTABLE);
+            assertDv(d, 8, MultiLevel.EFFECTIVELY_IMMUTABLE_HC_DV, Property.EXTERNAL_IMMUTABLE);
         }
         if ("supplier".equals(d.fieldInfo().name)) {
             assertEquals(DV.TRUE_DV, d.fieldAnalysis().getProperty(Property.FINAL));
             assertDv(d, 1, MultiLevel.IGNORE_MODS_DV, Property.EXTERNAL_IGNORE_MODIFICATIONS);
-            assertDv(d, 1, MultiLevel.EFFECTIVELY_E2IMMUTABLE_DV, Property.EXTERNAL_IMMUTABLE);
+            assertDv(d, 1, MultiLevel.EFFECTIVELY_IMMUTABLE_HC_DV, Property.EXTERNAL_IMMUTABLE);
             String expected = d.iteration() == 0 ? "<f:supplier>" : "supplierParam";
             assertEquals(expected, d.fieldAnalysis().getValue().toString());
         }
@@ -184,7 +184,7 @@ public class Test_Support_05_Lazy extends CommonTestRunner {
             String expect = d.iteration() <= 8 ? "Precondition[expression=<precondition>, causes=[]]"
                     : "Precondition[expression=null==t, causes=[state]]";
             assertEquals(expect, d.methodAnalysis().getPreconditionForEventual().toString());
-            assertDv(d, 9, MultiLevel.EFFECTIVELY_E2IMMUTABLE_DV, Property.IMMUTABLE);
+            assertDv(d, 9, MultiLevel.EFFECTIVELY_IMMUTABLE_HC_DV, Property.IMMUTABLE);
         }
     };
 

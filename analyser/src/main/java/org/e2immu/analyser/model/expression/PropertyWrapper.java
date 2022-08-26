@@ -251,7 +251,7 @@ public final class PropertyWrapper extends BaseExpression implements Expression,
     }
 
     private static String stringValue(Map.Entry<Property, DV> e) {
-        if (e.getKey() == Property.INDEPENDENT && e.getValue().equals(MultiLevel.INDEPENDENT_1_DV))
+        if (e.getKey() == Property.INDEPENDENT && e.getValue().equals(MultiLevel.INDEPENDENT_HC_DV))
             return "@Dependent1";
         return e.getKey().toString();
     }

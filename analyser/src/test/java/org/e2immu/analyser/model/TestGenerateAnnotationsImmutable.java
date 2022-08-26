@@ -34,17 +34,17 @@ public class TestGenerateAnnotationsImmutable {
     @Test
     public void testBefore() {
         assertEquals(Map.of(BeforeMark.class, NO_PARAMS),
-                generate(EVENTUALLY_E1IMMUTABLE_BEFORE_MARK_DV, MultiLevel.NOT_CONTAINER_DV, false));
+                generate(EVENTUALLY_FINAL_FIELDS_BEFORE_MARK_DV, MultiLevel.NOT_CONTAINER_DV, false));
         assertEquals(Map.of(BeforeMark.class, NO_PARAMS),
-                generate(EVENTUALLY_E1IMMUTABLE_BEFORE_MARK_DV, MultiLevel.CONTAINER_DV, false));
+                generate(EVENTUALLY_FINAL_FIELDS_BEFORE_MARK_DV, MultiLevel.CONTAINER_DV, false));
         assertEquals(Map.of(BeforeMark.class, NO_PARAMS),
-                generate(EVENTUALLY_E2IMMUTABLE_BEFORE_MARK_DV, MultiLevel.NOT_CONTAINER_DV, false));
+                generate(EVENTUALLY_IMMUTABLE_HC_BEFORE_MARK_DV, MultiLevel.NOT_CONTAINER_DV, false));
         assertEquals(Map.of(BeforeMark.class, NO_PARAMS),
-                generate(EVENTUALLY_E2IMMUTABLE_BEFORE_MARK_DV, MultiLevel.CONTAINER_DV, false));
+                generate(EVENTUALLY_IMMUTABLE_HC_BEFORE_MARK_DV, MultiLevel.CONTAINER_DV, false));
 
         try {
             assertEquals(Map.of(BeforeMark.class, NO_PARAMS),
-                    generate(EVENTUALLY_E1IMMUTABLE_BEFORE_MARK_DV, MultiLevel.NOT_CONTAINER_DV, true));
+                    generate(EVENTUALLY_FINAL_FIELDS_BEFORE_MARK_DV, MultiLevel.NOT_CONTAINER_DV, true));
             fail();
         } catch (RuntimeException rte) {
             // OK!
@@ -54,20 +54,20 @@ public class TestGenerateAnnotationsImmutable {
     @Test
     public void testAfter() {
         assertEquals(Map.of(FinalFields.class, NO_PARAMS),
-                generate(EVENTUALLY_E1IMMUTABLE_AFTER_MARK_DV, MultiLevel.NOT_CONTAINER_DV, false));
+                generate(EVENTUALLY_FINAL_FIELDS_AFTER_MARK_DV, MultiLevel.NOT_CONTAINER_DV, false));
         assertEquals(Map.of(FinalFields.class, NO_PARAMS, Container.class, NO_PARAMS),
-                generate(EVENTUALLY_E1IMMUTABLE_AFTER_MARK_DV, MultiLevel.CONTAINER_DV, false));
+                generate(EVENTUALLY_FINAL_FIELDS_AFTER_MARK_DV, MultiLevel.CONTAINER_DV, false));
         assertEquals(Map.of(Immutable.class, Map.of(HIDDEN_CONTENT, true),
                         FinalFields.class, Map.of(IMPLIED, true)),
-                generate(EVENTUALLY_E2IMMUTABLE_AFTER_MARK_DV, MultiLevel.NOT_CONTAINER_DV, false));
+                generate(EVENTUALLY_IMMUTABLE_HC_AFTER_MARK_DV, MultiLevel.NOT_CONTAINER_DV, false));
         assertEquals(Map.of(ImmutableContainer.class, Map.of(HIDDEN_CONTENT, true),
                         Container.class, Map.of(IMPLIED, true),
                         Immutable.class, Map.of(IMPLIED, true),
                         FinalFields.class, Map.of(IMPLIED, true)),
-                generate(EVENTUALLY_E2IMMUTABLE_AFTER_MARK_DV, MultiLevel.CONTAINER_DV, false));
+                generate(EVENTUALLY_IMMUTABLE_HC_AFTER_MARK_DV, MultiLevel.CONTAINER_DV, false));
         try {
             assertEquals(Map.of(FinalFields.class, NO_PARAMS),
-                    generate(EVENTUALLY_E1IMMUTABLE_AFTER_MARK_DV, MultiLevel.NOT_CONTAINER_DV, true));
+                    generate(EVENTUALLY_FINAL_FIELDS_AFTER_MARK_DV, MultiLevel.NOT_CONTAINER_DV, true));
             fail();
         } catch (RuntimeException rte) {
             // OK!
@@ -79,23 +79,23 @@ public class TestGenerateAnnotationsImmutable {
     public void testEventual() {
         // @FinalFields(after="mark")
         assertEquals(Map.of(FinalFields.class, Map.of(AFTER, "mark")),
-                generate(EVENTUALLY_E1IMMUTABLE_DV, MultiLevel.NOT_CONTAINER_DV, true, "mark", true, true));
+                generate(EVENTUALLY_FINAL_FIELDS_DV, MultiLevel.NOT_CONTAINER_DV, true, "mark", true, true));
 
         // @Immutable(after="mark", hc=true)
         assertEquals(Map.of(Immutable.class, Map.of(AFTER, "mark", HIDDEN_CONTENT, true),
                         FinalFields.class, Map.of(IMPLIED, true)),
-                generate(EVENTUALLY_E2IMMUTABLE_DV, MultiLevel.NOT_CONTAINER_DV, true, "mark", true, true));
+                generate(EVENTUALLY_IMMUTABLE_HC_DV, MultiLevel.NOT_CONTAINER_DV, true, "mark", true, true));
 
         // @FinalFields(after="mark") @Container
         assertEquals(Map.of(FinalFields.class, Map.of(AFTER, "mark"), Container.class, NO_PARAMS),
-                generate(EVENTUALLY_E1IMMUTABLE_DV, MultiLevel.CONTAINER_DV, true, "mark", true, true));
+                generate(EVENTUALLY_FINAL_FIELDS_DV, MultiLevel.CONTAINER_DV, true, "mark", true, true));
 
         // @ImmutableContainer(after="mark", hc=true) @Container(implied=true) @Immutable(implied=true)
         assertEquals(Map.of(ImmutableContainer.class, Map.of(AFTER, "mark2", HIDDEN_CONTENT, true),
                         Container.class, Map.of(IMPLIED, true),
                         Immutable.class, Map.of(IMPLIED, true),
                         FinalFields.class, Map.of(IMPLIED, true)),
-                generate(EVENTUALLY_E2IMMUTABLE_DV, MultiLevel.CONTAINER_DV, true, "mark2", true, true));
+                generate(EVENTUALLY_IMMUTABLE_HC_DV, MultiLevel.CONTAINER_DV, true, "mark2", true, true));
 
         // not better than formal has no effect, because of the eventual
         // @ImmutableContainer(after="mark", hc=true) @Container(implied=true) @Immutable(implied=true)
@@ -103,38 +103,38 @@ public class TestGenerateAnnotationsImmutable {
                         Container.class, Map.of(IMPLIED, true),
                         Immutable.class, Map.of(IMPLIED, true),
                         FinalFields.class, Map.of(IMPLIED, true)),
-                generate(EVENTUALLY_E2IMMUTABLE_DV, MultiLevel.CONTAINER_DV, true, "mark2", false, false));
+                generate(EVENTUALLY_IMMUTABLE_HC_DV, MultiLevel.CONTAINER_DV, true, "mark2", false, false));
     }
 
     @Test
     public void testEffective() {
         // @FinalFields
         assertEquals(Map.of(FinalFields.class, NO_PARAMS),
-                generate(EFFECTIVELY_E1IMMUTABLE_DV, MultiLevel.NOT_CONTAINER_DV, true, "mark", true, true));
+                generate(EFFECTIVELY_FINAL_FIELDS_DV, MultiLevel.NOT_CONTAINER_DV, true, "mark", true, true));
 
         // @Immutable(hc=true)
         assertEquals(Map.of(Immutable.class, Map.of(HIDDEN_CONTENT, true),
                         FinalFields.class, Map.of(IMPLIED, true)),
-                generate(EFFECTIVELY_E2IMMUTABLE_DV, MultiLevel.NOT_CONTAINER_DV, true, "mark", true, true));
+                generate(EFFECTIVELY_IMMUTABLE_HC_DV, MultiLevel.NOT_CONTAINER_DV, true, "mark", true, true));
 
         // @FinalFields @Container
         assertEquals(Map.of(FinalFields.class, NO_PARAMS, Container.class, NO_PARAMS),
-                generate(EFFECTIVELY_E1IMMUTABLE_DV, MultiLevel.CONTAINER_DV, true, "mark", true, true));
+                generate(EFFECTIVELY_FINAL_FIELDS_DV, MultiLevel.CONTAINER_DV, true, "mark", true, true));
 
         // @FinalFields @Container(implied=true)
         assertEquals(Map.of(FinalFields.class, NO_PARAMS, Container.class, Map.of(IMPLIED, true)),
-                generate(EFFECTIVELY_E1IMMUTABLE_DV, MultiLevel.CONTAINER_DV, true, "mark", true, false));
+                generate(EFFECTIVELY_FINAL_FIELDS_DV, MultiLevel.CONTAINER_DV, true, "mark", true, false));
 
         // @FinalFields(implied=true) @Container(implied=true)
         assertEquals(Map.of(FinalFields.class, Map.of(IMPLIED, true), Container.class, Map.of(IMPLIED, true)),
-                generate(EFFECTIVELY_E1IMMUTABLE_DV, MultiLevel.CONTAINER_DV, false, "mark", false, false));
+                generate(EFFECTIVELY_FINAL_FIELDS_DV, MultiLevel.CONTAINER_DV, false, "mark", false, false));
 
         // @ImmutableContainer(after="mark", hc=true) @Container(implied=true) @Immutable(implied=true) @FinalFields(implied=true)
         assertEquals(Map.of(ImmutableContainer.class, Map.of(HIDDEN_CONTENT, true),
                         Container.class, Map.of(IMPLIED, true),
                         Immutable.class, Map.of(IMPLIED, true),
                         FinalFields.class, Map.of(IMPLIED, true)),
-                generate(EFFECTIVELY_E2IMMUTABLE_DV, MultiLevel.CONTAINER_DV, true, "mark2", true, true));
+                generate(EFFECTIVELY_IMMUTABLE_HC_DV, MultiLevel.CONTAINER_DV, true, "mark2", true, true));
 
         // not better than formal has no effect on a type
         // @ImmutableContainer(after="mark", hc=true) @Container(implied=true) @Immutable(implied=true) @FinalFields(implied=true)
@@ -142,7 +142,7 @@ public class TestGenerateAnnotationsImmutable {
                         Container.class, Map.of(IMPLIED, true),
                         Immutable.class, Map.of(IMPLIED, true),
                         FinalFields.class, Map.of(IMPLIED, true)),
-                generate(EFFECTIVELY_E2IMMUTABLE_DV, MultiLevel.CONTAINER_DV, true, "mark2", false, false));
+                generate(EFFECTIVELY_IMMUTABLE_HC_DV, MultiLevel.CONTAINER_DV, true, "mark2", false, false));
 
         // but it has when not on a type
         // @ImmutableContainer(after="mark", hc=true) @Container(implied=true) @Immutable(implied=true) @FinalFields(implied=true)
@@ -150,7 +150,7 @@ public class TestGenerateAnnotationsImmutable {
                         Container.class, Map.of(IMPLIED, true),
                         Immutable.class, Map.of(IMPLIED, true),
                         FinalFields.class, Map.of(IMPLIED, true)),
-                generate(EFFECTIVELY_E2IMMUTABLE_DV, MultiLevel.CONTAINER_DV, false, "mark2", false, false));
+                generate(EFFECTIVELY_IMMUTABLE_HC_DV, MultiLevel.CONTAINER_DV, false, "mark2", false, false));
 
         // container is better than formal, so implied=true on Container, but not on ImmutableContainer!
         // @ImmutableContainer(hc=true) @Container(implied=true) @Immutable(implied=true) @FinalFields(implied=true)
@@ -158,14 +158,14 @@ public class TestGenerateAnnotationsImmutable {
                         Container.class, Map.of(IMPLIED, true),
                         Immutable.class, Map.of(IMPLIED, true),
                         FinalFields.class, Map.of(IMPLIED, true)),
-                generate(EFFECTIVELY_E2IMMUTABLE_DV, MultiLevel.CONTAINER_DV, false, "mark2", false, true));
+                generate(EFFECTIVELY_IMMUTABLE_HC_DV, MultiLevel.CONTAINER_DV, false, "mark2", false, true));
 
         // @ImmutableContainer(hc=true) @Container(implied=true) @Immutable(implied=true) @FinalFields(implied=true)
         assertEquals(Map.of(ImmutableContainer.class, Map.of(HIDDEN_CONTENT, true),
                         Container.class, Map.of(IMPLIED, true),
                         Immutable.class, Map.of(IMPLIED, true),
                         FinalFields.class, Map.of(IMPLIED, true)),
-                generate(EFFECTIVELY_E2IMMUTABLE_DV, MultiLevel.CONTAINER_DV, false, "mark2", true, false));
+                generate(EFFECTIVELY_IMMUTABLE_HC_DV, MultiLevel.CONTAINER_DV, false, "mark2", true, false));
     }
 
     @Test

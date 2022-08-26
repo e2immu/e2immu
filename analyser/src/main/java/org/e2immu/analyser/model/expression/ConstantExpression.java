@@ -54,7 +54,7 @@ public interface ConstantExpression<T> extends Expression {
             case CONTAINER:
                 return MultiLevel.CONTAINER_DV;
             case IMMUTABLE:
-                return MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV;
+                return MultiLevel.EFFECTIVELY_IMMUTABLE_DV;
             case NOT_NULL_EXPRESSION:
                 return MultiLevel.EFFECTIVELY_NOT_NULL_DV;
             case MODIFIED_METHOD:

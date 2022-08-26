@@ -65,7 +65,7 @@ public class Test_Independent extends CommonTestRunner {
             if ("methodAnalyserStream".equals(d.methodInfo().name)) {
                 if ("AnalyserContext".equals(d.methodInfo().typeInfo.simpleName)) {
                     assertDv(d, MultiLevel.INDEPENDENT_DV, Property.INDEPENDENT);
-                    assertDv(d, 3, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
+                    assertDv(d, 3, MultiLevel.EFFECTIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
                 }
             }
             if ("getMethodInfo".equals(d.methodInfo().name) && "MethodAnalyser".equals(d.methodInfo().typeInfo.simpleName)) {
@@ -74,11 +74,11 @@ public class Test_Independent extends CommonTestRunner {
         };
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("MethodInfo".equals(d.typeInfo().simpleName)) {
-                assertDv(d, 1, MultiLevel.EFFECTIVELY_E1IMMUTABLE_DV, Property.IMMUTABLE);
+                assertDv(d, 1, MultiLevel.EFFECTIVELY_FINAL_FIELDS_DV, Property.IMMUTABLE);
                 assertDv(d, 1, MultiLevel.DEPENDENT_DV, Property.INDEPENDENT);
             }
             if ("MethodAnalyser".equals(d.typeInfo().simpleName)) {
-                assertDv(d, 2, MultiLevel.EFFECTIVELY_E1IMMUTABLE_DV, Property.IMMUTABLE);
+                assertDv(d, 2, MultiLevel.EFFECTIVELY_FINAL_FIELDS_DV, Property.IMMUTABLE);
                 assertDv(d, 2, MultiLevel.DEPENDENT_DV, Property.INDEPENDENT);
             }
         };

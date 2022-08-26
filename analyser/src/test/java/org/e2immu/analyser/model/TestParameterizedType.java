@@ -65,8 +65,8 @@ public class TestParameterizedType {
         // Map<K, V>
         map = new TypeInfo(PACKAGE, "Map");
         {
-            TypeParameter mapK = new TypeParameterImpl(map, "K", 0);
-            TypeParameter mapV = new TypeParameterImpl(map, "V", 1);
+            TypeParameter mapK = new TypeParameterImpl(map, "K", 0).noTypeBounds();
+            TypeParameter mapV = new TypeParameterImpl(map, "V", 1).noTypeBounds();
 
             TypeInspection.Builder mapInspection = new TypeInspectionImpl.Builder(map, BY_HAND)
                     .noParent(primitives)
@@ -78,8 +78,8 @@ public class TestParameterizedType {
         // HashMap<K, V> implements Map<K, V>
         hashMap = new TypeInfo(PACKAGE, "HashMap");
         {
-            TypeParameter hashMapK = new TypeParameterImpl(hashMap, "K", 0);
-            TypeParameter hashMapV = new TypeParameterImpl(hashMap, "V", 1);
+            TypeParameter hashMapK = new TypeParameterImpl(hashMap, "K", 0).noTypeBounds();
+            TypeParameter hashMapV = new TypeParameterImpl(hashMap, "V", 1).noTypeBounds();
 
             TypeInspection.Builder hashMapInspection = new TypeInspectionImpl.Builder(map, BY_HAND)
                     .noParent(primitives)
@@ -94,7 +94,7 @@ public class TestParameterizedType {
         // StringMap<V> extends HashMap<String, V>
         stringMap = new TypeInfo(PACKAGE, "StringMap");
         {
-            TypeParameter stringMapV = new TypeParameterImpl(stringMap, "V", 0);
+            TypeParameter stringMapV = new TypeParameterImpl(stringMap, "V", 0).noTypeBounds();
 
             TypeInspection.Builder stringMapInspection = new TypeInspectionImpl.Builder(map, BY_HAND)
                     .setParentClass(new ParameterizedType(hashMap, List.of(primitives.stringParameterizedType(),
@@ -114,8 +114,8 @@ public class TestParameterizedType {
         }
         function = new TypeInfo(PACKAGE, "Function");
         {
-            TypeParameter functionT = new TypeParameterImpl(function, "T", 0);
-            TypeParameter functionR = new TypeParameterImpl(function, "R", 1);
+            TypeParameter functionT = new TypeParameterImpl(function, "T", 0).noTypeBounds();
+            TypeParameter functionR = new TypeParameterImpl(function, "R", 1).noTypeBounds();
 
             MethodInspectionImpl.Builder applyBuilder = new MethodInspectionImpl.Builder(function, "apply");
             MethodInfo apply = applyBuilder
@@ -137,8 +137,8 @@ public class TestParameterizedType {
         // A<K, V>
         a = new TypeInfo(PACKAGE, "A");
         {
-            TypeParameter aK = new TypeParameterImpl(a, "K", 0);
-            TypeParameter aV = new TypeParameterImpl(a, "V", 1);
+            TypeParameter aK = new TypeParameterImpl(a, "K", 0).noTypeBounds();
+            TypeParameter aV = new TypeParameterImpl(a, "V", 1).noTypeBounds();
 
             TypeInspection.Builder aInspection = new TypeInspectionImpl.Builder(a, BY_HAND)
                     .noParent(primitives)
@@ -150,7 +150,7 @@ public class TestParameterizedType {
         // B<X> extends A<String, X>
         b = new TypeInfo(PACKAGE, "B");
         {
-            TypeParameter bX = new TypeParameterImpl(b, "X", 0);
+            TypeParameter bX = new TypeParameterImpl(b, "X", 0).noTypeBounds();
 
             TypeInspection.Builder bInspection = new TypeInspectionImpl.Builder(b, BY_HAND)
                     .setParentClass(new ParameterizedType(a, List.of(

@@ -312,7 +312,7 @@ public class Test_45_Project extends CommonTestRunner {
         };
         TypeMapVisitor typeMapVisitor = typeMap -> {
             TypeAnalysis stringAnalysis = typeMap.getPrimitives().stringTypeInfo().typeAnalysis.get();
-            assertEquals(MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, stringAnalysis.getProperty(Property.IMMUTABLE));
+            assertEquals(MultiLevel.EFFECTIVELY_IMMUTABLE_DV, stringAnalysis.getProperty(Property.IMMUTABLE));
         };
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("Container".equals(d.methodInfo().name) && d.methodInfo().isConstructor) {
@@ -349,7 +349,7 @@ public class Test_45_Project extends CommonTestRunner {
             assertEquals(MultiLevel.INDEPENDENT_DV, p0a.getProperty(Property.INDEPENDENT));
 
             assertEquals(MultiLevel.NOT_CONTAINER_DV, p0a.getProperty(Property.CONTAINER));
-            assertEquals(MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, p0a.getProperty(Property.IMMUTABLE));
+            assertEquals(MultiLevel.EFFECTIVELY_IMMUTABLE_DV, p0a.getProperty(Property.IMMUTABLE));
         };
         testClass("Project_4", 0, 1, new DebugConfiguration.Builder()
                         .addTypeMapVisitor(typeMapVisitor)

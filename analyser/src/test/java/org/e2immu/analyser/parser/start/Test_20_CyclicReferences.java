@@ -51,7 +51,7 @@ public class Test_20_CyclicReferences extends CommonTestRunner {
                 if (d.variable() instanceof FieldReference fr && "field2".equals(fr.fieldInfo.name)) {
                     if ("0".equals(d.statementId())) {
                         assertEquals("\"cde\"", d.currentValue().toString());
-                        assertDv(d, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
+                        assertDv(d, MultiLevel.EFFECTIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
                     }
                 }
             }

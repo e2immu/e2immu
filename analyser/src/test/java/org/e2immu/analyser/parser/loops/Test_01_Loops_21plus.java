@@ -273,10 +273,10 @@ public class Test_01_Loops_21plus extends CommonTestRunner {
                     if ("4".equals(d.statementId())) {
                         String expected = d.iteration() <= 4 ? "<vl:x>" : "instance type X";
                         assertEquals(expected, d.currentValue().toString());
-                        assertDv(d, 5, MultiLevel.EFFECTIVELY_E2IMMUTABLE_DV, Property.IMMUTABLE);
+                        assertDv(d, 5, MultiLevel.EFFECTIVELY_IMMUTABLE_HC_DV, Property.IMMUTABLE);
                     }
                     if ("4.0.0".equals(d.statementId())) {
-                        assertDv(d, 5, MultiLevel.EFFECTIVELY_E2IMMUTABLE_DV, Property.IMMUTABLE);
+                        assertDv(d, 5, MultiLevel.EFFECTIVELY_IMMUTABLE_HC_DV, Property.IMMUTABLE);
 
                         String linked = d.iteration() <= 4 ? "this.xes:-1" : "this.xes:3";
                         assertEquals(linked, d.variableInfo().getLinkedVariables().toString());

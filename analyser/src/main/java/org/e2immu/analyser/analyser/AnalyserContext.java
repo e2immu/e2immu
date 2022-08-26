@@ -184,7 +184,7 @@ public interface AnalyserContext extends AnalysisProvider, InspectionProvider {
         SetOfTypes hiddenContentTypes = typeParametersOf(parameterizedType);
         return hiddenContentTypes.types().stream()
                 .map(this::typeImmutable)
-                .reduce(MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, DV::min);
+                .reduce(MultiLevel.EFFECTIVELY_IMMUTABLE_DV, DV::min);
     }
 
     private SetOfTypes typeParametersOf(ParameterizedType parameterizedType) {

@@ -62,7 +62,7 @@ public class Test_E2ImmutableComposition extends CommonTestRunner {
                     if ("0.0.0".equals(d.statementId())) {
                         String expected = d.iteration() <= 3 ? "<vl:one>" : "nullable instance type One<Integer>";
                         assertEquals(expected, d.currentValue().toString());
-                        assertDv(d, 4, MultiLevel.EFFECTIVELY_E2IMMUTABLE_DV, Property.IMMUTABLE);
+                        assertDv(d, 4, MultiLevel.EFFECTIVELY_IMMUTABLE_HC_DV, Property.IMMUTABLE);
                     }
                 }
             }
@@ -80,7 +80,7 @@ public class Test_E2ImmutableComposition extends CommonTestRunner {
                     String expected = d.iteration() <= 3 ? "<m:first>" : "`one.t`";
                     assertEquals(expected, d.currentValue().toString());
                     assertDv(d, 4, MultiLevel.DEPENDENT_DV, Property.INDEPENDENT);
-                    assertDv(d, 4, MultiLevel.EFFECTIVELY_E1IMMUTABLE_DV, Property.IMMUTABLE);
+                    assertDv(d, 4, MultiLevel.EFFECTIVELY_FINAL_FIELDS_DV, Property.IMMUTABLE);
                     // the expanded variable is linked to "this", delays are provided by EvaluateMethodCall.delay
                     String linked = d.iteration() <= 3 ? "this.one:-1,this:-1" : "this:2";
                     assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
@@ -149,7 +149,7 @@ public class Test_E2ImmutableComposition extends CommonTestRunner {
 
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("Marker".equals(d.typeInfo().simpleName)) {
-                assertDv(d, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
+                assertDv(d, MultiLevel.EFFECTIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
                 assertDv(d, MultiLevel.CONTAINER_DV, Property.CONTAINER);
             }
             if ("ImmutableArrayOfTransparentOnes".equals(d.typeInfo().simpleName)) {

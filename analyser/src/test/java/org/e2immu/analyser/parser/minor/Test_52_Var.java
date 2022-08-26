@@ -154,18 +154,18 @@ public class Test_52_Var extends CommonTestRunner {
                     assertEquals("(instance type StringWriter/*{L sw:statically_assigned:0}*/).toString()",
                             d.currentValue().toString());
                     // explicit as result of the method, rather than governed by the type
-                    assertEquals(MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, d.getProperty(Property.IMMUTABLE));
+                    assertEquals(MultiLevel.EFFECTIVELY_IMMUTABLE_DV, d.getProperty(Property.IMMUTABLE));
                 }
                 if ("0.1.0".equals(d.statementId())) {
                     assertEquals("\"Error!\"", d.currentValue().toString());
-                    assertEquals(MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, d.getProperty(Property.IMMUTABLE));
+                    assertEquals(MultiLevel.EFFECTIVELY_IMMUTABLE_DV, d.getProperty(Property.IMMUTABLE));
                 }
             }
         };
         TypeMapVisitor typeMapVisitor = typeMap -> {
             TypeInfo typeInfo = typeMap.get(String.class);
             DV imm = typeInfo.typeAnalysis.get().getProperty(Property.IMMUTABLE);
-            assertEquals(MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, imm);
+            assertEquals(MultiLevel.EFFECTIVELY_IMMUTABLE_DV, imm);
         };
 
         testClass("Var_5", 0, 0, new DebugConfiguration.Builder()

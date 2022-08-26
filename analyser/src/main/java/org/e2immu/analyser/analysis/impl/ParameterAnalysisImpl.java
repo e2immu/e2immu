@@ -188,7 +188,7 @@ public class ParameterAnalysisImpl extends AnalysisImpl implements ParameterAnal
             DV independent = getProperty(Property.INDEPENDENT);
             if (independent.equals(MultiLevel.INDEPENDENT_DV) && independentType.lt(MultiLevel.INDEPENDENT_DV)) {
                 addAnnotation(e2ImmuAnnotationExpressions.independent);
-            } else if (independent.equals(MultiLevel.INDEPENDENT_1_DV) && independentType.lt(MultiLevel.INDEPENDENT_1_DV)) {
+            } else if (independent.equals(MultiLevel.INDEPENDENT_HC_DV) && independentType.lt(MultiLevel.INDEPENDENT_HC_DV)) {
                 AnnotationExpression independentHC = E2ImmuAnnotationExpressions.create(primitives, Independent.class,
                         "hc", true);
                 addAnnotation(independentHC);

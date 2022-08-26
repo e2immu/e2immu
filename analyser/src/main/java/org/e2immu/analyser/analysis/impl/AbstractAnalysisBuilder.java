@@ -236,16 +236,16 @@ abstract class AbstractAnalysisBuilder implements Analysis {
                 if (e2ImmuAnnotationExpressions.finalFields.typeInfo() == t) {
                     // @FinalFields
                     levelImmutable = parameters.absent() ? MultiLevel.Level.ABSENT
-                            : MultiLevel.Level.IMMUTABLE_1.max(levelImmutable);
+                            : MultiLevel.Level.MUTABLE.max(levelImmutable);
                     eventual = isEventual(annotationExpression);
 
                 } else if (isImmutable) {
                     // @Immutable
                     boolean hiddenContent = analyserIdentification.isAbstract ||
                             annotationExpression.extract(HIDDEN_CONTENT, false);
-                    MultiLevel.Level immutable = hiddenContent ? MultiLevel.Level.IMMUTABLE_2 : MultiLevel.Level.IMMUTABLE_R;
+                    MultiLevel.Level immutable = hiddenContent ? MultiLevel.Level.IMMUTABLE_HC : MultiLevel.Level.IMMUTABLE;
                     levelImmutable = parameters.absent() ? MultiLevel.Level.ABSENT : levelImmutable.max(immutable);
-                    DV independentHc = hiddenContent ? MultiLevel.INDEPENDENT_1_DV : MultiLevel.INDEPENDENT_DV;
+                    DV independentHc = hiddenContent ? MultiLevel.INDEPENDENT_HC_DV : MultiLevel.INDEPENDENT_DV;
                     independent = parameters.absent() ? MultiLevel.DEPENDENT_DV : independent.maxIgnoreDelay(independentHc);
                     eventual = isEventual(annotationExpression);
                     String constantValue = annotationExpression.extract(VALUE, "");
@@ -256,7 +256,7 @@ abstract class AbstractAnalysisBuilder implements Analysis {
                     // @Independent
                     boolean hc = annotationExpression.extract(HIDDEN_CONTENT, false);
                     independent = parameters.absent() ? MultiLevel.DEPENDENT_DV :
-                            hc ? MultiLevel.INDEPENDENT_1_DV : MultiLevel.INDEPENDENT_DV;
+                            hc ? MultiLevel.INDEPENDENT_HC_DV : MultiLevel.INDEPENDENT_DV;
                     if (analyserIdentification == Analyser.AnalyserIdentification.PARAMETER) {
                         linkLevel = parameters.absent() ? LinkedVariables.LINK_DEPENDENT :
                                 hc ? LinkedVariables.LINK_INDEPENDENT_HC : LinkedVariables.LINK_INDEPENDENT;
@@ -310,7 +310,7 @@ abstract class AbstractAnalysisBuilder implements Analysis {
                 } else if (e2ImmuAnnotationExpressions.utilityClass.typeInfo() == t) {
                     // @UtilityClass
                     setProperty(Property.UTILITY_CLASS, trueFalse);
-                    levelImmutable = MultiLevel.Level.IMMUTABLE_R;
+                    levelImmutable = MultiLevel.Level.IMMUTABLE;
                     independent = MultiLevel.INDEPENDENT_DV;
                 } else if (e2ImmuAnnotationExpressions.extensionClass.typeInfo() == t) {
                     // @ExtensionClass
@@ -344,7 +344,7 @@ abstract class AbstractAnalysisBuilder implements Analysis {
         }
         if (levelImmutable != MultiLevel.Level.ABSENT) {
             DV value = eventual != null ? MultiLevel.eventuallyImmutable(levelImmutable.level)
-                    : MultiLevel.effectivelyImmutable(levelImmutable.level);
+                    : MultiLevel.effectivelyImmutable(MultiLevel.Effective.EFFECTIVE, levelImmutable.level);
             setProperty(Property.IMMUTABLE, value);
             if (eventual != null) {
                 writeTypeEventualFields(eventual);

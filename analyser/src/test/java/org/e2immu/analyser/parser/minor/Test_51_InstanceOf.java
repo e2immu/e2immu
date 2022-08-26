@@ -186,7 +186,7 @@ public class Test_51_InstanceOf extends CommonTestRunner {
                 // FALSE because no AnnotatedAPI, addAll is not modifying!
                 assertDv(d, DV.FALSE_DV, Property.MODIFIED_METHOD);
                 assertDv(d, MultiLevel.INDEPENDENT_DV, Property.INDEPENDENT);
-                assertDv(d, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
+                assertDv(d, MultiLevel.EFFECTIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
             }
             if ("getBase".equals(d.methodInfo().name)) {
                 // Stream is mutable; is it linked?
@@ -199,7 +199,7 @@ public class Test_51_InstanceOf extends CommonTestRunner {
         };
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("InstanceOf_3".equals(d.typeInfo().simpleName)) {
-                assertDv(d, 1, MultiLevel.EFFECTIVELY_E1IMMUTABLE_DV, Property.IMMUTABLE);
+                assertDv(d, 1, MultiLevel.EFFECTIVELY_FINAL_FIELDS_DV, Property.IMMUTABLE);
             }
         };
         testClass("InstanceOf_3", 0, 1, new DebugConfiguration.Builder()
@@ -478,13 +478,13 @@ public class Test_51_InstanceOf extends CommonTestRunner {
 
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("BooleanConstant".equals(d.typeInfo().simpleName)) {
-                assertDv(d, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
+                assertDv(d, MultiLevel.EFFECTIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
             }
             if ("IntConstant".equals(d.typeInfo().simpleName)) {
-                assertDv(d, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
+                assertDv(d, MultiLevel.EFFECTIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
             }
             if ("StringConstant".equals(d.typeInfo().simpleName)) {
-                assertDv(d, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
+                assertDv(d, MultiLevel.EFFECTIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
             }
         };
         testClass("InstanceOf_9", 0, 0, new DebugConfiguration.Builder()
@@ -638,7 +638,7 @@ public class Test_51_InstanceOf extends CommonTestRunner {
         };
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("Expression".equals(d.typeInfo().simpleName)) {
-                assertDv(d, MultiLevel.EFFECTIVELY_E1IMMUTABLE_DV, Property.IMMUTABLE);
+                assertDv(d, MultiLevel.EFFECTIVELY_FINAL_FIELDS_DV, Property.IMMUTABLE);
                 assertDv(d, MultiLevel.CONTAINER_DV, Property.CONTAINER);
             }
             if ("Negation".equals(d.typeInfo().simpleName)) {
@@ -761,7 +761,7 @@ public class Test_51_InstanceOf extends CommonTestRunner {
                     if ("0.0.1.0.0".equals(d.statementId())) {
                         String expect = d.iteration() <= 1 ? "<m:nonNumericPartOfLhs>" : "`expression/*(Sum)*/.lhs`";
                         assertEquals(expect, d.currentValue().toString());
-                        assertDv(d, 2, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
+                        assertDv(d, 2, MultiLevel.EFFECTIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
                         assertDv(d, 2, MultiLevel.INDEPENDENT_DV, Property.INDEPENDENT);
                         assertDv(d, 2, DV.FALSE_DV, Property.IDENTITY);
                         assertDv(d, 2, MultiLevel.NOT_IGNORE_MODS_DV, Property.IGNORE_MODIFICATIONS);
@@ -921,13 +921,13 @@ public class Test_51_InstanceOf extends CommonTestRunner {
             }
             if ("XB".equals(d.methodInfo().name)) {
                 assertDv(d.p(0), 1, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
-                assertDv(d.p(0), 1, MultiLevel.INDEPENDENT_1_DV, Property.INDEPENDENT);
+                assertDv(d.p(0), 1, MultiLevel.INDEPENDENT_HC_DV, Property.INDEPENDENT);
             }
         };
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             switch (d.typeInfo().simpleName) {
                 case "$1" -> {
-                    assertDv(d, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, Property.PARTIAL_IMMUTABLE);
+                    assertDv(d, MultiLevel.EFFECTIVELY_IMMUTABLE_DV, Property.PARTIAL_IMMUTABLE);
                     assertDv(d, MultiLevel.CONTAINER_DV, Property.PARTIAL_CONTAINER);
                     // means: we have to wait until we know the property of the enclosing type
                     String expect = d.iteration() == 0 ? "container@Class_InstanceOf_11" : "cm@Parameter_evaluationContext";
@@ -1267,7 +1267,7 @@ public class Test_51_InstanceOf extends CommonTestRunner {
             }
             if ("instanceOf".equals(d.methodInfo().name)) {
                 assertEquals("InstanceOfPositive", d.methodInfo().typeInfo.simpleName);
-                assertDv(d, 3, MultiLevel.EFFECTIVELY_E2IMMUTABLE_DV, Property.IMMUTABLE);
+                assertDv(d, 3, MultiLevel.EFFECTIVELY_IMMUTABLE_HC_DV, Property.IMMUTABLE);
             }
             // $3 is the lambda in statement 3 of FindInstanceOfPatterns.find
             if ("apply".equals(d.methodInfo().name) && "$3".equals(d.methodInfo().typeInfo.simpleName)) {
@@ -1291,24 +1291,24 @@ public class Test_51_InstanceOf extends CommonTestRunner {
                     assertTrue(d.typeAnalysis().getHiddenContentTypes().isEmpty());
                 }
                 // without Annotated APIs, Class is mutable
-                assertDv(d, 1, MultiLevel.EFFECTIVELY_E1IMMUTABLE_DV, Property.IMMUTABLE);
+                assertDv(d, 1, MultiLevel.EFFECTIVELY_FINAL_FIELDS_DV, Property.IMMUTABLE);
             }
             if ("InstanceOfPositive".equals(d.typeInfo().simpleName)) {
-                assertDv(d, 3, MultiLevel.EFFECTIVELY_E2IMMUTABLE_DV, Property.IMMUTABLE);
+                assertDv(d, 3, MultiLevel.EFFECTIVELY_IMMUTABLE_HC_DV, Property.IMMUTABLE);
             }
             if ("UnaryOperator".equals(d.typeInfo().simpleName)) {
-                assertDv(d, 2, MultiLevel.EFFECTIVELY_E1IMMUTABLE_DV, Property.IMMUTABLE);
+                assertDv(d, 2, MultiLevel.EFFECTIVELY_FINAL_FIELDS_DV, Property.IMMUTABLE);
             }
             if ("Negation".equals(d.typeInfo().simpleName)) {
-                assertDv(d, 2, MultiLevel.EFFECTIVELY_E1IMMUTABLE_DV, Property.IMMUTABLE);
+                assertDv(d, 2, MultiLevel.EFFECTIVELY_FINAL_FIELDS_DV, Property.IMMUTABLE);
             }
             // $3 is the lambda in statement 3 of FindInstanceOfPatterns.find
             if ("$3".equals(d.typeInfo().simpleName)) {
                 assertEquals("FindInstanceOfPatterns", d.typeInfo().packageNameOrEnclosingType.getRight().simpleName);
-                assertDv(d, 4, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
+                assertDv(d, 4, MultiLevel.EFFECTIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
             }
             if ("Operator".equals(d.typeInfo().simpleName)) {
-                assertDv(d, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
+                assertDv(d, MultiLevel.EFFECTIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
             }
         };
         testClass("InstanceOf_16", 0, 7, new DebugConfiguration.Builder()

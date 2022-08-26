@@ -125,8 +125,8 @@ public class Test_00_Basics_14 extends CommonTestRunner {
 
                 // the field itself is of unbound type
                 assertDv(d, 0, MultiLevel.CONTAINER_DV, EXTERNAL_CONTAINER);
-                assertDv(d, 1, MultiLevel.EFFECTIVELY_E2IMMUTABLE_DV, EXTERNAL_IMMUTABLE);
-                assertDv(d, 1, MultiLevel.INDEPENDENT_1_DV, INDEPENDENT);
+                assertDv(d, 1, MultiLevel.EFFECTIVELY_IMMUTABLE_HC_DV, EXTERNAL_IMMUTABLE);
+                assertDv(d, 1, MultiLevel.INDEPENDENT_HC_DV, INDEPENDENT);
                 assertEquals("<variable value>", d.fieldAnalysis().getValue().toString());
 
                 assertEquals("t:0", d.fieldAnalysis().getLinkedVariables().toString());
@@ -143,7 +143,7 @@ public class Test_00_Basics_14 extends CommonTestRunner {
 
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("Basics_14".equals(d.typeInfo().simpleName)) {
-                assertDv(d, 2, MultiLevel.EVENTUALLY_E2IMMUTABLE_DV, IMMUTABLE);
+                assertDv(d, 2, MultiLevel.EVENTUALLY_IMMUTABLE_HC_DV, IMMUTABLE);
             }
         };
 

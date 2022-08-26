@@ -188,7 +188,7 @@ public class Test_56_Fluent extends CommonTestRunner {
             }
             if ("IFluent_0".equals(d.typeInfo().simpleName)) {
                 // property has been contracted in the code: there is no computing
-                assertEquals(MultiLevel.EFFECTIVELY_E2IMMUTABLE_DV, d.typeAnalysis().getProperty(Property.IMMUTABLE));
+                assertEquals(MultiLevel.EFFECTIVELY_IMMUTABLE_HC_DV, d.typeAnalysis().getProperty(Property.IMMUTABLE));
                 assertTrue(d.typeInfo().typePropertiesAreContracted());
             }
             if ("Builder".equals(d.typeInfo().simpleName)) {
@@ -226,10 +226,10 @@ public class Test_56_Fluent extends CommonTestRunner {
                 assertEquals(16, d.typeAnalysis().getExplicitTypes(null).size());
 
                 assertTrue(d.typeInfo().typeResolution.get().hasOneKnownGeneratedImplementation());
-                assertDv(d, 1, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
+                assertDv(d, 1, MultiLevel.EFFECTIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
             }
             if ("Fluent_1".equals(d.typeInfo().simpleName)) {
-                assertDv(d, 1, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
+                assertDv(d, 1, MultiLevel.EFFECTIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
                 assertFalse(d.typeInfo().typePropertiesAreContracted());
                 assertEquals("", d.typeAnalysis().hiddenContentAndExplicitTypeComputationDelays().toString());
                 assertTrue(d.typeAnalysis().getHiddenContentTypes().isEmpty());
@@ -243,7 +243,7 @@ public class Test_56_Fluent extends CommonTestRunner {
                 assertEquals(DV.FALSE_DV, d.methodAnalysis().getProperty(Property.FLUENT));
                 assertEquals(DV.FALSE_DV, d.methodAnalysis().getProperty(Property.IDENTITY));
                 assertEquals(MultiLevel.INDEPENDENT_DV, d.methodAnalysis().getProperty(Property.INDEPENDENT));
-                assertEquals(MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, d.methodAnalysis().getProperty(Property.IMMUTABLE));
+                assertEquals(MultiLevel.EFFECTIVELY_IMMUTABLE_DV, d.methodAnalysis().getProperty(Property.IMMUTABLE));
             }
             if ("identity".equals(d.methodInfo().name)) {
                 assertEquals(DV.FALSE_DV, d.methodAnalysis().getProperty(Property.MODIFIED_METHOD));

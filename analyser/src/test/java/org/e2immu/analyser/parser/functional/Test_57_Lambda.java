@@ -47,7 +47,7 @@ public class Test_57_Lambda extends CommonTestRunner {
             if ("collector".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof ReturnVariable) {
                     assertDv(d, 1, MultiLevel.CONTAINER_DV, Property.CONTAINER);
-                    assertDv(d, 1, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
+                    assertDv(d, 1, MultiLevel.EFFECTIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
                 }
             }
         };
@@ -62,13 +62,13 @@ public class Test_57_Lambda extends CommonTestRunner {
                     } else fail("Got " + srv.getClass());
                 }
                 assertDv(d, 1, MultiLevel.CONTAINER_DV, Property.CONTAINER);
-                assertDv(d, 1, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
+                assertDv(d, 1, MultiLevel.EFFECTIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
             }
         };
 
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("$1".equals(d.typeInfo().simpleName)) {
-                assertDv(d, 2, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
+                assertDv(d, 2, MultiLevel.EFFECTIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
             }
         };
 

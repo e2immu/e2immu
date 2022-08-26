@@ -47,7 +47,7 @@ public class TestCommonJavaLang extends CommonAnnotatedAPI {
         assertEquals(DV.FALSE_DV, methodAnalysis.getProperty(Property.FLUENT));
         assertEquals(MultiLevel.INDEPENDENT_DV, methodAnalysis.getProperty(Property.INDEPENDENT));
         assertEquals(DV.FALSE_DV, methodAnalysis.getProperty(Property.MODIFIED_METHOD));
-        assertEquals(MultiLevel.EFFECTIVELY_E1IMMUTABLE_DV,
+        assertEquals(MultiLevel.EFFECTIVELY_FINAL_FIELDS_DV,
                 methodAnalysis.getProperty(Property.IMMUTABLE));
     }
 
@@ -89,7 +89,7 @@ public class TestCommonJavaLang extends CommonAnnotatedAPI {
         assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, methodAnalysis.getProperty(Property.NOT_NULL_EXPRESSION));
         assertEquals(DV.FALSE_DV, methodAnalysis.getProperty(Property.MODIFIED_METHOD));
 
-        assertEquals(MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, methodAnalysis.getProperty(Property.IMMUTABLE));
+        assertEquals(MultiLevel.EFFECTIVELY_IMMUTABLE_DV, methodAnalysis.getProperty(Property.IMMUTABLE));
         assertEquals(MultiLevel.INDEPENDENT_DV, methodAnalysis.getProperty(Property.INDEPENDENT));
     }
 
@@ -114,7 +114,7 @@ public class TestCommonJavaLang extends CommonAnnotatedAPI {
 
             ParameterAnalysis p0 = appendBoolean.parameterAnalysis(0);
             assertEquals(MultiLevel.INDEPENDENT_DV, p0.getProperty(Property.INDEPENDENT));
-            assertEquals(MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, p0.getProperty(Property.IMMUTABLE));
+            assertEquals(MultiLevel.EFFECTIVELY_IMMUTABLE_DV, p0.getProperty(Property.IMMUTABLE));
             assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, p0.getProperty(Property.NOT_NULL_PARAMETER));
             assertEquals(DV.FALSE_DV, p0.getProperty(Property.MODIFIED_VARIABLE));
             assertThrows(PropertyException.class, () -> p0.getProperty(Property.MODIFIED_METHOD));
@@ -132,7 +132,7 @@ public class TestCommonJavaLang extends CommonAnnotatedAPI {
             assertEquals(MultiLevel.MUTABLE_DV, methodAnalysis.getProperty(Property.IMMUTABLE));
 
             ParameterAnalysis p0 = appendString.parameterAnalysis(0);
-            assertEquals(MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, p0.getProperty(Property.IMMUTABLE));
+            assertEquals(MultiLevel.EFFECTIVELY_IMMUTABLE_DV, p0.getProperty(Property.IMMUTABLE));
             assertEquals(MultiLevel.INDEPENDENT_DV, p0.getProperty(Property.INDEPENDENT));
             assertEquals(MultiLevel.NULLABLE_DV, p0.getProperty(Property.NOT_NULL_PARAMETER));
             assertEquals(DV.FALSE_DV, p0.getProperty(Property.MODIFIED_VARIABLE));
@@ -176,11 +176,11 @@ public class TestCommonJavaLang extends CommonAnnotatedAPI {
         assertEquals(DV.FALSE_DV, methodAnalysis.getProperty(Property.FLUENT));
         assertEquals(MultiLevel.INDEPENDENT_DV, methodAnalysis.getProperty(Property.INDEPENDENT));
         assertEquals(DV.FALSE_DV, methodAnalysis.getProperty(Property.MODIFIED_METHOD));
-        assertEquals(MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, methodAnalysis.getProperty(Property.IMMUTABLE));
+        assertEquals(MultiLevel.EFFECTIVELY_IMMUTABLE_DV, methodAnalysis.getProperty(Property.IMMUTABLE));
 
         ParameterAnalysis p0 = compareTo.parameterAnalysis(0);
         assertEquals(MultiLevel.INDEPENDENT_DV, p0.getProperty(Property.INDEPENDENT));
-        assertEquals(MultiLevel.EFFECTIVELY_E2IMMUTABLE_DV, p0.getProperty(Property.IMMUTABLE));
+        assertEquals(MultiLevel.EFFECTIVELY_IMMUTABLE_HC_DV, p0.getProperty(Property.IMMUTABLE));
         assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, p0.getProperty(Property.NOT_NULL_PARAMETER));
         assertEquals(DV.FALSE_DV, p0.getProperty(Property.MODIFIED_VARIABLE));
 
@@ -238,7 +238,7 @@ public class TestCommonJavaLang extends CommonAnnotatedAPI {
 
         ParameterAnalysis p0 = methodInfo.parameterAnalysis(0);
         assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, p0.getProperty(Property.NOT_NULL_PARAMETER));
-        assertEquals(MultiLevel.INDEPENDENT_1_DV, p0.getProperty(Property.INDEPENDENT));
+        assertEquals(MultiLevel.INDEPENDENT_HC_DV, p0.getProperty(Property.INDEPENDENT));
         ParameterInfo pi0 = methodInfo.methodInspection.get().getParameters().get(0);
         assertEquals("action", pi0.name);
         assertEquals(0, pi0.index);
@@ -281,7 +281,7 @@ public class TestCommonJavaLang extends CommonAnnotatedAPI {
         TypeInfo typeInfo = typeContext.getFullyQualified(Boolean.class);
         TypeAnalysis typeAnalysis = typeInfo.typeAnalysis.get();
         assertEquals(MultiLevel.INDEPENDENT_DV, typeAnalysis.getProperty(Property.INDEPENDENT));
-        assertEquals(MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, typeAnalysis.getProperty(Property.IMMUTABLE));
+        assertEquals(MultiLevel.EFFECTIVELY_IMMUTABLE_DV, typeAnalysis.getProperty(Property.IMMUTABLE));
         assertEquals(MultiLevel.CONTAINER_DV, typeAnalysis.getProperty(Property.CONTAINER));
     }
 
@@ -291,7 +291,7 @@ public class TestCommonJavaLang extends CommonAnnotatedAPI {
         TypeInfo typeInfo = typeContext.getFullyQualified(Integer.class);
         TypeAnalysis typeAnalysis = typeInfo.typeAnalysis.get();
         assertEquals(MultiLevel.INDEPENDENT_DV, typeAnalysis.getProperty(Property.INDEPENDENT));
-        assertEquals(MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, typeAnalysis.getProperty(Property.IMMUTABLE));
+        assertEquals(MultiLevel.EFFECTIVELY_IMMUTABLE_DV, typeAnalysis.getProperty(Property.IMMUTABLE));
         assertEquals(MultiLevel.CONTAINER_DV, typeAnalysis.getProperty(Property.CONTAINER));
     }
 
@@ -302,7 +302,7 @@ public class TestCommonJavaLang extends CommonAnnotatedAPI {
         MethodAnalysis methodAnalysis = method.methodAnalysis.get();
         assertEquals(DV.FALSE_DV, methodAnalysis.getProperty(Property.MODIFIED_METHOD));
         assertEquals(MultiLevel.INDEPENDENT_DV, methodAnalysis.getProperty(Property.INDEPENDENT));
-        assertEquals(MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, methodAnalysis.getProperty(Property.IMMUTABLE));
+        assertEquals(MultiLevel.EFFECTIVELY_IMMUTABLE_DV, methodAnalysis.getProperty(Property.IMMUTABLE));
 
         ParameterAnalysis p0 = method.parameterAnalysis(0);
         assertEquals(DV.FALSE_DV, p0.getProperty(Property.MODIFIED_VARIABLE));

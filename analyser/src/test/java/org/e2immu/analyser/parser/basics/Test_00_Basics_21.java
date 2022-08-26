@@ -100,7 +100,7 @@ public class Test_00_Basics_21 extends CommonTestRunner {
                             assertEquals(MultiLevel.MUTABLE_DV, d.variableInfoContainer()
                                     .getPreviousOrInitial().getProperty(CONTEXT_IMMUTABLE));
                         }
-                        assertDv(d, 3, MultiLevel.EVENTUALLY_E2IMMUTABLE_AFTER_MARK_DV, CONTEXT_IMMUTABLE);
+                        assertDv(d, 3, MultiLevel.EVENTUALLY_IMMUTABLE_HC_AFTER_MARK_DV, CONTEXT_IMMUTABLE);
                     } else {
                         assertEquals("0", d.statementId());
                         String expectValue = switch (d.iteration()) {
@@ -112,7 +112,7 @@ public class Test_00_Basics_21 extends CommonTestRunner {
 
                         assertEquals(MultiLevel.MUTABLE_DV, d.variableInfoContainer().getPreviousOrInitial()
                                 .getProperty(CONTEXT_IMMUTABLE));
-                        assertDv(d, 3, MultiLevel.EVENTUALLY_E2IMMUTABLE_AFTER_MARK_DV, CONTEXT_IMMUTABLE);
+                        assertDv(d, 3, MultiLevel.EVENTUALLY_IMMUTABLE_HC_AFTER_MARK_DV, CONTEXT_IMMUTABLE);
 
                         String expectLinked = d.iteration() <= 1 ? "this:-1" : "this:3";
                         assertEquals(expectLinked, d.variableInfo().getLinkedVariables().toString());
@@ -123,7 +123,7 @@ public class Test_00_Basics_21 extends CommonTestRunner {
                 if (d.variable() instanceof This) {
                     if ("0.0.0".equals(d.statementId())) {
                         assertDv(d, MultiLevel.MUTABLE_DV, IMMUTABLE);
-                        assertDv(d, 3, MultiLevel.EVENTUALLY_E2IMMUTABLE_DV, EXTERNAL_IMMUTABLE);
+                        assertDv(d, 3, MultiLevel.EVENTUALLY_IMMUTABLE_HC_DV, EXTERNAL_IMMUTABLE);
                     }
                 }
             }
@@ -175,8 +175,8 @@ public class Test_00_Basics_21 extends CommonTestRunner {
 
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("Basics_21".equals(d.typeInfo().simpleName)) {
-                assertDv(d, 2, MultiLevel.EVENTUALLY_E2IMMUTABLE_DV, IMMUTABLE);
-                assertDv(d, 3, MultiLevel.INDEPENDENT_1_DV, INDEPENDENT);
+                assertDv(d, 2, MultiLevel.EVENTUALLY_IMMUTABLE_HC_DV, IMMUTABLE);
+                assertDv(d, 3, MultiLevel.INDEPENDENT_HC_DV, INDEPENDENT);
             }
         };
 

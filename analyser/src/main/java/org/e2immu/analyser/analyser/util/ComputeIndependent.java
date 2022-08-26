@@ -89,7 +89,7 @@ public record ComputeIndependent(AnalyserContext analyserContext) {
                     DV immutable = analyserContext.immutableOfHiddenContentInTypeParameters(oneType);
                     return MultiLevel.independentCorrespondingToImmutable(immutable);
                 }
-                return MultiLevel.INDEPENDENT_1_DV;
+                return MultiLevel.INDEPENDENT_HC_DV;
             }
             throw new UnsupportedOperationException();
         }
@@ -124,7 +124,7 @@ public record ComputeIndependent(AnalyserContext analyserContext) {
         SetOfTypes hiddenB = tb.getHiddenContentTypes(b);
         SetOfTypes intersection = hiddenA.intersection(hiddenB);
         if (intersection.isEmpty()) return MultiLevel.INDEPENDENT_DV;
-        return MultiLevel.INDEPENDENT_1_DV;
+        return MultiLevel.INDEPENDENT_HC_DV;
     }
 
     private DV verifyIncludedInHiddenContentOf(DV linkLevel, ParameterizedType a, ParameterizedType b, DV onFail) {
@@ -132,7 +132,7 @@ public record ComputeIndependent(AnalyserContext analyserContext) {
         if (typeInfo == null) {
             // T and T[], for example
             assert a.arrays != b.arrays;
-            return MultiLevel.INDEPENDENT_1_DV;
+            return MultiLevel.INDEPENDENT_HC_DV;
         }
         TypeAnalysis typeAnalysis = analyserContext.getTypeAnalysisNullWhenAbsent(typeInfo);
         if (typeAnalysis == null) return MultiLevel.INDEPENDENT_DV;
@@ -143,7 +143,7 @@ public record ComputeIndependent(AnalyserContext analyserContext) {
         SetOfTypes hiddenB = typeAnalysis.getHiddenContentTypes(b);
         if (hiddenB.contains(a)) {
             if (LINK_DEPENDENT.equals(linkLevel)) return MultiLevel.DEPENDENT_DV;
-            return MultiLevel.INDEPENDENT_1_DV; // even if "a" is mutable!!
+            return MultiLevel.INDEPENDENT_HC_DV; // even if "a" is mutable!!
         }
         return onFail;
     }

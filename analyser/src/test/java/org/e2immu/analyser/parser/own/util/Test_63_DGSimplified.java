@@ -604,7 +604,7 @@ public class Test_63_DGSimplified extends CommonTestRunner {
             if ("reverse".equals(d.methodInfo().name)) {
                 assertDv(d.p(0), 40, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
                 assertDv(d.p(0), 40, MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL_DV, Property.NOT_NULL_PARAMETER);
-                assertDv(d, 50, MultiLevel.EFFECTIVELY_E1IMMUTABLE_DV, Property.IMMUTABLE);
+                assertDv(d, 50, MultiLevel.EFFECTIVELY_FINAL_FIELDS_DV, Property.IMMUTABLE);
                 assertDv(d, 19, MultiLevel.INDEPENDENT_DV, Property.INDEPENDENT);
                 // priority 4
                 assertEquals(d.iteration() >= 50, d.methodAnalysis().getSingleReturnValue().isDone());
@@ -624,7 +624,7 @@ public class Test_63_DGSimplified extends CommonTestRunner {
             }
             if ("sorted".equals(d.methodInfo().name)) {
                 // priority 2
-                assertDv(d, 47, MultiLevel.INDEPENDENT_1_DV, Property.INDEPENDENT);
+                assertDv(d, 47, MultiLevel.INDEPENDENT_HC_DV, Property.INDEPENDENT);
             }
             if ("comparator".equals(d.methodInfo().name)) {
                 assertDv(d, MultiLevel.INDEPENDENT_DV, Property.INDEPENDENT);
@@ -636,10 +636,10 @@ public class Test_63_DGSimplified extends CommonTestRunner {
         };
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("DGSimplified_4".equals(d.typeInfo().simpleName)) {
-                assertDv(d, 49, MultiLevel.EFFECTIVELY_E1IMMUTABLE_DV, Property.IMMUTABLE);
+                assertDv(d, 49, MultiLevel.EFFECTIVELY_FINAL_FIELDS_DV, Property.IMMUTABLE);
                 // priority 3
                 // IMPROVE we should find a better breaking point (but the value appears to be correct)
-                assertDv(d, 49, MultiLevel.INDEPENDENT_1_INCONCLUSIVE, Property.INDEPENDENT);
+                assertDv(d, 49, MultiLevel.INDEPENDENT_HC_INCONCLUSIVE, Property.INDEPENDENT);
             }
         };
         testClass("DGSimplified_4", 1, 3, new DebugConfiguration.Builder()
