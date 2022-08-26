@@ -22,7 +22,12 @@ import org.e2immu.analyser.model.TypeInfo;
 
 import static org.e2immu.analyser.analyser.LinkedVariables.*;
 
-public record ComputeIndependent(AnalyserContext analyserContext) {
+public record ComputeIndependent(AnalyserContext analyserContext, SetOfTypes hiddenContentOfCurrentType) {
+
+    public ComputeIndependent {
+        assert analyserContext != null;
+        assert hiddenContentOfCurrentType != null;
+    }
 
     /**
      * Variables of two types are linked to each other, at a given <code>linkLevel</code>.
@@ -98,14 +103,15 @@ public record ComputeIndependent(AnalyserContext analyserContext) {
             return MultiLevel.INDEPENDENT_DV;
         }
         if (aUnboundTypeParameter) {
-            return verifyIncludedInHiddenContentOf(linkLevel, a, b, MultiLevel.INDEPENDENT_DV);
+            return verifyIncludedInHiddenContentOf(immutableA, linkLevel, a, b, MultiLevel.INDEPENDENT_DV);
         }
         if (bUnboundTypeParameter) {
-            return verifyIncludedInHiddenContentOf(linkLevel, b, a, MultiLevel.INDEPENDENT_DV);
+            return verifyIncludedInHiddenContentOf(MultiLevel.EFFECTIVELY_IMMUTABLE_HC_DV,
+                    linkLevel, b, a, MultiLevel.INDEPENDENT_DV);
         }
-        DV aInB = verifyIncludedInHiddenContentOf(linkLevel, a, b, null);
+        DV aInB = verifyIncludedInHiddenContentOf(immutableA, linkLevel, a, b, null);
         if (aInB != null) return aInB;
-        DV bInA = verifyIncludedInHiddenContentOf(linkLevel, b, a, null);
+        DV bInA = verifyIncludedInHiddenContentOf(null, linkLevel, b, a, null);
         if (bInA != null) return bInA;
 
         return intersection(linkLevel, a, b);
@@ -123,11 +129,22 @@ public record ComputeIndependent(AnalyserContext analyserContext) {
         SetOfTypes hiddenA = ta.getHiddenContentTypes(a);
         SetOfTypes hiddenB = tb.getHiddenContentTypes(b);
         SetOfTypes intersection = hiddenA.intersection(hiddenB);
+
         if (intersection.isEmpty()) return MultiLevel.INDEPENDENT_DV;
-        return MultiLevel.INDEPENDENT_HC_DV;
+
+        DV inHiddenContent = intersection.types().stream()
+                .filter(hiddenContentOfCurrentType::contains)
+                .map(pt -> {
+                    DV immutable = analyserContext.typeImmutable(pt);
+                    return MultiLevel.independentCorrespondingToImmutable(immutable);
+                }).reduce(MultiLevel.INDEPENDENT_DV, DV::min);
+        if (MultiLevel.INDEPENDENT_DV == inHiddenContent) {
+            return MultiLevel.INDEPENDENT_HC_DV;
+        }
+        return MultiLevel.independentCorrespondingToImmutable(inHiddenContent);
     }
 
-    private DV verifyIncludedInHiddenContentOf(DV linkLevel, ParameterizedType a, ParameterizedType b, DV onFail) {
+    private DV verifyIncludedInHiddenContentOf(DV immutableA, DV linkLevel, ParameterizedType a, ParameterizedType b, DV onFail) {
         TypeInfo typeInfo = b.bestTypeInfo();
         if (typeInfo == null) {
             // T and T[], for example
@@ -143,6 +160,15 @@ public record ComputeIndependent(AnalyserContext analyserContext) {
         SetOfTypes hiddenB = typeAnalysis.getHiddenContentTypes(b);
         if (hiddenB.contains(a)) {
             if (LINK_DEPENDENT.equals(linkLevel)) return MultiLevel.DEPENDENT_DV;
+
+            /*
+            but what if 'a' is not part of the hidden content of the current type? then we should return the
+            independent value ~ immutableA.
+             */
+            if (!hiddenContentOfCurrentType.contains(a)) {
+                DV immutable = immutableA == null ? analyserContext.typeImmutable(a) : immutableA;
+                return MultiLevel.independentCorrespondingToImmutable(immutable);
+            }
             return MultiLevel.INDEPENDENT_HC_DV; // even if "a" is mutable!!
         }
         return onFail;

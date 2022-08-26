@@ -23,6 +23,7 @@ import org.e2immu.analyser.analyser.util.ComputeIndependent;
 import org.e2immu.analyser.analysis.FieldAnalysis;
 import org.e2immu.analyser.analysis.MethodAnalysis;
 import org.e2immu.analyser.analysis.StatementAnalysis;
+import org.e2immu.analyser.analysis.TypeAnalysis;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.MultiValue;
 import org.e2immu.analyser.model.expression.VariableExpression;
@@ -271,7 +272,12 @@ public class ComputedParameterAnalyser extends ParameterAnalyserImpl {
     }
 
     private DV independentFromFields(DV immutable, Map<FieldInfo, DV> fields) {
-        ComputeIndependent computeIndependent = new ComputeIndependent(analyserContext);
+        TypeAnalysis typeAnalysis = analyserContext.getTypeAnalysis(parameterInfo.getTypeInfo());
+        if (typeAnalysis.hiddenContentAndExplicitTypeComputationDelays().isDelayed()) {
+            return typeAnalysis.hiddenContentAndExplicitTypeComputationDelays().causesOfDelay();
+        }
+        SetOfTypes hiddenContentCurrentType = typeAnalysis.getHiddenContentTypes();
+        ComputeIndependent computeIndependent = new ComputeIndependent(analyserContext, hiddenContentCurrentType);
         DV independent = fields.entrySet().stream()
                 .map(e -> computeIndependent.compute(e.getValue(), parameterInfo.parameterizedType, immutable,
                         e.getKey().type))

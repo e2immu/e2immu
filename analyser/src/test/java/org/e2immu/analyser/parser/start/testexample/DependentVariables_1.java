@@ -19,9 +19,6 @@ import org.e2immu.annotation.FinalFields;
 import org.e2immu.annotation.Independent;
 import org.e2immu.annotation.Nullable;
 
-/*
-as of 202208, transparent types simply produce a warning
- */
 public class DependentVariables_1 {
 
     @Container
@@ -44,12 +41,12 @@ public class DependentVariables_1 {
         private final X[] xs;
 
         // dependent, because X is mutable
-        public XS(X[] p, X[] source) {
-            this.xs = source.clone();
+        public XS(@Independent(absent = true) X[] p) {
+            this.xs = new X[p.length];
             System.arraycopy(p, 0, this.xs, 0, p.length);
         }
 
-        // dependent!
+        @Independent(absent = true)
         @Nullable
         public X getX(int index) {
             return xs[index];

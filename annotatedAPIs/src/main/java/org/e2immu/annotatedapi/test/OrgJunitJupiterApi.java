@@ -12,30 +12,16 @@
  * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.e2immu.analyser.parser.start.testexample;
+package org.e2immu.annotatedapi.test;
 
-import org.e2immu.annotation.Identity;
-import org.e2immu.annotation.ImmutableContainer;
-import org.e2immu.annotation.NotModified;
-import org.e2immu.annotation.NotNull;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.e2immu.annotation.Independent;
 
-// hc=true because LOGGER has hidden content
-@ImmutableContainer(hc = true)
-public class Identity_0 {
-    /*
-    The @NotNull on the idemX methods relies on LOGGER.debug(@NotNull String s) { .. }
-     */
-    @NotNull
-    static final Logger LOGGER = LoggerFactory.getLogger(Identity_0.class);
+public class OrgJunitJupiterApi {
 
-    @Identity
-    @NotModified
-    @NotNull
-    public static String idem(@NotNull String s) {
-        LOGGER.debug(s);
-        return s;
+    static final String PACKAGE_NAME = "org.junit.jupiter.api";
+
+    @Independent
+    interface Assertions$ {
+
     }
-
 }

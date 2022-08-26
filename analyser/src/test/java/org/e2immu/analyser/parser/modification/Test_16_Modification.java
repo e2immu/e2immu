@@ -192,6 +192,19 @@ public class Test_16_Modification extends CommonTestRunner {
                 .build());
     }
 
+    /*
+    List<ErrorMessage> is mutable, even if the List itself were immutable -- it is the List's concrete choice of
+    hidden content that determines the final immutable value.
+
+    Now is errorMessage linked :2 or linked :3 to messages?
+    It should be :3 because ErrorMessage takes the role of hidden content in List<ErrorMessage>
+    A modification to the list does not imply a modification to the ErrorMessage.
+    A modification in an error message does imply a modification to the whole graph, but it's in List's hidden content.
+
+    It is important to note that ErrorMessage is not part of the hidden content of FaultyImplementation!
+    The parameter ErrorMessage does link in a DEPENDENT fashion to the fields of the type, even if its link with
+    this.messages is :3.
+    */
 
     @Test
     public void test16() throws IOException {
@@ -200,17 +213,7 @@ public class Test_16_Modification extends CommonTestRunner {
             if ("addError".equals(d.methodInfo().name)) {
                 if ("FaultyImplementation".equals(d.methodInfo().typeInfo.simpleName)) {
                     if (d.variable() instanceof ParameterInfo pi && "errorMessage".equals(pi.name)) {
-                        if ("1".equals(d.statementId())) {
-                            /* :3 because ErrorMessage takes the role of hidden content in List<ErrorMessage>
-                                A modification to the list does not imply a modification to the ErrorMessage
-
-                               :2 because ErrorMessage is not hidden content in FaultyImplementation
-                               A modification to the errorMessage argument does mean a modification to the field messages
-
-                               Internally, we must work with :3, because we do not want a subsequent .remove() on the
-                               list to have an effect on the errorMessage.
-                               Externally, towards the parameter, we must first ascertain whether ErrorMessage is hidden or not.
-                             */
+                        if ("0".equals(d.statementId())) {
                             String linked = d.iteration() <= 1 ? "this.messages:-1" : "this.messages:3";
                             assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
                         }
@@ -256,6 +259,12 @@ public class Test_16_Modification extends CommonTestRunner {
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("FaultyImplementation".equals(d.typeInfo().simpleName)) {
                 assertTrue(d.typeAnalysis().getHiddenContentTypes().isEmpty());
+                assertDv(d, 3, MultiLevel.DEPENDENT_DV, Property.INDEPENDENT);
+            }
+            if ("ErrorRegistry".equals(d.typeInfo().simpleName)) {
+                assertTrue(d.typeAnalysis().getHiddenContentTypes().isEmpty());
+                assertDv(d, MultiLevel.DEPENDENT_DV, Property.INDEPENDENT);
+
             }
         };
 

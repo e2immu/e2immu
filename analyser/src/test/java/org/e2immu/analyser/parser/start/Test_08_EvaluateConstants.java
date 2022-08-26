@@ -125,11 +125,10 @@ public class Test_08_EvaluateConstants extends CommonTestRunner {
             }
         };
 
-    /*
-    Method ee() becomes @NotModified in iteration 1
-    Only then, the internal object flows of print2 can be frozen; this happens during evaluation.
-
-     */
+        /*
+        Method ee() becomes @NotModified in iteration 1
+        Only then, the internal object flows of print2 can be frozen; this happens during evaluation.
+        */
 
         StatementAnalyserVisitor statementAnalyserVisitor = d -> {
             MethodLevelData methodLevelData = d.statementAnalysis().methodLevelData();
@@ -182,6 +181,12 @@ public class Test_08_EvaluateConstants extends CommonTestRunner {
         };
 
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
+            if ("c".equals(d.fieldInfo().name)) {
+                assertDv(d, DV.TRUE_DV, Property.CONSTANT);
+                assertDv(d, MultiLevel.EFFECTIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
+                assertDv(d, MultiLevel.CONTAINER_DV, Property.CONTAINER);
+                assertEquals("false", d.fieldAnalysis().getValue().toString());
+            }
             if ("e".equals(d.fieldInfo().name)) {
                 assertEquals("", d.fieldAnalysis().getLinkedVariables().toString());
             }

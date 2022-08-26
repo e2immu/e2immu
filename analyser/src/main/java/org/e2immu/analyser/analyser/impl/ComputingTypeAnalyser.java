@@ -535,7 +535,7 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
         // copy into approved preconditions
         tempApproved.forEach(typeAnalysis::putInApprovedPreconditionsE1);
         typeAnalysis.freezeApprovedPreconditionsFinalFields();
-        LOGGER.debug("Approved preconditions {} in {}, type is now @E1Immutable(after=)", tempApproved.values(), typeInfo);
+        LOGGER.debug("Approved preconditions {} in {}, type can now be @FinalFields(after=)", tempApproved.values(), typeInfo);
         return DONE;
     }
 
@@ -842,7 +842,8 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
         DV typeIndependent = typeAnalysis.getProperty(Property.INDEPENDENT);
         if (typeIndependent.isDone()) return DONE;
         if (typeInfo.typePropertiesAreContracted()) {
-            Message message = AnnotatedAPIAnalyser.simpleComputeIndependent(analyserContext, typeAnalysis);
+            Message message = AnnotatedAPIAnalyser.simpleComputeIndependent(analyserContext, typeAnalysis,
+                    m -> !m.methodInspection.get().isPrivate());
             if (message != null) analyserResultBuilder.add(message);
             return DONE;
         }

@@ -746,8 +746,13 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
             fieldAnalysis.setProperty(Property.INDEPENDENT, delay);
             return delay;
         }
-
-        ComputeIndependent computeIndependent = new ComputeIndependent(analyserContext);
+        TypeAnalysis typeAnalysis = myTypeAnalyser.getTypeAnalysis();
+        if (typeAnalysis.hiddenContentAndExplicitTypeComputationDelays().isDelayed()) {
+            LOGGER.debug("Field {} independent delayed: wait for hidden content of type", fieldInfo);
+            return typeAnalysis.hiddenContentAndExplicitTypeComputationDelays().causesOfDelay();
+        }
+        SetOfTypes hiddenContentCurrentType = typeAnalysis.getHiddenContentTypes();
+        ComputeIndependent computeIndependent = new ComputeIndependent(analyserContext, hiddenContentCurrentType);
         DV independent = fieldAnalysis.linkedVariables.get().stream()
                 .filter(e -> e.getKey() instanceof ParameterInfo pi && pi.owner.isAccessibleOutsidePrimaryType()
                         || e.getKey() instanceof ReturnVariable rv && rv.getMethodInfo().isAccessibleOutsidePrimaryType())
@@ -1618,8 +1623,8 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
             // dynamic type annotations
             check(e2.container);
 
-            DV typeImmutable = getFieldAnalysis().getProperty(EXTERNAL_IMMUTABLE);
-            String constantValue = fieldAnalysis.getValue() != null && MultiLevel.isAtLeastEventuallyRecursivelyImmutable(typeImmutable)
+            DV constant = fieldAnalysis.getProperty(CONSTANT);
+            String constantValue = fieldAnalysis.getValue() != null && constant.valueIsTrue()
                     ? fieldAnalysis.getValue().unQuotedString() : "";
             analyserResultBuilder.add(CheckImmutable.check(fieldInfo, e2.finalFields, fieldAnalysis, null));
             analyserResultBuilder.add(CheckImmutable.check(fieldInfo, e2.immutable, fieldAnalysis, null));

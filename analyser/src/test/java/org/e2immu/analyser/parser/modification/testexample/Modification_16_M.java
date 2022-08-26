@@ -56,7 +56,6 @@ public class Modification_16_M {
         void addError(ErrorMessage errorMessage);
     }
 
-    // not @E1Container, because one method
     @FinalFields
     @Container(absent = true)
     static class FaultyImplementation implements ErrorRegistry {

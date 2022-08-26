@@ -17,7 +17,6 @@ package org.e2immu.analyser.parser.start;
 import org.e2immu.analyser.analyser.DV;
 import org.e2immu.analyser.analyser.Property;
 import org.e2immu.analyser.analyser.Stage;
-import org.e2immu.analyser.analysis.MethodAnalysis;
 import org.e2immu.analyser.analysis.ParameterAnalysis;
 import org.e2immu.analyser.config.AnalyserConfiguration;
 import org.e2immu.analyser.config.DebugConfiguration;
@@ -100,19 +99,25 @@ public class Test_10_Identity extends CommonTestRunner {
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
             if ("LOGGER".equals(d.fieldInfo().name) && "Identity_0".equals(d.fieldInfo().owner.simpleName)) {
                 assertEquals("", d.fieldAnalysis().getLinkedVariables().toString());
+                // means: not linked to parameters of setters/constructors
+                assertDv(d, MultiLevel.INDEPENDENT_DV, INDEPENDENT);
             }
         };
 
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
-            MethodAnalysis methodAnalysis = d.methodAnalysis();
-            if (d.iteration() > 1) {
-                if ("idem".equals(d.methodInfo().name)) {
-                    assertEquals("/*inline idem*/s", d.methodAnalysis().getSingleReturnValue().toString());
-                    assertEquals(DV.FALSE_DV, methodAnalysis.getProperty(Property.MODIFIED_METHOD));
-                    assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV,
-                            methodAnalysis.getProperty(Property.NOT_NULL_EXPRESSION));
-                    assertEquals(DV.TRUE_DV, methodAnalysis.getProperty(Property.IDENTITY));
-                }
+            if ("idem".equals(d.methodInfo().name)) {
+                String srv = d.iteration() == 0 ? "<m:idem>" : "/*inline idem*/s";
+                assertEquals(srv, d.methodAnalysis().getSingleReturnValue().toString());
+                assertDv(d, DV.FALSE_DV, Property.MODIFIED_METHOD);
+                assertDv(d, 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_EXPRESSION);
+                assertDv(d, 1, DV.TRUE_DV, Property.IDENTITY);
+                assertDv(d, MultiLevel.INDEPENDENT_DV, INDEPENDENT);
+            }
+        };
+
+        TypeAnalyserVisitor typeAnalyserVisitor = d -> {
+            if ("Identity_0".equals(d.typeInfo().simpleName)) {
+                assertDv(d, MultiLevel.EFFECTIVELY_IMMUTABLE_HC_DV, IMMUTABLE);
             }
         };
 
@@ -122,6 +127,7 @@ public class Test_10_Identity extends CommonTestRunner {
                         .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                         .addTypeMapVisitor(typeMapVisitor)
                         .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+                        .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
                         .build(),
                 new AnalyserConfiguration.Builder().setSkipTransformations(true).build());
     }

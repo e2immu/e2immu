@@ -379,6 +379,15 @@ public record ComputeTypeImmutable(AnalyserContext analyserContext,
                     LOGGER.debug("Ignoring private modifier check of {}, self-referencing", fieldInfo);
                 }
             }
+            /*
+             if the field is not recursively immutable, we have to allow for hidden content (w.minLevel cannot
+             have its maximal value of IMMUTABLE.level anymore).
+             */
+
+            int fieldImmutableLevel = MultiLevel.level(fieldImmutable);
+            if (fieldImmutableLevel < MultiLevel.Level.IMMUTABLE.level) {
+                w.minLevel = Math.min(w.minLevel, MultiLevel.Level.IMMUTABLE_HC.level);
+            }
         }
         if (causesFields.isDelayed()) {
             LOGGER.debug("Delaying immutable of {} because of fields, delays: {}", typeInfo, causesFields);

@@ -38,6 +38,7 @@ import java.lang.annotation.Annotation;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -575,7 +576,8 @@ public class AnnotatedAPIAnalyser implements AnalyserContext {
         typeAnalysisBuilder.setHiddenContentTypes(hiddenContentTypes);
 
         ensureImmutableAndContainerInShallowTypeAnalysis(typeAnalysisBuilder);
-        Message message = simpleComputeIndependent(this, typeAnalysisBuilder);
+        Message message = simpleComputeIndependent(this, typeAnalysisBuilder,
+                m -> m.methodInspection.get().isPubliclyAccessible());
         if (message != null) {
             messages.add(message);
         }
@@ -652,7 +654,9 @@ public class AnnotatedAPIAnalyser implements AnalyserContext {
      Because we have a chicken-and-egg problem (the independent value can be computed from the methods, but the
      parameters may require an independent value, it is better to assign a value when obviously possible.
      */
-    public static Message simpleComputeIndependent(AnalysisProvider analysisProvider, TypeAnalysisImpl.Builder builder) {
+    public static Message simpleComputeIndependent(AnalysisProvider analysisProvider,
+                                                   TypeAnalysisImpl.Builder builder,
+                                                   Predicate<MethodInfo> isAccessible) {
         DV immutable = builder.getPropertyFromMapDelayWhenAbsent(Property.IMMUTABLE);
         DV inMap = builder.getPropertyFromMapDelayWhenAbsent(Property.INDEPENDENT);
         DV independent = MultiLevel.independentCorrespondingToImmutableLevelDv(MultiLevel.level(immutable));
@@ -665,7 +669,7 @@ public class AnnotatedAPIAnalyser implements AnalyserContext {
             boolean allMethodsOnlyPrimitives =
                     builder.getTypeInfo().typeInspection.get()
                             .methodsAndConstructors(TypeInspection.Methods.THIS_TYPE_ONLY)
-                            .filter(m -> m.methodInspection.get().isPubliclyAccessible())
+                            .filter(isAccessible)
                             .allMatch(m -> (m.isConstructor || m.isVoid() || m.returnType().isPrimitiveStringClass())
                                     && m.methodInspection.get().getParameters().stream()
                                     .allMatch(p -> p.parameterizedType.isPrimitiveStringClass()));

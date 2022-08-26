@@ -22,9 +22,7 @@ import java.util.Set;
 
 /*
 Breaking an infinite delay loop; see explanation in Test_16_Modification_2.
-
-Set<String> is now transparent in C1; C1 is not transparent in Modification_20.
-addAll is non-modifying as compared to modifying in _19
+C1.set is transparent (never accessed) but we don't compute that anymore.
  */
 public class Modification_20 {
 

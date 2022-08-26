@@ -234,10 +234,6 @@ public class FieldAnalysisImpl extends AnalysisImpl implements FieldAnalysis {
                     addAnnotation(e2.effectivelyFinal);
                 }
             }
-
-            // all other annotations cannot be added to primitives
-            if (type.isPrimitiveExcludingVoid()) return;
-
             DV formallyImmutable = analysisProvider.typeImmutable(fieldInfo.type);
             DV dynamicallyImmutable = getProperty(Property.EXTERNAL_IMMUTABLE);
             DV formallyContainer = analysisProvider.typeContainer(fieldInfo.type);
