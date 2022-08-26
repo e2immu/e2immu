@@ -92,7 +92,7 @@ public class Test_16_Modification_11_2 extends CommonTestRunner {
                 if (d.variable() instanceof FieldReference fr && "s2".equals(fr.fieldInfo.name)) {
                     if ("0".equals(d.statementId())) {
                         assertDv(d, 10, MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL_DV, CONTEXT_NOT_NULL);
-                        String expected = d.iteration() <= 11 ? "c:-1" : "c:2";
+                        String expected = d.iteration() <= 10 ? "c:-1" : "c:2";
                         assertEquals(expected, d.variableInfo().getLinkedVariables().toString());
                     }
                 }
@@ -101,14 +101,14 @@ public class Test_16_Modification_11_2 extends CommonTestRunner {
                         assertEquals(MultiLevel.NULLABLE_DV, d.getProperty(CONTEXT_NOT_NULL));
                     }
                     if ("2".equals(d.statementId())) {
-                        assertDv(d, 12, MultiLevel.EFFECTIVELY_NOT_NULL_DV, CONTEXT_NOT_NULL);
+                        assertDv(d, 11, MultiLevel.EFFECTIVELY_NOT_NULL_DV, CONTEXT_NOT_NULL);
 
-                        String expectLinked = d.iteration() <= 11 ? "c.set:-1,this.s2:-1" : "c.set:2,this.s2:2";
+                        String expectLinked = d.iteration() <= 10 ? "c.set:-1,this.s2:-1" : "c.set:2,this.s2:2";
                         assertEquals(expectLinked, d.variableInfo().getLinkedVariables().toString());
                     }
                 }
                 if (d.variable() instanceof ReturnVariable && "2".equals(d.statementId())) {
-                    String expectValue = d.iteration() <= 11 ? "<m:addAll>" : "instance type boolean";
+                    String expectValue = d.iteration() <= 10 ? "<m:addAll>" : "instance type boolean";
                     assertEquals(expectValue, d.currentValue().toString());
                 }
             }
@@ -139,7 +139,7 @@ public class Test_16_Modification_11_2 extends CommonTestRunner {
                     assertNull(d.haveError(Message.Label.POTENTIAL_NULL_POINTER_EXCEPTION));
                 }
                 if ("2".equals(d.statementId())) {
-                    assertEquals(d.iteration() >= 12,
+                    assertEquals(d.iteration() >= 11,
                             d.statementAnalysis().methodLevelData().linksHaveBeenEstablished());
                 }
             }
@@ -155,7 +155,7 @@ public class Test_16_Modification_11_2 extends CommonTestRunner {
                 assertDv(d, 1, DV.TRUE_DV, MODIFIED_OUTSIDE_METHOD);
             }
             if ("s2".equals(d.fieldInfo().name)) {
-                assertDv(d, 11, MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL_DV, EXTERNAL_NOT_NULL);
+                assertDv(d, 10, MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL_DV, EXTERNAL_NOT_NULL);
             }
         };
 

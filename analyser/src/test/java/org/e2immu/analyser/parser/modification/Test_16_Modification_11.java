@@ -180,6 +180,9 @@ public class Test_16_Modification_11 extends CommonTestRunner {
             if ("Modification_11".equals(d.typeInfo().simpleName)) {
                 assertTrue(d.typeAnalysis().getHiddenContentTypes().isEmpty());
             }
+            if ("C1".equals(d.typeInfo().simpleName)) {
+                assertDv(d, MultiLevel.DEPENDENT_DV, Property.INDEPENDENT);
+            }
         };
 
         // 3 errors: none of the @NotNull1 materialise on field, method and parameter

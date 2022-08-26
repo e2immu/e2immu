@@ -69,7 +69,7 @@ public class Test_16_Modification extends CommonTestRunner {
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("clearIfExceeds".equals(d.methodInfo().name) && INNER_THIS.equals(d.variableName())) {
                 if ("0".equals(d.statementId())) {
-                    assertDv(d, 2, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                    assertDv(d, 1, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                 }
                 if ("0.0.0".equals(d.statementId())) {
                     assertDv(d, 0, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
@@ -84,7 +84,7 @@ public class Test_16_Modification extends CommonTestRunner {
         };
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("clearIfExceeds".equals(d.methodInfo().name)) {
-                assertDv(d, 2, DV.TRUE_DV, Property.MODIFIED_METHOD);
+                assertDv(d, 1, DV.TRUE_DV, Property.MODIFIED_METHOD);
             }
         };
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {

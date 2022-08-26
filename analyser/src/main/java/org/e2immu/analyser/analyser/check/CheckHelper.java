@@ -82,6 +82,11 @@ public record CheckHelper(InspectionProvider inspectionProvider, E2ImmuAnnotatio
             // annotation has to be absent
             if (inAnalysis != null) {
                 // but it is there
+                if (inAnalysis.e2ImmuAnnotationParameters().absent()) {
+                    // but even in analysis, it says ABSENT...
+                    analysis.putAnnotationCheck(inAnalysis, OK_ABSENT);
+                    return null;
+                }
                 analysis.putAnnotationCheck(inAnalysis, Analysis.AnnotationCheck.PRESENT);
                 return Message.newMessage(where, Message.Label.ANNOTATION_UNEXPECTEDLY_PRESENT, annotationSimpleName);
             }
