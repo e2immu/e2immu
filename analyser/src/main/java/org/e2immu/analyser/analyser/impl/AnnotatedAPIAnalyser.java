@@ -207,12 +207,7 @@ public class AnnotatedAPIAnalyser implements AnalyserContext {
         // do the types first,
         typeAnalyses.forEach((typeInfo, typeAnalysis) -> {
             try {
-                if (typeInfo.packageNameOrEnclosingType.isLeft() &&
-                        Primitives.INTERNAL.equals(typeInfo.packageNameOrEnclosingType.getLeft())) {
-                    hardcodedSyntheticFunctionalInterfaces(typeInfo, typeAnalysis);
-                } else {
-                    shallowTypeAnalysis(typeInfo, typeAnalysis, e2ImmuAnnotationExpressions);
-                }
+                shallowTypeAnalysis(typeInfo, typeAnalysis, e2ImmuAnnotationExpressions);
             } catch (RuntimeException runtimeException) {
                 LOGGER.error("Caught exception while shallowly analysing type " + typeInfo.fullyQualifiedName);
                 throw runtimeException;
@@ -260,19 +255,6 @@ public class AnnotatedAPIAnalyser implements AnalyserContext {
 
         return Stream.concat(methodAnalysers.values().stream().flatMap(MethodAnalyser::getMessageStream),
                 Stream.concat(shallowFieldAnalyser.getMessageStream(), messages.getMessageStream()));
-    }
-
-    // see also JavaUtilFunction.java, Annotated APIs
-    private void hardcodedSyntheticFunctionalInterfaces(TypeInfo typeInfo, TypeAnalysisImpl.Builder typeAnalysis) {
-        typeAnalysis.setProperty(Property.INDEPENDENT, MultiLevel.INDEPENDENT_HC_DV);
-        boolean isContainer = typeInfo.simpleName.equals(Primitives.SYNTHETIC_FUNCTION_0);
-        typeAnalysis.setProperty(Property.CONTAINER, isContainer ? MultiLevel.CONTAINER_DV : MultiLevel.NOT_CONTAINER_DV);
-        typeAnalysis.setProperty(Property.IMMUTABLE, MultiLevel.MUTABLE_DV);
-        typeAnalysis.setProperty(Property.MODIFIED_METHOD, DV.TRUE_DV);
-        typeAnalysis.setImmutableDeterminedByTypeParameters(false);
-        typeAnalysis.freezeApprovedPreconditionsFinalFields();
-        typeAnalysis.freezeApprovedPreconditionsImmutable();
-        typeInfo.typeAnalysis.set(typeAnalysis);
     }
 
     private void hardcodedCrucialClasses() {
@@ -641,16 +623,17 @@ public class AnnotatedAPIAnalyser implements AnalyserContext {
                 .methodsAndConstructors(TypeInspection.Methods.THIS_TYPE_ONLY)
                 .filter(m -> m.methodInspection.get().isPubliclyAccessible())
                 .map(m -> new ValueExplanation(getMethodAnalysis(m).getProperty(Property.INDEPENDENT),
-                        m.fullyQualifiedName));
+                        "Method " + m.fullyQualifiedName));
         Stream<ValueExplanation> parameterStream = typeInfo.typeInspection.get()
                 .methodsAndConstructors(TypeInspection.Methods.THIS_TYPE_ONLY)
                 .filter(m -> m.methodInspection.get().isPubliclyAccessible())
                 .flatMap(m -> getMethodAnalysis(m).getParameterAnalyses().stream())
-                .map(p -> new ValueExplanation(p.getProperty(Property.INDEPENDENT), p.getParameterInfo().fullyQualifiedName));
+                .map(p -> new ValueExplanation(p.getProperty(Property.INDEPENDENT),
+                        "Parameter " + p.getParameterInfo().fullyQualifiedName));
         ValueExplanation myMethods =
                 Stream.concat(methodStream, parameterStream)
                         .min(Comparator.comparing(p -> p.value.value()))
-                        .orElse(new ValueExplanation(Property.INDEPENDENT.bestDv, "none"));
+                        .orElse(new ValueExplanation(Property.INDEPENDENT.bestDv, "'no methods'"));
 
         Stream<TypeInfo> superTypes = typeInfo.typeResolution.get().superTypesExcludingJavaLangObject()
                 .stream();
@@ -658,10 +641,10 @@ public class AnnotatedAPIAnalyser implements AnalyserContext {
                 .filter(t -> t.typeInspection.get().isPublic())
                 .map(this::getTypeAnalysis)
                 .map(ta -> new ValueExplanation(MultiLevel.dropHiddenContentOfIndependent(ta.getProperty(Property.INDEPENDENT)),
-                        ta.getTypeInfo().fullyQualifiedName))
+                        "Type " + ta.getTypeInfo().fullyQualifiedName))
                 .min(Comparator.comparing(p -> p.value.value()))
-                .orElse(new ValueExplanation(Property.INDEPENDENT.bestDv, "none"));
-        return myMethods.value.lt(fromSuperTypes.value) ? myMethods : fromSuperTypes;
+                .orElse(new ValueExplanation(Property.INDEPENDENT.bestDv, "'no supertypes'"));
+        return myMethods.value.le(fromSuperTypes.value) ? myMethods : fromSuperTypes;
     }
 
     /*

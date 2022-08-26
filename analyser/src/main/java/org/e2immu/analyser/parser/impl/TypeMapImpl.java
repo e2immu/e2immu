@@ -24,6 +24,9 @@ import org.e2immu.analyser.inspector.impl.ParameterInspectionImpl;
 import org.e2immu.analyser.inspector.impl.TypeInspectionImpl;
 import org.e2immu.analyser.inspector.impl.TypeInspectorImpl;
 import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.model.expression.BooleanConstant;
+import org.e2immu.analyser.model.expression.MemberValuePair;
+import org.e2immu.analyser.model.impl.AnnotationExpressionImpl;
 import org.e2immu.analyser.model.impl.TypeParameterImpl;
 import org.e2immu.analyser.parser.*;
 import org.e2immu.analyser.resolver.ShallowMethodResolver;
@@ -470,6 +473,14 @@ public class TypeMapImpl implements TypeMap {
             TypeInfo typeInfo = new TypeInfo(Primitives.INTERNAL, name);
             TypeInspection.Builder builder = add(typeInfo, BY_HAND_WITHOUT_STATEMENTS);
 
+            AnnotationExpression independentHc = new AnnotationExpressionImpl(e2ImmuAnnotationExpressions.independent.typeInfo(),
+                    List.of(new MemberValuePair(E2ImmuAnnotationExpressions.HIDDEN_CONTENT, new BooleanConstant(primitives, true))));
+            builder.addAnnotation(independentHc);
+            boolean isContainer = typeInfo.simpleName.equals(Primitives.SYNTHETIC_FUNCTION_0);
+            if (isContainer) {
+                builder.addAnnotation(e2ImmuAnnotationExpressions.container);
+            }
+
             builder.setParentClass(primitives.objectParameterizedType);
             builder.setTypeNature(TypeNature.INTERFACE);
             List<TypeParameter> tps = new ArrayList<>();
@@ -486,6 +497,7 @@ public class TypeMapImpl implements TypeMap {
             String methodName = methodNameOfFunctionalInterface(isVoid, numberOfParameters,
                     returnType.isBooleanOrBoxedBoolean());
             MethodInspection.Builder m = new MethodInspectionImpl.Builder(typeInfo, methodName);
+            m.addAnnotation(e2ImmuAnnotationExpressions.modified);
             m.setReturnType(returnType);
             for (int i = 0; i < numberOfParameters; i++) {
                 m.addParameter(new ParameterInspectionImpl.Builder(Identifier.generate("param synthetic function"),
