@@ -75,33 +75,55 @@ public class Test_04_NotNull_AAPI extends CommonTestRunner {
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("add".equals(d.methodInfo().name)) {
                 if ("newTrieNode".equals(d.variableName())) {
-                    if ("1.0.1".equals(d.statementId())) {
-                        assertDv(d, 1, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
-                    }
                     if ("1.0.1.0.2".equals(d.statementId())) {
                         assertDv(d, 1, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                        String linked = d.iteration() == 0 ? "node.map:-1,node:-1,this.root:-1"
+                                : "node.map:3,node:3,this.root:3";
+                        assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
+                    }
+                    if ("1.0.1.1.1.0.1".equals(d.statementId())) {
+                        assertEquals(0, d.iteration());
+                        String linked = "node.map:-1,node:-1,s:-1,this.root:-1";
+                        assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
                     }
                     if ("1.0.1.1.1".equals(d.statementId())) {
-                        assertTrue(d.iteration() < 2);
+                        assertEquals(0, d.iteration());
+                        String linked = "node.map:-1,node:-1,s:-1,this.root:-1";
+                        assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
                     }
+                    if ("1.0.1".equals(d.statementId())) {
+                        String linked = d.iteration() == 0 ? "node.map:-1,node:-1,s:-1,this.root:-1"
+                                : "node.map:3,node:3,this.root:3";
+                        assertDv(d, 1, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                        assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
+                    }
+                    /*
+                     assignment "node = newTrieNode", why would link to this.root be DEPENDENT:2???
+                     should be INDEPENDENT_HC:3
+                     */
                     if ("1.0.2".equals(d.statementId())) {
-                        String linked = d.iteration() == 0 ? "node.map:-1,node:0,s:-1,this.root:-1" : "node:0";
+                        String linked = d.iteration() == 0 ? "node.map:-1,node:0,s:-1,this.root:-1"
+                                : "node.map:2,node:0,this.root:3";
                         assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
                         assertDv(d, 1, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
                     }
                 }
                 if ("node".equals(d.variableName())) {
-                    if ("1.0.1".equals(d.statementId())) {
-                        assertDv(d, 1, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
-                    }
                     if ("1.0.1.0.2".equals(d.statementId())) {
                         assertDv(d, 1, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
                     }
                     if ("1.0.1.1.1".equals(d.statementId())) {
-                        assertTrue(d.iteration() < 2);
+                        assertEquals(0, d.iteration());
+                    }
+                    if ("1.0.1".equals(d.statementId())) {
+                        assertDv(d, 1, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
+                        String linked = d.iteration() == 0 ? "newTrieNode:-1,node.map:-1,s:-1,this.root:0"
+                                : "newTrieNode:3,node.map:2,this.root:0";
+                        assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
                     }
                     if ("1.0.2".equals(d.statementId())) {
-                        String linked = d.iteration() == 0 ? "newTrieNode:0,node.map:-1,s:-1,this.root:-1" : "newTrieNode:0";
+                        String linked = d.iteration() == 0 ? "newTrieNode:0,node.map:-1,s:-1,this.root:-1"
+                                : "newTrieNode:0,node.map:2,this.root:3";
                         assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
                         assertDv(d, 1, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
                     }

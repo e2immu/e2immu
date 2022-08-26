@@ -139,10 +139,9 @@ public class Test_30_SwitchStatement extends CommonTestRunner {
         };
 
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
-            if ("method".equals(d.methodInfo().name) && d.iteration() > 0) {
-                assertEquals(DV.FALSE_DV, d.methodAnalysis().getProperty(Property.CONSTANT));
-                assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV,
-                        d.methodAnalysis().getProperty(Property.NOT_NULL_EXPRESSION));
+            if ("method".equals(d.methodInfo().name)) {
+                assertDv(d, DV.FALSE_DV, Property.CONSTANT);
+                assertDv(d, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_EXPRESSION);
             }
         };
 
