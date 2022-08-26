@@ -593,8 +593,10 @@ public class AnnotatedAPIAnalyser implements AnalyserContext {
         typeAnalysisBuilder.setHiddenContentTypes(hiddenContentTypes);
 
         ensureImmutableAndContainerInShallowTypeAnalysis(typeAnalysisBuilder);
-        simpleComputeIndependent(typeAnalysisBuilder);
-
+        Message message = simpleComputeIndependent(this, typeAnalysisBuilder);
+        if (message != null) {
+            messages.add(message);
+        }
         computeImmutableDeterminedByTypeParameters(typeInspection, typeAnalysisBuilder);
 
         // and close!
@@ -667,7 +669,7 @@ public class AnnotatedAPIAnalyser implements AnalyserContext {
      Because we have a chicken-and-egg problem (the independent value can be computed from the methods, but the
      parameters may require an independent value, it is better to assign a value when obviously possible.
      */
-    private void simpleComputeIndependent(TypeAnalysisImpl.Builder builder) {
+    public static Message simpleComputeIndependent(AnalysisProvider analysisProvider, TypeAnalysisImpl.Builder builder) {
         DV immutable = builder.getPropertyFromMapDelayWhenAbsent(Property.IMMUTABLE);
         DV inMap = builder.getPropertyFromMapDelayWhenAbsent(Property.INDEPENDENT);
         DV independent = MultiLevel.independentCorrespondingToImmutableLevelDv(MultiLevel.level(immutable));
@@ -675,34 +677,34 @@ public class AnnotatedAPIAnalyser implements AnalyserContext {
             if (immutable.ge(MultiLevel.EFFECTIVELY_E2IMMUTABLE_DV)) {
                 // minimal value; we'd have an inconsistency otherwise
                 builder.setProperty(Property.INDEPENDENT, independent);
-                return;
+                return null;
             }
-
             boolean allMethodsOnlyPrimitives =
                     builder.getTypeInfo().typeInspection.get()
                             .methodsAndConstructors(TypeInspection.Methods.THIS_TYPE_ONLY)
                             .filter(m -> m.methodInspection.get().isPubliclyAccessible())
                             .allMatch(m -> (m.isConstructor || m.isVoid() || m.returnType().isPrimitiveStringClass())
-                                    && m.methodInspection.get().getParameters().stream().allMatch(p -> p.parameterizedType.isPrimitiveStringClass()));
+                                    && m.methodInspection.get().getParameters().stream()
+                                    .allMatch(p -> p.parameterizedType.isPrimitiveStringClass()));
             if (allMethodsOnlyPrimitives) {
                 Stream<TypeInfo> superTypes = builder.typeInfo.typeResolution.get().superTypesExcludingJavaLangObject()
                         .stream();
                 DV fromSuperTypes = superTypes
                         .filter(t -> t.typeInspection.get().isPublic())
-                        .map(this::getTypeAnalysis)
+                        .map(analysisProvider::getTypeAnalysis)
                         .map(ta -> MultiLevel.dropHiddenContentOfIndependent(ta.getProperty(Property.INDEPENDENT)))
                         .reduce(MultiLevel.INDEPENDENT_DV, DV::min);
                 if (fromSuperTypes.isDone()) {
                     builder.setProperty(Property.INDEPENDENT, fromSuperTypes);
-                    return;
+                    return null;
                 }
             }
             // fallback
             builder.setProperty(Property.INDEPENDENT, MultiLevel.DEPENDENT_DV);
         } else if (immutable.ge(MultiLevel.EFFECTIVELY_E2IMMUTABLE_DV) && inMap.lt(independent)) {
-            messages.add(Message.newMessage(builder.typeInfo.newLocation(),
-                    Message.Label.INCONSISTENT_INDEPENDENCE_VALUE));
+            return Message.newMessage(builder.typeInfo.newLocation(), Message.Label.INCONSISTENT_INDEPENDENCE_VALUE);
         }
+        return null;
     }
 
     @Override

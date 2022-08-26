@@ -18,10 +18,6 @@ import org.e2immu.analyser.analyser.DV;
 
 public class Inconclusive extends NoDelay {
 
-    public Inconclusive(int value, String label) {
-        super(value, label);
-    }
-
     public Inconclusive(DV noDelay) {
         super(noDelay.value(), noDelay.label() + "_inconclusive");
         assert noDelay.isDone();
@@ -30,5 +26,16 @@ public class Inconclusive extends NoDelay {
     @Override
     public boolean isInconclusive() {
         return true;
+    }
+
+    @Override
+    public int hashCode() {
+        return super.hashCode();
+    }
+
+    // use the NoDelay version, which accepts Inconclusive
+    @Override
+    public boolean equals(Object o) {
+        return super.equals(o);
     }
 }

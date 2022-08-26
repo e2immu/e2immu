@@ -90,6 +90,11 @@ public class Test_16_Modification_9 extends CommonTestRunner {
             if ("s2".equals(d.fieldInfo().name)) {
                 assertDv(d, 1, DV.TRUE_DV, Property.MODIFIED_OUTSIDE_METHOD);
             }
+            if ("LOGGER".equals(d.fieldInfo().name)) {
+                assertDv(d, MultiLevel.EFFECTIVELY_E2IMMUTABLE_DV, Property.EXTERNAL_IMMUTABLE);
+                // important: the logger will not store your objects, will never modify their hidden content
+                assertDv(d, MultiLevel.INDEPENDENT_DV, Property.INDEPENDENT);
+            }
         };
 
         TypeMapVisitor typeMapVisitor = typeMap -> {
@@ -100,11 +105,10 @@ public class Test_16_Modification_9 extends CommonTestRunner {
                     .getProperty(Property.INDEPENDENT));
         };
 
-        // there is no transparent content in this type; as a consequence, the parameter s
-        // can never be @Dependent1 (even if it weren't of immutable type String)
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("Modification_9".equals(d.typeInfo().simpleName)) {
-                assertTrue(d.typeAnalysis().getHiddenContentTypes().isEmpty());
+                // Logger is an interface, so it must be possible to have hidden content
+                assertEquals("Type org.slf4j.Logger", d.typeAnalysis().getHiddenContentTypes().toString());
             }
         };
 

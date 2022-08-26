@@ -141,6 +141,12 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
             typeAnalysis.setPropertyIfAbsentOrDelayed(PARTIAL_IMMUTABLE, typeImmutable);
             return DONE; // we have a decision already
         }
+        if (typeInfo.typePropertiesAreContracted()) {
+            // make sure this is the same value as in AnnotatedAPIAnalyser.ensureImmutableAndContainerInShallowTypeAnalysis
+            typeAnalysis.setProperty(IMMUTABLE, MultiLevel.MUTABLE_DV);
+            typeAnalysis.setPropertyIfAbsentOrDelayed(PARTIAL_IMMUTABLE, MultiLevel.MUTABLE_DV);
+            return DONE;
+        }
         return computeTypeImmutable.analyseImmutable(sharedState);
     }
 
@@ -747,6 +753,12 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
         if (container.isDone()) {
             return DONE;
         }
+        if (typeInfo.typePropertiesAreContracted()) {
+            // make sure this is the same value as in AnnotatedAPIAnalyser.ensureImmutableAndContainerInShallowTypeAnalysis
+            typeAnalysis.setProperty(CONTAINER, MultiLevel.NOT_CONTAINER_DV);
+            typeAnalysis.setPropertyIfAbsentOrDelayed(PARTIAL_CONTAINER, MultiLevel.NOT_CONTAINER_DV);
+            return DONE;
+        }
 
         Property ALT_CONTAINER;
         AnalysisStatus ALT_DONE;
@@ -829,6 +841,11 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
     private AnalysisStatus analyseIndependent(SharedState sharedState) {
         DV typeIndependent = typeAnalysis.getProperty(Property.INDEPENDENT);
         if (typeIndependent.isDone()) return DONE;
+        if (typeInfo.typePropertiesAreContracted()) {
+            Message message = AnnotatedAPIAnalyser.simpleComputeIndependent(analyserContext, typeAnalysis);
+            if (message != null) analyserResultBuilder.add(message);
+            return DONE;
+        }
 
         MaxValueStatus parentOrEnclosing = parentOrEnclosingMustHaveTheSameProperty(Property.INDEPENDENT);
         if (MARKER != parentOrEnclosing.status) return parentOrEnclosing.status;
