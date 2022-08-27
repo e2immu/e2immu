@@ -224,7 +224,23 @@ public class Test_26_Enum_withAPI extends CommonTestRunner {
 
     @Test
     public void test6() throws IOException {
+        MethodAnalyserVisitor methodAnalyserVisitor = d -> {
+            if ("returnTwo".equals(d.methodInfo().name)) {
+                // important: even if valueOf() is immutable_hc, we must fill in the concrete type, which is mutable!
+                assertDv(d, 4, MultiLevel.MUTABLE_DV, Property.IMMUTABLE);
+            }
+            if ("valueOf".equals(d.methodInfo().name)) {
+                assertDv(d, 4, MultiLevel.EFFECTIVELY_IMMUTABLE_HC_DV, Property.IMMUTABLE);
+            }
+        };
+        TypeAnalyserVisitor typeAnalyserVisitor = d -> {
+            if ("Enum_6".equals(d.typeInfo().simpleName)) {
+                assertDv(d, 1, MultiLevel.MUTABLE_DV, Property.IMMUTABLE);
+            }
+        };
         testClass("Enum_6", 0, 0, new DebugConfiguration.Builder()
+                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
                 .build());
     }
 

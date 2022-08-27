@@ -407,8 +407,7 @@ public class ShallowMethodAnalyser extends MethodAnalyserImpl {
                 DV maxImmutable = MultiLevel.independentCorrespondingToImmutableLevelDv(immutableLevel);
                 TypeAnalysis ownerAnalysis = analyserContext.getTypeAnalysis(builder.getParameterInfo().owner.typeInfo);
                 DV independentType = ownerAnalysis.getProperty(Property.INDEPENDENT);
-                assert independentType.isDone()
-                        : "Do not have an @Independent value for type when computing that of " + builder.getParameterInfo();
+                if (independentType.isDelayed()) return independentType;
                 value = independentType.max(maxImmutable);
             } else {
                 value = MultiLevel.INDEPENDENT_DV;

@@ -1166,7 +1166,7 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
             LOGGER.debug("Utility class: Don't know yet about @Immutable on {}, delaying", typeInfo);
             return immutable.causesOfDelay();
         }
-        if (MultiLevel.EFFECTIVELY_IMMUTABLE_DV.equals(immutable)) {
+        if (!MultiLevel.EFFECTIVELY_IMMUTABLE_DV.equals(immutable)) {
             LOGGER.debug("Type {} is not a @UtilityClass, not recursively @Immutable", typeInfo);
             typeAnalysis.setProperty(Property.UTILITY_CLASS, DV.FALSE_DV);
             return DONE;
