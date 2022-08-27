@@ -308,13 +308,14 @@ public class Test_14_Warnings extends CommonTestRunner {
     public void test4() throws IOException {
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("Warnings_4".equals(d.methodInfo().name)) {
+                assertEquals("0", d.statementId());
                 if (d.variable() instanceof FieldReference fr && "set".equals(fr.fieldInfo.name)) {
                     assertEquals("Set.copyOf(input)", d.currentValue().toString());
                     assertEquals("Type java.util.Set<java.lang.String>", d.currentValue().returnType().toString());
-                    // because immutableOfHiddenContent = @ERContainer
-                    assertTrue(d.variableInfo().getLinkedVariables().isEmpty());
-                    // we wait because of hidden content
                     assertDv(d, MultiLevel.EFFECTIVELY_IMMUTABLE_DV, IMMUTABLE);
+                    // if recursively immutable, then cannot link
+                    assertTrue(d.variableInfo().getLinkedVariables().isEmpty(),
+                            "Got: " + d.variableInfo().getLinkedVariables().toString());
                 }
             }
         };

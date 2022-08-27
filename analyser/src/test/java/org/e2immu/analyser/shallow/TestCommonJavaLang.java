@@ -161,7 +161,7 @@ public class TestCommonJavaLang extends CommonAnnotatedAPI {
     public void testCharSequence() {
         TypeInfo charSequence = typeContext.getFullyQualified(CharSequence.class);
         TypeAnalysis typeAnalysis = charSequence.typeAnalysis.get();
-        testImmutableContainerType(typeAnalysis, true, true);
+        testImmutableContainerType(typeAnalysis, true, false);
     }
 
     @Test

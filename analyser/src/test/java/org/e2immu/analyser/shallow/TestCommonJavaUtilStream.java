@@ -92,4 +92,17 @@ public class TestCommonJavaUtilStream extends CommonAnnotatedAPI {
         assertEquals(MultiLevel.INDEPENDENT_HC_DV, p0.getProperty(Property.INDEPENDENT));
         assertEquals(MultiLevel.EFFECTIVELY_IMMUTABLE_HC_DV, p0.getProperty(Property.IMMUTABLE));
     }
+
+    @Test
+    public void testStreamEmpty() {
+        TypeInfo typeInfo = typeContext.getFullyQualified(Stream.class);
+        MethodInfo methodInfo = typeInfo.findUniqueMethod("empty", 0);
+        assertTrue(methodInfo.methodInspection.get().isStatic());
+        assertTrue(methodInfo.methodInspection.get().isFactoryMethod());
+
+        MethodAnalysis methodAnalysis = methodInfo.methodAnalysis.get();
+        assertEquals(DV.FALSE_DV, methodAnalysis.getProperty(Property.MODIFIED_METHOD));
+        assertEquals(MultiLevel.INDEPENDENT_DV, methodAnalysis.getProperty(Property.INDEPENDENT));
+        assertEquals(MultiLevel.EFFECTIVELY_IMMUTABLE_DV, methodAnalysis.getProperty(Property.IMMUTABLE));
+    }
 }

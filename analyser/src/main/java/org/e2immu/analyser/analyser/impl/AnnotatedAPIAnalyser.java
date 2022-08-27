@@ -309,7 +309,9 @@ public class AnnotatedAPIAnalyser implements AnalyserContext {
     private void validateIndependent(TypeInfo typeInfo, DV inMap, ValueExplanation computed) {
         if (computed.value.isDone()) {
             if (!inMap.equals(computed.value)) {
-                if (typeInfo.typeInspection.get().isPublic() && typeInfo.isNotJDKInternal()) {
+                if (typeInfo.typeInspection.get().isPublic()
+                        && typeInfo.isNotJDKInternal()
+                        && independenceIsNotContracted(typeInfo)) {
                     Message message = Message.newMessage(typeInfo.newLocation(),
                             Message.Label.TYPE_HAS_DIFFERENT_VALUE_FOR_INDEPENDENT,
                             "Found " + inMap + ", computed " + computed.value
@@ -318,6 +320,15 @@ public class AnnotatedAPIAnalyser implements AnalyserContext {
                 }
             }
         } // else: we're at the edge of the known/analysed types, we're not exploring further and rely on the value
+    }
+
+    /*
+    an alternative would be to allow the transition from HC=true to HC=false when the type parameters disappear
+    e.g. PrimitiveIterator.OfInt has no type parameters, even if Iterator has them
+     */
+    private boolean independenceIsNotContracted(TypeInfo typeInfo) {
+        Optional<AnnotationExpression> opt = typeInfo.hasInspectedAnnotation(e2ImmuAnnotationExpressions.independent);
+        return opt.stream().noneMatch(ae -> ae.e2ImmuAnnotationParameters().contract());
     }
 
     private record ValueExplanation(DV value, String explanation) {
@@ -642,7 +653,7 @@ public class AnnotatedAPIAnalyser implements AnalyserContext {
         ValueExplanation fromSuperTypes = superTypes
                 .filter(t -> t.typeInspection.get().isPublic())
                 .map(this::getTypeAnalysis)
-                .map(ta -> new ValueExplanation(MultiLevel.dropHiddenContentOfIndependent(ta.getProperty(Property.INDEPENDENT)),
+                .map(ta -> new ValueExplanation(ta.getProperty(Property.INDEPENDENT),
                         "Type " + ta.getTypeInfo().fullyQualifiedName))
                 .min(Comparator.comparing(p -> p.value.value()))
                 .orElse(new ValueExplanation(Property.INDEPENDENT.bestDv, "'no supertypes'"));
@@ -679,7 +690,7 @@ public class AnnotatedAPIAnalyser implements AnalyserContext {
                 DV fromSuperTypes = superTypes
                         .filter(t -> t.typeInspection.get().isPublic())
                         .map(analysisProvider::getTypeAnalysis)
-                        .map(ta -> MultiLevel.dropHiddenContentOfIndependent(ta.getProperty(Property.INDEPENDENT)))
+                        .map(ta -> ta.getProperty(Property.INDEPENDENT))
                         .reduce(MultiLevel.INDEPENDENT_DV, DV::min);
                 if (fromSuperTypes.isDone()) {
                     builder.setProperty(Property.INDEPENDENT, fromSuperTypes);

@@ -439,7 +439,18 @@ public class ShallowMethodAnalyser extends MethodAnalyserImpl {
         // typeIndependent is set by hand in AnnotatedAPI files
         DV typeIndependent = analyserContext.getTypeAnalysis(methodInfo.typeInfo).getPropertyFromMapNeverDelay(Property.INDEPENDENT);
         DV bestOfOverrides = bestOfOverrides(Property.INDEPENDENT);
-        return returnValueIndependent.max(bestOfOverrides).max(typeIndependent);
+        DV result = returnValueIndependent.max(bestOfOverrides).max(typeIndependent);
+
+        if (MultiLevel.INDEPENDENT_HC_DV.equals(result) && methodInfo.methodInspection.get().isFactoryMethod()) {
+            // at least one of the parameters must be independent HC!!
+            boolean hcParam = parameterAnalyses.stream()
+                    .anyMatch(pa -> MultiLevel.INDEPENDENT_HC_DV.equals(pa.getProperty(Property.INDEPENDENT)));
+            if (!hcParam) {
+                analyserResultBuilder.add(Message.newMessage(methodInfo.newLocation(),
+                        Message.Label.FACTORY_METHOD_INDEPENDENT_HC));
+            }
+        }
+        return result;
     }
 
     private DV computeMethodIndependentReturnValue() {

@@ -18,6 +18,9 @@ import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.analysis.Analysis;
 import org.e2immu.analyser.analysis.ParameterAnalysis;
 import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.model.expression.BooleanConstant;
+import org.e2immu.analyser.model.expression.MemberValuePair;
+import org.e2immu.analyser.model.impl.AnnotationExpressionImpl;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
 import org.e2immu.analyser.parser.Primitives;
@@ -162,8 +165,7 @@ public class ParameterAnalysisImpl extends AnalysisImpl implements ParameterAnal
                     linksToParameters.getOrDefault(LinkedVariables.EMPTY));
         }
 
-        public void transferPropertiesToAnnotations(AnalyserContext analysisProvider,
-                                                    E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions) {
+        public void transferPropertiesToAnnotations(AnalyserContext analysisProvider, E2ImmuAnnotationExpressions e2) {
 
             // no annotations can be added to primitives
             if (parameterInfo.parameterizedType.isPrimitiveExcludingVoid()) return;
@@ -174,20 +176,27 @@ public class ParameterAnalysisImpl extends AnalysisImpl implements ParameterAnal
             DV ignoreModifications = getProperty(Property.IGNORE_MODIFICATIONS);
             if (!analysisProvider.cannotBeModifiedInThisClass(parameterInfo.parameterizedType).valueIsTrue() &&
                     !ignoreModifications.equals(MultiLevel.IGNORE_MODS_DV)) {
-                AnnotationExpression ae = modified.valueIsFalse() ? e2ImmuAnnotationExpressions.notModified :
-                        e2ImmuAnnotationExpressions.modified;
+                // the explicit annotation
+                AnnotationExpression ae = modified.valueIsFalse() ? e2.notModified :
+                        e2.modified;
                 addAnnotation(ae);
+                // the negation, absent and implied, see e.g. Container_4
+                AnnotationExpression negated = new AnnotationExpressionImpl(modified.valueIsFalse()
+                        ? e2.modified.typeInfo() : e2.notModified.typeInfo(),
+                        List.of(new MemberValuePair(E2ImmuAnnotationExpressions.IMPLIED, new BooleanConstant(primitives, true)),
+                                new MemberValuePair(E2ImmuAnnotationExpressions.ABSENT, new BooleanConstant(primitives, true))));
+                addAnnotation(negated);
             }
 
             // @NotNull
-            doNotNull(e2ImmuAnnotationExpressions, getProperty(Property.NOT_NULL_PARAMETER),
+            doNotNull(e2, getProperty(Property.NOT_NULL_PARAMETER),
                     parameterInfo.parameterizedType.isPrimitiveExcludingVoid());
 
             // @Independent1; @Independent, @Dependent not shown
             DV independentType = analysisProvider.typeIndependent(parameterInfo.parameterizedType);
             DV independent = getProperty(Property.INDEPENDENT);
             if (independent.equals(MultiLevel.INDEPENDENT_DV) && independentType.lt(MultiLevel.INDEPENDENT_DV)) {
-                addAnnotation(e2ImmuAnnotationExpressions.independent);
+                addAnnotation(e2.independent);
             } else if (independent.equals(MultiLevel.INDEPENDENT_HC_DV) && independentType.lt(MultiLevel.INDEPENDENT_HC_DV)) {
                 AnnotationExpression independentHC = E2ImmuAnnotationExpressions.create(primitives, Independent.class,
                         "hc", true);
@@ -200,7 +209,7 @@ public class ParameterAnalysisImpl extends AnalysisImpl implements ParameterAnal
             DV dynamicallyContainer = getProperty(Property.CONTAINER);
             boolean immutableBetterThanFormal = dynamicallyImmutable.gt(formallyImmutable);
             boolean containerBetterThanFormal = dynamicallyContainer.gt(formallyContainer);
-            doImmutableContainer(e2ImmuAnnotationExpressions, dynamicallyImmutable, dynamicallyContainer,
+            doImmutableContainer(e2, dynamicallyImmutable, dynamicallyContainer,
                     immutableBetterThanFormal, containerBetterThanFormal, null, false);
         }
 

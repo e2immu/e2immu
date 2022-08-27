@@ -34,10 +34,18 @@ public class JavaUtilConcurrent {
     @Independent(hc = true)
     interface Future$<V> {
 
+        @Modified
+        @Independent(hc = true)
+        V get();
     }
 
     interface Executor${
         @Modified
         void execute(Runnable runnable);
+    }
+
+    @Independent(hc = true)
+    interface RunnableFuture$<V> {
+
     }
 }

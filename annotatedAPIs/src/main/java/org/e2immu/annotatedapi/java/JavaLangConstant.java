@@ -24,12 +24,14 @@ class JavaLangConstant {
     final static String PACKAGE_NAME = "java.lang.constant";
 
     @ImmutableContainer
+    @Independent
     interface ConstantDesc$ {
         @NotNull
         Object resolveConstantDesc(MethodHandles.Lookup lookup);
     }
 
     @ImmutableContainer
+    @Independent
     interface Constable$ {
 
         @NotNull

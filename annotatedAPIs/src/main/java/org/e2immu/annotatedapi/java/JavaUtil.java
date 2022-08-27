@@ -93,23 +93,26 @@ public class JavaUtil extends AnnotatedAPI {
     }
 
     @Container
-    @Independent
+    @Independent(hc = true)
     interface PrimitiveIterator$<T> {
 
+        /*
+        contract=true to override the expected independence with hidden content
+         */
         @Container
-        @Independent
+        @Independent(contract = true)
         interface OfInt {
 
         }
 
         @Container
-        @Independent
+        @Independent(contract = true)
         interface OfLong {
 
         }
 
         @Container
-        @Independent
+        @Independent(contract = true)
         interface OfDouble {
 
         }
@@ -468,7 +471,7 @@ public class JavaUtil extends AnnotatedAPI {
          */
         @ImmutableContainer(hc = true)
         @NotNull(content = true)
-        <EE> Set<EE> copyOf(@NotNull(content = true) Collection<? extends EE> collection);
+        <EE> Set<EE> copyOf(@NotNull(content = true) @Independent(hc = true) Collection<? extends EE> collection);
 
         default boolean isEmpty$Value$Size(int i, boolean retVal) {
             return i == 0;
@@ -538,7 +541,7 @@ public class JavaUtil extends AnnotatedAPI {
 
         @ImmutableContainer(hc = true)
         @NotNull(content = true)
-        <H> java.util.Set<H> of(@NotNull(content = true) H... hs);
+        <H> java.util.Set<H> of(@NotNull(content = true) @Independent(hc = true) H... hs);
 
         default boolean remove$Modification$Size(int i, Integer j, Object o) {
             return JavaUtil.setRemoveModificationHelper(i, j, contains(o));
@@ -695,6 +698,12 @@ public class JavaUtil extends AnnotatedAPI {
         int compare(@NotNull T o1, @NotNull T o2);
 
         <U> java.util.Comparator<U> comparingInt(@NotNull ToIntFunction<? super U> keyExtractor);
+
+        @ImmutableContainer
+        <T extends Comparable<? super T>> Comparator<T> naturalOrder();
+
+        @ImmutableContainer
+        <T extends Comparable<? super T>> Comparator<T> reverseOrder();
     }
 
     /*
@@ -792,13 +801,17 @@ public class JavaUtil extends AnnotatedAPI {
 
         boolean containsKey(@NotNull @Independent Object key);
 
+        @ImmutableContainer
+        @NotNull
+        <KK, VV> Map<KK, VV> of();
+
         /*
          factory method, @NotModified by default, independence in the immutable container is with respect to the
          parameter 'map'.
          */
         @ImmutableContainer(hc = true)
         @NotNull
-        <KK, VV> Map<KK, VV> copyOf(@NotNull Map<? extends KK, ? extends VV> map);
+        <KK, VV> Map<KK, VV> copyOf(@NotNull @Independent(hc = true) Map<? extends KK, ? extends VV> map);
 
         @ImmutableContainer(hc = true)
         @NotNull

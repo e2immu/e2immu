@@ -260,6 +260,8 @@ public class ConstructorCall extends BaseExpression implements HasParameterExpre
      Combine the formal independence value of the parameter with the dynamic independence of a evaluated expression.
 
      The result is interpreted as independence with respect to the fields of the (newly created) object!!
+     In the case of a factory method, it is interpreted as independence wrt the method result.
+
 
      Example 1: parameterInfo = java.util.List.add(E):0:e, which is INDEPENDENT_HC.
      This means that the argument will become part of the list's hidden content.
@@ -270,6 +272,9 @@ public class ConstructorCall extends BaseExpression implements HasParameterExpre
      See e.g. E2ImmutableComposition_0.ExposedArrayOfHasSize
      If we feed in an array of recursively immutable elements, like HasSize[], we want LINK_DEPENDENT as an outcome.
      If we feed in the recursively immutable element HasSize, we remain LINK_INDEPENDENT.
+
+     Example 3: parameterInfo = java.util.Set.copyOf(Collection<E> input):0:input, which is INDEPENDENT_HC rather
+     than DEPENDENT, because the resulting set is independent of the input set, yet contains its elements.
      */
     private static DV computeIndependentFromComponents(EvaluationResult context,
                                                        Expression value,

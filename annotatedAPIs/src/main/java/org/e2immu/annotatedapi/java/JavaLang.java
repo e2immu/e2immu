@@ -153,7 +153,12 @@ class JavaLang {
         ClassLoader getClassLoader();
     }
 
+    /*
+     implicitly, hc=true for immutable; however, the independent does not get this hc=true automatically;
+     the type is independent, even if there is a subsequence() method
+     */
     @ImmutableContainer
+    @Independent
     interface CharSequence$ {
         char charAt(int index);
 

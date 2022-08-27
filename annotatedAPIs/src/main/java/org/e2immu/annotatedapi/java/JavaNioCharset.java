@@ -18,6 +18,7 @@ import org.e2immu.annotation.*;
 
 import java.nio.Buffer;
 import java.nio.CharBuffer;
+import java.nio.charset.Charset;
 
 public class JavaNioCharset {
 
@@ -29,6 +30,13 @@ public class JavaNioCharset {
     @ImmutableContainer
     interface Charset$ {
 
+        @ImmutableContainer
+        @NotNull
+        Charset defaultCharset();
+
+        @ImmutableContainer
+        @NotNull
+        Charset forName(String name);
     }
 
 }

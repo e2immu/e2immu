@@ -133,9 +133,26 @@ public record ComputeTypeImmutable(AnalyserContext analyserContext,
         if (status7 != null) return status7;
 
         MultiLevel.Effective effective = w.eventual ? MultiLevel.Effective.EVENTUAL : MultiLevel.Effective.EFFECTIVE;
-        DV finalValue = w.fromParentOrEnclosing.min(MultiLevel.composeImmutable(effective, w.minLevel));
+        DV immutableWithoutSuperTypes = MultiLevel.composeImmutable(effective, w.minLevel);
+        DV finalValue = includeSuperTypes(w.fromParentOrEnclosing, immutableWithoutSuperTypes);
         LOGGER.debug("Set {} of type {} to {}", w.ALT_IMMUTABLE, typeInfo.fullyQualifiedName, finalValue);
         return doneImmutable(w.ALT_IMMUTABLE, finalValue, w.ALT_DONE);
+    }
+
+    private DV includeSuperTypes(DV fromParentOrEnclosing, DV immutableWithoutSuperTypes) {
+        assert fromParentOrEnclosing.gt(MultiLevel.MUTABLE_DV);
+        int levelParent = MultiLevel.level(fromParentOrEnclosing);
+        if (MultiLevel.Level.IMMUTABLE_HC.level == levelParent && parentOrEnclosingHaveNoHiddenContent()) {
+            /*
+             this can be due to the fact that the parent is an interface, which must have HC if it is immutable
+             we study the hidden content of the parent; if empty, we return only our immutable value.
+             Example: deriving from java.lang.Enum (as each enumeration does) means that the immutable value of
+             Enum is not relevant, as it has no hidden content.
+             */
+            return immutableWithoutSuperTypes;
+        }
+        // e.g. final fields + immutable hc -> ff
+        return fromParentOrEnclosing.min(immutableWithoutSuperTypes);
     }
 
     private AnalysisStatus checkFieldsThatMustBeGuarded(Work w) {
@@ -467,6 +484,10 @@ public record ComputeTypeImmutable(AnalyserContext analyserContext,
 
         w.whenImmutableFails = w.fromParentOrEnclosing.min(whenImmutableFails);
         return null; // continue
+    }
+
+    private boolean parentOrEnclosingHaveNoHiddenContent() {
+        return parentAndOrEnclosingTypeAnalysis.stream().allMatch(ta -> ta.getHiddenContentTypes().isEmpty());
     }
 
     private AnalysisStatus fromParentOrEnclosing(Work w, Analyser.SharedState sharedState) {

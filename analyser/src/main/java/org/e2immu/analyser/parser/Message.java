@@ -51,6 +51,7 @@ public record Message(Location location, Label message, String extra) {
         EMPTY_LOOP,
         EVENTUAL_AFTER_REQUIRED,
         EVENTUAL_BEFORE_REQUIRED,
+        FACTORY_METHOD_INDEPENDENT_HC,
         FIELD_INITIALIZATION_NOT_NULL_CONFLICT(Severity.WARN), // only when not all field's values linked to parameter
         FINALIZER_METHOD_CALLED_ON_FIELD_NOT_IN_FINALIZER,
         FINALIZER_METHOD_CALLED_ON_PARAMETER,
@@ -94,8 +95,7 @@ public record Message(Location location, Label message, String extra) {
         WORSE_THAN_OVERRIDDEN_METHOD_PARAMETER,
         WORSE_THAN_OVERRIDDEN_METHOD,
         WRONG_ANNOTATION_PARAMETER,
-        WRONG_PRECONDITION,
-        ;
+        WRONG_PRECONDITION;
 
         public final Severity severity;
 

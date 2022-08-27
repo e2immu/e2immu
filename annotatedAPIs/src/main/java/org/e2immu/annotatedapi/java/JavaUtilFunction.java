@@ -14,13 +14,11 @@
 
 package org.e2immu.annotatedapi.java;
 
-import org.e2immu.annotation.Container;
-import org.e2immu.annotation.Independent;
-import org.e2immu.annotation.Modified;
-import org.e2immu.annotation.NotNull;
+import org.e2immu.annotation.*;
 
 import java.util.Comparator;
 import java.util.function.Consumer;
+import java.util.function.UnaryOperator;
 
 public class JavaUtilFunction {
 
@@ -70,6 +68,7 @@ public class JavaUtilFunction {
         <V> java.util.function.Function<V, R> compose(@NotNull java.util.function.Function<? super V, ? extends T> before);
 
         @NotNull
+        @ImmutableContainer
         <T> java.util.function.Function<T, T> identity();
     }
 
@@ -159,6 +158,9 @@ public class JavaUtilFunction {
     @Independent(hc = true)
     interface UnaryOperator$<R> {
 
+        @NotNull
+        @ImmutableContainer
+        <T> UnaryOperator<T> identity();
     }
 
     @Independent(hc = true)
@@ -178,5 +180,4 @@ public class JavaUtilFunction {
         @Modified
         void accept(T t, double i);
     }
-
 }

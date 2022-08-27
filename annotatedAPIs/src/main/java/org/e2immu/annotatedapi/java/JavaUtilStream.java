@@ -81,7 +81,7 @@ public class JavaUtilStream {
     }
 
     @ImmutableContainer
-    @Independent
+    @Independent(contract = true)
     interface IntStream$ {
         long count();
 
@@ -96,8 +96,9 @@ public class JavaUtilStream {
         }
     }
 
+    // contract=true to override the bump-up from hidden content to no hidden content without warning/error
     @ImmutableContainer
-    @Independent
+    @Independent(contract = true)
     interface DoubleStream$ {
         long count();
 
@@ -113,7 +114,7 @@ public class JavaUtilStream {
     }
 
     @ImmutableContainer
-    @Independent
+    @Independent(contract = true)
     interface LongStream$ {
         long count();
 
@@ -142,9 +143,10 @@ public class JavaUtilStream {
         <TT> Stream<TT> concat(@NotNull Stream<? extends TT> s1, @NotNull Stream<? extends TT> s2);
 
         /*
-         Independent!
+         Independent, immutable
          */
         @NotNull
+        @ImmutableContainer
         <TT> Stream<TT> empty();
 
         /*

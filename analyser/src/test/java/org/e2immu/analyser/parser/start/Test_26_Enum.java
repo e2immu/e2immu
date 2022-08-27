@@ -107,7 +107,7 @@ public class Test_26_Enum extends CommonTestRunner {
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("Enum_0".equals(d.typeInfo().simpleName)) {
                 assertDv(d, MultiLevel.EFFECTIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
-                assertDv(d, MultiLevel.INDEPENDENT_DV, Property.INDEPENDENT);
+                assertDv(d, 1, MultiLevel.INDEPENDENT_DV, Property.INDEPENDENT);
                 assertDv(d, 1, MultiLevel.CONTAINER_DV, Property.CONTAINER);
             }
         };
@@ -541,7 +541,7 @@ public class Test_26_Enum extends CommonTestRunner {
             if ("START".equals(d.fieldInfo().name)) {
                 assertEquals("new Position(\"S\")", d.fieldAnalysis().getValue().toString());
                 assertDv(d, 0, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.EXTERNAL_NOT_NULL);
-                assertDv(d, 1, MultiLevel.INDEPENDENT_DV, Property.INDEPENDENT);
+                assertDv(d, MultiLevel.INDEPENDENT_DV, Property.INDEPENDENT);
                 assertDv(d, 1, MultiLevel.EFFECTIVELY_IMMUTABLE_DV, Property.EXTERNAL_IMMUTABLE);
                 assertDv(d, 1, MultiLevel.CONTAINER_DV, Property.EXTERNAL_CONTAINER);
             }

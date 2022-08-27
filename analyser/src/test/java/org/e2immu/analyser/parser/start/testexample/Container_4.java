@@ -22,7 +22,7 @@ import java.util.Set;
 @Container(absent = true)
 public class Container_4 {
 
-    @NotNull
+    @NotNull(content = true)
     private final Set<String> s;
 
     public Container_4(@NotNull(content = true) Set<String> p) {

@@ -301,11 +301,6 @@ public class MultiLevel {
         return immutable.ge(EVENTUALLY_IMMUTABLE_DV);
     }
 
-    public static DV dropHiddenContentOfIndependent(DV dv) {
-        if (dv.ge(MultiLevel.INDEPENDENT_HC_DV)) return MultiLevel.INDEPENDENT_DV;
-        return dv;
-    }
-
     public static Effective effectiveAtFinalFields(DV dv) {
         int level = MultiLevel.level(dv);
         if (level < MUTABLE.level) return FALSE;
