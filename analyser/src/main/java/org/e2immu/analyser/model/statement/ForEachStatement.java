@@ -29,6 +29,7 @@ import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.util.UpgradableBooleanMap;
 
 import java.util.List;
+import java.util.Objects;
 
 public class ForEachStatement extends LoopStatement {
     public final Identifier.PositionalIdentifier positionOfExpression;
@@ -58,17 +59,40 @@ public class ForEachStatement extends LoopStatement {
     }
 
     @Override
+    public boolean equals(Object obj) {
+        if (obj == this) return true;
+        if (obj instanceof ForEachStatement other) {
+            return identifier.equals(other.identifier)
+                    && expression.equals(other.expression)
+                    && structure.block().equals(other.structure.block())
+                    && structure.initialisers().equals(other.structure.initialisers());
+        }
+        return false;
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(identifier, expression, structure.block(), structure.initialisers());
+    }
+
+    @Override
     public boolean hasExitCondition() {
         return false;
     }
 
     @Override
-    public Statement translate(InspectionProvider inspectionProvider, TranslationMap translationMap) {
-        return new ForEachStatement(identifier, label,
-                (LocalVariableCreation) translationMap.translateExpression(structure.initialisers().get(0)),
-                translationMap.translateExpression(expression),
+    public List<Statement> translate(InspectionProvider inspectionProvider, TranslationMap translationMap) {
+        List<Statement> direct = translationMap.translateStatement(inspectionProvider, this);
+        if (haveDirectTranslation(direct, this)) return direct;
+
+        LocalVariableCreation translatedLvc = (LocalVariableCreation) structure.initialisers().get(0)
+                .translate(inspectionProvider, translationMap);
+        List<Statement> translatedBlock = structure.block().translate(inspectionProvider, translationMap);
+        return List.of(new ForEachStatement(identifier, label,
+                translatedLvc,
+                expression.translate(inspectionProvider, translationMap),
                 positionOfExpression,
-                translationMap.translateBlock(inspectionProvider, structure.block()));
+                ensureBlock(structure.block().identifier, translatedBlock)));
     }
 
     @Override

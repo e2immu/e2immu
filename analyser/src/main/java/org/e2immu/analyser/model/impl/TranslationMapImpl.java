@@ -52,8 +52,6 @@ import java.util.stream.Collectors;
  *         Primary use case: renaming variables in code transformations.
  *     </li>
  * </ul>
- *
- *
  */
 public class TranslationMapImpl implements TranslationMap {
 
@@ -66,6 +64,7 @@ public class TranslationMapImpl implements TranslationMap {
     public final Map<? extends Variable, ? extends Expression> variableExpressions;
     public final boolean expandDelayedWrappedExpressions;
     public final boolean recurseIntoScopeVariables;
+    public final boolean yieldIntoReturn;
 
     public TranslationMapImpl(Map<? extends Statement, List<Statement>> statements,
                               Map<? extends Expression, ? extends Expression> expressions,
@@ -74,13 +73,15 @@ public class TranslationMapImpl implements TranslationMap {
                               Map<MethodInfo, MethodInfo> methods,
                               Map<ParameterizedType, ParameterizedType> types,
                               boolean expandDelayedWrappedExpressions,
-                              boolean recurseIntoScopeVariables) {
+                              boolean recurseIntoScopeVariables,
+                              boolean yieldIntoReturn) {
         this.variables = variables;
         this.expressions = expressions;
         this.variableExpressions = variableExpressions;
         this.statements = statements;
         this.methods = methods;
         this.types = types;
+        this.yieldIntoReturn = yieldIntoReturn;
         localVariables = variables.entrySet().stream()
                 .filter(e -> e.getKey() instanceof LocalVariableReference && e.getValue() instanceof LocalVariableReference)
                 .collect(Collectors.toMap(e -> ((LocalVariableReference) e.getKey()).variable,
@@ -99,6 +100,11 @@ public class TranslationMapImpl implements TranslationMap {
         return "TM{" + variables.size() + "," + methods.size() + "," + expressions.size() + "," + statements.size()
                 + "," + types.size() + "," + localVariables.size() + "," + variableExpressions.size() +
                 (expandDelayedWrappedExpressions ? ",expand" : "") + "}";
+    }
+
+    @Override
+    public boolean translateYieldIntoReturn() {
+        return yieldIntoReturn;
     }
 
     @Override
@@ -134,10 +140,7 @@ public class TranslationMapImpl implements TranslationMap {
     @Override
     public List<Statement> translateStatement(InspectionProvider inspectionProvider, Statement statement) {
         List<Statement> list = statements.get(statement);
-        if (list == null) {
-            return List.of(statement.translate(inspectionProvider, this));
-        }
-        return list.stream().map(st -> st.translate(inspectionProvider, this)).collect(Collectors.toList());
+        return list == null ? List.of(statement) : list;
     }
 
     @Override
@@ -186,10 +189,11 @@ public class TranslationMapImpl implements TranslationMap {
         private final Map<ParameterizedType, ParameterizedType> types = new HashMap<>();
         private boolean expandDelayedWrappedExpressions;
         private boolean recurseIntoScopeVariables;
+    private boolean yieldIntoReturn;
 
         public TranslationMapImpl build() {
             return new TranslationMapImpl(statements, expressions, variableExpressions, variables, methods, types,
-                    expandDelayedWrappedExpressions, recurseIntoScopeVariables);
+                    expandDelayedWrappedExpressions, recurseIntoScopeVariables, yieldIntoReturn);
         }
 
         public Builder setRecurseIntoScopeVariables(boolean recurseIntoScopeVariables) {
@@ -231,6 +235,11 @@ public class TranslationMapImpl implements TranslationMap {
 
         public Builder put(Variable template, Variable actual) {
             variables.put(template, actual);
+            return this;
+        }
+
+        public Builder setYieldToReturn(boolean b) {
+            this.yieldIntoReturn = b;
             return this;
         }
 

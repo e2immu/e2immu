@@ -21,6 +21,7 @@ import org.e2immu.analyser.output.Text;
 import org.e2immu.analyser.parser.InspectionProvider;
 
 import java.util.List;
+import java.util.Objects;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
@@ -31,17 +32,39 @@ public class ExplicitConstructorInvocation extends StatementWithStructure {
     public final MethodInfo methodInfo;
 
     public ExplicitConstructorInvocation(Identifier identifier,
-                                         boolean isSuper, MethodInfo methodInfo, List<Expression> parameterExpressions) {
+                                         boolean isSuper,
+                                         MethodInfo methodInfo,
+                                         List<Expression> parameterExpressions) {
         super(identifier, new Structure.Builder().setUpdaters(parameterExpressions).build());
         this.isSuper = isSuper;
         this.methodInfo = methodInfo;
     }
 
     @Override
-    public Statement translate(InspectionProvider inspectionProvider, TranslationMap translationMap) {
-        return new ExplicitConstructorInvocation(identifier, isSuper, methodInfo, structure.updaters().stream()
-                .map(translationMap::translateExpression)
-                .collect(Collectors.toList()));
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o instanceof ExplicitConstructorInvocation other) {
+            return identifier.equals(other.identifier)
+                    && isSuper == other.isSuper
+                    && methodInfo.equals(other.methodInfo)
+                    && structure.updaters().equals(other.structure.updaters());
+        }
+        return false;
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(identifier, isSuper, methodInfo, structure.updaters());
+    }
+
+    @Override
+    public List<Statement> translate(InspectionProvider inspectionProvider, TranslationMap translationMap) {
+        List<Statement> direct = translationMap.translateStatement(inspectionProvider, this);
+        if (haveDirectTranslation(direct, this)) return direct;
+
+        return List.of(new ExplicitConstructorInvocation(identifier, isSuper, methodInfo, structure.updaters().stream()
+                .map(updater -> updater.translate(inspectionProvider, translationMap))
+                .collect(Collectors.toList())));
     }
 
     @Override

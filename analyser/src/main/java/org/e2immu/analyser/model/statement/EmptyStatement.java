@@ -14,19 +14,39 @@
 
 package org.e2immu.analyser.model.statement;
 
-import org.e2immu.analyser.model.Element;
-import org.e2immu.analyser.model.Identifier;
-import org.e2immu.analyser.model.LimitedStatementAnalysis;
-import org.e2immu.analyser.model.Qualification;
+import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.Symbol;
+import org.e2immu.analyser.parser.InspectionProvider;
 
+import java.util.List;
 import java.util.function.Predicate;
 
 public class EmptyStatement extends StatementWithStructure {
 
     public EmptyStatement(Identifier identifier) {
         super(identifier);
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (obj == this) return true;
+        if (obj instanceof EmptyStatement other) {
+            return identifier.equals(other.identifier);
+        }
+        return false;
+    }
+
+    @Override
+    public int hashCode() {
+        return identifier.hashCode();
+    }
+
+    @Override
+    public List<Statement> translate(InspectionProvider inspectionProvider, TranslationMap translationMap) {
+        List<Statement> direct = translationMap.translateStatement(inspectionProvider, this);
+        if (haveDirectTranslation(direct, this)) return direct;
+        return List.of(this);
     }
 
     @Override

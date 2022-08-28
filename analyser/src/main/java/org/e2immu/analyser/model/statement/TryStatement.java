@@ -32,6 +32,7 @@ import org.e2immu.analyser.util.Pair;
 import org.e2immu.analyser.util.UpgradableBooleanMap;
 
 import java.util.List;
+import java.util.Objects;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
@@ -97,14 +98,42 @@ public class TryStatement extends StatementWithStructure {
         return builder.build();
     }
 
+
     @Override
-    public Statement translate(InspectionProvider inspectionProvider, TranslationMap translationMap) {
-        return new TryStatement(identifier, resources.stream().map(translationMap::translateExpression).collect(Collectors.toList()),
-                translationMap.translateBlock(inspectionProvider, structure.block()),
-                catchClauses.stream().map(p -> new Pair<>(
-                        TranslationMapImpl.ensureExpressionType(p.k.translate(inspectionProvider, translationMap), CatchParameter.class),
-                        translationMap.translateBlock(inspectionProvider, p.v))).collect(Collectors.toList()),
-                translationMap.translateBlock(inspectionProvider, finallyBlock));
+    public boolean equals(Object obj) {
+        if (obj == this) return true;
+        if (obj instanceof TryStatement other) {
+            return identifier.equals(other.identifier)
+                    && resources.equals(other.resources)
+                    && subElements.equals(other.subElements);
+        }
+        return false;
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(identifier, resources, subElements);
+    }
+
+    @Override
+    public List<Statement> translate(InspectionProvider inspectionProvider, TranslationMap translationMap) {
+        List<Statement> direct = translationMap.translateStatement(inspectionProvider, this);
+        if (haveDirectTranslation(direct, this)) return direct;
+
+        List<Statement> translatedBlock = structure.block().translate(inspectionProvider, translationMap);
+        List<Expression> resources = this.resources.stream()
+                .map(r -> r.translate(inspectionProvider, translationMap))
+                .collect(Collectors.toList());
+        List<Statement> translatedFinally = finallyBlock.translate(inspectionProvider, translationMap);
+
+        return List.of(new TryStatement(identifier, resources,
+                ensureBlock(structure.block().identifier, translatedBlock),
+                catchClauses.stream()
+                        .map(p -> new Pair<>(
+                                TranslationMapImpl.ensureExpressionType(p.k.translate(inspectionProvider, translationMap), CatchParameter.class),
+                                ensureBlock(p.v.identifier, p.v.translate(inspectionProvider, translationMap))))
+                        .collect(Collectors.toList()),
+                ensureBlock(finallyBlock.identifier, translatedFinally)));
     }
 
     public static class CatchParameter extends BaseExpression implements Expression {

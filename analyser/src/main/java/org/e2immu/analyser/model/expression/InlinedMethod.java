@@ -268,6 +268,10 @@ public class InlinedMethod extends BaseExpression implements Expression {
                 builder.put(variableExpression, replacement);
             } // possibly a field need not replacing
         }
+        if(expression.returnType().isTypeParameter()) {
+            builder.put(expression.returnType(),scope.returnType());
+        }
+
         return builder.build();
     }
 
@@ -282,7 +286,7 @@ public class InlinedMethod extends BaseExpression implements Expression {
         if (variable instanceof ParameterInfo parameterInfo) {
             if (parameterInfo.getMethod() == methodInfo) {
                 Expression parameterReplacement = parameterReplacement(parameters, inspectionProvider, parameterInfo);
-                if(parameterReplacement.isInstanceOf(InlinedMethod.class)) {
+                if (parameterReplacement.isInstanceOf(InlinedMethod.class)) {
                     // see e.g., Lookahead.lookAhead, blocking "writer" from being expanded
                     return expandedVariable(evaluationResult, parameterInfo.identifier, DV.TRUE_DV, variable);
                 }

@@ -24,6 +24,7 @@ import org.e2immu.analyser.output.Text;
 import org.e2immu.analyser.parser.InspectionProvider;
 
 import java.util.List;
+import java.util.Objects;
 import java.util.function.Predicate;
 
 public class YieldStatement extends StatementWithExpression {
@@ -32,6 +33,20 @@ public class YieldStatement extends StatementWithExpression {
         super(identifier, new Structure.Builder()
                 .setExpression(expression)
                 .setForwardEvaluationInfo(ForwardEvaluationInfo.DEFAULT).build(), expression);
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (obj == this) return true;
+        if (obj instanceof YieldStatement other) {
+            return identifier.equals(other.identifier) && expression.equals(other.expression);
+        }
+        return false;
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(identifier, expression);
     }
 
     @Override
@@ -45,8 +60,17 @@ public class YieldStatement extends StatementWithExpression {
     }
 
     @Override
-    public Statement translate(InspectionProvider inspectionProvider, TranslationMap translationMap) {
-        return new YieldStatement(identifier, translationMap.translateExpression(expression));
+    public List<Statement> translate(InspectionProvider inspectionProvider, TranslationMap translationMap) {
+        List<Statement> direct = translationMap.translateStatement(inspectionProvider, this);
+        if (haveDirectTranslation(direct, this)) return direct;
+
+        Expression tex = expression.translate(inspectionProvider, translationMap);
+
+        if (translationMap.translateYieldIntoReturn()) {
+            return List.of(new ReturnStatement(identifier, tex));
+        }
+        if (tex == expression) return List.of(this);
+        return List.of(new YieldStatement(identifier, tex));
     }
 
     @Override

@@ -25,7 +25,6 @@ import org.e2immu.analyser.util.ListUtil;
 
 import java.util.List;
 import java.util.function.Predicate;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public class SwitchStatementNewStyle extends StatementWithExpression implements HasSwitchLabels {
@@ -51,10 +50,15 @@ public class SwitchStatementNewStyle extends StatementWithExpression implements 
     }
 
     @Override
-    public Statement translate(InspectionProvider inspectionProvider, TranslationMap translationMap) {
-        return new SwitchStatementNewStyle(identifier, translationMap.translateExpression(expression),
-                switchEntries.stream().map(se -> (SwitchEntry) se.translate(inspectionProvider, translationMap))
-                        .collect(Collectors.toList()));
+    public List<Statement> translate(InspectionProvider inspectionProvider, TranslationMap translationMap) {
+        List<Statement> direct = translationMap.translateStatement(inspectionProvider, this);
+        if (haveDirectTranslation(direct, this)) return direct;
+
+        Expression translatedVariable = expression.translate(inspectionProvider, translationMap);
+        List<SwitchEntry> translatedEntries = switchEntries.stream()
+                .map(l -> (SwitchEntry) l.translate(inspectionProvider, translationMap).get(0)).toList();
+
+        return List.of(new SwitchStatementNewStyle(identifier, translatedVariable, translatedEntries));
     }
 
     @Override

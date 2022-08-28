@@ -73,7 +73,6 @@ public interface Expression extends Element, Comparable<Expression> {
     }
 
     @NotNull
-    @Override
     default Expression translate(InspectionProvider inspectionProvider, TranslationMap translationMap) {
         throw new UnsupportedOperationException("all expressions need to have this implemented! " + getClass());
     }

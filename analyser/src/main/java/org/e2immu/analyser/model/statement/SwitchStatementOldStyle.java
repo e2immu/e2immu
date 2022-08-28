@@ -77,11 +77,17 @@ public class SwitchStatementOldStyle extends StatementWithExpression implements 
     }
 
     @Override
-    public Statement translate(InspectionProvider inspectionProvider, TranslationMap translationMap) {
-        return new SwitchStatementOldStyle(identifier, translationMap.translateExpression(expression),
-                (Block) structure.block().translate(inspectionProvider, translationMap),
-                switchLabels.stream().map(sl -> sl.translate(inspectionProvider, translationMap))
-                        .collect(Collectors.toList()));
+    public List<Statement> translate(InspectionProvider inspectionProvider, TranslationMap translationMap) {
+        List<Statement> direct = translationMap.translateStatement(inspectionProvider, this);
+        if (haveDirectTranslation(direct, this)) return direct;
+
+        Expression translatedExpression = expression.translate(inspectionProvider, translationMap);
+        List<SwitchLabel> translatedLabels = switchLabels.stream()
+                .map(l -> l.translate(inspectionProvider, translationMap))
+                .collect(Collectors.toList());
+        return List.of(new SwitchStatementOldStyle(identifier, translatedExpression,
+                ensureBlock(structure.block().identifier, structure.block().translate(inspectionProvider, translationMap)),
+                translatedLabels));
     }
 
     @Override

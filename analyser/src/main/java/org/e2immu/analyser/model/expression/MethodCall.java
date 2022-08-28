@@ -57,13 +57,6 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
     public final Expression object;
     public final List<Expression> parameterExpressions;
 
-    public MethodCall(Expression object,
-                      MethodInfo methodInfo,
-                      List<Expression> parameterExpressions) {
-        this(Identifier.joined("methodCall", Stream.concat(Stream.of(object.getIdentifier()), parameterExpressions.stream().map(Expression::getIdentifier)).toList()),
-                false, object, methodInfo, methodInfo.returnType(), parameterExpressions);
-    }
-
     public MethodCall(Identifier identifier,
                       Expression object,
                       MethodInfo methodInfo,
@@ -1140,28 +1133,32 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         DV formal = methodAnalysis.getProperty(property);
         if (property.propertyType == Property.PropertyType.VALUE) {
 
-            DV adjusted;
-            // dynamic value? if the method has a type parameter as part of the result, we could be returning different values
+            boolean internalCycle = methodInfo.methodResolution.get().ignoreMeBecauseOfPartOfCallCycle();
+
             if (Property.IMMUTABLE == property) {
-                adjusted = dynamicImmutable(formal, methodAnalysis, context).max(formal);
-            } else if (Property.INDEPENDENT == property) {
+                DV dynamic = dynamicImmutable(formal, methodAnalysis, context);
+                return internalCycle ? dynamic.maxIgnoreDelay(property.falseDv) : dynamic;
+            }
+
+            if (Property.INDEPENDENT == property) {
                 DV immutable = getProperty(context, Property.IMMUTABLE, duringEvaluation);
                 if (immutable.isDelayed()) return immutable;
                 int immutableLevel = MultiLevel.level(immutable);
+                DV independent;
                 if (immutableLevel >= MultiLevel.Level.IMMUTABLE_HC.level) {
-                    adjusted = MultiLevel.independentCorrespondingToImmutableLevelDv(immutableLevel);
+                    independent = MultiLevel.independentCorrespondingToImmutableLevelDv(immutableLevel);
                 } else {
-                    adjusted = formal;
+                    independent = formal;
                 }
-            } else {
-                adjusted = formal;
+                return internalCycle ? independent.maxIgnoreDelay(property.falseDv) : independent;
             }
+
             // formal can be a @NotNull contracted annotation on the method; we cannot dismiss it
             // problem is that it may have to be computed, which introduces an unresolved delay in the case of cyclic calls.
             DV fromConcrete = context.getAnalyserContext().defaultValueProperty(property, concreteReturnType);
-            boolean internalCycle = methodInfo.methodResolution.get().ignoreMeBecauseOfPartOfCallCycle();
-            if (internalCycle) return fromConcrete.maxIgnoreDelay(adjusted).max(property.falseDv);
-            return fromConcrete.max(adjusted);
+
+            if (internalCycle) return fromConcrete.maxIgnoreDelay(formal).max(property.falseDv);
+            return fromConcrete.max(formal);
         }
         return formal;
     }
@@ -1173,40 +1170,18 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
             return context.evaluationContext().getProperty(parameterExpressions.get(0), Property.IMMUTABLE,
                     true, true);
         }
+        AnalyserContext analyserContext = context.getAnalyserContext();
+        MethodInspection methodInspection = analyserContext.getMethodInspection(methodInfo);
+        TypeAnalysis typeAnalysis = analyserContext.getTypeAnalysis(context.getCurrentType());
 
-        if (MultiLevel.isAtLeastEventuallyImmutableHC(formal)) {
-            assert formal.isDone();
-            // the independence of the result, and the immutable level of the hidden content, will determine the result
-            DV methodIndependent = methodAnalysis.getProperty(Property.INDEPENDENT);
-            if (methodIndependent.isDelayed()) return methodIndependent;
-
-            assert MultiLevel.independentConsistentWithImmutable(methodIndependent, formal) :
-                    "formal independent value inconsistent with formal immutable value for method "
-                            + methodInfo.fullyQualifiedName + ": independent " + methodIndependent + ", immutable " + formal;
-
-            // we know the method is formally @Independent1+ < @Independent;
-            // looking at the immutable level of linked1 variables looks "through" the recursion that this method provides
-            // in the case of factory methods or indeed identity
-            // see E2Immutable_11
-            AnalyserContext analyserContext = context.getAnalyserContext();
-            TypeAnalysis typeAnalysis = analyserContext.getTypeAnalysis(context.getCurrentType());
-            MethodInspection methodInspection = analyserContext.getMethodInspection(methodInfo);
-
-            if (methodInspection.isFactoryMethod()) {
-                if (typeAnalysis.hiddenContentAndExplicitTypeComputationDelays().isDelayed()) {
-                    return typeAnalysis.hiddenContentAndExplicitTypeComputationDelays();
-                }
-                SetOfTypes hiddenContentTypes = typeAnalysis.getHiddenContentTypes();
-                return factoryMethodDynamicallyImmutable(formal, hiddenContentTypes, context);
+        if (methodInspection.isFactoryMethod()) {
+            if (typeAnalysis.hiddenContentAndExplicitTypeComputationDelays().isDelayed()) {
+                return typeAnalysis.hiddenContentAndExplicitTypeComputationDelays();
             }
-
-            /*
-            Formal can be E2Immutable for Map.Entry<K, V>, because the removal method has gone.
-            It can still upgrade to ERImmutable when the K and V become ER themselves
-             */
-            return analyserContext.typeImmutable(returnType(), formal);
+            SetOfTypes hiddenContentTypes = typeAnalysis.getHiddenContentTypes();
+            return factoryMethodDynamicallyImmutable(formal, hiddenContentTypes, context);
         }
-        return formal;
+        return analyserContext.typeImmutable(returnType());
     }
 
     private DV factoryMethodDynamicallyImmutable(DV formal,

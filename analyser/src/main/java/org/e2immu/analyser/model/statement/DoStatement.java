@@ -21,6 +21,9 @@ import org.e2immu.analyser.output.Symbol;
 import org.e2immu.analyser.output.Text;
 import org.e2immu.analyser.parser.InspectionProvider;
 
+import java.util.List;
+import java.util.Objects;
+
 public class DoStatement extends LoopStatement {
 
     public DoStatement(Identifier identifier,
@@ -36,16 +39,36 @@ public class DoStatement extends LoopStatement {
     }
 
     @Override
+    public boolean equals(Object obj) {
+        if (obj == this) return true;
+        if (obj instanceof DoStatement other) {
+            return identifier.equals(other.identifier)
+                    && expression.equals(other.expression)
+                    && structure.block().equals(other.structure.block())
+                    && Objects.equals(label, other.label);
+        }
+        return false;
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(identifier, expression, structure.block(), label);
+    }
+
+    @Override
     public boolean hasExitCondition() {
         return true;
     }
 
     @Override
-    public Statement translate(InspectionProvider inspectionProvider, TranslationMap translationMap) {
+    public List<Statement> translate(InspectionProvider inspectionProvider, TranslationMap translationMap) {
+        List<Statement> direct = translationMap.translateStatement(inspectionProvider, this);
+        if (haveDirectTranslation(direct, this)) return direct;
+
         Expression tex = expression.translate(inspectionProvider, translationMap);
-        Block block = translationMap.translateBlock(inspectionProvider, structure.block());
-        if (tex == expression && block == structure.block()) return this;
-        return new DoStatement(identifier, label, tex, block);
+        List<Statement> translatedBlock = structure.block().translate(inspectionProvider, translationMap);
+        if (tex == expression && !haveDirectTranslation(translatedBlock, structure.block())) return List.of(this);
+        return List.of(new DoStatement(identifier, label, tex, ensureBlock(structure.block().identifier, translatedBlock)));
     }
 
 

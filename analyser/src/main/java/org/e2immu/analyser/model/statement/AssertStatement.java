@@ -22,6 +22,7 @@ import org.e2immu.analyser.output.Text;
 import org.e2immu.analyser.parser.InspectionProvider;
 
 import java.util.List;
+import java.util.Objects;
 import java.util.function.Predicate;
 
 public class AssertStatement extends StatementWithStructure {
@@ -38,11 +39,30 @@ public class AssertStatement extends StatementWithStructure {
         this.message = message;
     }
 
+
     @Override
-    public Statement translate(InspectionProvider inspectionProvider, TranslationMap translationMap) {
+    public boolean equals(Object obj) {
+        if (obj == this) return true;
+        if (obj instanceof AssertStatement other) {
+            return identifier.equals(other.identifier) && structure.expression().equals(other.structure.expression())
+                    && message.equals(other.message);
+        }
+        return false;
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(identifier, structure.expression(), message);
+    }
+
+    @Override
+    public List<Statement> translate(InspectionProvider inspectionProvider, TranslationMap translationMap) {
+        List<Statement> direct = translationMap.translateStatement(inspectionProvider, this);
+        if (haveDirectTranslation(direct, this)) return direct;
         Expression tex = structure.expression().translate(inspectionProvider, translationMap);
-        if (tex == structure.expression()) return this;
-        return new AssertStatement(identifier, tex, message);
+        Expression msg = message == null ? null : message.translate(inspectionProvider, translationMap);
+        if (tex == structure.expression() && msg == message) return List.of(this);
+        return List.of(new AssertStatement(identifier, tex, msg));
     }
 
     @Override

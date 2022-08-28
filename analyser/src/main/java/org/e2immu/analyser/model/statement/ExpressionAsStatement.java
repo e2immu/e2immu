@@ -23,6 +23,7 @@ import org.e2immu.analyser.output.Symbol;
 import org.e2immu.analyser.parser.InspectionProvider;
 
 import java.util.List;
+import java.util.Objects;
 import java.util.function.Predicate;
 
 public class ExpressionAsStatement extends StatementWithExpression {
@@ -36,6 +37,21 @@ public class ExpressionAsStatement extends StatementWithExpression {
     public ExpressionAsStatement(Identifier identifier, Expression expression, boolean synthetic) {
         super(identifier, createCodeOrganization(expression), expression);
         this.synthetic = synthetic;
+    }
+
+
+    @Override
+    public boolean equals(Object obj) {
+        if (obj == this) return true;
+        if (obj instanceof ExpressionAsStatement other) {
+            return identifier.equals(other.identifier) && expression.equals(other.expression);
+        }
+        return false;
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(identifier, expression);
     }
 
     @Override
@@ -58,12 +74,13 @@ public class ExpressionAsStatement extends StatementWithExpression {
     }
 
     @Override
-    public Statement translate(InspectionProvider inspectionProvider, TranslationMap translationMap) {
-        Expression tex = translationMap.translateExpression(expression);
-        if (tex != expression) return new ExpressionAsStatement(identifier, tex);
+    public List<Statement> translate(InspectionProvider inspectionProvider, TranslationMap translationMap) {
+        List<Statement> direct = translationMap.translateStatement(inspectionProvider, this);
+        if (haveDirectTranslation(direct, this)) return direct;
+
         Expression translated = expression.translate(inspectionProvider, translationMap);
-        if (translated != expression) return new ExpressionAsStatement(identifier, translated);
-        return this;
+        if (translated != expression) return List.of(new ExpressionAsStatement(identifier, translated));
+        return List.of(this);
     }
 
     @Override

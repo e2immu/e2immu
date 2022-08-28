@@ -14,16 +14,15 @@
 
 package org.e2immu.analyser.model.statement;
 
-import org.e2immu.analyser.model.Element;
-import org.e2immu.analyser.model.Identifier;
-import org.e2immu.analyser.model.LimitedStatementAnalysis;
-import org.e2immu.analyser.model.Qualification;
+import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.Space;
 import org.e2immu.analyser.output.Symbol;
 import org.e2immu.analyser.output.Text;
+import org.e2immu.analyser.parser.InspectionProvider;
 
-import java.util.function.Predicate;
+import java.util.List;
+import java.util.Objects;
 
 public class BreakStatement extends BreakOrContinueStatement {
 
@@ -39,5 +38,26 @@ public class BreakStatement extends BreakOrContinueStatement {
         }
         outputBuilder.add(Symbol.SEMICOLON).addIfNotNull(messageComment(statementAnalysis));
         return outputBuilder;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (obj == this) return true;
+        if (obj instanceof BreakStatement other) {
+            return identifier.equals(other.identifier) && Objects.equals(label, other.label);
+        }
+        return false;
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(identifier, label);
+    }
+
+    @Override
+    public List<Statement> translate(InspectionProvider inspectionProvider, TranslationMap translationMap) {
+        List<Statement> direct = translationMap.translateStatement(inspectionProvider, this);
+        if (haveDirectTranslation(direct, this)) return direct;
+        return List.of(this);
     }
 }

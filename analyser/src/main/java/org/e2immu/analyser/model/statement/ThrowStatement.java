@@ -23,6 +23,7 @@ import org.e2immu.analyser.output.Text;
 import org.e2immu.analyser.parser.InspectionProvider;
 
 import java.util.List;
+import java.util.Objects;
 import java.util.function.Predicate;
 
 public class ThrowStatement extends StatementWithExpression {
@@ -30,6 +31,20 @@ public class ThrowStatement extends StatementWithExpression {
     public ThrowStatement(Identifier identifier, Expression expression) {
         super(identifier, new Structure.Builder().setExpression(expression)
                 .setForwardEvaluationInfo(ForwardEvaluationInfo.NOT_NULL).build(), expression);
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (obj == this) return true;
+        if (obj instanceof ThrowStatement other) {
+            return identifier.equals(other.identifier) && expression.equals(other.expression);
+        }
+        return false;
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(identifier, expression);
     }
 
     @Override
@@ -45,8 +60,13 @@ public class ThrowStatement extends StatementWithExpression {
     }
 
     @Override
-    public Statement translate(InspectionProvider inspectionProvider, TranslationMap translationMap) {
-        return new ThrowStatement(identifier, translationMap.translateExpression(expression));
+    public List<Statement> translate(InspectionProvider inspectionProvider, TranslationMap translationMap) {
+        List<Statement> direct = translationMap.translateStatement(inspectionProvider, this);
+        if (haveDirectTranslation(direct, this)) return direct;
+
+        Expression tex = expression.translate(inspectionProvider, translationMap);
+        if (tex == expression) return List.of(this);
+        return List.of(new ThrowStatement(identifier, translationMap.translateExpression(expression)));
     }
 
     @Override

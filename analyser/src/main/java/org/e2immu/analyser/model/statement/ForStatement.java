@@ -24,6 +24,7 @@ import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.util.ListUtil;
 
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -53,6 +54,21 @@ public class ForStatement extends LoopStatement {
                 .setBlock(block).build(), label);
     }
 
+
+    @Override
+    public boolean equals(Object obj) {
+        if (obj == this) return true;
+        if (obj instanceof IfElseStatement other) {
+            return identifier.equals(other.identifier) && subElements().equals(other.subElements());
+        }
+        return false;
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(identifier, subElements());
+    }
+
     // for(int i=0; i<x; i++) has no exit condition: 'i' in 'i<x' is a locally created variable
     // int i; for(i=0; i<x; i++) has one... the variable 'i' in 'i<x' persists after the loop
     @Override
@@ -67,12 +83,20 @@ public class ForStatement extends LoopStatement {
     }
 
     @Override
-    public Statement translate(InspectionProvider inspectionProvider, TranslationMap translationMap) {
-        return new ForStatement(identifier, label,
-                structure.initialisers().stream().map(translationMap::translateExpression).collect(Collectors.toList()),
-                translationMap.translateExpression(expression),
-                structure.updaters().stream().map(translationMap::translateExpression).collect(Collectors.toList()),
-                translationMap.translateBlock(inspectionProvider, structure.block()));
+    public List<Statement> translate(InspectionProvider inspectionProvider, TranslationMap translationMap) {
+        List<Statement> direct = translationMap.translateStatement(inspectionProvider, this);
+        if (haveDirectTranslation(direct, this)) return direct;
+
+        Expression tex = expression.translate(inspectionProvider, translationMap);
+        List<Statement> translatedBlock = structure.block().translate(inspectionProvider, translationMap);
+        List<Expression> updaters = structure.updaters().stream()
+                .map(updater -> updater.translate(inspectionProvider, translationMap)).
+                collect(Collectors.toList());
+        List<Expression> initializers = structure.initialisers().stream()
+                .map(init -> init.translate(inspectionProvider, translationMap))
+                .collect(Collectors.toList());
+        return List.of(new ForStatement(identifier, label, initializers, tex, updaters,
+                ensureBlock(structure.block().identifier, translatedBlock)));
     }
 
     @Override

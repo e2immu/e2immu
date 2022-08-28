@@ -61,4 +61,6 @@ public interface TranslationMap {
 
     // because equality of delayed variables is based on ==
     Expression translateVariableExpressionNullIfNotTranslated(Variable variable);
+
+    boolean translateYieldIntoReturn();
 }

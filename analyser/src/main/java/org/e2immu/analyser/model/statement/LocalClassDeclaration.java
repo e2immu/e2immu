@@ -43,8 +43,8 @@ public class LocalClassDeclaration extends StatementWithStructure {
     }
 
     @Override
-    public Statement translate(InspectionProvider inspectionProvider, TranslationMap translationMap) {
-        return this; // TODO we will need something more complicated here.
+    public List<Statement> translate(InspectionProvider inspectionProvider, TranslationMap translationMap) {
+        return List.of(this); // TODO we will need something more complicated here.
     }
 
     @Override

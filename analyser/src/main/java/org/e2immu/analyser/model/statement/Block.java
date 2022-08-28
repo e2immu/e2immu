@@ -25,10 +25,7 @@ import org.e2immu.annotation.Fluent;
 import org.e2immu.annotation.NotModified;
 import org.e2immu.annotation.NotNull;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
@@ -47,6 +44,20 @@ public class Block extends StatementWithStructure {
                 .setStatementExecution(StatementExecution.ALWAYS)
                 .setStatements(statements).build();
         this.label = label;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o instanceof Block other) {
+            return Objects.equals(label, other.label) && structure.equals(other.structure);
+        }
+        return false;
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(label, structure);
     }
 
     @Container(builds = Block.class)
@@ -81,6 +92,12 @@ public class Block extends StatementWithStructure {
 
         public int size() {
             return statements.size();
+        }
+
+        @Fluent
+        public BlockBuilder addStatements(Collection<Statement> statements) {
+            this.statements.addAll(statements);
+            return this;
         }
     }
 
@@ -242,13 +259,21 @@ public class Block extends StatementWithStructure {
         }
     }
 
+    /*
+    IMPORTANT: blocks must translate into blocks
+     */
     @Override
-    public Statement translate(InspectionProvider inspectionProvider, TranslationMap translationMap) {
-        if (isEmpty()) return this;
-        return new Block(identifier, structure.statements().stream()
-                .flatMap(st -> Objects.requireNonNull(translationMap.translateStatement(inspectionProvider, st),
+    public List<Statement> translate(InspectionProvider inspectionProvider, TranslationMap translationMap) {
+        List<Statement> direct = translationMap.translateStatement(inspectionProvider, this);
+        if (haveDirectTranslation(direct, this)) {
+            assert direct.size() == 1 && direct.get(0) instanceof Block;
+            return direct;
+        }
+
+        return List.of(new Block(identifier, structure.statements().stream()
+                .flatMap(st -> Objects.requireNonNull(st.translate(inspectionProvider, translationMap),
                         "Translation of statement of " + st.getClass() + " returns null: " + st).stream())
-                .collect(Collectors.toList()), label);
+                .collect(Collectors.toList()), label));
     }
 
     public boolean isEmpty() {

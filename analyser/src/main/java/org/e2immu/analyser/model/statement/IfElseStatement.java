@@ -26,6 +26,7 @@ import org.e2immu.analyser.output.Text;
 import org.e2immu.analyser.parser.InspectionProvider;
 
 import java.util.List;
+import java.util.Objects;
 import java.util.function.Predicate;
 
 public class IfElseStatement extends StatementWithExpression {
@@ -38,6 +39,24 @@ public class IfElseStatement extends StatementWithExpression {
                            Block elseBlock) {
         super(identifier, createCodeOrganization(expression, ifBlock, elseBlock), expression);
         this.elseBlock = elseBlock;
+    }
+
+
+    @Override
+    public boolean equals(Object obj) {
+        if (obj == this) return true;
+        if (obj instanceof IfElseStatement other) {
+            return identifier.equals(other.identifier)
+                    && expression.equals(other.expression)
+                    && structure.block().equals(other.structure.block())
+                    && elseBlock.equals(other.elseBlock);
+        }
+        return false;
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(identifier, expression, structure.block(), elseBlock);
     }
 
     // note that we add the expression only once
@@ -65,11 +84,16 @@ public class IfElseStatement extends StatementWithExpression {
     }
 
     @Override
-    public Statement translate(InspectionProvider inspectionProvider, TranslationMap translationMap) {
-        return new IfElseStatement(identifier,
-                translationMap.translateExpression(expression),
-                translationMap.translateBlock(inspectionProvider, structure.block()),
-                translationMap.translateBlock(inspectionProvider, elseBlock));
+    public List<Statement> translate(InspectionProvider inspectionProvider, TranslationMap translationMap) {
+        List<Statement> direct = translationMap.translateStatement(inspectionProvider, this);
+        if (haveDirectTranslation(direct, this)) return direct;
+
+        List<Statement> translatedIf = structure.block().translate(inspectionProvider, translationMap);
+        List<Statement> translatedElse = elseBlock.translate(inspectionProvider, translationMap);
+        return List.of(new IfElseStatement(identifier,
+                expression.translate(inspectionProvider, translationMap),
+                ensureBlock(structure.block().getIdentifier(), translatedIf),
+                ensureBlock(elseBlock.identifier, translatedElse)));
     }
 
     @Override

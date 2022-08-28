@@ -66,13 +66,6 @@ public interface Element {
         return List.copyOf(result);
     }
 
-    // translate
-
-    @NotNull
-    default Element translate(InspectionProvider inspectionProvider, TranslationMap translationMap) {
-        return this;
-    }
-
     // types referenced (used for imports, uploading annotations, dependency tree between types)
     // the boolean distinguishes between an explicit mention (used for import) and an implicit one.
     @NotNull

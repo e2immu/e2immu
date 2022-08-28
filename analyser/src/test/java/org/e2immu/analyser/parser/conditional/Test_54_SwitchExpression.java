@@ -20,12 +20,15 @@ import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.ParameterInfo;
 import org.e2immu.analyser.model.Statement;
 import org.e2immu.analyser.model.expression.Lambda;
+import org.e2immu.analyser.model.expression.MethodCall;
 import org.e2immu.analyser.model.statement.IfElseStatement;
 import org.e2immu.analyser.model.statement.ReturnStatement;
 import org.e2immu.analyser.model.statement.ThrowStatement;
 import org.e2immu.analyser.parser.CommonTestRunner;
+import org.e2immu.analyser.visitor.MethodAnalyserVisitor;
 import org.e2immu.analyser.visitor.StatementAnalyserVariableVisitor;
 import org.e2immu.analyser.visitor.StatementAnalyserVisitor;
+import org.e2immu.analyser.visitor.TypeAnalyserVisitor;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
@@ -95,13 +98,28 @@ public class Test_54_SwitchExpression extends CommonTestRunner {
             if ("method".equals(d.methodInfo().name)) {
                 assertEquals("0", d.statementId());
                 assertTrue(d.statementAnalysis().statement() instanceof ReturnStatement rs
-                        && rs.expression instanceof Lambda lambda
+                        && rs.expression instanceof MethodCall mc
+                        && mc.object instanceof Lambda lambda
                         && "$1".equals(lambda.definesType().simpleName));
+            }
+        };
+        MethodAnalyserVisitor methodAnalyserVisitor = d -> {
+            if ("apply".equals(d.methodInfo().name) && "$1".equals(d.methodInfo().typeInfo.simpleName)) {
+
+                assertDv(d.p(0), 1, MultiLevel.EFFECTIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
+                assertDv(d.p(0), 1, MultiLevel.INDEPENDENT_DV, Property.INDEPENDENT);
+            }
+        };
+        TypeAnalyserVisitor typeAnalyserVisitor = d -> {
+            if ("Choice".equals(d.typeInfo().simpleName)) {
+                assertDv(d, MultiLevel.EFFECTIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
             }
         };
         testClass("SwitchExpression_4", 0, 1, new DebugConfiguration.Builder()
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
+                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .build());
     }
 }

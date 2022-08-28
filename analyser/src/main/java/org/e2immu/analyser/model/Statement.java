@@ -14,6 +14,7 @@
 
 package org.e2immu.analyser.model;
 
+import org.e2immu.analyser.model.statement.Block;
 import org.e2immu.analyser.model.statement.Structure;
 import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.Symbol;
@@ -21,13 +22,24 @@ import org.e2immu.analyser.output.Text;
 import org.e2immu.analyser.parser.Bundle;
 import org.e2immu.analyser.parser.InspectionProvider;
 
+import java.util.List;
+
 public interface Statement extends Element {
 
     Structure getStructure();
 
-    @Override
-    default Statement translate(InspectionProvider inspectionProvider, TranslationMap translationMap) {
-        return this;
+    List<Statement> translate(InspectionProvider inspectionProvider, TranslationMap translationMap);
+
+    default boolean haveDirectTranslation(List<Statement> resultOfTranslation, Statement statement) {
+        return resultOfTranslation.size() != 1 || resultOfTranslation.get(0) != statement;
+    }
+
+    default Block ensureBlock(Identifier identifier, List<Statement> resultOfTranslation) {
+        if (resultOfTranslation.size() == 1 && resultOfTranslation.get(0) instanceof Block block) {
+            return block;
+        }
+        if (resultOfTranslation.isEmpty()) return Block.emptyBlock(identifier);
+        return new Block.BlockBuilder(identifier).addStatements(resultOfTranslation).build();
     }
 
     OutputBuilder output(Qualification qualification, LimitedStatementAnalysis statementAnalysis);

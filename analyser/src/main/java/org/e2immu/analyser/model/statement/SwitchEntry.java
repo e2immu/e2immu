@@ -132,13 +132,17 @@ public abstract class SwitchEntry extends StatementWithStructure {
         }
 
         @Override
-        public Statement translate(InspectionProvider inspectionProvider, TranslationMap translationMap) {
-            return new StatementsEntry(identifier, primitives,
-                    translationMap.translateExpression(switchVariableAsExpression),
-                    labels.stream().map(translationMap::translateExpression).collect(Collectors.toList()),
+        public List<Statement> translate(InspectionProvider inspectionProvider, TranslationMap translationMap) {
+            List<Statement> direct = translationMap.translateStatement(inspectionProvider, this);
+            if (haveDirectTranslation(direct, this)) return direct;
+
+            Expression tex = switchVariableAsExpression.translate(inspectionProvider, translationMap);
+            List<Expression> translatedLabels = labels.stream()
+                    .map(l -> l.translate(inspectionProvider, translationMap)).collect(Collectors.toList());
+            return List.of(new StatementsEntry(identifier, primitives, tex, translatedLabels,
                     structure.statements().stream()
-                            .flatMap(st -> translationMap.translateStatement(inspectionProvider, st)
-                                    .stream()).collect(Collectors.toList()));
+                            .flatMap(st -> st.translate(inspectionProvider, translationMap)
+                                    .stream()).collect(Collectors.toList())));
         }
 
         @Override
@@ -204,10 +208,16 @@ public abstract class SwitchEntry extends StatementWithStructure {
         }
 
         @Override
-        public Statement translate(InspectionProvider inspectionProvider, TranslationMap translationMap) {
-            return new BlockEntry(identifier, primitives, translationMap.translateExpression(switchVariableAsExpression),
-                    labels.stream().map(translationMap::translateExpression).collect(Collectors.toList()),
-                    translationMap.translateBlock(inspectionProvider, structure.block()));
+        public List<Statement> translate(InspectionProvider inspectionProvider, TranslationMap translationMap) {
+            List<Statement> direct = translationMap.translateStatement(inspectionProvider, this);
+            if (haveDirectTranslation(direct, this)) return direct;
+
+            Expression translatedVariable = switchVariableAsExpression.translate(inspectionProvider, translationMap);
+            List<Expression> translatedLabels = labels.stream().map(l -> l.translate(inspectionProvider, translationMap))
+                    .collect(Collectors.toList());
+            List<Statement> translatedBlock = structure.block().translate(inspectionProvider, translationMap);
+            return List.of(new BlockEntry(identifier, primitives, translatedVariable, translatedLabels,
+                    ensureBlock(structure.block().identifier, translatedBlock)));
         }
 
         @Override
