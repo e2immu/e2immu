@@ -334,5 +334,15 @@ public class MultiLevel {
         throw new UnsupportedOperationException();
     }
 
-
+    public static boolean independentCorrespondsToImmutable(DV independent, DV immutable) {
+        int immutableLevel = level(immutable);
+        if (DEPENDENT_DV.ge(independent)) {
+            return immutableLevel == MUTABLE.level;
+        }
+        if (INDEPENDENT_HC_DV.equals(independent)) {
+            return immutableLevel == IMMUTABLE_HC.level;
+        }
+        assert INDEPENDENT_DV.equals(independent);
+        return immutableLevel == IMMUTABLE.level;
+    }
 }

@@ -84,7 +84,7 @@ public class Test_11_MethodReferences extends CommonTestRunner {
                 DV immutable = d.evaluationResult().evaluationContext()
                         .getProperty(d.evaluationResult().value(), Property.IMMUTABLE, true, true);
                 if (d.iteration() > 0) {
-                    assertEquals(MultiLevel.EFFECTIVELY_IMMUTABLE_HC_DV, immutable);
+                    assertEquals(MultiLevel.MUTABLE_DV, immutable);
                 } else {
                     assertEquals("initial:this.map@Method_stream_0-C", immutable.toString());
                 }
@@ -97,9 +97,11 @@ public class Test_11_MethodReferences extends CommonTestRunner {
                 assertDv(d.p(0), 1, MultiLevel.INDEPENDENT_DV, Property.INDEPENDENT);
             }
             if ("stream".equals(d.methodInfo().name)) {
-                assertDv(d, 1, MultiLevel.EFFECTIVELY_IMMUTABLE_HC_DV, Property.IMMUTABLE);
+                assertDv(d, 1, MultiLevel.MUTABLE_DV, Property.IMMUTABLE);
+                assertDv(d, 1, MultiLevel.DEPENDENT_DV, Property.INDEPENDENT);
             }
         };
+
         testClass("MethodReferences_3", 0, 0, new DebugConfiguration.Builder()
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .addEvaluationResultVisitor(evaluationResultVisitor)

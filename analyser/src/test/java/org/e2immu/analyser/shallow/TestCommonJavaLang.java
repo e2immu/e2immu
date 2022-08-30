@@ -56,6 +56,7 @@ public class TestCommonJavaLang extends CommonAnnotatedAPI {
         TypeInfo object = typeContext.getFullyQualified(Object.class);
         TypeAnalysis objectAnalysis = object.typeAnalysis.get();
         testImmutableContainerType(objectAnalysis, true, false);
+        assertTrue(object.typeInspection.get().isExtensible());
     }
 
     @Test
@@ -63,6 +64,7 @@ public class TestCommonJavaLang extends CommonAnnotatedAPI {
         TypeInfo string = typeContext.getFullyQualified(String.class);
         TypeAnalysis typeAnalysis = string.typeAnalysis.get();
         testImmutableContainerType(typeAnalysis, false, false);
+        assertFalse(string.typeInspection.get().isExtensible());
     }
 
     @Test

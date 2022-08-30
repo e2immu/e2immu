@@ -14,29 +14,33 @@
 
 package org.e2immu.analyser.parser.start.testexample;
 
-
 import org.e2immu.annotation.ImmutableContainer;
 import org.e2immu.annotation.Independent;
 
-/*
-An anonymous subtype created in the constructor.
- */
 @ImmutableContainer
-public class SubTypes_10 {
+public interface E2Immutable_15_1 {
 
-    @ImmutableContainer // hc=true
+    @ImmutableContainer
     @Independent
-    interface External {
+    interface Suffix {
     }
 
-    private final External external;
+    Suffix NO_SUFFIX = new Suffix() {
+    };
 
-    public SubTypes_10() {
-        external = new External() {
-        };
+    default Suffix suffix() {
+        return NO_SUFFIX;
     }
 
-    public void go() {
-        System.out.println(external);
+    /*
+    situation 8
+     */
+    record VariableDefinedOutsideLoop(E2Immutable_15_1 previousVariableNature,
+                                      String statementIndex) implements E2Immutable_15_1 {
+        @Override
+        public Suffix suffix() {
+            return new Suffix() {
+            };
+        }
     }
 }

@@ -134,9 +134,25 @@ public record ComputeTypeImmutable(AnalyserContext analyserContext,
 
         MultiLevel.Effective effective = w.eventual ? MultiLevel.Effective.EVENTUAL : MultiLevel.Effective.EFFECTIVE;
         DV immutableWithoutSuperTypes = MultiLevel.composeImmutable(effective, w.minLevel);
-        DV finalValue = includeSuperTypes(w.fromParentOrEnclosing, immutableWithoutSuperTypes);
+        DV superTypesIncluded = includeSuperTypes(w.fromParentOrEnclosing, immutableWithoutSuperTypes);
+        DV finalValue = accountForExtensibility(superTypesIncluded);
         LOGGER.debug("Set {} of type {} to {}", w.ALT_IMMUTABLE, typeInfo.fullyQualifiedName, finalValue);
         return doneImmutable(w.ALT_IMMUTABLE, finalValue, w.ALT_DONE);
+    }
+
+    private DV accountForExtensibility(DV immutable) {
+        if (typeInspection.typeNature() == TypeNature.CLASS && !typeInspection.isExtensible()) {
+            int level = MultiLevel.level(immutable);
+            if (level == MultiLevel.Level.IMMUTABLE_HC.level) {
+                Set<ParameterizedType> superTypes = typeInfo.superTypes(analyserContext);
+                Set<ParameterizedType> hiddenContent = new HashSet<>(typeAnalysis.getHiddenContentTypes().types());
+                hiddenContent.removeAll(superTypes);
+                if (hiddenContent.isEmpty()) {
+                    return MultiLevel.composeImmutable(MultiLevel.effective(immutable), MultiLevel.Level.IMMUTABLE.level);
+                }
+            }
+        }
+        return immutable;
     }
 
     private DV includeSuperTypes(DV fromParentOrEnclosing, DV immutableWithoutSuperTypes) {
@@ -519,8 +535,9 @@ public record ComputeTypeImmutable(AnalyserContext analyserContext,
             }
             if (partialImmutable.isDone()) {
                 DV min = w.fromParentOrEnclosing.min(partialImmutable);
-                typeAnalysis.setProperty(Property.IMMUTABLE, min);
-                LOGGER.debug("We had already done the work without parent/enclosing, now its there: {}", min);
+                DV finalValue = accountForExtensibility(min);
+                typeAnalysis.setProperty(Property.IMMUTABLE, finalValue);
+                LOGGER.debug("We had already done the work without parent/enclosing, now its there: {}", finalValue);
                 return DONE;
             }
             w.ALT_IMMUTABLE = Property.IMMUTABLE;

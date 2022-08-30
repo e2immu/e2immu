@@ -924,12 +924,24 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
                 }
             }
         }
-        DV finalValue = parentOrEnclosing.maxValue
+        DV finalComputedValue = parentOrEnclosing.maxValue
                 .min(valueFromMethodReturnValue)
                 .min(valueFromFields)
                 .min(valueFromMethodParameters);
-        assert finalValue.isDone();
+        assert finalComputedValue.isDone();
 
+        DV immutable = typeAnalysis.getProperty(IMMUTABLE);
+        DV finalValue;
+        if (MultiLevel.INDEPENDENT_DV.gt(finalComputedValue)) {
+            if (immutable.isDelayed()) {
+                LOGGER.debug("Independence of type {} delayed, waiting for type immutable", typeInfo);
+                return delayIndependent(immutable.causesOfDelay());
+            }
+            finalValue = adjustToImmutable(immutable, finalComputedValue);
+        } else {
+            // no point even waiting
+            finalValue = finalComputedValue;
+        }
         DV potentiallyInconclusive;
         if (inconclusive) {
             potentiallyInconclusive = new Inconclusive(finalValue);
@@ -940,6 +952,17 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
         }
         typeAnalysis.setProperty(Property.INDEPENDENT, potentiallyInconclusive);
         return DONE;
+    }
+
+    /*
+    in the matrix, some combinations are not possible
+     */
+    private DV adjustToImmutable(DV immutable, DV independent) {
+        if (MultiLevel.isAtLeastEventuallyRecursivelyImmutable(immutable)) return MultiLevel.INDEPENDENT_DV;
+        if (MultiLevel.isAtLeastEventuallyImmutableHC(immutable) && MultiLevel.DEPENDENT_DV.equals(independent)) {
+            return MultiLevel.independentCorrespondingToImmutable(immutable);
+        }
+        return independent;
     }
 
     private AnalysisStatus delayIndependent(CausesOfDelay causesOfDelay) {

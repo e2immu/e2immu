@@ -77,6 +77,8 @@ public interface TypeInspection extends Inspection {
 
     boolean isFunctionalInterface();
 
+    boolean isExtensible();
+
     enum Methods {
 
         THIS_TYPE_ONLY(false, false, null),

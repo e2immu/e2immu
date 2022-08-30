@@ -408,8 +408,8 @@ public class TypeAnalysisImpl extends AnalysisImpl implements TypeAnalysis {
 
             DV immutable = getProperty(Property.IMMUTABLE);
             DV container = getProperty(Property.CONTAINER);
-            doImmutableContainer(e2ImmuAnnotationExpressions, immutable, container, false,
-                    false, null, false);
+            doImmutableContainer(e2ImmuAnnotationExpressions, immutable, container, true,
+                    true, null, false);
 
             // @Independent
             DV independent = getProperty(Property.INDEPENDENT);

@@ -161,6 +161,11 @@ public class TypeInspectionImpl extends InspectionImpl implements TypeInspection
         return permittedWhenSealed;
     }
 
+    @Override
+    public boolean isExtensible() {
+        return !modifiers.contains(TypeModifier.FINAL) && !modifiers.contains(TypeModifier.SEALED);
+    }
+
     @Container(builds = TypeInspectionImpl.class)
     public static class Builder extends AbstractInspectionBuilder<TypeInspection.Builder> implements TypeInspection.Builder {
         private TypeNature typeNature = TypeNature.CLASS;
@@ -199,6 +204,11 @@ public class TypeInspectionImpl extends InspectionImpl implements TypeInspection
         @Override
         public boolean isFunctionalInterface() {
             return functionalInterface;
+        }
+
+        @Override
+        public boolean isExtensible() {
+            return modifiers.contains(TypeModifier.FINAL);
         }
 
         @Override

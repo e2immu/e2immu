@@ -162,21 +162,20 @@ public interface AnalysisProvider {
     }
 
     /*
-    Why dynamic value? firstEntry() returns a Map.Entry, which formally is MUTABLE, but has E2IMMUTABLE assigned
-    Once a type is E2IMMUTABLE, we have to look at the immutability of the hidden content, to potentially upgrade
-    to a higher version. See e.g., E2Immutable_11,12
+    Why dynamic value? See MethodCall.dynamicImmutable().
+    If the dynamic value is IMMUTABLE_HC and the computed value is MUTABLE, we still need to go through the
+    immutableDeterminedByTypeParameters() code... therefore a simple remote 'max()' operation does not work.
      */
 
     default DV typeImmutable(ParameterizedType parameterizedType, DV dynamicValue) {
-        assert dynamicValue.isDone();
         if (parameterizedType.arrays > 0) {
             return MultiLevel.EFFECTIVELY_FINAL_FIELDS_DV;
         }
         if (parameterizedType == ParameterizedType.NULL_CONSTANT) {
-            return dynamicValue;
+            return MultiLevel.NOT_INVOLVED_DV;
         }
         if (parameterizedType.isUnboundTypeParameter()) {
-            return dynamicValue.max(MultiLevel.EFFECTIVELY_IMMUTABLE_HC_DV);
+            return MultiLevel.EFFECTIVELY_IMMUTABLE_HC_DV;
         }
         TypeInfo bestType = parameterizedType.bestTypeInfo();
         TypeAnalysis typeAnalysis = getTypeAnalysisNullWhenAbsent(bestType);
@@ -187,7 +186,8 @@ public interface AnalysisProvider {
         if (baseValue.isDelayed()) {
             return baseValue;
         }
-        DV dynamicBaseValue = dynamicValue.max(baseValue);
+        assert dynamicValue.isDone();
+        DV dynamicBaseValue = baseValue.max(dynamicValue);
         MultiLevel.Effective effective = MultiLevel.effective(dynamicBaseValue);
         if (MultiLevel.isAtLeastImmutableHC(dynamicBaseValue) && !parameterizedType.parameters.isEmpty()) {
             DV useTypeParameters = typeAnalysis.immutableDeterminedByTypeParameters();

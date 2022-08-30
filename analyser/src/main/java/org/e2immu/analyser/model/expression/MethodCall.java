@@ -1181,7 +1181,23 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
             SetOfTypes hiddenContentTypes = typeAnalysis.getHiddenContentTypes();
             return factoryMethodDynamicallyImmutable(formal, hiddenContentTypes, context);
         }
-        return analyserContext.typeImmutable(returnType());
+
+        /*
+        There is one situation where we need to deviate from the value of the concrete return type: when we know
+        through analysis of the statement, that the dynamic immutable value is higher than the formal one.
+
+        E2Immutable_11: method firstEntry() should be immutable, rather than mutable. Must go through the
+        immutableDeterminedByTypeParameters() code!
+
+        Enum_6: method returnTwo must return mutable, even if the formal=dynamic value is higher
+        MethodReferences_3: method stream() must return mutable: the type parameter is mutable, formal=dynamic is higher
+         */
+        DV dynamicImmutable = methodAnalysis.getProperty(Property.IMMUTABLE);
+        DV formalImmutable = analyserContext.typeImmutable(methodInfo.returnType());
+        if (dynamicImmutable.gt(formalImmutable)) {
+            return analyserContext.typeImmutable(concreteReturnType, dynamicImmutable);
+        }
+        return analyserContext.typeImmutable(concreteReturnType);
     }
 
     private DV factoryMethodDynamicallyImmutable(DV formal,
@@ -1271,9 +1287,41 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         if (methodIndependent.isDelayed()) {
             return linkedVariablesOfObject.changeToDelay(methodIndependent);
         }
-        if (methodIndependent.equals(MultiLevel.INDEPENDENT_DV)) return LinkedVariables.EMPTY;
-        DV level = LinkedVariables.fromIndependentToLinkedVariableLevel(methodIndependent);
-        return LinkedVariables.EMPTY.merge(linkedVariablesOfObject, level);
+        if (methodIndependent.equals(MultiLevel.INDEPENDENT_DV)) {
+            return LinkedVariables.EMPTY;
+        }
+        if (methodIndependent.equals(MultiLevel.DEPENDENT_DV)) {
+            return linkedVariablesOfObject.minimum(LinkedVariables.LINK_DEPENDENT);
+        }
+        // check hidden content
+
+        // method is map.firstEntry(), so we check if the immutability value of the return type of the method (Map.Entry)
+        // is determined by type parameters
+        TypeInfo bestReturnType = returnType().bestTypeInfo();
+        DV dependsOnTypeParameters;
+        if (bestReturnType == null) {
+            dependsOnTypeParameters = DV.TRUE_DV;
+        } else {
+            TypeAnalysis typeAnalysis = context.getAnalyserContext().getTypeAnalysis(methodInfo.typeInfo);
+            dependsOnTypeParameters = typeAnalysis.immutableDeterminedByTypeParameters();
+            if (dependsOnTypeParameters.isDelayed()) {
+                return linkedVariablesOfObject.changeToDelay(dependsOnTypeParameters);
+            }
+        }
+        if (dependsOnTypeParameters.valueIsTrue()) {
+            List<ParameterizedType> valuesForTypeParameters = returnType().isTypeParameter()
+                    ? List.of(returnType()) : returnType().parameters;
+            DV parametersImmutable = valuesForTypeParameters.stream()
+                    .map(pt -> context.getAnalyserContext().typeImmutable(pt))
+                    .reduce(MultiLevel.EFFECTIVELY_IMMUTABLE_DV, DV::min);
+            if (MultiLevel.isAtLeastEventuallyRecursivelyImmutable(parametersImmutable)) {
+                return LinkedVariables.EMPTY;
+            }
+            if (MultiLevel.MUTABLE_DV.ge(parametersImmutable)) {
+                return linkedVariablesOfObject.minimum(LinkedVariables.LINK_DEPENDENT);
+            }
+        }
+        return linkedVariablesOfObject.minimum(LinkedVariables.LINK_INDEPENDENT_HC);
     }
 
     @Override

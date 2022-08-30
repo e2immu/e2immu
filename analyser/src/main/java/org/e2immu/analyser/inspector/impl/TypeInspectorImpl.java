@@ -112,6 +112,7 @@ public class TypeInspectorImpl implements TypeInspector {
             builder.setParentClass(typeImplemented);
         }
         builder.setAccess(Inspection.Access.PRIVATE);
+        builder.addTypeModifier(TypeModifier.FINAL);
         continueInspection(withSubTypes, members, false, null, null);
     }
 

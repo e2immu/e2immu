@@ -182,7 +182,7 @@ abstract class AbstractAnalysisBuilder implements Analysis {
 
     protected boolean doIndependent(E2ImmuAnnotationExpressions e2, DV independent, DV formallyIndependent, DV immutable) {
         boolean implied = independent.equals(formallyIndependent)
-                || MultiLevel.independentConsistentWithImmutable(independent, immutable);
+                || MultiLevel.independentCorrespondsToImmutable(independent, immutable);
         Map<Class<?>, Map<String, Object>> map = GenerateAnnotationsIndependent.map(independent, implied);
         return generate(e2, map);
     }

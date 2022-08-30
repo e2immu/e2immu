@@ -741,4 +741,20 @@ public final class TypeInfo implements NamedType, WithInspectionAndAnalysis, Com
     public boolean isNotJDKInternal() {
         return !fullyQualifiedName.startsWith("jdk.internal");
     }
+
+    public Set<ParameterizedType> superTypes(InspectionProvider inspectionProvider) {
+        TypeInspection inspection = inspectionProvider.getTypeInspection(this);
+        Set<ParameterizedType> superTypes = new HashSet<>();
+        if (inspection.parentClass() != null) {
+            superTypes.add(inspection.parentClass());
+            if (!inspection.parentClass().isJavaLangObject()) {
+                superTypes.addAll(inspection.parentClass().typeInfo.superTypes(inspectionProvider));
+            }
+        }
+        for (ParameterizedType interfaceImplemented : inspection.interfacesImplemented()) {
+            superTypes.add(interfaceImplemented);
+            superTypes.addAll(interfaceImplemented.typeInfo.superTypes(inspectionProvider));
+        }
+        return superTypes;
+    }
 }

@@ -38,7 +38,7 @@ public class MethodReferences_3 {
         input.keySet().forEach(map::get); // will cause potential null ptr exception, get
     }
 
-    // dependent!
+    // dependent, mutable
     @NotNull(content = true)
     @NotModified
     public Stream<Map.Entry<String, Integer>> stream() {
