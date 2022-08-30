@@ -24,7 +24,6 @@ import org.e2immu.analyser.model.impl.AnnotationExpressionImpl;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
 import org.e2immu.analyser.parser.Primitives;
-import org.e2immu.annotation.Independent;
 import org.e2immu.support.EventuallyFinal;
 import org.e2immu.support.SetOnce;
 import org.e2immu.support.SetOnceMap;
@@ -192,16 +191,6 @@ public class ParameterAnalysisImpl extends AnalysisImpl implements ParameterAnal
             doNotNull(e2, getProperty(Property.NOT_NULL_PARAMETER),
                     parameterInfo.parameterizedType.isPrimitiveExcludingVoid());
 
-            // @Independent1; @Independent, @Dependent not shown
-            DV independentType = analysisProvider.typeIndependent(parameterInfo.parameterizedType);
-            DV independent = getProperty(Property.INDEPENDENT);
-            if (independent.equals(MultiLevel.INDEPENDENT_DV) && independentType.lt(MultiLevel.INDEPENDENT_DV)) {
-                addAnnotation(e2.independent);
-            } else if (independent.equals(MultiLevel.INDEPENDENT_HC_DV) && independentType.lt(MultiLevel.INDEPENDENT_HC_DV)) {
-                AnnotationExpression independentHC = E2ImmuAnnotationExpressions.create(primitives, Independent.class,
-                        "hc", true);
-                addAnnotation(independentHC);
-            }
 
             DV formallyImmutable = analysisProvider.typeImmutable(parameterInfo.parameterizedType);
             DV dynamicallyImmutable = getProperty(Property.IMMUTABLE);
@@ -211,6 +200,10 @@ public class ParameterAnalysisImpl extends AnalysisImpl implements ParameterAnal
             boolean containerBetterThanFormal = dynamicallyContainer.gt(formallyContainer);
             doImmutableContainer(e2, dynamicallyImmutable, dynamicallyContainer,
                     immutableBetterThanFormal, containerBetterThanFormal, null, false);
+
+            DV independentType = analysisProvider.typeIndependent(parameterInfo.parameterizedType);
+            DV independent = getProperty(Property.INDEPENDENT);
+            doIndependent(e2, independent, independentType, dynamicallyImmutable);
         }
 
         public boolean addAssignedToField(FieldInfo fieldInfo, DV assignedOrLinked) {

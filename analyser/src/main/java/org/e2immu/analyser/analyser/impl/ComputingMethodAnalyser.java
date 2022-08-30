@@ -688,10 +688,9 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
         }
         VariableInfo variableInfo = getReturnAsVariable();
         DV dynamic;
-        if (variableInfo.valueIsSet() && variableInfo.getValue() instanceof VariableExpression ve
-                && ve.variable() instanceof This thisVar) {
+        if (variableInfo.valueIsSet() && variableInfo.getValue().returnType().typeInfo == methodInfo.typeInfo) {
             // read directly from type analyser
-            TypeAnalysis typeAnalysis = analyserContext.getTypeAnalysis(thisVar.typeInfo);
+            TypeAnalysis typeAnalysis = analyserContext.getTypeAnalysis(methodInfo.typeInfo);
             dynamic = typeAnalysis.getProperty(CONTAINER);
         } else {
             dynamic = variableInfo.getProperty(CONTAINER);

@@ -180,9 +180,10 @@ public class MethodInspectionImpl extends InspectionImpl implements MethodInspec
     public List<MethodModifier> minimalModifiers() {
         List<MethodModifier> result = new ArrayList<>();
         Access access = getAccess();
-        boolean isInterface = getMethodInfo().typeInfo.isInterface();
+        boolean inInterface = getMethodInfo().typeInfo.isInterface();
         boolean isAbstract = isAbstract();
-        if (access != Access.PACKAGE && !(isInterface && isAbstract)) {
+        boolean isDefault = isDefault();
+        if (access != Access.PACKAGE && !(inInterface && (isAbstract || isDefault))) {
             MethodModifier accessModifier = switch (access) {
                 case PRIVATE -> MethodModifier.PRIVATE;
                 case PUBLIC -> MethodModifier.PUBLIC;
@@ -191,8 +192,8 @@ public class MethodInspectionImpl extends InspectionImpl implements MethodInspec
             };
             result.add(accessModifier);
         }
-        if (isInterface) {
-            if (isDefault()) result.add(MethodModifier.DEFAULT);
+        if (inInterface) {
+            if (isDefault) result.add(MethodModifier.DEFAULT);
         } else {
             if (isAbstract) result.add(MethodModifier.ABSTRACT);
         }

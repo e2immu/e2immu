@@ -15,15 +15,12 @@
 package org.e2immu.analyser.parser.start.testexample;
 
 
+import org.e2immu.annotation.FinalFields;
 import org.e2immu.annotation.ImmutableContainer;
 import org.e2immu.annotation.Modified;
 
 import java.util.List;
 
-/* Current view (20220413) on why OneVariable and Variable are MUTABLE, NOT_CONTAINER:
- * Adding e.g. @E2Immutable via a contract will restrict implementations. Not adding it leaves implementations
- * free to choose. However, if you do not add @Modified on the method (variable()), your implementation cannot be modifying!
- */
 @ImmutableContainer
 public class E2Immutable_16 {
 
@@ -37,7 +34,7 @@ public class E2Immutable_16 {
 
     }
 
-    @ImmutableContainer
+    @ImmutableContainer(hc = true)
     record Record(OneVariable x) {
 
         @Override
@@ -46,10 +43,7 @@ public class E2Immutable_16 {
         }
     }
 
-    /*
-     No hidden content, because this type is the only implementation known, so all Variables must be LocalVariable.
-     */
-    @ImmutableContainer
+    @FinalFields
     record LocalVariable(List<String> readIds, Variable variable) implements Variable {
 
         @Modified // computed, causes error!

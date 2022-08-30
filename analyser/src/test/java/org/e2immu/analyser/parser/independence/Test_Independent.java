@@ -15,11 +15,13 @@
 
 package org.e2immu.analyser.parser.independence;
 
+import org.e2immu.analyser.analyser.DV;
 import org.e2immu.analyser.analyser.Property;
 import org.e2immu.analyser.config.AnalyserConfiguration;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.parser.CommonTestRunner;
+import org.e2immu.analyser.visitor.FieldAnalyserVisitor;
 import org.e2immu.analyser.visitor.MethodAnalyserVisitor;
 import org.e2immu.analyser.visitor.TypeAnalyserVisitor;
 import org.junit.jupiter.api.Test;
@@ -61,11 +63,29 @@ public class Test_Independent extends CommonTestRunner {
 
     @Test
     public void test_4() throws IOException {
+        FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
+            if ("methodAnalysers".equals(d.fieldInfo().name)) {
+                assertEquals("AnalyserContextImpl", d.fieldInfo().owner.simpleName);
+                assertDv(d, MultiLevel.MUTABLE_DV, Property.EXTERNAL_IMMUTABLE);
+            }
+        };
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("methodAnalyserStream".equals(d.methodInfo().name)) {
                 if ("AnalyserContext".equals(d.methodInfo().typeInfo.simpleName)) {
                     assertDv(d, MultiLevel.INDEPENDENT_DV, Property.INDEPENDENT);
-                    assertDv(d, 3, MultiLevel.EFFECTIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
+                    assertDv(d, 1, MultiLevel.EFFECTIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
+                }
+                if ("AnalyserContextImpl".equals(d.methodInfo().typeInfo.simpleName)) {
+                    assertDv(d, 1, MultiLevel.DEPENDENT_DV, Property.INDEPENDENT);
+                    assertDv(d, 1, MultiLevel.MUTABLE_DV, Property.IMMUTABLE);
+                }
+            }
+            if ("parallelMethodAnalyserStream".equals(d.methodInfo().name)) {
+                if ("AnalyserContext".equals(d.methodInfo().typeInfo.simpleName)) {
+                    assertDv(d, 1, MultiLevel.INDEPENDENT_DV, Property.INDEPENDENT);
+                    assertDv(d, 1, MultiLevel.EFFECTIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
+                    // IMPROVE this is very debatable, should we use or discard the value??
+                    assertDv(d, 1, DV.TRUE_DV, Property.CONSTANT);
                 }
             }
             if ("getMethodInfo".equals(d.methodInfo().name) && "MethodAnalyser".equals(d.methodInfo().typeInfo.simpleName)) {
@@ -78,6 +98,10 @@ public class Test_Independent extends CommonTestRunner {
                 assertDv(d, 1, MultiLevel.DEPENDENT_DV, Property.INDEPENDENT);
             }
             if ("MethodAnalyser".equals(d.typeInfo().simpleName)) {
+                assertDv(d, MultiLevel.MUTABLE_DV, Property.IMMUTABLE);
+                assertDv(d, MultiLevel.DEPENDENT_DV, Property.INDEPENDENT);
+            }
+            if ("MethodAnalyserImpl".equals(d.typeInfo().simpleName)) {
                 assertDv(d, 2, MultiLevel.EFFECTIVELY_FINAL_FIELDS_DV, Property.IMMUTABLE);
                 assertDv(d, 2, MultiLevel.DEPENDENT_DV, Property.INDEPENDENT);
             }
@@ -85,6 +109,7 @@ public class Test_Independent extends CommonTestRunner {
         testClass("Independent_4", 0, 4, new DebugConfiguration.Builder()
                         .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                         .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
+                        .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                         .build(),
                 new AnalyserConfiguration.Builder()
                         .setComputeFieldAnalyserAcrossAllMethods(true)

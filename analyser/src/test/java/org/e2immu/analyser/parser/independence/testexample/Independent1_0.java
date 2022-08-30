@@ -19,6 +19,7 @@ import org.e2immu.annotation.*;
 import java.util.function.Consumer;
 
 @Container
+@Independent(hc = true)
 public class Independent1_0<T> {
     @Final(absent = true)
     @NotModified

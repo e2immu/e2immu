@@ -68,7 +68,11 @@ public class Independent_2 {
             return new ISet(List.of(i));
         }
 
-        @ImmutableContainer
+        /*
+         IMPROVE: at the moment, we cannot know that by using this constructor, we end up with an
+         empty set, which, instead of being mutable, renders it immutable
+         */
+        @ImmutableContainer(contract = true)
         public static ISet of() {
             return new ISet();
         }

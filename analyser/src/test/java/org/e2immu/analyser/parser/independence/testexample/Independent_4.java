@@ -15,6 +15,8 @@
 package org.e2immu.analyser.parser.independence.testexample;
 
 
+import org.e2immu.annotation.ImmutableContainer;
+
 import java.util.List;
 import java.util.stream.Stream;
 
@@ -57,6 +59,8 @@ public class Independent_4 {
             return null;
         }
 
+        // IMPROVE this is debatable!!
+        @ImmutableContainer("null")
         default Stream<MethodAnalyser> parallelMethodAnalyserStream() {
             return methodAnalyserStream();
         }

@@ -181,7 +181,7 @@ public class Test_16_Modification_11 extends CommonTestRunner {
                 assertTrue(d.typeAnalysis().getHiddenContentTypes().isEmpty());
             }
             if ("C1".equals(d.typeInfo().simpleName)) {
-                assertDv(d, MultiLevel.DEPENDENT_DV, Property.INDEPENDENT);
+                assertDv(d, 1, MultiLevel.DEPENDENT_DV, Property.INDEPENDENT);
             }
         };
 
