@@ -14,10 +14,7 @@
 
 package org.e2immu.analyser.parser.start.testexample;
 
-import org.e2immu.annotation.Container;
-import org.e2immu.annotation.FinalFields;
-import org.e2immu.annotation.Independent;
-import org.e2immu.annotation.Nullable;
+import org.e2immu.annotation.*;
 
 public class DependentVariables_1 {
 
@@ -38,10 +35,11 @@ public class DependentVariables_1 {
     @FinalFields
     @Container
     static class XS {
+        @NotModified // because we don't modify it; however it is dependent on parameter p
         private final X[] xs;
 
-        // dependent, because X is mutable
-        public XS(@Independent(absent = true) X[] p) {
+        // dependent, because X is mutable; however, we don't change it
+        public XS(@Independent(absent = true) @NotModified X[] p) {
             this.xs = new X[p.length];
             System.arraycopy(p, 0, this.xs, 0, p.length);
         }

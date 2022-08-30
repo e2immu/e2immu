@@ -344,7 +344,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
             builder.link(v, v2, combined);
         }));
 
-        linksBetweenParameters(builder, context, concreteMethod, parameterValues, linkedVariablesOfParameters);
+        linksBetweenParameters(builder, context, concreteMethod, methodAnalysis, parameterValues, linkedVariablesOfParameters);
 
         // increment the time, irrespective of NO_VALUE
         CausesOfDelay incrementDelays;
@@ -488,6 +488,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
     public void linksBetweenParameters(EvaluationResult.Builder builder,
                                        EvaluationResult context,
                                        MethodInfo concreteMethod,
+                                       MethodAnalysis methodAnalysis,
                                        List<Expression> parameterValues,
                                        List<LinkedVariables> linkedVariables) {
         // key is dependent on values, but only if all of them are variable expressions
@@ -501,8 +502,10 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
             Variable targetVariable = bestTargetVariable(targetExpression, targetValue);
             if (targetVariable != null) {
                 Expression expression = bestExpression(parameterExpressions.get(pi.index), parameterValues.get(pi.index));
+                DV linkTargetIsModified = methodAnalysis == null ? DV.TRUE_DV // for testing
+                        : methodAnalysis.getParameterAnalyses().get(target.index).getProperty(Property.MODIFIED_VARIABLE);
                 tryLinkBetweenParameters(builder, context, targetVariable, target.index, targetIsVarArgs, level, expression,
-                        parameterValues, linkedVariables);
+                        linkTargetIsModified, parameterValues, linkedVariables);
             }
         }));
     }
@@ -540,15 +543,16 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
                                           boolean targetIsVarArgs,
                                           DV level,
                                           Expression source,
+                                          DV linkTargetIsModified,
                                           List<Expression> parameterValues,
                                           List<LinkedVariables> linkedVariables) {
         IsVariableExpression vSource = source.asInstanceOf(IsVariableExpression.class);
         if (vSource != null) {
-            // Independent1_2
+            // Independent1_2, DependentVariables_1
             ParameterizedType typeOfHiddenContent = findHiddenContentType(context.getAnalyserContext(),
                     vSource.variable().parameterizedType());
             linksBetweenParametersVarArgs(builder, context, targetIndex, targetIsVarArgs, level, vSource,
-                    typeOfHiddenContent, parameterValues, linkedVariables);
+                    linkTargetIsModified, typeOfHiddenContent, parameterValues, linkedVariables);
         }
         MethodReference methodReference = source.asInstanceOf(MethodReference.class);
         if (methodReference != null) {
@@ -558,7 +562,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
                 ParameterizedType typeOfHiddenContent = findHiddenContentType(context.getAnalyserContext(),
                         mrSource.variable().parameterizedType());
                 linksBetweenParametersVarArgs(builder, context, targetIndex, targetIsVarArgs, level, mrSource,
-                        typeOfHiddenContent, parameterValues, linkedVariables);
+                        linkTargetIsModified, typeOfHiddenContent, parameterValues, linkedVariables);
             }
         }
         InlinedMethod inlinedMethod = source.asInstanceOf(InlinedMethod.class);
@@ -575,7 +579,8 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
                     if (v instanceof ParameterInfo piLambda && piLambda.owner != inlinedMethod.methodInfo()) {
                         DV l = srv.isDelayed() ? srv.causesOfDelay() : level;
                         linksBetweenParametersVarArgs(builder, context, targetIndex, targetIsVarArgs, l,
-                                new VariableExpression(v), typeOfHiddenContent, parameterValues, linkedVariables);
+                                new VariableExpression(v), linkTargetIsModified,
+                                typeOfHiddenContent, parameterValues, linkedVariables);
                     }
                 }
             }
@@ -593,7 +598,8 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
                     if (v instanceof ParameterInfo piLambda && piLambda.owner != lambda.methodInfo) {
                         DV l = srv.isDelayed() ? srv.causesOfDelay() : level;
                         linksBetweenParametersVarArgs(builder, context, targetIndex, targetIsVarArgs, l,
-                                new VariableExpression(v), typeOfHiddenContent, parameterValues, linkedVariables);
+                                new VariableExpression(v), linkTargetIsModified,
+                                typeOfHiddenContent, parameterValues, linkedVariables);
                     }
                 }
             }
@@ -606,6 +612,9 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
             ParameterizedType returnType = type.findSingleAbstractMethodOfInterface(analyserContext)
                     .getConcreteReturnType(analyserContext.getPrimitives());
             return findHiddenContentType(analyserContext, returnType);
+        }
+        if (type.arrays > 0) {
+            return type.copyWithoutArrays();
         }
         if (type.typeParameter != null) {
             return type.copyWithOneFewerArrays();
@@ -622,22 +631,36 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
                                                boolean targetIsVarArgs,
                                                DV level,
                                                IsVariableExpression vSource,
+                                               DV linkTargetIsModified,
                                                ParameterizedType typeOfHiddenContent,
                                                List<Expression> parameterValues,
                                                List<LinkedVariables> linkedVariables) {
         DV immutableOfHiddenContent = context.getAnalyserContext().typeImmutable(typeOfHiddenContent);
-        DV correctedLevel = LinkedVariables.LINK_INDEPENDENT_HC.equals(level)
-                && MultiLevel.isAtLeastEffectivelyImmutableHC(immutableOfHiddenContent)
-                ? LinkedVariables.fromImmutableToLinkedVariableLevel(immutableOfHiddenContent)
-                : level;
+        DV correctedLevel = correctLinkLevel(immutableOfHiddenContent, level, linkTargetIsModified);
         if (!LinkedVariables.LINK_INDEPENDENT.equals(correctedLevel)) {
-            linksBetweenParameters(builder, vSource, targetIndex, level, parameterValues, linkedVariables);
+            linksBetweenParameters(builder, vSource, targetIndex, correctedLevel, parameterValues, linkedVariables);
             if (targetIsVarArgs) {
                 for (int i = targetIndex + 1; i < parameterExpressions.size(); i++) {
-                    linksBetweenParameters(builder, vSource, i, level, parameterValues, linkedVariables);
+                    linksBetweenParameters(builder, vSource, i, correctedLevel, parameterValues, linkedVariables);
                 }
             }
         }
+    }
+
+    private DV correctLinkLevel(DV immutable, DV level, DV linkTargetIsModified) {
+        if (level.equals(LinkedVariables.LINK_INDEPENDENT) || MultiLevel.isAtLeastEventuallyRecursivelyImmutable(immutable)) {
+            return LinkedVariables.LINK_INDEPENDENT; // no linking
+        }
+        if (immutable.isDelayed()) return immutable;
+        if (level.equals(LinkedVariables.LINK_INDEPENDENT_HC) && MultiLevel.isAtLeastEventuallyImmutableHC(immutable)) {
+            return LinkedVariables.LINK_INDEPENDENT_HC;
+        }
+        if (linkTargetIsModified.isDelayed()) return linkTargetIsModified;
+        // link is dependent, unless the source is not modified (see DependentVariables_1)
+        if (linkTargetIsModified.valueIsFalse()) {
+            return LinkedVariables.LINK_INDEPENDENT;
+        }
+        return LinkedVariables.LINK_DEPENDENT;
     }
 
     private void linksBetweenParameters(EvaluationResult.Builder builder,

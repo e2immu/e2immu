@@ -206,7 +206,7 @@ public class TestLinkingExpression {
                 new TypeExpression(Identifier.CONSTANT, collectionInteger, Diamond.NO), addAll, parameterValues);
         assertEquals("Collection.addAll(v,i,j)", methodCall.toString());
         EvaluationResult.Builder builder = new EvaluationResult.Builder(context);
-        methodCall.linksBetweenParameters(builder, context, methodCall.methodInfo, parameterValues,
+        methodCall.linksBetweenParameters(builder, context, methodCall.methodInfo, null, parameterValues,
                 // no prior additional links, not that any would be possible
                 List.of(LinkedVariables.of(Map.of(v, LinkedVariables.LINK_ASSIGNED)),
                         LinkedVariables.of(Map.of(i, LinkedVariables.LINK_ASSIGNED)),
@@ -240,7 +240,7 @@ public class TestLinkingExpression {
         assertEquals("Collection.addAll(v,i,j)", methodCall.toString());
 
         EvaluationResult.Builder builder = new EvaluationResult.Builder(context);
-        methodCall.linksBetweenParameters(builder, context, methodCall.methodInfo, parameterValues,
+        methodCall.linksBetweenParameters(builder, context, methodCall.methodInfo, null, parameterValues,
                 // no prior additional links
                 List.of(LinkedVariables.of(Map.of(v, LinkedVariables.LINK_ASSIGNED)),
                         LinkedVariables.of(Map.of(i, LinkedVariables.LINK_ASSIGNED)),
@@ -248,7 +248,7 @@ public class TestLinkingExpression {
 
         assertNull(builder.build().changeData().get(i));
         assertNull(builder.build().changeData().get(j));
-        assertEquals("i:3,j:3", builder.build().changeData().get(v).linkedVariables().toString());
+        assertEquals("i:2,j:2", builder.build().changeData().get(v).linkedVariables().toString());
     }
 
     private IntConstant newInt(int i) {
