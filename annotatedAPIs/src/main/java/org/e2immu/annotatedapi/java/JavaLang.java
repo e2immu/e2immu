@@ -553,7 +553,7 @@ class JavaLang {
 
         void arraycopy(@NotNull @NotModified Object src,
                        int srcPos,
-                       @NotNull @Modified @Independent(parameters = {0}) Object dest,
+                       @NotNull @Modified @Independent(hc = true, parameters = {0}) Object dest,
                        int destPos,
                        int length);
 

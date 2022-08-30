@@ -250,7 +250,7 @@ public class Test_26_Enum_withAPI extends CommonTestRunner {
             if ("sort".equals(d.methodInfo().name)) {
                 if ("array".equals(d.variableName())) {
                     if ("0".equals(d.statementId())) {
-                        String expected = d.iteration() == 0 ? "<new:Enum_11[]>" : "new Enum_11[](Enum_11.GROUPS)";
+                        String expected = d.iteration() == 0 ? "<new:Enum_11[]>" : "new Enum_11[Enum_11.GROUPS]";
                         assertEquals(expected, d.currentValue().toString());
                         // arrays are ALWAYS containers!
                         assertDv(d, 1, MultiLevel.CONTAINER_DV, Property.CONTAINER);

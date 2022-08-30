@@ -270,6 +270,7 @@ public class Test_Independent1 extends CommonTestRunner {
             if ("get".equals(d.methodInfo().name)) {
                 assertEquals("ImmutableArrayOfOnes", d.methodInfo().typeInfo.simpleName);
                 assertDv(d, 3, MultiLevel.EFFECTIVELY_IMMUTABLE_HC_DV, Property.IMMUTABLE);
+                assertDv(d, 3, MultiLevel.INDEPENDENT_HC_DV, Property.INDEPENDENT);
             }
             if ("apply".equals(d.methodInfo().name)) {
                 assertEquals("$1", d.methodInfo().typeInfo.simpleName);

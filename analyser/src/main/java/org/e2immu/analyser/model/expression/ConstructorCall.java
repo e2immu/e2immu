@@ -402,16 +402,29 @@ public class ConstructorCall extends BaseExpression implements HasParameterExpre
         OutputBuilder outputBuilder = new OutputBuilder();
         if (constructor != null || anonymousClass != null) {
             outputBuilder.add(new Text("new")).add(Space.ONE)
-                    .add(parameterizedType.output(qualification, false, diamond));
+                    .add(parameterizedType.copyWithoutArrays().output(qualification, false, diamond));
             if (arrayInitializer == null) {
-                if (parameterExpressions.isEmpty()) {
-                    outputBuilder.add(Symbol.OPEN_CLOSE_PARENTHESIS);
+                if (parameterizedType.arrays > 0) {
+                    for (int i = 0; i < parameterizedType.arrays; i++) {
+                        if (i < parameterExpressions.size()) {
+                            outputBuilder
+                                    .add(Symbol.LEFT_BRACKET)
+                                    .add(parameterExpressions.get(i).output(qualification))
+                                    .add(Symbol.RIGHT_BRACKET);
+                        } else {
+                            outputBuilder.add(Symbol.OPEN_CLOSE_BRACKETS);
+                        }
+                    }
                 } else {
-                    outputBuilder
-                            .add(Symbol.LEFT_PARENTHESIS)
-                            .add(parameterExpressions.stream().map(expression -> expression.output(qualification))
-                                    .collect(OutputBuilder.joining(Symbol.COMMA)))
-                            .add(Symbol.RIGHT_PARENTHESIS);
+                    if (parameterExpressions.isEmpty()) {
+                        outputBuilder.add(Symbol.OPEN_CLOSE_PARENTHESIS);
+                    } else {
+                        outputBuilder
+                                .add(Symbol.LEFT_PARENTHESIS)
+                                .add(parameterExpressions.stream().map(expression -> expression.output(qualification))
+                                        .collect(OutputBuilder.joining(Symbol.COMMA)))
+                                .add(Symbol.RIGHT_PARENTHESIS);
+                    }
                 }
             }
         }

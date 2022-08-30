@@ -21,6 +21,7 @@ import org.e2immu.analyser.analyser.VariableInfo;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.ParameterInfo;
+import org.e2immu.analyser.model.expression.ConstructorCall;
 import org.e2immu.analyser.model.expression.Or;
 import org.e2immu.analyser.model.variable.DependentVariable;
 import org.e2immu.analyser.model.variable.FieldReference;
@@ -128,16 +129,14 @@ public class Test_07_DependentVariables extends CommonTestRunner {
             }
             if ("getX".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof FieldReference fr && "xs".equals(fr.fieldInfo.name)) {
-                    String expect = d.iteration() <= 1 ? "<f:xs>" : "instance type Object";
+                    String expect = d.iteration() <= 1 ? "<f:xs>" : "instance type X[]";
                     assertEquals(expect, d.currentValue().toString());
                     assertDv(d, 2, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_EXPRESSION);
                     assertDv(d, MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL_DV, Property.CONTEXT_NOT_NULL);
                 }
                 if (d.variable() instanceof ReturnVariable) {
                     String expectValue = switch (d.iteration()) {
-                        case 0 -> "<dv:xs[index]>";
-                        // from iteration 1, we know xs, and we know index; at iteration 1, we do not know the dependent variable
-                        case 1 -> "<array-access:X>/*{L xs:independent1:3}*/";
+                        case 0, 1 -> "<dv:xs[index]>";
                         default -> "xs[index]";
                     };
                     assertEquals(expectValue, d.currentValue().minimalOutput());
@@ -151,12 +150,13 @@ public class Test_07_DependentVariables extends CommonTestRunner {
                 if (d.variable() instanceof DependentVariable dv) {
                     assertEquals("xs[index]", dv.simpleName);
                     String expected = switch (d.iteration()) {
-                        case 0, 1 -> "<array-access:X>/*{L xs:independent1:3}*/";
-                        default -> "nullable instance type X/*{L xs:independent1:3}*/";
+                        case 0, 1 -> "<v:xs[index]>/*{DL xs:immutable@Class_X}*/";
+                        default -> "nullable instance type X/*{L xs:dependent:2}*/";
                     };
                     assertEquals(expected, d.currentValue().toString());
                     // DVE has no linking info (so this.xs:-1) goes out in iteration 0
-                    assertEquals("this.xs:3", d.variableInfo().getLinkedVariables().toString());
+                    String linked = d.iteration() <= 1 ? "this.xs:-1" : "this.xs:2";
+                    assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
 
                     assertDv(d, MultiLevel.NULLABLE_DV, Property.CONTEXT_NOT_NULL);
                     assertDv(d, 2, MultiLevel.NULLABLE_DV, Property.NOT_NULL_EXPRESSION);
@@ -169,10 +169,12 @@ public class Test_07_DependentVariables extends CommonTestRunner {
                 }
                 if (d.variable() instanceof FieldReference fr && "xs".equals(fr.fieldInfo.name)) {
                     if ("0".equals(d.statementId())) {
-                        assertEquals("source.clone()", d.currentValue().toString());
+                        assertTrue(d.currentValue() instanceof ConstructorCall);
+                        assertEquals("new X[p.length]", d.currentValue().toString());
+                        assertEquals("", d.variableInfo().getLinkedVariables().toString());
                     }
                     if ("1".equals(d.statementId())) {
-                        String expectLv = d.iteration() == 0 ? "p:-1" : "p:3";
+                        String expectLv = d.iteration() == 0 ? "p:-1" : "p:2";
                         assertEquals(expectLv, d.variableInfo().getLinkedVariables().toString());
                     }
                 }
@@ -181,27 +183,29 @@ public class Test_07_DependentVariables extends CommonTestRunner {
 
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("getX".equals(d.methodInfo().name)) {
-                assertDv(d, 2, MultiLevel.INDEPENDENT_HC_DV, Property.INDEPENDENT);
+                assertDv(d, 2, MultiLevel.DEPENDENT_DV, Property.INDEPENDENT);
             }
             if ("XS".equals(d.methodInfo().name)) {
                 assertTrue(d.methodInfo().isConstructor);
-                assertDv(d.p(0), 2, MultiLevel.INDEPENDENT_HC_DV, Property.INDEPENDENT);
+                assertDv(d.p(0), 2, MultiLevel.DEPENDENT_DV, Property.INDEPENDENT);
             }
         };
 
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
+            if ("X".equals(d.typeInfo().simpleName)) {
+                assertDv(d, 1, MultiLevel.MUTABLE_DV, Property.IMMUTABLE);
+            }
             if ("XS".equals(d.typeInfo().simpleName)) {
-                assertEquals("Type org.e2immu.analyser.parser.start.testexample.DependentVariables_1.X",
-                        d.typeAnalysis().getHiddenContentTypes().toString());
+                assertTrue(d.typeAnalysis().getHiddenContentTypes().isEmpty());
             }
         };
 
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
             if ("xs".equals(d.fieldInfo().name)) {
-                String expectLinked = d.iteration() == 0 ? "p:-1" : "p:3,xs[index]:3";
+                String expectLinked = d.iteration() == 0 ? "p:-1" : "p:2";
                 assertEquals(expectLinked, d.fieldAnalysis().getLinkedVariables().toString());
                 assertEquals(d.iteration() == 0, d.fieldAnalysis().getLinkedVariables().isDelayed());
-                assertEquals("source.clone()", d.fieldAnalysis().getValue().toString());
+                assertEquals("instance type X[]", d.fieldAnalysis().getValue().toString());
                 assertDv(d, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.EXTERNAL_NOT_NULL);
             }
             if ("i".equals(d.fieldInfo().name)) {
@@ -211,11 +215,11 @@ public class Test_07_DependentVariables extends CommonTestRunner {
         };
 
         testClass("DependentVariables_1", 0, 0, new DebugConfiguration.Builder()
-               // .addEvaluationResultVisitor(evaluationResultVisitor)
-              //  .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-               // .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
-              //  .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
-              //  .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+                .addEvaluationResultVisitor(evaluationResultVisitor)
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
+                .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                 .build());
     }
 

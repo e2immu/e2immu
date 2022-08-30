@@ -81,12 +81,10 @@ public record ComputeIndependent(AnalyserContext analyserContext, SetOfTypes hid
             }
             if (LINK_INDEPENDENT_HC.equals(linkLevel)) {
                 // e.g. set1.addAll(set2) -- content of set2 added to set1, same type
-                // result is INDEPENDENT_HC unless the common type is recursively immutable
+                // result is determined by type parameters
                 TypeInfo bestTypeInfo = oneType.bestTypeInfo();
                 assert bestTypeInfo != null;
                 TypeAnalysis typeAnalysis = analyserContext.getTypeAnalysis(bestTypeInfo);
-                SetOfTypes hiddenContent = typeAnalysis.getHiddenContentTypes();
-                assert !hiddenContent.isEmpty();
 
                 DV determinedByTypeParameters = typeAnalysis.immutableDeterminedByTypeParameters();
                 if (determinedByTypeParameters.isDelayed()) return determinedByTypeParameters;
@@ -94,7 +92,8 @@ public record ComputeIndependent(AnalyserContext analyserContext, SetOfTypes hid
                     DV immutable = analyserContext.immutableOfHiddenContentInTypeParameters(oneType);
                     return MultiLevel.independentCorrespondingToImmutable(immutable);
                 }
-                return MultiLevel.INDEPENDENT_HC_DV;
+                DV immutable = analyserContext.typeImmutable(oneType);
+                return MultiLevel.independentCorrespondingToImmutable(immutable);
             }
             throw new UnsupportedOperationException();
         }

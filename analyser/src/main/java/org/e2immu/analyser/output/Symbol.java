@@ -53,6 +53,7 @@ public record Symbol(String symbol, Space left, Space right, String constant) im
 
     public static final Symbol LEFT_BRACKET = new Symbol("[", NONE, NO_SPACE_SPLIT_ALLOWED, "LEFT_BRACKET");
     public static final Symbol RIGHT_BRACKET = new Symbol("]", NONE, RELAXED_NO_SPACE_SPLIT_ALLOWED, "RIGHT_BRACKET");
+    public static final Symbol OPEN_CLOSE_BRACKETS = new Symbol("[]", NONE, RELAXED_NO_SPACE_SPLIT_ALLOWED, "OPEN_CLOSE_BRACKETS");
 
     public static final Symbol LEFT_ANGLE_BRACKET = new Symbol("<", NONE, NONE, "LEFT_ANGLE_BRACKET");
     public static final Symbol RIGHT_ANGLE_BRACKET = new Symbol(">", NONE, ONE_IS_NICE_EASY_SPLIT, "RIGHT_ANGLE_BRACKET");
