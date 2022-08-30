@@ -652,8 +652,9 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
             return LinkedVariables.LINK_INDEPENDENT; // no linking
         }
         if (immutable.isDelayed()) return immutable;
-        if (level.equals(LinkedVariables.LINK_INDEPENDENT_HC) && MultiLevel.isAtLeastEventuallyImmutableHC(immutable)) {
-            return LinkedVariables.LINK_INDEPENDENT_HC;
+        if ((level.equals(LinkedVariables.LINK_COMMON_HC) || level.equals(LinkedVariables.LINK_IS_HC_OF))
+                && MultiLevel.isAtLeastEventuallyImmutableHC(immutable)) {
+            return level;
         }
         if (linkTargetIsModified.isDelayed()) return linkTargetIsModified;
         // link is dependent, unless the source is not modified (see DependentVariables_1)
@@ -1344,7 +1345,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
                 return linkedVariablesOfObject.minimum(LinkedVariables.LINK_DEPENDENT);
             }
         }
-        return linkedVariablesOfObject.minimum(LinkedVariables.LINK_INDEPENDENT_HC);
+        return linkedVariablesOfObject; // FIXME ??? .minimum(LinkedVariables.LINK_INDEPENDENT_HC);
     }
 
     @Override

@@ -93,9 +93,10 @@ public interface ValueAndPropertyProxy {
         }
     }
 
-    default boolean isLinkedToParameter(DV requiredLevel) {
-        DV acceptLv = requiredLevel.le(MultiLevel.EFFECTIVELY_NOT_NULL_DV) ? LinkedVariables.LINK_ASSIGNED : LinkedVariables.LINK_INDEPENDENT_HC;
+    default boolean isLinkedToParameter(DV maxLinkLevel) {
         return getLinkedVariables().variables().entrySet().stream().anyMatch(e ->
-                e.getKey() instanceof ParameterInfo && e.getValue().ge(LinkedVariables.LINK_STATICALLY_ASSIGNED) && e.getValue().le(acceptLv));
+                e.getKey() instanceof ParameterInfo
+                        && e.getValue().ge(LinkedVariables.LINK_STATICALLY_ASSIGNED)
+                        && e.getValue().le(maxLinkLevel));
     }
 }

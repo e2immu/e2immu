@@ -629,7 +629,9 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
 
         DV worstOverValues;
         if (computeContextPropertiesOverAllMethods) {
-            worstOverValues = worstOverValuesFiltered(bestOverContext, worstOverValuesUnfiltered);
+            DV maxLinkLevel = bestOverContext.le(MultiLevel.EFFECTIVELY_NOT_NULL_DV)
+                    ? LinkedVariables.LINK_ASSIGNED : LinkedVariables.LINK_COMMON_HC;
+            worstOverValues = worstOverValuesFiltered(bestOverContext, worstOverValuesUnfiltered, maxLinkLevel);
         } else {
             // no filtering, there must be at least one value
             worstOverValues = worstOverValuesUnfiltered;
@@ -647,11 +649,11 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
         return nne;
     }
 
-    private DV worstOverValuesFiltered(DV bestOverContext, DV worstOverValuesUnfiltered) {
+    private DV worstOverValuesFiltered(DV bestOverContext, DV worstOverValuesUnfiltered, DV maxLinkLevel) {
         DV worstOverValues;
         DV worst = fieldAnalysis.getValues().stream()
                 .filter(proxy -> proxy.getOrigin() != ValueAndPropertyProxy.Origin.CONSTRUCTION ||
-                        !proxy.isLinkedToParameter(bestOverContext))
+                        !proxy.isLinkedToParameter(maxLinkLevel))
                 .map(proxy -> proxy.getProperty(Property.NOT_NULL_EXPRESSION))
                 .reduce(DV.MAX_INT_DV, DV::min);
         if (worst != DV.MAX_INT_DV) {

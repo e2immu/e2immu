@@ -300,4 +300,45 @@ public interface AnalysisProvider {
                 .collect(Properties.collect(p -> p == Property.NOT_NULL_EXPRESSION ? valueForNotNullExpression :
                         defaultValueProperty(p, parameterizedType), writable));
     }
+
+    default DV typeRelation(ParameterizedType pt1, ParameterizedType pt2) {
+        TypeInfo b1 = pt1.bestTypeInfo();
+        TypeInfo b2 = pt1.bestTypeInfo();
+        if (b1 == null && b2 == null) {
+            return pt1.equals(pt2) ? LinkedVariables.LINK_COMMON_HC : LinkedVariables.LINK_INDEPENDENT;
+        }
+        if (b1 == null) {
+            TypeAnalysis t2 = getTypeAnalysisNullWhenAbsent(b2);
+            if (t2 == null) return LinkedVariables.LINK_INDEPENDENT;
+            if (t2.hiddenContentAndExplicitTypeComputationDelays().isDelayed()) {
+                return t2.hiddenContentAndExplicitTypeComputationDelays();
+            }
+            assert t2.getHiddenContentTypes().contains(pt1);
+            return LinkedVariables.LINK_IS_HC_OF;
+        }
+        if (b2 == null) {
+            TypeAnalysis t1 = getTypeAnalysis(b1);
+            if (t1 == null) return LinkedVariables.LINK_INDEPENDENT;
+            if (t1.hiddenContentAndExplicitTypeComputationDelays().isDelayed()) {
+                return t1.hiddenContentAndExplicitTypeComputationDelays();
+            }
+            assert t1.getHiddenContentTypes().contains(pt2);
+            return LinkedVariables.LINK_IS_HC_OF;
+        }
+        if (!pt1.equals(pt2)) {
+            TypeAnalysis t1 = getTypeAnalysis(b1);
+            if (t1 == null) return LinkedVariables.LINK_INDEPENDENT;
+            if (t1.hiddenContentAndExplicitTypeComputationDelays().isDelayed()) {
+                return t1.hiddenContentAndExplicitTypeComputationDelays();
+            }
+            if (t1.getHiddenContentTypes().contains(pt2)) return LinkedVariables.LINK_IS_HC_OF;
+            TypeAnalysis t2 = getTypeAnalysis(b2);
+            if (t2 == null) return LinkedVariables.LINK_INDEPENDENT;
+            if (t2.hiddenContentAndExplicitTypeComputationDelays().isDelayed()) {
+                return t2.hiddenContentAndExplicitTypeComputationDelays();
+            }
+            if (t2.getHiddenContentTypes().contains(pt1)) return LinkedVariables.LINK_IS_HC_OF;
+        }
+        return LinkedVariables.LINK_COMMON_HC;
+    }
 }

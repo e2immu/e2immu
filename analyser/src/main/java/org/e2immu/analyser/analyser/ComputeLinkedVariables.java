@@ -203,8 +203,10 @@ public class ComputeLinkedVariables {
             return typeAnalysisOfBestType.immutableDeterminedByTypeParameters();
         };
 
+        BiPredicate<Variable, Variable> isHcOf = (v1, v2) -> LinkedVariables.LINK_IS_HC_OF
+                .equals(analysisProvider.typeRelation(v1.parameterizedType(), v2.parameterizedType()));
         curatedBeforeIgnore = refToScope.removeIncompatibleWithImmutable(variable, computeMyself, computeImmutable,
-                immutableCanBeIncreasedByTypeParameters, computeImmutableHiddenContent);
+                immutableCanBeIncreasedByTypeParameters, computeImmutableHiddenContent, isHcOf);
 
         LinkedVariables curated = curatedBeforeIgnore
                 .remove(v -> ignore.test(statementAnalysis.getVariableOrDefaultNull(v.fullyQualifiedName()), v));

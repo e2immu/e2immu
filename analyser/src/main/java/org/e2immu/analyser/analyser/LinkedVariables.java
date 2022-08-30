@@ -18,6 +18,7 @@ import org.e2immu.analyser.analyser.delay.DelayFactory;
 import org.e2immu.analyser.analyser.delay.NoDelay;
 import org.e2immu.analyser.model.Location;
 import org.e2immu.analyser.model.MultiLevel;
+import org.e2immu.analyser.model.ParameterizedType;
 import org.e2immu.analyser.model.TranslationMap;
 import org.e2immu.analyser.model.variable.Variable;
 
@@ -25,6 +26,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.BiPredicate;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
@@ -51,20 +53,24 @@ public class LinkedVariables implements Comparable<LinkedVariables> {
     // use .equals, not a marker
     public static final LinkedVariables EMPTY = new LinkedVariables(Map.of());
 
-    public static DV fromIndependentToLinkedVariableLevel(DV independent) {
+    public static DV fromIndependentToLinkedVariableLevel(DV independent, ParameterizedType sourceType, SetOfTypes hiddenContentOfTargetType) {
         if (independent.isDelayed()) return independent;
         if (MultiLevel.INDEPENDENT_DV.equals(independent)) return LinkedVariables.LINK_INDEPENDENT;
         if (MultiLevel.DEPENDENT_DV.equals(independent)) return LinkedVariables.LINK_DEPENDENT;
-        return LINK_INDEPENDENT_HC;
+        return hiddenContentOfTargetType.contains(sourceType) ? LINK_IS_HC_OF : LINK_COMMON_HC;
     }
 
-    public static DV fromImmutableToLinkedVariableLevel(DV immutable) {
+    public static DV fromImmutableToLinkedVariableLevel(DV immutable,
+                                                        AnalysisProvider analysisProvider,
+                                                        ParameterizedType sourceType,
+                                                        ParameterizedType targetType) {
         if (immutable.isDelayed()) return immutable;
         // REC IMM -> NO_LINKING
         if (MultiLevel.isAtLeastEventuallyRecursivelyImmutable(immutable)) return LinkedVariables.LINK_INDEPENDENT;
         int level = MultiLevel.level(immutable);
         if (level == MultiLevel.Level.MUTABLE.level) return LINK_DEPENDENT;
-        return LINK_INDEPENDENT_HC;
+
+        return analysisProvider.typeRelation(sourceType, targetType);
     }
 
     public boolean isDelayed() {
@@ -75,8 +81,9 @@ public class LinkedVariables implements Comparable<LinkedVariables> {
     public static final DV LINK_STATICALLY_ASSIGNED = new NoDelay(0, "statically_assigned");
     public static final DV LINK_ASSIGNED = new NoDelay(1, "assigned");
     public static final DV LINK_DEPENDENT = new NoDelay(2, "dependent");
-    public static final DV LINK_INDEPENDENT_HC = new NoDelay(3, "independent1");
-    public static final DV LINK_INDEPENDENT = new NoDelay(4, "independent");
+    public static final DV LINK_IS_HC_OF = new NoDelay(3, "is_hc_of");
+    public static final DV LINK_COMMON_HC = new NoDelay(4, "common_hc");
+    public static final DV LINK_INDEPENDENT = new NoDelay(5, "independent");
 
     public static LinkedVariables of(Variable variable, DV value) {
         return new LinkedVariables(Map.of(variable, value));
@@ -274,8 +281,9 @@ public class LinkedVariables implements Comparable<LinkedVariables> {
     public LinkedVariables removeIncompatibleWithImmutable(Variable source,
                                                            Predicate<Variable> myself,
                                                            Function<Variable, DV> computeImmutable,
-                                                           Function<Variable, DV> immutableCanBeIncreasedByTypeParameters,
-                                                           Function<Variable, DV> computeImmutableHiddenContent) {
+                                                           Function<Variable, DV> immutableIsDeterminedByTypeParameters,
+                                                           Function<Variable, DV> computeImmutableHiddenContent,
+                                                           BiPredicate<Variable, Variable> isHcOf) {
         if (isEmpty() || this == NOT_YET_SET) return this;
         DV sourceImmutable = computeImmutable.apply(source);
         if (sourceImmutable.isDelayed()) {
@@ -320,18 +328,20 @@ public class LinkedVariables implements Comparable<LinkedVariables> {
                          if the set contains level 2 immutable objects, the linking should go to a higher level than
                          independent_1, but we're not worried about that right now
                          */
-                        DV canIncrease = immutableCanBeIncreasedByTypeParameters.apply(target);
-                        if (canIncrease.isDelayed()) {
-                            result.put(target, canIncrease);
-                        } else if (canIncrease.valueIsTrue()) {
+                        DV takeImmutableFromTypeParameters = immutableIsDeterminedByTypeParameters.apply(target);
+                        if (takeImmutableFromTypeParameters.isDelayed()) {
+                            result.put(target, takeImmutableFromTypeParameters);
+                        } else if (takeImmutableFromTypeParameters.valueIsTrue()) {
                             DV immutableHidden = computeImmutableHiddenContent.apply(target);
                             if (immutableHidden.isDelayed()) {
                                 result.put(target, immutableHidden);
                             } else if (!MultiLevel.isAtLeastEventuallyRecursivelyImmutable(immutableHidden)) {
-                                result.put(target, LINK_INDEPENDENT_HC);
+                                DV independent = isHcOf.test(source, target) ? LINK_IS_HC_OF : LINK_COMMON_HC;
+                                result.put(target, independent);
                             }
                         } else {
-                            result.put(target, LINK_INDEPENDENT_HC);
+                            DV independent = isHcOf.test(source, target) ? LINK_IS_HC_OF : LINK_COMMON_HC;
+                            result.put(target, independent);
                         }
                     }
                 }

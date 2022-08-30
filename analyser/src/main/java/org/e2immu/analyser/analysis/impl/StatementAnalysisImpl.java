@@ -1683,7 +1683,9 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
                 arrayValue = Instance.genericArrayAccess(Identifier.generate("dep var"), context, arrayBase, dv);
             }
             Properties valueProperties = context.evaluationContext().getValueProperties(arrayValue);
-            DV lvIndependent = LinkedVariables.fromIndependentToLinkedVariableLevel(independent);
+            DV lvIndependent = LinkedVariables.fromIndependentToLinkedVariableLevel(independent,
+                    // FIXME EMPTY is not going to cut it
+                    dv.parameterizedType, SetOfTypes.EMPTY);
             if (lvIndependent.equals(LinkedVariables.LINK_INDEPENDENT)) {
                 linkedVariables = vic.initialLinkedVariables();
                 initialValue = arrayValue;
@@ -1700,7 +1702,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
     }
 
     /*
-     If the array base type is not E2, we should return DEPENDENT.
+     If the array base type is not immutable, we should return DEPENDENT.
      See DependentVariables_1,_2
      */
     private static DV determineIndependentOfArrayBase(EvaluationResult context, Expression value) {
@@ -2171,7 +2173,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
         linked values are at least INDEPENDENT_1 (when the loopVar type is MUTABLE), and at most INDEPENDENT
         (when the loopVar is recursively IMMUTABLE)
          */
-        DV minLinking = minimumLinking(evaluationContext, loopVar.parameterizedType());
+        DV minLinking = minimumLinking(evaluationContext, loopVar.parameterizedType(), evaluatedIterable.returnType());
         LinkedVariables linked1 = minLinking == LinkedVariables.LINK_INDEPENDENT ? LinkedVariables.EMPTY :
                 linked.minimum(minLinking);
         EvaluationResult.Builder builder = new EvaluationResult.Builder(evaluationResult);
@@ -2179,10 +2181,11 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
         return builder.compose(evaluationResult).build();
     }
 
-    private DV minimumLinking(EvaluationContext evaluationContext, ParameterizedType concreteType) {
-        // unbound should give E2Immutable
+    private DV minimumLinking(EvaluationContext evaluationContext, ParameterizedType concreteType,
+                              ParameterizedType iterableType) {
         DV immutable = evaluationContext.getAnalyserContext().typeImmutable(concreteType);
-        return LinkedVariables.fromImmutableToLinkedVariableLevel(immutable);
+        return LinkedVariables.fromImmutableToLinkedVariableLevel(immutable, evaluationContext.getAnalyserContext(),
+                concreteType, iterableType);
     }
 
     private static DV notNullOfLoopVariable(EvaluationContext evaluationContext, Expression value, CausesOfDelay delays) {

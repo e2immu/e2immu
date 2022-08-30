@@ -265,7 +265,7 @@ public class ConstructorCall extends BaseExpression implements HasParameterExpre
 
      Example 1: parameterInfo = java.util.List.add(E):0:e, which is INDEPENDENT_HC.
      This means that the argument will become part of the list's hidden content.
-     Unless the argument is recursively immutable, result should be LINK_INDEPENDENT_HC.
+     Unless the argument is recursively immutable, result should be LINK_IN_HC_OF.
      See e.g. Modification_16
 
      Example 2: parameterInfo = java.util.function.Consumer.accept(T):0:t, which is DEPENDENT.
@@ -273,7 +273,7 @@ public class ConstructorCall extends BaseExpression implements HasParameterExpre
      If we feed in an array of recursively immutable elements, like HasSize[], we want LINK_DEPENDENT as an outcome.
      If we feed in the recursively immutable element HasSize, we remain LINK_INDEPENDENT.
 
-     Example 3: parameterInfo = java.util.Set.copyOf(Collection<E> input):0:input, which is INDEPENDENT_HC rather
+     Example 3: parameterInfo = java.util.Set.copyOf(Collection<E> input):0:input, which is COMMON_HC rather
      than DEPENDENT, because the resulting set is independent of the input set, yet contains its elements.
      */
     private static DV computeIndependentFromComponents(EvaluationResult context,
@@ -293,12 +293,8 @@ public class ConstructorCall extends BaseExpression implements HasParameterExpre
         CausesOfDelay causes = immutableOfValue.causesOfDelay().merge(independentOnParameter.causesOfDelay());
         if (causes.isDelayed()) return causes;
 
-        if (independentOnParameter.ge(MultiLevel.INDEPENDENT_HC_DV)
-                && !MultiLevel.isAtLeastEventuallyImmutableHC(immutableOfValue)) {
-            // mutable, but linked content-wise
-            return LinkedVariables.LINK_INDEPENDENT_HC;
-        }
-        return LinkedVariables.fromImmutableToLinkedVariableLevel(immutableOfValue);
+        return LinkedVariables.fromImmutableToLinkedVariableLevel(immutableOfValue, context.getAnalyserContext(),
+                parameterInfo.parameterizedType, value.returnType());
     }
 
     @Override

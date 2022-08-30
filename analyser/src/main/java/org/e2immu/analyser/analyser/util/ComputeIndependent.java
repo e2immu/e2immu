@@ -79,7 +79,7 @@ public record ComputeIndependent(AnalyserContext analyserContext, SetOfTypes hid
             if (LINK_DEPENDENT.equals(linkLevel)) {
                 return MultiLevel.DEPENDENT_DV;
             }
-            if (LINK_INDEPENDENT_HC.equals(linkLevel)) {
+            if (LINK_COMMON_HC.equals(linkLevel)) {
                 // e.g. set1.addAll(set2) -- content of set2 added to set1, same type
                 // result is determined by type parameters
                 TypeInfo bestTypeInfo = oneType.bestTypeInfo();
@@ -95,7 +95,7 @@ public record ComputeIndependent(AnalyserContext analyserContext, SetOfTypes hid
                 DV immutable = analyserContext.typeImmutable(oneType);
                 return MultiLevel.independentCorrespondingToImmutable(immutable);
             }
-            throw new UnsupportedOperationException();
+            throw new UnsupportedOperationException("?? " + linkLevel);
         }
         // now 2 different, non-assignable types remain...
         if (aUnboundTypeParameter && bUnboundTypeParameter) {
@@ -159,7 +159,7 @@ public record ComputeIndependent(AnalyserContext analyserContext, SetOfTypes hid
         SetOfTypes hiddenB = typeAnalysis.getHiddenContentTypes(b);
         if (hiddenB.contains(a)) {
             if (LINK_DEPENDENT.equals(linkLevel)) return MultiLevel.DEPENDENT_DV;
-
+            assert LINK_IS_HC_OF.equals(linkLevel);
             /*
             but what if 'a' is not part of the hidden content of the current type? then we should return the
             independent value ~ immutableA.
