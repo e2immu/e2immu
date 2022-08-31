@@ -16,6 +16,7 @@ package org.e2immu.analyser.model.expression;
 
 import org.e2immu.analyser.analyser.Properties;
 import org.e2immu.analyser.analyser.*;
+import org.e2immu.analyser.analyser.util.ComputeIndependent;
 import org.e2immu.analyser.analysis.FieldAnalysis;
 import org.e2immu.analyser.analysis.ParameterAnalysis;
 import org.e2immu.analyser.analysis.TypeAnalysis;
@@ -26,6 +27,7 @@ import org.e2immu.analyser.model.expression.util.MultiExpression;
 import org.e2immu.analyser.model.expression.util.TranslationCollectors;
 import org.e2immu.analyser.model.impl.BaseExpression;
 import org.e2immu.analyser.model.impl.TranslationMapImpl;
+import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.Space;
 import org.e2immu.analyser.output.Symbol;
@@ -41,6 +43,7 @@ import java.util.*;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
+import static org.e2immu.analyser.model.MultiLevel.DEPENDENT_DV;
 import static org.e2immu.analyser.model.MultiLevel.INDEPENDENT_DV;
 
 /*
@@ -194,7 +197,7 @@ public class ConstructorCall extends BaseExpression implements HasParameterExpre
                 // IMPROVE use parameterValues (evaluated expressions), will that make a difference?
                 parameterExpressions);
         return combineArgumentIndependenceWithFormalParameterIndependence(context, constructor.methodInspection.get(),
-                parameterExpressions, linkedVariables);
+                linkedVariables, returnType());
     }
 
     public static List<LinkedVariables> computeLinkedVariablesOfParameters(EvaluationResult context,
@@ -227,16 +230,11 @@ public class ConstructorCall extends BaseExpression implements HasParameterExpre
      */
     static LinkedVariables combineArgumentIndependenceWithFormalParameterIndependence(EvaluationResult evaluationContext,
                                                                                       MethodInspection methodInspection,
-                                                                                      List<Expression> parameterExpressions,
-                                                                                      List<LinkedVariables> linkedVariables) {
-        // quick shortcut
-        if (parameterExpressions.isEmpty()) {
-            return LinkedVariables.EMPTY;
-        }
-
+                                                                                      List<LinkedVariables> linkedVariables,
+                                                                                      ParameterizedType objectType) {
         LinkedVariables result = LinkedVariables.EMPTY;
         int i = 0;
-        for (Expression value : parameterExpressions) {
+        for (LinkedVariables sub : linkedVariables) {
             ParameterInfo parameterInfo;
             if (i < methodInspection.getParameters().size()) {
                 parameterInfo = methodInspection.getParameters().get(i);
@@ -244,16 +242,54 @@ public class ConstructorCall extends BaseExpression implements HasParameterExpre
                 parameterInfo = methodInspection.getParameters().get(methodInspection.getParameters().size() - 1);
                 assert parameterInfo.parameterInspection.get().isVarArgs();
             }
-            DV link = computeIndependentFromComponents(evaluationContext, value, parameterInfo);
-            LinkedVariables sub = linkedVariables.get(i);
-            if (link.isDelayed()) {
-                result = result.mergeDelay(sub, link);
-            } else if (link.ge(LinkedVariables.LINK_ASSIGNED) && link.lt(LinkedVariables.LINK_INDEPENDENT)) {
-                result = result.merge(sub, link);
-            }
+            Map<Variable, DV> newLinkMap = new HashMap<>();
+            sub.stream().forEach(e -> {
+                Variable v = e.getKey();
+                DV linkLevel = e.getValue();
+                if (linkLevel.isDelayed()) {
+                    newLinkMap.put(v, linkLevel);
+                } else {
+                    DV newLinkLevel = computeIndependentFromComponents(evaluationContext, parameterInfo,
+                            linkLevel, v.parameterizedType(), objectType);
+                    newLinkMap.put(v, newLinkLevel);
+                }
+            });
+            LinkedVariables lv = LinkedVariables.of(newLinkMap);
+            result = result.merge(lv);
             i++;
         }
         return result.minimum(LinkedVariables.LINK_ASSIGNED);
+    }
+
+    private static DV computeIndependentFromComponents(EvaluationResult context,
+                                                       ParameterInfo parameterInfo,
+                                                       DV linkLevel,
+                                                       ParameterizedType variableType,
+                                                       ParameterizedType objectType) {
+        assert linkLevel.isDone();
+
+        ParameterAnalysis parameterAnalysis = context.getAnalyserContext().getParameterAnalysis(parameterInfo);
+        DV independentOnParameter = parameterAnalysis.getProperty(Property.INDEPENDENT);
+
+        // shortcut: either is at max value, then there is no discussion
+        if (INDEPENDENT_DV.equals(independentOnParameter) || linkLevel.equals(LinkedVariables.LINK_INDEPENDENT)) {
+            return LinkedVariables.LINK_INDEPENDENT;
+        }
+
+        // any delay: wait!
+        CausesOfDelay causes = independentOnParameter.causesOfDelay();
+        if (causes.isDelayed()) return causes;
+
+        if (DEPENDENT_DV.equals(independentOnParameter)) {
+            // if linkLevel is already hidden content, then keep that level
+            return LinkedVariables.LINK_DEPENDENT.max(linkLevel);
+        }
+
+        // hidden content... use the relation WITH RESPECT TO THE method's type (not the parameter!!!)
+        // TODO we're ignoring linkLevel atm,
+        ComputeIndependent computeIndependent = new ComputeIndependent(context.getAnalyserContext(),
+                context.getCurrentType().primaryType());
+        return computeIndependent.typeRelation(variableType, objectType);
     }
 
     /*
@@ -278,13 +314,14 @@ public class ConstructorCall extends BaseExpression implements HasParameterExpre
      */
     private static DV computeIndependentFromComponents(EvaluationResult context,
                                                        Expression value,
-                                                       ParameterInfo parameterInfo) {
+                                                       ParameterInfo parameterInfo,
+                                                       ParameterizedType objectType) {
         ParameterAnalysis parameterAnalysis = context.getAnalyserContext().getParameterAnalysis(parameterInfo);
         DV independentOnParameter = parameterAnalysis.getProperty(Property.INDEPENDENT);
         DV immutableOfValue = context.getProperty(value, Property.IMMUTABLE);
 
         // shortcut: either is at max value, then there is no discussion
-        if (independentOnParameter.equals(INDEPENDENT_DV)
+        if (INDEPENDENT_DV.equals(independentOnParameter)
                 || MultiLevel.isAtLeastEventuallyRecursivelyImmutable(immutableOfValue)) {
             return LinkedVariables.LINK_INDEPENDENT;
         }
@@ -293,8 +330,13 @@ public class ConstructorCall extends BaseExpression implements HasParameterExpre
         CausesOfDelay causes = immutableOfValue.causesOfDelay().merge(independentOnParameter.causesOfDelay());
         if (causes.isDelayed()) return causes;
 
-        return LinkedVariables.fromImmutableToLinkedVariableLevel(immutableOfValue, context.getAnalyserContext(),
-                parameterInfo.parameterizedType, value.returnType());
+        if (DEPENDENT_DV.equals(independentOnParameter)) {
+            return LinkedVariables.LINK_DEPENDENT;
+        }
+        // hidden content... use the relation WITH RESPECT TO THE method's type (not the parameter!!!)
+        ComputeIndependent computeIndependent = new ComputeIndependent(context.getAnalyserContext(),
+                context.getCurrentType().primaryType());
+        return computeIndependent.typeRelation(value.returnType(), objectType);
     }
 
     @Override

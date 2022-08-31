@@ -68,7 +68,7 @@ public class Test_00_Basics_21 extends CommonTestRunner {
                     EvaluationResult.ChangeData cd = d.findValueChangeBySubString("other");
                     assertEquals("", cd.linkedVariables().toString());
 
-                    // this is linked to other at :4 common HC
+                    // this is linked to other at :4, common HC (and not :3, is_hc_of!)
                     EvaluationResult.ChangeData cdThis = d.findValueChangeByToString("this");
                     String expectLv = d.iteration() <= 1 ? "other:-1" : "other:4"; // common_hc
                     assertEquals(expectLv, cdThis.linkedVariables().toString());

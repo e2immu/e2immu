@@ -328,7 +328,7 @@ public class Test_00_Basics_6 extends CommonTestRunner {
                 EvaluationResult.ChangeData changeDataV1 = d.findValueChange("v1");
                 assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, changeDataV1.getProperty(CONTEXT_NOT_NULL));
 
-                assertEquals(d.iteration() >= 1, d.haveValueChange(FIELD));
+                assertTrue(d.haveValueChange(FIELD));
             }
             if ("test3".equals(d.methodInfo().name) && "1".equals(d.statementId())) {
                 if (d.iteration() == 0) {

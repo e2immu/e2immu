@@ -14,7 +14,10 @@
 
 package org.e2immu.analyser.analyser.util;
 
-import org.e2immu.analyser.analyser.*;
+import org.e2immu.analyser.analyser.AnalyserContext;
+import org.e2immu.analyser.analyser.DV;
+import org.e2immu.analyser.analyser.LinkedVariables;
+import org.e2immu.analyser.analyser.SetOfTypes;
 import org.e2immu.analyser.analysis.TypeAnalysis;
 import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.ParameterizedType;
@@ -22,154 +25,117 @@ import org.e2immu.analyser.model.TypeInfo;
 
 import static org.e2immu.analyser.analyser.LinkedVariables.*;
 
-public record ComputeIndependent(AnalyserContext analyserContext, SetOfTypes hiddenContentOfCurrentType) {
+public record ComputeIndependent(AnalyserContext analyserContext, TypeInfo currentPrimaryType) {
 
     public ComputeIndependent {
         assert analyserContext != null;
-        assert hiddenContentOfCurrentType != null;
+        assert currentPrimaryType != null;
     }
 
     /**
      * Variables of two types are linked to each other, at a given <code>linkLevel</code>.
-     * Assuming that one of them is a field, and the other a parameter, or a return value,
-     * return the value of the INDEPENDENT property given this linking.
      * <p>
-     * The types can be identical, assignable to each other, or completely different.
-     * In the latter case, they may share a common subtype.
+     * Case 1: {@link org.e2immu.analyser.analyser.impl.ComputedParameterAnalyser}
+     * The first type ('a') is the parameter's (formal) type, the second ('b') is a field.
+     * <p>
+     * Case 2: {@link org.e2immu.analyser.analyser.impl.ComputingMethodAnalyser}
+     * The first type ('a') is the concrete return type, the second ('b') is a field
+     * <p>
+     * Case 3: {@link org.e2immu.analyser.analyser.impl.FieldAnalyserImpl}
+     * The first type ('a') is the field's (formal? concrete?) type
+     * <p>
+     * The link-level has already been adapted to the immutability status of the two types: if
+     * 'a' is immutable, it should be with hidden content, because otherwise there would be no link.
+     * A type parameter cannot have link-level DEPENDENT.
+     * <p>
+     * Examples:
+     * <p>
+     * A parameter of type E linked to a field of List type can be either assigned, or IN_HC_OF.
+     * Similarly, a parameter of type Object linked to a field of List type can be either assigned, or IN_HC_OF.
+     * A parameter of type Set linked to a field of List type must be DEPENDENT or COMMON_HC, as they're not assignable.
      *
-     * @param linkLevel  any of STATICALLY_ASSIGNED, ASSIGNED, DEPENDENT, INDEPENDENT1, NO
+     * @param linkLevel  any of STATICALLY_ASSIGNED, ASSIGNED, DEPENDENT, IN_HC_OF, COMMON_HC, INDEPENDENT
      * @param a          one of the two types
      * @param immutableA not null if you already know the immutable value of <code>a</code>
      * @param b          one of the two types, can be equal to <code>a</code>
      * @return the value for the INDEPENDENT property
      */
     public DV compute(DV linkLevel, ParameterizedType a, DV immutableA, ParameterizedType b) {
-        if (LinkedVariables.LINK_INDEPENDENT.equals(linkLevel)) return MultiLevel.INDEPENDENT_DV;
-
-        // when not null, the types are identical or assignable to each other
-        ParameterizedType oneType;
-        // when not null, the types are identical or assignable to each other
-        DV immutableOneType;
-        boolean aTypeParameter = a.isTypeParameter();
-        boolean bTypeParameter = b.isTypeParameter();
-
-        if (a.equals(b)) {
-            oneType = a;
-            immutableOneType = immutableA;
-        } else if (!aTypeParameter && a.isAssignableFrom(analyserContext, b)) {
-            oneType = a;
-            immutableOneType = immutableA;
-        } else if (!bTypeParameter && b.isAssignableFrom(analyserContext, a)) {
-            oneType = b;
-            immutableOneType = null;
-        } else {
-            oneType = null;
-            immutableOneType = null;
-        }
-
+        assert linkLevel.isDone();
         if (LINK_STATICALLY_ASSIGNED.equals(linkLevel) || LINK_ASSIGNED.equals(linkLevel)) {
-            // types a and b are either equal or assignable, otherwise one cannot assign
-            assert oneType != null : "Assignment?";
-
-            DV immutable = immutableOneType != null ? immutableOneType : analyserContext.typeImmutable(oneType);
+            /*
+             Types a and b are either equal or assignable, otherwise one cannot assign.
+             The type relation cannot be IN_HC_OF, it should be COMMON_HC (or INDEPENDENT in case of no information).
+             We return the independent value corresponding to the most specific type.
+             */
+            ParameterizedType mostSpecific = a.mostSpecific(analyserContext, currentPrimaryType, b);
+            DV immutable = mostSpecific == a ? immutableA : analyserContext.typeImmutable(b);
             return MultiLevel.independentCorrespondingToImmutable(immutable);
         }
-
-        if (oneType != null) {
-            if (LINK_DEPENDENT.equals(linkLevel)) {
-                return MultiLevel.DEPENDENT_DV;
-            }
-            if (LINK_COMMON_HC.equals(linkLevel)) {
-                // e.g. set1.addAll(set2) -- content of set2 added to set1, same type
-                // result is determined by type parameters
-                TypeInfo bestTypeInfo = oneType.bestTypeInfo();
-                assert bestTypeInfo != null;
-                TypeAnalysis typeAnalysis = analyserContext.getTypeAnalysis(bestTypeInfo);
-
-                DV determinedByTypeParameters = typeAnalysis.immutableDeterminedByTypeParameters();
-                if (determinedByTypeParameters.isDelayed()) return determinedByTypeParameters;
-                if (determinedByTypeParameters.valueIsTrue()) {
-                    DV immutable = analyserContext.immutableOfHiddenContentInTypeParameters(oneType);
-                    return MultiLevel.independentCorrespondingToImmutable(immutable);
-                }
-                DV immutable = analyserContext.typeImmutable(oneType);
-                return MultiLevel.independentCorrespondingToImmutable(immutable);
-            }
-            throw new UnsupportedOperationException("?? " + linkLevel);
-        }
-        // now 2 different, non-assignable types remain...
-        if (aTypeParameter && bTypeParameter) {
-            return MultiLevel.INDEPENDENT_DV;
-        }
-        if (aTypeParameter) {
-            return verifyIncludedInHiddenContentOf(immutableA, linkLevel, a, b, MultiLevel.INDEPENDENT_DV);
-        }
-        if (bTypeParameter) {
-            return verifyIncludedInHiddenContentOf(MultiLevel.EFFECTIVELY_IMMUTABLE_HC_DV,
-                    linkLevel, b, a, MultiLevel.INDEPENDENT_DV);
-        }
-        DV aInB = verifyIncludedInHiddenContentOf(immutableA, linkLevel, a, b, null);
-        if (aInB != null) return aInB;
-        DV bInA = verifyIncludedInHiddenContentOf(null, linkLevel, b, a, null);
-        if (bInA != null) return bInA;
-
-        return intersection(linkLevel, a, b);
-    }
-
-    private DV intersection(DV linkLevel, ParameterizedType a, ParameterizedType b) {
+        if (LINK_INDEPENDENT.equals(linkLevel)) return MultiLevel.INDEPENDENT_DV;
         if (LINK_DEPENDENT.equals(linkLevel)) return MultiLevel.DEPENDENT_DV;
-
-        TypeAnalysis ta = analyserContext.getTypeAnalysisNullWhenAbsent(a.bestTypeInfo());
-        TypeAnalysis tb = analyserContext.getTypeAnalysisNullWhenAbsent(b.bestTypeInfo());
-        if (ta == null || tb == null) return MultiLevel.INDEPENDENT_DV;
-        CausesOfDelay causes = ta.hiddenContentAndExplicitTypeComputationDelays().causesOfDelay()
-                .merge(tb.hiddenContentAndExplicitTypeComputationDelays().causesOfDelay());
-        if (causes.isDelayed()) return causes;
-        SetOfTypes hiddenA = ta.getHiddenContentTypes(a);
-        SetOfTypes hiddenB = tb.getHiddenContentTypes(b);
-        SetOfTypes intersection = hiddenA.intersection(hiddenB);
-
-        if (intersection.isEmpty()) return MultiLevel.INDEPENDENT_DV;
-
-        DV inHiddenContent = intersection.types().stream()
-                .filter(hiddenContentOfCurrentType::contains)
-                .map(pt -> {
-                    DV immutable = analyserContext.typeImmutable(pt);
-                    return MultiLevel.independentCorrespondingToImmutable(immutable);
-                }).reduce(MultiLevel.INDEPENDENT_DV, DV::min);
-        if (MultiLevel.INDEPENDENT_DV == inHiddenContent) {
-            return MultiLevel.INDEPENDENT_HC_DV;
-        }
-        return MultiLevel.independentCorrespondingToImmutable(inHiddenContent);
+        assert LINK_IS_HC_OF.equals(linkLevel) || LINK_COMMON_HC.equals(linkLevel);
+        return MultiLevel.INDEPENDENT_HC_DV;
     }
 
-    private DV verifyIncludedInHiddenContentOf(DV immutableA, DV linkLevel, ParameterizedType a, ParameterizedType b, DV onFail) {
-        TypeInfo typeInfo = b.bestTypeInfo();
-        if (typeInfo == null) {
-            // T and T[], for example
-            assert a.arrays != b.arrays;
-            return MultiLevel.INDEPENDENT_HC_DV;
+
+    // FIXME write test for Collection<? extends E>, List<E> etc., occurs in Basics_20
+
+    /**
+     * How do the types relate wrt to hidden content?
+     *
+     * @param pt1 the first type
+     * @param pt2 the second type, there is no order, you can exchange pt1 and pt2
+     * @return either IS_HC_OF, COMMON_HC, or INDEPENDENT
+     */
+    public DV typeRelation(ParameterizedType pt1, ParameterizedType pt2) {
+        TypeInfo b1 = pt1.bestTypeInfo();
+        TypeInfo b2 = pt2.bestTypeInfo();
+        if (b1 == null && b2 == null) {
+            // two unbound type parameters
+            assert pt1.equals(pt2) : "curious to see when this happens";
+            return LinkedVariables.LINK_COMMON_HC;
         }
-        TypeAnalysis typeAnalysis = analyserContext.getTypeAnalysisNullWhenAbsent(typeInfo);
-        if (typeAnalysis == null) return MultiLevel.INDEPENDENT_DV;
-        CausesOfDelay causes = typeAnalysis.hiddenContentAndExplicitTypeComputationDelays();
-        if (causes.isDelayed()) {
-            return causes;
+        if (b1 == null) {
+            return unboundTypeParameter(pt1, pt2, b2);
         }
-        SetOfTypes hiddenB = typeAnalysis.getHiddenContentTypes(b);
-        if (hiddenB.contains(a)) {
-            if (LINK_DEPENDENT.equals(linkLevel)) return MultiLevel.DEPENDENT_DV;
-            assert LINK_IS_HC_OF.equals(linkLevel);
-            /*
-            but what if 'a' is not part of the hidden content of the current type? then we should return the
-            independent value ~ immutableA.
-             */
-            if (!hiddenContentOfCurrentType.contains(a)) {
-                DV immutable = immutableA == null ? analyserContext.typeImmutable(a) : immutableA;
-                return MultiLevel.independentCorrespondingToImmutable(immutable);
+        if (b2 == null) {
+            return unboundTypeParameter(pt2, pt1, b1);
+        }
+        if (!pt1.equals(pt2)) {
+            TypeAnalysis t1 = analyserContext.getTypeAnalysis(b1);
+            if (t1 == null) return LinkedVariables.LINK_INDEPENDENT;
+            if (t1.hiddenContentAndExplicitTypeComputationDelays().isDelayed()) {
+                return t1.hiddenContentAndExplicitTypeComputationDelays();
             }
-            return MultiLevel.INDEPENDENT_HC_DV; // even if "a" is mutable!!
+            SetOfTypes translatedHcOfT1 = t1.getHiddenContentTypes().translate(analyserContext, pt2);
+            if (translatedHcOfT1.contains(pt2)) return LinkedVariables.LINK_IS_HC_OF;
+
+            TypeAnalysis t2 = analyserContext.getTypeAnalysis(b2);
+            if (t2 == null) return LinkedVariables.LINK_INDEPENDENT;
+            if (t2.hiddenContentAndExplicitTypeComputationDelays().isDelayed()) {
+                return t2.hiddenContentAndExplicitTypeComputationDelays();
+            }
+            SetOfTypes translatedHcOfT2 = t2.getHiddenContentTypes().translate(analyserContext, pt1);
+            if (translatedHcOfT2.contains(pt1)) return LinkedVariables.LINK_IS_HC_OF;
         }
-        return onFail;
+        return LinkedVariables.LINK_COMMON_HC;
+    }
+
+    /*
+    list.add(x), with E the formal type pt1, and X the mutable type x;
+
+    the link level
+     */
+    private DV unboundTypeParameter(ParameterizedType pt1, ParameterizedType pt2, TypeInfo b2) {
+        TypeAnalysis t2 = analyserContext.getTypeAnalysisNullWhenAbsent(b2);
+        if (t2 == null) return LinkedVariables.LINK_INDEPENDENT;
+        if (t2.hiddenContentAndExplicitTypeComputationDelays().isDelayed()) {
+            return t2.hiddenContentAndExplicitTypeComputationDelays();
+        }
+        if (t2.getHiddenContentTypes().translate(analyserContext, pt2).contains(pt1)) {
+            return LinkedVariables.LINK_IS_HC_OF;
+        }
+        throw new UnsupportedOperationException();
     }
 }

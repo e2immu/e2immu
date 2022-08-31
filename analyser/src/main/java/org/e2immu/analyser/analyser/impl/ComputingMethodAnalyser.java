@@ -972,12 +972,8 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
             if (linkedVariables.isDelayed()) {
                 return linkedVariables.causesOfDelay();
             }
-            if (typeAnalysis.hiddenContentAndExplicitTypeComputationDelays().isDelayed()) {
-                LOGGER.debug("Delaying independent of {}, hidden content not yet known", methodInfo);
-                return AnalysisStatus.of(typeAnalysis.hiddenContentAndExplicitTypeComputationDelays().causesOfDelay());
-            }
-            SetOfTypes hiddenContentCurrentType = typeAnalysis.getHiddenContentTypes();
-            ComputeIndependent computeIndependent = new ComputeIndependent(analyserContext, hiddenContentCurrentType);
+
+            ComputeIndependent computeIndependent = new ComputeIndependent(analyserContext, methodInfo.typeInfo.primaryType());
             independent = linkedVariables.stream()
                     .filter(e -> e.getKey() instanceof FieldReference fr && fr.scopeIsRecursivelyThis()
                             || e.getKey() instanceof This)

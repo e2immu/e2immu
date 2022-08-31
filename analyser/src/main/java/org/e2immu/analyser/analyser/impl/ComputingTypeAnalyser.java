@@ -75,7 +75,7 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
     private static final Logger LOGGER = LoggerFactory.getLogger(ComputingTypeAnalyser.class);
     private static final AtomicInteger callCounterForDebugging = new AtomicInteger();
 
-    public static final String ANALYSE_TRANSPARENT_TYPES = "analyseTransparentTypes";
+    public static final String ANALYSE_EXPLICIT_HC_TYPES = "analyseExplicitAndHiddenContentTypes";
     public static final String ANALYSE_IMMUTABLE_CAN_BE_INCREASED = "analyseImmutableCanBeIncreased";
     public static final String FIND_ASPECTS = "findAspects";
     public static final String COMPUTE_APPROVED_PRECONDITIONS_FINAL_FIELDS = "computeApprovedPreconditionsFinalFields";
@@ -106,7 +106,7 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
         AnalyserProgram analyserProgram = analyserContextInput.getAnalyserProgram();
         AnalyserComponents.Builder<String, SharedState> builder = new AnalyserComponents.Builder<String, SharedState>(analyserProgram)
                 .add(FIND_ASPECTS, iteration -> findAspects())
-                .add(ANALYSE_TRANSPARENT_TYPES, iteration -> analyseExplicitAndHiddenTypes())
+                .add(ANALYSE_EXPLICIT_HC_TYPES, iteration -> analyseExplicitAndHiddenContentTypes())
                 .add(ANALYSE_IMMUTABLE_CAN_BE_INCREASED, iteration -> analyseImmutableDeterminedByTypeParameters());
 
         if (typeInfo.isInterface()) {
@@ -210,7 +210,7 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
 
         // running this here saves an iteration, especially since the inclusion of currentType
         // in AnalysisProvider.defaultImmutable(...)
-        analyseExplicitAndHiddenTypes();
+        analyseExplicitAndHiddenContentTypes();
 
         computeTypeImmutable = new ComputeTypeImmutable(analyserContext, typeInfo, typeInspection, typeAnalysis,
                 parentAndOrEnclosingTypeAnalysis, myMethodAnalysers, myConstructors, myFieldAnalysers);
@@ -302,7 +302,7 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
     /*
 
      */
-    private AnalysisStatus analyseExplicitAndHiddenTypes() {
+    private AnalysisStatus analyseExplicitAndHiddenContentTypes() {
         if (typeAnalysis.hiddenContentAndExplicitTypeComputationDelays().isDone()) return DONE;
 
         // STEP 1: Ensure all my static sub-types have been processed, but wait if that's not possible
@@ -315,7 +315,7 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
                         TypeAnalysisImpl.Builder stAna = (TypeAnalysisImpl.Builder) analyserContext.getTypeAnalysis(st);
                         if (stAna.hiddenContentAndExplicitTypeComputationDelays().isDelayed()) {
                             ComputingTypeAnalyser typeAnalyser = (ComputingTypeAnalyser) analyserContext.getTypeAnalyser(st);
-                            typeAnalyser.analyseExplicitAndHiddenTypes();
+                            typeAnalyser.analyseExplicitAndHiddenContentTypes();
                         }
                         return stAna.hiddenContentAndExplicitTypeComputationDelays();
                     })
@@ -370,7 +370,7 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
                 // third clause to avoid cycles
                 if (delays.isDelayed() && typeInfo.primaryType() == parentClass.primaryType() && !typeInfo.isEnclosedIn(parentClass)) {
                     ComputingTypeAnalyser typeAnalyser = (ComputingTypeAnalyser) analyserContext.getTypeAnalyser(parentClass);
-                    typeAnalyser.analyseExplicitAndHiddenTypes();
+                    typeAnalyser.analyseExplicitAndHiddenContentTypes();
                 }
                 CausesOfDelay delays2 = typeAnalysis.hiddenContentAndExplicitTypeComputationDelays();
                 if (delays2.isDone()) {
@@ -394,7 +394,7 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
                     CausesOfDelay delays = typeAnalysis.hiddenContentAndExplicitTypeComputationDelays();
                     if (delays.isDelayed() && typeInfo.primaryType() == ifTypeInfo.primaryType()) {
                         ComputingTypeAnalyser typeAnalyser = (ComputingTypeAnalyser) analyserContext.getTypeAnalyser(ifTypeInfo);
-                        typeAnalyser.analyseExplicitAndHiddenTypes();
+                        typeAnalyser.analyseExplicitAndHiddenContentTypes();
                         causes = causes.merge(delays);
                     }
                     CausesOfDelay delays2 = typeAnalysis.hiddenContentAndExplicitTypeComputationDelays();

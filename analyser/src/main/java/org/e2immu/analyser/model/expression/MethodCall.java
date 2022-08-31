@@ -17,6 +17,7 @@ package org.e2immu.analyser.model.expression;
 import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.analyser.delay.DelayFactory;
 import org.e2immu.analyser.analyser.delay.SimpleCause;
+import org.e2immu.analyser.analyser.util.ComputeIndependent;
 import org.e2immu.analyser.analysis.MethodAnalysis;
 import org.e2immu.analyser.analysis.StatementAnalysis;
 import org.e2immu.analyser.analysis.TypeAnalysis;
@@ -337,8 +338,8 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
                 parameterExpressions, parameterValues);
         LinkedVariables linkedToObject = firstInCallCycle ? LinkedVariables.EMPTY :
                 ConstructorCall.combineArgumentIndependenceWithFormalParameterIndependence(context,
-                        context.getAnalyserContext().getMethodInspection(methodInfo), parameterValues,
-                        linkedVariablesOfParameters);
+                        context.getAnalyserContext().getMethodInspection(methodInfo),
+                        linkedVariablesOfParameters, objectValue.returnType());
         linkedVariablesOfObject.variables().forEach((v, level) -> linkedToObject.variables().forEach((v2, level2) -> {
             DV combined = object.isDelayed() ? object.causesOfDelay() : level.max(level2);
             builder.link(v, v2, combined);
@@ -1298,8 +1299,8 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
             List<LinkedVariables> linkedVariables = ConstructorCall.computeLinkedVariablesOfParameters(context, parameterExpressions, parameterExpressions);
             // IMPROVE use parameterValues (evaluated expressions), will that make a difference?
             // content link to the parameters, and all variables normally linked to them
-            return ConstructorCall.combineArgumentIndependenceWithFormalParameterIndependence(context, methodInspection, parameterExpressions,
-                    linkedVariables);
+            return ConstructorCall.combineArgumentIndependenceWithFormalParameterIndependence(context, methodInspection,
+                    linkedVariables, object.returnType());
         }
 
         // RULE 4: otherwise, we link to the object, even if the object is 'this'
@@ -1321,20 +1322,27 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
 
         // method is map.firstEntry(), so we check if the immutability value of the return type of the method (Map.Entry)
         // is determined by type parameters
-        TypeInfo bestReturnType = returnType().bestTypeInfo();
+        ParameterizedType returnType = returnType();
+        TypeInfo bestReturnType = returnType.bestTypeInfo();
         DV dependsOnTypeParameters;
         if (bestReturnType == null) {
             dependsOnTypeParameters = DV.TRUE_DV;
         } else {
-            TypeAnalysis typeAnalysis = context.getAnalyserContext().getTypeAnalysis(methodInfo.typeInfo);
+            TypeAnalysis typeAnalysis = context.getAnalyserContext().getTypeAnalysis(bestReturnType);
             dependsOnTypeParameters = typeAnalysis.immutableDeterminedByTypeParameters();
             if (dependsOnTypeParameters.isDelayed()) {
                 return linkedVariablesOfObject.changeToDelay(dependsOnTypeParameters);
             }
         }
+        /*
+        method T List.get(index), depends on type parameters? yes, computed on List<T>
+        returnType() == T -> parametersImmutable = immutable(T)
+        returnType() == class C -> parametersImmutable = immutable(C)
+         */
+
         if (dependsOnTypeParameters.valueIsTrue()) {
-            List<ParameterizedType> valuesForTypeParameters = returnType().isTypeParameter()
-                    ? List.of(returnType()) : returnType().parameters;
+            List<ParameterizedType> valuesForTypeParameters = returnType.isTypeParameter()
+                    ? List.of(returnType) : returnType.parameters;
             DV parametersImmutable = valuesForTypeParameters.stream()
                     .map(pt -> context.getAnalyserContext().typeImmutable(pt))
                     .reduce(MultiLevel.EFFECTIVELY_IMMUTABLE_DV, DV::min);
@@ -1345,10 +1353,16 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
                 return linkedVariablesOfObject.minimum(LinkedVariables.LINK_DEPENDENT);
             }
             // hidden content
-           DV relation =  context.getAnalyserContext().typeRelation(object.returnType(), returnType());
+            ComputeIndependent computeIndependent = new ComputeIndependent(context.getAnalyserContext(),
+                    context.getCurrentType().primaryType());
+            DV relation = computeIndependent.typeRelation(object.returnType(), returnType);
             return linkedVariablesOfObject.minimum(relation);
         }
-        return linkedVariablesOfObject; // FIXME ??? .minimum(LinkedVariables.LINK_INDEPENDENT_HC);
+        // almost the same code as with dependsOnTypeParameters FIXME is it the same?
+        DV immutableReturnType = context.getAnalyserContext().typeImmutable(returnType);
+        DV linkLevel = LinkedVariables.fromImmutableToLinkedVariableLevel(immutableReturnType, context.getAnalyserContext(),
+                context.getCurrentType().primaryType(), object.returnType(), returnType);
+        return linkedVariablesOfObject.minimum(linkLevel);
     }
 
     @Override

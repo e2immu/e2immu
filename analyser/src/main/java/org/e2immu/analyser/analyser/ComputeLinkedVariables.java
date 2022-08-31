@@ -18,6 +18,7 @@ import org.e2immu.analyser.analyser.delay.DelayFactory;
 import org.e2immu.analyser.analyser.delay.ProgressAndDelay;
 import org.e2immu.analyser.analyser.delay.SimpleCause;
 import org.e2immu.analyser.analyser.delay.VariableCause;
+import org.e2immu.analyser.analyser.util.ComputeIndependent;
 import org.e2immu.analyser.analyser.util.WeightedGraph;
 import org.e2immu.analyser.analysis.StatementAnalysis;
 import org.e2immu.analyser.analysis.TypeAnalysis;
@@ -203,8 +204,10 @@ public class ComputeLinkedVariables {
             return typeAnalysisOfBestType.immutableDeterminedByTypeParameters();
         };
 
+        ComputeIndependent computeIndependent = new ComputeIndependent(analyserContext,
+                evaluationContext.getCurrentType().primaryType());
         BiPredicate<Variable, Variable> isHcOf = (v1, v2) -> LinkedVariables.LINK_IS_HC_OF
-                .equals(analyserContext.typeRelation(v1.parameterizedType(), v2.parameterizedType()));
+                .equals(computeIndependent.typeRelation(v1.parameterizedType(), v2.parameterizedType()));
         curatedBeforeIgnore = refToScope.removeIncompatibleWithImmutable(variable, computeMyself, computeImmutable,
                 immutableCanBeIncreasedByTypeParameters, computeImmutableHiddenContent, isHcOf);
 

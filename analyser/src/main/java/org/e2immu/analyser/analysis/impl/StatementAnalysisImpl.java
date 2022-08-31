@@ -2185,7 +2185,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
                               ParameterizedType iterableType) {
         DV immutable = evaluationContext.getAnalyserContext().typeImmutable(concreteType);
         return LinkedVariables.fromImmutableToLinkedVariableLevel(immutable, evaluationContext.getAnalyserContext(),
-                concreteType, iterableType);
+                evaluationContext.getCurrentType().primaryType(), concreteType, iterableType);
     }
 
     private static DV notNullOfLoopVariable(EvaluationContext evaluationContext, Expression value, CausesOfDelay delays) {

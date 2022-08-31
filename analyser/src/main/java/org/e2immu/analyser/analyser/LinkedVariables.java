@@ -16,10 +16,8 @@ package org.e2immu.analyser.analyser;
 
 import org.e2immu.analyser.analyser.delay.DelayFactory;
 import org.e2immu.analyser.analyser.delay.NoDelay;
-import org.e2immu.analyser.model.Location;
-import org.e2immu.analyser.model.MultiLevel;
-import org.e2immu.analyser.model.ParameterizedType;
-import org.e2immu.analyser.model.TranslationMap;
+import org.e2immu.analyser.analyser.util.ComputeIndependent;
+import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.variable.Variable;
 
 import java.util.HashMap;
@@ -62,13 +60,14 @@ public class LinkedVariables implements Comparable<LinkedVariables> {
 
     public static DV fromImmutableToLinkedVariableLevel(DV immutable,
                                                         AnalyserContext analyserContext,
+                                                        TypeInfo primaryType,
                                                         ParameterizedType sourceType,
                                                         ParameterizedType targetType) {
         if (immutable.isDelayed()) return immutable;
         // REC IMM -> NO_LINKING
         if (MultiLevel.isAtLeastEventuallyRecursivelyImmutable(immutable)) return LinkedVariables.LINK_INDEPENDENT;
-
-        return analyserContext.typeRelation(sourceType, targetType);
+        ComputeIndependent computeIndependent = new ComputeIndependent(analyserContext, primaryType);
+        return computeIndependent.typeRelation(sourceType, targetType);
     }
 
     public boolean isDelayed() {
