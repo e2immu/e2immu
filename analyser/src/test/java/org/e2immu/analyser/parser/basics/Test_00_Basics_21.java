@@ -22,6 +22,7 @@ import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.ParameterInfo;
 import org.e2immu.analyser.model.variable.FieldReference;
+import org.e2immu.analyser.model.variable.ReturnVariable;
 import org.e2immu.analyser.model.variable.This;
 import org.e2immu.analyser.parser.CommonTestRunner;
 import org.e2immu.analyser.visitor.*;
@@ -66,8 +67,10 @@ public class Test_00_Basics_21 extends CommonTestRunner {
                     assertEquals(expectValue, d.evaluationResult().value().toString());
                     EvaluationResult.ChangeData cd = d.findValueChangeBySubString("other");
                     assertEquals("", cd.linkedVariables().toString());
+
+                    // this is linked to other at :4 common HC
                     EvaluationResult.ChangeData cdThis = d.findValueChangeByToString("this");
-                    String expectLv = d.iteration() <= 1 ? "other:-1" : "other:3";
+                    String expectLv = d.iteration() <= 1 ? "other:-1" : "other:4"; // common_hc
                     assertEquals(expectLv, cdThis.linkedVariables().toString());
 
                     assertEquals(d.iteration() <= 2, d.evaluationResult().causesOfDelay().isDelayed());
@@ -91,7 +94,8 @@ public class Test_00_Basics_21 extends CommonTestRunner {
                         };
                         assertEquals(expectValue, d.currentValue().toString());
 
-                        String expectLinked = d.iteration() <= 1 ? "this:-1" : "this:3";
+                        // other is linked to this with common HC
+                        String expectLinked = d.iteration() <= 1 ? "this:-1" : "this:4";
                         assertEquals(expectLinked, d.variableInfo().getLinkedVariables().toString());
 
                         assertDv(d, 2, DV.FALSE_DV, CONTEXT_MODIFIED);
@@ -114,7 +118,7 @@ public class Test_00_Basics_21 extends CommonTestRunner {
                                 .getProperty(CONTEXT_IMMUTABLE));
                         assertDv(d, 3, MultiLevel.EVENTUALLY_IMMUTABLE_HC_AFTER_MARK_DV, CONTEXT_IMMUTABLE);
 
-                        String expectLinked = d.iteration() <= 1 ? "this:-1" : "this:3";
+                        String expectLinked = d.iteration() <= 1 ? "this:-1" : "this:4";
                         assertEquals(expectLinked, d.variableInfo().getLinkedVariables().toString());
 
                         assertDv(d, 2, DV.FALSE_DV, CONTEXT_MODIFIED);
@@ -139,6 +143,13 @@ public class Test_00_Basics_21 extends CommonTestRunner {
                     if ("1".equals(d.statementId())) {
                         assertDv(d, 2, DV.FALSE_DV, CONTEXT_MODIFIED);
                         assertEquals("1:M", d.variableInfo().getAssignmentIds().getLatestAssignment());
+                    }
+                }
+            }
+            if ("get".equals(d.methodInfo().name)) {
+                if (d.variable() instanceof ReturnVariable) {
+                    if ("1".equals(d.statementId())) {
+                        assertEquals("this.t:0", d.variableInfo().getLinkedVariables().toString());
                     }
                 }
             }

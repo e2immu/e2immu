@@ -155,7 +155,7 @@ public class ComputeLinkedVariables {
         }
         ClusterResult cr = computeClusters(weightedGraph, variables,
                 staticallyAssigned ? LinkedVariables.LINK_STATICALLY_ASSIGNED : DV.MIN_INT_DV,
-                staticallyAssigned ? LinkedVariables.LINK_STATICALLY_ASSIGNED : LinkedVariables.LINK_DEPENDENT,
+                staticallyAssigned ? LinkedVariables.LINK_STATICALLY_ASSIGNED : LinkedVariables.LINK_IS_HC_OF,
                 !staticallyAssigned,
                 encounteredNotYetSet.get());
 
@@ -179,7 +179,7 @@ public class ComputeLinkedVariables {
                                        Set<CauseOfDelay> delaysInClustering,
                                        VariableInfo vi1,
                                        Variable variable) {
-        AnalysisProvider analysisProvider = evaluationContext.getAnalyserContext();
+        AnalyserContext analyserContext = evaluationContext.getAnalyserContext();
 
         boolean isBeingReassigned = reassigned.contains(variable);
 
@@ -192,26 +192,38 @@ public class ComputeLinkedVariables {
 
         Predicate<Variable> computeMyself = evaluationContext::isMyself;
         Function<Variable, DV> computeImmutable = v -> v instanceof This || evaluationContext.isMyself(v) ? MultiLevel.NOT_INVOLVED_DV :
-                analysisProvider.typeImmutable(v.parameterizedType());
+                analyserContext.typeImmutable(v.parameterizedType());
         Function<Variable, DV> computeImmutableHiddenContent = v -> v instanceof This ? MultiLevel.NOT_INVOLVED_DV :
                 evaluationContext.getAnalyserContext().immutableOfHiddenContentInTypeParameters(v.parameterizedType());
 
         Function<Variable, DV> immutableCanBeIncreasedByTypeParameters = v -> {
             TypeInfo bestType = v.parameterizedType().bestTypeInfo();
             if (bestType == null) return DV.FALSE_DV; // would be a weird situation
-            TypeAnalysis typeAnalysisOfBestType = analysisProvider.getTypeAnalysis(bestType);
+            TypeAnalysis typeAnalysisOfBestType = analyserContext.getTypeAnalysis(bestType);
             return typeAnalysisOfBestType.immutableDeterminedByTypeParameters();
         };
 
         BiPredicate<Variable, Variable> isHcOf = (v1, v2) -> LinkedVariables.LINK_IS_HC_OF
-                .equals(analysisProvider.typeRelation(v1.parameterizedType(), v2.parameterizedType()));
+                .equals(analyserContext.typeRelation(v1.parameterizedType(), v2.parameterizedType()));
         curatedBeforeIgnore = refToScope.removeIncompatibleWithImmutable(variable, computeMyself, computeImmutable,
                 immutableCanBeIncreasedByTypeParameters, computeImmutableHiddenContent, isHcOf);
 
         LinkedVariables curated = curatedBeforeIgnore
                 .remove(v -> ignore.test(statementAnalysis.getVariableOrDefaultNull(v.fullyQualifiedName()), v));
         boolean bidirectional = !(variable instanceof ReturnVariable);
-        weightedGraph.addNode(variable, curated.variables(), bidirectional, DV::min);
+        if (bidirectional) {
+            // not too efficient, but for now split
+            Map<Variable, DV> varsSymmetric = curated.bidirectional(true);
+            if(!varsSymmetric.isEmpty()) {
+                weightedGraph.addNode(variable, varsSymmetric, true, DV::min);
+            }
+            Map<Variable, DV> varsAsymmetric = curated.bidirectional(false);
+            if(!varsAsymmetric.isEmpty()) {
+                weightedGraph.addNode(variable, varsAsymmetric, true, DV::min);
+            }
+        } else {
+            weightedGraph.addNode(variable, curated.variables(), false, DV::min);
+        }
         boolean accountForDelay = staticallyAssigned || !(variable instanceof ReturnVariable);
         // context modified for the return variable is never linked, but the variables themselves must be present
         if (accountForDelay && curated.isDelayed()) {

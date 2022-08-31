@@ -131,6 +131,9 @@ public interface TypeAnalysis extends Analysis {
 
     This method returns DV.TRUE when the immutable property varies with its type parameters,
     DV.FALSE when not, and a delay when we don't know yet.
+
+    IMPROVE at some point, extend to "immutableDeterminedByCasts"? See Basics_20.C3, where we use Object
+    rather than a type parameter.
      */
     DV immutableDeterminedByTypeParameters();
 

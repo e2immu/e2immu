@@ -259,7 +259,7 @@ public class TestCommonJavaLang extends CommonAnnotatedAPI {
         assertEquals(DV.FALSE_DV, p0.getProperty(Property.MODIFIED_VARIABLE));
 
         ParameterAnalysis p2 = methodAnalysis.getParameterAnalyses().get(2);
-        assertEquals("object:3", p2.getLinksToOtherParameters().toString());
+        assertEquals("object:4", p2.getLinksToOtherParameters().toString());
         assertEquals(DV.TRUE_DV, p2.getProperty(Property.MODIFIED_VARIABLE));
     }
 

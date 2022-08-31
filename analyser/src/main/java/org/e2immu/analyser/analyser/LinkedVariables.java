@@ -61,16 +61,14 @@ public class LinkedVariables implements Comparable<LinkedVariables> {
     }
 
     public static DV fromImmutableToLinkedVariableLevel(DV immutable,
-                                                        AnalysisProvider analysisProvider,
+                                                        AnalyserContext analyserContext,
                                                         ParameterizedType sourceType,
                                                         ParameterizedType targetType) {
         if (immutable.isDelayed()) return immutable;
         // REC IMM -> NO_LINKING
         if (MultiLevel.isAtLeastEventuallyRecursivelyImmutable(immutable)) return LinkedVariables.LINK_INDEPENDENT;
-        int level = MultiLevel.level(immutable);
-        if (level == MultiLevel.Level.MUTABLE.level) return LINK_DEPENDENT;
 
-        return analysisProvider.typeRelation(sourceType, targetType);
+        return analyserContext.typeRelation(sourceType, targetType);
     }
 
     public boolean isDelayed() {
@@ -401,5 +399,12 @@ public class LinkedVariables implements Comparable<LinkedVariables> {
         if (isEmpty() || this == NOT_YET_SET) return Set.of();
         return variables.entrySet().stream().filter(e -> e.getValue().equals(LINK_STATICALLY_ASSIGNED))
                 .map(Map.Entry::getKey).collect(Collectors.toUnmodifiableSet());
+    }
+
+    public Map<Variable, DV> bidirectional(boolean symmetric) {
+        if (isEmpty() || this == NOT_YET_SET) return Map.of();
+        return variables.entrySet().stream()
+                .filter(e -> symmetric ^ (LINK_IS_HC_OF.equals(e.getValue()) || LINK_COMMON_HC.equals(e.getValue())))
+                .collect(Collectors.toUnmodifiableMap(Map.Entry::getKey, Map.Entry::getValue));
     }
 }

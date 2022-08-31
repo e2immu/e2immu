@@ -32,16 +32,29 @@ import java.util.Map;
 
 import static org.e2immu.analyser.analyser.LinkedVariables.*;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 public class TestWeightedGraph_1 {
 
     Variable thisVar, toDo, nodeMap, cycle, smallerCycle, removed;
     CausesOfDelay delay;
     final DV v0 = LINK_STATICALLY_ASSIGNED;
-    final DV v3 = LINK_COMMON_HC;
+    final DV v4 = LINK_COMMON_HC;
     WeightedGraph wg;
 
+    /*
+     thisVar 0 <----D----> removed 0
+       ^ <--\
+       |     --\
+       |4       --\4
+       v           --->
+     cycle 0           smallerCycle 0
+       ^ <--\
+       |4   ---\
+       |        ---\4
+       v             --->
+     nodeMap 0 <----4--->  to_do 0
+     */
     @BeforeEach
     public void beforeEach() {
         thisVar = makeVariable("thisVar");
@@ -53,12 +66,12 @@ public class TestWeightedGraph_1 {
         delay = DelayFactory.createDelay(new SimpleCause(Location.NOT_YET_SET, CauseOfDelay.Cause.ECI));
 
         wg = new WeightedGraph();
-        wg.addNode(thisVar, Map.of(thisVar, v0, removed, delay, cycle, v3, smallerCycle, v3));
+        wg.addNode(thisVar, Map.of(thisVar, v0, removed, delay, cycle, v4, smallerCycle, v4));
         wg.addNode(removed, Map.of(removed, v0, thisVar, delay));
-        wg.addNode(smallerCycle, Map.of(thisVar, v3));
-        wg.addNode(cycle, Map.of(cycle, v0, nodeMap, v3, toDo, v3, thisVar, v3));
-        wg.addNode(nodeMap, Map.of(nodeMap, v0, toDo, v3, cycle, v3));
-        wg.addNode(toDo, Map.of(toDo, v0, nodeMap, v3, cycle, v3));
+        wg.addNode(smallerCycle, Map.of(smallerCycle, v0, thisVar, v4));
+        wg.addNode(cycle, Map.of(cycle, v0, nodeMap, v4, toDo, v4, thisVar, v4));
+        wg.addNode(nodeMap, Map.of(nodeMap, v0, toDo, v4, cycle, v4));
+        wg.addNode(toDo, Map.of(toDo, v0, nodeMap, v4, cycle, v4));
     }
 
     @Test
@@ -66,8 +79,8 @@ public class TestWeightedGraph_1 {
         Map<Variable, DV> startAtToDo = wg.links(toDo, LINK_STATICALLY_ASSIGNED, false);
         assertEquals(1, startAtToDo.size());
         assertEquals(v0, startAtToDo.get(toDo));
-     //   assertEquals(DV.MAX_INT_DV, startAtToDo.get(cycle));
-      //  assertEquals(DV.MAX_INT_DV, startAtToDo.get(nodeMap));
+        assertNull(startAtToDo.get(cycle));
+        assertNull(startAtToDo.get(nodeMap));
     }
 
     @Test
@@ -75,8 +88,8 @@ public class TestWeightedGraph_1 {
         Map<Variable, DV> startAtToDo = wg.links(toDo, LINK_DEPENDENT, true);
         assertEquals(1, startAtToDo.size());
         assertEquals(v0, startAtToDo.get(toDo));
-      //  assertEquals(DV.MAX_INT_DV, startAtToDo.get(cycle));
-    //    assertEquals(DV.MAX_INT_DV, startAtToDo.get(nodeMap));
+        assertNull(startAtToDo.get(cycle));
+        assertNull(startAtToDo.get(nodeMap));
     }
 
     @Test
@@ -84,10 +97,10 @@ public class TestWeightedGraph_1 {
         Map<Variable, DV> startAtToDo = wg.links(toDo, LINK_COMMON_HC, false);
         assertEquals(5, startAtToDo.size());
         assertEquals(v0, startAtToDo.get(toDo));
-        assertEquals(v3, startAtToDo.get(cycle));
-        assertEquals(v3, startAtToDo.get(nodeMap));
-        assertEquals(v3, startAtToDo.get(thisVar));
-        assertEquals(v3, startAtToDo.get(smallerCycle));
+        assertEquals(v4, startAtToDo.get(cycle));
+        assertEquals(v4, startAtToDo.get(nodeMap));
+        assertEquals(v4, startAtToDo.get(thisVar));
+        assertEquals(v4, startAtToDo.get(smallerCycle));
     }
 
     @Test
@@ -119,8 +132,8 @@ public class TestWeightedGraph_1 {
     public void test4b() {
         Map<Variable, DV> startAtRemoved = wg.links(removed, LINK_DEPENDENT, true);
         assertEquals(2, startAtRemoved.size());
-      //  assertEquals(DV.MAX_INT_DV, startAtRemoved.get(cycle));
-      //  assertEquals(DV.MAX_INT_DV, startAtRemoved.get(smallerCycle));
+        assertNull(startAtRemoved.get(cycle));
+        assertNull(startAtRemoved.get(smallerCycle));
         assertEquals(delay, startAtRemoved.get(thisVar));
         assertEquals(LINK_STATICALLY_ASSIGNED, startAtRemoved.get(removed));
     }

@@ -285,7 +285,7 @@ public class TestCommonJavaUtil extends CommonAnnotatedAPI {
                 .findFirst().orElseThrow();
         assertEquals("java.util.Arrays.setAll(T[],java.util.function.IntFunction<? extends T>)", methodInfo.fullyQualifiedName);
         ParameterAnalysis p1 = methodInfo.methodAnalysis.get().getParameterAnalyses().get(1);
-        assertEquals("array:3", p1.getLinksToOtherParameters().toString());
+        assertEquals("array:4", p1.getLinksToOtherParameters().toString());
 
         ParameterInfo pi1 = methodInfo.methodInspection.get().getParameters().get(1);
         assertEquals("generator", pi1.name);

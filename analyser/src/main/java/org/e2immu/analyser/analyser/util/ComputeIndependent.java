@@ -50,16 +50,16 @@ public record ComputeIndependent(AnalyserContext analyserContext, SetOfTypes hid
         ParameterizedType oneType;
         // when not null, the types are identical or assignable to each other
         DV immutableOneType;
-        boolean aUnboundTypeParameter = a.isUnboundTypeParameter();
-        boolean bUnboundTypeParameter = b.isUnboundTypeParameter();
+        boolean aTypeParameter = a.isTypeParameter();
+        boolean bTypeParameter = b.isTypeParameter();
 
         if (a.equals(b)) {
             oneType = a;
             immutableOneType = immutableA;
-        } else if (!aUnboundTypeParameter && a.isAssignableFrom(analyserContext, b)) {
+        } else if (!aTypeParameter && a.isAssignableFrom(analyserContext, b)) {
             oneType = a;
             immutableOneType = immutableA;
-        } else if (!bUnboundTypeParameter && b.isAssignableFrom(analyserContext, a)) {
+        } else if (!bTypeParameter && b.isAssignableFrom(analyserContext, a)) {
             oneType = b;
             immutableOneType = null;
         } else {
@@ -98,13 +98,13 @@ public record ComputeIndependent(AnalyserContext analyserContext, SetOfTypes hid
             throw new UnsupportedOperationException("?? " + linkLevel);
         }
         // now 2 different, non-assignable types remain...
-        if (aUnboundTypeParameter && bUnboundTypeParameter) {
+        if (aTypeParameter && bTypeParameter) {
             return MultiLevel.INDEPENDENT_DV;
         }
-        if (aUnboundTypeParameter) {
+        if (aTypeParameter) {
             return verifyIncludedInHiddenContentOf(immutableA, linkLevel, a, b, MultiLevel.INDEPENDENT_DV);
         }
-        if (bUnboundTypeParameter) {
+        if (bTypeParameter) {
             return verifyIncludedInHiddenContentOf(MultiLevel.EFFECTIVELY_IMMUTABLE_HC_DV,
                     linkLevel, b, a, MultiLevel.INDEPENDENT_DV);
         }

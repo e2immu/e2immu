@@ -163,7 +163,15 @@ public class TypeInspectionImpl extends InspectionImpl implements TypeInspection
 
     @Override
     public boolean isExtensible() {
-        return !modifiers.contains(TypeModifier.FINAL) && !modifiers.contains(TypeModifier.SEALED);
+        return isExtensible(modifiers, typeNature);
+    }
+
+    private static boolean isExtensible(Set<TypeModifier> modifiers, TypeNature typeNature) {
+        return switch (typeNature) {
+            case ENUM, ANNOTATION, PRIMITIVE, RECORD -> false;
+            case INTERFACE -> true;
+            case CLASS -> !modifiers.contains(TypeModifier.FINAL) && !modifiers.contains(TypeModifier.SEALED);
+        };
     }
 
     @Container(builds = TypeInspectionImpl.class)
@@ -208,7 +216,7 @@ public class TypeInspectionImpl extends InspectionImpl implements TypeInspection
 
         @Override
         public boolean isExtensible() {
-            return modifiers.contains(TypeModifier.FINAL);
+            return TypeInspectionImpl.isExtensible(modifiers, typeNature);
         }
 
         @Override

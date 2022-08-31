@@ -14,9 +14,12 @@
 
 package org.e2immu.analyser.analyser;
 
+import org.e2immu.analyser.model.NamedType;
 import org.e2immu.analyser.model.ParameterizedType;
+import org.e2immu.analyser.parser.InspectionProvider;
 
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -73,6 +76,25 @@ public record SetOfTypes(Set<ParameterizedType> types) {
                         return b.parameters.get(t.typeParameter.getIndex());
                     }
                     return t;
+                })
+                .collect(Collectors.toUnmodifiableSet()));
+    }
+
+    /*
+    make a translation map based on pt2, and translate from formal to concrete.
+
+    If types contains E=formal type parameter of List<E>, and pt = List<T>, we want
+    to return a SetOfTypes containing T instead of E
+     */
+    public SetOfTypes translate(InspectionProvider inspectionProvider, ParameterizedType pt) {
+        Map<NamedType, ParameterizedType> map = pt.initialTypeParameterMap(inspectionProvider);
+        return new SetOfTypes(types.stream()
+                .map(t -> {
+                    // pt is a type without type parameters, and t is a type parameter
+                    if (map.isEmpty() && t.isAssignableFrom(inspectionProvider, pt)) {
+                        return pt;
+                    }
+                    return t.applyTranslation(inspectionProvider.getPrimitives(), map);
                 })
                 .collect(Collectors.toUnmodifiableSet()));
     }

@@ -172,9 +172,7 @@ public abstract class TypeAnalyserImpl extends AbstractAnalyser implements TypeA
         }
 
         // those hidden content types that are type parameters
-        boolean res = typeAnalysis.getHiddenContentTypes().types()
-                .stream().anyMatch(ParameterizedType::isUnboundTypeParameter);
-
+        boolean res = typeAnalysis.getHiddenContentTypes().types().stream().anyMatch(ParameterizedType::isTypeParameter);
         LOGGER.debug("Immutable can be increased for {}? {}", typeInfo.fullyQualifiedName, res);
         typeAnalysis.setImmutableDeterminedByTypeParameters(res);
         return DONE;

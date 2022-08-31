@@ -1344,6 +1344,9 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
             if (MultiLevel.MUTABLE_DV.ge(parametersImmutable)) {
                 return linkedVariablesOfObject.minimum(LinkedVariables.LINK_DEPENDENT);
             }
+            // hidden content
+           DV relation =  context.getAnalyserContext().typeRelation(object.returnType(), returnType());
+            return linkedVariablesOfObject.minimum(relation);
         }
         return linkedVariablesOfObject; // FIXME ??? .minimum(LinkedVariables.LINK_INDEPENDENT_HC);
     }
