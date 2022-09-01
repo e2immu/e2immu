@@ -1393,16 +1393,12 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
         Set<Variable> touched = touchedStream(linkedVariablesMap, newlyCreatedScopeVariables, prepareMerge);
         boolean oneBranchHasBecomeUnreachable = oneBranchHasBecomeUnreachable();
         ComputeLinkedVariables computeLinkedVariables = ComputeLinkedVariables.create(this, MERGE,
-                true, oneBranchHasBecomeUnreachable,
+                oneBranchHasBecomeUnreachable,
                 (vic, v) -> !touched.contains(v),
                 variablesWhereMergeOverwrites,
                 linkedVariablesFromBlocks, evaluationContext);
-        ComputeLinkedVariables computeLinkedVariablesCm = ComputeLinkedVariables.create(this, MERGE,
-                false, oneBranchHasBecomeUnreachable,
-                (vic, v) -> !touched.contains(v),
-                variablesWhereMergeOverwrites,
-                linkedVariablesFromBlocks, evaluationContext);
-        boolean progress = computeLinkedVariablesCm.writeLinkedVariables(computeLinkedVariables, touched,
+
+        boolean progress = computeLinkedVariables.writeLinkedVariables(computeLinkedVariables, touched,
                 prepareMerge.toRemove);
 
         for (Variable variable : touched) {
@@ -1460,8 +1456,8 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
         ProgressAndDelay cContStatus = computeLinkedVariables.write(CONTEXT_CONTAINER,
                 groupPropertyValues.getMap(CONTEXT_CONTAINER));
 
-        ProgressAndDelay cmStatus = computeLinkedVariablesCm.write(CONTEXT_MODIFIED,
-                groupPropertyValues.getMap(CONTEXT_MODIFIED), conditionCauses);
+        ProgressAndDelay cmStatus = computeLinkedVariables.writeContextModified(groupPropertyValues
+                .getMap(CONTEXT_MODIFIED), conditionCauses);
 
         return delay.combine(ennStatus).combine(cnnStatus).combine(cmStatus).combine(extImmStatus)
                 .combine(extContStatus).combine(cImmStatus).combine(cContStatus).combine(extIgnModStatus)
@@ -2203,7 +2199,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
         // hidden content: how do the types relate? entry: map, the linkedOfIterable=map:2; Map.Entry is mutable -> keep :2
         // the type were immutable without hc
         assert LinkedVariables.LINK_COMMON_HC.equals(linkOfLoopVarInIterable);
-        if(MultiLevel.isMutable(immutableOfLoopVar)) {
+        if (MultiLevel.isMutable(immutableOfLoopVar)) {
             return linkedOfIterable.minimum(LinkedVariables.LINK_DEPENDENT);
         }
 

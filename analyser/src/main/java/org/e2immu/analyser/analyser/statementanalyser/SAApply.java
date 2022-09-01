@@ -749,20 +749,14 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
         Set<Variable> reassigned = evaluationResult.changeData().entrySet().stream()
                 .filter(e -> e.getValue().markAssignment()).map(Map.Entry::getKey).collect(Collectors.toUnmodifiableSet());
         ComputeLinkedVariables computeLinkedVariables = ComputeLinkedVariables.create(statementAnalysis, EVALUATION,
-                true, false,
-                (vic, v) -> variableUnknown(v),
-                reassigned,
-                linkedVariablesFromChangeData,
-                sharedState.evaluationContext());
-        ComputeLinkedVariables computeLinkedVariablesCm = ComputeLinkedVariables.create(statementAnalysis, EVALUATION,
-                false, false,
+                false,
                 (vic, v) -> variableUnknown(v),
                 reassigned,
                 linkedVariablesFromChangeData,
                 sharedState.evaluationContext());
 
         // we should be able to cache the statically assigned variables, they cannot change anymore after iteration 0
-        ProgressAndDelay linkDelays = computeLinkedVariablesCm.writeClusteredLinkedVariables(computeLinkedVariables);
+        ProgressAndDelay linkDelays = computeLinkedVariables.writeClusteredLinkedVariables();
 
         // 1
         ProgressAndDelay cnnStatus = computeLinkedVariables.write(CONTEXT_NOT_NULL,
@@ -836,7 +830,8 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
         ProgressAndDelay cContStatus = computeLinkedVariables.write(CONTEXT_CONTAINER, groupPropertyValues.getMap(CONTEXT_CONTAINER));
 
         // 7
-        ProgressAndDelay cmStatus = computeLinkedVariablesCm.write(CONTEXT_MODIFIED, groupPropertyValues.getMap(CONTEXT_MODIFIED));
+        ProgressAndDelay cmStatus = computeLinkedVariables.writeContextModified(groupPropertyValues.getMap(CONTEXT_MODIFIED),
+                CausesOfDelay.EMPTY);
 
         // 8
         ProgressAndDelay extIgnMod = computeLinkedVariables.write(EXTERNAL_IGNORE_MODIFICATIONS,
