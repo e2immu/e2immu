@@ -18,7 +18,6 @@ import org.e2immu.analyser.analyser.delay.DelayFactory;
 import org.e2immu.analyser.analyser.delay.ProgressAndDelay;
 import org.e2immu.analyser.analyser.delay.SimpleCause;
 import org.e2immu.analyser.analyser.delay.VariableCause;
-import org.e2immu.analyser.analyser.util.ComputeIndependent;
 import org.e2immu.analyser.analyser.util.WeightedGraph;
 import org.e2immu.analyser.analysis.StatementAnalysis;
 import org.e2immu.analyser.analysis.TypeAnalysis;
@@ -40,6 +39,9 @@ import java.util.function.BiPredicate;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
+
+import static org.e2immu.analyser.analyser.LinkedVariables.LINK_COMMON_HC;
+import static org.e2immu.analyser.analyser.LinkedVariables.LINK_STATICALLY_ASSIGNED;
 
 /*
 Goal:
@@ -154,11 +156,12 @@ public class ComputeLinkedVariables {
                 }
             }
         }
-        ClusterResult cr = computeClusters(weightedGraph, variables,
-                staticallyAssigned ? LinkedVariables.LINK_STATICALLY_ASSIGNED : DV.MIN_INT_DV,
-                staticallyAssigned ? LinkedVariables.LINK_STATICALLY_ASSIGNED : LinkedVariables.LINK_IS_HC_OF,
-                !staticallyAssigned,
-                encounteredNotYetSet.get());
+        ClusterResult cr;
+        if (staticallyAssigned) {
+            cr = computeSymmetricClusters(weightedGraph, variables);
+        } else {
+            cr = computeAsymmetricClusters(weightedGraph, variables, encounteredNotYetSet.get());
+        }
 
         // this will cause delays across the board for CONTEXT_ and EXTERNAL_ if the flag is set.
         if (evaluationContext.delayStatementBecauseOfECI()) {
@@ -203,26 +206,26 @@ public class ComputeLinkedVariables {
             TypeAnalysis typeAnalysisOfBestType = analyserContext.getTypeAnalysis(bestType);
             return typeAnalysisOfBestType.immutableDeterminedByTypeParameters();
         };
-
+/*
         ComputeIndependent computeIndependent = new ComputeIndependent(analyserContext,
                 evaluationContext.getCurrentType().primaryType());
         BiPredicate<Variable, Variable> isHcOf = (v1, v2) -> LinkedVariables.LINK_IS_HC_OF
-                .equals(computeIndependent.typeRelation(v1.parameterizedType(), v2.parameterizedType()));
+                .equals(computeIndependent.linkLevelOfTwoHCRelatedTypes(v1.parameterizedType(), v2.parameterizedType()));
         curatedBeforeIgnore = refToScope.removeIncompatibleWithImmutable(variable, computeMyself, computeImmutable,
                 immutableCanBeIncreasedByTypeParameters, computeImmutableHiddenContent, isHcOf);
-
-        LinkedVariables curated = curatedBeforeIgnore
+*/
+        LinkedVariables curated = refToScope
                 .remove(v -> ignore.test(statementAnalysis.getVariableOrDefaultNull(v.fullyQualifiedName()), v));
         boolean bidirectional = !(variable instanceof ReturnVariable);
         if (bidirectional) {
             // not too efficient, but for now split
             Map<Variable, DV> varsSymmetric = curated.bidirectional(true);
-            if(!varsSymmetric.isEmpty()) {
+            if (!varsSymmetric.isEmpty()) {
                 weightedGraph.addNode(variable, varsSymmetric, true, DV::min);
             }
             Map<Variable, DV> varsAsymmetric = curated.bidirectional(false);
-            if(!varsAsymmetric.isEmpty()) {
-                weightedGraph.addNode(variable, varsAsymmetric, true, DV::min);
+            if (!varsAsymmetric.isEmpty()) {
+                weightedGraph.addNode(variable, varsAsymmetric, false, DV::min);
             }
         } else {
             weightedGraph.addNode(variable, curated.variables(), false, DV::min);
@@ -252,12 +255,42 @@ public class ComputeLinkedVariables {
     private record ClusterResult(Cluster returnValueCluster, Variable rv, List<Cluster> clusters) {
     }
 
-    private static ClusterResult computeClusters(WeightedGraph weightedGraph,
-                                                 Set<Variable> variables,
-                                                 DV minInclusive,
-                                                 DV maxInclusive,
-                                                 boolean followDelayed,
-                                                 CausesOfDelay encounteredNotYetSet) {
+    /*
+    slower than the symmetric case, but IS_HC_OF is asymmetric.
+     */
+    private static ClusterResult computeAsymmetricClusters(WeightedGraph weightedGraph,
+                                                           Set<Variable> variables,
+                                                           CausesOfDelay encounteredNotYetSet) {
+        List<Cluster> result = new ArrayList<>(variables.size());
+        Cluster rvCluster = null;
+        Variable rv = null;
+        for (Variable variable : variables) {
+            Map<Variable, DV> map = weightedGraph.links(variable, LinkedVariables.LINK_IS_HC_OF, true);
+            Set<Variable> reachable = map.entrySet().stream()
+                    .filter(e -> e.getValue().ge(LINK_STATICALLY_ASSIGNED) && e.getValue().le(LINK_COMMON_HC))
+                    .map(Map.Entry::getKey).collect(Collectors.toUnmodifiableSet());
+            DV delays = map.values().stream().reduce(DV.MIN_INT_DV, DV::max);
+            CausesOfDelay clusterDelay;
+            if (encounteredNotYetSet.isDelayed()) {
+                clusterDelay = encounteredNotYetSet;
+            } else {
+                clusterDelay = delays == DV.MIN_INT_DV ? CausesOfDelay.EMPTY : delays.causesOfDelay();
+            }
+
+            Cluster cluster = new Cluster(reachable, clusterDelay);
+            if (variable instanceof ReturnVariable) {
+                rvCluster = cluster;
+                assert rv == null;
+                rv = variable;
+            } else {
+                result.add(cluster);
+            }
+        }
+        return new ClusterResult(rvCluster, rv, result);
+    }
+
+    private static ClusterResult computeSymmetricClusters(WeightedGraph weightedGraph,
+                                                          Set<Variable> variables) {
         Set<Variable> done = new HashSet<>();
         List<Cluster> result = new ArrayList<>(variables.size());
         Cluster rvCluster = null;
@@ -265,17 +298,13 @@ public class ComputeLinkedVariables {
 
         for (Variable variable : variables) {
             if (!done.contains(variable)) {
-                Map<Variable, DV> map = weightedGraph.links(variable, maxInclusive, followDelayed);
+                Map<Variable, DV> map = weightedGraph.links(variable, LINK_STATICALLY_ASSIGNED, false);
                 Set<Variable> reachable = map.entrySet().stream()
-                        .filter(e -> e.getValue().ge(minInclusive) && e.getValue().le(maxInclusive))
+                        .filter(e -> e.getValue().ge(LINK_STATICALLY_ASSIGNED) && e.getValue().le(LINK_STATICALLY_ASSIGNED))
                         .map(Map.Entry::getKey).collect(Collectors.toUnmodifiableSet());
                 DV delays = map.values().stream().reduce(DV.MIN_INT_DV, DV::max);
-                CausesOfDelay clusterDelay;
-                if (encounteredNotYetSet.isDelayed() && followDelayed) {
-                    clusterDelay = encounteredNotYetSet;
-                } else {
-                    clusterDelay = delays == DV.MIN_INT_DV ? CausesOfDelay.EMPTY : delays.causesOfDelay();
-                }
+                CausesOfDelay clusterDelay = delays == DV.MIN_INT_DV ? CausesOfDelay.EMPTY : delays.causesOfDelay();
+
                 Cluster cluster = new Cluster(reachable, clusterDelay);
                 if (variable instanceof ReturnVariable) {
                     rvCluster = cluster;
@@ -591,7 +620,7 @@ public class ComputeLinkedVariables {
         }
         Set<Variable> staticallyAssigned = staticallyAssignedVariables.get(variable);
         if (staticallyAssigned != null) {
-            staticallyAssigned.forEach(v -> map.put(v, LinkedVariables.LINK_STATICALLY_ASSIGNED));
+            staticallyAssigned.forEach(v -> map.put(v, LINK_STATICALLY_ASSIGNED));
         }
         map.remove(variable); // no self references
         if (map.isEmpty()) {

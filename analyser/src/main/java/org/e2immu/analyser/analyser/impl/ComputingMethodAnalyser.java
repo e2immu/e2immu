@@ -972,14 +972,20 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
             if (linkedVariables.isDelayed()) {
                 return linkedVariables.causesOfDelay();
             }
+            if (typeAnalysis.hiddenContentAndExplicitTypeComputationDelays().isDelayed()) {
+                LOGGER.debug("Delaying independent of {}, hidden content not yet known", methodInfo);
+                return AnalysisStatus.of(typeAnalysis.hiddenContentAndExplicitTypeComputationDelays().causesOfDelay());
+            }
+            SetOfTypes hiddenContentCurrentType = typeAnalysis.getHiddenContentTypes();
 
-            ComputeIndependent computeIndependent = new ComputeIndependent(analyserContext, methodInfo.typeInfo.primaryType());
+            ComputeIndependent computeIndependent = new ComputeIndependent(analyserContext, hiddenContentCurrentType,
+                    methodInfo.typeInfo.primaryType());
             independent = linkedVariables.stream()
                     .filter(e -> e.getKey() instanceof FieldReference fr && fr.scopeIsRecursivelyThis()
                             || e.getKey() instanceof This)
                     .map(e -> {
                         if (e.getKey() instanceof This) return MultiLevel.INDEPENDENT_DV;
-                        return computeIndependent.compute(e.getValue(), returnType, immutable, e.getKey().parameterizedType());
+                        return computeIndependent.typesAtLinkLevel(e.getValue(), returnType, immutable, e.getKey().parameterizedType());
                     })
                     .reduce(MultiLevel.INDEPENDENT_DV, DV::min);
         }

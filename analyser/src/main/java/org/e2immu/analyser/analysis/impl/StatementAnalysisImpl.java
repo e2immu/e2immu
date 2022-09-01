@@ -2167,22 +2167,52 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
             Identifier identifier = Identifier.forVariableOutOfScope(loopVar, index);
             value = Instance.forLoopVariable(identifier, loopVar, valueProperties);
         }
-        LinkedVariables linked = evaluatedIterable.linkedVariables(EvaluationResult.from(evaluationContext));
-        /*
-        We know that the spliterator() method is INDEPENDENT_1 wrt the iterating type, so we must ensure the
-        linked values are at least INDEPENDENT_1 (when the loopVar type is MUTABLE), and at most INDEPENDENT
-        (when the loopVar is recursively IMMUTABLE)
-         */
-        DV minLinking = minimumLinking(evaluationContext, loopVar.parameterizedType(), evaluatedIterable.returnType());
-        LinkedVariables linked1 = minLinking == LinkedVariables.LINK_INDEPENDENT ? LinkedVariables.EMPTY :
-                linked.minimum(minLinking);
+        LinkedVariables linkedOfIterable = evaluatedIterable.linkedVariables(EvaluationResult.from(evaluationContext))
+                .minimum(LinkedVariables.LINK_ASSIGNED);
+        DV linkOfLoopVarInIterable = linkOfLoopVarInIterable(evaluationContext, parameterizedType,
+                evaluatedIterable.returnType());
+        LinkedVariables linked;
+        if (linkOfLoopVarInIterable.isDelayed()) {
+            linked = linkedOfIterable.changeToDelay(linkOfLoopVarInIterable.causesOfDelay());
+        } else {
+            DV immutableOfLoopVar = valueProperties.get(IMMUTABLE);
+            linked = combineLinkOfLoopVarAndLinkedOfIterable(linkedOfIterable, linkOfLoopVarInIterable, immutableOfLoopVar);
+        }
         EvaluationResult.Builder builder = new EvaluationResult.Builder(evaluationResult);
-        builder.assignment(loopVar, value, linked1);
+        builder.assignment(loopVar, value, linked);
         return builder.compose(evaluationResult).build();
     }
 
-    private DV minimumLinking(EvaluationContext evaluationContext, ParameterizedType concreteType,
-                              ParameterizedType iterableType) {
+    private LinkedVariables combineLinkOfLoopVarAndLinkedOfIterable(LinkedVariables linkedOfIterable,
+                                                                    DV linkOfLoopVarInIterable,
+                                                                    DV immutableOfLoopVar) {
+        assert linkOfLoopVarInIterable.isDone();
+
+        if (LinkedVariables.LINK_INDEPENDENT.equals(linkOfLoopVarInIterable)) {
+            return LinkedVariables.EMPTY;
+        }
+        if (LinkedVariables.LINK_DEPENDENT.equals(linkOfLoopVarInIterable)) {
+            return linkedOfIterable.minimum(LinkedVariables.LINK_DEPENDENT);
+        }
+
+        // T to List<T> type-wise; t:list --> list:1 -> list:3;
+        // t : someMethodExpression(list), with list:4 -> list:3
+        if (LinkedVariables.LINK_IS_HC_OF.equals(linkOfLoopVarInIterable)) {
+            return linkedOfIterable.changeAllToUnlessDelayed(LinkedVariables.LINK_IS_HC_OF);
+        }
+        // hidden content: how do the types relate? entry: map, the linkedOfIterable=map:2; Map.Entry is mutable -> keep :2
+        // the type were immutable without hc
+        assert LinkedVariables.LINK_COMMON_HC.equals(linkOfLoopVarInIterable);
+        if(MultiLevel.isMutable(immutableOfLoopVar)) {
+            return linkedOfIterable.minimum(LinkedVariables.LINK_DEPENDENT);
+        }
+
+        // so immutable with hidden content (because fully immutable would not result in common hc)
+        return linkedOfIterable.minimum(LinkedVariables.LINK_COMMON_HC);
+    }
+
+    private DV linkOfLoopVarInIterable(EvaluationContext evaluationContext, ParameterizedType concreteType,
+                                       ParameterizedType iterableType) {
         DV immutable = evaluationContext.getAnalyserContext().typeImmutable(concreteType);
         return LinkedVariables.fromImmutableToLinkedVariableLevel(immutable, evaluationContext.getAnalyserContext(),
                 evaluationContext.getCurrentType().primaryType(), concreteType, iterableType);
@@ -2196,7 +2226,6 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
         DV nne = evaluationContext.getProperty(value, NOT_NULL_EXPRESSION, true, false);
         return nne.isDelayed() ? nne : MultiLevel.composeOneLevelLessNotNull(nne);
     }
-
 
     /*
     Initially triggered by the presence of the IN_NOT_NULL_CONTEXT flag, which marks the transition of CNN from NULLABLE

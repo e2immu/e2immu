@@ -22,7 +22,7 @@ import org.e2immu.analyser.analyser.nonanalyserimpl.AbstractEvaluationContextImp
 import org.e2immu.analyser.analyser.util.AnalyserResult;
 import org.e2immu.analyser.analyser.util.AssignmentIncompatibleWithPrecondition;
 import org.e2immu.analyser.analyser.util.ExplicitTypes;
-import org.e2immu.analyser.analyser.util.HiddenContentTypes;
+import org.e2immu.analyser.analyser.util.ComputeHiddenContentTypes;
 import org.e2immu.analyser.analysis.*;
 import org.e2immu.analyser.analysis.impl.TypeAnalysisImpl;
 import org.e2immu.analyser.config.AnalyserProgram;
@@ -455,7 +455,7 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
         */
         SetOfTypes typeParameters = new SetOfTypes(typeInspection.typeParameters().stream()
                 .map(TypeParameter::toParameterizedType).collect(Collectors.toUnmodifiableSet()));
-        SetOfTypes hiddenContentTypes = new HiddenContentTypes(typeInfo, analyserContext).go(typeParameters).build();
+        SetOfTypes hiddenContentTypes = new ComputeHiddenContentTypes(typeInfo, analyserContext).go(typeParameters).build();
         typeAnalysis.setHiddenContentTypes(hiddenContentTypes);
 
         LOGGER.debug("Transparent data types for {} are: [{}]", typeInfo, allTypes);

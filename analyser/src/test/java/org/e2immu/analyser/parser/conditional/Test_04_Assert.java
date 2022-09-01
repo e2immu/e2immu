@@ -21,13 +21,14 @@ import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.ParameterInfo;
 import org.e2immu.analyser.model.variable.ReturnVariable;
+import org.e2immu.analyser.model.variable.This;
 import org.e2immu.analyser.parser.CommonTestRunner;
 import org.e2immu.analyser.visitor.*;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.*;
 
 public class Test_04_Assert extends CommonTestRunner {
     public Test_04_Assert() {
@@ -71,10 +72,18 @@ public class Test_04_Assert extends CommonTestRunner {
             if ("causesOfDelay".equals(d.methodInfo().name) && "NotDelayed".equals(d.methodInfo().typeInfo.simpleName)) {
                 if (d.variable() instanceof ReturnVariable) {
                     assertEquals("SimpleSet.EMPTY:0", d.variableInfo().getLinkedVariables().toString());
-                    assertDv(d, 5, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.EXTERNAL_NOT_NULL);
+                    assertDv(d, 8, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.EXTERNAL_NOT_NULL);
                 }
             }
             if ("combine".equals(d.methodInfo().name)) {
+                if (d.variable() instanceof This) {
+                    if ("1".equals(d.statementId()) || "2".equals(d.statementId()) || "3".equals(d.statementId())) {
+                        assertEquals("", d.variableInfo().getLinkedVariables().toString());
+                    }
+                    if ("4.0.0".equals(d.statementId())) {
+                        assertEquals("merge:0", d.variableInfo().getLinkedVariables().toString());
+                    }
+                }
                 if (d.variable() instanceof ReturnVariable) {
                     if ("3".equals(d.statementId())) {
                         assertEquals("other instanceof NotDelayed&&null!=other?this:<return value>",
@@ -93,24 +102,26 @@ public class Test_04_Assert extends CommonTestRunner {
                         assertEquals("this:0", d.variableInfo().getLinkedVariables().toString());
                     }
                     if ("5".equals(d.statementId())) {
-                        String value = d.iteration() <= 1
-                                ? "<simplification>?this:<m:addProgress>"
-                                : "other instanceof NotDelayed?this:null";
+                        String value = switch (d.iteration()) {
+                            case 0, 1 -> "<simplification>?this:<m:addProgress>";
+                            case 2, 3, 4, 5 -> "<instanceOf:NotDelayed>&&null!=(limit&&(`causes`.size()>=11||other.numberOfDelays()>=11)?nullable instance type AnalysisStatus/*@Identity*/:<p:other>)?this:<m:addProgress>";
+                            default -> "other instanceof NotDelayed?this:null";
+                        };
                         assertEquals(value, d.currentValue().toString());
                         // there should not be a STATICALLY_ASSIGNED here: it is the result of a method call
                         // however, the previous linking is taken into account, and only the linking to "other"
                         // remains to be solved.
-                        String linked = d.iteration() <= 1 ? "merge:0,other:-1,this:0" : "merge:0,this:0";
+                        String linked = d.iteration() <= 5 ? "merge:0,other:-1,this:0" : "merge:0,this:0";
                         assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
                     }
                 }
                 if ("merge".equals(d.variableName())) {
                     if ("4".equals(d.statementId())) {
-                        String linked = d.iteration() <= 1 ? "other:-1,this:0" : "this:0";
+                        String linked = d.iteration() <= 5 ? "other:-1,this:0" : "this:0";
                         assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
                     }
                     if ("4.1.0".equals(d.statementId())) {
-                        String linked = d.iteration() <= 1 ? "other:-1,this:-1" : "this:1";
+                        String linked = d.iteration() <= 5 ? "other:-1,this:-1" : "this:1";
                         /*
                         The result should definitely not conclude other:3, because other is not linked to the return value!
                         This value cannot be known until we know of the independence of "merge"
@@ -119,11 +130,11 @@ public class Test_04_Assert extends CommonTestRunner {
                     }
                     if ("5".equals(d.statementId())) {
                         String value = switch (d.iteration()) {
-                            case 0, 1 -> "limit&&(-1+other.numberOfDelays()>=<f:LIMIT>||-1-<f:LIMIT>+<m:numberOfDelays>>=0)?<s:SimpleSet>:<s:CausesOfDelay>";
+                            case 0, 1,2,3,4,5 -> "limit&&(-1+other.numberOfDelays()>=<f:LIMIT>||-1-<f:LIMIT>+<m:numberOfDelays>>=0)?<s:SimpleSet>:<s:CausesOfDelay>";
                             default -> "this";
                         };
                         assertEquals(value, d.currentValue().toString());
-                        String linked = d.iteration() <= 1 ? "other:-1,this:0" : "this:0";
+                        String linked = d.iteration() <= 5 ? "other:-1,this:0" : "this:0";
                         assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
                     }
                 }
@@ -136,10 +147,13 @@ public class Test_04_Assert extends CommonTestRunner {
             }
             if ("causesOfDelay".equals(d.methodInfo().name)) {
                 if ("SimpleSet".equals(d.methodInfo().typeInfo.simpleName)) {
-                   assertDv(d, 4, MultiLevel.CONTAINER_DV, Property.CONTAINER);
+                    assertDv(d, 7, MultiLevel.CONTAINER_DV, Property.CONTAINER);
                 }
                 if ("AnalysisStatus".equals(d.methodInfo().typeInfo.simpleName)) {
                     assertDv(d, MultiLevel.CONTAINER_DV, Property.CONTAINER);
+                }
+                if ("NotDelayed".equals(d.methodInfo().typeInfo.simpleName)) {
+                    assertDv(d, 8, MultiLevel.CONTAINER_DV, Property.CONTAINER);
                 }
             }
             if ("merge".equals(d.methodInfo().name)) {
@@ -155,12 +169,19 @@ public class Test_04_Assert extends CommonTestRunner {
             if ("CausesOfDelay".equals(d.typeInfo().simpleName)) {
                 assertDv(d, MultiLevel.EFFECTIVELY_IMMUTABLE_HC_DV, Property.IMMUTABLE);
                 assertDv(d, MultiLevel.CONTAINER_DV, Property.CONTAINER);
+                assertTrue(d.typeInspection().isExtensible());
+            }
+            if ("NotDelayed".equals(d.typeInfo().simpleName)) {
+                assertFalse(d.typeInspection().isExtensible());
+            }
+            if ("SimpleSet".equals(d.typeInfo().simpleName)) {
+                assertTrue(d.typeInspection().isExtensible());
             }
         };
 
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
             if ("EMPTY".equals(d.fieldInfo().name)) {
-                assertDv(d, 3, MultiLevel.EFFECTIVELY_FINAL_FIELDS_DV, Property.EXTERNAL_IMMUTABLE);
+                assertDv(d, 6, MultiLevel.EFFECTIVELY_FINAL_FIELDS_DV, Property.EXTERNAL_IMMUTABLE);
                 // as a final field, it is not linked to the parameters of the constructor
                 assertDv(d, MultiLevel.INDEPENDENT_DV, Property.INDEPENDENT);
             }
@@ -175,7 +196,6 @@ public class Test_04_Assert extends CommonTestRunner {
                 .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
                 .build(), new AnalyserConfiguration.Builder().setForceAlphabeticAnalysisInPrimaryType(true).build());
     }
-
 
     @Test
     public void test_1() throws IOException {

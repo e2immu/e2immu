@@ -86,8 +86,8 @@ public class Test_00_Basics_24 extends CommonTestRunner {
                     }
                     if ("3".equals(d.statementId())) {
                         String linked = switch (d.iteration()) {
-                            case 0 -> "a:-1,pos:-1,x.s:-1,x:-1";
-                            case 1, 2 -> "a:-1,pos:-1,x.s:-1";
+                            case 0, 1, 2 -> "a:-1,pos:-1,x.s:-1,x:-1";
+                            //  case  2 -> "a:-1,pos:-1,x.s:-1";
                             default -> "";
                         };
                         assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
@@ -97,7 +97,7 @@ public class Test_00_Basics_24 extends CommonTestRunner {
                     if ("3".equals(d.statementId())) {
                         String linked = switch (d.iteration()) {
                             case 0, 1, 2 -> "a:-1,pos:-1,this.map:-1,x.s:0,x:-1";
-                            default -> "x.s:0";
+                            default -> "x.s:0,x:2";
                         };
                         assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
                     }
@@ -114,8 +114,8 @@ public class Test_00_Basics_24 extends CommonTestRunner {
                 };
                 assertDv(d, delay, 3, DV.FALSE_DV, Property.MODIFIED_OUTSIDE_METHOD);
                 String linked = switch (d.iteration()) {
-                    case 0 -> "a:-1,pos:-1,s:-1,this.map:-1,x:-1";
-                    case 1, 2 -> "a:-1,pos:-1,s:-1,this.map:-1";
+                    case 0, 1, 2 -> "a:-1,pos:-1,s:-1,this.map:-1,x:-1";
+                    //case 1, 2 -> "a:-1,pos:-1,s:-1,this.map:-1";
                     default -> "s:0";
                 };
                 assertEquals(linked, d.fieldAnalysis().getLinkedVariables().toString());

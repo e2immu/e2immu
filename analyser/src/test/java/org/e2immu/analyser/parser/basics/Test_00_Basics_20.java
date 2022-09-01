@@ -175,6 +175,11 @@ public class Test_00_Basics_20 extends CommonTestRunner {
                     if ("2".equals(d.statementId())) {
                         assertEquals(expected, d.currentValue().toString());
                     }
+                    if("3".equals(d.statementId())) {
+                        String lvs = d.iteration() <= 1 ? "list:-1" : "list:3";
+                        // directional arrow, I'm part of the HC of the list; a change in 'I' is a change in list as well
+                        assertEquals(lvs, d.variableInfo().getLinkedVariables().toString());
+                    }
                 }
                 if ("list".equals(d.variableName())) {
                     if ("2".equals(d.statementId())) {
@@ -190,7 +195,8 @@ public class Test_00_Basics_20 extends CommonTestRunner {
 
                         // while class "I" is independent, it is also mutable. It is the latter property that is relevant
                         // in the "Basics_20" type
-                        String lvs = d.iteration() <= 1 ? "i:-1" : "i:3";
+                        String lvs = d.iteration() <= 1 ? "i:-1" : "";// a change in list does not imply a change in "i"
+                        // the other direction must exist!
                         assertEquals(lvs, d.variableInfo().getLinkedVariables().toString());
 
                         assertDv(d, DV.TRUE_DV, CONTEXT_MODIFIED);
@@ -204,7 +210,7 @@ public class Test_00_Basics_20 extends CommonTestRunner {
                     // delay in iteration 1 because we need to know ci's IMMUTABLE property
                     String expectLv = switch (d.iteration()) {
                         case 0, 1 -> "i:-1,list:-1";
-                        default -> "i:3,list:2";
+                        default -> "list:2"; // and not i:3, asymmetrical
                     };
                     assertEquals(expectLv, d.variableInfo().getLinkedVariables().toString());
                     assertDv(d, 2, DV.TRUE_DV, CONTEXT_MODIFIED);
@@ -215,7 +221,7 @@ public class Test_00_Basics_20 extends CommonTestRunner {
 
                     String expectLv = switch (d.iteration()) {
                         case 0, 1 -> "ci:-1,i:-1,list:-1";
-                        default -> "ci:4,i:4,list:4"; // FIXME should be i:3
+                        default -> "ci:4,list:4";
                     };
                     assertEquals(expectLv, d.variableInfo().getLinkedVariables().toString());
 
@@ -275,7 +281,7 @@ public class Test_00_Basics_20 extends CommonTestRunner {
         }
         if ("C3".equals(d.typeInfo().simpleName)) {
             assertDv(d, 1, MultiLevel.EFFECTIVELY_IMMUTABLE_HC_DV, IMMUTABLE);
-            assertEquals("", d.typeAnalysis().getHiddenContentTypes().toString());
+            assertEquals("Type java.lang.Object", d.typeAnalysis().getHiddenContentTypes().toString());
             assertEquals(DV.FALSE_DV, d.typeAnalysis().immutableDeterminedByTypeParameters());
         }
         if ("C4".equals(d.typeInfo().simpleName)) {

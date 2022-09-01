@@ -76,10 +76,10 @@ public class Test_04_NotNull_AAPI extends CommonTestRunner {
             if ("add".equals(d.methodInfo().name)) {
                 if ("newTrieNode".equals(d.variableName())) {
                     if ("1.0.1.0.2".equals(d.statementId())) {
-                        assertDv(d, 1, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                         String linked = d.iteration() == 0 ? "node.map:-1,node:-1,this.root:-1"
                                 : "node.map:3,node:3,this.root:3";
                         assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
+                        assertDv(d, 1, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     }
                     if ("1.0.1.1.1.0.1".equals(d.statementId())) {
                         assertEquals(0, d.iteration());

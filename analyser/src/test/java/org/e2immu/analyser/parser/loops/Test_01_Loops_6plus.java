@@ -274,7 +274,7 @@ public class Test_01_Loops_6plus extends CommonTestRunner {
                     }
                     if ("4".equals(d.statementId())) {
                         assertDv(d, 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, CONTEXT_NOT_NULL);
-                        String linked = d.iteration() == 0 ? "ZoneOffset.UTC:-1,now:-1" : "";
+                        String linked = d.iteration() == 0 ? "ZoneOffset.UTC:-1,map:-1,now:-1" : "";
                         assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
                     }
                     if ("5".equals(d.statementId())) {
@@ -291,7 +291,7 @@ public class Test_01_Loops_6plus extends CommonTestRunner {
                                 ? "map.entrySet().isEmpty()?new HashMap<>()/*AnnotatedAPI.isKnown(true)&&0==this.size()*/:<vl:result>"
                                 : "map.entrySet().isEmpty()?new HashMap<>()/*AnnotatedAPI.isKnown(true)&&0==this.size()*/:instance type Map<String,String>";
                         assertEquals(expectValue, d.currentValue().toString());
-                        String linked = d.iteration() == 0 ? "ZoneOffset.UTC:-1,now:-1,result:0" : "result:0";
+                        String linked = d.iteration() == 0 ? "ZoneOffset.UTC:-1,map:-1,now:-1,result:0" : "result:0";
                         assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
                         assertDv(d, MultiLevel.NULLABLE_DV, CONTEXT_NOT_NULL);
                         assertDv(d, 2, MultiLevel.EFFECTIVELY_NOT_NULL_DV, NOT_NULL_EXPRESSION);

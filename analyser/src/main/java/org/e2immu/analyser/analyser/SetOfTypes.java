@@ -31,6 +31,10 @@ public record SetOfTypes(Set<ParameterizedType> types) {
         this.types = Set.copyOf(types);
     }
 
+    public static SetOfTypes of(ParameterizedType pt) {
+        return new SetOfTypes(Set.of(pt));
+    }
+
     // if T is hidden, then ? extends T is hidden as well
     public boolean contains(ParameterizedType parameterizedType) {
         if (types.contains(parameterizedType)) return true;
@@ -65,19 +69,6 @@ public record SetOfTypes(Set<ParameterizedType> types) {
 
     public int size() {
         return types.size();
-    }
-
-    public SetOfTypes applyTypeParameters(ParameterizedType b) {
-        if (b.isUnboundTypeParameter()) return this;
-        return new SetOfTypes(types.stream()
-                .map(t -> {
-                    if (t.isTypeParameter() && t.typeParameter.getOwner().isLeft() &&
-                            t.typeParameter.getOwner().getLeft() == b.typeInfo) {
-                        return b.parameters.get(t.typeParameter.getIndex());
-                    }
-                    return t;
-                })
-                .collect(Collectors.toUnmodifiableSet()));
     }
 
     /*

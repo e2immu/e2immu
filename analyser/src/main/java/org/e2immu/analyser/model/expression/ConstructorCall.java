@@ -192,12 +192,13 @@ public class ConstructorCall extends BaseExpression implements HasParameterExpre
     @Override
     public LinkedVariables linkedVariables(EvaluationResult context) {
         // instance, no constructor parameter expressions
-        if (constructor == null) return LinkedVariables.EMPTY;
+        if (constructor == null || parameterExpressions.isEmpty()) return LinkedVariables.EMPTY;
+        List<Expression> parameterValues = parameterExpressions.stream()
+                .map(pe -> pe.evaluate(context, ForwardEvaluationInfo.DEFAULT).value())
+                .toList();
         List<LinkedVariables> linkedVariables = computeLinkedVariablesOfParameters(context, parameterExpressions,
-                // IMPROVE use parameterValues (evaluated expressions), will that make a difference?
-                parameterExpressions);
-        return combineArgumentIndependenceWithFormalParameterIndependence(context, constructor.methodInspection.get(),
-                linkedVariables, returnType());
+                parameterValues);
+        return linkFromObjectToParameters(context, constructor.methodInspection.get(), linkedVariables, returnType());
     }
 
     public static List<LinkedVariables> computeLinkedVariablesOfParameters(EvaluationResult context,
@@ -207,31 +208,29 @@ public class ConstructorCall extends BaseExpression implements HasParameterExpre
         int i = 0;
         List<LinkedVariables> result = new ArrayList<>(parameterExpressions.size());
         for (Expression expression : parameterExpressions) {
-            // assigned is only for @Identity, and that is captured earlier in MethodCall.linkedVariables()
-            LinkedVariables lvExpression = expression.linkedVariables(context).minimum(LinkedVariables.LINK_DEPENDENT);
-            LinkedVariables merged;
+            LinkedVariables lv;
             Expression value = parameterValues.get(i);
-            if (value != expression) {
-                LinkedVariables lvValue = value.linkedVariables(context);
-                merged = lvExpression.merge(lvValue);
+            if (expression instanceof VariableExpression || value instanceof ExpandedVariable) {
+                lv = expression.linkedVariables(context);
             } else {
-                merged = lvExpression;
+                lv = value.linkedVariables(context);
             }
-            result.add(merged);
+            result.add(lv.minimum(LinkedVariables.LINK_DEPENDENT));
             i++;
         }
         return result;
     }
 
     /*
-    Compute the links between the newly created object (constructor call) or the object (method call) and the
+    Compute the links from the newly created object (constructor call) or the object (method call) to the
     parameters of the constructor/method.
-
      */
-    static LinkedVariables combineArgumentIndependenceWithFormalParameterIndependence(EvaluationResult evaluationContext,
-                                                                                      MethodInspection methodInspection,
-                                                                                      List<LinkedVariables> linkedVariables,
-                                                                                      ParameterizedType objectType) {
+    static LinkedVariables linkFromObjectToParameters(EvaluationResult evaluationContext,
+                                                      MethodInspection methodInspection,
+                                                      List<LinkedVariables> linkedVariables,
+                                                      ParameterizedType objectType) {
+        DV immutableType = evaluationContext.getAnalyserContext().typeImmutable(objectType);
+
         LinkedVariables result = LinkedVariables.EMPTY;
         int i = 0;
         for (LinkedVariables sub : linkedVariables) {
@@ -243,17 +242,23 @@ public class ConstructorCall extends BaseExpression implements HasParameterExpre
                 assert parameterInfo.parameterInspection.get().isVarArgs();
             }
             Map<Variable, DV> newLinkMap = new HashMap<>();
-            sub.stream().forEach(e -> {
+            for (Map.Entry<Variable, DV> e : sub) {
                 Variable v = e.getKey();
                 DV linkLevel = e.getValue();
-                if (linkLevel.isDelayed()) {
-                    newLinkMap.put(v, linkLevel);
-                } else {
-                    DV newLinkLevel = computeIndependentFromComponents(evaluationContext, parameterInfo,
-                            linkLevel, v.parameterizedType(), objectType);
-                    newLinkMap.put(v, newLinkLevel);
+                if (immutableType.isDelayed()) {
+                    newLinkMap.put(v, immutableType);
+                } else if (!MultiLevel.isAtLeastEventuallyRecursivelyImmutable(immutableType)) {
+                    if (linkLevel.isDelayed()) {
+                        newLinkMap.put(v, linkLevel);
+                    } else {
+                        DV newLinkLevel = computeLinkLevelFromParameterAndItsLinkedVariables(evaluationContext,
+                                parameterInfo, linkLevel, v.parameterizedType(), objectType, false);
+                        if (newLinkLevel.lt(LinkedVariables.LINK_INDEPENDENT)) {
+                            newLinkMap.put(v, newLinkLevel);
+                        }
+                    }
                 }
-            });
+            }
             LinkedVariables lv = LinkedVariables.of(newLinkMap);
             result = result.merge(lv);
             i++;
@@ -261,11 +266,56 @@ public class ConstructorCall extends BaseExpression implements HasParameterExpre
         return result.minimum(LinkedVariables.LINK_ASSIGNED);
     }
 
-    private static DV computeIndependentFromComponents(EvaluationResult context,
-                                                       ParameterInfo parameterInfo,
-                                                       DV linkLevel,
-                                                       ParameterizedType variableType,
-                                                       ParameterizedType objectType) {
+    /*
+     Compute the links from the parameters of a method into its object.
+     For now not implemented for constructors (we'll need some sort of temporary, reverse link version of IS_HC_OF)
+     */
+    static Map<ParameterInfo, LinkedVariables> fromParameterIntoObject(EvaluationResult evaluationContext,
+                                                                       MethodInspection methodInspection,
+                                                                       List<LinkedVariables> linkedVariables,
+                                                                       ParameterizedType objectType) {
+        DV immutableType = evaluationContext.getAnalyserContext().typeImmutable(objectType);
+        Map<ParameterInfo, LinkedVariables> result = new HashMap<>();
+        int i = 0;
+        for (LinkedVariables sub : linkedVariables) {
+            ParameterInfo parameterInfo;
+            if (i < methodInspection.getParameters().size()) {
+                parameterInfo = methodInspection.getParameters().get(i);
+            } else {
+                parameterInfo = methodInspection.getParameters().get(methodInspection.getParameters().size() - 1);
+                assert parameterInfo.parameterInspection.get().isVarArgs();
+            }
+            Map<Variable, DV> newLinkMap = new HashMap<>();
+            for (Map.Entry<Variable, DV> e : sub) {
+                Variable v = e.getKey();
+                DV linkLevel = e.getValue().min(LinkedVariables.LINK_ASSIGNED);
+                if (immutableType.isDelayed()) {
+                    newLinkMap.put(v, immutableType);
+                } else if (!MultiLevel.isAtLeastEventuallyRecursivelyImmutable(immutableType)) {
+                    if (linkLevel.isDelayed()) {
+                        newLinkMap.put(v, linkLevel);
+                    } else {
+                        DV newLinkLevel = computeLinkLevelFromParameterAndItsLinkedVariables(evaluationContext,
+                                parameterInfo, linkLevel, v.parameterizedType(), objectType, true);
+                        if (newLinkLevel.lt(LinkedVariables.LINK_INDEPENDENT)) {
+                            newLinkMap.put(v, newLinkLevel);
+                        }
+                    }
+                }
+            }
+            LinkedVariables lv = LinkedVariables.of(newLinkMap);
+            result.put(parameterInfo, lv);
+            i++;
+        }
+        return result;
+    }
+
+    private static DV computeLinkLevelFromParameterAndItsLinkedVariables(EvaluationResult context,
+                                                                         ParameterInfo parameterInfo,
+                                                                         DV linkLevel,
+                                                                         ParameterizedType variableType,
+                                                                         ParameterizedType objectType,
+                                                                         boolean fromParameterToObject) {
         assert linkLevel.isDone();
 
         ParameterAnalysis parameterAnalysis = context.getAnalyserContext().getParameterAnalysis(parameterInfo);
@@ -285,11 +335,13 @@ public class ConstructorCall extends BaseExpression implements HasParameterExpre
             return LinkedVariables.LINK_DEPENDENT.max(linkLevel);
         }
 
-        // hidden content... use the relation WITH RESPECT TO THE method's type (not the parameter!!!)
-        // TODO we're ignoring linkLevel atm,
+        // hidden content... use the relation of parameter type with respect to object type (not the return type!)
         ComputeIndependent computeIndependent = new ComputeIndependent(context.getAnalyserContext(),
                 context.getCurrentType().primaryType());
-        return computeIndependent.typeRelation(variableType, objectType);
+        if (fromParameterToObject) {
+            return computeIndependent.directedLinkLevelOfTwoHCRelatedTypes(variableType, objectType);
+        }
+        return LinkedVariables.LINK_COMMON_HC;
     }
 
     /*
@@ -312,10 +364,10 @@ public class ConstructorCall extends BaseExpression implements HasParameterExpre
      Example 3: parameterInfo = java.util.Set.copyOf(Collection<E> input):0:input, which is COMMON_HC rather
      than DEPENDENT, because the resulting set is independent of the input set, yet contains its elements.
      */
-    private static DV computeIndependentFromComponents(EvaluationResult context,
-                                                       Expression value,
-                                                       ParameterInfo parameterInfo,
-                                                       ParameterizedType objectType) {
+    private static DV computeLinkLevelFromParameterAndItsLinkedVariables(EvaluationResult context,
+                                                                         Expression value,
+                                                                         ParameterInfo parameterInfo,
+                                                                         ParameterizedType objectType) {
         ParameterAnalysis parameterAnalysis = context.getAnalyserContext().getParameterAnalysis(parameterInfo);
         DV independentOnParameter = parameterAnalysis.getProperty(Property.INDEPENDENT);
         DV immutableOfValue = context.getProperty(value, Property.IMMUTABLE);
@@ -336,7 +388,7 @@ public class ConstructorCall extends BaseExpression implements HasParameterExpre
         // hidden content... use the relation WITH RESPECT TO THE method's type (not the parameter!!!)
         ComputeIndependent computeIndependent = new ComputeIndependent(context.getAnalyserContext(),
                 context.getCurrentType().primaryType());
-        return computeIndependent.typeRelation(value.returnType(), objectType);
+        return computeIndependent.linkLevelOfTwoHCRelatedTypes(value.returnType(), objectType);
     }
 
     @Override
@@ -542,6 +594,10 @@ public class ConstructorCall extends BaseExpression implements HasParameterExpre
                 (!constructor.methodResolution.isSet() || constructor.methodResolution.get().allowsInterrupts())) {
             res.k.incrementStatementTime();
         }
+
+        // links from object into the parameters  new List(x), which may render x --3--> new object
+        // but that's not a variable... how do we solve that? with a reverse link, that gets translated in assignment?
+        // FIXME implement!!
 
         DV cImm = forwardEvaluationInfo.getProperty(Property.CONTEXT_IMMUTABLE);
         if (MultiLevel.isAfterThrowWhenNotEventual(cImm)) {

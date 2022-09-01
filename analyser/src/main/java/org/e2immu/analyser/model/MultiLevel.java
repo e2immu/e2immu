@@ -178,6 +178,10 @@ public class MultiLevel {
         return dv.ge(EVENTUALLY_IMMUTABLE_HC_DV);
     }
 
+    public static boolean isMutable(DV dv) {
+        return dv.lt(EVENTUALLY_IMMUTABLE_HC_DV);
+    }
+
     public static boolean isAtLeastEffectivelyImmutableHC(DV dv) {
         if (dv.ge(EFFECTIVELY_IMMUTABLE_HC_DV)) {
             Effective effective = effective(dv);

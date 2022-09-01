@@ -25,18 +25,18 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-public class HiddenContentTypes {
+public class ComputeHiddenContentTypes {
     private final AnalyserContext analyserContext;
     private final TypeInfo typeInfo;
     private final Set<ParameterizedType> types = new HashSet<>();
     private final Set<TypeInfo> hierarchyToAvoid = new HashSet<>();
 
-    public HiddenContentTypes(TypeInfo typeInfo, AnalyserContext analyserContext) {
+    public ComputeHiddenContentTypes(TypeInfo typeInfo, AnalyserContext analyserContext) {
         this.analyserContext = analyserContext;
         this.typeInfo = typeInfo;
     }
 
-    public HiddenContentTypes go(SetOfTypes typeParameters) {
+    public ComputeHiddenContentTypes go(SetOfTypes typeParameters) {
         types.addAll(typeParameters.types()); // these are the unbound type parameters of the type
         if (!typeInfo.isJavaLangObject()) {
             recurse(typeInfo);
@@ -83,9 +83,6 @@ public class HiddenContentTypes {
     }
 
     private void addType(ParameterizedType type) {
-        if (type.isPrimitiveExcludingVoid() || type.isJavaLangObject()) {
-            return;
-        }
         TypeInfo bestType = type.bestTypeInfo();
         if (bestType == null) return; // do not add type parameters! the relevant ones have been added already
         if (hierarchyToAvoid.contains(bestType)) {
@@ -96,7 +93,7 @@ public class HiddenContentTypes {
         if (MultiLevel.isAtLeastEventuallyImmutableHC(immutable)) {
             types.add(type);
         } else {
-            // so we end up with a mutable/E1 type...
+            // so we end up with a mutable type
             TypeAnalysis typeAnalysis = analyserContext.getTypeAnalysisNullWhenAbsent(bestType);
             if (typeAnalysis == null || typeAnalysis.hiddenContentAndExplicitTypeComputationDelays().isDelayed()) {
                 //?
@@ -105,8 +102,8 @@ public class HiddenContentTypes {
                 the naive approach (simply adding all the hidden content types) doesn't work, 'type' will have
                 concrete values for any type parameter!
                  */
-                SetOfTypes hidden = typeAnalysis.getHiddenContentTypes();
-                types.addAll(hidden.types().stream().filter(ParameterizedType::isType).toList());
+                SetOfTypes hidden = typeAnalysis.getHiddenContentTypes().translate(analyserContext, type);
+                hidden.types().forEach(this::addType);
             }
         }
     }

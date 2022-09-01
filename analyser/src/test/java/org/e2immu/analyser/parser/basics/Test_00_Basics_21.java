@@ -64,14 +64,15 @@ public class Test_00_Basics_21 extends CommonTestRunner {
                         case 0, 1 -> "<m:set>";
                         default -> "<no return value>";
                     };
+
+                    // 'other' is linked to 'this', but 'this' is not linked to 'other' (MethodCall.evaluate() on set)
                     assertEquals(expectValue, d.evaluationResult().value().toString());
                     EvaluationResult.ChangeData cd = d.findValueChangeBySubString("other");
-                    assertEquals("", cd.linkedVariables().toString());
+                    String linked = d.iteration() <= 2 ? "this:-1" : "this:4";
+                    assertEquals(linked, cd.linkedVariables().toString());
 
-                    // this is linked to other at :4, common HC (and not :3, is_hc_of!)
                     EvaluationResult.ChangeData cdThis = d.findValueChangeByToString("this");
-                    String expectLv = d.iteration() <= 1 ? "other:-1" : "other:4"; // common_hc
-                    assertEquals(expectLv, cdThis.linkedVariables().toString());
+                    assertEquals("", cdThis.linkedVariables().toString());
 
                     assertEquals(d.iteration() <= 2, d.evaluationResult().causesOfDelay().isDelayed());
                 }
@@ -95,10 +96,10 @@ public class Test_00_Basics_21 extends CommonTestRunner {
                         assertEquals(expectValue, d.currentValue().toString());
 
                         // other is linked to this with common HC
-                        String expectLinked = d.iteration() <= 1 ? "this:-1" : "this:4";
+                        String expectLinked = d.iteration() <= 2 ? "this:-1" : "this:4";
                         assertEquals(expectLinked, d.variableInfo().getLinkedVariables().toString());
 
-                        assertDv(d, 2, DV.FALSE_DV, CONTEXT_MODIFIED);
+                        assertDv(d, 3, DV.FALSE_DV, CONTEXT_MODIFIED);
 
                         if (d.iteration() >= 3) {
                             assertEquals(MultiLevel.MUTABLE_DV, d.variableInfoContainer()
@@ -118,10 +119,10 @@ public class Test_00_Basics_21 extends CommonTestRunner {
                                 .getProperty(CONTEXT_IMMUTABLE));
                         assertDv(d, 3, MultiLevel.EVENTUALLY_IMMUTABLE_HC_AFTER_MARK_DV, CONTEXT_IMMUTABLE);
 
-                        String expectLinked = d.iteration() <= 1 ? "this:-1" : "this:4";
+                        String expectLinked = d.iteration() <= 2 ? "this:-1" : "this:4";
                         assertEquals(expectLinked, d.variableInfo().getLinkedVariables().toString());
 
-                        assertDv(d, 2, DV.FALSE_DV, CONTEXT_MODIFIED);
+                        assertDv(d, 3, DV.FALSE_DV, CONTEXT_MODIFIED);
                     }
                 }
                 if (d.variable() instanceof This) {
@@ -157,10 +158,10 @@ public class Test_00_Basics_21 extends CommonTestRunner {
 
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("copy".equals(d.methodInfo().name)) {
-                assertEquals(d.iteration() >= 2,
+                assertEquals(d.iteration() >= 3,
                         d.methodAnalysis().methodLevelData().linksHaveBeenEstablished());
-                assertDv(d.p(0), 3, DV.FALSE_DV, CONTEXT_MODIFIED);
-                assertDv(d.p(0), 3, DV.FALSE_DV, MODIFIED_VARIABLE);
+                assertDv(d.p(0), 4, DV.FALSE_DV, CONTEXT_MODIFIED);
+                assertDv(d.p(0), 4, DV.FALSE_DV, MODIFIED_VARIABLE);
             }
             if ("set".equals(d.methodInfo().name)) {
                 assertEquals(DV.TRUE_DV, d.methodAnalysis().getProperty(MODIFIED_METHOD));
@@ -187,7 +188,7 @@ public class Test_00_Basics_21 extends CommonTestRunner {
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("Basics_21".equals(d.typeInfo().simpleName)) {
                 assertDv(d, 2, MultiLevel.EVENTUALLY_IMMUTABLE_HC_DV, IMMUTABLE);
-                assertDv(d, 3, MultiLevel.INDEPENDENT_HC_DV, INDEPENDENT);
+                assertDv(d, 4, MultiLevel.INDEPENDENT_HC_DV, INDEPENDENT);
             }
         };
 

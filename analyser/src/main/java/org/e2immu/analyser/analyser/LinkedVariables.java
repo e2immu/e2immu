@@ -20,10 +20,7 @@ import org.e2immu.analyser.analyser.util.ComputeIndependent;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.variable.Variable;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.function.BiPredicate;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -36,14 +33,17 @@ Convention for spotting delays:
 1. at assignment level: no delays, never
 2. at dependent, independent1 level: add the variable, with DELAYED_VALUE
  */
-public class LinkedVariables implements Comparable<LinkedVariables> {
+public class LinkedVariables implements Comparable<LinkedVariables>, Iterable<Map.Entry<Variable, DV>> {
 
     private final Map<Variable, DV> variables;
 
     private LinkedVariables(Map<Variable, DV> variables) {
         assert variables != null;
         this.variables = variables;
-        assert variables.values().stream().noneMatch(dv -> dv == DV.FALSE_DV || dv == MultiLevel.INDEPENDENT_HC_DV);
+        assert variables.values().stream().noneMatch(dv -> dv == DV.FALSE_DV
+                || dv == MultiLevel.INDEPENDENT_HC_DV
+                || dv == MultiLevel.DEPENDENT_DV
+                || dv == LINK_INDEPENDENT);
     }
 
     // never use .equals() here, marker
@@ -67,7 +67,7 @@ public class LinkedVariables implements Comparable<LinkedVariables> {
         // REC IMM -> NO_LINKING
         if (MultiLevel.isAtLeastEventuallyRecursivelyImmutable(immutable)) return LinkedVariables.LINK_INDEPENDENT;
         ComputeIndependent computeIndependent = new ComputeIndependent(analyserContext, primaryType);
-        return computeIndependent.typeRelation(sourceType, targetType);
+        return computeIndependent.linkLevelOfTwoHCRelatedTypes(sourceType, targetType);
     }
 
     public boolean isDelayed() {
@@ -100,6 +100,11 @@ public class LinkedVariables implements Comparable<LinkedVariables> {
 
     public static boolean isAssigned(DV level) {
         return level.equals(LINK_STATICALLY_ASSIGNED) || level.equals(LINK_ASSIGNED);
+    }
+
+    @Override
+    public Iterator<Map.Entry<Variable, DV>> iterator() {
+        return variables.entrySet().iterator();
     }
 
     public LinkedVariables mergeDelay(LinkedVariables other, DV whenMissing) {
@@ -267,6 +272,13 @@ public class LinkedVariables implements Comparable<LinkedVariables> {
         return of(map);
     }
 
+    public LinkedVariables changeAllToUnlessDelayed(DV value) {
+        if (isEmpty() || this == NOT_YET_SET) return this;
+        Map<Variable, DV> map = variables.entrySet().stream()
+                .collect(Collectors.toMap(Map.Entry::getKey, e -> e.getValue().isDelayed() ? e.getValue() : value));
+        return of(map);
+    }
+
     public DV value(Variable variable) {
         return variables.get(variable);
     }
@@ -403,7 +415,7 @@ public class LinkedVariables implements Comparable<LinkedVariables> {
     public Map<Variable, DV> bidirectional(boolean symmetric) {
         if (isEmpty() || this == NOT_YET_SET) return Map.of();
         return variables.entrySet().stream()
-                .filter(e -> symmetric ^ (LINK_IS_HC_OF.equals(e.getValue()) || LINK_COMMON_HC.equals(e.getValue())))
+                .filter(e -> symmetric ^ LINK_IS_HC_OF.equals(e.getValue()))
                 .collect(Collectors.toUnmodifiableMap(Map.Entry::getKey, Map.Entry::getValue));
     }
 }

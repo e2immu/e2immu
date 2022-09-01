@@ -272,10 +272,16 @@ public class ComputedParameterAnalyser extends ParameterAnalyserImpl {
     }
 
     private DV independentFromFields(DV immutable, Map<FieldInfo, DV> fields) {
-        ComputeIndependent computeIndependent = new ComputeIndependent(analyserContext,
+        TypeAnalysis typeAnalysis = analyserContext.getTypeAnalysis(parameterInfo.getTypeInfo());
+        if (typeAnalysis.hiddenContentAndExplicitTypeComputationDelays().isDelayed()) {
+            return typeAnalysis.hiddenContentAndExplicitTypeComputationDelays().causesOfDelay();
+        }
+        SetOfTypes hiddenContentCurrentType = typeAnalysis.getHiddenContentTypes();
+
+        ComputeIndependent computeIndependent = new ComputeIndependent(analyserContext, hiddenContentCurrentType,
                 parameterInfo.getTypeInfo().primaryType());
         DV independent = fields.entrySet().stream()
-                .map(e -> computeIndependent.compute(e.getValue(), parameterInfo.parameterizedType, immutable,
+                .map(e -> computeIndependent.typesAtLinkLevel(e.getValue(), parameterInfo.parameterizedType, immutable,
                         e.getKey().type))
                 .reduce(INDEPENDENT_DV, DV::min);
         LOGGER.debug("Assign {} to parameter {}", independent, parameterInfo);

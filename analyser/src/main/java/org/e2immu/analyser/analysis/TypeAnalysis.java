@@ -154,10 +154,6 @@ public interface TypeAnalysis extends Analysis {
      */
     SetOfTypes getHiddenContentTypes();
 
-    default SetOfTypes getHiddenContentTypes(ParameterizedType b) {
-        return getHiddenContentTypes().applyTypeParameters(b);
-    }
-
     @NotNull
     CausesOfDelay hiddenContentAndExplicitTypeComputationDelays();
 

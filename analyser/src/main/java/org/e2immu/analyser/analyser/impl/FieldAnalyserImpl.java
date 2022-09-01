@@ -748,12 +748,19 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
             fieldAnalysis.setProperty(Property.INDEPENDENT, delay);
             return delay;
         }
+        TypeAnalysis typeAnalysis = myTypeAnalyser.getTypeAnalysis();
+        if (typeAnalysis.hiddenContentAndExplicitTypeComputationDelays().isDelayed()) {
+            LOGGER.debug("Field {} independent delayed: wait for hidden content of type", fieldInfo);
+            return typeAnalysis.hiddenContentAndExplicitTypeComputationDelays().causesOfDelay();
+        }
+        SetOfTypes hiddenContentCurrentType = typeAnalysis.getHiddenContentTypes();
+
         // IMPROVE should we use fieldInfo.type or the concrete type from the value, if there?
-        ComputeIndependent computeIndependent = new ComputeIndependent(analyserContext, primaryType);
+        ComputeIndependent computeIndependent = new ComputeIndependent(analyserContext, hiddenContentCurrentType, primaryType);
         DV independent = fieldAnalysis.linkedVariables.get().stream()
                 .filter(e -> e.getKey() instanceof ParameterInfo pi && pi.owner.isAccessibleOutsidePrimaryType()
                         || e.getKey() instanceof ReturnVariable rv && rv.getMethodInfo().isAccessibleOutsidePrimaryType())
-                .map(e -> computeIndependent.compute(e.getValue(), fieldInfo.type, immutable,
+                .map(e -> computeIndependent.typesAtLinkLevel(e.getValue(), fieldInfo.type, immutable,
                         e.getKey().parameterizedType()))
                 .reduce(MultiLevel.INDEPENDENT_DV, DV::min);
         fieldAnalysis.setProperty(Property.INDEPENDENT, independent);
