@@ -16,35 +16,35 @@ package org.e2immu.analyser.parser.modification.testexample;
 
 import org.e2immu.annotation.Modified;
 
-import java.util.HashSet;
-import java.util.Set;
+import java.util.List;
 
-/*
-Breaking an infinite delay loop; see explanation in Test_16_Modification_2.
-
-Set<String> is transparent in C1; C1 is not transparent in Modification_20.
-addAll is modifying, as in _19 but not in _20.
- */
 public class Modification_21 {
 
-    final Set<String> s2 = new HashSet<>();
+    static class I {
+        private int i;
 
-    static class C1 {
-        @Modified
-        final Set<String> set;
+        I(int i) {
+            this.i = i;
+        }
 
-        C1(@Modified Set<String> setC) {
-            this.set = setC;
+        public int getI() {
+            return i;
+        }
+
+        public void setI(int i) {
+            this.i = i;
         }
     }
 
-    private boolean example1() {
-        C1 c = new C1(s2);
-        C1 localD = new C1(Set.of("a", "b", "c"));
-        return addAll(c.set, localD.set);
+    public static int test1(@Modified List<I> list) {
+        I i = list.get(0);
+        i.setI(3); // 'i' modified, list as well!
+        return list.get(0).getI();
     }
 
-    private static boolean addAll(Set<String> c, Set<String> d) {
-        return c.addAll(d);
+    public static int test2(@Modified List<I> list) {
+        I i = new I(3);
+        list.add(i); // list modified, 'i' not
+        return list.get(0).getI();
     }
 }

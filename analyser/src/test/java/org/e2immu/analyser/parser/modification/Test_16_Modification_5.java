@@ -17,6 +17,7 @@ package org.e2immu.analyser.parser.modification;
 import org.e2immu.analyser.analyser.DV;
 import org.e2immu.analyser.analyser.Property;
 import org.e2immu.analyser.config.DebugConfiguration;
+import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.ParameterInfo;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.parser.CommonTestRunner;
@@ -55,12 +56,18 @@ public class Test_16_Modification_5 extends CommonTestRunner {
                 assertTrue(d.methodInfo().isConstructor);
                 assertEquals(DV.TRUE_DV, d.methodAnalysis().getProperty(Property.MODIFIED_METHOD));
                 assertDv(d.p(0), 1, DV.FALSE_DV, Property.MODIFIED_OUTSIDE_METHOD);
+                assertDv(d.p(0), 1, MultiLevel.INDEPENDENT_DV, Property.INDEPENDENT);
             }
         };
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
             if ("set5".equals(d.fieldInfo().name)) {
                 assertDv(d, DV.TRUE_DV, Property.FINAL);
-                assertEquals("", d.fieldAnalysis().getLinkedVariables().toString());
+                /*
+                linked hidden content-wise to in5, but because the intersection is immutable, the field is
+                independent, and the parameter as well, and therefore, in5 is @NotModified!
+                 */
+                assertEquals("in5:4", d.fieldAnalysis().getLinkedVariables().toString());
+                assertDv(d, MultiLevel.INDEPENDENT_DV, Property.INDEPENDENT);
             }
         };
 

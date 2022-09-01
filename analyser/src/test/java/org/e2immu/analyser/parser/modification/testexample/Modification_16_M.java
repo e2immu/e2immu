@@ -68,7 +68,7 @@ public class Modification_16_M {
         }
 
         @Override
-        public void addError(ErrorMessage errorMessage) {
+        public void addError(@Modified ErrorMessage errorMessage) {
             messages.add(errorMessage);
             errorMessage.setMessage("Added: " + errorMessage.message); // raises error!
         }

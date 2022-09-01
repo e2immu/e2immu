@@ -78,13 +78,17 @@ public class Test_16_Modification extends CommonTestRunner {
             if ("Modification_13".equals(d.methodInfo().name)) {
                 assertEquals("0", d.statementId());
                 if (d.variable() instanceof ParameterInfo pi && "input".equals(pi.name)) {
-                    assertEquals("", d.variableInfo().getLinkedVariables().toString());
+                    assertEquals("this.set:4", d.variableInfo().getLinkedVariables().toString());
                 }
             }
         };
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("clearIfExceeds".equals(d.methodInfo().name)) {
                 assertDv(d, 1, DV.TRUE_DV, Property.MODIFIED_METHOD);
+            }
+            if ("Modification_13".equals(d.methodInfo().name)) {
+                assertDv(d.p(0), 1, MultiLevel.INDEPENDENT_DV, Property.INDEPENDENT);
+                assertDv(d.p(0), 1, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
             }
         };
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
@@ -218,6 +222,13 @@ public class Test_16_Modification extends CommonTestRunner {
                             assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
                         }
                     }
+                    if(d.variable() instanceof FieldReference fr && "messages".equals(fr.fieldInfo.name)) {
+                        if ("0".equals(d.statementId())) {
+                            // asymmetrical link!
+                            String linked = d.iteration() <= 1 ? "errorMessage:-1" : "";
+                            assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
+                        }
+                    }
                 }
             }
         };
@@ -243,7 +254,7 @@ public class Test_16_Modification extends CommonTestRunner {
                     assertDv(d.p(0), 2, MultiLevel.DEPENDENT_DV, Property.INDEPENDENT);
                 }
                 if ("FaultyImplementation".equals(d.methodInfo().typeInfo.simpleName)) {
-                    assertDv(d.p(0), 2, MultiLevel.CONTAINER_DV, Property.CONTAINER);
+                    assertDv(d.p(0), 3, MultiLevel.CONTAINER_DV, Property.CONTAINER);
                     assertDv(d.p(0), 3, MultiLevel.DEPENDENT_DV, Property.INDEPENDENT);
                 }
             }
@@ -290,24 +301,6 @@ public class Test_16_Modification extends CommonTestRunner {
         // statics
         testClass("Modification_18", 0, 0, new DebugConfiguration.Builder()
                 .build());
-    }
-
-    @Test
-    public void test21() throws IOException {
-        TypeAnalyserVisitor typeAnalyserVisitor = d -> {
-            if ("C1".equals(d.typeInfo().simpleName)) {
-                assertTrue(d.typeAnalysis().getHiddenContentTypes().isEmpty());
-            }
-            if ("Modification_21".equals(d.typeInfo().simpleName)) {
-                assertTrue(d.typeAnalysis().getHiddenContentTypes().isEmpty());
-            }
-        };
-
-        //WARN in Method org.e2immu.analyser.parser.modification.testexample.Modification_21.example1() (line 44, pos 9): Potential null pointer exception: Variable: set
-        testClass("Modification_21", 0, 1, new DebugConfiguration.Builder()
-                        .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
-                        .build(),
-                new AnalyserConfiguration.Builder().setComputeFieldAnalyserAcrossAllMethods(true).build());
     }
 
     @Test

@@ -25,7 +25,7 @@ import java.util.Set;
 
 /*
 while this one tests modification (in inner class, has effect on outer class)
-it also relies on Inner not being E2Immutable when Modification_13 is only E1Immutable
+it also relies on Inner not being immutable when Modification_13 is only @FinalFields
  */
 
 @FinalFields
