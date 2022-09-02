@@ -377,7 +377,7 @@ public class Test_07_DependentVariables extends CommonTestRunner {
                 } else if ("b".equals(d.variableName())) {
                     assertEquals("a", d.variableInfo().getValue().toString());
                 } else if ("array".equals(d.variableName())) {
-                    assertEquals("new int[](3)", d.currentValue().toString());
+                    assertEquals("new int[3]", d.currentValue().toString());
                 } else if (d.variable() instanceof ReturnVariable) {
                     if ("3".equals(d.statementId())) {
                         assertEquals("12", d.currentValue().toString());

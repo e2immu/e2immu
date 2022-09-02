@@ -34,8 +34,7 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static org.e2immu.analyser.analyser.AssignmentIds.NOT_YET_ASSIGNED;
-import static org.e2immu.analyser.analyser.Property.IMMUTABLE;
-import static org.e2immu.analyser.analyser.Property.IMMUTABLE_BREAK;
+import static org.e2immu.analyser.analyser.Property.*;
 
 public class VariableInfoContainerImpl extends Freezable implements VariableInfoContainer {
     private static final Logger LOGGER = LoggerFactory.getLogger(VariableInfoContainerImpl.class);
@@ -625,11 +624,11 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
     }
 
     @Override
-    public void markOverride(Property property, DV value) {
+    public void markContextModifiedOverride(DV value) {
         assert value.isDone();
-        DV inMap = propertyOverrides.getOrDefaultNull(property);
+        DV inMap = propertyOverrides.getOrDefaultNull(CONTEXT_MODIFIED);
         if (inMap == null) {
-            propertyOverrides.put(property, value);
+            propertyOverrides.put(CONTEXT_MODIFIED, value);
         } else if (!inMap.equals(value)) {
             throw new UnsupportedOperationException("Overwriting the override, from " + inMap + " to " + value);
         }

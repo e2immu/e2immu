@@ -20,10 +20,8 @@ import org.e2immu.analyser.model.Location;
 import org.e2immu.analyser.model.variable.VariableNature;
 import org.e2immu.annotation.Modified;
 import org.e2immu.annotation.NotNull;
-import org.e2immu.support.SetOnce;
 import org.e2immu.support.SetOnceMap;
 
-import java.util.Map;
 import java.util.Set;
 
 /**
@@ -205,7 +203,7 @@ public interface VariableInfoContainer {
                                                        Properties properties,
                                                        CausesOfDelay causesOfDelay);
 
-    void markOverride(Property property, DV value);
+    void markContextModifiedOverride(DV value);
 
     SetOnceMap<Property, DV> propertyOverrides();
 

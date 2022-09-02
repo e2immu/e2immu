@@ -195,7 +195,7 @@ public class Test_18_E2Immutable extends CommonTestRunner {
     public void test_2() throws IOException {
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
             if ("set3".equals(d.fieldInfo().name)) {
-                assertEquals("", d.fieldAnalysis().getLinkedVariables().toString());
+                assertEquals("set3Param:4", d.fieldAnalysis().getLinkedVariables().toString());
             }
         };
 
@@ -204,7 +204,7 @@ public class Test_18_E2Immutable extends CommonTestRunner {
                 assertTrue(d.methodInfo().isConstructor);
                 if (d.variable() instanceof FieldReference fr && "set3".equals(fr.fieldInfo.name)) {
                     assertEquals("new HashSet<>(set3Param)/*this.size()==set3Param.size()*/", d.currentValue().toString());
-                    assertTrue(d.variableInfo().getLinkedVariables().isEmpty());
+                    assertEquals("set3Param:4", d.variableInfo().getLinkedVariables().toString());
                 }
             }
         };
@@ -244,17 +244,14 @@ public class Test_18_E2Immutable extends CommonTestRunner {
 
             if ("mingle".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof ReturnVariable && "1".equals(d.statementId())) {
-                    String linked = d.iteration() == 0 ? "input4:0,this.strings4:-1" : "input4:0";
-                    assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
+                    assertEquals("input4:0,this.strings4:4", d.variableInfo().getLinkedVariables().toString());
                 }
                 if (d.variable() instanceof ParameterInfo pi && "input4".equals(pi.name) && "0".equals(d.statementId())) {
-                    String linked = d.iteration() == 0 ? "this.strings4:-1" : "";
-                    assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
+                    assertEquals("this.strings4:4", d.variableInfo().getLinkedVariables().toString());
                 }
                 if (d.variable() instanceof FieldReference fr && "strings4".equals(fr.fieldInfo.name) && "0".equals(d.statementId())) {
                     assertTrue(fr.scopeIsThis());
-                    String linked = d.iteration() == 0 ? "input4:-1" : "";
-                    assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
+                    assertEquals("input4:4", d.variableInfo().getLinkedVariables().toString());
                 }
             }
         };
@@ -276,10 +273,10 @@ public class Test_18_E2Immutable extends CommonTestRunner {
                 }
                 // this method returns the input parameter
                 assertDv(d, 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, NOT_NULL_EXPRESSION);
-                assertDv(d, 1, MultiLevel.INDEPENDENT_DV, INDEPENDENT);
+                assertDv(d, MultiLevel.INDEPENDENT_DV, INDEPENDENT);
 
                 // parameter input4
-                assertDv(d.p(0), 2, MultiLevel.INDEPENDENT_DV, INDEPENDENT);
+                assertDv(d.p(0), 1, MultiLevel.INDEPENDENT_DV, INDEPENDENT);
             }
 
             if ("getStrings4".equals(d.methodInfo().name)) {
@@ -297,6 +294,7 @@ public class Test_18_E2Immutable extends CommonTestRunner {
                     assertTrue(d.methodAnalysis().getSingleReturnValue() instanceof InlinedMethod);
                 }
                 assertDv(d, 1, MultiLevel.EFFECTIVELY_IMMUTABLE_DV, IMMUTABLE);
+                assertDv(d, 1, MultiLevel.INDEPENDENT_DV, INDEPENDENT);
             }
         };
 
@@ -305,7 +303,7 @@ public class Test_18_E2Immutable extends CommonTestRunner {
                 assertEquals(DV.TRUE_DV, d.fieldAnalysis().getProperty(FINAL));
 
                 assertEquals("Set.copyOf(input4)", d.fieldAnalysis().getValue().toString());
-                assertEquals("", d.fieldAnalysis().getLinkedVariables().toString());
+                assertEquals("input4:4", d.fieldAnalysis().getLinkedVariables().toString());
                 assertDv(d, MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL_DV, EXTERNAL_NOT_NULL);
                 assertDv(d, MultiLevel.EFFECTIVELY_IMMUTABLE_DV, EXTERNAL_IMMUTABLE);
                 assertDv(d, MultiLevel.CONTAINER_DV, EXTERNAL_CONTAINER);

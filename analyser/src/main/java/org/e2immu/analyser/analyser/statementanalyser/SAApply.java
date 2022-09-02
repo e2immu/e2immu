@@ -518,7 +518,7 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
                 //     c -> c instanceof VariableCause vc && vc.variable().equals(variable))) {
                 // we'll decide to change to instance, but we'll mark this decision
                 // See: Loops_21, _21_1, ListUtilSimplified_0, _1, DependencyGraphSimplified_0, _1, Project_0bis
-                vic.markOverride(CONTEXT_MODIFIED, DV.TRUE_DV);
+                vic.markContextModifiedOverride(DV.TRUE_DV);
                 LOGGER.debug("Breaking delay loop, deciding on MODIFIED for {}", variable);
             } else {
                 CausesOfDelay causes = DelayFactory.createDelay(new VariableCause(variable, getLocation(),

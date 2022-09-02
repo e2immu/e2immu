@@ -168,7 +168,7 @@ public class Test_09_EvaluatesToConstant extends CommonTestRunner {
                     if (d.iteration() == 0) {
                         String linked = "b:-1,param:-1";
                         assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
-                        assertEquals(DV.FALSE_DV, d.getProperty(Property.CONTEXT_MODIFIED));
+                        assertNull(d.getProperty(Property.CONTEXT_MODIFIED));
                     } else {
                         fail(); // unreachable, now that the condition is stable
                     }
@@ -178,7 +178,6 @@ public class Test_09_EvaluatesToConstant extends CommonTestRunner {
                     assertEquals(expected, d.currentValue().toString());
                     String linked = d.iteration() == 0 ? "b:-1,param:-1" : "";
                     assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
-                    assertEquals(DV.FALSE_DV, d.getProperty(Property.CONTEXT_MODIFIED));
                 }
                 if ("1".equals(d.statementId())) {
                     String expected = d.iteration() == 0
@@ -188,7 +187,7 @@ public class Test_09_EvaluatesToConstant extends CommonTestRunner {
                     assertEquals(d.iteration() > 0, causesOfDelayOfLinkedVars.isDone());
                     String linked = d.iteration() == 0 ? "b:-1,param:-1" : "";
                     assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
-                    assertDv(d, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                    assertNull(d.getProperty(Property.CONTEXT_MODIFIED));
                 }
             }
         }

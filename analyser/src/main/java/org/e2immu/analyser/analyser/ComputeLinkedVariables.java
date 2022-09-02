@@ -362,12 +362,8 @@ public class ComputeLinkedVariables {
         boolean progress = false;
         if (vic != null) {
             DV value;
-            DV override = vic.propertyOverrides().getOrDefaultNull(property);
             boolean complain;
-            if (override != null) {
-                value = override;
-                complain = false;
-            } else if ((property == Property.CONTEXT_NOT_NULL || property == Property.CONTEXT_IMMUTABLE
+            if ((property == Property.CONTEXT_NOT_NULL || property == Property.CONTEXT_IMMUTABLE
                     || property == Property.CONTEXT_CONTAINER) && oneBranchHasBecomeUnreachable) {
                 value = valueInput;
                 complain = false;
@@ -667,20 +663,34 @@ public class ComputeLinkedVariables {
             assert newValue != null;
             VariableInfoContainer vic = statementAnalysis.getVariableOrDefaultNull(variable.fullyQualifiedName());
             if (vic != null) {
+                DV override = vic.propertyOverrides().getOrDefaultNull(Property.CONTEXT_MODIFIED);
+                DV newValueAfterOverride;
+                boolean complain;
+                if (override == null) {
+                    newValueAfterOverride = newValue;
+                    complain = true;
+                } else {
+                    newValueAfterOverride = override;
+                    complain = false;
+                }
                 VariableInfo vi = vic.ensureLevelForPropertiesLinkedVariables(statementAnalysis.location(stage), stage);
                 DV current = vi.getProperty(Property.CONTEXT_MODIFIED);
                 if (current.isDelayed()) {
                     try {
-                        vic.setProperty(Property.CONTEXT_MODIFIED, newValue, stage);
-                        progress |= newValue.isDone();
+                        vic.setProperty(Property.CONTEXT_MODIFIED, newValueAfterOverride, stage);
+                        progress |= newValueAfterOverride.isDone();
                         causesOfDelay = causesOfDelay.merge(newValue.causesOfDelay());
                     } catch (IllegalStateException ise) {
                         LOGGER.error("Return value cluster: {}", returnValueCluster);
                         throw ise;
                     }
-                } else if (newValue.isDone() && !newValue.equals(current)) {
-                    LOGGER.error("Variable {}, property CONTEXT_MODIFIED, current {}, new {}", variable, current, newValue);
-                    throw new UnsupportedOperationException("Overwriting value");
+                } else if (newValueAfterOverride.isDone() && !newValueAfterOverride.equals(current)) {
+                    if (complain) {
+                        LOGGER.error("Variable {}, property CONTEXT_MODIFIED, current {}, new {}", variable, current, newValueAfterOverride);
+                        throw new UnsupportedOperationException("Overwriting value");
+                    } else {
+                        LOGGER.debug("Ignoring difference, keep context modified {} on {}", current, variable);
+                    }
                 }
             }
         }

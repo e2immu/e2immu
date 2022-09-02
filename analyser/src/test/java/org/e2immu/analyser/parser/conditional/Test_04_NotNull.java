@@ -77,13 +77,6 @@ public class Test_04_NotNull extends CommonTestRunner {
                     if ("0.0.0".equals(d.statementId())) {
                         String linked = d.iteration() <= 3 ? "this.s:-1" : "";
                         assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
-                        assertDv(d, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
-                    }
-                    if ("0".equals(d.statementId())) {
-                        assertDv(d, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
-                    }
-                    if ("1".equals(d.statementId())) {
-                        assertDv(d, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     }
                 }
             }
@@ -91,11 +84,6 @@ public class Test_04_NotNull extends CommonTestRunner {
         StatementAnalyserVisitor statementAnalyserVisitor = d -> {
             if ("lowerCase".equals(d.methodInfo().name)) {
                 if ("0".equals(d.statementId())) {
-                    // so there is nothing happening in 3, 5, and 8
-                    // in 4, context modified of s, return variable, statements 0, 0.0.0
-                    // in 6, same, statement 1
-                    // in 7, the parameter input gets a not-modified
-                    // in 9, the field s gets a value
                     assertEquals(d.iteration() >= 3, d.context().evaluationContext().allowBreakDelay());
                 }
                 if ("0.0.0".equals(d.statementId())) {
@@ -124,7 +112,7 @@ public class Test_04_NotNull extends CommonTestRunner {
             }
         };
         testClass("NotNull_1", 0, 0, new DebugConfiguration.Builder()
-                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                   .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .addStatementAnalyserVisitor(statementAnalyserVisitor)
                 .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)

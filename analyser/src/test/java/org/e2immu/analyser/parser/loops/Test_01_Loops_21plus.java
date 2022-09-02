@@ -202,6 +202,19 @@ public class Test_01_Loops_21plus extends CommonTestRunner {
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("method".equals(d.methodInfo().name)) {
                 if ("array".equals(d.variableName())) {
+                    if ("1".equals(d.statementId())) {
+                        assertDv(d, DV.FALSE_DV, CONTEXT_MODIFIED);
+                    }
+                    if ("2".equals(d.statementId())) {
+                        String expected = switch (d.iteration()) {
+                            case 0 -> "<loopIsNotEmptyCondition>?<vl:array>:new String[n][m]";
+                            case 1, 2, 3 -> "-2-<oos:i>+n>=0?<vl:array>:new String[n][m]";
+                            default -> "-2-(instance type int)+n>=0?instance type String[][]:new String[n][m]";
+                        };
+                        assertEquals(expected, d.currentValue().toString());
+                        VariableInfo eval = d.variableInfoContainer().best(Stage.EVALUATION);
+                        assertEquals(DV.FALSE_DV, eval.getProperty(CONTEXT_MODIFIED));
+                    }
                     if ("2.0.1".equals(d.statementId())) {
                         DV override = d.variableInfoContainer().propertyOverrides().getOrDefaultNull(CONTEXT_MODIFIED);
                         assertEquals(d.iteration() >= 4, DV.TRUE_DV.equals(override));
@@ -214,7 +227,9 @@ public class Test_01_Loops_21plus extends CommonTestRunner {
                         String expected = d.iteration() <= 3 ? "<vl:array>" : "instance type String[][]";
                         assertEquals(expected, d.currentValue().toString());
 
-                        assertDv(d, 4, DV.FALSE_DV, CONTEXT_MODIFIED);
+                        // TRUE instead of false, at the moment, because we don't have a proper guessing
+                        // mechanism yet (based on a direct CM, CM on the statically-assigned clustering)
+                        assertDv(d, 4, DV.TRUE_DV, CONTEXT_MODIFIED);
                     }
                 }
             }

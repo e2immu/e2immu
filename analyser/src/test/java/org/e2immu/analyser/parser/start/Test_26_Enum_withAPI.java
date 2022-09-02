@@ -74,16 +74,16 @@ public class Test_26_Enum_withAPI extends CommonTestRunner {
 
         StatementAnalyserVisitor statementAnalyserVisitor = d -> {
             if ("test".equals(d.methodInfo().name)) {
-                assertEquals(d.iteration() >= 1, d.statementAnalysis().methodLevelData().linksHaveBeenEstablished());
+                assertTrue(d.statementAnalysis().methodLevelData().linksHaveBeenEstablished());
             }
             if ("values".equals(d.methodInfo().name)) {
                 assertTrue(d.statementAnalysis().methodLevelData().linksHaveBeenEstablished());
             }
             if ("valueOf".equals(d.methodInfo().name)) {
-                assertEquals(d.iteration() >= 1, d.statementAnalysis().methodLevelData().linksHaveBeenEstablished());
+                assertTrue(d.statementAnalysis().methodLevelData().linksHaveBeenEstablished());
             }
             if ("isThree".equals(d.methodInfo().name)) {
-                assertEquals(d.iteration() >= 4, d.statementAnalysis().methodLevelData().linksHaveBeenEstablished());
+                assertEquals(d.iteration() >= 3, d.statementAnalysis().methodLevelData().linksHaveBeenEstablished());
             }
         };
 
@@ -112,21 +112,21 @@ public class Test_26_Enum_withAPI extends CommonTestRunner {
             if ("valueOf".equals(d.methodInfo().name)) {
                 assertDv(d, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_EXPRESSION);
                 assertDv(d, DV.FALSE_DV, Property.MODIFIED_METHOD);
-                String expect = d.iteration() <= 3 ? "<m:valueOf>"
+                String expect = d.iteration() < 3 ? "<m:valueOf>"
                         : "/*inline valueOf*/Arrays.stream({`Enum_0.ONE`,`Enum_0.TWO`,`Enum_0.THREE`}).filter(/*inline test*/(instance type String).equals(name)).findFirst().orElseThrow()";
                 assertEquals(expect, d.methodAnalysis().getSingleReturnValue().toString());
-                mustSeeIteration(d, 4);
+                mustSeeIteration(d, 3);
 
             }
             if ("values".equals(d.methodInfo().name)) {
-                String expect = d.iteration() <= 3 ? "<m:values>" : "/*inline values*/{Enum_0.ONE,Enum_0.TWO,Enum_0.THREE}";
+                String expect = d.iteration() < 3 ? "<m:values>" : "/*inline values*/{Enum_0.ONE,Enum_0.TWO,Enum_0.THREE}";
                 assertEquals(expect, d.methodAnalysis().getSingleReturnValue().toString());
                 assertEquals(DV.FALSE_DV, d.methodAnalysis().getProperty(Property.MODIFIED_METHOD));
             }
             if ("isThree".equals(d.methodInfo().name)) {
-                String expect = d.iteration() <= 3 ? "<m:isThree>" : "/*inline isThree*/Enum_0.THREE==this";
+                String expect = d.iteration() < 3 ? "<m:isThree>" : "/*inline isThree*/Enum_0.THREE==this";
                 assertEquals(expect, d.methodAnalysis().getSingleReturnValue().toString());
-                mustSeeIteration(d, 4);
+                mustSeeIteration(d, 3);
             }
         };
 
@@ -169,7 +169,7 @@ public class Test_26_Enum_withAPI extends CommonTestRunner {
         EvaluationResultVisitor evaluationResultVisitor = d -> {
             if ("highest".equals(d.methodInfo().name)) {
                 if ("0".equals(d.statementId())) {
-                    String expectValue = d.iteration() <= 3 ? "1==<m:getCnt>" : "true";
+                    String expectValue = d.iteration() < 3 ? "1==<m:getCnt>" : "true";
                     // ===  1==Enum_4.ONE.cnt, with ONE=new Enum_4(1)
 
                     assertEquals(expectValue, d.evaluationResult().value().toString());
@@ -227,10 +227,10 @@ public class Test_26_Enum_withAPI extends CommonTestRunner {
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("returnTwo".equals(d.methodInfo().name)) {
                 // important: even if valueOf() is immutable_hc, we must fill in the concrete type, which is mutable!
-                assertDv(d, 4, MultiLevel.MUTABLE_DV, Property.IMMUTABLE);
+                assertDv(d, 3, MultiLevel.MUTABLE_DV, Property.IMMUTABLE);
             }
             if ("valueOf".equals(d.methodInfo().name)) {
-                assertDv(d, 4, MultiLevel.EFFECTIVELY_IMMUTABLE_HC_DV, Property.IMMUTABLE);
+                assertDv(d, 3, MultiLevel.EFFECTIVELY_IMMUTABLE_HC_DV, Property.IMMUTABLE);
             }
         };
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
