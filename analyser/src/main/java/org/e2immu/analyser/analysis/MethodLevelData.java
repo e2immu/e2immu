@@ -19,6 +19,7 @@ import org.e2immu.analyser.analyser.util.AnalyserResult;
 import org.e2immu.analyser.config.AnalyserProgram;
 import org.e2immu.analyser.model.MethodInfo;
 import org.e2immu.analyser.model.variable.LocalVariableReference;
+import org.e2immu.analyser.model.variable.ReturnVariable;
 import org.e2immu.analyser.model.variable.This;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.support.EventuallyFinal;
@@ -158,8 +159,10 @@ public class MethodLevelData {
                 .filter(vi -> !(vi.variable() instanceof This))
                 // local variables that have been created, but not yet assigned/read; reject ConditionalInitialization
                 .filter(vi -> !(vi.variable() instanceof LocalVariableReference) || vi.isAssigned())
+                // accept all linked variable delays, but not CM on the return variable (is not used anywhere)
                 .map(vi -> vi.getLinkedVariables().causesOfDelay().merge(
-                        vi.getProperty(Property.CONTEXT_MODIFIED).causesOfDelay()))
+                        vi.variable() instanceof ReturnVariable ? CausesOfDelay.EMPTY :
+                                vi.getProperty(Property.CONTEXT_MODIFIED).causesOfDelay()))
                 .filter(CausesOfDelay::isDelayed)
                 .findFirst().orElse(null);
         // IMPORTANT! only the first delay is passed on, not all delays are computed

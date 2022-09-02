@@ -274,8 +274,7 @@ public class Test_01_Loops_6plus extends CommonTestRunner {
                     }
                     if ("4".equals(d.statementId())) {
                         assertDv(d, 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, CONTEXT_NOT_NULL);
-                        String linked = d.iteration() == 0 ? "ZoneOffset.UTC:-1,map:-1,now:-1" : "";
-                        assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
+                        assertEquals("", d.variableInfo().getLinkedVariables().toString());
                     }
                     if ("5".equals(d.statementId())) {
                         assertDv(d, 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, CONTEXT_NOT_NULL);
@@ -291,8 +290,7 @@ public class Test_01_Loops_6plus extends CommonTestRunner {
                                 ? "map.entrySet().isEmpty()?new HashMap<>()/*AnnotatedAPI.isKnown(true)&&0==this.size()*/:<vl:result>"
                                 : "map.entrySet().isEmpty()?new HashMap<>()/*AnnotatedAPI.isKnown(true)&&0==this.size()*/:instance type Map<String,String>";
                         assertEquals(expectValue, d.currentValue().toString());
-                        String linked = d.iteration() == 0 ? "ZoneOffset.UTC:-1,map:-1,now:-1,result:0" : "result:0";
-                        assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
+                        assertEquals("result:0", d.variableInfo().getLinkedVariables().toString());
                         assertDv(d, MultiLevel.NULLABLE_DV, CONTEXT_NOT_NULL);
                         assertDv(d, 2, MultiLevel.EFFECTIVELY_NOT_NULL_DV, NOT_NULL_EXPRESSION);
                     }
@@ -569,6 +567,8 @@ public class Test_01_Loops_6plus extends CommonTestRunner {
 
     @Test
     public void test_17_2() throws IOException {
+        // delay breaking in iteration 4
+
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("method".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof FieldReference fr && "map".equals(fr.fieldInfo.name)) {
@@ -578,26 +578,26 @@ public class Test_01_Loops_6plus extends CommonTestRunner {
                         assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, eval.getProperty(CONTEXT_NOT_NULL));
 
                         // merge:
-                        assertDv(d, 3, MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL_DV, CONTEXT_NOT_NULL);
+                        assertDv(d, 4, MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL_DV, CONTEXT_NOT_NULL);
                     }
                     if ("1.0.0".equals(d.statementId())) {
                         // as the sourceOfLoop of entry
+                        assertEquals(d.iteration() == 4, d.context().evaluationContext().allowBreakDelay());
                         assertTrue(d.variableInfoContainer().hasEvaluation());
                         VariableInfo eval = d.variableInfoContainer().best(Stage.EVALUATION);
-                        assertEquals(d.iteration() <= 2, eval.getProperty(CONTEXT_NOT_NULL).isDelayed());
+                        assertEquals(d.iteration() <= 3, eval.getProperty(CONTEXT_NOT_NULL).isDelayed());
 
                         assertTrue(d.variableInfoContainer().hasMerge());
-                        assertDv(d, 3, MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL_DV, CONTEXT_NOT_NULL);
+                        assertDv(d, 4, MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL_DV, CONTEXT_NOT_NULL);
                     }
                 }
             }
         };
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
-            //assertFalse(d.evaluationContext().allowBreakDelay());
             if ("map".equals(d.fieldInfo().name)) {
                 // whatever happens, this remains nullable! map can have been null, setMap does not have to be called, and
                 // neither does method
-                assertDv(d, 3, MultiLevel.NULLABLE_DV, EXTERNAL_NOT_NULL);
+                assertDv(d, 4, MultiLevel.NULLABLE_DV, EXTERNAL_NOT_NULL);
             }
         };
         testClass("Loops_17", 0, 1, new DebugConfiguration.Builder()
@@ -651,7 +651,7 @@ public class Test_01_Loops_6plus extends CommonTestRunner {
                         assertDv(d, 1, MultiLevel.MUTABLE_DV, IMMUTABLE);
                     }
                     if ("1.0.1.0.0".equals(d.statementId())) {
-                        String expectL1 = d.iteration() == 0 ? "container:-1,key:-1,queried:-1,this.kvStore:-1" : "this.kvStore:2";
+                        String expectL1 = d.iteration() == 0 ? "container:-1,key:-1,this.kvStore:-1" : "this.kvStore:2";
                         assertEquals(expectL1, d.variableInfo().getLinkedVariables().toString());
                     }
                 }
@@ -671,7 +671,7 @@ public class Test_01_Loops_6plus extends CommonTestRunner {
                         assertEquals(linkedE, eval.getLinkedVariables().toString());
 
                         assertTrue(d.variableInfoContainer().hasMerge());
-                        String linkedM = d.iteration() == 0 ? "queried:-1,result:-1" : "";
+                        String linkedM = d.iteration() == 0 ? "scope-container:1.0.1.read:-1,scope-container:1.0.1:-1" : "";
                         assertEquals(linkedM, d.variableInfo().getLinkedVariables().toString());
                     }
                 }

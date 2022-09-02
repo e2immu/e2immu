@@ -14,24 +14,12 @@
 
 package org.e2immu.analyser.parser.modification;
 
-import org.e2immu.analyser.analyser.DV;
-import org.e2immu.analyser.analyser.Property;
-import org.e2immu.analyser.analysis.impl.FieldAnalysisImpl;
 import org.e2immu.analyser.config.AnalyserConfiguration;
 import org.e2immu.analyser.config.DebugConfiguration;
-import org.e2immu.analyser.model.MethodInfo;
-import org.e2immu.analyser.model.MultiLevel;
-import org.e2immu.analyser.model.TypeInfo;
-import org.e2immu.analyser.model.variable.FieldReference;
-import org.e2immu.analyser.model.variable.This;
 import org.e2immu.analyser.parser.CommonTestRunner;
-import org.e2immu.analyser.visitor.*;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
-import java.util.Set;
-
-import static org.junit.jupiter.api.Assertions.*;
 
 public class Test_16_Modification_21 extends CommonTestRunner {
 
@@ -42,7 +30,7 @@ public class Test_16_Modification_21 extends CommonTestRunner {
     @Test
     public void test() throws IOException {
 
-        testClass("Modification_21", 0, 1, new DebugConfiguration.Builder()
+        testClass("Modification_21", 0, 0, new DebugConfiguration.Builder()
                         .build(),
                 new AnalyserConfiguration.Builder().setComputeFieldAnalyserAcrossAllMethods(true).build());
     }

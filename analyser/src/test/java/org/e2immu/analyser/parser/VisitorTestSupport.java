@@ -19,7 +19,6 @@ import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.analysis.range.Range;
 import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.visitor.CommonVisitorData;
-import org.e2immu.analyser.visitor.FieldAnalyserVisitor;
 import org.e2immu.analyser.visitor.StatementAnalyserVariableVisitor;
 import org.e2immu.analyser.visitor.StatementAnalyserVisitor;
 
@@ -27,8 +26,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 public abstract class VisitorTestSupport {
 
@@ -72,6 +70,8 @@ public abstract class VisitorTestSupport {
     public void assertDv(CommonVisitorData d, String delayed, int delayedBeforeIteration, DV expect, Property property) {
         DV value = d.getProperty(property);
         if (d.iteration() < delayedBeforeIteration) {
+            assertNotNull(value, "Expect delay rather than null in iteration " + d.iteration()
+                    + "<" + delayedBeforeIteration + " for property " + property);
             assertEquals(delayed, value.toString(),
                     "Expected delay in iteration " + d.iteration() + "<" + delayedBeforeIteration + ", but got " + value + " for property " + property);
         } else {

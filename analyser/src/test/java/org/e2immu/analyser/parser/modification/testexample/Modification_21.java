@@ -14,12 +14,16 @@
 
 package org.e2immu.analyser.parser.modification.testexample;
 
+import org.e2immu.annotation.Container;
+import org.e2immu.annotation.Independent;
 import org.e2immu.annotation.Modified;
 
 import java.util.List;
 
 public class Modification_21 {
 
+    @Container
+    @Independent
     static class I {
         private int i;
 

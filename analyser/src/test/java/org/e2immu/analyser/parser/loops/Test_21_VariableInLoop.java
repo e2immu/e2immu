@@ -24,6 +24,7 @@ import org.e2immu.analyser.parser.CommonTestRunner;
 import org.e2immu.analyser.visitor.EvaluationResultVisitor;
 import org.e2immu.analyser.visitor.StatementAnalyserVariableVisitor;
 import org.e2immu.analyser.visitor.StatementAnalyserVisitor;
+import org.e2immu.analyser.visitor.TypeAnalyserVisitor;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
@@ -127,7 +128,7 @@ public class Test_21_VariableInLoop extends CommonTestRunner {
                         assertDv(d, 2, MultiLevel.NULLABLE_DV, Property.CONTEXT_NOT_NULL);
                         String linked = switch (d.iteration()) {
                             case 0, 1 -> "firstStatementAnalyser:0,sa.navigationData().next:-1,scope-59:18:-1,scope-60:47:-1";
-                            default -> "firstStatementAnalyser:0,sa.navigationData().next:2,scope-59:18:2,scope-60:47:2";
+                            default -> "firstStatementAnalyser:0,sa.navigationData().next:4,scope-59:18:2,scope-60:47:2";
                         };
                         assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
                     }
@@ -177,10 +178,16 @@ public class Test_21_VariableInLoop extends CommonTestRunner {
                 }
             }
         };
+        TypeAnalyserVisitor typeAnalyserVisitor = d-> {
+            if("StatementAnalyser".equals(d.typeInfo().simpleName)) {
+               assertDv(d, MultiLevel.MUTABLE_DV, Property.IMMUTABLE);
+            }
+        };
         // sa.navigationData(), x2
         testClass("VariableInLoop_1", 0, 2, new DebugConfiguration.Builder()
                 .addStatementAnalyserVisitor(statementAnalyserVisitor)
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
                 .build());
     }
 
@@ -255,6 +262,12 @@ public class Test_21_VariableInLoop extends CommonTestRunner {
                     if ("2.0.0".equals(d.statementId())) {
                         String expected = d.iteration() <= 1 ? "<vl:toDo>" : "instance type HashSet<String>";
                         assertEquals(expected, d.currentValue().toString());
+                        assertDv(d, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                    }
+                    if ("2.0.2".equals(d.statementId())) {
+                        String expected = d.iteration() <= 1 ? "<vl:toDo>" : "instance type Set<String>";
+                        assertEquals(expected, d.currentValue().toString());
+                        assertDv(d, 1, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
                     }
                     if ("2".equals(d.statementId())) {
                         assertDv(d, 1, DV.TRUE_DV, Property.CONTEXT_MODIFIED);

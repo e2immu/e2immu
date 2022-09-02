@@ -112,7 +112,7 @@ public class Test_16_Modification_19 extends CommonTestRunner {
                         assertNotNull(fr.scopeVariable);
                         assertEquals("c", fr.scopeVariable.toString());
 
-                        String cmDelay = "cm@Parameter_c;initial:this.s2@Method_example1_0-C";
+                        String cmDelay = "initial:this.s2@Method_example1_0-C";
                         assertDv(d, cmDelay, 1, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
                     }
                 }
