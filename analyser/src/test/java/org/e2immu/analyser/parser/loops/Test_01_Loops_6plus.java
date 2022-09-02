@@ -567,7 +567,7 @@ public class Test_01_Loops_6plus extends CommonTestRunner {
 
     @Test
     public void test_17_2() throws IOException {
-        // delay breaking in iteration 4
+        // delay breaking in iteration 3
 
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("method".equals(d.methodInfo().name)) {
@@ -578,17 +578,17 @@ public class Test_01_Loops_6plus extends CommonTestRunner {
                         assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, eval.getProperty(CONTEXT_NOT_NULL));
 
                         // merge:
-                        assertDv(d, 4, MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL_DV, CONTEXT_NOT_NULL);
+                        assertDv(d, 3, MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL_DV, CONTEXT_NOT_NULL);
                     }
                     if ("1.0.0".equals(d.statementId())) {
                         // as the sourceOfLoop of entry
-                        assertEquals(d.iteration() == 4, d.context().evaluationContext().allowBreakDelay());
+                        assertEquals(d.iteration() == 3, d.context().evaluationContext().allowBreakDelay());
                         assertTrue(d.variableInfoContainer().hasEvaluation());
                         VariableInfo eval = d.variableInfoContainer().best(Stage.EVALUATION);
-                        assertEquals(d.iteration() <= 3, eval.getProperty(CONTEXT_NOT_NULL).isDelayed());
+                        assertEquals(d.iteration() <= 2, eval.getProperty(CONTEXT_NOT_NULL).isDelayed());
 
                         assertTrue(d.variableInfoContainer().hasMerge());
-                        assertDv(d, 4, MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL_DV, CONTEXT_NOT_NULL);
+                        assertDv(d, 3, MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL_DV, CONTEXT_NOT_NULL);
                     }
                 }
             }
@@ -597,7 +597,7 @@ public class Test_01_Loops_6plus extends CommonTestRunner {
             if ("map".equals(d.fieldInfo().name)) {
                 // whatever happens, this remains nullable! map can have been null, setMap does not have to be called, and
                 // neither does method
-                assertDv(d, 4, MultiLevel.NULLABLE_DV, EXTERNAL_NOT_NULL);
+                assertDv(d, 3, MultiLevel.NULLABLE_DV, EXTERNAL_NOT_NULL);
             }
         };
         testClass("Loops_17", 0, 1, new DebugConfiguration.Builder()

@@ -467,17 +467,21 @@ public class Assignment extends BaseExpression implements Expression {
                 LinkedVariables lvs = fieldReference.scope.linkedVariables(context);
                 builder.modifyingMethodAccess(fieldReference.scopeVariable, instance, lvs);
 
+                // IMPROVE: recursion also in markModified --  but what about the code above?
                 // recurse!
                 markModified(builder, context, fieldReference.scopeVariable);
             }
         } else if (at instanceof ParameterInfo parameterInfo) {
             builder.addParameterShouldNotBeAssignedTo(parameterInfo);
         } else if (at instanceof DependentVariable dv) {
-            if (dv.arrayVariable() != null) {
-                builder.markContextModified(dv.arrayVariable(), DV.TRUE_DV);
+            Variable arrayVariable = dv.arrayVariable();
+            if (arrayVariable != null) {
+                builder.markRead(arrayVariable);
+                builder.markContextModified(arrayVariable, DV.TRUE_DV);
 
+                // IMPROVE: recursion also in markModified
                 // recurse!
-                markModified(builder, context, dv.arrayVariable());
+                markModified(builder, context, arrayVariable);
             }
         }
     }

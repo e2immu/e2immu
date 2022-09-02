@@ -1457,7 +1457,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
                 groupPropertyValues.getMap(CONTEXT_CONTAINER));
 
         ProgressAndDelay cmStatus = computeLinkedVariables.writeContextModified(groupPropertyValues
-                .getMap(CONTEXT_MODIFIED), conditionCauses);
+                .getMap(CONTEXT_MODIFIED), conditionCauses, true);
 
         return delay.combine(ennStatus).combine(cnnStatus).combine(cmStatus).combine(extImmStatus)
                 .combine(extContStatus).combine(cImmStatus).combine(cContStatus).combine(extIgnModStatus)

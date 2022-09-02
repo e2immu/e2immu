@@ -176,9 +176,10 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
             }
         }
 
+        boolean noAssignments = evaluationResult.changeData().values().stream().noneMatch(EvaluationResult.ChangeData::markAssignment);
         ProgressAndDelay delayStatus = new ProgressAndDelay(progress, cumulativeDelay);
         ApplyStatusAndEnnStatus applyStatusAndEnnStatus = contextProperties(sharedState, evaluationResult,
-                delayStatus, analyserContext, groupPropertyValues);
+                delayStatus, analyserContext, groupPropertyValues, noAssignments);
 
         // debugging...
 
@@ -734,7 +735,8 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
                                                       EvaluationResult evaluationResult,
                                                       ProgressAndDelay delayIn,
                                                       AnalyserContext analyserContext,
-                                                      GroupPropertyValues groupPropertyValues) {
+                                                      GroupPropertyValues groupPropertyValues,
+                                                      boolean noAssignments) {
         // the second one is across clusters of variables
         groupPropertyValues.addToMap(statementAnalysis);
 
@@ -831,7 +833,7 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
 
         // 7
         ProgressAndDelay cmStatus = computeLinkedVariables.writeContextModified(groupPropertyValues.getMap(CONTEXT_MODIFIED),
-                CausesOfDelay.EMPTY);
+                CausesOfDelay.EMPTY, noAssignments);
 
         // 8
         ProgressAndDelay extIgnMod = computeLinkedVariables.write(EXTERNAL_IGNORE_MODIFICATIONS,

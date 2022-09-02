@@ -658,8 +658,10 @@ public record EvaluationResult(EvaluationContext evaluationContext,
                     }
                 }
                 if (variable instanceof FieldReference fr && fr.scopeVariable != null) {
+                    markRead(fr.scopeVariable);
                     markContextModified(fr.scopeVariable, modified);
                 } else if (variable instanceof DependentVariable dv && dv.arrayVariable() != null) {
+                    markRead(dv.arrayVariable());
                     markContextModified(dv.arrayVariable(), modified);
                 }
             }

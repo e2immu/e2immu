@@ -165,7 +165,7 @@ public class Test_01_Loops_21plus extends CommonTestRunner {
                             default -> "array:2,array[i]:1";
                         };
                         assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
-                        assertDv(d, 1, DV.TRUE_DV, CONTEXT_MODIFIED);
+                        assertDv(d, DV.TRUE_DV, CONTEXT_MODIFIED);
                     }
                 }
             }
@@ -214,9 +214,7 @@ public class Test_01_Loops_21plus extends CommonTestRunner {
                         String expected = d.iteration() <= 3 ? "<vl:array>" : "instance type String[][]";
                         assertEquals(expected, d.currentValue().toString());
 
-                        // TRUE instead of false, at the moment, because we don't have a proper guessing
-                        // mechanism yet (based on a direct CM, CM on the statically-assigned clustering)
-                        assertDv(d, 4, DV.TRUE_DV, CONTEXT_MODIFIED);
+                        assertDv(d, 4, DV.FALSE_DV, CONTEXT_MODIFIED);
                     }
                 }
             }

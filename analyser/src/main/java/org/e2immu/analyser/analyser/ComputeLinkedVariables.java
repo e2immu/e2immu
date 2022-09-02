@@ -621,9 +621,10 @@ public class ComputeLinkedVariables {
     only when we looped over all, we can start writing out values
 
      */
-    public ProgressAndDelay writeContextModified(Map<Variable, DV> propertyMap, CausesOfDelay extraDelay) {
+    public ProgressAndDelay writeContextModified(Map<Variable, DV> propertyMap, CausesOfDelay extraDelay,
+                                                 boolean noAssignments) {
         Map<Variable, DV> finalModified;
-        if (propertyMap.values().stream().allMatch(DV::valueIsFalse)) {
+        if (noAssignments && propertyMap.values().stream().allMatch(DV::valueIsFalse)) {
             finalModified = propertyMap;
             assert propertyMap.keySet().containsAll(variablesInClusters);
         } else {
