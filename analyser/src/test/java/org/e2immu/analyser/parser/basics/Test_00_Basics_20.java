@@ -225,7 +225,8 @@ public class Test_00_Basics_20 extends CommonTestRunner {
                     };
                     assertEquals(expectLv, d.variableInfo().getLinkedVariables().toString());
 
-                    assertDv(d, 2, DV.FALSE_DV, CONTEXT_MODIFIED);
+                    // see explanation in method source why this is TRUE
+                    assertDv(d, 2, DV.TRUE_DV, CONTEXT_MODIFIED);
                 }
             }
         };
@@ -262,7 +263,7 @@ public class Test_00_Basics_20 extends CommonTestRunner {
                 assertDv(d, 1, MultiLevel.INDEPENDENT_HC_DV, INDEPENDENT);
             }
             if ("getListC1".equals(d.methodInfo().name)) {
-                assertDv(d, MultiLevel.DEPENDENT_DV, INDEPENDENT);
+                assertDv(d, 1, MultiLevel.DEPENDENT_DV, INDEPENDENT);
             }
         };
     }

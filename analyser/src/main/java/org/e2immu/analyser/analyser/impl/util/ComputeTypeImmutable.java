@@ -416,7 +416,11 @@ public record ComputeTypeImmutable(AnalyserContext analyserContext,
              if the field is not recursively immutable, we have to allow for hidden content (w.minLevel cannot
              have its maximal value of IMMUTABLE.level anymore).
              */
-
+            if (fieldImmutable.isDelayed()) {
+                // this delay is not caught because of the partial data... still, we cannot conclude, see e.g. E2Immutable_10
+                LOGGER.debug("Delaying immutable of {} because field {} has immutable delayed", typeInfo, fieldInfo);
+                return delayImmutable(fieldImmutable.causesOfDelay(), sharedState.allowBreakDelay(), w.whenImmutableFails);
+            }
             int fieldImmutableLevel = MultiLevel.level(fieldImmutable);
             if (fieldImmutableLevel < MultiLevel.Level.IMMUTABLE.level) {
                 w.minLevel = Math.min(w.minLevel, MultiLevel.Level.IMMUTABLE_HC.level);

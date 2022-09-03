@@ -25,6 +25,7 @@ yet, the SimpleContainer returned by get7 is modifiable, and hence dependent.
  */
 @FinalFields
 @Container
+@ImmutableContainer(absent = true)
 public class E2Immutable_7 {
 
     @Independent
@@ -44,16 +45,18 @@ public class E2Immutable_7 {
     @NotModified
     private final Map<String, SimpleContainer> map7;
 
-    public E2Immutable_7(Map<String, SimpleContainer> map7Param) {
-        map7 = new HashMap<>(map7Param); // not linked
+    public E2Immutable_7(@Independent(absent = true) Map<String, SimpleContainer> map7Param) {
+        map7 = new HashMap<>(map7Param); // common HC linked
     }
 
     // dependent! SimpleContainer is mutable
+    @Independent(absent = true)
     public SimpleContainer get7(String input) {
         return map7.get(input);
     }
 
     // dependent, even if the map is independent, and its content is independent
+    @Independent(absent = true)
     public Map<String, SimpleContainer> getMap7() {
         Map<String, SimpleContainer> incremented = new HashMap<>(map7);
         incremented.values().forEach(sc -> sc.setI(sc.getI() + 1));

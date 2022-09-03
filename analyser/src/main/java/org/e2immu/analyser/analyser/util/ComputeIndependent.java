@@ -52,14 +52,16 @@ public record ComputeIndependent(AnalyserContext analyserContext,
      * On the other hand, a link level of DEPENDENT assumes that the underlying type is mutable.
      * A link level of INDEPENDENT should not occur, but for convenience we translate directly. The immutability status
      * of the types is not important in this case.
+     * <p>
+     * LinkedVariables(target) = { field1:linkLevel1, field2:linkLevel2, ...}
      *
-     * @param linkLevel  any of STATICALLY_ASSIGNED, ASSIGNED, DEPENDENT, IN_HC_OF, COMMON_HC, INDEPENDENT
-     * @param a          one of the two types
-     * @param immutableA not null if you already know the immutable value of <code>a</code>
-     * @param b          one of the two types, can be equal to <code>a</code>
+     * @param linkLevel       any of STATICALLY_ASSIGNED, ASSIGNED, DEPENDENT, IN_HC_OF, COMMON_HC, INDEPENDENT
+     * @param a               one of the two types
+     * @param immutableAInput not null if you already know the immutable value of <code>a</code>
+     * @param b               one of the two types, can be equal to <code>a</code>
      * @return the value for the INDEPENDENT property
      */
-    public DV typesAtLinkLevel(DV linkLevel, ParameterizedType a, DV immutableA, ParameterizedType b) {
+    public DV typesAtLinkLevel(DV linkLevel, ParameterizedType a, DV immutableAInput, ParameterizedType b) {
         assert linkLevel.isDone();
         if (LINK_STATICALLY_ASSIGNED.equals(linkLevel) || LINK_ASSIGNED.equals(linkLevel)) {
             /*
@@ -67,8 +69,9 @@ public record ComputeIndependent(AnalyserContext analyserContext,
              The type relation cannot be IN_HC_OF, it should be COMMON_HC (or INDEPENDENT in case of no information).
              We return the independent value corresponding to the most specific type.
              */
-            ParameterizedType mostSpecific = a.mostSpecific(analyserContext, currentPrimaryType, b);
-            DV immutable = mostSpecific == a ? immutableA : analyserContext.typeImmutable(b);
+            DV immutableA = immutableAInput == null ? analyserContext.typeImmutable(a) : immutableAInput;
+            DV immutableB = analyserContext.typeImmutable(b);
+            DV immutable = max(immutableA, immutableB);
             return MultiLevel.independentCorrespondingToImmutable(immutable);
         }
         if (LINK_INDEPENDENT.equals(linkLevel)) return MultiLevel.INDEPENDENT_DV;
@@ -77,6 +80,15 @@ public record ComputeIndependent(AnalyserContext analyserContext,
         assert LINK_IS_HC_OF.equals(linkLevel) || LINK_COMMON_HC.equals(linkLevel);
         DV immutableOfIntersection = immutableOfIntersection(a, b);
         return MultiLevel.independentCorrespondingToImmutable(immutableOfIntersection);
+    }
+
+    private DV max(DV immutableA, DV immutableB) {
+        // minor shortcut
+        if (MultiLevel.isAtLeastEventuallyRecursivelyImmutable(immutableA)
+                || MultiLevel.isAtLeastEventuallyRecursivelyImmutable(immutableB)) {
+            return MultiLevel.EFFECTIVELY_IMMUTABLE_DV;
+        }
+        return immutableA.max(immutableB);
     }
 
     private DV immutableOfIntersection(ParameterizedType pt1, ParameterizedType pt2) {
@@ -115,19 +127,22 @@ public record ComputeIndependent(AnalyserContext analyserContext,
             // delay
             return causes;
         }
-        SetOfTypes hidden1 = t1.getHiddenContentTypes().translate(analyserContext, pt1);
-        SetOfTypes hidden2 = t2.getHiddenContentTypes().translate(analyserContext, pt2);
-        SetOfTypes intersection = hidden1.intersection(hidden2);
+        SetOfTypes intersection = analyserContext.intersectionOfHiddenContent(pt1, t1, pt2, t2);
 
         if (intersection.isEmpty()) {
             // no intersection between
             return MultiLevel.INDEPENDENT_DV;
         }
 
-        return intersection.types().stream()
-                .filter(hiddenContentOfCurrentType::contains)
-                .map(analyserContext::typeImmutable)
-                .reduce(MultiLevel.EFFECTIVELY_IMMUTABLE_DV, DV::min);
+        DV min = MultiLevel.EFFECTIVELY_IMMUTABLE_DV;
+        for (ParameterizedType pt : intersection.types()) {
+            DV immutable = analyserContext.typeImmutable(pt);
+            if (MultiLevel.isMutable(immutable)) return MultiLevel.MUTABLE_DV;
+            if (!MultiLevel.isAtLeastEventuallyRecursivelyImmutable(immutable) && hiddenContentOfCurrentType.contains(pt)) {
+                min = MultiLevel.EFFECTIVELY_IMMUTABLE_HC_DV;
+            }
+        }
+        return min;
     }
 
     /*
@@ -230,9 +245,7 @@ public record ComputeIndependent(AnalyserContext analyserContext,
         CausesOfDelay causes = t1.hiddenContentAndExplicitTypeComputationDelays().causesOfDelay()
                 .merge(t2.hiddenContentAndExplicitTypeComputationDelays().causesOfDelay());
         if (causes.isDelayed()) return causes;
-        SetOfTypes hidden1 = t1.getHiddenContentTypes().translate(analyserContext, pt1);
-        SetOfTypes hidden2 = t2.getHiddenContentTypes().translate(analyserContext, pt2);
-        SetOfTypes intersection = hidden1.intersection(hidden2);
+        SetOfTypes intersection = analyserContext.intersectionOfHiddenContent(pt1, t1, pt2, t2);
 
         if (intersection.isEmpty()) return MultiLevel.INDEPENDENT_DV;
 
@@ -273,64 +286,5 @@ public record ComputeIndependent(AnalyserContext analyserContext,
             return LinkedVariables.LINK_IS_HC_OF;
         }
         return null; // try something else
-    }
-
-
-    /**
-     * How do the types relate wrt to hidden content?
-     *
-     * @param pt1 the first type
-     * @param pt2 the second type, there is no order, you can exchange pt1 and pt2
-     * @return either IS_HC_OF, COMMON_HC, or INDEPENDENT
-     */
-    public DV typeRelation2(ParameterizedType pt1, ParameterizedType pt2) {
-        TypeInfo b1 = pt1.bestTypeInfo();
-        TypeInfo b2 = pt2.bestTypeInfo();
-        if (b1 == null && b2 == null) {
-            // two unbound type parameters
-            assert pt1.equals(pt2) : "curious to see when this happens";
-            return LinkedVariables.LINK_COMMON_HC;
-        }
-        if (b1 == null) {
-            return unboundTypeParameter(pt1, pt2, b2);
-        }
-        if (b2 == null) {
-            return unboundTypeParameter(pt2, pt1, b1);
-        }
-        if (!pt1.equals(pt2)) {
-            TypeAnalysis t1 = analyserContext.getTypeAnalysis(b1);
-            if (t1 == null) return LinkedVariables.LINK_INDEPENDENT;
-            if (t1.hiddenContentAndExplicitTypeComputationDelays().isDelayed()) {
-                return t1.hiddenContentAndExplicitTypeComputationDelays();
-            }
-            SetOfTypes translatedHcOfT1 = t1.getHiddenContentTypes().translate(analyserContext, pt2);
-            if (translatedHcOfT1.contains(pt2)) return LinkedVariables.LINK_IS_HC_OF;
-
-            TypeAnalysis t2 = analyserContext.getTypeAnalysis(b2);
-            if (t2 == null) return LinkedVariables.LINK_INDEPENDENT;
-            if (t2.hiddenContentAndExplicitTypeComputationDelays().isDelayed()) {
-                return t2.hiddenContentAndExplicitTypeComputationDelays();
-            }
-            SetOfTypes translatedHcOfT2 = t2.getHiddenContentTypes().translate(analyserContext, pt1);
-            if (translatedHcOfT2.contains(pt1)) return LinkedVariables.LINK_IS_HC_OF;
-        }
-        return LinkedVariables.LINK_COMMON_HC;
-    }
-
-    /*
-    list.add(x), with E the formal type pt1, and X the mutable type x;
-
-    the link level
-     */
-    private DV unboundTypeParameter(ParameterizedType pt1, ParameterizedType pt2, TypeInfo b2) {
-        TypeAnalysis t2 = analyserContext.getTypeAnalysisNullWhenAbsent(b2);
-        if (t2 == null) return LinkedVariables.LINK_INDEPENDENT;
-        if (t2.hiddenContentAndExplicitTypeComputationDelays().isDelayed()) {
-            return t2.hiddenContentAndExplicitTypeComputationDelays();
-        }
-        if (t2.getHiddenContentTypes().translate(analyserContext, pt2).contains(pt1)) {
-            return LinkedVariables.LINK_IS_HC_OF;
-        }
-        throw new UnsupportedOperationException();
     }
 }

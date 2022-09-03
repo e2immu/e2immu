@@ -432,11 +432,11 @@ public class Test_14_Warnings extends CommonTestRunner {
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
             }
             if ("methodMustNotBeStatic5".equals(d.methodInfo().name)) {
-                String expected = "/*inline methodMustNotBeStatic5*/this";
+                String expected = d.iteration() < 8 ? "<m:methodMustNotBeStatic5>" : "/*inline methodMustNotBeStatic5*/this";
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
 
-                assertDv(d, DV.FALSE_DV, MODIFIED_METHOD);
-                assertDv(d, DV.TRUE_DV, FLUENT);
+                assertDv(d, 8, DV.FALSE_DV, MODIFIED_METHOD);
+                assertDv(d, 8, DV.TRUE_DV, FLUENT);
             }
         };
 
@@ -502,7 +502,7 @@ public class Test_14_Warnings extends CommonTestRunner {
                             .getOverrides(d.evaluationContext().getAnalyserContext());
                     assertFalse(overrides.isEmpty());
 
-                    assertDv(d, 1, DV.FALSE_DV, MODIFIED_METHOD); // method modifies parameter, not a field!
+                    assertDv(d, DV.FALSE_DV, MODIFIED_METHOD); // method modifies parameter, not a field!
                     // whatever happens, the set remains independent (the int added is independent)
                     assertDv(d, MultiLevel.INDEPENDENT_DV, INDEPENDENT);
                 }

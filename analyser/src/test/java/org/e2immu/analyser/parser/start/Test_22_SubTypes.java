@@ -291,14 +291,14 @@ public class Test_22_SubTypes extends CommonTestRunner {
             if ("go".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof FieldReference fr && "external".equals(fr.fieldInfo.name)) {
                     assertEquals("0", d.statementId());
-                    assertDv(d,2, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                    assertDv(d,DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                 }
             }
         };
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
             if ("external".equals(d.fieldInfo().name)) {
                 assertDv(d, MultiLevel.NOT_IGNORE_MODS_DV, Property.EXTERNAL_IGNORE_MODIFICATIONS);
-                assertDv(d, 2, DV.FALSE_DV, Property.MODIFIED_OUTSIDE_METHOD);
+                assertDv(d, DV.FALSE_DV, Property.MODIFIED_OUTSIDE_METHOD);
 
                 String expected = d.iteration() == 0 ? "values:this.external@Field_external" : "";
                 assertEquals(expected, d.fieldAnalysis().valuesDelayed().toString());
@@ -314,7 +314,7 @@ public class Test_22_SubTypes extends CommonTestRunner {
             if ("$1".equals(d.typeInfo().simpleName)) {
                 // so we know early on that the anonymous type itself is immutable; however, we must wait for the enclosing type
                 assertDv(d, MultiLevel.EFFECTIVELY_IMMUTABLE_DV, Property.PARTIAL_IMMUTABLE);
-                assertDv(d, 3, MultiLevel.EFFECTIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
+                assertDv(d, 2, MultiLevel.EFFECTIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
                 assertDv(d, 1, MultiLevel.INDEPENDENT_DV, Property.INDEPENDENT);
             }
         };

@@ -20,11 +20,9 @@ import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.model.MethodInfo;
 import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.TypeInfo;
+import org.e2immu.analyser.model.variable.ReturnVariable;
 import org.e2immu.analyser.parser.CommonTestRunner;
-import org.e2immu.analyser.visitor.EvaluationResultVisitor;
-import org.e2immu.analyser.visitor.MethodAnalyserVisitor;
-import org.e2immu.analyser.visitor.TypeAnalyserVisitor;
-import org.e2immu.analyser.visitor.TypeMapVisitor;
+import org.e2immu.analyser.visitor.*;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
@@ -91,6 +89,16 @@ public class Test_11_MethodReferences extends CommonTestRunner {
             }
         };
 
+        StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+            if ("stream".equals(d.methodInfo().name)) {
+                if (d.variable() instanceof ReturnVariable) {
+                    String linked = d.iteration() == 0 ? "this.map:-1" : "this.map:4";
+                    assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
+                    assertDv(d, 1, MultiLevel.MUTABLE_DV, Property.IMMUTABLE);
+                }
+            }
+        };
+
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("print".equals(d.methodInfo().name)) {
                 assertEquals(DV.FALSE_DV, d.methodAnalysis().getProperty(Property.MODIFIED_METHOD));
@@ -105,6 +113,7 @@ public class Test_11_MethodReferences extends CommonTestRunner {
         testClass("MethodReferences_3", 0, 0, new DebugConfiguration.Builder()
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .addEvaluationResultVisitor(evaluationResultVisitor)
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .build());
     }
 

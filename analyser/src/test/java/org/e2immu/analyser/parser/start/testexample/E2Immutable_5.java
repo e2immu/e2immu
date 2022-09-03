@@ -16,6 +16,7 @@ package org.e2immu.analyser.parser.start.testexample;
 
 
 import org.e2immu.annotation.ImmutableContainer;
+import org.e2immu.annotation.Independent;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -23,10 +24,11 @@ import java.util.Map;
 @ImmutableContainer(hc = true)
 public class E2Immutable_5<T> {
 
+    @Independent(hc = true)
     private final Map<String, T> map5;
 
     public E2Immutable_5(Map<String, T> map5Param) {
-        map5 = new HashMap<>(map5Param); // not linked, but content linked
+        map5 = new HashMap<>(map5Param); // common hidden content
     }
 
     public T get5(String input) {
