@@ -14,12 +14,17 @@
 
 package org.e2immu.analyser.parser.start.testexample;
 
+import org.e2immu.annotation.ImmutableContainer;
+import org.e2immu.annotation.Independent;
+
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
 
 public class VariableScope_8 {
 
+    @ImmutableContainer
+    @Independent
     interface OutputElement {
 
     }
@@ -39,7 +44,7 @@ public class VariableScope_8 {
     interface Expression {
         default OutputBuilder outputInParenthesis(Qualification qualification, Precedence precedence, Expression expression) {
             if (precedence.greaterThan(expression.precedence())) {
-                return new OutputBuilder().add(Symbol.LEFT_PARENTHESIS).add(expression.output(qualification)).add(Symbol.RIGHT_PARENTHESIS);
+                return new OutputBuilder().add(Symbol.LEFT_PARENTHESIS).addBuilder(expression.output(qualification)).add(Symbol.RIGHT_PARENTHESIS);
             }
             return expression.output(qualification);
         }
@@ -138,7 +143,7 @@ public class VariableScope_8 {
             return this;
         }
 
-        OutputBuilder add(OutputBuilder outputBuilder) {
+        OutputBuilder addBuilder(OutputBuilder outputBuilder) {
             outputElements.addAll(outputBuilder.outputElements);
             return this;
         }
@@ -158,7 +163,7 @@ public class VariableScope_8 {
                     } else {
                         gg = guideGenerator;
                     }
-                    outputBuilder.add(methodCall.output2(qualification, gg)); // recursive call
+                    outputBuilder.addBuilder(methodCall.output2(qualification, gg)); // recursive call
                     outputBuilder.add(gg.mid());
                 }
             }

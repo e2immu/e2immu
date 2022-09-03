@@ -15,6 +15,8 @@
 package org.e2immu.analyser.parser.start.testexample;
 
 
+import org.e2immu.annotation.ImmutableContainer;
+import org.e2immu.annotation.Independent;
 import org.e2immu.annotation.NotModified;
 
 import java.util.HashMap;
@@ -28,11 +30,15 @@ import java.util.stream.Collectors;
 public class VariableScope_5 {
 
     // note: @FunctionalInterface implicit!
+    @ImmutableContainer // contracted!
+    @Independent  // contracted, we cannot compute from the method a t m
     interface TypeInfo {
         String packageName();
     }
 
     // note: @FunctionalInterface implicit!
+    @ImmutableContainer // contracted!
+    @Independent // contracted, we cannot compute from the method a t m
     interface Qualification {
         boolean addTypeReturnImport(@NotModified TypeInfo typeInfo);
     }

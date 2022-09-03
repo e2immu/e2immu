@@ -1161,7 +1161,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         boolean recursiveCall = recursiveCall(methodInfo, context.evaluationContext());
         boolean breakCallCycleDelay = methodInfo.methodResolution.get().ignoreMeBecauseOfPartOfCallCycle();
         if (recursiveCall || breakCallCycleDelay) {
-            return property.bestDv;
+            return property == Property.CONTEXT_MODIFIED ? DV.FALSE_DV : property.bestDv;
         }
         MethodAnalysis methodAnalysis = context.getAnalyserContext().getMethodAnalysis(methodInfo);
         // return the formal value
