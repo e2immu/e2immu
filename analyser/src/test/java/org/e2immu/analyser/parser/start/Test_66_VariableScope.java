@@ -324,6 +324,8 @@ public class Test_66_VariableScope extends CommonTestRunner {
                         assertEquals(expected, d.currentValue().toString());
                         assertDv(d, 3, DV.FALSE_DV, Property.IDENTITY);
                         assertDv(d, 3, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+
+                        assertEquals("doImport:-1,typeInfo:-1", d.variableInfo().getLinkedVariables().toString());
                     }
                     if ("1.0.1".equals(d.statementId())) {
                         assertDv(d, 3, DV.FALSE_DV, Property.CONTEXT_MODIFIED);

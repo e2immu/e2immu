@@ -56,12 +56,12 @@ public class InstanceOf_11 {
         if (expression instanceof Sum sum) {
             Double d = sum.numericPartOfLhs();
             if (d != null) {
-                Expression v = sum.nonNumericPartOfLhs(evaluationContext);
+                Expression v = sum.nonNumericPartOfLhs(evaluationContext); // 0.0.1.0.0
                 Expression x;
                 boolean lessThan;
                 double b;
                 if (v instanceof Negation ne1) {
-                    x = ne1.expression;
+                    x = ne1.expression; // 0.0.1.0.4.0.0
                     lessThan = true;
                     b = d;
                 } else {
@@ -69,7 +69,7 @@ public class InstanceOf_11 {
                     lessThan = false;
                     b = -d;
                 }
-                return new XB(x, b, lessThan);
+                return new XB(x, b, lessThan); // 0.0.1.0.5
             }
         }
         Expression x;

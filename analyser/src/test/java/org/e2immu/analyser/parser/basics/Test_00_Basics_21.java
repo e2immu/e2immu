@@ -64,14 +64,14 @@ public class Test_00_Basics_21 extends CommonTestRunner {
                         default -> "<no return value>";
                     };
 
-                    // 'other' is linked to 'this', but 'this' is not linked to 'other' (MethodCall.evaluate() on set)
                     assertEquals(expectValue, d.evaluationResult().value().toString());
                     EvaluationResult.ChangeData cd = d.findValueChangeBySubString("other");
                     String linked = d.iteration() < 2 ? "this:-1" : "this:4";
                     assertEquals(linked, cd.linkedVariables().toString());
 
                     EvaluationResult.ChangeData cdThis = d.findValueChangeByToString("this");
-                    assertEquals("", cdThis.linkedVariables().toString());
+                    String linkedReverse = d.iteration() < 2 ? "other:-1" : "other:4";
+                    assertEquals(linkedReverse, cdThis.linkedVariables().toString());
 
                     assertEquals(d.iteration() <= 2, d.evaluationResult().causesOfDelay().isDelayed());
                 }
@@ -130,6 +130,9 @@ public class Test_00_Basics_21 extends CommonTestRunner {
                     if ("0.0.0".equals(d.statementId())) {
                         assertDv(d, MultiLevel.MUTABLE_DV, IMMUTABLE);
                         assertDv(d, 3, MultiLevel.EVENTUALLY_IMMUTABLE_HC_DV, EXTERNAL_IMMUTABLE);
+
+                        String expectLinked = d.iteration() < 2 ? "other:-1" : "other:4";
+                        assertEquals(expectLinked, d.variableInfo().getLinkedVariables().toString());
                     }
                 }
             }

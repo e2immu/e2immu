@@ -15,6 +15,8 @@
 package org.e2immu.analyser.parser.minor.testexample;
 
 
+import org.e2immu.annotation.Container;
+import org.e2immu.annotation.FinalFields;
 import org.e2immu.annotation.Modified;
 import org.e2immu.annotation.Nullable;
 
@@ -26,6 +28,8 @@ public class InstanceOf_10 {
         int setScore(int score);
     }
 
+    @Container
+    @FinalFields
     private record Negation(Expression expression) implements Expression {
         @Override
         public int setScore(int score) {

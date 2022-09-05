@@ -22,10 +22,7 @@ import org.e2immu.analyser.model.expression.DelayedExpression;
 import org.e2immu.analyser.model.expression.DelayedVariableExpression;
 import org.e2immu.analyser.model.expression.EmptyExpression;
 import org.e2immu.analyser.model.expression.VariableExpression;
-import org.e2immu.analyser.model.variable.DependentVariable;
-import org.e2immu.analyser.model.variable.FieldReference;
-import org.e2immu.analyser.model.variable.This;
-import org.e2immu.analyser.model.variable.Variable;
+import org.e2immu.analyser.model.variable.*;
 import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.Messages;
@@ -762,14 +759,19 @@ public record EvaluationResult(EvaluationContext evaluationContext,
             CausesOfDelay stateDelaysFilteredForSelfReference = resultOfExpression.isDelayed() ? stateIsDelayed : breakSelfReferenceDelay(assignmentTarget, stateIsDelayed);
             if (ecd == null) {
                 newEcd = new ChangeData(value, value.causesOfDelay().merge(stateDelaysFilteredForSelfReference),
-                        stateDelaysFilteredForSelfReference, markAssignment, Set.of(), linkedVariables, LinkedVariables.EMPTY, Map.of());
+                        stateDelaysFilteredForSelfReference, markAssignment, Set.of(), LinkedVariables.EMPTY, LinkedVariables.EMPTY, Map.of());
             } else {
                 CausesOfDelay mergedValueDelays = ecd.delays.merge(stateDelaysFilteredForSelfReference).merge(value.causesOfDelay());
                 newEcd = new ChangeData(value, mergedValueDelays,
                         ecd.stateIsDelayed.merge(stateDelaysFilteredForSelfReference), ecd.markAssignment || markAssignment,
-                        ecd.readAtStatementTime, linkedVariables, LinkedVariables.EMPTY, ecd.properties);
+                        ecd.readAtStatementTime, ecd.linkedVariables, LinkedVariables.EMPTY, ecd.properties);
             }
             valueChanges.put(assignmentTarget, newEcd);
+
+            // TODO not too efficient, but for now... we want to get the symmetry right
+            for (Map.Entry<Variable, DV> entry : linkedVariables) {
+                link(assignmentTarget, entry.getKey(), entry.getValue());
+            }
             return this;
         }
 
@@ -856,9 +858,24 @@ public record EvaluationResult(EvaluationContext evaluationContext,
         }
 
         /*
+        delayed links must be symmetrical, until we know whether the direction is LINK_IS_HC_OF or not.
+        you can never link to the return variable.
+         */
+        public void link(Variable from, Variable to, DV level) {
+            assert !LinkedVariables.LINK_INDEPENDENT.equals(level);
+
+            internalLink(from, to, level);
+            if (!LinkedVariables.LINK_IS_HC_OF.equals(level) && !(from instanceof ReturnVariable)) {
+                internalLink(to, from, level);
+            }
+        }
+
+        /*
       we use a null value for inScope to indicate a delay
        */
-        public void link(Variable from, Variable to, DV level) {
+        public void internalLink(Variable from, Variable to, DV level) {
+            assert !(to instanceof ReturnVariable) : "Cannot link to return variable";
+
             ChangeData newEcd;
             ChangeData ecd = valueChanges.get(from);
             LinkedVariables linked = LinkedVariables.of(to, level);

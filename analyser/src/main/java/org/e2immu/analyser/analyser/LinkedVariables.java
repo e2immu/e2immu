@@ -18,6 +18,7 @@ import org.e2immu.analyser.analyser.delay.DelayFactory;
 import org.e2immu.analyser.analyser.delay.NoDelay;
 import org.e2immu.analyser.analyser.util.ComputeIndependent;
 import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.model.variable.ReturnVariable;
 import org.e2immu.analyser.model.variable.Variable;
 
 import java.util.*;
@@ -410,12 +411,5 @@ public class LinkedVariables implements Comparable<LinkedVariables>, Iterable<Ma
         if (isEmpty() || this == NOT_YET_SET) return Set.of();
         return variables.entrySet().stream().filter(e -> e.getValue().equals(LINK_STATICALLY_ASSIGNED))
                 .map(Map.Entry::getKey).collect(Collectors.toUnmodifiableSet());
-    }
-
-    public Map<Variable, DV> bidirectional(boolean symmetric) {
-        if (isEmpty() || this == NOT_YET_SET) return Map.of();
-        return variables.entrySet().stream()
-                .filter(e -> symmetric ^ LINK_IS_HC_OF.equals(e.getValue()))
-                .collect(Collectors.toUnmodifiableMap(Map.Entry::getKey, Map.Entry::getValue));
     }
 }

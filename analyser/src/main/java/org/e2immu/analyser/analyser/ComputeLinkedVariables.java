@@ -127,9 +127,10 @@ public class ComputeLinkedVariables {
         });
         /*
         The code above should be sufficient, except that when a variable is linked to another one that is not in the stage,
-        a delay in computeImmutableHiddenContent can go missing if the linking is computed one-sided (e.g., inMap:0,translationMap:3
-        from one side, inMap:3,translationMap:0 from the other. The level 3 forces a check on computeImmutableHiddenContent,
-        but if inMap is at E and translationMap only at C, not at E, than this side is not seen).
+        a symmetric delay can go missing if the linking is computed one-sided (e.g., inMap:0,translationMap:4
+        from one side, inMap:4,translationMap:0 from the other. If inMap is at Evaluation and translationMap only at C,
+        not at E, than this side is not seen.)
+        Basics_8, _23 fail without this code.
          */
         for (Variable variable : variables) {
             if (!atStage.contains(variable)) {
@@ -169,21 +170,8 @@ public class ComputeLinkedVariables {
 
         LinkedVariables curated = refToScope
                 .remove(v -> ignore.test(statementAnalysis.getVariableOrDefaultNull(v.fullyQualifiedName()), v));
-        boolean bidirectional = !(variable instanceof ReturnVariable);
-        if (bidirectional) {
-            // not too efficient...
-            Map<Variable, DV> varsSymmetric = curated.bidirectional(true);
-            if (!varsSymmetric.isEmpty()) {
-                weightedGraph.addNode(variable, varsSymmetric, true, DV::min);
-            }
-            Map<Variable, DV> varsAsymmetric = curated.bidirectional(false);
-            if (!varsAsymmetric.isEmpty()) {
-                weightedGraph.addNode(variable, varsAsymmetric, false, DV::min);
-            }
-        } else {
-            weightedGraph.addNode(variable, curated.variables(), false, DV::min);
-        }
 
+        weightedGraph.addNode(variable, curated.variables(), false, DV::min);
         return curated;
     }
 
@@ -600,7 +588,7 @@ public class ComputeLinkedVariables {
                         // this second situation arises in InstanceOf_16: direct self reference
                         propertyValue.containsCauseOfDelay(CauseOfDelay.Cause.CONTEXT_MODIFIED,
                                 c -> c instanceof SimpleCause sc && sc.location().getInfo() == v))) {
-            LOGGER.debug("Breaking a MOM / CM delay for parameter  in {}", propertyValue);
+            LOGGER.debug("Breaking a MOM / CM delay for parameter {} in {}", v, propertyValue);
             statementAnalysis.setBrokeDelay();
             return DV.FALSE_DV;
         }
