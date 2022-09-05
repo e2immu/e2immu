@@ -334,21 +334,25 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         // links from parameter into object
         // (the other direction, object into parameter, yields MODIFIED on the parameter)
         LinkedVariables linkedVariablesOfObject = linkedVariablesOfObject(context, objectValue);
-        List<LinkedVariables> linkedVariablesOfParameters = linkedVariablesOfObject.isEmpty() ? List.of()
-                : ConstructorCall.computeLinkedVariablesOfParameters(context, parameterExpressions, parameterValues);
-        for (Map.Entry<Variable, DV> e : linkedVariablesOfObject) {
-            Variable linkedToObject = e.getKey();
+        if (!linkedVariablesOfObject.isEmpty()) {
+            List<LinkedVariables> linkedVariablesOfParameters =
+                    ConstructorCall.computeLinkedVariablesOfParameters(context, parameterExpressions, parameterValues);
             Map<ParameterInfo, LinkedVariables> linksToLinkedToObject = firstInCallCycle ? Map.of() :
                     ConstructorCall.fromParameterIntoObject(context,
                             context.getAnalyserContext().getMethodInspection(methodInfo),
                             linkedVariablesOfParameters, objectValue.returnType());
-            for (LinkedVariables lv : linksToLinkedToObject.values()) {
-                for (Map.Entry<Variable, DV> ee : lv) {
-                    Variable linkedToParameter = ee.getKey();
-                    DV fromLinkedToParameterToLinkedToObject = ee.getValue();
-                    DV fromLinkedToObjectToObject = e.getValue();
-                    DV combined = fromLinkedToParameterToLinkedToObject.max(fromLinkedToObjectToObject);
-                    builder.link(linkedToParameter, linkedToObject, combined);
+            if (!linksToLinkedToObject.isEmpty()) {
+                for (Map.Entry<Variable, DV> e : linkedVariablesOfObject) {
+                    Variable linkedToObject = e.getKey();
+                    for (LinkedVariables lv : linksToLinkedToObject.values()) {
+                        for (Map.Entry<Variable, DV> ee : lv) {
+                            Variable linkedToParameter = ee.getKey();
+                            DV fromLinkedToParameterToLinkedToObject = ee.getValue();
+                            DV fromLinkedToObjectToObject = e.getValue();
+                            DV combined = fromLinkedToParameterToLinkedToObject.max(fromLinkedToObjectToObject);
+                            builder.link(linkedToParameter, linkedToObject, combined);
+                        }
+                    }
                 }
             }
         }
@@ -835,7 +839,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
                                 i = null;
                             }
                             if (i != null) {
-                               //FIXME LinkedVariables lv = context.evaluationContext().linkedVariables(variable);
+                                //FIXME LinkedVariables lv = context.evaluationContext().linkedVariables(variable);
                                 builder.modifyingMethodAccess(variable, i, null);
                             }
                         }
@@ -1298,7 +1302,6 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
             // temporarily link to both the object and the parameter, in a delayed way
             return object.linkedVariables(context)
                     .merge(parameterExpressions.get(0).linkedVariables(context))
-                    .minimum(LinkedVariables.LINK_ASSIGNED)
                     .changeNonStaticallyAssignedToDelay(identity);
         }
 
