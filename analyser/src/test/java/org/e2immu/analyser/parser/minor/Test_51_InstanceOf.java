@@ -597,15 +597,15 @@ public class Test_51_InstanceOf extends CommonTestRunner {
                             case 1 -> "<vp:expression:immutable@Interface_Expression>";
                             default -> "expression";
                         };
-                        assertEquals(expression, d.currentValue().toString());
+                        assertEquals("expression", d.currentValue().toString());
                         // nothing we can do about this NOT_CONTAINER value, parameter cannot wait
                         assertDv(d, 0, MultiLevel.NOT_CONTAINER_DV, Property.CONTAINER);
-                        assertDv(d, 2, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                        assertDv(d, 0, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     }
                     if ("2".equals(d.statementId())) {
                         assertCurrentValue(d, 2, "expression instanceof Negation&&null!=expression?scope-ne:2.expression:expression");
                         String expectLv = switch (d.iteration()) {
-                            case 0, 1 -> "expression:0,scope-ne:2.expression:0,scope-ne:2:-1";
+                      //      case 0, 1 -> "expression:0,scope-ne:2.expression:0,scope-ne:2:-1";
                             default -> "expression:0,scope-ne:2.expression:0,scope-ne:2:2";
                         };
                         assertEquals(expectLv, d.variableInfo().getLinkedVariables().toString());

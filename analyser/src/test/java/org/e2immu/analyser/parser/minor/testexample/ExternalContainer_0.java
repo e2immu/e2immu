@@ -96,7 +96,7 @@ public class ExternalContainer_0 {
 
     // we can be guaranteed that the accept method in "print" does not modify i!
     // the @Container property is absent because the formal type is the same as the concrete one
-    @Container(absent = true)
+    @Container(implied = true)
     @NotModified
     private final I iField = new I();
 

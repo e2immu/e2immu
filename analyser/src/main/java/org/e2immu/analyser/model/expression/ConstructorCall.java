@@ -269,12 +269,17 @@ public class ConstructorCall extends BaseExpression implements HasParameterExpre
     /*
      Compute the links from the parameters of a method into its object.
      For now not implemented for constructors (we'll need some sort of temporary, reverse link version of IS_HC_OF)
+
+     Object type is important to cut short independence, but cannot be used on self! See e.g. EventuallyE2Immutable_0.
+     If we do that, we need to wait for IMMUTABLE of the type before we can compute linking, which is used for independence
+     of 'this', ... infinite loop, to be broken.
      */
-    static Map<ParameterInfo, LinkedVariables> fromParameterIntoObject(EvaluationResult evaluationContext,
+    static Map<ParameterInfo, LinkedVariables> fromParameterIntoObject(EvaluationResult context,
                                                                        MethodInspection methodInspection,
                                                                        List<LinkedVariables> linkedVariables,
                                                                        ParameterizedType objectType) {
-        DV immutableType = evaluationContext.getAnalyserContext().typeImmutable(objectType);
+        DV immutableType = context.evaluationContext().isMyself(objectType) ? MultiLevel.MUTABLE_DV
+                : context.getAnalyserContext().typeImmutable(objectType);
         Map<ParameterInfo, LinkedVariables> result = new HashMap<>();
         int i = 0;
         for (LinkedVariables sub : linkedVariables) {
@@ -295,7 +300,7 @@ public class ConstructorCall extends BaseExpression implements HasParameterExpre
                     if (linkLevel.isDelayed()) {
                         newLinkMap.put(v, linkLevel);
                     } else {
-                        DV newLinkLevel = computeLinkLevelFromParameterAndItsLinkedVariables(evaluationContext,
+                        DV newLinkLevel = computeLinkLevelFromParameterAndItsLinkedVariables(context,
                                 parameterInfo, linkLevel, v.parameterizedType(), objectType, true);
                         if (newLinkLevel.lt(LinkedVariables.LINK_INDEPENDENT)) {
                             newLinkMap.put(v, newLinkLevel);

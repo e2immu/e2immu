@@ -359,6 +359,8 @@ public class Test_14_Warnings extends CommonTestRunner {
         final String T = "org.e2immu.analyser.parser.start.testexample.Warnings_5.ChildClass.t";
 
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+            assertFalse(d.context().evaluationContext().allowBreakDelay());
+
             if ("methodMustNotBeStatic2".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof FieldReference fr && "s".equals(fr.fieldInfo.name)) {
                     String expectValue = d.iteration() == 0 ? "<f:s>" : NULLABLE_INSTANCE_TYPE_STRING;
@@ -432,11 +434,11 @@ public class Test_14_Warnings extends CommonTestRunner {
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
             }
             if ("methodMustNotBeStatic5".equals(d.methodInfo().name)) {
-                String expected = d.iteration() < 8 ? "<m:methodMustNotBeStatic5>" : "/*inline methodMustNotBeStatic5*/this";
+                String expected = "/*inline methodMustNotBeStatic5*/this";
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
 
-                assertDv(d, 8, DV.FALSE_DV, MODIFIED_METHOD);
-                assertDv(d, 8, DV.TRUE_DV, FLUENT);
+                assertDv(d, DV.FALSE_DV, MODIFIED_METHOD);
+                assertDv(d, DV.TRUE_DV, FLUENT);
             }
         };
 

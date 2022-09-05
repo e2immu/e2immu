@@ -22,7 +22,7 @@ import org.e2immu.annotation.eventual.TestMark;
 /*
 similar to setOnce, to detect errors
  */
-@ImmutableContainer(after = "t", hc = true)
+@Immutable(after = "t", hc = true)
 public class EventuallyE2Immutable_2<T> {
 
     private T t;

@@ -126,7 +126,7 @@ public class Test_41_E2InContext extends CommonTestRunner {
             if ("getEventually".equals(d.methodInfo().name)) {
                 assertDv(d, 4, MultiLevel.EVENTUALLY_IMMUTABLE_DV, Property.IMMUTABLE);
                 // INDEPENDENT follows the "after" state
-                assertDv(d, 4, MultiLevel.INDEPENDENT_DV, Property.INDEPENDENT);
+                assertDv(d, 3, MultiLevel.INDEPENDENT_DV, Property.INDEPENDENT);
             }
             if ("set".equals(d.methodInfo().name)) {
                 MethodAnalysis.Eventual eventual = d.methodAnalysis().getEventual();

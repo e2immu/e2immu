@@ -32,6 +32,7 @@ public interface MethodAnalyserVisitor {
     void visit(Data data);
 
     record Data(int iteration,
+                boolean allowBreakDelay,
                 EvaluationContext evaluationContext,
                 MethodInfo methodInfo,
                 MethodAnalysis methodAnalysis,

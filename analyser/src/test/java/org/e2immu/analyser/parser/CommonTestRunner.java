@@ -129,6 +129,7 @@ public abstract class CommonTestRunner extends VisitorTestSupport {
                 .addSources("../../e2immu-support/src/main/java")
                 .addClassPath(InputConfiguration.DEFAULT_CLASSPATH)
                 .addClassPath(Input.JAR_WITH_PATH_PREFIX + "org/slf4j")
+                .addClassPath(Input.JAR_WITH_PATH_PREFIX + "org/junit/jupiter/api")
                 .addClassPath(Input.JAR_WITH_PATH_PREFIX + "ch/qos/logback/core")
                 .addClassPath(Input.JAR_WITH_PATH_PREFIX + "com/github/javaparser/ast");
 

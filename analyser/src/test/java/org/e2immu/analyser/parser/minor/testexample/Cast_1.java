@@ -15,14 +15,18 @@
 package org.e2immu.analyser.parser.minor.testexample;
 
 import org.e2immu.annotation.FinalFields;
+import org.e2immu.annotation.ImmutableContainer;
 import org.e2immu.annotation.Modified;
 import org.e2immu.annotation.NotModified;
 
 /*
-so while T is an unbound type parameter, the transparency promise is broken by the use
-of a cast in the incrementedT method
+While T is an unbound type parameter, it is downcast to String and Counter.
+It remains hidden content.
+
+It cannot be immutable, as there is a modifying method.
  */
 @FinalFields
+@ImmutableContainer(absent = true)
 public class Cast_1<T> {
 
     static class Counter {

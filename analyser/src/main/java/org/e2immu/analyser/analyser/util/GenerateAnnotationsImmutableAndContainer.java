@@ -79,11 +79,11 @@ public class GenerateAnnotationsImmutableAndContainer {
 
         // EVENTUAL
         if (effective == MultiLevel.Effective.EVENTUAL) {
-            if (isType || immutableBetterThanFormal && !mark.isBlank()) {
+            if (isType || immutableBetterThanFormal || !mark.isBlank()) {
                 return map(level, haveContainer, containerInconclusive, containerBetterThanFormal, Map.of(AFTER, mark));
             }
-            if (immutableBetterThanFormal || haveContainer && containerBetterThanFormal) {
-                return map(level, haveContainer, containerInconclusive, containerBetterThanFormal, Map.of());
+            if (haveContainer && containerBetterThanFormal) {
+                return map(level, true, containerInconclusive, true, Map.of());
             }
             return map(level, haveContainer, containerInconclusive, containerBetterThanFormal, Map.of(IMPLIED, true));
         }

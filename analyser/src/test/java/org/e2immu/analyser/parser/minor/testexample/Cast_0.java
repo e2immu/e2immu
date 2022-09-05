@@ -18,9 +18,7 @@ import org.e2immu.annotation.ImmutableContainer;
 import org.e2immu.annotation.NotModified;
 
 /*
-Example of a cast which messes with the immutability rules: because
-of the cast, T is not transparent; it is not explicitly @E2Immutable itself,
-and it is exposed via the getter -> cannot be @E2Immutable.
+The downcast from T to String does not change the fact that T is hidden content.
  */
 @ImmutableContainer(hc = true)
 public class Cast_0<T> {

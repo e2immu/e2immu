@@ -217,6 +217,7 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
             if (!visitors.isEmpty()) {
                 for (MethodAnalyserVisitor methodAnalyserVisitor : visitors) {
                     methodAnalyserVisitor.visit(new MethodAnalyserVisitor.Data(iteration,
+                            sharedState.allowBreakDelay(),
                             evaluationContext, methodInfo, methodAnalysis,
                             parameterAnalyses, analyserComponents.getStatusesAsMap(),
                             analyserResultBuilder::getMessageStream));

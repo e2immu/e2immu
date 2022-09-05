@@ -89,7 +89,7 @@ public class ExternalContainer_2 {
         System.out.println(iField.getI());
     }
 
-    @Container(absent = true)
+    @Container(implied = true)
     @Modified
     private final I iField = new I();
 

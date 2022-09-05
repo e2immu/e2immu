@@ -106,6 +106,7 @@ public class AggregatingTypeAnalyser extends TypeAnalyserImpl {
         if (!visitors.isEmpty()) {
             for (TypeAnalyserVisitor typeAnalyserVisitor : visitors) {
                 typeAnalyserVisitor.visit(new TypeAnalyserVisitor.Data(sharedState.iteration(),
+                        sharedState.allowBreakDelay(),
                         analyserContext.getPrimitives(),
                         typeInfo,
                         analyserContext.getTypeInspection(typeInfo),

@@ -47,7 +47,7 @@ public class Test_36_Cast extends CommonTestRunner {
     public void test_0() throws IOException {
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("Cast_0".equals(d.typeInfo().simpleName)) {
-                assertTrue(d.typeAnalysis().getHiddenContentTypes().isEmpty());
+                assertEquals("Type param T", d.typeAnalysis().getHiddenContentTypes().toString());
             }
         };
         testClass("Cast_0", 0, 0, new DebugConfiguration.Builder()
@@ -59,7 +59,7 @@ public class Test_36_Cast extends CommonTestRunner {
     public void test_1() throws IOException {
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("Cast_1".equals(d.typeInfo().simpleName)) {
-                assertTrue(d.typeAnalysis().getHiddenContentTypes().isEmpty());
+                assertEquals("Type param T", d.typeAnalysis().getHiddenContentTypes().toString());
                 assertDv(d, 1, MultiLevel.EFFECTIVELY_FINAL_FIELDS_DV, Property.IMMUTABLE);
             }
 

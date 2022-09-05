@@ -118,7 +118,6 @@ public class Test_33_ExternalNotNull extends CommonTestRunner {
             }
         };
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
-            DV enn = d.fieldAnalysis().getProperty(EXTERNAL_NOT_NULL);
             DV effFinal = d.fieldAnalysis().getProperty(Property.FINAL);
             FieldAnalysisImpl.Builder fai = (FieldAnalysisImpl.Builder) d.fieldAnalysis();
 
@@ -128,7 +127,7 @@ public class Test_33_ExternalNotNull extends CommonTestRunner {
                 String expected = d.iteration() == 0 ? "<f:o>" : "[null,\"hello\"]";
                 assertEquals(expected, d.fieldAnalysis().getValue().toString());
                 assertEquals("", d.fieldAnalysis().getLinkedVariables().toString());
-                if(d.iteration()>0) {
+                if (d.iteration() > 0) {
                     assertFalse(fai.valuesAreLinkedToParameters(LinkedVariables.LINK_ASSIGNED));
                 }
             }
@@ -138,15 +137,16 @@ public class Test_33_ExternalNotNull extends CommonTestRunner {
                 String expected = d.iteration() == 0 ? "<f:p>" : "[p1,p2]";
                 assertEquals(expected, d.fieldAnalysis().getValue().toString());
                 assertEquals("p1:0,p2:0", d.fieldAnalysis().getLinkedVariables().toString());
-                if(d.iteration()>0) {
-                    assertFalse(fai.valuesAreLinkedToParameters(LinkedVariables.LINK_ASSIGNED));
+                if (d.iteration() > 0) {
+                    assertTrue(fai.valuesAreLinkedToParameters(LinkedVariables.LINK_ASSIGNED));
                 }
             }
             if ("q".equals(d.fieldInfo().name)) {
                 assertDv(d, 1, MultiLevel.NULLABLE_DV, EXTERNAL_NOT_NULL);
                 assertEquals(DV.FALSE_DV, effFinal);
                 assertEquals("q2:0,qs:0", d.fieldAnalysis().getLinkedVariables().toString());
-                if(d.iteration()>0) {
+                if (d.iteration() > 0) {
+                    // also value null
                     assertFalse(fai.valuesAreLinkedToParameters(LinkedVariables.LINK_ASSIGNED));
                 }
             }

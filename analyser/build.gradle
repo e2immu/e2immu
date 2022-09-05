@@ -37,7 +37,7 @@ jar {
 }
 
 test {
-    exclude '**/failing/*', '**/own/*', '**/minor/*', '**/eventual/*', '**/functional/*', '**/independence/*'
+    exclude '**/failing/*', '**/own/*'
 
     maxHeapSize = "2G"
     useJUnitPlatform()

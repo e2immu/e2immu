@@ -21,7 +21,7 @@ import org.e2immu.annotation.eventual.Only;
 /*
 Same as _3, but now on a parameter rather than on "this"
  */
-@ImmutableContainer(after = "t", hc = true)
+@Immutable(after = "t", hc = true)
 public class EventuallyE2Immutable_4<T> {
 
     private T t;

@@ -235,7 +235,7 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
             analyserResultBuilder.setAnalysisStatus(analysisStatus);
             for (TypeAnalyserVisitor typeAnalyserVisitor : analyserContext.getConfiguration()
                     .debugConfiguration().afterTypePropertyComputations()) {
-                typeAnalyserVisitor.visit(new TypeAnalyserVisitor.Data(iteration,
+                typeAnalyserVisitor.visit(new TypeAnalyserVisitor.Data(iteration, sharedState.allowBreakDelay(),
                         analyserContext.getPrimitives(),
                         typeInfo,
                         analyserContext.getTypeInspection(typeInfo),

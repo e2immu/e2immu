@@ -44,7 +44,7 @@ public class E2InContext_1 {
 
     @BeforeMark(absent = true)
     @ImmutableContainer(after = "eventually")
-    // @ERContainer because better than @E2Container; the "after=" signifies that it is plainly eventual
+    // the "after=" signifies that it is eventual
     private final Eventually<String> eventually = new Eventually<>();
 
     // whilst correct the very first time around, the state of eventually can be changed outside this class

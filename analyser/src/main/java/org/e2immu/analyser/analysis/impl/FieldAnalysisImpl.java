@@ -353,7 +353,8 @@ public class FieldAnalysisImpl extends AnalysisImpl implements FieldAnalysis {
         }
 
         public boolean valuesAreLinkedToParameters(DV maxLinkLevel) {
-            return getValues().stream().allMatch(proxy -> proxy.isLinkedToParameter(maxLinkLevel));
+            List<ValueAndPropertyProxy> values = getValues();
+            return values.stream().allMatch(proxy -> proxy.isLinkedToParameter(maxLinkLevel));
         }
     }
 }

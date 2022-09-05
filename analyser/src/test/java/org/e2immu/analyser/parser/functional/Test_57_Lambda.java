@@ -68,7 +68,7 @@ public class Test_57_Lambda extends CommonTestRunner {
 
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("$1".equals(d.typeInfo().simpleName)) {
-                assertDv(d, 2, MultiLevel.EFFECTIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
+                assertDv(d, 1, MultiLevel.EFFECTIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
             }
         };
 
@@ -161,14 +161,14 @@ public class Test_57_Lambda extends CommonTestRunner {
                     if ("x".equals(fr.scope.toString())) {
                         String expected = d.iteration() == 0 ? "<f:k>" : "instance type int";
                         assertEquals(expected, d.currentValue().toString());
-                        String linked = d.iteration() == 0 ? "scope-36:37:-1,x:-1" : "";
+                        String linked = d.iteration() == 0 ? "scope-36:37:-1,x:-1" : "x:2";
                         assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
 
                         assertEquals("0", d.statementId());
                         assertDv(d, 1, MultiLevel.CONTAINER_DV, Property.CONTEXT_CONTAINER);
                     } else if (fr.scope instanceof ConstructorCall) {
                         String linked = d.iteration() == 0 ? "NOT_YET_SET" : "";
-                        assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
+                        assertEquals("", d.variableInfo().getLinkedVariables().toString());
                     } else fail("? " + fr.scope);
                 }
                 if (d.variable() instanceof ReturnVariable) {
@@ -176,7 +176,7 @@ public class Test_57_Lambda extends CommonTestRunner {
                     assertEquals(expected, d.currentValue().toString());
                     String linked = d.iteration() == 0
                             ? "new X(x.k).k:0,scope-36:37:-1,x.k:-1,x:-1"
-                            : "new X(x.k).k:0,x.k:1";
+                            : "new X(x.k).k:0,x.k:1,x:2";
                     assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
                 }
             }
@@ -219,7 +219,7 @@ public class Test_57_Lambda extends CommonTestRunner {
                 if (d.variable() instanceof FieldReference fr && "k".equals(fr.fieldInfo.name)) {
                     if ("x".equals(fr.scope.toString())) {
                         if ("3".equals(d.statementId())) {
-                            String linked = ""; // FIXME changes to j:1 in iteration 1, caused by expansion of f.get()
+                            String linked = "x:2"; // FIXME changes to j:1 in iteration 1, caused by expansion of f.get()
                             assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
                         }
                     }
@@ -231,7 +231,7 @@ public class Test_57_Lambda extends CommonTestRunner {
                         if ("0".equals(d.statementId())) {
                             String linked = d.iteration() == 0
                                     ? "l:0,scope-37:21:-1,x.k:-1,x:-1"
-                                    : "l:0,x.k:1";
+                                    : "l:0,x.k:1,x:2";
                             assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
                         }
                         if ("1".equals(d.statementId())) {
@@ -242,13 +242,13 @@ public class Test_57_Lambda extends CommonTestRunner {
                         if ("0".equals(d.statementId())) {
                             String linked = d.iteration() == 0
                                     ? "l:-1,new X(x.k).k:-1,scope-37:21:-1,x:-1"
-                                    : "l:1,new X(x.k).k:1";
+                                    : "l:1,new X(x.k).k:1,x:2";
                             assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
                         }
                         if ("1".equals(d.statementId())) {
                             String linked = d.iteration() == 0
                                     ? "l:-1,new X(x.k).k:-1,scope-37:21:-1,x:-1"
-                                    : "l:1,new X(x.k).k:1";
+                                    : "l:1,new X(x.k).k:1,x:2";
                             assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
                         }
                     } else fail("Scope " + fr.scope);
@@ -260,14 +260,14 @@ public class Test_57_Lambda extends CommonTestRunner {
                         assertDv(d, 1, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                         String expectedLv = d.iteration() == 0
                                 ? "new X(x.k).k:0,scope-37:21:-1,x.k:-1,x:-1"
-                                : "new X(x.k).k:0,x.k:1";
+                                : "new X(x.k).k:0,x.k:1,x:2";
                         assertEquals(expectedLv, d.variableInfo().getLinkedVariables().toString());
                     }
                     if ("1".equals(d.statementId())) {
                         assertDv(d, 1, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                         String expectedLv = d.iteration() == 0
                                 ? "new X(x.k).k:0,scope-37:21:-1,x.k:-1,x:-1"
-                                : "new X(x.k).k:0,x.k:1";
+                                : "new X(x.k).k:0,x.k:1,x:2";
                         assertEquals(expectedLv, d.variableInfo().getLinkedVariables().toString());
                     }
                 }
@@ -275,10 +275,9 @@ public class Test_57_Lambda extends CommonTestRunner {
                     if ("1".equals(d.statementId())) {
                         String expected = d.iteration() == 0 ? "<cc-exp:X>" : "x.k";
                         assertEquals(expected, d.currentValue().toString());
-                        assertDv(d, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                         String linked = d.iteration() == 0
                                 ? "l:0,new X(x.k).k:0,scope-37:21:-1,x.k:-1,x:-1"
-                                : "l:0,new X(x.k).k:0,x.k:1";
+                                : "l:0,new X(x.k).k:0,x.k:1,x:2";
                         assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
                     }
                 }

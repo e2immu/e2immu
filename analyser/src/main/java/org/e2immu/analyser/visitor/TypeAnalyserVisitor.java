@@ -28,7 +28,9 @@ import java.util.Map;
 public interface TypeAnalyserVisitor {
     void visit(Data data);
 
-    record Data(int iteration, Primitives primitives,
+    record Data(int iteration,
+                boolean allowBreakDelay,
+                Primitives primitives,
                 TypeInfo typeInfo,
                 TypeInspection typeInspection,
                 TypeAnalysis typeAnalysis,

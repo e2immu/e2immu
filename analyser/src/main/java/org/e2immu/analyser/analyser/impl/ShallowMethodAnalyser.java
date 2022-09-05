@@ -152,7 +152,7 @@ public class ShallowMethodAnalyser extends MethodAnalyserImpl {
                     .debugConfiguration().afterMethodAnalyserVisitors();
             if (!visitors.isEmpty()) {
                 for (MethodAnalyserVisitor methodAnalyserVisitor : visitors) {
-                    methodAnalyserVisitor.visit(new MethodAnalyserVisitor.Data(iteration,
+                    methodAnalyserVisitor.visit(new MethodAnalyserVisitor.Data(iteration, false,
                             null, methodInfo, methodAnalysis,
                             parameterAnalyses, Map.of(),
                             this::getMessageStream));
