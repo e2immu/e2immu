@@ -141,9 +141,15 @@ public record ComputeTypeImmutable(AnalyserContext analyserContext,
     }
 
     private DV accountForExtensibility(DV immutable) {
-        if (typeInspection.typeNature() == TypeNature.CLASS && !typeInspection.isExtensible()) {
+        if (typeInspection.typeNature() == TypeNature.CLASS) {
             int level = MultiLevel.level(immutable);
-            if (level == MultiLevel.Level.IMMUTABLE_HC.level) {
+            if (typeInspection.isExtensible()) {
+                // abstract classes must have hidden content
+                if (level == MultiLevel.Level.IMMUTABLE.level && typeInspection.isAbstract()) {
+                    return MultiLevel.composeImmutable(MultiLevel.effective(immutable), MultiLevel.Level.IMMUTABLE_HC.level);
+                }
+            } else if (level == MultiLevel.Level.IMMUTABLE_HC.level) {
+                // not extensible, IMMUTABLE_HC: check hidden content, if empty, return IMMUTABLE
                 Set<ParameterizedType> superTypes = typeInfo.superTypes(analyserContext);
                 Set<ParameterizedType> hiddenContent = new HashSet<>(typeAnalysis.getHiddenContentTypes().types());
                 hiddenContent.removeAll(superTypes);

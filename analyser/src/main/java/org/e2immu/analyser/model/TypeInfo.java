@@ -277,8 +277,7 @@ public final class TypeInfo implements NamedType, WithInspectionAndAnalysis, Com
 
     public boolean isAbstract(InspectionProvider inspectionProvider) {
         TypeInspection inspection = inspectionProvider.getTypeInspection(this);
-        if (inspection.typeNature() == TypeNature.INTERFACE) return true;
-        return inspection.modifiers().contains(TypeModifier.ABSTRACT);
+        return inspection.isAbstract();
     }
 
     /*

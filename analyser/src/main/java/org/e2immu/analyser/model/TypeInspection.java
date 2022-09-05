@@ -20,7 +20,6 @@ import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.resolver.ShallowMethodResolver;
 import org.e2immu.analyser.util.ListUtil;
-import org.e2immu.analyser.util.UpgradableBooleanMap;
 import org.e2immu.annotation.Fluent;
 import org.e2immu.annotation.NotNull;
 
@@ -78,6 +77,11 @@ public interface TypeInspection extends Inspection {
     boolean isFunctionalInterface();
 
     boolean isExtensible();
+
+    default boolean isAbstract() {
+        if (typeNature() == TypeNature.INTERFACE) return true;
+        return modifiers().contains(TypeModifier.ABSTRACT);
+    }
 
     enum Methods {
 

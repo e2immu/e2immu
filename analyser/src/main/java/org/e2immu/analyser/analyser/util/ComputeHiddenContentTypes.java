@@ -103,7 +103,7 @@ public class ComputeHiddenContentTypes {
                 concrete values for any type parameter!
                  */
                 SetOfTypes hidden = typeAnalysis.getHiddenContentTypes().translate(analyserContext, type);
-                hidden.types().forEach(this::addType);
+                hidden.types().stream().filter(t -> !type.equals(t)).forEach(this::addType);
             }
         }
     }

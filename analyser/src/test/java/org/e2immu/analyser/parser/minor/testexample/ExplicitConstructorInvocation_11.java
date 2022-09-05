@@ -37,7 +37,7 @@ public class ExplicitConstructorInvocation_11 {
         }
     }
 
-    record Identifier<T>(T t) {
+    record Identifier() {
     }
 
     static abstract class ElementImpl {
