@@ -751,7 +751,7 @@ public class Test_01_Loops_6plus extends CommonTestRunner {
                     if ("1.0.1.0.1".equals(d.statementId())) {
                         assertNotNull(fr.scopeVariable);
                         assertEquals("container", fr.scopeVariable.simpleName());
-                        String expected = d.iteration() <= 2 ? "<f:read>" : "nullable instance type Date";
+                        String expected = d.iteration() <= 2 ? "<f:container.read>" : "nullable instance type Date";
                         assertEquals(expected, d.currentValue().toString());
 
                         assertEquals("container", fr.scope.toString());

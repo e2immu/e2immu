@@ -159,7 +159,7 @@ public class Test_57_Lambda extends CommonTestRunner {
             if ("get".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof FieldReference fr && "k".equals(fr.fieldInfo.name)) {
                     if ("x".equals(fr.scope.toString())) {
-                        String expected = d.iteration() == 0 ? "<f:k>" : "instance type int";
+                        String expected = d.iteration() == 0 ? "<f:x.k>" : "instance type int";
                         assertEquals(expected, d.currentValue().toString());
                         String linked = d.iteration() == 0 ? "NOT_YET_SET" : "x:2";
                         assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
@@ -232,7 +232,7 @@ public class Test_57_Lambda extends CommonTestRunner {
                             assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
                         }
                         if ("1".equals(d.statementId())) {
-                            String expected = d.iteration() == 0 ? "<f:k>" : "instance type int";
+                            String expected = d.iteration() == 0 ? "<f:new X(x.k).k>" : "instance type int";
                             assertEquals(expected, d.currentValue().toString());
                         }
                     } else if ("x".equals(fr.scope.toString())) {
@@ -436,7 +436,7 @@ public class Test_57_Lambda extends CommonTestRunner {
             if ("assigning".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof FieldReference fr && "i".equals(fr.fieldInfo.name)) {
                     if ("0".equals(d.statementId())) {
-                        String expected = d.iteration() == 0 ? "<f:i>" : "instance type int";
+                        String expected = d.iteration() == 0 ? "<f:ii.i>" : "instance type int";
                         assertEquals(expected, d.currentValue().toString());
 
                         assertDv(d, 2, DV.FALSE_DV, Property.CONTEXT_MODIFIED);

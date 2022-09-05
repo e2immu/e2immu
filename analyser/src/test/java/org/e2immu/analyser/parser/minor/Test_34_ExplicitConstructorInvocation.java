@@ -376,7 +376,7 @@ public class Test_34_ExplicitConstructorInvocation extends CommonTestRunner {
                 }
                 if (d.variable() instanceof FieldReference fr && "condition".equals(fr.fieldInfo.name)) {
                     if ("parent".equals(fr.scope.toString())) {
-                        String expected = d.iteration() < 4 ? "<f:condition>" : "instance type Expression";
+                        String expected = d.iteration() < 4 ? "<f:parent.condition>" : "instance type Expression";
                         assertEquals(expected, d.currentValue().toString());
                         assertEquals("this.parent:2", d.variableInfo().getLinkedVariables().toString());
                         assertDv(d, DV.TRUE_DV, Property.CONTEXT_MODIFIED);

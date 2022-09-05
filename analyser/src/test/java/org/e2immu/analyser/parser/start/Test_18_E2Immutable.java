@@ -104,7 +104,7 @@ public class Test_18_E2Immutable extends CommonTestRunner {
                         fr.scope instanceof VariableExpression ve && "parent2Param".equals(ve.variable().simpleName())) {
                     assertNotEquals("0", d.statementId());
                     if ("1".equals(d.statementId())) {
-                        String expectValue = d.iteration() <= 1 ? "<f:level2>" : "instance type int";
+                        String expectValue = d.iteration() <= 1 ? "<f:parent2Param.level2>" : "instance type int";
                         assertEquals(expectValue, d.currentValue().toString());
                     }
                 }

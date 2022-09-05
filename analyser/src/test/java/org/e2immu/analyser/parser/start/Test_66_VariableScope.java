@@ -479,7 +479,7 @@ public class Test_66_VariableScope extends CommonTestRunner {
                     if ("1.0.2".equals(d.statementId())) {
                         assertEquals("perPackage", fr.scope.toString());
                         String expected = switch (d.iteration()) {
-                            case 0 -> "<f:allowStar>&&<m:addTypeReturnImport>";
+                            case 0 -> "<f:perPackage.allowStar>&&<m:addTypeReturnImport>";
                             case 1, 2 -> "instance type boolean&&<m:addTypeReturnImport>";
                             default -> "instance type boolean&&`typeInfo.packageName`.startsWith(\"org\")";
                         };
@@ -491,7 +491,7 @@ public class Test_66_VariableScope extends CommonTestRunner {
                             assertEquals(expected, d.currentValue().toString());
                         } else if ("scope-perPackage:1".equals(fr.scope.toString())) {
                             String expected = switch (d.iteration()) {
-                                case 0 -> "<null-check>&&!<m:equals>?<f:allowStar>&&<m:addTypeReturnImport>:<f:allowStar>";
+                                case 0 -> "<null-check>&&!<m:equals>?<dv:scope-perPackage:1.allowStar>&&<m:addTypeReturnImport>:<f:scope-perPackage:1.allowStar>";
                                 case 1, 2 -> "!myPackage.equals(`typeInfo.packageName`)&&null!=`typeInfo.packageName`?instance type boolean&&<m:addTypeReturnImport>:instance type boolean";
                                 default -> "!myPackage.equals(`typeInfo.packageName`)&&null!=`typeInfo.packageName`?instance type boolean&&`typeInfo.packageName`.startsWith(\"org\"):instance type boolean";
                             };
@@ -551,7 +551,7 @@ public class Test_66_VariableScope extends CommonTestRunner {
                     assertTrue(Set.of("this", "other", "m").contains(fr.scope.toString()));
                     if ("m".equals(fr.scope.toString())) {
                         if ("3".equals(d.statementId())) {
-                            String expected = d.iteration() == 0 ? "<f:messages>"
+                            String expected = d.iteration() == 0 ? "<f:m.messages>"
                                     : "instance type Set<Message>/*this.size()>=other.messages.size()*/";
                             assertEquals(expected, d.currentValue().toString());
                         }
@@ -889,6 +889,8 @@ public class Test_66_VariableScope extends CommonTestRunner {
                 if (d.variable() instanceof FieldReference fr && "statementIndex".equals(fr.fieldInfo.name)) {
                     if ("vdol".equals(fr.scope.toString())) {
                         assertTrue(d.statementId().compareTo("2") < 0);
+                        String expected = d.iteration() == 0 ? "<f:vdol.statementIndex>" : "nullable instance type String";
+                        assertEquals(expected, d.currentValue().toString());
                     } else if ("scope-vdol:1".equals(fr.scope.toString())) {
                         assertNotNull(fr.scopeVariable);
                         if (fr.scopeVariable.variableNature() instanceof VariableNature.ScopeVariable sv) {
@@ -896,10 +898,10 @@ public class Test_66_VariableScope extends CommonTestRunner {
                             assertEquals("1~", sv.getBeyondIndex());
                         } else fail();
                         assertNotEquals("1.0.0", d.statementId());
+                        String expected = d.iteration() == 0 ? "<f:scope-vdol:1.statementIndex>" : "nullable instance type String";
+                        assertEquals(expected, d.currentValue().toString());
                     } else fail("? scope " + fr.scope);
                     if ("1".equals(d.statementId())) {
-                        String expected = d.iteration() == 0 ? "<f:statementIndex>" : "nullable instance type String";
-                        assertEquals(expected, d.currentValue().toString());
                         assertTrue(d.variableInfoContainer().variableNature() instanceof VariableNature.NormalLocalVariable);
                     }
                 }

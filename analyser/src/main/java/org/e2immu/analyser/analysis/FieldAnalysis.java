@@ -21,6 +21,7 @@ import org.e2immu.analyser.model.expression.DelayedVariableExpression;
 import org.e2immu.analyser.model.expression.Instance;
 import org.e2immu.analyser.model.expression.PropertyWrapper;
 import org.e2immu.analyser.model.variable.FieldReference;
+import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.annotation.NotNull;
 
 import java.util.Map;
@@ -98,11 +99,15 @@ public interface FieldAnalysis extends Analysis {
 
     Expression getInitializerValue();
 
-    default Expression getValueForStatementAnalyser(FieldReference fieldReference, int statementTime) {
+    default Expression getValueForStatementAnalyser(TypeInfo primaryType, FieldReference fieldReference, int statementTime) {
         Expression value = getValue();
         // IMPORTANT: do not return Instance object here (i.e. do not add "|| value.isInstanceOf(Instance.class)")
         // because the instance does not have the eventual information that the field analyser holds.
-        if (value.isDelayed() || value.isConstant()) return value;
+        if (value.isConstant()) return value;
+        if (value.isDelayed()) {
+            if (fieldReference.scopeIsThis()) return value;
+            return DelayedVariableExpression.forField(fieldReference, statementTime, value.causesOfDelay());
+        }
 
         Properties properties = getValueProperties();
         CausesOfDelay delay = properties.delays();
@@ -110,7 +115,16 @@ public interface FieldAnalysis extends Analysis {
         if (delay.isDelayed()) {
             return DelayedVariableExpression.forDelayedValueProperties(fieldReference, statementTime, delay);
         }
-        Instance instance = Instance.forField(getFieldInfo(), value.returnType(), properties);
+        ParameterizedType mostSpecific;
+        if (value.returnType().typeInfo != null && value.returnType().typeInfo.equals(fieldReference.fieldInfo.type.typeInfo)) {
+            // same typeInfo, but maybe different type parameters; see e.g. NotNull_AAPI_3
+            mostSpecific = fieldReference.parameterizedType;
+        } else {
+            // instance type List<...> in fieldReference vs instance type ArrayList<...> in value; see e.g. Basics_20
+            mostSpecific = fieldReference.parameterizedType.mostSpecific(InspectionProvider.DEFAULT,
+                    primaryType, value.returnType());
+        }
+        Instance instance = Instance.forField(getFieldInfo(), mostSpecific, properties);
         if (value instanceof ConstructorCall) {
             return PropertyWrapper.addState(instance, value);
         }

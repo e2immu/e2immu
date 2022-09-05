@@ -100,7 +100,7 @@ public class Test_16_Modification_19 extends CommonTestRunner {
                     assertEquals("set", fr.fieldInfo.name);
                     if ("2".equals(d.statementId())) {
                         String expectValue = switch (d.iteration()) {
-                            case 0 -> "<f:set>";
+                            case 0 -> "<f:c.set>";
                             case 1, 2 -> "<cc-exp:C1:set>";
                             default -> "nullable instance type Set<String>";
                         };

@@ -14,9 +14,7 @@
 
 package org.e2immu.analyser.parser.conditional;
 
-import org.e2immu.analyser.analyser.DV;
-import org.e2immu.analyser.analyser.EvaluationResult;
-import org.e2immu.analyser.analyser.Property;
+import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.config.AnalyserConfiguration;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.model.MultiLevel;
@@ -92,9 +90,18 @@ public class Test_04_NotNull_AAPI extends CommonTestRunner {
                             assertEquals("new LinkedList<>()/*0==this.size()*/", d.currentValue().toString());
                         }
                         if ("2".equals(d.statementId())) {
-                            assertEquals("<null-check>?new LinkedList<>()/*0==this.size()*/:<f:data>", d.currentValue().toString());
+                            VariableInfo eval = d.variableInfoContainer().best(Stage.EVALUATION);
+                            String evalValue = d.iteration() < 3 ? "<f:node.data>" : "nullable instance type List<T>";
+                            assertEquals(evalValue, eval.getValue().toString());
+
+                            String expected = switch (d.iteration()) {
+                                case 0 -> "<null-check>?new LinkedList<>()/*0==this.size()*/:<f:node.data>";
+                                case 1, 2 -> "<null-check>?new LinkedList<>()/*0==this.size()*/:<vp:data:link@Field_data>";
+                                default -> "null==nullable instance type List<T>?new LinkedList<>()/*0==this.size()*/:nullable instance type List<T>";
+                            };
+                            assertEquals(expected, d.currentValue().toString());
+                            assertEquals("Type java.util.List<T>", d.currentValue().returnType().toString());
                         }
-                        assertEquals("Type java.util.LinkedList<T>", d.currentValue().returnType().toString());
                     }
                 }
             }

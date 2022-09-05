@@ -78,7 +78,7 @@ public class Test_00_Basics_23 extends CommonTestRunner {
                 }
                 if (d.variable() instanceof FieldReference fr && "i".equals(fr.fieldInfo.name)) {
                     if (fr.scopeVariable instanceof LocalVariableReference lvr) {
-                        String expected = d.iteration() == 0 ? "<f:i>" : "instance type int";
+                        String expected = d.iteration() == 0 ? "<f:(k<3?a:b).i>" : "instance type int";
                         if ("a".equals(lvr.simpleName())) {
                             assertEquals(expected, d.currentValue().toString());
                         } else if ("b".equals(lvr.simpleName())) {
@@ -130,7 +130,7 @@ public class Test_00_Basics_23 extends CommonTestRunner {
                     if ("1.0.0".equals(d.statementId())) {
                         assertNotNull(fr.scopeVariable);
                         if ("c".equals(fr.scopeVariable.simpleName())) {
-                            String expected = d.iteration() == 0 ? "<f:i>" : "instance type int";
+                            String expected = d.iteration() == 0 ? "<f:c.i>" : "instance type int";
                             assertEquals(expected, d.currentValue().toString());
                         }
                     }

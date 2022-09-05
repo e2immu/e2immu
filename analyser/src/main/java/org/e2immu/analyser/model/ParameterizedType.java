@@ -720,12 +720,14 @@ public class ParameterizedType {
     public ParameterizedType mostSpecific(InspectionProvider inspectionProvider,
                                           TypeInfo primaryType,
                                           ParameterizedType other) {
+        if (equals(other)) return this;
         if (isType() && typeInfo.isVoid() || other.isType() && other.typeInfo.isVoid()) {
             return inspectionProvider.getPrimitives().voidParameterizedType();
         }
         if (isTypeParameter()) {
             if (other.isTypeParameter()) {
                 // a type parameter in the primary type has priority over another one
+                // IMPROVE change this to a hierarchy rather than primary vs other
                 if (primaryType.equals(other.typeParameter.primaryType())) return other;
                 return this;
             }
