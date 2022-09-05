@@ -325,7 +325,12 @@ public class Test_66_VariableScope extends CommonTestRunner {
                         assertDv(d, 3, DV.FALSE_DV, Property.IDENTITY);
                         assertDv(d, 3, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
 
-                        assertEquals("doImport:-1,typeInfo:-1", d.variableInfo().getLinkedVariables().toString());
+                        String linked = switch (d.iteration()) {
+                            case 0 -> "NOT_YET_SET";
+                            case 1, 2 -> "doImport:-1,typeInfo:-1";
+                            default -> "";
+                        };
+                        assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
                     }
                     if ("1.0.1".equals(d.statementId())) {
                         assertDv(d, 3, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
@@ -412,7 +417,7 @@ public class Test_66_VariableScope extends CommonTestRunner {
                 }
                 if ("scope-perPackage:1".equals(d.variableName())) {
                     assertEquals("1", d.statementId());
-                    assertDv(d, 3, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
+                    assertDv(d, 1, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
                 }
             }
         };
@@ -537,6 +542,9 @@ public class Test_66_VariableScope extends CommonTestRunner {
                     if ("3".equals(d.statementId())) {
                         String expected = d.iteration() == 0 ? "<s:VariableScope_7>" : "instance type VariableScope_7";
                         assertEquals(expected, d.currentValue().toString());
+
+                        assertEquals("m.messages:4,other.messages:4,other:4",
+                                d.variableInfo().getLinkedVariables().toString());
                     }
                 }
                 if (d.variable() instanceof FieldReference fr && "messages".equals(fr.fieldInfo.name)) {
@@ -587,7 +595,7 @@ public class Test_66_VariableScope extends CommonTestRunner {
                 if (d.variable() instanceof FieldReference fr && "object".equals(fr.fieldInfo.name)) {
                     assertEquals("this", fr.scope.toString());
                     if ("2".equals(d.statementId())) {
-                        assertDv(d, 16, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                        assertDv(d, 17, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     }
                 }
                 if ("methodCall".equals(d.variableName())) {
@@ -596,7 +604,7 @@ public class Test_66_VariableScope extends CommonTestRunner {
                         // evaluation
                         assertFalse(d.variableInfoContainer().hasMerge());
                         assertTrue(d.variableInfoContainer().hasEvaluation());
-                        assertCurrentValue(d, 16, "object/*(MethodCall)*/");
+                        assertCurrentValue(d, 17, "object/*(MethodCall)*/");
                     }
                     assertNotEquals("2", d.statementId());
                     assertNotEquals("3", d.statementId());
@@ -607,18 +615,18 @@ public class Test_66_VariableScope extends CommonTestRunner {
                     }
                     if ("2.0.0.0.1".equals(d.statementId())) {
                         // recursive method call, parameter is not modified by default
-                        String linked = d.iteration() < 16
+                        String linked = d.iteration() < 17
                                 ? "guideGenerator:0,methodCall:-1,outputBuilder:-1,qualification:-1,this.object:-1,this:-1"
                                 : "guideGenerator:0";
                         assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
-                        assertDv(d, 16, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                        assertDv(d, 17, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     }
                     if ("2.0.0.0.2".equals(d.statementId())) {
-                        String linked = d.iteration() < 16
+                        String linked = d.iteration() < 17
                                 ? "guideGenerator:0,methodCall:-1,outputBuilder:-1,qualification:-1,this.object:-1,this:-1"
                                 : "guideGenerator:0,outputBuilder:4";
                         assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
-                        assertDv(d, 16, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                        assertDv(d, 17, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     }
                 }
                 if (d.variable() instanceof ParameterInfo pi && "guideGenerator".equals(pi.name)) {
@@ -627,25 +635,25 @@ public class Test_66_VariableScope extends CommonTestRunner {
                     }
                     if ("2.0.0.0.1".equals(d.statementId())) {
                         // recursive method call, parameter is not modified by default
-                        String linked = d.iteration() < 16
+                        String linked = d.iteration() < 17
                                 ? "gg:0,methodCall:-1,outputBuilder:-1,qualification:-1,this.object:-1,this:-1"
                                 : "gg:0";
                         assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
-                        assertDv(d, 16, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                        assertDv(d, 17, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     }
                     if ("2.0.0.0.2".equals(d.statementId())) {
-                        String linked = d.iteration() < 16
+                        String linked = d.iteration() < 17
                                 ? "gg:0,methodCall:-1,outputBuilder:-1,qualification:-1,this.object:-1,this:-1"
                                 : "gg:0,outputBuilder:4";
                         assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
-                        assertDv(d, 16, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                        assertDv(d, 17, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     }
                 }
             }
 
             if ("valueOf".equals(d.methodInfo().name) && "Required".equals(d.methodInfo().typeInfo.simpleName)) {
                 if (d.variable() instanceof ParameterInfo pi && "name".equals(pi.name)) {
-                    assertDv(d, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                    assertDv(d, 1, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                 }
             }
 
@@ -655,7 +663,7 @@ public class Test_66_VariableScope extends CommonTestRunner {
                     if ("0.0.0".equals(d.statementId())) {
                         String linked = switch (d.iteration()) {
                             case 0 -> "Symbol.LEFT_PARENTHESIS:-1,Symbol.RIGHT_PARENTHESIS:-1,expression:-1,precedence:-1,qualification:-1";
-                            case 1, 2 -> "Symbol.LEFT_PARENTHESIS:-1,Symbol.RIGHT_PARENTHESIS:-1,expression:-1,qualification:-1";
+                            case 1, 2, 3 -> "Symbol.LEFT_PARENTHESIS:-1,Symbol.RIGHT_PARENTHESIS:-1,expression:-1,qualification:-1";
                             default -> "";
                         };
                         assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
@@ -667,7 +675,9 @@ public class Test_66_VariableScope extends CommonTestRunner {
         StatementAnalyserVisitor statementAnalyserVisitor = d -> {
             if ("valueOf".equals(d.methodInfo().name) && "Required".equals(d.methodInfo().typeInfo.simpleName)) {
                 assertEquals("0", d.statementId());
-                String expected = "name={modified in context=false:0, not null in context=nullable:1, read=true:1}, this={modified in context=false:0}";
+                String expected = d.iteration() == 0
+                        ? "name={modified in context=link@NOT_YET_SET, not null in context=nullable:1, read=true:1}, this={modified in context=link@NOT_YET_SET}"
+                        : "name={modified in context=false:0, not null in context=nullable:1, read=true:1}, this={modified in context=false:0}";
                 assertEquals(expected, d.statementAnalysis().propertiesFromSubAnalysersSortedToString());
             }
         };
@@ -683,25 +693,25 @@ public class Test_66_VariableScope extends CommonTestRunner {
                 assertDv(d, DV.FALSE_DV, Property.MODIFIED_METHOD);
             }
             if ("output".equals(d.methodInfo().name) && "MethodCall".equals(d.methodInfo().typeInfo.simpleName)) {
-                assertDv(d, 9, DV.FALSE_DV, Property.MODIFIED_METHOD);
+                assertDv(d, 10, DV.FALSE_DV, Property.MODIFIED_METHOD);
             }
             if ("output2".equals(d.methodInfo().name)) {
-                assertDv(d, 16, DV.FALSE_DV, Property.MODIFIED_METHOD);
-                String expected = d.iteration() <= 15 ? "<m:output2>"
+                assertDv(d, 17, DV.FALSE_DV, Property.MODIFIED_METHOD);
+                String expected = d.iteration() < 17 ? "<m:output2>"
                         : "/*inline output2*/!(object instanceof MethodCall)||null==object?new OutputBuilder(new LinkedList<>()):instance type OutputBuilder";
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
 
-                assertDv(d.p(0), 17, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
-                assertDv(d.p(1), 17, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
+                assertDv(d.p(0), 18, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
+                assertDv(d.p(1), 18, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
             }
             if ("valueOf".equals(d.methodInfo().name) && "Required".equals(d.methodInfo().typeInfo.simpleName)) {
-                assertDv(d.p(0), 1, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                assertDv(d.p(0), 2, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
             }
         };
 
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("MethodCall".equals(d.typeInfo().simpleName)) {
-                assertDv(d, 15, MultiLevel.EFFECTIVELY_FINAL_FIELDS_DV, Property.IMMUTABLE);
+                assertDv(d, 16, MultiLevel.EFFECTIVELY_FINAL_FIELDS_DV, Property.IMMUTABLE);
             }
         };
 

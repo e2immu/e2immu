@@ -474,7 +474,7 @@ public class Test_18_E2Immutable extends CommonTestRunner {
                 if (d.variable() instanceof FieldReference fieldReference && "sub".equals(fieldReference.fieldInfo.name)) {
                     String expectValue = d.iteration() <= 1 ? "<f:sub>" : "instance type Sub/*new Sub()*/";
                     assertEquals(expectValue, d.currentValue().toString());
-                    assertEquals("sub.string:2", d.variableInfo().getLinkedVariables().toString());
+                    assertEquals("", d.variableInfo().getLinkedVariables().toString());
 
                     assertDv(d, DV.FALSE_DV, CONTEXT_MODIFIED);
                     assertDv(d, 2, MultiLevel.EFFECTIVELY_IMMUTABLE_DV, IMMUTABLE);

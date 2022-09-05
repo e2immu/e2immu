@@ -97,13 +97,9 @@ public class Test_04_NotNull_AAPI extends CommonTestRunner {
                         assertDv(d, 1, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                         assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
                     }
-                    /*
-                     IMPROVE assignment "node = newTrieNode", why would link to this.root be DEPENDENT:2???
-                     should be INDEPENDENT_HC:3
-                     */
                     if ("1.0.2".equals(d.statementId())) {
                         String linked = d.iteration() == 0 ? "node.map:-1,node:0,s:-1,this.root:-1"
-                                : "node.map:2,node:0,this.root:2";
+                                : "node.map:3,node:0,this.root:3";
                         assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
                         assertDv(d, 1, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
                     }
@@ -118,12 +114,12 @@ public class Test_04_NotNull_AAPI extends CommonTestRunner {
                     if ("1.0.1".equals(d.statementId())) {
                         assertDv(d, 1, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
                         String linked = d.iteration() == 0 ? "newTrieNode:-1,node.map:-1,s:-1,this.root:0"
-                                : "node.map:2,this.root:0";
+                                : "this.root:0";
                         assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
                     }
                     if ("1.0.2".equals(d.statementId())) {
                         String linked = d.iteration() == 0 ? "newTrieNode:0,node.map:-1,s:-1,this.root:-1"
-                                : "newTrieNode:0,node.map:2,this.root:2";
+                                : "newTrieNode:0,node.map:3,this.root:3";
                         assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
                         assertDv(d, 1, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
                     }

@@ -334,10 +334,10 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         // links from parameter into object
         // (the other direction, object into parameter, yields MODIFIED on the parameter)
         LinkedVariables linkedVariablesOfObject = linkedVariablesOfObject(context, objectValue);
+        List<LinkedVariables> linkedVariablesOfParameters = linkedVariablesOfObject.isEmpty() ? List.of()
+                : ConstructorCall.computeLinkedVariablesOfParameters(context, parameterExpressions, parameterValues);
         for (Map.Entry<Variable, DV> e : linkedVariablesOfObject) {
             Variable linkedToObject = e.getKey();
-            List<LinkedVariables> linkedVariablesOfParameters = ConstructorCall.computeLinkedVariablesOfParameters(context,
-                    parameterExpressions, parameterValues);
             Map<ParameterInfo, LinkedVariables> linksToLinkedToObject = firstInCallCycle ? Map.of() :
                     ConstructorCall.fromParameterIntoObject(context,
                             context.getAnalyserContext().getMethodInspection(methodInfo),
@@ -413,8 +413,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
     private LinkedVariables linkedVariablesOfObject(EvaluationResult context, Expression objectValue) {
         LinkedVariables linkedVariables = objectValue.linkedVariables(context);
         if (object instanceof IsVariableExpression ive) {
-            return linkedVariables.merge(LinkedVariables.of(ive.variable(),
-                    LinkedVariables.LINK_STATICALLY_ASSIGNED));
+            return linkedVariables.merge(ive.linkedVariables(context));
         }
         return linkedVariables;
     }
@@ -836,8 +835,8 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
                                 i = null;
                             }
                             if (i != null) {
-                                LinkedVariables lv = context.evaluationContext().linkedVariables(variable);
-                                builder.modifyingMethodAccess(variable, i, lv);
+                               //FIXME LinkedVariables lv = context.evaluationContext().linkedVariables(variable);
+                                builder.modifyingMethodAccess(variable, i, null);
                             }
                         }
                     } else {
@@ -1329,7 +1328,11 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
             // there is no linking...
             return LinkedVariables.EMPTY;
         }
-        DV immutableOfObject = context.getAnalyserContext().typeImmutable(objectOrItsValue.returnType());
+        ParameterizedType returnTypeOfObject = objectOrItsValue.returnType();
+        DV immutableOfObject = context.getAnalyserContext().typeImmutable(returnTypeOfObject);
+        if (!context.evaluationContext().isMyself(returnTypeOfObject) && immutableOfObject.isDelayed()) {
+            return linkedVariablesOfObject.changeToDelay(immutableOfObject);
+        }
         if (MultiLevel.isAtLeastEventuallyRecursivelyImmutable(immutableOfObject)) {
             /*
              if the result type immutable because of a choice in type parameters, methodIndependent will return

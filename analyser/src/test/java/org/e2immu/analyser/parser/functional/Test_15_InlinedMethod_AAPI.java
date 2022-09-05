@@ -277,9 +277,12 @@ public class Test_15_InlinedMethod_AAPI extends CommonTestRunner {
             if ("variables".equals(d.methodInfo().name)) {
                 String expected = "this.subElements().stream().flatMap(instance type $1).collect(Collectors.toList())";
                 assertEquals(expected, d.evaluationResult().value().toString());
-                assertEquals("", d.evaluationResult().causesOfDelay().toString());
+                String delay = d.iteration() == 0 ? "immutable@Record_Variable" : "";
+                assertEquals(delay, d.evaluationResult().causesOfDelay().toString());
+
                 EvaluationResult.ChangeData cd = d.findValueChangeByToString("this");
                 assertEquals(DV.FALSE_DV, cd.getProperty(Property.CONTEXT_MODIFIED));
+                assertEquals("", cd.linkedVariables().toString());
             }
         };
 
@@ -287,6 +290,18 @@ public class Test_15_InlinedMethod_AAPI extends CommonTestRunner {
             if ("variables".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof This) {
                     assertDv(d, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                    assertEquals("", d.variableInfo().getLinkedVariables().toString());
+                }
+                if (d.variable() instanceof ReturnVariable) {
+                    String linked = d.iteration() == 0 ? "this:-1" : "";
+                    assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
+                }
+            }
+            if ("subElements".equals(d.methodInfo().name)) {
+                if ("BinaryOperator".equals(d.methodInfo().typeInfo.simpleName)) {
+                    if (d.variable() instanceof ReturnVariable) {
+                        assertEquals("this.lhs:-1,this.rhs:-1", d.variableInfo().getLinkedVariables().toString());
+                    }
                 }
             }
         };
@@ -331,13 +346,41 @@ public class Test_15_InlinedMethod_AAPI extends CommonTestRunner {
                 assertEquals("compare", d.methodInfo().methodResolution.get().methodsOfOwnClassReachedSorted());
                 assertEquals("", d.methodInfo().methodResolution.get().callCycleSorted());
 
-                assertDv(d, 2, DV.FALSE_DV, Property.MODIFIED_METHOD);
+                assertDv(d, 4, DV.FALSE_DV, Property.MODIFIED_METHOD);
+            }
+            if ("subElements".equals(d.methodInfo().name)) {
+                if ("Expression".equals(d.methodInfo().typeInfo.simpleName)) {
+                    assertDv(d, MultiLevel.MUTABLE_DV, Property.IMMUTABLE);
+                    assertDv(d, MultiLevel.DEPENDENT_DV, Property.INDEPENDENT);
+                } else if ("BinaryOperator".equals(d.methodInfo().typeInfo.simpleName)) {
+                    assertDv(d, 5, MultiLevel.MUTABLE_DV, Property.IMMUTABLE);
+                }
+            }
+            if ("lhs".equals(d.methodInfo().name)) {
+                // FIXME why is this breaking necessary? it is definitely wrong, lhs is not immutable but mutable
+                assertFalse(d.allowBreakDelay());
+            }
+        };
+        FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
+            if ("lhs".equals(d.fieldInfo().name)) {
+                assertDv(d, 1, MultiLevel.MUTABLE_DV, Property.EXTERNAL_IMMUTABLE);
+            }
+        };
+
+        TypeAnalyserVisitor typeAnalyserVisitor = d -> {
+            if ("Variable".equals(d.typeInfo().simpleName)) {
+                assertDv(d, MultiLevel.EFFECTIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
+            }
+            if ("Expression".equals(d.typeInfo().simpleName)) {
+                assertDv(d, MultiLevel.MUTABLE_DV, Property.IMMUTABLE);
             }
         };
         testClass("InlinedMethod_11", 1, 5, new DebugConfiguration.Builder()
                 .addEvaluationResultVisitor(evaluationResultVisitor)
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+                .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
                 .build());
     }
 

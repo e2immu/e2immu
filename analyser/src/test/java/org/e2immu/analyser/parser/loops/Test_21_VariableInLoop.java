@@ -128,7 +128,7 @@ public class Test_21_VariableInLoop extends CommonTestRunner {
                         assertDv(d, 2, MultiLevel.NULLABLE_DV, Property.CONTEXT_NOT_NULL);
                         String linked = switch (d.iteration()) {
                             case 0, 1 -> "firstStatementAnalyser:0,sa.navigationData().next:-1,scope-59:18:-1,scope-60:47:-1";
-                            default -> "firstStatementAnalyser:0,sa.navigationData().next:4,scope-59:18:2,scope-60:47:2";
+                            default -> "firstStatementAnalyser:0,sa.navigationData().next:4,scope-59:18:4,scope-60:47:4";
                         };
                         assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
                     }
@@ -163,7 +163,7 @@ public class Test_21_VariableInLoop extends CommonTestRunner {
                     if ("1".equals(d.statementId())) {
                         String expected = switch (d.iteration()) {
                             case 0 -> "<null-check>?<m:navigationData>:<not yet assigned>";
-                            case 1 -> "null==sa$1?<not yet assigned>:<m:navigationData>";
+                            case 1 -> "null==sa$1?<not yet assigned>:<vp:NavigationData:cm@Parameter_next;mom@Parameter_next>";
                             default -> "null==sa$1?<not yet assigned>:sa$1.navigationData()";
                         };
                         assertEquals(expected, d.currentValue().toString());

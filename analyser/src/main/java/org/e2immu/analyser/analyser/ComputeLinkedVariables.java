@@ -162,7 +162,7 @@ public class ComputeLinkedVariables {
                                        Variable variable) {
         boolean isBeingReassigned = reassigned.contains(variable);
 
-        LinkedVariables external = externalLinkedVariables.apply(variable);
+        LinkedVariables external = Objects.requireNonNullElse(externalLinkedVariables.apply(variable), LinkedVariables.EMPTY);
         LinkedVariables inVi = isBeingReassigned ? LinkedVariables.EMPTY
                 : vi1.getLinkedVariables().remove(reassigned);
         LinkedVariables combined = external.merge(inVi);
@@ -441,8 +441,9 @@ public class ComputeLinkedVariables {
             VariableInfoContainer vic = statementAnalysis.getVariable(variable.fullyQualifiedName());
 
             Map<Variable, DV> map = weightedGraph.links(variable, null, true);
+            CausesOfDelay delays = linkingNotYetSet.contains(variable) ? LinkedVariables.NOT_YET_SET_DELAY : CausesOfDelay.EMPTY;
             LinkedVariables linkedVariables = applyStaticallyAssignedAndRemoveSelfReference(staticallyAssigned,
-                    variable, map, CausesOfDelay.EMPTY);
+                    variable, map, delays);
 
             causes = causes.merge(linkedVariables.causesOfDelay());
             vic.ensureLevelForPropertiesLinkedVariables(statementAnalysis.location(stage), stage);
@@ -453,9 +454,11 @@ public class ComputeLinkedVariables {
         if (returnVariable != null) {
             VariableInfoContainer vicRv = statementAnalysis.getVariable(returnVariable.fullyQualifiedName());
 
+            CausesOfDelay delays = linkingNotYetSet.contains(returnVariable) ? LinkedVariables.NOT_YET_SET_DELAY : CausesOfDelay.EMPTY;
+
             Map<Variable, DV> map = weightedGraph.links(returnVariable, null, true);
             LinkedVariables linkedVariables = applyStaticallyAssignedAndRemoveSelfReference(staticallyAssigned,
-                    returnVariable, map, CausesOfDelay.EMPTY);
+                    returnVariable, map, delays);
 
             causes = causes.merge(linkedVariables.causesOfDelay());
             vicRv.ensureLevelForPropertiesLinkedVariables(statementAnalysis.location(stage), stage);

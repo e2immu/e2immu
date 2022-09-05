@@ -398,8 +398,9 @@ public class Test_51_InstanceOf extends CommonTestRunner {
                         VariableInfo prev = d.variableInfoContainer().getPreviousOrInitial();
                         assertEquals("object/*(Boolean)*/", prev.getValue().toString());
 
-                        assertEquals("object/*(Boolean)*/", d.currentValue().toString());
-                        assertDv(d, MultiLevel.NULLABLE_DV, Property.NOT_NULL_EXPRESSION);
+                        String expected = d.iteration() == 0 ? "<v:bool>" : "object/*(Boolean)*/";
+                        assertEquals(expected, d.currentValue().toString());
+                        assertDv(d, 1, MultiLevel.NULLABLE_DV, Property.NOT_NULL_EXPRESSION);
                         assertEquals("Type java.lang.Boolean", d.currentValue().returnType().toString());
                     }
                 }
@@ -409,7 +410,8 @@ public class Test_51_InstanceOf extends CommonTestRunner {
                         assertTrue(d.variableInfoContainer().isPrevious());
                         VariableInfo prev = d.variableInfoContainer().getPreviousOrInitial();
                         assertEquals("object/*(Integer)*/", prev.getValue().toString());
-                        assertEquals("object/*(Integer)*/", d.currentValue().toString());
+                        String expected = d.iteration() == 0 ? "<v:integer>" : "object/*(Integer)*/";
+                        assertEquals(expected, d.currentValue().toString());
                         assertEquals("Type java.lang.Integer", d.currentValue().returnType().toString());
                     }
                 }

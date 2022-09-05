@@ -341,9 +341,9 @@ public class ConstructorCall extends BaseExpression implements HasParameterExpre
         }
 
         // hidden content... use the relation of parameter type with respect to object type (not the return type!)
-        ComputeIndependent computeIndependent = new ComputeIndependent(context.getAnalyserContext(),
-                context.getCurrentType().primaryType());
         if (fromParameterToObject) {
+            ComputeIndependent computeIndependent = new ComputeIndependent(context.getAnalyserContext(),
+                    context.getCurrentType().primaryType());
             return computeIndependent.directedLinkLevelOfTwoHCRelatedTypes(variableType, objectType);
         }
         return LinkedVariables.LINK_COMMON_HC;

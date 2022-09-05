@@ -103,8 +103,17 @@ public class Test_16_Modification_11_2 extends CommonTestRunner {
                     if ("2".equals(d.statementId())) {
                         assertDv(d, 11, MultiLevel.EFFECTIVELY_NOT_NULL_DV, CONTEXT_NOT_NULL);
 
-                        String expectLinked = d.iteration() <= 10 ? "c.set:-1,this.s2:-1" : "c.set:2,this.s2:2";
+                        String expectLinked = d.iteration() <= 10 ? "this.s2:-1" : "this.s2:2";
                         assertEquals(expectLinked, d.variableInfo().getLinkedVariables().toString());
+                    }
+                }
+                if(d.variable() instanceof FieldReference fr &&"set".equals(fr.fieldInfo.name)) {
+                    assertNotNull(fr.scopeVariable);
+                    if("c".equals(fr.scopeVariable.simpleName())) {
+                        if("2".equals(d.statementId())) {
+                            String expectLinked = d.iteration() <= 10 ? "c:-1,this.s2:-1" : "c:2,this.s2:2";
+                            assertEquals(expectLinked, d.variableInfo().getLinkedVariables().toString());
+                        }
                     }
                 }
                 if (d.variable() instanceof ReturnVariable && "2".equals(d.statementId())) {

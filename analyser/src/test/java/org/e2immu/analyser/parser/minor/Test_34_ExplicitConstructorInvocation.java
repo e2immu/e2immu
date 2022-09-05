@@ -368,29 +368,23 @@ public class Test_34_ExplicitConstructorInvocation extends CommonTestRunner {
                 assertEquals("0", d.statementId());
                 if (d.variable() instanceof FieldReference fr && "parent".equals(fr.fieldInfo.name)) {
                     assertTrue(fr.scopeIsThis());
-                    String expected = d.iteration() <= 4 ? "<f:parent>" : "nullable instance type C";
+                    String expected = d.iteration() < 4 ? "<f:parent>" : "nullable instance type C";
                     assertEquals(expected, d.currentValue().toString());
-                    String linked = d.iteration() == 0 ? "parent.condition:-1" : "";
+                    String linked = d.iteration() == 0 ? "NOT_YET_SET" : "";
                     assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
                     assertDv(d, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
                 }
                 if (d.variable() instanceof FieldReference fr && "condition".equals(fr.fieldInfo.name)) {
                     if ("parent".equals(fr.scope.toString())) {
-                        String expected = switch (d.iteration()) {
-                            case 0, 1 -> "<f:condition>";
-                            case 2, 3, 4 -> "<f:parent.condition>";
-                            default -> "instance type Expression";
-                        };
+                        String expected = d.iteration() < 4 ? "<f:condition>" : "instance type Expression";
                         assertEquals(expected, d.currentValue().toString());
-                        String linked = d.iteration() == 0 ? "this.parent:-1" : "";
-                        assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
+                        assertEquals("this.parent:2", d.variableInfo().getLinkedVariables().toString());
                         assertDv(d, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
                     } else if (fr.scopeIsThis()) {
-                        String expected = d.iteration() <= 4 ? "<f:condition>" : "instance type Expression";
+                        String expected = d.iteration() < 4 ? "<f:condition>" : "instance type Expression";
                         assertEquals(expected, d.currentValue().toString());
-                        String linked = d.iteration() == 0 ? "NOT_YET_SET" : "";
-                        assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
-                        assertDv(d, 1, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                        assertEquals("", d.variableInfo().getLinkedVariables().toString());
+                        assertDv(d, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     } else fail("Found " + fr.scope);
                 }
             }
@@ -413,7 +407,7 @@ public class Test_34_ExplicitConstructorInvocation extends CommonTestRunner {
         };
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("merge".equals(d.methodInfo().name) && "Expression".equals(d.methodInfo().typeInfo.simpleName)) {
-                assertDv(d, 1, MultiLevel.EFFECTIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
+                assertDv(d, MultiLevel.EFFECTIVELY_IMMUTABLE_HC_DV, Property.IMMUTABLE);
                 assertDv(d, DV.FALSE_DV, Property.MODIFIED_METHOD);
                 assertDv(d.p(0), DV.TRUE_DV, Property.MODIFIED_VARIABLE); // !!!!!! IMPORTANT !!!!!!
             }
@@ -421,20 +415,20 @@ public class Test_34_ExplicitConstructorInvocation extends CommonTestRunner {
                 String expected = d.iteration() == 0 ? "<m:merge>" : "/*inline merge*/new UnknownExpression(v||condition.other())";
                 // broken by Cause.SINGLE_RETURN_VALUE
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
-                assertDv(d, 1, MultiLevel.EFFECTIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
+                assertDv(d, 1, MultiLevel.EFFECTIVELY_IMMUTABLE_HC_DV, Property.IMMUTABLE);
                 assertDv(d, DV.FALSE_DV, Property.MODIFIED_METHOD);
                 assertDv(d.p(0), 1, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
             }
             if ("absolute".equals(d.methodInfo().name)) {
-                String expected = d.iteration() <= 4 ? "<m:absolute>"
+                String expected = d.iteration() < 4 ? "<m:absolute>"
                         : "null==parent?condition:condition.merge(parent.condition)";
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
-                assertDv(d, 1, DV.TRUE_DV, Property.MODIFIED_METHOD);
+                assertDv(d, DV.TRUE_DV, Property.MODIFIED_METHOD);
             }
         };
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("Expression".equals(d.typeInfo().simpleName)) {
-                assertDv(d, MultiLevel.EFFECTIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
+                assertDv(d, MultiLevel.EFFECTIVELY_IMMUTABLE_HC_DV, Property.IMMUTABLE);
             }
             if ("UnknownExpression".equals(d.typeInfo().simpleName)) {
                 assertDv(d, 1, MultiLevel.EFFECTIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
