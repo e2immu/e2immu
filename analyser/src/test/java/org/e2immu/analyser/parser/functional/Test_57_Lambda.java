@@ -25,6 +25,7 @@ import org.e2immu.analyser.model.expression.ConstructorCall;
 import org.e2immu.analyser.model.expression.InlinedMethod;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.ReturnVariable;
+import org.e2immu.analyser.model.variable.This;
 import org.e2immu.analyser.parser.CommonTestRunner;
 import org.e2immu.analyser.visitor.*;
 import org.junit.jupiter.api.Test;
@@ -109,9 +110,54 @@ public class Test_57_Lambda extends CommonTestRunner {
     public void test_2() throws IOException {
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("method".equals(d.methodInfo().name)) {
+                if (d.variable() instanceof ReturnVariable) {
+                    if ("2".equals(d.statementId())) {
+                        String linked = d.iteration() == 0 ? "f:-1,j:-1,this.i:-1,this:-1" : "";
+                        assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
+                    }
+                }
+                if (d.variable() instanceof This thisVar) {
+                    if ("Lambda_2".equals(thisVar.typeInfo.simpleName)) {
+                        if ("1".equals(d.statementId())) {
+                            String linked = d.iteration() == 0 ? "f:-1,j:-1" : "j:2";
+                            assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
+                        }
+                        if ("2".equals(d.statementId())) {
+                            String linked = d.iteration() == 0 ? "f:-1,j:-1" : "j:2";
+                            assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
+                        }
+                    } else if ("$1".equals(thisVar.typeInfo.simpleName)) {
+                        if ("1".equals(d.statementId())) {
+                            String linked = d.iteration() == 0 ? "f:-1,j:-1,this:-1" : "j:2";
+                            assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
+                        }
+                        if ("2".equals(d.statementId())) {
+                            String linked = d.iteration() == 0 ? "f:-1,j:-1,this:-1" : "j:2";
+                            assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
+                        }
+                    } else fail();
+                }
+                if (d.variable() instanceof FieldReference fr && "i".equals(fr.fieldInfo.name)) {
+                    assertTrue(fr.scopeIsThis());
+                    if ("0".equals(d.statementId())) {
+                        assertEquals("", d.variableInfo().getLinkedVariables().toString());
+                    }
+                }
                 if ("j".equals(d.variableName())) {
-                    String expect = d.iteration() == 0 ? "<m:get>" : "`this.i`";
-                    assertEquals(expect, d.currentValue().toString());
+                    if ("1".equals(d.statementId())) {
+                        String expect = d.iteration() == 0 ? "<m:get>" : "`this.i`";
+                        assertEquals(expect, d.currentValue().toString());
+                        String linked = d.iteration() == 0 ? "f:-1,this:-1" : "this:2";
+                        assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
+                    }
+                }
+                if ("f".equals(d.variableName())) {
+                    if ("0".equals(d.statementId())) {
+                        String expected = d.iteration() == 0 ? "<m:get>" : "/*inline get*/i$0";
+                        assertEquals(expected, d.currentValue().toString());
+                        String linked = d.iteration() == 0 ? "this:-1" : "";
+                        assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
+                    }
                 }
             }
         };
@@ -207,6 +253,11 @@ public class Test_57_Lambda extends CommonTestRunner {
     public void test_4() throws IOException {
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("method".equals(d.methodInfo().name)) {
+                if ("f".equals(d.variableName())) {
+                    if ("1".equals(d.statementId())) {
+                        assertEquals("", d.variableInfo().getLinkedVariables().toString());
+                    }
+                }
                 if ("j".equals(d.variableName())) {
                     if ("2".equals(d.statementId()) || "3".equals(d.statementId())) {
                         String expect = d.iteration() == 0 ? "<s:int>" : "`x.k`";
@@ -217,9 +268,11 @@ public class Test_57_Lambda extends CommonTestRunner {
                 }
                 if (d.variable() instanceof FieldReference fr && "k".equals(fr.fieldInfo.name)) {
                     if ("x".equals(fr.scope.toString())) {
+                        if ("1".equals(d.statementId())) {
+                            assertEquals("x:2", d.variableInfo().getLinkedVariables().toString());
+                        }
                         if ("3".equals(d.statementId())) {
-                            String linked = "x:2"; // FIXME changes to j:1 in iteration 1, caused by expansion of f.get()
-                            assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
+                            assertEquals("x:2", d.variableInfo().getLinkedVariables().toString());
                         }
                     }
                 }

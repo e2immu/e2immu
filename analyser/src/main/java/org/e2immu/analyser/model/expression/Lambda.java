@@ -22,6 +22,8 @@ import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.impl.BaseExpression;
 import org.e2immu.analyser.model.statement.Block;
 import org.e2immu.analyser.model.statement.ReturnStatement;
+import org.e2immu.analyser.model.variable.FieldReference;
+import org.e2immu.analyser.model.variable.This;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.output.*;
 import org.e2immu.analyser.parser.InspectionProvider;
@@ -307,11 +309,12 @@ public class Lambda extends BaseExpression implements Expression {
     @Override
     public List<Variable> variables(boolean descendIntoFieldReferences) {
         /*
-        do not return the variables of this block (goes via general method, subElements...)
-        e.g. Expressions_0.extractEquals, pattern variable eq comes out of the Lambda into the enclosing method
-
-        wait until the Lambda has become an InlinedMethod if you want access to the variables (see e.g. E2ImmutableComposition_0)
+        See Lambda_2, Lambda_4, SwitchExpression_4: we all the "this" variants that we encounter.
+        Called by DelayedExpression, original.variables(...) for the delayed version of the lambda.
          */
-        return List.of();
+        return block.variables(true).stream()
+                .filter(v -> v instanceof FieldReference fr && fr.scopeVariable instanceof This)
+                .map(v -> ((FieldReference) v).scopeVariable)
+                .toList();
     }
 }

@@ -195,7 +195,10 @@ public class LocalVariableCreation extends BaseExpression implements Expression 
 
     @Override
     public List<Variable> variables(boolean descendIntoFieldReferences) {
-        return declarations.stream().map(d -> (Variable) d.localVariableReference()).toList();
+        return declarations.stream()
+                .flatMap(d -> Stream.concat(Stream.of((Variable) d.localVariableReference()),
+                        d.expression.variables(descendIntoFieldReferences).stream()))
+                .toList();
     }
 
     @Override

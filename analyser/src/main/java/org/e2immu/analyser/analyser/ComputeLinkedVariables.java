@@ -481,7 +481,7 @@ public class ComputeLinkedVariables {
         try {
             return vic.setLinkedVariables(linkedVariables, stage);
         } catch (IllegalStateException isa) {
-            LOGGER.error("Linked variables change in illegal way in stmt {}: {}", statementAnalysis.index(), isa);
+            LOGGER.error("Linked variables change in illegal way in stmt {}", statementAnalysis.index());
             LOGGER.error("Variable: {}", variable);
             throw isa;
         }

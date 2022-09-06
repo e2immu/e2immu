@@ -80,7 +80,7 @@ public class Test_26_Enum_withAPI extends CommonTestRunner {
                 assertTrue(d.statementAnalysis().methodLevelData().linksHaveBeenEstablished());
             }
             if ("valueOf".equals(d.methodInfo().name)) {
-                assertEquals(d.iteration() >= 1, d.statementAnalysis().methodLevelData().linksHaveBeenEstablished());
+                assertEquals(d.iteration() >= 4, d.statementAnalysis().methodLevelData().linksHaveBeenEstablished());
             }
             if ("isThree".equals(d.methodInfo().name)) {
                 assertEquals(d.iteration() >= 4, d.statementAnalysis().methodLevelData().linksHaveBeenEstablished());

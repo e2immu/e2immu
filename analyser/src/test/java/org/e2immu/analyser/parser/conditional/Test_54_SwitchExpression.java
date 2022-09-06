@@ -24,6 +24,8 @@ import org.e2immu.analyser.model.expression.MethodCall;
 import org.e2immu.analyser.model.statement.IfElseStatement;
 import org.e2immu.analyser.model.statement.ReturnStatement;
 import org.e2immu.analyser.model.statement.ThrowStatement;
+import org.e2immu.analyser.model.variable.FieldReference;
+import org.e2immu.analyser.model.variable.ReturnVariable;
 import org.e2immu.analyser.parser.CommonTestRunner;
 import org.e2immu.analyser.visitor.MethodAnalyserVisitor;
 import org.e2immu.analyser.visitor.StatementAnalyserVariableVisitor;
@@ -33,8 +35,7 @@ import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 public class Test_54_SwitchExpression extends CommonTestRunner {
     public Test_54_SwitchExpression() {
@@ -91,6 +92,22 @@ public class Test_54_SwitchExpression extends CommonTestRunner {
                         assertTrue(statement instanceof ThrowStatement);
                         assertDv(d, 2, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.CONTEXT_NOT_NULL);
                     }
+                }
+                if (d.variable() instanceof FieldReference fr && "out".equals(fr.fieldInfo.name)) {
+                    assertEquals("System", fr.scope.toString());
+                    assertEquals("", d.variableInfo().getLinkedVariables().toString());
+
+                    assertDv(d, 2, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.CONTEXT_NOT_NULL);
+                }
+            }
+            if ("method".equals(d.methodInfo().name)) {
+                if (d.variable() instanceof ReturnVariable) {
+                    String expected = d.iteration() <= 1 ? "<m:apply>"
+                            : "c==`Choice.THREE`?b?\"It's \"+c:\"or \"+c:c==`Choice.TWO`?\"b\":c==`Choice.ONE`?\"a\":<return value>";
+                    assertEquals(expected, d.currentValue().toString());
+                }
+                if (d.variable() instanceof FieldReference fr && "out".equals(fr.fieldInfo.name)) {
+                    fail();
                 }
             }
         };
