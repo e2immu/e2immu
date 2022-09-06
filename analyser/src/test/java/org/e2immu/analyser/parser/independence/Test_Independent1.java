@@ -158,13 +158,54 @@ public class Test_Independent1 extends CommonTestRunner {
 
     @Test
     public void test_4() throws IOException {
+        StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+            if ("visit".equals(d.methodInfo().name)) {
+                if (d.variable() instanceof ParameterInfo pi && "consumer".equals(pi.name)) {
+                    if ("0.0.0".equals(d.statementId())) {
+                        assertEquals("", d.variableInfo().getLinkedVariables().toString());
+                    }
+                }
+                if ("t".equals(d.variableName())) {
+                    if ("0.0.0".equals(d.statementId())) {
+                        // StatementAnalysisImpl.evaluationOfForEachVariable generates the this.ts:-1,3
+                        // the "accept" call generates consumer:-1,3
+                        String linked = d.iteration() == 0 ? "consumer:-1,this.ts:-1" : "consumer:3,this.ts:3";
+                        assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
+                    }
+                }
+                if (d.variable() instanceof FieldReference fr && "ts".equals(fr.fieldInfo.name)) {
+                    assertTrue(fr.scopeIsThis());
+                    if ("0".equals(d.statementId())) {
+                        String linked = d.iteration() == 0 ? "consumer:-1" : "consumer:4";
+                        assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
+                    }
+                }
+            }
+        };
         testClass("Independent1_4", 0, 0, new DebugConfiguration.Builder()
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .build());
     }
 
     @Test
     public void test_4_1() throws IOException {
+        StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+            if ("visit".equals(d.methodInfo().name)) {
+                if (d.variable() instanceof ParameterInfo pi && "consumer".equals(pi.name)) {
+                    if ("0.0.0".equals(d.statementId())) {
+                        assertEquals("", d.variableInfo().getLinkedVariables().toString());
+                    }
+                }
+                if ("t".equals(d.variableName())) {
+                    if ("0.0.0".equals(d.statementId())) {
+                        String linked = d.iteration() == 0 ? "this.ts:-1" : "this.ts:3";
+                        assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
+                    }
+                }
+            }
+        };
         testClass("Independent1_4_1", 0, 0, new DebugConfiguration.Builder()
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .build());
     }
 

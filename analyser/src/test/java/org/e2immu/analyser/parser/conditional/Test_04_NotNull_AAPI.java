@@ -51,13 +51,13 @@ public class Test_04_NotNull_AAPI extends CommonTestRunner {
             if ("add".equals(d.methodInfo().name)) {
                 if ("node".equals(d.variableName())) {
                     if ("2".equals(d.statementId())) {
-                        String linked = d.iteration() < 2 ? "node.map:-1,this.root:0" : "node.map:3,this.root:0";
+                        String linked = d.iteration() < 2 ? "node.map:-1,strings:-1,this.root:0" : "node.map:3,this.root:0";
                         assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
                     }
                     if ("3".equals(d.statementId())) {
                         String linked = switch (d.iteration()) {
-                            case 0 -> "data:-1,node.data:-1,node.map:-1,this.root:0";
-                            case 1 -> "node.map:-1,this.root:0";
+                            case 0 -> "data:-1,node.data:-1,node.map:-1,strings:-1,this.root:0";
+                            case 1 -> "node.map:-1,strings:-1,this.root:0";
                             default -> "node.map:3,this.root:0";
                         };
                         assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
@@ -67,13 +67,13 @@ public class Test_04_NotNull_AAPI extends CommonTestRunner {
                     assertNotNull(fr.scopeVariable);
                     if ("node".equals(fr.scopeVariable.simpleName())) {
                         if ("2".equals(d.statementId())) {
-                            String linked = d.iteration() < 2 ? "node:-1,this.root:-1" : "node:2,this.root:2";
+                            String linked = d.iteration() < 2 ? "node:-1,strings:-1,this.root:-1" : "node:2,this.root:2";
                             assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
                         }
                         if ("3".equals(d.statementId())) {
                             String linked = switch (d.iteration()) {
-                                case 0 -> "data:-1,node.data:-1,node:-1,this.root:-1";
-                                case 1 -> "node:-1,this.root:-1";
+                                case 0 -> "data:-1,node.data:-1,node:-1,strings:-1,this.root:-1";
+                                case 1 -> "node:-1,strings:-1,this.root:-1";
                                 default -> "node:2,this.root:2";
                             };
                             assertEquals(linked, d.variableInfo().getLinkedVariables().toString());

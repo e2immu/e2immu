@@ -1366,6 +1366,9 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
         return cav.variableInfo().isRead() || cav.variableInfo().isAssigned();
     }
 
+    private record BackLinkForEachResult(Set<Variable> newlyCreated, CausesOfDelay delays) {
+    }
+
     private ProgressAndDelay linkingAndGroupProperties(EvaluationContext evaluationContext,
                                                        GroupPropertyValues groupPropertyValues,
                                                        Map<Variable, LinkedVariables> linkedVariablesMap,
@@ -1377,6 +1380,12 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
                                                        CausesOfDelay conditionCauses,
                                                        ProgressAndDelay delay) {
 
+        BackLinkForEachResult backLink;
+        if (statement instanceof ForEachStatement) {
+            backLink = backLinkIterable(linkedVariablesMap);
+        } else {
+            backLink = new BackLinkForEachResult(Set.of(), CausesOfDelay.EMPTY);
+        }
         for (VariableInfoContainer vic : prepareMerge.toIgnore) {
             Variable variable = vic.current().variable();
             Variable renamed = prepareMerge.renames.get(variable);
@@ -1403,7 +1412,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
                 prepareMerge.toRemove);
 
         for (Variable variable : touched) {
-            if (!linkedVariablesMap.containsKey(variable) &&
+            if ((!linkedVariablesMap.containsKey(variable) || backLink.newlyCreated.contains(variable)) &&
                     !(variable instanceof LocalVariableReference lvr && newlyCreatedScopeVariables.contains(lvr))) {
                 VariableInfoContainer vic = variables.getOrDefaultNull(variable.fullyQualifiedName());
                 assert vic != null;
@@ -1460,10 +1469,73 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
         ProgressAndDelay cmStatus = computeLinkedVariables.writeContextModified(groupPropertyValues
                 .getMap(CONTEXT_MODIFIED), conditionCauses, true);
 
-        return delay.combine(ennStatus).combine(cnnStatus).combine(cmStatus).combine(extImmStatus)
+        return delay
+                .combine(backLink.delays)
+                .combine(ennStatus).combine(cnnStatus).combine(cmStatus).combine(extImmStatus)
                 .combine(extContStatus).combine(cImmStatus).combine(cContStatus).combine(extIgnModStatus)
                 .merge(externalDelaysOnIgnoredVariables)
                 .addProgress(progress);
+    }
+
+    /*
+    Example code: 'for(T t: ts) { consumer.accept(t); }'
+    t links to consumer:3, ts:3, we want to connect consumer and ts with :4
+
+    See Independent1_4.
+    The reason we need this code is that links are unidirectional, and the links from t will disappear as the loop var
+    goes out of scope.
+    The reason we need this code HERE is that we must have the delay to consumer:-1 from the very first iteration.
+    We cannot add it during evaluationOfForEachVariable() in the first iteration, as we don't know which variable to link to.
+     */
+    private BackLinkForEachResult backLinkIterable(Map<Variable, LinkedVariables> linkedVariablesMap) {
+        IsVariableExpression ive = stateData.valueOfExpression.get().asInstanceOf(IsVariableExpression.class);
+        Set<Variable> newToLinkedVariablesMap = new HashSet<>();
+        CausesOfDelay causes = CausesOfDelay.EMPTY;
+        if (ive != null) {
+            StatementAnalysis first = navigationData.blocks.get().get(0).orElse(null);
+            StatementAnalysis last = first == null ? null : first.lastStatement();
+            if (last != null) {
+                Expression initialiser = statement.getStructure().initialisers().get(0);
+                if (initialiser instanceof LocalVariableCreation lvc) {
+                    Variable loopVar = lvc.newLocalVariables().get(0);
+                    VariableInfo latestVariableInfo = last.getLatestVariableInfo(loopVar.fullyQualifiedName());
+                    Variable iterableVar = ive.variable();
+
+                    LinkedVariables linkedOfLoopVar = latestVariableInfo.getLinkedVariables();
+                    // any --3--> link to a variable not local to the loop, we also point to the iterable as <--4-->
+
+                    for (Map.Entry<Variable, DV> e : linkedOfLoopVar) {
+                        Variable targetOfLoopVar = e.getKey();
+                        if (!targetOfLoopVar.equals(iterableVar)) {
+                            if (!linkedVariablesMap.containsKey(targetOfLoopVar)) {
+                                newToLinkedVariablesMap.add(targetOfLoopVar);
+                            }
+                            if (!linkedVariablesMap.containsKey(iterableVar)) {
+                                newToLinkedVariablesMap.add(iterableVar);
+                            }
+                            if (e.getValue().isDelayed()) {
+                                link(linkedVariablesMap, iterableVar, targetOfLoopVar, e.getValue());
+                                link(linkedVariablesMap, targetOfLoopVar, iterableVar, e.getValue());
+                                causes = causes.merge(e.getValue().causesOfDelay());
+                            } else if (LinkedVariables.LINK_IS_HC_OF.equals(e.getValue())) {
+                                link(linkedVariablesMap, iterableVar, targetOfLoopVar, LinkedVariables.LINK_COMMON_HC);
+                                link(linkedVariablesMap, targetOfLoopVar, iterableVar, LinkedVariables.LINK_COMMON_HC);
+                            }
+                        }
+                    }
+                } else throw new UnsupportedOperationException("?? expect lvc, got " + initialiser);
+            }
+        }
+        return new BackLinkForEachResult(Set.copyOf(newToLinkedVariablesMap), causes);
+    }
+
+    private void link(Map<Variable, LinkedVariables> linkedVariablesMap, Variable from, Variable to, DV linkLevel) {
+        LinkedVariables lv = linkedVariablesMap.get(from);
+        if (lv == null) {
+            linkedVariablesMap.put(from, LinkedVariables.of(to, linkLevel));
+        } else {
+            linkedVariablesMap.put(from, lv.merge(LinkedVariables.of(to, linkLevel)));
+        }
     }
 
     /*
