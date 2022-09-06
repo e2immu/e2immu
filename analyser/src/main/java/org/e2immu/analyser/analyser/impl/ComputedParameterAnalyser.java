@@ -238,37 +238,84 @@ public class ComputedParameterAnalyser extends ParameterAnalyserImpl {
          */
 
         StatementAnalysis lastStatement = analyserContext.getMethodAnalysis(parameterInfo.owner).getLastStatement();
+        DV independent = INDEPENDENT_DV;
+        CausesOfDelay delay = CausesOfDelay.EMPTY;
+
         if (lastStatement != null) {
-            VariableInfo vi = lastStatement.findOrNull(parameterInfo, Stage.MERGE);
-            if (vi != null) {
-                if (!vi.linkedVariablesIsSet()) {
-                    if (sharedState.allowBreakDelay() && vi.getLinkedVariables().causesOfDelay()
+
+            // from the parameter to one or more fields
+            VariableInfo viParam = lastStatement.findOrNull(parameterInfo, Stage.MERGE);
+            if (viParam != null) {
+                if (!viParam.linkedVariablesIsSet()) {
+                    if (sharedState.allowBreakDelay() && viParam.getLinkedVariables().causesOfDelay()
                             .containsCauseOfDelay(CauseOfDelay.Cause.LINKING)) {
-                        LOGGER.debug("Breaking delay in independent, parameter {}", parameterInfo.fullyQualifiedName);
+                        LOGGER.debug("Breaking parameter delay in independent, parameter {}", parameterInfo.fullyQualifiedName);
                         parameterAnalysis.setProperty(INDEPENDENT, INDEPENDENT_DV);
                         return DONE;
                     }
                     LOGGER.debug("Delay independent in parameter {}, waiting for linked1variables in statement {}",
                             parameterInfo.fullyQualifiedName(), lastStatement.index());
-                    CausesOfDelay delay = DelayFactory.createDelay(new VariableCause(parameterInfo, lastStatement.location(Stage.MERGE),
+                    delay = DelayFactory.createDelay(new VariableCause(parameterInfo, lastStatement.location(Stage.MERGE),
                             CauseOfDelay.Cause.LINKING));
-                    parameterAnalysis.setProperty(INDEPENDENT, delay);
-                    return delay;
+                } else {
+                    Map<FieldInfo, DV> fields = viParam.getLinkedVariables().variables().entrySet().stream()
+                            .filter(e -> e.getKey() instanceof FieldReference fr && fr.scopeIsThis())
+                            .collect(Collectors.toUnmodifiableMap(e -> ((FieldReference) e.getKey()).fieldInfo, Map.Entry::getValue));
+                    if (!fields.isEmpty()) {
+                        // The parameter is linked to some fields.
+                        DV dv = independentFromFields(immutable, fields);
+                        if (dv.isDelayed()) {
+                            delay = dv.causesOfDelay();
+                        } else {
+                            independent = dv;
+                        }
+                    }
                 }
-                Map<FieldInfo, DV> fields = vi.getLinkedVariables().variables().entrySet().stream()
-                        .filter(e -> e.getKey() instanceof FieldReference fr && fr.scopeIsThis())
-                        .collect(Collectors.toUnmodifiableMap(e -> ((FieldReference) e.getKey()).fieldInfo, Map.Entry::getValue));
-                if (!fields.isEmpty()) {
-                    // The parameter is linked to some fields.
-                    DV independent = independentFromFields(immutable, fields);
-                    parameterAnalysis.setProperty(INDEPENDENT, independent);
-                    return AnalysisStatus.of(independent);
+            }
+
+            // from fields to parameters, exposing via a functional interface (e.g. Independent1_0)
+            List<VariableInfo> vis = lastStatement.variableStream()
+                    .filter(v -> v.variable() instanceof FieldReference fr && fr.scopeIsThis())
+                    .toList();
+            for (VariableInfo vi : vis) {
+                if (!vi.linkedVariablesIsSet()) {
+                    if (sharedState.allowBreakDelay() && vi.getLinkedVariables().causesOfDelay()
+                            .containsCauseOfDelay(CauseOfDelay.Cause.LINKING)) {
+                        LOGGER.debug("Breaking parameter delay in independent, parameter {}, field {}",
+                                parameterInfo, vi.variable());
+                        parameterAnalysis.setProperty(INDEPENDENT, INDEPENDENT_DV);
+                        return DONE;
+                    }
+                    LOGGER.debug("Delay independent in parameter {}, waiting for linked1variables in statement {}",
+                            parameterInfo.fullyQualifiedName(), lastStatement.index());
+                    delay = delay.merge(DelayFactory.createDelay(new VariableCause(vi.variable(), lastStatement.location(Stage.MERGE),
+                            CauseOfDelay.Cause.LINKING)));
+                } else {
+                    DV linkToParameter = vi.getLinkedVariables().value(parameterInfo);
+                    if (linkToParameter != null) {
+                        TypeAnalysis typeAnalysis = analyserContext.getTypeAnalysis(parameterInfo.getTypeInfo());
+                        if (typeAnalysis.hiddenContentAndExplicitTypeComputationDelays().isDelayed()) {
+                            return typeAnalysis.hiddenContentAndExplicitTypeComputationDelays().causesOfDelay();
+                        }
+                        SetOfTypes hiddenContentCurrentType = typeAnalysis.getHiddenContentTypes();
+                        ComputeIndependent computeIndependent = new ComputeIndependent(analyserContext, hiddenContentCurrentType,
+                                parameterInfo.getTypeInfo().primaryType());
+
+                        DV independentOfParameter = computeIndependent.typesAtLinkLevel(linkToParameter,
+                                parameterInfo.parameterizedType, immutable, vi.variable().parameterizedType());
+                        independent = independent.min(independentOfParameter);
+                    }
                 }
             }
         }
-        // finally, no other alternative
-        parameterAnalysis.setProperty(INDEPENDENT, INDEPENDENT_DV);
-        return DONE;
+        if (delay.isDelayed()) {
+            LOGGER.debug("Delaying independent of parameter {}", parameterInfo);
+            parameterAnalysis.setProperty(INDEPENDENT, delay);
+            return AnalysisStatus.of(delay);
+        }
+        LOGGER.debug("Setting independent of parameter {} to {}", parameterInfo, independent);
+        parameterAnalysis.setProperty(INDEPENDENT, independent);
+        return AnalysisStatus.of(independent);
     }
 
     private DV independentFromFields(DV immutable, Map<FieldInfo, DV> fields) {

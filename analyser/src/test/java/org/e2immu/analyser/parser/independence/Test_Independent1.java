@@ -52,19 +52,20 @@ public class Test_Independent1 extends CommonTestRunner {
                     assertDv(d, 1, MultiLevel.INDEPENDENT_HC_DV, Property.INDEPENDENT);
                     String expected = d.iteration() == 0 ? "<p:consumer>"
                             : "nullable instance type Consumer<T>/*@Identity*//*@IgnoreMods*/";
-                    assertEquals(expected,
-                            d.currentValue().toString());
+                    assertEquals(expected, d.currentValue().toString());
                     assertDv(d, 1, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                    assertEquals("", d.variableInfo().getLinkedVariables().toString());
                 }
                 if (d.variable() instanceof FieldReference fr && "t".equals(fr.fieldInfo.name)) {
                     assertTrue(fr.scopeIsThis());
                     assertDv(d, 1, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                    assertEquals("consumer:3", d.variableInfo().getLinkedVariables().toString());
                 }
             }
         };
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("visit".equals(d.methodInfo().name)) {
-                assertDv(d.p(0), 2, MultiLevel.INDEPENDENT_HC_DV, Property.INDEPENDENT);
+                assertDv(d.p(0), 1, MultiLevel.INDEPENDENT_HC_DV, Property.INDEPENDENT);
                 // implicitly present:
                 assertDv(d.p(0), MultiLevel.IGNORE_MODS_DV, Property.IGNORE_MODIFICATIONS);
                 assertDv(d.p(0), DV.FALSE_DV, Property.MODIFIED_VARIABLE); // because of @IgnoreModifications
@@ -91,7 +92,12 @@ public class Test_Independent1 extends CommonTestRunner {
                 if (d.variable() instanceof FieldReference fr && "set".equals(fr.fieldInfo.name)) {
                     assertTrue(fr.scopeIsThis());
                     if ("1".equals(d.statementId())) {
-                        assertEquals("ts:3", d.variableInfo().getLinkedVariables().toString());
+                        assertEquals("ts:4", d.variableInfo().getLinkedVariables().toString());
+                    }
+                }
+                if (d.variable() instanceof ParameterInfo pi && "ts".equals(pi.name)) {
+                    if ("1".equals(d.statementId())) {
+                        assertEquals("this.set:4", d.variableInfo().getLinkedVariables().toString());
                     }
                 }
             }
@@ -118,7 +124,6 @@ public class Test_Independent1 extends CommonTestRunner {
     public void test_2_1() throws IOException {
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("Independent1_2_1".equals(d.typeInfo().simpleName)) {
-                // String is not transparent (new String[])
                 assertEquals("", d.typeAnalysis().getHiddenContentTypes().toString());
             }
         };
@@ -131,7 +136,6 @@ public class Test_Independent1 extends CommonTestRunner {
     public void test_2_2() throws IOException {
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("Independent1_2_2".equals(d.typeInfo().simpleName)) {
-                // String is not transparent (new String[])
                 assertEquals("", d.typeAnalysis().getHiddenContentTypes().toString());
             }
         };

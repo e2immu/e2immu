@@ -334,9 +334,10 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         // links from parameter into object
         // (the other direction, object into parameter, yields MODIFIED on the parameter)
         LinkedVariables linkedVariablesOfObject = linkedVariablesOfObject(context, objectValue);
+        List<LinkedVariables> linkedVariablesOfParameters;
         if (!linkedVariablesOfObject.isEmpty()) {
-            List<LinkedVariables> linkedVariablesOfParameters =
-                    ConstructorCall.computeLinkedVariablesOfParameters(context, parameterExpressions, parameterValues);
+            linkedVariablesOfParameters = ConstructorCall.computeLinkedVariablesOfParameters(context,
+                    parameterExpressions, parameterValues);
             Map<ParameterInfo, LinkedVariables> linksToLinkedToObject = firstInCallCycle ? Map.of() :
                     ConstructorCall.fromParameterIntoObject(context,
                             context.getAnalyserContext().getMethodInspection(methodInfo),
@@ -355,11 +356,12 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
                     }
                 }
             }
+        } else {
+            linkedVariablesOfParameters = null; // compute later, we don't want to compute if not needed
         }
 
         // links between parameters
-        // FIXME implement
-        // linksBetweenParameters(builder, context, concreteMethod, methodAnalysis, parameterValues, linkedVariablesOfParameters);
+        linksBetweenParameters(builder, context, concreteMethod, methodAnalysis, parameterValues, linkedVariablesOfParameters);
 
         // increment the time, irrespective of NO_VALUE
         CausesOfDelay incrementDelays;
@@ -507,6 +509,10 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
                                        List<LinkedVariables> linkedVariables) {
         // key is dependent on values, but only if all of them are variable expressions
         Map<ParameterInfo, LinkedVariables> crossLinks = concreteMethod.crossLinks(context.getAnalyserContext());
+        if (crossLinks.isEmpty()) return;
+        List<LinkedVariables> linkedVariablesOfParameters = linkedVariables == null
+                ? ConstructorCall.computeLinkedVariablesOfParameters(context, parameterExpressions, parameterValues)
+                : linkedVariables;
         crossLinks.forEach((pi, lv) -> lv.stream().forEach(e -> {
             ParameterInfo target = (ParameterInfo) e.getKey();
             boolean targetIsVarArgs = target.parameterInspection.get().isVarArgs();
@@ -519,7 +525,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
                 DV linkTargetIsModified = methodAnalysis == null ? DV.TRUE_DV // for testing
                         : methodAnalysis.getParameterAnalyses().get(target.index).getProperty(Property.MODIFIED_VARIABLE);
                 tryLinkBetweenParameters(builder, context, targetVariable, target.index, targetIsVarArgs, level, expression,
-                        linkTargetIsModified, parameterValues, linkedVariables);
+                        linkTargetIsModified, parameterValues, linkedVariablesOfParameters);
             }
         }));
     }
@@ -550,6 +556,11 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         return null;
     }
 
+    /*
+    example Independent1_2_1
+    target = ts, index 0, not varargs, linked 4=common_hc to generator, index 1;
+    target ts is modified; values are new String[4] and generator, linked variables are this.ts:2 and generator:2
+     */
     private void tryLinkBetweenParameters(EvaluationResult.Builder builder,
                                           EvaluationResult context,
                                           Variable target,
@@ -563,20 +574,24 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         IsVariableExpression vSource = source.asInstanceOf(IsVariableExpression.class);
         if (vSource != null) {
             // Independent1_2, DependentVariables_1
-            ParameterizedType typeOfHiddenContent = findHiddenContentType(context.getAnalyserContext(),
-                    vSource.variable().parameterizedType());
-            linksBetweenParametersVarArgs(builder, context, targetIndex, targetIsVarArgs, level, vSource,
-                    linkTargetIsModified, typeOfHiddenContent, parameterValues, linkedVariables);
+            SetOfTypes typesOfHiddenContent = context.getAnalyserContext()
+                    .hiddenContentTypes(vSource.variable().parameterizedType());
+            for (ParameterizedType typeOfHiddenContent : typesOfHiddenContent.types()) {
+                linksBetweenParametersVarArgs(builder, context, targetIndex, targetIsVarArgs, level, vSource,
+                        linkTargetIsModified, typeOfHiddenContent, parameterValues, linkedVariables);
+            }
         }
         MethodReference methodReference = source.asInstanceOf(MethodReference.class);
         if (methodReference != null) {
             // Independent1_3
             IsVariableExpression mrSource = methodReference.scope.asInstanceOf(IsVariableExpression.class);
             if (mrSource != null) {
-                ParameterizedType typeOfHiddenContent = findHiddenContentType(context.getAnalyserContext(),
-                        mrSource.variable().parameterizedType());
-                linksBetweenParametersVarArgs(builder, context, targetIndex, targetIsVarArgs, level, mrSource,
-                        linkTargetIsModified, typeOfHiddenContent, parameterValues, linkedVariables);
+                SetOfTypes typesOfHiddenContent = context.getAnalyserContext()
+                        .hiddenContentTypes(mrSource.variable().parameterizedType());
+                for (ParameterizedType typeOfHiddenContent : typesOfHiddenContent.types()) {
+                    linksBetweenParametersVarArgs(builder, context, targetIndex, targetIsVarArgs, level, mrSource,
+                            linkTargetIsModified, typeOfHiddenContent, parameterValues, linkedVariables);
+                }
             }
         }
         InlinedMethod inlinedMethod = source.asInstanceOf(InlinedMethod.class);
@@ -618,25 +633,6 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
                 }
             }
         }
-    }
-
-    // TODO this is HORRIBLY ad-hoc, use analysisProvider.immutableOfHiddenContent
-    private ParameterizedType findHiddenContentType(AnalyserContext analyserContext, ParameterizedType type) {
-        if (type.isFunctionalInterface(analyserContext)) {
-            ParameterizedType returnType = type.findSingleAbstractMethodOfInterface(analyserContext)
-                    .getConcreteReturnType(analyserContext.getPrimitives());
-            return findHiddenContentType(analyserContext, returnType);
-        }
-        if (type.arrays > 0) {
-            return type.copyWithoutArrays();
-        }
-        if (type.typeParameter != null) {
-            return type.copyWithOneFewerArrays();
-        }
-        if (type.parameters.size() == 1) {
-            return type.parameters.get(0);
-        }
-        return type;
     }
 
     private void linksBetweenParametersVarArgs(EvaluationResult.Builder builder,
@@ -839,7 +835,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
                                 i = null;
                             }
                             if (i != null) {
-                                //FIXME LinkedVariables lv = context.evaluationContext().linkedVariables(variable);
+                                // keep existing linked variables!!!
                                 builder.modifyingMethodAccess(variable, i, null);
                             }
                         }

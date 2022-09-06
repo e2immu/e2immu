@@ -211,6 +211,26 @@ public interface AnalyserContext extends AnalysisProvider, InspectionProvider {
     }
 
     /*
+    Front method for typeAnalysis.getHiddenContentTypes(), when there may not be a type.
+
+    T, T[], T[][]  --> T
+    Function<T, R> --> hidden content(R)
+     */
+    default SetOfTypes hiddenContentTypes(ParameterizedType type) {
+        if (type.isFunctionalInterface(this)) {
+            ParameterizedType returnType = type.findSingleAbstractMethodOfInterface(this)
+                    .getConcreteReturnType(getPrimitives());
+            return hiddenContentTypes(returnType);
+        }
+        if (type.typeParameter != null) {
+            return new SetOfTypes(Set.of(type.copyWithoutArrays()));
+        }
+        TypeAnalysis typeAnalysis = getTypeAnalysis(type.bestTypeInfo());
+        return typeAnalysis.getHiddenContentTypes();
+    }
+
+
+    /*
     Intersection of hidden content types.
 
     The default implementation would be to compute a set-wise intersection; e.g., if we're computing the hidden content

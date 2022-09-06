@@ -270,7 +270,7 @@ public class Test_ExternalContainer extends CommonTestRunner {
                 assertDv(d, 3, MultiLevel.CONTAINER_DV, Property.EXTERNAL_CONTAINER);
             }
             if ("myContainerLinkedToParameter".equals(d.fieldInfo().name)) {
-                assertDv(d, 6, MultiLevel.NOT_CONTAINER_DV, Property.EXTERNAL_CONTAINER);
+                assertDv(d, 7, MultiLevel.NOT_CONTAINER_DV, Property.EXTERNAL_CONTAINER);
             }
             if ("iField".equals(d.fieldInfo().name)) {
                 assertDv(d, 1, MultiLevel.CONTAINER_DV, Property.EXTERNAL_CONTAINER);

@@ -161,7 +161,8 @@ public record ComputeIndependent(AnalyserContext analyserContext,
             // delay
             return typeAnalysisBig.hiddenContentAndExplicitTypeComputationDelays();
         }
-        if (typeAnalysisBig.getHiddenContentTypes().translate(analyserContext, big).contains(small)) {
+        ParameterizedType smallWithoutArrays = small.copyWithoutArrays();
+        if (typeAnalysisBig.getHiddenContentTypes().translate(analyserContext, big).contains(smallWithoutArrays)) {
             TypeInfo typeInfoSmall = small.typeInfo;
             if (typeInfoSmall == null) {
                 // unbound type parameter is always immutable with hidden content
@@ -219,7 +220,10 @@ public record ComputeIndependent(AnalyserContext analyserContext,
         TypeInfo b2 = pt2.bestTypeInfo();
         if (b1 == null && b2 == null) {
             // two unbound type parameters
-            assert pt1.equals(pt2) : "curious to see when this happens";
+            if (pt1.arrays == 0 && pt2.arrays > 0 || pt1.arrays > 0 && pt2.arrays == 0) {
+                return LINK_IS_HC_OF;
+            }
+            assert pt1.typeParameter != null && pt1.typeParameter.equals(pt2.typeParameter);
             return LinkedVariables.LINK_COMMON_HC;
         }
         if (b2 != null) {
