@@ -14,6 +14,7 @@
 
 package org.e2immu.analyser.parser.minor.testexample;
 
+import org.e2immu.annotation.Immutable;
 import org.e2immu.annotation.ImmutableContainer;
 import org.e2immu.annotation.Modified;
 import org.e2immu.annotation.eventual.BeforeMark;
@@ -22,7 +23,7 @@ import org.e2immu.annotation.eventual.Only;
 import org.e2immu.annotation.rare.Finalizer;
 import org.e2immu.support.EventuallyFinal;
 
-@ImmutableContainer(after = "eventuallyFinal")
+@Immutable(after = "eventuallyFinal")
 public class Finalizer_1 {
 
     /*

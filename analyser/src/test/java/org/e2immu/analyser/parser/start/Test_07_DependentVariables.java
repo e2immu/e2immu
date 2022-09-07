@@ -166,11 +166,13 @@ public class Test_07_DependentVariables extends CommonTestRunner {
                 assertTrue(d.methodInfo().isConstructor);
                 if (d.variable() instanceof ParameterInfo p && "p".equals(p.name)) {
                     if("1".equals(d.statementId())) {
-                        String expected = d.iteration() <= 1 ? "<p:p>" : "nullable instance type X[]/*@Identity*/";
+                        String expected =  "nullable instance type X[]/*@Identity*/";
                         assertEquals(expected, d.currentValue().toString());
+                        assertEquals("this.xs:4", d.variableInfo().getLinkedVariables().toString());
                     }
                 }
                 if (d.variable() instanceof FieldReference fr && "xs".equals(fr.fieldInfo.name)) {
+                    assertTrue(fr.scopeIsThis());
                     if ("0".equals(d.statementId())) {
                         assertTrue(d.currentValue() instanceof ConstructorCall);
                         assertEquals("new X[p.length]", d.currentValue().toString());
@@ -178,8 +180,7 @@ public class Test_07_DependentVariables extends CommonTestRunner {
                     }
                     if ("1".equals(d.statementId())) {
                         // no link, because the link target (p) is @NotModified in System.arraycopy
-                        String expectLv = d.iteration() <= 1 ? "p:-1" : "";
-                        assertEquals(expectLv, d.variableInfo().getLinkedVariables().toString());
+                        assertEquals("p:4", d.variableInfo().getLinkedVariables().toString());
                     }
                 }
             }
@@ -191,7 +192,7 @@ public class Test_07_DependentVariables extends CommonTestRunner {
             }
             if ("XS".equals(d.methodInfo().name)) {
                 assertTrue(d.methodInfo().isConstructor);
-                assertDv(d.p(0), 3, MultiLevel.DEPENDENT_DV, Property.INDEPENDENT);
+                assertDv(d.p(0), 2, MultiLevel.DEPENDENT_DV, Property.INDEPENDENT);
             }
         };
 
@@ -206,9 +207,7 @@ public class Test_07_DependentVariables extends CommonTestRunner {
 
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
             if ("xs".equals(d.fieldInfo().name)) {
-                String expectLinked = d.iteration() <= 1 ? "p:-1" : "xs[index]:2";
-                assertEquals(expectLinked, d.fieldAnalysis().getLinkedVariables().toString());
-                assertEquals(d.iteration() <= 1, d.fieldAnalysis().getLinkedVariables().isDelayed());
+                assertEquals("p:4", d.fieldAnalysis().getLinkedVariables().toString());
                 assertEquals("instance type X[]", d.fieldAnalysis().getValue().toString());
                 assertDv(d, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.EXTERNAL_NOT_NULL);
             }
@@ -230,7 +229,20 @@ public class Test_07_DependentVariables extends CommonTestRunner {
 
     @Test
     public void test_1_1() throws IOException {
+        StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d-> {
+            if ("XS".equals(d.methodInfo().name)) {
+                assertTrue(d.methodInfo().isConstructor);
+                if (d.variable() instanceof ParameterInfo p && "p".equals(p.name)) {
+                    if ("1".equals(d.statementId())) {
+                        String expected = "nullable instance type X[]/*@Identity*/";
+                        assertEquals(expected, d.currentValue().toString());
+                        assertEquals("this.xs:4", d.variableInfo().getLinkedVariables().toString());
+                    }
+                }
+            }
+        };
         testClass("DependentVariables_1_1", 0, 0, new DebugConfiguration.Builder()
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .build());
     }
 
@@ -243,15 +255,14 @@ public class Test_07_DependentVariables extends CommonTestRunner {
                 assertTrue(d.methodInfo().isConstructor);
                 if (d.variable() instanceof FieldReference fr && "xs".equals(fr.fieldInfo.name)) {
                     if ("1".equals(d.statementId())) {
-                        String expectLinked = d.iteration() == 0 ? "xs:-1" : "xs:3";
-                        assertEquals(expectLinked, d.variableInfo().getLinkedVariables().toString());
+                        assertEquals("xs:4", d.variableInfo().getLinkedVariables().toString());
                     }
                 }
             }
             if ("getX".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof ReturnVariable) {
                     String expectLinked = switch (d.iteration()) {
-                        case 0, 1 -> "index:-1,this.xs:-1,xs[index]:-1";
+                        case 0, 1, 2 -> "index:-1,this.xs:-1,xs[index]:-1";
                         default -> "this.xs:2,xs[index]:1";
                     };
                     assertEquals(expectLinked, d.variableInfo().getLinkedVariables().toString());
@@ -262,7 +273,7 @@ public class Test_07_DependentVariables extends CommonTestRunner {
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
             if ("xs".equals(d.fieldInfo().name)) {
                 String linked = d.iteration() == 0 ? "xs:-1" : "xs:3";
-                assertEquals(linked, d.fieldAnalysis().getLinkedVariables().toString());
+                assertEquals("xs:4", d.fieldAnalysis().getLinkedVariables().toString());
             }
         };
 
@@ -274,10 +285,9 @@ public class Test_07_DependentVariables extends CommonTestRunner {
 
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("getX".equals(d.methodInfo().name)) {
-                String expected = d.iteration() <= 1 ? "<m:getX>" : "/*inline getX*/xs[index]";
+                String expected = d.iteration() <= 2 ? "<m:getX>" : "/*inline getX*/xs[index]";
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
-                // has to be DEPENDENT, because X is not transparent
-                assertDv(d, 2, MultiLevel.DEPENDENT_DV, Property.INDEPENDENT);
+                assertDv(d, 3, MultiLevel.DEPENDENT_DV, Property.INDEPENDENT);
             }
             if ("XS".equals(d.methodInfo().name)) {
                 assertTrue(d.methodInfo().isConstructor);

@@ -206,7 +206,7 @@ public class TestLinkingExpression {
                 new TypeExpression(Identifier.CONSTANT, collectionInteger, Diamond.NO), addAll, parameterValues);
         assertEquals("Collection.addAll(v,i,j)", methodCall.toString());
         EvaluationResult.Builder builder = new EvaluationResult.Builder(context);
-        methodCall.linksBetweenParameters(builder, context, methodCall.methodInfo, null, parameterValues,
+        methodCall.linksBetweenParameters(builder, context, methodCall.methodInfo, parameterValues,
                 // no prior additional links, not that any would be possible
                 List.of(LinkedVariables.of(Map.of(v, LinkedVariables.LINK_ASSIGNED)),
                         LinkedVariables.of(Map.of(i, LinkedVariables.LINK_ASSIGNED)),
@@ -240,7 +240,7 @@ public class TestLinkingExpression {
         assertEquals("Collection.addAll(v,i,j)", methodCall.toString());
 
         EvaluationResult.Builder builder = new EvaluationResult.Builder(context);
-        methodCall.linksBetweenParameters(builder, context, methodCall.methodInfo, null, parameterValues,
+        methodCall.linksBetweenParameters(builder, context, methodCall.methodInfo, parameterValues,
                 // no prior additional links
                 List.of(LinkedVariables.of(Map.of(v, LinkedVariables.LINK_ASSIGNED)),
                         LinkedVariables.of(Map.of(i, LinkedVariables.LINK_ASSIGNED)),

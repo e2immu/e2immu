@@ -78,7 +78,7 @@ public record ComputeIndependent(AnalyserContext analyserContext,
         if (LINK_DEPENDENT.equals(linkLevel)) return MultiLevel.DEPENDENT_DV;
 
         assert LINK_IS_HC_OF.equals(linkLevel) || LINK_COMMON_HC.equals(linkLevel);
-        DV immutableOfIntersection = immutableOfIntersection(a, b);
+        DV immutableOfIntersection = immutableOfIntersectionOfHiddenContent(a, b);
         return MultiLevel.independentCorrespondingToImmutable(immutableOfIntersection);
     }
 
@@ -91,12 +91,20 @@ public record ComputeIndependent(AnalyserContext analyserContext,
         return immutableA.max(immutableB);
     }
 
-    private DV immutableOfIntersection(ParameterizedType pt1, ParameterizedType pt2) {
+    private DV immutableOfIntersectionOfHiddenContent(ParameterizedType pt1, ParameterizedType pt2) {
+        if (pt1.equals(pt2) && pt1.arrays > 0) {
+            /*
+             Independent1_1, Set<T> vs Set<T>, we want the immutable value of T, not of Set; this rule does NOT apply
+             DependentVariables_2, X[] and X[], we want the immutable value of X; this rule does apply
+             */
+            return analyserContext.typeImmutable(pt1.copyWithoutArrays());
+        }
+
         TypeInfo b1 = pt1.bestTypeInfo();
         TypeInfo b2 = pt2.bestTypeInfo();
         if (b1 == null && b2 == null) {
             // two unbound type parameters
-            assert pt1.equals(pt2) : "curious to see when this happens";
+            assert pt1.typeParameter != null && pt1.typeParameter.equals(pt2.typeParameter);
             return MultiLevel.EFFECTIVELY_IMMUTABLE_HC_DV;
         }
         if (b2 != null) {
@@ -121,6 +129,7 @@ public record ComputeIndependent(AnalyserContext analyserContext,
             // no info
             return MultiLevel.EFFECTIVELY_IMMUTABLE_DV;
         }
+
         CausesOfDelay causes = t1.hiddenContentAndExplicitTypeComputationDelays().causesOfDelay()
                 .merge(t2.hiddenContentAndExplicitTypeComputationDelays().causesOfDelay());
         if (causes.isDelayed()) {
@@ -131,7 +140,7 @@ public record ComputeIndependent(AnalyserContext analyserContext,
 
         if (intersection.isEmpty()) {
             // no intersection between
-            return MultiLevel.INDEPENDENT_DV;
+            return MultiLevel.EFFECTIVELY_IMMUTABLE_DV;
         }
 
         DV min = MultiLevel.EFFECTIVELY_IMMUTABLE_DV;
@@ -201,7 +210,7 @@ public record ComputeIndependent(AnalyserContext analyserContext,
      * @return either DEPENDENT, IS_HC_OF, COMMON_HC, or INDEPENDENT, or a delay when we're waiting for immutable
      */
     public DV linkLevelOfTwoHCRelatedTypes(ParameterizedType pt1, ParameterizedType pt2) {
-        if (pt1.equals(pt2)) {
+        if (pt1.equals(pt2) && pt1.arrays > 0) {
             return LINK_COMMON_HC;
         }
 
@@ -218,7 +227,7 @@ public record ComputeIndependent(AnalyserContext analyserContext,
         }
 
         if (b2 != null) {
-            if(b2.equals(b1)) {
+            if (b2.equals(b1)) {
                 if (pt1.arrays == 0 && pt2.arrays > 0 || pt1.arrays > 0 && pt2.arrays == 0) {
                     return LINK_IS_HC_OF;
                 }
