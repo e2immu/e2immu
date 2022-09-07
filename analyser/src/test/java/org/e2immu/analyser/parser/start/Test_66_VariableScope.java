@@ -540,7 +540,7 @@ public class Test_66_VariableScope extends CommonTestRunner {
                         assertEquals(expected, d.currentValue().toString());
                     }
                     if ("3".equals(d.statementId())) {
-                        String expected = d.iteration() == 0 ? "<s:VariableScope_7>" : "instance type VariableScope_7";
+                        String expected = d.iteration() == 0 ? "<s:VariableScope_7>" : "new VariableScope_7()";
                         assertEquals(expected, d.currentValue().toString());
 
                         assertEquals("m.messages:4,other.messages:4,other:4",
@@ -958,7 +958,7 @@ public class Test_66_VariableScope extends CommonTestRunner {
                 if (d.variable() instanceof ReturnVariable) {
                     if ("0.0.0".equals(d.statementId())) {
                         String expected = d.iteration() == 0 ? "s.length()==<f:x.i>?<f:x.i>:<return value>"
-                                : "s.length()==x.i?s.length()/*{L i:statically_assigned:0,x:dependent:2}*/:<return value>";
+                                : "s.length()==x.i?s.length()/*{L i:statically_assigned:0,x:is_hc_of:3}*/:<return value>";
                         assertEquals(expected, d.currentValue().toString());
                         String linked = d.iteration() == 0 ? "x.i:0,x:-1,xs:-1" : "x.i:0,x:2";
                         assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
@@ -966,7 +966,7 @@ public class Test_66_VariableScope extends CommonTestRunner {
                     if ("0".equals(d.statementId())) {
                         String expected = d.iteration() == 0
                                 ? "xs.isEmpty()||s.length()!=<dv:scope-x:0.i>?<return value>:<dv:scope-x:0.i>"
-                                : "xs.isEmpty()||s.length()!=scope-x:0.i?<return value>:s.length()/*{L i:statically_assigned:0,x:dependent:2}*/";
+                                : "xs.isEmpty()||s.length()!=scope-x:0.i?<return value>:s.length()/*{L i:statically_assigned:0,x:is_hc_of:3}*/";
                         assertEquals(expected, d.currentValue().toString());
                         String linked = d.iteration() == 0 ? "scope-x:0.i:0,scope-x:0:-1,xs:-1" : "scope-x:0.i:0,scope-x:0:2";
                         assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
@@ -974,7 +974,7 @@ public class Test_66_VariableScope extends CommonTestRunner {
                     if ("1".equals(d.statementId())) {
                         String expected = d.iteration() == 0
                                 ? "<m:isEmpty>||<dv:scope-x:0.i>!=<m:length>?0:<dv:scope-x:0.i>"
-                                : "xs.isEmpty()||s.length()!=scope-x:0.i?0:s.length()/*{L i:statically_assigned:0,x:dependent:2}*/";
+                                : "xs.isEmpty()||s.length()!=scope-x:0.i?0:s.length()/*{L i:statically_assigned:0,x:is_hc_of:3}*/";
                         assertEquals(expected, d.currentValue().toString());
                         String linked = d.iteration() == 0 ? "s:-1,scope-x:0.i:0,scope-x:0:-1,xs:-1" : "scope-x:0.i:0,scope-x:0:2";
                         assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
@@ -1036,19 +1036,19 @@ public class Test_66_VariableScope extends CommonTestRunner {
                 if (d.variable() instanceof ReturnVariable) {
                     if ("0.0.0".equals(d.statementId())) {
                         String expected = d.iteration() <= 1 ? "s.length()==<f:x.i>?<f:x.i>:<return value>"
-                                : "s.length()==y/*(X)*/.i$0?s.length()/*{L i:statically_assigned:0,x:dependent:2}*/:<return value>";
+                                : "s.length()==y/*(X)*/.i$0?s.length()/*{L i:statically_assigned:0,x:is_hc_of:3}*/:<return value>";
                         assertEquals(expected, d.currentValue().toString());
                     }
                     if ("0".equals(d.statementId())) {
                         String expected = d.iteration() <= 1
                                 ? "y instanceof X&&null!=y&&s.length()==<dv:scope-x:0.i>?<dv:scope-x:0.i>:<return value>"
-                                : "y instanceof X&&null!=y&&s.length()==scope-x:0.i?s.length()/*{L i:statically_assigned:0,x:dependent:2}*/:<return value>";
+                                : "y instanceof X&&null!=y&&s.length()==scope-x:0.i?s.length()/*{L i:statically_assigned:0,x:is_hc_of:3}*/:<return value>";
                         assertEquals(expected, d.currentValue().toString());
                     }
                     if ("1".equals(d.statementId())) {
                         String expected = d.iteration() <= 1
                                 ? "y instanceof X&&null!=y&&<dv:scope-x:0.i>==<m:length>?<dv:scope-x:0.i>:0"
-                                : "y instanceof X&&null!=y&&s.length()==y/*(X)*/.i$1?s.length()/*{L i:statically_assigned:0,x:dependent:2}*/:0";
+                                : "y instanceof X&&null!=y&&s.length()==y/*(X)*/.i$1?s.length()/*{L i:statically_assigned:0,x:is_hc_of:3}*/:0";
                         assertEquals(expected, d.currentValue().toString());
                     }
                 }

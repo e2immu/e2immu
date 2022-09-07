@@ -163,18 +163,7 @@ public record ComputeIndependent(AnalyserContext analyserContext,
         }
         ParameterizedType smallWithoutArrays = small.copyWithoutArrays();
         if (typeAnalysisBig.getHiddenContentTypes().translate(analyserContext, big).contains(smallWithoutArrays)) {
-            TypeInfo typeInfoSmall = small.typeInfo;
-            if (typeInfoSmall == null) {
-                // unbound type parameter is always immutable with hidden content
-                return MultiLevel.EFFECTIVELY_IMMUTABLE_HC_DV;
-            }
-            TypeAnalysis typeAnalysisSmall = analyserContext.getTypeAnalysisNullWhenAbsent(typeInfoSmall);
-            if (typeAnalysisSmall == null) {
-                // no info
-                return MultiLevel.EFFECTIVELY_IMMUTABLE_DV;
-            }
-            // immutable of intersection = immutable of small type
-            return typeAnalysisSmall.getProperty(Property.IMMUTABLE);
+            return analyserContext.typeImmutable(smallWithoutArrays);
         }
         return null; // try something else
     }
@@ -218,6 +207,7 @@ public record ComputeIndependent(AnalyserContext analyserContext,
 
         TypeInfo b1 = pt1.bestTypeInfo();
         TypeInfo b2 = pt2.bestTypeInfo();
+
         if (b1 == null && b2 == null) {
             // two unbound type parameters
             if (pt1.arrays == 0 && pt2.arrays > 0 || pt1.arrays > 0 && pt2.arrays == 0) {
@@ -226,14 +216,22 @@ public record ComputeIndependent(AnalyserContext analyserContext,
             assert pt1.typeParameter != null && pt1.typeParameter.equals(pt2.typeParameter);
             return LinkedVariables.LINK_COMMON_HC;
         }
+
         if (b2 != null) {
-            DV dv = smallInsideBig(pt1, pt2, b2);
+            if(b2.equals(b1)) {
+                if (pt1.arrays == 0 && pt2.arrays > 0 || pt1.arrays > 0 && pt2.arrays == 0) {
+                    return LINK_IS_HC_OF;
+                }
+                return LINK_COMMON_HC;
+            }
+
+            DV dv = linkLevelSmallInsideBig(pt1, pt2, b2);
             if (dv != null) {
                 return dv;
             }
         }
         if (b1 != null) {
-            DV dv = smallInsideBig(pt2, pt1, b1);
+            DV dv = linkLevelSmallInsideBig(pt2, pt1, b1);
             if (dv != null) {
                 return dv;
             }
@@ -273,18 +271,15 @@ public record ComputeIndependent(AnalyserContext analyserContext,
 
     the link level
      */
-    private DV smallInsideBig(ParameterizedType small, ParameterizedType big, TypeInfo typeInfoBig) {
+    private DV linkLevelSmallInsideBig(ParameterizedType small, ParameterizedType big, TypeInfo typeInfoBig) {
         TypeAnalysis typeAnalysisBig = analyserContext.getTypeAnalysisNullWhenAbsent(typeInfoBig);
         if (typeAnalysisBig == null) return LinkedVariables.LINK_INDEPENDENT;
         if (typeAnalysisBig.hiddenContentAndExplicitTypeComputationDelays().isDelayed()) {
             return typeAnalysisBig.hiddenContentAndExplicitTypeComputationDelays();
         }
-        if (typeAnalysisBig.getHiddenContentTypes().translate(analyserContext, big).contains(small)) {
-            TypeInfo typeInfoSmall = small.typeInfo;
-            if (typeInfoSmall == null) return LINK_IS_HC_OF;
-            TypeAnalysis typeAnalysisSmall = analyserContext.getTypeAnalysisNullWhenAbsent(typeInfoSmall);
-            if (typeAnalysisSmall == null) return LinkedVariables.LINK_INDEPENDENT;
-            DV immutable = typeAnalysisSmall.getProperty(Property.IMMUTABLE);
+        ParameterizedType smallWithoutArrays = small.copyWithoutArrays();
+        if (typeAnalysisBig.getHiddenContentTypes().translate(analyserContext, big).contains(smallWithoutArrays)) {
+            DV immutable = analyserContext.typeImmutable(smallWithoutArrays);
             if (MultiLevel.isMutable(immutable)) return LINK_DEPENDENT;
             if (MultiLevel.isAtLeastEventuallyRecursivelyImmutable(immutable)) return LINK_INDEPENDENT;
             return LinkedVariables.LINK_IS_HC_OF;

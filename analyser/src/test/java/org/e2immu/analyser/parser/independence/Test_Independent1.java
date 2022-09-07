@@ -18,6 +18,7 @@ package org.e2immu.analyser.parser.independence;
 
 import org.e2immu.analyser.analyser.DV;
 import org.e2immu.analyser.analyser.Property;
+import org.e2immu.analyser.analyser.VariableInfo;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.ParameterInfo;
@@ -222,7 +223,6 @@ public class Test_Independent1 extends CommonTestRunner {
                                 d.currentValue().toString());
                         String linked = switch (d.iteration()) {
                             case 0, 1 -> "one:-1,this.ones:-1";
-                            case 2 -> "one:-1";
                             default -> "";
                         };
                         assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
@@ -232,7 +232,6 @@ public class Test_Independent1 extends CommonTestRunner {
                     if ("0.0.0".equals(d.statementId())) {
                         String linked = switch (d.iteration()) {
                             case 0, 1 -> "consumer:-1,this.ones:-1";
-                            case 2 -> "consumer:-1";
                             default -> "";
                         };
                         assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
@@ -248,7 +247,7 @@ public class Test_Independent1 extends CommonTestRunner {
             if ("ImmutableArrayOfTransparentOnes".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof ParameterInfo pi && "generator".equals(pi.name)) {
                     if ("1".equals(d.statementId())) {
-                        String linked = d.iteration() < 2 ? "this.ones:-1" : "";
+                        String linked = d.iteration() < 2 ? "this.ones:-1" : "this.ones:4";
                         assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
                     }
                 }
@@ -293,11 +292,23 @@ public class Test_Independent1 extends CommonTestRunner {
             if ("visit".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof ParameterInfo pi && "consumer".equals(pi.name)) {
                     if ("0.0.0".equals(d.statementId())) {
-                        String linked = d.iteration() <= 2 ? "one:-1,this.ones:-1" : "one:3,this.ones:3";
+                        String linked = d.iteration() < 2 ? "one:-1,this.ones:-1" : "";
                         assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
                     }
                     if ("0".equals(d.statementId())) {
-                        String linked = d.iteration() <= 2 ? "this.ones:-1" : "this.ones:3";
+                        String linked = d.iteration() < 3 ? "this.ones:-1" : "this.ones:4";
+                        assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
+                    }
+                }
+                if ("one".equals(d.variableName())) {
+                    if ("0.0.0".equals(d.statementId())) {
+                        VariableInfo eval0 = d.variableInfoContainer().getPreviousOrInitial();
+                        // set in StatementAnalysisImpl.evaluationOfForEachVariable
+                        String linkedOE = d.iteration() < 3 ? "this.ones:-1" : "this.ones:3";
+                        assertEquals(linkedOE, eval0.getLinkedVariables().toString());
+
+                        // consumer comes in via the method call, this.ones via statement 0, evaluation
+                        String linked = d.iteration() < 3 ? "consumer:-1,this.ones:-1" : "consumer:3,this.ones:3";
                         assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
                     }
                 }
@@ -305,9 +316,17 @@ public class Test_Independent1 extends CommonTestRunner {
             if ("ImmutableArrayOfOnes".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof ParameterInfo pi && "generator".equals(pi.name)) {
                     if ("1".equals(d.statementId())) {
-                        String linked = d.iteration() < 2 ? "this.ones:-1" : "this.ones:3";
+                        String linked = d.iteration() < 2 ? "this.ones:-1" : "this.ones:4";
                         assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
                     }
+                }
+            }
+            if ("get".equals(d.methodInfo().name)) {
+                if (d.variable() instanceof ReturnVariable) {
+                    String linked = d.iteration() < 3
+                            ? "index:-1,ones[index]:-1,this.ones:-1"
+                            : "ones[index]:1,this.ones:3";
+                    assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
                 }
             }
         };

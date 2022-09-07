@@ -19,6 +19,7 @@ import org.e2immu.analyser.config.AnalyserConfiguration;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.ParameterInfo;
+import org.e2immu.analyser.model.ParameterizedType;
 import org.e2immu.analyser.model.TypeInfo;
 import org.e2immu.analyser.model.variable.*;
 import org.e2immu.analyser.parser.CommonTestRunner;
@@ -513,7 +514,7 @@ public class Test_51_InstanceOf extends CommonTestRunner {
                         assertDv(d, 2, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                         String expected = switch (d.iteration()) {
                             case 0, 1 -> "ne.expression:-1,ne:-1,x:-1";
-                            default -> "ne.expression:2,ne:1,x:2";
+                            default -> "ne:1";
                         };
                         assertEquals(expected, d.variableInfo().getLinkedVariables().toString());
                         assertDv(d, MultiLevel.NULLABLE_DV, Property.CONTEXT_NOT_NULL);
@@ -565,7 +566,7 @@ public class Test_51_InstanceOf extends CommonTestRunner {
                         assertEquals(expected, d.currentValue().toString());
                         String expectLv = switch (d.iteration()) {
                             case 0, 1 -> "expression:-1,ne.expression:-1,x:-1";
-                            default -> "expression:1,ne.expression:2,x:2";
+                            default -> "expression:1";
                         };
                         assertEquals(expectLv, d.variableInfo().getLinkedVariables().toString());
                         assertDv(d, 2, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
@@ -977,12 +978,11 @@ public class Test_51_InstanceOf extends CommonTestRunner {
             if ("find".equals(d.methodInfo().name)) {
                 if ("1".equals(d.statementId())) {
                     String expected = switch (d.iteration()) {
-                        case 0, 1 -> "<null-check>&&<m:isUnaryNot>&&expression instanceof UnaryOperator";
-                        case 2 -> "expression/*(UnaryOperator)*/.operator.isUnaryNot()&&<null-check>&&expression instanceof UnaryOperator";
+                        case 0 -> "<m:isUnaryNot>&&expression instanceof UnaryOperator&&null!=expression";
                         default -> "expression/*(UnaryOperator)*/.operator.isUnaryNot()&&expression instanceof UnaryOperator&&null!=expression";
                     };
                     assertEquals(expected, d.evaluationResult().value().toString());
-                    assertEquals(d.iteration() <= 2, d.evaluationResult().causesOfDelay().isDelayed());
+                    assertEquals(d.iteration() == 0, d.evaluationResult().causesOfDelay().isDelayed());
                 }
                 if ("1.0.0".equals(d.statementId())) {
                     String expected = d.iteration() <= 3 ? "<m:toList>"
@@ -991,15 +991,14 @@ public class Test_51_InstanceOf extends CommonTestRunner {
                     assertEquals(d.iteration() <= 3, d.evaluationResult().causesOfDelay().isDelayed());
                 }
                 if ("2".equals(d.statementId())) {
-                    String delay = d.iteration() <= 2 ? "initial:expression@Method_find_1-E;initial:unaryOperator.operator@Method_find_1-C"
+                    String delay = d.iteration() == 0 ? "initial:expression@Method_find_1-E;initial:unaryOperator.operator@Method_find_1-C"
                             : "";
                     assertEquals(delay, d.evaluationResult().causesOfDelay().toString());
                 }
                 if ("3".equals(d.statementId())) {
                     String expected = switch (d.iteration()) {
-                        case 0, 1 -> "<instanceOf:InstanceOf>?<m:of>:<null-check>&&<m:isUnaryNot>&&<instanceOf:UnaryOperator>&&!<instanceOf:InstanceOf>?<m:toList>:<simplification>?<m:toList>:<m:toList>";
-                        case 2 -> "<instanceOf:InstanceOf>?<m:of>:<m:isUnaryNot>&&<null-check>&&!<instanceOf:InstanceOf>?<m:toList>:<simplification>?<m:toList>:<m:toList>";
-                        case 3 -> "expression instanceof InstanceOf&&null!=expression?List.of(new InstanceOfPositive(expression/*(InstanceOf)*/,true)):<m:isUnaryNot>&&expression instanceof UnaryOperator&&null!=expression?<m:toList>:expression instanceof Negation&&null!=expression&&(!<m:isUnaryNot>||!(expression instanceof UnaryOperator))?<m:toList>:(nullable instance type List<Expression>).stream().flatMap(instance type $3).toList()";
+                        case 0 -> "<instanceOf:InstanceOf>?<m:of>:<simplification>?<m:toList>:<simplification>?<m:toList>:<m:toList>";
+                        case 1, 2, 3 -> "expression instanceof InstanceOf&&null!=expression?<m:of>:<m:isUnaryNot>&&expression instanceof UnaryOperator&&null!=expression?<m:toList>:expression instanceof Negation&&null!=expression&&(!<m:isUnaryNot>||!(expression instanceof UnaryOperator))?<m:toList>:(nullable instance type List<Expression>).stream().flatMap(instance type $3).toList()";
                         default -> "expression instanceof InstanceOf&&null!=expression?List.of(new InstanceOfPositive(expression/*(InstanceOf)*/,true)):expression/*(UnaryOperator)*/.operator.isUnaryNot()&&expression instanceof UnaryOperator&&null!=expression?FindInstanceOfPatterns.find(expression/*(UnaryOperator)*/.eu).stream().map(/*inline apply*/new InstanceOfPositive(iop.instanceOf,!iop.positive)).toList():expression instanceof Negation&&null!=expression&&(!expression/*(UnaryOperator)*/.operator.isUnaryNot()||!(expression instanceof UnaryOperator))?FindInstanceOfPatterns.find(expression/*(Negation)*/.en).stream().map(/*inline apply*/new InstanceOfPositive(iop.instanceOf,!iop.positive)).toList():(nullable instance type List<Expression>).stream().flatMap(instance type $3).toList()";
                     };
                     assertEquals(expected, d.evaluationResult().value().toString());
@@ -1009,7 +1008,7 @@ public class Test_51_InstanceOf extends CommonTestRunner {
                 assertEquals("0", d.statementId());
                 String expected = d.iteration() <= 2 ? "<new:InstanceOfPositive>" : "new InstanceOfPositive(iop.instanceOf,!iop.positive)";
                 assertEquals(expected, d.evaluationResult().value().toString());
-                assertEquals(d.iteration() <= 2, d.evaluationResult().causesOfDelay().isDelayed());
+                assertEquals(d.iteration() <= 3, d.evaluationResult().causesOfDelay().isDelayed());
             }
         };
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
@@ -1018,43 +1017,42 @@ public class Test_51_InstanceOf extends CommonTestRunner {
 
                 if (d.variable() instanceof ParameterInfo pi && pi.owner == d.methodInfo() && "expression".equals(pi.name)) {
                     if ("0".equals(d.statementId())) {
-                        assertDv(d, 4, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                        assertDv(d, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     }
                     if ("1".equals(d.statementId())) {
-                        assertDv(d, 4, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                        assertDv(d, 1, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     }
                     if ("2".equals(d.statementId())) {
                         assertTrue(d.variableInfoContainer().hasEvaluation());
                         VariableInfo eval = d.variableInfoContainer().best(Stage.EVALUATION);
-                        if (d.iteration() >= 4) {
+                        if (d.iteration() > 0) {
                             assertEquals(DV.FALSE_DV, eval.getProperty(Property.CONTEXT_MODIFIED));
                         } else {
                             assertTrue(eval.getProperty(Property.CONTEXT_MODIFIED).isDelayed());
                         }
                         String delay = switch (d.iteration()) {
-                            case 0, 1, 2 -> "initial:expression@Method_find_1-E;initial:unaryOperator.operator@Method_find_1-C";
+                            case 0 -> "initial:expression@Method_find_1-E;initial:unaryOperator.operator@Method_find_1-C";
                             default -> "";
                         };
                         assertEquals(delay, eval.getLinkedVariables().causesOfDelay().toString());
                         String linked = switch (d.iteration()) {
-                            case 0 -> "instanceOf:-1,scope-negation:0.en:-1,scope-negation:0:-1,scope-unaryOperator:1.eu:-1,scope-unaryOperator:1.operator:-1,scope-unaryOperator:1:-1";
-                            case 1, 2 -> "instanceOf:-1,scope-negation:0.en:-1,scope-negation:0:-1,scope-unaryOperator:1.eu:-1,scope-unaryOperator:1:-1";
-                            default -> "instanceOf:1,scope-negation:0.en:2,scope-negation:0:2,scope-unaryOperator:1.eu:2,scope-unaryOperator:1:2";
+                            case 0 -> "instanceOf:-1";
+                            default -> "instanceOf:1";
                         };
                         assertEquals(linked, eval.getLinkedVariables().toString());
 
-                        assertDv(d, 4, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
-                        String expected = d.iteration() <= 2 ? "<p:expression>" : "nullable instance type Expression/*@Identity*/";
+                        assertDv(d, 1, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                        String expected = d.iteration() == 0 ? "<p:expression>" : "nullable instance type Expression/*@Identity*/";
                         assertEquals(expected, d.currentValue().toString());
                     }
                     if ("2.0.0".equals(d.statementId())) {
                         assertTrue(d.variableInfoContainer().hasEvaluation());
-                        assertDv(d, 4, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
-                        String expected = d.iteration() <= 2 ? "<p:expression>" : "nullable instance type Expression/*@Identity*/";
+                        assertDv(d, 1, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                        String expected = d.iteration() == 0 ? "<p:expression>" : "nullable instance type Expression/*@Identity*/";
                         assertEquals(expected, d.currentValue().toString());
                     }
                     if ("3".equals(d.statementId())) {
-                        assertDv(d, 3, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
+                        assertDv(d, 1, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
                     }
                 }
                 if (d.variable() instanceof FieldReference fr && "operator".equals(fr.fieldInfo.name)) {
@@ -1063,9 +1061,8 @@ public class Test_51_InstanceOf extends CommonTestRunner {
                         if ("1".equals(d.statementId())) {
                             assertFalse(d.variableInfoContainer().hasEvaluation());
                             assertTrue(d.variableInfoContainer().hasMerge()); // created in the merge!
-                            assertDv(d, 3, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
-                            String linked = d.iteration() == 0 ? "expression:-1,scope-negation:0.en:-1,scope-negation:0:-1,scope-unaryOperator:1.eu:-1,scope-unaryOperator:1:-1" : "";
-                            assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
+                            assertDv(d, 1, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                            assertEquals("scope-unaryOperator:1:2", d.variableInfo().getLinkedVariables().toString());
                         }
                         assertNotEquals("1.0.0", d.statementId()); // cannot exist here!!
                         if ("3".equals(d.statementId())) {
@@ -1078,8 +1075,7 @@ public class Test_51_InstanceOf extends CommonTestRunner {
                         if ("1".equals(d.statementId())) {
                             assertTrue(d.variableInfoContainer().hasEvaluation());
                             VariableInfo eval = d.variableInfoContainer().best(Stage.EVALUATION);
-                            String lvs = d.iteration() == 0 ? "expression:-1,scope-negation:0.en:-1,scope-negation:0:-1,unaryOperator:-1" : "";
-                            assertEquals(lvs, eval.getLinkedVariables().toString());
+                            assertEquals("expression:2,unaryOperator:2", eval.getLinkedVariables().toString());
                         }
                     }
                 }
@@ -1098,80 +1094,74 @@ public class Test_51_InstanceOf extends CommonTestRunner {
                 } else if (d.variable() instanceof FieldReference fr && "operator".equals(fr.fieldInfo.name)) {
                     assertEquals("unaryOperator", fr.scope.toString());
                     String value = switch (d.iteration()) {
-                        case 0 -> "<f:operator>";
-                        case 1 -> "<vp:operator:container@Interface_Operator>";
+                        case 0 -> "<f:unaryOperator.operator>";
                         default -> "nullable instance type Operator";
                     };
                     assertEquals(value, d.currentValue().toString());
                     assertFalse(d.variableInfoContainer().hasEvaluation());
                     assertDv(d, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
 
-                    String linked = d.iteration() == 0 ? "NOT_YET_SET" : "";
+                    String linked = d.iteration() == 0 ? "NOT_YET_SET" : "expression:2,unaryOperator:2";
                     assertEquals(linked, lvs);
                 } else if (d.variable() instanceof FieldReference fr && "en".equals(fr.fieldInfo.name)) {
                     assertEquals("scope-negation:0", fr.scope.toString());
                     String value = switch (d.iteration()) {
-                        case 0 -> "<f:en>";
+                        case 0 -> "<f:scope-negation:0.en>";
                         case 1 -> "<vp:en:container@Interface_Expression>";
                         default -> "nullable instance type Expression";
                     };
                     assertEquals(value, d.currentValue().toString());
-                    assertEquals(d.iteration() > 0, d.variableInfoContainer().hasEvaluation());
-                    if (d.iteration() > 0) { // so that there is an evaluation
+                    assertEquals(d.iteration() > BIG, d.variableInfoContainer().hasEvaluation());
+                    if (d.iteration() > BIG) { // so that there is an evaluation
                         assertDv(d, 3, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     }
                     String linked = switch (d.iteration()) {
                         case 0 -> "NOT_YET_SET";
-                        case 1, 2 -> "expression:-1,scope-negation:0:-1,unaryOperator:-1";
-                        default -> "expression:2,scope-negation:0:2,unaryOperator:2";
+                        default -> "expression:2,scope-negation:0:2";
                     };
                     assertEquals(linked, lvs);
                 } else if (d.variable() instanceof ParameterInfo pi && "expression".equals(pi.name)) {
-                    assertDv(d, 3, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                    assertDv(d, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     String linked = switch (d.iteration()) {
                         case 0 -> "NOT_YET_SET";
-                        case 1, 2 -> "scope-negation:0.en:-1,scope-negation:0:-1,unaryOperator:-1";
-                        default -> "scope-negation:0.en:2,scope-negation:0:2,unaryOperator:1";
+                        default -> "unaryOperator:1";
                     };
                     assertEquals(linked, lvs);
                 } else if ("scope-negation:0".equals(d.variableName())) {
-                    assertEquals(d.iteration() > 0, d.variableInfoContainer().hasEvaluation());
-                    if (d.iteration() > 0) {
+                    assertEquals(d.iteration() > BIG, d.variableInfoContainer().hasEvaluation());
+                    if (d.iteration() > BIG) {
                         assertDv(d, 3, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     }
                     String expected = switch (d.iteration()) {
                         case 0 -> "NOT_YET_SET";
-                        case 1, 2 -> "expression:-1,scope-negation:0.en:-1,unaryOperator:-1";
-                        default -> "expression:2,scope-negation:0.en:2,unaryOperator:2";
+                        default -> "";//""expression:2,scope-negation:0.en:2,unaryOperator:2";
                     };
                     assertEquals(expected, lvs);
                 } else if ("unaryOperator".equals(d.variableName())) {
                     assertEquals(d.iteration() > 0, d.variableInfoContainer().hasEvaluation());
                     if (d.iteration() > 0) { // so that there is an Evaluation
-                        assertDv(d, 3, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                        assertDv(d, 1, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     }
                     String expected = switch (d.iteration()) {
                         case 0 -> "NOT_YET_SET";
-                        case 1, 2 -> "expression:-1,scope-negation:0.en:-1,scope-negation:0:-1";
-                        default -> "expression:1,scope-negation:0.en:2,scope-negation:0:2";
+                        default -> "expression:1";
                     };
                     assertEquals(expected, lvs);
                 } else if (d.variable() instanceof FieldReference fr && "positive".equals(fr.fieldInfo.name)) {
                     assertNotNull(fr.scopeVariable);
                     assertEquals("iop", fr.scopeVariable.simpleName());
-                    assertDv(d, 1, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
-                    String expected = d.iteration() == 0 ? "NOT_YET_SET" : "";
-                    assertEquals(expected, lvs);
+                    assertDv(d, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                    assertEquals("iop:2", lvs);
 
                 } else if (d.variable() instanceof ParameterInfo pi && "iop".equals(pi.name)) {
-                    assertDv(d, 4, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                    assertDv(d, 1, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
 
                 } else if (d.variable() instanceof FieldReference fr && "instanceOf".equals(fr.fieldInfo.name)) {
                     assertNotNull(fr.scopeVariable);
                     assertEquals("iop", fr.scopeVariable.simpleName());
-                    assertDv(d, 4, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                    assertDv(d, 1, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                 } else if (d.variable() instanceof ReturnVariable) {
-                    assertDv(d, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                    assertDv(d, MultiLevel.NULLABLE_DV, Property.CONTEXT_NOT_NULL);
                 } else fail("Have " + d.variableName());
             }
         };
@@ -1210,7 +1200,7 @@ public class Test_51_InstanceOf extends CommonTestRunner {
             }
             if ("instanceOf".equals(d.methodInfo().name)) {
                 assertEquals("InstanceOfPositive", d.methodInfo().typeInfo.simpleName);
-                assertDv(d, 3, MultiLevel.EFFECTIVELY_IMMUTABLE_HC_DV, Property.IMMUTABLE);
+                assertDv(d, 3, MultiLevel.EFFECTIVELY_FINAL_FIELDS_DV, Property.IMMUTABLE);
             }
             // $3 is the lambda in statement 3 of FindInstanceOfPatterns.find
             if ("apply".equals(d.methodInfo().name) && "$3".equals(d.methodInfo().typeInfo.simpleName)) {
@@ -1227,6 +1217,12 @@ public class Test_51_InstanceOf extends CommonTestRunner {
                 String expected = d.iteration() <= 1 ? "<m:subElements>" : "List.of(eu)";
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
             }
+            if("clazz".equals(d.methodInfo().name)) {
+                ParameterizedType returnType = d.methodInfo().returnType();
+                assertEquals("Type java.lang.Class<?>", returnType.toString());
+                DV classImmutable = d.evaluationContext().getAnalyserContext().typeImmutable(returnType);
+                assertEquals(MultiLevel.MUTABLE_DV, classImmutable);
+            }
         };
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("InstanceOf".equals(d.typeInfo().simpleName)) {
@@ -1237,7 +1233,7 @@ public class Test_51_InstanceOf extends CommonTestRunner {
                 assertDv(d, 1, MultiLevel.EFFECTIVELY_FINAL_FIELDS_DV, Property.IMMUTABLE);
             }
             if ("InstanceOfPositive".equals(d.typeInfo().simpleName)) {
-                assertDv(d, 3, MultiLevel.EFFECTIVELY_IMMUTABLE_HC_DV, Property.IMMUTABLE);
+                assertDv(d, 3, MultiLevel.EFFECTIVELY_FINAL_FIELDS_DV, Property.IMMUTABLE);
             }
             if ("UnaryOperator".equals(d.typeInfo().simpleName)) {
                 assertDv(d, 2, MultiLevel.EFFECTIVELY_FINAL_FIELDS_DV, Property.IMMUTABLE);
@@ -1248,10 +1244,10 @@ public class Test_51_InstanceOf extends CommonTestRunner {
             // $3 is the lambda in statement 3 of FindInstanceOfPatterns.find
             if ("$3".equals(d.typeInfo().simpleName)) {
                 assertEquals("FindInstanceOfPatterns", d.typeInfo().packageNameOrEnclosingType.getRight().simpleName);
-                assertDv(d, 4, MultiLevel.EFFECTIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
+                assertDv(d, 5, MultiLevel.EFFECTIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
             }
             if ("Operator".equals(d.typeInfo().simpleName)) {
-                assertDv(d, MultiLevel.EFFECTIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
+                assertDv(d, MultiLevel.EFFECTIVELY_IMMUTABLE_HC_DV, Property.IMMUTABLE);
             }
         };
         testClass("InstanceOf_16", 0, 7, new DebugConfiguration.Builder()
