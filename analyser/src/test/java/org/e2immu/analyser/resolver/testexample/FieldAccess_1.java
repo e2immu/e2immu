@@ -40,7 +40,7 @@ public class FieldAccess_1 {
         }
     }
 
-    public static class ComputedParameterAnalyser extends ParameterAnalyser {
+    public static class CPA extends ParameterAnalyser {
         public final String t = "3";
 
         public void method() {

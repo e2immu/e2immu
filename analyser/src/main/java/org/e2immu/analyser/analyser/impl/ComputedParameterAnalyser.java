@@ -29,6 +29,9 @@ import org.e2immu.analyser.model.expression.MultiValue;
 import org.e2immu.analyser.model.expression.VariableExpression;
 import org.e2immu.analyser.model.statement.ExplicitConstructorInvocation;
 import org.e2immu.analyser.model.variable.FieldReference;
+import org.e2immu.analyser.model.variable.This;
+import org.e2immu.analyser.model.variable.Variable;
+import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.resolver.impl.ResolverImpl;
 import org.slf4j.Logger;
@@ -258,11 +261,14 @@ public class ComputedParameterAnalyser extends ParameterAnalyserImpl {
                     delay = DelayFactory.createDelay(new VariableCause(parameterInfo, lastStatement.location(Stage.MERGE),
                             CauseOfDelay.Cause.LINKING));
                 } else {
-                    Map<FieldInfo, DV> fields = viParam.getLinkedVariables().variables().entrySet().stream()
-                            .filter(e -> e.getKey() instanceof FieldReference fr && fr.scopeIsThis())
-                            .collect(Collectors.toUnmodifiableMap(e -> ((FieldReference) e.getKey()).fieldInfo, Map.Entry::getValue));
+                    Map<Variable, DV> fields = viParam.getLinkedVariables().variables().entrySet().stream()
+                            .filter(e -> e.getKey() instanceof FieldReference fr && fr.scopeIsThis() || e.getKey() instanceof This)
+                            .collect(Collectors.toUnmodifiableMap(Map.Entry::getKey, Map.Entry::getValue));
                     if (!fields.isEmpty()) {
-                        // The parameter is linked to some fields.
+                        /*
+                         The parameter is linked to some fields, or to "this", because of expanded variables,
+                         see e.g. E2ImmutableComposition_0.EncapsulatedExposedArrayOfHasSize)
+                         */
                         DV dv = independentFromFields(immutable, fields);
                         if (dv.isDelayed()) {
                             delay = dv.causesOfDelay();
@@ -318,7 +324,7 @@ public class ComputedParameterAnalyser extends ParameterAnalyserImpl {
         return AnalysisStatus.of(independent);
     }
 
-    private DV independentFromFields(DV immutable, Map<FieldInfo, DV> fields) {
+    private DV independentFromFields(DV immutable, Map<Variable, DV> fields) {
         TypeAnalysis typeAnalysis = analyserContext.getTypeAnalysis(parameterInfo.getTypeInfo());
         if (typeAnalysis.hiddenContentDelays().isDelayed()) {
             return typeAnalysis.hiddenContentDelays().causesOfDelay();
@@ -329,7 +335,7 @@ public class ComputedParameterAnalyser extends ParameterAnalyserImpl {
                 parameterInfo.getTypeInfo().primaryType());
         DV independent = fields.entrySet().stream()
                 .map(e -> computeIndependent.typesAtLinkLevel(e.getValue(), parameterInfo.parameterizedType, immutable,
-                        e.getKey().type))
+                        e.getKey().parameterizedType()))
                 .reduce(INDEPENDENT_DV, DV::min);
         LOGGER.debug("Assign {} to parameter {}", independent, parameterInfo);
         return independent;
@@ -446,7 +452,9 @@ public class ComputedParameterAnalyser extends ParameterAnalyserImpl {
                 && !map.isEmpty()
                 && map.values().stream().allMatch(LinkedVariables::isAssigned)) {
             DV immutable = analyserContext.typeImmutable(parameterInfo.parameterizedType);
-            DV independent = independentFromFields(immutable, map);
+            Map<Variable, DV> map2 = map.entrySet().stream().collect(Collectors
+                    .toUnmodifiableMap(e -> new FieldReference(InspectionProvider.DEFAULT, e.getKey()), Map.Entry::getValue));
+            DV independent = independentFromFields(immutable, map2);
             parameterAnalysis.setProperty(INDEPENDENT, independent);
             if (independent.isDelayed()) {
                 LOGGER.debug("Delaying @Independent on parameter {}", parameterInfo);

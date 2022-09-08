@@ -1382,7 +1382,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
 
         BackLinkForEachResult backLink;
         if (statement instanceof ForEachStatement) {
-            backLink = backLinkIterable(linkedVariablesMap);
+            backLink = backLinkIterable(evaluationContext, linkedVariablesMap);
         } else {
             backLink = new BackLinkForEachResult(Set.of(), CausesOfDelay.EMPTY);
         }
@@ -1487,44 +1487,53 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
     The reason we need this code HERE is that we must have the delay to consumer:-1 from the very first iteration.
     We cannot add it during evaluationOfForEachVariable() in the first iteration, as we don't know which variable to link to.
      */
-    private BackLinkForEachResult backLinkIterable(Map<Variable, LinkedVariables> linkedVariablesMap) {
-        IsVariableExpression ive = stateData.valueOfExpression.get().asInstanceOf(IsVariableExpression.class);
+    private BackLinkForEachResult backLinkIterable(EvaluationContext evaluationContext,
+                                                   Map<Variable, LinkedVariables> linkedVariablesMap) {
+
         Set<Variable> newToLinkedVariablesMap = new HashSet<>();
         CausesOfDelay causes = CausesOfDelay.EMPTY;
-        if (ive != null) {
-            StatementAnalysis first = navigationData.blocks.get().get(0).orElse(null);
-            StatementAnalysis last = first == null ? null : first.lastStatement();
-            if (last != null) {
-                Expression initialiser = statement.getStructure().initialisers().get(0);
-                if (initialiser instanceof LocalVariableCreation lvc) {
-                    Variable loopVar = lvc.newLocalVariables().get(0);
-                    VariableInfo latestVariableInfo = last.getLatestVariableInfo(loopVar.fullyQualifiedName());
-                    Variable iterableVar = ive.variable();
 
+        StatementAnalysis first = navigationData.blocks.get().get(0).orElse(null);
+        StatementAnalysis last = first == null ? null : first.lastStatement();
+        if (last != null) {
+            Expression initialiser = statement.getStructure().initialisers().get(0);
+            if (initialiser instanceof LocalVariableCreation lvc) {
+                Variable loopVar = lvc.newLocalVariables().get(0);
+                VariableInfo latestVariableInfo = last.getLatestVariableInfo(loopVar.fullyQualifiedName());
+                if (latestVariableInfo != null) {
                     LinkedVariables linkedOfLoopVar = latestVariableInfo.getLinkedVariables();
                     // any --3--> link to a variable not local to the loop, we also point to the iterable as <--4-->
 
-                    for (Map.Entry<Variable, DV> e : linkedOfLoopVar) {
-                        Variable targetOfLoopVar = e.getKey();
-                        if (!targetOfLoopVar.equals(iterableVar)) {
-                            if (!linkedVariablesMap.containsKey(targetOfLoopVar)) {
-                                newToLinkedVariablesMap.add(targetOfLoopVar);
-                            }
-                            if (!linkedVariablesMap.containsKey(iterableVar)) {
-                                newToLinkedVariablesMap.add(iterableVar);
-                            }
-                            if (e.getValue().isDelayed()) {
-                                link(linkedVariablesMap, iterableVar, targetOfLoopVar, e.getValue());
-                                link(linkedVariablesMap, targetOfLoopVar, iterableVar, e.getValue());
-                                causes = causes.merge(e.getValue().causesOfDelay());
-                            } else if (LinkedVariables.LINK_IS_HC_OF.equals(e.getValue())) {
-                                link(linkedVariablesMap, iterableVar, targetOfLoopVar, LinkedVariables.LINK_COMMON_HC);
-                                link(linkedVariablesMap, targetOfLoopVar, iterableVar, LinkedVariables.LINK_COMMON_HC);
+                    EvaluationResult context = EvaluationResult.from(evaluationContext);
+                    LinkedVariables linkedVariables = stateData.valueOfExpression.get().linkedVariables(context);
+
+                    for (Map.Entry<Variable, DV> lve : linkedVariables) {
+                        Variable iterableVar = lve.getKey();
+
+                        for (Map.Entry<Variable, DV> e : linkedOfLoopVar) {
+                            Variable targetOfLoopVar = e.getKey();
+                            if (!targetOfLoopVar.equals(iterableVar)) {
+                                if (!linkedVariablesMap.containsKey(targetOfLoopVar)) {
+                                    newToLinkedVariablesMap.add(targetOfLoopVar);
+                                }
+                                if (!linkedVariablesMap.containsKey(iterableVar)) {
+                                    newToLinkedVariablesMap.add(iterableVar);
+                                }
+                                if (e.getValue().isDelayed()) {
+                                    link(linkedVariablesMap, iterableVar, targetOfLoopVar, e.getValue());
+                                    link(linkedVariablesMap, targetOfLoopVar, iterableVar, e.getValue());
+                                    causes = causes.merge(e.getValue().causesOfDelay());
+                                } else if (LinkedVariables.LINK_IS_HC_OF.equals(e.getValue())) {
+                                    link(linkedVariablesMap, iterableVar, targetOfLoopVar, LinkedVariables.LINK_COMMON_HC);
+                                    link(linkedVariablesMap, targetOfLoopVar, iterableVar, LinkedVariables.LINK_COMMON_HC);
+                                }
                             }
                         }
                     }
-                } else throw new UnsupportedOperationException("?? expect lvc, got " + initialiser);
-            }
+                } else {
+                    LOGGER.debug("possible in iteration 0 of a loop, see e.g. Loops_3");
+                }
+            } else throw new UnsupportedOperationException("?? expect lvc, got " + initialiser);
         }
         return new BackLinkForEachResult(Set.copyOf(newToLinkedVariablesMap), causes);
     }

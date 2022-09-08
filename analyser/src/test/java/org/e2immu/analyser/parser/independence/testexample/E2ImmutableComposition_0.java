@@ -486,7 +486,6 @@ public class E2ImmutableComposition_0 {
             return one.first();
         }
 
-        // should raise an error, elements are not E2 content
         @Override
         public void visit(@Independent(hc = true) Consumer<HasSize> consumer) {
             for (HasSize element : one.first()) consumer.accept(element);

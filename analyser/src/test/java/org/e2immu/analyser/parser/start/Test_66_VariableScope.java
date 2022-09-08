@@ -747,17 +747,17 @@ public class Test_66_VariableScope extends CommonTestRunner {
             if ("output2".equals(d.methodInfo().name)) {
                 if ("outputBuilder".equals(d.variableName())) {
                     if ("2.0.0.0.1".equals(d.statementId())) {
-                        String expected = d.iteration() <= 2 ? "<new:OutputBuilder>" : "instance type OutputBuilder";
+                        String expected = d.iteration() <= 3 ? "<new:OutputBuilder>" : "instance type OutputBuilder";
                         assertEquals(expected, d.currentValue().toString());
                     }
                     if ("3".equals(d.statementId())) {
-                        assertDv(d, 2, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
-                        assertCurrentValue(d, 3, "!(object instanceof MethodCall)||null==object?new OutputBuilder(new LinkedList<>()):instance type OutputBuilder");
+                        assertDv(d, 3, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
+                        assertCurrentValue(d, 4, "!(object instanceof MethodCall)||null==object?new OutputBuilder(new LinkedList<>()):instance type OutputBuilder");
                     }
                 }
                 if (d.variable() instanceof ReturnVariable) {
                     if ("3".equals(d.statementId())) {
-                        assertCurrentValue(d, 3, "!(object instanceof MethodCall)||null==object?new OutputBuilder(new LinkedList<>()):instance type OutputBuilder");
+                        assertCurrentValue(d, 4, "!(object instanceof MethodCall)||null==object?new OutputBuilder(new LinkedList<>()):instance type OutputBuilder");
                     }
                 }
                 if (d.variable() instanceof FieldReference fr && "object".equals(fr.fieldInfo.name)) {
@@ -796,18 +796,18 @@ public class Test_66_VariableScope extends CommonTestRunner {
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("output2".equals(d.methodInfo().name)) {
                 if ("gg".equals(d.variableName())) {
-                    String expected = d.iteration() <= 2 ? "<c:boolean>?<m:defaultGuideGenerator>:guideGenerator"
-                            : "null==guideGenerator?new GuideGenerator(){public OutputElement start(){return null;}public OutputElement end(){return null;}public OutputElement mid(){return null;}}:guideGenerator";
                     if ("2.0.0.0.1".equals(d.statementId())) {
+                        String expected = d.iteration() <= 3 ? "<c:boolean>?<m:defaultGuideGenerator>:guideGenerator"
+                                : "null==guideGenerator?new GuideGenerator(){public OutputElement start(){return null;}public OutputElement end(){return null;}public OutputElement mid(){return null;}}:guideGenerator";
                         assertEquals(expected, d.currentValue().toString());
-                        String linked = d.iteration() <= 1 ? "guideGenerator:0,outputBuilder:-1"
+                        String linked = d.iteration() <= 2 ? "guideGenerator:0,outputBuilder:-1"
                                 : "guideGenerator:0,outputBuilder:2";
                         assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
                     }
                 }
                 if ("outputBuilder".equals(d.variableName())) {
                     if ("2.0.0.0.1".equals(d.statementId())) {
-                        assertCurrentValue(d, 3, "instance type OutputBuilder");
+                        assertCurrentValue(d, 4, "instance type OutputBuilder");
                     }
                 }
                 if (d.variable() instanceof ParameterInfo pi && "guideGenerator".equals(pi.name)) {
@@ -820,16 +820,16 @@ public class Test_66_VariableScope extends CommonTestRunner {
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("output2".equals(d.methodInfo().name)) {
                 assertDv(d, 2, DV.FALSE_DV, Property.MODIFIED_METHOD);
-                String expected = d.iteration() <= 2 ? "<m:output2>"
+                String expected = d.iteration() <= 3 ? "<m:output2>"
                         : "/*inline output2*/!(object instanceof MethodCall)||null==object?new OutputBuilder(new LinkedList<>()):instance type OutputBuilder";
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
                 assertDv(d.p(0), 1, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
-                assertDv(d.p(1), 3, DV.TRUE_DV, Property.MODIFIED_VARIABLE);
+                assertDv(d.p(1), 4, DV.TRUE_DV, Property.MODIFIED_VARIABLE);
             }
         };
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("MethodCall".equals(d.typeInfo().simpleName)) {
-                assertDv(d, 3, MultiLevel.EFFECTIVELY_FINAL_FIELDS_DV, Property.IMMUTABLE);
+                assertDv(d, 4, MultiLevel.EFFECTIVELY_FINAL_FIELDS_DV, Property.IMMUTABLE);
             }
         };
         testClass("VariableScope_8_2", 1, DONT_CARE, new DebugConfiguration.Builder()

@@ -37,7 +37,7 @@ public class TestFieldAccess extends CommonTest {
     @Test
     public void test_1() throws IOException {
         TypeMap typeMap = inspectAndResolve(FieldAccess_1.class, TestImport.IMPORT_HELPER);
-        TypeInfo subType = typeMap.get(FieldAccess_1.ComputedParameterAnalyser.class);
+        TypeInfo subType = typeMap.get(FieldAccess_1.CPA.class);
         MethodInfo method = subType.findUniqueMethod("method", 0);
         assertNotNull(method);
     }

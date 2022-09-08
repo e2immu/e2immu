@@ -79,15 +79,20 @@ public record SetOfTypes(Set<ParameterizedType> types) {
      */
     public SetOfTypes translate(InspectionProvider inspectionProvider, ParameterizedType pt) {
         Map<NamedType, ParameterizedType> map = pt.initialTypeParameterMap(inspectionProvider);
-        return new SetOfTypes(types.stream()
-                .map(t -> {
-                    // pt is a type without type parameters, and t is a type parameter
-                    if (map.isEmpty() && t.isAssignableFrom(inspectionProvider, pt)) {
-                        return pt;
-                    }
-                    return t.applyTranslation(inspectionProvider.getPrimitives(), map);
-                })
-                .collect(Collectors.toUnmodifiableSet()));
+        Set<ParameterizedType> newTypes = types.stream()
+                .map(t -> translate(inspectionProvider, pt, map, t))
+                .collect(Collectors.toUnmodifiableSet());
+        return new SetOfTypes(newTypes);
+    }
+
+    private ParameterizedType translate(InspectionProvider inspectionProvider,
+                                        ParameterizedType pt,
+                                        Map<NamedType, ParameterizedType> map,
+                                        ParameterizedType t) {
+        if (map.isEmpty() && t.isTypeParameter() && t.isAssignableFrom(inspectionProvider, pt)) {
+            return pt;
+        }
+        return t.applyTranslation(inspectionProvider.getPrimitives(), map);
     }
 
     public SetOfTypes dropArrays() {

@@ -108,7 +108,7 @@ public class Test_ExternalContainer extends CommonTestRunner {
                 assertDv(d, 2, MultiLevel.NOT_CONTAINER_DV, Property.EXTERNAL_CONTAINER);
             }
             if ("myContainer".equals(d.fieldInfo().name)) {
-                assertDv(d, 3, MultiLevel.CONTAINER_DV, Property.EXTERNAL_CONTAINER);
+                assertDv(d, 4, MultiLevel.CONTAINER_DV, Property.EXTERNAL_CONTAINER);
             }
             if ("myContainerLinkedToParameter".equals(d.fieldInfo().name)) {
                 assertDv(d, MultiLevel.CONTAINER_DV, Property.EXTERNAL_CONTAINER);
@@ -127,7 +127,7 @@ public class Test_ExternalContainer extends CommonTestRunner {
                 assertDv(d, MultiLevel.CONTAINER_DV, Property.CONTAINER);
             }
             if ("MyContainer".equals(d.typeInfo().simpleName)) {
-                assertDv(d, 2, MultiLevel.CONTAINER_DV, Property.CONTAINER);
+                assertDv(d, 3, MultiLevel.CONTAINER_DV, Property.CONTAINER);
             }
             if ("MyNonContainer".equals(d.typeInfo().simpleName)) {
                 assertDv(d, 1, MultiLevel.NOT_CONTAINER_DV, Property.CONTAINER);
@@ -205,7 +205,7 @@ public class Test_ExternalContainer extends CommonTestRunner {
                 assertDv(d, 2, MultiLevel.NOT_CONTAINER_DV, Property.EXTERNAL_CONTAINER);
             }
             if ("myContainer".equals(d.fieldInfo().name)) {
-                assertDv(d, 3, MultiLevel.CONTAINER_DV, Property.EXTERNAL_CONTAINER);
+                assertDv(d, 4, MultiLevel.CONTAINER_DV, Property.EXTERNAL_CONTAINER);
             }
             if ("myContainerLinkedToParameter".equals(d.fieldInfo().name)) {
                 assertDv(d, 7, MultiLevel.NOT_CONTAINER_DV, Property.EXTERNAL_CONTAINER);
@@ -220,7 +220,7 @@ public class Test_ExternalContainer extends CommonTestRunner {
                 assertDv(d, MultiLevel.CONTAINER_DV, Property.CONTAINER);
             }
             if ("MyContainer".equals(d.typeInfo().simpleName)) {
-                assertDv(d, 2, MultiLevel.CONTAINER_DV, Property.CONTAINER);
+                assertDv(d, 3, MultiLevel.CONTAINER_DV, Property.CONTAINER);
             }
             if ("MyNonContainer".equals(d.typeInfo().simpleName)) {
                 assertDv(d, 1, MultiLevel.NOT_CONTAINER_DV, Property.CONTAINER);
@@ -267,7 +267,7 @@ public class Test_ExternalContainer extends CommonTestRunner {
                 assertDv(d, 2, MultiLevel.NOT_CONTAINER_DV, Property.EXTERNAL_CONTAINER);
             }
             if ("myContainer".equals(d.fieldInfo().name)) {
-                assertDv(d, 3, MultiLevel.CONTAINER_DV, Property.EXTERNAL_CONTAINER);
+                assertDv(d, 4, MultiLevel.CONTAINER_DV, Property.EXTERNAL_CONTAINER);
             }
             if ("myContainerLinkedToParameter".equals(d.fieldInfo().name)) {
                 assertDv(d, 7, MultiLevel.NOT_CONTAINER_DV, Property.EXTERNAL_CONTAINER);
@@ -282,7 +282,7 @@ public class Test_ExternalContainer extends CommonTestRunner {
                 assertDv(d, MultiLevel.CONTAINER_DV, Property.CONTAINER);
             }
             if ("MyContainer".equals(d.typeInfo().simpleName)) {
-                assertDv(d, 2, MultiLevel.CONTAINER_DV, Property.CONTAINER);
+                assertDv(d, 3, MultiLevel.CONTAINER_DV, Property.CONTAINER);
             }
             if ("MyNonContainer".equals(d.typeInfo().simpleName)) {
                 assertDv(d, 1, MultiLevel.NOT_CONTAINER_DV, Property.CONTAINER);

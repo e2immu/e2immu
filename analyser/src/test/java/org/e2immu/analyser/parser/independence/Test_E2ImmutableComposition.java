@@ -42,7 +42,7 @@ public class Test_E2ImmutableComposition extends CommonTestRunner {
         EvaluationResultVisitor evaluationResultVisitor = d -> {
             String clazz = d.methodInfo().typeInfo.simpleName;
             if ("first".equals(d.methodInfo().name) && "EncapsulatedAssignableArrayOfHasSize".equals(clazz)) {
-                String expect = d.iteration() <= BIG ? "<array-access:HasSize>" : "nullable instance type HasSize";
+                String expect = d.iteration() < 4 ? "<array-access:HasSize>" : "nullable instance type HasSize/*{L one:3}*/";
                 assertEquals(expect, d.evaluationResult().value().toString());
             }
             if ("first".equals(d.methodInfo().name) && "ArrayOfConstants".equals(clazz)) {
@@ -67,6 +67,29 @@ public class Test_E2ImmutableComposition extends CommonTestRunner {
                     }
                 }
             }
+            if ("visit".equals(d.methodInfo().name) && "EncapsulatedExposedArrayOfHasSize".equals(clazz)) {
+                if ("element".equals(d.variableName())) {
+                    if ("0.0.0".equals(d.statementId())) {
+                        String expected = d.iteration() <= 3 ? "<vl:element>" : "nullable instance type HasSize";
+                        assertEquals(expected, d.currentValue().toString());
+                        assertDv(d, 4, MultiLevel.EFFECTIVELY_IMMUTABLE_HC_DV, Property.IMMUTABLE);
+                        String linked = d.iteration() < 4 ? "consumer:-1,this.one:-1,this:-1" : "consumer:3,this.one:3";
+                        assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
+                    }
+                }
+                if (d.variable() instanceof FieldReference fr && "one".equals(fr.fieldInfo.name)) {
+                    if ("0".equals(d.statementId())) {
+                        String linked = d.iteration() < 4 ? "consumer:-1,this:-1" : "consumer:4";
+                        assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
+                    }
+                }
+                if (d.variable() instanceof ParameterInfo pi && "consumer".equals(pi.name)) {
+                    if ("0".equals(d.statementId())) {
+                        String linked = d.iteration() < 4 ? "this.one:-1,this:-1" : "this.one:4";
+                        assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
+                    }
+                }
+            }
             if ("visitArray".equals(d.methodInfo().name) && "ExposedArrayOfHasSize".equals(clazz)) {
                 assertEquals("0", d.statementId());
                 if (d.variable() instanceof ParameterInfo pi && "consumer".equals(pi.name)) {
@@ -84,8 +107,8 @@ public class Test_E2ImmutableComposition extends CommonTestRunner {
                     assertEquals(expected, d.currentValue().toString());
                     assertDv(d, 4, MultiLevel.DEPENDENT_DV, Property.INDEPENDENT);
                     assertDv(d, 4, MultiLevel.EFFECTIVELY_FINAL_FIELDS_DV, Property.IMMUTABLE);
-                    // the expanded variable is linked to "this", delays are provided by EvaluateMethodCall.delay
-                    String linked = d.iteration() < 4 ? "this.one:-1,this:-1" : "this:2";
+                    // the expanded variable is linked to "this.one:3", delays are provided by EvaluateMethodCall.delay
+                    String linked = d.iteration() < 4 ? "this.one:-1,this:-1" : "this.one:3";
                     assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
                 }
             }
@@ -123,8 +146,7 @@ public class Test_E2ImmutableComposition extends CommonTestRunner {
                 if (d.variable() instanceof ReturnVariable) {
                     String expected = d.iteration() <= 3 ? "<m:first>" : "`one.t`";
                     assertEquals(expected, d.currentValue().toString());
-                    // because the value is an ExpandedVariable, we can only link to this, not to the field!
-                    String linked = d.iteration() <= 3 ? "this.one:-1,this:-1" : "this:3";
+                    String linked = d.iteration() <= 3 ? "this.one:-1,this:-1" : "this.one:3";
                     assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
                 }
             }
@@ -137,15 +159,15 @@ public class Test_E2ImmutableComposition extends CommonTestRunner {
                 }
                 if (d.variable() instanceof ReturnVariable) {
                     String expected = d.iteration() < 4 ? "<array-access:HasSize>"
-                            : "nullable instance type HasSize/*{L this:3}*/";
+                            : "nullable instance type HasSize/*{L one:3}*/";
                     assertEquals(expected, d.currentValue().toString());
-                    String linked = d.iteration() < 4 ? "av-480:20:-1,this.one:-1,this:-1" : "av-480:20:3,this:3";
+                    String linked = d.iteration() < 4 ? "av-480:20:-1,av-480:20[0]:-1,this.one:-1,this:-1" : "this.one:3";
                     assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
                 }
                 if ("av-480:20".equals(d.variableName())) {
                     String expected = d.iteration() < 4 ? "<m:first>" : "`one.t`";
                     assertEquals(expected, d.currentValue().toString());
-                    String linked = d.iteration() < 4 ? "this.one:-1,this:-1" : "this:2";
+                    String linked = d.iteration() < 4 ? "this.one:-1,this:-1" : "this.one:3";
                     assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
                 }
             }
@@ -175,6 +197,37 @@ public class Test_E2ImmutableComposition extends CommonTestRunner {
                         String linked = d.iteration() <= 1 ? "generator:-1,this.one:-1" : "generator:4,this.one:4";
                         assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
                     }
+                }
+            }
+            if ("set".equals(d.methodInfo().name) && "EncapsulatedAssignableArrayOfHasSize".equals(clazz)) {
+                assertEquals("0", d.statementId());
+                if (d.variable() instanceof FieldReference fr && "one".equals(fr.fieldInfo.name)) {
+                    // link to this because of expanded variable `one.t`
+                    String linked = d.iteration() < 4 ? "av-527:13:-1,this:-1" : "";
+                    assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
+                }
+                if (d.variableName().startsWith("av-")) {
+                    assertTrue(d.variableName().startsWith("av-527:13"));
+                    if (d.variableName().equals("av-527:13")) {
+                        // represents one.first()
+                        String expected = d.iteration() < 4 ? "<m:first>" : "`one.t`";
+                        assertEquals(expected, d.currentValue().toString());
+                        String linked = d.iteration() < 4 ? "this.one:-1,this:-1" : "this.one:3";
+                        assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
+                    } else {
+                        // represents one.first()[index]
+                        assertTrue(d.variableName().startsWith("av-527:13["));
+                        String linked = d.iteration() < 4
+                                ? "av-527:13:-1,hasSize:0,this.one:-1,this:-1"
+                                : "av-527:13:3,hasSize:0,this.one:3";
+                        assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
+                    }
+                }
+                if (d.variable() instanceof ParameterInfo pi && "hasSize".equals(pi.name)) {
+                    String linked = d.iteration() < 4
+                            ? "av-527:13:-1,av-527:13[index]:0,this.one:-1,this:-1"
+                            : "av-527:13:3,av-527:13[index]:0,this.one:3";
+                    assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
                 }
             }
         };
@@ -220,6 +273,9 @@ public class Test_E2ImmutableComposition extends CommonTestRunner {
                 String expected = d.iteration() <= 3 ? "<m:getElements>" : "/*inline getElements*/`one.t`";
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
                 assertDv(d, 4, MultiLevel.DEPENDENT_DV, Property.INDEPENDENT);
+            }
+            if ("visit".equals(d.methodInfo().name) && "EncapsulatedExposedArrayOfHasSize".equals(clazz)) {
+                assertDv(d.p(0), 5, MultiLevel.INDEPENDENT_HC_DV, Property.INDEPENDENT);
             }
             if ("visit".equals(d.methodInfo().name) && "ImmutableArrayOfTransparentOnes".equals(clazz)) {
                 assertDv(d.p(0), 5, MultiLevel.DEPENDENT_DV, Property.INDEPENDENT);

@@ -305,7 +305,8 @@ record SAInitializersAndUpdaters(StatementAnalysis statementAnalysis) {
             if (!statementAnalysis.variableIsSet(variable.fullyQualifiedName())) {
                 Properties properties = evaluationContext.getAnalyserContext()
                         .defaultValueProperties(variable.parameterizedType());
-                ExpandedVariable ev = new ExpandedVariable(identifier, variable, properties);
+                // FIXME LV.EMPTY is a temporary stop-gap
+                ExpandedVariable ev = new ExpandedVariable(identifier, variable, properties, LinkedVariables.EMPTY);
                 builder.addVariableExpression(variable, ev);
                 builder.put(new VariableExpression(variable), ev);
             }

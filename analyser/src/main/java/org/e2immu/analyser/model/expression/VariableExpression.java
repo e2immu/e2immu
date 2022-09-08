@@ -289,6 +289,8 @@ public class VariableExpression extends BaseExpression implements IsVariableExpr
             assert scopeResult != null;
             assert indexResult != null;
             Expression computedScope = scopeResult.value();
+            builder.link(dv, dv.arrayVariable(), LinkedVariables.LINK_IS_HC_OF);
+
             if (computedScope instanceof ArrayInitializer initializer && indexResult.value() instanceof Numeric in) {
                 // known array, known index (a[] = {1,2,3}, a[2] == 3)
                 int intIndex = in.getNumber().intValue();
@@ -297,6 +299,8 @@ public class VariableExpression extends BaseExpression implements IsVariableExpr
                 }
                 return builder.setExpression(initializer.multiExpression.expressions()[intIndex]).build();
             }
+
+
             if (dv.arrayVariable() instanceof LocalVariableReference lvr
                     && lvr.variableNature() instanceof VariableNature.ScopeVariable
                     && !(computedScope.isInstanceOf(IsVariableExpression.class))

@@ -258,18 +258,19 @@ public class InlinedMethod extends BaseExpression implements Expression {
                                          List<Expression> parameters,
                                          Expression scope,
                                          TypeInfo typeOfTranslation,
-                                         Identifier identifierOfMethodCall) {
+                                         Identifier identifierOfMethodCall,
+                                         LinkedVariables linkedVariables) {
         TranslationMapImpl.Builder builder = new TranslationMapImpl.Builder();
 
         for (VariableExpression variableExpression : variablesOfExpression) {
             Expression replacement = replace(variableExpression, parameters, scope, typeOfTranslation, evaluationContext,
-                    identifierOfMethodCall);
+                    identifierOfMethodCall, linkedVariables);
             if (replacement != null) {
                 builder.put(variableExpression, replacement);
             } // possibly a field need not replacing
         }
-        if(expression.returnType().isTypeParameter()) {
-            builder.put(expression.returnType(),scope.returnType());
+        if (expression.returnType().isTypeParameter()) {
+            builder.put(expression.returnType(), scope.returnType());
         }
 
         return builder.build();
@@ -280,7 +281,8 @@ public class InlinedMethod extends BaseExpression implements Expression {
                                Expression scope,
                                TypeInfo typeOfTranslation,
                                EvaluationResult evaluationResult,
-                               Identifier identifierOfMethodCall) {
+                               Identifier identifierOfMethodCall,
+                               LinkedVariables linkedVariables) {
         Variable variable = variableExpression.variable();
         InspectionProvider inspectionProvider = evaluationResult.getAnalyserContext();
         if (variable instanceof ParameterInfo parameterInfo) {
@@ -288,7 +290,7 @@ public class InlinedMethod extends BaseExpression implements Expression {
                 Expression parameterReplacement = parameterReplacement(parameters, inspectionProvider, parameterInfo);
                 if (parameterReplacement.isInstanceOf(InlinedMethod.class)) {
                     // see e.g., Lookahead.lookAhead, blocking "writer" from being expanded
-                    return expandedVariable(evaluationResult, parameterInfo.identifier, DV.TRUE_DV, variable);
+                    return expandedVariable(evaluationResult, parameterInfo.identifier, DV.TRUE_DV, variable, linkedVariables);
                 }
                 return parameterReplacement;
             }
@@ -298,7 +300,7 @@ public class InlinedMethod extends BaseExpression implements Expression {
             if (currentMethodAnalyser != null && parameterInfo.getMethod() == currentMethodAnalyser.getMethodInfo()) {
                 return variableExpression;
             }
-            return expandedVariable(evaluationResult, identifierOfMethodCall, null, variable);
+            return expandedVariable(evaluationResult, identifierOfMethodCall, null, variable, linkedVariables);
         }
         if (variable instanceof This && !methodInfo.methodInspection.get().isStatic()) {
             return scope;
@@ -310,7 +312,7 @@ public class InlinedMethod extends BaseExpression implements Expression {
                     .getFieldAnalysis(fieldReference.fieldInfo);
             DV effectivelyFinal = fieldAnalysis.getProperty(Property.FINAL);
             Variable modifiedVariable = replaceScope(parameters, scope, typeOfTranslation, evaluationResult,
-                    identifierOfMethodCall, variable, inspectionProvider, fieldReference);
+                    identifierOfMethodCall, variable, inspectionProvider, linkedVariables, fieldReference);
 
             /*
             Lambda_4: simply being present is not good enough to ensure consistency wrt. linked variables
@@ -329,7 +331,8 @@ public class InlinedMethod extends BaseExpression implements Expression {
                         // see Enum_4 as a nice example
                         if (ccValue.isConstant()) return ccValue;
                         if (ccValue instanceof VariableExpression ve) {
-                            return replace(ve, parameters, scope, typeOfTranslation, evaluationResult, identifierOfMethodCall);
+                            return replace(ve, parameters, scope, typeOfTranslation, evaluationResult,
+                                    identifierOfMethodCall, linkedVariables);
                         }
                         // Loops_19 shows that we have to expand (d.time)
                     }
@@ -337,13 +340,14 @@ public class InlinedMethod extends BaseExpression implements Expression {
 
                 // we use the identifier of the field itself here: every time this field is expanded, it gets the same identifier
                 return expandedVariable(evaluationResult, fieldReference.fieldInfo.getIdentifier(), effectivelyFinal,
-                        modifiedVariable);
+                        modifiedVariable, linkedVariables);
             }
-            return expandedVariable(evaluationResult, identifierOfMethodCall, effectivelyFinal, modifiedVariable);
+            return expandedVariable(evaluationResult, identifierOfMethodCall, effectivelyFinal, modifiedVariable,
+                    linkedVariables);
         }
 
         // e.g., local variable reference, see InlinedMethod_3
-        return expandedVariable(evaluationResult, identifierOfMethodCall, null, variable);
+        return expandedVariable(evaluationResult, identifierOfMethodCall, null, variable, linkedVariables);
     }
 
     private Variable replaceScope(List<Expression> parameters,
@@ -352,13 +356,15 @@ public class InlinedMethod extends BaseExpression implements Expression {
                                   EvaluationResult evaluationResult,
                                   Identifier identifierOfMethodCall,
                                   Variable variable,
-                                  InspectionProvider inspectionProvider
-            , FieldReference fieldReference) {
+                                  InspectionProvider inspectionProvider,
+                                  LinkedVariables linkedVariables,
+                                  FieldReference fieldReference) {
         Variable modifiedVariable;
         if (fieldReference.scope instanceof VariableExpression ve) {
             Expression replacedScope = replace(ve, parameters, scope, typeOfTranslation, evaluationResult,
-                    identifierOfMethodCall);
-            modifiedVariable = new FieldReference(inspectionProvider, fieldReference.fieldInfo, replacedScope, fieldReference.getOwningType());
+                    identifierOfMethodCall, linkedVariables);
+            modifiedVariable = new FieldReference(inspectionProvider, fieldReference.fieldInfo, replacedScope,
+                    fieldReference.getOwningType());
         } else {
             modifiedVariable = variable;
         }
@@ -394,7 +400,8 @@ public class InlinedMethod extends BaseExpression implements Expression {
     private Expression expandedVariable(EvaluationResult context,
                                         Identifier identifierOfMethodCall,
                                         DV effectivelyFinal,
-                                        Variable variable) {
+                                        Variable variable,
+                                        LinkedVariables linkedVariables) {
 
         AnalyserContext analyserContext = context.getAnalyserContext();
         ParameterizedType parameterizedType = variable.parameterizedType();
@@ -444,7 +451,7 @@ public class InlinedMethod extends BaseExpression implements Expression {
             // non-modifying method when used for inlining actual method values
             inline = VariableIdentifier.variable(variable);
         }
-        return new ExpandedVariable(inline, variable, valueProperties);
+        return new ExpandedVariable(inline, variable, valueProperties, linkedVariables);
     }
 
     private int indexOfParameterLinkedToFinalField(EvaluationResult context,

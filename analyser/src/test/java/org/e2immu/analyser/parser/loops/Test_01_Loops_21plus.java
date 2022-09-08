@@ -146,9 +146,11 @@ public class Test_01_Loops_21plus extends CommonTestRunner {
                     assertTrue(d.variable() instanceof DependentVariable);
                     assertTrue(d.variableInfoContainer().variableNature() instanceof VariableNature.LoopVariable);
                     if ("2.0.1.0.2".equals(d.statementId())) {
-                        String linked = d.iteration() == 0
-                                ? "array:-1,array[i]:-1,av-32:17:-1,i:-1,inner:-1,innerMod:-1,j:-1,outer:-1,outerMod:-1"
-                                : "";
+                        String linked = switch (d.iteration()) {
+                            case 0 -> "array:-1,array[i]:-1,av-32:17:-1,i:-1,inner:-1,innerMod:-1,j:-1,outer:-1,outerMod:-1";
+                            case 1, 2, 3 -> "array:-1,array[i]:-1,av-32:17:-1,i:-1";
+                            default -> "array:3,array[i]:3,av-32:17:3";
+                        };
                         assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
                         assertEquals("2.0.1.0.2-E", d.variableInfo().getAssignmentIds().toString());
                     }

@@ -101,8 +101,9 @@ public class EvaluateMethodCall {
                 (inlineValue = objectValue.asInstanceOf(InlinedMethod.class)) != null &&
                 inlineValue.canBeApplied(context)) {
             Expression scopeOfObjectValue = new VariableExpression(context.evaluationContext().currentThis());
+            LinkedVariables linkedVariables = methodCall.linkedVariables(context);
             TranslationMap translationMap = inlineValue.translationMap(context,
-                    parameters, scopeOfObjectValue, context.getCurrentType(), identifier);
+                    parameters, scopeOfObjectValue, context.getCurrentType(), identifier, linkedVariables);
             Expression translated = inlineValue.translate(analyserContext, translationMap);
             ForwardEvaluationInfo fwd = new ForwardEvaluationInfo.Builder(forwardEvaluationInfo)
                     .addMethod(methodInfo).doNotComplainInlineConditional().build();
@@ -221,8 +222,9 @@ public class EvaluateMethodCall {
             InlinedMethod iv;
             if ((iv = srv.asInstanceOf(InlinedMethod.class)) != null && iv.canBeApplied(context) &&
                     forwardEvaluationInfo.allowInline(methodInfo)) {
+                LinkedVariables linkedVariables = methodCall.linkedVariables(context);
                 TranslationMap translationMap = iv.translationMap(context, parameters, objectValue,
-                        context.getCurrentType(), identifier);
+                        context.getCurrentType(), identifier, linkedVariables);
                 Expression translated = iv.translate(analyserContext, translationMap);
                 ForwardEvaluationInfo forward = new ForwardEvaluationInfo.Builder(forwardEvaluationInfo)
                         .setNotSwitchingToConcreteMethod()
