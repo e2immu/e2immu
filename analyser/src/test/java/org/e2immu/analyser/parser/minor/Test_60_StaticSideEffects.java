@@ -59,7 +59,7 @@ public class Test_60_StaticSideEffects extends CommonTestRunner {
 
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("StaticSideEffects_1".equals(d.typeInfo().simpleName)) {
-                assertEquals("Type param K", d.typeAnalysis().getHiddenContentTypes().toString());
+                assertHc(d, 0, "K");
             }
         };
 

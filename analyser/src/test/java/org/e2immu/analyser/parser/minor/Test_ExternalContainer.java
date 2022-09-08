@@ -83,8 +83,8 @@ public class Test_ExternalContainer extends CommonTestRunner {
             if ("ExternalContainer_0".equals(d.methodInfo().name)) {
                 assertDv(d.p(0), 1, MultiLevel.CONTAINER_DV, Property.CONTAINER);
                 ParameterAnalysis p0 = d.parameterAnalyses().get(0);
-                assertEquals(d.iteration() == 0, p0.assignedToFieldDelays().isDelayed());
-                if (d.iteration() > 0) {
+                assertEquals(d.iteration() < 2, p0.assignedToFieldDelays().isDelayed());
+                if (d.iteration() > 1) {
                     assertEquals("{myContainerLinkedToParameter=assigned:1}", p0.getAssignedToField().toString());
                 }
                 assertDv(d.p(0), 1, MultiLevel.EFFECTIVELY_IMMUTABLE_HC_DV, Property.IMMUTABLE);

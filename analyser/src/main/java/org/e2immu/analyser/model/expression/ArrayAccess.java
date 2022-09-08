@@ -14,10 +14,7 @@
 
 package org.e2immu.analyser.model.expression;
 
-import org.e2immu.analyser.analyser.DV;
-import org.e2immu.analyser.analyser.EvaluationResult;
-import org.e2immu.analyser.analyser.ForwardEvaluationInfo;
-import org.e2immu.analyser.analyser.Property;
+import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.impl.BaseExpression;
 import org.e2immu.analyser.model.variable.DependentVariable;
@@ -153,5 +150,10 @@ public class ArrayAccess extends BaseExpression implements Expression {
         VariableExpression ve = new VariableExpression(dependentVariable.getIdentifier(),
                 dependentVariable, VariableExpression.NO_SUFFIX, expression, index);
         return ve.evaluate(context, forwardEvaluationInfo);
+    }
+
+    @Override
+    public LinkedVariables linkedVariables(EvaluationResult context) {
+        return VariableExpression.internalLinkedVariables(dependentVariable, LinkedVariables.LINK_STATICALLY_ASSIGNED);
     }
 }

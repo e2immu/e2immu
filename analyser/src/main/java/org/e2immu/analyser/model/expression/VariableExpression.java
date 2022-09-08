@@ -305,12 +305,19 @@ public class VariableExpression extends BaseExpression implements IsVariableExpr
                 Properties properties = context.evaluationContext().getAnalyserContext()
                         .defaultValueProperties(dv.parameterizedType);
                 CausesOfDelay delays = properties.delays();
+                LinkedVariables lv = scopeResult.linkedVariables(lvr);
+                assert lv != null : "We have recently evaluated the arrayVariable";
                 Expression replacement;
-                if (delays.isDelayed()) {
+                if (delays.isDelayed() || lv.isDelayed()) {
                     replacement = DelayedExpression.forArrayAccessValue(dv.getIdentifier(), dv.parameterizedType,
-                            new VariableExpression(dv), delays);
+                            new VariableExpression(dv), delays.merge(lv.causesOfDelay()));
                 } else {
-                    replacement = Instance.forArrayAccess(dv.getIdentifier(), dv.parameterizedType, properties);
+                    Expression instance = Instance.forArrayAccess(dv.getIdentifier(), dv.parameterizedType, properties);
+                    if (lv.isEmpty()) {
+                        replacement = instance;
+                    } else {
+                        replacement = PropertyWrapper.propertyWrapper(instance, lv.minimum(LinkedVariables.LINK_IS_HC_OF));
+                    }
                 }
                 return builder.setExpression(replacement).build();
             }
@@ -464,7 +471,7 @@ public class VariableExpression extends BaseExpression implements IsVariableExpr
         return internalLinkedVariables(variable, LinkedVariables.LINK_STATICALLY_ASSIGNED);
     }
 
-    private static LinkedVariables internalLinkedVariables(Variable variable, DV linkLevel) {
+    static LinkedVariables internalLinkedVariables(Variable variable, DV linkLevel) {
         if (variable instanceof DependentVariable dv) {
             LinkedVariables recursive = internalLinkedVariables(dv.arrayVariable(), LinkedVariables.LINK_IS_HC_OF);
             return LinkedVariables.of(variable, linkLevel).merge(recursive);

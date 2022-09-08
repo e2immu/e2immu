@@ -57,7 +57,7 @@ public class Test_25_FieldReference extends CommonTestRunner {
                     assertTrue(d.statementId().startsWith("0.0"), "Seen in " + d.statementId());
                 }
                 if (d.variable() instanceof FieldReference fr && "changeData".equals(fr.fieldInfo.name)) {
-                    assertCurrentValue(d, 2, "nullable instance type Map<String,ChangeData>");
+                    assertCurrentValue(d, 3, "nullable instance type Map<String,ChangeData>");
                     if ("0.0.0".equals(d.statementId())) {
                         assertDv(d, MultiLevel.NOT_CONTAINER_DV, Property.CONTEXT_CONTAINER);
                     }
@@ -77,9 +77,9 @@ public class Test_25_FieldReference extends CommonTestRunner {
                 // it is not linked, it is not exposed; and its dynamic type is immutable IF we know that Map.of()
                 // returns an immutable map. but we don't. HOWEVER, because there are no Annotated APIs, there is no info
                 // about hidden content, and therefore the algorithm says the factory method is immutable
-                assertDv(d, MultiLevel.EFFECTIVELY_IMMUTABLE_DV, Property.EXTERNAL_IMMUTABLE);
+                assertDv(d, 2, MultiLevel.EFFECTIVELY_IMMUTABLE_DV, Property.EXTERNAL_IMMUTABLE);
                 assertDv(d, 1, MultiLevel.NOT_CONTAINER_DV, Property.EXTERNAL_CONTAINER);
-                assertDv(d, 2, DV.FALSE_DV, Property.MODIFIED_OUTSIDE_METHOD);
+                assertDv(d, 3, DV.FALSE_DV, Property.MODIFIED_OUTSIDE_METHOD);
             }
         };
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
@@ -102,9 +102,11 @@ public class Test_25_FieldReference extends CommonTestRunner {
             if ("ChangeData".equals(d.typeInfo().simpleName)) {
                 assertDv(d, 1, MultiLevel.CONTAINER_DV, Property.CONTAINER);
                 assertDv(d, 1, MultiLevel.EFFECTIVELY_FINAL_FIELDS_DV, Property.IMMUTABLE);
+                assertHc(d, 0, "");
             }
             if ("FieldReference_1".equals(d.typeInfo().simpleName)) {
                 assertDv(d, MultiLevel.CONTAINER_DV, Property.CONTAINER);
+                assertHc(d, 1, "");
             }
         };
         // potential null pointer exceptions

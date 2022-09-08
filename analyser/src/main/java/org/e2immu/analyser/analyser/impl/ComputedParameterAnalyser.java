@@ -294,8 +294,8 @@ public class ComputedParameterAnalyser extends ParameterAnalyserImpl {
                     DV linkToParameter = vi.getLinkedVariables().value(parameterInfo);
                     if (linkToParameter != null) {
                         TypeAnalysis typeAnalysis = analyserContext.getTypeAnalysis(parameterInfo.getTypeInfo());
-                        if (typeAnalysis.hiddenContentAndExplicitTypeComputationDelays().isDelayed()) {
-                            return typeAnalysis.hiddenContentAndExplicitTypeComputationDelays().causesOfDelay();
+                        if (typeAnalysis.hiddenContentDelays().isDelayed()) {
+                            return typeAnalysis.hiddenContentDelays().causesOfDelay();
                         }
                         SetOfTypes hiddenContentCurrentType = typeAnalysis.getHiddenContentTypes();
                         ComputeIndependent computeIndependent = new ComputeIndependent(analyserContext, hiddenContentCurrentType,
@@ -320,8 +320,8 @@ public class ComputedParameterAnalyser extends ParameterAnalyserImpl {
 
     private DV independentFromFields(DV immutable, Map<FieldInfo, DV> fields) {
         TypeAnalysis typeAnalysis = analyserContext.getTypeAnalysis(parameterInfo.getTypeInfo());
-        if (typeAnalysis.hiddenContentAndExplicitTypeComputationDelays().isDelayed()) {
-            return typeAnalysis.hiddenContentAndExplicitTypeComputationDelays().causesOfDelay();
+        if (typeAnalysis.hiddenContentDelays().isDelayed()) {
+            return typeAnalysis.hiddenContentDelays().causesOfDelay();
         }
         SetOfTypes hiddenContentCurrentType = typeAnalysis.getHiddenContentTypes();
 

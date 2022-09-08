@@ -21,7 +21,6 @@ import org.e2immu.analyser.analyser.impl.util.ComputeTypeImmutable;
 import org.e2immu.analyser.analyser.nonanalyserimpl.AbstractEvaluationContextImpl;
 import org.e2immu.analyser.analyser.util.AnalyserResult;
 import org.e2immu.analyser.analyser.util.AssignmentIncompatibleWithPrecondition;
-import org.e2immu.analyser.analyser.util.ExplicitTypes;
 import org.e2immu.analyser.analyser.util.ComputeHiddenContentTypes;
 import org.e2immu.analyser.analysis.*;
 import org.e2immu.analyser.analysis.impl.TypeAnalysisImpl;
@@ -75,7 +74,7 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
     private static final Logger LOGGER = LoggerFactory.getLogger(ComputingTypeAnalyser.class);
     private static final AtomicInteger callCounterForDebugging = new AtomicInteger();
 
-    public static final String ANALYSE_EXPLICIT_HC_TYPES = "analyseExplicitAndHiddenContentTypes";
+    public static final String ANALYSE_HC_TYPES = "analyseHiddenContentTypes";
     public static final String ANALYSE_IMMUTABLE_CAN_BE_INCREASED = "analyseImmutableCanBeIncreased";
     public static final String FIND_ASPECTS = "findAspects";
     public static final String COMPUTE_APPROVED_PRECONDITIONS_FINAL_FIELDS = "computeApprovedPreconditionsFinalFields";
@@ -106,7 +105,7 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
         AnalyserProgram analyserProgram = analyserContextInput.getAnalyserProgram();
         AnalyserComponents.Builder<String, SharedState> builder = new AnalyserComponents.Builder<String, SharedState>(analyserProgram)
                 .add(FIND_ASPECTS, iteration -> findAspects())
-                .add(ANALYSE_EXPLICIT_HC_TYPES, iteration -> analyseExplicitAndHiddenContentTypes())
+                .add(ANALYSE_HC_TYPES, iteration -> analyseHiddenContentTypes())
                 .add(ANALYSE_IMMUTABLE_CAN_BE_INCREASED, iteration -> analyseImmutableDeterminedByTypeParameters());
 
         if (typeInfo.isInterface()) {
@@ -148,6 +147,11 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
             return DONE;
         }
         return computeTypeImmutable.analyseImmutable(sharedState);
+    }
+
+    @Override
+    public Stream<FieldAnalyser> allFieldAnalysers() {
+        return myFieldAnalysers.stream();
     }
 
     @Override
@@ -208,9 +212,8 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
         }
         parentAndOrEnclosingTypeAnalysis = List.copyOf(tmp);
 
-        // running this here saves an iteration, especially since the inclusion of currentType
-        // in AnalysisProvider.defaultImmutable(...)
-        analyseExplicitAndHiddenContentTypes();
+        // running this here may save an iteration
+        analyseHiddenContentTypes();
 
         computeTypeImmutable = new ComputeTypeImmutable(analyserContext, typeInfo, typeInspection, typeAnalysis,
                 parentAndOrEnclosingTypeAnalysis, myMethodAnalysers, myConstructors, myFieldAnalysers);
@@ -299,166 +302,22 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
         }
     }
 
-    /*
+    private AnalysisStatus analyseHiddenContentTypes() {
+        if (typeAnalysis.hiddenContentDelays().isDone()) return DONE;
 
-     */
-    private AnalysisStatus analyseExplicitAndHiddenContentTypes() {
-        if (typeAnalysis.hiddenContentAndExplicitTypeComputationDelays().isDone()) return DONE;
-
-        // STEP 1: Ensure all my static sub-types have been processed, but wait if that's not possible
-
-        if (!typeInspection.subTypes().isEmpty()) {
-            // wait until all static subtypes have hidden content computed
-            CausesOfDelay delays = typeInspection.subTypes().stream()
-                    .filter(TypeInfo::isStatic)
-                    .map(st -> {
-                        TypeAnalysisImpl.Builder stAna = (TypeAnalysisImpl.Builder) analyserContext.getTypeAnalysis(st);
-                        if (stAna.hiddenContentAndExplicitTypeComputationDelays().isDelayed()) {
-                            ComputingTypeAnalyser typeAnalyser = (ComputingTypeAnalyser) analyserContext.getTypeAnalyser(st);
-                            typeAnalyser.analyseExplicitAndHiddenContentTypes();
-                        }
-                        return stAna.hiddenContentAndExplicitTypeComputationDelays();
-                    })
-                    .reduce(CausesOfDelay.EMPTY, CausesOfDelay::merge);
-            if (delays.isDelayed()) {
-                LOGGER.debug("Hidden content of static nested types of {} not yet known", typeInfo);
-                return delays;
-            }
-        }
-
-        // STEP 2: if I'm a non-static nested type (an inner class) then my enclosing class will take care of me.
-        // because I have identical hidden content types.
-
-        if (!typeInspection.isStatic()) {
-            TypeInfo staticEnclosing = typeInfo;
-            while (!staticEnclosing.isStatic()) {
-                staticEnclosing = staticEnclosing.packageNameOrEnclosingType.getRight();
-            }
-            TypeAnalysisImpl.Builder typeAnalysisStaticEnclosing = (TypeAnalysisImpl.Builder) analyserContext.getTypeAnalysis(staticEnclosing);
-            CausesOfDelay delays = typeAnalysisStaticEnclosing.hiddenContentAndExplicitTypeComputationDelays();
-            if (delays.isDone()) {
-                typeAnalysis.setHiddenContentTypes(typeAnalysisStaticEnclosing.getHiddenContentTypes());
-                typeAnalysis.copyExplicitTypes(typeAnalysisStaticEnclosing);
-            } else {
-                LOGGER.debug("Hidden content of inner class {} computed together with that of enclosing class {}",
-                        typeInfo.simpleName, staticEnclosing);
-                return delays;
-            }
-            return DONE;
-        }
-
-        // STEP 3: collect from static nested types; we have ensured their presence
-
-        Set<ParameterizedType> explicitTypesFromSubTypes = typeInspection.subTypes().stream()
-                .filter(TypeInfo::isStatic)
-                .flatMap(st -> {
-                    TypeAnalysis typeAnalysis = analyserContext.getTypeAnalysis(st);
-                    return typeAnalysis.getExplicitTypes(analyserContext).types().stream();
-                }).collect(Collectors.toUnmodifiableSet());
-
-        // STEP 5: ensure + collect from parent
-
-        SetOfTypes explicitTypesFromParent;
-        {
-            TypeInfo parentClass = typeInspection.parentClass().typeInfo;
-            // IMPORTANT: skip aggregated, otherwise infinite loop
-            if (parentClass.isJavaLangObject() || parentClass.isAggregated()) {
-                explicitTypesFromParent = analyserContext.getPrimitives().explicitTypesOfJLO();
-            } else {
-                TypeAnalysis typeAnalysis = analyserContext.getTypeAnalysis(parentClass);
-                CausesOfDelay delays = typeAnalysis.hiddenContentAndExplicitTypeComputationDelays();
-                // third clause to avoid cycles
-                if (delays.isDelayed() && typeInfo.primaryType() == parentClass.primaryType() && !typeInfo.isEnclosedIn(parentClass)) {
-                    ComputingTypeAnalyser typeAnalyser = (ComputingTypeAnalyser) analyserContext.getTypeAnalyser(parentClass);
-                    typeAnalyser.analyseExplicitAndHiddenContentTypes();
-                }
-                CausesOfDelay delays2 = typeAnalysis.hiddenContentAndExplicitTypeComputationDelays();
-                if (delays2.isDone()) {
-                    explicitTypesFromParent = typeAnalysis.getExplicitTypes(analyserContext);
-                } else {
-                    LOGGER.debug("Wait for hidden content types to arrive {}, parent {}", typeInfo, parentClass);
-                    return delays;
-                }
-            }
-        }
-
-        // STEP 6: ensure + collect interface types
-
-        {
-            CausesOfDelay causes = CausesOfDelay.EMPTY;
-            for (ParameterizedType ifType : typeInspection.interfacesImplemented()) {
-                TypeInfo ifTypeInfo = ifType.typeInfo;
-                // 2nd clause to avoid cycles
-                if (!ifTypeInfo.isAggregated() && !typeInfo.isEnclosedIn(ifTypeInfo)) {
-                    TypeAnalysis typeAnalysis = analyserContext.getTypeAnalysis(ifTypeInfo);
-                    CausesOfDelay delays = typeAnalysis.hiddenContentAndExplicitTypeComputationDelays();
-                    if (delays.isDelayed() && typeInfo.primaryType() == ifTypeInfo.primaryType()) {
-                        ComputingTypeAnalyser typeAnalyser = (ComputingTypeAnalyser) analyserContext.getTypeAnalyser(ifTypeInfo);
-                        typeAnalyser.analyseExplicitAndHiddenContentTypes();
-                        causes = causes.merge(delays);
-                    }
-                    CausesOfDelay delays2 = typeAnalysis.hiddenContentAndExplicitTypeComputationDelays();
-                    if (delays2.isDelayed()) {
-                        LOGGER.debug("Wait for hidden content types to arrive {}, interface {}", typeInfo,
-                                ifTypeInfo.simpleName);
-                        causes = causes.merge(delays2);
-                    }
-                }
-            }
-            if (causes.isDelayed()) {
-                LOGGER.debug("Delaying hidden content type computation of {}, delays: {}", typeInfo, causes);
-                return causes;
-            }
-        }
-        Set<ParameterizedType> explicitTypesFromInterfaces = typeInspection.interfacesImplemented()
-                .stream()
-                .filter(i -> !i.typeInfo.isAggregated())
-                .flatMap(i -> {
-                    TypeAnalysis typeAnalysis = analyserContext.getTypeAnalysis(i.typeInfo);
-                    SetOfTypes explicitTypes = typeAnalysis.getExplicitTypes(analyserContext);
-                    if (explicitTypes == null)
-                        return Stream.of(); // FIXME is this correct? if we cause a delay, will it cause cycles?
-                    return explicitTypes.types().stream();
-                })
-                .collect(Collectors.toUnmodifiableSet());
-
-        // STEP 7: start computation
-
-        // first, determine the types of fields, methods and constructors
-
-        // IMPROVE ensure we have all methods, constructors and fields of inner (non-static) nested classes
-        Set<ParameterizedType> allTypes = typeInspection.typesOfFieldsMethodsConstructors(analyserContext);
-
-        // add all type parameters of these types
-        allTypes.addAll(allTypes.stream().flatMap(pt -> pt.components(false).stream()).toList());
-        LOGGER.debug("Types of fields, methods and constructors: {}", allTypes);
-
-        // then, compute the explicit types
-        Map<ParameterizedType, Set<ExplicitTypes.UsedAs>> explicitTypes =
-                new ExplicitTypes(analyserContext, typeInfo).go(typeInspection).getResult();
-
-        Set<ParameterizedType> allExplicitTypes = new HashSet<>(explicitTypes.keySet());
-        allExplicitTypes.addAll(explicitTypesFromInterfaces);
-        allExplicitTypes.addAll(explicitTypesFromParent.types());
-        allExplicitTypes.addAll(explicitTypesFromSubTypes);
-
-        LOGGER.debug("All explicit types: {}", explicitTypes);
-
-        Set<ParameterizedType> superTypesOfExplicitTypes = allExplicitTypes.stream()
-                .flatMap(pt -> pt.concreteSuperTypes(analyserContext))
-                .collect(Collectors.toUnmodifiableSet());
-        allExplicitTypes.addAll(superTypesOfExplicitTypes);
-        typeAnalysis.setExplicitTypes(new SetOfTypes(allExplicitTypes));
-
-        /*
-        Now for the computation of hidden content types.
-        */
         SetOfTypes typeParameters = new SetOfTypes(typeInspection.typeParameters().stream()
-                .map(TypeParameter::toParameterizedType).collect(Collectors.toUnmodifiableSet()));
-        SetOfTypes hiddenContentTypes = new ComputeHiddenContentTypes(typeInfo, analyserContext).go(typeParameters).build();
-        typeAnalysis.setHiddenContentTypes(hiddenContentTypes);
-
-        LOGGER.debug("Transparent data types for {} are: [{}]", typeInfo, allTypes);
+                .map(TypeParameter::toParameterizedType)
+                .collect(Collectors.toUnmodifiableSet()));
+        ComputeHiddenContentTypes computeHc = new ComputeHiddenContentTypes(typeInfo, analyserContext)
+                .go(typeParameters);
+        CausesOfDelay hiddenContentDelays = computeHc.delays();
+        if (hiddenContentDelays.isDelayed()) {
+            LOGGER.debug("Delaying hidden content type computation of {}", typeInfo);
+            typeAnalysis.setHiddenContentTypesDelay(hiddenContentDelays);
+            return AnalysisStatus.of(hiddenContentDelays);
+        }
+        LOGGER.debug("Computed hidden content types of {}", typeInfo);
+        typeAnalysis.setHiddenContentTypes(computeHc.build());
         return DONE;
     }
 

@@ -16,8 +16,6 @@ package org.e2immu.analyser.parser.start.testexample;
 
 import org.e2immu.annotation.*;
 
-// variant on DependentVariables_1; now X is not transparent anymore in XS
-// XS is an E1Container now
 public class DependentVariables_2 {
 
     @Container

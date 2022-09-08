@@ -18,7 +18,6 @@ import org.e2immu.analyser.analyser.DV;
 import org.e2immu.analyser.analyser.Property;
 import org.e2immu.analyser.analyser.Stage;
 import org.e2immu.analyser.analyser.VariableInfo;
-import org.e2immu.analyser.config.AnalyserConfiguration;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.ParameterInfo;
@@ -222,7 +221,7 @@ public class Test_16_Modification extends CommonTestRunner {
                             assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
                         }
                     }
-                    if(d.variable() instanceof FieldReference fr && "messages".equals(fr.fieldInfo.name)) {
+                    if (d.variable() instanceof FieldReference fr && "messages".equals(fr.fieldInfo.name)) {
                         if ("0".equals(d.statementId())) {
                             // asymmetrical link!
                             String linked = d.iteration() <= 1 ? "errorMessage:-1" : "";
@@ -240,8 +239,8 @@ public class Test_16_Modification extends CommonTestRunner {
                     assertDv(d, MultiLevel.DEPENDENT_DV, Property.INDEPENDENT);
                 }
                 if ("FaultyImplementation".equals(d.methodInfo().typeInfo.simpleName)) {
-                    assertDv(d, 1, MultiLevel.CONTAINER_DV, Property.CONTAINER);
-                    assertDv(d, 1, MultiLevel.DEPENDENT_DV, Property.INDEPENDENT);
+                    assertDv(d, 4, MultiLevel.CONTAINER_DV, Property.CONTAINER);
+                    assertDv(d, 4, MultiLevel.DEPENDENT_DV, Property.INDEPENDENT);
                 }
             }
             if ("addError".equals(d.methodInfo().name)) {
@@ -254,7 +253,7 @@ public class Test_16_Modification extends CommonTestRunner {
                     assertDv(d.p(0), 2, MultiLevel.DEPENDENT_DV, Property.INDEPENDENT);
                 }
                 if ("FaultyImplementation".equals(d.methodInfo().typeInfo.simpleName)) {
-                    assertDv(d.p(0), 3, MultiLevel.CONTAINER_DV, Property.CONTAINER);
+                    assertDv(d.p(0), 5, MultiLevel.CONTAINER_DV, Property.CONTAINER);
                     assertDv(d.p(0), 3, MultiLevel.DEPENDENT_DV, Property.INDEPENDENT);
                 }
             }
@@ -269,8 +268,8 @@ public class Test_16_Modification extends CommonTestRunner {
 
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("FaultyImplementation".equals(d.typeInfo().simpleName)) {
-                assertTrue(d.typeAnalysis().getHiddenContentTypes().isEmpty());
-                assertDv(d, 3, MultiLevel.DEPENDENT_DV, Property.INDEPENDENT);
+                assertHc(d, 2, "");
+                assertDv(d, 4, MultiLevel.DEPENDENT_DV, Property.INDEPENDENT);
             }
             if ("ErrorRegistry".equals(d.typeInfo().simpleName)) {
                 assertTrue(d.typeAnalysis().getHiddenContentTypes().isEmpty());

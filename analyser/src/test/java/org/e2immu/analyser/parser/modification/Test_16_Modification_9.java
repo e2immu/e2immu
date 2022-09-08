@@ -108,7 +108,7 @@ public class Test_16_Modification_9 extends CommonTestRunner {
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("Modification_9".equals(d.typeInfo().simpleName)) {
                 // Logger is an interface, so it must be possible to have hidden content
-                assertEquals("Type org.slf4j.Logger", d.typeAnalysis().getHiddenContentTypes().toString());
+                assertHc(d, 0, "Logger");
             }
         };
 

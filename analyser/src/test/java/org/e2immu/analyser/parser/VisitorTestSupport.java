@@ -21,6 +21,7 @@ import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.visitor.CommonVisitorData;
 import org.e2immu.analyser.visitor.StatementAnalyserVariableVisitor;
 import org.e2immu.analyser.visitor.StatementAnalyserVisitor;
+import org.e2immu.analyser.visitor.TypeAnalyserVisitor;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -182,4 +183,15 @@ public abstract class VisitorTestSupport {
         return range;
     }
 
+    protected void assertHc(TypeAnalyserVisitor.Data d, int delayedBefore, String s) {
+        CausesOfDelay causes = d.typeAnalysis().hiddenContentDelays();
+        if (d.iteration() < delayedBefore) {
+            assertTrue(causes.isDelayed(),
+                    "Expected hidden content to be delayed in iteration " + d.iteration() + " < " + delayedBefore);
+        } else {
+            assertTrue(causes.isDone(),
+                    "Expected hidden content to be done in iteration " + d.iteration() + " >= " + delayedBefore);
+            assertEquals(s, d.typeAnalysis().getHiddenContentTypes().toString());
+        }
+    }
 }

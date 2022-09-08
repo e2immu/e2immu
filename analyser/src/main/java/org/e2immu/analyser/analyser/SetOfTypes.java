@@ -52,7 +52,7 @@ public record SetOfTypes(Set<ParameterizedType> types) {
 
     @Override
     public String toString() {
-        return types.stream().map(ParameterizedType::toString).sorted().collect(Collectors.joining(", "));
+        return types.stream().map(ParameterizedType::printSimple).sorted().collect(Collectors.joining(", "));
     }
 
     public SetOfTypes union(SetOfTypes other) {
@@ -88,5 +88,13 @@ public record SetOfTypes(Set<ParameterizedType> types) {
                     return t.applyTranslation(inspectionProvider.getPrimitives(), map);
                 })
                 .collect(Collectors.toUnmodifiableSet()));
+    }
+
+    public SetOfTypes dropArrays() {
+        if (types.isEmpty()) return this;
+        Set<ParameterizedType> newSet = types.stream()
+                .map(ParameterizedType::copyWithoutArrays)
+                .collect(Collectors.toUnmodifiableSet());
+        return new SetOfTypes(newSet);
     }
 }

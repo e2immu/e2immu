@@ -42,7 +42,8 @@ public class Test_E2ImmutableComposition extends CommonTestRunner {
         EvaluationResultVisitor evaluationResultVisitor = d -> {
             String clazz = d.methodInfo().typeInfo.simpleName;
             if ("first".equals(d.methodInfo().name) && "EncapsulatedAssignableArrayOfHasSize".equals(clazz)) {
-                assertEquals("nullable instance type HasSize", d.evaluationResult().value().toString());
+                String expect = d.iteration() <= BIG ? "<array-access:HasSize>" : "nullable instance type HasSize";
+                assertEquals(expect, d.evaluationResult().value().toString());
             }
             if ("first".equals(d.methodInfo().name) && "ArrayOfConstants".equals(clazz)) {
                 String expected = d.iteration() == 0 ? "<dv:strings[0]>" : "\"a\"";
@@ -62,27 +63,29 @@ public class Test_E2ImmutableComposition extends CommonTestRunner {
                     if ("0.0.0".equals(d.statementId())) {
                         String expected = d.iteration() <= 3 ? "<vl:one>" : "nullable instance type One<Integer>";
                         assertEquals(expected, d.currentValue().toString());
-                        assertDv(d, 4, MultiLevel.EFFECTIVELY_IMMUTABLE_HC_DV, Property.IMMUTABLE);
+                        assertDv(d, 4, MultiLevel.MUTABLE_DV, Property.IMMUTABLE);
                     }
                 }
             }
             if ("visitArray".equals(d.methodInfo().name) && "ExposedArrayOfHasSize".equals(clazz)) {
                 assertEquals("0", d.statementId());
                 if (d.variable() instanceof ParameterInfo pi && "consumer".equals(pi.name)) {
-                    // dependent, rather than independent1: modifications are possible!
-                    String linked = d.iteration() == 0 ? "this.elements:-1" : "this.elements:2";
-                    assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
+                    assertEquals("", d.variableInfo().getLinkedVariables().toString());
+                }
+                if (d.variable() instanceof FieldReference fr && "elements".equals(fr.fieldInfo.name)) {
+                    assertTrue(fr.scopeIsThis());
+                    assertEquals("consumer:3", d.variableInfo().getLinkedVariables().toString());
                 }
             }
             if ("getElements".equals(d.methodInfo().name) && "EncapsulatedExposedArrayOfHasSize".equals(clazz)) {
                 assertEquals("0", d.statementId());
                 if (d.variable() instanceof ReturnVariable) {
-                    String expected = d.iteration() <= 3 ? "<m:first>" : "`one.t`";
+                    String expected = d.iteration() < 4 ? "<m:first>" : "`one.t`";
                     assertEquals(expected, d.currentValue().toString());
                     assertDv(d, 4, MultiLevel.DEPENDENT_DV, Property.INDEPENDENT);
                     assertDv(d, 4, MultiLevel.EFFECTIVELY_FINAL_FIELDS_DV, Property.IMMUTABLE);
                     // the expanded variable is linked to "this", delays are provided by EvaluateMethodCall.delay
-                    String linked = d.iteration() <= 3 ? "this.one:-1,this:-1" : "this:2";
+                    String linked = d.iteration() < 4 ? "this.one:-1,this:-1" : "this:2";
                     assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
                 }
             }
@@ -100,11 +103,76 @@ public class Test_E2ImmutableComposition extends CommonTestRunner {
                     }
                 }
             }
+            if ("first".equals(d.methodInfo().name) && "One".equals(d.methodInfo().typeInfo.simpleName)) {
+                assertEquals("0", d.statementId());
+                if (d.variable() instanceof FieldReference fr && "t".equals(fr.fieldInfo.name)) {
+                    assertTrue(fr.scopeIsThis());
+                    assertEquals("", d.variableInfo().getLinkedVariables().toString());
+                }
+                if (d.variable() instanceof ReturnVariable) {
+                    assertEquals("this.t:0", d.variableInfo().getLinkedVariables().toString());
+                }
+            }
+            if ("first".equals(d.methodInfo().name) && "OneWithOne".equals(d.methodInfo().typeInfo.simpleName)) {
+                assertEquals("0", d.statementId());
+                if (d.variable() instanceof FieldReference fr && "one".equals(fr.fieldInfo.name)) {
+                    assertTrue(fr.scopeIsThis());
+                    String linked = d.iteration() <= 3 ? "this:-1" : "";
+                    assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
+                }
+                if (d.variable() instanceof ReturnVariable) {
+                    String expected = d.iteration() <= 3 ? "<m:first>" : "`one.t`";
+                    assertEquals(expected, d.currentValue().toString());
+                    // because the value is an ExpandedVariable, we can only link to this, not to the field!
+                    String linked = d.iteration() <= 3 ? "this.one:-1,this:-1" : "this:3";
+                    assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
+                }
+            }
+            if ("first".equals(d.methodInfo().name) && "EncapsulatedExposedArrayOfHasSize".equals(d.methodInfo().typeInfo.simpleName)) {
+                assertEquals("0", d.statementId());
+                if (d.variable() instanceof FieldReference fr && "one".equals(fr.fieldInfo.name)) {
+                    assertTrue(fr.scopeIsThis());
+                    String linked = d.iteration() <= 3 ? "av-480:20:-1,this:-1" : "";
+                    assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
+                }
+                if (d.variable() instanceof ReturnVariable) {
+                    String expected = d.iteration() < 4 ? "<array-access:HasSize>"
+                            : "nullable instance type HasSize/*{L this:3}*/";
+                    assertEquals(expected, d.currentValue().toString());
+                    String linked = d.iteration() < 4 ? "av-480:20:-1,this.one:-1,this:-1" : "av-480:20:3,this:3";
+                    assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
+                }
+                if ("av-480:20".equals(d.variableName())) {
+                    String expected = d.iteration() < 4 ? "<m:first>" : "`one.t`";
+                    assertEquals(expected, d.currentValue().toString());
+                    String linked = d.iteration() < 4 ? "this.one:-1,this:-1" : "this:2";
+                    assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
+                }
+            }
+            if ("first".equals(d.methodInfo().name) & "ImmutableArrayOfMarker".equals(d.methodInfo().typeInfo.simpleName)) {
+                if (d.variable() instanceof ReturnVariable) {
+                    String expected = d.iteration() < 2 ? "<dv:markers[0]>" : "markers[0]";
+                    assertEquals(expected, d.currentValue().toString());
+                    String linked = d.iteration() < 2 ? "markers[0]:-1,this.markers:-1" : "markers[0]:1,this.markers:3";
+                    assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
+                }
+            }
             if ("ImmutableArrayOfTransparentOnes".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof ParameterInfo pi && "generator".equals(pi.name)) {
                     if ("1".equals(d.statementId())) {
                         // One is transparent, so we're filling the 'ones' array with the equivalent of an unbound parameter type
-                        String linked = d.iteration() < 3 ? "this.ones:-1" : "this.ones:3";
+                        String linked = d.iteration() < 3 ? "this.ones:-1" : "this.ones:4";
+                        assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
+                    }
+                }
+            }
+            if ("EncapsulatedExposedArrayOfHasSize".equals(d.methodInfo().name) && "EncapsulatedExposedArrayOfHasSize".equals(clazz)) {
+                if ("elements".equals(d.variableName())) {
+                    if ("1".equals(d.statementId())) {
+                        assertEquals("generator:4", d.variableInfo().getLinkedVariables().toString());
+                    }
+                    if ("2".equals(d.statementId())) {
+                        String linked = d.iteration() <= 1 ? "generator:-1,this.one:-1" : "generator:4,this.one:4";
                         assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
                     }
                 }
@@ -122,6 +190,8 @@ public class Test_E2ImmutableComposition extends CommonTestRunner {
             if ("one".equals(d.fieldInfo().name) && "EncapsulatedExposedArrayOfHasSize".equals(clazz)) {
                 String expected = d.iteration() <= 2 ? "<f:one>" : "instance type ImmutableOne<HasSize[]>";
                 assertEquals(expected, d.fieldAnalysis().getValue().toString());
+                String linked = d.iteration() < 2 ? "elements:-1,generator:-1" : "generator:4";
+                assertEquals(linked, d.fieldAnalysis().getLinkedVariables().toString());
             }
         };
 
@@ -135,25 +205,72 @@ public class Test_E2ImmutableComposition extends CommonTestRunner {
                 assertDv(d.p(0), 2, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
             }
             if ("visitArray".equals(d.methodInfo().name) && "ExposedArrayOfHasSize".equals(clazz)) {
-                assertDv(d.p(0), 2, MultiLevel.DEPENDENT_DV, Property.INDEPENDENT);
+                assertDv(d.p(0), 1, MultiLevel.DEPENDENT_DV, Property.INDEPENDENT);
             }
             if ("first".equals(d.methodInfo().name) && "EncapsulatedExposedArrayOfHasSize".equals(clazz)) {
-                assertDv(d, MultiLevel.INDEPENDENT_DV, Property.INDEPENDENT);
+                assertDv(d, 4, MultiLevel.INDEPENDENT_HC_DV, Property.INDEPENDENT);
+            }
+            if ("EncapsulatedExposedArrayOfHasSize".equals(d.methodInfo().name) && "EncapsulatedExposedArrayOfHasSize".equals(clazz)) {
+                assertDv(d.p(1), 4, MultiLevel.INDEPENDENT_HC_DV, Property.INDEPENDENT);
+            }
+            if ("first".equals(d.methodInfo().name) & "ImmutableArrayOfMarker".equals(clazz)) {
+                assertDv(d, 2, MultiLevel.INDEPENDENT_HC_DV, Property.INDEPENDENT);
             }
             if ("getElements".equals(d.methodInfo().name) && "EncapsulatedExposedArrayOfHasSize".equals(clazz)) {
                 String expected = d.iteration() <= 3 ? "<m:getElements>" : "/*inline getElements*/`one.t`";
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
                 assertDv(d, 4, MultiLevel.DEPENDENT_DV, Property.INDEPENDENT);
             }
+            if ("visit".equals(d.methodInfo().name) && "ImmutableArrayOfTransparentOnes".equals(clazz)) {
+                assertDv(d.p(0), 5, MultiLevel.DEPENDENT_DV, Property.INDEPENDENT);
+            }
         };
 
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
-            if ("Marker".equals(d.typeInfo().simpleName)) {
-                assertDv(d, MultiLevel.EFFECTIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
+            String clazz = d.typeInfo().simpleName;
+            if ("Marker".equals(clazz)) {
+                assertTrue(d.typeAnalysis().getHiddenContentTypes().isEmpty());
+            }
+            if ("HasSize".equals(clazz)) {
+                assertTrue(d.typeAnalysis().getHiddenContentTypes().isEmpty());
+            }
+            if ("NonEmptyImmutableList".equals(clazz)) {
+                assertHc(d, 0, "T");
+            }
+            if ("NonEmptyList".equals(clazz)) {
+                assertHc(d, 0, "T");
+            }
+            if ("One".equals(clazz)) {
+                assertHc(d, 0, "T");
+            }
+            if ("ImmutableOne".equals(clazz)) {
+                assertDv(d, 1, MultiLevel.EFFECTIVELY_IMMUTABLE_HC_DV, Property.IMMUTABLE);
+                assertHc(d, 0, "T");
+            }
+            if ("ConstantOne".equals(clazz)) {
+                assertTrue(d.typeAnalysis().getHiddenContentTypes().isEmpty());
+            }
+            if ("Marker".equals(clazz)) {
+                assertDv(d, MultiLevel.EFFECTIVELY_IMMUTABLE_HC_DV, Property.IMMUTABLE);
                 assertDv(d, MultiLevel.CONTAINER_DV, Property.CONTAINER);
             }
-            if ("ImmutableArrayOfTransparentOnes".equals(d.typeInfo().simpleName)) {
-                assertTrue(d.typeAnalysis().getHiddenContentTypes().isEmpty());
+            if ("ImmutableArrayOfT".equals(clazz)) {
+                assertHc(d, 0, "T");
+            }
+            if ("ImmutableArrayOfMarker".equals(clazz)) {
+                assertHc(d, 0, "Marker");
+            }
+            if ("ImmutableArrayOfHasSize".equals(clazz)) {
+                assertHc(d, 0, "HasSize");
+            }
+            if ("ImmutableArrayOfTransparentOnes".equals(clazz)) {
+                assertHc(d, 2, "");
+            }
+            if ("EncapsulatedExposedArrayOfHasSize".equals(clazz)) {
+                assertHc(d, 2, "HasSize");
+            }
+            if ("EncapsulatedImmutableArrayOfHasSize".equals(clazz)) {
+                assertHc(d, 2, "HasSize");
             }
         };
 
@@ -161,8 +278,12 @@ public class Test_E2ImmutableComposition extends CommonTestRunner {
          All the warnings are complaints about one.first() getting used without checks.
          We leave it this way (rather than adding @NotNull on the interface) because
          parsing EncapsulatedImmutableArrayOfHasSize.size(), in Arrays.stream(...), tests InlinedMethod.expandedVariable
+
+
+         ERRORS: 268 ImmutableArrayOfTransparentOnes.visit:consumer:0: dependent, required independent hc
+
          */
-        testClass("E2ImmutableComposition_0", 0, 8, new DebugConfiguration.Builder()
+        testClass("E2ImmutableComposition_0", 1, 8, new DebugConfiguration.Builder()
                 .addEvaluationResultVisitor(evaluationResultVisitor)
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)

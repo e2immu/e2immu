@@ -35,8 +35,7 @@ import org.junit.jupiter.api.Test;
 import java.io.IOException;
 import java.util.List;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 public class Test_Independent1 extends CommonTestRunner {
 
@@ -112,7 +111,7 @@ public class Test_Independent1 extends CommonTestRunner {
     public void test_2() throws IOException {
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("Independent1_2".equals(d.typeInfo().simpleName)) {
-                assertEquals("Type param T", d.typeAnalysis().getHiddenContentTypes().toString());
+                assertHc(d, 0, "T");
             }
         };
         testClass("Independent1_2", 0, 0, new DebugConfiguration.Builder()
@@ -125,7 +124,7 @@ public class Test_Independent1 extends CommonTestRunner {
     public void test_2_1() throws IOException {
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("Independent1_2_1".equals(d.typeInfo().simpleName)) {
-                assertEquals("", d.typeAnalysis().getHiddenContentTypes().toString());
+                assertHc(d, 0, "");
             }
         };
         testClass("Independent1_2_1", 0, 0, new DebugConfiguration.Builder()
@@ -217,7 +216,7 @@ public class Test_Independent1 extends CommonTestRunner {
             if ("visit".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof ParameterInfo pi && "consumer".equals(pi.name)) {
                     if ("0.0.0".equals(d.statementId())) {
-                        String expected = d.iteration() <= 2 ? "<p:consumer>"
+                        String expected = d.iteration() < 4 ? "<p:consumer>"
                                 : "nullable instance type Consumer<One<Integer>>/*@Identity*//*@IgnoreMods*/";
                         assertEquals(expected,
                                 d.currentValue().toString());
@@ -271,11 +270,7 @@ public class Test_Independent1 extends CommonTestRunner {
         };
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("ImmutableArrayOfTransparentOnes".equals(d.typeInfo().simpleName)) {
-                // we're using One[].clone() to avoid making One explicit
-                // calling methods in java.lang.Object do not make an object explicit
-
-                // the "transparent" concept is not implemented (202208)
-                assertTrue(d.typeAnalysis().getHiddenContentTypes().isEmpty());
+                assertHc(d, 2, "");
             }
         };
         testClass("Independent1_5", 0, 0, new DebugConfiguration.Builder()
@@ -350,8 +345,7 @@ public class Test_Independent1 extends CommonTestRunner {
                 assertDv(d, 1, MultiLevel.EFFECTIVELY_IMMUTABLE_HC_DV, Property.IMMUTABLE);
             }
             if ("ImmutableArrayOfOnes".equals(d.typeInfo().simpleName)) {
-                // new One[size] makes One explicit, however, T remains transparent
-                assertEquals("Type param T", d.typeAnalysis().getHiddenContentTypes().toString());
+                assertHc(d, 1, "T");
             }
         };
         testClass("Independent1_6", 0, 0, new DebugConfiguration.Builder()
@@ -365,9 +359,11 @@ public class Test_Independent1 extends CommonTestRunner {
     @Test
     public void test_6_1() throws IOException {
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
+            if ("One".equals(d.typeInfo().simpleName)) {
+                assertHc(d, 0, "T");
+            }
             if ("ImmutableArrayOfOnes".equals(d.typeInfo().simpleName)) {
-                // new One[size] makes One explicit
-                assertEquals("", d.typeAnalysis().getHiddenContentTypes().toString());
+                assertHc(d, 2, "");
             }
         };
         testClass("Independent1_6_1", 0, 0, new DebugConfiguration.Builder()
@@ -380,13 +376,14 @@ public class Test_Independent1 extends CommonTestRunner {
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("Data".equals(d.typeInfo().simpleName)) {
                 // new One[size] makes One explicit
-                assertEquals("Type param X", d.typeAnalysis().getHiddenContentTypes().toString());
+                assertHc(d, 2, "X");
             }
         };
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
+            assertFalse(d.allowBreakDelay());
             if ("methodInfo".equals(d.methodInfo().name)) {
                 assertTrue(d.methodInfo().methodInspection.get().isSynthetic());
-                assertDv(d, 3, MultiLevel.EVENTUALLY_IMMUTABLE_HC_DV, Property.IMMUTABLE);
+                assertDv(d, 4, MultiLevel.EVENTUALLY_IMMUTABLE_HC_DV, Property.IMMUTABLE);
                 //    assertDv(d, 3, MultiLevel.INDEPENDENT_1_DV, Property.INDEPENDENT);
             }
         };

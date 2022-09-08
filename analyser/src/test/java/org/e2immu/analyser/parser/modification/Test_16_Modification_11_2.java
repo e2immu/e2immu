@@ -92,7 +92,7 @@ public class Test_16_Modification_11_2 extends CommonTestRunner {
                 if (d.variable() instanceof FieldReference fr && "s2".equals(fr.fieldInfo.name)) {
                     if ("0".equals(d.statementId())) {
                         assertDv(d, 10, MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL_DV, CONTEXT_NOT_NULL);
-                        String expected = d.iteration() <= 10 ? "c:-1" : "c:2";
+                        String expected = d.iteration() <= 11 ? "c:-1" : "c:2";
                         assertEquals(expected, d.variableInfo().getLinkedVariables().toString());
                     }
                 }
@@ -101,23 +101,23 @@ public class Test_16_Modification_11_2 extends CommonTestRunner {
                         assertEquals(MultiLevel.NULLABLE_DV, d.getProperty(CONTEXT_NOT_NULL));
                     }
                     if ("2".equals(d.statementId())) {
-                        assertDv(d, 11, MultiLevel.EFFECTIVELY_NOT_NULL_DV, CONTEXT_NOT_NULL);
+                        assertDv(d, 12, MultiLevel.EFFECTIVELY_NOT_NULL_DV, CONTEXT_NOT_NULL);
 
-                        String expectLinked = d.iteration() <= 10 ? "this.s2:-1" : "this.s2:2";
+                        String expectLinked = d.iteration() <= 11 ? "this.s2:-1" : "this.s2:2";
                         assertEquals(expectLinked, d.variableInfo().getLinkedVariables().toString());
                     }
                 }
-                if(d.variable() instanceof FieldReference fr &&"set".equals(fr.fieldInfo.name)) {
+                if (d.variable() instanceof FieldReference fr && "set".equals(fr.fieldInfo.name)) {
                     assertNotNull(fr.scopeVariable);
-                    if("c".equals(fr.scopeVariable.simpleName())) {
-                        if("2".equals(d.statementId())) {
-                            String expectLinked = d.iteration() <= 10 ? "c:-1,this.s2:-1" : "c:2,this.s2:2";
+                    if ("c".equals(fr.scopeVariable.simpleName())) {
+                        if ("2".equals(d.statementId())) {
+                            String expectLinked = d.iteration() <= 11 ? "c:-1,this.s2:-1" : "c:2,this.s2:2";
                             assertEquals(expectLinked, d.variableInfo().getLinkedVariables().toString());
                         }
                     }
                 }
                 if (d.variable() instanceof ReturnVariable && "2".equals(d.statementId())) {
-                    String expectValue = d.iteration() <= 10 ? "<m:addAll>" : "instance type boolean";
+                    String expectValue = d.iteration() <= 11 ? "<m:addAll>" : "instance type boolean";
                     assertEquals(expectValue, d.currentValue().toString());
                 }
             }
@@ -148,7 +148,7 @@ public class Test_16_Modification_11_2 extends CommonTestRunner {
                     assertNull(d.haveError(Message.Label.POTENTIAL_NULL_POINTER_EXCEPTION));
                 }
                 if ("2".equals(d.statementId())) {
-                    assertEquals(d.iteration() >= 11,
+                    assertEquals(d.iteration() >= 12,
                             d.statementAnalysis().methodLevelData().linksHaveBeenEstablished());
                 }
             }
@@ -184,10 +184,12 @@ public class Test_16_Modification_11_2 extends CommonTestRunner {
 
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("Modification_11".equals(d.typeInfo().simpleName)) {
-                assertTrue(d.typeAnalysis().getHiddenContentTypes().isEmpty());
+                assertHc(d, 10, "");
             }
             if ("C1".equals(d.typeInfo().simpleName)) {
+                assertHc(d, 0, "");
                 assertDv(d, 2, MultiLevel.NOT_CONTAINER_DV, Property.CONTAINER);
+                assertDv(d, 10, MultiLevel.EFFECTIVELY_FINAL_FIELDS_DV, IMMUTABLE);
             }
         };
 

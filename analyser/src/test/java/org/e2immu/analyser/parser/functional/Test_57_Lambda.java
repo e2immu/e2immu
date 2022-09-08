@@ -119,11 +119,12 @@ public class Test_57_Lambda extends CommonTestRunner {
                 if (d.variable() instanceof This thisVar) {
                     if ("Lambda_2".equals(thisVar.typeInfo.simpleName)) {
                         if ("1".equals(d.statementId())) {
-                            String linked = d.iteration() == 0 ? "f:-1,j:-1" : "j:2";
+                            assertEquals("instance type Lambda_2", d.currentValue().toString());
+                            String linked = d.iteration() == 0 ? "f:-1,j:-1" : "j:4";
                             assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
                         }
                         if ("2".equals(d.statementId())) {
-                            String linked = d.iteration() == 0 ? "f:-1,j:-1" : "j:2";
+                            String linked = d.iteration() == 0 ? "f:-1,j:-1" : "j:4";
                             assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
                         }
                     } else if ("$1".equals(thisVar.typeInfo.simpleName)) {
@@ -147,7 +148,7 @@ public class Test_57_Lambda extends CommonTestRunner {
                     if ("1".equals(d.statementId())) {
                         String expect = d.iteration() == 0 ? "<m:get>" : "`this.i`";
                         assertEquals(expect, d.currentValue().toString());
-                        String linked = d.iteration() == 0 ? "f:-1,this:-1" : "this:2";
+                        String linked = d.iteration() == 0 ? "f:-1,this:-1" : "this:4";
                         assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
                     }
                 }

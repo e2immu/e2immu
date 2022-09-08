@@ -174,16 +174,25 @@ public class Test_04_Assert extends CommonTestRunner {
         };
 
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
+            if("AnalysisStatus".equals(d.typeInfo().simpleName)) {
+                assertHc(d, 0, ""); // no type parameters
+            }
+            if("CauseOfDelay".equals(d.typeInfo().simpleName)) {
+                assertHc(d, 0, ""); // no type parameters
+            }
             if ("CausesOfDelay".equals(d.typeInfo().simpleName)) {
                 assertDv(d, MultiLevel.EFFECTIVELY_IMMUTABLE_HC_DV, Property.IMMUTABLE);
                 assertDv(d, MultiLevel.CONTAINER_DV, Property.CONTAINER);
                 assertTrue(d.typeInspection().isExtensible());
+                assertHc(d, 0, "");
             }
             if ("NotDelayed".equals(d.typeInfo().simpleName)) {
                 assertFalse(d.typeInspection().isExtensible());
+                assertHc(d, 0, ""); // no fields
             }
             if ("SimpleSet".equals(d.typeInfo().simpleName)) {
                 assertTrue(d.typeInspection().isExtensible());
+                assertHc(d, 0, "CauseOfDelay");
             }
         };
 

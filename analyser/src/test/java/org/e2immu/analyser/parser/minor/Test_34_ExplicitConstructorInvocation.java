@@ -253,12 +253,29 @@ public class Test_34_ExplicitConstructorInvocation extends CommonTestRunner {
                 }
             }
         };
+
+        MethodAnalyserVisitor methodAnalyserVisitor = d -> {
+            if ("requireNonNull".equals(d.methodInfo().name)) {
+                assertDv(d, DV.TRUE_DV, Property.IDENTITY);
+                assertDv(d.p(0), 1, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
+            }
+            if ("getPrimitives".equals(d.methodInfo().name)) {
+                assertDv(d, DV.FALSE_DV, Property.MODIFIED_METHOD);
+            }
+        };
         testClass("ExplicitConstructorInvocation_7", 0, 0, new DebugConfiguration.Builder()
                 .addEvaluationResultVisitor(evaluationResultVisitor)
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .build(), new AnalyserConfiguration.Builder().setForceAlphabeticAnalysisInPrimaryType(true).build());
     }
 
+
+    @Test
+    public void test_7_1() throws IOException {
+        testClass("ExplicitConstructorInvocation_7_1", 0, 0, new DebugConfiguration.Builder()
+                .build());
+    }
 
     @Test
     public void test_8() throws IOException {
@@ -488,7 +505,7 @@ public class Test_34_ExplicitConstructorInvocation extends CommonTestRunner {
                 assertDv(d, MultiLevel.EFFECTIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
             }
             if ("ElementImpl".equals(d.typeInfo().simpleName)) {
-                assertTrue(d.typeAnalysis().getHiddenContentTypes().isEmpty());
+                assertHc(d, 1, "");
             }
         };
         testClass("ExplicitConstructorInvocation_11", 0, 1, new DebugConfiguration.Builder()
@@ -544,7 +561,7 @@ public class Test_34_ExplicitConstructorInvocation extends CommonTestRunner {
                 assertDv(d, 4, MultiLevel.EFFECTIVELY_FINAL_FIELDS_DV, Property.IMMUTABLE);
             }
             if ("X4_BitwiseAnd".equals(d.typeInfo().simpleName)) {
-                assertDv(d, 4, MultiLevel.EFFECTIVELY_FINAL_FIELDS_DV, Property.IMMUTABLE);
+                assertDv(d, 5, MultiLevel.EFFECTIVELY_FINAL_FIELDS_DV, Property.IMMUTABLE);
             }
         };
         testClass("ExplicitConstructorInvocation_12", 0, 1, new DebugConfiguration.Builder()
@@ -585,13 +602,13 @@ public class Test_34_ExplicitConstructorInvocation extends CommonTestRunner {
         };
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("X1_ElementImpl".equals(d.typeInfo().simpleName)) {
-                assertDv(d, 2, MultiLevel.EFFECTIVELY_IMMUTABLE_HC_DV, Property.IMMUTABLE);
+                assertDv(d, 1, MultiLevel.EFFECTIVELY_IMMUTABLE_HC_DV, Property.IMMUTABLE);
             }
             if ("X5_BaseExpression".equals(d.typeInfo().simpleName)) {
-                assertDv(d, 2, MultiLevel.EFFECTIVELY_IMMUTABLE_HC_DV, Property.IMMUTABLE);
+                assertDv(d, 1, MultiLevel.EFFECTIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
             }
             if ("X3_BinaryOperator".equals(d.typeInfo().simpleName)) {
-                assertDv(d, 3, MultiLevel.EFFECTIVELY_IMMUTABLE_HC_DV, Property.IMMUTABLE);
+                assertDv(d, 2, MultiLevel.EFFECTIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
             }
         };
         testClass("ExplicitConstructorInvocation_12_1", 0, 0, new DebugConfiguration.Builder()

@@ -108,6 +108,9 @@ public record ComputeIndependent(AnalyserContext analyserContext,
             return MultiLevel.EFFECTIVELY_IMMUTABLE_HC_DV;
         }
         if (b2 != null) {
+            if (b2.equals(b1) && pt1.arrays != pt2.arrays) {
+                return analyserContext.typeImmutable(pt1.copyWithoutArrays());
+            }
             DV dv = immutableSmallInsideBig(pt1, pt2, b2);
             if (dv != null) {
                 return dv;
@@ -130,8 +133,7 @@ public record ComputeIndependent(AnalyserContext analyserContext,
             return MultiLevel.EFFECTIVELY_IMMUTABLE_DV;
         }
 
-        CausesOfDelay causes = t1.hiddenContentAndExplicitTypeComputationDelays().causesOfDelay()
-                .merge(t2.hiddenContentAndExplicitTypeComputationDelays().causesOfDelay());
+        CausesOfDelay causes = t1.hiddenContentDelays().causesOfDelay().merge(t2.hiddenContentDelays().causesOfDelay());
         if (causes.isDelayed()) {
             // delay
             return causes;
@@ -147,7 +149,7 @@ public record ComputeIndependent(AnalyserContext analyserContext,
         for (ParameterizedType pt : intersection.types()) {
             DV immutable = analyserContext.typeImmutable(pt);
             if (MultiLevel.isMutable(immutable)) return MultiLevel.MUTABLE_DV;
-            if (!MultiLevel.isAtLeastEventuallyRecursivelyImmutable(immutable) && hiddenContentOfCurrentType.contains(pt)) {
+            if (!MultiLevel.isAtLeastEventuallyRecursivelyImmutable(immutable)) {// IMPROVE should we filter? && hiddenContentOfCurrentType.contains(pt)) {
                 min = MultiLevel.EFFECTIVELY_IMMUTABLE_HC_DV;
             }
         }
@@ -166,9 +168,12 @@ public record ComputeIndependent(AnalyserContext analyserContext,
             // no info
             return MultiLevel.EFFECTIVELY_IMMUTABLE_DV;
         }
-        if (typeAnalysisBig.hiddenContentAndExplicitTypeComputationDelays().isDelayed()) {
+        if (typeAnalysisBig.hiddenContentDelays().isDelayed()) {
             // delay
-            return typeAnalysisBig.hiddenContentAndExplicitTypeComputationDelays();
+            return typeAnalysisBig.hiddenContentDelays();
+        }
+        if (typeAnalysisBig.getHiddenContentTypes().translate(analyserContext, big).contains(small)) {
+            return analyserContext.typeImmutable(small);
         }
         ParameterizedType smallWithoutArrays = small.copyWithoutArrays();
         if (typeAnalysisBig.getHiddenContentTypes().translate(analyserContext, big).contains(smallWithoutArrays)) {
@@ -253,15 +258,15 @@ public record ComputeIndependent(AnalyserContext analyserContext,
         TypeAnalysis t1 = analyserContext.getTypeAnalysisNullWhenAbsent(b1);
         TypeAnalysis t2 = analyserContext.getTypeAnalysisNullWhenAbsent(b2);
         if (t1 == null || t2 == null) return MultiLevel.INDEPENDENT_DV;
-        CausesOfDelay causes = t1.hiddenContentAndExplicitTypeComputationDelays().causesOfDelay()
-                .merge(t2.hiddenContentAndExplicitTypeComputationDelays().causesOfDelay());
+        CausesOfDelay causes = t1.hiddenContentDelays().causesOfDelay()
+                .merge(t2.hiddenContentDelays().causesOfDelay());
         if (causes.isDelayed()) return causes;
         SetOfTypes intersection = analyserContext.intersectionOfHiddenContent(pt1, t1, pt2, t2);
 
         if (intersection.isEmpty()) return MultiLevel.INDEPENDENT_DV;
 
         DV independent = intersection.types().stream()
-//                .filter(hiddenContentOfCurrentType::contains)
+//                .filter(hiddenContentOfCurrentType::contains) IMPROVE should we do this?
                 .map(pt -> {
                     DV immutable = analyserContext.typeImmutable(pt);
                     return MultiLevel.independentCorrespondingToImmutable(immutable);
@@ -283,16 +288,23 @@ public record ComputeIndependent(AnalyserContext analyserContext,
     private DV linkLevelSmallInsideBig(ParameterizedType small, ParameterizedType big, TypeInfo typeInfoBig) {
         TypeAnalysis typeAnalysisBig = analyserContext.getTypeAnalysisNullWhenAbsent(typeInfoBig);
         if (typeAnalysisBig == null) return LinkedVariables.LINK_INDEPENDENT;
-        if (typeAnalysisBig.hiddenContentAndExplicitTypeComputationDelays().isDelayed()) {
-            return typeAnalysisBig.hiddenContentAndExplicitTypeComputationDelays();
+        if (typeAnalysisBig.hiddenContentDelays().isDelayed()) {
+            return typeAnalysisBig.hiddenContentDelays();
+        }
+        if (typeAnalysisBig.getHiddenContentTypes().translate(analyserContext, big).contains(small)) {
+            return toLinkLevelSmallInsideBig(small);
         }
         ParameterizedType smallWithoutArrays = small.copyWithoutArrays();
         if (typeAnalysisBig.getHiddenContentTypes().translate(analyserContext, big).contains(smallWithoutArrays)) {
-            DV immutable = analyserContext.typeImmutable(smallWithoutArrays);
-            if (MultiLevel.isMutable(immutable)) return LINK_DEPENDENT;
-            if (MultiLevel.isAtLeastEventuallyRecursivelyImmutable(immutable)) return LINK_INDEPENDENT;
-            return LinkedVariables.LINK_IS_HC_OF;
+            return toLinkLevelSmallInsideBig(smallWithoutArrays);
         }
         return null; // try something else
+    }
+
+    private DV toLinkLevelSmallInsideBig(ParameterizedType smallWithoutArrays) {
+        DV immutable = analyserContext.typeImmutable(smallWithoutArrays);
+        if (MultiLevel.isMutable(immutable)) return LINK_DEPENDENT;
+        if (MultiLevel.isAtLeastEventuallyRecursivelyImmutable(immutable)) return LINK_INDEPENDENT;
+        return LinkedVariables.LINK_IS_HC_OF;
     }
 }

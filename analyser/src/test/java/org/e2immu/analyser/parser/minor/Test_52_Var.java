@@ -151,7 +151,7 @@ public class Test_52_Var extends CommonTestRunner {
             }
             if (d.variable() instanceof ReturnVariable) {
                 if ("0.0.0".equals(d.statementId())) {
-                    assertEquals("(instance type StringWriter/*{L sw:statically_assigned:0}*/).toString()",
+                    assertEquals("(instance type StringWriter/*{L sw:0}*/).toString()",
                             d.currentValue().toString());
                     // explicit as result of the method, rather than governed by the type
                     assertEquals(MultiLevel.EFFECTIVELY_IMMUTABLE_DV, d.getProperty(Property.IMMUTABLE));

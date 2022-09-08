@@ -38,7 +38,7 @@ public class AggregatingTypeAnalyser extends TypeAnalyserImpl {
     public static final String IMMUTABLE = "immutable";
     public static final String INDEPENDENT = "independent";
     public static final String CONTAINER = "container";
-    public static final String TRANSPARENT = "transparent";
+    public static final String HIDDEN_CONTENT = "hiddenContent";
     public static final String IMMUTABLE_CAN_BE_INCREASED = "immutableCanBeIncreased";
 
     private final SetOnce<List<TypeAnalysis>> implementingAnalyses = new SetOnce<>();
@@ -58,7 +58,7 @@ public class AggregatingTypeAnalyser extends TypeAnalyserImpl {
                 .add(IMMUTABLE, iteration -> this.aggregate(Property.IMMUTABLE))
                 .add(INDEPENDENT, iteration -> this.aggregate(Property.INDEPENDENT))
                 .add(CONTAINER, iteration -> this.aggregate(Property.CONTAINER))
-                .add(TRANSPARENT, iteration -> this.aggregateTransparent())
+                .add(HIDDEN_CONTENT, iteration -> this.aggregateHiddenContentTypes())
                 .add(IMMUTABLE_CAN_BE_INCREASED, iteration -> super.analyseImmutableDeterminedByTypeParameters());
 
         analyserComponents = builder.build();
@@ -92,6 +92,11 @@ public class AggregatingTypeAnalyser extends TypeAnalyserImpl {
     @Override
     public Stream<MethodAnalyser> allMethodAnalysersIncludingSubTypes() {
         return implementingAnalysers.get().stream().flatMap(TypeAnalyser::allMethodAnalysersIncludingSubTypes);
+    }
+
+    @Override
+    public Stream<FieldAnalyser> allFieldAnalysers() {
+        return implementingAnalysers.get().stream().flatMap(TypeAnalyser::allFieldAnalysers);
     }
 
     @Override
@@ -139,20 +144,17 @@ public class AggregatingTypeAnalyser extends TypeAnalyserImpl {
         return DONE;
     }
 
-    private AnalysisStatus aggregateTransparent() {
-        if (typeAnalysis.hiddenContentAndExplicitTypeComputationDelays().isDone()) return DONE;
-        CausesOfDelay delays = implementingAnalyses.get().stream().map(a -> a.hiddenContentAndExplicitTypeComputationDelays().causesOfDelay())
+    private AnalysisStatus aggregateHiddenContentTypes() {
+        if (typeAnalysis.hiddenContentDelays().isDone()) return DONE;
+        CausesOfDelay delays = implementingAnalyses.get().stream().map(a -> a.hiddenContentDelays().causesOfDelay())
                 .reduce(CausesOfDelay.EMPTY, CausesOfDelay::merge);
         if (delays.isDelayed()) {
             typeAnalysis.setHiddenContentTypesDelay(delays);
             return delays;
         }
-        SetOfTypes unionExplicit = implementingAnalyses.get().stream()
-                .map(a -> a.getExplicitTypes(analyserContext))
-                .reduce(SetOfTypes.EMPTY, SetOfTypes::union);
-        typeAnalysis.setExplicitTypes(unionExplicit);
         SetOfTypes unionHiddenContent = implementingAnalyses.get().stream()
-                .map(TypeAnalysis::getHiddenContentTypes).reduce(SetOfTypes.EMPTY, SetOfTypes::union);
+                .map(TypeAnalysis::getHiddenContentTypes)
+                .reduce(SetOfTypes.EMPTY, SetOfTypes::union);
         typeAnalysis.setHiddenContentTypes(unionHiddenContent);
         return DONE;
     }

@@ -164,17 +164,40 @@ public record ComputeTypeImmutable(AnalyserContext analyserContext,
     private DV includeSuperTypes(DV fromParentOrEnclosing, DV immutableWithoutSuperTypes) {
         assert fromParentOrEnclosing.gt(MultiLevel.MUTABLE_DV);
         int levelParent = MultiLevel.level(fromParentOrEnclosing);
-        if (MultiLevel.Level.IMMUTABLE_HC.level == levelParent && parentOrEnclosingHaveNoHiddenContent()) {
-            /*
-             this can be due to the fact that the parent is an interface, which must have HC if it is immutable
-             we study the hidden content of the parent; if empty, we return only our immutable value.
-             Example: deriving from java.lang.Enum (as each enumeration does) means that the immutable value of
-             Enum is not relevant, as it has no hidden content.
-             */
-            return immutableWithoutSuperTypes;
+        if (MultiLevel.Level.IMMUTABLE_HC.level == levelParent) {
+            DV noHiddenContentInParentEnclosing = parentOrEnclosingHaveNoHiddenContent();
+            if (noHiddenContentInParentEnclosing.isDelayed()) {
+                return noHiddenContentInParentEnclosing;
+            }
+            if (noHiddenContentInParentEnclosing.valueIsTrue()) {
+                /*
+                 this can be due to the fact that the parent is an interface, which must have HC if it is immutable
+                 we study the hidden content of the parent; if empty, we return only our immutable value.
+                 Example: deriving from java.lang.Enum (as each enumeration does) means that the immutable value of
+                 Enum is not relevant, as it has no hidden content.
+
+                 FIXME do delay loop detection
+                 */
+                return immutableWithoutSuperTypes;
+            }
         }
         // e.g. final fields + immutable hc -> ff
         return fromParentOrEnclosing.min(immutableWithoutSuperTypes);
+    }
+
+    /*
+    enclosing is present if the subtype is not static; parent is present if different from java.lang.Object.
+
+    E2Immutable_15_1 is an example where there could be a delay cycle between a (non-static) anonymous type
+     */
+    private DV parentOrEnclosingHaveNoHiddenContent() {
+        CausesOfDelay delays = parentAndOrEnclosingTypeAnalysis.stream()
+                .filter(ta -> ta.getTypeInfo().isAbstract())
+                .map(TypeAnalysis::hiddenContentDelays)
+                .reduce(CausesOfDelay.EMPTY, CausesOfDelay::merge);
+        if (delays.isDelayed()) return delays;
+        boolean b = parentAndOrEnclosingTypeAnalysis.stream().allMatch(ta -> ta.getHiddenContentTypes().isEmpty());
+        return DV.fromBoolDv(b);
     }
 
     private AnalysisStatus checkFieldsThatMustBeGuarded(Work w) {
@@ -510,10 +533,6 @@ public record ComputeTypeImmutable(AnalyserContext analyserContext,
 
         w.whenImmutableFails = w.fromParentOrEnclosing.min(whenImmutableFails);
         return null; // continue
-    }
-
-    private boolean parentOrEnclosingHaveNoHiddenContent() {
-        return parentAndOrEnclosingTypeAnalysis.stream().allMatch(ta -> ta.getHiddenContentTypes().isEmpty());
     }
 
     private AnalysisStatus fromParentOrEnclosing(Work w, Analyser.SharedState sharedState) {

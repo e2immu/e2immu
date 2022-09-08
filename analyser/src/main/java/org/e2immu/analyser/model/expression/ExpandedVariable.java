@@ -15,6 +15,7 @@
 package org.e2immu.analyser.model.expression;
 
 import org.e2immu.analyser.analyser.*;
+import org.e2immu.analyser.analyser.util.ComputeIndependent;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.util.ExpressionComparator;
 import org.e2immu.analyser.model.impl.BaseExpression;
@@ -141,7 +142,18 @@ public class ExpandedVariable extends BaseExpression {
         a substitution. See EvaluateMethodCall.delay
          */
         if (variable instanceof FieldReference fr && fr.scopeIsRecursivelyThis()) {
-            return LinkedVariables.of(fr.thisInScope(), LinkedVariables.LINK_DEPENDENT);
+            // field is part of the content of the type. is it part of the hidden content?
+            ComputeIndependent computeIndependent = new ComputeIndependent(context.getAnalyserContext(),
+                    context.getCurrentType().primaryType());
+            TypeAnalyser typeAnalyser = context.getAnalyserContext().getTypeAnalyser(context.getCurrentType());
+            DV linkLevelToFields = typeAnalyser.allFieldAnalysers().map(fa ->
+                    computeIndependent.linkLevelOfTwoHCRelatedTypes(fr.parameterizedType,
+                            fa.getFieldInfo().type)).reduce(LinkedVariables.LINK_INDEPENDENT, DV::min);
+            if(!LinkedVariables.LINK_INDEPENDENT.equals(linkLevelToFields)) {
+                // if we link in a dependent way to a mutable field, then we must link this:2
+
+                return LinkedVariables.of(fr.thisInScope(), linkLevelToFields);
+            }
         }
         return LinkedVariables.EMPTY;
     }

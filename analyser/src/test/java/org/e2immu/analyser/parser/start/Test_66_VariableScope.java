@@ -409,15 +409,15 @@ public class Test_66_VariableScope extends CommonTestRunner {
                 }
                 if (d.variable() instanceof FieldReference fr && "types".equals(fr.fieldInfo.name)) {
                     if ("1.0.2".equals(d.statementId())) {
-                        assertDv(d, 1, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
+                        assertDv(d, 2, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
                     }
                     if ("1.0.2.0.0".equals(d.statementId())) {
-                        assertDv(d, 1, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
+                        assertDv(d, 2, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
                     }
                 }
                 if ("scope-perPackage:1".equals(d.variableName())) {
                     assertEquals("1", d.statementId());
-                    assertDv(d, 1, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
+                    assertDv(d, 2, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
                 }
             }
         };
@@ -445,14 +445,20 @@ public class Test_66_VariableScope extends CommonTestRunner {
                 assertDv(d, MultiLevel.EFFECTIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
                 assertDv(d, 1, MultiLevel.INDEPENDENT_DV, Property.INDEPENDENT);
                 assertDv(d, 2, MultiLevel.CONTAINER_DV, Property.CONTAINER);
+                assertHc(d, 0, "");
             }
             if ("Qualification".equals(d.typeInfo().simpleName)) {
                 assertDv(d, MultiLevel.EFFECTIVELY_IMMUTABLE_HC_DV, Property.IMMUTABLE);
                 assertDv(d, MultiLevel.INDEPENDENT_DV, Property.INDEPENDENT);
+                assertHc(d, 0, "");
             }
             if ("TypeInfo".equals(d.typeInfo().simpleName)) {
                 assertDv(d, MultiLevel.EFFECTIVELY_IMMUTABLE_HC_DV, Property.IMMUTABLE);
                 assertDv(d, MultiLevel.INDEPENDENT_DV, Property.INDEPENDENT);
+                assertHc(d, 0, "");
+            }
+            if ("VariableScope_5".equals(d.typeInfo().simpleName)) {
+                assertHc(d, 0, "");
             }
         };
         testClass("VariableScope_5", 2, 1, new DebugConfiguration.Builder()
@@ -559,9 +565,18 @@ public class Test_66_VariableScope extends CommonTestRunner {
                 }
             }
         };
+        TypeAnalyserVisitor typeAnalyserVisitor = d -> {
+            if ("Message".equals(d.typeInfo().simpleName)) {
+                assertHc(d, 0, "");
+            }
+            if ("VariableScope_7".equals(d.typeInfo().simpleName)) {
+                assertHc(d, 0, "Message");
+            }
+        };
         testClass("VariableScope_7", 0, 0, new DebugConfiguration.Builder()
                 .addEvaluationResultVisitor(evaluationResultVisitor)
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
                 .build());
     }
 
@@ -958,7 +973,7 @@ public class Test_66_VariableScope extends CommonTestRunner {
                 if (d.variable() instanceof ReturnVariable) {
                     if ("0.0.0".equals(d.statementId())) {
                         String expected = d.iteration() == 0 ? "s.length()==<f:x.i>?<f:x.i>:<return value>"
-                                : "s.length()==x.i?s.length()/*{L i:statically_assigned:0,x:is_hc_of:3}*/:<return value>";
+                                : "s.length()==x.i?s.length()/*{L i:0,x:3}*/:<return value>";
                         assertEquals(expected, d.currentValue().toString());
                         String linked = d.iteration() == 0 ? "x.i:0,x:-1,xs:-1" : "x.i:0,x:2";
                         assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
@@ -966,7 +981,7 @@ public class Test_66_VariableScope extends CommonTestRunner {
                     if ("0".equals(d.statementId())) {
                         String expected = d.iteration() == 0
                                 ? "xs.isEmpty()||s.length()!=<dv:scope-x:0.i>?<return value>:<dv:scope-x:0.i>"
-                                : "xs.isEmpty()||s.length()!=scope-x:0.i?<return value>:s.length()/*{L i:statically_assigned:0,x:is_hc_of:3}*/";
+                                : "xs.isEmpty()||s.length()!=scope-x:0.i?<return value>:s.length()/*{L i:0,x:3}*/";
                         assertEquals(expected, d.currentValue().toString());
                         String linked = d.iteration() == 0 ? "scope-x:0.i:0,scope-x:0:-1,xs:-1" : "scope-x:0.i:0,scope-x:0:2";
                         assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
@@ -974,7 +989,7 @@ public class Test_66_VariableScope extends CommonTestRunner {
                     if ("1".equals(d.statementId())) {
                         String expected = d.iteration() == 0
                                 ? "<m:isEmpty>||<dv:scope-x:0.i>!=<m:length>?0:<dv:scope-x:0.i>"
-                                : "xs.isEmpty()||s.length()!=scope-x:0.i?0:s.length()/*{L i:statically_assigned:0,x:is_hc_of:3}*/";
+                                : "xs.isEmpty()||s.length()!=scope-x:0.i?0:s.length()/*{L i:0,x:3}*/";
                         assertEquals(expected, d.currentValue().toString());
                         String linked = d.iteration() == 0 ? "s:-1,scope-x:0.i:0,scope-x:0:-1,xs:-1" : "scope-x:0.i:0,scope-x:0:2";
                         assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
@@ -1036,19 +1051,19 @@ public class Test_66_VariableScope extends CommonTestRunner {
                 if (d.variable() instanceof ReturnVariable) {
                     if ("0.0.0".equals(d.statementId())) {
                         String expected = d.iteration() <= 1 ? "s.length()==<f:x.i>?<f:x.i>:<return value>"
-                                : "s.length()==y/*(X)*/.i$0?s.length()/*{L i:statically_assigned:0,x:is_hc_of:3}*/:<return value>";
+                                : "s.length()==y/*(X)*/.i$0?s.length()/*{L i:0,x:3}*/:<return value>";
                         assertEquals(expected, d.currentValue().toString());
                     }
                     if ("0".equals(d.statementId())) {
                         String expected = d.iteration() <= 1
                                 ? "y instanceof X&&null!=y&&s.length()==<dv:scope-x:0.i>?<dv:scope-x:0.i>:<return value>"
-                                : "y instanceof X&&null!=y&&s.length()==scope-x:0.i?s.length()/*{L i:statically_assigned:0,x:is_hc_of:3}*/:<return value>";
+                                : "y instanceof X&&null!=y&&s.length()==scope-x:0.i?s.length()/*{L i:0,x:3}*/:<return value>";
                         assertEquals(expected, d.currentValue().toString());
                     }
                     if ("1".equals(d.statementId())) {
                         String expected = d.iteration() <= 1
                                 ? "y instanceof X&&null!=y&&<dv:scope-x:0.i>==<m:length>?<dv:scope-x:0.i>:0"
-                                : "y instanceof X&&null!=y&&s.length()==y/*(X)*/.i$1?s.length()/*{L i:statically_assigned:0,x:is_hc_of:3}*/:0";
+                                : "y instanceof X&&null!=y&&s.length()==y/*(X)*/.i$1?s.length()/*{L i:0,x:3}*/:0";
                         assertEquals(expected, d.currentValue().toString());
                     }
                 }

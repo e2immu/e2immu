@@ -254,7 +254,7 @@ public class Test_22_SubTypes extends CommonTestRunner {
             }
 
             if ("Example8".equals(d.typeInfo().simpleName)) {
-                assertEquals("Type param T", d.typeAnalysis().getHiddenContentTypes().toString());
+                assertEquals("T", d.typeAnalysis().getHiddenContentTypes().toString());
                 assertDv(d, MultiLevel.EFFECTIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
             }
             // nested in Example8

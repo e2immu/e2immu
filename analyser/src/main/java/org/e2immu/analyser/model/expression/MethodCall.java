@@ -1174,8 +1174,8 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         TypeAnalysis typeAnalysis = analyserContext.getTypeAnalysis(context.getCurrentType());
 
         if (methodInspection.isFactoryMethod()) {
-            if (typeAnalysis.hiddenContentAndExplicitTypeComputationDelays().isDelayed()) {
-                return typeAnalysis.hiddenContentAndExplicitTypeComputationDelays();
+            if (typeAnalysis.hiddenContentDelays().isDelayed()) {
+                return typeAnalysis.hiddenContentDelays();
             }
             SetOfTypes hiddenContentTypes = typeAnalysis.getHiddenContentTypes();
             return factoryMethodDynamicallyImmutable(formal, hiddenContentTypes, context);

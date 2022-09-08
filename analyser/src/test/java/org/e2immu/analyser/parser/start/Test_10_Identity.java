@@ -213,7 +213,7 @@ public class Test_10_Identity extends CommonTestRunner {
                     if ("1".equals(d.statementId())) {
                         assertEquals("s:0", d.variableInfo().getLinkedVariables().toString());
                         String expected = d.iteration() == 0 ? "<m:equals>?<m:idem>:<p:s>"
-                                : "\"a\".equals(s)?\"a\"/*@Identity {L s:statically_assigned:0}*/:s";
+                                : "\"a\".equals(s)?\"a\"/*@Identity {L s:0}*/:s";
                         assertEquals(expected, d.currentValue().toString());
                         assertDv(d, 1, DV.TRUE_DV, IDENTITY);
                     }
@@ -224,7 +224,7 @@ public class Test_10_Identity extends CommonTestRunner {
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("idem3".equals(d.methodInfo().name)) {
                 String expected = d.iteration() == 0 ? "<m:idem3>"
-                        : "/*inline idem3*/\"a\".equals(s)?\"a\"/*@Identity {L s:statically_assigned:0}*/:s";
+                        : "/*inline idem3*/\"a\".equals(s)?\"a\"/*@Identity {L s:0}*/:s";
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
                 assertDv(d, 1, DV.TRUE_DV, Property.IDENTITY);
                 assertDv(d, DV.FALSE_DV, Property.MODIFIED_METHOD);

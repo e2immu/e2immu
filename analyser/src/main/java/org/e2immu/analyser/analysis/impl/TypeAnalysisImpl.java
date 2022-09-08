@@ -20,7 +20,6 @@ import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.VariableExpression;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
-import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.annotation.FinalFields;
 import org.e2immu.annotation.Independent;
@@ -157,14 +156,8 @@ public class TypeAnalysisImpl extends AnalysisImpl implements TypeAnalysis {
         return translateToVisibleField(visibleFields, fieldReference);
     }
 
-    // AnnotatedAPI situation. We simply collect the types visible in the API.
     @Override
-    public SetOfTypes getExplicitTypes(InspectionProvider inspectionProvider) {
-        return typeInfo.typeInspection.get().typesOfMethodsAndConstructors(InspectionProvider.DEFAULT);
-    }
-
-    @Override
-    public CausesOfDelay hiddenContentAndExplicitTypeComputationDelays() {
+    public CausesOfDelay hiddenContentDelays() {
         return CausesOfDelay.EMPTY;
     }
 
@@ -201,7 +194,6 @@ public class TypeAnalysisImpl extends AnalysisImpl implements TypeAnalysis {
         private final AddOnceSet<FieldInfo> guardedByEventuallyImmutableFields = new AddOnceSet<>();
 
         private final VariableFirstThen<CausesOfDelay, SetOfTypes> hiddenContentTypes;
-        private final SetOnce<SetOfTypes> explicitTypes = new SetOnce<>();
 
         public final SetOnceMap<String, MethodInfo> aspects = new SetOnceMap<>();
 
@@ -224,7 +216,6 @@ public class TypeAnalysisImpl extends AnalysisImpl implements TypeAnalysis {
             assert approvedPreconditionsE1.isFrozen();
             assert immutableDeterminedByTypeParameters.isSet();
             assert hiddenContentTypes.isSet();
-            assert explicitTypes.isSet();
         }
 
         private static CausesOfDelay initialDelay(TypeInfo typeInfo) {
@@ -437,36 +428,8 @@ public class TypeAnalysisImpl extends AnalysisImpl implements TypeAnalysis {
             }
         }
 
-        // this implementation is a bit of a hack -- explicit types are not set directly for shallowly
-        // analysed types. When extending from a shallow type, e.g., when extending from RuntimeException,
-        // you'll need its explicit types. They may reach further than what we've investigated, so
-        // those get filtered out. See e.g. Enum_0, which extends implicitly from java.lang.Enum
         @Override
-        public SetOfTypes getExplicitTypes(InspectionProvider inspectionProvider) {
-            if (!explicitTypes.isSet()) {
-                if (getTypeInfo().shallowAnalysis()) {
-                    SetOfTypes set = typeInfo.typeInspection.get().typesOfMethodsAndConstructors(InspectionProvider.DEFAULT);
-                    Set<ParameterizedType> filtered = set.types().stream()
-                            .filter(pt -> pt.typeInfo != null && pt.typeInfo.typeInspection.isSet())
-                            .collect(Collectors.toUnmodifiableSet());
-                    explicitTypes.set(new SetOfTypes(filtered));
-                    return new SetOfTypes(filtered);
-                }
-                return null; // not yet set
-            }
-            return explicitTypes.get(typeInfo.fullyQualifiedName);
-        }
-
-        public void setExplicitTypes(SetOfTypes explicitTypes) {
-            this.explicitTypes.set(explicitTypes);
-        }
-
-        public void copyExplicitTypes(Builder other) {
-            this.explicitTypes.copy(other.explicitTypes);
-        }
-
-        @Override
-        public CausesOfDelay hiddenContentAndExplicitTypeComputationDelays() {
+        public CausesOfDelay hiddenContentDelays() {
             if (hiddenContentTypes.isSet()) return CausesOfDelay.EMPTY;
             return hiddenContentTypes.getFirst();
         }

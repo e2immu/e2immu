@@ -41,7 +41,7 @@ public class TestCommonJavaUtilFunction extends CommonAnnotatedAPI {
         assertEquals(MultiLevel.INDEPENDENT_HC_DV, typeAnalysis.getProperty(Property.INDEPENDENT));
         assertEquals(MultiLevel.NOT_CONTAINER_DV, typeAnalysis.getProperty(Property.CONTAINER));
 
-        assertEquals("Type param T", typeAnalysis.getHiddenContentTypes().toString());
+        assertEquals("T", typeAnalysis.getHiddenContentTypes().toString());
     }
 
     @Test
@@ -71,7 +71,7 @@ public class TestCommonJavaUtilFunction extends CommonAnnotatedAPI {
         assertTrue(typeInfo.typeInspection.get().isFunctionalInterface());
 
         TypeAnalysis typeAnalysis = typeInfo.typeAnalysis.get();
-        assertEquals("Type param R, Type param T", typeAnalysis.getHiddenContentTypes().toString());
+        assertEquals("R, T", typeAnalysis.getHiddenContentTypes().toString());
     }
 
     @Test
@@ -96,6 +96,6 @@ public class TestCommonJavaUtilFunction extends CommonAnnotatedAPI {
         assertEquals(MultiLevel.MUTABLE_DV, typeAnalysis.getProperty(Property.IMMUTABLE));
         assertEquals(MultiLevel.INDEPENDENT_HC_DV, typeAnalysis.getProperty(Property.INDEPENDENT));
 
-        assertEquals("Type param T", typeAnalysis.getHiddenContentTypes().toString());
+        assertEquals("T", typeAnalysis.getHiddenContentTypes().toString());
     }
 }

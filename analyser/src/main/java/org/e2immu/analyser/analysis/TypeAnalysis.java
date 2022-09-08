@@ -17,7 +17,6 @@ package org.e2immu.analyser.analysis;
 import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.variable.FieldReference;
-import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.annotation.NotNull;
 
 import java.util.HashSet;
@@ -138,13 +137,6 @@ public interface TypeAnalysis extends Analysis {
     DV immutableDeterminedByTypeParameters();
 
     /**
-     * The explicit types are those types in the object graph of the fields that are accessed.
-     *
-     * @return null when not yet set, use hiddenContentAndExplicitTypeComputationDelays to check
-     */
-    SetOfTypes getExplicitTypes(InspectionProvider inspectionProvider);
-
-    /**
      * The hidden content of a type as computed. Contains all the types of the fields
      * that are immutable, but not recursively immutable.
      * As a result, this set does not contain any primitives, or java.lang.String, for example.
@@ -155,6 +147,5 @@ public interface TypeAnalysis extends Analysis {
     SetOfTypes getHiddenContentTypes();
 
     @NotNull
-    CausesOfDelay hiddenContentAndExplicitTypeComputationDelays();
-
+    CausesOfDelay hiddenContentDelays();
 }

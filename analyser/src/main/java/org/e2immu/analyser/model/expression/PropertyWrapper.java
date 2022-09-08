@@ -226,7 +226,7 @@ public final class PropertyWrapper extends BaseExpression implements Expression,
                 String prefix = linkedVariables.isDelayed() ? "{DL " : "{L ";
                 String main = linkedVariables.variables().entrySet().stream()
                         .sorted(Comparator.comparing(e -> e.getKey().simpleName()))
-                        .map(e -> e.getKey().simpleName() + ":" + e.getValue().toString())
+                        .map(e -> e.getKey().simpleName() + ":" + e.getValue().value())
                         .collect(Collectors.joining(",", prefix, "}"));
                 outputBuilder.add(new Text(main));
             }

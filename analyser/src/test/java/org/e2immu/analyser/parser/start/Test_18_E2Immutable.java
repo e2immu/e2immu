@@ -350,7 +350,7 @@ public class Test_18_E2Immutable extends CommonTestRunner {
 
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("E2Immutable_5".equals(d.typeInfo().simpleName)) {
-                assertEquals("Type param T", d.typeAnalysis().getHiddenContentTypes().toString());
+                assertHc(d, 0, "T");
             }
         };
 
@@ -381,21 +381,21 @@ public class Test_18_E2Immutable extends CommonTestRunner {
             if ("getMap7".equals(d.methodInfo().name)) {
                 if ("incremented".equals(d.variableName())) {
                     if ("0".equals(d.statementId())) {
-                        String expectValue = d.iteration() == 0 ? "<new:HashMap<String,SimpleContainer>>"
+                        String expectValue = d.iteration() < 3 ? "<new:HashMap<String,SimpleContainer>>"
                                 : "new HashMap<>(map7)/*this.size()==map7.size()*/";
                         assertEquals(expectValue, d.currentValue().toString());
-                        String expectLinked = d.iteration() == 0 ? "this.map7:-1" : "this.map7:4";
+                        String expectLinked = d.iteration() < 3 ? "this.map7:-1" : "this.map7:4";
                         assertEquals(expectLinked, d.variableInfo().getLinkedVariables().toString());
                     }
                     if ("1".equals(d.statementId())) {
-                        String expectValue = d.iteration() == 0 ? "<new:HashMap<String,SimpleContainer>>"
+                        String expectValue = d.iteration() < 3 ? "<new:HashMap<String,SimpleContainer>>"
                                 : "new HashMap<>(map7)/*this.size()==map7.size()*/";
                         assertEquals(expectValue, d.currentValue().toString());
                     }
                 }
                 if (d.variable() instanceof ReturnVariable) {
                     if ("2".equals(d.statementId())) {
-                        String expectLinked = d.iteration() == 0 ? "incremented:0,this.map7:-1" : "incremented:0,this.map7:4";
+                        String expectLinked = d.iteration() < 3 ? "incremented:0,this.map7:-1" : "incremented:0,this.map7:4";
                         assertEquals(expectLinked, d.variableInfo().getLinkedVariables().toString());
                     }
                 }
@@ -412,10 +412,10 @@ public class Test_18_E2Immutable extends CommonTestRunner {
                 assertEquals(expect, d.methodAnalysis().getSingleReturnValue().toString());
             }
             if ("get7".equals(d.methodInfo().name)) {
-                assertDv(d, 2, MultiLevel.DEPENDENT_DV, INDEPENDENT);
+                assertDv(d, 3, MultiLevel.DEPENDENT_DV, INDEPENDENT);
             }
             if ("getMap7".equals(d.methodInfo().name)) {
-                assertDv(d, 1, MultiLevel.DEPENDENT_DV, INDEPENDENT);
+                assertDv(d, 3, MultiLevel.DEPENDENT_DV, INDEPENDENT);
             }
         };
 
@@ -428,11 +428,13 @@ public class Test_18_E2Immutable extends CommonTestRunner {
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("E2Immutable_7".equals(d.typeInfo().simpleName)) {
                 // because SimpleContainer is mutable
-                assertDv(d, 1, MultiLevel.DEPENDENT_DV, INDEPENDENT);
+                assertDv(d, 3, MultiLevel.DEPENDENT_DV, INDEPENDENT);
+                assertHc(d, 1, "");
             }
             if ("SimpleContainer".equals(d.typeInfo().simpleName)) {
                 assertDv(d, 1, MultiLevel.MUTABLE_DV, IMMUTABLE);
                 assertDv(d, MultiLevel.INDEPENDENT_DV, INDEPENDENT);
+                assertHc(d, 0, "");
             }
         };
         testClass("E2Immutable_7", 0, 0, new DebugConfiguration.Builder()
@@ -593,7 +595,7 @@ public class Test_18_E2Immutable extends CommonTestRunner {
 
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("E2Immutable_12".equals(d.typeInfo().simpleName)) {
-                assertEquals("Type param T", d.typeAnalysis().getHiddenContentTypes().toString());
+                assertHc(d, 0, "T");
             }
         };
 
@@ -628,7 +630,7 @@ public class Test_18_E2Immutable extends CommonTestRunner {
 
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("E2Immutable_14".equals(d.typeInfo().simpleName)) {
-                assertEquals("Type param T", d.typeAnalysis().getHiddenContentTypes().toString());
+                assertHc(d, 0, "T");
             }
         };
 
@@ -714,6 +716,12 @@ public class Test_18_E2Immutable extends CommonTestRunner {
     @Test
     public void test_15_1() throws IOException {
 
+        MethodAnalyserVisitor methodAnalyserVisitor = d -> {
+            if ("suffix".equals(d.methodInfo().name)) {
+                assertFalse(d.allowBreakDelay());
+            }
+        };
+
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
             if ("NO_SUFFIX".equals(d.fieldInfo().name)) {
                 assertDv(d, MultiLevel.EFFECTIVELY_IMMUTABLE_DV, EXTERNAL_IMMUTABLE);
@@ -723,14 +731,18 @@ public class Test_18_E2Immutable extends CommonTestRunner {
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("E2Immutable_15_1".equals(d.typeInfo().simpleName)) {
                 assertDv(d, MultiLevel.EFFECTIVELY_IMMUTABLE_HC_DV, IMMUTABLE);
+                assertHc(d, 0, "Suffix");
             } else if ("Suffix".equals(d.typeInfo().simpleName)) {
                 assertDv(d, MultiLevel.EFFECTIVELY_IMMUTABLE_HC_DV, IMMUTABLE);
+                assertHc(d, 0, "");
             } else if ("VariableDefinedOutsideLoop".equals(d.typeInfo().simpleName)) {
                 // because E2Immutable_15 is mutable
                 assertDv(d, 2, MultiLevel.EFFECTIVELY_IMMUTABLE_HC_DV, IMMUTABLE);
+                assertHc(d, 0, "Suffix");
             } else if ("$1".equals(d.typeInfo().simpleName)) {
                 // new Suffix() {} as return value in suffix() method in VDOL
                 assertFalse(d.typeInspection().isExtensible());
+                assertHc(d, 0, "");
                 assertEquals("VariableDefinedOutsideLoop", d.typeInfo().packageNameOrEnclosingType.getRight().simpleName);
                 assertDv(d, MultiLevel.EFFECTIVELY_IMMUTABLE_DV, PARTIAL_IMMUTABLE);
                 assertDv(d, 3, MultiLevel.EFFECTIVELY_IMMUTABLE_DV, IMMUTABLE);
@@ -740,12 +752,14 @@ public class Test_18_E2Immutable extends CommonTestRunner {
                 // new Suffix() {} on field NO_SUFFIX
                 assertEquals("E2Immutable_15_1", d.typeInfo().packageNameOrEnclosingType.getRight().simpleName);
                 assertFalse(d.typeInspection().isStatic());
+                assertHc(d, 0, "");
                 assertDv(d, MultiLevel.EFFECTIVELY_IMMUTABLE_DV, IMMUTABLE);
             } else fail("type " + d.typeInfo());
         };
         testClass("E2Immutable_15_1", 0, 0, new DebugConfiguration.Builder()
                         .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
                         .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+                        .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                         .build(),
                 new AnalyserConfiguration.Builder()
                         .setComputeFieldAnalyserAcrossAllMethods(true)
@@ -772,7 +786,7 @@ public class Test_18_E2Immutable extends CommonTestRunner {
                 assertDv(d, 1, MultiLevel.EFFECTIVELY_IMMUTABLE_HC_DV, IMMUTABLE);
             }
             if ("LocalVariable".equals(d.typeInfo().simpleName)) {
-                assertDv(d, 1, MultiLevel.EFFECTIVELY_FINAL_FIELDS_DV, IMMUTABLE);
+                assertDv(d, 2, MultiLevel.EFFECTIVELY_FINAL_FIELDS_DV, IMMUTABLE);
             }
         };
 

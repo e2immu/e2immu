@@ -19,9 +19,9 @@ import org.e2immu.annotation.Container;
 import java.util.List;
 import java.util.Random;
 
-// attempt at re-creating a delay problem with the constructors of And
+// variant without the @Container on Primitives
 
-public class ExplicitConstructorInvocation_7 {
+public class ExplicitConstructorInvocation_7_1 {
 
     interface Identifier {
         int getComplexity();
@@ -35,7 +35,7 @@ public class ExplicitConstructorInvocation_7 {
         }
     }
 
-    @Container
+    //@Container diff wrt _7
     interface Primitives {
     }
 
@@ -50,18 +50,18 @@ public class ExplicitConstructorInvocation_7 {
     private final List<Expression> expressions;
     private final int complexity;
 
-    public ExplicitConstructorInvocation_7(Primitives primitives1, List<Expression> expressions) {
+    public ExplicitConstructorInvocation_7_1(Primitives primitives1, List<Expression> expressions) {
         this(null, primitives1, expressions);
     }
 
-    private ExplicitConstructorInvocation_7(Identifier identifier, Primitives primitives2, List<Expression> expressions) {
+    private ExplicitConstructorInvocation_7_1(Identifier identifier, Primitives primitives2, List<Expression> expressions) {
         this.complexity = COMPLEXITY + expressions.stream().mapToInt(Expression::getComplexity).sum()
                 + (identifier == null ? 0 : identifier.getComplexity());
         this.primitives = requireNonNull(primitives2);
         this.expressions = requireNonNull(expressions);
     }
 
-    private ExplicitConstructorInvocation_7(Identifier identifier, Primitives primitives3) {
+    private ExplicitConstructorInvocation_7_1(Identifier identifier, Primitives primitives3) {
         this(identifier, primitives3, List.of());
     }
 

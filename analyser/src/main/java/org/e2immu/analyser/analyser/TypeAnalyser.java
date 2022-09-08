@@ -29,4 +29,6 @@ public interface TypeAnalyser extends Analyser {
     TypeInfo getPrimaryType();
 
     Stream<MethodAnalyser> allMethodAnalysersIncludingSubTypes();
+
+    Stream<FieldAnalyser> allFieldAnalysers();
 }

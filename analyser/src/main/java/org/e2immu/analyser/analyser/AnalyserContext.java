@@ -27,7 +27,6 @@ import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.pattern.PatternMatcher;
 
-import java.util.HashSet;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -181,55 +180,6 @@ public interface AnalyserContext extends AnalysisProvider, InspectionProvider {
         return getConfiguration().analyserConfiguration().analyserProgram();
     }
 
-    default DV immutableOfHiddenContentInTypeParameters(ParameterizedType parameterizedType) {
-        SetOfTypes hiddenContentTypes = typeParametersOf(parameterizedType);
-        return hiddenContentTypes.types().stream()
-                .map(this::typeImmutable)
-                .reduce(MultiLevel.EFFECTIVELY_IMMUTABLE_DV, DV::min);
-    }
-
-    private SetOfTypes typeParametersOf(ParameterizedType parameterizedType) {
-        TypeInfo bestType = parameterizedType.bestTypeInfo();
-        if (bestType == null) {
-            // unbound type parameter, with or without arrays
-            return new SetOfTypes(Set.of(parameterizedType.copyWithoutArrays()));
-        }
-        /*
-        archetypal situation 1: pt == Set<String>; we want to return String
-
-        Formally, the type has formal type parameters. They must be part of the hidden
-        content; so we return the values of the concrete parameters
-         */
-        TypeInspection typeInspection = getTypeInspection(bestType);
-        Set<ParameterizedType> result = new HashSet<>();
-        for (TypeParameter tp : typeInspection.typeParameters()) {
-            if (tp.isUnbound() && parameterizedType.parameters.size() > tp.getIndex()) {
-                result.add(parameterizedType.parameters.get(tp.getIndex()));
-            }
-        }
-        return new SetOfTypes(result);
-    }
-
-    /*
-    Front method for typeAnalysis.getHiddenContentTypes(), when there may not be a type.
-
-    T, T[], T[][]  --> T
-    Function<T, R> --> hidden content(R)
-     */
-    default SetOfTypes hiddenContentTypes(ParameterizedType type) {
-        if (type.isFunctionalInterface(this)) {
-            ParameterizedType returnType = type.findSingleAbstractMethodOfInterface(this)
-                    .getConcreteReturnType(getPrimitives());
-            return hiddenContentTypes(returnType);
-        }
-        if (type.typeParameter != null) {
-            return new SetOfTypes(Set.of(type.copyWithoutArrays()));
-        }
-        TypeAnalysis typeAnalysis = getTypeAnalysis(type.bestTypeInfo());
-        return typeAnalysis.getHiddenContentTypes();
-    }
-
-
     /*
     Intersection of hidden content types.
 
@@ -242,8 +192,8 @@ public interface AnalyserContext extends AnalysisProvider, InspectionProvider {
     among the String and Integer. See: MethodReference_3, stream() method.
      */
     default SetOfTypes intersectionOfHiddenContent(ParameterizedType pt1, TypeAnalysis t1, ParameterizedType pt2, TypeAnalysis t2) {
-        SetOfTypes hidden1 = t1.getHiddenContentTypes().translate(this, pt1);
-        SetOfTypes hidden2 = t2.getHiddenContentTypes().translate(this, pt2);
+        SetOfTypes hidden1 = t1.getHiddenContentTypes().translate(this, pt1).dropArrays();
+        SetOfTypes hidden2 = t2.getHiddenContentTypes().translate(this, pt2).dropArrays();
         SetOfTypes plainIntersection = hidden1.intersection(hidden2);
         if (plainIntersection.isEmpty() && !hidden1.isEmpty() && !hidden2.isEmpty()) {
             // for now, we're hard-coding the Map.Entry situation

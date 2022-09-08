@@ -749,9 +749,9 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
             return delay;
         }
         TypeAnalysis typeAnalysis = myTypeAnalyser.getTypeAnalysis();
-        if (typeAnalysis.hiddenContentAndExplicitTypeComputationDelays().isDelayed()) {
+        if (typeAnalysis.hiddenContentDelays().isDelayed()) {
             LOGGER.debug("Field {} independent delayed: wait for hidden content of type", fieldInfo);
-            return typeAnalysis.hiddenContentAndExplicitTypeComputationDelays().causesOfDelay();
+            return typeAnalysis.hiddenContentDelays().causesOfDelay();
         }
         SetOfTypes hiddenContentCurrentType = typeAnalysis.getHiddenContentTypes();
 

@@ -44,8 +44,8 @@ public class E2ImmutableComposition_0 {
     }
 
     /**
-     * This as an @E2Immutable abstract type.
-     * We've added a non-modifying, non-exposing (independent) method.
+     * This is annotated as an immutable abstract type.
+     * We've added a non-modifying, hidden content exposing <code>visit</code> method.
      * Semantically, this type is meant to hold data of the unbound parameter type {@link T}.
      *
      * @param <T>
@@ -97,7 +97,8 @@ public class E2ImmutableComposition_0 {
      */
     @Container
     static class One<T> implements NonEmptyList<T> {
-        @FinalFields(absent = true)
+        @Final(absent = true)
+        @ImmutableContainer(hc = true)
         @NotModified
         private T t;
 
@@ -260,6 +261,9 @@ public class E2ImmutableComposition_0 {
             return ones[index];
         }
 
+        /**
+         * @param consumer ERROR: dependent, in contradiction to the requirement in {@link NonEmptyImmutableList}
+         */
         @Override
         public void visit(Consumer<One<Integer>> consumer) {
             for (One<Integer> one : ones) consumer.accept(one);
@@ -441,7 +445,7 @@ public class E2ImmutableComposition_0 {
         }
 
         @Override
-        public void visit(@Independent Consumer<HasSize> consumer) {
+        public void visit(@Independent(hc = true) Consumer<HasSize> consumer) {
             for (HasSize element : elements) consumer.accept(element);
         }
     }

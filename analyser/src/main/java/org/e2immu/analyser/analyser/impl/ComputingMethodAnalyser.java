@@ -971,11 +971,15 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
             ParameterizedType returnType = methodInfo.returnType();
             LinkedVariables linkedVariables = variableInfo.getLinkedVariables();
             if (linkedVariables.isDelayed()) {
+                LOGGER.debug("Delaying independent of {}, linked variables not known", methodInfo);
+                methodAnalysis.setProperty(INDEPENDENT, linkedVariables.causesOfDelay());
                 return linkedVariables.causesOfDelay();
             }
-            if (typeAnalysis.hiddenContentAndExplicitTypeComputationDelays().isDelayed()) {
+            if (typeAnalysis.hiddenContentDelays().isDelayed()) {
                 LOGGER.debug("Delaying independent of {}, hidden content not yet known", methodInfo);
-                return AnalysisStatus.of(typeAnalysis.hiddenContentAndExplicitTypeComputationDelays().causesOfDelay());
+                CausesOfDelay delay = typeAnalysis.hiddenContentDelays().causesOfDelay();
+                methodAnalysis.setProperty(INDEPENDENT, delay);
+                return AnalysisStatus.of(delay);
             }
             SetOfTypes hiddenContentCurrentType = typeAnalysis.getHiddenContentTypes();
 
@@ -985,7 +989,10 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
                     .filter(e -> e.getKey() instanceof FieldReference fr && fr.scopeIsRecursivelyThis()
                             || e.getKey() instanceof This)
                     .map(e -> {
-                        if (e.getKey() instanceof This) return MultiLevel.INDEPENDENT_DV;
+                        if (e.getKey() instanceof This && e.getValue().le(LinkedVariables.LINK_ASSIGNED)) {
+                            // return this
+                            return MultiLevel.INDEPENDENT_DV;
+                        }
                         return computeIndependent.typesAtLinkLevel(e.getValue(), returnType, immutable, e.getKey().parameterizedType());
                     })
                     .reduce(MultiLevel.INDEPENDENT_DV, DV::min);

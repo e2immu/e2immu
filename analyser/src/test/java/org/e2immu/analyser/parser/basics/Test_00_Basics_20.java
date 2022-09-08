@@ -175,7 +175,7 @@ public class Test_00_Basics_20 extends CommonTestRunner {
                     if ("2".equals(d.statementId())) {
                         assertEquals(expected, d.currentValue().toString());
                     }
-                    if("3".equals(d.statementId())) {
+                    if ("3".equals(d.statementId())) {
                         String lvs = d.iteration() <= 1 ? "list:-1" : "list:3";
                         // directional arrow, I'm part of the HC of the list; a change in 'I' is a change in list as well
                         assertEquals(lvs, d.variableInfo().getLinkedVariables().toString());
@@ -277,17 +277,17 @@ public class Test_00_Basics_20 extends CommonTestRunner {
         }
         if ("C2".equals(d.typeInfo().simpleName)) {
             assertDv(d, 1, MultiLevel.EFFECTIVELY_IMMUTABLE_HC_DV, IMMUTABLE);
-            assertEquals("Type param T", d.typeAnalysis().getHiddenContentTypes().toString());
+            assertHc(d, 0, "T");
             assertEquals(DV.TRUE_DV, d.typeAnalysis().immutableDeterminedByTypeParameters());
         }
         if ("C3".equals(d.typeInfo().simpleName)) {
             assertDv(d, 1, MultiLevel.EFFECTIVELY_IMMUTABLE_HC_DV, IMMUTABLE);
-            assertEquals("Type java.lang.Object", d.typeAnalysis().getHiddenContentTypes().toString());
+            assertHc(d, 0, "Object");
             assertEquals(DV.FALSE_DV, d.typeAnalysis().immutableDeterminedByTypeParameters());
         }
         if ("C4".equals(d.typeInfo().simpleName)) {
             assertDv(d, 1, MultiLevel.EFFECTIVELY_IMMUTABLE_HC_DV, IMMUTABLE);
-            assertEquals("Type param T", d.typeAnalysis().getHiddenContentTypes().toString());
+            assertHc(d, 0, "T");
             assertEquals(DV.TRUE_DV, d.typeAnalysis().immutableDeterminedByTypeParameters());
         }
     };

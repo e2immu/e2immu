@@ -45,9 +45,11 @@ public class Test_Independent extends CommonTestRunner {
     @Test
     public void test_2() throws IOException {
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
+            if ("I".equals(d.typeInfo().simpleName)) {
+                assertHc(d, 0, "");
+            }
             if ("ISet".equals(d.typeInfo().simpleName)) {
-                // The type "I" is not transparent in "ISet", because of the "I::new" method reference!!!
-                assertEquals("", d.typeAnalysis().getHiddenContentTypes().toString());
+                assertHc(d, 2, "");
             }
         };
         testClass("Independent_2", 0, 0, new DebugConfiguration.Builder()
@@ -76,8 +78,8 @@ public class Test_Independent extends CommonTestRunner {
                     assertDv(d, 1, MultiLevel.EFFECTIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
                 }
                 if ("AnalyserContextImpl".equals(d.methodInfo().typeInfo.simpleName)) {
-                    assertDv(d, 1, MultiLevel.DEPENDENT_DV, Property.INDEPENDENT);
-                    assertDv(d, 1, MultiLevel.MUTABLE_DV, Property.IMMUTABLE);
+                    assertDv(d, 3, MultiLevel.DEPENDENT_DV, Property.INDEPENDENT);
+                    assertDv(d, 3, MultiLevel.MUTABLE_DV, Property.IMMUTABLE);
                 }
             }
             if ("parallelMethodAnalyserStream".equals(d.methodInfo().name)) {
@@ -96,14 +98,25 @@ public class Test_Independent extends CommonTestRunner {
             if ("MethodInfo".equals(d.typeInfo().simpleName)) {
                 assertDv(d, 1, MultiLevel.EFFECTIVELY_FINAL_FIELDS_DV, Property.IMMUTABLE);
                 assertDv(d, 1, MultiLevel.DEPENDENT_DV, Property.INDEPENDENT);
+                assertHc(d, 0, "");
             }
             if ("MethodAnalyser".equals(d.typeInfo().simpleName)) {
                 assertDv(d, MultiLevel.MUTABLE_DV, Property.IMMUTABLE);
                 assertDv(d, MultiLevel.DEPENDENT_DV, Property.INDEPENDENT);
+                assertHc(d, 0, "");
             }
             if ("MethodAnalyserImpl".equals(d.typeInfo().simpleName)) {
+                assertDv(d, 3, MultiLevel.EFFECTIVELY_FINAL_FIELDS_DV, Property.IMMUTABLE);
+                assertDv(d, 3, MultiLevel.DEPENDENT_DV, Property.INDEPENDENT);
+                assertHc(d, 2, "");
+            }
+            if ("AnalyserContext".equals(d.typeInfo().simpleName)) {
+                assertHc(d, 0, "");
+                assertDv(d, MultiLevel.MUTABLE_DV, Property.IMMUTABLE);
+            }
+            if ("AnalyserContextImpl".equals(d.typeInfo().simpleName)) {
+                assertHc(d, 1, "");
                 assertDv(d, 2, MultiLevel.EFFECTIVELY_FINAL_FIELDS_DV, Property.IMMUTABLE);
-                assertDv(d, 2, MultiLevel.DEPENDENT_DV, Property.INDEPENDENT);
             }
         };
         testClass("Independent_4", 0, 4, new DebugConfiguration.Builder()

@@ -69,7 +69,8 @@ public class Test_42_Finalizer extends CommonTestRunner {
             if ("testLinking".equals(d.methodInfo().name)) {
                 if ("ff".equals(d.variableName())) {
                     if ("0".equals(d.statementId())) {
-                        assertEquals("nullable instance type Finalizer_0/*@Identity*//*{L f:statically_assigned:0}*//*@NotNull*/", d.currentValue().toString());
+                        assertEquals("nullable instance type Finalizer_0/*@Identity*//*{L f:0}*//*@NotNull*/",
+                                d.currentValue().toString());
                         assertEquals("f:1", d.variableInfo().getLinkedVariables().toString());
                     }
                 }

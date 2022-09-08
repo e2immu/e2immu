@@ -195,6 +195,12 @@ public record EvaluationResult(EvaluationContext evaluationContext,
                 precondition);
     }
 
+    public LinkedVariables linkedVariables(Variable variable) {
+        ChangeData cd = changeData.get(variable);
+        if (cd != null) return cd.linkedVariables;
+        return null;
+    }
+
     /**
      * Any of [value, markAssignment, linkedVariables]
      * can be used independently: possibly we want to mark assignment, but still have NO_VALUE for the value.
