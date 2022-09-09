@@ -204,6 +204,10 @@ public class ForwardEvaluationInfo {
 
         public Builder ensureModificationSetNotNull() {
             addProperty(Property.CONTEXT_NOT_NULL, MultiLevel.EFFECTIVELY_NOT_NULL_DV);
+            return ensureModificationSet();
+        }
+
+        public Builder ensureModificationSet() {
             if (properties.containsKey(Property.CONTEXT_MODIFIED)) {
                 addProperty(Property.CONTEXT_MODIFIED, DV.FALSE_DV);
             }

@@ -21,7 +21,7 @@ import java.util.Arrays;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 
-public class E2ImmutableComposition_0 {
+public class E2ImmutableComposition_0 { // DO NOT CHANGE LINE NUMBERS! TEST RELIES ON ARRAY-VARIABLES with line number ids
 
     @ImmutableContainer
     interface Marker {

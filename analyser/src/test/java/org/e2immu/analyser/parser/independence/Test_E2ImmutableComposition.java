@@ -17,6 +17,7 @@ package org.e2immu.analyser.parser.independence;
 
 import org.e2immu.analyser.analyser.DV;
 import org.e2immu.analyser.analyser.Property;
+import org.e2immu.analyser.analyser.VariableInfo;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.ParameterInfo;
@@ -28,8 +29,7 @@ import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 public class Test_E2ImmutableComposition extends CommonTestRunner {
 
@@ -164,11 +164,30 @@ public class Test_E2ImmutableComposition extends CommonTestRunner {
                     String linked = d.iteration() < 4 ? "av-480:20:-1,av-480:20[0]:-1,this.one:-1,this:-1" : "this.one:3";
                     assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
                 }
-                if ("av-480:20".equals(d.variableName())) {
-                    String expected = d.iteration() < 4 ? "<m:first>" : "`one.t`";
-                    assertEquals(expected, d.currentValue().toString());
-                    String linked = d.iteration() < 4 ? "this.one:-1,this:-1" : "this.one:3";
-                    assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
+                if (d.variableName().startsWith("av-")) {
+                    if ("av-480:20".equals(d.variableName())) {
+                        String expected = d.iteration() < 4 ? "<m:first>" : "`one.t`";
+                        assertEquals(expected, d.currentValue().toString());
+                        assertDv(d, 4, MultiLevel.NULLABLE_DV, Property.NOT_NULL_EXPRESSION);
+                        if (d.iteration() >= 5) {
+                            VariableInfo vi1 = d.variableInfoContainer().getPreviousOrInitial();
+                            assertEquals(MultiLevel.NULLABLE_DV, vi1.getProperty(Property.NOT_NULL_EXPRESSION));
+                        }
+                        String linked = d.iteration() < 4 ? "this.one:-1,this:-1" : "this.one:3";
+                        assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
+                        assertDv(d, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.CONTEXT_NOT_NULL);
+                        assertDv(d, 4, MultiLevel.NULLABLE_DV, Property.NOT_NULL_EXPRESSION);
+
+                    } else if ("av-480:20[0]".equals(d.variableName())) {
+                        String linked = d.iteration() < 4 ? "av-480:20:-1,this.one:-1,this:-1" : "av-480:20:3,this.one:3";
+                        assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
+                        assertDv(d, MultiLevel.NULLABLE_DV, Property.CONTEXT_NOT_NULL);
+
+                        // depends on av-480-20 nne in vi1
+                        assertDv(d, 5, MultiLevel.NULLABLE_DV, Property.NOT_NULL_EXPRESSION);
+                    } else {
+                        fail("?: " + d.variableName());
+                    }
                 }
             }
             if ("first".equals(d.methodInfo().name) & "ImmutableArrayOfMarker".equals(d.methodInfo().typeInfo.simpleName)) {
@@ -339,7 +358,7 @@ public class Test_E2ImmutableComposition extends CommonTestRunner {
          ERRORS: 268 ImmutableArrayOfTransparentOnes.visit:consumer:0: dependent, required independent hc
 
          */
-        testClass("E2ImmutableComposition_0", 1, 8, new DebugConfiguration.Builder()
+        testClass("E2ImmutableComposition_0", 1, 11, new DebugConfiguration.Builder()
                 .addEvaluationResultVisitor(evaluationResultVisitor)
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)

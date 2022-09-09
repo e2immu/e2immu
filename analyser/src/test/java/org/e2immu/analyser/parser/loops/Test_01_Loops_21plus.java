@@ -32,8 +32,7 @@ import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 
-import static org.e2immu.analyser.analyser.Property.CONTEXT_MODIFIED;
-import static org.e2immu.analyser.analyser.Property.CONTEXT_NOT_NULL;
+import static org.e2immu.analyser.analyser.Property.*;
 import static org.junit.jupiter.api.Assertions.*;
 
 public class Test_01_Loops_21plus extends CommonTestRunner {
@@ -240,6 +239,124 @@ public class Test_01_Loops_21plus extends CommonTestRunner {
         };
         // potential null pointer array[i][j].length()
         testClass("Loops_21_1", 0, 1, new DebugConfiguration.Builder()
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .build());
+    }
+
+    @Test
+    public void test_21_2() throws IOException {
+        StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+            if ("method".equals(d.methodInfo().name)) {
+                if (d.variableName().startsWith("array")) {
+                    if ("array".equals(d.variableName())) {
+                        if ("1".equals(d.statementId())) {
+                            assertEquals("new String[n][]", d.currentValue().toString());
+                            assertDv(d, MultiLevel.EFFECTIVELY_NOT_NULL_DV, NOT_NULL_EXPRESSION);
+                        }
+                        if ("2.0.0".equals(d.statementId())) {
+                            String expected = d.iteration() == 0 ? "<vl:array>" : "instance type String[][]";
+                            assertEquals(expected, d.currentValue().toString());
+                            // IMPROVE even though after the assignment, it has become content not null
+                            assertDv(d, 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, NOT_NULL_EXPRESSION);
+                        }
+                    } else if ("array[i]".equals(d.variableName())) {
+                        if ("2.0.0".equals(d.statementId())) {
+                            assertEquals("new String[m]", d.currentValue().toString());
+                            assertDv(d, MultiLevel.EFFECTIVELY_NOT_NULL_DV, NOT_NULL_EXPRESSION);
+                        }
+                        if ("2.0.2.0.2".equals(d.statementId())) {
+                            String expected = d.iteration() < 4 ? "<vl:array[i]>" : "instance type String[]";
+                            assertEquals(expected, d.currentValue().toString());
+                            assertDv(d, 4, MultiLevel.EFFECTIVELY_NOT_NULL_DV, NOT_NULL_EXPRESSION);
+                        }
+                    } else fail("?: " + d.variableName());
+                }
+                if (d.variableName().startsWith("av-")) {
+                    if ("av-32:17".equals(d.variableName())) {
+                        if ("2.0.2.0.2".equals(d.statementId())) {
+                            String expected = switch (d.iteration()) {
+                                case 0 -> "<dv:array[i]>";
+                                case 1, 2, 3 -> "<vl:array[i]>";
+                                default -> "array$2.0.2[i$2.0.2]$2.0.2";
+                            };
+                            assertEquals(expected, d.currentValue().toString());
+                        }
+                        if ("2.0.2".equals(d.statementId())) {
+                            String expected = switch (d.iteration()) {
+                                case 0 -> "<loopIsNotEmptyCondition>?<dv:array[i]>:<not yet assigned>";
+                                case 1, 2, 3 -> "-1-<oos:j>+m>=0?<vl:array[i]>:<not yet assigned>";
+                                default -> "-1-(instance type int)+m>=0?array$2.0.2[i$2.0.2]$2.0.2:<not yet assigned>";
+                            };
+                            assertEquals(expected, d.currentValue().toString());
+                        }
+                    } else if ("av-32:17[j]".equals(d.variableName())) {
+                        assertEquals("2.0.2.0.2", d.statementId());
+                        String expected = d.iteration() == 0
+                                ? "<m:charAt>+\"->\"+<m:charAt>"
+                                : "outer$2.0.2.charAt(i$2.0.2%outer$2.0.2.length())+\"->\"+inner$2.0.2.charAt(j%inner$2.0.2.length())";
+                        assertEquals(expected, d.currentValue().toString());
+                        assertDv(d, 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, NOT_NULL_EXPRESSION);
+                    } else fail("?: " + d.variableName());
+                }
+            }
+        };
+        testClass("Loops_21_2", 0, 0, new DebugConfiguration.Builder()
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .build());
+    }
+
+    @Test
+    public void test_21_3() throws IOException {
+        StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+            if ("method".equals(d.methodInfo().name)) {
+                if (d.variableName().startsWith("array")) {
+                    if ("array".equals(d.variableName())) {
+                        if ("1".equals(d.statementId())) {
+                            assertEquals("new String[n][]", d.currentValue().toString());
+                            assertDv(d, MultiLevel.EFFECTIVELY_NOT_NULL_DV, NOT_NULL_EXPRESSION);
+                        }
+                        if ("2.0.0".equals(d.statementId())) {
+                            String expected = d.iteration() < 4 ? "<vl:array>" : "instance type String[][]";
+                            assertEquals(expected, d.currentValue().toString());
+                            assertDv(d, 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, NOT_NULL_EXPRESSION);
+                        }
+                    } else if ("array[i]".equals(d.variableName())) {
+                        if ("2.0.1.0.2".equals(d.statementId())) {
+                            String expected = d.iteration() < 4 ? "<array-access:String[]>" : "nullable instance type String[]";
+                            assertEquals(expected, d.currentValue().toString());
+                            assertDv(d, 4, MultiLevel.NULLABLE_DV, NOT_NULL_EXPRESSION);
+                        }
+                    } else fail("?: " + d.variableName());
+                }
+                if (d.variableName().startsWith("av-")) {
+                    if ("av-31:17".equals(d.variableName())) {
+                        if ("2.0.1.0.2".equals(d.statementId())) {
+                            String expected = switch (d.iteration()) {
+                                case 0, 1, 2, 3 -> "<dv:array[i]>";
+                                default -> "array$2.0.1[i$2.0.1]$2.0.1";
+                            };
+                            assertEquals(expected, d.currentValue().toString());
+                        }
+                        if ("2.0.1".equals(d.statementId())) {
+                            String expected = switch (d.iteration()) {
+                                case 0 -> "<loopIsNotEmptyCondition>?<dv:array[i]>:<not yet assigned>";
+                                case 1, 2, 3 -> "-1-<oos:j>+m>=0?<dv:array[i]>:<not yet assigned>";
+                                default -> "-1-(instance type int)+m>=0?array$2.0.1[i$2.0.1]$2.0.1:<not yet assigned>";
+                            };
+                            assertEquals(expected, d.currentValue().toString());
+                        }
+                    } else if ("av-31:17[j]".equals(d.variableName())) {
+                        assertEquals("2.0.1.0.2", d.statementId());
+                        String expected = d.iteration() == 0
+                                ? "<m:charAt>+\"->\"+<m:charAt>"
+                                : "outer$2.0.1.charAt(i$2.0.1%outer$2.0.1.length())+\"->\"+inner$2.0.1.charAt(j%inner$2.0.1.length())";
+                        assertEquals(expected, d.currentValue().toString());
+                        assertDv(d, 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, NOT_NULL_EXPRESSION);
+                    } else fail("?: " + d.variableName());
+                }
+            }
+        };
+        testClass("Loops_21_3", 0, 1, new DebugConfiguration.Builder()
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .build());
     }

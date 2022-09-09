@@ -464,10 +464,14 @@ public class VariableExpression extends BaseExpression implements IsVariableExpr
             return ve.evaluate(context, forwardEvaluationInfo.copy().notNullNotAssignment(higher).build());
         }
         assert variable instanceof LocalVariableReference lvr && lvr.variableNature() instanceof VariableNature.ScopeVariable;
-        ForwardEvaluationInfo forward = forwardEvaluationInfo.copy().ensureModificationSetNotNull().build();
+        ForwardEvaluationInfo forward = forwardEvaluationInfo.copy().ensureModificationSet().build();
         VariableExpression scopeVE = new VariableExpression(variable);
         Assignment assignment = new Assignment(context.getPrimitives(), scopeVE, expression);
-        return assignment.evaluate(context, forward);
+        EvaluationResult er = assignment.evaluate(context, forward);
+        EvaluationResult.Builder builder = new EvaluationResult.Builder(context).compose(er);
+        // we have to set the not-null context for the array variable, because there is array access
+        builder.variableOccursInNotNullContext(variable, expression, MultiLevel.EFFECTIVELY_NOT_NULL_DV, forwardEvaluationInfo);
+        return builder.build();
     }
 
     @Override

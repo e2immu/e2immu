@@ -39,6 +39,7 @@ public class UnknownExpression extends BaseExpression implements Expression {
     public static final String NOT_YET_ASSIGNED = "not yet assigned";
     public static final String NO_RETURN_VALUE = "no return value";
     public static final String UNDETERMINED_RETURN_VALUE = "undetermined return value";
+    public static final String NO_INDEX_SIZE = "no index size";
 
     private final ParameterizedType parameterizedType;
     private final String msg;
@@ -89,6 +90,10 @@ public class UnknownExpression extends BaseExpression implements Expression {
 
     public static Expression forUnknownReturnValue(Identifier identifier, ParameterizedType parameterizedType) {
         return new UnknownExpression(identifier, parameterizedType, UNDETERMINED_RETURN_VALUE);
+    }
+
+    public static Expression forNoIndexSize(Identifier identifier, ParameterizedType parameterizedType) {
+        return new UnknownExpression(identifier, parameterizedType, NO_INDEX_SIZE);
     }
 
     @Override

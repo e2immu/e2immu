@@ -349,53 +349,6 @@ public class ConstructorCall extends BaseExpression implements HasParameterExpre
         return LinkedVariables.LINK_COMMON_HC;
     }
 
-    /*
-     Combine the formal independence value of the parameter with the dynamic independence of a evaluated expression.
-
-     The result is interpreted as independence with respect to the fields of the (newly created) object!!
-     In the case of a factory method, it is interpreted as independence wrt the method result.
-
-
-     Example 1: parameterInfo = java.util.List.add(E):0:e, which is INDEPENDENT_HC.
-     This means that the argument will become part of the list's hidden content.
-     Unless the argument is recursively immutable, result should be LINK_IN_HC_OF.
-     See e.g. Modification_16
-
-     Example 2: parameterInfo = java.util.function.Consumer.accept(T):0:t, which is DEPENDENT.
-     See e.g. E2ImmutableComposition_0.ExposedArrayOfHasSize
-     If we feed in an array of recursively immutable elements, like HasSize[], we want LINK_DEPENDENT as an outcome.
-     If we feed in the recursively immutable element HasSize, we remain LINK_INDEPENDENT.
-
-     Example 3: parameterInfo = java.util.Set.copyOf(Collection<E> input):0:input, which is COMMON_HC rather
-     than DEPENDENT, because the resulting set is independent of the input set, yet contains its elements.
-     */
-    private static DV computeLinkLevelFromParameterAndItsLinkedVariables(EvaluationResult context,
-                                                                         Expression value,
-                                                                         ParameterInfo parameterInfo,
-                                                                         ParameterizedType objectType) {
-        ParameterAnalysis parameterAnalysis = context.getAnalyserContext().getParameterAnalysis(parameterInfo);
-        DV independentOnParameter = parameterAnalysis.getProperty(Property.INDEPENDENT);
-        DV immutableOfValue = context.getProperty(value, Property.IMMUTABLE);
-
-        // shortcut: either is at max value, then there is no discussion
-        if (INDEPENDENT_DV.equals(independentOnParameter)
-                || MultiLevel.isAtLeastEventuallyRecursivelyImmutable(immutableOfValue)) {
-            return LinkedVariables.LINK_INDEPENDENT;
-        }
-
-        // any delay: wait!
-        CausesOfDelay causes = immutableOfValue.causesOfDelay().merge(independentOnParameter.causesOfDelay());
-        if (causes.isDelayed()) return causes;
-
-        if (DEPENDENT_DV.equals(independentOnParameter)) {
-            return LinkedVariables.LINK_DEPENDENT;
-        }
-        // hidden content... use the relation WITH RESPECT TO THE method's type (not the parameter!!!)
-        ComputeIndependent computeIndependent = new ComputeIndependent(context.getAnalyserContext(),
-                context.getCurrentType().primaryType());
-        return computeIndependent.linkLevelOfTwoHCRelatedTypes(value.returnType(), objectType);
-    }
-
     @Override
     public int internalCompareTo(Expression v) {
         return parameterizedType.detailedString()
@@ -426,9 +379,22 @@ public class ConstructorCall extends BaseExpression implements HasParameterExpre
         };
     }
 
+    /*
+    new String[3][2] = content not null
+    new String[3][] = not null
+    new String[] = illegal
+     */
     private DV notNullValue() {
-        if (parameterizedType.arrays <= 1) return MultiLevel.EFFECTIVELY_NOT_NULL_DV;
-        return MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL_DV;
+        if (parameterizedType.arrays > 0) {
+            int countSize = 0;
+            while (countSize < parameterExpressions.size() && !(parameterExpressions.get(countSize) instanceof UnknownExpression)) {
+                countSize++;
+            }
+            assert countSize > 0;
+            if (countSize == 1) return MultiLevel.EFFECTIVELY_NOT_NULL_DV;
+            return MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL_DV;
+        }
+        return MultiLevel.EFFECTIVELY_NOT_NULL_DV;
     }
 
     private DV independentValue(ParameterizedType pt, AnalyserContext analyserContext) {
@@ -502,10 +468,12 @@ public class ConstructorCall extends BaseExpression implements HasParameterExpre
                 if (parameterizedType.arrays > 0) {
                     for (int i = 0; i < parameterizedType.arrays; i++) {
                         if (i < parameterExpressions.size()) {
-                            outputBuilder
-                                    .add(Symbol.LEFT_BRACKET)
-                                    .add(parameterExpressions.get(i).output(qualification))
-                                    .add(Symbol.RIGHT_BRACKET);
+                            outputBuilder.add(Symbol.LEFT_BRACKET);
+                            Expression size = parameterExpressions.get(i);
+                            if (!(size instanceof UnknownExpression)) {
+                                outputBuilder.add(size.output(qualification));
+                            }
+                            outputBuilder.add(Symbol.RIGHT_BRACKET);
                         } else {
                             outputBuilder.add(Symbol.OPEN_CLOSE_BRACKETS);
                         }

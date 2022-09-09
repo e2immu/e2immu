@@ -172,11 +172,18 @@ public record ComputeIndependent(AnalyserContext analyserContext,
             // delay
             return typeAnalysisBig.hiddenContentDelays();
         }
-        if (typeAnalysisBig.getHiddenContentTypes().translate(analyserContext, big).contains(small)) {
+        SetOfTypes translatedHc = typeAnalysisBig.getHiddenContentTypes().translate(analyserContext, big);
+        if (translatedHc.contains(small)) {
+            return analyserContext.typeImmutable(small);
+        }
+        SetOfTypes translatedHcWithoutArrays = translatedHc.dropArrays();
+        if (translatedHcWithoutArrays.contains(small)) {
+            // symmetric analogue of the next one, HC = HasSize[], small = HasSize
             return analyserContext.typeImmutable(small);
         }
         ParameterizedType smallWithoutArrays = small.copyWithoutArrays();
-        if (typeAnalysisBig.getHiddenContentTypes().translate(analyserContext, big).contains(smallWithoutArrays)) {
+        if (translatedHc.contains(smallWithoutArrays)) {
+            // HC = HasSize, small = HasSize[]
             return analyserContext.typeImmutable(smallWithoutArrays);
         }
         return null; // try something else
@@ -286,23 +293,8 @@ public record ComputeIndependent(AnalyserContext analyserContext,
     the link level
      */
     private DV linkLevelSmallInsideBig(ParameterizedType small, ParameterizedType big, TypeInfo typeInfoBig) {
-        TypeAnalysis typeAnalysisBig = analyserContext.getTypeAnalysisNullWhenAbsent(typeInfoBig);
-        if (typeAnalysisBig == null) return LinkedVariables.LINK_INDEPENDENT;
-        if (typeAnalysisBig.hiddenContentDelays().isDelayed()) {
-            return typeAnalysisBig.hiddenContentDelays();
-        }
-        if (typeAnalysisBig.getHiddenContentTypes().translate(analyserContext, big).contains(small)) {
-            return toLinkLevelSmallInsideBig(small);
-        }
-        ParameterizedType smallWithoutArrays = small.copyWithoutArrays();
-        if (typeAnalysisBig.getHiddenContentTypes().translate(analyserContext, big).contains(smallWithoutArrays)) {
-            return toLinkLevelSmallInsideBig(smallWithoutArrays);
-        }
-        return null; // try something else
-    }
-
-    private DV toLinkLevelSmallInsideBig(ParameterizedType smallWithoutArrays) {
-        DV immutable = analyserContext.typeImmutable(smallWithoutArrays);
+        DV immutable = immutableSmallInsideBig(small, big, typeInfoBig);
+        if (immutable == null) return null;
         if (MultiLevel.isMutable(immutable)) return LINK_DEPENDENT;
         if (MultiLevel.isAtLeastEventuallyRecursivelyImmutable(immutable)) return LINK_INDEPENDENT;
         return LinkedVariables.LINK_IS_HC_OF;
