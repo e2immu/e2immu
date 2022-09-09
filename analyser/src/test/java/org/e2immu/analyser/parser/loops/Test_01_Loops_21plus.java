@@ -283,9 +283,9 @@ public class Test_01_Loops_21plus extends CommonTestRunner {
                         }
                         if ("2.0.2".equals(d.statementId())) {
                             String expected = switch (d.iteration()) {
-                                case 0 -> "<loopIsNotEmptyCondition>?<dv:array[i]>:<not yet assigned>";
-                                case 1, 2, 3 -> "-1-<oos:j>+m>=0?<vl:array[i]>:<not yet assigned>";
-                                default -> "-1-(instance type int)+m>=0?array$2.0.2[i$2.0.2]$2.0.2:<not yet assigned>";
+                                case 0 -> "<loopIsNotEmptyCondition>?<dv:array[i]>:nullable instance type String[]";
+                                case 1, 2, 3 -> "-1-<oos:j>+m>=0?<vl:array[i]>:nullable instance type String[]";
+                                default -> "-1-(instance type int)+m>=0?array$2.0.2[i$2.0.2]$2.0.2:nullable instance type String[]";
                             };
                             assertEquals(expected, d.currentValue().toString());
                         }
@@ -330,6 +330,7 @@ public class Test_01_Loops_21plus extends CommonTestRunner {
                 }
                 if (d.variableName().startsWith("av-")) {
                     if ("av-31:17".equals(d.variableName())) {
+                        // represents array[i] as the array variable of array[i][]
                         if ("2.0.1.0.2".equals(d.statementId())) {
                             String expected = switch (d.iteration()) {
                                 case 0, 1, 2, 3 -> "<dv:array[i]>";
@@ -339,9 +340,9 @@ public class Test_01_Loops_21plus extends CommonTestRunner {
                         }
                         if ("2.0.1".equals(d.statementId())) {
                             String expected = switch (d.iteration()) {
-                                case 0 -> "<loopIsNotEmptyCondition>?<dv:array[i]>:<not yet assigned>";
-                                case 1, 2, 3 -> "-1-<oos:j>+m>=0?<dv:array[i]>:<not yet assigned>";
-                                default -> "-1-(instance type int)+m>=0?array$2.0.1[i$2.0.1]$2.0.1:<not yet assigned>";
+                                case 0 -> "<loopIsNotEmptyCondition>?<dv:array[i]>:nullable instance type String[]";
+                                case 1, 2, 3 -> "-1-<oos:j>+m>=0?<dv:array[i]>:nullable instance type String[]";
+                                default -> "-1-(instance type int)+m>=0?array$2.0.1[i$2.0.1]$2.0.1:nullable instance type String[]";
                             };
                             assertEquals(expected, d.currentValue().toString());
                         }

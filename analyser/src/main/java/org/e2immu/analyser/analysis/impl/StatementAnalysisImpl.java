@@ -1702,7 +1702,8 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
         } else if (variable instanceof LocalVariableReference || variable instanceof DependentVariable) {
             // forEach() goes through a different system than for(), see code in SAApply.potentiallyModifyEvaluationResult and
             // ParameterizedType_0 test
-            if (variableNature instanceof VariableNature.LoopVariable && !(statement instanceof ForEachStatement)) {
+            if (variableNature instanceof VariableNature.LoopVariable && !(statement instanceof ForEachStatement)
+                    || variableNature instanceof VariableNature.ScopeVariable) {
                 initializeLoopVariable(vic, variable, evaluationContext.getAnalyserContext());
             } else {
                 initializeLocalOrDependentVariable(vic, variable, EvaluationResult.from(evaluationContext));
@@ -2323,6 +2324,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
         Set<Variable> alreadyRaised = new HashSet<>();
         changeDataMap.entrySet().stream()
                 .filter(e -> e.getValue().getProperty(IN_NOT_NULL_CONTEXT).ge(EFFECTIVELY_NOT_NULL_DV))
+                .filter(e -> !(e.getKey() instanceof LocalVariableReference lvr && lvr.variableNature() instanceof VariableNature.ScopeVariable))
                 .sorted(Comparator.comparing(e -> -e.getValue().getProperty(IN_NOT_NULL_CONTEXT).value()))
                 .forEach(e -> {
                     Variable variable = e.getKey();
@@ -2358,7 +2360,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
                                         "Variable: " + variable.simpleName()));
                                 alreadyRaised.add(variable);
                             }
-                        } // else: TODO content 2 etc.
+                        }
                     }
                 });
         changeDataMap.forEach((v, cd) -> {

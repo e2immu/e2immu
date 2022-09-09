@@ -169,7 +169,7 @@ public class Test_E2ImmutableComposition extends CommonTestRunner {
                         String expected = d.iteration() < 4 ? "<m:first>" : "`one.t`";
                         assertEquals(expected, d.currentValue().toString());
                         assertDv(d, 4, MultiLevel.NULLABLE_DV, Property.NOT_NULL_EXPRESSION);
-                        if (d.iteration() >= 5) {
+                        if (d.iteration() >= 4) {
                             VariableInfo vi1 = d.variableInfoContainer().getPreviousOrInitial();
                             assertEquals(MultiLevel.NULLABLE_DV, vi1.getProperty(Property.NOT_NULL_EXPRESSION));
                         }
@@ -184,7 +184,7 @@ public class Test_E2ImmutableComposition extends CommonTestRunner {
                         assertDv(d, MultiLevel.NULLABLE_DV, Property.CONTEXT_NOT_NULL);
 
                         // depends on av-480-20 nne in vi1
-                        assertDv(d, 5, MultiLevel.NULLABLE_DV, Property.NOT_NULL_EXPRESSION);
+                        assertDv(d, 4, MultiLevel.NULLABLE_DV, Property.NOT_NULL_EXPRESSION);
                     } else {
                         fail("?: " + d.variableName());
                     }
@@ -358,7 +358,7 @@ public class Test_E2ImmutableComposition extends CommonTestRunner {
          ERRORS: 268 ImmutableArrayOfTransparentOnes.visit:consumer:0: dependent, required independent hc
 
          */
-        testClass("E2ImmutableComposition_0", 1, 11, new DebugConfiguration.Builder()
+        testClass("E2ImmutableComposition_0", 1, 8, new DebugConfiguration.Builder()
                 .addEvaluationResultVisitor(evaluationResultVisitor)
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
