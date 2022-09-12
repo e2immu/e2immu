@@ -1412,7 +1412,7 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
 
         Map<Variable, DV> map = allMethodsAndConstructors(true)
                 .flatMap(m -> m.getFieldAsVariableStream(fieldInfo))
-                .filter(VariableInfo::linkedVariablesIsSet)
+                .filter(VariableInfo::isAssigned)
                 .flatMap(vi -> vi.getLinkedVariables().variables().entrySet().stream())
                 .filter(e -> !(e.getKey() instanceof LocalVariableReference)
                         && !(e.getKey() instanceof ReturnVariable)

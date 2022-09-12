@@ -60,8 +60,8 @@ public class StateData {
         assert precondition.isFinal();
         assert preconditionFromMethodCalls.isFinal();
         assert valueOfExpression.isFinal();
-        assert statesOfInterrupts == null || statesOfInterrupts.stream().allMatch(e -> e.getValue().isFinal());
-        assert statesOfReturnInLoop == null || statesOfReturnInLoop.stream().allMatch(e -> e.getValue().isFinal());
+        assert statesOfInterrupts == null || statesOfInterrupts.valueStream().allMatch(EventuallyFinal::isFinal);
+        assert statesOfReturnInLoop == null || statesOfReturnInLoop.valueStream().allMatch(EventuallyFinal::isFinal);
     }
 
     public void makeUnreachable(Primitives primitives) {
@@ -79,13 +79,13 @@ public class StateData {
             valueOfExpression.setFinal(unreachable);
         }
         if (statesOfInterrupts != null) {
-            statesOfInterrupts.stream().forEach(e -> {
-                if (e.getValue().isVariable()) e.getValue().setFinal(unreachable);
+            statesOfInterrupts.valueStream().forEach(v -> {
+                if (v.isVariable()) v.setFinal(unreachable);
             });
         }
         if (statesOfReturnInLoop != null) {
-            statesOfReturnInLoop.stream().forEach(e -> {
-                if (e.getValue().isVariable()) e.getValue().setFinal(unreachable);
+            statesOfReturnInLoop.valueStream().forEach(v -> {
+                if (v.isVariable()) v.setFinal(unreachable);
             });
         }
     }
@@ -268,8 +268,8 @@ public class StateData {
 
         List<Expression> ors = new ArrayList<>();
         if (loopStatement.hasExitCondition()) {
-            statesOfInterrupts.stream().map(Map.Entry::getValue).forEach(e ->
-                    ors.add(context.evaluationContext().replaceLocalVariables(e.get())));
+            statesOfInterrupts.valueStream().forEach(v ->
+                    ors.add(context.evaluationContext().replaceLocalVariables(v.get())));
             if (!negatedConditionOrExitState.isBoolValueFalse()) {
                 // the exit condition cannot contain local variables
                 ors.add(context.evaluationContext().replaceLocalVariables(negatedConditionOrExitState));

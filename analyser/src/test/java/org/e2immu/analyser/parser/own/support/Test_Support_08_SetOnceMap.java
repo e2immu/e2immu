@@ -47,9 +47,11 @@ public class Test_Support_08_SetOnceMap extends CommonTestRunner {
     public void test() throws IOException {
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("SetOnceMap".equals(d.typeInfo().simpleName)) {
-                assertEquals("Type param K, Type param V",
-                        d.typeAnalysis().getHiddenContentTypes().toString());
-                assertDv(d, 4, MultiLevel.CONTAINER_DV, Property.CONTAINER);
+                assertHc(d, 0, "K, V");
+                assertDv(d, 3, MultiLevel.CONTAINER_DV, Property.CONTAINER);
+            }
+            if ("Entry".equals(d.typeInfo().simpleName)) {
+                assertDv(d, 1, MultiLevel.EFFECTIVELY_IMMUTABLE_HC_DV, Property.IMMUTABLE);
             }
         };
 
@@ -74,20 +76,12 @@ public class Test_Support_08_SetOnceMap extends CommonTestRunner {
                             d.statementAnalysis().methodLevelData().linksHaveBeenEstablished());
                 }
             }
-            if ("putAll".equals(d.methodInfo().name)) {
-                if ("1".equals(d.statementId())) {
-                    if (d.iteration() > 2) {
-                        String expected = "setOnceMap={modified in context=false:0, not null in context=nullable:1}, this={modified in context=true:1, read=true:1}";
-                        assertEquals(expected, d.statementAnalysis().propertiesFromSubAnalysersSortedToString());
-                    }
-                }
-            }
         };
 
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("accept".equals(d.methodInfo().name) && "$1".equals(d.methodInfo().typeInfo.simpleName)) {
                 if (d.variable() instanceof ParameterInfo p && "e".equals(p.name)) {
-                    String expect =switch( d.iteration()) {
+                    String expect = switch (d.iteration()) {
                         case 0, 1 -> "<mod:V>";
                         case 2 -> "<mod:K>";
                         default -> "nullable instance type Entry<K,V>/*@Identity*/";
@@ -97,7 +91,7 @@ public class Test_Support_08_SetOnceMap extends CommonTestRunner {
             }
             if ("get".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof ParameterInfo k && "k".equals(k.name)) {
-                    if("0.0.0".equals(d.statementId())) {
+                    if ("0.0.0".equals(d.statementId())) {
                         String expectValue = d.iteration() == 0 ? "<mod:K>" : "nullable instance type K/*@Identity*/";
                         assertEquals(expectValue, d.currentValue().toString());
                         String linked = d.iteration() == 0 ? "this:-1" : "";
@@ -145,8 +139,7 @@ public class Test_Support_08_SetOnceMap extends CommonTestRunner {
                     if ("4".equals(d.statementId())) {
                         String expectValue = d.iteration() == 0 ? "<p:v>" : "nullable instance type V";
                         assertEquals(expectValue, d.currentValue().toString());
-                        String lvs = d.iteration() <= 1 ? "k:-1,this.map:-1,this:-1" : "k:3,this.map:3";
-                        assertEquals(lvs, d.variableInfo().getLinkedVariables().toString());
+                        assertEquals("this.map:3", d.variableInfo().getLinkedVariables().toString());
                     }
                 }
             }
@@ -155,11 +148,20 @@ public class Test_Support_08_SetOnceMap extends CommonTestRunner {
                     assertDv(d, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                 }
             }
+            if ("putAll".equals(d.methodInfo().name)) {
+                if (d.variable() instanceof ParameterInfo pi && "setOnceMap".equals(pi.name)) {
+                    if ("1".equals(d.statementId())) {
+                        assertEquals("?", d.variableInfo().getLinkedVariables().toString());
+                        assertDv(d, BIG, MultiLevel.INDEPENDENT_HC_DV, Property.INDEPENDENT);
+                    }
+                }
+            }
         };
 
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("putAll".equals(d.methodInfo().name)) {
-                assertEquals("accept,get,isSet,put,stream", d.methodInfo().methodResolution.get().methodsOfOwnClassReached()
+                assertDv(d, 1, DV.TRUE_DV, Property.MODIFIED_METHOD);
+                assertEquals("get,isSet,put", d.methodInfo().methodResolution.get().methodsOfOwnClassReached()
                         .stream().map(m -> m.name).sorted().collect(Collectors.joining(",")));
             }
             if ("put".equals(d.methodInfo().name) && "SetOnceMap".equals(d.methodInfo().typeInfo.simpleName)) {
@@ -188,10 +190,17 @@ public class Test_Support_08_SetOnceMap extends CommonTestRunner {
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
             }
             if ("stream".equals(d.methodInfo().name)) {
-                assertEquals("", d.methodInfo().methodResolution.get().methodsOfOwnClassReached()
+                assertEquals("apply", d.methodInfo().methodResolution.get().methodsOfOwnClassReached()
                         .stream().map(m -> m.name).sorted().collect(Collectors.joining(",")));
 
-                assertDv(d, DV.FALSE_DV, Property.MODIFIED_METHOD);
+                assertDv(d, 2, DV.FALSE_DV, Property.MODIFIED_METHOD);
+                assertDv(d, 2, MultiLevel.EFFECTIVELY_IMMUTABLE_HC_DV, Property.IMMUTABLE);
+                assertDv(d, 2, MultiLevel.INDEPENDENT_HC_DV, Property.INDEPENDENT);
+            }
+            if ("apply".equals(d.methodInfo().name)) {
+                assertEquals("$1", d.methodInfo().typeInfo.simpleName);
+                assertDv(d, 2, MultiLevel.EFFECTIVELY_IMMUTABLE_HC_DV, Property.IMMUTABLE);
+                assertDv(d, 2, MultiLevel.INDEPENDENT_DV, Property.INDEPENDENT);
             }
         };
 

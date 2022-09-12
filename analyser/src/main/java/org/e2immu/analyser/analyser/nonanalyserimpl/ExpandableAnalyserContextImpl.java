@@ -88,7 +88,7 @@ public class ExpandableAnalyserContextImpl implements AnalyserContext {
 
     @Override
     public Stream<MethodAnalyser> methodAnalyserStream() {
-        return Stream.concat(parent.methodAnalyserStream(), this.methodAnalysers.stream().map(Map.Entry::getValue));
+        return Stream.concat(parent.methodAnalyserStream(), this.methodAnalysers.valueStream());
     }
 
     @Override
@@ -157,7 +157,7 @@ public class ExpandableAnalyserContextImpl implements AnalyserContext {
 
     @Override
     public Stream<FieldAnalyser> fieldAnalyserStream() {
-        return Stream.concat(parent.fieldAnalyserStream(), this.fieldAnalysers.stream().map(Map.Entry::getValue));
+        return Stream.concat(parent.fieldAnalyserStream(), this.fieldAnalysers.valueStream());
     }
 
     @Override

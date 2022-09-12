@@ -887,8 +887,8 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
         } // else: already true, so no need to look at this
 
         if (contextModified.valueIsFalse()) {
-            DV maxModified = methodLevelData.copyModificationStatusFrom.stream()
-                    .map(mi -> mi.getKey().methodAnalysis.get().getProperty(Property.MODIFIED_METHOD))
+            DV maxModified = methodLevelData.copyModificationStatusFrom.keyStream()
+                    .map(mi -> mi.methodAnalysis.get().getProperty(Property.MODIFIED_METHOD))
                     .reduce(DV.MIN_INT_DV, DV::max);
             if (maxModified != DV.MIN_INT_DV) {
                 if (maxModified.isDelayed()) {
@@ -968,7 +968,6 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
         } else {
             // normal computation
             VariableInfo variableInfo = getReturnAsVariable();
-            ParameterizedType returnType = methodInfo.returnType();
             LinkedVariables linkedVariables = variableInfo.getLinkedVariables();
             if (linkedVariables.isDelayed()) {
                 LOGGER.debug("Delaying independent of {}, linked variables not known", methodInfo);
@@ -985,6 +984,7 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
 
             ComputeIndependent computeIndependent = new ComputeIndependent(analyserContext, hiddenContentCurrentType,
                     methodInfo.typeInfo.primaryType());
+            ParameterizedType concreteReturnType = variableInfo.getValue().returnType();
             independent = linkedVariables.stream()
                     .filter(e -> e.getKey() instanceof FieldReference fr && fr.scopeIsRecursivelyThis()
                             || e.getKey() instanceof This)
@@ -993,7 +993,7 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
                             // return this
                             return MultiLevel.INDEPENDENT_DV;
                         }
-                        return computeIndependent.typesAtLinkLevel(e.getValue(), returnType, immutable, e.getKey().parameterizedType());
+                        return computeIndependent.typesAtLinkLevel(e.getValue(), concreteReturnType, immutable, e.getKey().parameterizedType());
                     })
                     .reduce(MultiLevel.INDEPENDENT_DV, DV::min);
         }
@@ -1051,8 +1051,7 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
     @Override
     public Stream<VariableInfo> getFieldAsVariableStream(FieldInfo fieldInfo) {
         StatementAnalysis lastStatement = methodAnalysis.getLastStatement();
-        return lastStatement == null ? Stream.empty() :
-                methodAnalysis.getLastStatement().streamOfLatestInfoOfVariablesReferringTo(fieldInfo);
+        return lastStatement == null ? Stream.empty() : lastStatement.streamOfLatestInfoOfVariablesReferringTo(fieldInfo);
     }
 
     public VariableInfo getThisAsVariable() {

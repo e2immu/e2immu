@@ -362,7 +362,7 @@ public class MethodInfo implements WithInspectionAndAnalysis {
     }
 
     public Set<MethodInfo> getImplementations() {
-        return implementations.stream().map(Map.Entry::getValue).collect(Collectors.toUnmodifiableSet());
+        return implementations.valueStream().collect(Collectors.toUnmodifiableSet());
     }
 
     public Expression extractSingleReturnExpression() {

@@ -1562,7 +1562,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
     private Set<Variable> touchedStream(Map<Variable, LinkedVariables> linkedVariablesMap, Set<? extends Variable> newlyCreatedScopeVariables, PrepareMerge prepareMerge) {
         return Stream.concat(newlyCreatedScopeVariables.stream(), Stream.concat(Stream.concat(linkedVariablesMap.keySet().stream(),
                                 linkedVariablesMap.values().stream().flatMap(lv -> lv.variables().keySet().stream())),
-                        variables.stream().map(Map.Entry::getValue).filter(vic -> vic.hasEvaluation() ||
+                        variables.valueStream().filter(vic -> vic.hasEvaluation() ||
                                         // the following condition is necessary to include fields with a scope in newlyCreatedScopeVariables, see e.g. InstanceOf_16
                                         vic.current().variable().containsAtLeastOneOf(newlyCreatedScopeVariables))
                                 .map(e -> e.current().variable())))
@@ -2118,7 +2118,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
 
     @Override
     public Stream<VariableInfo> variableStream() {
-        return variables.stream().map(Map.Entry::getValue)
+        return variables.valueStream()
                 .filter(VariableInfoContainer::isNotRemoved)
                 .map(VariableInfoContainer::current);
     }

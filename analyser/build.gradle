@@ -37,7 +37,8 @@ jar {
 }
 
 test {
-    exclude '**/failing/*', '**/own/*'
+    exclude '**/failing/*', '**/own/annotationstore/*', '**/own/config/*', '**/own/output/*', '**/own/snippet/*',
+            '**/own/util/*'
 
     maxHeapSize = "2G"
     useJUnitPlatform()

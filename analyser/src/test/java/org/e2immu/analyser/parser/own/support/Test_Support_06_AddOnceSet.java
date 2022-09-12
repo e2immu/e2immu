@@ -52,7 +52,7 @@ public class Test_Support_06_AddOnceSet extends CommonTestRunner {
 
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("AddOnceSet".equals(d.typeInfo().simpleName)) {
-                assertEquals("Type param V", d.typeAnalysis().getHiddenContentTypes().toString());
+                assertEquals("V", d.typeAnalysis().getHiddenContentTypes().toString());
 
                 assertEquals("{frozen=!frozen}", d.typeAnalysis().getApprovedPreconditionsFinalFields().toString());
                 if (d.iteration() >= 2) {
@@ -91,7 +91,7 @@ public class Test_Support_06_AddOnceSet extends CommonTestRunner {
             if ("forEach".equals(d.methodInfo().name)) {
                 assertEquals("0", d.statementId());
                 if (d.variable() instanceof ParameterInfo pi && "consumer".equals(pi.name)) {
-                    String linked = d.iteration() == 0 ? "this.set:-1" : "this.set:3";
+                    String linked = d.iteration() == 0 ? "this.set:-1" : "this.set:4";
                     assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
                 }
             }

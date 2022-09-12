@@ -64,7 +64,7 @@ public class Test_38_FirstThen extends CommonTestRunner {
 
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("FirstThen_0".equals(d.typeInfo().simpleName)) {
-                assertEquals("Type param S", d.typeAnalysis().getHiddenContentTypes().toString());
+                assertEquals("S", d.typeAnalysis().getHiddenContentTypes().toString());
             }
         };
 

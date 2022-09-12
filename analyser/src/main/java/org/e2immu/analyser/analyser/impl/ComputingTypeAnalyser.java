@@ -297,8 +297,8 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
                     }
                 }
             }
-            LOGGER.debug("Found aspects {} in {}, {}", typeAnalysis.aspects.stream().map(Map.Entry::getKey).collect(Collectors.joining(",")),
-                    typeAnalysis, mainMethod);
+            LOGGER.debug("Found aspects {} in {}, {}", typeAnalysis.aspects.keyStream()
+                    .collect(Collectors.joining(",")), typeAnalysis, mainMethod);
         }
     }
 
