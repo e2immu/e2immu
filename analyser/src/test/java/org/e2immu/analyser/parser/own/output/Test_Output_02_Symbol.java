@@ -33,6 +33,7 @@ import java.io.IOException;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 
 public class Test_Output_02_Symbol extends CommonTestRunner {
 
@@ -48,9 +49,9 @@ public class Test_Output_02_Symbol extends CommonTestRunner {
 
                 // call to OutputElement.length(...), which has both a default implementation, and other implementations
                 if (d.variable() instanceof ParameterInfo pi && "options".equals(pi.name)) {
-                    String expected = d.iteration() == 0 ? "<p:options>" : "nullable instance type FormattingOptions/*@Identity*/";
+                    String expected = d.iteration() < 2 ? "<p:options>" : "nullable instance type FormattingOptions/*@Identity*/";
                     assertEquals(expected, d.currentValue().toString());
-                    assertDv(d, 1, MultiLevel.NULLABLE_DV, Property.CONTEXT_NOT_NULL);
+                    assertDv(d, 2, MultiLevel.NULLABLE_DV, Property.CONTEXT_NOT_NULL);
                 }
             }
             if ("length".equals(d.methodInfo().name) && "OutputElement".equals(d.methodInfo().typeInfo.simpleName)) {
@@ -62,13 +63,15 @@ public class Test_Output_02_Symbol extends CommonTestRunner {
         };
 
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
+            assertFalse(d.allowBreakDelay());
+
             if ("length".equals(d.methodInfo().name) && "OutputElement".equals(d.methodInfo().typeInfo.simpleName)) {
                 assertDv(d.p(0), 1, MultiLevel.NULLABLE_DV, Property.NOT_NULL_PARAMETER);
             }
             if ("right".equals(d.methodInfo().name) && "Symbol".equals(d.methodInfo().typeInfo.simpleName)) {
-                String expected = d.iteration() == 0 ? "<m:right>" : "/*inline right*/right";
+                String expected = d.iteration() < 2 ? "<m:right>" : "/*inline right*/right";
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
-                String pc = d.iteration() <= 2 ? "<precondition>" : "true";
+                String pc = d.iteration() < 5 ? "<precondition>" : "true";
                 assertEquals(pc, d.methodAnalysis().getPreconditionForEventual().expression().toString());
             }
         };

@@ -239,9 +239,9 @@ public class Test_62_FormatterSimplified extends CommonTestRunner {
         EvaluationResultVisitor evaluationResultVisitor = d -> {
             if ("apply".equals(d.methodInfo().name)) {
                 if ("0.0.0".equals(d.statementId())) {
-                    String expect = d.iteration() <= 1 ? "<null-check>" : "null==forwardInfo.guide";
+                    String expect = d.iteration() < 3 ? "<null-check>" : "null==forwardInfo.guide";
                     assertEquals(expect, d.evaluationResult().value().toString());
-                    assertEquals(d.iteration() <= 1, d.evaluationResult().causesOfDelay().isDelayed());
+                    assertEquals(d.iteration() < 3, d.evaluationResult().causesOfDelay().isDelayed());
                 }
             }
         };
@@ -253,7 +253,7 @@ public class Test_62_FormatterSimplified extends CommonTestRunner {
                 }
                 if ("0.0.1".equals(d.statementId())) {
                     DV exec = d.statementAnalysis().flowData().getGuaranteedToBeReachedInCurrentBlock();
-                    if (d.iteration() <= 1) {
+                    if (d.iteration() < 3) {
                         assertTrue(exec.isDelayed());
                     } else {
                         assertEquals(FlowData.ALWAYS, exec);
@@ -301,22 +301,23 @@ public class Test_62_FormatterSimplified extends CommonTestRunner {
                         case 0 -> "<f:(new Stack<GuideOnStack>()).peek().forwardInfo>";
                         case 1 -> "<vp:forwardInfo:container@Record_ForwardInfo>";
                         case 2 -> "<vp:forwardInfo:cm@Parameter_guide;cm@Parameter_string;mom@Parameter_guide;mom@Parameter_string>";
+                        case 3 -> "<vp:forwardInfo:break_imm_delay@Method_guide;srv@Method_guide>";
                         default -> "((new Stack<GuideOnStack>()/*0==this.size()*/).peek()).forwardInfo";
                     };
                     assertEquals(expect, d.evaluationResult().value().toString());
                 }
                 if ("1".equals(d.statementId())) {
                     String expect = switch (d.iteration()) {
-                        case 0, 1, 2 -> "<null-check>&&9==<m:index>";
+                        case 0, 1, 2, 3 -> "<null-check>&&9==<m:index>";
                         default -> "null!=((new Stack<GuideOnStack>()/*0==this.size()*/).peek()).forwardInfo&&9==((new Stack<GuideOnStack>()/*0==this.size()*/).peek()).forwardInfo.guide.index()";
                     };
                     assertEquals(expect, d.evaluationResult().value().toString());
-                    assertEquals(d.iteration() <= 2, d.evaluationResult().causesOfDelay().isDelayed());
+                    assertEquals(d.iteration() <= 3, d.evaluationResult().causesOfDelay().isDelayed());
                 }
                 if ("2".equals(d.statementId())) {
                     String expect = d.iteration() == 0 ? "<instanceOf:Guide>" : "list.get(forwardInfo.pos) instanceof Guide";
                     assertEquals(expect, d.evaluationResult().value().toString());
-                    assertEquals(d.iteration() <= 2, d.evaluationResult().causesOfDelay().isDelayed());
+                    assertEquals(d.iteration() <= 3, d.evaluationResult().causesOfDelay().isDelayed());
                 }
             }
         };
@@ -331,6 +332,7 @@ public class Test_62_FormatterSimplified extends CommonTestRunner {
                             case 0 -> "<f:(new Stack<GuideOnStack>()).peek().forwardInfo>";
                             case 1 -> "<vp:forwardInfo:container@Record_ForwardInfo>";
                             case 2 -> "<vp:forwardInfo:cm@Parameter_guide;cm@Parameter_string;mom@Parameter_guide;mom@Parameter_string>";
+                            case 3 -> "<vp:forwardInfo:break_imm_delay@Method_guide;srv@Method_guide>";
                             default -> "((new Stack<GuideOnStack>()/*0==this.size()*/).peek()).forwardInfo";
                         };
                         assertEquals(expect, d.currentValue().toString());
@@ -342,23 +344,23 @@ public class Test_62_FormatterSimplified extends CommonTestRunner {
                     }
                 }
                 if (d.variable() instanceof ReturnVariable && "2".equals(d.statementId())) {
-                    String expect = d.iteration() <= 2 ? "<s:boolean>" : "list.get(forwardInfo.pos) instanceof Guide";
+                    String expect = d.iteration() <= 3 ? "<s:boolean>" : "list.get(forwardInfo.pos) instanceof Guide";
                     assertEquals(expect, d.currentValue().toString());
                 }
                 if (d.variable() instanceof FieldReference fr && "pos".equals(fr.fieldInfo.name)) {
                     assertEquals("forwardInfo", fr.scope.toString());
-                    String expect = d.iteration() <= 2 ? "<f:pos>" : "instance type int";
+                    String expect = d.iteration() <= 3 ? "<f:forwardInfo.pos>" : "instance type int";
                     assertEquals(expect, d.currentValue().toString());
                 }
                 if (d.variable() instanceof FieldReference fr && "guide".equals(fr.fieldInfo.name)) {
-                    String expect = d.iteration() <= 2 ? "<f:guide>" : "nullable instance type Guide";
+                    String expect = d.iteration() <= 3 ? "<f:fwdInfo.guide>" : "nullable instance type Guide";
                     assertEquals(expect, d.currentValue().toString());
                     if ("fwdInfo".equals(fr.scope.toString())) {
                         if ("0".equals(d.statementId())) {
                             fail();
                         }
                         if ("1".equals(d.statementId())) {
-                            assertDv(d, 1, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                            assertDv(d, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                         }
                     } else if ("(new Stack<GuideOnStack>()/*0==this.size()*/).peek().forwardInfo".equals(fr.scope.toString())) {
                         assertDv(d, 1, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
@@ -366,7 +368,9 @@ public class Test_62_FormatterSimplified extends CommonTestRunner {
                 }
                 if (d.variable() instanceof FieldReference fr && "forwardInfo".equals(fr.fieldInfo.name)) {
                     if ("(new Stack<GuideOnStack>()).peek()".equals(fr.scope.toString())) {
-                        String expect = d.iteration() <= 2 ? "<f:forwardInfo>" : "nullable instance type ForwardInfo";
+                        String expect = d.iteration() < 4
+                                ? "<f:(new Stack<GuideOnStack>()).peek().forwardInfo>"
+                                : "nullable instance type ForwardInfo";
                         assertEquals(expect, d.currentValue().toString());
                     } else if ("(new Stack<GuideOnStack>()/*0==this.size()*/).peek()".equals(fr.scope.toString())) {
                         assertEquals("nullable instance type ForwardInfo", d.currentValue().toString());
@@ -382,20 +386,20 @@ public class Test_62_FormatterSimplified extends CommonTestRunner {
                     assertFalse(d.localConditionManager().isDelayed());
                 }
                 if ("1".equals(d.statementId())) {
-                    assertEquals(d.iteration() <= 2, d.conditionManagerForNextStatement().isDelayed());
+                    assertEquals(d.iteration() <= 3, d.conditionManagerForNextStatement().isDelayed());
                     assertFalse(d.localConditionManager().isDelayed());
 
-                    assertEquals(d.iteration() >= 3,
+                    assertEquals(d.iteration() >= 4,
                             d.statementAnalysis().stateData().valueOfExpressionIsDelayed().isDone());
                     //     mustSeeIteration(d, 3);
 
-                    assertEquals(d.iteration() >= 3, d.statementAnalysis().stateData().preconditionIsFinal());
-                    assertEquals(d.iteration() >= 3,
+                    assertEquals(d.iteration() >= 4, d.statementAnalysis().stateData().preconditionIsFinal());
+                    assertEquals(d.iteration() >= 4,
                             d.statementAnalysis().methodLevelData().combinedPreconditionIsFinal());
                 }
                 if ("2".equals(d.statementId())) {
-                    assertEquals(d.iteration() <= 2, d.localConditionManager().isDelayed());
-                    assertEquals(d.iteration() <= 2, d.conditionManagerForNextStatement().isDelayed());
+                    assertEquals(d.iteration() <= 3, d.localConditionManager().isDelayed());
+                    assertEquals(d.iteration() <= 3, d.conditionManagerForNextStatement().isDelayed());
                 }
             }
         };
@@ -403,7 +407,7 @@ public class Test_62_FormatterSimplified extends CommonTestRunner {
             if ("apply".equals(d.methodInfo().name)) {
                 assertEquals("$1", d.methodInfo().typeInfo.simpleName);
 
-                String expected = d.iteration() <= 2 ? "<m:apply>" : "/*inline apply*/list.get(forwardInfo.pos) instanceof Guide";
+                String expected = d.iteration() <= 3 ? "<m:apply>" : "/*inline apply*/list.get(forwardInfo.pos) instanceof Guide";
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
             }
         };
@@ -426,10 +430,10 @@ public class Test_62_FormatterSimplified extends CommonTestRunner {
 
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("OutputElement".equals(d.typeInfo().simpleName)) {
-                assertEquals(MultiLevel.EFFECTIVELY_IMMUTABLE_DV, d.typeAnalysis().getProperty(Property.IMMUTABLE));
+                assertEquals(MultiLevel.EFFECTIVELY_IMMUTABLE_HC_DV, d.typeAnalysis().getProperty(Property.IMMUTABLE));
             }
             if ("Guide".equals(d.typeInfo().simpleName)) {
-                assertEquals(MultiLevel.EFFECTIVELY_IMMUTABLE_DV, d.typeAnalysis().getProperty(Property.IMMUTABLE));
+                assertEquals(MultiLevel.EFFECTIVELY_IMMUTABLE_HC_DV, d.typeAnalysis().getProperty(Property.IMMUTABLE));
                 MethodInfo index = d.typeInfo().findUniqueMethod("index", 0);
                 MethodAnalysis indexAnalysis = d.analysisProvider().getMethodAnalysis(index);
                 assertEquals(DV.FALSE_DV, indexAnalysis.getProperty(Property.MODIFIED_METHOD));
