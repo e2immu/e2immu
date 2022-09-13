@@ -44,17 +44,17 @@ public class Test_16_Modification_9 extends CommonTestRunner {
             if ("add".equals(d.methodInfo().name)) {
                 if ("theSet".equals(d.variableName())) {
                     if ("1".equals(d.statementId())) {
-                        String expectValue = d.iteration() == 0 ? "<f:s2>" : "s2";
+                        String expectValue = d.iteration() < 3 ? "<f:s2>" : "s2";
                         assertEquals(expectValue, d.currentValue().toString());
                         assertDv(d, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     }
                     if ("2".equals(d.statementId())) {
-                        String expectValue = d.iteration() == 0 ? "<f:s2>" : "s2";
+                        String expectValue = d.iteration() < 3 ? "<f:s2>" : "s2";
                         assertEquals(expectValue, d.currentValue().toString());
 
-                        String expectLv = d.iteration() == 0 ? "Modification_9.LOGGER:-1,this.s2:0" : "this.s2:0";
+                        String expectLv = d.iteration() < 2 ? "Modification_9.LOGGER:-1,this.s2:0" : "this.s2:0";
                         assertEquals(expectLv, d.variableInfo().getLinkedVariables().toString());
-                        assertDv(d, 1, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
+                        assertDv(d, 3, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
                     }
                 }
                 if (d.variable() instanceof FieldReference fr && "s2".equals(fr.fieldInfo.name)) {
@@ -62,14 +62,14 @@ public class Test_16_Modification_9 extends CommonTestRunner {
                     if ("0".equals(d.statementId())) {
                         expectLinked = "theSet:0";
                     } else {
-                        expectLinked = d.iteration() == 0 ? "Modification_9.LOGGER:-1,theSet:0" : "theSet:0";
+                        expectLinked = d.iteration() < 2 ? "Modification_9.LOGGER:-1,theSet:0" : "theSet:0";
                     }
                     assertEquals(expectLinked, d.variableInfo().getLinkedVariables().toString());
 
                     if (("2".equals(d.statementId()) || "3".equals(d.statementId()))) {
-                        assertDv(d, 1, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
+                        assertDv(d, 3, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
 
-                        String expected = d.iteration() == 0 ? "<f:s2>"
+                        String expected = d.iteration() < 3 ? "<f:s2>"
                                 : "instance type HashSet<String>/*this.contains(s)&&this.size()>=1*/";
                         assertEquals(expected, d.currentValue().toString());
                     }
@@ -88,12 +88,12 @@ public class Test_16_Modification_9 extends CommonTestRunner {
 
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
             if ("s2".equals(d.fieldInfo().name)) {
-                assertDv(d, 1, DV.TRUE_DV, Property.MODIFIED_OUTSIDE_METHOD);
+                assertDv(d, 3, DV.TRUE_DV, Property.MODIFIED_OUTSIDE_METHOD);
             }
             if ("LOGGER".equals(d.fieldInfo().name)) {
                 assertDv(d, MultiLevel.EFFECTIVELY_IMMUTABLE_HC_DV, Property.EXTERNAL_IMMUTABLE);
                 // important: the logger will not store your objects, will never modify their hidden content
-                assertDv(d, MultiLevel.INDEPENDENT_DV, Property.INDEPENDENT);
+                assertDv(d, 2, MultiLevel.INDEPENDENT_DV, Property.INDEPENDENT);
             }
         };
 

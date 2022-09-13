@@ -263,8 +263,8 @@ public class Test_07_DependentVariables extends CommonTestRunner {
 
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
             if ("xs".equals(d.fieldInfo().name)) {
-                String linked = d.iteration() == 0 ? "xs:-1" : "xs:3";
-                assertEquals("xs:4", d.fieldAnalysis().getLinkedVariables().toString());
+                String linked = d.iteration() == 0 ? "index:-1,scope-52:20:-1,xs:-1,xs[index]:-1" : "xs:4";
+                assertEquals(linked, d.fieldAnalysis().getLinkedVariables().toString());
             }
         };
 

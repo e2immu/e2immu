@@ -533,7 +533,7 @@ public class Test_66_VariableScope extends CommonTestRunner {
         EvaluationResultVisitor evaluationResultVisitor = d -> {
             if ("combine".equals(d.methodInfo().name)) {
                 if ("3".equals(d.statementId())) {
-                    String expected = d.iteration() == 0 ? "<m:addAll>" : "instance type boolean";
+                    String expected = d.iteration() < 2 ? "<m:addAll>" : "instance type boolean";
                     assertEquals(expected, d.evaluationResult().value().toString());
                 }
             }
@@ -542,11 +542,11 @@ public class Test_66_VariableScope extends CommonTestRunner {
             if ("combine".equals(d.methodInfo().name)) {
                 if ("m".equals(d.variableName())) {
                     if ("2".equals(d.statementId())) {
-                        String expected = d.iteration() == 0 ? "<s:VariableScope_7>" : "new VariableScope_7()";
+                        String expected = d.iteration() < 2 ? "<s:VariableScope_7>" : "new VariableScope_7()";
                         assertEquals(expected, d.currentValue().toString());
                     }
                     if ("3".equals(d.statementId())) {
-                        String expected = d.iteration() == 0 ? "<s:VariableScope_7>" : "new VariableScope_7()";
+                        String expected = d.iteration() < 2 ? "<s:VariableScope_7>" : "new VariableScope_7()";
                         assertEquals(expected, d.currentValue().toString());
 
                         assertEquals("m.messages:4,other.messages:4,other:4",
@@ -557,7 +557,7 @@ public class Test_66_VariableScope extends CommonTestRunner {
                     assertTrue(Set.of("this", "other", "m").contains(fr.scope.toString()));
                     if ("m".equals(fr.scope.toString())) {
                         if ("3".equals(d.statementId())) {
-                            String expected = d.iteration() == 0 ? "<f:m.messages>"
+                            String expected = d.iteration() < 2 ? "<f:m.messages>"
                                     : "instance type Set<Message>/*this.size()>=other.messages.size()*/";
                             assertEquals(expected, d.currentValue().toString());
                         }

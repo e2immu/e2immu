@@ -16,10 +16,7 @@ package org.e2immu.analyser.parser.functional.testexample;
 
 import org.e2immu.annotation.FinalFields;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.function.BiConsumer;
 import java.util.function.BinaryOperator;
 import java.util.function.Function;
@@ -97,7 +94,7 @@ public class InlinedMethod_13 {
 
                 @Override
                 public Function<UpgradableBooleanMap<T>, UpgradableBooleanMap<T>> finisher() {
-                    return t -> t;
+                    return t -> Objects.requireNonNull(t);
                 }
 
                 @Override

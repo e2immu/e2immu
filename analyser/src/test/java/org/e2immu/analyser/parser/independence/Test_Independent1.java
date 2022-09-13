@@ -169,14 +169,14 @@ public class Test_Independent1 extends CommonTestRunner {
                     if ("0.0.0".equals(d.statementId())) {
                         // StatementAnalysisImpl.evaluationOfForEachVariable generates the this.ts:-1,3
                         // the "accept" call generates consumer:-1,3
-                        String linked = d.iteration() == 0 ? "consumer:-1,this.ts:-1" : "consumer:3,this.ts:3";
+                        String linked = d.iteration() < 2 ? "consumer:-1,this.ts:-1" : "consumer:3,this.ts:3";
                         assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
                     }
                 }
                 if (d.variable() instanceof FieldReference fr && "ts".equals(fr.fieldInfo.name)) {
                     assertTrue(fr.scopeIsThis());
                     if ("0".equals(d.statementId())) {
-                        String linked = d.iteration() == 0 ? "consumer:-1" : "consumer:4";
+                        String linked = d.iteration() < 2 ? "consumer:-1" : "consumer:4";
                         assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
                     }
                 }
@@ -198,7 +198,7 @@ public class Test_Independent1 extends CommonTestRunner {
                 }
                 if ("t".equals(d.variableName())) {
                     if ("0.0.0".equals(d.statementId())) {
-                        String linked = d.iteration() == 0 ? "this.ts:-1" : "this.ts:3";
+                        String linked = d.iteration() < 2 ? "this.ts:-1" : "this.ts:3";
                         assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
                     }
                 }

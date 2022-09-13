@@ -299,4 +299,28 @@ public record ComputeIndependent(AnalyserContext analyserContext,
         if (MultiLevel.isAtLeastEventuallyRecursivelyImmutable(immutable)) return LINK_INDEPENDENT;
         return LinkedVariables.LINK_IS_HC_OF;
     }
+
+    /**
+     * @param scopePt          type of the variable in the linked variables of the scope
+     * @param scopeLinkLevel   link level of the scope variable
+     * @param parameterType    type of the parameter
+     * @param paramIndependent independent of the parameter
+     * @return link level for the scope variable
+     */
+    public DV linkLevelOfParameterVsScope(ParameterizedType scopePt,
+                                          DV scopeLinkLevel,
+                                          ParameterizedType parameterType,
+                                          DV paramIndependent) {
+        if (scopeLinkLevel.isDelayed()) return scopeLinkLevel;
+        if (LINK_STATICALLY_ASSIGNED.equals(scopeLinkLevel) || LINK_ASSIGNED.equals(scopeLinkLevel)) {
+            /*
+             e.g., this:0, type parameter K, independent_hc
+             */
+            if (paramIndependent.isDelayed()) return paramIndependent;
+            if (MultiLevel.INDEPENDENT_DV.equals(paramIndependent)) return LINK_INDEPENDENT;
+            if (MultiLevel.DEPENDENT_DV.equals(paramIndependent)) return LINK_DEPENDENT;
+            return linkLevelOfTwoHCRelatedTypes(scopePt, parameterType);
+        }
+        throw new UnsupportedOperationException("NYI");
+    }
 }

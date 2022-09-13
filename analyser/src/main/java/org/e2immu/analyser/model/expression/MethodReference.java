@@ -14,20 +14,22 @@
 
 package org.e2immu.analyser.model.expression;
 
-import org.e2immu.analyser.analyser.DV;
-import org.e2immu.analyser.analyser.EvaluationResult;
-import org.e2immu.analyser.analyser.ForwardEvaluationInfo;
-import org.e2immu.analyser.analyser.Property;
+import org.e2immu.analyser.analyser.*;
+import org.e2immu.analyser.analyser.util.ComputeIndependent;
 import org.e2immu.analyser.analysis.MethodAnalysis;
+import org.e2immu.analyser.analysis.ParameterAnalysis;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.variable.This;
+import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.Symbol;
 import org.e2immu.analyser.output.Text;
 import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.util.UpgradableBooleanMap;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.function.Predicate;
 
@@ -129,6 +131,41 @@ public class MethodReference extends ExpressionWithMethodReferenceResolution {
         builder.compose(scopeResult);
         builder.setExpression(this);
         return builder.build();
+    }
+
+    /*
+     Example: other.map.forEach(this::put), in SetOnceMap.putAll
+     equivalent of other.map.forEach((k,v) -> this.put(k,v))
+     k and v as parameters of put are linked to this at independent_hc level, and should cause a link
+     from forEach:k --3--> this, forEach:v --3--> this, so that we end up with
+       other.map <--4--> this, and other <--4--> this.
+     We definitely don't want other <--2--> this.
+
+     Example:
+
+     */
+    @Override
+    public LinkedVariables linkedVariables(EvaluationResult context) {
+        if (scope instanceof TypeExpression) {
+            return LinkedVariables.EMPTY;
+        }
+        MethodAnalysis methodAnalysis = context.getAnalyserContext().getMethodAnalysis(methodInfo);
+        Map<Variable, DV> newLvMap = new HashMap<>();
+        EvaluationResult scopeResult = scope.evaluate(context, ForwardEvaluationInfo.DEFAULT);
+        LinkedVariables scopeLv = scopeResult.value().linkedVariables(context);
+        ComputeIndependent computeIndependent = new ComputeIndependent(context.getAnalyserContext(), context.getCurrentType().primaryType());
+
+        for (ParameterAnalysis parameterAnalysis : methodAnalysis.getParameterAnalyses()) {
+            DV paramIndependent = parameterAnalysis.getProperty(Property.INDEPENDENT);
+            if (!MultiLevel.INDEPENDENT_DV.equals(paramIndependent)) {
+                for (Map.Entry<Variable, DV> e : scopeLv) {
+                    DV dv = computeIndependent.linkLevelOfParameterVsScope(e.getKey().parameterizedType(),
+                            e.getValue(), parameterAnalysis.getParameterInfo().parameterizedType, paramIndependent);
+                    newLvMap.merge(e.getKey(), dv, DV::min);
+                }
+            }
+        }
+        return LinkedVariables.of(newLvMap);
     }
 
     @Override

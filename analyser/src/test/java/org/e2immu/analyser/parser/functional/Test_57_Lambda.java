@@ -499,14 +499,14 @@ public class Test_57_Lambda extends CommonTestRunner {
                         String expected = d.iteration() == 0 ? "<f:ii.i>" : "instance type int";
                         assertEquals(expected, d.currentValue().toString());
 
-                        assertDv(d, 2, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                        assertDv(d, 3, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     }
                 }
             }
         };
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
             if ("ii".equals(d.fieldInfo().name)) {
-                assertDv(d, 2, DV.FALSE_DV, Property.MODIFIED_OUTSIDE_METHOD);
+                assertDv(d, 3, DV.FALSE_DV, Property.MODIFIED_OUTSIDE_METHOD);
             }
             if ("i".equals(d.fieldInfo().name)) {
                 assertDv(d, DV.FALSE_DV, Property.FINAL);

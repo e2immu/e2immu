@@ -423,7 +423,8 @@ public class Test_01_Loops_21plus extends CommonTestRunner {
         };
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
             if ("xes".equals(d.fieldInfo().name)) {
-                assertEquals("xesIn:0", d.fieldAnalysis().getLinkedVariables().toString());
+                String linked = d.iteration() == 0 ? "all:-1,xesIn:-1" : "xesIn:0";
+                assertEquals(linked, d.fieldAnalysis().getLinkedVariables().toString());
                 assertEquals("xesIn", d.fieldAnalysis().getValue().toString());
                 assertDv(d, 4, MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL_DV, Property.EXTERNAL_NOT_NULL);
             }

@@ -41,10 +41,10 @@ public class Test_04_NotNull_AAPI extends CommonTestRunner {
             if ("isStrictPrefix".equals(d.methodInfo().name)) {
                 if ("node".equals(d.variableName())) {
                     if ("0".equals(d.statementId())) {
-                        String expected = d.iteration() <= 1 ? "<m:goTo>"
+                        String expected = d.iteration() < 3 ? "<m:goTo>"
                                 : "-1-(instance type int)+prefix.length>=0&&(null==``node`.map`.get(nullable instance type String)||null==``node`.map`)?null:-1-(instance type int)+prefix.length>=0?``node`.map`.get(nullable instance type String):`root`";
                         assertEquals(expected, d.currentValue().toString());
-                        assertDv(d, 2, MultiLevel.NULLABLE_DV, Property.NOT_NULL_EXPRESSION);
+                        assertDv(d, 3, MultiLevel.NULLABLE_DV, Property.NOT_NULL_EXPRESSION);
                     }
                 }
             }
@@ -91,12 +91,12 @@ public class Test_04_NotNull_AAPI extends CommonTestRunner {
                         }
                         if ("2".equals(d.statementId())) {
                             VariableInfo eval = d.variableInfoContainer().best(Stage.EVALUATION);
-                            String evalValue = d.iteration() < 3 ? "<f:node.data>" : "nullable instance type List<T>";
+                            String evalValue = d.iteration() < 4 ? "<f:node.data>" : "nullable instance type List<T>";
                             assertEquals(evalValue, eval.getValue().toString());
 
                             String expected = switch (d.iteration()) {
                                 case 0 -> "<null-check>?new LinkedList<>()/*0==this.size()*/:<f:node.data>";
-                                case 1, 2 -> "<null-check>?new LinkedList<>()/*0==this.size()*/:<vp:data:link@Field_data>";
+                                case 1, 2, 3 -> "<null-check>?new LinkedList<>()/*0==this.size()*/:<vp:data:link@Field_data>";
                                 default -> "null==nullable instance type List<T>?new LinkedList<>()/*0==this.size()*/:nullable instance type List<T>";
                             };
                             assertEquals(expected, d.currentValue().toString());
@@ -108,10 +108,10 @@ public class Test_04_NotNull_AAPI extends CommonTestRunner {
         };
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("goTo".equals(d.methodInfo().name)) {
-                String expected = d.iteration() <= 1 ? "<m:goTo>"
+                String expected = d.iteration() < 3 ? "<m:goTo>"
                         : "/*inline goTo*/-1-(instance type int)+upToPosition>=0&&(null==(null==node$1.map$0?node$1:node$1.map$0.get(nullable instance type String)).map$1.get(nullable instance type String)||null==(null==node$1.map$0?node$1:node$1.map$0.get(nullable instance type String)).map$1)?null:-1-(instance type int)+upToPosition>=0?null==node$1.map$0?node$1:node$1.map$0.get(nullable instance type String):root";
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
-                assertDv(d, 2, MultiLevel.NULLABLE_DV, Property.NOT_NULL_EXPRESSION);
+                assertDv(d, 3, MultiLevel.NULLABLE_DV, Property.NOT_NULL_EXPRESSION);
             }
         };
         testClass("NotNull_3", 0, 0, new DebugConfiguration.Builder()

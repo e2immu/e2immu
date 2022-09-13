@@ -84,7 +84,7 @@ public class Test_16_Modification_6 extends CommonTestRunner {
                 assertEquals("in6", d.fieldAnalysis().getValue().toString());
                 // in FieldAnalyserImpl.analyseLinked we block all links to field references
                 // that go to the same fieldInfo, disallowing example6.set6:0
-                assertEquals("example6:2,in6:0,values6:4", d.fieldAnalysis().getLinkedVariables().toString());
+                assertEquals("in6:0", d.fieldAnalysis().getLinkedVariables().toString());
                 assertDv(d, MultiLevel.DEPENDENT_DV, Property.INDEPENDENT);
 
                 assertDv(d, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.EXTERNAL_NOT_NULL);

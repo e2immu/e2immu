@@ -83,7 +83,7 @@ public class Test_16_Modification_11 extends CommonTestRunner {
                     if ("0".equals(d.statementId())) {
                         assertDv(d, 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.CONTEXT_NOT_NULL);
                         String expected = switch (d.iteration()) {
-                            case 0, 1, 2 -> "c:-1";
+                            case 0, 1, 2, 3 -> "c:-1";
                             default -> "c:2";
                         };
                         assertEquals(expected, d.variableInfo().getLinkedVariables().toString());
@@ -93,22 +93,22 @@ public class Test_16_Modification_11 extends CommonTestRunner {
                     if ("0".equals(d.statementId())) {
                         assertEquals(MultiLevel.NULLABLE_DV, d.getProperty(Property.CONTEXT_NOT_NULL));
                         String expectLinked = switch (d.iteration()) {
-                            case 0, 1, 2 -> "this.s2:-1";
+                            case 0, 1, 2, 3 -> "this.s2:-1";
                             default -> "this.s2:2";
                         };
                         assertEquals(expectLinked, d.variableInfo().getLinkedVariables().toString());
                     }
                     if ("2".equals(d.statementId())) {
                         String expectLinked = switch (d.iteration()) {
-                            case 0, 1, 2 -> "this.s2:-1";
+                            case 0, 1, 2, 3 -> "this.s2:-1";
                             default -> "this.s2:2";
                         };
                         assertEquals(expectLinked, d.variableInfo().getLinkedVariables().toString());
-                        assertDv(d, 3, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.CONTEXT_NOT_NULL);
+                        assertDv(d, 4, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.CONTEXT_NOT_NULL);
                     }
                 }
                 if (d.variable() instanceof ReturnVariable && "2".equals(d.statementId())) {
-                    String expectValue = d.iteration() <= 2 ? "<m:addAll>" : "instance type boolean";
+                    String expectValue = d.iteration() < 4 ? "<m:addAll>" : "instance type boolean";
                     assertEquals(expectValue, d.currentValue().toString());
                 }
             }
@@ -137,12 +137,12 @@ public class Test_16_Modification_11 extends CommonTestRunner {
             }
             if ("example1".equals(d.methodInfo().name)) {
                 if ("0".equals(d.statementId())) {
-                    assertEquals(d.iteration() <= 2,
+                    assertEquals(d.iteration() < 4,
                             d.haveError(Message.Label.POTENTIAL_NULL_POINTER_EXCEPTION) == null);
                 }
                 if ("2".equals(d.statementId())) {
-                    mustSeeIteration(d, 3);
-                    assertEquals(d.iteration() >= 3,
+                    mustSeeIteration(d, 4);
+                    assertEquals(d.iteration() >= 4,
                             d.statementAnalysis().methodLevelData().linksHaveBeenEstablished());
                 }
             }
@@ -178,7 +178,7 @@ public class Test_16_Modification_11 extends CommonTestRunner {
 
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("Modification_11".equals(d.typeInfo().simpleName)) {
-               assertHc(d, 1, "");
+                assertHc(d, 1, "");
             }
             if ("C1".equals(d.typeInfo().simpleName)) {
                 assertDv(d, 1, MultiLevel.DEPENDENT_DV, Property.INDEPENDENT);
