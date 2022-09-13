@@ -21,6 +21,7 @@ import org.e2immu.analyser.config.AnalyserProgram;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.parser.CommonTestRunner;
+import org.e2immu.analyser.visitor.FieldAnalyserVisitor;
 import org.e2immu.analyser.visitor.MethodAnalyserVisitor;
 import org.e2immu.analyser.visitor.TypeAnalyserVisitor;
 import org.junit.jupiter.api.Test;
@@ -28,12 +29,20 @@ import org.junit.jupiter.api.Test;
 import java.io.IOException;
 import java.util.List;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class Test_Config_00_AnalyserProgram extends CommonTestRunner {
 
     @Test
     public void test() throws IOException {
+        FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
+            if ("dependsOn".equals(d.fieldInfo().name)) {
+                assertEquals("[Set.of(),Arrays.stream(dependsOn).collect(Collectors.toUnmodifiableSet())]",
+                        d.fieldAnalysis().getValue().toString());
+                assertDv(d, MultiLevel.EFFECTIVELY_IMMUTABLE_DV, Property.EXTERNAL_IMMUTABLE);
+            }
+        };
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("from".equals(d.methodInfo().name)) {
                 assertDv(d, DV.FALSE_DV, Property.FLUENT);
@@ -41,15 +50,16 @@ public class Test_Config_00_AnalyserProgram extends CommonTestRunner {
         };
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("AnalyserProgram".equals(d.typeInfo().simpleName)) {
-                assertDv(d, 1, MultiLevel.EFFECTIVELY_FINAL_FIELDS_DV, Property.IMMUTABLE);
+                assertDv(d, 22, MultiLevel.EFFECTIVELY_FINAL_FIELDS_DV, Property.IMMUTABLE);
             }
             if ("Step".equals(d.typeInfo().simpleName)) {
                 assertTrue(d.typeInfo().isStatic());
-                assertDv(d, 24, MultiLevel.EFFECTIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
+                assertDv(d, 21, MultiLevel.EFFECTIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
             }
         };
         testSupportAndUtilClasses(List.of(AnalyserProgram.class), 0, 1,
                 new DebugConfiguration.Builder()
+                        .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                         .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
                         .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                         .build(),

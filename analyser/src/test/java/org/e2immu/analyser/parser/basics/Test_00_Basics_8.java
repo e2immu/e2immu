@@ -140,11 +140,11 @@ public class Test_00_Basics_8 extends CommonTestRunner {
                 }
                 if ("java.lang.System.out".equals(d.variableName())) {
                     if ("0".equals(d.statementId())) {
-                        String expectValue = d.iteration() == 0 ? "<f:out>" : "instance type PrintStream";
+                        String expectValue = d.iteration() == 0 ? "<f:out>" : "instance type PrintStream/*@IgnoreMods*/";
                         assertEquals(expectValue, d.currentValue().toString());
                     }
                     if ("4".equals(d.statementId())) {
-                        String expectValue = d.iteration() == 0 ? "<f:out>" : "instance type PrintStream";
+                        String expectValue = d.iteration() == 0 ? "<f:out>" : "instance type PrintStream/*@IgnoreMods*/";
                         assertEquals(expectValue, d.currentValue().toString());
                     }
                     assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, d.getProperty(CONTEXT_NOT_NULL));

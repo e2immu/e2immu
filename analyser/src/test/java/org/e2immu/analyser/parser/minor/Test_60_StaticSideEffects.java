@@ -186,7 +186,7 @@ public class Test_60_StaticSideEffects extends CommonTestRunner {
 
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
             if ("counter".equals(d.fieldInfo().name)) {
-                assertEquals(MultiLevel.IGNORE_MODS_DV, d.fieldAnalysis().getProperty(Property.IGNORE_MODIFICATIONS));
+                assertEquals(MultiLevel.IGNORE_MODS_DV, d.fieldAnalysis().getProperty(Property.EXTERNAL_IGNORE_MODIFICATIONS));
                 assertDv(d, DV.FALSE_DV, Property.MODIFIED_OUTSIDE_METHOD);
             }
         };

@@ -68,12 +68,12 @@ public class Test_01_Loops_20 extends CommonTestRunner {
                 if (d.variable() instanceof FieldReference fr && "out".equals(fr.fieldInfo.name)) {
                     if ("1".equals(d.statementId())) {
                         String expect = d.iteration() == 0
-                                ? "path.split(\"/\").length>=1?<f:out>:instance type PrintStream"
-                                : "instance type PrintStream";
+                                ? "path.split(\"/\").length>=1?<f:out>:instance type PrintStream/*@IgnoreMods*/"
+                                : "instance type PrintStream/*@IgnoreMods*/";
                         assertEquals(expect, d.currentValue().toString());
                     }
                     if ("1.0.0".equals(d.statementId())) {
-                        String expect = d.iteration() == 0 ? "<f:out>" : "instance type PrintStream";
+                        String expect = d.iteration() == 0 ? "<f:out>" : "instance type PrintStream/*@IgnoreMods*/";
                         assertEquals(expect, d.currentValue().toString());
                     }
                 }

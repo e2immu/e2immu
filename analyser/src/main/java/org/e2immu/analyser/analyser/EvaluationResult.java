@@ -649,7 +649,7 @@ public record EvaluationResult(EvaluationContext evaluationContext,
         public void markContextModified(Variable variable, DV modified) {
             assert evaluationContext != null;
             DV ignoreContentModifications = variable instanceof FieldReference fr ? evaluationContext.getAnalyserContext()
-                    .getFieldAnalysis(fr.fieldInfo).getProperty(Property.IGNORE_MODIFICATIONS)
+                    .getFieldAnalysis(fr.fieldInfo).getProperty(Property.EXTERNAL_IGNORE_MODIFICATIONS)
                     : Property.IGNORE_MODIFICATIONS.falseDv;
             if (!ignoreContentModifications.equals(MultiLevel.IGNORE_MODS_DV)) {
                 ChangeData cd = valueChanges.get(variable);

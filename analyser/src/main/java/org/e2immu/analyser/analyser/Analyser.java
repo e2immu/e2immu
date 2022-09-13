@@ -27,6 +27,8 @@ import org.slf4j.LoggerFactory;
 import java.util.Collection;
 import java.util.stream.Stream;
 
+import static org.e2immu.analyser.analyser.Property.*;
+
 public interface Analyser extends Comparable<Analyser> {
 
 
@@ -40,17 +42,23 @@ public interface Analyser extends Comparable<Analyser> {
     }
 
     enum AnalyserIdentification {
-        TYPE(null, false), // type does not have notNull
-        ABSTRACT_TYPE(null, true), // type does not have notNull
-        FIELD(Property.EXTERNAL_NOT_NULL, false),
-        PARAMETER(Property.NOT_NULL_PARAMETER, false),
-        METHOD(Property.NOT_NULL_EXPRESSION, false);
+        TYPE(IMMUTABLE, CONTAINER, null, null, false), // type does not have notNull
+        ABSTRACT_TYPE(IMMUTABLE, CONTAINER, null, null, true), // type does not have notNull
+        FIELD(EXTERNAL_IMMUTABLE, EXTERNAL_CONTAINER, EXTERNAL_NOT_NULL, EXTERNAL_IGNORE_MODIFICATIONS, false),
+        PARAMETER(IMMUTABLE, CONTAINER, NOT_NULL_PARAMETER, IGNORE_MODIFICATIONS, false),
+        METHOD(IMMUTABLE, CONTAINER, NOT_NULL_EXPRESSION, null, false);
 
+        public final Property immutable;
+        public final Property container;
         public final Property notNull;
+        public final Property ignoreMods;
         public final boolean isAbstract;
 
-        AnalyserIdentification(Property notNull, boolean isAbstract) {
+        AnalyserIdentification(Property immutable, Property container, Property notNull, Property ignoreMods, boolean isAbstract) {
             this.notNull = notNull;
+            this.container = container;
+            this.immutable = immutable;
+            this.ignoreMods = ignoreMods;
             this.isAbstract = isAbstract;
         }
     }

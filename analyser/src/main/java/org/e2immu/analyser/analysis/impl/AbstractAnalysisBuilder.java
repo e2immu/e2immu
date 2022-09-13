@@ -20,7 +20,10 @@ import org.e2immu.analyser.analyser.util.GenerateAnnotationsImmutableAndContaine
 import org.e2immu.analyser.analyser.util.GenerateAnnotationsIndependent;
 import org.e2immu.analyser.analysis.Analysis;
 import org.e2immu.analyser.analysis.TypeAnalysis;
-import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.model.AnnotationExpression;
+import org.e2immu.analyser.model.MultiLevel;
+import org.e2immu.analyser.model.Qualification;
+import org.e2immu.analyser.model.TypeInfo;
 import org.e2immu.analyser.model.expression.ConstantExpression;
 import org.e2immu.analyser.model.expression.MemberValuePair;
 import org.e2immu.analyser.model.impl.AnnotationExpressionImpl;
@@ -323,7 +326,7 @@ abstract class AbstractAnalysisBuilder implements Analysis {
                 } else if (e2ImmuAnnotationExpressions.ignoreModifications.typeInfo() == t) {
                     // @IgnoreModifications
                     DV trueFalseMulti = parameters.absent() ? MultiLevel.NOT_IGNORE_MODS_DV : MultiLevel.IGNORE_MODS_DV;
-                    setProperty(Property.IGNORE_MODIFICATIONS, trueFalseMulti);
+                    setProperty(analyserIdentification.ignoreMods, trueFalseMulti);
                 } else if (e2ImmuAnnotationExpressions.finalizer.typeInfo() == t) {
                     // @Finalizer
                     setProperty(Property.FINALIZER, trueFalse);
@@ -337,15 +340,15 @@ abstract class AbstractAnalysisBuilder implements Analysis {
             setProperty(Property.INDEPENDENT, independent);
         }
         if (container) {
-            setProperty(Property.CONTAINER, MultiLevel.CONTAINER_DV);
+            setProperty(analyserIdentification.container, MultiLevel.CONTAINER_DV);
             if (levelImmutable == MultiLevel.Level.ABSENT) {
-                setProperty(Property.IMMUTABLE, MultiLevel.MUTABLE_DV);
+                setProperty(analyserIdentification.immutable, MultiLevel.MUTABLE_DV);
             }
         }
         if (levelImmutable != MultiLevel.Level.ABSENT) {
             DV value = eventual != null ? MultiLevel.eventuallyImmutable(levelImmutable.level)
                     : MultiLevel.effectivelyImmutable(MultiLevel.Effective.EFFECTIVE, levelImmutable.level);
-            setProperty(Property.IMMUTABLE, value);
+            setProperty(analyserIdentification.immutable, value);
             if (eventual != null) {
                 writeTypeEventualFields(eventual);
             }

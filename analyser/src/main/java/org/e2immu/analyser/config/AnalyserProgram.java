@@ -14,6 +14,8 @@
 
 package org.e2immu.analyser.config;
 
+import org.e2immu.annotation.ImmutableContainer;
+
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
@@ -50,6 +52,10 @@ public record AnalyserProgram(Step step, Set<Step> accepted) {
             this.dependsOn = Arrays.stream(dependsOn).collect(Collectors.toUnmodifiableSet());
         }
 
+        /*
+        contracted, we have currently no means of making .collect() return immutable objects.
+         */
+        @ImmutableContainer(contract = true)
         private final Set<Step> dependsOn;
     }
 

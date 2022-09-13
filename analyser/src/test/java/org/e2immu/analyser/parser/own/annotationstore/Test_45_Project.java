@@ -232,7 +232,7 @@ public class Test_45_Project extends CommonTestRunner {
             if ("updated".equals(d.fieldInfo().name)) {
                 // assertEquals(Set.of(14, 16, 18, 21, 23, 27, 31).contains(d.iteration()), d.evaluationContext().allowBreakDelay());
                 assertEquals("Container", d.fieldInfo().owner.simpleName);
-                String linked = d.iteration() == 0 ? "ZoneOffset.UTC:-1" : "";
+                String linked = d.iteration() == 0 ? "ZoneOffset.UTC:-1,scope-container:2.0.1:-1,this.kvStore:-1" : "";
                 assertEquals(linked, d.fieldAnalysis().getLinkedVariables().toString());
                 assertDv(d, 17, DV.FALSE_DV, Property.MODIFIED_OUTSIDE_METHOD);
             }
@@ -240,7 +240,8 @@ public class Test_45_Project extends CommonTestRunner {
                 // assertEquals(Set.of(18, 21, 23, 27, 34, 38).contains(d.iteration()), d.evaluationContext().allowBreakDelay());
 
                 assertEquals("Container", d.fieldInfo().owner.simpleName);
-                assertEquals("value:0", d.fieldAnalysis().getLinkedVariables().toString());
+                String linked = d.iteration() == 0 ? "container:-1,key:-1,key:-1,key:-1,prev.read:-1,prev:-1,scope-111:28:-1,scope-container:2.0.1:-1,scope-scope-111:28:0:-1,this.kvStore:-1,value:-1,value:-1" : "value:0";
+                assertEquals(linked, d.fieldAnalysis().getLinkedVariables().toString());
                 assertDv(d, 22, DV.FALSE_DV, Property.MODIFIED_OUTSIDE_METHOD);
                 assertDv(d, 32, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.EXTERNAL_NOT_NULL);
             }
@@ -251,31 +252,31 @@ public class Test_45_Project extends CommonTestRunner {
 
             if ("Container".equals(d.methodInfo().name)) {
                 assertTrue(d.methodInfo().isConstructor);
-                assertDv(d.p(0), 23, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
-                assertDv(d.p(0), 23, DV.FALSE_DV, Property.MODIFIED_OUTSIDE_METHOD);
+                assertDv(d.p(0), 2, DV.TRUE_DV, Property.MODIFIED_VARIABLE);
+                assertDv(d.p(0), 2, DV.TRUE_DV, Property.MODIFIED_OUTSIDE_METHOD);
                 assertDv(d.p(0), 1, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
 
-                assertDv(d.p(1), 33, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
-                assertDv(d.p(1), 33, DV.FALSE_DV, Property.MODIFIED_OUTSIDE_METHOD);
+                assertDv(d.p(1), 19, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
+                assertDv(d.p(1), 19, DV.FALSE_DV, Property.MODIFIED_OUTSIDE_METHOD);
                 assertDv(d.p(1), 1, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
             }
             if ("set".equals(d.methodInfo().name)) {
-                assertDv(d, 36, DV.FALSE_DV, Property.MODIFIED_METHOD);
-                String expected = d.iteration() < 36 ? "<m:set>"
-                        : "/*inline set*/null==kvStore.get(key)?null:(kvStore.get(key)).value";
+                assertDv(d, 22, DV.TRUE_DV, Property.MODIFIED_METHOD);
+                String expected = d.iteration() < 22 ? "<m:set>"
+                        : "null==kvStore.get(key)?null:(kvStore.get(key)).value";
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
             }
             if ("get".equals(d.methodInfo().name)) {
-                assertDv(d, 32, DV.FALSE_DV, Property.MODIFIED_METHOD);
-                String expected = d.iteration() < 33 ? "<m:get>"
+                assertDv(d, 17, DV.FALSE_DV, Property.MODIFIED_METHOD);
+                String expected = d.iteration() < 18 ? "<m:get>"
                         : "/*inline get*/null==kvStore.get(key)?null:container.value";
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
             }
         };
 
         testClass("Project_0", 1, DONT_CARE, new DebugConfiguration.Builder()
-                        .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-                        .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+                     //   .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                     //   .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                         .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                         .build(),
                 new AnalyserConfiguration.Builder()
@@ -300,8 +301,8 @@ public class Test_45_Project extends CommonTestRunner {
                 if ("prev".equals(d.variableName())) {
                     if ("1".equals(d.statementId())) {
                         String expected = switch (d.iteration()) {
-                            case 0 -> "<null-check>?<new:Container>:<m:get>";
-                            case 1 -> "<null-check>?<new:Container>:<vp:Container:cm@Parameter_value;mom@Parameter_value>";
+                            case 0, 1 -> "<null-check>?<new:Container>:<m:get>";
+                            // case 1 -> "<null-check>?<new:Container>:<vp:Container:cm@Parameter_value;mom@Parameter_value>";
                             default -> "null==kvStore.get(key)?new Container(value):kvStore.get(key)";
                         };
                         assertEquals(expected, d.currentValue().toString());
@@ -349,10 +350,16 @@ public class Test_45_Project extends CommonTestRunner {
             assertEquals(MultiLevel.INDEPENDENT_DV, p0a.getProperty(Property.INDEPENDENT));
 
             assertEquals(MultiLevel.NOT_CONTAINER_DV, p0a.getProperty(Property.CONTAINER));
-            assertEquals(MultiLevel.EFFECTIVELY_IMMUTABLE_DV, p0a.getProperty(Property.IMMUTABLE));
+            assertEquals(MultiLevel.EFFECTIVELY_IMMUTABLE_HC_DV, p0a.getProperty(Property.IMMUTABLE));
+        };
+        TypeAnalyserVisitor typeAnalyserVisitor = d -> {
+            if ("Container".equals(d.typeInfo().simpleName)) {
+                assertDv(d, 5, MultiLevel.EFFECTIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
+            }
         };
         testClass("Project_4", 0, 1, new DebugConfiguration.Builder()
                         .addTypeMapVisitor(typeMapVisitor)
+                        .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
                         .build(),
                 new AnalyserConfiguration.Builder().setComputeFieldAnalyserAcrossAllMethods(true).build());
     }

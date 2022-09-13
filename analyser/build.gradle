@@ -37,8 +37,7 @@ jar {
 }
 
 test {
-    exclude '**/failing/*', '**/own/annotationstore/*', '**/own/config/*', '**/own/output/*', '**/own/snippet/*',
-            '**/own/util/*'
+    exclude '**/failing/*', '**/own/output/*', '**/own/snippet/*', '**/own/util/*'
 
     maxHeapSize = "2G"
     useJUnitPlatform()
@@ -48,7 +47,7 @@ test {
 dependencies {
     implementation 'org.e2immu:e2immu-support:0.6.0'      // LGPL 3.0
 
-   // implementation 'org.slf4j:slf4j-api:1.7.32'           // MIT X-11 License
+    // implementation 'org.slf4j:slf4j-api:1.7.32'           // MIT X-11 License
     implementation 'ch.qos.logback:logback-classic:1.2.11' // EPL v1.0 and the LGPL 2.1
 
     implementation 'com.github.javaparser:javaparser-core:3.24.1-SNAPSHOT'
@@ -123,13 +122,15 @@ class MyTestListener implements TestListener {
         file.createNewFile()
     }
 
-    void beforeSuite(TestDescriptor testDescriptor) { }
-    void afterSuite(TestDescriptor testDescriptor, TestResult testResult) { }
-    void beforeTest(TestDescriptor testDescriptor) { }
+    void beforeSuite(TestDescriptor testDescriptor) {}
+
+    void afterSuite(TestDescriptor testDescriptor, TestResult testResult) {}
+
+    void beforeTest(TestDescriptor testDescriptor) {}
 
     void afterTest(TestDescriptor testDescriptor, TestResult testResult) {
-        if(testResult.resultType == TestResult.ResultType.SUCCESS && testFqns.add(testDescriptor.className))
-            file << testDescriptor.className+"\n"
+        if (testResult.resultType == TestResult.ResultType.SUCCESS && testFqns.add(testDescriptor.className))
+            file << testDescriptor.className + "\n"
     }
 }
 
@@ -187,7 +188,7 @@ class IterateOverTests extends DefaultTask {
         proc.consumeProcessOutput(output, error)
         proc.waitForOrKill(3600_000)
         if (!output.isBlank()) {
-            logger.info( "----\n$output\n----\n")
+            logger.info("----\n$output\n----\n")
         }
         if (!error.isBlank()) {
             logger.error("---- ERROR ----\n$error\n----\n")
@@ -206,7 +207,7 @@ dependencies {
     iterate1 'com.codemodernizer:jacocoparser:0.0.1'
 }
 
-task iterateOverTests(type : IterateOverTests) {
+task iterateOverTests(type: IterateOverTests) {
     dependsOn test, jacocoTestReport
 
     testFQNs = new File(buildDir, "testFQNs.txt")

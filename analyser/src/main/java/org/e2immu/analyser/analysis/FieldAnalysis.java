@@ -75,13 +75,11 @@ public interface FieldAnalysis extends Analysis {
             case BEFORE_MARK:
             case CONSTANT:
             case EXTERNAL_CONTAINER:
-            case CONTAINER:
             case EXTERNAL_IMMUTABLE:
             case PARTIAL_EXTERNAL_IMMUTABLE:
             case EXTERNAL_NOT_NULL:
             case FINAL:
             case IDENTITY:
-            case IGNORE_MODIFICATIONS:
             case EXTERNAL_IGNORE_MODIFICATIONS:
             case INDEPENDENT:
             case MODIFIED_OUTSIDE_METHOD:
