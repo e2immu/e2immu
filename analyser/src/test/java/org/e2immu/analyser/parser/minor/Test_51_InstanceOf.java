@@ -921,19 +921,22 @@ public class Test_51_InstanceOf extends CommonTestRunner {
                 if (d.variable() instanceof ParameterInfo pi && "v".equals(pi.name)) {
                     if ("0".equals(d.statementId())) {
                         assertEquals("nullable instance type Expression/*@Identity*/", d.currentValue().toString());
-                        assertDv(d, MultiLevel.NOT_CONTAINER_DV, Property.CONTAINER);
-                        assertDv(d, MultiLevel.NOT_INVOLVED_DV, Property.EXTERNAL_CONTAINER);
+                        assertDv(d, MultiLevel.CONTAINER_DV, Property.CONTAINER);
+                        assertDv(d, MultiLevel.CONTAINER_DV, Property.EXTERNAL_CONTAINER);
                     }
                 }
                 if ("unwrapped".equals(d.variableName())) {
                     if ("0".equals(d.statementId())) {
-                        assertDv(d, 0, MultiLevel.NOT_CONTAINER_DV, Property.CONTAINER);
+                        assertDv(d, 0, MultiLevel.CONTAINER_DV, Property.CONTAINER);
                     }
                 }
             }
         };
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("Expression".equals(d.typeInfo().simpleName)) {
+                assertDv(d, MultiLevel.CONTAINER_DV, Property.CONTAINER);
+            }
+            if ("ExpressionWrapper".equals(d.typeInfo().simpleName)) {
                 assertDv(d, MultiLevel.CONTAINER_DV, Property.CONTAINER);
             }
         };

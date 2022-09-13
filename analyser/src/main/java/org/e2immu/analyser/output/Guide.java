@@ -16,6 +16,7 @@ package org.e2immu.analyser.output;
 
 
 import org.e2immu.annotation.ImmutableContainer;
+import org.e2immu.annotation.rare.IgnoreModifications;
 
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -32,6 +33,7 @@ public record Guide(int index,
         assert position != null;
     }
 
+    @IgnoreModifications
     private static final AtomicInteger generator = new AtomicInteger();
 
     public enum Position {

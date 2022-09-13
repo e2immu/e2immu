@@ -219,7 +219,6 @@ record SAHelper(StatementAnalysis statementAnalysis) {
 
     public static EvaluationResult scopeVariablesForPatternVariables(EvaluationResult evaluationResult2, String index) {
         TranslationMapImpl.Builder builder = new TranslationMapImpl.Builder();
-        EvaluationResult.Builder erBuilder = new EvaluationResult.Builder(evaluationResult2);
         for (Map.Entry<Variable, EvaluationResult.ChangeData> e : evaluationResult2.changeData().entrySet()) {
             if (evaluationResult2.evaluationContext().isPatternVariableCreatedAt(e.getKey(), index)) {
                 Variable pv = e.getKey();

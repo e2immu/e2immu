@@ -116,7 +116,7 @@ public class OutputTypeInfo {
                 afterAnnotations.add(Symbol.RIGHT_ANGLE_BRACKET);
             }
             if (isRecord) {
-                afterAnnotations.add(outputFieldsAsParameters(insideType, fields));
+                afterAnnotations.add(outputNonStaticFieldsAsParameters(insideType, fields));
             }
             if (parentClass != null) {
                 afterAnnotations.add(Space.ONE).add(new Text("extends")).add(Space.ONE).add(parentClass.output(insideType));
@@ -195,8 +195,9 @@ public class OutputTypeInfo {
         };
     }
 
-    private static OutputBuilder outputFieldsAsParameters(Qualification qualification, List<FieldInfo> fields) {
+    private static OutputBuilder outputNonStaticFieldsAsParameters(Qualification qualification, List<FieldInfo> fields) {
         return fields.stream()
+                .filter(fieldInfo -> !fieldInfo.fieldInspection.get().isStatic())
                 .map(fieldInfo -> fieldInfo.output(qualification, true))
                 .collect(OutputBuilder.joining(Symbol.COMMA, Symbol.LEFT_PARENTHESIS, Symbol.RIGHT_PARENTHESIS,
                         Guide.generatorForParameterDeclaration()));

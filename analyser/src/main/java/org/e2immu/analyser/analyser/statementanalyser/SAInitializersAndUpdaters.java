@@ -213,6 +213,10 @@ record SAInitializersAndUpdaters(StatementAnalysis statementAnalysis) {
             ParameterInfo parameterInfo = eci.methodInfo.methodInspection.get().getParameters().get(i);
             translationMapBuilder.put(new VariableExpression(parameterInfo), updater);
             translationMapBuilder.addVariableExpression(parameterInfo, updater);
+            IsVariableExpression ive = updater.asInstanceOf(IsVariableExpression.class);
+            if(ive != null) {
+                translationMapBuilder.put(parameterInfo, ive.variable());
+            }
 
             /*
             next to the assignments, we also do normal evaluations of the arguments of the ECI

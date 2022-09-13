@@ -14,9 +14,13 @@
 
 package org.e2immu.analyser.output;
 
+import org.e2immu.annotation.Container;
+import org.e2immu.annotation.Independent;
 import org.e2immu.annotation.NotModified;
 import org.e2immu.annotation.NotNull;
 
+@Container
+@Independent
 public interface OutputElement {
 
     @NotModified

@@ -15,8 +15,11 @@
 package org.e2immu.analyser.model.impl;
 
 import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.model.expression.DelayedVariableExpression;
+import org.e2immu.analyser.model.expression.VariableExpression;
 import org.e2immu.analyser.model.expression.util.TranslationCollectors;
 import org.e2immu.analyser.model.statement.Block;
+import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.LocalVariableReference;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.parser.InspectionProvider;
@@ -129,7 +132,21 @@ public class TranslationMapImpl implements TranslationMap {
 
     @Override
     public Variable translateVariable(Variable variable) {
-        return Objects.requireNonNullElse(variables.get(variable), variable);
+        Variable v = variables.get(variable);
+        if (v != null) return v;
+        if (variable instanceof FieldReference fr && fr.scopeVariable != null) {
+            Variable scopeTranslated = translateVariable(fr.scopeVariable);
+            if (scopeTranslated != fr.scopeVariable) {
+                Expression e;
+                if (fr.scope.isDelayed()) {
+                    e = DelayedVariableExpression.forVariable(scopeTranslated, fr.statementTime(), fr.scope.causesOfDelay());
+                } else {
+                    e = new VariableExpression(scopeTranslated);
+                }
+                return new FieldReference(InspectionProvider.DEFAULT, fr.fieldInfo, e, fr.getOwningType());
+            }
+        }
+        return variable;
     }
 
     @Override
@@ -189,7 +206,7 @@ public class TranslationMapImpl implements TranslationMap {
         private final Map<ParameterizedType, ParameterizedType> types = new HashMap<>();
         private boolean expandDelayedWrappedExpressions;
         private boolean recurseIntoScopeVariables;
-    private boolean yieldIntoReturn;
+        private boolean yieldIntoReturn;
 
         public TranslationMapImpl build() {
             return new TranslationMapImpl(statements, expressions, variableExpressions, variables, methods, types,

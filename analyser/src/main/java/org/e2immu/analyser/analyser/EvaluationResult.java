@@ -178,8 +178,16 @@ public record EvaluationResult(EvaluationContext evaluationContext,
             Variable translated = translationMap.translateVariable(e.getKey());
             EvaluationResult.ChangeData newChangeData = e.getValue().translate(inspectionProvider, translationMap);
             newMap.put(translated, newChangeData);
-            if (translated != e.getKey()) {
-                newMap.put(e.getKey(), newChangeData);
+            if(translated != e.getKey()) {
+                /* x.i -> scope-x:2.i
+
+                no linked variables, otherwise we end up with asymmetrical :0 and :1 arrows
+                we have to keep the variable, we need its value (see e.g. VariableScope_14)
+                 */
+                ChangeData cd = e.getValue();
+                ChangeData ncd = new ChangeData(cd.value, cd.delays, cd.stateIsDelayed, cd.markAssignment,
+                        cd.readAtStatementTime, LinkedVariables.EMPTY, LinkedVariables.EMPTY, Map.of());
+                newMap.put(e.getKey(), ncd);
             }
         }
         Expression translatedValue = value == null ? null : value.translate(inspectionProvider, translationMap);

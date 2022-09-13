@@ -14,11 +14,15 @@
 
 package org.e2immu.analyser.parser.minor.testexample;
 
+import org.e2immu.annotation.Container;
+
 public class InstanceOf_14 {
 
+    @Container
     interface Expression {
     }
 
+    @Container
     interface ExpressionWrapper {
         Expression getExpression();
     }
