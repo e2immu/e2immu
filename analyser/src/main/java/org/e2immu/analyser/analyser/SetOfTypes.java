@@ -38,10 +38,17 @@ public record SetOfTypes(Set<ParameterizedType> types) {
     // if T is hidden, then ? extends T is hidden as well
     public boolean contains(ParameterizedType parameterizedType) {
         if (types.contains(parameterizedType)) return true;
-        if (parameterizedType.typeParameter != null && parameterizedType.wildCard != ParameterizedType.WildCard.NONE) {
-            ParameterizedType withoutWildcard = new ParameterizedType(parameterizedType.typeParameter, parameterizedType.arrays,
-                    ParameterizedType.WildCard.NONE);
-            return types.contains(withoutWildcard);
+        if (parameterizedType.typeParameter != null) {
+            if (parameterizedType.wildCard != ParameterizedType.WildCard.NONE) {
+                ParameterizedType withoutWildcard = new ParameterizedType(parameterizedType.typeParameter, parameterizedType.arrays,
+                        ParameterizedType.WildCard.NONE);
+                return types.contains(withoutWildcard);
+            } else {
+                // try with wildcard
+                ParameterizedType withWildCard = new ParameterizedType(parameterizedType.typeParameter, parameterizedType.arrays,
+                        ParameterizedType.WildCard.EXTENDS);
+                return types.contains(withWildCard);
+            }
         }
         return false;
     }

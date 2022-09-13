@@ -159,9 +159,14 @@ public class MethodReference extends ExpressionWithMethodReferenceResolution {
             DV paramIndependent = parameterAnalysis.getProperty(Property.INDEPENDENT);
             if (!MultiLevel.INDEPENDENT_DV.equals(paramIndependent)) {
                 for (Map.Entry<Variable, DV> e : scopeLv) {
+                    int index = parameterAnalysis.getParameterInfo().index;
+                    // the concreteReturnType is the concrete functional type; grab the type parameter!
+                    ParameterizedType concreteParameterType = this.concreteReturnType.parameters.get(index);
                     DV dv = computeIndependent.linkLevelOfParameterVsScope(e.getKey().parameterizedType(),
-                            e.getValue(), parameterAnalysis.getParameterInfo().parameterizedType, paramIndependent);
-                    newLvMap.merge(e.getKey(), dv, DV::min);
+                            e.getValue(), concreteParameterType, paramIndependent);
+                    if (!LinkedVariables.LINK_INDEPENDENT.equals(dv)) {
+                        newLvMap.merge(e.getKey(), dv, DV::min);
+                    }
                 }
             }
         }
