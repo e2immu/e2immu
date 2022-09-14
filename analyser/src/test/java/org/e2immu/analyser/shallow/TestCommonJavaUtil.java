@@ -55,8 +55,8 @@ public class TestCommonJavaUtil extends CommonAnnotatedAPI {
         ParameterAnalysis p0 = methodInfo.parameterAnalysis(0);
         assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, p0.getProperty(Property.NOT_NULL_PARAMETER));
         assertEquals(MultiLevel.INDEPENDENT_HC_DV, p0.getProperty(Property.INDEPENDENT));
-        assertEquals(MultiLevel.NOT_CONTAINER_DV, p0.getProperty(Property.CONTAINER));
-
+        assertEquals(MultiLevel.NOT_CONTAINER_DV, p0.getProperty(Property.CONTAINER_RESTRICTION));
+        assertEquals(MultiLevel.CONTAINER_DV, p0.getProperty(Property.CONTAINER));
         // as opposed to java.io.PrintStream.print(X x), for example
         assertFalse(methodInfo.methodResolution.get().allowsInterrupts());
     }
@@ -528,7 +528,8 @@ public class TestCommonJavaUtil extends CommonAnnotatedAPI {
         assertEquals(DV.FALSE_DV, p0.getProperty(Property.MODIFIED_VARIABLE));
         //! IMPORTANT ! an array is @Container, but a varargs parameter is not seen as an array for the purpose of enforcing @Container
         // see code in ParameterAnalysis.getParameterProperty
-        assertEquals(MultiLevel.NOT_CONTAINER_DV, p0.getProperty(Property.CONTAINER));
+        assertEquals(MultiLevel.NOT_CONTAINER_DV, p0.getProperty(Property.CONTAINER_RESTRICTION));
+        assertEquals(MultiLevel.CONTAINER_DV, p0.getProperty(Property.CONTAINER));
     }
 
 

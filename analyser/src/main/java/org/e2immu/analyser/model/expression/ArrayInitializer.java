@@ -153,7 +153,7 @@ public class ArrayInitializer extends BaseExpression implements Expression {
                 case EXTERNAL_IMMUTABLE, IMMUTABLE -> MultiLevel.EFFECTIVELY_IMMUTABLE_DV;
                 case INDEPENDENT -> MultiLevel.INDEPENDENT_DV;
                 case CONSTANT -> DV.TRUE_DV;
-                case EXTERNAL_CONTAINER, CONTAINER -> MultiLevel.CONTAINER_DV;
+                case CONTAINER_RESTRICTION, CONTAINER -> MultiLevel.CONTAINER_DV;
                 case EXTERNAL_IGNORE_MODIFICATIONS, IGNORE_MODIFICATIONS -> MultiLevel.NOT_IGNORE_MODS_DV;
                 case NOT_NULL_EXPRESSION -> MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL_DV;
                 default -> throw new UnsupportedOperationException("Property " + property);
@@ -168,7 +168,7 @@ public class ArrayInitializer extends BaseExpression implements Expression {
             // it is an array
             return MultiLevel.EFFECTIVELY_FINAL_FIELDS_DV;
         }
-        if (Property.EXTERNAL_CONTAINER == property || Property.CONTAINER == property) {
+        if (Property.CONTAINER_RESTRICTION == property || Property.CONTAINER == property) {
             return MultiLevel.CONTAINER_DV;
         }
         if (Property.EXTERNAL_IGNORE_MODIFICATIONS == property || Property.IGNORE_MODIFICATIONS == property) {

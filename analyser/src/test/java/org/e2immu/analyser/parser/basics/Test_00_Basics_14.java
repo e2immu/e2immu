@@ -124,7 +124,7 @@ public class Test_00_Basics_14 extends CommonTestRunner {
                 assertDv(d, DV.FALSE_DV, FINAL);
 
                 // the field itself is of unbound type
-                assertDv(d, 0, MultiLevel.CONTAINER_DV, EXTERNAL_CONTAINER);
+                assertDv(d, 0, MultiLevel.NOT_CONTAINER_DV, CONTAINER_RESTRICTION);
                 assertDv(d, 1, MultiLevel.EFFECTIVELY_IMMUTABLE_HC_DV, EXTERNAL_IMMUTABLE);
                 assertDv(d, 1, MultiLevel.INDEPENDENT_HC_DV, INDEPENDENT);
                 assertEquals("<variable value>", d.fieldAnalysis().getValue().toString());

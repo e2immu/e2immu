@@ -696,7 +696,7 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
         } else {
             dynamic = variableInfo.getProperty(CONTAINER);
         }
-        DV dynamicExt = variableInfo.getProperty(EXTERNAL_CONTAINER);
+        DV dynamicExt = variableInfo.getProperty(CONTAINER_RESTRICTION);
         return dynamic.max(dynamicExt);
     }
 
@@ -1074,7 +1074,7 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
     public static Property external(Property property) {
         if (property == NOT_NULL_EXPRESSION) return EXTERNAL_NOT_NULL;
         if (property == IMMUTABLE) return EXTERNAL_IMMUTABLE;
-        if (property == CONTAINER) return EXTERNAL_CONTAINER;
+        if (property == CONTAINER) return CONTAINER_RESTRICTION;
         if (property == IGNORE_MODIFICATIONS) return EXTERNAL_IGNORE_MODIFICATIONS;
         return property;
     }

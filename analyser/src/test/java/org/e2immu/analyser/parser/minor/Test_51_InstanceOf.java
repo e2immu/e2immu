@@ -612,7 +612,7 @@ public class Test_51_InstanceOf extends CommonTestRunner {
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
             if ("expression".equals(d.fieldInfo().name)) {
                 assertEquals("Negation", d.fieldInfo().owner.simpleName);
-                assertDv(d, 1, MultiLevel.NOT_CONTAINER_DV, Property.EXTERNAL_CONTAINER);
+                assertDv(d, 1, MultiLevel.NOT_CONTAINER_DV, Property.CONTAINER_RESTRICTION);
             }
         };
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
@@ -848,12 +848,12 @@ public class Test_51_InstanceOf extends CommonTestRunner {
                     case "InstanceOf_11" -> {
                         assertEquals("new Expression(){}", d.fieldAnalysis().getValue().toString());
                         //  has to be container; was known in iteration 1 previously
-                        assertDv(d, 8, MultiLevel.NOT_CONTAINER_INCONCLUSIVE, Property.EXTERNAL_CONTAINER);
+                        assertDv(d, 8, MultiLevel.NOT_CONTAINER_INCONCLUSIVE, Property.CONTAINER_RESTRICTION);
                         assertDv(d, 8, DV.FALSE_DV, Property.MODIFIED_OUTSIDE_METHOD);
                     }
                     case "Negation" -> {
                         assertEquals("expression", d.fieldAnalysis().getValue().toString());
-                        assertDv(d, 1, MultiLevel.NOT_CONTAINER_DV, Property.EXTERNAL_CONTAINER);
+                        assertDv(d, 1, MultiLevel.NOT_CONTAINER_DV, Property.CONTAINER_RESTRICTION);
                         assertDv(d, DV.FALSE_DV, Property.MODIFIED_OUTSIDE_METHOD);
                     }
                     default -> fail("? " + d.fieldInfo().owner.simpleName);
@@ -922,7 +922,7 @@ public class Test_51_InstanceOf extends CommonTestRunner {
                     if ("0".equals(d.statementId())) {
                         assertEquals("nullable instance type Expression/*@Identity*/", d.currentValue().toString());
                         assertDv(d, MultiLevel.CONTAINER_DV, Property.CONTAINER);
-                        assertDv(d, MultiLevel.CONTAINER_DV, Property.EXTERNAL_CONTAINER);
+                        assertDv(d, MultiLevel.NOT_CONTAINER_DV, Property.CONTAINER_RESTRICTION);
                     }
                 }
                 if ("unwrapped".equals(d.variableName())) {

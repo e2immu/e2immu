@@ -72,7 +72,7 @@ public class ExternalContainer_0 {
     @ImmutableContainer(hc = true) // computed
     private final Consumer<I> myContainerLinkedToParameter;
 
-    // not contracted but computed: the @E2Container property, travels from @E2Container on the field
+    // not contracted but computed: the @ImmutableContainer property travels from the field
     public ExternalContainer_0(@ImmutableContainer(hc = true) Consumer<I> consumer) {
         this.myContainerLinkedToParameter = consumer;
     }

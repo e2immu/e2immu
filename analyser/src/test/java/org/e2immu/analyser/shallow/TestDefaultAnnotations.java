@@ -310,7 +310,7 @@ public class TestDefaultAnnotations {
         FieldInfo out = system.getFieldByName("out", true);
         FieldAnalysis outAnalysis = out.fieldAnalysis.get();
 
-        assertEquals(MultiLevel.NOT_CONTAINER_DV, outAnalysis.getProperty(Property.CONTAINER));
+        assertEquals(MultiLevel.NOT_CONTAINER_DV, outAnalysis.getProperty(Property.CONTAINER_RESTRICTION));
         assertEquals(MultiLevel.MUTABLE_DV, outAnalysis.getProperty(Property.IMMUTABLE));
         assertEquals(DV.TRUE_DV, outAnalysis.getProperty(Property.FINAL));
         assertEquals(DV.FALSE_DV, outAnalysis.getProperty(Property.MODIFIED_OUTSIDE_METHOD));
@@ -319,7 +319,7 @@ public class TestDefaultAnnotations {
 
         if (outAnalysis instanceof FieldAnalysisImpl outAnalysisImpl) {
             assertTrue(outAnalysisImpl.properties.containsKey(Property.FINAL));
-            assertTrue(outAnalysisImpl.properties.containsKey(Property.EXTERNAL_CONTAINER));
+            assertTrue(outAnalysisImpl.properties.containsKey(Property.CONTAINER_RESTRICTION));
         } else fail();
 
         Expression value = outAnalysis.getValue();
@@ -333,14 +333,15 @@ public class TestDefaultAnnotations {
         FieldInfo bytes = integer.getFieldByName("BYTES", true);
         FieldAnalysis bytesAnalysis = bytes.fieldAnalysis.get();
 
-        assertEquals(MultiLevel.CONTAINER_DV, bytesAnalysis.getProperty(Property.EXTERNAL_CONTAINER));
+        assertEquals(MultiLevel.NOT_CONTAINER_DV, bytesAnalysis.getProperty(Property.CONTAINER_RESTRICTION));
+        assertEquals(MultiLevel.CONTAINER_DV, bytesAnalysis.getProperty(Property.CONTAINER));
         assertEquals(MultiLevel.EFFECTIVELY_IMMUTABLE_DV, bytesAnalysis.getProperty(Property.IMMUTABLE));
         assertEquals(DV.TRUE_DV, bytesAnalysis.getProperty(Property.FINAL));
         assertEquals(DV.FALSE_DV, bytesAnalysis.getProperty(Property.MODIFIED_OUTSIDE_METHOD));
         assertEquals(MultiLevel.INDEPENDENT_DV, bytesAnalysis.getProperty(Property.INDEPENDENT));
 
         if (bytesAnalysis instanceof FieldAnalysisImpl bytesAnalysisImpl) {
-            assertTrue(bytesAnalysisImpl.properties.containsKey(Property.EXTERNAL_CONTAINER));
+            assertTrue(bytesAnalysisImpl.properties.containsKey(Property.CONTAINER));
             assertTrue(bytesAnalysisImpl.properties.containsKey(Property.FINAL));
         } else fail();
 

@@ -143,7 +143,8 @@ public class Test_10_Identity extends CommonTestRunner {
                         String expectLv = d.iteration() == 0 ? "s:-1" : "s:1";
                         assertEquals(expectLv, d.variableInfo().getLinkedVariables().toString());
                         assertEquals(MultiLevel.NULLABLE_DV, d.getProperty(Property.CONTEXT_NOT_NULL));
-                        assertDv(d, 1, MultiLevel.CONTAINER_DV, EXTERNAL_CONTAINER);
+                        assertDv(d, 1, MultiLevel.NOT_CONTAINER_DV, CONTAINER_RESTRICTION);
+                        assertDv(d, 1, MultiLevel.CONTAINER_DV, CONTAINER);
                     }
                 }
                 if (d.variable() instanceof ParameterInfo s && "s".equals(s.name)) {

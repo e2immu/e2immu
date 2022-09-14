@@ -121,7 +121,8 @@ public class EvaluateParameters {
                     map = new HashMap<>();
                     map.put(Property.CONTEXT_MODIFIED, parameterAnalysis.getProperty(Property.MODIFIED_VARIABLE));
                     map.put(Property.CONTEXT_NOT_NULL, parameterAnalysis.getProperty(Property.NOT_NULL_PARAMETER));
-                    map.put(Property.CONTEXT_CONTAINER, parameterAnalysis.getProperty(Property.CONTAINER));
+                    DV containerRestriction = parameterAnalysis.getProperty(Property.CONTAINER_RESTRICTION);
+                    map.put(Property.CONTEXT_CONTAINER, containerRestriction);
                 }
             } catch (RuntimeException e) {
                 LOGGER.error("Failed to obtain parameter analysis of {}", parameterInfo.fullyQualifiedName());

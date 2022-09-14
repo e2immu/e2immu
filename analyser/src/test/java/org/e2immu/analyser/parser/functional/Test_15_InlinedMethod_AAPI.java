@@ -304,7 +304,8 @@ public class Test_15_InlinedMethod_AAPI extends CommonTestRunner {
             if ("subElements".equals(d.methodInfo().name)) {
                 if ("BinaryOperator".equals(d.methodInfo().typeInfo.simpleName)) {
                     if (d.variable() instanceof ReturnVariable) {
-                        assertEquals("this.lhs:-1,this.rhs:-1", d.variableInfo().getLinkedVariables().toString());
+                        String linked = d.iteration() <= 2 ? "this.lhs:-1,this.rhs:-1" : "";
+                        assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
                     }
                 }
             }
@@ -357,7 +358,7 @@ public class Test_15_InlinedMethod_AAPI extends CommonTestRunner {
                     assertDv(d, MultiLevel.MUTABLE_DV, Property.IMMUTABLE);
                     assertDv(d, MultiLevel.DEPENDENT_DV, Property.INDEPENDENT);
                 } else if ("BinaryOperator".equals(d.methodInfo().typeInfo.simpleName)) {
-                    assertDv(d, 5, MultiLevel.MUTABLE_DV, Property.IMMUTABLE);
+                    assertDv(d, 3, MultiLevel.MUTABLE_DV, Property.IMMUTABLE);
                 }
             }
             if ("lhs".equals(d.methodInfo().name)) {
@@ -367,6 +368,7 @@ public class Test_15_InlinedMethod_AAPI extends CommonTestRunner {
         };
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
             if ("lhs".equals(d.fieldInfo().name)) {
+                assertDv(d, DV.TRUE_DV, Property.FINAL);
                 assertDv(d, 1, MultiLevel.MUTABLE_DV, Property.EXTERNAL_IMMUTABLE);
             }
         };

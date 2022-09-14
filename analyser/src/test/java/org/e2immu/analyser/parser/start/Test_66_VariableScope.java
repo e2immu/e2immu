@@ -691,8 +691,8 @@ public class Test_66_VariableScope extends CommonTestRunner {
             if ("valueOf".equals(d.methodInfo().name) && "Required".equals(d.methodInfo().typeInfo.simpleName)) {
                 assertEquals("0", d.statementId());
                 String expected = d.iteration() == 0
-                        ? "name={modified in context=link@NOT_YET_SET, not null in context=nullable:1, read=true:1}, this={modified in context=link@NOT_YET_SET}"
-                        : "name={modified in context=false:0, not null in context=nullable:1, read=true:1}, this={modified in context=false:0}";
+                        ? "name={context-modified=link@NOT_YET_SET, context-not-null=nullable:1, read=true:1}, this={context-modified=link@NOT_YET_SET}"
+                        : "name={context-modified=false:0, context-not-null=nullable:1, read=true:1}, this={context-modified=false:0}";
                 assertEquals(expected, d.statementAnalysis().propertiesFromSubAnalysersSortedToString());
             }
         };

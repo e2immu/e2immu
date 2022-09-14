@@ -711,7 +711,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
     Do not add IMMUTABLE to this set! (computed from external, formal, context)
      */
     public static final Set<Property> FROM_PARAMETER_ANALYSER_TO_PROPERTIES
-            = Set.of(EXTERNAL_NOT_NULL, EXTERNAL_IMMUTABLE, EXTERNAL_CONTAINER, IGNORE_MODIFICATIONS);
+            = Set.of(EXTERNAL_NOT_NULL, EXTERNAL_IMMUTABLE, CONTAINER_RESTRICTION, IGNORE_MODIFICATIONS);
 
     /*
     assume that all parameters, also those from closures, are already present
@@ -1453,8 +1453,8 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
         ProgressAndDelay extImmStatus = computeLinkedVariables.write(EXTERNAL_IMMUTABLE,
                 groupPropertyValues.getMap(EXTERNAL_IMMUTABLE));
 
-        ProgressAndDelay extContStatus = computeLinkedVariables.write(EXTERNAL_CONTAINER,
-                groupPropertyValues.getMap(EXTERNAL_CONTAINER));
+        ProgressAndDelay extContStatus = computeLinkedVariables.write(CONTAINER_RESTRICTION,
+                groupPropertyValues.getMap(CONTAINER_RESTRICTION));
 
         ProgressAndDelay extIgnModStatus = computeLinkedVariables.write(EXTERNAL_IGNORE_MODIFICATIONS,
                 groupPropertyValues.getMap(EXTERNAL_IGNORE_MODIFICATIONS));
@@ -1728,12 +1728,12 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
         Properties properties = Properties.of(Map.of(
                 EXTERNAL_NOT_NULL, EXTERNAL_NOT_NULL.valueWhenAbsent(),
                 EXTERNAL_IMMUTABLE, EXTERNAL_IMMUTABLE.valueWhenAbsent(),
-                EXTERNAL_CONTAINER, EXTERNAL_CONTAINER.valueWhenAbsent(),
+                CONTAINER_RESTRICTION, CONTAINER_RESTRICTION.valueWhenAbsent(),
                 EXTERNAL_IGNORE_MODIFICATIONS, EXTERNAL_IGNORE_MODIFICATIONS.valueWhenAbsent(),
                 CONTEXT_MODIFIED, DV.FALSE_DV,
                 CONTEXT_NOT_NULL, valueProperties.get(NOT_NULL_EXPRESSION),
                 CONTEXT_IMMUTABLE, valueProperties.get(IMMUTABLE),
-                CONTEXT_CONTAINER, valueProperties.get(CONTAINER)
+                CONTEXT_CONTAINER, CONTAINER_RESTRICTION.falseDv
         ));
         Properties allProperties = valueProperties.combine(properties);
         vic.setValue(instance, LinkedVariables.EMPTY, allProperties, INITIAL);

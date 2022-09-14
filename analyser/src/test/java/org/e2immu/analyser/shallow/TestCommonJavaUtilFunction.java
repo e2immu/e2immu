@@ -26,6 +26,7 @@ import org.junit.jupiter.api.Test;
 
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.function.Predicate;
 import java.util.function.Supplier;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -97,5 +98,21 @@ public class TestCommonJavaUtilFunction extends CommonAnnotatedAPI {
         assertEquals(MultiLevel.INDEPENDENT_HC_DV, typeAnalysis.getProperty(Property.INDEPENDENT));
 
         assertEquals("T", typeAnalysis.getHiddenContentTypes().toString());
+    }
+
+
+    @Test
+    public void testPredicateTest() {
+        TypeInfo typeInfo = typeContext.getFullyQualified(Predicate.class);
+
+        MethodInfo methodInfo = typeInfo.findUniqueMethod("test", 1);
+        MethodAnalysis methodAnalysis = methodInfo.methodAnalysis.get();
+        assertEquals(DV.TRUE_DV, methodAnalysis.getProperty(Property.MODIFIED_METHOD));
+
+        // e
+        ParameterAnalysis p0 = methodInfo.parameterAnalysis(0);
+        assertEquals(DV.TRUE_DV, p0.getProperty(Property.MODIFIED_VARIABLE), "in " + methodInfo.fullyQualifiedName);
+        assertEquals(MultiLevel.CONTAINER_DV, p0.getProperty(Property.CONTAINER));
+        assertEquals(MultiLevel.NOT_CONTAINER_DV, p0.getProperty(Property.CONTAINER_RESTRICTION));
     }
 }

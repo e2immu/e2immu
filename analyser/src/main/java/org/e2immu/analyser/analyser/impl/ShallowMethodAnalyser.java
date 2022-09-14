@@ -226,7 +226,8 @@ public class ShallowMethodAnalyser extends MethodAnalyserImpl {
         CausesOfDelay c2 = computeParameterPropertyIfNecessary(builder, Property.IMMUTABLE, this::computeParameterImmutable);
         CausesOfDelay c3 = computeParameterPropertyIfNecessary(builder, Property.INDEPENDENT, this::computeParameterIndependent);
         CausesOfDelay c4 = computeParameterPropertyIfNecessary(builder, Property.NOT_NULL_PARAMETER, this::computeParameterNotNull);
-        CausesOfDelay c5 = computeParameterPropertyIfNecessary(builder, Property.CONTAINER, this::computeParameterContainer);
+        CausesOfDelay c5 = computeParameterPropertyIfNecessary(builder, Property.CONTAINER_RESTRICTION, this::computeParameterContainerRestriction);
+        computeParameterPropertyIfNecessary(builder, Property.CONTAINER, this::computeParameterContainer);
         CausesOfDelay c6 = computeParameterPropertyIfNecessary(builder, Property.IGNORE_MODIFICATIONS,
                 this::computeParameterIgnoreModification);
         return c1.merge(c2).merge(c3).merge(c4).merge(c5).merge(c6);
@@ -245,10 +246,18 @@ public class ShallowMethodAnalyser extends MethodAnalyserImpl {
     }
 
     /*
-    @Container on parameters needs to be contracted; but it does inherit
+    @Container on parameters needs to be contracted; but it does inherit; it goes into CONTAINER_RESTRICTION
+     */
+    private DV computeParameterContainerRestriction(ParameterAnalysisImpl.Builder builder) {
+        return MultiLevel.NOT_CONTAINER_DV.maxIgnoreDelay(bestOfParameterOverrides(builder.getParameterInfo(),
+                Property.CONTAINER_RESTRICTION));
+    }
+
+    /*
+    CONTAINER is the value property, also for fields!!
      */
     private DV computeParameterContainer(ParameterAnalysisImpl.Builder builder) {
-        return MultiLevel.NOT_CONTAINER_DV.maxIgnoreDelay(bestOfParameterOverrides(builder.getParameterInfo(), Property.CONTAINER));
+        return analyserContext.typeContainer(builder.getParameterInfo().parameterizedType);
     }
 
     private CausesOfDelay computeMethodPropertiesAfterParameters() {

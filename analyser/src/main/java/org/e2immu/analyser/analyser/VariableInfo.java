@@ -148,7 +148,7 @@ public interface VariableInfo {
             new MergeOp(EXTERNAL_IMMUTABLE, DV::min, EXTERNAL_IMMUTABLE.bestDv),
             new MergeOp(CONTEXT_IMMUTABLE, DV::max, CONTEXT_IMMUTABLE.falseDv),
 
-            new MergeOp(EXTERNAL_CONTAINER, DV::min, EXTERNAL_CONTAINER.bestDv),
+            new MergeOp(CONTAINER_RESTRICTION, DV::max, CONTAINER_RESTRICTION.falseDv),
             new MergeOp(CONTAINER, DV::min, CONTAINER.bestDv),
             new MergeOp(CONTEXT_CONTAINER, MAX_CC, CONTEXT_CONTAINER.falseDv),
 
@@ -168,7 +168,7 @@ public interface VariableInfo {
             new MergeOp(EXTERNAL_NOT_NULL, DV::min, EXTERNAL_NOT_NULL.bestDv),
             new MergeOp(EXTERNAL_IMMUTABLE, DV::min, EXTERNAL_IMMUTABLE.bestDv),
             new MergeOp(CONTEXT_IMMUTABLE, DV::max, CONTEXT_IMMUTABLE.falseDv),
-            new MergeOp(EXTERNAL_CONTAINER, DV::min, EXTERNAL_CONTAINER.bestDv),
+            new MergeOp(CONTAINER_RESTRICTION, DV::max, CONTAINER_RESTRICTION.falseDv),
             new MergeOp(CONTEXT_CONTAINER, DV::max, CONTEXT_CONTAINER.falseDv),
 
             new MergeOp(EXTERNAL_IGNORE_MODIFICATIONS, DV::min, EXTERNAL_IGNORE_MODIFICATIONS.bestDv),

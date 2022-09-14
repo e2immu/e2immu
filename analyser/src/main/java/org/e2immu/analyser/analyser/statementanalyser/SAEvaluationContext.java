@@ -407,7 +407,7 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
 
     private static final Properties EXTERNALS_WHEN_ABSENT = Properties.of(Map.of(
             EXTERNAL_IMMUTABLE, EXTERNAL_IMMUTABLE.valueWhenAbsent(),
-            EXTERNAL_CONTAINER, EXTERNAL_CONTAINER.valueWhenAbsent(),
+            CONTAINER_RESTRICTION, CONTAINER_RESTRICTION.valueWhenAbsent(),
             EXTERNAL_IGNORE_MODIFICATIONS, EXTERNAL_IGNORE_MODIFICATIONS.valueWhenAbsent(),
             EXTERNAL_NOT_NULL, EXTERNAL_NOT_NULL.valueWhenAbsent()));
 
@@ -417,7 +417,7 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
         if (valueToWrite.isDelayed()) {
             // e.g., delayed method call
             CausesOfDelay delay = valueToWrite.causesOfDelay();
-            return Properties.of(Map.of(EXTERNAL_IMMUTABLE, delay, EXTERNAL_CONTAINER, delay,
+            return Properties.of(Map.of(EXTERNAL_IMMUTABLE, delay, CONTAINER_RESTRICTION, delay,
                     EXTERNAL_IGNORE_MODIFICATIONS, delay, EXTERNAL_NOT_NULL, delay));
         }
         if ((ive = valueToWrite.asInstanceOf(VariableExpression.class)) != null) {

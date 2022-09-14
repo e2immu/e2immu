@@ -17,7 +17,6 @@ package org.e2immu.analyser.parser.minor;
 
 import org.e2immu.analyser.analyser.DV;
 import org.e2immu.analyser.analyser.EvaluationResult;
-import org.e2immu.analyser.analyser.LinkedVariables;
 import org.e2immu.analyser.analyser.Property;
 import org.e2immu.analyser.config.AnalyserConfiguration;
 import org.e2immu.analyser.config.DebugConfiguration;
@@ -316,9 +315,11 @@ public class Test_34_ExplicitConstructorInvocation extends CommonTestRunner {
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             List<ParameterInfo> parameters = d.methodInfo().methodInspection.get().getParameters();
             if (d.methodInfo().isConstructor && 3 == parameters.size()) {
-                assertDv(d.p(1), 1, MultiLevel.CONTAINER_DV, Property.CONTAINER);
+                assertDv(d.p(1), 2, MultiLevel.NOT_CONTAINER_DV, Property.CONTAINER_RESTRICTION);
+                assertDv(d.p(1), 2, MultiLevel.NOT_CONTAINER_DV, Property.CONTAINER);
             }
             if ("requireNonNull".equals(d.methodInfo().name)) {
+                assertDv(d.p(0), MultiLevel.NOT_CONTAINER_DV, Property.CONTAINER_RESTRICTION);
                 assertDv(d.p(0), MultiLevel.CONTAINER_DV, Property.CONTAINER);
             }
         };
@@ -695,9 +696,18 @@ public class Test_34_ExplicitConstructorInvocation extends CommonTestRunner {
                 assertDv(d, DV.TRUE_DV, Property.MODIFIED_METHOD);
             }
         };
+
+        FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
+            if ("prefixPrimitiveOperator".equals(d.fieldInfo().name)) {
+                assertDv(d, MultiLevel.CONTAINER_DV, Property.CONTAINER);
+                assertDv(d, BIG, MultiLevel.NOT_CONTAINER_DV, Property.CONTAINER_RESTRICTION);
+            }
+        };
+
         testClass("ExplicitConstructorInvocation_13", 0, 1, new DebugConfiguration.Builder()
                         .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                         .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                        .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                         .build(),
                 new AnalyserConfiguration.Builder()
                         .setComputeFieldAnalyserAcrossAllMethods(true)

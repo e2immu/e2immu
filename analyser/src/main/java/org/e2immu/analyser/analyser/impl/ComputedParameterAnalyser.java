@@ -118,22 +118,17 @@ public class ComputedParameterAnalyser extends ParameterAnalyserImpl {
             parameterAnalysis.setProperty(INDEPENDENT, contractIndependent);
         }
 
-        DV contractContainer = parameterAnalysis.getProperty(CONTAINER);
-        if (!parameterAnalysis.properties.isDone(CONTAINER)) {
-            if (contractContainer.isDone()) {
-                parameterAnalysis.setProperty(CONTAINER, contractContainer);
-                parameterAnalysis.setProperty(EXTERNAL_CONTAINER, contractContainer);
-            } else {
-                // essentially here to satisfy the internal check that java.lang.String is always a @Container
-                // returns a non-null in some standard situations (array, unbound pt, final type)
-                DV dv = analyserContext.safeContainer(parameterInfo.parameterizedType);
-                if (dv != null) {
-                    parameterAnalysis.setProperty(CONTAINER, dv);
-                    parameterAnalysis.setProperty(EXTERNAL_CONTAINER, dv);
-                }
-            }
+        DV contractContainerRestriction = parameterAnalysis.getProperty(CONTAINER_RESTRICTION);
+        if (!parameterAnalysis.properties.isDone(CONTAINER_RESTRICTION) && contractContainerRestriction.isDone()) {
+            parameterAnalysis.setProperty(CONTAINER_RESTRICTION, contractContainerRestriction);
         }
 
+        if (!parameterAnalysis.properties.isDone(CONTAINER)) {
+            DV safeContainer = analyserContext.safeContainer(parameterInfo.parameterizedType);
+            if (safeContainer != null && safeContainer.isDone()) {
+                parameterAnalysis.setProperty(CONTAINER, safeContainer);
+            }
+        }
 
         DV contractModified = parameterAnalysis.getProperty(Property.MODIFIED_VARIABLE);
         if (contractModified.isDone() && !parameterAnalysis.properties.isDone(Property.MODIFIED_OUTSIDE_METHOD)) {
@@ -201,7 +196,7 @@ public class ComputedParameterAnalyser extends ParameterAnalyserImpl {
             }
         }
         DV context = parameterAnalysis.getProperty(CONTEXT_CONTAINER);
-        DV external = parameterAnalysis.getProperty(EXTERNAL_CONTAINER);
+        DV external = parameterAnalysis.getProperty(CONTAINER_RESTRICTION);
         DV best = context.max(external).max(formal);
         parameterAnalysis.setProperty(CONTAINER, best);
         return AnalysisStatus.of(best);
@@ -361,7 +356,7 @@ public class ComputedParameterAnalyser extends ParameterAnalyserImpl {
     }
 
     private static final List<Property> PROPERTY_LIST = List.of(EXTERNAL_NOT_NULL, MODIFIED_OUTSIDE_METHOD,
-            EXTERNAL_IMMUTABLE, EXTERNAL_CONTAINER); // For now, NOT going with EXTERNAL_IGNORE_MODS
+            EXTERNAL_IMMUTABLE, CONTAINER_RESTRICTION); // For now, NOT going with EXTERNAL_IGNORE_MODS
 
     private static List<Property> propertiesToCopy(DV assignedOrLinked) {
         if (LinkedVariables.isAssigned(assignedOrLinked)) return PROPERTY_LIST;
@@ -468,7 +463,7 @@ public class ComputedParameterAnalyser extends ParameterAnalyserImpl {
         for (Property property : PROPERTY_LIST) {
             if (!parameterAnalysis.properties.isDone(property) && !propertiesDelayed.contains(property)) {
                 DV v;
-                if (property == EXTERNAL_CONTAINER || property == EXTERNAL_NOT_NULL || property == EXTERNAL_IGNORE_MODIFICATIONS) {
+                if (property == CONTAINER_RESTRICTION || property == EXTERNAL_NOT_NULL || property == EXTERNAL_IGNORE_MODIFICATIONS) {
                     v = property.valueWhenAbsent();
                 } else if (property == EXTERNAL_IMMUTABLE) {
                     v = analyserContext.typeImmutable(parameterInfo.parameterizedType);
@@ -487,7 +482,7 @@ public class ComputedParameterAnalyser extends ParameterAnalyserImpl {
         assert delays.isDelayed() || parameterAnalysis.properties.isDone(Property.MODIFIED_OUTSIDE_METHOD) &&
                 parameterAnalysis.properties.isDone(Property.EXTERNAL_NOT_NULL) &&
                 //   parameterAnalysis.properties.isDone(EXTERNAL_IMMUTABLE) &&
-                parameterAnalysis.properties.isDone(EXTERNAL_CONTAINER);
+                parameterAnalysis.properties.isDone(CONTAINER_RESTRICTION);
 
         if (delays.isDelayed()) {
             parameterAnalysis.setCausesOfAssignedToFieldDelays(delays);
@@ -651,13 +646,10 @@ public class ComputedParameterAnalyser extends ParameterAnalyserImpl {
                 DV value = vi.getProperty(property);
                 if (value.isDone()) {
                     parameterAnalysis.setProperty(property, value);
-                    LOGGER.debug("Set {} on parameter {} to {}", property,
-                            parameterInfo.fullyQualifiedName(), value);
+                    LOGGER.debug("Set {} on parameter {} to {}", property, parameterInfo, value);
                     changed = true;
                 } else {
-                    LOGGER.debug(
-                            "Delays on {} not yet resolved for parameter {}, delaying", property,
-                            parameterInfo.fullyQualifiedName());
+                    LOGGER.debug("Delays on {} not yet resolved for parameter {}, delaying", property, parameterInfo);
                     delayFromContext = delayFromContext.merge(value.causesOfDelay());
                 }
             }
@@ -723,8 +715,8 @@ public class ComputedParameterAnalyser extends ParameterAnalyserImpl {
             if (!parameterAnalysis.properties.isDone(EXTERNAL_IMMUTABLE)) {
                 parameterAnalysis.setProperty(EXTERNAL_IMMUTABLE, EXTERNAL_IMMUTABLE.valueWhenAbsent());
             }
-            if (!parameterAnalysis.properties.isDone(EXTERNAL_CONTAINER)) {
-                parameterAnalysis.setProperty(EXTERNAL_CONTAINER, EXTERNAL_CONTAINER.valueWhenAbsent());
+            if (!parameterAnalysis.properties.isDone(CONTAINER_RESTRICTION)) {
+                parameterAnalysis.setProperty(CONTAINER_RESTRICTION, CONTAINER_RESTRICTION.valueWhenAbsent());
             }
             parameterAnalysis.setProperty(CONTEXT_IMMUTABLE, MUTABLE_DV);
 

@@ -132,6 +132,10 @@ public class Test_16_Modification extends CommonTestRunner {
                 String expected = d.iteration() == 0 ? "<f:input>" : "input";
                 assertEquals(expected, d.fieldAnalysis().getValue().toString());
             }
+            if ("j".equals(d.fieldInfo().name)) {
+                assertDv(d, MultiLevel.CONTAINER_DV, Property.CONTAINER);
+                assertDv(d, MultiLevel.NOT_CONTAINER_DV, Property.CONTAINER_RESTRICTION);
+            }
         };
 
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
@@ -246,7 +250,8 @@ public class Test_16_Modification extends CommonTestRunner {
             if ("addError".equals(d.methodInfo().name)) {
                 if ("ErrorRegistry".equals(d.methodInfo().typeInfo.simpleName)) {
                     assertDv(d.p(0), DV.FALSE_DV, Property.MODIFIED_VARIABLE);
-                    assertDv(d.p(0), MultiLevel.NOT_CONTAINER_DV, Property.CONTAINER);
+                    assertDv(d.p(0), MultiLevel.NOT_CONTAINER_DV, Property.CONTAINER_RESTRICTION);
+                    assertDv(d.p(0), 2, MultiLevel.CONTAINER_DV, Property.CONTAINER);
 
                     // 2 delays because of the computation of IMMUTABLE of ErrorMessage, which is a class which needs
                     // the ComputedTypeAnalyser. It ends up being MUTABLE, so that the parameter becomes DEPENDENT by convention
@@ -262,7 +267,8 @@ public class Test_16_Modification extends CommonTestRunner {
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
             if ("messages".equals(d.fieldInfo().name)) {
                 assertEquals("instance type ArrayList<ErrorMessage>", d.fieldAnalysis().getValue().toString());
-                assertDv(d, MultiLevel.CONTAINER_DV, Property.EXTERNAL_CONTAINER);
+                assertDv(d, MultiLevel.CONTAINER_DV, Property.CONTAINER);
+                assertDv(d, MultiLevel.NOT_CONTAINER_DV, Property.CONTAINER_RESTRICTION);
             }
         };
 

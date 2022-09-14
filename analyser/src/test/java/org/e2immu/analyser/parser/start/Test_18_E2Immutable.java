@@ -306,7 +306,8 @@ public class Test_18_E2Immutable extends CommonTestRunner {
                 assertEquals("", d.fieldAnalysis().getLinkedVariables().toString());
                 assertDv(d, MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL_DV, EXTERNAL_NOT_NULL);
                 assertDv(d, MultiLevel.EFFECTIVELY_IMMUTABLE_DV, EXTERNAL_IMMUTABLE);
-                assertDv(d, MultiLevel.CONTAINER_DV, EXTERNAL_CONTAINER);
+                assertDv(d, MultiLevel.CONTAINER_DV, CONTAINER);
+                assertDv(d, MultiLevel.NOT_CONTAINER_DV, CONTAINER_RESTRICTION);
             }
         };
 

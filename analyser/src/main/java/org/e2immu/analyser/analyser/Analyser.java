@@ -44,8 +44,8 @@ public interface Analyser extends Comparable<Analyser> {
     enum AnalyserIdentification {
         TYPE(IMMUTABLE, CONTAINER, null, null, false), // type does not have notNull
         ABSTRACT_TYPE(IMMUTABLE, CONTAINER, null, null, true), // type does not have notNull
-        FIELD(EXTERNAL_IMMUTABLE, EXTERNAL_CONTAINER, EXTERNAL_NOT_NULL, EXTERNAL_IGNORE_MODIFICATIONS, false),
-        PARAMETER(IMMUTABLE, CONTAINER, NOT_NULL_PARAMETER, IGNORE_MODIFICATIONS, false),
+        FIELD(EXTERNAL_IMMUTABLE, CONTAINER_RESTRICTION, EXTERNAL_NOT_NULL, EXTERNAL_IGNORE_MODIFICATIONS, false),
+        PARAMETER(IMMUTABLE, CONTAINER_RESTRICTION, NOT_NULL_PARAMETER, IGNORE_MODIFICATIONS, false),
         METHOD(IMMUTABLE, CONTAINER, NOT_NULL_EXPRESSION, null, false);
 
         public final Property immutable;

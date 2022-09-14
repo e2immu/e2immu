@@ -237,7 +237,7 @@ public class FieldAnalysisImpl extends AnalysisImpl implements FieldAnalysis {
             DV formallyImmutable = analysisProvider.typeImmutable(fieldInfo.type);
             DV dynamicallyImmutable = getProperty(Property.EXTERNAL_IMMUTABLE);
             DV formallyContainer = analysisProvider.typeContainer(fieldInfo.type);
-            DV dynamicallyContainer = getProperty(Property.EXTERNAL_CONTAINER);
+            DV dynamicallyContainer = getProperty(Property.CONTAINER);
 
             // @NotModified(after=), @NotModified, @Modified
             if (modified.valueIsTrue() && !ownerImmutable.isDelayed()
@@ -281,22 +281,6 @@ public class FieldAnalysisImpl extends AnalysisImpl implements FieldAnalysis {
             if (beforeMark.valueIsTrue()) {
                 addAnnotation(e2.beforeMark);
             }
-        }
-
-        private DV typeImmutable() {
-            if (bestType == null) return MultiLevel.EFFECTIVELY_IMMUTABLE_HC_DV;
-            return// fieldInfo.owner == bestType || bestType == null ? MultiLevel.MUTABLE_DV :
-                    analysisProvider.getTypeAnalysis(bestType).getProperty(Property.IMMUTABLE);
-        }
-
-        private DV typeIndependent() {
-            return// fieldInfo.owner == bestType || bestType == null ? MultiLevel.DEPENDENT_DV :
-                    analysisProvider.getTypeAnalysis(bestType).getProperty(Property.INDEPENDENT);
-        }
-
-        private DV typeContainer() {
-            return //fieldInfo.owner == bestType || bestType == null ? MultiLevel.NOT_CONTAINER_DV :
-                    analysisProvider.getTypeAnalysis(bestType).getProperty(Property.CONTAINER);
         }
 
         public void setValues(List<ValueAndPropertyProxy> values, CausesOfDelay delayed) {

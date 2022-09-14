@@ -79,7 +79,7 @@ public class Test_25_FieldReference extends CommonTestRunner {
                 // returns an immutable map. but we don't. HOWEVER, because there are no Annotated APIs, there is no info
                 // about hidden content, and therefore the algorithm says the factory method is immutable
                 assertDv(d, 2, MultiLevel.EFFECTIVELY_IMMUTABLE_DV, Property.EXTERNAL_IMMUTABLE);
-                assertDv(d, 1, MultiLevel.NOT_CONTAINER_DV, Property.EXTERNAL_CONTAINER);
+                assertDv(d, 1, MultiLevel.NOT_CONTAINER_DV, Property.CONTAINER_RESTRICTION);
                 assertDv(d, 3, DV.FALSE_DV, Property.MODIFIED_OUTSIDE_METHOD);
             }
         };

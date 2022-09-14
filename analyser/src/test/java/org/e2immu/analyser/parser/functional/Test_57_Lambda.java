@@ -212,7 +212,7 @@ public class Test_57_Lambda extends CommonTestRunner {
                         assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
 
                         assertEquals("0", d.statementId());
-                        assertDv(d, 1, MultiLevel.CONTAINER_DV, Property.CONTEXT_CONTAINER);
+                        assertDv(d, 1, MultiLevel.NOT_CONTAINER_DV, Property.CONTEXT_CONTAINER);
                     } else if (fr.scope instanceof ConstructorCall) {
                         assertEquals("", d.variableInfo().getLinkedVariables().toString());
                     } else fail("? " + fr.scope);

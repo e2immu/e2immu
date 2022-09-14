@@ -74,6 +74,7 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
     public static final String ANALYSE_NOT_NULL = "analyseNotNull";
     public static final String ANALYSE_MODIFIED = "analyseModified";
     public static final String ANALYSE_CONTAINER = "analyseContainer";
+    public static final String ANALYSE_CONTAINER_RESTRICTION = "analyseContainerRestriction";
     public static final String ANALYSE_LINKED = "analyseLinked";
     public static final String FIELD_ERRORS = "fieldErrors";
     public static final String ANALYSE_VALUES = "analyseValues";
@@ -128,6 +129,7 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
                 .add(ANALYSE_IMMUTABLE, this::analyseImmutable)
                 .add(ANALYSE_NOT_NULL, this::analyseNotNull)
                 .add(ANALYSE_CONTAINER, this::analyseContainer)
+                .add(ANALYSE_CONTAINER_RESTRICTION, this::analyseContainerRestriction)
                 .add(ANALYSE_IGNORE_MODIFICATIONS, this::analyseIgnoreModifications)
                 .add(ANALYSE_FINAL_VALUE, sharedState -> analyseFinalValue())
                 .add(ANALYSE_CONSTANT, sharedState -> analyseConstant())
@@ -433,12 +435,12 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
     leaves: non-final class, @Contracted==FALSE. For now, simply return FALSE.
      */
     private AnalysisStatus analyseContainer(SharedState sharedState) {
-        if (fieldAnalysis.getPropertyFromMapDelayWhenAbsent(EXTERNAL_CONTAINER).isDone()) return DONE;
+        if (fieldAnalysis.getPropertyFromMapDelayWhenAbsent(CONTAINER).isDone()) return DONE;
 
         DV safe = analyserContext.safeContainer(fieldInfo.type);
         if (safe != null && safe.isDone()) {
             LOGGER.debug("Set @Container on {} to safe value {}", fqn, safe);
-            fieldAnalysis.setProperty(EXTERNAL_CONTAINER, safe);
+            fieldAnalysis.setProperty(CONTAINER, safe);
             return DONE;
         }
         TypeInfo formalType = fieldInfo.type.bestTypeInfo();
@@ -467,7 +469,7 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
         }
         if (safeMinimum.equals(MultiLevel.CONTAINER_DV) || safeMinimum.equals(MultiLevel.NOT_CONTAINER_DV) && !otherValues) {
             LOGGER.debug("Set @Container on {} to safe minimum over values: {}", fqn, safeMinimum);
-            fieldAnalysis.setProperty(EXTERNAL_CONTAINER, safeMinimum);
+            fieldAnalysis.setProperty(CONTAINER, safeMinimum);
             return DONE;
         }
 
@@ -482,7 +484,7 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
         }
 
         LOGGER.debug("@Container on field {}: value of best over context: {}", fqn, bestOverContext);
-        fieldAnalysis.setProperty(EXTERNAL_CONTAINER, bestOverContext);
+        fieldAnalysis.setProperty(CONTAINER, bestOverContext);
         return AnalysisStatus.of(bestOverContext); //DELAY EXIT POINT
     }
 
@@ -490,11 +492,11 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
         if (allowBreak) {
             DV inconclusive = new Inconclusive(backupValue);
             LOGGER.debug("Breaking @Container delay on field {} to {}, {}", fqn, inconclusive, msg);
-            fieldAnalysis.setProperty(EXTERNAL_CONTAINER, inconclusive);
+            fieldAnalysis.setProperty(CONTAINER, inconclusive);
             return DONE;
         }
         LOGGER.debug("Delaying @Container of field {}, {}", fqn, msg);
-        fieldAnalysis.setProperty(EXTERNAL_CONTAINER, causesOfDelay);
+        fieldAnalysis.setProperty(CONTAINER, causesOfDelay);
         return AnalysisStatus.of(causesOfDelay);
     }
 
@@ -520,6 +522,40 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
             return analyserContext.typeContainer(type);
         }
         return null;
+    }
+
+    private AnalysisStatus analyseContainerRestriction(SharedState sharedState) {
+        if (fieldAnalysis.getPropertyFromMapDelayWhenAbsent(CONTAINER_RESTRICTION).isDone()) return DONE;
+        DV container = fieldAnalysis.getProperty(CONTAINER);
+        if (container.isDelayed()) {
+            fieldAnalysis.setProperty(CONTAINER_RESTRICTION, container);
+            return AnalysisStatus.of(container);
+        }
+        if (MultiLevel.NOT_CONTAINER_DV.equals(container)) {
+            fieldAnalysis.setProperty(CONTAINER_RESTRICTION, MultiLevel.NOT_CONTAINER_DV);
+            LOGGER.debug("Set container restriction on {} to NOT_CONTAINER", fieldInfo);
+            return DONE;
+        }
+        DV restriction;
+        if (fieldInfo.type.isPrimitiveStringClass()) {
+            // some shortcuts
+            restriction = MultiLevel.NOT_CONTAINER_DV;
+        } else {
+            /*
+             look at the CONTEXT_CONTAINER property
+
+             ECI_13 gives an example where the field is read in a constructor of the current type, which leads to a
+             cycle, currently broken in ... FIXME
+             */
+            Stream<DV> containerStream = myMethodsAndConstructors.stream()
+                    .flatMap(m -> m.getFieldAsVariableStream(fieldInfo))
+                    .filter(VariableInfo::isRead)
+                    .map(vi -> vi.getProperty(CONTEXT_CONTAINER));
+            restriction = StreamUtil.reduceWithCancel(containerStream, MultiLevel.NOT_CONTAINER_DV, DV::max, DV::isDelayed);
+        }
+        fieldAnalysis.setProperty(CONTAINER_RESTRICTION, restriction);
+        LOGGER.debug("Set container restriction on {} to  {}", fieldInfo, restriction);
+        return AnalysisStatus.of(restriction);
     }
 
     private AnalysisStatus analyseNotNull(SharedState sharedState) {

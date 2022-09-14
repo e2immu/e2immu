@@ -157,7 +157,9 @@ public class Test_01_Loops_21plus extends CommonTestRunner {
                 if ("i".equals(d.variableName())) {
                     if ("2".equals(d.statementId())) {
                         assertFalse(d.variableInfoContainer().hasMerge());
-                        assertDv(d, MultiLevel.CONTAINER_DV, Property.CONTEXT_CONTAINER);
+                        assertDv(d, MultiLevel.CONTAINER_DV, Property.CONTAINER);
+                        assertDv(d, MultiLevel.NOT_CONTAINER_DV, CONTEXT_CONTAINER);
+                        assertDv(d, MultiLevel.NOT_CONTAINER_DV, CONTAINER_RESTRICTION);
                     }
                 }
                 if ("av-32:17".equals(d.variableName())) {

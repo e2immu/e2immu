@@ -335,7 +335,6 @@ public class Test_45_Project extends CommonTestRunner {
                 .build());
     }
 
-
     @Test
     public void test_4() throws IOException {
         TypeMapVisitor typeMapVisitor = typeMap -> {
@@ -349,7 +348,7 @@ public class Test_45_Project extends CommonTestRunner {
             assertEquals(MultiLevel.NULLABLE_DV, p0a.getProperty(Property.NOT_NULL_PARAMETER));
             assertEquals(MultiLevel.INDEPENDENT_DV, p0a.getProperty(Property.INDEPENDENT));
 
-            assertEquals(MultiLevel.NOT_CONTAINER_DV, p0a.getProperty(Property.CONTAINER));
+            assertEquals(MultiLevel.NOT_CONTAINER_DV, p0a.getProperty(Property.CONTAINER_RESTRICTION));
             assertEquals(MultiLevel.EFFECTIVELY_IMMUTABLE_HC_DV, p0a.getProperty(Property.IMMUTABLE));
         };
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {

@@ -76,8 +76,8 @@ record SAHelper(StatementAnalysis statementAnalysis) {
 
     private static DV groupPropertyValue(Property k, DV prev, DV change, EvaluationContext evaluationContext, Variable variable) {
         return switch (k) {
-            case EXTERNAL_CONTAINER, EXTERNAL_IGNORE_MODIFICATIONS -> prev.minIgnoreNotInvolved(change);
-            case EXTERNAL_IMMUTABLE, EXTERNAL_NOT_NULL, CONTEXT_IMMUTABLE -> prev.max(change);
+            case EXTERNAL_IGNORE_MODIFICATIONS -> prev.minIgnoreNotInvolved(change);
+            case CONTAINER_RESTRICTION, EXTERNAL_IMMUTABLE, EXTERNAL_NOT_NULL, CONTEXT_IMMUTABLE -> prev.max(change);
             case CONTEXT_MODIFIED -> VariableInfo.MAX_CM.apply(prev, change);
             case CONTEXT_CONTAINER -> evaluationContext.isMyselfExcludeThis(variable)
                     ? MultiLevel.NOT_CONTAINER_DV

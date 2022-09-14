@@ -502,7 +502,7 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
             });
             return mergeImpl.getProperty(Property.EXTERNAL_IMMUTABLE).causesOfDelay()
                     .merge(mergeImpl.getProperty(Property.EXTERNAL_NOT_NULL).causesOfDelay())
-                    .merge(mergeImpl.getProperty(Property.EXTERNAL_CONTAINER).causesOfDelay())
+                    .merge(mergeImpl.getProperty(Property.CONTAINER_RESTRICTION).causesOfDelay())
                     .merge(mergeImpl.getProperty(Property.EXTERNAL_IGNORE_MODIFICATIONS).causesOfDelay());
         }
         return CausesOfDelay.EMPTY;

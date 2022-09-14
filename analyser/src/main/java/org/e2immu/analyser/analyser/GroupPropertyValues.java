@@ -35,7 +35,7 @@ public class GroupPropertyValues {
             CONTEXT_CONTAINER,
             EXTERNAL_NOT_NULL,
             EXTERNAL_IMMUTABLE,
-            EXTERNAL_CONTAINER,
+            CONTAINER_RESTRICTION,
             EXTERNAL_IGNORE_MODIFICATIONS);
 
     static {

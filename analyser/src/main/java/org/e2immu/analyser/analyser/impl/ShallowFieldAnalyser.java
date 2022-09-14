@@ -86,9 +86,12 @@ public class ShallowFieldAnalyser {
                     }
                 }
             }
-            fieldAnalysisBuilder.setProperty(Property.EXTERNAL_CONTAINER, typeIsContainer);
+            fieldAnalysisBuilder.setProperty(Property.CONTAINER, typeIsContainer);
         } else {
             typeIsContainer = fieldAnalysisBuilder.properties.getOrDefaultNull(Property.CONTAINER);
+        }
+        if (!fieldAnalysisBuilder.properties.isDone(Property.CONTAINER_RESTRICTION)) {
+            fieldAnalysisBuilder.setProperty(Property.CONTAINER_RESTRICTION, Property.CONTAINER_RESTRICTION.falseDv);
         }
 
         DV annotatedImmutable = fieldAnalysisBuilder.getPropertyFromMapDelayWhenAbsent(Property.IMMUTABLE);

@@ -819,14 +819,14 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
                 groupPropertyValues.getMap(CONTEXT_IMMUTABLE));
 
         // 5
-        ProgressAndDelay extContStatus = computeLinkedVariables.write(EXTERNAL_CONTAINER,
-                groupPropertyValues.getMap(EXTERNAL_CONTAINER));
+        ProgressAndDelay extContStatus = computeLinkedVariables.write(CONTAINER_RESTRICTION,
+                groupPropertyValues.getMap(CONTAINER_RESTRICTION));
         CausesOfDelay anyExtCont = statementAnalysis.variableStream()
                 .map(vi -> {
-                    CausesOfDelay causes = vi.getProperty(EXTERNAL_CONTAINER).causesOfDelay();
+                    CausesOfDelay causes = vi.getProperty(CONTAINER_RESTRICTION).causesOfDelay();
                     if (causes.isDelayed()) {
                         return causes.merge(DelayFactory.createDelay(new VariableCause(vi.variable(), getLocation(),
-                                CauseOfDelay.Cause.EXT_CONTAINER)));
+                                CauseOfDelay.Cause.CONTAINER_RESTRICTION)));
                     }
                     return CausesOfDelay.EMPTY;
                 })

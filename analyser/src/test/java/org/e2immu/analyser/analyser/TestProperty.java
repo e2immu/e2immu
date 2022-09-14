@@ -25,7 +25,7 @@ public class TestProperty {
     Set<Property> CONTEXT = Set.of(Property.CONTEXT_IMMUTABLE, Property.CONTEXT_CONTAINER,
             Property.CONTEXT_MODIFIED, Property.CONTEXT_NOT_NULL);
 
-    Set<Property> EXTERNAL = Set.of(Property.EXTERNAL_IMMUTABLE, Property.EXTERNAL_CONTAINER,
+    Set<Property> EXTERNAL = Set.of(Property.EXTERNAL_IMMUTABLE, Property.CONTAINER_RESTRICTION,
             Property.EXTERNAL_NOT_NULL, Property.EXTERNAL_IGNORE_MODIFICATIONS);
 
     @Test

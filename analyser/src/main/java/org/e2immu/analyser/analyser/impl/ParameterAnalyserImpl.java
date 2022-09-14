@@ -104,7 +104,7 @@ public abstract class ParameterAnalyserImpl extends AbstractAnalyser implements 
     }
 
     private static final Set<Property> CHECK_WORSE_THAN_PARENT = Set.of(NOT_NULL_PARAMETER, MODIFIED_VARIABLE,
-            CONTAINER, INDEPENDENT, IMMUTABLE);
+            CONTAINER_RESTRICTION, INDEPENDENT, IMMUTABLE);
 
     private void checkWorseThanParent() {
         for (Property property : CHECK_WORSE_THAN_PARENT) {

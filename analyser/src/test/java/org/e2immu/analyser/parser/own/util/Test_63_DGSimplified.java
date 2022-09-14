@@ -171,7 +171,7 @@ public class Test_63_DGSimplified extends CommonTestRunner {
                 assertEquals("instance type HashMap<T,Node<T>>", d.fieldAnalysis().getValue().toString());
                 assertDv(d, MultiLevel.MUTABLE_DV, Property.EXTERNAL_IMMUTABLE);
                 assertDv(d, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.EXTERNAL_NOT_NULL);
-                assertDv(d, MultiLevel.CONTAINER_DV, Property.EXTERNAL_CONTAINER);
+                assertDv(d, MultiLevel.CONTAINER_DV, Property.CONTAINER_RESTRICTION);
                 assertDv(d, MultiLevel.NOT_IGNORE_MODS_DV, Property.EXTERNAL_IGNORE_MODIFICATIONS);
 
                 assertEquals("", ((FieldAnalysisImpl.Builder) d.fieldAnalysis()).allLinksHaveBeenEstablished().toString());

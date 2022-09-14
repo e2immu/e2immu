@@ -695,7 +695,11 @@ public class PrimitivesImpl implements Primitives {
     @Override
     public MethodAnalysis createEmptyMethodAnalysis(MethodInfo methodInfo) {
         List<ParameterAnalysis> parameterAnalyses = methodInfo.methodInspection.get().getParameters().stream()
-                .map(p -> (ParameterAnalysis) new ParameterAnalysisImpl.Builder(this, AnalysisProvider.DEFAULT_PROVIDER, p).build())
+                .map(p -> {
+                    ParameterAnalysisImpl.Builder pb = new ParameterAnalysisImpl.Builder(this, AnalysisProvider.DEFAULT_PROVIDER, p);
+                    pb.setProperty(Property.CONTAINER_RESTRICTION, MultiLevel.NOT_CONTAINER_DV);
+                    return (ParameterAnalysis) pb.build();
+                })
                 .collect(Collectors.toList());
         MethodAnalysisImpl.Builder builder = new MethodAnalysisImpl.Builder(Analysis.AnalysisMode.CONTRACTED,
                 this, AnalysisProvider.DEFAULT_PROVIDER, InspectionProvider.DEFAULT,

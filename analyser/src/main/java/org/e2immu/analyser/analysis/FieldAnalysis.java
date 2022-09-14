@@ -74,7 +74,8 @@ public interface FieldAnalysis extends Analysis {
 
             case BEFORE_MARK:
             case CONSTANT:
-            case EXTERNAL_CONTAINER:
+            case CONTAINER_RESTRICTION:
+            case CONTAINER:
             case EXTERNAL_IMMUTABLE:
             case PARTIAL_EXTERNAL_IMMUTABLE:
             case EXTERNAL_NOT_NULL:
@@ -133,7 +134,7 @@ public interface FieldAnalysis extends Analysis {
         return Properties.of(Map.of(
                 Property.NOT_NULL_EXPRESSION, getProperty(Property.EXTERNAL_NOT_NULL),
                 Property.IMMUTABLE, getProperty(Property.EXTERNAL_IMMUTABLE),
-                Property.CONTAINER, getProperty(Property.EXTERNAL_CONTAINER),
+                Property.CONTAINER, getProperty(Property.CONTAINER),
                 Property.INDEPENDENT, getProperty(Property.INDEPENDENT),
                 Property.IGNORE_MODIFICATIONS, getProperty(Property.EXTERNAL_IGNORE_MODIFICATIONS),
                 Property.IDENTITY, Property.IDENTITY.falseDv));

@@ -50,11 +50,11 @@ public class Test_Config_00_AnalyserProgram extends CommonTestRunner {
         };
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("AnalyserProgram".equals(d.typeInfo().simpleName)) {
-                assertDv(d, 22, MultiLevel.EFFECTIVELY_FINAL_FIELDS_DV, Property.IMMUTABLE);
+                assertDv(d, 23, MultiLevel.EFFECTIVELY_FINAL_FIELDS_DV, Property.IMMUTABLE);
             }
             if ("Step".equals(d.typeInfo().simpleName)) {
                 assertTrue(d.typeInfo().isStatic());
-                assertDv(d, 21, MultiLevel.EFFECTIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
+                assertDv(d, 22, MultiLevel.EFFECTIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
             }
         };
         testSupportAndUtilClasses(List.of(AnalyserProgram.class), 0, 1,

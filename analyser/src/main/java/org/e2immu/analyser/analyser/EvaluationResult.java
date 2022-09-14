@@ -706,7 +706,7 @@ public record EvaluationResult(EvaluationContext evaluationContext,
             Variable linkedToFieldOrParameter = assignedToFieldOrParameter(evaluationContext, variable);
             if (linkedToFieldOrParameter instanceof FieldReference || linkedToFieldOrParameter instanceof ParameterInfo) {
                 // will come back later
-                DV external = getPropertyFromInitial(linkedToFieldOrParameter, Property.EXTERNAL_CONTAINER);
+                DV external = getPropertyFromInitial(linkedToFieldOrParameter, Property.CONTAINER_RESTRICTION);
                 if (external.equals(MultiLevel.NOT_CONTAINER_DV) && complain) {
                     Message message = Message.newMessage(evaluationContext.getLocation(EVALUATION), Message.Label.MODIFICATION_NOT_ALLOWED, variable.simpleName());
                     messages.add(message);

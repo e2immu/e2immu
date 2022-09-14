@@ -20,6 +20,7 @@ import org.e2immu.analyser.config.AnalyserConfiguration;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.ParameterInfo;
+import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.ReturnVariable;
 import org.e2immu.analyser.model.variable.This;
 import org.e2immu.analyser.parser.CommonTestRunner;
@@ -75,6 +76,10 @@ public class Test_04_Assert extends CommonTestRunner {
                 if (d.variable() instanceof ReturnVariable) {
                     assertEquals("SimpleSet.EMPTY:0", d.variableInfo().getLinkedVariables().toString());
                     assertDv(d, 5, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.EXTERNAL_NOT_NULL);
+                }
+                if (d.variable() instanceof FieldReference fr && "EMPTY".equals(fr.fieldInfo.name)) {
+                    assertCurrentValue(d, 5, "instance type SimpleSet/*new SimpleSet(Set.of())*/");
+                    assertDv(d, 5, MultiLevel.CONTAINER_DV, Property.CONTAINER);
                 }
             }
             if ("combine".equals(d.methodInfo().name)) {
@@ -174,10 +179,10 @@ public class Test_04_Assert extends CommonTestRunner {
         };
 
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
-            if("AnalysisStatus".equals(d.typeInfo().simpleName)) {
+            if ("AnalysisStatus".equals(d.typeInfo().simpleName)) {
                 assertHc(d, 0, ""); // no type parameters
             }
-            if("CauseOfDelay".equals(d.typeInfo().simpleName)) {
+            if ("CauseOfDelay".equals(d.typeInfo().simpleName)) {
                 assertHc(d, 0, ""); // no type parameters
             }
             if ("CausesOfDelay".equals(d.typeInfo().simpleName)) {
@@ -193,6 +198,7 @@ public class Test_04_Assert extends CommonTestRunner {
             if ("SimpleSet".equals(d.typeInfo().simpleName)) {
                 assertTrue(d.typeInspection().isExtensible());
                 assertHc(d, 0, "CauseOfDelay");
+                assertDv(d, 3, MultiLevel.CONTAINER_DV, Property.CONTAINER);
             }
         };
 
@@ -201,6 +207,9 @@ public class Test_04_Assert extends CommonTestRunner {
                 assertDv(d, 3, MultiLevel.EFFECTIVELY_FINAL_FIELDS_DV, Property.EXTERNAL_IMMUTABLE);
                 // as a final field, it is not linked to the parameters of the constructor
                 assertDv(d, MultiLevel.INDEPENDENT_DV, Property.INDEPENDENT);
+                assertDv(d, 4, MultiLevel.CONTAINER_DV, Property.CONTAINER);
+                assertDv(d, 4, MultiLevel.NOT_CONTAINER_DV, Property.CONTAINER_RESTRICTION);
+                assertEquals("new SimpleSet(Set.of())", d.fieldAnalysis().getValue().toString());
             }
         };
 
