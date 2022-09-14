@@ -26,6 +26,7 @@ import org.e2immu.analyser.model.expression.*;
 import org.e2immu.analyser.model.impl.LocationImpl;
 import org.e2immu.analyser.model.impl.TranslationMapImpl;
 import org.e2immu.analyser.model.statement.*;
+import org.e2immu.analyser.model.variable.LocalVariableReference;
 import org.e2immu.analyser.model.variable.ReturnVariable;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.parser.Message;
@@ -83,7 +84,8 @@ record SAEvaluationOfMainExpression(StatementAnalysis statementAnalysis,
          */
         CausesOfDelay causes = ((StatementAnalysisImpl) statementAnalysis).localVariablesInLoop();
 
-        Structure structure = statementAnalysis.statement().getStructure();
+        Statement statement = statementAnalysis.statement();
+        Structure structure = statement.getStructure();
         if (structure.expression() == EmptyExpression.EMPTY_EXPRESSION && expressionsFromInitAndUpdate.isEmpty()) {
             return emptyExpression(sharedState, causes);
         }
@@ -101,7 +103,7 @@ record SAEvaluationOfMainExpression(StatementAnalysis statementAnalysis,
 
         LOGGER.info("Eval it {} main {} in {}", sharedState.evaluationContext().getIteration(), index(), methodInfo().fullyQualifiedName);
         ForwardEvaluationInfo forwardEvaluationInfo;
-        if (statementAnalysis.statement() instanceof ReturnStatement) {
+        if (statement instanceof ReturnStatement) {
             // code identical to snippet in Assignment.evaluate, to prepare for value evaluation
             ForwardEvaluationInfo.Builder fwdBuilder = new ForwardEvaluationInfo.Builder(structure.forwardEvaluationInfo())
                     .setAssignmentTarget(new ReturnVariable(methodInfo()));
@@ -115,24 +117,24 @@ record SAEvaluationOfMainExpression(StatementAnalysis statementAnalysis,
         // here is a good breakpoint location, e.g. "4.0.1".equals(index())
         EvaluationResult result = toEvaluate.evaluate(context, forwardEvaluationInfo);
 
-        if (statementAnalysis.statement() instanceof ReturnStatement) {
+        if (statement instanceof ReturnStatement) {
             result = createAndEvaluateReturnStatement(sharedState.evaluationContext(), toEvaluate, result);
-        }
-        if (statementAnalysis.statement() instanceof LoopStatement) {
+        } else if (statement instanceof LoopStatement) {
             Range range = statementAnalysis.rangeData().getRange();
             if (range.isDelayed()) {
                 statementAnalysis.rangeData().computeRange(statementAnalysis, result);
                 statementAnalysis.ensureMessages(statementAnalysis.rangeData().messages());
             }
-        }
-        if (statementAnalysis.statement() instanceof ThrowStatement) {
+        } else if (statement instanceof ThrowStatement) {
             if (methodInfo().hasReturnValue()) {
                 result = modifyReturnValueRemoveConditionBasedOnState(sharedState, result);
             }
-        }
-        if (statementAnalysis.statement() instanceof AssertStatement) {
+        } else if (statement instanceof AssertStatement) {
             result = handleNotNullClausesInAssertStatement(sharedState.context(), result);
+        } else if (statement instanceof ExplicitConstructorInvocation) {
+            result = result.filterChangeData(v -> !(v instanceof LocalVariableReference));
         }
+
         if (statementAnalysis.flowData().timeAfterExecutionNotYetSet()) {
             statementAnalysis.flowData().setTimeAfterEvaluation(result.statementTime(), index());
         }
@@ -152,16 +154,16 @@ record SAEvaluationOfMainExpression(StatementAnalysis statementAnalysis,
         assert value != null; // EmptyExpression in case there really is no value
 
         CausesOfDelay stateForLoop = CausesOfDelay.EMPTY;
-        if (value.isDone() && (statementAnalysis.statement() instanceof IfElseStatement ||
-                statementAnalysis.statement() instanceof AssertStatement)) {
+        if (value.isDone() && (statement instanceof IfElseStatement ||
+                statement instanceof AssertStatement)) {
             value = eval_IfElse_Assert(sharedState, value);
             if (value.isDelayed()) {
                 // for example, an if(...) inside a loop, when the loop's range is being computed
                 stateForLoop = value.causesOfDelay();
             }
-        } else if (value.isDone() && statementAnalysis.statement() instanceof HasSwitchLabels switchStatement) {
+        } else if (value.isDone() && statement instanceof HasSwitchLabels switchStatement) {
             eval_Switch(sharedState, value, switchStatement);
-        } else if (statementAnalysis.statement() instanceof ReturnStatement) {
+        } else if (statement instanceof ReturnStatement) {
             stateForLoop = addLoopReturnStatesToState(sharedState);
             Expression condition = sharedState.localConditionManager().condition();
             StatementAnalysisImpl.FindLoopResult correspondingLoop = statementAnalysis.findLoopByLabel(null);

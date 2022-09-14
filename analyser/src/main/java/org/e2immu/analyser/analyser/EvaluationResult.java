@@ -34,6 +34,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -178,7 +179,7 @@ public record EvaluationResult(EvaluationContext evaluationContext,
             Variable translated = translationMap.translateVariable(e.getKey());
             EvaluationResult.ChangeData newChangeData = e.getValue().translate(inspectionProvider, translationMap);
             newMap.put(translated, newChangeData);
-            if(translated != e.getKey()) {
+            if (translated != e.getKey()) {
                 /* x.i -> scope-x:2.i
 
                 no linked variables, otherwise we end up with asymmetrical :0 and :1 arrows
@@ -207,6 +208,16 @@ public record EvaluationResult(EvaluationContext evaluationContext,
         ChangeData cd = changeData.get(variable);
         if (cd != null) return cd.linkedVariables;
         return null;
+    }
+
+    public EvaluationResult filterChangeData(Predicate<Variable> predicate) {
+        Map<Variable, ChangeData> newChangeData = changeData.entrySet().stream().filter(e -> predicate.test(e.getKey()))
+                .collect(Collectors.toUnmodifiableMap(Map.Entry::getKey, Map.Entry::getValue));
+        CausesOfDelay newChangeDataDelays = newChangeData.values()
+                .stream().map(e -> e.delays).reduce(CausesOfDelay.EMPTY, CausesOfDelay::merge);
+        CausesOfDelay newCauses = value.causesOfDelay().merge(newChangeDataDelays);
+        return new EvaluationResult(evaluationContext, statementTime, value, storedValues, newCauses, messages, newChangeData,
+                precondition);
     }
 
     /**

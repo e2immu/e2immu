@@ -591,6 +591,10 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
         return new LoopResult(true, causes, progress);
     }
 
+    /*
+    ECI: linked variables are being delayed in the evaluation of VariableExpressionFixedForward.
+     */
+
     private Expression delayAssignmentValue(StatementAnalyserSharedState sharedState,
                                             Expression valueToWrite,
                                             CausesOfDelay valuePropertiesIsDelayed) {

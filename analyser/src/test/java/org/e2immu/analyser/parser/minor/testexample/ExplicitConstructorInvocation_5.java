@@ -34,8 +34,8 @@ public class ExplicitConstructorInvocation_5 {
         this.packageName = "?";
     }
 
-    public ExplicitConstructorInvocation_5(ExplicitConstructorInvocation_5 parent) {
-        this(parent.packageName, parent);
+    public ExplicitConstructorInvocation_5(ExplicitConstructorInvocation_5 parent1) {
+        this(parent1.packageName, parent1);
     }
 
     public ExplicitConstructorInvocation_5(String packageName, ExplicitConstructorInvocation_5 parentContext) {

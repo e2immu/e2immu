@@ -17,6 +17,7 @@ package org.e2immu.analyser.parser.minor;
 
 import org.e2immu.analyser.analyser.DV;
 import org.e2immu.analyser.analyser.EvaluationResult;
+import org.e2immu.analyser.analyser.LinkedVariables;
 import org.e2immu.analyser.analyser.Property;
 import org.e2immu.analyser.config.AnalyserConfiguration;
 import org.e2immu.analyser.config.DebugConfiguration;
@@ -94,10 +95,17 @@ public class Test_34_ExplicitConstructorInvocation extends CommonTestRunner {
         // 3 errors: private fields not read outside constructors
 
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
-            if (d.methodInfo().isConstructor && d.methodInfo().methodInspection.get().getParameters().size() == 1
-                    && "ExplicitConstructorInvocation_5".equals(d.methodInfo().methodInspection.get().getParameters().get(0).parameterizedType.typeInfo.simpleName)) {
+            List<ParameterInfo> parameters = d.methodInfo().methodInspection.get().getParameters();
+            if (d.methodInfo().isConstructor && parameters.size() == 1
+                    && "ExplicitConstructorInvocation_5".equals(parameters.get(0).parameterizedType.typeInfo.simpleName)) {
                 if (d.variable() instanceof FieldReference fr && "parent".equals(fr.fieldInfo.name)) {
-                    assertEquals("parent/*@NotNull*/", d.currentValue().toString());
+                    String linked = switch (d.iteration()) {
+                        case 0 -> "parent1.packageName:-1,parent1.typeMap:-1,parent1:-1,this.packageName:-1,this.typeMap:-1,this:-1";
+                        case 1 -> "parent1.typeMap:-1,parent1:-1,this.typeMap:-1";
+                        default -> "parent1:1";
+                    };
+                    assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
+                    assertEquals("parent1/*@NotNull*/", d.currentValue().toString());
                     assertDv(d, MultiLevel.MUTABLE_DV, Property.IMMUTABLE);
                     assertDv(d, MultiLevel.DEPENDENT_DV, Property.INDEPENDENT);
                     assertDv(d, MultiLevel.NOT_CONTAINER_DV, Property.CONTAINER);
@@ -106,7 +114,7 @@ public class Test_34_ExplicitConstructorInvocation extends CommonTestRunner {
         };
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
             if ("parent".equals(d.fieldInfo().name)) {
-                String expected = "[null,parentContext/*@NotNull*/,parent/*@NotNull*/]";
+                String expected = "[null,parentContext/*@NotNull*/,parent1/*@NotNull*/]";
                 assertEquals(expected, d.fieldAnalysis().getValue().toString());
             }
             if ("typeMap".equals(d.fieldInfo().name)) {
@@ -203,7 +211,7 @@ public class Test_34_ExplicitConstructorInvocation extends CommonTestRunner {
                         };
                         assertEquals(expected, d.currentValue().toString());
                         String linked = switch (d.iteration()) {
-                            case 0 -> "identifier:-1,primitives3:-1,this.complexity:-1,this.expressions:-1";
+                            case 0 -> "identifier:-1,primitives3:-1,this.complexity:-1,this.expressions:-1,this:-1";
                             case 1 -> "primitives3:-1";
                             default -> "primitives3:1";
                         };
@@ -217,7 +225,7 @@ public class Test_34_ExplicitConstructorInvocation extends CommonTestRunner {
                         };
                         assertEquals(expected, d.currentValue().toString());
                         String linked = switch (d.iteration()) {
-                            case 0 -> "identifier:-1,primitives3:-1,this.expressions:-1,this.primitives:-1";
+                            case 0 -> "identifier:-1,primitives3:-1,this.expressions:-1,this.primitives:-1,this:-1";
                             case 1 -> "identifier:-1";
                             default -> "";
                         };
@@ -229,7 +237,9 @@ public class Test_34_ExplicitConstructorInvocation extends CommonTestRunner {
                         String expected = d.iteration() == 0 ? "<s:Primitives>" : "primitives1/*@NotNull*/";
 
                         assertEquals(expected, d.currentValue().toString());
-                        String linked = d.iteration() == 0 ? "primitives1:-1" : "primitives1:1";
+                        String linked = d.iteration() == 0
+                                ? "ExplicitConstructorInvocation_7.COMPLEXITY:-1,expressions:-1,primitives1:-1,this.complexity:-1,this.expressions:-1,this:-1"
+                                : "primitives1:1";
                         assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
                     }
                     if (d.variable() instanceof FieldReference fr && "complexity".equals(fr.fieldInfo.name)) {
@@ -238,7 +248,7 @@ public class Test_34_ExplicitConstructorInvocation extends CommonTestRunner {
                                 : "3+expressions.stream().mapToInt(Expression::getComplexity).sum()";
                         assertEquals(expected, d.currentValue().toString());
                         String linked = d.iteration() == 0
-                                ? "ExplicitConstructorInvocation_7.COMPLEXITY:-1,expressions:-1,this.expressions:-1"
+                                ? "ExplicitConstructorInvocation_7.COMPLEXITY:-1,expressions:-1,primitives1:-1,this.expressions:-1,this.primitives:-1,this:-1"
                                 : "";
                         assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
                     }
@@ -273,7 +283,48 @@ public class Test_34_ExplicitConstructorInvocation extends CommonTestRunner {
 
     @Test
     public void test_7_1() throws IOException {
+        StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+            List<ParameterInfo> parameters = d.methodInfo().methodInspection.get().getParameters();
+            if (d.methodInfo().isConstructor && !parameters.isEmpty()
+                    && "Primitives".equals(parameters.get(0).parameterizedType.typeInfo.simpleName)) {
+                assertEquals("0", d.statementId());
+
+                if (d.variable() instanceof ParameterInfo pi && "primitives1".equals(pi.name)) {
+                    String linked = d.iteration() == 0 ? "ExplicitConstructorInvocation_7_1.COMPLEXITY:-1,expressions:-1,this.complexity:-1,this.expressions:-1,this.primitives:-1,this:-1" : "this.primitives:1";
+                    assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
+                }
+            }
+            if (d.methodInfo().isConstructor && parameters.size() == 3) {
+                if (d.variable() instanceof FieldReference fr && "primitives".equals(fr.fieldInfo.name)) {
+                    if ("1".equals(d.statementId())) {
+                        assertEquals("primitives2/*@NotNull*/", d.currentValue().toString());
+                    }
+                    if ("2".equals(d.statementId())) {
+                        // goes through SAApply.delayVariablesNotMentioned(), so no value yet in iteration 0
+                        String expected = d.iteration() == 0 ? "<f:primitives>" : "primitives2/*@NotNull*/";
+                        assertEquals(expected, d.currentValue().toString());
+                    }
+                }
+                if (d.variable() instanceof FieldReference fr && "expressions".equals(fr.fieldInfo.name)) {
+                    if ("2".equals(d.statementId())) {
+                        String expected = d.iteration() == 0 ? "<m:requireNonNull>" : "expressions";
+                        assertEquals(expected, d.currentValue().toString());
+                    }
+                }
+            }
+        };
+        MethodAnalyserVisitor methodAnalyserVisitor = d -> {
+            List<ParameterInfo> parameters = d.methodInfo().methodInspection.get().getParameters();
+            if (d.methodInfo().isConstructor && 3 == parameters.size()) {
+                assertDv(d.p(1), 1, MultiLevel.CONTAINER_DV, Property.CONTAINER);
+            }
+            if ("requireNonNull".equals(d.methodInfo().name)) {
+                assertDv(d.p(0), MultiLevel.CONTAINER_DV, Property.CONTAINER);
+            }
+        };
         testClass("ExplicitConstructorInvocation_7_1", 0, 0, new DebugConfiguration.Builder()
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .build());
     }
 
@@ -527,18 +578,17 @@ public class Test_34_ExplicitConstructorInvocation extends CommonTestRunner {
     public void test_12() throws IOException {
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("X5_BaseExpression".equals(d.methodInfo().name)) {
-                assertDv(d.p(0), 1, DV.FALSE_DV, Property.MODIFIED_VARIABLE); //3
+                assertDv(d.p(0), 2, DV.FALSE_DV, Property.MODIFIED_VARIABLE); //3
             }
             if ("X3_BinaryOperator".equals(d.methodInfo().name)) {
                 String delay = switch (d.iteration()) {
-                    case 0, 1 -> "cm@Parameter_identifier3;mom@Parameter_identifier3";
-                    case 2 -> "mom@Parameter_identifier3";
+                    case 0, 1, 2 -> "cm@Parameter_identifier3;mom@Parameter_identifier3";
                     default -> "cm@Parameter_identifier3";
                 };
                 assertDv(d.p(0), delay, 3, DV.FALSE_DV, Property.MODIFIED_VARIABLE); //4
             }
             if ("X4_BitwiseAnd".equals(d.methodInfo().name)) {
-                assertDv(d.p(0), "cm@Parameter_identifier4", 2, DV.FALSE_DV, Property.MODIFIED_VARIABLE); //2
+                assertDv(d.p(0), "cm@Parameter_identifier4", 3, DV.FALSE_DV, Property.MODIFIED_VARIABLE); //2
             }
             if ("X1_ElementImpl".equals(d.methodInfo().name)) {
                 assertDv(d.p(0), 1, DV.FALSE_DV, Property.MODIFIED_VARIABLE); //1
@@ -591,10 +641,10 @@ public class Test_34_ExplicitConstructorInvocation extends CommonTestRunner {
         };
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("X5_BaseExpression".equals(d.methodInfo().name)) {
-                assertDv(d.p(0), 1, DV.FALSE_DV, Property.MODIFIED_VARIABLE); //3
+                assertDv(d.p(0), 2, DV.FALSE_DV, Property.MODIFIED_VARIABLE); //3
             }
             if ("X3_BinaryOperator".equals(d.methodInfo().name)) {
-                assertDv(d.p(0), 2, DV.FALSE_DV, Property.MODIFIED_VARIABLE); //4
+                assertDv(d.p(0), 3, DV.FALSE_DV, Property.MODIFIED_VARIABLE); //4
             }
             if ("X1_ElementImpl".equals(d.methodInfo().name)) {
                 assertDv(d.p(0), 1, DV.FALSE_DV, Property.MODIFIED_VARIABLE); //1

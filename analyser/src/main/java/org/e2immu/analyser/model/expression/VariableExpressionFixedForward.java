@@ -14,8 +14,12 @@
 
 package org.e2immu.analyser.model.expression;
 
-import org.e2immu.analyser.analyser.ForwardEvaluationInfo;
-import org.e2immu.analyser.model.variable.Variable;
+import org.e2immu.analyser.analyser.*;
+import org.e2immu.analyser.analyser.delay.DelayFactory;
+import org.e2immu.analyser.analyser.delay.VariableCause;
+import org.e2immu.analyser.model.ParameterInfo;
+import org.e2immu.analyser.model.variable.This;
+import org.e2immu.analyser.parser.InspectionProvider;
 
 /*
 Specific use in ECI (see SAInitializersAndUpdaters)
@@ -23,13 +27,30 @@ Specific use in ECI (see SAInitializersAndUpdaters)
 public class VariableExpressionFixedForward extends VariableExpression {
     private final ForwardEvaluationInfo forwardEvaluationInfo;
 
-    public VariableExpressionFixedForward(Variable variable, ForwardEvaluationInfo forwardEvaluationInfo) {
-        super(variable);
+    public VariableExpressionFixedForward(ParameterInfo parameterInfo, ForwardEvaluationInfo forwardEvaluationInfo) {
+        super(parameterInfo);
         this.forwardEvaluationInfo = forwardEvaluationInfo;
     }
 
     @Override
     public ForwardEvaluationInfo overrideForward(ForwardEvaluationInfo asParameter) {
         return forwardEvaluationInfo;
+    }
+
+    /*
+    the value is being delayed in SAApply.delayAssignmentValue()
+     */
+    @Override
+    public EvaluationResult evaluate(EvaluationResult context, ForwardEvaluationInfo forwardEvaluationInfoIn) {
+        EvaluationResult result = super.evaluate(context, forwardEvaluationInfoIn);
+        if (context.evaluationContext().getIteration() == 0) {
+            EvaluationResult.Builder builder = new EvaluationResult.Builder(context);
+            VariableCause cause = new VariableCause(variable(), context.evaluationContext().getLocation(Stage.EVALUATION),
+                    CauseOfDelay.Cause.INITIAL_VALUE);
+            CausesOfDelay causes = DelayFactory.createDelay(cause);
+            builder.link(variable(), new This(InspectionProvider.DEFAULT, context.getCurrentType()), causes);
+            return builder.compose(result).build();
+        }
+        return result;
     }
 }

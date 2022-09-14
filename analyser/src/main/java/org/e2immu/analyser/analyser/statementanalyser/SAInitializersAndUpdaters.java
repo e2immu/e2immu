@@ -214,7 +214,7 @@ record SAInitializersAndUpdaters(StatementAnalysis statementAnalysis) {
             translationMapBuilder.put(new VariableExpression(parameterInfo), updater);
             translationMapBuilder.addVariableExpression(parameterInfo, updater);
             IsVariableExpression ive = updater.asInstanceOf(IsVariableExpression.class);
-            if(ive != null) {
+            if (ive != null) {
                 translationMapBuilder.put(parameterInfo, ive.variable());
             }
 
@@ -245,7 +245,7 @@ record SAInitializersAndUpdaters(StatementAnalysis statementAnalysis) {
                         .build();
                 VariableExpression newVe = new VariableExpressionFixedForward(pi, forwardEvaluationInfo);
                 assignments.add(newVe);
-            } else {
+            } else if (!updater.isConstant()) {
                 assignments.add(updater);
             }
             i++;
