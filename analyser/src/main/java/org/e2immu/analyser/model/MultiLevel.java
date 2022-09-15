@@ -179,6 +179,7 @@ public class MultiLevel {
     }
 
     public static boolean isMutable(DV dv) {
+        assert dv.isDone();
         return dv.lt(EVENTUALLY_IMMUTABLE_HC_DV);
     }
 

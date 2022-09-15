@@ -22,6 +22,8 @@ import org.e2immu.analyser.model.TypeInfo;
 
 import static org.e2immu.analyser.analyser.LinkedVariables.*;
 
+// FIXME what with "mySelf" and circular references, such as thot in Container_7?
+
 public record ComputeIndependent(AnalyserContext analyserContext,
                                  SetOfTypes hiddenContentOfCurrentType,
                                  TypeInfo currentPrimaryType) {
@@ -91,7 +93,7 @@ public record ComputeIndependent(AnalyserContext analyserContext,
         return immutableA.max(immutableB);
     }
 
-    private DV immutableOfIntersectionOfHiddenContent(ParameterizedType pt1, ParameterizedType pt2) {
+    public DV immutableOfIntersectionOfHiddenContent(ParameterizedType pt1, ParameterizedType pt2) {
         if (pt1.equals(pt2) && pt1.arrays > 0) {
             /*
              Independent1_1, Set<T> vs Set<T>, we want the immutable value of T, not of Set; this rule does NOT apply
@@ -148,8 +150,12 @@ public record ComputeIndependent(AnalyserContext analyserContext,
         DV min = MultiLevel.EFFECTIVELY_IMMUTABLE_DV;
         for (ParameterizedType pt : intersection.types()) {
             DV immutable = analyserContext.typeImmutable(pt);
-            if (MultiLevel.isMutable(immutable)) return MultiLevel.MUTABLE_DV;
-            if (!MultiLevel.isAtLeastEventuallyRecursivelyImmutable(immutable)) {// IMPROVE should we filter? && hiddenContentOfCurrentType.contains(pt)) {
+            if (immutable.isDelayed()) {
+                min = min.min(immutable);
+            } else if (MultiLevel.isMutable(immutable)) {
+                return MultiLevel.MUTABLE_DV;
+            } else if (!MultiLevel.isAtLeastEventuallyRecursivelyImmutable(immutable)) {
+                // IMPROVE should we filter? && hiddenContentOfCurrentType.contains(pt)) {
                 min = MultiLevel.EFFECTIVELY_IMMUTABLE_HC_DV;
             }
         }

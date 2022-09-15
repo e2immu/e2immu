@@ -75,6 +75,12 @@ public class Test_Support_06_AddOnceSet extends CommonTestRunner {
                 String expected = d.iteration() == 0 ? "<precondition>" : "!frozen";
                 assertEquals(expected, d.methodAnalysis().getPreconditionForEventual().expression().toString());
             }
+            if ("toImmutableSet".equals(d.methodInfo().name)) {
+                String expected = d.iteration() == 0 ? "<m:toImmutableSet>"
+                        : "/*inline toImmutableSet*/Set.copyOf(set.keySet())";
+                assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
+                assertDv(d, 1, MultiLevel.EFFECTIVELY_IMMUTABLE_HC_DV, Property.IMMUTABLE);
+            }
         };
 
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {

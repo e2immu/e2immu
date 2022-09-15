@@ -20,6 +20,7 @@ import org.e2immu.analyser.analyser.delay.DelayFactory;
 import org.e2immu.analyser.analyser.delay.SimpleCause;
 import org.e2immu.analyser.analyser.util.ComputeIndependent;
 import org.e2immu.analyser.analysis.MethodAnalysis;
+import org.e2immu.analyser.analysis.ParameterAnalysis;
 import org.e2immu.analyser.analysis.StatementAnalysis;
 import org.e2immu.analyser.analysis.TypeAnalysis;
 import org.e2immu.analyser.model.*;
@@ -1171,14 +1172,9 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         }
         AnalyserContext analyserContext = context.getAnalyserContext();
         MethodInspection methodInspection = analyserContext.getMethodInspection(methodInfo);
-        TypeAnalysis typeAnalysis = analyserContext.getTypeAnalysis(context.getCurrentType());
 
         if (methodInspection.isFactoryMethod()) {
-            if (typeAnalysis.hiddenContentDelays().isDelayed()) {
-                return typeAnalysis.hiddenContentDelays();
-            }
-            SetOfTypes hiddenContentTypes = typeAnalysis.getHiddenContentTypes();
-            return factoryMethodDynamicallyImmutable(formal, hiddenContentTypes, context);
+            return factoryMethodDynamicallyImmutable(methodAnalysis, formal, context);
         }
 
         /*
@@ -1199,27 +1195,45 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         return analyserContext.typeImmutable(concreteReturnType);
     }
 
-    private DV factoryMethodDynamicallyImmutable(DV formal,
-                                                 SetOfTypes hiddenContentTypes,
-                                                 EvaluationResult context) {
-        DV minParams = DV.MAX_INT_DV;
-        CausesOfDelay causesOfDelay = CausesOfDelay.EMPTY;
-        for (Expression expression : parameterExpressions) {
-            ParameterizedType concreteType = expression.returnType();
-            EvaluationContext.HiddenContent concreteHiddenTypes = context.evaluationContext()
-                    .extractHiddenContentTypes(concreteType, hiddenContentTypes);
-            if (concreteHiddenTypes.causesOfDelay().isDelayed()) {
-                causesOfDelay = causesOfDelay.merge(concreteHiddenTypes.causesOfDelay());
-            } else {
-                DV hiddenImmutable = concreteHiddenTypes.hiddenTypes().stream()
-                        .map(pt -> context.getAnalyserContext().typeImmutable(pt))
-                        .reduce(MultiLevel.EFFECTIVELY_IMMUTABLE_DV, DV::min);
-                minParams = minParams.min(hiddenImmutable);
-            }
+    private DV factoryMethodDynamicallyImmutable(MethodAnalysis methodAnalysis, DV formal, EvaluationResult context) {
+        if (MultiLevel.isAtLeastEventuallyRecursivelyImmutable(formal) || !MultiLevel.isAtLeastEventuallyImmutableHC(formal)) {
+            return formal;
         }
-        if (minParams == DV.MAX_INT_DV) return formal;
-        if (causesOfDelay.isDelayed()) return causesOfDelay;
-        if (minParams.isDelayed()) return minParams;
+        // immutable with hidden content, the result is determined by the immutability values of the parameters
+        DV minParams = MultiLevel.EFFECTIVELY_IMMUTABLE_DV;
+        int i = 0;
+        CausesOfDelay causesOfDelay = CausesOfDelay.EMPTY;
+        for (Expression pe : parameterExpressions) {
+            DV immutable = context.getProperty(pe, Property.IMMUTABLE);
+            if (!MultiLevel.isAtLeastEventuallyRecursivelyImmutable(immutable)) {
+                ParameterAnalysis parameterAnalysis = methodAnalysis.getParameterAnalyses().get(i);
+                DV independent = parameterAnalysis.getProperty(Property.INDEPENDENT);
+                if (independent.isDelayed()) {
+                    causesOfDelay = causesOfDelay.merge(independent.causesOfDelay());
+                } else if (MultiLevel.INDEPENDENT_DV.gt(independent)) {
+                    DV dv;
+                    if (MultiLevel.INDEPENDENT_HC_DV.equals(independent)) {
+                        ComputeIndependent ci = new ComputeIndependent(context.getAnalyserContext(), context.getCurrentType().primaryType());
+                        ParameterizedType formalParameterType = methodInfo.methodInspection.get().formalParameterType(i);
+                        DV linkLevel = ci.directedLinkLevelOfTwoHCRelatedTypes(formalParameterType, methodInfo.returnType());
+                        boolean shareHiddenContent = LinkedVariables.LINK_COMMON_HC.equals(linkLevel);
+                        if (shareHiddenContent) {
+                            dv = ci.immutableOfIntersectionOfHiddenContent(pe.returnType(), concreteReturnType);
+                        } else {
+                            dv = immutable;
+                        }
+                    } else {
+                        // dependent, directly take immutable value
+                        dv = immutable;
+                    }
+                    minParams = minParams.min(dv);
+                } // else: ignore
+            }
+            i++;
+        }
+        if (minParams.isDelayed() || causesOfDelay.isDelayed()) {
+            return minParams.causesOfDelay().merge(causesOfDelay);
+        }
         return minParams;
     }
 

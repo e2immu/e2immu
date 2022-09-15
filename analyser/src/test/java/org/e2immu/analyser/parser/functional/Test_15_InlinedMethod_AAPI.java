@@ -164,14 +164,14 @@ public class Test_15_InlinedMethod_AAPI extends CommonTestRunner {
             if ("method".equals(d.methodInfo().name)) {
                 if ("numParameters".equals(d.variableName())) {
                     if ("2".equals(d.statementId())) {
-                        String expected = d.iteration() == 0 ? "<m:size>"
+                        String expected = d.iteration() < 2 ? "<m:size>"
                                 : "(`inspectionProvider.getMethodInspection(this).b`?List.of(new ParameterInfo(new ParameterizedType(\"i\"),0)):List.of()).size()";
                         assertEquals(expected, d.currentValue().toString());
                     }
                 }
                 if ("parameters".equals(d.variableName())) {
                     if ("2".equals(d.statementId())) {
-                        String expected = d.iteration() == 0 ? "<m:getParameters>"
+                        String expected = d.iteration() < 2 ? "<m:getParameters>"
                                 : "`inspectionProvider.getMethodInspection(this).b`?List.of(new ParameterInfo(new ParameterizedType(\"i\"),0)):List.of()";
                         assertEquals(expected, d.currentValue().toString());
                     }
@@ -191,7 +191,7 @@ public class Test_15_InlinedMethod_AAPI extends CommonTestRunner {
         StatementAnalyserVisitor statementAnalyserVisitor = d -> {
             if ("method".equals(d.methodInfo().name)) {
                 if ("3".equals(d.statementId())) {
-                    String expected = d.iteration() == 0 ? "1==<m:size>"
+                    String expected = d.iteration() < 2 ? "1==<m:size>"
                             : "1==(`inspectionProvider.getMethodInspection(this).b`?List.of(new ParameterInfo(new ParameterizedType(\"i\"),0)):List.of()).size()";
                     assertEquals(expected, d.statementAnalysis().stateData().valueOfExpression.get().toString());
                 }
@@ -203,7 +203,8 @@ public class Test_15_InlinedMethod_AAPI extends CommonTestRunner {
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
             }
             if ("getParameters".equals(d.methodInfo().name)) {
-                String expected = d.iteration() == 0 ? "<m:getParameters>" : "/*inline getParameters*/b$0?List.of(new ParameterInfo(new ParameterizedType(\"i\"),0)):List.of()";
+                String expected = d.iteration() < 2 ? "<m:getParameters>"
+                        : "/*inline getParameters*/b$0?List.of(new ParameterInfo(new ParameterizedType(\"i\"),0)):List.of()";
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
             }
         };
@@ -306,6 +307,9 @@ public class Test_15_InlinedMethod_AAPI extends CommonTestRunner {
                     if (d.variable() instanceof ReturnVariable) {
                         String linked = d.iteration() <= 2 ? "this.lhs:-1,this.rhs:-1" : "";
                         assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
+                        String expected = d.iteration() <= 2 ? "<m:of>" : "List.of(lhs,rhs)";
+                        assertEquals(expected, d.currentValue().toString());
+                        assertDv(d, 3, MultiLevel.MUTABLE_DV, Property.IMMUTABLE);
                     }
                 }
             }
@@ -351,21 +355,24 @@ public class Test_15_InlinedMethod_AAPI extends CommonTestRunner {
                 assertEquals("compare", d.methodInfo().methodResolution.get().methodsOfOwnClassReachedSorted());
                 assertEquals("", d.methodInfo().methodResolution.get().callCycleSorted());
 
-                assertDv(d, 4, DV.FALSE_DV, Property.MODIFIED_METHOD);
+                assertDv(d, 3, DV.FALSE_DV, Property.MODIFIED_METHOD);
             }
             if ("subElements".equals(d.methodInfo().name)) {
                 if ("Expression".equals(d.methodInfo().typeInfo.simpleName)) {
                     assertDv(d, MultiLevel.MUTABLE_DV, Property.IMMUTABLE);
                     assertDv(d, MultiLevel.DEPENDENT_DV, Property.INDEPENDENT);
                 } else if ("BinaryOperator".equals(d.methodInfo().typeInfo.simpleName)) {
+                    String expected = d.iteration() <= 2 ? "<m:subElements>" : "/*inline subElements*/List.of(lhs,rhs)";
+                    assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
                     assertDv(d, 3, MultiLevel.MUTABLE_DV, Property.IMMUTABLE);
                 }
             }
             if ("lhs".equals(d.methodInfo().name)) {
-                // FIXME why is this breaking necessary? it is definitely wrong, lhs is not immutable but mutable
                 assertFalse(d.allowBreakDelay());
+                assertDv(d, 3, MultiLevel.MUTABLE_DV, Property.IMMUTABLE);
             }
         };
+
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
             if ("lhs".equals(d.fieldInfo().name)) {
                 assertDv(d, DV.TRUE_DV, Property.FINAL);
