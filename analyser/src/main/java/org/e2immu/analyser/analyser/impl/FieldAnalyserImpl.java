@@ -792,7 +792,8 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
         SetOfTypes hiddenContentCurrentType = typeAnalysis.getHiddenContentTypes();
 
         // IMPROVE should we use fieldInfo.type or the concrete type from the value, if there?
-        ComputeIndependent computeIndependent = new ComputeIndependent(analyserContext, hiddenContentCurrentType, primaryType);
+        ComputeIndependent computeIndependent = new ComputeIndependent(analyserContext, hiddenContentCurrentType,
+                fieldInfo.owner);
         DV independent = fieldAnalysis.linkedVariables.get().stream()
                 .filter(e -> e.getKey() instanceof ParameterInfo pi && pi.owner.isAccessibleOutsidePrimaryType()
                         || e.getKey() instanceof ReturnVariable rv && rv.getMethodInfo().isAccessibleOutsidePrimaryType())

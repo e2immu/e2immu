@@ -153,7 +153,7 @@ public class MethodReference extends ExpressionWithMethodReferenceResolution {
         Map<Variable, DV> newLvMap = new HashMap<>();
         EvaluationResult scopeResult = scope.evaluate(context, ForwardEvaluationInfo.DEFAULT);
         LinkedVariables scopeLv = scopeResult.value().linkedVariables(context);
-        ComputeIndependent computeIndependent = new ComputeIndependent(context.getAnalyserContext(), context.getCurrentType().primaryType());
+        ComputeIndependent computeIndependent = new ComputeIndependent(context.getAnalyserContext(), context.getCurrentType());
 
         for (ParameterAnalysis parameterAnalysis : methodAnalysis.getParameterAnalyses()) {
             DV paramIndependent = parameterAnalysis.getProperty(Property.INDEPENDENT);

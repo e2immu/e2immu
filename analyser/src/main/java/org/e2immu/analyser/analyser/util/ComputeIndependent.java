@@ -19,22 +19,31 @@ import org.e2immu.analyser.analysis.TypeAnalysis;
 import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.ParameterizedType;
 import org.e2immu.analyser.model.TypeInfo;
+import org.e2immu.analyser.parser.InspectionProvider;
 
 import static org.e2immu.analyser.analyser.LinkedVariables.*;
 
-// FIXME what with "mySelf" and circular references, such as thot in Container_7?
-
 public record ComputeIndependent(AnalyserContext analyserContext,
                                  SetOfTypes hiddenContentOfCurrentType,
-                                 TypeInfo currentPrimaryType) {
+                                 TypeInfo currentType) {
 
     public ComputeIndependent {
         assert analyserContext != null;
-        assert currentPrimaryType != null;
+        assert currentType != null;
     }
 
     public ComputeIndependent(AnalyserContext analyserContext, TypeInfo currentPrimaryType) {
         this(analyserContext, null, currentPrimaryType);
+    }
+
+    /*
+    the value chosen here in case of "isMyself" has an impact, obviously; see e.g. Container_7, E2Immutable_15
+     */
+    private DV typeImmutable(ParameterizedType pt) {
+        if (currentType.isMyself(pt, InspectionProvider.DEFAULT)) {
+            return MultiLevel.MUTABLE_DV;
+        }
+        return analyserContext.typeImmutable(pt);
     }
 
     /**
@@ -71,8 +80,8 @@ public record ComputeIndependent(AnalyserContext analyserContext,
              The type relation cannot be IN_HC_OF, it should be COMMON_HC (or INDEPENDENT in case of no information).
              We return the independent value corresponding to the most specific type.
              */
-            DV immutableA = immutableAInput == null ? analyserContext.typeImmutable(a) : immutableAInput;
-            DV immutableB = analyserContext.typeImmutable(b);
+            DV immutableA = immutableAInput == null ? typeImmutable(a) : immutableAInput;
+            DV immutableB = typeImmutable(b);
             DV immutable = max(immutableA, immutableB);
             return MultiLevel.independentCorrespondingToImmutable(immutable);
         }
@@ -99,7 +108,7 @@ public record ComputeIndependent(AnalyserContext analyserContext,
              Independent1_1, Set<T> vs Set<T>, we want the immutable value of T, not of Set; this rule does NOT apply
              DependentVariables_2, X[] and X[], we want the immutable value of X; this rule does apply
              */
-            return analyserContext.typeImmutable(pt1.copyWithoutArrays());
+            return typeImmutable(pt1.copyWithoutArrays());
         }
 
         TypeInfo b1 = pt1.bestTypeInfo();
@@ -111,7 +120,7 @@ public record ComputeIndependent(AnalyserContext analyserContext,
         }
         if (b2 != null) {
             if (b2.equals(b1) && pt1.arrays != pt2.arrays) {
-                return analyserContext.typeImmutable(pt1.copyWithoutArrays());
+                return typeImmutable(pt1.copyWithoutArrays());
             }
             DV dv = immutableSmallInsideBig(pt1, pt2, b2);
             if (dv != null) {
@@ -149,7 +158,7 @@ public record ComputeIndependent(AnalyserContext analyserContext,
 
         DV min = MultiLevel.EFFECTIVELY_IMMUTABLE_DV;
         for (ParameterizedType pt : intersection.types()) {
-            DV immutable = analyserContext.typeImmutable(pt);
+            DV immutable = typeImmutable(pt);
             if (immutable.isDelayed()) {
                 min = min.min(immutable);
             } else if (MultiLevel.isMutable(immutable)) {
@@ -180,17 +189,17 @@ public record ComputeIndependent(AnalyserContext analyserContext,
         }
         SetOfTypes translatedHc = typeAnalysisBig.getHiddenContentTypes().translate(analyserContext, big);
         if (translatedHc.contains(small)) {
-            return analyserContext.typeImmutable(small);
+            return typeImmutable(small);
         }
         SetOfTypes translatedHcWithoutArrays = translatedHc.dropArrays();
         if (translatedHcWithoutArrays.contains(small)) {
             // symmetric analogue of the next one, HC = HasSize[], small = HasSize
-            return analyserContext.typeImmutable(small);
+            return typeImmutable(small);
         }
         ParameterizedType smallWithoutArrays = small.copyWithoutArrays();
         if (translatedHc.contains(smallWithoutArrays)) {
             // HC = HasSize, small = HasSize[]
-            return analyserContext.typeImmutable(smallWithoutArrays);
+            return typeImmutable(smallWithoutArrays);
         }
         return null; // try something else
     }
@@ -281,7 +290,7 @@ public record ComputeIndependent(AnalyserContext analyserContext,
         DV independent = intersection.types().stream()
 //                .filter(hiddenContentOfCurrentType::contains) IMPROVE should we do this?
                 .map(pt -> {
-                    DV immutable = analyserContext.typeImmutable(pt);
+                    DV immutable = typeImmutable(pt);
                     return MultiLevel.independentCorrespondingToImmutable(immutable);
                 }).reduce(MultiLevel.INDEPENDENT_DV, DV::min);
         if (MultiLevel.INDEPENDENT_DV == independent) {

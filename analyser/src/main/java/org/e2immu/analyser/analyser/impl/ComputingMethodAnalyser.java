@@ -983,7 +983,7 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
             SetOfTypes hiddenContentCurrentType = typeAnalysis.getHiddenContentTypes();
 
             ComputeIndependent computeIndependent = new ComputeIndependent(analyserContext, hiddenContentCurrentType,
-                    methodInfo.typeInfo.primaryType());
+                    methodInfo.typeInfo);
             ParameterizedType concreteReturnType = variableInfo.getValue().returnType();
             independent = linkedVariables.stream()
                     .filter(e -> e.getKey() instanceof FieldReference fr && fr.scopeIsRecursivelyThis()

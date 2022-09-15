@@ -1213,7 +1213,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
                 } else if (MultiLevel.INDEPENDENT_DV.gt(independent)) {
                     DV dv;
                     if (MultiLevel.INDEPENDENT_HC_DV.equals(independent)) {
-                        ComputeIndependent ci = new ComputeIndependent(context.getAnalyserContext(), context.getCurrentType().primaryType());
+                        ComputeIndependent ci = new ComputeIndependent(context.getAnalyserContext(), context.getCurrentType());
                         ParameterizedType formalParameterType = methodInfo.methodInspection.get().formalParameterType(i);
                         DV linkLevel = ci.directedLinkLevelOfTwoHCRelatedTypes(formalParameterType, methodInfo.returnType());
                         boolean shareHiddenContent = LinkedVariables.LINK_COMMON_HC.equals(linkLevel);
@@ -1330,15 +1330,23 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         }
         if (methodIndependent.equals(MultiLevel.DEPENDENT_DV)) {
             Map<Variable, DV> newLinked = new HashMap<>();
+            CausesOfDelay causesOfDelay = CausesOfDelay.EMPTY;
             for (Map.Entry<Variable, DV> e : linkedVariablesOfObject) {
                 DV immutable = context.getAnalyserContext().typeImmutable(e.getKey().parameterizedType());
-                if (MultiLevel.isMutable(immutable)) newLinked.put(e.getKey(), LinkedVariables.LINK_DEPENDENT);
+                if (immutable.isDelayed()) {
+                    causesOfDelay = causesOfDelay.merge(immutable.causesOfDelay());
+                } else if (MultiLevel.isMutable(immutable)) {
+                    newLinked.put(e.getKey(), LinkedVariables.LINK_DEPENDENT);
+                }
+            }
+            if(causesOfDelay.isDelayed()) {
+                return linkedVariablesOfObject.changeToDelay(causesOfDelay);
             }
             return LinkedVariables.of(newLinked);
         }
         assert MultiLevel.INDEPENDENT_HC_DV.equals(methodIndependent);
         ComputeIndependent computeIndependent = new ComputeIndependent(context.getAnalyserContext(),
-                context.getCurrentType().primaryType());
+                context.getCurrentType());
         Map<Variable, DV> newLinked = new HashMap<>();
         for (Map.Entry<Variable, DV> e : linkedVariablesOfObject) {
             ParameterizedType pt1 = e.getKey().parameterizedType();

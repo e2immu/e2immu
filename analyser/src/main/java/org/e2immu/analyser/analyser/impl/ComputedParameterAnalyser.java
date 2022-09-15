@@ -300,7 +300,7 @@ public class ComputedParameterAnalyser extends ParameterAnalyserImpl {
                         }
                         SetOfTypes hiddenContentCurrentType = typeAnalysis.getHiddenContentTypes();
                         ComputeIndependent computeIndependent = new ComputeIndependent(analyserContext, hiddenContentCurrentType,
-                                parameterInfo.getTypeInfo().primaryType());
+                                parameterInfo.getTypeInfo());
 
                         DV independentOfParameter = computeIndependent.typesAtLinkLevel(linkToParameter,
                                 parameterInfo.parameterizedType, immutable, vi.variable().parameterizedType());
@@ -327,7 +327,7 @@ public class ComputedParameterAnalyser extends ParameterAnalyserImpl {
         SetOfTypes hiddenContentCurrentType = typeAnalysis.getHiddenContentTypes();
 
         ComputeIndependent computeIndependent = new ComputeIndependent(analyserContext, hiddenContentCurrentType,
-                parameterInfo.getTypeInfo().primaryType());
+                parameterInfo.getTypeInfo());
         DV independent = fields.entrySet().stream()
                 .map(e -> computeIndependent.typesAtLinkLevel(e.getValue(), parameterInfo.parameterizedType, immutable,
                         e.getKey().parameterizedType()))

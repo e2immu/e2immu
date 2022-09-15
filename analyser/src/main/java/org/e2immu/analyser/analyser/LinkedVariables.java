@@ -61,13 +61,13 @@ public class LinkedVariables implements Comparable<LinkedVariables>, Iterable<Ma
 
     public static DV fromImmutableToLinkedVariableLevel(DV immutable,
                                                         AnalyserContext analyserContext,
-                                                        TypeInfo primaryType,
+                                                        TypeInfo currentType,
                                                         ParameterizedType sourceType,
                                                         ParameterizedType targetType) {
         if (immutable.isDelayed()) return immutable;
         // REC IMM -> NO_LINKING
         if (MultiLevel.isAtLeastEventuallyRecursivelyImmutable(immutable)) return LinkedVariables.LINK_INDEPENDENT;
-        ComputeIndependent computeIndependent = new ComputeIndependent(analyserContext, primaryType);
+        ComputeIndependent computeIndependent = new ComputeIndependent(analyserContext, currentType);
         return computeIndependent.linkLevelOfTwoHCRelatedTypes(sourceType, targetType);
     }
 
