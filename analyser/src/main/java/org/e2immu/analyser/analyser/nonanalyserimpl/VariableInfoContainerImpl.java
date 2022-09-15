@@ -495,7 +495,9 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
             VariableInfo best = best(Stage.EVALUATION);
             VariableInfoImpl mergeImpl = merge.get();
             if (mergeImpl.getValue().isDelayed()) mergeImpl.setValue(best.getValue());
-            mergeImpl.ensureLinkedVariables();
+            if (!mergeImpl.linkedVariablesIsSet()) {
+                mergeImpl.setLinkedVariables(best.getLinkedVariables());
+            }
             best.getProperties().forEach((k, v) -> {
                 DV dv = mergeImpl.getProperty(k, null);
                 if (dv == null || dv.isDelayed()) mergeImpl.setProperty(k, v);

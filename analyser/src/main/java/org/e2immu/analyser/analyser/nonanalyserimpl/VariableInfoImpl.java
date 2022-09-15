@@ -60,12 +60,6 @@ public class VariableInfoImpl implements VariableInfo {
     // 20211023 needs to be frozen explicitly
     private final EventuallyFinal<LinkedVariables> linkedVariables = new EventuallyFinal<>();
 
-    // ONLY for testing!
-    public VariableInfoImpl(Variable variable) {
-        this(Location.NOT_YET_SET, variable, AssignmentIds.NOT_YET_ASSIGNED, NOT_YET_READ, Set.of(), null,
-                VariableInfoContainer.NOT_RELEVANT);
-    }
-
     // used for returning delayed values
     public VariableInfoImpl(Location location, Variable variable, int statementTime) {
         this(location, variable, AssignmentIds.NOT_YET_ASSIGNED, NOT_YET_READ, Set.of(), null, statementTime);
@@ -310,21 +304,5 @@ public class VariableInfoImpl implements VariableInfo {
         setProperty(EXTERNAL_IMMUTABLE, EXTERNAL_IMMUTABLE.valueWhenAbsent());
         setProperty(CONTAINER_RESTRICTION, CONTAINER_RESTRICTION.valueWhenAbsent());
         setProperty(EXTERNAL_IGNORE_MODIFICATIONS, EXTERNAL_IGNORE_MODIFICATIONS.valueWhenAbsent());
-    }
-
-    public void ensureProperty(Property property, DV dv) {
-        DV inMap = properties.getOrDefaultNull(property);
-        if (inMap == null || inMap.isDelayed()) {
-            properties.put(property, dv);
-        }
-    }
-
-    /*
-    in the safest possible way, keep what you have
-     */
-    public void ensureLinkedVariables() {
-        if (linkedVariables.isVariable()) {
-            linkedVariables.setFinal(linkedVariables.get().nonDelayedPart());
-        }
     }
 }

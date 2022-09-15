@@ -18,12 +18,9 @@ import org.e2immu.analyser.analyser.delay.DelayFactory;
 import org.e2immu.analyser.analyser.delay.NoDelay;
 import org.e2immu.analyser.analyser.util.ComputeIndependent;
 import org.e2immu.analyser.model.*;
-import org.e2immu.analyser.model.variable.ReturnVariable;
 import org.e2immu.analyser.model.variable.Variable;
 
 import java.util.*;
-import java.util.function.BiPredicate;
-import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -95,10 +92,6 @@ public class LinkedVariables implements Comparable<LinkedVariables>, Iterable<Ma
         return new LinkedVariables(Map.of(var1, v1, var2, v2));
     }
 
-    public static boolean isNotIndependent(DV assignedOrLinked) {
-        return assignedOrLinked.ge(LINK_STATICALLY_ASSIGNED) && assignedOrLinked.lt(LINK_INDEPENDENT);
-    }
-
     public static boolean isAssigned(DV level) {
         return level.equals(LINK_STATICALLY_ASSIGNED) || level.equals(LINK_ASSIGNED);
     }
@@ -106,22 +99,6 @@ public class LinkedVariables implements Comparable<LinkedVariables>, Iterable<Ma
     @Override
     public Iterator<Map.Entry<Variable, DV>> iterator() {
         return variables.entrySet().iterator();
-    }
-
-    public LinkedVariables mergeDelay(LinkedVariables other, DV whenMissing) {
-        assert whenMissing.isDelayed();
-        HashMap<Variable, DV> map = new HashMap<>(variables);
-        other.variables.forEach((v, i) -> {
-            DV inMap = map.get(v);
-            if (inMap == null) {
-                map.put(v, whenMissing);
-            } else {
-                // once 0, always 0 (we do not accept delays on 0!)
-                DV merged = inMap.equals(LINK_STATICALLY_ASSIGNED) ? LINK_STATICALLY_ASSIGNED : whenMissing;
-                map.put(v, merged);
-            }
-        });
-        return of(map);
     }
 
     /*
@@ -204,21 +181,9 @@ public class LinkedVariables implements Comparable<LinkedVariables>, Iterable<Ma
                 .collect(Collectors.toMap(Map.Entry::getKey, e -> minimum.max(e.getValue()))));
     }
 
-    public Stream<Variable> variablesAssignedOrDependent() {
-        return variables.entrySet().stream()
-                .filter(e -> isAssignedOrLinked(e.getValue()))
-                .map(Map.Entry::getKey);
-    }
-
     public Stream<Variable> variablesAssigned() {
         return variables.entrySet().stream()
                 .filter(e -> isAssigned(e.getValue()))
-                .map(Map.Entry::getKey);
-    }
-
-    public Stream<Variable> independent1Variables() {
-        return variables.entrySet().stream()
-                .filter(e -> e.getValue().gt(LINK_DEPENDENT))
                 .map(Map.Entry::getKey);
     }
 
@@ -284,82 +249,6 @@ public class LinkedVariables implements Comparable<LinkedVariables>, Iterable<Ma
         return variables.get(variable);
     }
 
-    /*
-    we prune a linked variables map, based on immutable values.
-    if the source is @ERImmutable, then there cannot be linked; but the same holds for the targets!
-     */
-    public LinkedVariables removeIncompatibleWithImmutable(Variable source,
-                                                           Predicate<Variable> myself,
-                                                           Function<Variable, DV> computeImmutable,
-                                                           Function<Variable, DV> immutableIsDeterminedByTypeParameters,
-                                                           Function<Variable, DV> computeImmutableHiddenContent,
-                                                           BiPredicate<Variable, Variable> isHcOf) {
-        if (isEmpty() || this == NOT_YET_SET) return this;
-        DV sourceImmutable = computeImmutable.apply(source);
-        if (sourceImmutable.isDelayed()) {
-            return changeToDelay(sourceImmutable); // but keep the 0
-        }
-
-        Map<Variable, DV> adjustedSource;
-        if (!variables.isEmpty() && sourceImmutable.ge(MultiLevel.EFFECTIVELY_IMMUTABLE_HC_DV)) {
-            // level 2+ -> remove all @Dependent
-            boolean recursivelyImmutable = sourceImmutable.equals(MultiLevel.EFFECTIVELY_IMMUTABLE_DV);
-            adjustedSource = variables.entrySet().stream()
-                    .filter(e -> recursivelyImmutable ? e.getValue().le(LINK_ASSIGNED) :
-                            !e.getValue().equals(LINK_DEPENDENT))
-                    .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
-        } else {
-            adjustedSource = variables;
-        }
-        Map<Variable, DV> result = new HashMap<>();
-        for (Map.Entry<Variable, DV> entry : adjustedSource.entrySet()) {
-            DV linkLevel = entry.getValue();
-            Variable target = entry.getKey();
-            if (myself.test(target) || linkLevel.equals(LINK_STATICALLY_ASSIGNED)) {
-                result.put(target, linkLevel);
-            } else {
-                DV targetImmutable = computeImmutable.apply(target);
-                if (targetImmutable.isDelayed()) {
-                    result.put(target, targetImmutable);
-                } else if (MultiLevel.isAtLeastEventuallyRecursivelyImmutable(targetImmutable)) {
-                    // targetImmutable is @ERImmutable; only assignments kept
-                    if (linkLevel.le(LINK_ASSIGNED)) {
-                        result.put(target, linkLevel);
-                    }
-                } else {
-                    if (linkLevel.le(LINK_DEPENDENT)) {
-                        result.put(target, linkLevel);
-                    } else { // INDEPENDENT1+
-                        /*
-                         so we may have a mutable object linked at content level to the variable
-                         e.g. this.set = new HashSet<>(inputSet)
-
-                         if this set is a set of recursively immutable objects, the linking disappears
-                         if the set contains level 2 immutable objects, the linking should go to a higher level than
-                         independent_1, but we're not worried about that right now
-                         */
-                        DV takeImmutableFromTypeParameters = immutableIsDeterminedByTypeParameters.apply(target);
-                        if (takeImmutableFromTypeParameters.isDelayed()) {
-                            result.put(target, takeImmutableFromTypeParameters);
-                        } else if (takeImmutableFromTypeParameters.valueIsTrue()) {
-                            DV immutableHidden = computeImmutableHiddenContent.apply(target);
-                            if (immutableHidden.isDelayed()) {
-                                result.put(target, immutableHidden);
-                            } else if (!MultiLevel.isAtLeastEventuallyRecursivelyImmutable(immutableHidden)) {
-                                DV independent = isHcOf.test(source, target) ? LINK_IS_HC_OF : LINK_COMMON_HC;
-                                result.put(target, independent);
-                            }
-                        } else {
-                            DV independent = isHcOf.test(source, target) ? LINK_IS_HC_OF : LINK_COMMON_HC;
-                            result.put(target, independent);
-                        }
-                    }
-                }
-            }
-        }
-        return of(result);
-    }
-
     public static boolean isAssignedOrLinked(DV dependent) {
         return dependent.ge(LINK_STATICALLY_ASSIGNED) && dependent.le(LINK_DEPENDENT);
     }
@@ -398,13 +287,6 @@ public class LinkedVariables implements Comparable<LinkedVariables>, Iterable<Ma
 
     public boolean identicalStaticallyAssigned(LinkedVariables linkedVariables) {
         return staticallyAssigned().equals(linkedVariables.staticallyAssigned());
-    }
-
-    public LinkedVariables nonDelayedPart() {
-        if (isEmpty() || this == NOT_YET_SET) return this;
-        return of(variables.entrySet().stream()
-                .filter(e -> e.getValue().isDone())
-                .collect(Collectors.toUnmodifiableMap(Map.Entry::getKey, Map.Entry::getValue)));
     }
 
     public Set<Variable> directAssignmentVariables() {

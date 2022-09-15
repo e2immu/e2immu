@@ -1786,10 +1786,6 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
      */
     private static DV determineIndependentOfArrayBase(EvaluationResult context, Expression value) {
         ParameterizedType arrayBaseType = value.returnType().copyWithoutArrays();
-
-        TypeInfo currentType = context.getCurrentType();
-        TypeAnalysis typeAnalysis = context.getAnalyserContext().getTypeAnalysis(currentType);
-
         if (context.evaluationContext().isMyself(arrayBaseType))
             return MultiLevel.NOT_INVOLVED_DV; // BREAK INFINITE LOOP
         // IMPORTANT: currentType == null, we've done the hidden content check already
