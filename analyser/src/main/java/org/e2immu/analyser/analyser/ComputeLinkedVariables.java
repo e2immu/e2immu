@@ -24,6 +24,7 @@ import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.ReturnVariable;
 import org.e2immu.analyser.model.variable.This;
 import org.e2immu.analyser.model.variable.Variable;
+import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.support.Either;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -106,47 +107,40 @@ public class ComputeLinkedVariables {
                                                 EvaluationContext evaluationContext) {
         WeightedGraph weightedGraph = new WeightedGraph();
         // we keep track of all variables at the level, PLUS variables linked to, which are not at the level
-        Set<Variable> variables = new HashSet<>();
-        Set<Variable> atStage = new HashSet<>();
+        Set<Variable> done = new HashSet<>();
         Set<Variable> linkingNotYetSet = new HashSet<>();
 
-        statementAnalysis.variableEntryStream(stage).forEach(e -> {
-            VariableInfoContainer vic = e.getValue();
-            VariableInfo vi1 = vic.getPreviousOrInitial();
-            Variable variable = vi1.variable();
-            if (!ignore.test(vic, variable)) {
-                variables.add(variable);
-                atStage.add(variable);
-                LinkedVariables linkedVariables = add(statementAnalysis, ignore, reassigned, externalLinkedVariables,
-                        weightedGraph, vi1, variable);
-                variables.addAll(linkedVariables.variables().keySet());
-                if (linkedVariables == LinkedVariables.NOT_YET_SET) {
-                    linkingNotYetSet.add(variable);
-                }
-            }
-        });
-        /*
-        The code above should be sufficient, except that when a variable is linked to another one that is not in the stage,
-        a symmetric delay can go missing if the linking is computed one-sided (e.g., inMap:0,translationMap:4
-        from one side, inMap:4,translationMap:0 from the other. If inMap is at Evaluation and translationMap only at C,
-        not at E, than this side is not seen.)
-        Basics_8, _23 fail without this code.
-         */
-        for (Variable variable : variables) {
-            if (!atStage.contains(variable)) {
-                // extra added, should we also process?
-                VariableInfoContainer vic = statementAnalysis.getVariableOrDefaultNull(variable.fullyQualifiedName());
-                if (vic != null && !ignore.test(vic, variable)) {
+        Set<VariableInfoContainer> start = statementAnalysis.variableEntryStream(stage)
+                .map(Map.Entry::getValue).collect(Collectors.toUnmodifiableSet());
+        boolean iteration1Plus = false;
+        while (!start.isEmpty()) {
+            Set<VariableInfoContainer> linked = new HashSet<>();
+            for (VariableInfoContainer vic : start) {
+                Variable variable = vic.current().variable();
+                if (iteration1Plus || !ignore.test(vic, variable)) {
+                    done.add(variable);
                     VariableInfo vi1 = vic.getPreviousOrInitial();
                     LinkedVariables linkedVariables = add(statementAnalysis, ignore, reassigned, externalLinkedVariables,
                             weightedGraph, vi1, variable);
+                    for (Map.Entry<Variable, DV> e : linkedVariables) {
+                        Variable v = e.getKey();
+                        if (!done.contains(v)) {
+                            VariableInfoContainer linkedVic = statementAnalysis.getVariableOrDefaultNull(v.fullyQualifiedName());
+                            if (linkedVic != null) {
+                                linked.add(linkedVic);
+                            }
+                        }
+                    }
                     if (linkedVariables == LinkedVariables.NOT_YET_SET) {
                         linkingNotYetSet.add(variable);
                     }
                 }
             }
+            linked.removeIf(vic -> done.contains(vic.current().variable()));
+            start = new HashSet<>(linked);
+            iteration1Plus = true;
         }
-        ClusterResult cr = computeClusters(weightedGraph, variables);
+        ClusterResult cr = computeClusters(weightedGraph, done);
 
         return new ComputeLinkedVariables(statementAnalysis, stage, ignore, weightedGraph, cr.variablesInClusters(), cr.clusters,
                 cr.returnValueCluster, cr.rv, evaluationContext.allowBreakDelay(), oneBranchHasBecomeUnreachable,
