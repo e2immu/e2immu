@@ -262,6 +262,9 @@ record SAInitializersAndUpdaters(StatementAnalysis statementAnalysis) {
                 for (VariableInfo variableInfo : methodAnalysis.getFieldAsVariable(fieldInfo)) {
                     if (variableInfo.isAssigned()) {
                         Expression start = variableInfo.getValue();
+                        if(start instanceof DelayedExpression de) {
+                            start = de.getDoneOriginal();
+                        }
                         FieldReference fr = new FieldReference(analyserContext, fieldInfo);
                         Expression translated1 = start.translate(analyserContext, translationMap);
                         Expression translated = evaluationContext.getIteration() > 0

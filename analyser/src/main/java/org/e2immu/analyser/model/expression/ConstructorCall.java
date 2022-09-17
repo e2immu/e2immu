@@ -541,7 +541,7 @@ public class ConstructorCall extends BaseExpression implements HasParameterExpre
                 false);
         CausesOfDelay parameterDelays = res.v.stream().map(Expression::causesOfDelay).reduce(CausesOfDelay.EMPTY, CausesOfDelay::merge);
         if (parameterDelays.isDelayed()) {
-            return delayedConstructorCall(context, res.k, parameterDelays);
+            return delayedConstructorCall(context, res.k, null, parameterDelays); // FIXME
         }
 
         // check state changes of companion methods
@@ -552,11 +552,12 @@ public class ConstructorCall extends BaseExpression implements HasParameterExpre
             if (modReturn == null) {
                 instance = this;
             } else if (modReturn.expression() != null) {
+                Properties properties = context.evaluationContext().getValueProperties(modReturn.expression());
                 instance = modReturn.expression().isDelayed()
-                        ? createDelayedValue(identifier, context, modReturn.expression().causesOfDelay())
+                        ? createDelayedValue(identifier, context, properties, modReturn.expression().causesOfDelay())
                         : modReturn.expression();
             } else {
-                instance = createDelayedValue(identifier, context, modReturn.causes());
+                instance = createDelayedValue(identifier, context, (Properties) null, modReturn.causes());
             }
         } else {
             instance = this;
@@ -581,9 +582,10 @@ public class ConstructorCall extends BaseExpression implements HasParameterExpre
 
     private EvaluationResult delayedConstructorCall(EvaluationResult context,
                                                     EvaluationResult.Builder builder,
+                                                    Properties valueProperties,
                                                     CausesOfDelay causesOfDelay) {
         assert causesOfDelay.isDelayed();
-        builder.setExpression(createDelayedValue(identifier, context, causesOfDelay));
+        builder.setExpression(createDelayedValue(identifier, context, valueProperties, causesOfDelay));
         // set scope delay
         return builder.build();
     }
@@ -594,7 +596,10 @@ public class ConstructorCall extends BaseExpression implements HasParameterExpre
     }
 
     @Override
-    public Expression createDelayedValue(Identifier identifier, EvaluationResult context, CausesOfDelay causes) {
+    public Expression createDelayedValue(Identifier identifier,
+                                         EvaluationResult context,
+                                         Properties valueProperties,
+                                         CausesOfDelay causes) {
         return createDelayedValue(identifier, context, parameterizedType, causes);
     }
 

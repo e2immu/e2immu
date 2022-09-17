@@ -24,7 +24,7 @@ import org.e2immu.annotation.NotNull;
  "Static Side Effects Only" is a concept that still needs implementation.
  */
 
-public class SideEffects_0 {
+public class StaticSideEffects_5 {
 
     @NotModified
     public static void printStatic(String t) {

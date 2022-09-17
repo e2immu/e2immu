@@ -504,15 +504,17 @@ public class Test_04_Precondition extends CommonTestRunner {
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("pop".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof FieldReference fr && "stack".equals(fr.fieldInfo.name)) {
-                    assertDv(d, 2, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
+                    assertDv(d, 1, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
                 }
             }
         };
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("pop".equals(d.methodInfo().name)) {
-                String expected = d.iteration() < 2
-                        ? "Precondition[expression=<precondition>, causes=[escape]]"
-                        : "Precondition[expression=true, causes=[]]";
+                String expected = switch (d.iteration()) {
+                    case 0 -> "Precondition[expression=<precondition>, causes=[escape]]";
+                    case 1 -> "Precondition[expression=!<m:isEmpty>, causes=[escape]]";
+                    default -> "Precondition[expression=true, causes=[]]";
+                };
                 assertEquals(expected, d.methodAnalysis().getPrecondition().toString());
                 if (d.iteration() >= 2) assertTrue(d.methodAnalysis().getPrecondition().isEmpty());
             }

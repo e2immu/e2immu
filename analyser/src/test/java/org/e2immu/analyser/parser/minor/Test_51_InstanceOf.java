@@ -582,7 +582,7 @@ public class Test_51_InstanceOf extends CommonTestRunner {
                 if ("x".equals(d.variableName())) {
                     if ("2.0.0".equals(d.statementId())) {
                         assertCurrentValue(d, 3, "expression/*(Negation)*/.expression");
-                        assertDv(d, 3, MultiLevel.NOT_CONTAINER_DV, Property.CONTAINER);
+                        assertDv(d, 2, MultiLevel.NOT_CONTAINER_DV, Property.CONTAINER);
                         assertDv(d, 3, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     }
                     if ("2.1.0".equals(d.statementId())) {

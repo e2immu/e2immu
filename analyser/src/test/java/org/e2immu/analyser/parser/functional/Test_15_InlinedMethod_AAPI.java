@@ -140,7 +140,7 @@ public class Test_15_InlinedMethod_AAPI extends CommonTestRunner {
                 String expected = d.iteration() < 2 ? "<m:plusRandom>" : "i+r";
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
                 if (d.iteration() >= 2) assertTrue(d.methodAnalysis().getSingleReturnValue() instanceof Sum);
-                assertDv(d, 2, DV.TRUE_DV, Property.MODIFIED_METHOD);
+                assertDv(d, 1, DV.TRUE_DV, Property.MODIFIED_METHOD);
             }
             if ("difference31".equals(d.methodInfo().name)) {
                 String expected = d.iteration() < 2 ? "<m:difference31>" : "instance type int-(instance type int)";

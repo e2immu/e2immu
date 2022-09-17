@@ -283,7 +283,12 @@ public class Test_62_FormatterSimplified extends CommonTestRunner {
         EvaluationResultVisitor evaluationResultVisitor = d -> {
             if ("apply".equals(d.methodInfo().name)) {
                 if ("0.0.0".equals(d.statementId())) {
-                    String expect = d.iteration() < 3 ? "<null-check>" : "null==forwardInfo.guide";
+                    String expect = switch(d.iteration()) {
+                        case 0 -> "<null-check>";
+                        case 1 -> "null==<vp:guide:container@Interface_Guide>";
+                        case 2 -> "null==<vp:guide:independent@Field_guide>";
+                        default -> "null==forwardInfo.guide";
+                    };
                     assertEquals(expect, d.evaluationResult().value().toString());
                     assertEquals(d.iteration() < 3, d.evaluationResult().causesOfDelay().isDelayed());
                 }

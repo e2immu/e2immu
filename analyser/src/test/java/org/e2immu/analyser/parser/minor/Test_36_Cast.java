@@ -60,7 +60,7 @@ public class Test_36_Cast extends CommonTestRunner {
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("Cast_1".equals(d.typeInfo().simpleName)) {
                 assertHc(d, 0, "T");
-                assertDv(d, 2, MultiLevel.EFFECTIVELY_FINAL_FIELDS_DV, Property.IMMUTABLE);
+                assertDv(d, 1, MultiLevel.EFFECTIVELY_FINAL_FIELDS_DV, Property.IMMUTABLE);
             }
 
             if ("Counter".equals(d.typeInfo().simpleName)) {
@@ -81,7 +81,7 @@ public class Test_36_Cast extends CommonTestRunner {
                 if (d.variable() instanceof FieldReference fr && "t".equals(fr.fieldInfo.name)) {
                     String expectValue = d.iteration() < 2 ? "<f:t>" : "instance type T";
                     assertEquals(expectValue, d.currentValue().toString());
-                    assertDv(d, 2, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
+                    assertDv(d, 1, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
                 }
             }
             if ("getTAsString".equals(d.methodInfo().name) && d.variable() instanceof ReturnVariable) {
@@ -113,16 +113,16 @@ public class Test_36_Cast extends CommonTestRunner {
 
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
             if ("t".equals(d.fieldInfo().name)) {
-                assertDv(d, 2, DV.TRUE_DV, Property.MODIFIED_OUTSIDE_METHOD);
+                assertDv(d, 1, DV.TRUE_DV, Property.MODIFIED_OUTSIDE_METHOD);
             }
         };
 
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("incrementedT".equals(d.methodInfo().name)) {
-                assertDv(d, 2, DV.TRUE_DV, Property.MODIFIED_METHOD);
+                assertDv(d, 1, DV.TRUE_DV, Property.MODIFIED_METHOD);
             }
             if ("Cast_1".equals(d.methodInfo().name)) {
-                assertDv(d.p(0), 3, DV.TRUE_DV, Property.MODIFIED_OUTSIDE_METHOD);
+                assertDv(d.p(0), 2, DV.TRUE_DV, Property.MODIFIED_OUTSIDE_METHOD);
             }
         };
 

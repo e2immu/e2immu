@@ -787,7 +787,7 @@ public class Test_18_E2Immutable extends CommonTestRunner {
                 assertDv(d, 1, MultiLevel.EFFECTIVELY_IMMUTABLE_HC_DV, IMMUTABLE);
             }
             if ("LocalVariable".equals(d.typeInfo().simpleName)) {
-                assertDv(d, 2, MultiLevel.EFFECTIVELY_FINAL_FIELDS_DV, IMMUTABLE);
+                assertDv(d, 1, MultiLevel.EFFECTIVELY_FINAL_FIELDS_DV, IMMUTABLE);
             }
         };
 

@@ -388,7 +388,8 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
                 .getValueProperties(variable.parameterizedType(), valueToWrite, true);
         Properties externalProperties = sharedState.evaluationContext().getExternalProperties(valueToWrite);
 
-        Expression valueToWritePossiblyDelayed = delayAssignmentValue(sharedState, valueToWrite, valueProperties.delays());
+        Expression valueToWritePossiblyDelayed = delayAssignmentValue(sharedState, valueToWrite,
+                valueProperties, valueProperties.delays());
 
         Properties changeDataProperties = Properties.of(changeData.properties());
         boolean myself = sharedState.evaluationContext().isMyself(variable);
@@ -597,6 +598,7 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
 
     private Expression delayAssignmentValue(StatementAnalyserSharedState sharedState,
                                             Expression valueToWrite,
+                                            Properties valueProperties,
                                             CausesOfDelay valuePropertiesIsDelayed) {
         boolean valueToWriteIsDelayed = valueToWrite.isDelayed();
         CausesOfDelay causes;
@@ -607,7 +609,7 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
         }
         if (!valueToWriteIsDelayed && causes.isDelayed()) {
             return valueToWrite.createDelayedValue(valueToWrite.getIdentifier(),
-                    EvaluationResult.from(sharedState.evaluationContext()), causes);
+                    EvaluationResult.from(sharedState.evaluationContext()), valueProperties, causes);
         }
         return valueToWrite;
     }

@@ -96,8 +96,8 @@ public class Test_04_NotNull_AAPI extends CommonTestRunner {
 
                             String expected = switch (d.iteration()) {
                                 case 0 -> "<null-check>?new LinkedList<>()/*0==this.size()*/:<f:node.data>";
-                                case 1, 2, 3, 4, 5 -> "<null-check>?new LinkedList<>()/*0==this.size()*/:<vp:data:link@Field_data>";
-                                case 6, 7, 8, 9 -> "null==<vp:data:link@Field_data>?new LinkedList<>()/*0==this.size()*/:<vp:data:link@Field_data>";
+                                case 1, 2 -> "null==<f:node.data>?new LinkedList<>()/*0==this.size()*/:<vp:data:link@Field_data>";
+                                case 3, 4, 5, 6, 7, 8, 9 -> "null==<vp:data:link@Field_data>?new LinkedList<>()/*0==this.size()*/:<vp:data:link@Field_data>";
                                 default -> "null==nullable instance type List<T>?new LinkedList<>()/*0==this.size()*/:nullable instance type List<T>";
                             };
                             assertEquals(expected, d.currentValue().toString());

@@ -182,7 +182,7 @@ public class Test_34_ExplicitConstructorInvocation extends CommonTestRunner {
                     assertTrue(cd.markAssignment());
 
                     Expression value = cd.value();
-                    String expected = d.iteration() == 0 ? "<s:Primitives>" : "primitives1/*@NotNull*/";
+                    String expected = d.iteration() == 0 ? "<m:requireNonNull>" : "primitives1/*@NotNull*/";
                     assertEquals(expected, value.toString());
                     if (d.iteration() == 0) {
                         if (value instanceof DelayedExpression de) {
@@ -203,17 +203,10 @@ public class Test_34_ExplicitConstructorInvocation extends CommonTestRunner {
                 if ("Primitives".equals(typeOfParam1.typeInfo.simpleName) && numParams == 2) {
                     assertEquals("0", d.statementId());
                     if (d.variable() instanceof FieldReference fr && "primitives".equals(fr.fieldInfo.name)) {
-                        String expected = switch (d.iteration()) {
-                            case 0 -> "<eci>";
-                            case 1 -> "<s:Primitives>";
-                            default -> "primitives3/*@NotNull*/";
-                        };
+                        String expected = d.iteration() == 0 ? "<eci>" : "primitives3/*@NotNull*/";
                         assertEquals(expected, d.currentValue().toString());
-                        String linked = switch (d.iteration()) {
-                            case 0 -> "identifier:-1,primitives3:-1,this.complexity:-1,this.expressions:-1,this:-1";
-                            case 1 -> "primitives3:-1";
-                            default -> "primitives3:1";
-                        };
+                        String linked = d.iteration() == 0 ? "identifier:-1,primitives3:-1,this.complexity:-1,this.expressions:-1,this:-1"
+                                : "primitives3:1";
                         assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
                     }
                     if (d.variable() instanceof FieldReference fr && "complexity".equals(fr.fieldInfo.name)) {
@@ -233,7 +226,7 @@ public class Test_34_ExplicitConstructorInvocation extends CommonTestRunner {
                 } else if ("List".equals(typeOfParam1.typeInfo.simpleName) && numParams == 2) {
                     assertEquals("0", d.statementId());
                     if (d.variable() instanceof FieldReference fr && "primitives".equals(fr.fieldInfo.name)) {
-                        String expected = d.iteration() == 0 ? "<s:Primitives>" : "primitives1/*@NotNull*/";
+                        String expected = d.iteration() == 0 ? "<m:requireNonNull>" : "primitives1/*@NotNull*/";
 
                         assertEquals(expected, d.currentValue().toString());
                         String linked = d.iteration() == 0
@@ -381,7 +374,7 @@ public class Test_34_ExplicitConstructorInvocation extends CommonTestRunner {
                     String linked = d.iteration() <= 2 ? "UnknownExpression.E1:-1" : "UnknownExpression.E1:1";
                     assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
                     String expected = switch (d.iteration()) {
-                        case 0 -> "<s:Expression>";
+                        case 0 -> "<f:E1>/*@NotNull*/"; // Objects.requireNotNull(E1), identity + @NN property
                         case 1 -> "<vp:E1:container@Record_UnknownExpression>";
                         case 2 -> "<vp:E1:break_imm_delay@Method_merge;cm@Parameter_condition;initial:this.v@Method_merge_0-C;srv@Method_merge>";
                         default -> "UnknownExpression.E1";
@@ -461,6 +454,7 @@ public class Test_34_ExplicitConstructorInvocation extends CommonTestRunner {
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
             if ("E1".equals(d.fieldInfo().name)) {
                 assertEquals("new UnknownExpression(true)", d.fieldAnalysis().getValue().toString());
+                assertDv(d, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.EXTERNAL_NOT_NULL);
             }
             if ("C".equals(d.fieldInfo().owner.simpleName)) {
                 if ("parent".equals(d.fieldInfo().name)) {
@@ -538,7 +532,7 @@ public class Test_34_ExplicitConstructorInvocation extends CommonTestRunner {
                 assertDv(d.p(0), 2, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
             }
             if ("BinaryOperator".equals(d.methodInfo().name)) {
-                assertDv(d.p(0), 5, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
+                assertDv(d.p(0), 4, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
             }
             if ("BitwiseAnd".equals(d.methodInfo().name)) {
                 assertDv(d.p(0), 2, DV.FALSE_DV, Property.MODIFIED_VARIABLE);

@@ -1,4 +1,3 @@
-
 /*
  * e2immu: a static code analyser for effective and eventual immutability
  * Copyright 2020-2021, Bart Naudts, https://www.e2immu.org
@@ -13,21 +12,22 @@
  * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.e2immu.analyser.parser.minor;
+package org.e2immu.analyser.parser.minor.testexample;
 
-import org.e2immu.analyser.config.DebugConfiguration;
-import org.e2immu.analyser.parser.CommonTestRunner;
-import org.junit.jupiter.api.Test;
+import java.util.concurrent.atomic.AtomicInteger;
 
-import java.io.IOException;
+public record StaticSideEffects_6(int index, int tabs) {
+    private static final AtomicInteger generator = new AtomicInteger();
 
-public class Test_23_SideEffects extends CommonTestRunner {
-    public Test_23_SideEffects() {
-        super(true);
-    }
+    public static class GuideGenerator {
+        public final int index;
 
-    @Test
-    public void test_0() throws IOException {
-        testClass("SideEffects_0", 0, 0, new DebugConfiguration.Builder().build());
+        private GuideGenerator() {
+            this(1);
+        }
+
+        private GuideGenerator(int tabs) {
+            index = generator.incrementAndGet();
+        }
     }
 }

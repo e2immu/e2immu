@@ -332,6 +332,15 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
         DV nne = properties.getOrDefaultNull(NOT_NULL_EXPRESSION);
         DV updated = nneForVariable(duringEvaluation, variable, nne, value.causesOfDelay());
         properties.overwrite(NOT_NULL_EXPRESSION, updated);
+        for (Property valueProperty : EvaluationContext.VALUE_PROPERTIES) {
+            DV dv = value.hardCodedPropertyOrNull(valueProperty);
+            if (dv != null) {
+                DV current = properties.getOrDefaultNull(valueProperty);
+                assert current == null || !current.isDone() || !dv.isDone()
+                        || dv.equals(current) : "Have conflict: " + dv + " vs " + current + " for property " + valueProperty;
+                properties.overwrite(valueProperty, dv);
+            }
+        }
         return properties;
     }
 

@@ -112,7 +112,7 @@ public interface FieldAnalysis extends Analysis {
         CausesOfDelay delay = properties.delays();
 
         if (delay.isDelayed()) {
-            return DelayedVariableExpression.forDelayedValueProperties(fieldReference, statementTime, delay);
+            return DelayedVariableExpression.forDelayedValueProperties(fieldReference, statementTime, properties, delay);
         }
         ParameterizedType mostSpecific;
         if (value.returnType().typeInfo != null && value.returnType().typeInfo.equals(fieldReference.fieldInfo.type.typeInfo)) {

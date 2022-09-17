@@ -25,8 +25,8 @@ import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 
-public class Test_Generics_0 extends CommonTestRunner {
-    public Test_Generics_0() {
+public class Test_Generics extends CommonTestRunner {
+    public Test_Generics() {
         super(true);
     }
 

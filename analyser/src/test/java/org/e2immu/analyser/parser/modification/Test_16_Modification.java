@@ -275,7 +275,7 @@ public class Test_16_Modification extends CommonTestRunner {
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("FaultyImplementation".equals(d.typeInfo().simpleName)) {
                 assertHc(d, 2, "");
-                assertDv(d, 4, MultiLevel.DEPENDENT_DV, Property.INDEPENDENT);
+                assertDv(d, 3, MultiLevel.DEPENDENT_DV, Property.INDEPENDENT);
             }
             if ("ErrorRegistry".equals(d.typeInfo().simpleName)) {
                 assertTrue(d.typeAnalysis().getHiddenContentTypes().isEmpty());

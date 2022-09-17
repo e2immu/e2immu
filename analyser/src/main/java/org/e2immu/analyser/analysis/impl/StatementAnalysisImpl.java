@@ -1889,7 +1889,8 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
         if (value.isDone()) {
             CausesOfDelay causes = combined.delays();
             if (causes.isDelayed()) {
-                toWrite = DelayedVariableExpression.forDelayedValueProperties(fieldReference, statementTime(INITIAL), causes);
+                toWrite = DelayedVariableExpression.forDelayedValueProperties(fieldReference, statementTime(INITIAL),
+                        properties, causes);
             } else {
                 toWrite = value;
             }

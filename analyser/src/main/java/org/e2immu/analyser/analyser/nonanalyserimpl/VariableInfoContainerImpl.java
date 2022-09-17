@@ -296,7 +296,12 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
                 if (v.isDelayed() && valueIsDone && vp.propertyType == Property.PropertyType.VALUE) {
                     throw new IllegalStateException("Not allowed to even try to set delay on a value property");
                 }
-                variableInfo.setProperty(vp, v);
+                DV current = variableInfo.getProperty(vp, null);
+                if (current == null || current.isDelayed()) {
+                    variableInfo.setProperty(vp, v);
+                } else if (v.isDone() && !current.equals(v)) {
+                    throw new IllegalStateException("Changing value from " + current + " to " + v + " for " + vp + ", var " + variableInfo.variable());
+                }
             });
         }
         if (linkedVariables != null) {
