@@ -14,12 +14,12 @@
 
 package org.e2immu.analyser.output;
 
-import org.e2immu.annotation.Container;
+import org.e2immu.annotation.ImmutableContainer;
 import org.e2immu.annotation.Independent;
 import org.e2immu.annotation.NotModified;
 import org.e2immu.annotation.NotNull;
 
-@Container
+@ImmutableContainer
 @Independent
 public interface OutputElement {
 
@@ -27,7 +27,9 @@ public interface OutputElement {
     @NotNull
     String minimal();
 
-    default int length(FormattingOptions options) { return write(options).length(); }
+    default int length(FormattingOptions options) {
+        return write(options).length();
+    }
 
     @NotModified
     @NotNull

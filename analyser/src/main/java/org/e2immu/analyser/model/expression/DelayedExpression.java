@@ -349,9 +349,9 @@ public final class DelayedExpression extends BaseExpression implements Expressio
     @Override
     public Expression translate(InspectionProvider inspectionProvider, TranslationMap translationMap) {
         Expression translated = original.translate(inspectionProvider, translationMap);
-        if (translated == original) return this;
-        return new DelayedExpression(identifier, msg, translationMap.translateType(parameterizedType),
-                translated, causesOfDelay);
+        ParameterizedType translatedType = translationMap.translateType(parameterizedType);
+        if (translated == original && translatedType == parameterizedType) return this;
+        return new DelayedExpression(identifier, msg, translatedType, translated, causesOfDelay);
     }
 
     @Override
@@ -375,6 +375,14 @@ public final class DelayedExpression extends BaseExpression implements Expressio
 
     public ParameterizedType parameterizedType() {
         return parameterizedType;
+    }
+
+    // for testing, recursive
+    public Expression getDoneOriginal() {
+        if (original instanceof DelayedExpression de) {
+            return de.getDoneOriginal();
+        }
+        return original;
     }
 
     @Override

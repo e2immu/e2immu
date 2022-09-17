@@ -111,8 +111,7 @@ public class Test_00_Basics_8 extends CommonTestRunner {
                         assertEquals("j0:0,k:0", linkedVariables, "At " + d.statementId());
                     }
                     if ("4.0.0".equals(d.statementId())) {
-                        String linked = "k:0,this.i:0";
-                        assertEquals(linked, linkedVariables, "At " + d.statementId());
+                        assertEquals("k:0", linkedVariables, "At " + d.statementId());
                     }
                     if ("4".equals(d.statementId())) {
                         String linked = d.iteration() == 0 ? "k:0,q:-1,this.i:0" : "k:0,this.i:0";

@@ -82,14 +82,14 @@ public class Test_61_OutputBuilderSimplified extends CommonTestRunner {
                         assertDv(d, MultiLevel.MUTABLE_DV, Property.IMMUTABLE);
                     }
                     if ("1".equals(d.statementId())) {
-                        String expectedValue = d.iteration() == 0 ? "<p:o2>" : "nullable instance type OutputBuilderSimplified_2";
+                        String expectedValue = "nullable instance type OutputBuilderSimplified_2";
                         assertEquals(expectedValue, d.currentValue().toString());
                         assertEquals("", d.variableInfo().getLinkedVariables().toString());
                         assertDv(d, 1, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                         // links have not been established
                         assertDv(d, 2, MultiLevel.MUTABLE_DV, Property.CONTEXT_IMMUTABLE);
                         // mutable, because self type
-                        assertDv(d, 1, MultiLevel.MUTABLE_DV, Property.IMMUTABLE);
+                        assertDv(d, MultiLevel.MUTABLE_DV, Property.IMMUTABLE);
                     }
                     if ("0.0.0".equals(d.statementId())) {
                         assertEquals("nullable instance type OutputBuilderSimplified_2", d.currentValue().toString());

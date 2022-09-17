@@ -24,6 +24,8 @@ import org.e2immu.analyser.model.MethodInfo;
 import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.ParameterInfo;
 import org.e2immu.analyser.model.TypeInfo;
+import org.e2immu.analyser.model.expression.DelayedExpression;
+import org.e2immu.analyser.model.expression.InlineConditional;
 import org.e2immu.analyser.model.expression.VariableExpression;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.ReturnVariable;
@@ -136,9 +138,58 @@ public class Test_62_FormatterSimplified extends CommonTestRunner {
                         };
                         assertEquals(expected, d.currentValue().toString());
                         assertDv(d, 4, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_EXPRESSION);
+                        if (d.iteration() == 0) {
+                            if (d.currentValue() instanceof InlineConditional ic && ic.ifTrue instanceof DelayedExpression de) {
+                                assertEquals("<oos:symbol>.symbol()", de.getDoneOriginal().toString());
+                            } else fail();
+                        }
+                    }
+                    if ("8.0.4.1.0.1.0.0.03".equals(d.statementId())) {
+                        assertEquals("<instanceOf:Symbol>?<m:symbol>:<instanceOf:Guide>?\"\":<m:write>",
+                                d.currentValue().toString());
+                        assertFalse(d.variableInfo().getLinkedVariables().stream()
+                                .anyMatch(e -> "symbol".equals(e.getKey().simpleName())));
                     }
                     if ("8".equals(d.statementId()) || "9".equals(d.statementId())) {
                         fail("The variable 'string' should not exist here");
+                    }
+                }
+                if ("writeSpace".equals(d.variableName())) {
+                    assertTrue(d.statementId().startsWith("8.0.4.1.0.1.0.0"));
+                    if ("8.0.4.1.0.1.0.0.03".equals(d.statementId())) {
+                        assertEquals("<v:wroteOnce>&&<v:lastOneWasSpace>!=<f:NONE>&&<v:lastOneWasSpace>!=<f:RELAXED_NONE>",
+                                d.currentValue().toString());
+                        assertFalse(d.variableInfo().getLinkedVariables().stream()
+                                .anyMatch(e -> "symbol".equals(e.getKey().simpleName())));
+                    }
+                }
+                if ("symbol".equals(d.variableName())) {
+                    // symbol should not exist outside 8.0.3
+                    assertTrue(d.statementId().compareTo("8.0.4") < 0);
+                }
+                if (d.variable() instanceof FieldReference fr && "NICE".equals(fr.fieldInfo.name)) {
+                    assertEquals("ElementarySpace", fr.scope.returnType().typeInfo.simpleName);
+                    if ("8".equals(d.statementId())) {
+                        String linked = switch (d.iteration()) {
+                            case 0 -> "ElementarySpace.NONE:-1,ElementarySpace.RELAXED_NONE:0,Space.NONE:-1,Split.NEVER:-1,allowBreak:-1,chars:-1,lastOneWasSpace:0,list:-1,outputElement:-1,pos:-1,scope-81:25:-1,scope-85:37:-1,scope-scope-81:25:8.0.3.split:-1,scope-scope-81:25:8.0.3:-1,scope-scope-85:37:8.0.3.split:-1,scope-scope-85:37:8.0.3:-1,split:-1,start:-1";
+                            case 1 -> "ElementarySpace.NONE:-1,ElementarySpace.RELAXED_NONE:0,Space.NONE:-1,Split.NEVER:-1,allowBreak:-1,chars:-1,lastOneWasSpace:0,list:-1,outputElement:-1,scope-81:25:-1,scope-85:37:-1,scope-scope-81:25:8.0.3.split:-1,scope-scope-81:25:8.0.3:-1,scope-scope-85:37:8.0.3.split:-1,scope-scope-85:37:8.0.3:-1,split:-1";
+                            default -> "";
+                        };
+                        //             assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
+                    }
+                    if ("9".equals(d.statementId())) {
+                        String linked = switch (d.iteration()) {
+                            case 0 -> "ElementarySpace.NONE:-1,ElementarySpace.RELAXED_NONE:0,Space.NONE:-1,Split.NEVER:-1,allowBreak:-1,lastOneWasSpace:0,list:-1,outputElement:-1,pos:-1,scope-81:25:-1,scope-85:37:-1,scope-scope-81:25:8.0.3.split:-1,scope-scope-81:25:8.0.3:-1,scope-scope-85:37:8.0.3.split:-1,scope-scope-85:37:8.0.3:-1,split:-1,start:-1,wroteOnce:-1";
+                            default -> "ElementarySpace.RELAXED_NONE:0,lastOneWasSpace:0";
+                        };
+                        assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
+                    }
+                }
+                if (d.variable() instanceof ReturnVariable) {
+                    if ("9".equals(d.statementId())) {
+                        assertEquals("(<instanceOf:Guide>?<m:apply>:<m:apply>&&<m:length>>=1)&&!<instanceOf:Space>&&-1+<v:end>>=<v:pos>&&<f:NEWLINE>!=<m:get>",
+                                d.currentValue().toString());
+                //        assertEquals("ElementarySpace.NICE:-1,ElementarySpace.NONE:-1,ElementarySpace.RELAXED_NONE:-1,Space.NEWLINE:-1,Space.NONE:-1,Split.NEVER:-1,allowBreak:-1,chars:-1,end:-1,lastOneWasSpace:-1,list:-1,maxChars:-1,outputElement:-1,pos:-1,scope-81:25:-1,scope-85:37:-1,scope-scope-81:25:8.0.3.split:-1,scope-scope-81:25:8.0.3:-1,scope-scope-85:37:8.0.3.split:-1,scope-scope-85:37:8.0.3:-1,split:-1,start:-1,writer:-1,wroteOnce:-1", d.variableInfo().getLinkedVariables().toString());
                     }
                 }
             }

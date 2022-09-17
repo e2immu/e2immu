@@ -14,5 +14,10 @@
 
 package org.e2immu.analyser.output;
 
+import org.e2immu.annotation.ImmutableContainer;
+import org.e2immu.annotation.Independent;
+
+@ImmutableContainer
+@Independent
 public interface Qualifier extends OutputElement {
 }

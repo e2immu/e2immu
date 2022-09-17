@@ -17,7 +17,10 @@ package org.e2immu.analyser.parser.own.output;
 
 import org.e2immu.analyser.analyser.DV;
 import org.e2immu.analyser.analyser.Property;
+import org.e2immu.analyser.analyser.VariableInfo;
 import org.e2immu.analyser.config.DebugConfiguration;
+import org.e2immu.analyser.model.MultiLevel;
+import org.e2immu.analyser.model.ParameterInfo;
 import org.e2immu.analyser.model.expression.InlinedMethod;
 import org.e2immu.analyser.model.variable.ReturnVariable;
 import org.e2immu.analyser.output.*;
@@ -25,6 +28,7 @@ import org.e2immu.analyser.parser.CommonTestRunner;
 import org.e2immu.analyser.visitor.MethodAnalyserVisitor;
 import org.e2immu.analyser.visitor.StatementAnalyserVariableVisitor;
 import org.e2immu.analyser.visitor.StatementAnalyserVisitor;
+import org.e2immu.analyser.visitor.TypeAnalyserVisitor;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
@@ -40,29 +44,75 @@ public class Test_Output_02_OutputBuilder extends CommonTestRunner {
 
     @Test
     public void test() throws IOException {
+        StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+            if ("accumulator".equals(d.methodInfo().name)) {
+                assertEquals("0", d.statementId());
+                if (d.variable() instanceof ParameterInfo pi && "separator".equals(pi.name)) {
+                    assertDv(d, 4, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                }
+            }
+            if ("accept".equals(d.methodInfo().name) && "$3".equals(d.methodInfo().typeInfo.simpleName)) {
+                assertEquals("$2", d.methodInfo().typeInfo.packageNameOrEnclosingType.getRight().simpleName);
+                if (d.variable() instanceof ParameterInfo pi && "separator".equals(pi.name)) {
+                    if ("0.0.0.0.0".equals(d.statementId())) {
+                        VariableInfo prev = d.variableInfoContainer().getPreviousOrInitial(); // 0.0.0.0 evaluation
+                        assertEquals(DV.FALSE_DV, prev.getProperty(Property.CONTEXT_MODIFIED));
+
+                        String linked = switch (d.iteration()) {
+                            case 0 -> "NOT_YET_SET";
+                            case 1, 2, 3 -> "a:-1";
+                            default -> "a:3"; // should have been :3
+                        };
+                        assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
+
+                        assertDv(d, 4, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                    }
+                }
+            }
+        };
         StatementAnalyserVisitor statementAnalyserVisitor = d -> {
             if ("apply".equals(d.methodInfo().name) && "$4".equals(d.methodInfo().typeInfo.simpleName)) {
                 if ("2.0.0".equals(d.statementId())) { // a.add(separator); add is fluent; the identity is there because "a" is the first parameter of apply
-                    String expected = d.iteration() == 0 ? "<m:add>" : "nullable instance type OutputBuilder/*@Identity*//*{L a:statically_assigned:0}*//*@NotNull*/";
+                    String expected = d.iteration() < 2 ? "<m:add>"
+                            : "nullable instance type OutputBuilder/*@Identity*//*{L a:0}*//*@NotNull*/";
                     assertEquals(expected, d.statementAnalysis().stateData().valueOfExpression.get().toString());
                 }
             }
         };
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("add".equals(d.methodInfo().name)) {
-                String typeOfParameter = d.methodInfo().methodInspection.get().getParameters().get(0).parameterizedType.typeInfo.simpleName;
+                ParameterInfo p0 = d.methodInfo().methodInspection.get().getParameters().get(0);
+                assertNotNull(p0.parameterizedType.typeInfo);
+                String typeOfParameter = p0.parameterizedType.typeInfo.simpleName;
                 if ("OutputBuilder".equals(typeOfParameter)) {
                     assertDv(d, DV.TRUE_DV, Property.MODIFIED_METHOD);
+                    assertDv(d.p(0), 3, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
                 } else if ("OutputElement".equals(typeOfParameter)) {
                     assertDv(d, DV.TRUE_DV, Property.MODIFIED_METHOD);
+                    assertDv(d.p(0), 3, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
+                    assertDv(d.p(0), 3, MultiLevel.INDEPENDENT_HC_DV, Property.INDEPENDENT);
                 } else fail();
+            }
+            if ("joining".equals(d.methodInfo().name)) {
+                int n = d.methodInfo().methodInspection.get().getParameters().size();
+                if (n == 4) {
+                    // separator
+                    assertDv(d.p(0), 5, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
+                }
+            }
+        };
+        TypeAnalyserVisitor typeAnalyserVisitor = d -> {
+            if ("OutputElement".equals(d.typeInfo().simpleName)) {
+                assertDv(d, MultiLevel.EFFECTIVELY_IMMUTABLE_HC_DV, Property.IMMUTABLE);
             }
         };
         testSupportAndUtilClasses(List.of(OutputBuilder.class, OutputElement.class, Qualifier.class,
                         FormattingOptions.class, Guide.class, ElementarySpace.class, Space.class, TypeName.class),
                 0, 0, new DebugConfiguration.Builder()
+                        .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                         .addStatementAnalyserVisitor(statementAnalyserVisitor)
                         .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                        .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
                         .build());
     }
 

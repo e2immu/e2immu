@@ -61,7 +61,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
                       Expression object,
                       MethodInfo methodInfo,
                       List<Expression> parameterExpressions) {
-        this(identifier, false, object, methodInfo, methodInfo.returnType(), parameterExpressions);
+        this(identifier, false, object, methodInfo, methodInfo.returnType(), parameterExpressions, true);
     }
 
     public MethodCall(Identifier identifier,
@@ -70,12 +70,23 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
                       MethodInfo methodInfo,
                       ParameterizedType returnType,
                       List<Expression> parameterExpressions) {
+        this(identifier, objectIsImplicit, object, methodInfo, returnType, parameterExpressions, true);
+    }
+
+    private MethodCall(Identifier identifier,
+                       boolean objectIsImplicit,
+                       Expression object,
+                       MethodInfo methodInfo,
+                       ParameterizedType returnType,
+                       List<Expression> parameterExpressions,
+                       boolean checkDelays) {
         super(identifier,
                 object.getComplexity() + 1 + parameterExpressions.stream().mapToInt(Expression::getComplexity).sum(),
                 methodInfo, returnType);
         this.object = Objects.requireNonNull(object);
         this.parameterExpressions = Objects.requireNonNull(parameterExpressions);
-        assert parameterExpressions.stream().noneMatch(Expression::isDelayed) : "Creating a method call with delayed arguments";
+        assert !checkDelays
+                || parameterExpressions.stream().noneMatch(Expression::isDelayed) : "Creating a method call with delayed arguments";
         this.objectIsImplicit = objectIsImplicit;
     }
 
@@ -104,16 +115,13 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         CausesOfDelay causesOfDelay = translatedParameters.stream()
                 .map(Expression::causesOfDelay).reduce(CausesOfDelay.EMPTY, CausesOfDelay::merge)
                 .merge(translatedObject.causesOfDelay());
+        MethodCall translatedMc = new MethodCall(identifier, objectIsImplicit, translatedObject,
+                translatedMethod, translatedReturnType, translatedParameters, causesOfDelay.isDone());
         if (causesOfDelay.isDelayed()) {
             return DelayedExpression.forMethod(identifier, translatedMethod, translatedMethod.returnType(),
-                    this, causesOfDelay, Map.of());
+                    translatedMc, causesOfDelay, Map.of());
         }
-        return new MethodCall(identifier,
-                objectIsImplicit,
-                translatedObject,
-                translatedMethod,
-                translatedReturnType,
-                translatedParameters);
+        return translatedMc;
     }
 
     @Override
@@ -1339,7 +1347,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
                     newLinked.put(e.getKey(), LinkedVariables.LINK_DEPENDENT);
                 }
             }
-            if(causesOfDelay.isDelayed()) {
+            if (causesOfDelay.isDelayed()) {
                 return linkedVariablesOfObject.changeToDelay(causesOfDelay);
             }
             return LinkedVariables.of(newLinked);

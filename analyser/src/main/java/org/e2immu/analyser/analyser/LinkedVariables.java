@@ -279,10 +279,8 @@ public class LinkedVariables implements Comparable<LinkedVariables>, Iterable<Ma
         return Properties.compareMaps(variables, o.variables);
     }
 
-    private List<Variable> staticallyAssigned() {
-        return variables.entrySet().stream()
-                .filter(e -> e.getValue().equals(LINK_STATICALLY_ASSIGNED))
-                .map(Map.Entry::getKey).sorted().toList();
+    private Set<Variable> staticallyAssigned() {
+        return staticallyAssignedStream().collect(Collectors.toUnmodifiableSet());
     }
 
     public boolean identicalStaticallyAssigned(LinkedVariables linkedVariables) {
@@ -293,5 +291,9 @@ public class LinkedVariables implements Comparable<LinkedVariables>, Iterable<Ma
         if (isEmpty() || this == NOT_YET_SET) return Set.of();
         return variables.entrySet().stream().filter(e -> e.getValue().equals(LINK_STATICALLY_ASSIGNED))
                 .map(Map.Entry::getKey).collect(Collectors.toUnmodifiableSet());
+    }
+
+    public Stream<Variable> staticallyAssignedStream() {
+        return variables.entrySet().stream().filter(e -> LINK_STATICALLY_ASSIGNED.equals(e.getValue())).map(Map.Entry::getKey);
     }
 }

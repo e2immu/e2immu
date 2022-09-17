@@ -1026,8 +1026,13 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
         // normal variables not accessed in the block, defined before the block, can be ignored
         //
         // if recognized: remove (into remove+ignore), otherwise ignore
+
+        Set<Variable> alsoMergeStaticallyAssigned = new HashSet<>(mergeEvenIfNotInSubBlocks);
+        Set<Variable> staticallyLinked = pm.toMerge.stream().flatMap(vic -> vic.best(EVALUATION).getLinkedVariables().staticallyAssignedStream()).collect(Collectors.toUnmodifiableSet());
+        alsoMergeStaticallyAssigned.addAll(staticallyLinked);
+
         Stream<VariableInfoContainer> atTopLevel = rawVariableStream().map(Map.Entry::getValue);
-        mergeAction(pm, seen, atTopLevel, vn -> vn.removeInMerge(index), mergeEvenIfNotInSubBlocks::contains, null);
+        mergeAction(pm, seen, atTopLevel, vn -> vn.removeInMerge(index), alsoMergeStaticallyAssigned::contains, null);
         return pm;
     }
 

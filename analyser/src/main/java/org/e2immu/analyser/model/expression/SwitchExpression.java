@@ -143,7 +143,7 @@ public class SwitchExpression extends BaseExpression implements Expression, HasS
     @Override
     public Expression translate(InspectionProvider inspectionProvider, TranslationMap translationMap) {
         List<SwitchEntry> translatedSwitchEntries = switchEntries.stream()
-                .map(se -> (SwitchEntry) se.translate(inspectionProvider, translationMap)).toList();
+                .map(se -> (SwitchEntry) se.translate(inspectionProvider, translationMap).get(0)).toList();
         MultiExpression translatedYieldExpressions = expressions.translate(inspectionProvider, translationMap);
         return new SwitchExpression(identifier, selector.translate(inspectionProvider, translationMap),
                 translatedSwitchEntries, returnType, translatedYieldExpressions);
