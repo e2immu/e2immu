@@ -37,6 +37,7 @@ A delayed expression stores the original expression, rather than the variables n
 because the translation needs to work for ExplicitConstructorInvocations. See e.g. ECI_7 where there are explicit tests.
  */
 public final class DelayedExpression extends BaseExpression implements Expression {
+    public static final String ECI = "<eci>";
     private final String msg;
     private final ParameterizedType parameterizedType;
     private final Expression original;
@@ -219,7 +220,7 @@ public final class DelayedExpression extends BaseExpression implements Expressio
     public static Expression forECI(Identifier identifier,
                                     Expression original,
                                     CausesOfDelay eciDelay) {
-        return new DelayedExpression(identifier, "<eci>", ParameterizedType.RETURN_TYPE_OF_CONSTRUCTOR, original,
+        return new DelayedExpression(identifier, ECI, ParameterizedType.RETURN_TYPE_OF_CONSTRUCTOR, original,
                 eciDelay);
     }
 

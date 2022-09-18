@@ -14,13 +14,11 @@
 
 package org.e2immu.analyser.model.expression;
 
-import org.e2immu.analyser.analyser.CausesOfDelay;
-import org.e2immu.analyser.analyser.EvaluationResult;
-import org.e2immu.analyser.analyser.ForwardEvaluationInfo;
-import org.e2immu.analyser.analyser.Property;
+import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.util.TranslationCollectors;
 import org.e2immu.analyser.model.impl.BaseExpression;
+import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.Symbol;
 import org.e2immu.analyser.parser.InspectionProvider;
@@ -124,6 +122,16 @@ public class CommaExpression extends BaseExpression implements Expression {
 
     public List<Expression> expressions() {
         return expressions;
+    }
+
+    @Override
+    public LinkedVariables linkedVariables(EvaluationResult context) {
+        return expressions.stream().map(e -> e.linkedVariables(context)).reduce(LinkedVariables.EMPTY, LinkedVariables::merge);
+    }
+
+    @Override
+    public List<Variable> variables(boolean descendIntoFieldReferences) {
+        return expressions.stream().flatMap(e -> e.variables(descendIntoFieldReferences).stream()).toList();
     }
 
     @Override

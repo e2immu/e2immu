@@ -25,6 +25,7 @@ import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.ParameterInfo;
 import org.e2immu.analyser.model.ParameterizedType;
 import org.e2immu.analyser.model.expression.DelayedExpression;
+import org.e2immu.analyser.model.expression.DelayedVariableExpression;
 import org.e2immu.analyser.model.expression.VariableExpression;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.Variable;
@@ -508,7 +509,6 @@ public class Test_34_ExplicitConstructorInvocation extends CommonTestRunner {
                 .build());
     }
 
-    // problem when forcing alphabetic analysis; works perfectly fine if we can do things in good order
     @Test
     public void test_11() throws IOException {
         StatementAnalyserVisitor statementAnalyserVisitor = d -> {
@@ -532,7 +532,7 @@ public class Test_34_ExplicitConstructorInvocation extends CommonTestRunner {
                 assertDv(d.p(0), 2, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
             }
             if ("BinaryOperator".equals(d.methodInfo().name)) {
-                assertDv(d.p(0), 4, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
+                assertDv(d.p(0), 5, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
             }
             if ("BitwiseAnd".equals(d.methodInfo().name)) {
                 assertDv(d.p(0), 2, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
@@ -571,6 +571,21 @@ public class Test_34_ExplicitConstructorInvocation extends CommonTestRunner {
     // eval order is 1,3,4,5
     @Test
     public void test_12() throws IOException {
+        StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+            if ("X4_BitwiseAnd".equals(d.methodInfo().name)) {
+                if (d.variable() instanceof FieldReference fr && "AND".equals(fr.fieldInfo.name)) {
+                    String expected = d.iteration() < 4 ? "<f:AND>" : "instance type Precedence/*new Precedence()*/";
+                    assertEquals(expected, d.currentValue().toString());
+                    if (d.iteration() == 0) {
+                        if (d.currentValue() instanceof DelayedVariableExpression dve) {
+                            assertNull(dve.hardCodedPropertyOrNull(Property.CONTEXT_NOT_NULL));
+                        } else fail();
+                    }
+                    assertDv(d, 0, MultiLevel.NULLABLE_DV, Property.CONTEXT_NOT_NULL);
+                }
+            }
+        };
+
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("X5_BaseExpression".equals(d.methodInfo().name)) {
                 assertDv(d.p(0), 2, DV.FALSE_DV, Property.MODIFIED_VARIABLE); //3
@@ -610,6 +625,7 @@ public class Test_34_ExplicitConstructorInvocation extends CommonTestRunner {
             }
         };
         testClass("ExplicitConstructorInvocation_12", 0, 1, new DebugConfiguration.Builder()
+                        .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                         .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                         .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
                         .build(),
@@ -670,8 +686,8 @@ public class Test_34_ExplicitConstructorInvocation extends CommonTestRunner {
     @Test
     public void test_13() throws IOException {
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+            int n = d.methodInfo().methodInspection.get().getParameters().size();
             if (d.methodInfo().isConstructor && d.methodInfo().methodInspection.get().isPrivate()) {
-                int n = d.methodInfo().methodInspection.get().getParameters().size();
                 assertEquals(10, n);
 
                 if (d.variable() instanceof ParameterInfo pi && "identifier".equals(pi.name)) {
@@ -682,6 +698,18 @@ public class Test_34_ExplicitConstructorInvocation extends CommonTestRunner {
                     String expected = d.iteration() == 0 ? "<p:variableTarget>"
                             : "variableTarget";
                     assertEquals(expected, d.currentValue().toString());
+                }
+            }
+            if (d.methodInfo().isConstructor && 4 == n) {
+                if (d.variable() instanceof FieldReference fr && "value".equals(fr.fieldInfo.name)) {
+                    String expected = d.iteration() == 0 ? "<eci>" : "value/*@NotNull*/";
+                    assertEquals(expected, d.currentValue().toString());
+                    String linked = switch (d.iteration()) {
+                        case 0 -> "identifier:-1,primitives:-1,target:-1,this.assignmentOperator:-1,this.binaryOperator:-1,this.complainAboutAssignmentOutsideType:-1,this.hackForUpdatersInForLoop:-1,this.identifier:-1,this.prefixPrimitiveOperator:-1,this.primitives:-1,this.target:-1,this.variableTarget:-1,this:-1,value:-1";
+                        case 1 -> "identifier:-1,primitives:-1,target:-1,this.identifier:-1,this.primitives:-1,this.target:-1,this.variableTarget:-1,value:-1";
+                        default -> "value:1";
+                    };
+                    assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
                 }
             }
         };
@@ -695,6 +723,9 @@ public class Test_34_ExplicitConstructorInvocation extends CommonTestRunner {
             if ("prefixPrimitiveOperator".equals(d.fieldInfo().name)) {
                 assertDv(d, MultiLevel.CONTAINER_DV, Property.CONTAINER);
                 assertDv(d, BIG, MultiLevel.NOT_CONTAINER_DV, Property.CONTAINER_RESTRICTION);
+                String expected = d.iteration() == 0 ? "<f:prefixPrimitiveOperator>"
+                        : "[null,null,prefixPrimitiveOperator,prefixPrimitiveOperator]";
+                assertEquals(expected, d.fieldAnalysis().getValue().toString());
             }
         };
 

@@ -262,8 +262,14 @@ record SAInitializersAndUpdaters(StatementAnalysis statementAnalysis) {
                 for (VariableInfo variableInfo : methodAnalysis.getFieldAsVariable(fieldInfo)) {
                     if (variableInfo.isAssigned()) {
                         Expression start = variableInfo.getValue();
-                        if(start instanceof DelayedExpression de) {
-                            start = de.getDoneOriginal();
+                        if (start instanceof DelayedExpression de) {
+                            if (DelayedExpression.ECI.equals(de.msg())) {
+                                // when the value itself is also waiting... recursion; we wait with our own variables
+                                start = DelayedExpression.forECI(fieldInfo.getIdentifier(), eciVariables(),
+                                        DelayFactory.createDelay(causeOfDelay));
+                            } else {
+                                start = de.getDoneOriginal();
+                            }
                         }
                         FieldReference fr = new FieldReference(analyserContext, fieldInfo);
                         Expression translated1 = start.translate(analyserContext, translationMap);
@@ -300,8 +306,9 @@ record SAInitializersAndUpdaters(StatementAnalysis statementAnalysis) {
 
     private Expression eciVariables() {
         MethodInfo methodInfo = statementAnalysis.methodAnalysis().getMethodInfo();
-        List<Variable> variables = methodInfo.methodInspection.get().getParameters().stream().map(v -> (Variable) v).toList();
-        return MultiExpressions.from(statement().getIdentifier(), variables);
+        List<Expression> variables = methodInfo.methodInspection.get().getParameters().stream()
+                .map(v -> (Expression) new VariableExpression(v)).toList();
+        return new CommaExpression(variables);
     }
 
     private Expression replaceUnknownFields(EvaluationContext evaluationContext, Expression expression) {
