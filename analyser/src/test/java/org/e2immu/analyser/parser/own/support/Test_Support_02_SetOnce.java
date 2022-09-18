@@ -459,8 +459,8 @@ public class Test_Support_02_SetOnce extends CommonTestRunner {
                     String delays = switch (d.iteration()) {
                         case 0 -> "initial:this.t@Method_equals_3-C";
                         case 1 -> "[13 delays]";
-                        case 2 -> "break_init_delay:this.t@Method_set_1.0.0-C;cm@Parameter_other;cm@Parameter_t;link:other@Method_copy_0:M;mom@Parameter_t";
-                        case 3 -> "cm@Parameter_other;cm@Parameter_t;link:other@Method_copy_0:M;mom@Parameter_t";
+                        case 2 -> "break_init_delay:this.t@Method_set_1.0.0-C;cm@Parameter_other;cm@Parameter_t;initial:this.t@Method_set_1.0.0-C;link:other@Method_copy_0:M";
+                        case 3 -> "break_init_delay:this.t@Method_set_1.0.0-C;cm@Parameter_other;cm@Parameter_t;link:other@Method_copy_0:M";
                         default -> "";
                     };
                     assertEquals(delays, d.evaluationResult().causesOfDelay().toString());

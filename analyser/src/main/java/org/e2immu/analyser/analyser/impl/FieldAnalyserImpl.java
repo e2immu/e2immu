@@ -545,16 +545,28 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
              look at the CONTEXT_CONTAINER property
 
              ECI_13 gives an example where the field is read in a constructor of the current type, which leads to a
-             cycle, currently broken in ... FIXME
+             cycle, currently broken by checking if my CONTAINER_RESTRICTION delay comes straight back to me
              */
             Stream<DV> containerStream = myMethodsAndConstructors.stream()
                     .flatMap(m -> m.getFieldAsVariableStream(fieldInfo))
                     .filter(VariableInfo::isRead)
                     .map(vi -> vi.getProperty(CONTEXT_CONTAINER));
-            restriction = StreamUtil.reduceWithCancel(containerStream, MultiLevel.NOT_CONTAINER_DV, DV::max, DV::isDelayed);
+            DV fromStream = StreamUtil.reduceWithCancel(containerStream, MultiLevel.NOT_CONTAINER_DV, DV::max, DV::isDelayed);
+            if (fromStream.isDelayed()) {
+                if (fromStream.containsCauseOfDelay(CauseOfDelay.Cause.CONTAINER_RESTRICTION, c -> c.variableIsField(fieldInfo))) {
+                    // step 2, break: injected delay has returned
+                    restriction = MultiLevel.NOT_CONTAINER_DV;
+                } else {
+                    // step 1, inject
+                    restriction = fromStream.causesOfDelay().merge(fieldInfo.delay(CauseOfDelay.Cause.CONTAINER_RESTRICTION));
+                }
+            } else {
+                // no delay
+                restriction = fromStream;
+            }
         }
         fieldAnalysis.setProperty(CONTAINER_RESTRICTION, restriction);
-        LOGGER.debug("Set container restriction on {} to  {}", fieldInfo, restriction);
+        LOGGER.debug("Set container restriction on field {} to {}", fieldInfo, restriction);
         return AnalysisStatus.of(restriction);
     }
 

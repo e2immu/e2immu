@@ -722,9 +722,16 @@ public class Test_34_ExplicitConstructorInvocation extends CommonTestRunner {
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
             if ("prefixPrimitiveOperator".equals(d.fieldInfo().name)) {
                 assertDv(d, MultiLevel.CONTAINER_DV, Property.CONTAINER);
-                assertDv(d, BIG, MultiLevel.NOT_CONTAINER_DV, Property.CONTAINER_RESTRICTION);
+                assertDv(d, 5, MultiLevel.NOT_CONTAINER_DV, Property.CONTAINER_RESTRICTION);
                 String expected = d.iteration() == 0 ? "<f:prefixPrimitiveOperator>"
                         : "[null,null,prefixPrimitiveOperator,prefixPrimitiveOperator]";
+                assertEquals(expected, d.fieldAnalysis().getValue().toString());
+            }
+            if ("assignmentOperator".equals(d.fieldInfo().name)) {
+                assertDv(d, 2, MultiLevel.CONTAINER_DV, Property.CONTAINER);
+                assertDv(d, 5, MultiLevel.NOT_CONTAINER_DV, Property.CONTAINER_RESTRICTION);
+                String expected = d.iteration() == 0 ? "<f:assignmentOperator>"
+                        : "[null,null,assignmentOperator,assignmentOperator]";
                 assertEquals(expected, d.fieldAnalysis().getValue().toString());
             }
         };

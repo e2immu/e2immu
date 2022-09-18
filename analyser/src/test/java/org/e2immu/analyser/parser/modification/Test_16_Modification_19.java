@@ -85,7 +85,7 @@ public class Test_16_Modification_19 extends CommonTestRunner {
                         String expectedDelay = switch (d.iteration()) {
                             case 0 -> "initial:this.s2@Method_example1_0-C";
                             case 1 -> "link@Field_s2";
-                            case 2 -> "mom@Parameter_setC";
+                            case 2 -> "cm@Parameter_d;initial:this.s2@Method_example1_0-C";
                             default -> "xxx";
                         };
                         assertCurrentValue(d, 3, expectedDelay, "new C1(s2)");
