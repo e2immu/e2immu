@@ -1414,7 +1414,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
                 linkedVariablesFromBlocks, evaluationContext);
 
         boolean progress = computeLinkedVariables.writeLinkedVariables(computeLinkedVariables, touched,
-                prepareMerge.toRemove);
+                prepareMerge.toRemove, linkedVariablesMap.keySet());
 
         for (Variable variable : touched) {
             if ((!linkedVariablesMap.containsKey(variable) || backLink.newlyCreated.contains(variable)) &&

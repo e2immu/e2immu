@@ -748,7 +748,8 @@ public class Test_51_InstanceOf extends CommonTestRunner {
                     }
                     // delays in clustering in iteration 2, otherwise we'd have CM
                     if ("0.0.1.0.5".equals(d.statementId())) {
-                        String expectLv = d.iteration() < 9 ? "sum:-1,this.expression:-1,this:-1" : "";
+                        String expectLv = d.iteration() < 9 ?
+                                "b:-1,d:-1,scope-ne1:0.0.1.0.4.expression:-1,scope-ne1:0.0.1.0.4:-1,sum:-1,this.expression:-1,this:-1,v:-1,x:-1" : "";
                         assertEquals(expectLv, d.variableInfo().getLinkedVariables().toString());
                     }
 
@@ -768,8 +769,10 @@ public class Test_51_InstanceOf extends CommonTestRunner {
                         assertEquals(expectLv, d.variableInfo().getLinkedVariables().toString());
                     }
                     if ("0.0.1.0.5".equals(d.statementId())) {
-                        String expectLv = d.iteration() < 9 ? "evaluationContext:-1,sum:-1,this:-1" : "sum:1";
-                        assertEquals(expectLv, d.variableInfo().getLinkedVariables().toString());
+                        String linked = d.iteration() < 9
+                                ? "b:-1,d:-1,evaluationContext:-1,scope-ne1:0.0.1.0.4.expression:-1,scope-ne1:0.0.1.0.4:-1,sum:-1,this:-1,v:-1,x:-1"
+                                : "scope-ne1:0.0.1.0.4.expression:2,scope-ne1:0.0.1.0.4:2,sum:1,v:2,x:2";
+                        assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
                     }
                     if ("0".equals(d.statementId()) || "2".equals(d.statementId())) {
                         String expected = d.iteration() < 9 ? "<f:expression>" : NEW_EXPRESSION;
@@ -985,7 +988,7 @@ public class Test_51_InstanceOf extends CommonTestRunner {
                 if ("3".equals(d.statementId())) {
                     String expected = switch (d.iteration()) {
                         case 0, 1 -> "<instanceOf:InstanceOf>?<m:of>:<simplification>?<m:toList>:<simplification>?<m:toList>:<m:toList>";
-                        case  2, 3 -> "expression instanceof InstanceOf&&null!=expression?<m:of>:<m:isUnaryNot>&&expression instanceof UnaryOperator&&null!=expression?<m:toList>:expression instanceof Negation&&null!=expression&&(!<m:isUnaryNot>||!(expression instanceof UnaryOperator))?<m:toList>:(nullable instance type List<Expression>).stream().flatMap(instance type $3).toList()";
+                        case 2, 3 -> "expression instanceof InstanceOf&&null!=expression?<m:of>:<m:isUnaryNot>&&expression instanceof UnaryOperator&&null!=expression?<m:toList>:expression instanceof Negation&&null!=expression&&(!<m:isUnaryNot>||!(expression instanceof UnaryOperator))?<m:toList>:(nullable instance type List<Expression>).stream().flatMap(instance type $3).toList()";
                         default -> "expression instanceof InstanceOf&&null!=expression?List.of(new InstanceOfPositive(expression/*(InstanceOf)*/,true)):expression/*(UnaryOperator)*/.operator.isUnaryNot()&&expression instanceof UnaryOperator&&null!=expression?FindInstanceOfPatterns.find(expression/*(UnaryOperator)*/.eu).stream().map(/*inline apply*/new InstanceOfPositive(iop.instanceOf,!iop.positive)).toList():expression instanceof Negation&&null!=expression&&(!expression/*(UnaryOperator)*/.operator.isUnaryNot()||!(expression instanceof UnaryOperator))?FindInstanceOfPatterns.find(expression/*(Negation)*/.en).stream().map(/*inline apply*/new InstanceOfPositive(iop.instanceOf,!iop.positive)).toList():(nullable instance type List<Expression>).stream().flatMap(instance type $3).toList()";
                     };
                     assertEquals(expected, d.evaluationResult().value().toString());
@@ -1049,7 +1052,7 @@ public class Test_51_InstanceOf extends CommonTestRunner {
                             assertFalse(d.variableInfoContainer().hasEvaluation());
                             assertTrue(d.variableInfoContainer().hasMerge()); // created in the merge!
                             assertDv(d, 2, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
-                            assertEquals("scope-unaryOperator:1:2", d.variableInfo().getLinkedVariables().toString());
+                            assertEquals("", d.variableInfo().getLinkedVariables().toString());
                         }
                         assertNotEquals("1.0.0", d.statementId()); // cannot exist here!!
                         if ("3".equals(d.statementId())) {

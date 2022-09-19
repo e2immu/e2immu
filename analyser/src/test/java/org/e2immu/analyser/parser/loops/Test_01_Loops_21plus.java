@@ -228,7 +228,12 @@ public class Test_01_Loops_21plus extends CommonTestRunner {
                         DV override = d.variableInfoContainer().propertyOverrides().getOrDefaultNull(CONTEXT_MODIFIED);
                         assertEquals(d.iteration() >= 4, DV.TRUE_DV.equals(override));
 
-                        assertEquals("", d.variableInfo().getLinkedVariables().toString());
+                        String linked = switch(d.iteration()) {
+                            case 0 -> "array[i]:-1,av-32:21:-1,i:-1,outer:-1,outerMod:-1";
+                            case 1, 2, 3 -> "array[i]:-1,av-32:21:-1,i:-1";
+                            default -> "";
+                        };
+                        assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
                         String expected = d.iteration() <= 3 ? "<vl:array>" : "instance type String[][]";
                         assertEquals(expected, d.currentValue().toString());
 

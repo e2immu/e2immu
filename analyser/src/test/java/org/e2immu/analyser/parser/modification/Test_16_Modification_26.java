@@ -30,6 +30,9 @@ import java.io.IOException;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.fail;
 
+/*
+See explanation in the source of Modification_26.
+ */
 public class Test_16_Modification_26 extends CommonTestRunner {
 
     public Test_16_Modification_26() {
@@ -52,7 +55,7 @@ public class Test_16_Modification_26 extends CommonTestRunner {
                         assertEquals("destination:4,inDestination:4,src:2", eval.getLinkedVariables().toString());
                         assertEquals(DV.TRUE_DV, eval.getProperty(Property.CONTEXT_MODIFIED)); // TODO wrong
 
-                        assertEquals("src:2", d.variableInfo().getLinkedVariables().toString());
+                        assertEquals("destination:4,inDestination:4,src:2", d.variableInfo().getLinkedVariables().toString());
                         assertDv(d, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
                     }
                 }
@@ -70,9 +73,7 @@ public class Test_16_Modification_26 extends CommonTestRunner {
                     if ("1.0.1.1.0".equals(d.statementId())) {
                         VariableInfo eval = d.variableInfoContainer().best(Stage.EVALUATION);
                         assertEquals("e:4,inDestination:4,src:4", eval.getLinkedVariables().toString());
-
-                        // TODO wrong, see Mod_26
-                        assertEquals("", d.variableInfo().getLinkedVariables().toString());
+                        assertEquals("e:4,inDestination:4,src:4", d.variableInfo().getLinkedVariables().toString());
                     }
                 }
                 if ("inDestination".equals(d.variableName())) {
@@ -87,8 +88,7 @@ public class Test_16_Modification_26 extends CommonTestRunner {
                         assertEquals("destination:3,e:4,src:4", eval.getLinkedVariables().toString());
                         assertEquals(DV.TRUE_DV, eval.getProperty(Property.CONTEXT_MODIFIED));
 
-                        // FIXME this is not correct neither: some linked variables remain, if the EVAL was modifying
-                        assertEquals("destination:3", d.variableInfo().getLinkedVariables().toString());
+                        assertEquals("destination:3,e:4,src:4", d.variableInfo().getLinkedVariables().toString());
                         assertDv(d, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
                     }
                 }
@@ -100,7 +100,8 @@ public class Test_16_Modification_26 extends CommonTestRunner {
                     }
                     // 2nd branch, merge of an if-statement
                     if ("1.0.1.1.0".equals(d.statementId())) {
-                        String expected = d.iteration() == 0 ? "instance type boolean||<vl:change>" : "instance type boolean||instance type boolean";
+                        String expected = d.iteration() == 0 ? "instance type boolean||<vl:change>"
+                                : "instance type boolean||instance type boolean";
                         assertEquals(expected, d.currentValue().toString());
                         assertDv(d, 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_EXPRESSION);
                         assertEquals("", d.variableInfo().getLinkedVariables().toString());
@@ -129,11 +130,13 @@ public class Test_16_Modification_26 extends CommonTestRunner {
                         assertDv(d, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     }
                     if ("1.0.1.1.0".equals(d.statementId())) { // else block
-                        assertEquals("e:2", d.variableInfo().getLinkedVariables().toString());
+                        assertEquals("destination:4,e:2,inDestination:4",
+                                d.variableInfo().getLinkedVariables().toString());
                         assertDv(d, DV.TRUE_DV, Property.CONTEXT_MODIFIED); // IMPROVE wrong
                     }
                     if ("1.0.1".equals(d.statementId())) { // if-else construct
-                        assertEquals("destination:4,e:2", d.variableInfo().getLinkedVariables().toString());
+                        assertEquals("destination:4,e:2,inDestination:4",
+                                d.variableInfo().getLinkedVariables().toString());
                         assertDv(d, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
                     }
                 }

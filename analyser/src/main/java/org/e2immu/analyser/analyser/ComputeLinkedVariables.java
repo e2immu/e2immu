@@ -24,7 +24,6 @@ import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.ReturnVariable;
 import org.e2immu.analyser.model.variable.This;
 import org.e2immu.analyser.model.variable.Variable;
-import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.support.Either;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -36,6 +35,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static org.e2immu.analyser.analyser.LinkedVariables.LINK_STATICALLY_ASSIGNED;
+import static org.e2immu.analyser.analyser.Stage.EVALUATION;
 
 /*
 Goal:
@@ -513,7 +513,8 @@ public class ComputeLinkedVariables {
      */
     public boolean writeLinkedVariables(ComputeLinkedVariables staticallyAssignedCLV,
                                         Set<Variable> touched,
-                                        Set<Variable> toRemove) {
+                                        Set<Variable> toRemove,
+                                        Set<Variable> haveLinkedVariables) {
         assert stage == Stage.MERGE;
         Map<Variable, Set<Variable>> staticallyAssignedVariables = staticallyAssignedCLV.staticallyAssignedVariables();
         AtomicBoolean progress = new AtomicBoolean();
@@ -523,13 +524,20 @@ public class ComputeLinkedVariables {
 
                     Variable variable = vic.current().variable();
                     if (touched.contains(variable)) {
-                        Map<Variable, DV> map = weightedGraph.links(variable, null, true);
-                        map.keySet().removeIf(toRemove::contains);
+                        LinkedVariables linkedVariables;
+                        if (haveLinkedVariables.contains(variable)) {
+                            Map<Variable, DV> map = weightedGraph.links(variable, null, true);
+                            map.keySet().removeIf(toRemove::contains);
 
-                        CausesOfDelay notYetSetDelays = linkingNotYetSet.contains(variable) ? LinkedVariables.NOT_YET_SET_DELAY
-                                : CausesOfDelay.EMPTY;
-                        LinkedVariables linkedVariables = applyStaticallyAssignedAndRemoveSelfReference(staticallyAssignedVariables,
-                                variable, map, notYetSetDelays);
+                            CausesOfDelay notYetSetDelays = linkingNotYetSet.contains(variable) ? LinkedVariables.NOT_YET_SET_DELAY
+                                    : CausesOfDelay.EMPTY;
+                            linkedVariables = applyStaticallyAssignedAndRemoveSelfReference(staticallyAssignedVariables,
+                                    variable, map, notYetSetDelays);
+                        } else {
+                            VariableInfo eval = vic.best(EVALUATION);
+                            linkedVariables = eval.getLinkedVariables();
+                        }
+
                         vic.ensureLevelForPropertiesLinkedVariables(statementAnalysis.location(Stage.MERGE), Stage.MERGE);
                         if (vic.setLinkedVariables(linkedVariables, stage)) {
                             progress.set(true);

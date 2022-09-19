@@ -15,6 +15,7 @@
 package org.e2immu.analyser.parser.modification;
 
 import org.e2immu.analyser.config.DebugConfiguration;
+import org.e2immu.analyser.model.ParameterInfo;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.parser.CommonTestRunner;
 import org.e2immu.analyser.visitor.StatementAnalyserVariableVisitor;
@@ -46,13 +47,16 @@ public class Test_16_Modification_25 extends CommonTestRunner {
             if ("add2".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof FieldReference fr && "ts".equals(fr.fieldInfo.name)) {
                     if ("1".equals(d.statementId())) {
-                        String linked = d.iteration() < 2 ? "as:-1,bs:-1,cs:-1,r:-1" : "as:4,bs:4,cs:4";
-                        assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
+                        assertEquals("as:4", d.variableInfo().getLinkedVariables().toString());
+                    }
+                }
+                if(d.variable() instanceof ParameterInfo pi && "as".equals(pi.name)) {
+                    if("1".equals(d.statementId())) {
+                        assertEquals("this.ts:4", d.variableInfo().getLinkedVariables().toString());
                     }
                 }
             }
         };
-
 
         testClass("Modification_25", 0, 0, new DebugConfiguration.Builder()
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)

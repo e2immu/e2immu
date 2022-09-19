@@ -163,7 +163,7 @@ public class Test_21_VariableInLoop extends CommonTestRunner {
                     if ("1".equals(d.statementId())) {
                         String expected = switch (d.iteration()) {
                             case 0 -> "<null-check>?<m:navigationData>:nullable instance type NavigationData";
-                            case 1 -> "null==sa$1?nullable instance type NavigationData:<vp:NavigationData:cm@Parameter_next;mom@Parameter_next>";
+                            case 1 -> "null==sa$1?nullable instance type NavigationData:<m:navigationData>";
                             default -> "null==sa$1?nullable instance type NavigationData:sa$1.navigationData()";
                         };
                         assertEquals(expected, d.currentValue().toString());

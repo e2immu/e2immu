@@ -185,7 +185,7 @@ public class JavaUtil extends AnnotatedAPI {
         void forEach(@Independent(hc = true) @NotNull(content = true) Consumer<? super E> action);
 
         default boolean remove$Modification$Size(int i, Integer j) {
-            return i <= j && i >= j - 1;
+            return j == null ? i >= 0 : (i <= j && i >= j - 1);
         }
 
         default boolean remove$Value$Size(int i, Object object, boolean retVal) {
@@ -203,7 +203,7 @@ public class JavaUtil extends AnnotatedAPI {
         boolean remove(@Independent @NotNull Object object);
 
         default boolean removeAll$Modification$Size(int i, Integer j, Collection<?> c) {
-            return i >= j - c.size() && i <= j;
+            return j == null ? i >= 0 : (i >= j - c.size() && i <= j);
         }
 
         default boolean removeAll$Value$Size(int i, Collection<?> c, boolean retVal) {
@@ -217,7 +217,7 @@ public class JavaUtil extends AnnotatedAPI {
         boolean removeIf(@Independent(hc = true) @NotNull Predicate<? super E> filter);
 
         default boolean retainAll$Modification$Size(int i, Integer j, Collection<?> c) {
-            return i <= c.size() && i <= j;
+            return i <= c.size() && i <= (j == null ? 0 : j);
         }
 
         default boolean retainAll$Value$Size(int i, Collection<?> c, boolean retVal) {
@@ -301,7 +301,7 @@ public class JavaUtil extends AnnotatedAPI {
         boolean add(E e);
 
         default boolean addAll$Modification$Size(int i, Integer j, Collection<? extends E> c) {
-            return i == j + c.size();
+            return i == (j == null ? 0 : j) + c.size();
         }
 
         default boolean addAll$Value(Collection<? extends E> c, boolean retVal) {

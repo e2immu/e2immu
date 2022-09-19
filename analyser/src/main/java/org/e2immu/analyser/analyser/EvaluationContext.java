@@ -166,6 +166,12 @@ public interface EvaluationContext {
                 return getAnalyserContext().getTypeAnalysis(thisVariable.typeInfo).getProperty(property);
             }
             if (variable instanceof PreAspectVariable pre) {
+                /*
+                pre-aspect variables must be nullable, because there can be no information, in which case "null" is injected.
+                the companion methods must take the null-value into account, see e.g. that of List.addAll, size aspect,
+                Modification_26. See also CompanionAnalyser.EvaluationContextImpl.getProperty().
+                 */
+                if (property == NOT_NULL_EXPRESSION) return MultiLevel.NULLABLE_DV;
                 return pre.valueForProperties().getProperty(EvaluationResult.from(this), property, true);
             }
             throw new UnsupportedOperationException("Variable value of type " + variable.getClass());
@@ -181,7 +187,7 @@ public interface EvaluationContext {
     }
 
     default DV getPropertyFromPreviousOrInitial(Variable variable, Property property) {
-        throw new UnsupportedOperationException("Not implemented in "+getClass());
+        throw new UnsupportedOperationException("Not implemented in " + getClass());
     }
 
     default ConditionManager getConditionManager() {

@@ -528,6 +528,7 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
         Variable v = eval.variable();
         VariableInfoImpl mergeImpl = ((VariableInfoContainerImpl) vicRenamed).merge.get();
         AtomicBoolean progress = new AtomicBoolean(mergeImpl.setValue(eval.getValue()));
+        // Linked variables have already been written/copied using ComputeLinkedVariables.writeLinkedVariables()
 
         eval.propertyStream()
                 .forEach(e -> {

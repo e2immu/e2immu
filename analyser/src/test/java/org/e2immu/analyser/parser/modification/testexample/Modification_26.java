@@ -18,11 +18,26 @@ import org.e2immu.annotation.Modified;
 import org.e2immu.annotation.NotModified;
 import org.e2immu.annotation.NotNull;
 
-import java.util.*;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
 
 /*
 Part of SMapList which poses a fundamental problem for the current independence computation, resulting in incorrect
 modification on 'src'.
+
+e <--2--> src
+inDestination --3--> destination
+destination <--4--> src
+e <--4--> destination
+
+they're all correct, and as a consequence, the weighted graph sequence
+    inDestination --> destination --> src
+which follows a 3 and therefore allows 4, transfers the modification on inDestination onto src.
+
+The problem is that the knowledge that there is a new LinkedList involved, is lost; modifications on List
+should not carry over to 'src', but they do.
+
  */
 public class Modification_26 {
 
