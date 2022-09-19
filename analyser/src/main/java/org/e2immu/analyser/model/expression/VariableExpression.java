@@ -36,6 +36,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.function.Predicate;
+import java.util.stream.Stream;
 
 import static org.e2immu.analyser.model.expression.ArrayAccess.ARRAY_VARIABLE;
 import static org.e2immu.analyser.model.expression.ArrayAccess.INDEX_VARIABLE;
@@ -508,7 +509,9 @@ public class VariableExpression extends BaseExpression implements IsVariableExpr
         if "this" remains a delayed linked variable.
          */
         if (descendIntoFieldReferences && variable instanceof FieldReference fr && !fr.isStatic && !fr.scopeIsThis()) {
-            return ListUtil.concatImmutable(scopeValue.variables(true), List.of(variable));
+            Stream<Variable> scopeVarStream = fr.scopeVariable == null ? Stream.of() : Stream.of(fr.scopeVariable);
+            Stream<Variable> value = scopeValue.variables(true).stream();
+            return Stream.concat(Stream.concat(scopeVarStream, value), Stream.of(variable)).toList();
         }
         return List.of(variable);
     }

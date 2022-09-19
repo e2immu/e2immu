@@ -345,8 +345,11 @@ public class Assignment extends BaseExpression implements Expression {
             finalValue = e2.assignedToTarget;
             expression = e2.resultOfExpression;
         }
-        // we by-pass the result of normal assignment which raises the i=i assign to myself error
-        doAssignmentWork(builder, context, newVariableTarget, finalValue);
+
+        markModified(builder, context, newVariableTarget);
+        LinkedVariables lvAfterDelay = computeLinkedVariables(context, finalValue);
+        builder.assignment(newVariableTarget, finalValue, lvAfterDelay);
+
         assert expression != null;
         return builder.setExpression(expression).build();
     }
@@ -425,17 +428,6 @@ public class Assignment extends BaseExpression implements Expression {
             // not composing, any error will have been raised already
         }
         return new E2(resultOfExpression, operationResult.value());
-    }
-
-    private void doAssignmentWork(EvaluationResult.Builder builder,
-                                  EvaluationResult context,
-                                  Variable at,
-                                  Expression resultOfExpression) {
-
-        markModified(builder, context, at);
-
-        LinkedVariables lvAfterDelay = computeLinkedVariables(context, resultOfExpression);
-        builder.assignment(at, resultOfExpression, lvAfterDelay);
     }
 
     private void markModified(EvaluationResult.Builder builder, EvaluationResult context, Variable at) {

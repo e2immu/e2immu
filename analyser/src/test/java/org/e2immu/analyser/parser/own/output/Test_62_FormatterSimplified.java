@@ -283,7 +283,7 @@ public class Test_62_FormatterSimplified extends CommonTestRunner {
         EvaluationResultVisitor evaluationResultVisitor = d -> {
             if ("apply".equals(d.methodInfo().name)) {
                 if ("0.0.0".equals(d.statementId())) {
-                    String expect = switch(d.iteration()) {
+                    String expect = switch (d.iteration()) {
                         case 0 -> "<null-check>";
                         case 1 -> "null==<vp:guide:container@Interface_Guide>";
                         case 2 -> "null==<vp:guide:independent@Field_guide>";
@@ -387,9 +387,10 @@ public class Test_62_FormatterSimplified extends CommonTestRunner {
                         assertEquals(expect, d.currentValue().toString());
 
                         // the type is in the same primary type, so we ignore IMMUTABLE if we don't know it yet
-                        assertEquals("(new Stack<GuideOnStack>()).peek().forwardInfo:0",
-                                d.variableInfo().getLinkedVariables().toString());
-                        assertDv(d, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                        String linked = d.iteration() < 4 ? "(new Stack<GuideOnStack>()).peek().forwardInfo:0,scope-53:35:-1"
+                                : "(new Stack<GuideOnStack>()).peek().forwardInfo:0,scope-53:35:3";
+                        assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
+                        assertDv(d, 4, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     }
                 }
                 if (d.variable() instanceof ReturnVariable && "2".equals(d.statementId())) {
@@ -409,7 +410,7 @@ public class Test_62_FormatterSimplified extends CommonTestRunner {
                             fail();
                         }
                         if ("1".equals(d.statementId())) {
-                            assertDv(d, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                            assertDv(d, 4, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                         }
                     } else if ("(new Stack<GuideOnStack>()/*0==this.size()*/).peek().forwardInfo".equals(fr.scope.toString())) {
                         assertDv(d, 1, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
