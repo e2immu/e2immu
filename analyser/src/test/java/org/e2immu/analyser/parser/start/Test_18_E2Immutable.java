@@ -718,15 +718,9 @@ public class Test_18_E2Immutable extends CommonTestRunner {
     @Test
     public void test_15_1() throws IOException {
 
-        MethodAnalyserVisitor methodAnalyserVisitor = d -> {
-            if ("suffix".equals(d.methodInfo().name)) {
-                //assertFalse(d.allowBreakDelay());
-            }
-        };
-
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
             if ("NO_SUFFIX".equals(d.fieldInfo().name)) {
-                assertDv(d, BIG, MultiLevel.EFFECTIVELY_IMMUTABLE_DV, EXTERNAL_IMMUTABLE);
+                assertDv(d, MultiLevel.EFFECTIVELY_IMMUTABLE_DV, EXTERNAL_IMMUTABLE);
             }
         };
 
@@ -757,13 +751,13 @@ public class Test_18_E2Immutable extends CommonTestRunner {
                 assertEquals("E2Immutable_15_1", d.typeInfo().packageNameOrEnclosingType.getRight().simpleName);
                 assertFalse(d.typeInspection().isStatic());
                 assertHc(d, 0, "");
-                assertDv(d, BIG, MultiLevel.EFFECTIVELY_IMMUTABLE_DV, IMMUTABLE);
+                assertDv(d, 1, MultiLevel.EFFECTIVELY_IMMUTABLE_DV, IMMUTABLE);
+                assertDv(d, MultiLevel.EFFECTIVELY_IMMUTABLE_DV, PARTIAL_IMMUTABLE);
             } else fail("type " + d.typeInfo());
         };
         testClass("E2Immutable_15_1", 0, 0, new DebugConfiguration.Builder()
                         .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
                         .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
-                        .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                         .build(),
                 new AnalyserConfiguration.Builder()
                         .setComputeFieldAnalyserAcrossAllMethods(true)

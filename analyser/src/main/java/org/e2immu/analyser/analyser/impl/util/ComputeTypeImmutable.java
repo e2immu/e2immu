@@ -135,12 +135,20 @@ public record ComputeTypeImmutable(AnalyserContext analyserContext,
         MultiLevel.Effective effective = w.eventual ? MultiLevel.Effective.EVENTUAL : MultiLevel.Effective.EFFECTIVE;
         DV immutableWithoutSuperTypes = MultiLevel.composeImmutable(effective, w.minLevel);
         DV superTypesIncluded = includeSuperTypes(w.fromParentOrEnclosing, immutableWithoutSuperTypes);
-        DV finalValue = accountForExtensibility(superTypesIncluded);
+        DV finalValue;
+        if (superTypesIncluded.isDelayed()) {
+            finalValue = accountForExtensibility(immutableWithoutSuperTypes);
+            w.ALT_IMMUTABLE = PARTIAL_IMMUTABLE;
+            w.ALT_DONE = AnalysisStatus.of(superTypesIncluded);
+        } else {
+            finalValue = accountForExtensibility(superTypesIncluded);
+        }
         LOGGER.debug("Set {} of type {} to {}", w.ALT_IMMUTABLE, typeInfo.fullyQualifiedName, finalValue);
         return doneImmutable(w.ALT_IMMUTABLE, finalValue, w.ALT_DONE);
     }
 
     private DV accountForExtensibility(DV immutable) {
+        assert immutable.isDone();
         if (typeInspection.typeNature() == TypeNature.CLASS) {
             int level = MultiLevel.level(immutable);
             if (typeInspection.isExtensible()) {
