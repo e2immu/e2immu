@@ -74,7 +74,7 @@ public class Modification_11 {
     }
 
     private boolean example1() {
-        C1 c = new C1(s2); // c.set is linked to s0 which is linked to set3
+        C1 c = new C1(s2); // c.set is linked to s2 which is linked to parameter set2
         C1 localD = new C1(Set.of("a", "b", "c"));
         return addAll(c.set, localD.set); // c cannot be @NotModified because of the addAll call
     }

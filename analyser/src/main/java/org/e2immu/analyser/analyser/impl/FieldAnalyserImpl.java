@@ -1434,25 +1434,34 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
     private AnalysisStatus analyseLinked(SharedState sharedState) {
         assert fieldAnalysis.linkedVariables.isVariable();
 
+        boolean ignoreContextModified = sharedState.allowBreakDelay();
         // we ONLY look at the linked variables of fields that have been assigned to, or have been modified
+
+        // ignoreContextModified: Modification_11_2, iteration 28, field C1.set
         CausesOfDelay causesOfDelay = allMethodsAndConstructors(true)
                 .flatMap(m -> m.getFieldAsVariableStream(fieldInfo)
-                        .filter(vi -> vi.isAssigned() || !vi.getProperty(CONTEXT_MODIFIED).valueIsFalse())
+                        .filter(vi -> vi.isAssigned() || !ignoreContextModified && !vi.getProperty(CONTEXT_MODIFIED).valueIsFalse())
                         .map(vi -> vi.getLinkedVariables().causesOfDelay()))
                 .filter(DV::isDelayed)
                 .reduce(CausesOfDelay.EMPTY, CausesOfDelay::merge);
         if (causesOfDelay.isDelayed()) {
             if (causesOfDelay.containsCauseOfDelay(CauseOfDelay.Cause.LINKING,
-                    c -> c instanceof SimpleCause sc && sc.location().getInfo() == fieldInfo)) {
-                //     || sharedState.allowBreakDelay() && causesOfDelay.containsCauseOfDelay(CauseOfDelay.Cause.INITIAL_VALUE,
-                //     c -> c.variableIsField(fieldInfo))) {
+                    c -> c instanceof SimpleCause sc && sc.location().getInfo() == fieldInfo)
+                    || sharedState.allowBreakDelay() && causesOfDelay.containsCauseOfDelay(CauseOfDelay.Cause.INITIAL_VALUE,
+                    c -> c.variableIsField(fieldInfo))) {
+                /* NotNull_AAPI_3, iteration 1, field 'map'
+                   Modification_11_2, iteration 30, field 's2'
+                   Project_0bis, iteration 23, field 'read'
+                 */
                 LOGGER.debug("Breaking linking delay on field {}", fieldInfo);
             } else {
-                LOGGER.debug("LinkedVariables not yet set for {}", fieldInfo);
+                LOGGER.debug("LinkedVariables not yet set for {} -- ignore CM? {}", fieldInfo, ignoreContextModified);
                 CausesOfDelay linkDelay = fieldInfo.delay(CauseOfDelay.Cause.LINKING);
                 Set<Variable> vars = allMethodsAndConstructors(true)
+                        .peek(m -> LOGGER.debug("   examining {}", m.getMethodInfo().name))
                         .flatMap(m -> m.getFieldAsVariableStream(fieldInfo))
-                        .filter(vi -> vi.isAssigned() || !vi.getProperty(CONTEXT_MODIFIED).valueIsFalse())
+                        .filter(vi -> vi.isAssigned() || !ignoreContextModified && !vi.getProperty(CONTEXT_MODIFIED).valueIsFalse())
+                        .peek(vi -> LOGGER.debug("      -- {}", vi.getLinkedVariables()))
                         .flatMap(vi -> vi.getLinkedVariables().variables().keySet().stream()).
                         collect(Collectors.toUnmodifiableSet());
                 LinkedVariables lv = LinkedVariables.of(vars.stream().collect(Collectors.toUnmodifiableMap(v -> v, v -> linkDelay)));
@@ -1474,7 +1483,7 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
 
         LinkedVariables linkedVariables = LinkedVariables.of(map);
         fieldAnalysis.setLinkedVariables(linkedVariables);
-        LOGGER.debug("FA: Set links of {} to [{}]", fqn, linkedVariables);
+        LOGGER.debug("FA: Set links of {} to [{}], ignored CM? {}", fqn, linkedVariables, ignoreContextModified);
         return DONE;
     }
 

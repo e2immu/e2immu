@@ -92,9 +92,9 @@ public class Test_66_VariableScope extends CommonTestRunner {
                             default -> "instance type int<=9&&instance type int>=0?instance type int+j$1.0.2:0";
                         };
                         assertEquals(expect, d.currentValue().toString());
-                    } else if ("1.0.3".equals(d.statementId())) {
-                        //...
-                    } else fail(d.statementId()); // no other statements
+                    } else if (!"1.0.3".equals(d.statementId())) {
+                        fail(d.statementId()); // no other statements
+                    }
                 }
                 if ("k".equals(d.variableName())) {
                     if ("1.0.3".equals(d.statementId())) {
@@ -397,10 +397,7 @@ public class Test_66_VariableScope extends CommonTestRunner {
                 }
                 if ("perPackage".equals(d.variableName())) {
                     if ("1.0.1".equals(d.statementId())) {
-                        String expected = switch (d.iteration()) {
-                            case 0 -> "<s:PerPackage>";
-                            default -> "instance type PerPackage";
-                        };
+                        String expected = d.iteration() == 0 ? "<s:PerPackage>" : "instance type PerPackage";
                         assertEquals(expected, d.currentValue().toString());
                     }
                     if ("1".equals(d.statementId())) {
@@ -852,7 +849,7 @@ public class Test_66_VariableScope extends CommonTestRunner {
                 if ("2".equals(d.statementId())) {
                     String expected = switch (d.iteration()) {
                         case 0 -> "<null-check>&&<instanceOf:VariableDefinedOutsideLoop>&&<m:startsWith>&&<dv:scope-vdol:1.previousVariableNature>!=this";
-                        case 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12 -> "scope-vdol:1.statementIndex.startsWith(index+\".\")&&<null-check>&&vn$1 instanceof VariableDefinedOutsideLoop&&<dv:scope-vdol:1.previousVariableNature>!=this";
+                        case 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11 -> "scope-vdol:1.statementIndex.startsWith(index+\".\")&&<null-check>&&vn$1 instanceof VariableDefinedOutsideLoop&&<dv:scope-vdol:1.previousVariableNature>!=this";
                         default -> "scope-vdol:1.statementIndex.startsWith(index+\".\")&&vn$1 instanceof VariableDefinedOutsideLoop&&scope-vdol:1.previousVariableNature!=this";
                     };
                     assertEquals(expected, d.evaluationResult().getExpression().toString());
@@ -872,7 +869,7 @@ public class Test_66_VariableScope extends CommonTestRunner {
                         assertTrue(d.variableInfoContainer().hasMerge());
                         String merge = switch (d.iteration()) {
                             case 0 -> "<instanceOf:VariableDefinedOutsideLoop>&&<m:startsWith>?<dv:scope-vdol:1.previousVariableNature>:this";
-                            case 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12 -> "scope-vdol:1.statementIndex.startsWith(index+\".\")&&vn$1 instanceof VariableDefinedOutsideLoop?<dv:scope-vdol:1.previousVariableNature>:this";
+                            case 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11 -> "scope-vdol:1.statementIndex.startsWith(index+\".\")&&vn$1 instanceof VariableDefinedOutsideLoop?<dv:scope-vdol:1.previousVariableNature>:this";
                             default -> "scope-vdol:1.statementIndex.startsWith(index+\".\")&&vn$1 instanceof VariableDefinedOutsideLoop?scope-vdol:1.previousVariableNature:this";
                         };
                         assertEquals(merge, d.currentValue().toString());
@@ -937,17 +934,14 @@ public class Test_66_VariableScope extends CommonTestRunner {
         StatementAnalyserVisitor statementAnalyserVisitor = d -> {
             if ("removeInSubBlockMerge".equals(d.methodInfo().name) && "VariableDefinedOutsideLoop".equals(d.methodInfo().typeInfo.simpleName)) {
                 if ("1".equals(d.statementId())) {
-                    String expected = switch (d.iteration()) {
-                        case 0 -> "CM{state=!<instanceOf:VariableDefinedOutsideLoop>||!<m:startsWith>;parent=CM{}}";
-                        default -> "CM{state=!scope-vdol:1.statementIndex.startsWith(index+\".\")||!(vn instanceof VariableDefinedOutsideLoop);parent=CM{}}";
-                    };
+                    String expected = d.iteration() == 0 ? "CM{state=!<instanceOf:VariableDefinedOutsideLoop>||!<m:startsWith>;parent=CM{}}"
+                            : "CM{state=!scope-vdol:1.statementIndex.startsWith(index+\".\")||!(vn instanceof VariableDefinedOutsideLoop);parent=CM{}}";
                     assertEquals(expected, d.conditionManagerForNextStatement().toString());
                 }
                 if ("2".equals(d.statementId())) {
                     String expected = switch (d.iteration()) {
                         case 0 -> "CM{state=(!<instanceOf:VariableDefinedOutsideLoop>||!<m:startsWith>)&&(!<null-check>||!<instanceOf:VariableDefinedOutsideLoop>||!<m:startsWith>||<dv:scope-vdol:1.previousVariableNature>==this);parent=CM{}}";
-                        case 1 -> "CM{state=(!scope-vdol:1.statementIndex.startsWith(index+\".\")||!<null-check>||!(vn$1 instanceof VariableDefinedOutsideLoop)||<dv:scope-vdol:1.previousVariableNature>==this)&&(!scope-vdol:1.statementIndex.startsWith(index+\".\")||!(vn instanceof VariableDefinedOutsideLoop));parent=CM{}}";
-                        case 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12 -> "CM{state=(!scope-vdol:1.statementIndex.startsWith(index+\".\")||!<null-check>||!(vn$1 instanceof VariableDefinedOutsideLoop)||<dv:scope-vdol:1.previousVariableNature>==this)&&(!scope-vdol:1.statementIndex.startsWith(index+\".\")||!(vn instanceof VariableDefinedOutsideLoop));parent=CM{}}";
+                        case 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11 -> "CM{state=(!scope-vdol:1.statementIndex.startsWith(index+\".\")||!<null-check>||!(vn$1 instanceof VariableDefinedOutsideLoop)||<dv:scope-vdol:1.previousVariableNature>==this)&&(!scope-vdol:1.statementIndex.startsWith(index+\".\")||!(vn instanceof VariableDefinedOutsideLoop));parent=CM{}}";
                         default -> "CM{state=(!scope-vdol:1.statementIndex.startsWith(index+\".\")||!(vn instanceof VariableDefinedOutsideLoop))&&(!scope-vdol:1.statementIndex.startsWith(index+\".\")||!(vn$1 instanceof VariableDefinedOutsideLoop)||scope-vdol:1.previousVariableNature==this);parent=CM{}}";
                     };
                     assertEquals(expected, d.conditionManagerForNextStatement().toString());
@@ -1002,10 +996,7 @@ public class Test_66_VariableScope extends CommonTestRunner {
                             assertEquals(expected, d.currentValue().toString());
                         }
                         if ("0.0.0".equals(d.statementId())) {
-                            String expected = switch (d.iteration()) {
-                                case 0 -> "<f:x.i>";
-                                default -> "instance type int";
-                            };
+                            String expected = d.iteration() == 0 ? "<f:x.i>" : "instance type int";
                             assertEquals(expected, d.currentValue().toString());
                         }
                         if ("0".equals(d.statementId())) {
@@ -1015,10 +1006,8 @@ public class Test_66_VariableScope extends CommonTestRunner {
                         assertNotNull(fr.scopeVariable);
                         assertEquals("scope-x:0", fr.scopeVariable.fullyQualifiedName());
                         if ("0".equals(d.statementId())) {
-                            String expected = switch (d.iteration()) {
-                                case 0 -> "xs.isEmpty()?<f:scope-x:0.i>:<dv:scope-x:0.i>";
-                                default -> "instance type int";
-                            };
+                            String expected = d.iteration() == 0 ? "xs.isEmpty()?<f:scope-x:0.i>:<dv:scope-x:0.i>"
+                                    : "instance type int";
                             assertEquals(expected, d.currentValue().toString());
                         }
                     } else fail("Scope " + fr.scope);
