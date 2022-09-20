@@ -12,21 +12,14 @@
  * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.e2immu.analyser.parser.start.testexample;
-
-import org.junit.jupiter.api.Test;
+package org.e2immu.analyser.resolver.testexample;
 
 import java.util.Iterator;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
+public class SubType_0 {
+    public static Iterable<Integer> makeIterator(int n) {
+        int lower = 0;
 
-public class SubTypes_5 {
-
-    final int lower = 0;
-
-    public Iterable<Integer> makeIterator(int n) {
-
-        // for this test, do not turn into Lambda!
         return new Iterable<>() {
 
             @Override
@@ -46,18 +39,5 @@ public class SubTypes_5 {
                 };
             }
         };
-    }
-
-    public int sum() {
-        int sum = 0;
-        for (int i : makeIterator(5)) {
-            sum += i;
-        }
-        return sum;
-    }
-
-    @Test
-    public void test() {
-        assertEquals(15, sum());
     }
 }

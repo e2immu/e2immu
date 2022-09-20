@@ -280,4 +280,16 @@ public class TestMethodCall extends CommonTest {
         assertEquals("Type org.e2immu.analyser.resolver.testexample.MethodCall_28.HasSize",
                 lambda.concreteReturnType.toString());
     }
+
+    @Test
+    public void test_29() throws IOException {
+        TypeMap typeMap = inspectAndResolve(MethodCall_29.class);
+        TypeInfo mc29 = typeMap.get(MethodCall_29.class);
+        MethodInfo visit = mc29.findUniqueMethod("visit", 1);
+        Block block = visit.methodInspection.get().getMethodBody();
+        MethodCall forEach = (MethodCall) ((ExpressionAsStatement) block.structure.getStatements().get(0)).expression;
+        assertEquals("java.lang.Iterable.forEach(java.util.function.Consumer<? super T>)",
+                forEach.methodInfo.fullyQualifiedName);
+    }
+
 }

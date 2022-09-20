@@ -431,6 +431,8 @@ public class Test_15_InlinedMethod_AAPI extends CommonTestRunner {
                 assertDv(d, 2, MultiLevel.NOT_CONTAINER_DV, Property.CONTAINER);
             }
             if ("$3".equals(d.typeInfo().simpleName)) {
+                assertEquals("UpgradableBooleanMap", d.typeInfo().packageNameOrEnclosingType.getRight().simpleName);
+                assertFalse(d.typeInspection().isStatic());
                 assertDv(d, 3, MultiLevel.NOT_CONTAINER_DV, Property.CONTAINER);
             }
         };

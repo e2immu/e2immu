@@ -12,38 +12,36 @@
  * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.e2immu.analyser.parser.start.testexample;
+package org.e2immu.analyser.resolver.testexample;
 
-import org.e2immu.annotation.ImmutableContainer;
-import org.e2immu.annotation.Independent;
+import static org.e2immu.analyser.resolver.testexample.a.ImplementsIterable.*;
 
-public interface E2Immutable_15 {
+import java.util.Map;
+import java.util.TreeMap;
+import java.util.function.BiConsumer;
 
-    @ImmutableContainer
-    @Independent
-    interface Suffix {
+public class Import_11 {
+    interface Variable {
     }
 
-    Suffix NO_SUFFIX = new Suffix() {
-    };
-
-    default Suffix suffix() {
-        return NO_SUFFIX;
+    interface DV {
     }
 
-    /*
-    situation 8
-     */
-    record VariableDefinedOutsideLoop(E2Immutable_15 previousVariableNature,
-                                      String statementIndex) implements E2Immutable_15 {
-        @Override
-        public Suffix suffix() {
-            return new Suffix() {
-                @Override
-                public String toString() {
-                    return previousVariableNature.toString();
-                }
-            };
+    private static class Node {
+        Map<Variable, DV> dependsOn;
+        final Variable variable;
+
+        private Node(Variable v) {
+            variable = v;
         }
     }
+
+    private final Map<Variable, Node> nodeMap = new TreeMap<>();
+
+    public void visit(BiConsumer<Variable, Map<Variable, DV>> consumer) {
+        nodeMap.values().forEach(n -> consumer.accept(n.variable, n.dependsOn));
+    }
+
+    final int I = INT;
 }
+

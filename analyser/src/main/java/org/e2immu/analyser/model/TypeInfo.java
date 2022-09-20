@@ -33,6 +33,7 @@ import org.e2immu.support.Either;
 import org.e2immu.support.SetOnce;
 
 import java.util.*;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 public final class TypeInfo implements NamedType, WithInspectionAndAnalysis, Comparable<TypeInfo> {
@@ -369,7 +370,7 @@ public final class TypeInfo implements NamedType, WithInspectionAndAnalysis, Com
     public boolean isEnclosedInStopAtLambdaOrAnonymous(TypeInfo typeInfo) {
         if (typeInfo == this) return true;
         if (packageNameOrEnclosingType.isLeft()) return false;
-        if (simpleName.startsWith("$") || simpleName.contains("$KV$")) return false;
+        if (isAnonymous() || isClassInMethod()) return false;
         return packageNameOrEnclosingType.getRight().isEnclosedIn(typeInfo);
     }
 
@@ -755,5 +756,17 @@ public final class TypeInfo implements NamedType, WithInspectionAndAnalysis, Com
             superTypes.addAll(interfaceImplemented.typeInfo.superTypes(inspectionProvider));
         }
         return superTypes;
+    }
+
+    private static final Pattern ANONYMOUS = Pattern.compile("\\$\\d+");
+
+    private static final Pattern CLASS_IN_METHOD = Pattern.compile("\\$KV\\$");
+
+    public boolean isAnonymous() {
+        return ANONYMOUS.matcher(simpleName).matches();
+    }
+
+    public boolean isClassInMethod() {
+        return CLASS_IN_METHOD.matcher(simpleName).find();
     }
 }
