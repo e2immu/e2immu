@@ -193,7 +193,8 @@ public class Test_Independent1 extends CommonTestRunner {
             if ("visit".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof ParameterInfo pi && "consumer".equals(pi.name)) {
                     if ("0.0.0".equals(d.statementId())) {
-                        assertEquals("", d.variableInfo().getLinkedVariables().toString());
+                        String linked = d.iteration() == 0 ? "t:-1,this.ts:-1,tt:-1" : "";
+                        assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
                     }
                 }
                 if ("t".equals(d.variableName())) {

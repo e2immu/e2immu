@@ -146,7 +146,8 @@ public class Test_14_Warnings extends CommonTestRunner {
                     if ("1.0.0".equals(d.statementId())) {
                         // so that we know that integers.iterator() has been called
                         assertEquals("1" + E, d.variableInfo().getReadId());
-                        assertTrue(d.variableInfo().getLinkedVariables().isEmpty());
+                        String linked = d.iteration() == 0 ? "loopVar:-1" : "";
+                        assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
                     }
                 }
                 if ("loopVar".equals(d.variableName())) {

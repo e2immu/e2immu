@@ -200,21 +200,6 @@ public class EvaluateParameters {
         return contextNotNull;
     }
 
-    private static DV correctContextModifiedFunctionalInterface(EvaluationResult context,
-                                                                Expression parameterValue,
-                                                                DV scopeIsIndependent,
-                                                                Map<Property, DV> map) {
-        if (scopeIsIndependent.isDelayed()) return scopeIsIndependent; // we'll have to wait
-        if (scopeIsIndependent.gt(MultiLevel.DEPENDENT_DV)) {
-            DV immutable = context.getProperty(parameterValue, Property.IMMUTABLE);
-            if (immutable.isDelayed()) return immutable;
-            int immutableLevel = MultiLevel.level(immutable); // @E2Immutable = level 1
-            int independentLevel = MultiLevel.level(scopeIsIndependent); // @Independent1 = 0
-            if (immutableLevel > independentLevel) return DV.FALSE_DV;
-        }
-        return map.getOrDefault(Property.CONTEXT_MODIFIED, DV.FALSE_DV);
-    }
-
     /*
     See e.g. Modification_23: if the parameter is modified, and the argument is a variable (or an expression linked
     to a variable) whose value is a constructor call, this constructor should change into an instance, much in the same
@@ -271,8 +256,13 @@ public class EvaluateParameters {
             context.evaluationContext().getCurrentStatement().getStatementAnalysis().setBrokeDelay();
             return false;
         }
-        if (dvLink.isDone() && parameterValue.isDone() && contextModified.valueIsTrue()) {
-            if (dvLink.le(LinkedVariables.LINK_DEPENDENT)) {
+
+        // done/non-delayed situation first...
+        CausesOfDelay delays = dvLink.causesOfDelay().merge(parameterValue.causesOfDelay())
+                .merge(contextModified.causesOfDelay());
+
+        if (delays.isDone()) {
+            if (dvLink.le(LinkedVariables.LINK_DEPENDENT) && contextModified.valueIsTrue()) {
                 Expression varVal = context.currentValue(variable);
                 ConstructorCall cc;
                 Expression newInstance;
@@ -293,30 +283,29 @@ public class EvaluateParameters {
                     return true;
                 }
             } // else: this variable is not affected
-        } else {
-            CausesOfDelay delayMarker = DelayFactory.createDelay(new SimpleCause(context.evaluationContext()
-                    .getLocation(Stage.EVALUATION), CauseOfDelay.Cause.CONSTRUCTOR_TO_INSTANCE));
-            Expression delayed;
-            if (parameterValue.isDelayed()) {
-                delayed = parameterValue.mergeDelays(delayMarker);
-            } else {
-                CausesOfDelay merge = dvLink.causesOfDelay().merge(parameterValue.causesOfDelay())
-                        .merge(contextModified.causesOfDelay()).merge(delayMarker);
-                delayed = DelayedExpression.forModification(parameterExpression, merge);
-            }
-            // IMPORTANT: we're not taking lvExpression each time we take the delayed variant of parameterExpression
-            // See Mod_23 and InstanceOf_9 why that goes wrong. We only need it for the primary variable "theVariable".
-            LinkedVariables lv;
-            if (variable == theVariable) {
-                lv = lvExpression;
-            } else {
-                LinkedVariables computed = context.evaluationContext().linkedVariables(variable);
-                lv = computed == null ? LinkedVariables.NOT_YET_SET : computed;
-            }
-            builder.modifyingMethodAccess(variable, delayed, lv, true);
-            return true;
+            return false;
         }
-        return false;
+
+        CausesOfDelay delayMarker = DelayFactory.createDelay(new SimpleCause(context.evaluationContext()
+                .getLocation(Stage.EVALUATION), CauseOfDelay.Cause.CONSTRUCTOR_TO_INSTANCE));
+        Expression combinedDelays;
+        if (parameterValue.isDelayed()) {
+            combinedDelays = parameterValue.mergeDelays(delayMarker);
+        } else {
+            combinedDelays = DelayedExpression.forModification(parameterExpression, delays.merge(delayMarker));
+        }
+        // IMPORTANT: we're not taking lvExpression each time we take the delayed variant of parameterExpression
+        // See Mod_23 and InstanceOf_9 why that goes wrong. We only need it for the primary variable "theVariable".
+        LinkedVariables lv;
+        if (variable == theVariable) {
+            lv = lvExpression;
+        } else {
+            LinkedVariables computed = context.evaluationContext().linkedVariables(variable);
+            lv = computed == null ? LinkedVariables.NOT_YET_SET : computed;
+        }
+        LinkedVariables delayedLv = lv.changeNonStaticallyAssignedToDelay(delays);
+        builder.modifyingMethodAccess(variable, combinedDelays, delayedLv, true);
+        return true;
     }
 
     private static boolean variableIsRecursivelyPresentOrField(EvaluationContext evaluationContext, Variable variable) {

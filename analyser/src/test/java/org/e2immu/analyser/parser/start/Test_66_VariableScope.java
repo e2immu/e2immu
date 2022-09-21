@@ -367,7 +367,7 @@ public class Test_66_VariableScope extends CommonTestRunner {
                         assertDv(d, 3, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     }
                     if ("1".equals(d.statementId())) {
-                        assertDv(d, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                        assertDv(d, 1, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     }
                 }
                 if (d.variable() instanceof ParameterInfo pi && "typeInfo".equals(pi.name)) {
@@ -797,8 +797,11 @@ public class Test_66_VariableScope extends CommonTestRunner {
                         String expected = d.iteration() < 3 ? "<c:boolean>?<m:defaultGuideGenerator>:guideGenerator"
                                 : "null==guideGenerator?new GuideGenerator(){public OutputElement start(){return null;}public OutputElement end(){return null;}public OutputElement mid(){return null;}}:guideGenerator";
                         assertEquals(expected, d.currentValue().toString());
-                        String linked = d.iteration() < 2 ? "guideGenerator:0,outputBuilder:-1"
-                                : "guideGenerator:0,outputBuilder:2";
+                        String linked =switch( d.iteration()) {
+                            case 0 -> "guideGenerator:0,methodCall:-1,outputBuilder:-1,qualification:-1,this.object:-1";
+                            case 1 -> "guideGenerator:0,outputBuilder:-1";
+                            default -> "guideGenerator:0,outputBuilder:2";
+                        };
                         assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
                     }
                 }

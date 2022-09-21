@@ -60,9 +60,8 @@ public class Test_16_Modification_20 extends CommonTestRunner {
                     if ("0".equals(d.statementId())) {
                         String expectedDelay = switch (d.iteration()) {
                             case 0 -> "cm@Parameter_setC;mom@Parameter_setC";
-                            case 1 -> "cm@Parameter_d;initial:this.s2@Method_example1_0-C";
+                            case 1, 3 -> "cm@Parameter_c;cm@Parameter_d;initial:this.s2@Method_example1_0-C";
                             case 2 -> "break_mom_delay@Parameter_setC;cm@Parameter_setC;link@Field_s2;mom@Parameter_setC";
-                            case 3 -> "cm@Parameter_d;initial:this.s2@Method_example1_0-C";
                             default -> "";
                         };
                         assertDv(d, expectedDelay, 4, DV.FALSE_DV, Property.CONTEXT_MODIFIED);

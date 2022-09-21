@@ -213,7 +213,11 @@ public class Test_E2ImmutableComposition extends CommonTestRunner {
                         assertEquals("generator:4", d.variableInfo().getLinkedVariables().toString());
                     }
                     if ("2".equals(d.statementId())) {
-                        String linked = d.iteration() <= 1 ? "generator:-1,this.one:-1" : "generator:4,this.one:4";
+                        String linked = switch (d.iteration()) {
+                            case 0 -> "generator:-1,size:-1,this.one:-1";
+                            case 1 -> "generator:-1,this.one:-1";
+                            default -> "generator:4,this.one:4";
+                        };
                         assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
                     }
                 }
@@ -262,7 +266,11 @@ public class Test_E2ImmutableComposition extends CommonTestRunner {
             if ("one".equals(d.fieldInfo().name) && "EncapsulatedExposedArrayOfHasSize".equals(clazz)) {
                 String expected = d.iteration() < 3 ? "<f:one>" : "instance type ImmutableOne<HasSize[]>";
                 assertEquals(expected, d.fieldAnalysis().getValue().toString());
-                String linked = d.iteration() < 4 ? "av-480:20:-1,consumer:-1,elements:-1,generator:-1,this:-1" : "generator:4";
+                String linked = switch (d.iteration()) {
+                    case 0 -> "av-480:20:-1,consumer:-1,elements:-1,generator:-1,size:-1,this:-1";
+                    case 1, 2, 3 -> "av-480:20:-1,consumer:-1,elements:-1,generator:-1,this:-1";
+                    default -> "generator:4";
+                };
                 assertEquals(linked, d.fieldAnalysis().getLinkedVariables().toString());
             }
         };

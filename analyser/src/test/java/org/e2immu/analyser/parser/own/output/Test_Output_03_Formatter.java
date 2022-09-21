@@ -127,7 +127,7 @@ public class Test_Output_03_Formatter extends CommonTestRunner {
                             fail();
                         }
                         if ("0.0.3".equals(d.statementId())) {
-                            String expected = d.iteration() < 2 ? "<f:writer>" : "instance type Writer";
+                            String expected = d.iteration() < 2 ? "<f:tab.writer>" : "instance type Writer";
                             assertEquals(expected, d.currentValue().toString());
                         }
                     } else if ("tabs.peek()".equals(fr.scope.toString())) {
@@ -141,8 +141,8 @@ public class Test_Output_03_Formatter extends CommonTestRunner {
                     } else if ("scope-tab:0".equals(fr.scope.toString())) {
                         if ("0".equals(d.statementId())) {
                             String expected = switch (d.iteration()) {
-                                case 0 -> "<f:writer>";
-                                case 1 -> "tabs.isEmpty()?instance type Writer:<f:writer>";
+                                case 0 -> "tabs.isEmpty()?<f:scope-tab:0.writer>:<dv:scope-tab:0.writer>";
+                                case 1 -> "tabs.isEmpty()?<vp:writer:link@Field_writer>:<dv:scope-tab:0.writer>";
                                 default -> "instance type Writer";
                             };
                             assertEquals(expected, d.currentValue().toString());
@@ -203,12 +203,12 @@ public class Test_Output_03_Formatter extends CommonTestRunner {
                 assertTrue(d.methodInfo().methodInspection.get().isStatic());
                 assertDv(d, DV.FALSE_DV, Property.MODIFIED_METHOD);
                 assertDv(d.p(0), 1, DV.TRUE_DV, Property.MODIFIED_VARIABLE);
-                assertDv(d.p(2), 2, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
+                assertDv(d.p(2), 3, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
             }
             if ("swap".equals(d.methodInfo().name) && "Formatter".equals(d.methodInfo().typeInfo.simpleName)) {
                 assertTrue(d.methodInfo().methodInspection.get().isStatic());
                 assertDv(d, DV.FALSE_DV, Property.MODIFIED_METHOD);
-                assertDv(d.p(0), 3, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
+                assertDv(d.p(0), 3, DV.TRUE_DV, Property.MODIFIED_VARIABLE);
                 assertDv(d.p(2), 3, DV.TRUE_DV, Property.MODIFIED_VARIABLE);
             }
             if ("writer".equals(d.methodInfo().name)) {
@@ -216,7 +216,7 @@ public class Test_Output_03_Formatter extends CommonTestRunner {
                 assertDv(d, DV.FALSE_DV, Property.MODIFIED_METHOD);
                 assertDv(d.p(0), 1, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
                 assertDv(d.p(1), 3, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
-                String expected = d.iteration() == 0 ? "<m:writer>" : "/*inline writer*/tabs.isEmpty()?writer:(tabs.peek()).writer$0";
+                String expected = d.iteration() < 2 ? "<m:writer>" : "/*inline writer*/tabs.isEmpty()?writer:(tabs.peek()).writer$0";
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
 
                 assertDv(d.p(0), 1, MultiLevel.NULLABLE_DV, Property.CONTEXT_NOT_NULL);

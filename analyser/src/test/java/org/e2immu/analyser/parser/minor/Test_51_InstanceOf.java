@@ -369,7 +369,8 @@ public class Test_51_InstanceOf extends CommonTestRunner {
                         assertEquals(expect, d.currentValue().toString());
                         assertEquals("Type java.lang.Object", p.parameterizedType.toString());
 
-                        assertEquals("string:1", d.variableInfo().getLinkedVariables().toString());
+                        String linked = d.iteration() == 0 ? "string:-1" : "string:1";
+                        assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
 
                         assertDv(d, MultiLevel.NULLABLE_DV, Property.CONTEXT_NOT_NULL);
                     }
@@ -1037,7 +1038,7 @@ public class Test_51_InstanceOf extends CommonTestRunner {
                     }
                     if ("2.0.0".equals(d.statementId())) {
                         assertTrue(d.variableInfoContainer().hasEvaluation());
-                        assertDv(d, 2, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                        assertDv(d, 4, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                         String expected = d.iteration() < 4 ? "<p:expression>" : "nullable instance type Expression/*@Identity*/";
                         assertEquals(expected, d.currentValue().toString());
                     }

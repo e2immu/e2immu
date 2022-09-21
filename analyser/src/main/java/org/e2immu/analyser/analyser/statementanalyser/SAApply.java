@@ -153,8 +153,11 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
             }
         }
 
+        Map<Variable, LinkedVariables> extraLv;
         if (delayNotEvaluated) {
-            delayVariablesNotMentioned2(existingVariablesNotVisited, setEvalValueToDelayed);
+            extraLv = delayVariablesNotMentioned2(existingVariablesNotVisited, setEvalValueToDelayed);
+        } else {
+            extraLv = Map.of();
         }
 
         for (Map.Entry<Variable, VariableInfoContainer> e : variablesDefinedOutsideLoop.entrySet()) {
@@ -179,7 +182,7 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
         boolean noAssignments = evaluationResult.changeData().values().stream().noneMatch(EvaluationResult.ChangeData::markAssignment);
         ProgressAndDelay delayStatus = new ProgressAndDelay(progress, cumulativeDelay);
         ApplyStatusAndEnnStatus applyStatusAndEnnStatus = contextProperties(sharedState, evaluationResult,
-                delayStatus, analyserContext, groupPropertyValues, noAssignments);
+                delayStatus, analyserContext, groupPropertyValues, noAssignments, extraLv);
 
         // debugging...
 
@@ -232,8 +235,12 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
 
     /*
     delay for variables not mentioned at all continued
+
+    linked variables + group properties cannot yet be set into EVALUATION, must go via normal method
      */
-    private void delayVariablesNotMentioned2(Map<Variable, VariableInfoContainer> existingVariablesNotVisited, Map<Variable, DelayAndLinked> setEvalValueToDelayed) {
+    private Map<Variable, LinkedVariables> delayVariablesNotMentioned2(Map<Variable, VariableInfoContainer> existingVariablesNotVisited,
+                                                                       Map<Variable, DelayAndLinked> setEvalValueToDelayed) {
+        Map<Variable, LinkedVariables> result = new HashMap<>();
         for (Map.Entry<Variable, DelayAndLinked> entry : setEvalValueToDelayed.entrySet()) {
             Variable variable = entry.getKey();
             DelayAndLinked dal = entry.getValue();
@@ -245,14 +252,15 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
                 }
                 VariableInfo eval = vic.best(EVALUATION);
                 if (!eval.valueIsSet()) {
-                    LinkedVariables lv = eval.getLinkedVariables().isDone()
-                            ? eval.getLinkedVariables()
-                            : eval.getLinkedVariables().merge(dal.linkedVariables);
-                    vic.setLinkedVariables(lv, EVALUATION);
+                    assert dal.linkedVariables.isDelayed();
+                    LinkedVariables merge = (LinkedVariables.NOT_YET_SET == dal.linkedVariables ? LinkedVariables.EMPTY : dal.linkedVariables)
+                            .merge(vi1.getLinkedVariables());
+                    result.put(variable, merge);
                 }
             }
         }
         existingVariablesNotVisited.keySet().removeAll(setEvalValueToDelayed.keySet());
+        return result;
     }
 
 
@@ -742,11 +750,14 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
                                                       ProgressAndDelay delayIn,
                                                       AnalyserContext analyserContext,
                                                       GroupPropertyValues groupPropertyValues,
-                                                      boolean noAssignments) {
+                                                      boolean noAssignments,
+                                                      Map<Variable, LinkedVariables> extraLv) {
         // the second one is across clusters of variables
         groupPropertyValues.addToMap(statementAnalysis);
 
         Function<Variable, LinkedVariables> linkedVariablesFromChangeData = v -> {
+            LinkedVariables extra = extraLv.get(v);
+            if (extra != null) return extra;
             EvaluationResult.ChangeData changeData = evaluationResult.changeData().get(v);
             return changeData == null ? LinkedVariables.EMPTY : changeData.linkedVariables();
         };
