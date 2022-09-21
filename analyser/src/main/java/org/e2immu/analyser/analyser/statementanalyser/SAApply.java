@@ -234,7 +234,7 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
     }
 
     /*
-    delay for variables not mentioned at all continued
+    delay for variables not mentioned at all, continued
 
     linked variables + group properties cannot yet be set into EVALUATION, must go via normal method
      */
@@ -246,17 +246,15 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
             DelayAndLinked dal = entry.getValue();
             VariableInfoContainer vic = statementAnalysis.getVariable(variable.fullyQualifiedName());
             VariableInfo vi1 = vic.getPreviousOrInitial();
-            if (vi1.valueIsSet()) {
-                if (!vic.hasEvaluation()) {
-                    vic.ensureEvaluation(getLocation(), vi1.getAssignmentIds(), vi1.getReadId(), vi1.getReadAtStatementTimes());
-                }
-                VariableInfo eval = vic.best(EVALUATION);
-                if (!eval.valueIsSet()) {
-                    assert dal.linkedVariables.isDelayed();
-                    LinkedVariables merge = (LinkedVariables.NOT_YET_SET == dal.linkedVariables ? LinkedVariables.EMPTY : dal.linkedVariables)
-                            .merge(vi1.getLinkedVariables());
-                    result.put(variable, merge);
-                }
+            if (!vic.hasEvaluation()) {
+                vic.ensureEvaluation(getLocation(), vi1.getAssignmentIds(), vi1.getReadId(), vi1.getReadAtStatementTimes());
+            }
+            VariableInfo eval = vic.best(EVALUATION);
+            if (!eval.linkedVariablesIsSet()) {
+                assert dal.linkedVariables.isDelayed();
+                LinkedVariables merge = (LinkedVariables.NOT_YET_SET == dal.linkedVariables ? LinkedVariables.EMPTY : dal.linkedVariables)
+                        .merge(vi1.getLinkedVariables());
+                result.put(variable, merge);
             }
         }
         existingVariablesNotVisited.keySet().removeAll(setEvalValueToDelayed.keySet());

@@ -248,10 +248,18 @@ public class Test_34_ExplicitConstructorInvocation extends CommonTestRunner {
                 } else {
                     assertEquals(3, numParams);
                     if (d.variable() instanceof FieldReference fr && "primitives".equals(fr.fieldInfo.name)) {
-                        String expected = d.iteration() == 0 ? "<s:Primitives>" : "primitives2/*@NotNull*/";
-                        assertEquals(expected, d.currentValue().toString());
-                        String linked = d.iteration() == 0 ? "primitives2:-1" : "primitives2:1";
-                        assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
+                        assertEquals("this", fr.scope.toString());
+                        if("0".equals(d.statementId())) {
+                            String expected = d.iteration() == 0 ? "<s:Primitives>" : "primitives2/*@NotNull*/";
+                            assertEquals(expected, d.currentValue().toString());
+                            String linked = switch (d.iteration()) {
+                                case 1 -> "ExplicitConstructorInvocation_7.COMPLEXITY:-1,expressions:-1,identifier:-1,primitives2:-1,this.complexity:-1,this.expressions:-1";
+                                case 0 -> "primitives2:-1";
+                                default -> "primitives2:1";
+                            };
+                            assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
+                            mustSeeIteration(d, 2);
+                        }
                     }
                 }
             }
@@ -407,7 +415,7 @@ public class Test_34_ExplicitConstructorInvocation extends CommonTestRunner {
                 }
                 if (d.variable() instanceof ParameterInfo pi && "state".equals(pi.name)) {
                     if ("1".equals(d.statementId())) {
-                        String linked = d.iteration() == 0 ? "parent:-1,precondition:-1" : "";
+                        String linked = d.iteration() == 0 ? "condition:-1,parent:-1,precondition:-1" : "";
                         assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
                         String expected = d.iteration() == 0 ? "<p:state>" : "nullable instance type Expression";
                         assertEquals(expected, d.currentValue().toString());
@@ -415,14 +423,17 @@ public class Test_34_ExplicitConstructorInvocation extends CommonTestRunner {
                 }
                 if (d.variable() instanceof FieldReference fr && "condition".equals(fr.fieldInfo.name)) {
                     if ("3".equals(d.statementId())) {
-                        assertEquals("condition:0", d.variableInfo().getLinkedVariables().toString());
+                        String linked = d.iteration() == 0 ? "condition:0,parent:-1,precondition:-1,state:-1" : "condition:0";
+                        assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
                         String expected = d.iteration() == 0 ? "<s:Expression>" : "condition";
                         assertEquals(expected, d.currentValue().toString());
                     }
                 }
                 if (d.variable() instanceof FieldReference fr && "state".equals(fr.fieldInfo.name)) {
                     if ("4".equals(d.statementId())) {
-                        String linked = d.iteration() == 0 ? "parent:-1,precondition:-1,state:0" : "state:0";
+                        String linked = d.iteration() == 0
+                                ? "condition:-1,parent:-1,precondition:-1,state:0,this.condition:-1"
+                                : "state:0";
                         assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
                         String expected = d.iteration() == 0 ? "<p:state>" : "state";
                         assertEquals(expected, d.currentValue().toString());

@@ -138,13 +138,13 @@ public class Test_10_Identity extends CommonTestRunner {
             if ("idem2".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof ReturnVariable) {
                     if ("1".equals(d.statementId())) {
-                        String expectValue = d.iteration() == 0 ? "<m:idem>" : "s/*@NotNull*/";
+                        String expectValue = d.iteration() < 2 ? "<m:idem>" : "s/*@NotNull*/";
                         assertEquals(expectValue, d.currentValue().toString());
-                        String expectLv = d.iteration() == 0 ? "s:-1" : "s:1";
+                        String expectLv = d.iteration() < 2 ? "s:-1" : "s:1";
                         assertEquals(expectLv, d.variableInfo().getLinkedVariables().toString());
                         assertEquals(MultiLevel.NULLABLE_DV, d.getProperty(Property.CONTEXT_NOT_NULL));
-                        assertDv(d, 1, MultiLevel.NOT_CONTAINER_DV, CONTAINER_RESTRICTION);
-                        assertDv(d, 1, MultiLevel.CONTAINER_DV, CONTAINER);
+                        assertDv(d, 2, MultiLevel.NOT_CONTAINER_DV, CONTAINER_RESTRICTION);
+                        assertDv(d, 2, MultiLevel.CONTAINER_DV, CONTAINER);
                     }
                 }
                 if (d.variable() instanceof ParameterInfo s && "s".equals(s.name)) {
@@ -154,7 +154,7 @@ public class Test_10_Identity extends CommonTestRunner {
                     if ("1".equals(d.statementId())) {
                         // because the @NotNull situation of the parameter of idem has not been resolved yet, there cannot be a
                         // delay resolved here
-                        assertDv(d, 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.CONTEXT_NOT_NULL);
+                        assertDv(d, 2, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.CONTEXT_NOT_NULL);
                     }
                 }
             }
@@ -168,21 +168,21 @@ public class Test_10_Identity extends CommonTestRunner {
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("idem".equals(d.methodInfo().name)) {
                 assertEquals(DV.FALSE_DV, d.methodAnalysis().getProperty(Property.MODIFIED_METHOD));
-                assertDv(d, 1, DV.TRUE_DV, Property.IDENTITY);
-                String expect = d.iteration() == 0 ? "<m:idem>" : "/*inline idem*/s";
+                assertDv(d, 2, DV.TRUE_DV, Property.IDENTITY);
+                String expect = d.iteration() < 2 ? "<m:idem>" : "/*inline idem*/s";
                 assertEquals(expect, d.methodAnalysis().getSingleReturnValue().toString());
 
-                assertDv(d, 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, NOT_NULL_EXPRESSION);
+                assertDv(d, 2, MultiLevel.EFFECTIVELY_NOT_NULL_DV, NOT_NULL_EXPRESSION);
                 assertDv(d.p(0), 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_PARAMETER);
             }
             if ("idem2".equals(d.methodInfo().name)) {
-                assertDv(d, DV.FALSE_DV, Property.MODIFIED_METHOD);
-                assertDv(d, 1, DV.TRUE_DV, Property.IDENTITY);
+                assertDv(d, 1, DV.FALSE_DV, Property.MODIFIED_METHOD);
+                assertDv(d, 2, DV.TRUE_DV, Property.IDENTITY);
 
-                String expect = d.iteration() == 0 ? "<m:idem2>" : "/*inline idem2*/s/*@NotNull*/";
+                String expect = d.iteration() < 2 ? "<m:idem2>" : "/*inline idem2*/s/*@NotNull*/";
                 assertEquals(expect, d.methodAnalysis().getSingleReturnValue().toString());
 
-                assertDv(d.p(0), 2, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_PARAMETER);
+                assertDv(d.p(0), 3, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_PARAMETER);
             }
         };
 
@@ -207,16 +207,16 @@ public class Test_10_Identity extends CommonTestRunner {
                         assertDv(d, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     }
                     if ("1".equals(d.statementId())) {
-                        assertDv(d, 2, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                        assertDv(d, 3, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     }
                 }
                 if (d.variable() instanceof ReturnVariable) {
                     if ("1".equals(d.statementId())) {
                         assertEquals("s:0", d.variableInfo().getLinkedVariables().toString());
-                        String expected = d.iteration() == 0 ? "<m:equals>?<m:idem>:<p:s>"
+                        String expected = d.iteration() < 2 ? "<m:equals>?<m:idem>:<p:s>"
                                 : "\"a\".equals(s)?\"a\"/*@Identity {L s:0}*/:s";
                         assertEquals(expected, d.currentValue().toString());
-                        assertDv(d, 1, DV.TRUE_DV, IDENTITY);
+                        assertDv(d, 2, DV.TRUE_DV, IDENTITY);
                     }
                 }
             }
@@ -224,15 +224,15 @@ public class Test_10_Identity extends CommonTestRunner {
 
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("idem3".equals(d.methodInfo().name)) {
-                String expected = d.iteration() == 0 ? "<m:idem3>"
+                String expected = d.iteration() < 2 ? "<m:idem3>"
                         : "/*inline idem3*/\"a\".equals(s)?\"a\"/*@Identity {L s:0}*/:s";
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
-                assertDv(d, 1, DV.TRUE_DV, Property.IDENTITY);
+                assertDv(d, 2, DV.TRUE_DV, Property.IDENTITY);
                 assertDv(d, DV.FALSE_DV, Property.MODIFIED_METHOD);
-                assertDv(d, 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_EXPRESSION);
+                assertDv(d, 2, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_EXPRESSION);
             }
             if ("idem2".equals(d.methodInfo().name)) {
-                assertDv(d.p(0), 2, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
+                assertDv(d.p(0), 3, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
             }
             if ("idem".equals(d.methodInfo().name)) {
                 assertDv(d.p(0), 1, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
@@ -252,7 +252,7 @@ public class Test_10_Identity extends CommonTestRunner {
         EvaluationResultVisitor evaluationResultVisitor = d -> {
             if ("idem4".equals(d.methodInfo().name) && "1".equals(d.statementId())) {
                 // double property wrapper
-                String expect = d.iteration() == 0 ? "<m:equals>?<m:idem>:<p:s>" : "s";
+                String expect = d.iteration() < 2 ? "<m:equals>?<m:idem>:<p:s>" : "s";
                 assertEquals(expect, d.evaluationResult().value().toString());
             }
         };
@@ -261,7 +261,7 @@ public class Test_10_Identity extends CommonTestRunner {
             if ("idem2".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof ReturnVariable) {
                     if ("1".equals(d.statementId())) {
-                        String expected = d.iteration() == 0 ? "s:-1" : "s:1";
+                        String expected = d.iteration() < 2 ? "s:-1" : "s:1";
                         assertEquals(expected, d.variableInfo().getLinkedVariables().toString());
                     }
                 }
@@ -278,12 +278,12 @@ public class Test_10_Identity extends CommonTestRunner {
 
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("idem2".equals(d.methodInfo().name)) {
-                assertDv(d, DV.FALSE_DV, Property.MODIFIED_METHOD);
-                assertDv(d, 1, DV.TRUE_DV, Property.IDENTITY);
+                assertDv(d, 1, DV.FALSE_DV, Property.MODIFIED_METHOD);
+                assertDv(d, 2, DV.TRUE_DV, Property.IDENTITY);
             }
             if ("idem4".equals(d.methodInfo().name)) {
-                assertDv(d, DV.FALSE_DV, Property.MODIFIED_METHOD);
-                assertDv(d, 1, DV.TRUE_DV, Property.IDENTITY);
+                assertDv(d, 1, DV.FALSE_DV, Property.MODIFIED_METHOD);
+                assertDv(d, 2, DV.TRUE_DV, Property.IDENTITY);
             }
         };
 

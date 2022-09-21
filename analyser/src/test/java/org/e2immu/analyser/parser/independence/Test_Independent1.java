@@ -199,7 +199,11 @@ public class Test_Independent1 extends CommonTestRunner {
                 }
                 if ("t".equals(d.variableName())) {
                     if ("0.0.0".equals(d.statementId())) {
-                        String linked = d.iteration() < 2 ? "this.ts:-1" : "this.ts:3";
+                        String linked = switch (d.iteration()) {
+                            case 0 -> "consumer:-1,this.ts:-1,tt:-1";
+                            case 1 -> "this.ts:-1";
+                            default -> "this.ts:3";
+                        };
                         assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
                     }
                 }

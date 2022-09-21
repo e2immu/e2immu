@@ -117,13 +117,21 @@ public class Test_04_Assert extends CommonTestRunner {
                         // there should not be a STATICALLY_ASSIGNED here: it is the result of a method call
                         // however, the previous linking is taken into account, and only the linking to "other"
                         // remains to be solved.
-                        String linked = d.iteration() < 2 ? "merge:0,other:-1,this:0" : "merge:0,this:0";
+                        String linked = switch (d.iteration()) {
+                            case 0 -> "CausesOfDelay.LIMIT:-1,limit:-1,merge:0,other:-1,this:0";
+                            case 1 -> "merge:0,other:-1,this:0";
+                            default -> "merge:0,this:0";
+                        };
                         assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
                     }
                 }
                 if ("merge".equals(d.variableName())) {
                     if ("4".equals(d.statementId())) {
-                        String linked = d.iteration() < 2 ? "other:-1,this:0" : "this:0";
+                        String linked = switch (d.iteration()) {
+                            case 0 -> "CausesOfDelay.LIMIT:-1,limit:-1,other:-1,this:0";
+                            case 1 -> "other:-1,this:0";
+                            default -> "this:0";
+                        };
                         assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
                     }
                     if ("4.1.0".equals(d.statementId())) {
@@ -139,7 +147,11 @@ public class Test_04_Assert extends CommonTestRunner {
                                 ? "limit&&(-1+other.numberOfDelays()>=<f:LIMIT>||-1-<f:LIMIT>+<m:numberOfDelays>>=0)?<s:SimpleSet>:<s:CausesOfDelay>"
                                 : "this";
                         assertEquals(value, d.currentValue().toString());
-                        String linked = d.iteration() < 2 ? "other:-1,this:0" : "this:0";
+                        String linked = switch (d.iteration()) {
+                            case 0 -> "CausesOfDelay.LIMIT:-1,limit:-1,other:-1,this:0";
+                            case 1 -> "other:-1,this:0";
+                            default -> "this:0";
+                        };
                         assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
                     }
                 }

@@ -231,16 +231,19 @@ public class Test_45_Project extends CommonTestRunner {
             }
             if ("updated".equals(d.fieldInfo().name)) {
                 assertEquals("Container", d.fieldInfo().owner.simpleName);
-                String linked = d.iteration() == 0 ? "ZoneOffset.UTC:-1,scope-container:2.0.1:-1,this.kvStore:-1"
+                String linked = d.iteration() == 0 ? "ZoneOffset.UTC:-1,now:-1,queried:-1,readWithinMillis:-1,result:-1,scope-container:2.0.1.read:-1,scope-container:2.0.1:-1,this.kvStore:-1"
                         : d.iteration() < 11 ? "scope-container:2.0.1:-1,this.kvStore:-1" : "";
                 assertEquals(linked, d.fieldAnalysis().getLinkedVariables().toString());
                 assertDv(d, 1, DV.TRUE_DV, Property.MODIFIED_OUTSIDE_METHOD);
             }
             if ("value".equals(d.fieldInfo().name)) {
                 assertEquals("Container", d.fieldInfo().owner.simpleName);
-                String linked = d.iteration() < 17
-                        ? "container:-1,key:-1,key:-1,key:-1,prev.read:-1,prev:-1,scope-111:28:-1,scope-container:2.0.1:-1,scope-scope-111:28:0:-1,this.kvStore:-1,value:-1,value:-1"
-                        : "value:0";
+                String linked =
+                        d.iteration() == 0
+                                ? "Project_0.LOGGER:-1,ZoneOffset.UTC:-1,container:-1,key:-1,key:-1,key:-1,now:-1,prev.read:-1,prev:-1,queried:-1,readWithinMillis:-1,result:-1,scope-111:28:-1,scope-container:2.0.1.read:-1,scope-container:2.0.1.updated:-1,scope-container:2.0.1:-1,scope-scope-111:28:0:-1,this.kvStore:-1,value:-1,value:-1"
+                                : d.iteration() < 17
+                                ? "container:-1,key:-1,key:-1,key:-1,prev.read:-1,prev:-1,scope-111:28:-1,scope-container:2.0.1:-1,scope-scope-111:28:0:-1,this.kvStore:-1,value:-1,value:-1"
+                                : "value:0";
                 assertEquals(linked, d.fieldAnalysis().getLinkedVariables().toString());
                 assertDv(d, DV.TRUE_DV, Property.MODIFIED_OUTSIDE_METHOD); // no annotated APIs, as argument of Map.put()
                 assertDv(d, 22, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.EXTERNAL_NOT_NULL);

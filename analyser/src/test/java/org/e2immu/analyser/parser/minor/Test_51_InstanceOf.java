@@ -749,8 +749,11 @@ public class Test_51_InstanceOf extends CommonTestRunner {
                     }
                     // delays in clustering in iteration 2, otherwise we'd have CM
                     if ("0.0.1.0.5".equals(d.statementId())) {
-                        String expectLv = d.iteration() < 9 ?
-                                "b:-1,d:-1,scope-ne1:0.0.1.0.4.expression:-1,scope-ne1:0.0.1.0.4:-1,sum:-1,this.expression:-1,this:-1,v:-1,x:-1" : "";
+                        String expectLv = d.iteration() == 0
+                                ? "b:-1,d:-1,lessThan:-1,scope-ne1:0.0.1.0.4.expression:-1,scope-ne1:0.0.1.0.4:-1,sum:-1,this.expression:-1,this:-1,v:-1,x:-1"
+                                : d.iteration() < 9
+                                ? "b:-1,d:-1,scope-ne1:0.0.1.0.4.expression:-1,scope-ne1:0.0.1.0.4:-1,sum:-1,this.expression:-1,this:-1,v:-1,x:-1"
+                                : "";
                         assertEquals(expectLv, d.variableInfo().getLinkedVariables().toString());
                     }
 
@@ -764,13 +767,17 @@ public class Test_51_InstanceOf extends CommonTestRunner {
                 }
                 if (d.variable() instanceof FieldReference fr && "expression".equals(fr.fieldInfo.name) && fr.scopeIsThis()) {
                     if ("0.0.1.0.4.0.0".equals(d.statementId())) {
-                        String expectLv = d.iteration() < 9
+                        String expectLv = d.iteration() == 0
+                                ? "b:-1,d:-1,evaluationContext:-1,lessThan:-1,ne1.expression:-1,ne1:-1,sum:-1,this:-1,v:-1,x:-1"
+                                : d.iteration() < 9
                                 ? "d:-1,evaluationContext:-1,ne1.expression:-1,ne1:-1,sum:-1,this:-1,v:-1,x:-1"
                                 : "ne1:2,sum:1,v:2";
                         assertEquals(expectLv, d.variableInfo().getLinkedVariables().toString());
                     }
                     if ("0.0.1.0.5".equals(d.statementId())) {
-                        String linked = d.iteration() < 9
+                        String linked = d.iteration() == 0
+                                ? "b:-1,d:-1,evaluationContext:-1,lessThan:-1,scope-ne1:0.0.1.0.4.expression:-1,scope-ne1:0.0.1.0.4:-1,sum:-1,this:-1,v:-1,x:-1"
+                                : d.iteration() < 9
                                 ? "b:-1,d:-1,evaluationContext:-1,scope-ne1:0.0.1.0.4.expression:-1,scope-ne1:0.0.1.0.4:-1,sum:-1,this:-1,v:-1,x:-1"
                                 : "scope-ne1:0.0.1.0.4.expression:2,scope-ne1:0.0.1.0.4:2,sum:1,v:2,x:2";
                         assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
@@ -1090,7 +1097,7 @@ public class Test_51_InstanceOf extends CommonTestRunner {
                         default -> "nullable instance type Operator";
                     };
                     assertEquals(value, d.currentValue().toString());
-                    assertFalse(d.variableInfoContainer().hasEvaluation());
+                    assertTrue(d.variableInfoContainer().hasEvaluation());
                     assertDv(d, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
 
                     String linked = d.iteration() == 0 ? "NOT_YET_SET" : "expression:2,unaryOperator:2";
@@ -1104,13 +1111,13 @@ public class Test_51_InstanceOf extends CommonTestRunner {
                         default -> "nullable instance type Expression";
                     };
                     assertEquals(value, d.currentValue().toString());
-                    assertEquals(d.iteration() > BIG, d.variableInfoContainer().hasEvaluation());
+                    assertTrue(d.variableInfoContainer().hasEvaluation());
                     if (d.iteration() > BIG) { // so that there is an evaluation
                         assertDv(d, 3, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     }
                     String linked = switch (d.iteration()) {
                         case 0 -> "NOT_YET_SET";
-                        default -> "expression:2,scope-negation:0:2";
+                        default -> "expression:2,scope-negation:0:2,unaryOperator:2";
                     };
                     assertEquals(linked, lvs);
                 } else if (d.variable() instanceof ParameterInfo pi && "expression".equals(pi.name)) {
@@ -1121,7 +1128,7 @@ public class Test_51_InstanceOf extends CommonTestRunner {
                     };
                     assertEquals(linked, lvs);
                 } else if ("scope-negation:0".equals(d.variableName())) {
-                    assertEquals(d.iteration() > BIG, d.variableInfoContainer().hasEvaluation());
+                    assertTrue(d.variableInfoContainer().hasEvaluation());
                     if (d.iteration() > BIG) {
                         assertDv(d, 3, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     }
@@ -1131,7 +1138,7 @@ public class Test_51_InstanceOf extends CommonTestRunner {
                     };
                     assertEquals(expected, lvs);
                 } else if ("unaryOperator".equals(d.variableName())) {
-                    assertEquals(d.iteration() > 0, d.variableInfoContainer().hasEvaluation());
+                    assertTrue(d.variableInfoContainer().hasEvaluation());
                     if (d.iteration() > 0) { // so that there is an Evaluation
                         assertDv(d, 1, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     }
