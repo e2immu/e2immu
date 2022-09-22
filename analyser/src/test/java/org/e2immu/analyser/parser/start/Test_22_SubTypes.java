@@ -50,36 +50,53 @@ public class Test_22_SubTypes extends CommonTestRunner {
 
     @Test
     public void test_1() throws IOException {
-        final String SUBTYPE = "MethodWithSubType$KV$1";
-        final String KV = "org.e2immu.analyser.parser.start.testexample.SubTypes_1." + SUBTYPE;
+        final String SUBTYPE_CONSTRUCTOR = "MethodWithSubType$KV$1";
+        final String KV = "org.e2immu.analyser.parser.start.testexample.SubTypes_1." + SUBTYPE_CONSTRUCTOR;
         final String KEY = KV + ".key";
 
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
-            if ("key".equals(d.fieldInfo().name) && SUBTYPE.equals(d.fieldInfo().owner.simpleName)) {
+            if ("key".equals(d.fieldInfo().name) && SUBTYPE_CONSTRUCTOR.equals(d.fieldInfo().owner.simpleName)) {
                 assertEquals(DV.TRUE_DV, d.fieldAnalysis().getProperty(Property.FINAL));
                 assertEquals("key:0", d.fieldAnalysis().getLinkedVariables().toString());
             }
         };
 
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
-            if (SUBTYPE.equals(d.methodInfo().name)) {
+            if (SUBTYPE_CONSTRUCTOR.equals(d.methodInfo().name)) {
                 assertTrue(d.methodInfo().isConstructor);
             }
         };
 
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
-            if (SUBTYPE.equals(d.methodInfo().name) && KEY.equals(d.variableName())) {
+            if (SUBTYPE_CONSTRUCTOR.equals(d.methodInfo().name) && KEY.equals(d.variableName())) {
                 assertEquals("key", d.currentValue().toString());
                 assertEquals("key:0", d.variableInfo().getLinkedVariables().toString());
             }
+        };
 
+        StatementAnalyserVisitor statementAnalyserVisitor = d -> {
+            if (SUBTYPE_CONSTRUCTOR.equals(d.methodInfo().name)) {
+                assertTrue(d.methodInfo().isConstructor);
+                if ("1".equals(d.statementId())) {
+                    assertEquals("s={context-modified=false:0, context-not-null=nullable:1, read=true:1}, this={context-modified=false:0}",
+                            d.variableAccessReport().toString());
+                }
+            }
+            if ("methodWithSubType".equals(d.methodInfo().name)) {
+                if ("1".equals(d.statementId())) {
+                    String expected = d.iteration() == 0
+                            ? "s={context-modified=initial:this.key@Method_toString_0-C;initial:this.value@Method_toString_0-C, context-not-null=nullable:1, read=true:1}, this={context-modified=initial:this.key@Method_toString_0-C;initial:this.value@Method_toString_0-C}"
+                            : "s={context-modified=false:0, context-not-null=nullable:1, read=true:1}, this={context-modified=false:0}";
+                    assertEquals(expected, d.statementAnalysis().propertiesFromSubAnalysersSortedToString());
+                }
+            }
         };
 
         EvaluationResultVisitor evaluationResultVisitor = d -> {
-            if (SUBTYPE.equals(d.methodInfo().name) && "0".equals(d.statementId())) {
+            if (SUBTYPE_CONSTRUCTOR.equals(d.methodInfo().name) && "0".equals(d.statementId())) {
                 assertEquals("key", d.evaluationResult().value().toString());
             }
-            if (SUBTYPE.equals(d.methodInfo().name) && "1".equals(d.statementId())) {
+            if (SUBTYPE_CONSTRUCTOR.equals(d.methodInfo().name) && "1".equals(d.statementId())) {
                 assertEquals("value+\"abc\"", d.evaluationResult().value().toString());
             }
         };
@@ -87,6 +104,7 @@ public class Test_22_SubTypes extends CommonTestRunner {
         testClass("SubTypes_1", 0, 0, new DebugConfiguration.Builder()
                 .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addStatementAnalyserVisitor(statementAnalyserVisitor)
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .addEvaluationResultVisitor(evaluationResultVisitor)
                 .build());
@@ -291,7 +309,7 @@ public class Test_22_SubTypes extends CommonTestRunner {
             if ("go".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof FieldReference fr && "external".equals(fr.fieldInfo.name)) {
                     assertEquals("0", d.statementId());
-                    assertDv(d,DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                    assertDv(d, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                 }
             }
         };

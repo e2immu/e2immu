@@ -136,7 +136,7 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
                     sharedState.allowBreakDelay);
             AnalyserResult result = firstStatementAnalyser.analyseAllStatementsInBlock(sharedState
                     .evaluationContext.getIteration(), fwd, sharedState.evaluationContext.getClosure());
-            analyserResultBuilder.add(result, false, false);
+            analyserResultBuilder.add(result, false, false, true);
             this.locallyCreatedPrimaryTypeAnalysers.addAll(result.localAnalysers());
             return result.analysisStatus();
         };

@@ -177,12 +177,26 @@ public interface VariableInfo {
             new MergeOp(MODIFIED_OUTSIDE_METHOD, MAX_CM, MODIFIED_OUTSIDE_METHOD.falseDv)
     );
 
+    List<MergeOp> MERGE_VARIABLE_ACCESS_REPORT = List.of(
+            new MergeOp(CONTEXT_NOT_NULL, DV::max, CONTEXT_NOT_NULL.falseDv),
+            new MergeOp(CONTEXT_MODIFIED, MAX_CM, CONTEXT_MODIFIED.falseDv),
+            new MergeOp(READ, MAX_CM, READ.falseDv)
+    );
+
     // used by change data
     static Map<Property, DV> mergeIgnoreAbsent(Map<Property, DV> m1, Map<Property, DV> m2) {
+        return internalMerge(m1, m2, MERGE);
+    }
+
+    static Map<Property, DV> mergeVariableAccessReport(Map<Property, DV> m1, Map<Property, DV> m2) {
+        return internalMerge(m1, m2, MERGE_VARIABLE_ACCESS_REPORT);
+    }
+
+    static Map<Property, DV> internalMerge(Map<Property, DV> m1, Map<Property, DV> m2, List<MergeOp> merges) {
         if (m2.isEmpty()) return m1;
         if (m1.isEmpty()) return m2;
         Map<Property, DV> map = new HashMap<>();
-        for (MergeOp mergeOp : MERGE) {
+        for (MergeOp mergeOp : merges) {
             DV v1 = m1.getOrDefault(mergeOp.property, null);
             DV v2 = m2.getOrDefault(mergeOp.property, null);
 

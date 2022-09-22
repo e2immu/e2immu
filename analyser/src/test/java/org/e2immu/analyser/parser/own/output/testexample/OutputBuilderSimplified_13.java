@@ -19,14 +19,16 @@ import org.e2immu.annotation.*;
 
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.*;
+import java.util.function.BiConsumer;
+import java.util.function.BinaryOperator;
+import java.util.function.Function;
+import java.util.function.Supplier;
 import java.util.stream.Collector;
-import java.util.stream.Collectors;
 
 @FinalFields
-@Container
-public class OutputBuilderSimplified_12 {
-    @ImmutableContainer
+@Container(absent = true)
+public class OutputBuilderSimplified_13 {
+    // NOT IMMUTABLE
     interface OutputElement {
         default String debug() {
             return "";
@@ -41,29 +43,29 @@ public class OutputBuilderSimplified_12 {
     @Modified
     final List<OutputElement> list = new LinkedList<>();
 
-    public OutputBuilderSimplified_12 add(OutputElement... outputElements) {
+    public OutputBuilderSimplified_13 add(@Independent(absent = true) @NotModified OutputElement... outputElements) {
         Collections.addAll(list, outputElements);
         return this;
     }
 
-    public OutputBuilderSimplified_12 add(OutputBuilderSimplified_12... outputBuilders) {
+    public OutputBuilderSimplified_13 add(@NotModified OutputBuilderSimplified_13... outputBuilders) {
         Arrays.stream(outputBuilders).flatMap(ob -> ob.list.stream()).forEach(list::add);
         return this;
     }
 
-    public static Collector<OutputBuilderSimplified_12, OutputBuilderSimplified_12, OutputBuilderSimplified_12> joining(OutputElement separator,
+    public static Collector<OutputBuilderSimplified_13, OutputBuilderSimplified_13, OutputBuilderSimplified_13> joining(@Modified OutputElement separator,
                                                                                                                         OutputElement start,
                                                                                                                         OutputElement end) {
         return new Collector<>() {
             private final AtomicInteger countMid = new AtomicInteger();
 
             @Override
-            public Supplier<OutputBuilderSimplified_12> supplier() {
-                return OutputBuilderSimplified_12::new;
+            public Supplier<OutputBuilderSimplified_13> supplier() {
+                return OutputBuilderSimplified_13::new;
             }
 
             @Override
-            public BiConsumer<OutputBuilderSimplified_12, OutputBuilderSimplified_12> accumulator() {
+            public BiConsumer<OutputBuilderSimplified_13, OutputBuilderSimplified_13> accumulator() {
                 return (a, b) -> {
                     if (!b.list.isEmpty()) {
                         boolean notStart =  !a.list.stream().allMatch(outputElement -> outputElement instanceof Space);
@@ -78,7 +80,7 @@ public class OutputBuilderSimplified_12 {
             }
 
             @Override
-            public BinaryOperator<OutputBuilderSimplified_12> combiner() {
+            public BinaryOperator<OutputBuilderSimplified_13> combiner() {
                 return (aa, bb) -> {
                     if (aa.list.isEmpty()) return bb;
                     if (bb.list.isEmpty()) return aa;
@@ -89,9 +91,9 @@ public class OutputBuilderSimplified_12 {
             }
 
             @Override
-            public Function<OutputBuilderSimplified_12, OutputBuilderSimplified_12> finisher() {
+            public Function<OutputBuilderSimplified_13, OutputBuilderSimplified_13> finisher() {
                 return t -> {
-                    OutputBuilderSimplified_12 result = new OutputBuilderSimplified_12();
+                    OutputBuilderSimplified_13 result = new OutputBuilderSimplified_13();
                     if (start != Space.NONE) result.add(start);
                     if (countMid.get() > 0 ) {
                        // result.add(guideGenerator.start());

@@ -16,6 +16,7 @@ package org.e2immu.analyser.parser.own.output;
 
 import org.e2immu.analyser.analyser.DV;
 import org.e2immu.analyser.analyser.Property;
+import org.e2immu.analyser.analyser.VariableInfo;
 import org.e2immu.analyser.analysis.ParameterAnalysis;
 import org.e2immu.analyser.config.AnalyserConfiguration;
 import org.e2immu.analyser.config.DebugConfiguration;
@@ -328,13 +329,13 @@ public class Test_61_OutputBuilderSimplified extends CommonTestRunner {
             }
             if ("joining".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof ParameterInfo pi && "separator".equals(pi.name)) {
-                    assertDv(d, 4, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                    assertDv(d, 5, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                 } else if (d.variable() instanceof ParameterInfo pi && "start".equals(pi.name)) {
-                    assertDv(d, 4, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                    assertDv(d, 5, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                 } else if (d.variable() instanceof ParameterInfo pi && "end".equals(pi.name)) {
-                    assertDv(d, 4, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                    assertDv(d, 5, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                 } else if (d.variable() instanceof This) {
-                    assertDv(d, 4, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                    assertDv(d, 5, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                 } else if (d.variable() instanceof FieldReference fr && "list".equals(fr.fieldInfo.name)) {
                     fail("list does not occur without in a scope known to the top-level method");
                 } else if (d.variable() instanceof FieldReference fr && "NONE".equals(fr.fieldInfo.name)) {
@@ -348,7 +349,7 @@ public class Test_61_OutputBuilderSimplified extends CommonTestRunner {
                 } else if (d.variable() instanceof ParameterInfo pi && "bb".equals(pi.name)) {
                     fail("Variable should not have been transferred");
                 } else if (d.variable() instanceof ReturnVariable) {
-                    String expected = d.iteration() < 6 ? "<new:Collector<OutputBuilderSimplified_7,OutputBuilderSimplified_7,OutputBuilderSimplified_7>>"
+                    String expected = d.iteration() < 7 ? "<new:Collector<OutputBuilderSimplified_7,OutputBuilderSimplified_7,OutputBuilderSimplified_7>>"
                             : "new Collector<>(){final AtomicInteger countMid=new AtomicInteger();public Supplier<OutputBuilderSimplified_7> supplier(){return OutputBuilderSimplified_7::new;}public BiConsumer<OutputBuilderSimplified_7,OutputBuilderSimplified_7> accumulator(){return (a,b)->{... debugging ...};}public BinaryOperator<OutputBuilderSimplified_7> combiner(){return (a,b)->{... debugging ...};}public Function<OutputBuilderSimplified_7,OutputBuilderSimplified_7> finisher(){return t->{... debugging ...};}public Set<Characteristics> characteristics(){return Set.of(Characteristics.CONCURRENT);}}";
                     assertEquals(expected, d.currentValue().toString());
                 } else fail("Variable " + d.variableName());
@@ -359,8 +360,8 @@ public class Test_61_OutputBuilderSimplified extends CommonTestRunner {
                 assertDv(d, MultiLevel.EFFECTIVELY_IMMUTABLE_HC_DV, Property.IMMUTABLE);
             }
             if ("OutputBuilderSimplified_7".equals(d.typeInfo().simpleName)) {
-                assertDv(d, 4, MultiLevel.EFFECTIVELY_FINAL_FIELDS_DV, Property.IMMUTABLE);
-                assertDv(d, 5, MultiLevel.CONTAINER_DV, Property.CONTAINER);
+                assertDv(d, 5, MultiLevel.EFFECTIVELY_FINAL_FIELDS_DV, Property.IMMUTABLE);
+                assertDv(d, 6, MultiLevel.CONTAINER_DV, Property.CONTAINER);
                 if (d.iteration() == 3) {
                     assertEquals("cm@Parameter_end;cm@Parameter_separator;cm@Parameter_start",
                             d.typeAnalysis().getProperty(Property.CONTAINER).causesOfDelay().toString());
@@ -368,16 +369,16 @@ public class Test_61_OutputBuilderSimplified extends CommonTestRunner {
             }
             if ("$2".equals(d.typeInfo().simpleName)) {
                 assertEquals(d.iteration() < 4, d.typeAnalysis().approvedPreconditionsStatus(true).isDelayed());
-                assertDv(d, 5, MultiLevel.EFFECTIVELY_FINAL_FIELDS_DV, Property.IMMUTABLE);
-                assertDv(d, 6, MultiLevel.CONTAINER_DV, Property.CONTAINER);
+                assertDv(d, 6, MultiLevel.EFFECTIVELY_FINAL_FIELDS_DV, Property.IMMUTABLE);
+                assertDv(d, 7, MultiLevel.CONTAINER_DV, Property.CONTAINER);
             }
             if ("$5".equals(d.typeInfo().simpleName)) {
-                assertDv(d, 6, MultiLevel.EFFECTIVELY_FINAL_FIELDS_DV, Property.IMMUTABLE);
-                assertDv(d, 7, MultiLevel.CONTAINER_DV, Property.CONTAINER);
+                assertDv(d, 7, MultiLevel.EFFECTIVELY_FINAL_FIELDS_DV, Property.IMMUTABLE);
+                assertDv(d, 8, MultiLevel.CONTAINER_DV, Property.CONTAINER);
             }
             if ("$6".equals(d.typeInfo().simpleName)) {
-                assertDv(d, 6, MultiLevel.EFFECTIVELY_FINAL_FIELDS_DV, Property.IMMUTABLE);
-                assertDv(d, 7, MultiLevel.CONTAINER_DV, Property.CONTAINER);
+                assertDv(d, 7, MultiLevel.EFFECTIVELY_FINAL_FIELDS_DV, Property.IMMUTABLE);
+                assertDv(d, 8, MultiLevel.CONTAINER_DV, Property.CONTAINER);
             }
         };
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
@@ -393,7 +394,7 @@ public class Test_61_OutputBuilderSimplified extends CommonTestRunner {
                 } else fail("Add? " + d.methodInfo().fullyQualifiedName);
             }
             if ("joining".equals(d.methodInfo().name)) {
-                assertDv(d, 4, DV.FALSE_DV, Property.MODIFIED_METHOD);
+                assertDv(d, 5, DV.FALSE_DV, Property.MODIFIED_METHOD);
             }
 
             if ("apply".equals(d.methodInfo().name) && "$4".equals(d.methodInfo().typeInfo.simpleName)) {
@@ -412,7 +413,7 @@ public class Test_61_OutputBuilderSimplified extends CommonTestRunner {
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
                 assertDv(d, 5, MultiLevel.EFFECTIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
                 assertDv(d, 5, MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL_DV, Property.NOT_NULL_EXPRESSION);
-                assertDv(d, 1, DV.TRUE_DV, Property.MODIFIED_METHOD);
+                assertDv(d, 4, DV.TRUE_DV, Property.MODIFIED_METHOD);
             }
             if ("supplier".equals(d.methodInfo().name)) {
                 assertEquals("/*inline supplier*/OutputBuilderSimplified_7::new", d.methodAnalysis().getSingleReturnValue().toString());
@@ -428,7 +429,7 @@ public class Test_61_OutputBuilderSimplified extends CommonTestRunner {
                 assertDv(d, 2, DV.FALSE_DV, Property.MODIFIED_METHOD);
             }
             if ("accumulator".equals(d.methodInfo().name)) {
-                assertDv(d, 2, DV.TRUE_DV, Property.MODIFIED_METHOD);
+                assertDv(d, 4, DV.TRUE_DV, Property.MODIFIED_METHOD);
             }
             if ("finisher".equals(d.methodInfo().name)) {
                 assertDv(d, 4, DV.FALSE_DV, Property.MODIFIED_METHOD);
@@ -528,14 +529,15 @@ public class Test_61_OutputBuilderSimplified extends CommonTestRunner {
                 }
             }
             if ("joining".equals(d.methodInfo().name)) {
+                assertFalse(d.context().evaluationContext().allowBreakDelay());
                 if (d.variable() instanceof ParameterInfo pi && "separator".equals(pi.name)) {
-                    assertDv(d, 1, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                    assertDv(d, 5, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                 } else if (d.variable() instanceof ParameterInfo pi && "start".equals(pi.name)) {
-                    assertDv(d, 1, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                    assertDv(d, 5, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                 } else if (d.variable() instanceof ParameterInfo pi && "end".equals(pi.name)) {
-                    assertDv(d, 1, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                    assertDv(d, 5, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                 } else if (d.variable() instanceof This) {
-                    assertDv(d, 1, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                    assertDv(d, 5, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                 } else if (d.variable() instanceof FieldReference fr && "list".equals(fr.fieldInfo.name)) {
                     fail("list does not occur without in a scope known to the top-level method");
                 } else if (d.variable() instanceof FieldReference fr && "NONE".equals(fr.fieldInfo.name)) {
@@ -552,18 +554,45 @@ public class Test_61_OutputBuilderSimplified extends CommonTestRunner {
                     assertDv(d, MultiLevel.MUTABLE_DV, Property.CONTEXT_IMMUTABLE);
                 } else fail("Variable " + d.variableName());
             }
+            if ("apply".equals(d.methodInfo().name) && "$5".equals(d.methodInfo().typeInfo.simpleName)) {
+                if (d.variable() instanceof ParameterInfo pi && "separator".equals(pi.name)) {
+                    if ("1".equals(d.statementId())) {
+                        String linked = d.iteration() == 0 ? "NOT_YET_SET" : "";
+                        assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
+                        assertDv(d, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                    }
+                    if ("2.0.0".equals(d.statementId())) {
+                        assertTrue(d.variableInfoContainer().hasEvaluation());
+                        VariableInfo eval2 = d.variableInfoContainer().getPreviousOrInitial();
+                        String eval2Linked = d.iteration() == 0 ? "NOT_YET_SET" : "";
+                        assertEquals(eval2Linked, eval2.getLinkedVariables().toString());
+
+                        String linked = switch (d.iteration()) {
+                            case 0 -> "NOT_YET_SET";
+                            case 1, 2, 3 -> "aa:-1";
+                            default -> "aa:3";
+                        };
+                        assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
+                        assertDv(d, 4, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                    }
+                }
+            }
         };
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("add".equals(d.methodInfo().name)) {
                 TypeInfo t0 = d.methodInfo().methodInspection.get().getParameters().get(0).parameterizedType.typeInfo;
                 if ("OutputElement".equals(t0.simpleName)) {
                     assertDv(d, DV.TRUE_DV, Property.MODIFIED_METHOD);
+                    assertDv(d.p(0), 3, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
+                    assertDv(d.p(0), 3, MultiLevel.INDEPENDENT_HC_DV, Property.INDEPENDENT);
                 } else if ("OutputBuilderSimplified_12".equals(t0.simpleName)) {
                     assertDv(d, DV.TRUE_DV, Property.MODIFIED_METHOD);
+                    assertDv(d.p(0), 3, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
+                    assertDv(d.p(0), 3, MultiLevel.INDEPENDENT_DV, Property.INDEPENDENT);
                 } else fail("Add? " + d.methodInfo().fullyQualifiedName);
             }
             if ("joining".equals(d.methodInfo().name)) {
-                assertDv(d, 1, DV.FALSE_DV, Property.MODIFIED_METHOD);
+                assertDv(d, 5, DV.FALSE_DV, Property.MODIFIED_METHOD);
             }
             if ("supplier".equals(d.methodInfo().name)) {
                 assertEquals("$2", d.methodInfo().typeInfo.simpleName);
@@ -606,17 +635,17 @@ public class Test_61_OutputBuilderSimplified extends CommonTestRunner {
         };
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("OutputBuilderSimplified_12".equals(d.typeInfo().simpleName)) {
-                assertEquals(d.iteration() >= 1, d.typeAnalysis().approvedPreconditionsStatus(true).isDone());
-                assertDv(d, 1, MultiLevel.EFFECTIVELY_FINAL_FIELDS_DV, Property.IMMUTABLE);
+                assertEquals(d.iteration() >= 5, d.typeAnalysis().approvedPreconditionsStatus(true).isDone());
+                assertDv(d, 5, MultiLevel.EFFECTIVELY_FINAL_FIELDS_DV, Property.IMMUTABLE);
             }
             if ("$2".equals(d.typeInfo().simpleName)) {
-                assertDv(d, 4, MultiLevel.EFFECTIVELY_FINAL_FIELDS_DV, Property.IMMUTABLE);
+                assertDv(d, 6, MultiLevel.EFFECTIVELY_FINAL_FIELDS_DV, Property.IMMUTABLE);
             }
             if ("$5".equals(d.typeInfo().simpleName)) {
-                assertDv(d, 5, MultiLevel.EFFECTIVELY_FINAL_FIELDS_DV, Property.IMMUTABLE);
+                assertDv(d, 7, MultiLevel.EFFECTIVELY_FINAL_FIELDS_DV, Property.IMMUTABLE);
             }
             if ("$6".equals(d.typeInfo().simpleName)) {
-                assertDv(d, 5, MultiLevel.EFFECTIVELY_FINAL_FIELDS_DV, Property.IMMUTABLE);
+                assertDv(d, 7, MultiLevel.EFFECTIVELY_FINAL_FIELDS_DV, Property.IMMUTABLE);
             }
         };
         testClass("OutputBuilderSimplified_12", 0, 0, new DebugConfiguration.Builder()
@@ -630,6 +659,129 @@ public class Test_61_OutputBuilderSimplified extends CommonTestRunner {
     @Test
     public void test_12_alpha() throws IOException {
         testClass("OutputBuilderSimplified_12", 0, 0, new DebugConfiguration.Builder()
+                .build(), new AnalyserConfiguration.Builder().setForceAlphabeticAnalysisInPrimaryType(true).build());
+    }
+
+    @Test
+    public void test_13() throws IOException {
+        StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+            // in accumulator
+            if ("accept".equals(d.methodInfo().name) && "$3".equals(d.methodInfo().typeInfo.simpleName)) {
+                assertEquals("$2", d.methodInfo().typeInfo.packageNameOrEnclosingType.getRight().simpleName);
+                if (d.variable() instanceof ParameterInfo pi && "separator".equals(pi.name)) {
+                    if ("0.0.1.0.0.0.0".equals(d.statementId())) {
+                        assertTrue(d.variableInfoContainer().hasEvaluation());
+                        VariableInfo eval2 = d.variableInfoContainer().getPreviousOrInitial();
+                        String eval2Linked = d.iteration() == 0 ? "NOT_YET_SET" : "";
+                        assertEquals(eval2Linked, eval2.getLinkedVariables().toString());
+
+                        String linked = switch (d.iteration()) {
+                            case 0 -> "NOT_YET_SET";
+                            case 1, 2 -> "a.list:-1,a:-1,notStart:-1";
+                            case 3 -> "a:-1";
+                            default -> "a:2"; // !!
+                        };
+                        assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
+                        assertDv(d, 4, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
+                    }
+                }
+            }
+            // in combiner
+            if ("apply".equals(d.methodInfo().name) && "$5".equals(d.methodInfo().typeInfo.simpleName)) {
+                if (d.variable() instanceof ParameterInfo pi && "separator".equals(pi.name)) {
+                    if ("2.0.0".equals(d.statementId())) {
+                        assertTrue(d.variableInfoContainer().hasEvaluation());
+                        VariableInfo eval2 = d.variableInfoContainer().getPreviousOrInitial();
+                        String eval2Linked = d.iteration() == 0 ? "NOT_YET_SET" : "";
+                        assertEquals(eval2Linked, eval2.getLinkedVariables().toString());
+
+                        String linked = switch (d.iteration()) {
+                            case 0 -> "NOT_YET_SET";
+                            case 1, 2, 3 -> "aa:-1";
+                            default -> "aa:2";
+                        };
+                        assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
+                        assertDv(d, 4, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
+                    }
+                }
+            }
+            if ("add".equals(d.methodInfo().name)) {
+                if (d.variable() instanceof ParameterInfo pi && "outputElements".equals(pi.name)) {
+                    if ("0".equals(d.statementId())) {
+                        // OutputElements are part of the HC of list, so must have 4
+                        String linked = d.iteration() < 3 ? "this.list:-1" : "this.list:4";
+                        assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
+                    }
+                }
+            }
+        };
+        StatementAnalyserVisitor statementAnalyserVisitor = d -> {
+            if ("joining".equals(d.methodInfo().name)) {
+                assertEquals("0", d.statementId());
+                String props = switch (d.iteration()) {
+                    case 0 -> "end={context-modified=[19 delays], context-not-null=constructor-to-instance@Method_apply_3.0.0-E;initial:Space.NONE@Method_apply_1-C;initial:end@Method_apply_3-E, read=true:1}, separator={context-modified=[19 delays], context-not-null=constructor-to-instance@Method_apply_2.0.0-E;initial:Space.NONE@Method_apply_2-C;initial:aa.list@Method_apply_0-C;initial:aa@Method_apply_0-E;initial:separator@Method_apply_2-E, read=true:1}, start={context-modified=[19 delays], context-not-null=initial:Space.NONE@Method_apply_1-C;initial:start@Method_apply_1-E, read=true:1}, this={context-modified=[19 delays]}";
+                    case 1 -> "end={context-modified=[11 delays], context-not-null=constructor-to-instance@Method_apply_3.0.0-E;initial:Space.NONE@Method_apply_1-C;initial:end@Method_apply_3-E;initial@Field_NONE, read=true:1}, separator={context-modified=[11 delays], context-not-null=constructor-to-instance@Method_apply_2.0.0-E;initial:Space.NONE@Method_apply_2-C;initial:aa.list@Method_apply_0-C;initial:aa@Method_apply_0-E;initial:separator@Method_apply_2-E;link@Field_list, read=true:1}, start={context-modified=[11 delays], context-not-null=initial:Space.NONE@Method_apply_1-C;initial:start@Method_apply_1-E, read=true:1}, this={context-modified=[11 delays]}";
+                    case 2 -> "end={context-modified=constructor-to-instance@Method_apply_4-E;initial:aa.list@Method_apply_0-C;initial:aa@Method_apply_0-E;link:outputBuilders@Method_add_1:M;link:outputElements@Method_add_1:M;link:this.list@Method_add_1:M;link@Field_list;srv@Method_apply, context-not-null=nullable:1, read=true:1}, separator={context-modified=constructor-to-instance@Method_apply_4-E;initial:aa.list@Method_apply_0-C;initial:aa@Method_apply_0-E;link:outputBuilders@Method_add_1:M;link:outputElements@Method_add_1:M;link:this.list@Method_add_1:M;link@Field_list;srv@Method_apply, context-not-null=constructor-to-instance@Method_apply_2.0.0-E;initial:aa.list@Method_apply_0-C;initial:aa@Method_apply_0-E;link@Field_list, read=true:1}, start={context-modified=constructor-to-instance@Method_apply_4-E;initial:aa.list@Method_apply_0-C;initial:aa@Method_apply_0-E;link:outputBuilders@Method_add_1:M;link:outputElements@Method_add_1:M;link:this.list@Method_add_1:M;link@Field_list;srv@Method_apply, context-not-null=nullable:1, read=true:1}, this={context-modified=constructor-to-instance@Method_apply_4-E;initial:aa.list@Method_apply_0-C;initial:aa@Method_apply_0-E;link:outputBuilders@Method_add_1:M;link:outputElements@Method_add_1:M;link:this.list@Method_add_1:M;link@Field_list;srv@Method_apply}";
+                    case 3 -> "end={context-modified=link:outputBuilders@Method_add_1:M;link:outputElements@Method_add_1:M;link:this.list@Method_add_1:M;srv@Method_apply, context-not-null=nullable:1, read=true:1}, separator={context-modified=link:outputBuilders@Method_add_1:M;link:outputElements@Method_add_1:M;link:this.list@Method_add_1:M;srv@Method_apply, context-not-null=nullable:1, read=true:1}, start={context-modified=link:outputBuilders@Method_add_1:M;link:outputElements@Method_add_1:M;link:this.list@Method_add_1:M;srv@Method_apply, context-not-null=nullable:1, read=true:1}, this={context-modified=link:outputBuilders@Method_add_1:M;link:outputElements@Method_add_1:M;link:this.list@Method_add_1:M;srv@Method_apply}";
+                    case 4 -> "end={context-modified=true:1, context-not-null=nullable:1, read=true:1}, separator={context-modified=true:1, context-not-null=nullable:1, read=true:1}, start={context-modified=true:1, context-not-null=nullable:1, read=true:1}, this={context-modified=cnn@Parameter_aa}";
+                    default -> "end={context-modified=true:1, context-not-null=nullable:1, read=true:1}, separator={context-modified=true:1, context-not-null=nullable:1, read=true:1}, start={context-modified=true:1, context-not-null=nullable:1, read=true:1}, this={context-modified=false:0}";
+                };
+                assertEquals(props, d.statementAnalysis().propertiesFromSubAnalysersSortedToString());
+            }
+
+            if ("accumulator".equals(d.methodInfo().name)) {
+                assertEquals("0", d.statementId());
+                String props = switch (d.iteration()) {
+                    case 0 -> "countMid={context-modified=constructor-to-instance@Method_accept_0.0.1.0.0.0.0-E;initial:Space.NONE@Method_accept_0.0.1.0.0-C;initial:a.list@Method_accept_0.0.0-C;initial:a@Method_accept_0.0.0-E;initial:b.list@Method_accept_0-C;initial:b@Method_accept_0-E;initial:separator@Method_accept_0.0.0-E;initial:this.countMid@Method_accept_0.0.1.0.2-C;initial@Field_countMid, context-not-null=initial_flow_value@Method_accept_0.0.1-C, read=true:1}, end={context-modified=constructor-to-instance@Method_accept_0.0.1.0.0.0.0-E;initial:Space.NONE@Method_accept_0.0.1.0.0-C;initial:a.list@Method_accept_0.0.0-C;initial:a@Method_accept_0.0.0-E;initial:b.list@Method_accept_0-C;initial:b@Method_accept_0-E;initial:separator@Method_accept_0.0.0-E;initial:this.countMid@Method_accept_0.0.1.0.2-C;initial@Field_countMid, context-not-null=nullable:1}, separator={context-modified=constructor-to-instance@Method_accept_0.0.1.0.0.0.0-E;initial:Space.NONE@Method_accept_0.0.1.0.0-C;initial:a.list@Method_accept_0.0.0-C;initial:a@Method_accept_0.0.0-E;initial:b.list@Method_accept_0-C;initial:b@Method_accept_0-E;initial:separator@Method_accept_0.0.0-E;initial:this.countMid@Method_accept_0.0.1.0.2-C;initial@Field_countMid, context-not-null=initial_flow_value@Method_accept_0.0.1-C, read=true:1}, start={context-modified=constructor-to-instance@Method_accept_0.0.1.0.0.0.0-E;initial:Space.NONE@Method_accept_0.0.1.0.0-C;initial:a.list@Method_accept_0.0.0-C;initial:a@Method_accept_0.0.0-E;initial:b.list@Method_accept_0-C;initial:b@Method_accept_0-E;initial:separator@Method_accept_0.0.0-E;initial:this.countMid@Method_accept_0.0.1.0.2-C;initial@Field_countMid, context-not-null=nullable:1}, this={context-modified=constructor-to-instance@Method_accept_0.0.1.0.0.0.0-E;initial:Space.NONE@Method_accept_0.0.1.0.0-C;initial:a.list@Method_accept_0.0.0-C;initial:a@Method_accept_0.0.0-E;initial:b.list@Method_accept_0-C;initial:b@Method_accept_0-E;initial:separator@Method_accept_0.0.0-E;initial:this.countMid@Method_accept_0.0.1.0.2-C;initial@Field_countMid, read=true:1}, this={context-modified=constructor-to-instance@Method_accept_0.0.1.0.0.0.0-E;initial:Space.NONE@Method_accept_0.0.1.0.0-C;initial:a.list@Method_accept_0.0.0-C;initial:a@Method_accept_0.0.0-E;initial:b.list@Method_accept_0-C;initial:b@Method_accept_0-E;initial:separator@Method_accept_0.0.0-E;initial:this.countMid@Method_accept_0.0.1.0.2-C;initial@Field_countMid}";
+                    case 1, 2 -> "countMid={context-modified=link:outputBuilders@Method_add_1:M;link:outputElements@Method_add_1:M;link:this.list@Method_add_1:M;link@Field_list, context-not-null=initial_flow_value@Method_accept_0.0.1-C, read=true:1}, end={context-modified=link:outputBuilders@Method_add_1:M;link:outputElements@Method_add_1:M;link:this.list@Method_add_1:M;link@Field_list, context-not-null=nullable:1}, separator={context-modified=link:outputBuilders@Method_add_1:M;link:outputElements@Method_add_1:M;link:this.list@Method_add_1:M;link@Field_list, context-not-null=initial_flow_value@Method_accept_0.0.1-C, read=true:1}, start={context-modified=link:outputBuilders@Method_add_1:M;link:outputElements@Method_add_1:M;link:this.list@Method_add_1:M;link@Field_list, context-not-null=nullable:1}, this={context-modified=link:outputBuilders@Method_add_1:M;link:outputElements@Method_add_1:M;link:this.list@Method_add_1:M;link@Field_list, read=true:1}, this={context-modified=link:outputBuilders@Method_add_1:M;link:outputElements@Method_add_1:M;link:this.list@Method_add_1:M;link@Field_list}";
+                    case 3 -> "countMid={context-modified=link:outputBuilders@Method_add_1:M;link:outputElements@Method_add_1:M;link:this.list@Method_add_1:M, context-not-null=not_null:5, read=true:1}, end={context-modified=link:outputBuilders@Method_add_1:M;link:outputElements@Method_add_1:M;link:this.list@Method_add_1:M, context-not-null=nullable:1}, separator={context-modified=link:outputBuilders@Method_add_1:M;link:outputElements@Method_add_1:M;link:this.list@Method_add_1:M, context-not-null=nullable:1, read=true:1}, start={context-modified=link:outputBuilders@Method_add_1:M;link:outputElements@Method_add_1:M;link:this.list@Method_add_1:M, context-not-null=nullable:1}, this={context-modified=link:outputBuilders@Method_add_1:M;link:outputElements@Method_add_1:M;link:this.list@Method_add_1:M, read=true:1}, this={context-modified=link:outputBuilders@Method_add_1:M;link:outputElements@Method_add_1:M;link:this.list@Method_add_1:M}";
+                    default -> "countMid={context-modified=true:1, context-not-null=not_null:5, read=true:1}, end={context-modified=false:0, context-not-null=nullable:1}, separator={context-modified=true:1, context-not-null=nullable:1, read=true:1}, start={context-modified=false:0, context-not-null=nullable:1}, this={context-modified=false:0}, this={context-modified=true:1, read=true:1}";
+                };
+                assertEquals(props, d.statementAnalysis().propertiesFromSubAnalysersSortedToString());
+            }
+
+            // in accept in accumulator: the first source of non-empty variable access reports
+            if ("accept".equals(d.methodInfo().name) && "$3".equals(d.methodInfo().typeInfo.simpleName)) {
+                assertEquals("$2", d.methodInfo().typeInfo.packageNameOrEnclosingType.getRight().simpleName);
+                if ("0".equals(d.statementId())) {
+                    String links = switch (d.iteration()) {
+                        case 0 -> "constructor-to-instance@Method_accept_0.0.1.0.0.0.0-E;initial:Space.NONE@Method_accept_0.0.1.0.0-C;initial:a.list@Method_accept_0.0.0-C;initial:a@Method_accept_0.0.0-E;initial:b.list@Method_accept_0-C;initial:b@Method_accept_0-E;initial:separator@Method_accept_0.0.0-E;initial:this.countMid@Method_accept_0.0.1.0.2-C;initial@Field_countMid";
+                        case 1, 2 -> "link:outputBuilders@Method_add_1:M;link:outputElements@Method_add_1:M;link:this.list@Method_add_1:M;link@Field_list";
+                        case 3 -> "link:outputBuilders@Method_add_1:M;link:outputElements@Method_add_1:M;link:this.list@Method_add_1:M";
+                        default -> "";
+                    };
+                    assertEquals(links, d.statementAnalysis().methodLevelData().linksHaveNotYetBeenEstablished().toString());
+                    String report = switch (d.iteration()) {
+                        case 0 -> "countMid={context-modified=constructor-to-instance@Method_accept_0.0.1.0.0.0.0-E;initial:Space.NONE@Method_accept_0.0.1.0.0-C;initial:a.list@Method_accept_0.0.0-C;initial:a@Method_accept_0.0.0-E;initial:b.list@Method_accept_0-C;initial:b@Method_accept_0-E;initial:separator@Method_accept_0.0.0-E;initial:this.countMid@Method_accept_0.0.1.0.2-C;initial@Field_countMid, context-not-null=initial_flow_value@Method_accept_0.0.1-C, read=true:1}, end={context-modified=constructor-to-instance@Method_accept_0.0.1.0.0.0.0-E;initial:Space.NONE@Method_accept_0.0.1.0.0-C;initial:a.list@Method_accept_0.0.0-C;initial:a@Method_accept_0.0.0-E;initial:b.list@Method_accept_0-C;initial:b@Method_accept_0-E;initial:separator@Method_accept_0.0.0-E;initial:this.countMid@Method_accept_0.0.1.0.2-C;initial@Field_countMid, context-not-null=nullable:1}, separator={context-modified=constructor-to-instance@Method_accept_0.0.1.0.0.0.0-E;initial:Space.NONE@Method_accept_0.0.1.0.0-C;initial:a.list@Method_accept_0.0.0-C;initial:a@Method_accept_0.0.0-E;initial:b.list@Method_accept_0-C;initial:b@Method_accept_0-E;initial:separator@Method_accept_0.0.0-E;initial:this.countMid@Method_accept_0.0.1.0.2-C;initial@Field_countMid, context-not-null=initial_flow_value@Method_accept_0.0.1-C, read=true:1}, start={context-modified=constructor-to-instance@Method_accept_0.0.1.0.0.0.0-E;initial:Space.NONE@Method_accept_0.0.1.0.0-C;initial:a.list@Method_accept_0.0.0-C;initial:a@Method_accept_0.0.0-E;initial:b.list@Method_accept_0-C;initial:b@Method_accept_0-E;initial:separator@Method_accept_0.0.0-E;initial:this.countMid@Method_accept_0.0.1.0.2-C;initial@Field_countMid, context-not-null=nullable:1}, this={context-modified=constructor-to-instance@Method_accept_0.0.1.0.0.0.0-E;initial:Space.NONE@Method_accept_0.0.1.0.0-C;initial:a.list@Method_accept_0.0.0-C;initial:a@Method_accept_0.0.0-E;initial:b.list@Method_accept_0-C;initial:b@Method_accept_0-E;initial:separator@Method_accept_0.0.0-E;initial:this.countMid@Method_accept_0.0.1.0.2-C;initial@Field_countMid, read=true:1}, this={context-modified=constructor-to-instance@Method_accept_0.0.1.0.0.0.0-E;initial:Space.NONE@Method_accept_0.0.1.0.0-C;initial:a.list@Method_accept_0.0.0-C;initial:a@Method_accept_0.0.0-E;initial:b.list@Method_accept_0-C;initial:b@Method_accept_0-E;initial:separator@Method_accept_0.0.0-E;initial:this.countMid@Method_accept_0.0.1.0.2-C;initial@Field_countMid}";
+                        case 1, 2 -> "countMid={context-modified=link:outputBuilders@Method_add_1:M;link:outputElements@Method_add_1:M;link:this.list@Method_add_1:M;link@Field_list, context-not-null=initial_flow_value@Method_accept_0.0.1-C, read=true:1}, end={context-modified=link:outputBuilders@Method_add_1:M;link:outputElements@Method_add_1:M;link:this.list@Method_add_1:M;link@Field_list, context-not-null=nullable:1}, separator={context-modified=link:outputBuilders@Method_add_1:M;link:outputElements@Method_add_1:M;link:this.list@Method_add_1:M;link@Field_list, context-not-null=initial_flow_value@Method_accept_0.0.1-C, read=true:1}, start={context-modified=link:outputBuilders@Method_add_1:M;link:outputElements@Method_add_1:M;link:this.list@Method_add_1:M;link@Field_list, context-not-null=nullable:1}, this={context-modified=link:outputBuilders@Method_add_1:M;link:outputElements@Method_add_1:M;link:this.list@Method_add_1:M;link@Field_list, read=true:1}, this={context-modified=link:outputBuilders@Method_add_1:M;link:outputElements@Method_add_1:M;link:this.list@Method_add_1:M;link@Field_list}";
+                        case 3 -> "countMid={context-modified=link:outputBuilders@Method_add_1:M;link:outputElements@Method_add_1:M;link:this.list@Method_add_1:M, context-not-null=not_null:5, read=true:1}, end={context-modified=link:outputBuilders@Method_add_1:M;link:outputElements@Method_add_1:M;link:this.list@Method_add_1:M, context-not-null=nullable:1}, separator={context-modified=link:outputBuilders@Method_add_1:M;link:outputElements@Method_add_1:M;link:this.list@Method_add_1:M, context-not-null=nullable:1, read=true:1}, start={context-modified=link:outputBuilders@Method_add_1:M;link:outputElements@Method_add_1:M;link:this.list@Method_add_1:M, context-not-null=nullable:1}, this={context-modified=link:outputBuilders@Method_add_1:M;link:outputElements@Method_add_1:M;link:this.list@Method_add_1:M, read=true:1}, this={context-modified=link:outputBuilders@Method_add_1:M;link:outputElements@Method_add_1:M;link:this.list@Method_add_1:M}";
+                        default -> "countMid={context-modified=true:1, context-not-null=not_null:5, read=true:1}, end={context-modified=false:0, context-not-null=nullable:1}, separator={context-modified=true:1, context-not-null=nullable:1, read=true:1}, start={context-modified=false:0, context-not-null=nullable:1}, this={context-modified=false:0}, this={context-modified=true:1, read=true:1}";
+                    };
+                    assertEquals(report, d.variableAccessReport().toString());
+                }
+            }
+        };
+        MethodAnalyserVisitor methodAnalyserVisitor = d -> {
+            if ("add".equals(d.methodInfo().name)) {
+                TypeInfo t0 = d.methodInfo().methodInspection.get().getParameters().get(0).parameterizedType.typeInfo;
+                if ("OutputElement".equals(t0.simpleName)) {
+                    assertDv(d, DV.TRUE_DV, Property.MODIFIED_METHOD);
+                    assertDv(d.p(0), 4, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
+                    // IMPORTANT: dependent means a.add(oe) implies mod on oe
+                    assertDv(d.p(0), 4, MultiLevel.DEPENDENT_DV, Property.INDEPENDENT); // different from _12!!
+                }
+            }
+        };
+        TypeAnalyserVisitor typeAnalyserVisitor = d -> {
+            if ("OutputElement".equals(d.typeInfo().simpleName)) {
+                assertDv(d, MultiLevel.MUTABLE_DV, Property.IMMUTABLE);
+            }
+        };
+        testClass("OutputBuilderSimplified_13", 0, 0, new DebugConfiguration.Builder()
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
                 .build(), new AnalyserConfiguration.Builder().setForceAlphabeticAnalysisInPrimaryType(true).build());
     }
 }

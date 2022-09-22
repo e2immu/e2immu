@@ -17,6 +17,7 @@ package org.e2immu.analyser.analyser.statementanalyser;
 import org.e2immu.analyser.analyser.Properties;
 import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.analyser.util.AnalyserResult;
+import org.e2immu.analyser.analyser.util.VariableAccessReport;
 import org.e2immu.analyser.analysis.StatementAnalysis;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.model.*;
@@ -175,7 +176,9 @@ record SAHelper(StatementAnalysis statementAnalysis) {
     public void visitStatementVisitors(String statementId,
                                        AnalyserResult result,
                                        StatementAnalyserSharedState sharedState,
-                                       DebugConfiguration debugConfiguration, AnalyserComponents<String, StatementAnalyserSharedState> analyserComponents) {
+                                       DebugConfiguration debugConfiguration,
+                                       AnalyserComponents<String, StatementAnalyserSharedState> analyserComponents,
+                                       VariableAccessReport variableAccessReport) {
         MethodInfo methodInfo = statementAnalysis.methodAnalysis().getMethodInfo();
         for (StatementAnalyserVariableVisitor statementAnalyserVariableVisitor :
                 debugConfiguration.statementAnalyserVariableVisitors()) {
@@ -210,7 +213,8 @@ record SAHelper(StatementAnalysis statementAnalysis) {
                             cm == null ? null : cm.absoluteState(sharedState.context()),
                             cm,
                             sharedState.localConditionManager(),
-                            analyserComponents.getStatusesAsMap()));
+                            analyserComponents.getStatusesAsMap(),
+                            variableAccessReport));
         }
     }
 

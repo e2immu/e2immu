@@ -61,7 +61,7 @@ public class PrimaryTypeAnalyserImpl implements PrimaryTypeAnalyser {
     private final Map<MethodInfo, MethodAnalyser> methodAnalysers;
     private final Map<FieldInfo, FieldAnalyser> fieldAnalysers;
     private final Map<ParameterInfo, ParameterAnalyser> parameterAnalysers;
-    private final AnalyserResult.Builder analyserResultBuilder = new AnalyserResult.Builder();
+    private AnalyserResult.Builder analyserResultBuilder;
     private final Primitives primitives;
     private final ImportantClasses importantClasses;
     private final AnalyserContext parent;
@@ -106,7 +106,7 @@ public class PrimaryTypeAnalyserImpl implements PrimaryTypeAnalyser {
             AnalysisStatus.AnalysisResultSupplier<SharedState> supplier = sharedState -> {
                 analyser.receiveAdditionalTypeAnalysers(localPrimaryTypeAnalysers);
                 AnalyserResult analyserResult = analyser.analyse(sharedState);
-                analyserResultBuilder.add(analyserResult, true, true);
+                analyserResultBuilder.add(analyserResult, true, true, false);
                 if (analyser instanceof MethodAnalyser methodAnalyser) {
                     methodAnalyser.getLocallyCreatedPrimaryTypeAnalysers().forEach(localPrimaryTypeAnalysers::add);
                 }
@@ -231,7 +231,7 @@ public class PrimaryTypeAnalyserImpl implements PrimaryTypeAnalyser {
                 delayHistogram.entrySet().stream().sorted((e1, e2) -> e2.getValue().getCnt() - e1.getValue().getCnt())
                         .limit(20)
                         .map(e -> e.getValue().getCnt() + ": " + (e.getKey() == null ? "?" : (e.getKey().niceClassName() + " " + e.getKey().fullyQualifiedName()) + ": " + e.getValue()))
-                                .collect(Collectors.joining("\n")));
+                        .collect(Collectors.joining("\n")));
     }
 
     private void logAnalysisStatuses(AnalyserComponents<Analyser, SharedState> analyserComponents) {
@@ -261,6 +261,7 @@ public class PrimaryTypeAnalyserImpl implements PrimaryTypeAnalyser {
     @Override
     public AnalyserResult analyse(SharedState sharedState) {
         patternMatcher.startNewIteration();
+        analyserResultBuilder = new AnalyserResult.Builder();
         AnalysisStatus analysisStatus = analyserComponents.run(sharedState);
         LOGGER.info("At end of PTA analysis, done {} of {} components, progress? {}",
                 analyserComponents.getStatuses().stream().filter(p -> p.getV().isDone()).count(),
@@ -331,12 +332,6 @@ public class PrimaryTypeAnalyserImpl implements PrimaryTypeAnalyser {
         return methodAnalysers.values().stream();
     }
 
-    /*
-        @Override
-        public Stream<MethodAnalyser> parallelMethodAnalyserStream() {
-            return methodAnalysers.values().stream();
-        }
-    */
     @Override
     public TypeAnalyser getTypeAnalyser(TypeInfo typeInfo) {
         TypeAnalyser typeAnalyser = typeAnalysers.get(typeInfo);
@@ -383,9 +378,5 @@ public class PrimaryTypeAnalyserImpl implements PrimaryTypeAnalyser {
     @Override
     public boolean isUnreachable() {
         return unreachable.isSet();
-    }
-
-    public Set<Integer> getIterationsWithAllowBreakDelay() {
-        return Set.copyOf(iterationsWithAllowBreakDelay);
     }
 }

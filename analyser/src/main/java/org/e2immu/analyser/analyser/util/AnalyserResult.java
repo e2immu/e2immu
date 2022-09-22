@@ -31,19 +31,6 @@ public record AnalyserResult(AnalysisStatus analysisStatus,
     public static final AnalyserResult EMPTY = new AnalyserResult(AnalysisStatus.DONE,
             Messages.EMPTY, VariableAccessReport.EMPTY, List.of());
 
-    public AnalyserResult combine(AnalyserResult other) {
-        return new AnalyserResult(analysisStatus.combine(other.analysisStatus),
-                messages.combine(other.messages),
-                variableAccessReport.combine(other.variableAccessReport),
-                combineLocalAnalysers(other.localAnalysers));
-    }
-
-    private List<PrimaryTypeAnalyser> combineLocalAnalysers(List<PrimaryTypeAnalyser> other) {
-        if (localAnalysers.isEmpty()) return other;
-        if (other.isEmpty()) return localAnalysers;
-        return Stream.concat(localAnalysers.stream(), other.stream()).toList();
-    }
-
     public static class Builder {
         private AnalysisStatus analysisStatus = AnalysisStatus.DONE;
         private final Messages messages = new Messages();
@@ -51,11 +38,11 @@ public record AnalyserResult(AnalysisStatus analysisStatus,
         private final List<PrimaryTypeAnalyser> localAnalysers = new ArrayList<>();
 
         public void add(AnalyserResult other) {
-            add(other, true, false);
+            add(other, true, false, true);
         }
 
-        public void add(AnalyserResult other, boolean addLocalAnalysers, boolean limit) {
-            this.variableAccessReport = variableAccessReport.combine(other.variableAccessReport);
+        public void add(AnalyserResult other, boolean addLocalAnalysers, boolean limit, boolean stayWithinMethod) {
+            this.variableAccessReport = variableAccessReport.combine(other.variableAccessReport, stayWithinMethod);
             if (addLocalAnalysers) this.localAnalysers.addAll(other.localAnalysers);
             combineAnalysisStatus(other.analysisStatus, limit);
             this.messages.addAll(other.messages().getMessageStream());
@@ -112,6 +99,10 @@ public record AnalyserResult(AnalysisStatus analysisStatus,
 
         public Stream<Message> getMessageStream() {
             return messages.getMessageStream();
+        }
+
+        public VariableAccessReport getVariableAccessReport() {
+            return variableAccessReport;
         }
     }
 }

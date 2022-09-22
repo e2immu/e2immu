@@ -2555,14 +2555,19 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
             boolean haveMapForVariable = read != null || modified != null || notNull != null;
             if (haveMapForVariable) {
                 Properties p = propertiesFromSubAnalysers.computeIfAbsent(variable, v -> Properties.writable());
-                if (read != null) {
-                    p.put(READ, read);
-                }
-                if (modified != null) {
-                    p.put(CONTEXT_MODIFIED, modified);
-                }
-                if (notNull != null) {
-                    p.put(CONTEXT_NOT_NULL, notNull);
+                try {
+                    if (read != null) {
+                        p.put(READ, read);
+                    }
+                    if (modified != null) {
+                        p.put(CONTEXT_MODIFIED, modified);
+                    }
+                    if (notNull != null) {
+                        p.put(CONTEXT_NOT_NULL, notNull);
+                    }
+                } catch (IllegalArgumentException ise) {
+                    LOGGER.error("Caught property change violation for variable {}", variable);
+                    throw ise;
                 }
             }
         }

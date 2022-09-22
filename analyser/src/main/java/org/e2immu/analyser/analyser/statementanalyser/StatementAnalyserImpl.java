@@ -492,7 +492,8 @@ public class StatementAnalyserImpl implements StatementAnalyser {
                     .build();
 
             helper.visitStatementVisitors(statementAnalysis.index(), result, sharedState,
-                    analyserContext.getConfiguration().debugConfiguration(), analyserComponents);
+                    analyserContext.getConfiguration().debugConfiguration(), analyserComponents,
+                    analyserResultBuilder.getVariableAccessReport());
 
             if (overallStatus.isDone()) {
                 statementAnalysis.internalAllDoneCheck();
@@ -636,56 +637,47 @@ public class StatementAnalyserImpl implements StatementAnalyser {
     */
     private AnalysisStatus transferFromClosureToResult(StatementAnalyserSharedState statementAnalyserSharedState) {
         StatementAnalysis last = myMethodAnalyser.getMethodAnalysis().getLastStatement();
-        if (last != statementAnalysis) {
-            // no point in running this unless we are the last statement in the method
+        EvaluationContext closure = statementAnalyserSharedState.evaluationContext().getClosure();
+        MethodInfo methodInfo = myMethodAnalyser.getMethodInfo();
+        boolean firstCallInCycle = methodInfo.methodResolution.get().ignoreMeBecauseOfPartOfCallCycle();
+        if (last != statementAnalysis || closure == null || firstCallInCycle) {
+            analyserResultBuilder.setVariableAccessReport(VariableAccessReport.EMPTY);
             return DONE;
         }
-        EvaluationContext closure = statementAnalyserSharedState.evaluationContext().getClosure();
-        if (closure != null) {
-            MethodInfo methodInfo = myMethodAnalyser.getMethodInfo();
-            boolean firstCallInCycle = methodInfo.methodResolution.get().ignoreMeBecauseOfPartOfCallCycle();
-            if (!firstCallInCycle) {
-                VariableAccessReport.Builder builder = new VariableAccessReport.Builder();
-                AtomicReference<CausesOfDelay> causes = new AtomicReference<>(CausesOfDelay.EMPTY);
-                TypeInfo currentType = statementAnalyserSharedState.evaluationContext().getCurrentType();
-                CausesOfDelay linksEstablished = statementAnalysis.methodLevelData().getLinksHaveBeenEstablished();
-                statementAnalysis.variableStream().forEach(vi -> {
-                    // naive approach
+
+        VariableAccessReport.Builder builder = new VariableAccessReport.Builder();
+        AtomicReference<CausesOfDelay> causes = new AtomicReference<>(CausesOfDelay.EMPTY);
+        TypeInfo currentType = statementAnalyserSharedState.evaluationContext().getCurrentType();
+        CausesOfDelay linksEstablished = statementAnalysis.methodLevelData().getLinksHaveBeenEstablished();
+        statementAnalysis.variableStream()
+                .filter(vi -> closure.acceptForVariableAccessReport(vi.variable(), currentType))
+                .forEach(vi -> {
                     Variable variable = vi.variable();
-                    if (closure.acceptForVariableAccessReport(variable, currentType)) {
-                        // mark, irrespective of whether it is present there or not (given that we are not the owner)
-                        // readId will be 0-E, index 0
-                        if (vi.isRead()) {
-                            builder.addVariableRead(variable);
-                        }
-
-                        DV modified = vi.getProperty(Property.CONTEXT_MODIFIED);
-
-                        /*
-                         the variable can be P-- in iteration 0, with modified == FALSE, and PEM in iteration 1, with a delay.
-                         Only when the links have been established, can we be sure that modified will progress in a stable fashion.
-                         */
-
-                        DV combined = modified.isDelayed() || linksEstablished.isDone() || modified.valueIsTrue()
-                                ? modified
-                                : modified.causesOfDelay().merge(linksEstablished);
-                        builder.addContextProperty(variable, Property.CONTEXT_MODIFIED, combined); // also when delayed!!!
-                        if (combined.isDelayed()) causes.set(causes.get().merge(combined.causesOfDelay()));
-                        if (!(variable instanceof This)) {
-                            DV notNull = vi.getProperty(Property.CONTEXT_NOT_NULL);
-                            builder.addContextProperty(variable, Property.CONTEXT_NOT_NULL, notNull);
-                            if (notNull.isDelayed()) causes.set(causes.get().merge(notNull.causesOfDelay()));
+                    if (vi.isRead()) {
+                        builder.addVariableRead(variable);
+                    }
+                    DV modified = vi.getProperty(Property.CONTEXT_MODIFIED);
+                    CausesOfDelay delays = modified.causesOfDelay().merge(linksEstablished);
+                    if (delays.isDone()) {
+                        builder.addContextProperty(variable, Property.CONTEXT_MODIFIED, modified); // also when delayed!!!
+                    } else {
+                        builder.addContextProperty(variable, Property.CONTEXT_MODIFIED, delays);
+                        causes.set(causes.get().merge(delays.causesOfDelay()));
+                    }
+                    if (!(variable instanceof This)) {
+                        DV notNull = vi.getProperty(Property.CONTEXT_NOT_NULL);
+                        builder.addContextProperty(variable, Property.CONTEXT_NOT_NULL, notNull);
+                        if (notNull.isDelayed()) {
+                            causes.set(causes.get().merge(notNull.causesOfDelay()));
                         }
                     }
                 });
-                VariableAccessReport variableAccessReport = builder.build();
-                analyserResultBuilder.setVariableAccessReport(variableAccessReport);
+        VariableAccessReport variableAccessReport = builder.build();
+        analyserResultBuilder.setVariableAccessReport(variableAccessReport);
 
-                if (causes.get().isDelayed()) {
-                    LOGGER.debug("Delay transfer from closure to result: {}", causes.get());
-                    return causes.get();
-                }
-            }
+        if (causes.get().isDelayed()) {
+            LOGGER.debug("Delay transfer from closure to result: {}", causes.get());
+            return causes.get();
         }
         return DONE;
     }
