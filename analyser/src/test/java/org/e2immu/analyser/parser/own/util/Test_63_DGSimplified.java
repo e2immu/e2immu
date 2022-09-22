@@ -46,30 +46,31 @@ public class Test_63_DGSimplified extends CommonTestRunner {
         EvaluationResultVisitor evaluationResultVisitor = d -> {
             if ("accept".equals(d.methodInfo().name) && "$4".equals(d.methodInfo().typeInfo.simpleName)) {
                 if ("0.0.1".equals(d.statementId())) {
-                    String value = d.iteration() <= 33 ? "<m:put>" : "nullable instance type Node<T>";
+                    String value = d.iteration() < 4 ? "<m:put>" : "nullable instance type Node<T>";
                     assertEquals(value, d.evaluationResult().value().toString());
-                    assertEquals(d.iteration() >= 36, d.evaluationResult().causesOfDelay().isDone());
+                    assertEquals(d.iteration() >= 4, d.evaluationResult().causesOfDelay().isDone());
                 }
             }
             if ("copyRemove".equals(d.methodInfo().name)) {
                 if ("2".equals(d.statementId())) {
-                    String expected = d.iteration() == 0 ? "<m:freeze>" : "<no return value>";
+                    String expected = d.iteration() < 4 ? "<m:freeze>" : "<no return value>";
                     assertEquals(expected, d.evaluationResult().value().toString());
                 }
             }
         };
+
         StatementAnalyserVisitor statementAnalyserVisitor = d -> {
             if ("accept".equals(d.methodInfo().name) && "$4".equals(d.methodInfo().typeInfo.simpleName)) {
                 if ("0.0.1".equals(d.statementId())) {
-                    assertEquals(d.iteration() >= 36, d.statementAnalysis().methodLevelData().linksHaveBeenEstablished());
+                    assertEquals(d.iteration() >= 3, d.statementAnalysis().methodLevelData().linksHaveBeenEstablished());
                 }
                 if ("0".equals(d.statementId())) {
-                    assertEquals(d.iteration() >= 36, d.statementAnalysis().methodLevelData().linksHaveBeenEstablished());
+                    assertEquals(d.iteration() >= 3, d.statementAnalysis().methodLevelData().linksHaveBeenEstablished());
                 }
             }
             if ("removeAsManyAsPossible".equals(d.methodInfo().name)) {
                 if ("1".equals(d.statementId())) {
-                    String state = d.iteration() <= 1 ? "!<m:get>" : "!changed.get()";
+                    String state = d.iteration() < 2 ? "!<m:get>" : "!changed.get()";
                     assertEquals(state, d.state().toString());
                 }
             }
@@ -78,7 +79,7 @@ public class Test_63_DGSimplified extends CommonTestRunner {
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("comparator".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof ReturnVariable) {
-                    String expected = d.iteration() <= 1 ? "<m:compare>"
+                    String expected = d.iteration() < 4 ? "<m:compare>"
                             : "/*inline compare*/(e1.getValue()).dependsOn$0.size()==(e2.getValue()).dependsOn$0.size()?null==backupComparator?0:backupComparator.compare(e1.getKey(),e2.getKey()):(e1.getValue()).dependsOn$0.size()-(e2.getValue()).dependsOn$0.size()";
                     assertEquals(expected, d.currentValue().toString());
                 }
@@ -90,18 +91,18 @@ public class Test_63_DGSimplified extends CommonTestRunner {
                         assertDv(d, MultiLevel.MUTABLE_DV, Property.IMMUTABLE);
                     }
                     if ("2".equals(d.statementId())) {
-                        String expected = d.iteration() == 0 ? "<v:copy>" : "instance type DGSimplified_0<T>";
+                        String expected = d.iteration() < 4 ? "<v:copy>" : "instance type DGSimplified_0<T>";
                         assertEquals(expected, d.currentValue().toString());
-                        assertDv(d, 1, MultiLevel.MUTABLE_DV, Property.IMMUTABLE);
-                        assertDv(d, 1, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
+                        assertDv(d, 4, MultiLevel.MUTABLE_DV, Property.IMMUTABLE);
+                        assertDv(d, 3, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
                     }
                 }
                 if (d.variable() instanceof ParameterInfo pi && "accept".equals(pi.name)) {
                     if ("1".equals(d.statementId())) {
-                        assertDv(d, 36, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                        assertDv(d, 3, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     }
                     if ("3".equals(d.statementId())) {
-                        assertDv(d, 36, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                        assertDv(d, 3, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     }
                 }
             }
@@ -110,8 +111,8 @@ public class Test_63_DGSimplified extends CommonTestRunner {
                     if ("copy".equals(fr.scope.toString())) {
                         if ("0.0.1".equals(d.statementId())) {
                             assertDv(d, 1, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
-                            String lvs = d.iteration() <= 35 ? "accept:-1,copy:-1,newDependsOn:-1,node.dependsOn:-1,node:-1,t:-1"
-                                    : "accept:3,copy:2,newDependsOn:3,node.dependsOn:3,node:3,t:3";
+                            String lvs = d.iteration() < 3 ? "accept:-1,copy:-1,newDependsOn:-1,node.dependsOn:-1,node:-1,t:-1"
+                                    : "copy:2,newDependsOn:4,node.dependsOn:4,node:4";
                             assertEquals(lvs, d.variableInfo().getLinkedVariables().toString());
                         }
                         if ("0".equals(d.statementId())) {
@@ -126,28 +127,30 @@ public class Test_63_DGSimplified extends CommonTestRunner {
                     }
                     if ("0.0.1".equals(d.statementId())) {
                         assertDv(d, 1, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
-                        String lvs = d.iteration() <= 35 ? "accept:-1,copy.nodeMap:-1,newDependsOn:-1,node.dependsOn:-1,node:-1,t:-1"
-                                : "accept:3,copy.nodeMap:2,newDependsOn:3,node.dependsOn:3,node:3,t:3";
+                        String lvs = d.iteration() == 0 ? "NOT_YET_SET"
+                                : d.iteration() < 3 ? "accept:-1,copy.nodeMap:-1,newDependsOn:-1,node.dependsOn:-1,node:-1,t:-1"
+                                : "copy.nodeMap:4,newDependsOn:4,node.dependsOn:4,node:4";
                         assertEquals(lvs, d.variableInfo().getLinkedVariables().toString());
                     }
                 }
                 if (d.variable() instanceof ParameterInfo pi && "accept".equals(pi.name)) {
                     assertEquals("copyRemove", pi.owner.name);
                     if ("0.0.0".equals(d.statementId())) {
-                        String linked = d.iteration() == 0 ? "newDependsOn:-1,node.dependsOn:-1,node:-1"
-                                : d.iteration() < 34 ? "newDependsOn:-1,node.dependsOn:-1,node:-1,t:-1"
-                                : "newDependsOn:3,node.dependsOn:3,node:3,t:3";
+                        String linked = d.iteration() == 0 ? "NOT_YET_SET"
+                                : d.iteration() == 1 ? "newDependsOn:-1,node.dependsOn:-1,node:-1"
+                                : "";
                         assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
-                        assertDv(d, 26, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                        assertDv(d, 2, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     }
                     if ("0.0.1".equals(d.statementId())) {
-                        String linked = d.iteration() < 36 ? "copy.nodeMap:-1,copy:-1,newDependsOn:-1,node.dependsOn:-1,node:-1,t:-1"
-                                : "copy.nodeMap:3,copy:3,newDependsOn:3,node.dependsOn:3,node:3,t:3";
+                        String linked = d.iteration() == 0 ? "NOT_YET_SET"
+                                : d.iteration() == 1 ? "copy.nodeMap:-1,copy:-1,newDependsOn:-1,node.dependsOn:-1,node:-1,t:-1"
+                                : "";
                         assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
-                        assertDv(d, 34, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                        assertDv(d, 3, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     }
                     if ("0".equals(d.statementId())) {
-                        assertDv(d, 36, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                        assertDv(d, 3, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     }
                 }
             }
@@ -155,11 +158,11 @@ public class Test_63_DGSimplified extends CommonTestRunner {
                 if ("changed".equals(d.variableName())) {
                     if ("1".equals(d.statementId())) {
                         assertTrue(d.variableInfoContainer().variableNature() instanceof VariableNature.VariableDefinedOutsideLoop);
-                        assertCurrentValue(d, 35, "changed$1.get()?instance type AtomicBoolean:new AtomicBoolean(true)");
+                        assertCurrentValue(d, 5, "changed$1.get()?instance type AtomicBoolean:new AtomicBoolean(true)");
                         assertDv(d, 1, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
                     }
                     if ("1.0.1".equals(d.statementId())) {
-                        String expected = d.iteration() <= 34 ? "<vl:changed>" : "instance type AtomicBoolean";
+                        String expected = d.iteration() < 5 ? "<vl:changed>" : "instance type AtomicBoolean";
                         assertEquals(expected, d.currentValue().toString());
                         assertDv(d, 1, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
                     }
@@ -171,10 +174,12 @@ public class Test_63_DGSimplified extends CommonTestRunner {
                 assertEquals("instance type HashMap<T,Node<T>>", d.fieldAnalysis().getValue().toString());
                 assertDv(d, MultiLevel.MUTABLE_DV, Property.EXTERNAL_IMMUTABLE);
                 assertDv(d, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.EXTERNAL_NOT_NULL);
-                assertDv(d, MultiLevel.CONTAINER_DV, Property.CONTAINER_RESTRICTION);
+                assertDv(d, 4, MultiLevel.NOT_CONTAINER_DV, Property.CONTAINER_RESTRICTION);
+                assertDv(d, MultiLevel.CONTAINER_DV, Property.CONTAINER);
                 assertDv(d, MultiLevel.NOT_IGNORE_MODS_DV, Property.EXTERNAL_IGNORE_MODIFICATIONS);
 
-                assertEquals("", ((FieldAnalysisImpl.Builder) d.fieldAnalysis()).allLinksHaveBeenEstablished().toString());
+                String links = d.iteration() == 0 ? "link@Field_nodeMap" : "";
+                assertEquals(links, ((FieldAnalysisImpl.Builder) d.fieldAnalysis()).allLinksHaveBeenEstablished().toString());
             }
         };
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
@@ -182,32 +187,33 @@ public class Test_63_DGSimplified extends CommonTestRunner {
                 assertDv(d, DV.FALSE_DV, Property.MODIFIED_METHOD);
             }
             if ("addNode".equals(d.methodInfo().name)) {
-                assertDv(d.p(0), 36, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
-                assertDv(d, 34, DV.TRUE_DV, Property.MODIFIED_METHOD);
+                assertDv(d.p(0), 6, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                assertDv(d, 4, DV.TRUE_DV, Property.MODIFIED_METHOD);
             }
             if ("comparator".equals(d.methodInfo().name)) {
-                String expected = d.iteration() <= 33 ? "<m:comparator>"
+                String expected = d.iteration() < 4 ? "<m:comparator>"
                         : "/*inline comparator*//*inline compare*/(e1.getValue()).dependsOn$0.size()==(e2.getValue()).dependsOn$0.size()?null==backupComparator?0:backupComparator.compare(e1.getKey(),e2.getKey()):(e1.getValue()).dependsOn$0.size()-(e2.getValue()).dependsOn$0.size()";
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
-                assertDv(d, 34, DV.FALSE_DV, Property.MODIFIED_METHOD);
+                assertDv(d, 3, DV.FALSE_DV, Property.MODIFIED_METHOD);
             }
             if ("copyRemove".equals(d.methodInfo().name)) {
-                assertDv(d, 36, DV.FALSE_DV, Property.MODIFIED_METHOD);
+                assertDv(d, 3, DV.FALSE_DV, Property.MODIFIED_METHOD);
             }
         };
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("DGSimplified_0".equals(d.typeInfo().simpleName)) {
-                assertDv(d, 35, MultiLevel.NOT_CONTAINER_DV, Property.CONTAINER); // TODO verify this
+                // removeAsManyAsPossible is public and has a modified parameter
+                assertDv(d, 5, MultiLevel.NOT_CONTAINER_DV, Property.CONTAINER);
             }
         };
-        // TODO improve on errors
-        testClass("DGSimplified_0", 5, 1, new DebugConfiguration.Builder()
+
+        testClass("DGSimplified_0", 0, 1, new DebugConfiguration.Builder()
                 .addEvaluationResultVisitor(evaluationResultVisitor)
-                .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
-                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+                .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
                 .build(), new AnalyserConfiguration.Builder()
                 .setComputeFieldAnalyserAcrossAllMethods(true).build());
     }
@@ -229,20 +235,16 @@ public class Test_63_DGSimplified extends CommonTestRunner {
             if ("recursivelyComputeDependencies".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof FieldReference fr && "nodeMap".equals(fr.fieldInfo.name)) {
                     if ("3".equals(d.statementId())) {
-                        assertDv(d, 38, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                        assertDv(d, 4, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     }
                 }
                 if (d.variable() instanceof FieldReference fr && "dependsOn".equals(fr.fieldInfo.name)) {
                     if ("node".equals(fr.scope.toString())) {
                         if ("3".equals(d.statementId())) {
-                            String expected = d.iteration() == 0
-                                    ? "<f:dependsOn>" : d.iteration() <= 37
-                                    ? "<null-check>&&null!=nullable instance type List<T>?<f:dependsOn>:nullable instance type List<T>"
-                                    : "nullable instance type List<T>";
-                            assertEquals(expected, d.currentValue().toString());
+                            assertCurrentValue(d, 4, "nullable instance type List<T>");
                         }
                         if ("3.0.0".equals(d.statementId())) { // forEach() call
-                            String expected = d.iteration() <= 37 ? "<f:dependsOn>" : "nullable instance type List<T>";
+                            String expected = d.iteration() < 4 ? "<f:node.dependsOn>" : "nullable instance type List<T>";
                             assertEquals(expected, d.currentValue().toString());
                         }
                     } else if ("nodeMap.get(t)".equals(fr.scope.toString())) {
@@ -259,8 +261,7 @@ public class Test_63_DGSimplified extends CommonTestRunner {
                     if ("3.0.0".equals(d.statementId())) {
                         assertTrue(d.variableInfoContainer().hasEvaluation());
                         VariableInfo eval = d.variableInfoContainer().best(Stage.EVALUATION);
-                        String linked = d.iteration() == 0 ? "node.dependsOn:-1,node:-1,t:-1,this.nodeMap:-1" : "t:3";
-                        assertEquals(linked, eval.getLinkedVariables().toString());
+                        assertEquals("", eval.getLinkedVariables().toString());
                     }
                 }
             }
@@ -269,13 +270,13 @@ public class Test_63_DGSimplified extends CommonTestRunner {
                     if ("0".equals(d.statementId())) {
                         assertTrue(d.variableInfoContainer().hasEvaluation());
                         VariableInfo eval = d.variableInfoContainer().best(Stage.EVALUATION);
-                        String linked = d.iteration() == 0 ? "NOT_YET_SET" : "t:3";
+                        String linked = d.iteration() == 0 ? "NOT_YET_SET" : "";
                         assertEquals(linked, eval.getLinkedVariables().toString());
                         assertTrue(d.variableInfoContainer().hasMerge());
                         assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
                     }
                     if ("0.0.0".equals(d.statementId())) {
-                        String linked = d.iteration() == 0 ? "NOT_YET_SET" : "t:3";
+                        String linked = d.iteration() == 0 ? "NOT_YET_SET" : "";
                         assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
                     }
                 }
@@ -283,11 +284,11 @@ public class Test_63_DGSimplified extends CommonTestRunner {
         };
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("recursivelyComputeDependencies".equals(d.methodInfo().name)) {
-                assertDv(d, 38, DV.FALSE_DV, Property.MODIFIED_METHOD);
+                assertDv(d, 4, DV.FALSE_DV, Property.MODIFIED_METHOD);
             }
             if ("accept".equals(d.methodInfo().name)) {
                 if ("$1".equals(d.methodInfo().typeInfo.simpleName)) { // recursivelyComputeDependencies
-                    assertDv(d, 39, DV.FALSE_DV, Property.MODIFIED_METHOD);
+                    assertDv(d, 5, DV.FALSE_DV, Property.MODIFIED_METHOD);
                 } else if ("$3".equals(d.methodInfo().typeInfo.simpleName)) {// visit
                     assertDv(d, DV.FALSE_DV, Property.MODIFIED_METHOD);
                 }
@@ -312,7 +313,7 @@ public class Test_63_DGSimplified extends CommonTestRunner {
         EvaluationResultVisitor evaluationResultVisitor = d -> {
             if ("reverse".equals(d.methodInfo().name)) {
                 if ("1.0.0".equals(d.statementId())) {
-                    String expected = d.iteration() <= 17 ? "<m:addNode>" : "<no return value>";
+                    String expected = d.iteration() < 21 ? "<m:addNode>" : "<no return value>";
                     assertEquals(expected, d.evaluationResult().value().toString());
                 }
             }
@@ -320,7 +321,7 @@ public class Test_63_DGSimplified extends CommonTestRunner {
         StatementAnalyserVisitor statementAnalyserVisitor = d -> {
             if ("reverse".equals(d.methodInfo().name)) {
                 if ("1.0.0".equals(d.statementId())) {
-                    String expected = d.iteration() <= 17 ? "<m:addNode>" : "<no return value>";
+                    String expected = d.iteration() < 21 ? "<m:addNode>" : "<no return value>";
                     assertEquals(expected, d.statementAnalysis().stateData().valueOfExpression.get().toString());
                 }
             }
@@ -349,23 +350,23 @@ public class Test_63_DGSimplified extends CommonTestRunner {
                 if ("0.0.1".equals(d.statementId())) {
                     String expected = switch (d.iteration()) {
                         case 0 -> "<null-check>";
-                        case 1, 2, 3, 4, 5, 6, 7, 8, 9 -> "null!=<f:node.dependsOn>";
+                        case 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 -> "null!=<f:node.dependsOn>";
                         default -> "null!=(nodeMap.get(t)).dependsOn";
                     };
                     assertEquals(expected, d.evaluationResult().value().toString());
                     String delays = switch (d.iteration()) {
                         case 0 -> "initial:this.nodeMap@Method_reverse_0.0.0-C";
-                        case 1, 2, 3, 4, 5, 6, 7, 8, 9 -> "initial:node@Method_reverse_0.0.1.0.0-C;initial:this.nodeMap@Method_reverse_0.0.0-C";
+                        case 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 -> "link@Field_nodeMap";
                         default -> "";
                     };
                     assertEquals(delays, d.evaluationResult().causesOfDelay().toString());
                 }
                 if ("0.0.1.0.0.0.0".equals(d.statementId())) {
-                    String expected = d.iteration() <= 9 ? "<m:contains>" : "set.contains(d)";
+                    String expected = d.iteration() < 11 ? "<m:contains>" : "set.contains(d)";
                     assertEquals(expected, d.evaluationResult().value().toString());
                     String delays = switch (d.iteration()) {
                         case 0 -> "initial:node@Method_reverse_0.0.1.0.0-C;initial:set@Method_reverse_0.0.0-E;initial:this.nodeMap@Method_reverse_0.0.0-C";
-                        case 1, 2, 3, 4, 5, 6, 7, 8, 9 -> "initial:node@Method_reverse_0.0.1.0.0-C;initial:this.nodeMap@Method_reverse_0.0.0-C";
+                        case 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 -> "initial:set@Method_reverse_0.0.0-E;initial:this.nodeMap@Method_reverse_0.0.0-C;link@Field_nodeMap";
                         default -> "";
                     };
                     assertEquals(delays, d.evaluationResult().causesOfDelay().toString());
@@ -383,18 +384,26 @@ public class Test_63_DGSimplified extends CommonTestRunner {
 
                         assertTrue(d.variableInfoContainer().isInitial());
                         VariableInfo initial = d.variableInfoContainer().getPreviousOrInitial();
-                        String expected = d.iteration() == 0 ? "<f:dependsOn>" : "nullable instance type List<T>";
+                        String expected = switch (d.iteration()) {
+                            case 0 -> "<f:node.dependsOn>";
+                            case 1, 2, 3, 4, 5, 7, 6, 8 -> "<vp:dependsOn:link@Field_dependsOn>";
+                            default -> "nullable instance type List<T>";
+                        };
                         assertEquals(expected, initial.getValue().toString());
 
                         assertTrue(d.variableInfoContainer().hasEvaluation());
                         VariableInfo eval = d.variableInfoContainer().best(Stage.EVALUATION);
-                        String expectedE = d.iteration() <= 9 ? "<f:dependsOn>" : "nullable instance type List<T>";
+                        String expectedE = switch (d.iteration()) {
+                            case 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 -> "<f:node.dependsOn>";
+                            default -> "nullable instance type List<T>";
+                        };
                         assertEquals(expectedE, eval.getValue().toString());
 
                         assertTrue(d.variableInfoContainer().hasMerge());
                         String expectedM = switch (d.iteration()) {
-                            case 0 -> "<f:dependsOn>";
-                            case 1, 2, 3, 4, 5, 6, 7, 8, 9 -> "null==nullable instance type List<T>?nullable instance type List<T>:<f:dependsOn>";
+                            case 0 -> "<f:node.dependsOn>";
+                            case 1,2,3,4,5,6,7,8 -> "<vp:dependsOn:link@Field_dependsOn>";
+                            case 9, 10 -> "null==nullable instance type List<T>?nullable instance type List<T>:<f:node.dependsOn>";
                             default -> "nullable instance type List<T>";
                         };
                         assertEquals(expectedM, d.currentValue().toString());
@@ -599,52 +608,52 @@ public class Test_63_DGSimplified extends CommonTestRunner {
 
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("addNode".equals(d.methodInfo().name)) {
-                assertDv(d, 36, DV.TRUE_DV, Property.MODIFIED_METHOD);
+                assertDv(d, 5, DV.TRUE_DV, Property.MODIFIED_METHOD);
             }
             if ("reverse".equals(d.methodInfo().name)) {
-                assertDv(d.p(0), 40, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
-                assertDv(d.p(0), 40, MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL_DV, Property.NOT_NULL_PARAMETER);
-                assertDv(d, 50, MultiLevel.EFFECTIVELY_FINAL_FIELDS_DV, Property.IMMUTABLE);
-                assertDv(d, 19, MultiLevel.INDEPENDENT_DV, Property.INDEPENDENT);
+                assertDv(d.p(0), 9, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
+                assertDv(d.p(0), 9, MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL_DV, Property.NOT_NULL_PARAMETER);
+                assertDv(d, 28, MultiLevel.EFFECTIVELY_FINAL_FIELDS_DV, Property.IMMUTABLE);
+                assertDv(d, 8, MultiLevel.INDEPENDENT_HC_DV, Property.INDEPENDENT);
                 // priority 4
-                assertEquals(d.iteration() >= 50, d.methodAnalysis().getSingleReturnValue().isDone());
-                if (d.iteration() >= 50) {
+                assertEquals(d.iteration() >= 28, d.methodAnalysis().getSingleReturnValue().isDone());
+                if (d.iteration() >= 28) {
                     assertEquals("/*inline reverse*/set.isEmpty()?new DGSimplified_4<>():instance type DGSimplified_4<T>", d.methodAnalysis().getSingleReturnValue().toString());
                 }
             }
             if ("singleRemoveStep".equals(d.methodInfo().name)) {
-                assertDv(d, 36, DV.FALSE_DV, Property.MODIFIED_METHOD);
-                assertDv(d.p(0), 37, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_PARAMETER);
-                assertDv(d.p(0), 37, DV.TRUE_DV, Property.MODIFIED_VARIABLE);
-                assertEquals(d.iteration() >= 37, d.methodAnalysis().getSingleReturnValue().isDone());
-                if (d.iteration() >= 37) {
+                assertDv(d, 6, DV.FALSE_DV, Property.MODIFIED_METHOD);
+                assertDv(d.p(0), 6, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_PARAMETER);
+                assertDv(d.p(0), 6, DV.TRUE_DV, Property.MODIFIED_VARIABLE);
+                assertEquals(d.iteration() >= 6, d.methodAnalysis().getSingleReturnValue().isDone());
+                if (d.iteration() >= 6) {
                     assertEquals("/*inline singleRemoveStep*/instance type boolean", d.methodAnalysis().getSingleReturnValue().toString());
                 }
                 assertDv(d, 0, MultiLevel.INDEPENDENT_DV, Property.INDEPENDENT);
             }
             if ("sorted".equals(d.methodInfo().name)) {
                 // priority 2
-                assertDv(d, 47, MultiLevel.INDEPENDENT_HC_DV, Property.INDEPENDENT);
+                assertDv(d, 21, MultiLevel.INDEPENDENT_HC_DV, Property.INDEPENDENT);
             }
             if ("comparator".equals(d.methodInfo().name)) {
-                assertDv(d, MultiLevel.INDEPENDENT_DV, Property.INDEPENDENT);
+                assertDv(d, 4, MultiLevel.INDEPENDENT_DV, Property.INDEPENDENT);
             }
             if ("removeAsManyAsPossible".equals(d.methodInfo().name)) {
-                assertDv(d, 50, DV.FALSE_DV, Property.MODIFIED_METHOD);
-                assertDv(d.p(0), 38, DV.TRUE_DV, Property.MODIFIED_VARIABLE);
+                assertDv(d, 28, DV.FALSE_DV, Property.MODIFIED_METHOD);
+                assertDv(d.p(0), 7, DV.TRUE_DV, Property.MODIFIED_VARIABLE);
             }
         };
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("DGSimplified_4".equals(d.typeInfo().simpleName)) {
-                assertDv(d, 49, MultiLevel.EFFECTIVELY_FINAL_FIELDS_DV, Property.IMMUTABLE);
+                assertDv(d, 27, MultiLevel.EFFECTIVELY_FINAL_FIELDS_DV, Property.IMMUTABLE);
                 // priority 3
                 // IMPROVE we should find a better breaking point (but the value appears to be correct)
-                assertDv(d, 49, MultiLevel.INDEPENDENT_HC_INCONCLUSIVE, Property.INDEPENDENT);
+                assertDv(d, 27, MultiLevel.INDEPENDENT_HC_INCONCLUSIVE, Property.INDEPENDENT);
             }
         };
         testClass("DGSimplified_4", 1, 3, new DebugConfiguration.Builder()
-                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-                .addStatementAnalyserVisitor(statementAnalyserVisitor)
+            //    .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+             //   .addStatementAnalyserVisitor(statementAnalyserVisitor)
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
                 .build(), new AnalyserConfiguration.Builder().setComputeFieldAnalyserAcrossAllMethods(true).build());

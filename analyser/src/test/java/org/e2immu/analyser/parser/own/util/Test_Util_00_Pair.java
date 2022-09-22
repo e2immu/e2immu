@@ -54,7 +54,7 @@ public class Test_Util_00_Pair extends CommonTestRunner {
 
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("getV".equals(d.methodInfo().name)) {
-                assertDv(d, MultiLevel.INDEPENDENT_HC_DV, Property.INDEPENDENT);
+                assertDv(d, 1, MultiLevel.INDEPENDENT_HC_DV, Property.INDEPENDENT);
             }
             if ("Pair".equals(d.methodInfo().name)) {
                 assertTrue(d.methodInfo().isConstructor);
@@ -64,7 +64,7 @@ public class Test_Util_00_Pair extends CommonTestRunner {
 
         // fields k and v do not link to the constructor's parameters because they are transparent
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
-            assertEquals("Type param K, Type param V", d.typeAnalysis().getHiddenContentTypes().toString());
+            assertEquals("K, V", d.typeAnalysis().getHiddenContentTypes().toString());
             assertDv(d, 1, MultiLevel.EFFECTIVELY_IMMUTABLE_HC_DV, Property.IMMUTABLE);
             assertDv(d, 1, MultiLevel.INDEPENDENT_HC_DV, Property.INDEPENDENT);
         };

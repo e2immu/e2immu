@@ -268,7 +268,12 @@ public record ComputeTypeImmutable(AnalyserContext analyserContext,
                 } else {
                     DV correctedIndependent = correctIndependentFunctionalInterface(parameterAnalysis, independent);
                     int correspondingImmutableLevel = MultiLevel.correspondingImmutableLevel(correctedIndependent);
-                    w.minLevel = Math.min(w.minLevel, correspondingImmutableLevel);
+                    int newLevel = Math.min(w.minLevel, correspondingImmutableLevel);
+                    if (w.minLevel > newLevel) {
+                        LOGGER.debug("Lowering immutability level of {} from {} to {}, because of independence of method {}: {}",
+                                typeInfo.simpleName, w.minLevel, newLevel, correctedIndependent, methodAnalyser.getMethodInfo().name);
+                    }
+                    w.minLevel = newLevel;
                 }
             }
         } else {
@@ -436,6 +441,8 @@ public record ComputeTypeImmutable(AnalyserContext analyserContext,
                         LOGGER.debug("For {} to become eventually immutable, modified field {} can only be modified " +
                                 "in methods marked @Mark or @Only(before=)", typeInfo, fieldInfo);
                         w.fieldsThatMustBeGuarded.add(fieldInfo);
+                        // so assume immutable for now, check later
+                        fieldImmutable = MultiLevel.EFFECTIVELY_IMMUTABLE_DV;
                     }
                 }
 

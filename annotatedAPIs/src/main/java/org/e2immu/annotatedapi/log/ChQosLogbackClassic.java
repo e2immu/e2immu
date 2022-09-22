@@ -28,4 +28,10 @@ public class ChQosLogbackClassic {
         @Modified
         void setLevel(@NotModified @NotNull Level level);
     }
+
+    interface Level$ {
+
+        @NotNull
+        Level DEBUG = null;
+    }
 }

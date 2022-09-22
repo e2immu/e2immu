@@ -24,7 +24,6 @@ import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 
-// comment out copyRemove, and things work out!
 @ImmutableContainer(after = "frozen", hc = true)
 public class DGSimplified_0<T> extends Freezable {
 
@@ -42,7 +41,7 @@ public class DGSimplified_0<T> extends Freezable {
         }
     }
 
-    @Modified
+    @NotModified(after = "frozen")
     private final Map<T, Node<T>> nodeMap = new HashMap<>();
 
     @NotModified
@@ -163,7 +162,7 @@ public class DGSimplified_0<T> extends Freezable {
 
     @Only(before = "frozen")
     @Modified
-    public void addNode(@NotNull @NotModified T t, @NotNull Collection<T> dependsOn, boolean bidirectional) {
+    public void addNode(@NotNull @NotModified T t, @NotNull(content = true) Collection<T> dependsOn, boolean bidirectional) {
         ensureNotFrozen();
         Node<T> node = getOrCreate(t);
         for (T d : dependsOn) {
@@ -182,7 +181,7 @@ public class DGSimplified_0<T> extends Freezable {
         return sorted(null, null, null);
     }
 
-    Comparator<Map.Entry<T, Node<T>>> comparator(Comparator<T> backupComparator) {
+   static <T> Comparator<Map.Entry<T, Node<T>>> comparator(Comparator<T> backupComparator) {
         return (e1, e2) -> {
             int c = e1.getValue().dependsOn.size() - e2.getValue().dependsOn.size();
             if (c == 0) {
@@ -192,7 +191,7 @@ public class DGSimplified_0<T> extends Freezable {
         };
     }
 
-    @Independent
+    @Independent(hc = true)
     public List<T> sorted(Consumer<T> reportPartOfCycle,
                           Consumer<T> reportIndependent,
                           Comparator<T> backupComparator) {
