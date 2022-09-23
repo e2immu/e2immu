@@ -238,14 +238,16 @@ public record ComputeTypeImmutable(AnalyserContext analyserContext,
     private AnalysisStatus loopOverMethods(Work w, Analyser.SharedState sharedState) {
         CausesOfDelay causesMethods = CausesOfDelay.EMPTY;
         for (MethodAnalyser methodAnalyser : myMethodAnalysers) {
-            DV modified = methodAnalyser.getMethodAnalysis().getProperty(Property.MODIFIED_METHOD_ALT_TEMP);
-            // in the eventual case, we only need to look at the non-modifying methods
-            // calling a modifying method will result in an error
-            if (modified.valueIsFalse()) {
-                causesMethods = causesMethods.merge(nonModifyingMethod(w, methodAnalyser));
-            } else if (modified.valueIsTrue()) {
-                causesMethods = causesMethods.merge(modifyingMethod(w, methodAnalyser));
-            } // excluded earlier in approved preconditions for immutability: no idea about modification, ignored
+            if (acceptMethod(methodAnalyser.getMethodInfo())) {
+                DV modified = methodAnalyser.getMethodAnalysis().getProperty(Property.MODIFIED_METHOD_ALT_TEMP);
+                // in the eventual case, we only need to look at the non-modifying methods
+                // calling a modifying method will result in an error
+                if (modified.valueIsFalse()) {
+                    causesMethods = causesMethods.merge(nonModifyingMethod(w, methodAnalyser));
+                } else if (modified.valueIsTrue()) {
+                    causesMethods = causesMethods.merge(modifyingMethod(w, methodAnalyser));
+                } // excluded earlier in approved preconditions for immutability: no idea about modification, ignored
+            }
         }
         if (causesMethods.isDelayed()) {
             return delayImmutable(causesMethods, sharedState.allowBreakDelay(), w.whenImmutableFails);
@@ -674,58 +676,65 @@ public record ComputeTypeImmutable(AnalyserContext analyserContext,
         return null;
     }
 
+    private boolean acceptMethod(MethodInfo methodInfo) {
+        return !methodInfo.inConstruction()
+                && !methodInfo.typeInfo.isStaticWithRespectTo(analyserContext, typeInfo);
+    }
+
     private AnalysisStatus negativeMethods(Work w) {
         for (MethodAnalyser methodAnalyser : myMethodAnalysers) {
-            DV modified = methodAnalyser.getMethodAnalysis().getProperty(Property.MODIFIED_METHOD_ALT_TEMP);
-            // in the eventual case, we only need to look at the non-modifying methods
-            // calling a modifying method will result in an error
-            if (modified.valueIsFalse()) {
-                if (methodAnalyser.getMethodInfo().isVoid()) continue; // we're looking at return types
-                DV returnTypeImmutable = methodAnalyser.getMethodAnalysis().getProperty(Property.IMMUTABLE);
+            if (acceptMethod(methodAnalyser.getMethodInfo())) {
+                DV modified = methodAnalyser.getMethodAnalysis().getProperty(Property.MODIFIED_METHOD_ALT_TEMP);
+                // in the eventual case, we only need to look at the non-modifying methods
+                // calling a modifying method will result in an error
+                if (modified.valueIsFalse()) {
+                    if (methodAnalyser.getMethodInfo().isVoid()) continue; // we're looking at return types
+                    DV returnTypeImmutable = methodAnalyser.getMethodAnalysis().getProperty(Property.IMMUTABLE);
 
-                ParameterizedType returnType;
-                Expression srv = methodAnalyser.getMethodAnalysis().getSingleReturnValue();
-                if (srv.isDone()) {
-                    // concrete
-                    returnType = srv.returnType();
-                } else {
-                    // formal; this one may come earlier, but that's OK; the only thing it can do is facilitate a delay
-                    returnType = analyserContext.getMethodInspection(methodAnalyser.getMethodInfo()).getReturnType();
-                }
-                boolean returnTypePartOfMyself = isOfOwnOrInnerClassType(returnType, typeInfo);
-                if (returnTypePartOfMyself) {
-                    continue;
-                }
-                if (returnTypeImmutable.isDelayed()) {
-                    continue;
-                }
-                MultiLevel.Effective returnTypeEffectiveImmutable = MultiLevel.effectiveAtImmutableLevel(returnTypeImmutable);
-                if (returnTypeEffectiveImmutable.lt(MultiLevel.Effective.EVENTUAL)) {
-                    DV independent = methodAnalyser.getMethodAnalysis().getProperty(Property.INDEPENDENT);
-                    if (independent.equals(MultiLevel.DEPENDENT_DV)) {
-                        LOGGER.debug("{} is not an immutable class, because method {}'s return type is not primitive, not immutable, not independent",
+                    ParameterizedType returnType;
+                    Expression srv = methodAnalyser.getMethodAnalysis().getSingleReturnValue();
+                    if (srv.isDone()) {
+                        // concrete
+                        returnType = srv.returnType();
+                    } else {
+                        // formal; this one may come earlier, but that's OK; the only thing it can do is facilitate a delay
+                        returnType = analyserContext.getMethodInspection(methodAnalyser.getMethodInfo()).getReturnType();
+                    }
+                    boolean returnTypePartOfMyself = isOfOwnOrInnerClassType(returnType, typeInfo);
+                    if (returnTypePartOfMyself) {
+                        continue;
+                    }
+                    if (returnTypeImmutable.isDelayed()) {
+                        continue;
+                    }
+                    MultiLevel.Effective returnTypeEffectiveImmutable = MultiLevel.effectiveAtImmutableLevel(returnTypeImmutable);
+                    if (returnTypeEffectiveImmutable.lt(MultiLevel.Effective.EVENTUAL)) {
+                        DV independent = methodAnalyser.getMethodAnalysis().getProperty(Property.INDEPENDENT);
+                        if (independent.equals(MultiLevel.DEPENDENT_DV)) {
+                            LOGGER.debug("{} is not an immutable class, because method {}'s return type is not primitive, not immutable, not independent",
+                                    typeInfo, methodAnalyser);
+                            return doneImmutable(w.ALT_IMMUTABLE, w.whenImmutableFails, w.ALT_DONE);
+                        }
+                    }
+                } else if (modified.valueIsTrue()) {
+                    if (typeAnalysis.isEventual()) {
+                        // code identical to that of constructors
+                        for (ParameterAnalysis parameterAnalysis : methodAnalyser.getParameterAnalyses()) {
+                            DV independent = parameterAnalysis.getProperty(Property.INDEPENDENT);
+                            if (independent.isDone()) {
+                                DV correctedIndependent = correctIndependentFunctionalInterface(parameterAnalysis, independent);
+                                if (correctedIndependent.equals(MultiLevel.DEPENDENT_DV)) {
+                                    LOGGER.debug("{} is not an immutable class, because constructor is @Dependent", typeInfo);
+                                    return doneImmutable(w.ALT_IMMUTABLE, w.whenImmutableFails, w.ALT_DONE);
+                                }
+                            }
+                        }
+                    } else {
+                        // contracted @Modified, see e.g. InlinedMethod_AAPI_3
+                        LOGGER.debug("{} is not an immutable class, because method {} is modifying (even though none of our fields are)",
                                 typeInfo, methodAnalyser);
                         return doneImmutable(w.ALT_IMMUTABLE, w.whenImmutableFails, w.ALT_DONE);
                     }
-                }
-            } else if (modified.valueIsTrue()) {
-                if (typeAnalysis.isEventual()) {
-                    // code identical to that of constructors
-                    for (ParameterAnalysis parameterAnalysis : methodAnalyser.getParameterAnalyses()) {
-                        DV independent = parameterAnalysis.getProperty(Property.INDEPENDENT);
-                        if (independent.isDone()) {
-                            DV correctedIndependent = correctIndependentFunctionalInterface(parameterAnalysis, independent);
-                            if (correctedIndependent.equals(MultiLevel.DEPENDENT_DV)) {
-                                LOGGER.debug("{} is not an immutable class, because constructor is @Dependent", typeInfo);
-                                return doneImmutable(w.ALT_IMMUTABLE, w.whenImmutableFails, w.ALT_DONE);
-                            }
-                        }
-                    }
-                } else {
-                    // contracted @Modified, see e.g. InlinedMethod_AAPI_3
-                    LOGGER.debug("{} is not an immutable class, because method {} is modifying (even though none of our fields are)",
-                            typeInfo, methodAnalyser);
-                    return doneImmutable(w.ALT_IMMUTABLE, w.whenImmutableFails, w.ALT_DONE);
                 }
             }
         }

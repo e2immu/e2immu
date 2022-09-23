@@ -111,6 +111,7 @@ public class TypeInspectorImpl implements TypeInspector {
         } else {
             builder.setParentClass(typeImplemented);
         }
+        builder.setEnclosingMethod(expressionContext.enclosingMethod());
         builder.setAccess(Inspection.Access.PRIVATE);
         builder.addTypeModifier(TypeModifier.FINAL);
         continueInspection(withSubTypes, members, false, null, null);

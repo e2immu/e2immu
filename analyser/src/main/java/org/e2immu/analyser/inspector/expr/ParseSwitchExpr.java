@@ -146,7 +146,7 @@ public class ParseSwitchExpr {
         ParameterizedType functionalType = new ParameterizedType(function, List.of(selectorType, returnType));
 
         ParseLambdaExpr.continueCreationOfAnonymousType(expressionContext.typeContext().typeMap,
-                applyMethodInspectionBuilder, functionalType, methodBody, returnType);
+                applyMethodInspectionBuilder, functionalType, methodBody, returnType, expressionContext.enclosingMethod());
         TypeContext typeContext = expressionContext.typeContext();
 
         expressionContext.resolver().resolve(typeContext,

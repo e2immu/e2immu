@@ -83,6 +83,8 @@ public interface ExpressionContext {
 
     TypeInfo enclosingType();
 
+    MethodInfo enclosingMethod();
+
     @NotNull
     TypeInfo primaryType();
 

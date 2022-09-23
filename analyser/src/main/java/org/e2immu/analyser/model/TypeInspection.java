@@ -35,6 +35,8 @@ public interface TypeInspection extends Inspection {
     @NotNull
     TypeInfo typeInfo();
 
+    MethodInfo enclosingMethod();
+
     @NotNull
     TypeNature typeNature();
 
@@ -321,5 +323,8 @@ public interface TypeInspection extends Inspection {
 
         @Fluent
         Builder addConstructor(MethodInfo methodInfo);
+
+        @Fluent
+        Builder setEnclosingMethod(MethodInfo enclosingMethod);
     }
 }

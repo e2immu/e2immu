@@ -39,7 +39,7 @@ class Final_1 {
         return i;
     }
 
-    @Modified // <2>
+    @Modified(construction = true) // <2>
     private void setI(int i) {
         this.i = i;
     }

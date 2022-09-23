@@ -38,6 +38,7 @@ public class TypeInspectionImpl extends InspectionImpl implements TypeInspection
 
     // the type that this inspection object belongs to
     public final TypeInfo typeInfo;
+    public final MethodInfo enclosingMethod;
     public final TypeNature typeNature;
     public final ParameterizedType parentClass;
     public final List<MethodInfo> constructors;
@@ -53,6 +54,7 @@ public class TypeInspectionImpl extends InspectionImpl implements TypeInspection
     public final Identifier.PositionalIdentifier positionalIdentifier;
 
     private TypeInspectionImpl(TypeInfo typeInfo,
+                               MethodInfo enclosingMethod,
                                TypeNature typeNature,
                                Access access,
                                List<TypeParameter> typeParameters,
@@ -70,6 +72,7 @@ public class TypeInspectionImpl extends InspectionImpl implements TypeInspection
                                boolean functionalInterface,
                                Identifier.PositionalIdentifier positionalIdentifier) {
         super(annotations, access, synthetic);
+        this.enclosingMethod = enclosingMethod;
         this.parentClass = parentClass;
         this.interfacesImplemented = interfacesImplemented;
         this.typeParameters = typeParameters;
@@ -104,6 +107,11 @@ public class TypeInspectionImpl extends InspectionImpl implements TypeInspection
     @Override
     public TypeInfo typeInfo() {
         return typeInfo;
+    }
+
+    @Override
+    public MethodInfo enclosingMethod() {
+        return enclosingMethod;
     }
 
     @Override
@@ -177,6 +185,7 @@ public class TypeInspectionImpl extends InspectionImpl implements TypeInspection
     @Container(builds = TypeInspectionImpl.class)
     public static class Builder extends AbstractInspectionBuilder<TypeInspection.Builder> implements TypeInspection.Builder {
         private TypeNature typeNature = TypeNature.CLASS;
+        private MethodInfo enclosingMethod;
         private final Set<String> methodAndConstructorNames = new HashSet<>();
         private final List<TypeInfo> permittedWhenSealed = new ArrayList<>();
         private final List<MethodInfo> methods = new ArrayList<>();
@@ -205,8 +214,18 @@ public class TypeInspectionImpl extends InspectionImpl implements TypeInspection
             return this;
         }
 
+        public Builder setEnclosingMethod(MethodInfo enclosingMethod) {
+            this.enclosingMethod = enclosingMethod;
+            return this;
+        }
+
         public void setPositionalIdentifier(Identifier.PositionalIdentifier positionalIdentifier) {
             this.positionalIdentifier = positionalIdentifier;
+        }
+
+        @Override
+        public MethodInfo enclosingMethod() {
+            return enclosingMethod;
         }
 
         @Override
@@ -352,6 +371,7 @@ public class TypeInspectionImpl extends InspectionImpl implements TypeInspection
 
             return new TypeInspectionImpl(
                     typeInfo,
+                    enclosingMethod,
                     typeNature,
                     getAccess(),
                     typeParameters(),

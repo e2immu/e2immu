@@ -900,6 +900,13 @@ public class ResolverImpl implements Resolver {
         }
     }
 
+    private boolean notPartOfConstruction(MethodInfo methodInfo, MethodInspection methodInspection) {
+        return !methodInspection.isPrivate() &&
+                !methodInspection.isStatic() &&
+                !methodInspection.getMethodInfo().typeInfo
+                        .isStaticWithRespectTo(inspectionProvider, methodInfo.typeInfo);
+    }
+
     /**
      * Note that this computation has to contain transitive calls.
      *
@@ -909,8 +916,10 @@ public class ResolverImpl implements Resolver {
                                                  MethodInfo methodInfo) {
         TypeInspection typeInspection = inspectionProvider.getTypeInspection(methodInfo.typeInfo);
         for (MethodInfo other : typeInspection.methods()) {
-            if (!other.methodInspection.get().isPrivate() &&
-                    builders.get(other).getMethodsOfOwnClassReached().contains(methodInfo)) {
+            MethodInspection otherInspection = other.methodInspection.get();
+            if (other != methodInfo
+                    && notPartOfConstruction(other, otherInspection)
+                    && builders.get(other).getMethodsOfOwnClassReached().contains(methodInfo)) {
                 return true;
             }
         }
@@ -927,11 +936,18 @@ public class ResolverImpl implements Resolver {
         return false;
     }
 
-    private boolean isCalledFromConstructors(Map<MethodInfo, MethodResolution.Builder> builders,
-                                             MethodInfo methodInfo) {
+    private boolean isCalledFromConstructorsOrStaticMethods(Map<MethodInfo, MethodResolution.Builder> builders,
+                                                            MethodInfo methodInfo) {
         TypeInspection typeInspection = inspectionProvider.getTypeInspection(methodInfo.typeInfo);
         for (MethodInfo other : typeInspection.constructors()) {
             if (builders.get(other).getMethodsOfOwnClassReached().contains(methodInfo)) {
+                return true;
+            }
+        }
+        for (MethodInfo other : typeInspection.methods()) {
+            MethodInspection otherInspection = other.methodInspection.get();
+            if (other != methodInfo && !notPartOfConstruction(other, otherInspection)
+                    && builders.get(other).getMethodsOfOwnClassReached().contains(methodInfo)) {
                 return true;
             }
         }
@@ -972,7 +988,7 @@ public class ResolverImpl implements Resolver {
         if (isCalledFromNonPrivateMethod(builders, methodInfo)) {
             return MethodResolution.CallStatus.CALLED_FROM_NON_PRIVATE_METHOD;
         }
-        if (isCalledFromConstructors(builders, methodInfo)) {
+        if (isCalledFromConstructorsOrStaticMethods(builders, methodInfo)) {
             return MethodResolution.CallStatus.PART_OF_CONSTRUCTION;
         }
         return MethodResolution.CallStatus.NOT_CALLED_AT_ALL;

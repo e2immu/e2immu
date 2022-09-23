@@ -50,6 +50,7 @@ public class E2ImmuAnnotationExpressions {
     public final static String ABSENT = "absent";
     public final static String AFTER = "after";
     public final static String BEFORE = "before";
+    public final static String CONSTRUCTION = "construction";
     public final static String CONTENT = "content";
     public final static String CONTRACT = "contract";
     public final static String HIDDEN_CONTENT = "hc";

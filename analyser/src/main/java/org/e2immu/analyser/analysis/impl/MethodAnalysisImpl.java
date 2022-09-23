@@ -37,6 +37,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import static org.e2immu.analyser.parser.E2ImmuAnnotationExpressions.CONSTRUCTION;
 import static org.e2immu.analyser.parser.E2ImmuAnnotationExpressions.IMPLIED;
 
 public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
@@ -381,11 +382,20 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
                     : typeAnalysisOfOwner.getProperty(Property.IMMUTABLE);
             boolean implied = MultiLevel.isEffectivelyImmutable(ownerImmutable);
             AnnotationExpression ae;
-            if (implied) {
-                Class<?> clazz = modified.valueIsFalse() ? NotModified.class : Modified.class;
-                ae = E2ImmuAnnotationExpressions.create(primitives, clazz, IMPLIED, true);
+            if (modified.valueIsTrue()) {
+                if (methodInfo.inConstruction()) {
+                    ae = E2ImmuAnnotationExpressions.create(primitives, Modified.class, CONSTRUCTION, true);
+                } else if (implied) {
+                    ae = E2ImmuAnnotationExpressions.create(primitives, Modified.class, IMPLIED, true);
+                } else {
+                    ae = e2.modified;
+                }
             } else {
-                ae = modified.valueIsFalse() ? e2.notModified : e2.modified;
+                if (implied) {
+                    ae = E2ImmuAnnotationExpressions.create(primitives, NotModified.class, IMPLIED, true);
+                } else {
+                    ae = e2.notModified;
+                }
             }
             addAnnotation(ae);
 

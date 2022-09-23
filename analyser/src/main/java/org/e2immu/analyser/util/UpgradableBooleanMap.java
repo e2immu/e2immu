@@ -18,6 +18,7 @@ import org.e2immu.annotation.*;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.function.BiConsumer;
 import java.util.function.BinaryOperator;
@@ -27,8 +28,10 @@ import java.util.stream.Collector;
 import java.util.stream.Stream;
 
 /*
-While this type has modifying methods (put, putAll), these methods are only used in factory methods.
-The 'map' object itself is effectively immutable: its hidden content is returned by 'get', 'stream'.
+The type would be an immutable container were it not for the mutable Map.Entry elements
+returned by the Stream<Map.Entry<...>> result of stream().
+
+The modifying methods 'put'
  */
 @ImmutableContainer(hc = true)
 public class UpgradableBooleanMap<T> {
@@ -54,7 +57,7 @@ public class UpgradableBooleanMap<T> {
 
             @Override
             public Function<UpgradableBooleanMap<T>, UpgradableBooleanMap<T>> finisher() {
-                return t -> t;
+                return Objects::requireNonNull;
             }
 
             @Override
@@ -66,7 +69,7 @@ public class UpgradableBooleanMap<T> {
 
     private final Map<T, Boolean> map = new HashMap<>();
 
-    @Independent(hc = true)
+    @Independent
     @NotNull
     public static <T> UpgradableBooleanMap<T> of(T t, boolean b) {
         UpgradableBooleanMap<T> upgradableBooleanMap = new UpgradableBooleanMap<>();
@@ -74,7 +77,7 @@ public class UpgradableBooleanMap<T> {
         return upgradableBooleanMap;
     }
 
-    @Independent(hc = true)
+    @Independent
     @NotNull
     public static <T> UpgradableBooleanMap<T> of(T t1, boolean b1, T t2, boolean b2) {
         UpgradableBooleanMap<T> upgradableBooleanMap = new UpgradableBooleanMap<>();
@@ -90,7 +93,7 @@ public class UpgradableBooleanMap<T> {
     }
 
     @SafeVarargs
-    @Independent(hc = true)
+    @Independent
     public static <T> UpgradableBooleanMap<T> of(UpgradableBooleanMap<T>... maps) {
         UpgradableBooleanMap<T> result = new UpgradableBooleanMap<>();
         if (maps != null) {
@@ -115,13 +118,35 @@ public class UpgradableBooleanMap<T> {
         return this;
     }
 
-    @NotNull(content = true)
-    @Independent(hc = true)
-    public Stream<Map.Entry<T, Boolean>> stream() {
-        return map.entrySet().stream();
+    @ImmutableContainer(hc = true)
+    public record ImmutableEntry<T>(T t, boolean b) implements Map.Entry<T, Boolean> {
+
+        public ImmutableEntry {
+            Objects.requireNonNull(t);
+        }
+
+        @Override
+        public T getKey() {
+            return t;
+        }
+
+        @Override
+        public Boolean getValue() {
+            return b;
+        }
+
+        @Override
+        public Boolean setValue(Boolean value) {
+            throw new UnsupportedOperationException();
+        }
     }
 
-    @Independent(hc = true)
+    @ImmutableContainer(hc = true)
+    @NotNull(content = true)
+    public Stream<Map.Entry<T, Boolean>> stream() {
+        return map.entrySet().stream().map(e -> new ImmutableEntry<>(e.getKey(), e.getValue()));
+    }
+
     public Boolean get(T t) {
         return map.get(t);
     }

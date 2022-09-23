@@ -185,7 +185,9 @@ public class ParseLambdaExpr {
         ParameterizedType functionalType = singleAbstractMethod.inferFunctionalType(inspectionProvider,
                 types, evaluation.inferredReturnType);
         continueCreationOfAnonymousType(expressionContext.typeContext().typeMap,
-                applyMethodInspectionBuilder, functionalType, evaluation.block, evaluation.inferredReturnType);
+                applyMethodInspectionBuilder, functionalType, evaluation.block,
+                evaluation.inferredReturnType,
+                expressionContext.enclosingMethod());
         TypeContext typeContext = expressionContext.typeContext();
 
         expressionContext.resolver().resolve(typeContext,
@@ -247,7 +249,8 @@ public class ParseLambdaExpr {
                                                 MethodInspection.Builder builder,
                                                 ParameterizedType functionalInterfaceType,
                                                 Block block,
-                                                ParameterizedType returnType) {
+                                                ParameterizedType returnType,
+                                                MethodInfo enclosingMethod) {
         MethodTypeParameterMap sam = functionalInterfaceType.findSingleAbstractMethodOfInterface(typeMapBuilder);
         MethodInspection methodInspectionOfSAMsMethod = typeMapBuilder.getMethodInspection(sam.methodInspection.getMethodInfo());
         ParameterizedType bestReturnType = returnType.mostSpecific(typeMapBuilder, builder.owner().primaryType(),
@@ -262,6 +265,7 @@ public class ParseLambdaExpr {
         TypeInspection.Builder typeInspectionBuilder = typeMapBuilder.ensureTypeInspection(typeInfo,
                         InspectionState.BY_HAND)
                 .noParent(typeMapBuilder.getPrimitives())
+                .setEnclosingMethod(enclosingMethod)
                 .setTypeNature(TypeNature.CLASS)
                 .addInterfaceImplemented(functionalInterfaceType)
                 .addMethod(methodInfo).setFunctionalInterface(true);
