@@ -230,6 +230,7 @@ public record ComputeTypeImmutable(AnalyserContext analyserContext,
                         w.whenImmutableFails);
                 return doneImmutable(w.ALT_IMMUTABLE, w.whenImmutableFails, w.ALT_DONE);
             }
+            LOGGER.debug("Type {}, all fields that had to be guarded, have been guarded", typeInfo);
         }
         return null;
     }
@@ -766,7 +767,14 @@ public record ComputeTypeImmutable(AnalyserContext analyserContext,
     }
 
     private static boolean isModified(VariableInfo vi) {
-        return vi.isAssigned() || vi.getProperty(Property.CONTEXT_MODIFIED).valueIsTrue();
+        /*
+        See DGSimplified_0.copyRemove: we only look at scopeIsThis() fields; 'self' types are mutable, and cannot be used
+        for eventual detection.
+         */
+        if (vi.variable() instanceof FieldReference fr) {
+            return fr.scopeIsThis() && (vi.isAssigned() || vi.getProperty(Property.CONTEXT_MODIFIED).valueIsTrue());
+        }
+        throw new UnsupportedOperationException();
     }
 
     private DV allMyFieldsFinal() {

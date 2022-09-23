@@ -649,6 +649,14 @@ public class ComputeLinkedVariables {
                 }
             }
         }
+        /*
+        As soon as there is one override, later linking may cause other variables to change value,
+        see DGSimplified_3 as an example. So we can't ignore complaints on an individual basis.
+         */
+        boolean haveOverride = variablesInClusters.stream().anyMatch(v -> {
+            VariableInfoContainer vic = statementAnalysis.getVariableOrDefaultNull(v.fullyQualifiedName());
+            return vic != null && vic.propertyOverrides().getOrDefaultNull(Property.CONTEXT_MODIFIED) != null;
+        });
         boolean progress = false;
         CausesOfDelay causesOfDelay = CausesOfDelay.EMPTY;
         for (Variable variable : variablesInClusters) {
@@ -657,15 +665,8 @@ public class ComputeLinkedVariables {
             VariableInfoContainer vic = statementAnalysis.getVariableOrDefaultNull(variable.fullyQualifiedName());
             if (vic != null) {
                 DV override = vic.propertyOverrides().getOrDefaultNull(Property.CONTEXT_MODIFIED);
-                DV newValueAfterOverride;
-                boolean complain;
-                if (override == null) {
-                    newValueAfterOverride = newValue;
-                    complain = true;
-                } else {
-                    newValueAfterOverride = override;
-                    complain = false;
-                }
+                DV newValueAfterOverride = Objects.requireNonNullElse(override, newValue);
+
                 VariableInfo vi = vic.ensureLevelForPropertiesLinkedVariables(statementAnalysis.location(stage), stage);
                 DV current = vi.getProperty(Property.CONTEXT_MODIFIED);
                 if (current.isDelayed()) {
@@ -678,11 +679,11 @@ public class ComputeLinkedVariables {
                         throw ise;
                     }
                 } else if (newValueAfterOverride.isDone() && !newValueAfterOverride.equals(current)) {
-                    if (complain) {
+                    if (haveOverride) {
+                        LOGGER.debug("Ignoring difference, keep context modified {} on {}", current, variable);
+                    } else {
                         LOGGER.error("Variable {}, property CONTEXT_MODIFIED, current {}, new {}", variable, current, newValueAfterOverride);
                         throw new UnsupportedOperationException("Overwriting value");
-                    } else {
-                        LOGGER.debug("Ignoring difference, keep context modified {} on {}", current, variable);
                     }
                 }
             }

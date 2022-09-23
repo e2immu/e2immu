@@ -88,6 +88,11 @@ public class Test_63_DGSimplified extends CommonTestRunner {
                 if ("copy".equals(d.variableName())) {
                     if ("0".equals(d.statementId())) {
                         assertEquals("new DGSimplified_0<>()", d.currentValue().toString());
+                        /*
+                         IMPORTANT: because it is self, it is mutable. As a consequence, it cannot be in a "BEFORE" state
+                         because it is not eventual. The regular ComputeTypeImmutable.methodsOf will exclude it because the
+                         field is not 'this'.
+                         */
                         assertDv(d, MultiLevel.MUTABLE_DV, Property.IMMUTABLE);
                     }
                     if ("2".equals(d.statementId())) {
@@ -189,6 +194,10 @@ public class Test_63_DGSimplified extends CommonTestRunner {
             if ("addNode".equals(d.methodInfo().name)) {
                 assertDv(d.p(0), 6, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                 assertDv(d, 4, DV.TRUE_DV, Property.MODIFIED_METHOD);
+                String pce = d.iteration() == 0
+                        ? "Precondition[expression=<precondition>, causes=[]]"
+                        : "Precondition[expression=!this.isFrozen(), causes=[companionMethod:ensureNotFrozen$Precondition, companionMethod:ensureNotFrozen$Precondition]]";
+                assertEquals(pce, d.methodAnalysis().getPreconditionForEventual().toString());
             }
             if ("comparator".equals(d.methodInfo().name)) {
                 String expected = d.iteration() < 4 ? "<m:comparator>"
@@ -376,6 +385,26 @@ public class Test_63_DGSimplified extends CommonTestRunner {
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("reverse".equals(d.methodInfo().name)) {
 
+                if (d.variable() instanceof FieldReference fr && "nodeMap".equals(fr.fieldInfo.name)) {
+                    assertTrue(fr.scopeIsThis());
+                    if ("0.0.0".equals(d.statementId())) {
+                        assertCurrentValue(d, 11, "instance type HashMap<T,Node<T>>");
+                        String linked = d.iteration() < 11 ? "node:-1,set:-1,t:-1" : "";
+                        assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
+                        assertDv(d, 11, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                    }
+                }
+                if ("node".equals(d.variableName())) {
+                    if ("0.0.0".equals(d.statementId())) {
+                        assertCurrentValue(d, 11, "nodeMap.get(t)");
+                        String linked = d.iteration() < 11 ? "set:-1,t:-1,this.nodeMap:-1" : "this.nodeMap:3";
+                        assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
+                        assertDv(d, 4, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
+                        if (d.iteration() >= 4) {
+                            assertEquals(DV.TRUE_DV, d.variableInfoContainer().propertyOverrides().get(Property.CONTEXT_MODIFIED));
+                        }
+                    }
+                }
                 if (d.variable() instanceof FieldReference fr && "dependsOn".equals(fr.fieldInfo.name)) {
                     if ("0.0.1".equals(d.statementId())) {
                         assertNotNull(fr.scopeVariable);
@@ -402,7 +431,7 @@ public class Test_63_DGSimplified extends CommonTestRunner {
                         assertTrue(d.variableInfoContainer().hasMerge());
                         String expectedM = switch (d.iteration()) {
                             case 0 -> "<f:node.dependsOn>";
-                            case 1,2,3,4,5,6,7,8 -> "<vp:dependsOn:link@Field_dependsOn>";
+                            case 1, 2, 3, 4, 5, 6, 7, 8 -> "<vp:dependsOn:link@Field_dependsOn>";
                             case 9, 10 -> "null==nullable instance type List<T>?nullable instance type List<T>:<f:node.dependsOn>";
                             default -> "nullable instance type List<T>";
                         };
@@ -431,78 +460,53 @@ public class Test_63_DGSimplified extends CommonTestRunner {
                 .build(), new AnalyserConfiguration.Builder().setComputeFieldAnalyserAcrossAllMethods(true).build());
     }
 
-    /*
-
-    4: main 1 $2.test
-    6: Type $2
-    9: main 0 $1.compare
-    12: Type $1 immutable
-    14: main 1 getOrCreate
-    16: param analyser addNode t independent
-    19: main 0 addNode
-    22: param analyser reverse set independent
-    25: param analyser removeAsManyAsPossible set independent
-    28: sorted: parameter, main 0...4 whole method
-    30: main 0 sorted1
-    32: field nodeMap, analyseModified
-    34: field dependsOn, analyseModified
-    36: Type Node, immutable
-    43: method reverse, @Container
-    45: main 1.0.1 subBlocks
-    47: Type DGS4, approved preconditions E2, break INDEP inconclusive
-    51: method reverse, @Immutable
-    53: main 1.0.1 removeAsManyAsPossible
-    55: main 0 sorted1 @Imm, @Cont
-    57: fail.
-
-     */
     @Test
     public void test_4() throws IOException {
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("sorted".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof ParameterInfo pi && "reportIndependent".equals(pi.name)) {
                     if ("3.0.1.0.3.0.2.0.0".equals(d.statementId())) {
-                        assertDv(d, 36, MultiLevel.NULLABLE_DV, Property.CONTEXT_NOT_NULL);
+                        assertDv(d, 21, MultiLevel.NULLABLE_DV, Property.CONTEXT_NOT_NULL);
                     }
                 }
                 if ("result".equals(d.variableName())) {
                     if ("2".equals(d.statementId())) {
-                        assertCurrentValue(d, 1, "new ArrayList<>(nodeMap.size())/*0==this.size()*/");
+                        assertCurrentValue(d, 5, "new ArrayList<>(nodeMap.size())/*0==this.size()*/");
                     }
                     if ("3.0.0".equals(d.statementId()) || "3.0.1".equals(d.statementId())) {
-                        assertCurrentValue(d, 29, "instance type List<T>");
+                        assertCurrentValue(d, 21, "instance type List<T>");
                     }
                     if ("3.0.2.0.7".equals(d.statementId())) {
                         // priority 1... can only fail because of "key"
-                        assertCurrentValue(d, 38, "instance type List<T>");
+                        assertCurrentValue(d, 21, "instance type List<T>");
                     }
                     if ("3.0.2.1.1".equals(d.statementId())) {
-                        assertCurrentValue(d, 36, "instance type List<T>");
+                        assertCurrentValue(d, 21, "instance type List<T>");
                     }
                 }
                 if ("cycle".equals(d.variableName())) {
                     assertTrue(d.statementId().compareTo("3.0.2.0.0") >= 0);
                     if ("3.0.2.0.0".equals(d.statementId())) {
-                        assertCurrentValue(d, 36, "new HashMap<>(toDo)/*this.size()==toDo$3.size()*/");
+                        assertCurrentValue(d, 21, "new HashMap<>(toDo)/*this.size()==toDo$3.size()*/");
                     }
                     if ("3.0.2.0.1".equals(d.statementId())) {
                         // call to removeAsManyAsPossible  priority 0
                         // the modification should travel from the linked keySet to the object
-                        assertCurrentValue(d, 38, "instance type HashMap<T,Node<T>>");
+                        assertCurrentValue(d, 21, "instance type HashMap<T,Node<T>>");
                     }
                 }
                 if ("sortedCycle".equals(d.variableName())) {
                     assertTrue(d.statementId().compareTo("3.0.2.0.3") >= 0);
-                    assertCurrentValue(d, 38, "cycle.entrySet().stream().sorted(/*inline compare*/`e1.getValue().dependsOn`.size()==`e2.getValue().dependsOn`.size()?null==backupComparator?0:backupComparator.compare(e1.getKey(),e2.getKey()):`e1.getValue().dependsOn`.size()-`e2.getValue().dependsOn`.size()).map(Entry::getKey).toList()");
+                    assertCurrentValue(d, 21, "cycle.entrySet().stream().sorted(/*inline compare*/`e1.getValue().dependsOn`.size()==`e2.getValue().dependsOn`.size()?null==backupComparator?0:backupComparator.compare(e1.getKey(),e2.getKey()):`e1.getValue().dependsOn`.size()-`e2.getValue().dependsOn`.size()).map(Entry::getKey).toList()");
                 }
                 if ("key".equals(d.variableName())) {
                     assertTrue(d.statementId().compareTo("3.0.2.0.4") >= 0);
-                    assertCurrentValue(d, 38, "cycle.entrySet().stream().sorted(/*inline compare*/`e1.getValue().dependsOn`.size()==`e2.getValue().dependsOn`.size()?null==backupComparator?0:backupComparator.compare(e1.getKey(),e2.getKey()):`e1.getValue().dependsOn`.size()-`e2.getValue().dependsOn`.size()).map(Entry::getKey).toList().get(0)");
+                    assertCurrentValue(d, 21, "cycle.entrySet().stream().sorted(/*inline compare*/`e1.getValue().dependsOn`.size()==`e2.getValue().dependsOn`.size()?null==backupComparator?0:backupComparator.compare(e1.getKey(),e2.getKey()):`e1.getValue().dependsOn`.size()-`e2.getValue().dependsOn`.size()).map(Entry::getKey).toList().get(0)");
                 }
             }
             if ("dependencies".equals(d.variableName())) {
                 if ("3.0.1.0.2.1.0".equals(d.statementId())) {
-                    String expected = d.iteration() < 36 ? "<f:entry.getValue().dependsOn>"
+                    String expected = d.iteration() < 21 ? "<f:entry.getValue().dependsOn>"
                             : "(entry.getValue()).dependsOn$0";
                     assertEquals(expected, d.currentValue().toString());
                 }
@@ -511,10 +515,10 @@ public class Test_63_DGSimplified extends CommonTestRunner {
                 if (d.variable() instanceof ParameterInfo pi && "backupComparator".equals(pi.name)) {
                     assertEquals("$1", d.methodInfo().typeInfo.simpleName);
                     if ("1.0.0".equals(d.statementId())) {
-                        String expected = d.iteration() == 0 ? "<p:backupComparator>"
+                        String expected = d.iteration() < 4 ? "<p:backupComparator>"
                                 : "nullable instance type Comparator<T>/*@Identity*/";
                         assertEquals(expected, d.currentValue().toString());
-                        assertDv(d, 1, MultiLevel.NULLABLE_DV, Property.CONTEXT_NOT_NULL);
+                        assertDv(d, 4, MultiLevel.NULLABLE_DV, Property.CONTEXT_NOT_NULL);
                     }
                 }
             }
@@ -524,28 +528,28 @@ public class Test_63_DGSimplified extends CommonTestRunner {
                         assertEquals("new DGSimplified_4<>()", d.currentValue().toString());
                     }
                     if ("1.0.2.0.0.0.0.0.0".equals(d.statementId())) {
-                        assertDv(d, 24, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
-                        assertCurrentValue(d, 36, "instance type DGSimplified_4<T>");
+                        assertDv(d, 5, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
+                        assertCurrentValue(d, 6, "instance type DGSimplified_4<T>");
                     }
                     if ("1.0.2".equals(d.statementId())) {
-                        assertCurrentValue(d, 36, "instance type DGSimplified_4<T>");
+                        assertCurrentValue(d, 6, "instance type DGSimplified_4<T>");
                     }
                     if ("1".equals(d.statementId()) || "2".equals(d.statementId())) {
-                        assertCurrentValue(d, 36,
+                        assertCurrentValue(d, 6,
                                 "set.isEmpty()?new DGSimplified_4<>():instance type DGSimplified_4<T>");
-                        assertDv(d, 24, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
+                        assertDv(d, 5, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
                     }
                 }
                 if (d.variable() instanceof ParameterInfo pi && "set".equals(pi.name)) {
                     if ("1.0.2.0.0.0.0".equals(d.statementId()) || "1.0.2.0.0".equals(d.statementId())
                             || "1".equals(d.statementId()) || "2".equals(d.statementId())) {
-                        assertDv(d, 39, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                        assertDv(d, 8, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     }
                 }
                 if (d.variable() instanceof ReturnVariable) {
                     if ("2".equals(d.statementId())) {
                         // priority 3: problem: independent, one of the methods
-                        assertCurrentValue(d, 50,
+                        assertCurrentValue(d, 28,
                                 "set.isEmpty()?new DGSimplified_4<>():instance type DGSimplified_4<T>");
                     }
                 }
@@ -553,22 +557,22 @@ public class Test_63_DGSimplified extends CommonTestRunner {
             if ("removeAsManyAsPossible".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof ParameterInfo pi && "set".equals(pi.name)) {
                     if ("1.0.0".equals(d.statementId())) {
-                        assertDv(d, 37, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
-                        assertDv(d, 37, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.CONTEXT_NOT_NULL);
+                        assertDv(d, 6, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
+                        assertDv(d, 6, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.CONTEXT_NOT_NULL);
                     }
                     if ("1.0.1".equals(d.statementId())) {
-                        assertDv(d, 37, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
-                        assertDv(d, 44, MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL_DV, Property.CONTEXT_NOT_NULL);
+                        assertDv(d, 6, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
+                        assertDv(d, 18, MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL_DV, Property.CONTEXT_NOT_NULL);
                     }
                     if ("1.0.2".equals(d.statementId())) {
-                        assertDv(d, 37, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
+                        assertDv(d, 6, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
 
                         // priority 5
-                        assertDv(d, 50, MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL_DV, Property.CONTEXT_NOT_NULL);
+                        assertDv(d, 18, MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL_DV, Property.CONTEXT_NOT_NULL);
                     }
                     if ("1".equals(d.statementId())) {
-                        assertDv(d, 37, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
-                        assertDv(d, 50, MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL_DV, Property.CONTEXT_NOT_NULL);
+                        assertDv(d, 6, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
+                        assertDv(d, 18, MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL_DV, Property.CONTEXT_NOT_NULL);
                     }
                 }
             }
@@ -576,7 +580,7 @@ public class Test_63_DGSimplified extends CommonTestRunner {
                 if ("d".equals(d.variableName())) {
                     assertTrue(d.variableInfoContainer().variableNature() instanceof VariableNature.LoopVariable);
                     if ("1".equals(d.statementId())) {
-                        String expected = d.iteration() == 0 ? "dependsOn:-1" : "dependsOn:3";
+                        String expected = d.iteration() == 0 ? "bidirectional:-1,dependsOn:-1" : "dependsOn:3";
                         assertEquals(expected, d.variableInfo().getLinkedVariables().toString());
                     }
                 }
@@ -584,15 +588,14 @@ public class Test_63_DGSimplified extends CommonTestRunner {
         };
         StatementAnalyserVisitor statementAnalyserVisitor = d -> {
             if ("sorted".equals(d.methodInfo().name)) {
-                if ("3.0.1.0.3.0.2.0.0".equals(d.statementId())) {
-                    String expected = d.iteration() == 0 ? "<null-check>" :
-                            d.iteration() < 36 ? "<c:boolean>" : "null!=reportIndependent";
+                if ("3.0.1.0.2.1.0".equals(d.statementId())) {
+                    String expected = d.iteration() < 21 ? "!<null-check>&&!<m:isEmpty>"
+                            : "!(entry.getValue()).dependsOn$0.isEmpty()&&null!=(entry.getValue()).dependsOn$0";
                     assertEquals(expected, d.condition().toString());
                 }
-                if ("3.0.1.0.2.1.0".equals(d.statementId())) {
-                    String expected = d.iteration() <= 28 ? "!<null-check>&&!<m:isEmpty>"
-                            : d.iteration() < 36 ? "!(entry.getValue()).dependsOn$0.isEmpty()&&!<null-check>"
-                            : "!(entry.getValue()).dependsOn$0.isEmpty()&&null!=(entry.getValue()).dependsOn$0";
+                if ("3.0.1.0.3.0.2.0.0".equals(d.statementId())) {
+                    String expected =d.iteration() == 0 ? "<null-check>" :
+                            d.iteration() < 21 ? "<c:boolean>" : "null!=reportIndependent";
                     assertEquals(expected, d.condition().toString());
                 }
             }
@@ -652,8 +655,8 @@ public class Test_63_DGSimplified extends CommonTestRunner {
             }
         };
         testClass("DGSimplified_4", 1, 3, new DebugConfiguration.Builder()
-            //    .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-             //   .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addStatementAnalyserVisitor(statementAnalyserVisitor)
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
                 .build(), new AnalyserConfiguration.Builder().setComputeFieldAnalyserAcrossAllMethods(true).build());

@@ -24,7 +24,8 @@ import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 
-@ImmutableContainer(after = "frozen", hc = true)
+// not a container, see removeAsManyAsPossible
+@Immutable(after = "frozen", hc = true)
 public class DGSimplified_0<T> extends Freezable {
 
     private static class Node<T> {
@@ -101,7 +102,7 @@ public class DGSimplified_0<T> extends Freezable {
         }
     }
 */
-    public Set<T> removeAsManyAsPossible(Set<T> set) {
+    public Set<T> removeAsManyAsPossible(@Modified Set<T> set) {
         AtomicBoolean changed = new AtomicBoolean(true);
         while (changed.get()) {
             changed.set(false);
