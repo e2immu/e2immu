@@ -425,6 +425,13 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
                 .collect(Collectors.toUnmodifiableSet());
     }
 
+    private boolean acceptForPrecondition(MethodInspection methodInspection) {
+        if (methodInspection.isAbstract()) return false;
+        if (methodInspection.getMethodInfo().inConstruction()) return false;
+        if (methodInspection.isStatic()) return false;
+        return !methodInspection.getMethodInfo().typeInfo.isStaticWithRespectTo(InspectionProvider.DEFAULT, typeInfo);
+    }
+
     /*
           writes: typeAnalysis.approvedPreconditionsImmutable, the official marker for eventuality in the type
 
@@ -435,8 +442,10 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
         if (typeAnalysis.approvedPreconditionsStatus(true).isDone()) {
             return DONE;
         }
-        CausesOfDelay modificationDelays = myMethodAnalysersExcludingSAMs.stream()
-                .filter(methodAnalyser -> !methodAnalyser.getMethodInfo().methodInspection.get().isAbstract())
+        List<MethodAnalyser> methodList = myMethodAnalysersExcludingSAMs.stream()
+                .filter(methodAnalyser -> acceptForPrecondition(methodAnalyser.getMethodInfo().methodInspection.get()))
+                .toList();
+        CausesOfDelay modificationDelays = methodList.stream()
                 .map(methodAnalyser -> methodAnalyser.getMethodAnalysis()
                         .getProperty(Property.MODIFIED_METHOD_ALT_TEMP).causesOfDelay())
                 .reduce(CausesOfDelay.EMPTY, CausesOfDelay::merge);
@@ -444,9 +453,7 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
         Set<MethodAnalyser> exclude;
         if (modificationDelays.isDelayed()) {
             if (sharedState.allowBreakDelay()) {
-                exclude = myMethodAnalysersExcludingSAMs.stream()
-                        .filter(methodAnalyser -> !methodAnalyser.getMethodInfo().methodInspection.get().isAbstract())
-                        .filter(methodAnalyser -> methodAnalyser.getMethodAnalysis()
+                exclude = methodList.stream().filter(methodAnalyser -> methodAnalyser.getMethodAnalysis()
                                 .getProperty(Property.MODIFIED_METHOD_ALT_TEMP).isDelayed())
                         .collect(Collectors.toUnmodifiableSet());
                 LOGGER.debug("Breaking immutable delay by marking excluding methods {}",
@@ -460,7 +467,7 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
             exclude = Set.of();
         }
 
-        CausesOfDelay preconditionForEventualDelays = myMethodAnalysersExcludingSAMs.stream()
+        CausesOfDelay preconditionForEventualDelays = methodList.stream()
                 .filter(ma -> ma.getMethodAnalysis().getProperty(Property.MODIFIED_METHOD_ALT_TEMP).valueIsTrue())
                 .filter(ma -> !exclude.contains(ma))
                 .map(ma -> ma.getMethodAnalysis().getPreconditionForEventual().causesOfDelay())
@@ -470,7 +477,7 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
             typeAnalysis.setApprovedPreconditionsImmutableDelays(preconditionForEventualDelays);
             return preconditionForEventualDelays;
         }
-        Optional<MethodAnalyser> optEmptyPreconditions = myMethodAnalysersExcludingSAMs.stream()
+        Optional<MethodAnalyser> optEmptyPreconditions = methodList.stream()
                 .filter(ma -> ma.getMethodAnalysis().getProperty(Property.MODIFIED_METHOD_ALT_TEMP).valueIsTrue() &&
                         ma.getMethodAnalysis().getPreconditionForEventual() == null)
                 .filter(ma -> !exclude.contains(ma))
@@ -484,8 +491,9 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
 
         Map<FieldReference, Expression> tempApproved = new HashMap<>();
         Map<FieldReference, Set<MethodInfo>> methodsForApprovedField = new HashMap<>();
-        for (MethodAnalyser methodAnalyser : myMethodAnalysersExcludingSAMs) {
-            if (exclude.contains(methodAnalyser)) continue;
+        for (MethodAnalyser methodAnalyser : methodList) {
+            if (exclude.contains(methodAnalyser))
+                continue;
             DV modified = methodAnalyser.getMethodAnalysis().getProperty(Property.MODIFIED_METHOD_ALT_TEMP);
             if (modified.valueIsTrue()) {
                 Precondition precondition = methodAnalyser.getMethodAnalysis().getPreconditionForEventual();
