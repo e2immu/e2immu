@@ -18,6 +18,7 @@ import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.analyser.delay.DelayFactory;
 import org.e2immu.analyser.analyser.delay.ProgressWrapper;
 import org.e2immu.analyser.analyser.impl.PrimaryTypeAnalyserImpl;
+import org.e2immu.analyser.analyser.impl.util.BreakDelayLevel;
 import org.e2immu.analyser.analyser.nonanalyserimpl.ExpandableAnalyserContextImpl;
 import org.e2immu.analyser.analyser.util.AnalyserResult;
 import org.e2immu.analyser.analyser.util.VariableAccessReport;
@@ -230,7 +231,7 @@ public class StatementAnalyserImpl implements StatementAnalyser {
                 EvaluationContext evaluationContext = new SAEvaluationContext(statementAnalysis,
                         myMethodAnalyser, this, analyserContext,
                         localAnalysers, iteration, forwardAnalysisInfo.conditionManager(), closure,
-                        delaySubsequentStatementBecauseOfECI, forwardAnalysisInfo.allowBreakDelay());
+                        delaySubsequentStatementBecauseOfECI, forwardAnalysisInfo.breakDelayLevel());
                 if (analyserContext.getConfiguration().analyserConfiguration().skipTransformations()) {
                     wasReplacement = false;
                 } else {
@@ -255,7 +256,7 @@ public class StatementAnalyserImpl implements StatementAnalyser {
 
                 statementAnalyser = (StatementAnalyserImpl) statementAnalyser.navigationDataNextGet().orElse(null);
 
-                if (result.analysisStatus().isProgress() && forwardAnalysisInfo.allowBreakDelay()) {
+                if (result.analysisStatus().isProgress() && forwardAnalysisInfo.breakDelayLevel().acceptStatement()) {
                     // LOGGER.debug("**** Removing allow break delay for subsequent statements ****");
                     // uncomment the following statement if you want to break only delays at one statement,
                     // instead of in the whole method
@@ -475,7 +476,7 @@ public class StatementAnalyserImpl implements StatementAnalyser {
             EvaluationContext evaluationContext = new SAEvaluationContext(
                     statementAnalysis, myMethodAnalyser, this, analyserContext, localAnalysers,
                     iteration, localConditionManager, closure, delaySubsequentStatementBecauseOfECI,
-                    forwardAnalysisInfo.allowBreakDelay());
+                    forwardAnalysisInfo.breakDelayLevel());
             StatementAnalyserSharedState sharedState = new StatementAnalyserSharedState(evaluationContext,
                     EvaluationResult.from(evaluationContext),
                     analyserResultBuilder, previous, forwardAnalysisInfo, localConditionManager);
@@ -580,7 +581,7 @@ public class StatementAnalyserImpl implements StatementAnalyser {
         for (PrimaryTypeAnalyser analyser : localAnalysers.get()) {
             LOGGER.debug("------- Starting local analyser {} ------", analyser.getName());
             Analyser.SharedState shared = new Analyser.SharedState(sharedState.evaluationContext().getIteration(),
-                    sharedState.evaluationContext().allowBreakDelay(), sharedState.evaluationContext());
+                    sharedState.evaluationContext().breakDelayLevel(), sharedState.evaluationContext());
             AnalyserResult analyserResult = analyser.analyse(shared);
             builder.add(analyserResult);
             LOGGER.debug("------- Ending local analyser   {} ------", analyser.getName());
@@ -697,7 +698,7 @@ public class StatementAnalyserImpl implements StatementAnalyser {
         return new SAEvaluationContext(statementAnalysis, myMethodAnalyser, this,
                 analyserContext, localAnalysers, 0,
                 ConditionManager.initialConditionManager(statementAnalysis.primitives()), null,
-                false, false);
+                false, BreakDelayLevel.NONE);
     }
 
     @Override

@@ -150,7 +150,7 @@ public class Test_Output_02_OutputBuilder extends CommonTestRunner {
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("fullyQualifiedName".equals(d.methodInfo().name)) {
                 if ("0".equals(d.statementId())) {
-                    assertFalse(d.context().evaluationContext().allowBreakDelay());
+                    assertFalse(d.allowBreakDelay());
                 }
             }
             if ("write".equals(d.methodInfo().name)) {

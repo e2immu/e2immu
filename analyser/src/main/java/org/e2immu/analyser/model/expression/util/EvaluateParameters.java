@@ -248,7 +248,7 @@ public class EvaluateParameters {
                 || !variableIsRecursivelyPresentOrField(context.evaluationContext(), variable)) {
             return false;
         }
-        if (context.evaluationContext().allowBreakDelay()
+        if (context.evaluationContext().breakDelayLevel().acceptParameter()
                 && parameterInfo != null
                 && contextModified.causesOfDelay().containsCauseOfDelay(CauseOfDelay.Cause.MODIFIED_OUTSIDE_METHOD,
                 c -> c instanceof SimpleCause sc && sc.location().getInfo().equals(parameterInfo))) {

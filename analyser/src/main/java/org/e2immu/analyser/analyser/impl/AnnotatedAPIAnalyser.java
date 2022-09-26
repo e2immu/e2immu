@@ -15,6 +15,7 @@
 package org.e2immu.analyser.analyser.impl;
 
 import org.e2immu.analyser.analyser.*;
+import org.e2immu.analyser.analyser.impl.util.BreakDelayLevel;
 import org.e2immu.analyser.analyser.util.AnalyserResult;
 import org.e2immu.analyser.analysis.MethodAnalysis;
 import org.e2immu.analyser.analysis.ParameterAnalysis;
@@ -232,7 +233,7 @@ public class AnnotatedAPIAnalyser implements AnalyserContext {
         methodAnalysers.forEach((methodInfo, analyser) -> {
             if (analyser instanceof ShallowMethodAnalyser) {
                 try {
-                    analyser.analyse(new Analyser.SharedState(0, false, null));
+                    analyser.analyse(new Analyser.SharedState(0, BreakDelayLevel.NONE, null));
                 } catch (RuntimeException runtimeException) {
                     LOGGER.error("Caught exception while shallowly analysing method " + methodInfo.fullyQualifiedName);
                     throw runtimeException;
@@ -518,7 +519,8 @@ public class AnnotatedAPIAnalyser implements AnalyserContext {
                     builder.fromAnnotationsIntoProperties(Analyser.AnalyserIdentification.METHOD, true,
                             methodInfo.methodInspection.get().getAnnotations(), e2ImmuAnnotationExpressions);
                 } else if (entry.getValue() instanceof ComputingMethodAnalyser computingMethodAnalyser) {
-                    Analyser.SharedState shared = new Analyser.SharedState(effectivelyFinalIteration, false, null);
+                    Analyser.SharedState shared = new Analyser.SharedState(effectivelyFinalIteration,
+                            BreakDelayLevel.NONE, null);
                     AnalyserResult analyserResult = computingMethodAnalyser.analyse(shared);
                     AnalysisStatus analysisStatus = analyserResult.analysisStatus();
                     if (analysisStatus != AnalysisStatus.DONE) {

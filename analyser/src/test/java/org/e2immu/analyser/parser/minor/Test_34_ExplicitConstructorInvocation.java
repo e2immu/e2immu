@@ -249,7 +249,7 @@ public class Test_34_ExplicitConstructorInvocation extends CommonTestRunner {
                     assertEquals(3, numParams);
                     if (d.variable() instanceof FieldReference fr && "primitives".equals(fr.fieldInfo.name)) {
                         assertEquals("this", fr.scope.toString());
-                        if("0".equals(d.statementId())) {
+                        if ("0".equals(d.statementId())) {
                             String expected = d.iteration() == 0 ? "<s:Primitives>" : "primitives2/*@NotNull*/";
                             assertEquals(expected, d.currentValue().toString());
                             String linked = switch (d.iteration()) {
@@ -747,10 +747,15 @@ public class Test_34_ExplicitConstructorInvocation extends CommonTestRunner {
             }
         };
 
+        BreakDelayVisitor breakDelayVisitor = d -> {
+            assertEquals("--------M---MF--MF--MF---MF-", d.delaySequence());
+        };
+
         testClass("ExplicitConstructorInvocation_13", 0, 1, new DebugConfiguration.Builder()
                         .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                         .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                         .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+                        .addBreakDelayVisitor(breakDelayVisitor)
                         .build(),
                 new AnalyserConfiguration.Builder()
                         .setComputeFieldAnalyserAcrossAllMethods(true)

@@ -65,7 +65,7 @@ public class Test_16_Modification_19 extends CommonTestRunner {
     @Test
     public void test19() throws IOException {
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
-            assertFalse(d.context().evaluationContext().allowBreakDelay());
+            assertFalse(d.allowBreakDelay());
 
             if ("example1".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof This) {

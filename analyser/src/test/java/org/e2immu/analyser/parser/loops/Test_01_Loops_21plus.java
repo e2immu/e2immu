@@ -85,7 +85,7 @@ public class Test_01_Loops_21plus extends CommonTestRunner {
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("method".equals(d.methodInfo().name)) {
                 if ("0".equals(d.statementId())) {
-                    assertEquals(4 == d.iteration(), d.context().evaluationContext().allowBreakDelay());
+                    assertEquals(4 == d.iteration(), d.allowBreakDelay());
                 }
                 if ("array[i]".equals(d.variableName())) {
                     if ("2.0.1.0.2".equals(d.statementId())) {

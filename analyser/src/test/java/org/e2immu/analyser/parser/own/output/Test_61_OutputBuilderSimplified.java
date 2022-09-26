@@ -231,7 +231,7 @@ public class Test_61_OutputBuilderSimplified extends CommonTestRunner {
     @Test
     public void test_7() throws IOException {
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
-            assertFalse(d.context().evaluationContext().allowBreakDelay());
+            assertFalse(d.allowBreakDelay());
 
             if ("apply".equals(d.methodInfo().name) && "$6".equals(d.methodInfo().typeInfo.simpleName)) {
                 if ("result".equals(d.variableName())) {
@@ -529,7 +529,7 @@ public class Test_61_OutputBuilderSimplified extends CommonTestRunner {
                 }
             }
             if ("joining".equals(d.methodInfo().name)) {
-                assertFalse(d.context().evaluationContext().allowBreakDelay());
+                assertFalse(d.allowBreakDelay());
                 if (d.variable() instanceof ParameterInfo pi && "separator".equals(pi.name)) {
                     assertDv(d, 5, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                 } else if (d.variable() instanceof ParameterInfo pi && "start".equals(pi.name)) {

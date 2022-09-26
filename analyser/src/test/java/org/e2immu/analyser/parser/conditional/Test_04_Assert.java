@@ -70,7 +70,7 @@ public class Test_04_Assert extends CommonTestRunner {
             }
         };
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
-            assertFalse(d.context().evaluationContext().allowBreakDelay());
+            assertFalse(d.allowBreakDelay());
 
             if ("causesOfDelay".equals(d.methodInfo().name) && "NotDelayed".equals(d.methodInfo().typeInfo.simpleName)) {
                 if (d.variable() instanceof ReturnVariable) {

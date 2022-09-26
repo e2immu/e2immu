@@ -400,7 +400,7 @@ public class Test_17_Container extends CommonTestRunner {
         final String CONTAINER_5 = "Container_5";
 
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
-            assertFalse(d.context().evaluationContext().allowBreakDelay());
+            assertFalse(d.allowBreakDelay());
 
             if (CONTAINER_5.equals(d.methodInfo().name) &&
                     d.variable() instanceof ParameterInfo p && "coll5".equals(p.name)) {

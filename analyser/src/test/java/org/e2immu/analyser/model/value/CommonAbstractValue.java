@@ -17,6 +17,7 @@ package org.e2immu.analyser.model.value;
 import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.analyser.delay.DelayFactory;
 import org.e2immu.analyser.analyser.delay.SimpleCause;
+import org.e2immu.analyser.analyser.impl.util.BreakDelayLevel;
 import org.e2immu.analyser.analyser.nonanalyserimpl.AbstractEvaluationContextImpl;
 import org.e2immu.analyser.analysis.Analysis;
 import org.e2immu.analyser.analysis.impl.ParameterAnalysisImpl;
@@ -223,11 +224,11 @@ public abstract class CommonAbstractValue {
     static class EvaluationContextImpl extends AbstractEvaluationContextImpl {
 
         private EvaluationContextImpl(ConditionManager conditionManager) {
-            super(1, 0, false, conditionManager, null);
+            super(1, 0, BreakDelayLevel.NONE, conditionManager, null);
         }
 
         EvaluationContextImpl() {
-            super(1, 0, false,
+            super(1, 0, BreakDelayLevel.NONE,
                     ConditionManager.initialConditionManager(PRIMITIVES), null);
         }
 

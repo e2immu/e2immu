@@ -23,10 +23,7 @@ import org.e2immu.analyser.model.variable.DependentVariable;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.ReturnVariable;
 import org.e2immu.analyser.parser.CommonTestRunner;
-import org.e2immu.analyser.visitor.FieldAnalyserVisitor;
-import org.e2immu.analyser.visitor.MethodAnalyserVisitor;
-import org.e2immu.analyser.visitor.StatementAnalyserVariableVisitor;
-import org.e2immu.analyser.visitor.StatementAnalyserVisitor;
+import org.e2immu.analyser.visitor.*;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
@@ -57,6 +54,9 @@ public class Test_04_NotNull extends CommonTestRunner {
                 .build(), new AnalyserConfiguration.Builder().setComputeContextPropertiesOverAllMethods(false).build());
     }
 
+    /*
+    tests breaking not-null delay at field level
+     */
     @Test
     public void test_1_1() throws IOException {
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
@@ -67,15 +67,15 @@ public class Test_04_NotNull extends CommonTestRunner {
                         assertDv(d, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     }
                     if ("0".equals(d.statementId())) {
-                        assertDv(d, 4, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                        assertDv(d, 5, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     }
                     if ("1".equals(d.statementId())) {
-                        assertDv(d, 4, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                        assertDv(d, 5, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     }
                 }
                 if (d.variable() instanceof ReturnVariable) {
                     if ("0.0.0".equals(d.statementId())) {
-                        String linked = d.iteration() <= 3 ? "this.s:-1" : "";
+                        String linked = d.iteration() < 5 ? "this.s:-1" : "";
                         assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
                     }
                 }
@@ -84,12 +84,12 @@ public class Test_04_NotNull extends CommonTestRunner {
         StatementAnalyserVisitor statementAnalyserVisitor = d -> {
             if ("lowerCase".equals(d.methodInfo().name)) {
                 if ("0".equals(d.statementId())) {
-                    assertEquals(d.iteration() >= 3, d.context().evaluationContext().allowBreakDelay());
+                    assertEquals(d.iteration() >= 3, d.allowBreakDelay());
                 }
                 if ("0.0.0".equals(d.statementId())) {
                     String expected = switch (d.iteration()) {
                         case 0, 1, 2 -> "<null-check>";
-                        case 3 -> "null!=<vp:s:ext_not_null@Field_s;initial:this.s@Method_lowerCase_0-C>";
+                        case 3, 4 -> "null!=<vp:s:ext_not_null@Field_s;initial:this.s@Method_lowerCase_0-C>";
                         default -> "null!=s";
                     };
                     assertEquals(expected, d.condition().toString());
@@ -98,24 +98,31 @@ public class Test_04_NotNull extends CommonTestRunner {
         };
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
             if ("s".equals(d.fieldInfo().name)) {
-                assertDv(d, 3, MultiLevel.NULLABLE_DV, Property.EXTERNAL_NOT_NULL);
+                assertEquals(d.iteration() == 4, d.allowBreakDelay());
+                assertDv(d, 4, MultiLevel.NULLABLE_DV, Property.EXTERNAL_NOT_NULL);
             }
         };
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("lowerCase".equals(d.methodInfo().name)) {
-                String expected = d.iteration() <= 3 ? "<m:lowerCase>"
+                String expected = d.iteration() < 5 ? "<m:lowerCase>"
                         : "/*inline lowerCase*/null==s?\"?\":s.toLowerCase()";
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
             }
             if ("NotNull_1".equals(d.methodInfo().name)) {
-                assertDv(d.p(0), 4, DV.FALSE_DV, Property.MODIFIED_OUTSIDE_METHOD);
+                assertDv(d.p(0), 5, DV.FALSE_DV, Property.MODIFIED_OUTSIDE_METHOD);
             }
         };
+
+        BreakDelayVisitor breakDelayVisitor = d -> {
+            assertEquals("---MF---", d.delaySequence());
+        };
+
         testClass("NotNull_1", 0, 0, new DebugConfiguration.Builder()
-                   .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .addStatementAnalyserVisitor(statementAnalyserVisitor)
                 .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                .addBreakDelayVisitor(breakDelayVisitor)
                 .build(), new AnalyserConfiguration.Builder().setComputeContextPropertiesOverAllMethods(true).build());
     }
 
@@ -134,12 +141,16 @@ public class Test_04_NotNull extends CommonTestRunner {
         };
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
             if ("s".equals(d.fieldInfo().name)) {
-                assertDv(d, 3, MultiLevel.NULLABLE_DV, Property.EXTERNAL_NOT_NULL);
+                assertDv(d, 4, MultiLevel.NULLABLE_DV, Property.EXTERNAL_NOT_NULL);
             }
+        };
+        BreakDelayVisitor breakDelayVisitor = d -> {
+            assertEquals("---MF-", d.delaySequence());
         };
         testClass("NotNull_2", 0, 0, new DebugConfiguration.Builder()
                 .addStatementAnalyserVisitor(statementAnalyserVisitor)
                 .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+                .addBreakDelayVisitor(breakDelayVisitor)
                 .build(), new AnalyserConfiguration.Builder().setComputeContextPropertiesOverAllMethods(true).build());
     }
 

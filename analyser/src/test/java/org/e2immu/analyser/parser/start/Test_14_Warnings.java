@@ -360,7 +360,7 @@ public class Test_14_Warnings extends CommonTestRunner {
         final String T = "org.e2immu.analyser.parser.start.testexample.Warnings_5.ChildClass.t";
 
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
-            assertFalse(d.context().evaluationContext().allowBreakDelay());
+            assertFalse(d.allowBreakDelay());
 
             if ("methodMustNotBeStatic2".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof FieldReference fr && "s".equals(fr.fieldInfo.name)) {

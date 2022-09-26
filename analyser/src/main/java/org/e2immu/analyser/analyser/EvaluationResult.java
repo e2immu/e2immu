@@ -17,6 +17,7 @@ package org.e2immu.analyser.analyser;
 import org.e2immu.analyser.analyser.delay.DelayFactory;
 import org.e2immu.analyser.analyser.delay.SimpleCause;
 import org.e2immu.analyser.analyser.delay.VariableCause;
+import org.e2immu.analyser.analyser.impl.util.BreakDelayLevel;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.DelayedExpression;
 import org.e2immu.analyser.model.expression.DelayedVariableExpression;
@@ -463,7 +464,7 @@ public record EvaluationResult(EvaluationContext evaluationContext,
             ConditionManager cm = evaluationContext.getConditionManager();
             CausesOfDelay cmDelays = cm.causesOfDelay();
             if (cmDelays.isDelayed()) {
-                if (evaluationContext.allowBreakDelay()
+                if (evaluationContext.breakDelayLevel().acceptStatement()
                         && inSourceOfLoop
                         && causeOfConditionManagerDelayIsLoopNotEmpty(cmDelays, variable)) {
                     LOGGER.debug("Breaking delay on source of loop {}", variable);

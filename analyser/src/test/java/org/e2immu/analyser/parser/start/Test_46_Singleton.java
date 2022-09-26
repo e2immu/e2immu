@@ -111,7 +111,7 @@ public class Test_46_Singleton extends CommonTestRunner {
         };
 
         StatementAnalyserVisitor statementAnalyserVisitor = d -> {
-            assertFalse(d.context().evaluationContext().allowBreakDelay());
+            assertFalse(d.allowBreakDelay());
         };
 
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {

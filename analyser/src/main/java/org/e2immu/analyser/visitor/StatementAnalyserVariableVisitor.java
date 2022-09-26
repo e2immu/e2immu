@@ -48,6 +48,10 @@ public interface StatementAnalyserVariableVisitor {
         public String label() {
             return methodInfo.fullyQualifiedName + "_" + statementId + ":" + variableName;
         }
+
+        public boolean allowBreakDelay() {
+            return context.evaluationContext().breakDelayLevel().acceptStatement();
+        }
     }
 
     void visit(Data data);

@@ -66,7 +66,7 @@ public class Test_37_EventuallyE2Immutable extends CommonTestRunner {
         };
 
         StatementAnalyserVisitor statementAnalyserVisitor = d -> {
-            assertFalse(d.context().evaluationContext().allowBreakDelay());
+            assertFalse(d.allowBreakDelay());
             if ("setT".equals(d.methodInfo().name)) {
                 if ("0.0.0".equals(d.statementId())) {
                     assertEquals(d.iteration() > 0, d.statementAnalysis().stateData().getPrecondition().isEmpty());
@@ -578,7 +578,7 @@ public class Test_37_EventuallyE2Immutable extends CommonTestRunner {
     public void test_9() throws IOException {
 
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
-            assertFalse(d.context().evaluationContext().allowBreakDelay());
+            assertFalse(d.allowBreakDelay());
 
             if ("setFinalAllowEquals".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof This) {

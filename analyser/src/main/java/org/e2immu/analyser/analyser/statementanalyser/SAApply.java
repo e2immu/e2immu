@@ -519,7 +519,7 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
         // we know there is no assignment, so the value properties can remain the same, if we have them
         Properties valueProperties = vic.getPreviousOrInitial().valueProperties();
         if (modified.isDelayed()) {
-            if (sharedState.evaluationContext().allowBreakDelay()) {
+            if (sharedState.evaluationContext().breakDelayLevel().acceptStatement()) {
                 // the restriction is not needed for now 
                 //     && modified.causesOfDelay().containsCauseOfDelay(CauseOfDelay.Cause.WAIT_FOR_MODIFICATION,
                 //     c -> c instanceof VariableCause vc && vc.variable().equals(variable))) {

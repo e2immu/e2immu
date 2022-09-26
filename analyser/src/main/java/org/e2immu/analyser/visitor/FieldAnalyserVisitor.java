@@ -58,5 +58,9 @@ public interface FieldAnalyserVisitor {
         public DV getProperty(Property property) {
             return fieldAnalysis.getProperty(property);
         }
+
+        public boolean allowBreakDelay() {
+            return evaluationContext.breakDelayLevel().acceptField();
+        }
     }
 }

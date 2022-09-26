@@ -112,7 +112,7 @@ public class AggregatingMethodAnalyser extends MethodAnalyserImpl {
         if (!visitors.isEmpty()) {
             for (MethodAnalyserVisitor methodAnalyserVisitor : visitors) {
                 methodAnalyserVisitor.visit(new MethodAnalyserVisitor.Data(sharedState.iteration(),
-                        sharedState.allowBreakDelay(),
+                        sharedState.breakDelayLevel(),
                         null, methodInfo, methodAnalysis,
                         parameterAnalyses, analyserComponents.getStatusesAsMap(),
                         analyserResultBuilder::getMessageStream));

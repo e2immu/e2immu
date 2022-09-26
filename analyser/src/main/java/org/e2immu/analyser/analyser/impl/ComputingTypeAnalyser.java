@@ -17,6 +17,7 @@ package org.e2immu.analyser.analyser.impl;
 import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.analyser.delay.Inconclusive;
 import org.e2immu.analyser.analyser.delay.NotDelayed;
+import org.e2immu.analyser.analyser.impl.util.BreakDelayLevel;
 import org.e2immu.analyser.analyser.impl.util.ComputeTypeImmutable;
 import org.e2immu.analyser.analyser.nonanalyserimpl.AbstractEvaluationContextImpl;
 import org.e2immu.analyser.analyser.util.AnalyserResult;
@@ -238,7 +239,7 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
             analyserResultBuilder.setAnalysisStatus(analysisStatus);
             for (TypeAnalyserVisitor typeAnalyserVisitor : analyserContext.getConfiguration()
                     .debugConfiguration().afterTypePropertyComputations()) {
-                typeAnalyserVisitor.visit(new TypeAnalyserVisitor.Data(iteration, sharedState.allowBreakDelay(),
+                typeAnalyserVisitor.visit(new TypeAnalyserVisitor.Data(iteration, sharedState.breakDelayLevel(),
                         analyserContext.getPrimitives(),
                         typeInfo,
                         analyserContext.getTypeInspection(typeInfo),
@@ -452,7 +453,7 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
 
         Set<MethodAnalyser> exclude;
         if (modificationDelays.isDelayed()) {
-            if (sharedState.allowBreakDelay()) {
+            if (sharedState.breakDelayLevel().acceptType()) {
                 exclude = methodList.stream().filter(methodAnalyser -> methodAnalyser.getMethodAnalysis()
                                 .getProperty(Property.MODIFIED_METHOD_ALT_TEMP).isDelayed())
                         .collect(Collectors.toUnmodifiableSet());
@@ -594,7 +595,7 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
     private HandlePrecondition handlePrecondition(MethodAnalyser methodAnalyser,
                                                   Precondition precondition,
                                                   int iteration) {
-        EvaluationResult context = EvaluationResult.from(new EvaluationContextImpl(iteration, false,
+        EvaluationResult context = EvaluationResult.from(new EvaluationContextImpl(iteration, BreakDelayLevel.NONE,
                 ConditionManager.initialConditionManager(analyserContext.getPrimitives()), null));
         Filter filter = new Filter(context, Filter.FilterMode.ACCEPT);
         Filter.FilterResult<FieldReference> filterResult = filter.filter(precondition.expression(),
@@ -667,7 +668,7 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
             }
         }
         if (allCauses.isDelayed()) {
-            if (sharedState.allowBreakDelay()) {
+            if (sharedState.breakDelayLevel().acceptType()) {
                 LOGGER.debug("Breaking delay in @Container on type {}", typeInfo);
                 typeAnalysis.setProperty(CONTAINER, MultiLevel.NOT_CONTAINER_INCONCLUSIVE);
                 typeAnalysis.setPropertyIfAbsentOrDelayed(PARTIAL_CONTAINER, MultiLevel.NOT_CONTAINER_INCONCLUSIVE);
@@ -725,7 +726,7 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
                 .map(fa -> independenceOfField(fa.getFieldAnalysis()))
                 .reduce(MultiLevel.INDEPENDENT_DV, DV::min);
         if (valueFromFields.isDelayed()) {
-            if (sharedState.allowBreakDelay()) {
+            if (sharedState.breakDelayLevel().acceptType()) {
                 valueFromFields = myFieldAnalysers.stream()
                         .filter(fa -> !fa.getFieldInfo().fieldInspection.get().isPrivate())
                         .filter(fa -> !typeInfo.isMyself(fa.getFieldInfo().type, InspectionProvider.DEFAULT))
@@ -749,7 +750,7 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
                     .map(pa -> correctIndependentFunctionalInterface(pa, pa.getPropertyFromMapDelayWhenAbsent(Property.INDEPENDENT)))
                     .reduce(MultiLevel.INDEPENDENT_DV, DV::min);
             if (valueFromMethodParameters.isDelayed()) {
-                if (sharedState.allowBreakDelay()) {
+                if (sharedState.breakDelayLevel().acceptType()) {
                     valueFromMethodParameters = myMethodAndConstructorAnalysersExcludingSAMs.stream()
                             .filter(ma -> !analyserContext.getMethodInspection(ma.getMethodInfo()).isPrivate())
                             .flatMap(ma -> ma.getParameterAnalyses().stream())
@@ -775,7 +776,7 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
                     .map(ma -> ma.getMethodAnalysis().getProperty(Property.INDEPENDENT))
                     .reduce(MultiLevel.INDEPENDENT_DV, DV::min);
             if (valueFromMethodReturnValue.isDelayed()) {
-                if (sharedState.allowBreakDelay()) {
+                if (sharedState.breakDelayLevel().acceptType()) {
                     valueFromMethodReturnValue = myMethodAnalysersExcludingSAMs.stream()
                             .filter(ma -> !ma.getMethodInfo().methodInspection.get().isPrivate()
                                     && ma.getMethodInfo().hasReturnValue()
@@ -1145,10 +1146,10 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
     class EvaluationContextImpl extends AbstractEvaluationContextImpl implements EvaluationContext {
 
         protected EvaluationContextImpl(int iteration,
-                                        boolean allowBreakDelay,
+                                        BreakDelayLevel breakDelayLevel,
                                         ConditionManager conditionManager,
                                         EvaluationContext closure) {
-            super(closure == null ? 1 : closure.getDepth() + 1, iteration, allowBreakDelay, conditionManager, closure);
+            super(closure == null ? 1 : closure.getDepth() + 1, iteration, breakDelayLevel, conditionManager, closure);
         }
 
         @Override

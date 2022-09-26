@@ -15,6 +15,7 @@
 package org.e2immu.analyser.visitor;
 
 import org.e2immu.analyser.analyser.*;
+import org.e2immu.analyser.analyser.impl.util.BreakDelayLevel;
 import org.e2immu.analyser.analysis.MethodAnalysis;
 import org.e2immu.analyser.analysis.ParameterAnalysis;
 import org.e2immu.analyser.analysis.StatementAnalysis;
@@ -32,7 +33,7 @@ public interface MethodAnalyserVisitor {
     void visit(Data data);
 
     record Data(int iteration,
-                boolean allowBreakDelay,
+                BreakDelayLevel breakDelayLevel,
                 EvaluationContext evaluationContext,
                 MethodInfo methodInfo,
                 MethodAnalysis methodAnalysis,
@@ -92,6 +93,10 @@ public interface MethodAnalyserVisitor {
                     return methodInfo().fullyQualifiedName + ":" + i;
                 }
             };
+        }
+
+        public boolean allowBreakDelay() {
+            return breakDelayLevel.acceptMethod();
         }
     }
 

@@ -249,12 +249,12 @@ record SASubBlocks(StatementAnalysis statementAnalysis, StatementAnalyser statem
                                         executionOfBlock.startOfBlock.getStatementAnalysis()),
                                 statementAnalysis.stateData().valueOfExpression.get(),
                                 statementAnalysis.stateData().valueOfExpression.get().causesOfDelay(),
-                                evaluationContext.allowBreakDelay());
+                                evaluationContext.breakDelayLevel());
                     } else {
                         forward = new ForwardAnalysisInfo(executionOfBlock.execution,
                                 executionOfBlock.conditionManager, executionOfBlock.catchVariable,
                                 null, null, CausesOfDelay.EMPTY,
-                                evaluationContext.allowBreakDelay());
+                                evaluationContext.breakDelayLevel());
                     }
                     AnalyserResult result = ((StatementAnalyserImpl) executionOfBlock.startOfBlock)
                             .analyseAllStatementsInBlock(evaluationContext.getIteration(),

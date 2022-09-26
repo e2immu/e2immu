@@ -17,6 +17,7 @@ package org.e2immu.analyser.analyser;
 import org.e2immu.analyser.analyser.delay.DelayFactory;
 import org.e2immu.analyser.analyser.delay.ProgressAndDelay;
 import org.e2immu.analyser.analyser.delay.SimpleCause;
+import org.e2immu.analyser.analyser.impl.util.BreakDelayLevel;
 import org.e2immu.analyser.analyser.util.WeightedGraph;
 import org.e2immu.analyser.analysis.StatementAnalysis;
 import org.e2immu.analyser.model.ParameterInfo;
@@ -64,7 +65,7 @@ public class ComputeLinkedVariables {
     private final Cluster returnValueCluster;
     private final Variable returnVariable;
     private final WeightedGraph weightedGraph;
-    private final boolean allowBreakDelay;
+    private final BreakDelayLevel breakDelayLevel;
     private final Set<Variable> linkingNotYetSet;
     private final boolean oneBranchHasBecomeUnreachable;
 
@@ -83,7 +84,7 @@ public class ComputeLinkedVariables {
                                    List<Cluster> clusters,
                                    Cluster returnValueCluster,
                                    Variable returnVariable,
-                                   boolean allowBreakDelay,
+                                   BreakDelayLevel breakDelayLevel,
                                    boolean oneBranchHasBecomeUnreachable,
                                    Set<Variable> linkingNotYetSet) {
         this.clusters = clusters;
@@ -92,7 +93,7 @@ public class ComputeLinkedVariables {
         this.stage = stage;
         this.statementAnalysis = statementAnalysis;
         this.weightedGraph = weightedGraph;
-        this.allowBreakDelay = allowBreakDelay;
+        this.breakDelayLevel = breakDelayLevel;
         this.linkingNotYetSet = linkingNotYetSet;
         this.oneBranchHasBecomeUnreachable = oneBranchHasBecomeUnreachable;
         this.variablesInClusters = variablesInClusters;
@@ -143,7 +144,7 @@ public class ComputeLinkedVariables {
         ClusterResult cr = computeClusters(weightedGraph, done);
 
         return new ComputeLinkedVariables(statementAnalysis, stage, ignore, weightedGraph, cr.variablesInClusters(), cr.clusters,
-                cr.returnValueCluster, cr.rv, evaluationContext.allowBreakDelay(), oneBranchHasBecomeUnreachable,
+                cr.returnValueCluster, cr.rv, evaluationContext.breakDelayLevel(), oneBranchHasBecomeUnreachable,
                 linkingNotYetSet);
     }
 
@@ -587,12 +588,13 @@ public class ComputeLinkedVariables {
      * allowBreakDelay is controlled by the primary type analyser; it gets activated when there was no progress anymore.
      */
     private DV potentiallyBreakContextModifiedDelay(Variable v, DV propertyValue) {
-        if (allowBreakDelay && propertyValue.isDelayed() &&
-                (propertyValue.containsCauseOfDelay(CauseOfDelay.Cause.BREAK_MOM_DELAY,
-                        c -> c instanceof SimpleCause sc && sc.location().getInfo() instanceof ParameterInfo) ||
-                        // this second situation arises in InstanceOf_16: direct self reference
-                        propertyValue.containsCauseOfDelay(CauseOfDelay.Cause.CONTEXT_MODIFIED,
-                                c -> c instanceof SimpleCause sc && sc.location().getInfo() == v))) {
+        if (breakDelayLevel.acceptStatement()
+                && propertyValue.isDelayed()
+                && (propertyValue.containsCauseOfDelay(CauseOfDelay.Cause.BREAK_MOM_DELAY,
+                c -> c instanceof SimpleCause sc && sc.location().getInfo() instanceof ParameterInfo) ||
+                // this second situation arises in InstanceOf_16: direct self reference
+                propertyValue.containsCauseOfDelay(CauseOfDelay.Cause.CONTEXT_MODIFIED,
+                        c -> c instanceof SimpleCause sc && sc.location().getInfo() == v))) {
             LOGGER.debug("Breaking a MOM / CM delay for parameter {} in {}", v, propertyValue);
             statementAnalysis.setBrokeDelay();
             return DV.FALSE_DV;

@@ -84,7 +84,7 @@ public class Test_00_Basics_21 extends CommonTestRunner {
         };
 
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
-            assertFalse(d.context().evaluationContext().allowBreakDelay());
+            assertFalse(d.allowBreakDelay());
 
             if ("copy".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof ParameterInfo pi && "other".equals(pi.name)) {
@@ -185,7 +185,7 @@ public class Test_00_Basics_21 extends CommonTestRunner {
         };
 
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
-            assertFalse(d.evaluationContext().allowBreakDelay());
+            assertFalse(d.allowBreakDelay());
 
             if ("t".equals(d.fieldInfo().name)) {
                 assertDv(d, 2, DV.FALSE_DV, MODIFIED_OUTSIDE_METHOD);

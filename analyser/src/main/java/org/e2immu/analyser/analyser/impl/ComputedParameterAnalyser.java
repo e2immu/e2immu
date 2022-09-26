@@ -245,7 +245,7 @@ public class ComputedParameterAnalyser extends ParameterAnalyserImpl {
             VariableInfo viParam = lastStatement.findOrNull(parameterInfo, Stage.MERGE);
             if (viParam != null) {
                 if (!viParam.linkedVariablesIsSet()) {
-                    if (sharedState.allowBreakDelay() && viParam.getLinkedVariables().causesOfDelay()
+                    if (sharedState.breakDelayLevel().acceptParameter() && viParam.getLinkedVariables().causesOfDelay()
                             .containsCauseOfDelay(CauseOfDelay.Cause.LINKING)) {
                         LOGGER.debug("Breaking parameter delay in independent, parameter {}", parameterInfo.fullyQualifiedName);
                         parameterAnalysis.setProperty(INDEPENDENT, INDEPENDENT_DV);
@@ -280,7 +280,7 @@ public class ComputedParameterAnalyser extends ParameterAnalyserImpl {
                     .toList();
             for (VariableInfo vi : vis) {
                 if (!vi.linkedVariablesIsSet()) {
-                    if (sharedState.allowBreakDelay() && vi.getLinkedVariables().causesOfDelay()
+                    if (sharedState.breakDelayLevel().acceptParameter() && vi.getLinkedVariables().causesOfDelay()
                             .containsCauseOfDelay(CauseOfDelay.Cause.LINKING)) {
                         LOGGER.debug("Breaking parameter delay in independent, parameter {}, field {}",
                                 parameterInfo, vi.variable());

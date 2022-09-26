@@ -377,7 +377,7 @@ public class Test_02_ConditionalChecks extends CommonTestRunner {
                     assertEquals("null!=o&&o.getClass()==this.getClass()&&o!=this", d.absoluteState().toString());
                 }
                 if ("2".equals(d.statementId())) {
-                    assertFalse( d.context().evaluationContext().allowBreakDelay());
+                    assertFalse( d.allowBreakDelay());
                     assertEquals("null!=o&&o.getClass()==this.getClass()&&o!=this", d.absoluteState().toString());
                 }
             }

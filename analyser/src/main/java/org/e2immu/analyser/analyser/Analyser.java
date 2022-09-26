@@ -14,6 +14,7 @@
 
 package org.e2immu.analyser.analyser;
 
+import org.e2immu.analyser.analyser.impl.util.BreakDelayLevel;
 import org.e2immu.analyser.analyser.util.AnalyserResult;
 import org.e2immu.analyser.analysis.Analysis;
 import org.e2immu.analyser.model.WithInspectionAndAnalysis;
@@ -32,12 +33,17 @@ import static org.e2immu.analyser.analyser.Property.*;
 public interface Analyser extends Comparable<Analyser> {
 
 
-    record SharedState(int iteration, boolean allowBreakDelay, EvaluationContext closure) {
+    record SharedState(int iteration, BreakDelayLevel breakDelayLevel, EvaluationContext closure) {
         private static final Logger LOGGER = LoggerFactory.getLogger(Analyser.class);
 
         public SharedState removeAllowBreakDelay() {
-            if (allowBreakDelay) LOGGER.debug("**** Removing allow break delay ****");
-            return new SharedState(iteration, false, closure);
+            if (breakDelayLevel.isActive()) LOGGER.debug("**** Removing allow break delay ****");
+            return new SharedState(iteration, BreakDelayLevel.NONE, closure);
+        }
+
+        public SharedState setBreakDelayLevel(BreakDelayLevel breakDelayLevel) {
+            if (breakDelayLevel == this.breakDelayLevel) return this;
+            return new SharedState(iteration, breakDelayLevel, closure);
         }
     }
 

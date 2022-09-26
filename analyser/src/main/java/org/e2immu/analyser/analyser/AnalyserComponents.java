@@ -21,6 +21,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
+import java.util.function.BiPredicate;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -66,9 +67,12 @@ public class AnalyserComponents<T, S> {
     private final boolean limitCausesOfDelay;
     private final Map<WithInspectionAndAnalysis, Info> delayHistogram;
     private final Function<S, S> updateUponProgress;
+    private final BiPredicate<T, S> executeConditionally;
 
-    private AnalyserComponents(boolean limitCausesOfDelay, LinkedHashMap<T, AnalysisResultSupplier<S>> suppliers,
-                               Function<S, S> updateUponProgress) {
+    private AnalyserComponents(boolean limitCausesOfDelay,
+                               LinkedHashMap<T, AnalysisResultSupplier<S>> suppliers,
+                               Function<S, S> updateUponProgress,
+                               BiPredicate<T, S> executeConditionally) {
         this.suppliers = suppliers;
         state = new AnalysisStatus[suppliers.size()];
         Arrays.fill(state, AnalysisStatus.NOT_YET_EXECUTED);
@@ -79,6 +83,7 @@ public class AnalyserComponents<T, S> {
             delayHistogram = null;
         }
         this.updateUponProgress = updateUponProgress;
+        this.executeConditionally = executeConditionally;
     }
 
     public AnalysisStatus getStatus(String t) {
@@ -94,6 +99,7 @@ public class AnalyserComponents<T, S> {
         private final AnalyserProgram analyserProgram;
         private boolean limitCausesOfDelay;
         private Function<S, S> updateUponProgress;
+        private BiPredicate<T, S> executeConditionally;
 
         public Builder(AnalyserProgram analyserProgram) {
             this.analyserProgram = analyserProgram;
@@ -120,8 +126,13 @@ public class AnalyserComponents<T, S> {
             return this;
         }
 
+        public Builder<T, S> setExecuteConditionally(BiPredicate<T, S> executeConditionally) {
+            this.executeConditionally = executeConditionally;
+            return this;
+        }
+
         public AnalyserComponents<T, S> build() {
-            return new AnalyserComponents<>(limitCausesOfDelay, suppliers, updateUponProgress);
+            return new AnalyserComponents<>(limitCausesOfDelay, suppliers, updateUponProgress, executeConditionally);
         }
     }
 
@@ -144,32 +155,39 @@ public class AnalyserComponents<T, S> {
             AnalysisStatus.AnalysisResultSupplier<S> supplier = entry.getValue();
             AnalysisStatus initialState = state[i];
             if (initialState != DONE) {
-                // execute
-                AnalysisStatus afterExec = supplier.apply(s);
-                assert afterExec != NOT_YET_EXECUTED;
-                if (afterExec == DONE || afterExec == DONE_ALL || afterExec.isProgress()) {
-                    if (!progress) {
-                        LOGGER.debug("First progress in {}", entry.getKey());
+                if (executeConditionally == null || executeConditionally.test(entry.getKey(), s)) {
+                    // execute
+                    AnalysisStatus afterExec = supplier.apply(s);
+                    assert afterExec != NOT_YET_EXECUTED;
+                    if (afterExec == DONE || afterExec == DONE_ALL || afterExec.isProgress()) {
+                        if (!progress) {
+                            LOGGER.debug("First progress in {}", entry.getKey());
+                        }
+                        progress = true;
+                        if (updateUponProgress != null) {
+                            s = updateUponProgress.apply(s);
+                        }
                     }
-                    progress = true;
-                    if (updateUponProgress != null) {
-                        s = updateUponProgress.apply(s);
+                    if (afterExec == DONE_ALL) {
+                        while (i < state.length) {
+                            state[i++] = DONE;
+                        }
+                        break; // out of the for loop!
                     }
-                }
-                if (afterExec == DONE_ALL) {
-                    while (i < state.length) {
-                        state[i++] = DONE;
+                    if (afterExec.isDelayed() && delayHistogram != null) {
+                        afterExec.causesOfDelay().causesStream().forEach(c ->
+                                delayHistogram.merge(c.location().getInfo(), new Info(c), (i1, i2) -> i1.add(c)));
                     }
-                    break; // out of the for loop!
-                }
-                if (afterExec.isDelayed() && delayHistogram != null) {
-                    afterExec.causesOfDelay().causesStream().forEach(c ->
-                            delayHistogram.merge(c.location().getInfo(), new Info(c), (i1, i2) -> i1.add(c)));
-                }
-                state[i] = afterExec;
-                if (afterExec != RUN_AGAIN) {
-                    assert afterExec.isDelayed() || afterExec == DONE;
-                    combined = combined.combine(afterExec, limitCausesOfDelay);
+                    state[i] = afterExec;
+                    if (afterExec != RUN_AGAIN) {
+                        assert afterExec.isDelayed() || afterExec == DONE;
+                        combined = combined.combine(afterExec, limitCausesOfDelay);
+                    }
+                } else {
+                    // we're skipping analysers which are delayed, so we can't have a DONE...
+                    if (combined.isDone()) {
+                        combined = AnalysisStatus.of(CausesOfDelay.MIN_INT_DV);
+                    }
                 }
             }
             i++;

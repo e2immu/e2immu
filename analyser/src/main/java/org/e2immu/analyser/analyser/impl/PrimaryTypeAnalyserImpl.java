@@ -15,6 +15,7 @@
 package org.e2immu.analyser.analyser.impl;
 
 import org.e2immu.analyser.analyser.*;
+import org.e2immu.analyser.analyser.impl.util.BreakDelayLevel;
 import org.e2immu.analyser.analyser.util.AnalyserResult;
 import org.e2immu.analyser.analysis.Analysis;
 import org.e2immu.analyser.config.Configuration;
@@ -29,6 +30,7 @@ import org.e2immu.analyser.pattern.PatternMatcher;
 import org.e2immu.analyser.resolver.AnalyserGenerator;
 import org.e2immu.analyser.resolver.TypeCycle;
 import org.e2immu.analyser.util.Pair;
+import org.e2immu.analyser.visitor.BreakDelayVisitor;
 import org.e2immu.support.Either;
 import org.e2immu.support.FlipSwitch;
 import org.slf4j.Logger;
@@ -68,7 +70,7 @@ public class PrimaryTypeAnalyserImpl implements PrimaryTypeAnalyser {
     private final Set<PrimaryTypeAnalyser> localPrimaryTypeAnalysers = new HashSet<>();
     private final AnalyserComponents<Analyser, SharedState> analyserComponents;
     private final FlipSwitch unreachable = new FlipSwitch();
-    private final Set<Integer> iterationsWithAllowBreakDelay = new HashSet<>();
+    private final StringBuilder delaySequence = new StringBuilder();
 
     public PrimaryTypeAnalyserImpl(AnalyserContext parent,
                                    TypeCycle typeCycle,
@@ -119,8 +121,17 @@ public class PrimaryTypeAnalyserImpl implements PrimaryTypeAnalyser {
         // maybe we should do that per PrimaryType, keeping a map?
         analyserComponents = builder
                 .setUpdateUponProgress(SharedState::removeAllowBreakDelay)
+                .setExecuteConditionally(this::executeConditionally)
                 .build();
         LOGGER.debug("List of analysers: {}", analysers);
+    }
+
+    private boolean executeConditionally(Analyser analyser, SharedState sharedState) {
+        return switch (sharedState.breakDelayLevel()) {
+            case FIELD -> analyser instanceof FieldAnalyser || analyser instanceof TypeAnalyser;
+            case TYPE -> analyser instanceof TypeAnalyser;
+            default -> true;
+        };
     }
 
     @Override
@@ -177,18 +188,18 @@ public class PrimaryTypeAnalyserImpl implements PrimaryTypeAnalyser {
 
         if (!configuration.analyserConfiguration().analyserProgram().accepts(ITERATION_0)) return;
         int iteration = 0;
-        boolean allowBreakDelay = false;
+        BreakDelayLevel breakDelayLevel = BreakDelayLevel.NONE;
         AnalysisStatus analysisStatus;
 
         int MAX_ITERATION = 100;
         do {
-            LOGGER.debug("\n******\nStarting iteration {} (break? {}) of the primary type analyser on {}\n******",
-                    iteration, allowBreakDelay, name);
-            if (allowBreakDelay) iterationsWithAllowBreakDelay.add(iteration);
+            delaySequence.append(breakDelayLevel.symbol);
 
+            LOGGER.debug("\n******\nStarting iteration {} (break? {}) of the primary type analyser on {}; sequence {}\n******",
+                    iteration, breakDelayLevel, name, delaySequence);
             analyserComponents.resetDelayHistogram();
 
-            SharedState sharedState = new SharedState(iteration, allowBreakDelay, null);
+            SharedState sharedState = new SharedState(iteration, breakDelayLevel, null);
             AnalyserResult analyserResult = analyse(sharedState);
             iteration++;
 
@@ -208,12 +219,22 @@ public class PrimaryTypeAnalyserImpl implements PrimaryTypeAnalyser {
             }
             analysisStatus = analyserResult.analysisStatus();
             if (analysisStatus == AnalysisStatus.DONE) break;
-            if (allowBreakDelay && !analysisStatus.isProgress()) {
-                // no point in continuing
-                break;
+            if (!analysisStatus.isProgress()) {
+                if (BreakDelayLevel.TYPE == breakDelayLevel) {
+                    // no point in continuing
+                    break;
+                }
+                breakDelayLevel = breakDelayLevel.next();
+            } else {
+                breakDelayLevel = BreakDelayLevel.NONE;
             }
-            allowBreakDelay = !analysisStatus.isProgress();
         } while (iteration < MAX_ITERATION);
+
+        List<BreakDelayVisitor> visitors = configuration.debugConfiguration().breakDelayVisitors();
+        for (BreakDelayVisitor breakDelayVisitor : visitors) {
+            breakDelayVisitor.visit(new BreakDelayVisitor.Data(iteration, delaySequence.toString()));
+        }
+
         if (analysisStatus.isDelayed()) {
             logAnalysisStatuses(analyserComponents);
             if (LOGGER.isDebugEnabled()) {

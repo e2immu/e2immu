@@ -280,7 +280,7 @@ public class Test_Support_02_SetOnce extends CommonTestRunner {
                         assertEquals("setOnce:1", d.variableInfo().getLinkedVariables().toString());
                     }
                     if ("3".equals(d.statementId())) {
-                        assertEquals(d.iteration() >= 5, d.context().evaluationContext().allowBreakDelay());
+                        assertEquals(d.iteration() >= 5, d.allowBreakDelay());
                         assertEquals("setOnce:1", d.variableInfo().getLinkedVariables().toString());
                     }
                 }

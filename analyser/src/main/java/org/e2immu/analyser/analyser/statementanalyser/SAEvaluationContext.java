@@ -16,6 +16,7 @@ package org.e2immu.analyser.analyser.statementanalyser;
 
 import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.analyser.delay.VariableCause;
+import org.e2immu.analyser.analyser.impl.util.BreakDelayLevel;
 import org.e2immu.analyser.analyser.nonanalyserimpl.AbstractEvaluationContextImpl;
 import org.e2immu.analyser.analyser.nonanalyserimpl.VariableInfoImpl;
 import org.e2immu.analyser.analysis.FieldAnalysis;
@@ -67,10 +68,10 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
                         EvaluationContext closure,
                         // NOTE: ECI = explicit constructor invocation
                         boolean delayStatementBecauseOfECI,
-                        boolean allowBreakDelay) {
+                        BreakDelayLevel breakDelayLevel) {
         this(statementAnalysis, myMethodAnalyser, statementAnalyser, analyserContext, localAnalysers,
                 iteration, conditionManager, closure, false, true,
-                false, delayStatementBecauseOfECI, allowBreakDelay);
+                false, delayStatementBecauseOfECI, breakDelayLevel);
     }
 
     // base is used to distinguish between the context created in SAEvaluationOfMain, as compared to temporary ones
@@ -88,9 +89,10 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
                         boolean base,
                         boolean preventAbsoluteStateComputation,
                         boolean delayStatementBecauseOfECI,
-                        boolean allowBreakDelay) {
-        super(closure == null ? 1 : closure.getDepth() + 1, iteration, allowBreakDelay ||
-                statementAnalysis.isBrokeDelay(), conditionManager, closure);
+                        BreakDelayLevel breakDelayLevel) {
+        super(closure == null ? 1 : closure.getDepth() + 1, iteration,
+                breakDelayLevel.max(statementAnalysis.isBrokeDelay() ? BreakDelayLevel.STATEMENT_METHOD : BreakDelayLevel.NONE),
+                conditionManager, closure);
         this.statementAnalyser = statementAnalyser;
         this.localAnalysers = localAnalysers;
         this.myMethodAnalyser = myMethodAnalyser;
@@ -140,7 +142,7 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
     public EvaluationContext copyToPreventAbsoluteStateComputation() {
         return new SAEvaluationContext(statementAnalysis, myMethodAnalyser, statementAnalyser, analyserContext,
                 localAnalysers, iteration, conditionManager, closure, disableEvaluationOfMethodCallsUsingCompanionMethods,
-                false, true, delayStatementBecauseOfECI, allowBreakDelay);
+                false, true, delayStatementBecauseOfECI, breakDelayLevel);
     }
 
     private MethodInfo methodInfo() {
@@ -206,7 +208,7 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
                 conditionManager.newAtStartOfNewBlockDoNotChangePrecondition(getPrimitives(), condition, conditionVariables),
                 closure,
                 disableEvaluationOfMethodCallsUsingCompanionMethods, false, preventAbsoluteStateComputation,
-                delayStatementBecauseOfECI, allowBreakDelay);
+                delayStatementBecauseOfECI, breakDelayLevel);
     }
 
     @Override
@@ -216,7 +218,7 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
                 myMethodAnalyser, statementAnalyser, analyserContext, localAnalysers,
                 iteration, cm, closure, disableEvaluationOfMethodCallsUsingCompanionMethods, false,
                 preventAbsoluteStateComputation,
-                delayStatementBecauseOfECI, allowBreakDelay);
+                delayStatementBecauseOfECI, breakDelayLevel);
     }
 
     @Override
@@ -225,7 +227,7 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
                 myMethodAnalyser, statementAnalyser, analyserContext, localAnalysers,
                 iteration, conditionManager.addState(state, stateVariables), closure,
                 false, false, preventAbsoluteStateComputation,
-                delayStatementBecauseOfECI, allowBreakDelay);
+                delayStatementBecauseOfECI, breakDelayLevel);
     }
 
         /*
@@ -242,7 +244,7 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
             DV nne = variableInfo.getProperty(NOT_NULL_EXPRESSION);
             DV nneTF = nne.isDelayed() ? nne : DV.fromBoolDv(!nne.equals(NULLABLE_DV));
             DV cm = notNullAccordingToConditionManager(ve.variable());
-            if (nneTF.isDelayed() && allowBreakDelay) {
+            if (nneTF.isDelayed() && breakDelayLevel().acceptStatement()) {
                 LOGGER.debug("Breaking NNE delay in isNotNull0");
                 statementAnalysis.setBrokeDelay();
                 return cnnTF.max(cm);
@@ -375,7 +377,7 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
                     myMethodAnalyser, statementAnalyser, analyserContext, localAnalysers,
                     iteration, conditionManager.withoutState(getPrimitives()), closure,
                     false, false,
-                    preventAbsoluteStateComputation, delayStatementBecauseOfECI, allowBreakDelay);
+                    preventAbsoluteStateComputation, delayStatementBecauseOfECI, breakDelayLevel);
             EvaluationResult context = EvaluationResult.from(customEc);
             return value.getProperty(context, NOT_NULL_EXPRESSION, true);
         }

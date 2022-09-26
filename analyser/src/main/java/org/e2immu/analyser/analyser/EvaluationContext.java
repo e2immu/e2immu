@@ -16,6 +16,7 @@ package org.e2immu.analyser.analyser;
 
 import org.e2immu.analyser.analyser.delay.DelayFactory;
 import org.e2immu.analyser.analyser.delay.SimpleCause;
+import org.e2immu.analyser.analyser.impl.util.BreakDelayLevel;
 import org.e2immu.analyser.analysis.FieldAnalysis;
 import org.e2immu.analyser.analysis.MethodAnalysis;
 import org.e2immu.analyser.analysis.ParameterAnalysis;
@@ -457,8 +458,8 @@ public interface EvaluationContext {
         return Properties.EMPTY;
     }
 
-    default boolean allowBreakDelay() {
-        return false;
+    default BreakDelayLevel breakDelayLevel() {
+        return BreakDelayLevel.NONE;
     }
 
     /*

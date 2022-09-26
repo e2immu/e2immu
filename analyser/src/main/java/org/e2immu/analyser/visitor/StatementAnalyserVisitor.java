@@ -72,6 +72,10 @@ public interface StatementAnalyserVisitor {
         public String label() {
             return methodInfo.fullyQualifiedName + "_" + statementId;
         }
+
+        public boolean allowBreakDelay() {
+            return context.evaluationContext().breakDelayLevel().acceptStatement();
+        }
     }
 
     void visit(Data data);

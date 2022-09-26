@@ -250,7 +250,7 @@ public record ComputeTypeImmutable(AnalyserContext analyserContext,
             }
         }
         if (causesMethods.isDelayed()) {
-            return delayImmutable(causesMethods, sharedState.allowBreakDelay(), w.whenImmutableFails);
+            return delayImmutable(causesMethods, sharedState.breakDelayLevel(), w.whenImmutableFails);
         }
         return null;
     }
@@ -361,7 +361,7 @@ public record ComputeTypeImmutable(AnalyserContext analyserContext,
             }
         }
         if (causesConstructor.isDelayed()) {
-            return delayImmutable(causesConstructor, sharedState.allowBreakDelay(), w.whenImmutableFails);
+            return delayImmutable(causesConstructor, sharedState.breakDelayLevel(), w.whenImmutableFails);
         }
         return null; // continue beyond constructors
     }
@@ -466,7 +466,7 @@ public record ComputeTypeImmutable(AnalyserContext analyserContext,
             if (fieldImmutable.isDelayed()) {
                 // this delay is not caught because of the partial data... still, we cannot conclude, see e.g. E2Immutable_10
                 LOGGER.debug("Delaying immutable of {} because field {} has immutable delayed", typeInfo, fieldInfo);
-                return delayImmutable(fieldImmutable.causesOfDelay(), sharedState.allowBreakDelay(), w.whenImmutableFails);
+                return delayImmutable(fieldImmutable.causesOfDelay(), sharedState.breakDelayLevel(), w.whenImmutableFails);
             }
             int fieldImmutableLevel = MultiLevel.level(fieldImmutable);
             if (fieldImmutableLevel < MultiLevel.Level.IMMUTABLE.level) {
@@ -475,7 +475,7 @@ public record ComputeTypeImmutable(AnalyserContext analyserContext,
         }
         if (causesFields.isDelayed()) {
             LOGGER.debug("Delaying immutable of {} because of fields, delays: {}", typeInfo, causesFields);
-            return delayImmutable(causesFields, sharedState.allowBreakDelay(), w.whenImmutableFails);
+            return delayImmutable(causesFields, sharedState.breakDelayLevel(), w.whenImmutableFails);
         }
 
         return null; // continue beyond fields
@@ -488,7 +488,7 @@ public record ComputeTypeImmutable(AnalyserContext analyserContext,
         if (approvedDelays.isDelayed()) {
             LOGGER.debug("Type {} is not effectively level 1 immutable, waiting for" +
                     " preconditions to find out if it is eventually level 2 immutable", typeInfo);
-            return delayImmutable(approvedDelays, sharedState.allowBreakDelay(), w.whenImmutableFails);
+            return delayImmutable(approvedDelays, sharedState.breakDelayLevel(), w.whenImmutableFails);
         }
 
         /*
@@ -511,7 +511,7 @@ public record ComputeTypeImmutable(AnalyserContext analyserContext,
             if (approvedDelays.isDelayed()) {
                 LOGGER.debug("Type {} is not effectively level 1 immutable, waiting for" +
                         " preconditions to find out if it is eventually level 1 immutable", typeInfo);
-                return delayImmutable(approvedDelays, sharedState.allowBreakDelay(), MultiLevel.MUTABLE_DV);
+                return delayImmutable(approvedDelays, sharedState.breakDelayLevel(), MultiLevel.MUTABLE_DV);
             }
             List<FieldReference> nonFinalFields = myFieldAnalysers.stream()
                     .filter(fa -> DV.FALSE_DV.equals(fa.getFieldAnalysis().getProperty(Property.FINAL)))
@@ -542,7 +542,7 @@ public record ComputeTypeImmutable(AnalyserContext analyserContext,
             if (approvedDelays.isDelayed()) {
                 LOGGER.debug("Type {} is effectively level 1 immutable, waiting for" +
                         " preconditions to find out if it is eventually level 2 immutable", typeInfo);
-                return delayImmutable(approvedDelays, sharedState.allowBreakDelay(), MultiLevel.MUTABLE_DV);
+                return delayImmutable(approvedDelays, sharedState.breakDelayLevel(), MultiLevel.MUTABLE_DV);
             }
             whenImmutableFails = MultiLevel.EFFECTIVELY_FINAL_FIELDS_DV;
             // it is possible that all fields are final, yet some field's content is used as the precondition
@@ -564,8 +564,8 @@ public record ComputeTypeImmutable(AnalyserContext analyserContext,
         if (w.fromParentOrEnclosing.isDelayed()) {
             typeAnalysis.setProperty(Property.IMMUTABLE, w.fromParentOrEnclosing);
             if (partialImmutable.isDone()) {
-                if (sharedState.allowBreakDelay()) {
-                    return delayImmutable(w.fromParentOrEnclosing.causesOfDelay(), true, MultiLevel.MUTABLE_DV);
+                if (sharedState.breakDelayLevel().acceptType()) {
+                    return delayImmutable(w.fromParentOrEnclosing.causesOfDelay(), BreakDelayLevel.TYPE, MultiLevel.MUTABLE_DV);
                 }
                 LOGGER.debug("We've done what we can, waiting for parent-enclosing now");
                 return AnalysisStatus.of(w.fromParentOrEnclosing);
@@ -753,9 +753,10 @@ public record ComputeTypeImmutable(AnalyserContext analyserContext,
         return analysisStatus;
     }
 
-    private AnalysisStatus delayImmutable(CausesOfDelay delays, boolean allowBreakDelay, DV baseValue) {
+    private AnalysisStatus delayImmutable(CausesOfDelay delays, BreakDelayLevel breakDelayLevel, DV baseValue) {
         DV value;
-        if (allowBreakDelay) {
+        boolean acceptBreak = breakDelayLevel.acceptType();
+        if (acceptBreak) {
             LOGGER.debug("Breaking delay in IMMUTABLE, type {}", typeInfo);
             value = new Inconclusive(baseValue);
         } else {
@@ -763,7 +764,7 @@ public record ComputeTypeImmutable(AnalyserContext analyserContext,
         }
         typeAnalysis.setProperty(IMMUTABLE, value);
         typeAnalysis.setPropertyIfAbsentOrDelayed(PARTIAL_IMMUTABLE, value);
-        return allowBreakDelay ? DONE : delays;
+        return acceptBreak ? DONE : delays;
     }
 
 

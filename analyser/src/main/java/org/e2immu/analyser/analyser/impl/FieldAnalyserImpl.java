@@ -24,6 +24,7 @@ import org.e2immu.analyser.analyser.delay.DelayFactory;
 import org.e2immu.analyser.analyser.delay.Inconclusive;
 import org.e2immu.analyser.analyser.delay.SimpleCause;
 import org.e2immu.analyser.analyser.delay.VariableCause;
+import org.e2immu.analyser.analyser.impl.util.BreakDelayLevel;
 import org.e2immu.analyser.analyser.nonanalyserimpl.AbstractEvaluationContextImpl;
 import org.e2immu.analyser.analyser.nonanalyserimpl.ExpandableAnalyserContextImpl;
 import org.e2immu.analyser.analyser.util.AnalyserResult;
@@ -271,7 +272,7 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
             List<FieldAnalyserVisitor> visitors = analyserContext.getConfiguration()
                     .debugConfiguration().afterFieldAnalyserVisitors();
             if (!visitors.isEmpty()) {
-                EvaluationContext evaluationContext = new EvaluationContextImpl(iteration, sharedState.allowBreakDelay(),
+                EvaluationContext evaluationContext = new EvaluationContextImpl(iteration, sharedState.breakDelayLevel(),
                         ConditionManager.initialConditionManager(analyserContext.getPrimitives()), sharedState.closure());
                 for (FieldAnalyserVisitor fieldAnalyserVisitor : visitors) {
                     fieldAnalyserVisitor.visit(new FieldAnalyserVisitor.Data(iteration, evaluationContext,
@@ -324,7 +325,7 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
                 }
 
                 EvaluationContext evaluationContext = new EvaluationContextImpl(sharedState.iteration(),
-                        sharedState.allowBreakDelay(),
+                        sharedState.breakDelayLevel(),
                         ConditionManager.initialConditionManager(analyserContext.getPrimitives()), sharedState.closure());
                 EvaluationResult evaluationResult = toEvaluate.evaluate(EvaluationResult.from(evaluationContext),
                         new ForwardEvaluationInfo.Builder().setEvaluatingFieldExpression().build());
@@ -400,7 +401,7 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
             builder.setAnalysisStatus(NOT_YET_EXECUTED);
             LOGGER.debug("------- Starting local analyser {} ------", analyser.getName());
             SharedState shared = new SharedState(sharedState.iteration(),
-                    false, sharedState.closure());
+                    BreakDelayLevel.NONE, sharedState.closure());
             AnalyserResult lambdaResult = analyser.analyse(shared);
             LOGGER.debug("------- Ending local analyser   {} ------", analyser.getName());
             builder.add(lambdaResult);
@@ -447,7 +448,7 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
         assert formalType != null;
         TypeAnalysis typeAnalysis = analyserContext.getTypeAnalysis(formalType);
         DV formal = typeAnalysis.getProperty(Property.CONTAINER);
-        boolean allowBreak = sharedState.allowBreakDelay();
+        boolean allowBreak = sharedState.breakDelayLevel().acceptField();
         if (formal.isDelayed()) {
             return delayContainer(formal.causesOfDelay(), "waiting for @Container of formal type", MultiLevel.CONTAINER_DV, allowBreak);
         }
@@ -634,7 +635,7 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
                     CausesOfDelay causes = vi.getProperty(CONTEXT_NOT_NULL).causesOfDelay();
                     // are the delays on CNN directly linked to the variables that we are linked to?
                     // see Project_0bis
-                    boolean breakDelay = sharedState.allowBreakDelay() &&
+                    boolean breakDelay = sharedState.breakDelayLevel().acceptField() &&
                             causes.containsCauseOfDelay(CauseOfDelay.Cause.EXTERNAL_NOT_NULL, c -> {
                                 if (c instanceof VariableCause vc) return filter.contains(vc.variable());
                                 if (c.location().getInfo() instanceof ParameterInfo pi) return filter.contains(pi);
@@ -1117,7 +1118,7 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
         CausesOfDelay delays = CausesOfDelay.EMPTY;
         if (haveInitialiser) {
             delays = fieldAnalysis.getInitializerValue().causesOfDelay();
-            EvaluationContext ec = new EvaluationContextImpl(0, false,
+            EvaluationContext ec = new EvaluationContextImpl(0, BreakDelayLevel.NONE,
                     ConditionManager.initialConditionManager(analyserContext.getPrimitives()), null);
             values.add(new ValueAndPropertyProxy() {
                 @Override
@@ -1263,7 +1264,7 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
         }
         CausesOfDelay valuesStatus = fieldAnalysis.valuesStatus();
         if (valuesStatus.isDelayed()) {
-            if (sharedState.allowBreakDelay()) {
+            if (sharedState.breakDelayLevel().acceptField()) {
                 LOGGER.debug("Breaking @IgnoreModifications for field {}", fqn);
                 fieldAnalysis.setProperty(EXTERNAL_IGNORE_MODIFICATIONS, MultiLevel.NOT_IGNORE_MODS_DV);
                 return DONE;
@@ -1417,7 +1418,7 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
             if (constructorCall.constructor() == null) return DV.FALSE_DV;
             for (Expression parameter : constructorCall.getParameterExpressions()) {
                 if (!parameter.isConstant()) {
-                    EvaluationContext evaluationContext = new EvaluationContextImpl(0, false, // IMPROVE
+                    EvaluationContext evaluationContext = new EvaluationContextImpl(0, BreakDelayLevel.NONE, // IMPROVE
                             ConditionManager.initialConditionManager(fieldAnalysis.primitives), null);
                     DV immutable = evaluationContext.getProperty(parameter, Property.IMMUTABLE, false, false);
                     if (immutable.isDelayed()) return immutable;
@@ -1434,7 +1435,7 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
     private AnalysisStatus analyseLinked(SharedState sharedState) {
         assert fieldAnalysis.linkedVariables.isVariable();
 
-        boolean ignoreContextModified = sharedState.allowBreakDelay();
+        boolean ignoreContextModified = sharedState.breakDelayLevel().acceptField();
         // we ONLY look at the linked variables of fields that have been assigned to, or have been modified
 
         // ignoreContextModified: Modification_11_2, iteration 28, field C1.set
@@ -1447,7 +1448,8 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
         if (causesOfDelay.isDelayed()) {
             if (causesOfDelay.containsCauseOfDelay(CauseOfDelay.Cause.LINKING,
                     c -> c instanceof SimpleCause sc && sc.location().getInfo() == fieldInfo)
-                    || sharedState.allowBreakDelay() && causesOfDelay.containsCauseOfDelay(CauseOfDelay.Cause.INITIAL_VALUE,
+                    || ignoreContextModified
+                    && causesOfDelay.containsCauseOfDelay(CauseOfDelay.Cause.INITIAL_VALUE,
                     c -> c.variableIsField(fieldInfo))) {
                 /* NotNull_AAPI_3, iteration 1, field 'map'
                    Modification_11_2, iteration 30, field 's2'
@@ -1605,7 +1607,7 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
                         .anyMatch(vi -> vi.getProperty(Property.CONTEXT_MODIFIED).causesOfDelay().isDelayed());
             }).forEach(m -> LOGGER.debug("  cm problems in {}", m.getMethodInfo().fullyQualifiedName));
         }
-        if (sharedState.allowBreakDelay()) {
+        if (sharedState.breakDelayLevel().acceptField()) {
             LOGGER.debug("Breaking field @Modified delay broken to @NotModified, for {}", fqn);
             fieldAnalysis.setProperty(Property.MODIFIED_OUTSIDE_METHOD, DV.FALSE_DV);
             return DONE;
@@ -1713,10 +1715,10 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
     private class EvaluationContextImpl extends AbstractEvaluationContextImpl {
 
         private EvaluationContextImpl(int iteration,
-                                      boolean allowBreakDelay,
+                                      BreakDelayLevel breakDelayLevel,
                                       ConditionManager conditionManager,
                                       EvaluationContext closure) {
-            super(closure == null ? 1 : closure.getDepth() + 1, iteration, allowBreakDelay, conditionManager, closure);
+            super(closure == null ? 1 : closure.getDepth() + 1, iteration, breakDelayLevel, conditionManager, closure);
         }
 
         @Override
@@ -1747,7 +1749,7 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
         public EvaluationContext child(Expression condition, Set<Variable> conditionVariables) {
             ConditionManager cm = conditionManager.newAtStartOfNewBlock(getPrimitives(), condition, conditionVariables,
                     Precondition.empty(getPrimitives()));
-            return FieldAnalyserImpl.this.new EvaluationContextImpl(iteration, allowBreakDelay, cm, closure);
+            return FieldAnalyserImpl.this.new EvaluationContextImpl(iteration, breakDelayLevel, cm, closure);
         }
 
         @Override

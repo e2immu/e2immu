@@ -584,7 +584,7 @@ public class Test_01_Loops_6plus extends CommonTestRunner {
                     }
                     if ("1.0.0".equals(d.statementId())) {
                         // as the sourceOfLoop of entry
-                        assertEquals(d.iteration() == 3, d.context().evaluationContext().allowBreakDelay());
+                        assertEquals(d.iteration() == 3, d.allowBreakDelay());
                         assertTrue(d.variableInfoContainer().hasEvaluation());
                         VariableInfo eval = d.variableInfoContainer().best(Stage.EVALUATION);
                         assertEquals(d.iteration() <= 2, eval.getProperty(CONTEXT_NOT_NULL).isDelayed());

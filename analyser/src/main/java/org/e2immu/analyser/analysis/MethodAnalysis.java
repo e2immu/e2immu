@@ -172,14 +172,17 @@ public interface MethodAnalysis extends Analysis {
         }
 
         public boolean isOnly() {
+            assert causesOfDelay.isDone();
             return !mark && test == null;
         }
 
         public boolean isMark() {
+            assert causesOfDelay.isDone();
             return mark;
         }
 
         public boolean isTestMark() {
+            assert causesOfDelay.isDone();
             return test != null;
         }
     }

@@ -15,6 +15,7 @@
 package org.e2immu.analyser.analyser.impl;
 
 import org.e2immu.analyser.analyser.*;
+import org.e2immu.analyser.analyser.impl.util.BreakDelayLevel;
 import org.e2immu.analyser.analyser.statementanalyser.StatementAnalyserImpl;
 import org.e2immu.analyser.analyser.util.AnalyserResult;
 import org.e2immu.analyser.analyser.util.VariableAccessReport;
@@ -152,7 +153,7 @@ public class ShallowMethodAnalyser extends MethodAnalyserImpl {
                     .debugConfiguration().afterMethodAnalyserVisitors();
             if (!visitors.isEmpty()) {
                 for (MethodAnalyserVisitor methodAnalyserVisitor : visitors) {
-                    methodAnalyserVisitor.visit(new MethodAnalyserVisitor.Data(iteration, false,
+                    methodAnalyserVisitor.visit(new MethodAnalyserVisitor.Data(iteration, BreakDelayLevel.NONE,
                             null, methodInfo, methodAnalysis,
                             parameterAnalyses, Map.of(),
                             this::getMessageStream));

@@ -15,6 +15,7 @@
 package org.e2immu.analyser.analyser.impl;
 
 import org.e2immu.analyser.analyser.*;
+import org.e2immu.analyser.analyser.impl.util.BreakDelayLevel;
 import org.e2immu.analyser.analyser.nonanalyserimpl.AbstractEvaluationContextImpl;
 import org.e2immu.analyser.analyser.nonanalyserimpl.ExpandableAnalyserContextImpl;
 import org.e2immu.analyser.analyser.statementanalyser.StatementAnalyserImpl;
@@ -75,7 +76,7 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
     Note that MethodLevelData is not part of the shared state, as the "lastStatement", where it resides,
     is only computed in the first step of the analyser components.
      */
-    private record SharedState(boolean allowBreakDelay, EvaluationContext evaluationContext) {
+    private record SharedState(BreakDelayLevel breakDelayLevel, EvaluationContext evaluationContext) {
     }
 
 
@@ -121,7 +122,7 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
         for (ParameterAnalyser parameterAnalyser : parameterAnalysers) {
             AnalysisStatus.AnalysisResultSupplier<SharedState> parameterAnalyserAction = (sharedState) -> {
                 Analyser.SharedState state = new Analyser.SharedState(sharedState.evaluationContext.getIteration(),
-                        sharedState.allowBreakDelay(), null);
+                        sharedState.breakDelayLevel(), null);
                 AnalyserResult result = parameterAnalyser.analyse(state);
                 analyserResultBuilder.add(result);
                 return result.analysisStatus();
@@ -133,7 +134,7 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
 
         AnalysisStatus.AnalysisResultSupplier<SharedState> statementAnalyser = (sharedState) -> {
             ForwardAnalysisInfo fwd = ForwardAnalysisInfo.startOfMethod(analyserContext.getPrimitives(),
-                    sharedState.allowBreakDelay);
+                    sharedState.breakDelayLevel);
             AnalyserResult result = firstStatementAnalyser.analyseAllStatementsInBlock(sharedState
                     .evaluationContext.getIteration(), fwd, sharedState.evaluationContext.getClosure());
             analyserResultBuilder.add(result, false, false, true);
@@ -202,9 +203,9 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
         int iteration = sharedState.iteration();
 
         LOGGER.info("Analysing method {} it {}", methodInfo, iteration);
-        EvaluationContext evaluationContext = new EvaluationContextImpl(iteration, sharedState.allowBreakDelay(),
+        EvaluationContext evaluationContext = new EvaluationContextImpl(iteration, sharedState.breakDelayLevel(),
                 ConditionManager.initialConditionManager(analyserContext.getPrimitives()), sharedState.closure());
-        SharedState state = new SharedState(sharedState.allowBreakDelay(), evaluationContext);
+        SharedState state = new SharedState(sharedState.breakDelayLevel(), evaluationContext);
 
         try {
             AnalysisStatus analysisStatus = analyserComponents.run(state);
@@ -217,7 +218,7 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
             if (!visitors.isEmpty()) {
                 for (MethodAnalyserVisitor methodAnalyserVisitor : visitors) {
                     methodAnalyserVisitor.visit(new MethodAnalyserVisitor.Data(iteration,
-                            sharedState.allowBreakDelay(),
+                            sharedState.breakDelayLevel(),
                             evaluationContext, methodInfo, methodAnalysis,
                             parameterAnalyses, analyserComponents.getStatusesAsMap(),
                             analyserResultBuilder::getMessageStream));
@@ -361,7 +362,7 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
                     })
                     .reduce(DV.TRUE_DV, DV::min);
             if (haveEventuallyImmutableFields.isDelayed()) {
-                if (sharedState.allowBreakDelay) {
+                if (sharedState.breakDelayLevel().acceptMethod()) {
                     LOGGER.debug("Breaking eventual precondition delay on {}", methodInfo);
                     break;
                 }
@@ -658,7 +659,7 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
 
     private AnalysisStatus computeImmutable(SharedState sharedState) {
         if (methodAnalysis.getPropertyFromMapDelayWhenAbsent(IMMUTABLE).isDone()) return DONE;
-        DV immutable = computeImmutableValue(sharedState.allowBreakDelay());
+        DV immutable = computeImmutableValue(sharedState.breakDelayLevel());
         methodAnalysis.setProperty(IMMUTABLE, immutable);
         if (immutable.isDelayed()) return immutable.causesOfDelay();
         LOGGER.debug("Set @Immutable to {} on {}", immutable, methodInfo);
@@ -667,17 +668,17 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
 
     private AnalysisStatus computeContainer(SharedState sharedState) {
         if (methodAnalysis.getPropertyFromMapDelayWhenAbsent(CONTAINER).isDone()) return DONE;
-        DV container = computeContainerValue(sharedState.allowBreakDelay());
+        DV container = computeContainerValue(sharedState.breakDelayLevel());
         if (container.isDelayed()) return container.causesOfDelay();
         methodAnalysis.setProperty(CONTAINER, container);
         LOGGER.debug("Set @Container to {} on {}", container, methodInfo);
         return DONE;
     }
 
-    private DV computeContainerValue(boolean allowBreakDelay) {
+    private DV computeContainerValue(BreakDelayLevel breakDelayLevel) {
         Expression expression = methodAnalysis.getSingleReturnValue();
         if (expression.isDelayed()) {
-            if (allowBreakDelay) {
+            if (breakDelayLevel.acceptMethod()) {
                 LOGGER.debug("Breaking @Container delay on {}", methodInfo);
             } else {
                 LOGGER.debug("Delaying @Container on {} until return value is set", methodInfo);
@@ -700,7 +701,7 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
         return dynamic.max(dynamicExt);
     }
 
-    private DV computeImmutableValue(boolean allowBreakDelay) {
+    private DV computeImmutableValue(BreakDelayLevel breakDelayLevel) {
         DV formalImmutable = analyserContext.typeImmutable(methodInfo.returnType());
         if (formalImmutable.equals(MultiLevel.EFFECTIVELY_IMMUTABLE_DV)) {
             return formalImmutable;
@@ -708,7 +709,7 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
 
         Expression expression = methodAnalysis.getSingleReturnValue();
         if (expression.isDelayed()) {
-            if (allowBreakDelay) {
+            if (breakDelayLevel.acceptMethod()) {
                 LOGGER.debug("Breaking @Immutable delay on {}", methodInfo);
             } else {
                 LOGGER.debug("Delaying @Immutable on {} until return value is set", methodInfo);
@@ -1082,17 +1083,17 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
     private class EvaluationContextImpl extends AbstractEvaluationContextImpl implements EvaluationContext {
 
         protected EvaluationContextImpl(int iteration,
-                                        boolean allowBreakDelay,
+                                        BreakDelayLevel breakDelayLevel,
                                         ConditionManager conditionManager,
                                         EvaluationContext closure) {
-            super(closure == null ? 1 : closure.getDepth() + 1, iteration, allowBreakDelay, conditionManager, closure);
+            super(closure == null ? 1 : closure.getDepth() + 1, iteration, breakDelayLevel, conditionManager, closure);
         }
 
         @Override
         public EvaluationContext child(Expression condition, Set<Variable> conditionVariables) {
             ConditionManager cm = conditionManager.newAtStartOfNewBlock(getPrimitives(), condition, conditionVariables,
                     Precondition.empty(getPrimitives()));
-            return ComputingMethodAnalyser.this.new EvaluationContextImpl(iteration, allowBreakDelay, cm, closure);
+            return ComputingMethodAnalyser.this.new EvaluationContextImpl(iteration, breakDelayLevel, cm, closure);
         }
 
         @Override

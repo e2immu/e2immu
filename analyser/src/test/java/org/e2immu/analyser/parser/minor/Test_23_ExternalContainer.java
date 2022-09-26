@@ -39,7 +39,7 @@ public class Test_23_ExternalContainer extends CommonTestRunner {
     @Test
     public void test_0() throws IOException {
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
-            assertFalse(d.context().evaluationContext().allowBreakDelay());
+            assertFalse(d.allowBreakDelay());
 
             if ("print".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof FieldReference fr && "iField".equals(fr.fieldInfo.name)) {
@@ -169,7 +169,7 @@ public class Test_23_ExternalContainer extends CommonTestRunner {
             }
             if ("go".equals(d.methodInfo().name)) {
                 if ("0".equals(d.statementId())) {
-                    assertEquals(d.iteration() == 8, d.context().evaluationContext().allowBreakDelay());
+                    assertEquals(d.iteration() == 8, d.allowBreakDelay());
                 }
                 if (d.variable() instanceof FieldReference fr && "myNonContainer".equals(fr.fieldInfo.name)) {
                     if ("2".equals(d.statementId())) {

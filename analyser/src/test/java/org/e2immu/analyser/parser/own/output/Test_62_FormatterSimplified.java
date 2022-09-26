@@ -79,7 +79,7 @@ public class Test_62_FormatterSimplified extends CommonTestRunner {
     @Test
     public void test_2() throws IOException {
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
-            assertFalse(d.context().evaluationContext().allowBreakDelay());
+            assertFalse(d.allowBreakDelay());
 
             if ("combine".equals(d.methodInfo().name)) {
                 assertEquals("0", d.statementId());

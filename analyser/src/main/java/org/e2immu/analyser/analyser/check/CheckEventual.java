@@ -30,6 +30,7 @@ public class CheckEventual {
             if (eventual != MethodAnalysis.NOT_EVENTUAL && eventual.isOnly()) {
                 // make sure the @Only(...) annotation gets printed
                 AnnotationExpression ae = methodAnalysis.annotationGetOrDefaultNull(annotationKey);
+                assert ae != null;
                 methodAnalysis.putAnnotationCheck(ae, Analysis.AnnotationCheck.COMPUTED);
             }
             return null; // nothing to verify
