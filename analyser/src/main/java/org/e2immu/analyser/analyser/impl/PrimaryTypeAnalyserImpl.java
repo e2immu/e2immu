@@ -232,7 +232,9 @@ public class PrimaryTypeAnalyserImpl implements PrimaryTypeAnalyser {
 
         List<BreakDelayVisitor> visitors = configuration.debugConfiguration().breakDelayVisitors();
         for (BreakDelayVisitor breakDelayVisitor : visitors) {
-            breakDelayVisitor.visit(new BreakDelayVisitor.Data(iteration, delaySequence.toString()));
+            for (TypeInfo typeInfo : primaryTypes) {
+                breakDelayVisitor.visit(new BreakDelayVisitor.Data(iteration, delaySequence.toString(), typeInfo));
+            }
         }
 
         if (analysisStatus.isDelayed()) {

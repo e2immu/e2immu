@@ -15,11 +15,12 @@
 package org.e2immu.analyser.visitor;
 
 import org.e2immu.analyser.analyser.impl.util.BreakDelayLevel;
+import org.e2immu.analyser.model.TypeInfo;
 
 public interface BreakDelayVisitor {
     void visit(Data data);
 
-    record Data(int iterations, String delaySequence) {
+    record Data(int iterations, String delaySequence, TypeInfo typeInfo) {
         public int breaks() {
             return (int) delaySequence.chars().filter(c -> c != BreakDelayLevel.NONE.symbol).count();
         }

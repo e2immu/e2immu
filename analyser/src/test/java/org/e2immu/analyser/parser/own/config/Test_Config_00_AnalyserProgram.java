@@ -21,6 +21,7 @@ import org.e2immu.analyser.config.AnalyserProgram;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.parser.CommonTestRunner;
+import org.e2immu.analyser.visitor.BreakDelayVisitor;
 import org.e2immu.analyser.visitor.FieldAnalyserVisitor;
 import org.e2immu.analyser.visitor.MethodAnalyserVisitor;
 import org.e2immu.analyser.visitor.TypeAnalyserVisitor;
@@ -43,25 +44,31 @@ public class Test_Config_00_AnalyserProgram extends CommonTestRunner {
                 assertDv(d, MultiLevel.EFFECTIVELY_IMMUTABLE_DV, Property.EXTERNAL_IMMUTABLE);
             }
         };
+
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("from".equals(d.methodInfo().name)) {
                 assertDv(d, DV.FALSE_DV, Property.FLUENT);
             }
         };
+
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("AnalyserProgram".equals(d.typeInfo().simpleName)) {
-                assertDv(d, 23, MultiLevel.EFFECTIVELY_FINAL_FIELDS_DV, Property.IMMUTABLE);
+                assertDv(d, 22, MultiLevel.EFFECTIVELY_FINAL_FIELDS_DV, Property.IMMUTABLE);
             }
             if ("Step".equals(d.typeInfo().simpleName)) {
                 assertTrue(d.typeInfo().isStatic());
-                assertDv(d, 22, MultiLevel.EFFECTIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
+                assertDv(d, 21, MultiLevel.EFFECTIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
             }
         };
+
+        BreakDelayVisitor breakDelayVisitor = d -> assertEquals("-------M-M-M--M-M-M-MF----M----", d.delaySequence());
+
         testSupportAndUtilClasses(List.of(AnalyserProgram.class), 0, 1,
                 new DebugConfiguration.Builder()
                         .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                         .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
                         .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                        .addBreakDelayVisitor(breakDelayVisitor)
                         .build(),
                 new AnalyserConfiguration.Builder()
                         .setComputeContextPropertiesOverAllMethods(true)

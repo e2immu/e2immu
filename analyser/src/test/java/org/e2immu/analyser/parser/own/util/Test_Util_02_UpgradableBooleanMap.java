@@ -25,7 +25,6 @@ import org.e2immu.analyser.model.ParameterInfo;
 import org.e2immu.analyser.model.TypeInfo;
 import org.e2immu.analyser.model.expression.InlinedMethod;
 import org.e2immu.analyser.model.variable.FieldReference;
-import org.e2immu.analyser.model.variable.ReturnVariable;
 import org.e2immu.analyser.model.variable.This;
 import org.e2immu.analyser.parser.CommonTestRunner;
 import org.e2immu.analyser.parser.InspectionProvider;
@@ -275,6 +274,12 @@ public class Test_Util_02_UpgradableBooleanMap extends CommonTestRunner {
                 assertEquals("instance type HashMap<T,Boolean>", d.fieldAnalysis().getValue().toString());
                 assertDv(d, 23, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.EXTERNAL_NOT_NULL);
                 assertDv(d, MultiLevel.NOT_IGNORE_MODS_DV, Property.EXTERNAL_IGNORE_MODIFICATIONS);
+
+                // not assigned; links to other parameters are not included in LV
+                assertEquals("", d.fieldAnalysis().getLinkedVariables().toString());
+                assertDv(d, BIG, DV.TRUE_DV, Property.MODIFIED_OUTSIDE_METHOD);
+
+                assertDv(d, BIG, MultiLevel.INDEPENDENT_HC_DV, Property.INDEPENDENT);
             }
         };
 

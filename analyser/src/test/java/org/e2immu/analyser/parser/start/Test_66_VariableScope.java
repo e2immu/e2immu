@@ -607,7 +607,7 @@ public class Test_66_VariableScope extends CommonTestRunner {
                 if (d.variable() instanceof FieldReference fr && "object".equals(fr.fieldInfo.name)) {
                     assertEquals("this", fr.scope.toString());
                     if ("2".equals(d.statementId())) {
-                        assertDv(d, 17, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                        assertDv(d, 20, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     }
                 }
                 if ("methodCall".equals(d.variableName())) {
@@ -616,7 +616,7 @@ public class Test_66_VariableScope extends CommonTestRunner {
                         // evaluation
                         assertFalse(d.variableInfoContainer().hasMerge());
                         assertTrue(d.variableInfoContainer().hasEvaluation());
-                        assertCurrentValue(d, 17, "object/*(MethodCall)*/");
+                        assertCurrentValue(d, 20, "object/*(MethodCall)*/");
                     }
                     assertNotEquals("2", d.statementId());
                     assertNotEquals("3", d.statementId());
@@ -627,18 +627,18 @@ public class Test_66_VariableScope extends CommonTestRunner {
                     }
                     if ("2.0.0.0.1".equals(d.statementId())) {
                         // recursive method call, parameter is not modified by default
-                        String linked = d.iteration() < 17
+                        String linked = d.iteration() < 20
                                 ? "guideGenerator:0,methodCall:-1,outputBuilder:-1,qualification:-1,this.object:-1,this:-1"
                                 : "guideGenerator:0";
                         assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
-                        assertDv(d, 17, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                        assertDv(d, 20, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     }
                     if ("2.0.0.0.2".equals(d.statementId())) {
-                        String linked = d.iteration() < 17
+                        String linked = d.iteration() < 20
                                 ? "guideGenerator:0,methodCall:-1,outputBuilder:-1,qualification:-1,this.object:-1,this:-1"
                                 : "guideGenerator:0,outputBuilder:4";
                         assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
-                        assertDv(d, 17, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                        assertDv(d, 20, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     }
                 }
                 if (d.variable() instanceof ParameterInfo pi && "guideGenerator".equals(pi.name)) {
@@ -647,18 +647,18 @@ public class Test_66_VariableScope extends CommonTestRunner {
                     }
                     if ("2.0.0.0.1".equals(d.statementId())) {
                         // recursive method call, parameter is not modified by default
-                        String linked = d.iteration() < 17
+                        String linked = d.iteration() < 20
                                 ? "gg:0,methodCall:-1,outputBuilder:-1,qualification:-1,this.object:-1,this:-1"
                                 : "gg:0";
                         assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
-                        assertDv(d, 17, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                        assertDv(d, 20, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     }
                     if ("2.0.0.0.2".equals(d.statementId())) {
-                        String linked = d.iteration() < 17
+                        String linked = d.iteration() < 20
                                 ? "gg:0,methodCall:-1,outputBuilder:-1,qualification:-1,this.object:-1,this:-1"
                                 : "gg:0,outputBuilder:4";
                         assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
-                        assertDv(d, 17, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                        assertDv(d, 20, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     }
                 }
             }
@@ -705,16 +705,16 @@ public class Test_66_VariableScope extends CommonTestRunner {
                 assertDv(d, DV.FALSE_DV, Property.MODIFIED_METHOD);
             }
             if ("output".equals(d.methodInfo().name) && "MethodCall".equals(d.methodInfo().typeInfo.simpleName)) {
-                assertDv(d, 17, DV.FALSE_DV, Property.MODIFIED_METHOD);
+                assertDv(d, 20, DV.FALSE_DV, Property.MODIFIED_METHOD);
             }
             if ("output2".equals(d.methodInfo().name)) {
-                assertDv(d, 17, DV.FALSE_DV, Property.MODIFIED_METHOD);
-                String expected = d.iteration() < 17 ? "<m:output2>"
+                assertDv(d, 20, DV.FALSE_DV, Property.MODIFIED_METHOD);
+                String expected = d.iteration() < 20 ? "<m:output2>"
                         : "/*inline output2*/!(object instanceof MethodCall)||null==object?new OutputBuilder(new LinkedList<>()):instance type OutputBuilder";
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
 
-                assertDv(d.p(0), 18, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
-                assertDv(d.p(1), 18, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
+                assertDv(d.p(0), 21, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
+                assertDv(d.p(1), 21, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
             }
             if ("valueOf".equals(d.methodInfo().name) && "Required".equals(d.methodInfo().typeInfo.simpleName)) {
                 assertDv(d.p(0), 2, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
@@ -723,15 +723,18 @@ public class Test_66_VariableScope extends CommonTestRunner {
 
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("MethodCall".equals(d.typeInfo().simpleName)) {
-                assertDv(d, 16, MultiLevel.EFFECTIVELY_FINAL_FIELDS_DV, Property.IMMUTABLE);
+                assertDv(d, 19, MultiLevel.EFFECTIVELY_FINAL_FIELDS_DV, Property.IMMUTABLE);
             }
         };
+
+        BreakDelayVisitor breakDelayVisitor = d-> assertEquals("-------M--M--MF--MFT---", d.delaySequence());
 
         testClass("VariableScope_8", 0, 6, new DebugConfiguration.Builder()
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .addStatementAnalyserVisitor(statementAnalyserVisitor)
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
+                .addBreakDelayVisitor(breakDelayVisitor)
                 .build());
 
     }
@@ -760,30 +763,36 @@ public class Test_66_VariableScope extends CommonTestRunner {
                 if (d.variable() instanceof FieldReference fr && "object".equals(fr.fieldInfo.name)) {
                     assertEquals("this", fr.scope.toString());
                     if ("2".equals(d.statementId())) {
-                        assertDv(d, 17, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                        assertDv(d, 20, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     }
                 }
             }
         };
+
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("output2".equals(d.methodInfo().name)) {
-                assertDv(d, 17, DV.FALSE_DV, Property.MODIFIED_METHOD);
-                String expected = d.iteration() < 17 ? "<m:output2>"
+                assertDv(d, 20, DV.FALSE_DV, Property.MODIFIED_METHOD);
+                String expected = d.iteration() < 20 ? "<m:output2>"
                         : "/*inline output2*/!(object instanceof MethodCall)||null==object?new OutputBuilder(new LinkedList<>()):instance type OutputBuilder";
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
-                assertDv(d.p(0), 18, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
-                assertDv(d.p(1), 18, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
+                assertDv(d.p(0), 21, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
+                assertDv(d.p(1), 21, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
             }
         };
+
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("MethodCall".equals(d.typeInfo().simpleName)) {
-                assertDv(d, 16, MultiLevel.EFFECTIVELY_FINAL_FIELDS_DV, Property.IMMUTABLE);
+                assertDv(d, 19, MultiLevel.EFFECTIVELY_FINAL_FIELDS_DV, Property.IMMUTABLE);
             }
         };
+
+        BreakDelayVisitor breakDelayVisitor = d -> assertEquals("-------M--M--MF--MFT---", d.delaySequence());
+
         testClass("VariableScope_8_1", 0, DONT_CARE, new DebugConfiguration.Builder()
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
+                .addBreakDelayVisitor(breakDelayVisitor)
                 .build());
     }
 
@@ -797,7 +806,7 @@ public class Test_66_VariableScope extends CommonTestRunner {
                         String expected = d.iteration() < 3 ? "<c:boolean>?<m:defaultGuideGenerator>:guideGenerator"
                                 : "null==guideGenerator?new GuideGenerator(){public OutputElement start(){return null;}public OutputElement end(){return null;}public OutputElement mid(){return null;}}:guideGenerator";
                         assertEquals(expected, d.currentValue().toString());
-                        String linked =switch( d.iteration()) {
+                        String linked = switch (d.iteration()) {
                             case 0 -> "guideGenerator:0,methodCall:-1,outputBuilder:-1,qualification:-1,this.object:-1";
                             case 1 -> "guideGenerator:0,outputBuilder:-1";
                             default -> "guideGenerator:0,outputBuilder:2";
@@ -852,7 +861,7 @@ public class Test_66_VariableScope extends CommonTestRunner {
                 if ("2".equals(d.statementId())) {
                     String expected = switch (d.iteration()) {
                         case 0 -> "<null-check>&&<instanceOf:VariableDefinedOutsideLoop>&&<m:startsWith>&&<dv:scope-vdol:1.previousVariableNature>!=this";
-                        case 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11 -> "scope-vdol:1.statementIndex.startsWith(index+\".\")&&<null-check>&&vn$1 instanceof VariableDefinedOutsideLoop&&<dv:scope-vdol:1.previousVariableNature>!=this";
+                        case 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13 -> "scope-vdol:1.statementIndex.startsWith(index+\".\")&&<null-check>&&vn$1 instanceof VariableDefinedOutsideLoop&&<dv:scope-vdol:1.previousVariableNature>!=this";
                         default -> "scope-vdol:1.statementIndex.startsWith(index+\".\")&&vn$1 instanceof VariableDefinedOutsideLoop&&scope-vdol:1.previousVariableNature!=this";
                     };
                     assertEquals(expected, d.evaluationResult().getExpression().toString());
@@ -872,7 +881,7 @@ public class Test_66_VariableScope extends CommonTestRunner {
                         assertTrue(d.variableInfoContainer().hasMerge());
                         String merge = switch (d.iteration()) {
                             case 0 -> "<instanceOf:VariableDefinedOutsideLoop>&&<m:startsWith>?<dv:scope-vdol:1.previousVariableNature>:this";
-                            case 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11 -> "scope-vdol:1.statementIndex.startsWith(index+\".\")&&vn$1 instanceof VariableDefinedOutsideLoop?<dv:scope-vdol:1.previousVariableNature>:this";
+                            case 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13 -> "scope-vdol:1.statementIndex.startsWith(index+\".\")&&vn$1 instanceof VariableDefinedOutsideLoop?<dv:scope-vdol:1.previousVariableNature>:this";
                             default -> "scope-vdol:1.statementIndex.startsWith(index+\".\")&&vn$1 instanceof VariableDefinedOutsideLoop?scope-vdol:1.previousVariableNature:this";
                         };
                         assertEquals(merge, d.currentValue().toString());
@@ -893,7 +902,7 @@ public class Test_66_VariableScope extends CommonTestRunner {
                         String expected = switch (d.iteration()) {
                             case 0 -> "<v:vn>/*(VariableDefinedOutsideLoop)*/";
                             case 1, 2 -> "<vp:vn:cm@Parameter_index;cm@Parameter_previousVariableNature;cm@Parameter_statementIndex;constructor-to-instance@Method_removeInSubBlockMerge_2.0.0-E;initial:index@Method_removeInSubBlockMerge_1-E;initial:vn@Method_removeInSubBlockMerge_1-C;initial@Field_previousVariableNature;mom@Parameter_previousVariableNature;mom@Parameter_statementIndex>/*(VariableDefinedOutsideLoop)*/";
-                            case 3, 4, 5, 6, 7, 8, 9, 10, 11 -> "<vp:vn:break_mom_delay@Parameter_previousVariableNature;cm@Parameter_index;cm@Parameter_previousVariableNature;cm@Parameter_statementIndex;constructor-to-instance@Method_removeInSubBlockMerge_2.0.0-E;initial:index@Method_removeInSubBlockMerge_1-E;initial:vn@Method_removeInSubBlockMerge_1-C;initial@Field_previousVariableNature;mom@Parameter_previousVariableNature;mom@Parameter_statementIndex>/*(VariableDefinedOutsideLoop)*/";
+                            case 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13 -> "<vp:vn:break_mom_delay@Parameter_previousVariableNature;cm@Parameter_index;cm@Parameter_previousVariableNature;cm@Parameter_statementIndex;constructor-to-instance@Method_removeInSubBlockMerge_2.0.0-E;initial:index@Method_removeInSubBlockMerge_1-E;initial:vn@Method_removeInSubBlockMerge_1-C;initial@Field_previousVariableNature;mom@Parameter_previousVariableNature;mom@Parameter_statementIndex>/*(VariableDefinedOutsideLoop)*/";
                             default -> "vn$1/*(VariableDefinedOutsideLoop)*/";
                         };
                         assertEquals(expected, d.currentValue().toString());
@@ -944,17 +953,21 @@ public class Test_66_VariableScope extends CommonTestRunner {
                 if ("2".equals(d.statementId())) {
                     String expected = switch (d.iteration()) {
                         case 0 -> "CM{state=(!<instanceOf:VariableDefinedOutsideLoop>||!<m:startsWith>)&&(!<null-check>||!<instanceOf:VariableDefinedOutsideLoop>||!<m:startsWith>||<dv:scope-vdol:1.previousVariableNature>==this);parent=CM{}}";
-                        case 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11 -> "CM{state=(!scope-vdol:1.statementIndex.startsWith(index+\".\")||!<null-check>||!(vn$1 instanceof VariableDefinedOutsideLoop)||<dv:scope-vdol:1.previousVariableNature>==this)&&(!scope-vdol:1.statementIndex.startsWith(index+\".\")||!(vn instanceof VariableDefinedOutsideLoop));parent=CM{}}";
+                        case 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13 -> "CM{state=(!scope-vdol:1.statementIndex.startsWith(index+\".\")||!<null-check>||!(vn$1 instanceof VariableDefinedOutsideLoop)||<dv:scope-vdol:1.previousVariableNature>==this)&&(!scope-vdol:1.statementIndex.startsWith(index+\".\")||!(vn instanceof VariableDefinedOutsideLoop));parent=CM{}}";
                         default -> "CM{state=(!scope-vdol:1.statementIndex.startsWith(index+\".\")||!(vn instanceof VariableDefinedOutsideLoop))&&(!scope-vdol:1.statementIndex.startsWith(index+\".\")||!(vn$1 instanceof VariableDefinedOutsideLoop)||scope-vdol:1.previousVariableNature==this);parent=CM{}}";
                     };
                     assertEquals(expected, d.conditionManagerForNextStatement().toString());
                 }
             }
         };
+
+        BreakDelayVisitor breakDelayVisitor = d -> assertEquals("----M--MF---MFT--", d.delaySequence());
+
         testClass("VariableScope_10", 0, 2, new DebugConfiguration.Builder()
                         .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                         .addStatementAnalyserVisitor(statementAnalyserVisitor)
                         .addEvaluationResultVisitor(evaluationResultVisitor)
+                        .addBreakDelayVisitor(breakDelayVisitor)
                         .build(),
                 new AnalyserConfiguration.Builder()
                         .setComputeFieldAnalyserAcrossAllMethods(true)

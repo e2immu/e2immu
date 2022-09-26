@@ -95,22 +95,22 @@ public class Test_16_Modification_11_2 extends CommonTestRunner {
                 if (d.variable() instanceof FieldReference fr && "s2".equals(fr.fieldInfo.name)) {
                     if ("0".equals(d.statementId())) {
                         assertDv(d, 14, MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL_DV, CONTEXT_NOT_NULL);
-                        String expected = d.iteration() < 31 ? "c:-1" : "c:2";
+                        String expected = d.iteration() < 32 ? "c:-1" : "c:2";
                         assertEquals(expected, d.variableInfo().getLinkedVariables().toString());
                     }
                 }
                 if ("c".equals(d.variableName())) {
                     if ("0".equals(d.statementId())) {
                         assertEquals(MultiLevel.NULLABLE_DV, d.getProperty(CONTEXT_NOT_NULL));
-                        String expectLinked = d.iteration() < 31 ? "this.s2:-1" : "this.s2:2";
+                        String expectLinked = d.iteration() < 32 ? "this.s2:-1" : "this.s2:2";
                         assertEquals(expectLinked, d.variableInfo().getLinkedVariables().toString());
-                        String expected = d.iteration() < 31 ? "<new:C1>" : "new C1(s2)";
+                        String expected = d.iteration() < 32 ? "<new:C1>" : "new C1(s2)";
                         assertEquals(expected, d.currentValue().toString());
                     }
                     if ("2".equals(d.statementId())) {
-                        assertDv(d, 31, MultiLevel.EFFECTIVELY_NOT_NULL_DV, CONTEXT_NOT_NULL);
+                        assertDv(d, 32, MultiLevel.EFFECTIVELY_NOT_NULL_DV, CONTEXT_NOT_NULL);
 
-                        String expectLinked = d.iteration() < 31 ? "this.s2:-1" : "this.s2:2";
+                        String expectLinked = d.iteration() < 32 ? "this.s2:-1" : "this.s2:2";
                         assertEquals(expectLinked, d.variableInfo().getLinkedVariables().toString());
                     }
                 }
@@ -118,13 +118,13 @@ public class Test_16_Modification_11_2 extends CommonTestRunner {
                     assertNotNull(fr.scopeVariable);
                     if ("c".equals(fr.scopeVariable.simpleName())) {
                         if ("2".equals(d.statementId())) {
-                            String expectLinked = d.iteration() < 31 ? "c:-1,this.s2:-1" : "c:2,this.s2:2";
+                            String expectLinked = d.iteration() < 32 ? "c:-1,this.s2:-1" : "c:2,this.s2:2";
                             assertEquals(expectLinked, d.variableInfo().getLinkedVariables().toString());
                         }
                     }
                 }
                 if (d.variable() instanceof ReturnVariable && "2".equals(d.statementId())) {
-                    String expectValue = d.iteration() < 31 ? "<m:addAll>" : "instance type boolean";
+                    String expectValue = d.iteration() < 32 ? "<m:addAll>" : "instance type boolean";
                     assertEquals(expectValue, d.currentValue().toString());
                 }
             }
@@ -165,7 +165,7 @@ public class Test_16_Modification_11_2 extends CommonTestRunner {
                     assertNull(d.haveError(Message.Label.POTENTIAL_NULL_POINTER_EXCEPTION));
                 }
                 if ("2".equals(d.statementId())) {
-                    assertEquals(d.iteration() >= 31,
+                    assertEquals(d.iteration() >= 32,
                             d.statementAnalysis().methodLevelData().linksHaveBeenEstablished());
                 }
             }
@@ -175,7 +175,7 @@ public class Test_16_Modification_11_2 extends CommonTestRunner {
             if ("set".equals(d.fieldInfo().name)) {
                 // "setC:1" instead of "c.set:0,localD.set:0,setC:1" consequence of change in FieldAnalyserImpl
                 String linked = d.iteration() < 13 ? "c1:-1,c:-1,d1.set:-1,d1:-1,localD:-1,setC:-1,this.s2:-1" :
-                        d.iteration() < 28 ? "c1:-1,c:-1,d1.set:-1,d1:-1,setC:-1,this.s2:-1"
+                        d.iteration() < 29 ? "c1:-1,c:-1,d1.set:-1,d1:-1,setC:-1,this.s2:-1"
                                 : "c1:2,d1:4,setC:1";
                 assertEquals(linked, d.fieldAnalysis().getLinkedVariables().toString());
                 assertEquals("setC/*@NotNull*/", d.fieldAnalysis().getValue().toString());
@@ -186,8 +186,8 @@ public class Test_16_Modification_11_2 extends CommonTestRunner {
                 assertEquals("setC/*@NotNull*/", d.fieldAnalysis().getValue().toString());
             }
             if ("s2".equals(d.fieldInfo().name)) {
-                assertDv(d, 29, MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL_DV, EXTERNAL_NOT_NULL);
-                String expected = d.iteration() < 29 ? "<f:s2>" : "set2";
+                assertDv(d, 30, MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL_DV, EXTERNAL_NOT_NULL);
+                String expected = d.iteration() < 30 ? "<f:s2>" : "set2";
                 assertEquals(expected, d.fieldAnalysis().getValue().toString());
             }
         };
@@ -221,12 +221,16 @@ public class Test_16_Modification_11_2 extends CommonTestRunner {
             }
         };
 
+        BreakDelayVisitor breakDelayVisitor = d -> assertEquals("------M-M-M--M---M--M--M--M-MF----",
+                d.delaySequence());
+
         testClass("Modification_11", 0, 0, new DebugConfiguration.Builder()
                         .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                         .addStatementAnalyserVisitor(statementAnalyserVisitor)
                         .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                         .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                         .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
+                        .addBreakDelayVisitor(breakDelayVisitor)
                         .build(),
                 new AnalyserConfiguration.Builder()
                         .setComputeFieldAnalyserAcrossAllMethods(true)
