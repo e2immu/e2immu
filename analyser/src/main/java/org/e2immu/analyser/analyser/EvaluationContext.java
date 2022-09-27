@@ -463,6 +463,22 @@ public interface EvaluationContext {
     }
 
     /*
+    modifications on immutable object...
+     */
+    default boolean inConstructionOrInStaticWithRespectTo(TypeInfo typeInfo) {
+        if (inConstruction() || typeInfo == null) return true;
+        MethodAnalyser methodAnalyser = getCurrentMethod();
+        if (methodAnalyser == null) return false; //?
+        /*
+         UpgradableBooleanMap: static factory methods: want to return true
+         ExternalImmutable_0: static, but not part of construction
+         */
+        if (methodAnalyser.getMethodInfo().methodInspection.get().isFactoryMethod()) return true;
+        return typeInfo.primaryType() == getCurrentType().primaryType()
+                && getCurrentType().recursivelyInConstructionOrStaticWithRespectTo(getAnalyserContext(), typeInfo);
+    }
+
+    /*
     if the formal type is T (hidden content), then the expression is returned is List.of(expression).
     It is important to return the expression, because it may have a dynamic immutability higher than its formal value,
     e.g., as a result of another method call.

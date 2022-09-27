@@ -770,14 +770,17 @@ public final class TypeInfo implements NamedType, WithInspectionAndAnalysis, Com
         return CLASS_IN_METHOD.matcher(simpleName).find();
     }
 
-    public boolean isStaticWithRespectTo(InspectionProvider inspectionProvider, TypeInfo enclosingType) {
+    public boolean recursivelyInConstructionOrStaticWithRespectTo(InspectionProvider inspectionProvider,
+                                                                  TypeInfo enclosingType) {
         MethodInfo enclosingMethod = inspectionProvider.getTypeInspection(this).enclosingMethod();
         if (enclosingMethod != null) {
-            if (enclosingMethod.typeInfo == enclosingType
-                    && inspectionProvider.getMethodInspection(enclosingMethod).isStatic()) {
+            if (enclosingMethod.inConstruction()) return true;
+            MethodInspection enclosingInspection = inspectionProvider.getMethodInspection(enclosingMethod);
+            if (enclosingMethod.typeInfo == enclosingType && enclosingInspection.isStatic()) {
                 return true;
             }
-            return enclosingMethod.typeInfo.isStaticWithRespectTo(inspectionProvider, enclosingType);
+            return enclosingMethod.typeInfo
+                    .recursivelyInConstructionOrStaticWithRespectTo(inspectionProvider, enclosingType);
         }
         return false;
     }

@@ -59,7 +59,7 @@ public class Test_Util_02_UpgradableBooleanMap extends CommonTestRunner {
                         d.typeInfo().fullyQualifiedName);
                 TypeInfo upgradable = d.typeInfo().packageNameOrEnclosingType.getRight();
                 assertEquals("UpgradableBooleanMap", upgradable.simpleName);
-                assertTrue(d.typeInfo().isStaticWithRespectTo(InspectionProvider.DEFAULT, upgradable));
+                assertTrue(d.typeInfo().recursivelyInConstructionOrStaticWithRespectTo(InspectionProvider.DEFAULT, upgradable));
                 assertDv(d, 25, MultiLevel.EFFECTIVELY_IMMUTABLE_DV, Property.IMMUTABLE); // FIXME hc!
             }
 
@@ -70,8 +70,8 @@ public class Test_Util_02_UpgradableBooleanMap extends CommonTestRunner {
                 TypeInfo upgradable = collector.packageNameOrEnclosingType.getRight();
                 assertEquals("UpgradableBooleanMap", upgradable.simpleName);
                 assertEquals("accumulator", d.typeInspection().enclosingMethod().name);
-                assertTrue(d.typeInfo().isStaticWithRespectTo(InspectionProvider.DEFAULT, upgradable));
-                assertFalse(d.typeInfo().isStaticWithRespectTo(InspectionProvider.DEFAULT, collector));
+                assertTrue(d.typeInfo().recursivelyInConstructionOrStaticWithRespectTo(InspectionProvider.DEFAULT, upgradable));
+                assertFalse(d.typeInfo().recursivelyInConstructionOrStaticWithRespectTo(InspectionProvider.DEFAULT, collector));
                 assertDv(d, 26, MultiLevel.EFFECTIVELY_IMMUTABLE_DV, Property.IMMUTABLE); // FIXME
             }
         };
@@ -163,7 +163,7 @@ public class Test_Util_02_UpgradableBooleanMap extends CommonTestRunner {
                         assertEquals(DV.FALSE_DV, eval.getProperty(Property.CONTEXT_MODIFIED));
 
                         // merge
-                        assertDv(d, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                        assertDv(d, 24, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     }
                 }
                 if (d.variable() instanceof FieldReference fr && "map".equals(fr.fieldInfo.name)) {
@@ -184,6 +184,11 @@ public class Test_Util_02_UpgradableBooleanMap extends CommonTestRunner {
                                 ? "<vp:map:ext_not_null@Field_map;initial:this.map@Method_put_0-C>"
                                 : "instance type HashMap<T,Boolean>";
                         assertEquals(expectedInitial, initial.getValue().toString());
+                        assertEquals(d.iteration() >= 1, initial.getProperty(Property.IGNORE_MODIFICATIONS).isDone());
+
+                        // EXT_IGN_MOD is already known because we're in construction:
+                        assertEquals(MultiLevel.NOT_IGNORE_MODS_DV, initial.getProperty(Property.EXTERNAL_IGNORE_MODIFICATIONS));
+                        assertTrue(d.context().evaluationContext().inConstruction());
 
                         assertTrue(d.variableInfoContainer().hasEvaluation());
                         VariableInfo eval = d.variableInfoContainer().best(Stage.EVALUATION);
@@ -284,7 +289,8 @@ public class Test_Util_02_UpgradableBooleanMap extends CommonTestRunner {
 
                 // only link is from t --3--> map, which is not included (at this point)
                 assertEquals("", d.fieldAnalysis().getLinkedVariables().toString());
-                assertDv(d, 23, DV.TRUE_DV, Property.MODIFIED_OUTSIDE_METHOD);
+                // NOT modified outside method, because the put/putAll are part of construction!!!
+                assertDv(d, 23, DV.FALSE_DV, Property.MODIFIED_OUTSIDE_METHOD);
 
                 // consequence of linking: no direct assignment, no outgoing links
                 assertDv(d, MultiLevel.INDEPENDENT_DV, Property.INDEPENDENT);

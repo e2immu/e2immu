@@ -430,7 +430,8 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
         if (methodInspection.isAbstract()) return false;
         if (methodInspection.getMethodInfo().inConstruction()) return false;
         if (methodInspection.isStatic()) return false;
-        return !methodInspection.getMethodInfo().typeInfo.isStaticWithRespectTo(InspectionProvider.DEFAULT, typeInfo);
+        return !methodInspection.getMethodInfo().typeInfo
+                .recursivelyInConstructionOrStaticWithRespectTo(InspectionProvider.DEFAULT, typeInfo);
     }
 
     /*

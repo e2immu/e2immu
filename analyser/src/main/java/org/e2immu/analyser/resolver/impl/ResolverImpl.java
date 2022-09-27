@@ -904,7 +904,7 @@ public class ResolverImpl implements Resolver {
         return !methodInspection.isPrivate() &&
                 !methodInspection.isStatic() &&
                 !methodInspection.getMethodInfo().typeInfo
-                        .isStaticWithRespectTo(inspectionProvider, methodInfo.typeInfo);
+                        .recursivelyInConstructionOrStaticWithRespectTo(inspectionProvider, methodInfo.typeInfo);
     }
 
     /**

@@ -656,12 +656,6 @@ public record EvaluationResult(EvaluationContext evaluationContext,
 
         }
 
-        private boolean hasBeenAssigned(FieldReference fr) {
-            ChangeData changeData = valueChanges.get(fr);
-            if (changeData != null && changeData.markAssignment) return true;
-            return evaluationContext.hasBeenAssigned(fr);
-        }
-
         /**
          * @param variable the variable in whose context the modification takes place
          * @param modified possibly delayed

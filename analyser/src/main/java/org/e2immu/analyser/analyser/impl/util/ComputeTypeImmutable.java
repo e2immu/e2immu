@@ -678,7 +678,7 @@ public record ComputeTypeImmutable(AnalyserContext analyserContext,
 
     private boolean acceptMethod(MethodInfo methodInfo) {
         return !methodInfo.inConstruction()
-                && !methodInfo.typeInfo.isStaticWithRespectTo(analyserContext, typeInfo);
+                && !methodInfo.typeInfo.recursivelyInConstructionOrStaticWithRespectTo(analyserContext, typeInfo);
     }
 
     private AnalysisStatus negativeMethods(Work w) {
