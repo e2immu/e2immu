@@ -33,6 +33,7 @@ import org.junit.jupiter.api.Test;
 import java.io.IOException;
 
 import static org.e2immu.analyser.analyser.Property.*;
+import static org.e2immu.analyser.model.MultiLevel.NOT_IGNORE_MODS_DV;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -66,6 +67,8 @@ public class Test_00_Basics_14 extends CommonTestRunner {
                         assertEquals(expected, d.currentValue().toString());
                         assertDv(d, MultiLevel.EFFECTIVELY_NOT_NULL_DV, CONTEXT_NOT_NULL);
                         assertDv(d, MultiLevel.MUTABLE_DV, CONTEXT_IMMUTABLE);
+                        assertDv(d, 2, NOT_IGNORE_MODS_DV, IGNORE_MODIFICATIONS);
+                        assertDv(d, 1, NOT_IGNORE_MODS_DV, EXTERNAL_IGNORE_MODIFICATIONS);
                     }
                 }
                 if (d.variable() instanceof ParameterInfo p && "t".equals(p.name)) {

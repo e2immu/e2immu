@@ -82,6 +82,8 @@ public class Test_00_Basics_1 extends CommonTestRunner {
                 assertEquals(MUTABLE_DV, d.getProperty(CONTEXT_IMMUTABLE));
                 assertDv(d, 1, NULLABLE_DV, EXTERNAL_NOT_NULL);
                 assertDv(d, 1, MUTABLE_DV, EXTERNAL_IMMUTABLE);
+                assertDv(d, NOT_IGNORE_MODS_DV, IGNORE_MODIFICATIONS);
+                assertDv(d, NOT_IGNORE_MODS_DV, EXTERNAL_IGNORE_MODIFICATIONS);
             }
 
             /*
@@ -95,7 +97,7 @@ public class Test_00_Basics_1 extends CommonTestRunner {
                 assertDv(d, NULLABLE_DV, CONTEXT_NOT_NULL);
                 assertDv(d, MUTABLE_DV, CONTEXT_IMMUTABLE);
 
-                if("0".equals(d.statementId())) {
+                if ("0".equals(d.statementId())) {
                     assertDvInitial(d, "ext_not_null@Parameter_p1", 1, NOT_INVOLVED_DV, EXTERNAL_NOT_NULL);
                     assertDvInitial(d, "ext_imm@Parameter_p1", 1, NOT_INVOLVED_DV, EXTERNAL_IMMUTABLE);
                     assertFalse(d.variableInfoContainer().hasEvaluation());
@@ -131,6 +133,8 @@ public class Test_00_Basics_1 extends CommonTestRunner {
                 assertEquals(expected, d.currentValue().toString());
                 assertEquals("", d.variableInfo().getLinkedVariables().toString());
                 assertDv(d, 1, NULLABLE_DV, CONTEXT_NOT_NULL);
+                assertDv(d, 1, NOT_IGNORE_MODS_DV, IGNORE_MODIFICATIONS);
+                assertDv(d, 1, NOT_IGNORE_MODS_DV, EXTERNAL_IGNORE_MODIFICATIONS);
             }
         }
         if ("getF1".equals(d.methodInfo().name)) {

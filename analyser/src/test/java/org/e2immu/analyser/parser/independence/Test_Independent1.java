@@ -353,10 +353,20 @@ public class Test_Independent1 extends CommonTestRunner {
                 assertHc(d, 1, "T");
             }
         };
+        FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
+            if ("ones".equals(d.fieldInfo().name)) {
+                String linked = d.iteration() == 0 ? "consumer:-1,generator:-1" : "";
+                assertEquals(linked, d.fieldAnalysis().getLinkedVariables().toString());
+            }
+            if ("t".equals(d.fieldInfo().name)) {
+                assertEquals("t:0", d.fieldAnalysis().getLinkedVariables().toString());
+            }
+        };
         testClass("Independent1_6", 0, 0, new DebugConfiguration.Builder()
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
+                .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                 .build());
     }
 

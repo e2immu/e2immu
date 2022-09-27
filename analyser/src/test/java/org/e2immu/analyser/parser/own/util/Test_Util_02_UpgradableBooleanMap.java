@@ -163,14 +163,19 @@ public class Test_Util_02_UpgradableBooleanMap extends CommonTestRunner {
                         assertEquals(DV.FALSE_DV, eval.getProperty(Property.CONTEXT_MODIFIED));
 
                         // merge
-                        assertDv(d, 24, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                        assertDv(d, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     }
                 }
                 if (d.variable() instanceof FieldReference fr && "map".equals(fr.fieldInfo.name)) {
                     assertTrue(fr.scopeIsThis());
                     if ("0.0.0".equals(d.statementId())) {
+                        assertDv(d, 24, MultiLevel.NOT_IGNORE_MODS_DV, Property.IGNORE_MODIFICATIONS);
+                        assertDv(d, MultiLevel.NOT_IGNORE_MODS_DV, Property.EXTERNAL_IGNORE_MODIFICATIONS);
+
                         assertDv(d, 24, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
                         assertCurrentValue(d, 24, "instance type HashMap<T,Boolean>");
+                        // link t --3-->map, not in the other direction
+                        assertEquals("", d.variableInfo().getLinkedVariables().toString());
                     }
                     if ("0".equals(d.statementId())) {
                         VariableInfo initial = d.variableInfoContainer().getPreviousOrInitial();
@@ -185,8 +190,10 @@ public class Test_Util_02_UpgradableBooleanMap extends CommonTestRunner {
                         assertEquals(DV.FALSE_DV, eval.getProperty(Property.CONTEXT_MODIFIED));
                         String expected = d.iteration() < 24 ? "<f:map>" : "instance type HashMap<T,Boolean>";
                         assertEquals(expected, eval.getValue().toString());
+                        // link t --3-->map, not in the other direction
+                        assertEquals("", d.variableInfo().getLinkedVariables().toString());
 
-                        // merge
+                        // merge: blocked by delay on condition manager
                         assertDv(d, 24, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
                     }
                 }
@@ -275,11 +282,12 @@ public class Test_Util_02_UpgradableBooleanMap extends CommonTestRunner {
                 assertDv(d, 23, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.EXTERNAL_NOT_NULL);
                 assertDv(d, MultiLevel.NOT_IGNORE_MODS_DV, Property.EXTERNAL_IGNORE_MODIFICATIONS);
 
-                // not assigned; links to other parameters are not included in LV
+                // only link is from t --3--> map, which is not included (at this point)
                 assertEquals("", d.fieldAnalysis().getLinkedVariables().toString());
-                assertDv(d, BIG, DV.TRUE_DV, Property.MODIFIED_OUTSIDE_METHOD);
+                assertDv(d, 23, DV.TRUE_DV, Property.MODIFIED_OUTSIDE_METHOD);
 
-                assertDv(d, BIG, MultiLevel.INDEPENDENT_HC_DV, Property.INDEPENDENT);
+                // consequence of linking: no direct assignment, no outgoing links
+                assertDv(d, MultiLevel.INDEPENDENT_DV, Property.INDEPENDENT);
             }
         };
 

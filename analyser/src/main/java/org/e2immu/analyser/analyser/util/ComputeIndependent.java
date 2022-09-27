@@ -216,6 +216,7 @@ public record ComputeIndependent(AnalyserContext analyserContext,
      * recursively immutable), or a delay when we're waiting for immutable
      */
     public DV directedLinkLevelOfTwoHCRelatedTypes(ParameterizedType pt1, ParameterizedType pt2) {
+        if (pt1.isPrimitiveStringClass() || pt2.isPrimitiveStringClass()) return LINK_INDEPENDENT;
         TypeInfo t2 = pt2.bestTypeInfo();
         if (t2 != null) {
             DV immutable = immutableSmallInsideBig(pt1, pt2, t2);
@@ -237,6 +238,8 @@ public record ComputeIndependent(AnalyserContext analyserContext,
      * @return either DEPENDENT, IS_HC_OF, COMMON_HC, or INDEPENDENT, or a delay when we're waiting for immutable
      */
     public DV linkLevelOfTwoHCRelatedTypes(ParameterizedType pt1, ParameterizedType pt2) {
+        if(pt1.isPrimitiveStringClass() || pt2.isPrimitiveStringClass()) return LINK_INDEPENDENT;
+
         if (pt1.equals(pt2) && pt1.arrays > 0) {
             return LINK_COMMON_HC;
         }

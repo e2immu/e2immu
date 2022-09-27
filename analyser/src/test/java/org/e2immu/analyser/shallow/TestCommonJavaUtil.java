@@ -361,6 +361,13 @@ public class TestCommonJavaUtil extends CommonAnnotatedAPI {
         assertEquals(DV.FALSE_DV, p0.getProperty(Property.MODIFIED_VARIABLE));
         assertEquals(MultiLevel.INDEPENDENT_HC_DV, p0.getProperty(Property.INDEPENDENT));
         assertEquals(MultiLevel.EFFECTIVELY_IMMUTABLE_HC_DV, p0.getProperty(Property.IMMUTABLE));
+
+        // value
+        ParameterAnalysis p1 = methodInfo.parameterAnalysis(0);
+        assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, p1.getProperty(Property.NOT_NULL_PARAMETER));
+        assertEquals(DV.FALSE_DV, p1.getProperty(Property.MODIFIED_VARIABLE));
+        assertEquals(MultiLevel.INDEPENDENT_HC_DV, p1.getProperty(Property.INDEPENDENT));
+        assertEquals(MultiLevel.EFFECTIVELY_IMMUTABLE_HC_DV, p1.getProperty(Property.IMMUTABLE));
     }
 
     @Test

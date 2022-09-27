@@ -148,7 +148,7 @@ public class Test_57_Lambda extends CommonTestRunner {
                     if ("1".equals(d.statementId())) {
                         String expect = d.iteration() == 0 ? "<m:get>" : "`this.i`";
                         assertEquals(expect, d.currentValue().toString());
-                        String linked = d.iteration() == 0 ? "f:-1,this:-1" : "f:4";
+                        String linked = d.iteration() == 0 ? "f:-1,this:-1" : "";
                         assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
                     }
                 }
@@ -185,7 +185,7 @@ public class Test_57_Lambda extends CommonTestRunner {
                     if ("2".equals(d.statementId())) {
                         String expect = d.iteration() == 0 ? "<s:int>" : "`x.k`";
                         assertEquals(expect, d.currentValue().toString());
-                        String expectLv = d.iteration() == 0 ? "f:-1" : "f:4";
+                        String expectLv = d.iteration() == 0 ? "f:-1" : "";
                         assertEquals(expectLv, d.variableInfo().getLinkedVariables().toString());
                     }
                 }
@@ -263,7 +263,7 @@ public class Test_57_Lambda extends CommonTestRunner {
                     if ("2".equals(d.statementId()) || "3".equals(d.statementId())) {
                         String expect = d.iteration() == 0 ? "<s:int>" : "`x.k`";
                         assertEquals(expect, d.currentValue().toString());
-                        String expectLv = d.iteration() == 0 ? "f:-1" : "f:4";
+                        String expectLv = d.iteration() == 0 ? "f:-1" : "";
                         assertEquals(expectLv, d.variableInfo().getLinkedVariables().toString());
                     }
                 }
