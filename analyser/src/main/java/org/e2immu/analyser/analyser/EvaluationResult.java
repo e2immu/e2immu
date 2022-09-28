@@ -177,7 +177,7 @@ public record EvaluationResult(EvaluationContext evaluationContext,
         Map<Variable, ChangeData> newMap = new HashMap<>();
         InspectionProvider inspectionProvider = evaluationContext.getAnalyserContext();
         for (Map.Entry<Variable, ChangeData> e : changeData().entrySet()) {
-            Variable translated = translationMap.translateVariable(e.getKey());
+            Variable translated = translationMap.translateVariable(evaluationContext.getAnalyserContext(), e.getKey());
             EvaluationResult.ChangeData newChangeData = e.getValue().translate(inspectionProvider, translationMap);
             newMap.put(translated, newChangeData);
             if (translated != e.getKey()) {
@@ -270,8 +270,10 @@ public record EvaluationResult(EvaluationContext evaluationContext,
             Expression translatedValue = value == null ? null : value.translate(inspectionProvider, translationMap);
             CausesOfDelay translatedDelays = delays == null ? null : delays.translate(inspectionProvider, translationMap);
             CausesOfDelay translatedStateIsDelayed = stateIsDelayed == null ? null : stateIsDelayed.translate(inspectionProvider, translationMap);
-            LinkedVariables translatedLv = linkedVariables == null ? null : linkedVariables.translate(translationMap);
-            LinkedVariables translatedToRemove = toRemoveFromLinkedVariables == null ? null : toRemoveFromLinkedVariables.translate(translationMap);
+            LinkedVariables translatedLv = linkedVariables == null ? null
+                    : linkedVariables.translate(inspectionProvider, translationMap);
+            LinkedVariables translatedToRemove = toRemoveFromLinkedVariables == null ? null
+                    : toRemoveFromLinkedVariables.translate(inspectionProvider, translationMap);
             if (translatedValue == value && translatedDelays == delays && translatedStateIsDelayed == stateIsDelayed
                     && translatedLv == linkedVariables && translatedToRemove == toRemoveFromLinkedVariables) {
                 return this;

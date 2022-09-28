@@ -175,7 +175,8 @@ public class Assignment extends BaseExpression implements Expression {
             translatedDirect = null;
         } else {
             Set<Variable> translated = directAssignmentVariables.stream()
-                    .map(translationMap::translateVariable).collect(Collectors.toUnmodifiableSet());
+                    .map(v -> translationMap.translateVariable(inspectionProvider, v))
+                    .collect(Collectors.toUnmodifiableSet());
             translatedDirect = translated.equals(directAssignmentVariables) ? directAssignmentVariables : translated;
         }
         if (translatedValue == this.value && translatedTarget == this.target && translatedDirect == directAssignmentVariables)

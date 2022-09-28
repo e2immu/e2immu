@@ -20,6 +20,7 @@ import org.e2immu.analyser.analyser.Property;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.ParameterInfo;
+import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.ReturnVariable;
 import org.e2immu.analyser.parser.CommonTestRunner;
 import org.e2immu.analyser.visitor.MethodAnalyserVisitor;
@@ -91,6 +92,26 @@ public class Test_FactoryMethod extends CommonTestRunner {
                     assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
                 }
             }
+            if ("copy2".equals(d.methodInfo().name)) {
+                if("result".equals(d.variableName())) {
+                    if("1".equals(d.statementId())) {
+                        String linked = d.iteration() < 2 ? "this.list:-1" : "this.list:4";
+                        assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
+                    }
+                }
+                if (d.variable() instanceof ReturnVariable) {
+                    if("2".equals(d.statementId())) {
+                        String linked = d.iteration() < 2 ? "result:0,this.list:-1" : "result:0,this.list:4";
+                        assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
+                    }
+                }
+                if(d.variable() instanceof FieldReference fr && "list".equals(fr.fieldInfo.name)) {
+                    if("1".equals(d.statementId())) {
+                        String linked = d.iteration() < 2 ? "result:-1" : "result:4";
+                        assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
+                    }
+                }
+            }
         };
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("of".equals(d.methodInfo().name)) {
@@ -98,7 +119,7 @@ public class Test_FactoryMethod extends CommonTestRunner {
             }
         };
 
-        // FIXME one error, still to be implemented
+        // 1 ERROR: not yet implemented, of1 line 32; directly linking into a new object
         testClass("FactoryMethod_0", 1, 0, new DebugConfiguration.Builder()
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)

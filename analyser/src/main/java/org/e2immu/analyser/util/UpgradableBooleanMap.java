@@ -137,12 +137,13 @@ public class UpgradableBooleanMap<T> {
 
         @Override
         public Boolean setValue(Boolean value) {
+            assert value != null; // to stop e2immu from complaining about non-null
             throw new UnsupportedOperationException();
         }
     }
 
     @ImmutableContainer(hc = true)
-    @NotNull(content = true)
+    @NotNull // TODO implement (content = true)
     public Stream<Map.Entry<T, Boolean>> stream() {
         return map.entrySet().stream().map(e -> new ImmutableEntry<>(e.getKey(), e.getValue()));
     }

@@ -629,7 +629,7 @@ public class Test_63_DGSimplified extends CommonTestRunner {
                 }
             }
             if ("singleRemoveStep".equals(d.methodInfo().name)) {
-                assertDv(d, 6, DV.FALSE_DV, Property.MODIFIED_METHOD);
+                assertDv(d, 5, DV.FALSE_DV, Property.MODIFIED_METHOD);
                 assertDv(d.p(0), 6, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_PARAMETER);
                 assertDv(d.p(0), 6, DV.TRUE_DV, Property.MODIFIED_VARIABLE);
                 assertEquals(d.iteration() >= 6, d.methodAnalysis().getSingleReturnValue().isDone());

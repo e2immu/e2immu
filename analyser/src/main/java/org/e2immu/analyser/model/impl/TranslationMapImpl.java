@@ -131,11 +131,11 @@ public class TranslationMapImpl implements TranslationMap {
     }
 
     @Override
-    public Variable translateVariable(Variable variable) {
+    public Variable translateVariable(InspectionProvider inspectionProvider, Variable variable) {
         Variable v = variables.get(variable);
         if (v != null) return v;
         if (variable instanceof FieldReference fr && fr.scopeVariable != null) {
-            Variable scopeTranslated = translateVariable(fr.scopeVariable);
+            Variable scopeTranslated = translateVariable(inspectionProvider, fr.scopeVariable);
             if (scopeTranslated != fr.scopeVariable) {
                 Expression e;
                 if (fr.scope.isDelayed()) {
@@ -143,7 +143,7 @@ public class TranslationMapImpl implements TranslationMap {
                 } else {
                     e = new VariableExpression(scopeTranslated);
                 }
-                return new FieldReference(InspectionProvider.DEFAULT, fr.fieldInfo, e, fr.getOwningType());
+                return new FieldReference(inspectionProvider, fr.fieldInfo, e, fr.getOwningType());
             }
         }
         return variable;

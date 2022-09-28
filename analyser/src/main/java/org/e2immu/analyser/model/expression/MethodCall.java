@@ -344,11 +344,12 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         // (the other direction, object into parameter, yields MODIFIED on the parameter)
         LinkedVariables linkedVariablesOfObject = linkedVariablesOfObject(context, objectValue);
         List<LinkedVariables> linkedVariablesOfParameters;
+        CausesOfDelay linkDelays = CausesOfDelay.EMPTY;
         if (!linkedVariablesOfObject.isEmpty()) {
-            linkedVariablesOfParameters = ConstructorCall.computeLinkedVariablesOfParameters(context,
+            linkedVariablesOfParameters = LinkParameters.computeLinkedVariablesOfParameters(context,
                     parameterExpressions, parameterValues);
             Map<ParameterInfo, LinkedVariables> linksToLinkedToObject = firstInCallCycle ? Map.of() :
-                    ConstructorCall.fromParameterIntoObject(context,
+                    LinkParameters.fromParameterIntoObject(context,
                             context.getAnalyserContext().getMethodInspection(methodInfo),
                             linkedVariablesOfParameters, objectValue.returnType());
             if (!linksToLinkedToObject.isEmpty()) {
@@ -361,6 +362,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
                             DV fromLinkedToObjectToObject = e.getValue();
                             DV combined = fromLinkedToParameterToLinkedToObject.max(fromLinkedToObjectToObject);
                             builder.link(linkedToParameter, linkedToObject, combined);
+                            linkDelays = linkDelays.merge(combined.causesOfDelay());
                         }
                     }
                 }
@@ -386,7 +388,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
                 .reduce(CausesOfDelay.EMPTY, CausesOfDelay::merge);
 
         CausesOfDelay delays1 = modified.causesOfDelay().merge(parameterDelays).merge(delayedFinalizer)
-                .merge(objectResult.causesOfDelay()).merge(incrementDelays);
+                .merge(objectResult.causesOfDelay()).merge(incrementDelays).merge(linkDelays);
 
 
         Expression modifiedInstance;
@@ -519,7 +521,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         Map<ParameterInfo, LinkedVariables> crossLinks = concreteMethod.crossLinks(context.getAnalyserContext());
         if (crossLinks.isEmpty()) return;
         List<LinkedVariables> linkedVariablesOfParameters = linkedVariables == null
-                ? ConstructorCall.computeLinkedVariablesOfParameters(context, parameterExpressions, parameterValues)
+                ? LinkParameters.computeLinkedVariablesOfParameters(context, parameterExpressions, parameterValues)
                 : linkedVariables;
         crossLinks.forEach((pi, lv) -> lv.stream().forEach(e -> {
             ParameterInfo target = (ParameterInfo) e.getKey();
@@ -1296,7 +1298,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
             List<Expression> parameterValues = parameterExpressions.stream()
                     .map(pe -> pe.evaluate(context, ForwardEvaluationInfo.DEFAULT).value())
                     .toList();
-            List<LinkedVariables> linkedVariables = ConstructorCall.computeLinkedVariablesOfParameters(context, parameterExpressions, parameterValues);
+            List<LinkedVariables> linkedVariables = LinkParameters.computeLinkedVariablesOfParameters(context, parameterExpressions, parameterValues);
             // content link to the parameters, and all variables normally linked to them
             return LinkedVariables.EMPTY; // FIXME implement!!
             ///   return ConstructorCall.combineArgumentIndependenceWithFormalParameterIndependence(context, methodInspection,

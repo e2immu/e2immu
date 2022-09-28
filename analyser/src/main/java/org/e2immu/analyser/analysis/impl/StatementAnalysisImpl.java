@@ -1262,7 +1262,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
                         lvStream = Stream.concat(Stream.of(previousLv), toMergeLvStream);
                     }
                     LinkedVariables linkedVariables = lvStream
-                            .map(lv -> lv.translate(translationMap))
+                            .map(lv -> lv.translate(evaluationContext.getAnalyserContext(), translationMap))
                             .reduce(LinkedVariables.EMPTY, LinkedVariables::merge);
                     if (executionDelay.isDelayed()) {
                         linkedVariablesMap.put(renamed, linkedVariables.changeNonStaticallyAssignedToDelay(executionDelay));
@@ -1443,7 +1443,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
         }
 
         if (translationMap.hasVariableTranslations()) {
-            groupPropertyValues.translate(translationMap);
+            groupPropertyValues.translate(evaluationContext.getAnalyserContext(), translationMap);
         }
 
         ProgressAndDelay ennStatus = computeLinkedVariables.write(EXTERNAL_NOT_NULL,

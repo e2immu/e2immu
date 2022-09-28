@@ -36,7 +36,7 @@ public interface TranslationMap {
     MethodInfo translateMethod(MethodInfo methodInfo);
 
     @NotNull
-    Variable translateVariable(Variable variable);
+    Variable translateVariable(InspectionProvider inspectionProvider, Variable variable);
 
     @NotNull(content = true)
     List<Statement> translateStatement(InspectionProvider inspectionProvider, Statement statement);

@@ -137,8 +137,8 @@ public final class DelayedWrappedExpression extends BaseExpression implements Ex
             return expression;
         }
         Expression translated = expression.translate(inspectionProvider, translationMap);
-        LinkedVariables lvTranslated = linkedVariables.translate(translationMap);
-        Variable varTranslated = translationMap.translateVariable(variable);
+        LinkedVariables lvTranslated = linkedVariables.translate(inspectionProvider, translationMap);
+        Variable varTranslated = translationMap.translateVariable(inspectionProvider, variable);
         if (translated != expression || lvTranslated != linkedVariables || varTranslated != variable) {
             return new DelayedWrappedExpression(identifier, varTranslated, translated, properties, lvTranslated, causesOfDelay);
         }

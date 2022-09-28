@@ -159,7 +159,7 @@ public class Test_Output_03_Formatter extends CommonTestRunner {
                     if ("3.1.0".equals(d.statementId())) {
                         String expected = d.iteration() <= 1 ? "<v:exceeds9>" : "`lookAhead.exceeds`";
                         assertEquals(expected, d.currentValue().toString());
-                        assertDv(d, 1, MultiLevel.NULLABLE_DV, Property.CONTEXT_NOT_NULL);
+                        assertDv(d, 2, MultiLevel.NULLABLE_DV, Property.CONTEXT_NOT_NULL);
                     }
                     if ("3.1.1".equals(d.statementId())) {
                         String expected = d.iteration() <= 1 ? "<v:exceeds9>" : "`lookAhead.exceeds`";

@@ -409,7 +409,7 @@ public class Test_Independent1 extends CommonTestRunner {
     }
 
     @Test
-    public void test_8_1() throws IOException {
+    public void test_8() throws IOException {
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
             if ("list".equals(d.fieldInfo().name)) {
                 assertDv(d, DV.FALSE_DV, Property.MODIFIED_OUTSIDE_METHOD);
@@ -419,5 +419,69 @@ public class Test_Independent1 extends CommonTestRunner {
                 .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                 .build());
     }
+
+    @Test
+    public void test_9() throws IOException {
+        StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+            if ("putAll".equals(d.methodInfo().name)) {
+                if (d.variable() instanceof ParameterInfo pi && "other".equals(pi.name)) {
+                    String linked = d.iteration() < 11 ? "this:-1" : "";
+                    assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
+                }
+            }
+        };
+        MethodAnalyserVisitor methodAnalyserVisitor = d -> {
+            if ("stream".equals(d.methodInfo().name)) {
+                String expected = d.iteration() < 11 ? "<m:stream>"
+                        : "/*inline stream*/map.entrySet().stream().map(/*inline apply*/new ImmutableEntry<>(e.getKey(),e.getValue()))";
+                assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
+            }
+        };
+        testClass("Independent1_9", 0, 0, new DebugConfiguration.Builder()
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                .build());
+    }
+
+    @Test
+    public void test_10() throws IOException {
+        // TODO NOT YET IMPLEMENTED
+        testClass("Independent1_10", 4, 1, new DebugConfiguration.Builder()
+                .build());
+    }
+
+    @Test
+    public void test_11() throws IOException {
+        StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+            if ("addAllLambda".equals(d.methodInfo().name)) {
+                if (d.variable() instanceof ParameterInfo pi && "other".equals(pi.name)) {
+                    String linked = d.iteration() < 2 ? "other.list:-1,this.list:-1" : "other.list:4,this.list:4";
+                    assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
+                }
+            }
+            if ("addAllCC".equals(d.methodInfo().name)) {
+                if (d.variable() instanceof ParameterInfo pi && "other".equals(pi.name)) {
+                    String linked = d.iteration() < 2 ? "other.list:-1,this.list:-1" : "other.list:4,this.list:4";
+                    assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
+                }
+            }
+            if ("addAllMR".equals(d.methodInfo().name)) {
+                if (d.variable() instanceof ParameterInfo pi && "other".equals(pi.name)) {
+                    String linked = d.iteration() < 2 ? "other.list:-1,this.list:-1" : "other.list:4,this.list:4";
+                    assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
+                }
+            }
+            if ("addAllMR2".equals(d.methodInfo().name)) {
+                if (d.variable() instanceof ParameterInfo pi && "other".equals(pi.name)) {
+                    String linked = d.iteration() < 2 ? "other.list:-1,this.list:-1" : "other.list:4,this.list:4";
+                    assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
+                }
+            }
+        };
+        testClass("Independent1_11", 0, 0, new DebugConfiguration.Builder()
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .build());
+    }
+
 
 }

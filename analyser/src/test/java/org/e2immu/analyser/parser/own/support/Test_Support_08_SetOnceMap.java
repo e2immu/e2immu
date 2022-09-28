@@ -151,22 +151,25 @@ public class Test_Support_08_SetOnceMap extends CommonTestRunner {
             if ("putAll".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof ParameterInfo pi && "setOnceMap".equals(pi.name)) {
                     if ("1".equals(d.statementId())) {
-                        String linked = d.iteration() < 3 ? "setOnceMap.map:-1,this:-1" : "setOnceMap.map:4,this:4";
+                        String linked = d.iteration() < 2
+                                ? "setOnceMap.map:-1,this.map:-1,this:-1"
+                                : "setOnceMap.map:4,this.map:4";
                         assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
-                        assertDv(d, 3, MultiLevel.DEPENDENT_DV, Property.INDEPENDENT);
+                        assertDv(d, 2, MultiLevel.DEPENDENT_DV, Property.INDEPENDENT);
                     }
                 }
                 if (d.variable() instanceof This) {
                     if ("1".equals(d.statementId())) {
-                        String linked = d.iteration() < 3 ? "setOnceMap.map:-1,setOnceMap:-1" : "setOnceMap.map:4,setOnceMap:4";
+                        String linked = d.iteration() < 2 ? "setOnceMap.map:-1,setOnceMap:-1,this.map:-1" : "";
                         assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
                     }
                 }
-                if (d.variable() instanceof FieldReference fr && "map".equals(fr.fieldInfo.name)) {
+                if (d.variable() instanceof FieldReference fr && "map".equals(fr.fieldInfo.name)
+                        && fr.scopeVariable != null
+                        && "setOnceMap".equals(fr.scopeVariable.simpleName())) {
                     assertEquals("1", d.statementId());
                     assertNotNull(fr.scopeVariable);
-                    assertEquals("setOnceMap", fr.scopeVariable.simpleName());
-                    String linked = d.iteration() < 3 ? "setOnceMap:-1,this:-1" : "setOnceMap:2,this:4";
+                    String linked = d.iteration() < 2 ? "setOnceMap:-1,this.map:-1,this:-1" : "setOnceMap:2,this.map:4";
                     assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
                 }
             }
@@ -174,7 +177,7 @@ public class Test_Support_08_SetOnceMap extends CommonTestRunner {
 
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("putAll".equals(d.methodInfo().name)) {
-                assertDv(d, 1, DV.TRUE_DV, Property.MODIFIED_METHOD);
+                assertDv(d, 2, DV.TRUE_DV, Property.MODIFIED_METHOD);
                 assertEquals("get,isSet,put", d.methodInfo().methodResolution.get().methodsOfOwnClassReached()
                         .stream().map(m -> m.name).sorted().collect(Collectors.joining(",")));
             }

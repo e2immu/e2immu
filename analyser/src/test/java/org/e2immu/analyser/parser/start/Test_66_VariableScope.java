@@ -287,7 +287,7 @@ public class Test_66_VariableScope extends CommonTestRunner {
                     if ("2".equals(d.statementId())) {
                         String expected = d.iteration() <= 2 ? "<new:QualificationImpl>" : "new QualificationImpl()";
                         assertEquals(expected, d.currentValue().toString());
-                        assertDv(d, DV.FALSE_DV, Property.IDENTITY);
+                        assertDv(d, 3, DV.FALSE_DV, Property.IDENTITY);
                     }
                 }
                 if (d.variable() instanceof FieldReference fr && "types".equals(fr.fieldInfo.name)) {

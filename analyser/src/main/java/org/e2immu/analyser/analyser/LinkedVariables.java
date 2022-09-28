@@ -18,9 +18,14 @@ import org.e2immu.analyser.analyser.delay.DelayFactory;
 import org.e2immu.analyser.analyser.delay.NoDelay;
 import org.e2immu.analyser.analyser.util.ComputeIndependent;
 import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.model.impl.TranslationMapImpl;
 import org.e2immu.analyser.model.variable.Variable;
+import org.e2immu.analyser.parser.InspectionProvider;
 
-import java.util.*;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Map;
+import java.util.Set;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -187,10 +192,11 @@ public class LinkedVariables implements Comparable<LinkedVariables>, Iterable<Ma
                 .map(Map.Entry::getKey);
     }
 
-    public LinkedVariables translate(TranslationMap translationMap) {
+    public LinkedVariables translate(InspectionProvider inspectionProvider, TranslationMap translationMap) {
         if (isEmpty() || this == NOT_YET_SET) return this;
         var translatedVariables = variables.entrySet().stream()
-                .collect(Collectors.toMap(e -> translationMap.translateVariable(e.getKey()), Map.Entry::getValue, DV::min));
+                .collect(Collectors.toMap(e -> translationMap.translateVariable(inspectionProvider,
+                        e.getKey()), Map.Entry::getValue, DV::min));
         if (translatedVariables.equals(variables)) return this;
         return of(translatedVariables);
     }

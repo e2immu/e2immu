@@ -83,7 +83,7 @@ public class InstanceOf extends BaseExpression implements Expression {
         ParameterizedType translatedType = translationMap.translateType(this.parameterizedType);
         Expression translatedExpression = expression == null ? null : expression.translate(inspectionProvider, translationMap);
         LocalVariableReference translatedLvr = patternVariable == null ? null
-                : (LocalVariableReference) translationMap.translateVariable(patternVariable);
+                : (LocalVariableReference) translationMap.translateVariable(inspectionProvider, patternVariable);
         if (translatedType == parameterizedType && translatedExpression == expression && translatedLvr == patternVariable) {
             return this;
         }
