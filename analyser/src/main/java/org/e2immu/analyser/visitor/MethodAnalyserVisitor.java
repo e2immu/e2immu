@@ -98,6 +98,10 @@ public interface MethodAnalyserVisitor {
         public boolean allowBreakDelay() {
             return breakDelayLevel.acceptMethod();
         }
+
+        public MethodInfo enclosingMethod() {
+            return methodInfo().typeInfo.typeInspection.get().enclosingMethod();
+        }
     }
 
 }

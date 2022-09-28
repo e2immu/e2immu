@@ -1533,7 +1533,9 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
             return Stream.concat(allMethodsAndConstructors(true), otherStaticBlocks());
         }
         // look at all methods and constructors, but ignore my constructors
-        return allMethodsAndConstructors(false);
+        return allMethodsAndConstructors(false)
+                .filter(m -> !(m.getMethodInfo().inConstruction() || m.getMethodInfo().typeInfo
+                        .recursivelyInConstructionOrStaticWithRespectTo(analyserContext, fieldInfo.owner)));
     }
 
     private Stream<MethodAnalyser> methodsForFinal() {

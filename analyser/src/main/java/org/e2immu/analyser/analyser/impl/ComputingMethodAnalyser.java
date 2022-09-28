@@ -986,17 +986,26 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
             ComputeIndependent computeIndependent = new ComputeIndependent(analyserContext, hiddenContentCurrentType,
                     methodInfo.typeInfo);
             ParameterizedType concreteReturnType = variableInfo.getValue().returnType();
-            independent = linkedVariables.stream()
-                    .filter(e -> e.getKey() instanceof FieldReference fr && fr.scopeIsRecursivelyThis()
-                            || e.getKey() instanceof This)
-                    .map(e -> {
-                        if (e.getKey() instanceof This && e.getValue().le(LinkedVariables.LINK_ASSIGNED)) {
-                            // return this
-                            return MultiLevel.INDEPENDENT_DV;
-                        }
-                        return computeIndependent.typesAtLinkLevel(e.getValue(), concreteReturnType, immutable, e.getKey().parameterizedType());
-                    })
-                    .reduce(MultiLevel.INDEPENDENT_DV, DV::min);
+            boolean factoryMethod = methodInspection.isFactoryMethod();
+            if (factoryMethod) {
+                independent = linkedVariables.stream()
+                        .filter(e -> e.getKey() instanceof ParameterInfo pi && pi.owner == methodInfo)
+                        .map(e -> computeIndependent.typesAtLinkLevel(e.getValue(),
+                                concreteReturnType, immutable, e.getKey().parameterizedType()))
+                        .reduce(MultiLevel.INDEPENDENT_DV, DV::min);
+            } else {
+                independent = linkedVariables.stream()
+                        .filter(e -> e.getKey() instanceof FieldReference fr && fr.scopeIsRecursivelyThis()
+                                || e.getKey() instanceof This)
+                        .map(e -> {
+                            if (e.getKey() instanceof This && e.getValue().le(LinkedVariables.LINK_ASSIGNED)) {
+                                // return this
+                                return MultiLevel.INDEPENDENT_DV;
+                            }
+                            return computeIndependent.typesAtLinkLevel(e.getValue(), concreteReturnType, immutable, e.getKey().parameterizedType());
+                        })
+                        .reduce(MultiLevel.INDEPENDENT_DV, DV::min);
+            }
         }
         methodAnalysis.setProperty(INDEPENDENT, independent);
         return AnalysisStatus.of(independent);

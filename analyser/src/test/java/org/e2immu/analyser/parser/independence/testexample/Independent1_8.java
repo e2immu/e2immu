@@ -16,28 +16,27 @@ package org.e2immu.analyser.parser.independence.testexample;
 
 import org.e2immu.annotation.ImmutableContainer;
 import org.e2immu.annotation.Independent;
+import org.e2immu.annotation.Modified;
 
-import java.util.Collections;
-import java.util.HashSet;
+import java.util.ArrayList;
 import java.util.List;
-import java.util.Set;
 
-/*
-just to double-check: without the setAll
- */
 @ImmutableContainer(hc = true)
-public class Independent1_3_1<T> {
-    private final T[] ts;
+public class Independent1_8<T> {
 
-    @SuppressWarnings("unchecked")
-    public Independent1_3_1(@Independent List<T> content) {
-        this.ts = (T[]) new Object[content.size()];
+    private List<T> list = new ArrayList<>();
+
+    public Independent1_8(@Independent(hc = true) T tt) {
+        add(tt);
+    }
+
+    @Modified(construction = true)
+    private void add(T t) {
+        list.add(t);
     }
 
     @Independent(hc = true)
-    public Set<T> getSet() {
-        Set<T> set = new HashSet<>();
-        Collections.addAll(set, this.ts);
-        return set;
+    public T getFirst() {
+        return list.isEmpty() ? null : list.get(0);
     }
 }

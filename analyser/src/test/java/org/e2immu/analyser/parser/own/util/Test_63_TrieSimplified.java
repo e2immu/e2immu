@@ -485,7 +485,7 @@ public class Test_63_TrieSimplified extends CommonTestRunner {
                 String expected = d.iteration() == 0 ? "<f:root>" : "new TrieNode<>()";
                 assertEquals(expected, d.fieldAnalysis().getValue().toString());
 
-                assertDv(d, 1, DV.FALSE_DV, Property.MODIFIED_OUTSIDE_METHOD);
+                assertDv(d, DV.FALSE_DV, Property.MODIFIED_OUTSIDE_METHOD);
             }
             if ("map".equals(d.fieldInfo().name)) {
                 assertEquals("null", d.fieldAnalysis().getValue().toString());

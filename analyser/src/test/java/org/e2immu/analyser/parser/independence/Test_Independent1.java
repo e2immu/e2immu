@@ -407,4 +407,17 @@ public class Test_Independent1 extends CommonTestRunner {
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .build());
     }
+
+    @Test
+    public void test_8_1() throws IOException {
+        FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
+            if ("list".equals(d.fieldInfo().name)) {
+                assertDv(d, DV.FALSE_DV, Property.MODIFIED_OUTSIDE_METHOD);
+            }
+        };
+        testClass("Independent1_8", 0, 0, new DebugConfiguration.Builder()
+                .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+                .build());
+    }
+
 }

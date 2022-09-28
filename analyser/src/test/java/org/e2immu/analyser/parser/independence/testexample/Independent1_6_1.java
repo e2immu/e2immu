@@ -14,7 +14,9 @@
 
 package org.e2immu.analyser.parser.independence.testexample;
 
-import org.e2immu.annotation.*;
+import org.e2immu.annotation.ImmutableContainer;
+import org.e2immu.annotation.Independent;
+import org.e2immu.annotation.NotModified;
 
 import java.util.Arrays;
 import java.util.function.Consumer;

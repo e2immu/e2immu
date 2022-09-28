@@ -29,6 +29,7 @@ import org.e2immu.analyser.model.expression.MultiValue;
 import org.e2immu.analyser.model.expression.VariableExpression;
 import org.e2immu.analyser.model.statement.ExplicitConstructorInvocation;
 import org.e2immu.analyser.model.variable.FieldReference;
+import org.e2immu.analyser.model.variable.ReturnVariable;
 import org.e2immu.analyser.model.variable.This;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.parser.InspectionProvider;
@@ -57,11 +58,26 @@ public class ComputedParameterAnalyser extends ParameterAnalyserImpl {
     public static final String ANALYSE_CONTEXT = "PA:analyseContext";
     public static final String ANALYSE_INDEPENDENT_NO_ASSIGNMENT = "PA:analyseIndependentNoAssignment";
     public static final String ANALYSE_CONTAINER_NO_ASSIGNMENT = "PA:analyseContainerNoAssignment";
+    public static final String ANALYSE_INDEPENDENT_OF_RETURN_VALUE = "PA:independentOfReturnValue";
 
     private Map<FieldInfo, FieldAnalyser> fieldAnalysers;
 
     public ComputedParameterAnalyser(AnalyserContext analyserContext, ParameterInfo parameterInfo) {
         super(analyserContext, parameterInfo);
+        AnalyserComponents.Builder<String, SharedState> ac = new AnalyserComponents.Builder<String, SharedState>(analyserContext.getAnalyserProgram())
+                .add(CHECK_UNUSED_PARAMETER, ITERATION_0, this::checkUnusedParameter)
+                .add(ANALYSE_FIRST_ITERATION, ITERATION_0, this::analyseFirstIteration)
+                .add(ANALYSE_CONTEXT, ITERATION_1PLUS, this::analyseContext);
+        if (parameterInfo.owner.methodInspection.get().isFactoryMethod()) {
+            ac.add(ANALYSE_INDEPENDENT_OF_RETURN_VALUE, this::analyseIndependentOfReturnValue);
+        } else {
+            ac.add(ANALYSE_FIELD_ASSIGNMENTS, ITERATION_1PLUS, this::analyseFieldAssignments)
+                    .add(ANALYSE_INDEPENDENT_NO_ASSIGNMENT, ITERATION_1PLUS, this::analyseIndependentNoAssignment);
+        }
+        ac.add(ANALYSE_CONTAINER_NO_ASSIGNMENT, ITERATION_1PLUS, this::analyseContainerNoAssignment)
+                .add("followExtImm", this::followExternalImmutable);
+        analyserComponents = ac.build();
+
     }
 
     @Override
@@ -75,16 +91,8 @@ public class ComputedParameterAnalyser extends ParameterAnalyserImpl {
     }
 
 
-    private final AnalyserComponents<String, SharedState> analyserComponents =
-            new AnalyserComponents.Builder<String, SharedState>(analyserContext.getAnalyserProgram())
-                    .add(CHECK_UNUSED_PARAMETER, ITERATION_0, this::checkUnusedParameter)
-                    .add(ANALYSE_FIRST_ITERATION, ITERATION_0, this::analyseFirstIteration)
-                    .add(ANALYSE_FIELD_ASSIGNMENTS, ITERATION_1PLUS, this::analyseFieldAssignments)
-                    .add(ANALYSE_CONTEXT, ITERATION_1PLUS, this::analyseContext)
-                    .add(ANALYSE_INDEPENDENT_NO_ASSIGNMENT, ITERATION_1PLUS, this::analyseIndependentNoAssignment)
-                    .add(ANALYSE_CONTAINER_NO_ASSIGNMENT, ITERATION_1PLUS, this::analyseContainerNoAssignment)
-                    .add("followExtImm", this::followExternalImmutable)
-                    .build();
+    private final AnalyserComponents<String, SharedState> analyserComponents;
+
 
     private AnalysisStatus analyseFirstIteration(SharedState sharedState) {
         assert sharedState.iteration() == 0;
@@ -334,6 +342,62 @@ public class ComputedParameterAnalyser extends ParameterAnalyserImpl {
                 .reduce(INDEPENDENT_DV, DV::min);
         LOGGER.debug("Assign {} to parameter {}", independent, parameterInfo);
         return independent;
+    }
+
+    private AnalysisStatus analyseIndependentOfReturnValue(SharedState sharedState) {
+        assert parameterInfo.owner.hasReturnValue(); // factory method!
+        if (!parameterAnalysis.isAssignedToFieldDelaysResolved()) parameterAnalysis.resolveFieldDelays();
+        if (parameterAnalysis.properties.isDone(INDEPENDENT)) return DONE;
+        DV immutable = analyserContext.typeImmutable(parameterInfo.parameterizedType);
+
+        // there is no restriction on immutable, because the link could have been STATICALLY_ASSIGNED
+        if (EFFECTIVELY_IMMUTABLE_DV.equals(immutable)) {
+            LOGGER.debug("Assign INDEPENDENT to parameter {}: type is recursively immutable", parameterInfo);
+            parameterAnalysis.setProperty(INDEPENDENT, INDEPENDENT_DV);
+            return DONE;
+        }
+        // in the first iteration, no statements have been analysed yet
+        if (sharedState.iteration() == 0) {
+            CausesOfDelay delay = parameterInfo.delay(CauseOfDelay.Cause.ASSIGNED_TO_FIELD);
+            parameterAnalysis.setProperty(INDEPENDENT, delay);
+            return delay;
+        }
+        StatementAnalysis lastStatement = analyserContext.getMethodAnalysis(parameterInfo.owner).getLastStatement();
+        DV independent = INDEPENDENT_DV;
+        CausesOfDelay delay = CausesOfDelay.EMPTY;
+
+        if (lastStatement != null) {
+            VariableInfo rv = lastStatement.getLatestVariableInfo(parameterInfo.owner.fullyQualifiedName);
+            assert rv != null && rv.variable() instanceof ReturnVariable;
+            delay = rv.getLinkedVariables().causesOfDelay();
+            Set<Variable> assigned = rv.getLinkedVariables().variablesAssigned().collect(Collectors.toUnmodifiableSet());
+            VariableInfo pi = lastStatement.getLatestVariableInfo(parameterInfo.fullyQualifiedName);
+            delay = delay.merge(pi.getLinkedVariables().causesOfDelay());
+            if (delay.isDone()) {
+                DV min = DV.MAX_INT_DV;
+                for (Map.Entry<Variable, DV> e : pi.getLinkedVariables()) {
+                    if (assigned.contains(e.getKey())) {
+                        min = min.min(e.getValue());
+                    }
+                }
+                if (min != DV.MAX_INT_DV) {
+                    DV dv = independentFromFields(immutable, Map.of(rv.variable(), min));
+                    if (dv.isDelayed()) {
+                        delay = dv.causesOfDelay();
+                    } else {
+                        independent = dv;
+                    }
+                } // else: TODO NOT YET IMPLEMENTED
+            }
+        }
+        if (delay.isDelayed()) {
+            LOGGER.debug("Delaying independent wrt return value of parameter {}", parameterInfo);
+            parameterAnalysis.setProperty(INDEPENDENT, delay);
+            return AnalysisStatus.of(delay);
+        }
+        LOGGER.debug("Setting independent wrt return value of parameter {} to {}", parameterInfo, independent);
+        parameterAnalysis.setProperty(INDEPENDENT, independent);
+        return AnalysisStatus.of(independent);
     }
 
     /**

@@ -50,7 +50,7 @@ public class Test_Util_02_UpgradableBooleanMap extends CommonTestRunner {
             if ("UpgradableBooleanMap".equals(d.typeInfo().simpleName)) {
                 assertEquals("T", d.typeAnalysis().getHiddenContentTypes().toString());
                 assertDv(d, 24, MultiLevel.EFFECTIVELY_IMMUTABLE_HC_DV, Property.IMMUTABLE);
-                assertDv(d, 24, MultiLevel.INDEPENDENT_DV, Property.INDEPENDENT); // FIXME wrong!
+                assertDv(d, 24, MultiLevel.INDEPENDENT_HC_DV, Property.INDEPENDENT);
                 assertDv(d, 32, MultiLevel.CONTAINER_DV, Property.CONTAINER);
             }
 
@@ -60,7 +60,7 @@ public class Test_Util_02_UpgradableBooleanMap extends CommonTestRunner {
                 TypeInfo upgradable = d.typeInfo().packageNameOrEnclosingType.getRight();
                 assertEquals("UpgradableBooleanMap", upgradable.simpleName);
                 assertTrue(d.typeInfo().recursivelyInConstructionOrStaticWithRespectTo(InspectionProvider.DEFAULT, upgradable));
-                assertDv(d, 25, MultiLevel.EFFECTIVELY_IMMUTABLE_DV, Property.IMMUTABLE); // FIXME hc!
+                assertDv(d, 25, MultiLevel.EFFECTIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
             }
 
             if ("$2".equals(d.typeInfo().simpleName)) {
@@ -72,7 +72,7 @@ public class Test_Util_02_UpgradableBooleanMap extends CommonTestRunner {
                 assertEquals("accumulator", d.typeInspection().enclosingMethod().name);
                 assertTrue(d.typeInfo().recursivelyInConstructionOrStaticWithRespectTo(InspectionProvider.DEFAULT, upgradable));
                 assertFalse(d.typeInfo().recursivelyInConstructionOrStaticWithRespectTo(InspectionProvider.DEFAULT, collector));
-                assertDv(d, 26, MultiLevel.EFFECTIVELY_IMMUTABLE_DV, Property.IMMUTABLE); // FIXME
+                assertDv(d, 26, MultiLevel.EFFECTIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
             }
         };
 
@@ -95,6 +95,8 @@ public class Test_Util_02_UpgradableBooleanMap extends CommonTestRunner {
                     }
                     if ("1".equals(d.statementId())) {
                         assertDv(d, 25, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                        String linked = d.iteration() == 0 ? "upgradableBooleanMap:-1" : "upgradableBooleanMap:3";
+                        assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
                     }
                     if ("2".equals(d.statementId())) {
                         assertDv(d, 25, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
@@ -203,6 +205,33 @@ public class Test_Util_02_UpgradableBooleanMap extends CommonTestRunner {
                     }
                 }
             }
+            if ("putAll".equals(d.methodInfo().name)) {
+                if (d.variable() instanceof This thisVar) {
+                    assert thisVar.typeInfo == d.methodInfo().typeInfo;
+                    if ("0".equals(d.statementId())) {
+                        assertEquals("", d.variableInfo().getLinkedVariables().toString());
+                    }
+                }
+                if(d.variable() instanceof ParameterInfo pi && "other".equals(pi.name)) {
+                    if ("0".equals(d.statementId())) {
+                        assertEquals("??", d.variableInfo().getLinkedVariables().toString());
+                    }
+                }
+            }
+            if ("accept".equals(d.methodInfo().name)) {
+                if ("putAll".equals(d.enclosingMethod().name)) {
+                    assertEquals("0", d.statementId());
+                    assertEquals("$3", d.methodInfo().typeInfo.simpleName);
+                    if (d.variable() instanceof ParameterInfo pi && "e".equals(pi.name)) {
+                        String linked = d.iteration() == 0 ? "this:-1" : "this:4";
+                        assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
+                    }
+                    if (d.variable() instanceof This thisVar && "UpgradableBooleanMap".equals(thisVar.typeInfo.simpleName)) {
+                        String linked = d.iteration() == 0 ? "NOT_YET_SET" : "e:4";
+                        assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
+                    }
+                }
+            }
         };
 
         StatementAnalyserVisitor statementAnalyserVisitor = d -> {
@@ -215,13 +244,20 @@ public class Test_Util_02_UpgradableBooleanMap extends CommonTestRunner {
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             int n = d.methodInfo().methodInspection.get().getParameters().size();
             if ("of".equals(d.methodInfo().name) && n == 2) {
+                assertTrue(d.methodInfo().methodInspection.get().isFactoryMethod());
+                // because only directional from parameter to result, not the other way around
+                assertDv(d, 1, MultiLevel.INDEPENDENT_DV, Property.INDEPENDENT);
+
                 assertDv(d, DV.FALSE_DV, Property.MODIFIED_METHOD);
                 assertDv(d.p(0), 26, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                // FIXME assertDv(d.p(0), 2, MultiLevel.INDEPENDENT_HC_DV, Property.INDEPENDENT);
             }
             if ("of".equals(d.methodInfo().name) && n == 1) {
                 String expected = d.iteration() < 25 ? "<m:of>"
                         : "/*inline of*/null==maps||maps.length<=0?new UpgradableBooleanMap<>():instance type UpgradableBooleanMap<T>";
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
+                // FIXME check that this is correct
+                assertDv(d, 1, MultiLevel.INDEPENDENT_DV, Property.INDEPENDENT);
                 if (d.iteration() >= 25) {
                     if (d.methodAnalysis().getSingleReturnValue() instanceof InlinedMethod inlinedMethod) {
                         assertEquals("maps", inlinedMethod.variablesOfExpressionSorted());
@@ -243,7 +279,6 @@ public class Test_Util_02_UpgradableBooleanMap extends CommonTestRunner {
                 assertTrue(d.methodInfo().inConstruction());
                 assertEquals("accept,apply,put,stream", d.methodInfo().methodResolution.get().methodsOfOwnClassReached()
                         .stream().map(m -> m.name).sorted().collect(Collectors.joining(",")));
-                // ModifiedMethod must be TRUE, CM travels from accept in $4
                 assertDv(d, 24, DV.TRUE_DV, Property.MODIFIED_METHOD);
             }
 
@@ -260,22 +295,16 @@ public class Test_Util_02_UpgradableBooleanMap extends CommonTestRunner {
             if ("characteristics".equals(d.methodInfo().name)) {
                 assertDv(d, DV.FALSE_DV, Property.MODIFIED_METHOD);
             }
-            // accumulator
-            if ("accept".equals(d.methodInfo().name) && "$2".equals(d.methodInfo().typeInfo.simpleName)) {
+            if ("accept".equals(d.methodInfo().name) && "accumulator".equals(d.enclosingMethod().name)) {
                 assertDv(d, DV.FALSE_DV, Property.MODIFIED_METHOD);
             }
-
-            // finisher
-            if ("apply".equals(d.methodInfo().name) && "$3".equals(d.methodInfo().typeInfo.simpleName)) {
+            if ("apply".equals(d.methodInfo().name) && "finisher".equals(d.enclosingMethod().name)) {
                 assertEquals(DV.FALSE_DV, d.methodAnalysis().getProperty(Property.MODIFIED_METHOD));
             }
-
-            // putAll
-            if ("accept".equals(d.methodInfo().name) && "$4".equals(d.methodInfo().typeInfo.simpleName)) {
-                assertDv(d, 1, DV.TRUE_DV, Property.MODIFIED_METHOD);
+            if ("accept".equals(d.methodInfo().name) && "putAll".equals(d.enclosingMethod().name)) {
+                assertDv(d, 24, DV.TRUE_DV, Property.MODIFIED_METHOD);
             }
-
-            if ("finisher".equals(d.methodInfo().name) && "$1".equals(d.methodInfo().typeInfo.simpleName)) {
+            if ("finisher".equals(d.methodInfo().name) && "collector".equals(d.enclosingMethod().name)) {
                 assertDv(d, MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL_DV, Property.NOT_NULL_EXPRESSION);
                 assertDv(d, DV.FALSE_DV, Property.MODIFIED_METHOD);
             }
@@ -290,7 +319,7 @@ public class Test_Util_02_UpgradableBooleanMap extends CommonTestRunner {
                 // only link is from t --3--> map, which is not included (at this point)
                 assertEquals("", d.fieldAnalysis().getLinkedVariables().toString());
                 // NOT modified outside method, because the put/putAll are part of construction!!!
-                assertDv(d, 23, DV.FALSE_DV, Property.MODIFIED_OUTSIDE_METHOD);
+                assertDv(d, DV.FALSE_DV, Property.MODIFIED_OUTSIDE_METHOD);
 
                 // consequence of linking: no direct assignment, no outgoing links
                 assertDv(d, MultiLevel.INDEPENDENT_DV, Property.INDEPENDENT);

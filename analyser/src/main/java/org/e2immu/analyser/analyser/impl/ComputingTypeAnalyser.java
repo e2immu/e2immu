@@ -981,7 +981,11 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
     private AnalysisStatus analyseExtensionClass() {
         DV extensionClass = typeAnalysis.getProperty(Property.EXTENSION_CLASS);
         if (extensionClass.isDone()) return DONE;
-
+        if (!typeInfo.isStatic()) {
+            LOGGER.debug("Type {} is not an @ExtensionClass, not static", typeInfo);
+            typeAnalysis.setProperty(Property.EXTENSION_CLASS, DV.FALSE_DV);
+            return DONE;
+        }
         DV immutable = typeAnalysis.getProperty(Property.IMMUTABLE);
         if (immutable.isDelayed()) {
             LOGGER.debug("Extension class: don't know yet about @Immutable on {}, delaying", typeInfo);

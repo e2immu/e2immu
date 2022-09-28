@@ -52,6 +52,10 @@ public interface StatementAnalyserVariableVisitor {
         public boolean allowBreakDelay() {
             return context.evaluationContext().breakDelayLevel().acceptStatement();
         }
+
+        public MethodInfo enclosingMethod() {
+            return methodInfo().typeInfo.typeInspection.get().enclosingMethod();
+        }
     }
 
     void visit(Data data);
