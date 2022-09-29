@@ -984,7 +984,7 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
             SetOfTypes hiddenContentCurrentType = typeAnalysis.getHiddenContentTypes();
 
             ComputeIndependent computeIndependent = new ComputeIndependent(analyserContext, hiddenContentCurrentType,
-                    methodInfo.typeInfo);
+                    methodInfo.typeInfo, false);
             ParameterizedType concreteReturnType = variableInfo.getValue().returnType();
             boolean factoryMethod = methodInspection.isFactoryMethod();
             DV computed;

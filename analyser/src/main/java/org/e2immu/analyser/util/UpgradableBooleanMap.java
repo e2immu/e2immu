@@ -77,7 +77,7 @@ public class UpgradableBooleanMap<T> {
         return upgradableBooleanMap;
     }
 
-    @Independent
+    @Independent // IMPROVE should be hc=true
     @NotNull
     public static <T> UpgradableBooleanMap<T> of(T t1, boolean b1, T t2, boolean b2) {
         UpgradableBooleanMap<T> upgradableBooleanMap = new UpgradableBooleanMap<>();
@@ -93,7 +93,7 @@ public class UpgradableBooleanMap<T> {
     }
 
     @SafeVarargs
-    @Independent
+    @Independent(hc = true)
     public static <T> UpgradableBooleanMap<T> of(UpgradableBooleanMap<T>... maps) {
         UpgradableBooleanMap<T> result = new UpgradableBooleanMap<>();
         if (maps != null) {

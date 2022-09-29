@@ -46,46 +46,16 @@ public class Test_Util_02_UpgradableBooleanMap extends CommonTestRunner {
 
     @Test
     public void test() throws IOException {
-        TypeAnalyserVisitor typeAnalyserVisitor = d -> {
-            if ("UpgradableBooleanMap".equals(d.typeInfo().simpleName)) {
-                assertEquals("T", d.typeAnalysis().getHiddenContentTypes().toString());
-                assertDv(d, 24, MultiLevel.EFFECTIVELY_IMMUTABLE_HC_DV, Property.IMMUTABLE);
-                assertDv(d, BIG, MultiLevel.INDEPENDENT_HC_DV, Property.INDEPENDENT);
-                assertDv(d, 32, MultiLevel.CONTAINER_DV, Property.CONTAINER);
-            }
-
-            if ("$1".equals(d.typeInfo().simpleName)) {
-                assertEquals("org.e2immu.analyser.util.UpgradableBooleanMap.$1",
-                        d.typeInfo().fullyQualifiedName);
-                TypeInfo upgradable = d.typeInfo().packageNameOrEnclosingType.getRight();
-                assertEquals("UpgradableBooleanMap", upgradable.simpleName);
-                assertTrue(d.typeInfo().recursivelyInConstructionOrStaticWithRespectTo(InspectionProvider.DEFAULT, upgradable));
-                assertDv(d, 25, MultiLevel.EFFECTIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
-            }
-
-            if ("$2".equals(d.typeInfo().simpleName)) {
-                assertEquals("org.e2immu.analyser.util.UpgradableBooleanMap.$1.$2",
-                        d.typeInfo().fullyQualifiedName);
-                TypeInfo collector = d.typeInfo().packageNameOrEnclosingType.getRight();
-                TypeInfo upgradable = collector.packageNameOrEnclosingType.getRight();
-                assertEquals("UpgradableBooleanMap", upgradable.simpleName);
-                assertEquals("accumulator", d.typeInspection().enclosingMethod().name);
-                assertTrue(d.typeInfo().recursivelyInConstructionOrStaticWithRespectTo(InspectionProvider.DEFAULT, upgradable));
-                assertFalse(d.typeInfo().recursivelyInConstructionOrStaticWithRespectTo(InspectionProvider.DEFAULT, collector));
-                assertDv(d, 26, MultiLevel.EFFECTIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
-            }
-        };
-
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             int n = d.methodInfo().methodInspection.get().getParameters().size();
             if ("of".equals(d.methodInfo().name) && n == 2) {
                 if ("upgradableBooleanMap".equals(d.variableName())) {
                     if ("0".equals(d.statementId())) {
-                        String expected = d.iteration() < BIG ? "<new:UpgradableBooleanMap<T>>" : "new UpgradableBooleanMap<>()";
+                        String expected = d.iteration() < 30 ? "<new:UpgradableBooleanMap<T>>" : "new UpgradableBooleanMap<>()";
                         assertEquals(expected, d.currentValue().toString());
                     }
                     if ("1".equals(d.statementId())) {
-                        String expected = d.iteration() < 25 ? "<new:UpgradableBooleanMap<T>>" : "instance type UpgradableBooleanMap<T>";
+                        String expected = d.iteration() < 30 ? "<new:UpgradableBooleanMap<T>>" : "instance type UpgradableBooleanMap<T>";
                         assertEquals(expected, d.currentValue().toString());
                     }
                 }
@@ -94,12 +64,12 @@ public class Test_Util_02_UpgradableBooleanMap extends CommonTestRunner {
                         assertDv(d, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     }
                     if ("1".equals(d.statementId())) {
-                        assertDv(d, 25, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                        assertDv(d, 30, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                         String linked = d.iteration() == 0 ? "upgradableBooleanMap:-1" : "upgradableBooleanMap:3";
                         assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
                     }
                     if ("2".equals(d.statementId())) {
-                        assertDv(d, 25, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                        assertDv(d, 30, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     }
                 }
             }
@@ -209,13 +179,13 @@ public class Test_Util_02_UpgradableBooleanMap extends CommonTestRunner {
                 if (d.variable() instanceof This thisVar) {
                     assert thisVar.typeInfo == d.methodInfo().typeInfo;
                     if ("0".equals(d.statementId())) {
-                        String linked = d.iteration() < 24 ? "other:-1" : ""; // FIXME ??
+                        String linked = d.iteration() < 24 ? "other:-1" : "other:4";
                         assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
                     }
                 }
                 if (d.variable() instanceof ParameterInfo pi && "other".equals(pi.name)) {
                     if ("0".equals(d.statementId())) {
-                        String linked = d.iteration() < 24 ? "this:-1" : ""; // FIXME ??
+                        String linked = d.iteration() < 24 ? "this:-1" : "this:4";
                         assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
                     }
                 }
@@ -248,23 +218,24 @@ public class Test_Util_02_UpgradableBooleanMap extends CommonTestRunner {
             if ("of".equals(d.methodInfo().name) && n == 2) {
                 assertTrue(d.methodInfo().methodInspection.get().isFactoryMethod());
                 // because only directional from parameter to result, not the other way around
-                assertDv(d, 1, MultiLevel.INDEPENDENT_DV, Property.INDEPENDENT);
+                assertDv(d, 30, MultiLevel.INDEPENDENT_DV, Property.INDEPENDENT);
 
                 assertDv(d, DV.FALSE_DV, Property.MODIFIED_METHOD);
-                assertDv(d.p(0), 26, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
-                // FIXME assertDv(d.p(0), 2, MultiLevel.INDEPENDENT_HC_DV, Property.INDEPENDENT);
+                assertDv(d.p(0), 31, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                assertDv(d.p(0), 2, MultiLevel.INDEPENDENT_HC_DV, Property.INDEPENDENT);
             }
             if ("of".equals(d.methodInfo().name) && n == 1) {
-                String expected = d.iteration() < 25 ? "<m:of>"
+                String expected = d.iteration() < 30 ? "<m:of>"
                         : "/*inline of*/null==maps||maps.length<=0?new UpgradableBooleanMap<>():instance type UpgradableBooleanMap<T>";
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
-                // FIXME check that this is correct
-                assertDv(d, BIG, MultiLevel.INDEPENDENT_DV, Property.INDEPENDENT);
-                if (d.iteration() >= 25) {
+                assertDv(d, 30, MultiLevel.INDEPENDENT_HC_DV, Property.INDEPENDENT);
+                if (d.iteration() >= 30) {
                     if (d.methodAnalysis().getSingleReturnValue() instanceof InlinedMethod inlinedMethod) {
                         assertEquals("maps", inlinedMethod.variablesOfExpressionSorted());
                     } else fail();
                 }
+                // IMPROVE should be HC, but code is not there yet in ComputedParameterAnalyser
+                assertDv(d.p(0), 26, MultiLevel.INDEPENDENT_DV, Property.INDEPENDENT);
             }
             if ("put".equals(d.methodInfo().name)) {
                 assertTrue(d.methodInfo().inConstruction());
@@ -275,7 +246,7 @@ public class Test_Util_02_UpgradableBooleanMap extends CommonTestRunner {
             if ("stream".equals(d.methodInfo().name)) {
                 assertFalse(d.methodInfo().inConstruction());
                 assertDv(d, 2, DV.FALSE_DV, Property.MODIFIED_METHOD);
-                assertDv(d, 24, MultiLevel.INDEPENDENT_DV, Property.INDEPENDENT); // FIXME wrong, hc!
+                assertDv(d, 24, MultiLevel.INDEPENDENT_HC_DV, Property.INDEPENDENT);
             }
             if ("putAll".equals(d.methodInfo().name)) {
                 assertTrue(d.methodInfo().inConstruction());
@@ -328,17 +299,47 @@ public class Test_Util_02_UpgradableBooleanMap extends CommonTestRunner {
             }
         };
 
-        BreakDelayVisitor breakDelayVisitor = d -> assertEquals("-----M--M-M--M--M---M-MF-----M-M---",
+        TypeAnalyserVisitor typeAnalyserVisitor = d -> {
+            if ("UpgradableBooleanMap".equals(d.typeInfo().simpleName)) {
+                assertEquals("T", d.typeAnalysis().getHiddenContentTypes().toString());
+                assertDv(d, 24, MultiLevel.EFFECTIVELY_IMMUTABLE_HC_DV, Property.IMMUTABLE);
+                assertDv(d, 29, MultiLevel.INDEPENDENT_HC_DV, Property.INDEPENDENT);
+                assertDv(d, 31, MultiLevel.CONTAINER_DV, Property.CONTAINER);
+            }
+
+            if ("$1".equals(d.typeInfo().simpleName)) {
+                assertEquals("org.e2immu.analyser.util.UpgradableBooleanMap.$1",
+                        d.typeInfo().fullyQualifiedName);
+                TypeInfo upgradable = d.typeInfo().packageNameOrEnclosingType.getRight();
+                assertEquals("UpgradableBooleanMap", upgradable.simpleName);
+                assertTrue(d.typeInfo().recursivelyInConstructionOrStaticWithRespectTo(InspectionProvider.DEFAULT, upgradable));
+                assertDv(d, 25, MultiLevel.EFFECTIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
+            }
+
+            if ("$2".equals(d.typeInfo().simpleName)) {
+                assertEquals("org.e2immu.analyser.util.UpgradableBooleanMap.$1.$2",
+                        d.typeInfo().fullyQualifiedName);
+                TypeInfo collector = d.typeInfo().packageNameOrEnclosingType.getRight();
+                TypeInfo upgradable = collector.packageNameOrEnclosingType.getRight();
+                assertEquals("UpgradableBooleanMap", upgradable.simpleName);
+                assertEquals("accumulator", d.typeInspection().enclosingMethod().name);
+                assertTrue(d.typeInfo().recursivelyInConstructionOrStaticWithRespectTo(InspectionProvider.DEFAULT, upgradable));
+                assertFalse(d.typeInfo().recursivelyInConstructionOrStaticWithRespectTo(InspectionProvider.DEFAULT, collector));
+                assertDv(d, 26, MultiLevel.EFFECTIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
+            }
+        };
+
+        BreakDelayVisitor breakDelayVisitor = d -> assertEquals("-----M--M-M--M--M---M-MF-----M----",
                 d.delaySequence());
 
         testSupportAndUtilClasses(List.of(UpgradableBooleanMap.class),
                 0, 0, new DebugConfiguration.Builder()
-                      //  .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
-                     //   .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
-                     //   .addStatementAnalyserVisitor(statementAnalyserVisitor)
-                     //   .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-                     //   .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
-                     //   .addBreakDelayVisitor(breakDelayVisitor)
+                        .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                        .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                        .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
+                        .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                        .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+                        .addBreakDelayVisitor(breakDelayVisitor)
                         .build());
     }
 

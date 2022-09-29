@@ -31,7 +31,7 @@ public class Independent1_9<T> {
     private final Map<T, Boolean> map = new HashMap<>();
 
     @SafeVarargs
-    @Independent
+    @Independent(hc = true) // with respect to the parameters, factory method!
     public static <T> Independent1_9<T> of(Independent1_9<T>... maps) {
         Independent1_9<T> result = new Independent1_9<>();
         if (maps != null) {

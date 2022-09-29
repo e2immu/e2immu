@@ -448,6 +448,14 @@ public class Test_Independent1 extends CommonTestRunner {
                     assertDv(d, 14, MultiLevel.EFFECTIVELY_IMMUTABLE_HC_DV, Property.IMMUTABLE);
                 }
             }
+            if ("of".equals(d.methodInfo().name)) {
+                if (d.variable() instanceof ReturnVariable) {
+                    if ("2".equals(d.statementId())) {
+                        String linked = d.iteration() < 15 ? "maps:-1,result:0" : "maps:4,result:0";
+                        assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
+                    }
+                }
+            }
         };
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("stream".equals(d.methodInfo().name)) {
@@ -463,6 +471,14 @@ public class Test_Independent1 extends CommonTestRunner {
             if ("entries".equals(d.methodInfo().name)) {
                 assertDv(d, 14, MultiLevel.EFFECTIVELY_IMMUTABLE_HC_DV, Property.IMMUTABLE);
                 assertDv(d, 14, MultiLevel.INDEPENDENT_HC_DV, Property.INDEPENDENT);
+            }
+            if ("of".equals(d.methodInfo().name)) {
+                /*
+                 IMPROVE this should be _HC, but there is no code yet in ComputedParameterAnalyser to look at the method
+                 return value rather than at the fields.  A complication will be that variables do not link to the return
+                 value currently.
+                 */
+                assertDv(d.p(0), 16, MultiLevel.INDEPENDENT_DV, Property.INDEPENDENT);
             }
         };
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
