@@ -1200,11 +1200,54 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         MethodReferences_3: method stream() must return mutable: the type parameter is mutable, formal=dynamic is higher
          */
         DV dynamicImmutable = methodAnalysis.getProperty(Property.IMMUTABLE);
-        DV formalImmutable = analyserContext.typeImmutable(methodInfo.returnType());
-        if (dynamicImmutable.gt(formalImmutable)) {
-            return analyserContext.typeImmutable(concreteReturnType, dynamicImmutable);
+        if (MultiLevel.isAtLeastEventuallyRecursivelyImmutable(dynamicImmutable)) return dynamicImmutable;
+        DV normalImmutable = analyserContext.typeImmutable(methodInspection.getReturnType());
+        DV concreteImmutable = analyserContext.typeImmutable(concreteReturnType);
+        CausesOfDelay causes = dynamicImmutable.causesOfDelay().merge(normalImmutable.causesOfDelay())
+                .merge(concreteImmutable.causesOfDelay());
+        if (causes.isDelayed()) return causes;
+        if (dynamicImmutable.equals(normalImmutable)) {
+            /*
+             there is no difference between the immutability of a method and the immutability of its return type,
+             so we don't have to do any acrobatics
+             */
+            return concreteImmutable;
         }
-        return analyserContext.typeImmutable(concreteReturnType);
+        assert MultiLevel.isMutable(normalImmutable) && MultiLevel.level(dynamicImmutable) == MultiLevel.Level.IMMUTABLE_HC.level;
+        Inference inference = inferImmutable(analyserContext, concreteReturnType);
+        if (inference.causes.isDelayed()) return inference.causes;
+        return analyserContext.typeImmutable(concreteReturnType, inference.map);
+    }
+
+    private record Inference(CausesOfDelay causes, Map<ParameterizedType, DV> map) {
+    }
+
+    private static final Inference EMPTY = new Inference(CausesOfDelay.EMPTY, Map.of());
+
+    private Inference inferImmutable(AnalyserContext analyserContext, ParameterizedType type) {
+        if (type.typeInfo == null) return EMPTY;
+        DV immutable = analyserContext.typeImmutable(type);
+        if (immutable.isDelayed()) return new Inference(immutable.causesOfDelay(), Map.of());
+        if (MultiLevel.isAtLeastEventuallyRecursivelyImmutable(immutable)) return EMPTY;
+
+        Map<ParameterizedType, DV> map = new HashMap<>();
+        map.put(type, MultiLevel.EFFECTIVELY_IMMUTABLE_HC_DV);
+        CausesOfDelay causes = CausesOfDelay.EMPTY;
+        if (MultiLevel.isMutable(immutable)) {
+            /*
+             all parameter types must be at least immutable_hc, for the main type to be immutable_hc; so we add them, unless
+             they're obviously recursively immutable
+             */
+            for (ParameterizedType parameter : type.parameters) {
+                Inference inference = inferImmutable(analyserContext, parameter);
+                if (inference.causes.isDelayed()) {
+                    causes = causes.merge(inference.causes);
+                } else {
+                    map.putAll(inference.map);
+                }
+            }
+        }
+        return new Inference(causes, map);
     }
 
     private DV factoryMethodDynamicallyImmutable(MethodAnalysis methodAnalysis, DV formal, EvaluationResult context) {
@@ -1295,10 +1338,10 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         // RULE 3: in a factory method, the result links to the parameters, directly
         MethodInspection methodInspection = context.getAnalyserContext().getMethodInspection(methodInfo);
         if (methodInspection.isFactoryMethod()) {
-            List<Expression> parameterValues = parameterExpressions.stream()
-                    .map(pe -> pe.evaluate(context, ForwardEvaluationInfo.DEFAULT).value())
-                    .toList();
-            List<LinkedVariables> linkedVariables = LinkParameters.computeLinkedVariablesOfParameters(context, parameterExpressions, parameterValues);
+            //List<Expression> parameterValues = parameterExpressions.stream()
+            //        .map(pe -> pe.evaluate(context, ForwardEvaluationInfo.DEFAULT).value())
+            //        .toList();
+            //List<LinkedVariables> linkedVariables = LinkParameters.computeLinkedVariablesOfParameters(context, parameterExpressions, parameterValues);
             // content link to the parameters, and all variables normally linked to them
             return LinkedVariables.EMPTY; // FIXME implement!!
             ///   return ConstructorCall.combineArgumentIndependenceWithFormalParameterIndependence(context, methodInspection,
@@ -1349,7 +1392,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
                     causesOfDelay = causesOfDelay.merge(immutable.causesOfDelay());
                 } else if (MultiLevel.isMutable(immutable)) {
                     newLinked.put(e.getKey(), LinkedVariables.LINK_DEPENDENT);
-                } else if(!MultiLevel.isAtLeastEventuallyRecursivelyImmutable(immutable)) {
+                } else if (!MultiLevel.isAtLeastEventuallyRecursivelyImmutable(immutable)) {
                     newLinked.put(e.getKey(), LinkedVariables.LINK_COMMON_HC);
                 }
             }

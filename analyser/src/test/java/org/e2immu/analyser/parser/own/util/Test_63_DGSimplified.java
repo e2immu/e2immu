@@ -621,7 +621,7 @@ public class Test_63_DGSimplified extends CommonTestRunner {
                 assertDv(d.p(0), 9, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
                 assertDv(d.p(0), 9, MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL_DV, Property.NOT_NULL_PARAMETER);
                 assertDv(d, 25, MultiLevel.EFFECTIVELY_FINAL_FIELDS_DV, Property.IMMUTABLE);
-                assertDv(d, 8, MultiLevel.INDEPENDENT_HC_DV, Property.INDEPENDENT);
+                assertDv(d, 25, MultiLevel.INDEPENDENT_HC_DV, Property.INDEPENDENT);
                 // priority 4
                 assertEquals(d.iteration() >= 25, d.methodAnalysis().getSingleReturnValue().isDone());
                 if (d.iteration() >= 25) {
@@ -642,7 +642,7 @@ public class Test_63_DGSimplified extends CommonTestRunner {
                 assertDv(d, 16, MultiLevel.INDEPENDENT_HC_DV, Property.INDEPENDENT);
             }
             if ("comparator".equals(d.methodInfo().name)) {
-                assertDv(d, 4, MultiLevel.INDEPENDENT_DV, Property.INDEPENDENT);
+                assertDv(d, 5, MultiLevel.INDEPENDENT_DV, Property.INDEPENDENT);
             }
             if ("removeAsManyAsPossible".equals(d.methodInfo().name)) {
                 assertDv(d, 25, DV.FALSE_DV, Property.MODIFIED_METHOD);

@@ -24,6 +24,8 @@ import org.e2immu.annotation.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Map;
+
 import static org.e2immu.analyser.model.MultiLevel.Level.IMMUTABLE_HC;
 
 public interface AnalysisProvider {
@@ -158,7 +160,7 @@ public interface AnalysisProvider {
     }
 
     default DV typeImmutable(ParameterizedType parameterizedType) {
-        return typeImmutable(parameterizedType, MultiLevel.NOT_INVOLVED_DV);
+        return typeImmutable(parameterizedType, Map.of());
     }
 
     /*
@@ -167,7 +169,7 @@ public interface AnalysisProvider {
     immutableDeterminedByTypeParameters() code... therefore a simple remote 'max()' operation does not work.
      */
 
-    default DV typeImmutable(ParameterizedType parameterizedType, DV dynamicValue) {
+    default DV typeImmutable(ParameterizedType parameterizedType, Map<ParameterizedType, DV> dynamicValues) {
         if (parameterizedType.arrays > 0) {
             return MultiLevel.EFFECTIVELY_FINAL_FIELDS_DV;
         }
@@ -182,12 +184,17 @@ public interface AnalysisProvider {
         if (typeAnalysis == null) {
             return typeAnalysisNotAvailable(bestType);
         }
-        DV baseValue = typeAnalysis.getProperty(Property.IMMUTABLE);
-        if (baseValue.isDelayed()) {
-            return baseValue;
+        DV dynamicBaseValue;
+        DV immutableOfCurrent = dynamicValues.get(parameterizedType);
+        if (immutableOfCurrent != null) {
+            dynamicBaseValue = immutableOfCurrent;
+        } else {
+            DV baseValue = typeAnalysis.getProperty(Property.IMMUTABLE);
+            if (baseValue.isDelayed()) {
+                return baseValue;
+            }
+            dynamicBaseValue = baseValue;
         }
-        assert dynamicValue.isDone();
-        DV dynamicBaseValue = baseValue.max(dynamicValue);
         MultiLevel.Effective effective = MultiLevel.effective(dynamicBaseValue);
         if (MultiLevel.isAtLeastImmutableHC(dynamicBaseValue) && !parameterizedType.parameters.isEmpty()) {
             DV useTypeParameters = typeAnalysis.immutableDeterminedByTypeParameters();
@@ -197,7 +204,7 @@ public interface AnalysisProvider {
             }
             if (useTypeParameters.valueIsTrue()) {
                 DV paramValue = parameterizedType.parameters.stream()
-                        .map(this::typeImmutable)
+                        .map(pt -> typeImmutable(pt, dynamicValues))
                         .map(v -> v.containsCauseOfDelay(CauseOfDelay.Cause.TYPE_ANALYSIS) ? MultiLevel.MUTABLE_DV : v)
                         .reduce(MultiLevel.EFFECTIVELY_IMMUTABLE_DV, DV::min);
                 if (paramValue.isDelayed()) return paramValue;

@@ -987,14 +987,15 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
                     methodInfo.typeInfo);
             ParameterizedType concreteReturnType = variableInfo.getValue().returnType();
             boolean factoryMethod = methodInspection.isFactoryMethod();
+            DV computed;
             if (factoryMethod) {
-                independent = linkedVariables.stream()
+                computed = linkedVariables.stream()
                         .filter(e -> e.getKey() instanceof ParameterInfo pi && pi.owner == methodInfo)
                         .map(e -> computeIndependent.typesAtLinkLevel(e.getValue(),
                                 concreteReturnType, immutable, e.getKey().parameterizedType()))
                         .reduce(MultiLevel.INDEPENDENT_DV, DV::min);
             } else {
-                independent = linkedVariables.stream()
+                computed = linkedVariables.stream()
                         .filter(e -> e.getKey() instanceof FieldReference fr && fr.scopeIsRecursivelyThis()
                                 || e.getKey() instanceof This)
                         .map(e -> {
@@ -1006,6 +1007,12 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
                         })
                         .reduce(MultiLevel.INDEPENDENT_DV, DV::min);
             }
+            /*
+            there is extensive code to potentially upgrade the immutable value of a method call (see MethodCall.dynamicImmutable())
+            so when this happens, we have to go along.
+             */
+            DV fromImmutable = MultiLevel.independentCorrespondingToImmutable(immutable);
+            independent = computed.max(fromImmutable);
         }
         methodAnalysis.setProperty(INDEPENDENT, independent);
         return AnalysisStatus.of(independent);

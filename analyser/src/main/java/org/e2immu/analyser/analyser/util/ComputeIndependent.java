@@ -21,6 +21,9 @@ import org.e2immu.analyser.model.ParameterizedType;
 import org.e2immu.analyser.model.TypeInfo;
 import org.e2immu.analyser.parser.InspectionProvider;
 
+import java.util.HashSet;
+import java.util.Set;
+
 import static org.e2immu.analyser.analyser.LinkedVariables.*;
 
 public record ComputeIndependent(AnalyserContext analyserContext,
@@ -149,26 +152,7 @@ public record ComputeIndependent(AnalyserContext analyserContext,
             // delay
             return causes;
         }
-        SetOfTypes intersection = analyserContext.intersectionOfHiddenContent(pt1, t1, pt2, t2);
-
-        if (intersection.isEmpty()) {
-            // no intersection between
-            return MultiLevel.EFFECTIVELY_IMMUTABLE_DV;
-        }
-
-        DV min = MultiLevel.EFFECTIVELY_IMMUTABLE_DV;
-        for (ParameterizedType pt : intersection.types()) {
-            DV immutable = typeImmutable(pt);
-            if (immutable.isDelayed()) {
-                min = min.min(immutable);
-            } else if (MultiLevel.isMutable(immutable)) {
-                return MultiLevel.MUTABLE_DV;
-            } else if (!MultiLevel.isAtLeastEventuallyRecursivelyImmutable(immutable)) {
-                // IMPROVE should we filter? && hiddenContentOfCurrentType.contains(pt)) {
-                min = MultiLevel.EFFECTIVELY_IMMUTABLE_HC_DV;
-            }
-        }
-        return min;
+        return internalImmutableOfIntersectionOfHiddenContent(pt1, t1, pt2, t2);
     }
 
     /*
@@ -238,7 +222,7 @@ public record ComputeIndependent(AnalyserContext analyserContext,
      * @return either DEPENDENT, IS_HC_OF, COMMON_HC, or INDEPENDENT, or a delay when we're waiting for immutable
      */
     public DV linkLevelOfTwoHCRelatedTypes(ParameterizedType pt1, ParameterizedType pt2) {
-        if(pt1.isPrimitiveStringClass() || pt2.isPrimitiveStringClass()) return LINK_INDEPENDENT;
+        if (pt1.isPrimitiveStringClass() || pt2.isPrimitiveStringClass()) return LINK_INDEPENDENT;
 
         if (pt1.equals(pt2) && pt1.arrays > 0) {
             return LINK_COMMON_HC;
@@ -286,17 +270,10 @@ public record ComputeIndependent(AnalyserContext analyserContext,
         CausesOfDelay causes = t1.hiddenContentDelays().causesOfDelay()
                 .merge(t2.hiddenContentDelays().causesOfDelay());
         if (causes.isDelayed()) return causes;
-        SetOfTypes intersection = analyserContext.intersectionOfHiddenContent(pt1, t1, pt2, t2);
+        DV immutable = internalImmutableOfIntersectionOfHiddenContent(pt1, t1, pt2, t2);
 
-        if (intersection.isEmpty()) return MultiLevel.INDEPENDENT_DV;
-
-        DV independent = intersection.types().stream()
-//                .filter(hiddenContentOfCurrentType::contains) IMPROVE should we do this?
-                .map(pt -> {
-                    DV immutable = typeImmutable(pt);
-                    return MultiLevel.independentCorrespondingToImmutable(immutable);
-                }).reduce(MultiLevel.INDEPENDENT_DV, DV::min);
-        if (MultiLevel.INDEPENDENT_DV == independent) {
+        DV independent = MultiLevel.independentCorrespondingToImmutable(immutable);
+        if (MultiLevel.INDEPENDENT_DV.equals(independent)) {
             return LINK_INDEPENDENT;
         }
         if (MultiLevel.DEPENDENT_DV.equals(independent)) {
@@ -340,5 +317,65 @@ public record ComputeIndependent(AnalyserContext analyserContext,
             return linkLevelOfTwoHCRelatedTypes(scopePt, parameterType);
         }
         throw new UnsupportedOperationException("NYI");
+    }
+
+    /*
+     Immutable of the intersection of hidden content types.
+
+     IMPORTANT: not symmetric!
+     The target is the e.g. return value, linked to a source. See DGSimplified_0, _1 where this asymmetry matters:
+     the source is a Map<T, Mut>, where only the T elements are copied into the target.
+
+     Collect the hidden content types independently for source and target.
+     Any mutable type in the source -> mutable.
+     Recursively immutable ones are ignored.
+     Delays are honoured.
+     If the intersection is not empty, there is hidden content!
+     */
+    private DV internalImmutableOfIntersectionOfHiddenContent(ParameterizedType target,
+                                                              TypeAnalysis targetTypeAnalysis,
+                                                              ParameterizedType source,
+                                                              TypeAnalysis sourceTypeAnalysis) {
+        HC hc1 = immutableHCTypes(target, targetTypeAnalysis, new HashSet<>());
+        HC hc2 = immutableHCTypes(source, sourceTypeAnalysis, new HashSet<>());
+        CausesOfDelay causes = hc1.immutable.causesOfDelay().merge(hc2.immutable.causesOfDelay());
+        if (causes.isDelayed()) return causes;
+        if (MultiLevel.MUTABLE_DV.equals(hc1.immutable)) {
+            return MultiLevel.MUTABLE_DV;
+        }
+        SetOfTypes intersection = hc1.immutableHCTypes().intersection(hc2.immutableHCTypes());
+        return intersection.isEmpty() ? MultiLevel.EFFECTIVELY_IMMUTABLE_DV : MultiLevel.EFFECTIVELY_IMMUTABLE_HC_DV;
+    }
+
+    private HC immutableHCTypes(ParameterizedType pt, TypeAnalysis t, Set<ParameterizedType> done) {
+        done.add(pt);
+        SetOfTypes hidden = t.getHiddenContentTypes().translate(analyserContext, pt).dropArrays();
+        CausesOfDelay causes = CausesOfDelay.EMPTY;
+        Set<ParameterizedType> hcTypes = new HashSet<>();
+        DV min = MultiLevel.EFFECTIVELY_IMMUTABLE_DV;
+        for (ParameterizedType type : hidden.types()) {
+            if (!done.contains(type)) {
+                if (type.typeInfo != null) {
+                    TypeAnalysis typeAnalysis = analyserContext.getTypeAnalysis(type.typeInfo);
+                    HC recursively = immutableHCTypes(type, typeAnalysis, done);
+                    if (MultiLevel.isMutable(recursively.immutable)) return recursively;
+                    causes = causes.merge(recursively.immutable.causesOfDelay());
+                    hcTypes.addAll(recursively.immutableHCTypes.types());
+                }
+                DV immutable = analyserContext.typeImmutable(type);
+                if (immutable.isDelayed()) {
+                    causes = causes.merge(immutable.causesOfDelay());
+                } else if (MultiLevel.isMutable(immutable)) {
+                    min = MultiLevel.MUTABLE_DV;
+                } else if (!MultiLevel.isAtLeastEventuallyRecursivelyImmutable(immutable)) {
+                    hcTypes.add(type);
+                    min = MultiLevel.EFFECTIVELY_IMMUTABLE_HC_DV;
+                }
+            }
+        }
+        return new HC(causes.isDelayed() ? causes : min, new SetOfTypes(hcTypes));
+    }
+
+    private record HC(DV immutable, SetOfTypes immutableHCTypes) {
     }
 }

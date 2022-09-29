@@ -179,39 +179,4 @@ public interface AnalyserContext extends AnalysisProvider, InspectionProvider {
     default AnalyserProgram getAnalyserProgram() {
         return getConfiguration().analyserConfiguration().analyserProgram();
     }
-
-    /*
-    Intersection of hidden content types.
-
-    The default implementation would be to compute a set-wise intersection; e.g., if we're computing the hidden content
-    type intersection of Set<Integer> and TreeSet<Integer>, we'd have 2x Integer, and return Integer.
-    Examples where !this.equals(other) are???: IMPROVE, make some example.
-
-    However, if this contains "String, Integer" and other contains "Map.Entry<String,Integer>"
-    (or vice versa, this operation must be symmetric), then we would expect the Map.Entry<String,Integer> to be included,
-    among the String and Integer. See: MethodReference_3, stream() method.
-     */
-    default SetOfTypes intersectionOfHiddenContent(ParameterizedType pt1, TypeAnalysis t1, ParameterizedType pt2, TypeAnalysis t2) {
-        SetOfTypes hidden1 = t1.getHiddenContentTypes().translate(this, pt1).dropArrays();
-        SetOfTypes hidden2 = t2.getHiddenContentTypes().translate(this, pt2).dropArrays();
-        SetOfTypes plainIntersection = hidden1.intersection(hidden2);
-        if (plainIntersection.isEmpty() && !hidden1.isEmpty() && !hidden2.isEmpty()) {
-            // for now, we're hard-coding the Map.Entry situation
-            Set<ParameterizedType> hidden1Hidden = hidden1.types().stream()
-                    .filter(t -> t.bestTypeInfo() != null)
-                    .flatMap(t -> getTypeAnalysis(t.bestTypeInfo()).getHiddenContentTypes()
-                            .translate(this, t).types().stream())
-                    .collect(Collectors.toUnmodifiableSet());
-            Set<ParameterizedType> hidden2Hidden = hidden2.types().stream()
-                    .filter(t -> t.bestTypeInfo() != null)
-                    .flatMap(t -> getTypeAnalysis(t.bestTypeInfo()).getHiddenContentTypes()
-                            .translate(this, t).types().stream())
-                    .collect(Collectors.toUnmodifiableSet());
-            if (hidden1Hidden.isEmpty() && hidden2Hidden.containsAll(hidden1.types()) ||
-                    hidden2Hidden.isEmpty() && hidden1Hidden.containsAll(hidden2.types())) {
-                return hidden1.union(hidden2);
-            }
-        }
-        return plainIntersection;
-    }
 }

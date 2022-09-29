@@ -19,7 +19,6 @@ package org.e2immu.analyser.parser.independence;
 import org.e2immu.analyser.analyser.DV;
 import org.e2immu.analyser.analyser.Property;
 import org.e2immu.analyser.analyser.VariableInfo;
-import org.e2immu.analyser.analyser.delay.Inconclusive;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.ParameterInfo;
@@ -423,8 +422,30 @@ public class Test_Independent1 extends CommonTestRunner {
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("putAll".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof ParameterInfo pi && "other".equals(pi.name)) {
-                    String linked = d.iteration() < 14 ? "this:-1" : "";
+                    String linked = d.iteration() < 14 ? "this:-1" : "this:4";
                     assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
+                }
+            }
+            if ("stream".equals(d.methodInfo().name)) {
+                assertEquals("0", d.statementId());
+                if (d.variable() instanceof ReturnVariable) {
+                    String linked = d.iteration() < 14 ? "this.map:-1" : "this.map:4";
+                    assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
+                }
+            }
+            if ("entries".equals(d.methodInfo().name)) {
+                assertEquals("0", d.statementId());
+                if (d.variable() instanceof ReturnVariable) {
+                    String linked = d.iteration() < 14 ? "this:-1" : "this:4";
+                    assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
+                    assertCurrentValue(d, 14,
+                            "`map`.entrySet().stream().map(/*inline apply*/new ImmutableEntry<>(e.getKey(),e.getValue())).toList()");
+                    if (d.iteration() >= 14) {
+                        // NOTE: there is no ImmutableEntry here!
+                        assertEquals("Type java.util.List<java.util.Map.Entry<T,java.lang.Boolean>>",
+                                d.variableInfo().getValue().returnType().toString());
+                    }
+                    assertDv(d, 14, MultiLevel.EFFECTIVELY_IMMUTABLE_HC_DV, Property.IMMUTABLE);
                 }
             }
         };
@@ -433,11 +454,33 @@ public class Test_Independent1 extends CommonTestRunner {
                 String expected = d.iteration() < 14 ? "<m:stream>"
                         : "/*inline stream*/map.entrySet().stream().map(/*inline apply*/new ImmutableEntry<>(e.getKey(),e.getValue()))";
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
+                assertDv(d, 14, MultiLevel.INDEPENDENT_HC_DV, Property.INDEPENDENT);
+                if (d.iteration() >= 14) {
+                    assertEquals("Type java.util.stream.Stream<org.e2immu.analyser.parser.independence.testexample.Independent1_9.ImmutableEntry<T>>",
+                            d.methodAnalysis().getSingleReturnValue().returnType().toString());
+                }
+            }
+            if ("entries".equals(d.methodInfo().name)) {
+                assertDv(d, 14, MultiLevel.EFFECTIVELY_IMMUTABLE_HC_DV, Property.IMMUTABLE);
+                assertDv(d, 14, MultiLevel.INDEPENDENT_HC_DV, Property.INDEPENDENT);
+            }
+        };
+        FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
+            if ("map".equals(d.fieldInfo().name)) {
+                assertDv(d, MultiLevel.MUTABLE_DV, Property.EXTERNAL_IMMUTABLE);
+                assertDv(d, MultiLevel.INDEPENDENT_DV, Property.INDEPENDENT);
+            }
+        };
+        TypeAnalyserVisitor typeAnalyserVisitor = d -> {
+            if ("Independent1_9".equals(d.typeInfo().simpleName)) {
+                assertDv(d, 14, MultiLevel.EFFECTIVELY_IMMUTABLE_HC_DV, Property.IMMUTABLE);
             }
         };
         testClass("Independent1_9", 0, 0, new DebugConfiguration.Builder()
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+                .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
                 .build());
     }
 

@@ -273,7 +273,7 @@ public class Test_18_E2Immutable extends CommonTestRunner {
                 }
                 // this method returns the input parameter
                 assertDv(d, 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, NOT_NULL_EXPRESSION);
-                assertDv(d, MultiLevel.INDEPENDENT_DV, INDEPENDENT);
+                assertDv(d, 1, MultiLevel.INDEPENDENT_DV, INDEPENDENT);
 
                 // parameter input4
                 assertDv(d.p(0), 1, MultiLevel.INDEPENDENT_DV, INDEPENDENT);

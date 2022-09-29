@@ -136,7 +136,7 @@ public class Test_48_Store extends CommonTestRunner {
                 assertDv(d, 2, DV.FALSE_DV, Property.MODIFIED_METHOD);
 
                 // independent because non-modifying (no Annotated API)
-                assertDv(d, MultiLevel.INDEPENDENT_DV, Property.INDEPENDENT);
+                assertDv(d, 2, MultiLevel.INDEPENDENT_DV, Property.INDEPENDENT);
 
                 String expected = d.iteration() < 2 ? "<m:getOrCreate>" : "/*inline getOrCreate*/new Project_0(\"x\")";
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());

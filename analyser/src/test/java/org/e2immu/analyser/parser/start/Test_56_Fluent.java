@@ -64,25 +64,25 @@ public class Test_56_Fluent extends CommonTestRunner {
                     }
                     // calls from, which is CM false in iteration 2
                     if ("1".equals(d.statementId())) {
-                        assertDv(d, 11, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                        assertDv(d, 13, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     }
                 }
                 // equals is evaluated after copyOf, so CM in the parameter of equals is only visible in iteration 3
                 if (d.variable() instanceof ReturnVariable) {
                     if ("0.0.0".equals(d.statementId())) {
-                        assertCurrentValue(d, 16, "instanceCopy/*(Fluent_0)*/");
+                        assertCurrentValue(d, 27, "instanceCopy/*(Fluent_0)*/");
                         assertTrue(d.currentValue() instanceof PropertyWrapper, "Have " + d.currentValue().getClass());
                         assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, d.getProperty(Property.NOT_NULL_EXPRESSION));
                     }
                     if ("1".equals(d.statementId())) {
-                        assertCurrentValue(d, 16,
+                        assertCurrentValue(d, 27,
                                 "instanceCopy instanceof Fluent_0&&null!=instanceCopy?instanceCopy/*(Fluent_0)*/:new Fluent_0(`instance type Builder.value`)");
 
-                        String expectLinks = d.iteration() <= 15 ? "instanceCopy:-1" : "instanceCopy:1";
+                        String expectLinks = d.iteration() < 27 ? "instanceCopy:-1" : "instanceCopy:1";
                         assertEquals(expectLinks, d.variableInfo().getLinkedVariables().toString());
 
                         // computation of NNE is important here!
-                        assertDv(d, 16, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_EXPRESSION);
+                        assertDv(d, 27, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_EXPRESSION);
                     }
                 }
             }
@@ -166,7 +166,7 @@ public class Test_56_Fluent extends CommonTestRunner {
                 assertDv(d, 9, DV.TRUE_DV, Property.FLUENT);
                 assertDv(d, 9, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_EXPRESSION);
                 // 'this' is always independent, there's no new information
-                assertDv(d, 1, MultiLevel.INDEPENDENT_DV, Property.INDEPENDENT);
+                assertDv(d, 7, MultiLevel.INDEPENDENT_DV, Property.INDEPENDENT);
 
                 assertDv(d, DV.TRUE_DV, Property.MODIFIED_METHOD);
             }
@@ -210,7 +210,7 @@ public class Test_56_Fluent extends CommonTestRunner {
         };
 
         testClass(List.of("a.IFluent_0", "Fluent_0"), 0, 1, new DebugConfiguration.Builder()
-            //    .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
                 .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)

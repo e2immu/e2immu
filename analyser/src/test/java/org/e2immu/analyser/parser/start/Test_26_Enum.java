@@ -90,7 +90,7 @@ public class Test_26_Enum extends CommonTestRunner {
                 assertEquals(expect, d.methodAnalysis().getSingleReturnValue().toString());
 
                 assertDv(d, 2, MultiLevel.EFFECTIVELY_FINAL_FIELDS_DV, Property.IMMUTABLE);
-                assertDv(d, MultiLevel.INDEPENDENT_DV, Property.INDEPENDENT);
+                assertDv(d, 2, MultiLevel.INDEPENDENT_DV, Property.INDEPENDENT);
             }
         };
 
