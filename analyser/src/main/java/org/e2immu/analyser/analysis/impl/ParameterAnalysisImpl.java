@@ -24,6 +24,7 @@ import org.e2immu.analyser.model.impl.AnnotationExpressionImpl;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
 import org.e2immu.analyser.parser.Primitives;
+import org.e2immu.annotation.NotModified;
 import org.e2immu.support.EventuallyFinal;
 import org.e2immu.support.SetOnce;
 import org.e2immu.support.SetOnceMap;
@@ -193,6 +194,9 @@ public class ParameterAnalysisImpl extends AnalysisImpl implements ParameterAnal
                         List.of(new MemberValuePair(E2ImmuAnnotationExpressions.IMPLIED, new BooleanConstant(primitives, true)),
                                 new MemberValuePair(E2ImmuAnnotationExpressions.ABSENT, new BooleanConstant(primitives, true))));
                 addAnnotation(negated);
+            } else {
+                AnnotationExpression implied = E2ImmuAnnotationExpressions.create(primitives, NotModified.class, E2ImmuAnnotationExpressions.IMPLIED, true);
+                addAnnotation(implied);
             }
 
             // @NotNull

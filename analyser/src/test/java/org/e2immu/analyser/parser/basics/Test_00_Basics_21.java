@@ -198,7 +198,7 @@ public class Test_00_Basics_21 extends CommonTestRunner {
 
             if ("Basics_21".equals(d.typeInfo().simpleName)) {
                 assertDv(d, 2, MultiLevel.EVENTUALLY_IMMUTABLE_HC_DV, IMMUTABLE);
-                assertDv(d, 3, MultiLevel.INDEPENDENT_HC_DV, INDEPENDENT);
+                assertDv(d, 2, MultiLevel.INDEPENDENT_HC_DV, INDEPENDENT);
             }
         };
 

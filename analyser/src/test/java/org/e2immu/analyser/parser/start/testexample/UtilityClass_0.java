@@ -24,7 +24,7 @@ import org.e2immu.annotation.type.UtilityClass;
 public class UtilityClass_0 {
 
     @NotModified
-    static void print(@NotModified(absent = true) String toPrint) {
+    static void print(@NotModified String toPrint) {
         System.out.println(toPrint);
     }
 

@@ -19,6 +19,7 @@ package org.e2immu.analyser.parser.independence;
 import org.e2immu.analyser.analyser.DV;
 import org.e2immu.analyser.analyser.Property;
 import org.e2immu.analyser.analyser.VariableInfo;
+import org.e2immu.analyser.analyser.delay.Inconclusive;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.ParameterInfo;
@@ -26,10 +27,7 @@ import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.ReturnVariable;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.parser.CommonTestRunner;
-import org.e2immu.analyser.visitor.FieldAnalyserVisitor;
-import org.e2immu.analyser.visitor.MethodAnalyserVisitor;
-import org.e2immu.analyser.visitor.StatementAnalyserVariableVisitor;
-import org.e2immu.analyser.visitor.TypeAnalyserVisitor;
+import org.e2immu.analyser.visitor.*;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
@@ -425,14 +423,14 @@ public class Test_Independent1 extends CommonTestRunner {
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("putAll".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof ParameterInfo pi && "other".equals(pi.name)) {
-                    String linked = d.iteration() < 11 ? "this:-1" : "";
+                    String linked = d.iteration() < 14 ? "this:-1" : "";
                     assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
                 }
             }
         };
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("stream".equals(d.methodInfo().name)) {
-                String expected = d.iteration() < 11 ? "<m:stream>"
+                String expected = d.iteration() < 14 ? "<m:stream>"
                         : "/*inline stream*/map.entrySet().stream().map(/*inline apply*/new ImmutableEntry<>(e.getKey(),e.getValue()))";
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
             }
@@ -442,6 +440,82 @@ public class Test_Independent1 extends CommonTestRunner {
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .build());
     }
+
+    /*
+    used to test linked variables of method expansions
+     */
+    @Test
+    public void test_9_1() throws IOException {
+        StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+            if ("keys".equals(d.methodInfo().name)) {
+                if (d.variable() instanceof ReturnVariable) {
+                    String linked = d.iteration() < 11 ? "this:-1" : "this:4";
+                    assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
+                }
+            }
+            if ("of".equals(d.methodInfo().name)) {
+                if (d.variable() instanceof ParameterInfo pi && "maps".equals(pi.name)) {
+                    if ("1.0.0.0.0".equals(d.statementId())) {
+                        assertCurrentValue(d, 12,
+                                "nullable instance type Independent1_9_1<T>[]/*@Identity*/");
+                        String linked = d.iteration() < 12 ? "map.map:-1,map:-1,result:-1"
+                                : "map.map:4,map:4,result:4";
+                        assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
+                        assertDv(d, 12, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                    }
+                }
+            }
+        };
+        MethodAnalyserVisitor methodAnalyserVisitor = d -> {
+            if ("of".equals(d.methodInfo().name)) {
+                String expected = d.iteration() < 12 ? "<m:of>"
+                        : "/*inline of*/null==maps||maps.length<=0?new Independent1_9_1<>():instance type Independent1_9_1<T>";
+                assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
+                assertDv(d, MultiLevel.INDEPENDENT_HC_DV, Property.INDEPENDENT);
+                assertDv(d, 12, MultiLevel.EFFECTIVELY_IMMUTABLE_HC_DV, Property.IMMUTABLE);
+                assertDv(d.p(0), 13, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                assertDv(d.p(0), 13, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
+            }
+            if ("stream".equals(d.methodInfo().name)) {
+                String expected = d.iteration() < 11 ? "<m:stream>" : "/*inline stream*/map.keySet().stream()";
+                assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
+                assertDv(d, 11, MultiLevel.INDEPENDENT_HC_DV, Property.INDEPENDENT);
+                assertDv(d, 11, MultiLevel.EFFECTIVELY_IMMUTABLE_HC_DV, Property.IMMUTABLE);
+            }
+            if ("keys".equals(d.methodInfo().name)) {
+                String expected = d.iteration() < 11 ? "<m:keys>" : "/*inline keys*/`map`.keySet().stream().toList()";
+                assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
+                assertDv(d, 11, MultiLevel.INDEPENDENT_HC_DV, Property.INDEPENDENT);
+                assertDv(d, 11, MultiLevel.EFFECTIVELY_IMMUTABLE_HC_DV, Property.IMMUTABLE);
+            }
+            if ("put".equals(d.methodInfo().name)) {
+                assertDv(d.p(0), 12, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
+            }
+        };
+        TypeAnalyserVisitor typeAnalyserVisitor = d -> {
+            if ("Independent1_9_1".equals(d.typeInfo().simpleName)) {
+                assertDv(d, 11, MultiLevel.INDEPENDENT_HC_DV, Property.INDEPENDENT);
+                assertDv(d, 11, MultiLevel.EFFECTIVELY_IMMUTABLE_HC_DV, Property.IMMUTABLE);
+                assertDv(d, MultiLevel.CONTAINER_DV, Property.CONTAINER);
+            }
+        };
+        FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
+            if ("map".equals(d.fieldInfo().name)) {
+                assertDv(d, 10, DV.FALSE_DV, Property.MODIFIED_OUTSIDE_METHOD);
+            }
+        };
+
+        BreakDelayVisitor breakDelayVisitor = d -> assertEquals("----M-M--MF---", d.delaySequence());
+
+        testClass("Independent1_9_1", 0, 0, new DebugConfiguration.Builder()
+                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
+                .addBreakDelayVisitor(breakDelayVisitor)
+                .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+                .build());
+    }
+
 
     @Test
     public void test_10() throws IOException {

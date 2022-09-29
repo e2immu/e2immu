@@ -14,29 +14,33 @@
 
 package org.e2immu.analyser.parser.independence.testexample;
 
-import org.e2immu.annotation.*;
+import org.e2immu.annotation.ImmutableContainer;
+import org.e2immu.annotation.Independent;
+import org.e2immu.annotation.Modified;
+import org.e2immu.annotation.NotModified;
 
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.stream.Stream;
 
 /*
-similar to putAll in UpgradableBooleanMap
+simpler than _9
  */
 @ImmutableContainer(hc = true)
-public class Independent1_9<T> {
+public class Independent1_9_1<T> {
 
     private final Map<T, Boolean> map = new HashMap<>();
 
     @SafeVarargs
-    @Independent
-    public static <T> Independent1_9<T> of(Independent1_9<T>... maps) {
-        Independent1_9<T> result = new Independent1_9<>();
+    @Independent(hc = true, contract = true)
+    public static <T> Independent1_9_1<T> of(@NotModified Independent1_9_1<T>... maps) {
+        Independent1_9_1<T> result = new Independent1_9_1<>();
         if (maps != null) {
-            for (Independent1_9<T> map : maps) {
-                result.putAll(map);
+            for (Independent1_9_1<T> map : maps) {
+                for (Map.Entry<T, Boolean> e : map.map.entrySet()) {
+                    result.put(e.getKey(), e.getValue());
+                }
             }
         }
         return result;
@@ -49,45 +53,17 @@ public class Independent1_9<T> {
         }
     }
 
-    @ImmutableContainer(hc = true)
-    public record ImmutableEntry<T>(T t, boolean b) implements Map.Entry<T, Boolean> {
-
-        public ImmutableEntry {
-            Objects.requireNonNull(t);
-        }
-
-        @Override
-        public T getKey() {
-            return t;
-        }
-
-        @Override
-        public Boolean getValue() {
-            return b;
-        }
-
-        @Override
-        public Boolean setValue(Boolean value) {
-            assert value != null; // to stop e2immu from complaining about non-null
-            throw new UnsupportedOperationException();
-        }
-    }
 
     @ImmutableContainer(hc = true)
     @Independent(hc = true)
-    @NotNull // TODO (content = true) has not been implemented yet
-    public Stream<Map.Entry<T, Boolean>> stream() {
-        return map.entrySet().stream().map(e -> new ImmutableEntry<>(e.getKey(), e.getValue()));
+    public Stream<T> stream() {
+        return map.keySet().stream();
     }
 
-    @Modified(construction = true)
-    private void putAll(@Independent(hc = true) Independent1_9<T> other) {
-        other.stream().forEach(e -> this.put(e.getKey(), e.getValue()));
-    }
-
+    @ImmutableContainer(hc = true)
     @Independent(hc = true)
     @NotModified
-    public List<Map.Entry<T, Boolean>> entries() {
+    public List<T> keys() {
         return stream().toList();
     }
 }

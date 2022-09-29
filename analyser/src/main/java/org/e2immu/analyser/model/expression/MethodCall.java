@@ -1349,6 +1349,8 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
                     causesOfDelay = causesOfDelay.merge(immutable.causesOfDelay());
                 } else if (MultiLevel.isMutable(immutable)) {
                     newLinked.put(e.getKey(), LinkedVariables.LINK_DEPENDENT);
+                } else if(!MultiLevel.isAtLeastEventuallyRecursivelyImmutable(immutable)) {
+                    newLinked.put(e.getKey(), LinkedVariables.LINK_COMMON_HC);
                 }
             }
             if (causesOfDelay.isDelayed()) {

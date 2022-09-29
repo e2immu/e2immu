@@ -124,8 +124,15 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
                     .add(ANALYSE_SINGLETON, iteration -> analyseSingleton())
                     .add(ANALYSE_EXTENSION_CLASS, iteration -> analyseExtensionClass());
         }
-
-        analyserComponents = builder.setLimitCausesOfDelay(true).build();
+        analyserComponents = builder.setLimitCausesOfDelay(true)
+                /*
+                 The following line limits the amount of breaks to 1 per iteration in the CTA.
+                 The convention in CMA and SA is to allow as many breaks as necessary in the same iteration.
+                 After breaking INDEPENDENT, do you want to break CONTAINER as well??, currently, yes,
+                 see VariableScope_8, DGSimplified_4
+                 */
+                //.setUpdateUponProgress(SharedState::removeAllowBreakDelay)
+                .build();
         Analyser.AnalyserIdentification identification = typeInfo.isAbstract()
                 ? Analyser.AnalyserIdentification.ABSTRACT_TYPE
                 : Analyser.AnalyserIdentification.TYPE;
@@ -655,8 +662,20 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
                     ParameterAnalysis parameterAnalysis = analyserContext.getParameterAnalysis(parameterInfo);
                     DV modified = parameterAnalysis.getProperty(Property.MODIFIED_VARIABLE);
                     if (modified.isDelayed() && methodAnalyser.hasCode()) {
-                        LOGGER.debug("Delaying container, modification of parameter {} undecided", parameterInfo);
-                        allCauses = allCauses.merge(modified.causesOfDelay());
+                        TypeInfo firstStaticEnclosingType = this.typeInfo.firstStaticEnclosingType(InspectionProvider.DEFAULT);
+                        TypeInfo ptType = parameterInfo.parameterizedType.typeInfo;
+                        if (ptType != null
+                                && ptType.firstStaticEnclosingType(InspectionProvider.DEFAULT).equals(firstStaticEnclosingType)) {
+                            /*
+                             self... we'll occasionally be shooting ourselves in the foot!
+                             without the value property CONTAINER, we have no value, which may delay MODIFIED...
+                             Basics_20, 21, SetOnce... can do without this, Independent1_9_1 has real trouble with it
+                             */
+                            LOGGER.debug("Ignoring parameter {} of structurally own type", parameterInfo);
+                        } else {
+                            LOGGER.debug("Delaying container, modification of parameter {} undecided", parameterInfo);
+                            allCauses = allCauses.merge(modified.causesOfDelay());
+                        }
                     }
                     if (modified.valueIsTrue()) {
                         LOGGER.debug("{} is not a @Container: the content of {} is modified in {}",
@@ -748,6 +767,7 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
             valueFromMethodParameters = myMethodAndConstructorAnalysersExcludingSAMs.stream()
                     .filter(ma -> !analyserContext.getMethodInspection(ma.getMethodInfo()).isPrivate())
                     .flatMap(ma -> ma.getParameterAnalyses().stream())
+                    .filter(this::parameterNotOfSelfType)
                     .map(pa -> correctIndependentFunctionalInterface(pa, pa.getPropertyFromMapDelayWhenAbsent(Property.INDEPENDENT)))
                     .reduce(MultiLevel.INDEPENDENT_DV, DV::min);
             if (valueFromMethodParameters.isDelayed()) {
@@ -755,6 +775,7 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
                     valueFromMethodParameters = myMethodAndConstructorAnalysersExcludingSAMs.stream()
                             .filter(ma -> !analyserContext.getMethodInspection(ma.getMethodInfo()).isPrivate())
                             .flatMap(ma -> ma.getParameterAnalyses().stream())
+                            .filter(this::parameterNotOfSelfType)
                             .map(pa -> correctIndependentFunctionalInterface(pa, pa.getPropertyFromMapDelayWhenAbsent(Property.INDEPENDENT)))
                             .filter(DV::isDone)
                             .reduce(MultiLevel.INDEPENDENT_DV, DV::min);
@@ -821,6 +842,16 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
         }
         typeAnalysis.setProperty(Property.INDEPENDENT, potentiallyInconclusive);
         return DONE;
+    }
+
+    private boolean parameterNotOfSelfType(ParameterAnalysis pa) {
+        TypeInfo firstStaticEnclosingType = typeInfo.firstStaticEnclosingType(InspectionProvider.DEFAULT);
+        TypeInfo ptType = pa.getParameterInfo().parameterizedType.typeInfo;
+        if (ptType != null && ptType.firstStaticEnclosingType(InspectionProvider.DEFAULT).equals(firstStaticEnclosingType)) {
+            LOGGER.debug("Skip parameter {} for independent computation, of self type", pa);
+            return false; // skip!!
+        }
+        return true;
     }
 
     /*

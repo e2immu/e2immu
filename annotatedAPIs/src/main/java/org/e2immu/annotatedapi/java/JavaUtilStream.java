@@ -139,7 +139,6 @@ public class JavaUtilStream {
          Factory method, the hidden content in the result comes from the parameters
          */
         @NotNull
-        @ImmutableContainer(hc = true)
         <TT> Stream<TT> concat(@NotNull Stream<? extends TT> s1, @NotNull Stream<? extends TT> s2);
 
         /*
@@ -153,14 +152,12 @@ public class JavaUtilStream {
          Factory method, the hidden content in the result comes from the parameter
          */
         @NotNull
-        @ImmutableContainer(hc = true)
         <TT> Stream<TT> of(@NotNull TT t);
 
         /*
          Factory method, the hidden content in the result comes from the parameter
          */
         @NotNull
-        @ImmutableContainer(hc = true)
         <TT> Stream<TT> of(@NotNull TT... t);
 
         /*
@@ -223,6 +220,7 @@ public class JavaUtilStream {
 
         @NotNull
         @Independent(hc = true)
+        @ImmutableContainer(hc = true)
         List<T> toList();
     }
 

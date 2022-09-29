@@ -270,7 +270,7 @@ public class Test_00_Basics_20 extends CommonTestRunner {
 
     TypeAnalyserVisitor typeAnalyserVisitor = d -> {
         if ("I".equals(d.typeInfo().simpleName)) {
-            assertDv(d, 1, MultiLevel.INDEPENDENT_DV, INDEPENDENT);
+            assertDv(d, MultiLevel.INDEPENDENT_DV, INDEPENDENT);
         }
         if ("C1".equals(d.typeInfo().simpleName)) {
             assertDv(d, 1, MultiLevel.EFFECTIVELY_FINAL_FIELDS_DV, IMMUTABLE);
