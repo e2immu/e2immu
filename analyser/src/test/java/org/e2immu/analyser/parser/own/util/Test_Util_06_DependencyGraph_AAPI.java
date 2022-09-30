@@ -86,7 +86,7 @@ public class Test_Util_06_DependencyGraph_AAPI extends CommonTestRunner {
             TypeInfo freezable = typeMap.get(Freezable.class);
 
             TypeAnalysis freezableAna = freezable.typeAnalysis.get();
-            assertEquals(MultiLevel.EVENTUALLY_IMMUTABLE_DV, freezableAna.getProperty(Property.IMMUTABLE));
+            assertEquals(MultiLevel.EVENTUALLY_IMMUTABLE_HC_DV, freezableAna.getProperty(Property.IMMUTABLE));
             assertEquals(MultiLevel.CONTAINER_DV, freezableAna.getProperty(Property.CONTAINER));
 
             MethodInfo freeze = freezable.findUniqueMethod("freeze", 0);

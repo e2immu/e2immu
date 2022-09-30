@@ -64,8 +64,8 @@ public class Test_Util_08_Resources extends CommonTestRunner {
                     assertEquals(delays, d.evaluationResult().causesOfDelay().toString());
                 }
                 if ("1.0.3.0.1".equals(d.statementId())) {
-                    String expected = d.iteration() == 0 ? "<m:isEmpty>?new String[](0):<m:split>"
-                            : "dirRelativeToBase.getPath().isEmpty()?new String[](0):(dirRelativeToBase.getPath().startsWith(\"/\")?dirRelativeToBase.getPath().substring(1):dirRelativeToBase.getPath()).split(\"/\")";
+                    String expected = d.iteration() == 0 ? "<m:isEmpty>?new String[0]:<m:split>"
+                            : "dirRelativeToBase.getPath().isEmpty()?new String[0]:(dirRelativeToBase.getPath().startsWith(\"/\")?dirRelativeToBase.getPath().substring(1):dirRelativeToBase.getPath()).split(\"/\")";
                     assertEquals(expected, d.evaluationResult().value().toString());
                 }
                 if ("1.0.3.0.2.0.1".equals(d.statementId())) {
@@ -74,7 +74,7 @@ public class Test_Util_08_Resources extends CommonTestRunner {
                     assertEquals(expected, d.evaluationResult().value().toString());
                 }
                 if ("1.0.3.0.2.0.1.0.2".equals(d.statementId())) {
-                    String value = d.iteration() == 0 ? "<m:add>" : "instance type TrieNode<URL>";
+                    String value = d.iteration() < BIG ? "<m:add>" : "instance type TrieNode<URL>";
                     assertEquals(value, d.evaluationResult().value().toString());
                 }
             }

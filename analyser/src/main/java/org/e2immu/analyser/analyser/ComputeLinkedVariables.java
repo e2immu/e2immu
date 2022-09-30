@@ -436,7 +436,8 @@ public class ComputeLinkedVariables {
             VariableInfoContainer vic = statementAnalysis.getVariable(variable.fullyQualifiedName());
 
             Map<Variable, DV> map = weightedGraph.links(variable, null, true);
-            CausesOfDelay delays = linkingNotYetSet.contains(variable) ? LinkedVariables.NOT_YET_SET_DELAY : CausesOfDelay.EMPTY;
+            CausesOfDelay delays = Collections.disjoint(linkingNotYetSet, map.keySet()) ? CausesOfDelay.EMPTY
+                    : LinkedVariables.NOT_YET_SET_DELAY;
             LinkedVariables linkedVariables = applyStaticallyAssignedAndRemoveSelfReference(staticallyAssigned,
                     variable, map, delays);
 

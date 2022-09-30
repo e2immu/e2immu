@@ -55,7 +55,8 @@ public class Test_Output_03_FormatterLookahead extends CommonTestRunner {
                 if ("scope-52:44".equals(d.variableName())) {
                     if ("2".equals(d.statementId())) { // if(...) statement
                         assertEquals("-1-lineLength+`forwardInfo.chars`+(null==`forwardInfo.string`?0:`forwardInfo.string`.length())>=0?nullable instance type GuideOnStack:nullable instance type GuideOnStack", d.currentValue().toString());
-                        assertEquals("startOfGuides:3", d.variableInfo().getLinkedVariables().toString());
+                        String linked = d.iteration() == 0 ? "startOfGuides:-1" : "startOfGuides:3";
+                        assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
                     }
                     if ("3".equals(d.statementId())) { // LVC outputElement = list.get(forwardInfo.pos())
                         String expected = d.iteration() == 0 ? "<v:scope-52:44>"
