@@ -100,13 +100,13 @@ public class Test_04_NotNull_AAPI extends CommonTestRunner {
                         }
                         if ("2".equals(d.statementId())) {
                             VariableInfo eval = d.variableInfoContainer().best(Stage.EVALUATION);
-                            String evalValue = d.iteration() < 7 ? "<f:node.data>" : "nullable instance type List<T>";
+                            String evalValue = d.iteration() < 4 ? "<f:node.data>" : "nullable instance type List<T>";
                             assertEquals(evalValue, eval.getValue().toString());
 
                             String expected = switch (d.iteration()) {
                                 case 0 -> "<null-check>?new LinkedList<>()/*0==this.size()*/:<f:node.data>";
                                 case 1, 2 -> "null==<f:node.data>?new LinkedList<>()/*0==this.size()*/:<vp:data:link@Field_data>";
-                                case 3, 4, 5, 6 -> "null==<vp:data:link@Field_data>?new LinkedList<>()/*0==this.size()*/:<vp:data:link@Field_data>";
+                                case 3 -> "null==<vp:data:link@Field_data>?new LinkedList<>()/*0==this.size()*/:<vp:data:link@Field_data>";
                                 default -> "null==nullable instance type List<T>?new LinkedList<>()/*0==this.size()*/:nullable instance type List<T>";
                             };
                             assertEquals(expected, d.currentValue().toString());
@@ -125,7 +125,7 @@ public class Test_04_NotNull_AAPI extends CommonTestRunner {
             }
         };
         BreakDelayVisitor breakDelayVisitor = d -> {
-            assertEquals("------MF---M-MFT-", d.delaySequence());
+            assertEquals("------", d.delaySequence());
         };
         testClass("NotNull_3", 0, 0, new DebugConfiguration.Builder()
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)

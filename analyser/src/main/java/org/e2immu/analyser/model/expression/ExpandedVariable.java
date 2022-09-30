@@ -49,6 +49,10 @@ public class ExpandedVariable extends BaseExpression {
         assert variable.causesOfDelay().isDone();
         this.variable = Objects.requireNonNull(variable);
         this.properties = Objects.requireNonNull(properties);
+        /*
+         IMPROVE: at this point, the linked variables can be delayed! This is against the rules,
+         and this only works because the linked variables are not part of equality.
+         */
         this.linkedVariables = Objects.requireNonNull(linkedVariables);
     }
 

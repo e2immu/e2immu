@@ -1388,7 +1388,12 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
             CausesOfDelay causesOfDelay = CausesOfDelay.EMPTY;
             for (Map.Entry<Variable, DV> e : linkedVariablesOfObject) {
                 DV immutable = context.getAnalyserContext().typeImmutable(e.getKey().parameterizedType());
-                if (immutable.isDelayed()) {
+                if (variable() instanceof This) {
+                    /*
+                     without this line, we get loops of CONTEXT_IMMUTABLE delays, see e.g., Test_Util_07_Trie
+                     */
+                    newLinked.put(e.getKey(), LinkedVariables.LINK_DEPENDENT);
+                } else if (immutable.isDelayed()) {
                     causesOfDelay = causesOfDelay.merge(immutable.causesOfDelay());
                 } else if (MultiLevel.isMutable(immutable)) {
                     newLinked.put(e.getKey(), LinkedVariables.LINK_DEPENDENT);

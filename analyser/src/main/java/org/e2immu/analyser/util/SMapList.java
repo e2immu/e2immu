@@ -35,8 +35,12 @@ public class SMapList {
         return new HashMap<>();
     }
 
+    /*
+    IMPROVE: we have to contract the @NotModified, because the computation is currently not able
+    to determine that it is not modifying (semantically, the "new LinkedList()" is ignored).
+     */
     @NotModified
-    public static <A, B> boolean addAll(@NotModified Map<A, List<B>> src, @Modified @NotNull Map<A, List<B>> destination) {
+    public static <A, B> boolean addAll(@NotModified(contract = true) Map<A, List<B>> src, @Modified @NotNull Map<A, List<B>> destination) {
         boolean change = false;
         for (Entry<A, List<B>> e : src.entrySet()) {
             List<B> inDestination = destination.get(e.getKey());
@@ -76,7 +80,7 @@ public class SMapList {
 
     @NotNull
     @NotModified
-    @Independent(hc = true)
+    @Independent // IMPROVE (hc = true)
     public static <A, B> List<B> list(@NotNull @NotModified Map<A, List<B>> map, @NotNull A a) {
         if (a == null) {
             throw new IllegalArgumentException(NULL_KEY);
@@ -89,7 +93,7 @@ public class SMapList {
     }
 
     @NotNull
-    @ImmutableContainer(hc = true)
+    // FIXME ?? @ImmutableContainer(hc = true)
     public static <A, B> Map<A, List<B>> immutable(@NotModified @NotNull(content = true) Map<A, List<B>> map) {
         Map<A, List<B>> tmp = new HashMap<>();
         for (Entry<A, List<B>> e : map.entrySet()) {
@@ -101,7 +105,7 @@ public class SMapList {
 
     @NotNull
     @NotModified
-    @Independent(hc = true)
+    @Independent // IMPROVE hc=true
     public static <A, B> Map<A, List<B>> copy(@NotNull(content = true) @NotModified Map<A, List<B>> map) {
         Map<A, List<B>> tmp = new HashMap<>();
         for (Entry<A, List<B>> e : map.entrySet()) {
