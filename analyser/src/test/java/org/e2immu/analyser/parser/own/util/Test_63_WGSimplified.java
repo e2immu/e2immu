@@ -157,7 +157,7 @@ public class Test_63_WGSimplified extends CommonTestRunner {
                 }
             }
         };
-        testClass("WGSimplified_0", 7, 0, new DebugConfiguration.Builder()
+        testClass("WGSimplified_0", 7, 1, new DebugConfiguration.Builder()
               //  .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .addStatementAnalyserVisitor(statementAnalyserVisitor)
                 .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)

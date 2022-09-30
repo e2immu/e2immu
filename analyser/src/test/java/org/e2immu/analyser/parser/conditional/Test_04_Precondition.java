@@ -512,11 +512,10 @@ public class Test_04_Precondition extends CommonTestRunner {
             if ("pop".equals(d.methodInfo().name)) {
                 String expected = switch (d.iteration()) {
                     case 0 -> "Precondition[expression=<precondition>, causes=[escape]]";
-                    case 1 -> "Precondition[expression=!<m:isEmpty>, causes=[escape]]";
                     default -> "Precondition[expression=true, causes=[]]";
                 };
                 assertEquals(expected, d.methodAnalysis().getPrecondition().toString());
-                if (d.iteration() >= 2) assertTrue(d.methodAnalysis().getPrecondition().isEmpty());
+                if (d.iteration() >= 1) assertTrue(d.methodAnalysis().getPrecondition().isEmpty());
             }
         };
         testClass("Precondition_7", 0, 0,

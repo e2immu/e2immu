@@ -382,21 +382,21 @@ public class Test_18_E2Immutable extends CommonTestRunner {
             if ("getMap7".equals(d.methodInfo().name)) {
                 if ("incremented".equals(d.variableName())) {
                     if ("0".equals(d.statementId())) {
-                        String expectValue = d.iteration() < 3 ? "<new:HashMap<String,SimpleContainer>>"
+                        String expectValue = d.iteration() == 0 ? "<new:HashMap<String,SimpleContainer>>"
                                 : "new HashMap<>(map7)/*this.size()==map7.size()*/";
                         assertEquals(expectValue, d.currentValue().toString());
-                        String expectLinked = d.iteration() < 3 ? "this.map7:-1" : "this.map7:4";
+                        String expectLinked = d.iteration() == 0 ? "this.map7:-1" : "this.map7:4";
                         assertEquals(expectLinked, d.variableInfo().getLinkedVariables().toString());
                     }
                     if ("1".equals(d.statementId())) {
-                        String expectValue = d.iteration() < 3 ? "<new:HashMap<String,SimpleContainer>>"
+                        String expectValue = d.iteration() == 0 ? "<new:HashMap<String,SimpleContainer>>"
                                 : "new HashMap<>(map7)/*this.size()==map7.size()*/";
                         assertEquals(expectValue, d.currentValue().toString());
                     }
                 }
                 if (d.variable() instanceof ReturnVariable) {
                     if ("2".equals(d.statementId())) {
-                        String expectLinked = d.iteration() < 3 ? "incremented:0,this.map7:-1" : "incremented:0,this.map7:4";
+                        String expectLinked = d.iteration() == 0 ? "incremented:0,this.map7:-1" : "incremented:0,this.map7:4";
                         assertEquals(expectLinked, d.variableInfo().getLinkedVariables().toString());
                     }
                 }
@@ -413,10 +413,10 @@ public class Test_18_E2Immutable extends CommonTestRunner {
                 assertEquals(expect, d.methodAnalysis().getSingleReturnValue().toString());
             }
             if ("get7".equals(d.methodInfo().name)) {
-                assertDv(d, 3, MultiLevel.DEPENDENT_DV, INDEPENDENT);
+                assertDv(d, 2, MultiLevel.DEPENDENT_DV, INDEPENDENT);
             }
             if ("getMap7".equals(d.methodInfo().name)) {
-                assertDv(d, 3, MultiLevel.DEPENDENT_DV, INDEPENDENT);
+                assertDv(d, 2, MultiLevel.DEPENDENT_DV, INDEPENDENT);
             }
         };
 
@@ -429,7 +429,7 @@ public class Test_18_E2Immutable extends CommonTestRunner {
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("E2Immutable_7".equals(d.typeInfo().simpleName)) {
                 // because SimpleContainer is mutable
-                assertDv(d, 3, MultiLevel.DEPENDENT_DV, INDEPENDENT);
+                assertDv(d, 2, MultiLevel.DEPENDENT_DV, INDEPENDENT);
                 assertHc(d, 1, "");
             }
             if ("SimpleContainer".equals(d.typeInfo().simpleName)) {

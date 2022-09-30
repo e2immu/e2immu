@@ -78,8 +78,8 @@ public class Test_Independent extends CommonTestRunner {
                     assertDv(d, 1, MultiLevel.EFFECTIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
                 }
                 if ("AnalyserContextImpl".equals(d.methodInfo().typeInfo.simpleName)) {
-                    assertDv(d, 3, MultiLevel.DEPENDENT_DV, Property.INDEPENDENT);
-                    assertDv(d, 3, MultiLevel.MUTABLE_DV, Property.IMMUTABLE);
+                    assertDv(d, 2, MultiLevel.DEPENDENT_DV, Property.INDEPENDENT);
+                    assertDv(d, 1, MultiLevel.MUTABLE_DV, Property.IMMUTABLE);
                 }
             }
             if ("parallelMethodAnalyserStream".equals(d.methodInfo().name)) {

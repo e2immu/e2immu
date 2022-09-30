@@ -117,15 +117,15 @@ public class Test_48_Store extends CommonTestRunner {
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("handleMultiSet".equals(d.methodInfo().name)) {
                 if ("project".equals(d.variableName())) {
-                    String expectValue = d.iteration() < 2 ? "<m:getOrCreate>" : "new Project_0(\"x\")";
+                    String expectValue = d.iteration() == 0? "<m:getOrCreate>" : "new Project_0(\"x\")";
                     assertEquals(expectValue, d.currentValue().toString());
 
                     // it 1: Store_3 is still immutable delayed
-                    String expectLinked = d.iteration() < 2 ? "this:-1" : "";
+                    String expectLinked = d.iteration() == 0 ? "this:-1" : "";
                     assertEquals(expectLinked, d.variableInfo().getLinkedVariables().toString());
                 }
                 if (d.variable() instanceof This) {
-                    assertDv(d, 2, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                    assertDv(d, 1, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                 }
             }
         };
@@ -133,22 +133,22 @@ public class Test_48_Store extends CommonTestRunner {
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("getOrCreate".equals(d.methodInfo().name)) {
                 // not modifying, there is no annotated API
-                assertDv(d, 2, DV.FALSE_DV, Property.MODIFIED_METHOD);
+                assertDv(d, 1, DV.FALSE_DV, Property.MODIFIED_METHOD);
 
                 // independent because non-modifying (no Annotated API)
-                assertDv(d, 2, MultiLevel.INDEPENDENT_DV, Property.INDEPENDENT);
+                assertDv(d, 1, MultiLevel.INDEPENDENT_DV, Property.INDEPENDENT);
 
-                String expected = d.iteration() < 2 ? "<m:getOrCreate>" : "/*inline getOrCreate*/new Project_0(\"x\")";
+                String expected = d.iteration() == 0 ? "<m:getOrCreate>" : "/*inline getOrCreate*/new Project_0(\"x\")";
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
             }
             if ("handleMultiSet".equals(d.methodInfo().name)) {
-                assertDv(d, 2, DV.FALSE_DV, Property.MODIFIED_METHOD);
+                assertDv(d, 1, DV.FALSE_DV, Property.MODIFIED_METHOD);
             }
         };
 
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
             if ("projects".equals(d.fieldInfo().name) && "Store_3".equals(d.fieldInfo().owner.simpleName)) {
-                assertDv(d, 2, DV.FALSE_DV, Property.MODIFIED_OUTSIDE_METHOD);
+                assertDv(d, 1, DV.FALSE_DV, Property.MODIFIED_OUTSIDE_METHOD);
                 assertDv(d, MultiLevel.MUTABLE_DV, Property.EXTERNAL_IMMUTABLE);
                 assertEquals("instance type HashMap<String,Project_0>", d.fieldAnalysis().getValue().toString());
             }
@@ -162,7 +162,7 @@ public class Test_48_Store extends CommonTestRunner {
             if ("Store_3".equals(d.typeInfo().simpleName)) {
                 assertHc(d, 0, "");
                 // hc = true because projects is mutable because ...?
-                assertDv(d, 2, MultiLevel.EFFECTIVELY_IMMUTABLE_HC_DV, Property.IMMUTABLE);
+                assertDv(d, 1, MultiLevel.EFFECTIVELY_IMMUTABLE_HC_DV, Property.IMMUTABLE);
             }
         };
 

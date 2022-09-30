@@ -620,11 +620,11 @@ public class Test_01_Loops_6plus extends CommonTestRunner {
 
         EvaluationResultVisitor evaluationResultVisitor = d -> {
             if ("1".equals(d.statementId())) {
-                String expectValue = d.iteration() < 2 ? "<m:entrySet>" : "kvStore$0.entrySet()";
+                String expectValue = d.iteration() == 0 ? "<m:entrySet>" : "kvStore$0.entrySet()";
                 assertEquals(expectValue, d.evaluationResult().value().toString());
             }
             if ("1.0.1.0.0".equals(d.statementId())) {
-                String expectValue = d.iteration() < 2 ? "<m:getValue>" : "entry.getValue()";
+                String expectValue = d.iteration() == 0 ? "<m:getValue>" : "entry.getValue()";
                 assertEquals(expectValue, d.evaluationResult().value().toString());
             }
         };
@@ -634,7 +634,8 @@ public class Test_01_Loops_6plus extends CommonTestRunner {
                 if ("result".equals(d.variableName())) {
                     if ("1".equals(d.statementId())) {
                         String expected = switch (d.iteration()) {
-                            case 0, 1 -> "<loopIsNotEmptyCondition>?<vl:result>:new HashMap<>()/*AnnotatedAPI.isKnown(true)&&0==this.size()*/";
+                            case 0 -> "<loopIsNotEmptyCondition>?<vl:result>:new HashMap<>()/*AnnotatedAPI.isKnown(true)&&0==this.size()*/";
+                            case 1 -> "kvStore$0.entrySet().isEmpty()?new HashMap<>()/*AnnotatedAPI.isKnown(true)&&0==this.size()*/:<vl:result>";
                             default -> "kvStore$0.entrySet().isEmpty()?new HashMap<>()/*AnnotatedAPI.isKnown(true)&&0==this.size()*/:instance type Map<String,String>";
                         };
                         assertEquals(expected, d.currentValue().toString());
@@ -647,12 +648,12 @@ public class Test_01_Loops_6plus extends CommonTestRunner {
                 }
                 if ("entry".equals(d.variableName())) {
                     if ("1.0.0".equals(d.statementId())) {
-                        String expectLv = d.iteration() < 2 ? "key:-1,this.kvStore:-1" : "this.kvStore:2";
+                        String expectLv = d.iteration() == 0 ? "key:-1,this.kvStore:-1" : "this.kvStore:2";
                         assertEquals(expectLv, d.variableInfo().getLinkedVariables().toString());
-                        assertDv(d, 2, MultiLevel.MUTABLE_DV, IMMUTABLE);
+                        assertDv(d, 1, MultiLevel.MUTABLE_DV, IMMUTABLE);
                     }
                     if ("1.0.1.0.0".equals(d.statementId())) {
-                        String expectL1 = d.iteration() < 2 ? "container:-1,key:-1,this.kvStore:-1" : "this.kvStore:2";
+                        String expectL1 = d.iteration() == 0 ? "container:-1,key:-1,this.kvStore:-1" : "this.kvStore:2";
                         assertEquals(expectL1, d.variableInfo().getLinkedVariables().toString());
                     }
                 }
@@ -661,14 +662,14 @@ public class Test_01_Loops_6plus extends CommonTestRunner {
                         assertTrue(d.variableInfoContainer().hasEvaluation());
                         assertFalse(d.variableInfoContainer().hasMerge());
 
-                        String linkedE = d.iteration() < 2 ? "entry:-1,key:-1" : "entry:2";
+                        String linkedE = d.iteration() == 0 ? "entry:-1,key:-1" : "entry:2";
                         assertEquals(linkedE, d.variableInfo().getLinkedVariables().toString());
                     }
                     if ("1".equals(d.statementId())) {
                         assertTrue(d.variableInfoContainer().hasEvaluation());
                         VariableInfo eval = d.variableInfoContainer().best(Stage.EVALUATION);
 
-                        String linkedE = d.iteration() < 2 ? "entry:-1" : "entry:2";
+                        String linkedE = d.iteration() == 0 ? "entry:-1" : "entry:2";
                         assertEquals(linkedE, eval.getLinkedVariables().toString());
 
                         assertTrue(d.variableInfoContainer().hasMerge());
@@ -725,7 +726,7 @@ public class Test_01_Loops_6plus extends CommonTestRunner {
                 if ("1.0.1.0.1".equals(d.statementId())) {
                     String expected = switch (d.iteration()) {
                         case 0 -> "<null-check>&&<m:isAfter>&&<m:isBefore>";
-                        case 1, 2 -> "<m:isAfter>&&<m:isBefore>&&null!=<f:container.read>";
+                        case 1 -> "<m:isAfter>&&<m:isBefore>&&null!=<f:container.read>";
                         default -> "`(entry.getValue()).updated.time`>`(entry.getValue()).read.time`&&`new Date(`(entry.getValue()).read.time`+readWithinMillis).time`>`now.time`&&null!=(entry.getValue()).read";
                     };
                     assertEquals(expected, d.evaluationResult().value().toString());
@@ -746,18 +747,19 @@ public class Test_01_Loops_6plus extends CommonTestRunner {
                 if (d.variable() instanceof ParameterInfo p && "readWithinMillis".equals(p.name)) {
                     if ("1.0.1".equals(d.statementId())) {
                         String expected = switch (d.iteration()) {
-                            case 0, 1, 2 -> "<m:contains>?instance type long:<p:readWithinMillis>";
+                            case 0 -> "<m:contains>?instance type long:<p:readWithinMillis>";
+                            case 1 -> "queried.contains(entry.getKey())?instance type long:<p:readWithinMillis>";
                             default -> "instance type long";
                         };
                         assertEquals(expected, d.currentValue().toString());
-                        assertDv(d, 3, MultiLevel.EFFECTIVELY_NOT_NULL_DV, NOT_NULL_EXPRESSION);
+                        assertDv(d, 2, MultiLevel.EFFECTIVELY_NOT_NULL_DV, NOT_NULL_EXPRESSION);
                     }
                 }
                 if (d.variable() instanceof FieldReference fr && "read".equals(fr.fieldInfo.name)) {
                     if ("1.0.1.0.1".equals(d.statementId())) {
                         assertNotNull(fr.scopeVariable);
                         assertEquals("container", fr.scopeVariable.simpleName());
-                        String expected = d.iteration() <= 2 ? "<f:container.read>" : "nullable instance type Date";
+                        String expected = d.iteration() < 2 ? "<f:container.read>" : "nullable instance type Date";
                         assertEquals(expected, d.currentValue().toString());
 
                         assertEquals("container", fr.scope.toString());

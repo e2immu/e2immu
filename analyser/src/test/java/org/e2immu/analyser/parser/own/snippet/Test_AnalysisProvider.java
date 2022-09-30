@@ -46,81 +46,63 @@ public class Test_AnalysisProvider extends CommonTestRunner {
     @Test
     public void test_0() throws IOException {
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
-            if ("apply".equals(d.methodInfo().name) && "$5".equals(d.methodInfo().typeInfo.simpleName)) {
-                assertEquals("0", d.statementId());
-                if (d.variable() instanceof FieldReference fr && "priority".equals(fr.fieldInfo.name)) {
-                    if ("Cause.TYPE_ANALYSIS".equals(fr.scope.toString())) {
-                        String expected = d.iteration() <= 4 ? "<f:Cause.TYPE_ANALYSIS.priority>"
-                                : "instance type int";
-                        assertEquals(expected, d.currentValue().toString());
-                    }
-                }
-            }
             if ("defaultImmutable".equals(d.methodInfo().name)) {
-                if (d.variable() instanceof FieldReference fr && "IMMUTABLE".equals(fr.fieldInfo.name)) {
-                    assertTrue(fr.isStatic);
-                    if ("8".equals(d.statementId())) {
-                        String expected = d.iteration() <= 4 ? "<f:IMMUTABLE>" : "instance type Property/*new Property(){}*/";
+                if (d.variable() instanceof FieldReference fr && "EFFECTIVELY_E1IMMUTABLE_DV".equals(fr.fieldInfo.name)) {
+                    if ("1".equals(d.statementId())) {
+                        assertDv(d, 1, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                    }
+                    if ("9".equals(d.statementId())) {
+                        assertDv(d, 5, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                    }
+                }
+                if ("doSum".equals(d.variableName())) {
+                    if ("8.0.0".equals(d.statementId())) {
+                        String expected = switch (d.iteration()) {
+                            case 0 -> "<s:DV>";
+                            case 1, 2, 3 -> "<m:immutableCanBeIncreasedByTypeParameters>";
+                            default -> "this.getTypeAnalysisNullWhenAbsent(`parameterizedType.bestTypeInfo`).immutableCanBeIncreasedByTypeParameters()";
+                        };
                         assertEquals(expected, d.currentValue().toString());
                     }
                 }
-                if (d.variable() instanceof FieldReference fr && "NOT_INVOLVED_DV".equals(fr.fieldInfo.name)) {
-                    assertTrue(fr.isStatic());
-                    if ("9".equals(d.statementId())) { // return dynamicBaseValue
-                        String linked = d.iteration() == 0
-                                ? "AnalysisProvider_0.EFFECTIVELY_E2IMMUTABLE_DV:-1,AnalysisProvider_0.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV:-1,AnalysisProvider_0.IMMUTABLE:-1,baseValue:-1,bestType:-1,dynamicBaseValue:-1,dynamicValue:-1,parameterizedType.parameters:-1,parameterizedType:-1,this:-1,typeAnalysis:-1"
-                                : "";
-                        assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
+                if ("baseValue".equals(d.variableName())) {
+                    if ("5".equals(d.statementId())) {
+                        String expected = switch (d.iteration()) {
+                            case 0, 1, 2 -> "<s:DV>";
+                            case 3 -> "<m:getProperty>";
+                            default -> "this.getTypeAnalysisNullWhenAbsent(`parameterizedType.bestTypeInfo`).getProperty(AnalysisProvider_0.IMMUTABLE)";
+                        };
+                        assertEquals(expected, d.currentValue().toString());
                     }
                 }
                 if (d.variable() instanceof ReturnVariable) {
                     if ("1".equals(d.statementId())) {
-                        assertEquals("AnalysisProvider_0.EFFECTIVELY_E1IMMUTABLE_DV:0",
-                                d.variableInfo().getLinkedVariables().toString());
-                        String ex = switch (d.iteration()) {
+                        String expected = switch (d.iteration()) {
                             case 0 -> "<f:parameterizedType.arrays>>=1?<f:EFFECTIVELY_E1IMMUTABLE_DV>:<return value>";
                             case 1, 2, 3, 4 -> "parameterizedType.arrays>=1?<f:EFFECTIVELY_E1IMMUTABLE_DV>:<return value>";
                             default -> "parameterizedType.arrays>=1?AnalysisProvider_0.EFFECTIVELY_E1IMMUTABLE_DV:<return value>";
                         };
-                        assertEquals(ex, d.currentValue().toString());
+                        assertEquals(expected, d.currentValue().toString());
                     }
-                    if ("3".equals(d.statementId())) {
-                        String linked = d.iteration() <= 4
-                                ? "AnalysisProvider_0.EFFECTIVELY_E1IMMUTABLE_DV:0,AnalysisProvider_0.EFFECTIVELY_E2IMMUTABLE_DV:-1,AnalysisProvider_0.NOT_INVOLVED_DV:-1,dynamicValue:-1,unboundIsMutable:-1"
-                                : "AnalysisProvider_0.EFFECTIVELY_E1IMMUTABLE_DV:0,AnalysisProvider_0.EFFECTIVELY_E2IMMUTABLE_DV:1,AnalysisProvider_0.NOT_INVOLVED_DV:1,dynamicValue:1";
-                        assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
-                        String ex = switch (d.iteration()) {
-                            case 0 -> "<null-check>?<s:DV>:<f:parameterizedType.arrays>>=1?<f:EFFECTIVELY_E1IMMUTABLE_DV>:<return value>";
-                            case 1, 2 -> "<null-check>?<m:max>:parameterizedType.arrays>=1?<f:EFFECTIVELY_E1IMMUTABLE_DV>:<return value>";
-                            case 3, 4 -> "null==`parameterizedType.bestTypeInfo`?<m:max>:parameterizedType.arrays>=1?<f:EFFECTIVELY_E1IMMUTABLE_DV>:<return value>";
-                            default -> "null==`parameterizedType.bestTypeInfo`?`dynamicValue.value`>=`unboundIsMutable?AnalysisProvider_0.NOT_INVOLVED_DV:AnalysisProvider_0.EFFECTIVELY_E2IMMUTABLE_DV.value`?dynamicValue:unboundIsMutable?AnalysisProvider_0.NOT_INVOLVED_DV:AnalysisProvider_0.EFFECTIVELY_E2IMMUTABLE_DV:parameterizedType.arrays>=1?AnalysisProvider_0.EFFECTIVELY_E1IMMUTABLE_DV:<return value>";
+                    if ("6".equals(d.statementId())) {
+                        String expected = switch (d.iteration()) {
+                            case 0 -> "<m:isDelayed>?<s:DV>:<null-check>?<s:DV>:<f:parameterizedType.arrays>>=1?<f:EFFECTIVELY_E1IMMUTABLE_DV>:<return value>";
+                            case 1, 2 -> "<m:isDelayed>?<s:DV>:<null-check>?<m:max>:parameterizedType.arrays>=1?<f:EFFECTIVELY_E1IMMUTABLE_DV>:<return value>";
+                            case 3 -> "<m:isDelayed>?<s:DV>:null==`parameterizedType.bestTypeInfo`?<m:max>:parameterizedType.arrays>=1?<f:EFFECTIVELY_E1IMMUTABLE_DV>:<return value>";
+                            case 4 -> "`this.getTypeAnalysisNullWhenAbsent(`parameterizedType.bestTypeInfo`).getProperty(AnalysisProvider_0.IMMUTABLE).value`<=-1?this.getTypeAnalysisNullWhenAbsent(`parameterizedType.bestTypeInfo`).getProperty(AnalysisProvider_0.IMMUTABLE):null==`parameterizedType.bestTypeInfo`?<m:max>:parameterizedType.arrays>=1?<f:EFFECTIVELY_E1IMMUTABLE_DV>:<return value>";
+                            default -> "`this.getTypeAnalysisNullWhenAbsent(`parameterizedType.bestTypeInfo`).getProperty(AnalysisProvider_0.IMMUTABLE).value`<=-1?this.getTypeAnalysisNullWhenAbsent(`parameterizedType.bestTypeInfo`).getProperty(AnalysisProvider_0.IMMUTABLE):null==`parameterizedType.bestTypeInfo`?`dynamicValue.value`>=`unboundIsMutable?AnalysisProvider_0.NOT_INVOLVED_DV:AnalysisProvider_0.EFFECTIVELY_E2IMMUTABLE_DV.value`?dynamicValue:unboundIsMutable?AnalysisProvider_0.NOT_INVOLVED_DV:AnalysisProvider_0.EFFECTIVELY_E2IMMUTABLE_DV:parameterizedType.arrays>=1?AnalysisProvider_0.EFFECTIVELY_E1IMMUTABLE_DV:<return value>";
                         };
-                        assertEquals(ex, d.currentValue().toString());
+                        assertEquals(expected, d.currentValue().toString());
                     }
-                    // problems start at statement 8
-                    if ("8".equals(d.statementId())) {
-                        String linked = switch (d.iteration()) {
-                            case 0, 1, 2 -> "AnalysisProvider_0.EFFECTIVELY_E1IMMUTABLE_DV:0,AnalysisProvider_0.EFFECTIVELY_E2IMMUTABLE_DV:-1,AnalysisProvider_0.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV:-1,AnalysisProvider_0.IMMUTABLE:-1,AnalysisProvider_0.NOT_INVOLVED_DV:-1,baseValue:0,bestType:-1,dynamicBaseValue:-1,dynamicValue:-1,parameterizedType.parameters:-1,parameterizedType:-1,this:-1,typeAnalysis:-1,unboundIsMutable:-1";
-                            case 3, 4 -> "AnalysisProvider_0.EFFECTIVELY_E1IMMUTABLE_DV:0,AnalysisProvider_0.EFFECTIVELY_E2IMMUTABLE_DV:-1,AnalysisProvider_0.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV:-1,AnalysisProvider_0.IMMUTABLE:-1,AnalysisProvider_0.NOT_INVOLVED_DV:-1,baseValue:0,dynamicBaseValue:-1,dynamicValue:-1,parameterizedType.parameters:-1,parameterizedType:-1,this:-1,typeAnalysis:-1,unboundIsMutable:-1";
-                            default -> "AnalysisProvider_0.EFFECTIVELY_E1IMMUTABLE_DV:0,AnalysisProvider_0.EFFECTIVELY_E2IMMUTABLE_DV:-1,AnalysisProvider_0.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV:-1,AnalysisProvider_0.IMMUTABLE:-1,AnalysisProvider_0.NOT_INVOLVED_DV:-1,baseValue:0,dynamicBaseValue:-1,dynamicValue:-1,parameterizedType.parameters:-1,parameterizedType:-1,this:-1,typeAnalysis:-1";
+                }
+                if ("dynamicBaseValue".equals(d.variableName())) {
+                    if ("7".equals(d.statementId())) {
+                        String expected = switch (d.iteration()) {
+                            case 0, 1, 2, 3 -> "<s:DV>";
+                            case 4 -> "<vp:DV:initial@Field_EFFECTIVELY_E2IMMUTABLE_DV;initial@Field_NOT_INVOLVED_DV>";
+                            default -> "`dynamicValue.value`>=`this.getTypeAnalysisNullWhenAbsent(`parameterizedType.bestTypeInfo`).getProperty(AnalysisProvider_0.IMMUTABLE).value`?dynamicValue:this.getTypeAnalysisNullWhenAbsent(`parameterizedType.bestTypeInfo`).getProperty(AnalysisProvider_0.IMMUTABLE)";
                         };
-                        //  assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
-                        String ex = switch (d.iteration()) {
-                            case 0 -> "<m:isAtLeastE2Immutable>&&!<m:isEmpty>?<m:valueIsTrue>?<m:isDelayed>?<m:reduce>:<m:sumImmutableLevels>:<m:isDelayed>?<s:DV>:<return value>:<m:isDelayed>?<s:DV>:<null-check>?<s:DV>:<f:parameterizedType.arrays>>=1?<f:EFFECTIVELY_E1IMMUTABLE_DV>:<return value>";
-                            case 1, 2 -> "<m:isAtLeastE2Immutable>&&!<m:isEmpty>?<m:valueIsTrue>?<m:isDelayed>?<m:reduce>:<m:sumImmutableLevels>:<m:isDelayed>?<s:DV>:<return value>:<m:isDelayed>?<s:DV>:<null-check>?<m:max>:parameterizedType.arrays>=1?<f:EFFECTIVELY_E1IMMUTABLE_DV>:<return value>";
-                            case 3, 4 -> "!parameterizedType.parameters.isEmpty()&&<m:isAtLeastE2Immutable>?<m:valueIsTrue>?<m:isDelayed>?<m:reduce>:<m:sumImmutableLevels>:<m:isDelayed>?<s:DV>:<return value>:<m:isDelayed>?<s:DV>:null==`parameterizedType.bestTypeInfo`?<m:max>:parameterizedType.arrays>=1?<f:EFFECTIVELY_E1IMMUTABLE_DV>:<return value>";
-                            default -> "!parameterizedType.parameters.isEmpty()&&<m:isAtLeastE2Immutable>?<m:valueIsTrue>?<m:isDelayed>?<m:reduce>:<m:sumImmutableLevels>:<m:isDelayed>?<s:DV>:<return value>:<m:isDelayed>?<s:DV>:null==`parameterizedType.bestTypeInfo`?`dynamicValue.value`>=`unboundIsMutable?AnalysisProvider_0.NOT_INVOLVED_DV:AnalysisProvider_0.EFFECTIVELY_E2IMMUTABLE_DV.value`?dynamicValue:unboundIsMutable?AnalysisProvider_0.NOT_INVOLVED_DV:AnalysisProvider_0.EFFECTIVELY_E2IMMUTABLE_DV:parameterizedType.arrays>=1?AnalysisProvider_0.EFFECTIVELY_E1IMMUTABLE_DV:<return value>";
-                        };
-                        // assertEquals(ex, d.currentValue().toString());
-                        // still delays at 22
-                    }
-                    if ("9".equals(d.statementId())) {
-                        String linked = switch (d.iteration()) {
-                            case 0, 1, 2 -> "AnalysisProvider_0.EFFECTIVELY_E1IMMUTABLE_DV:0,AnalysisProvider_0.EFFECTIVELY_E2IMMUTABLE_DV:-1,AnalysisProvider_0.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV:-1,AnalysisProvider_0.IMMUTABLE:-1,AnalysisProvider_0.NOT_INVOLVED_DV:-1,baseValue:0,bestType:-1,dynamicBaseValue:-1,dynamicValue:-1,parameterizedType.arrays:-1,parameterizedType.parameters:-1,parameterizedType:-1,this:-1,typeAnalysis:-1,unboundIsMutable:-1";
-                            case 3, 4 -> "AnalysisProvider_0.EFFECTIVELY_E1IMMUTABLE_DV:0,AnalysisProvider_0.EFFECTIVELY_E2IMMUTABLE_DV:-1,AnalysisProvider_0.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV:-1,AnalysisProvider_0.IMMUTABLE:-1,AnalysisProvider_0.NOT_INVOLVED_DV:-1,baseValue:0,dynamicBaseValue:-1,dynamicValue:-1,parameterizedType.arrays:-1,parameterizedType.parameters:-1,parameterizedType:-1,this:-1,typeAnalysis:-1,unboundIsMutable:-1";
-                            default -> "AnalysisProvider_0.EFFECTIVELY_E1IMMUTABLE_DV:0,AnalysisProvider_0.EFFECTIVELY_E2IMMUTABLE_DV:1,AnalysisProvider_0.NOT_INVOLVED_DV:1,baseValue:0,dynamicBaseValue:1,dynamicValue:1,parameterizedType.parameters:3,parameterizedType:3,this:2,typeAnalysis:2";
-                        };
-                        assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
+                        assertEquals(expected, d.currentValue().toString());
                     }
                 }
             }
@@ -134,6 +116,50 @@ public class Test_AnalysisProvider extends CommonTestRunner {
                 };
                 assertEquals(expected, d.statementAnalysis().stateData().getPrecondition().toString());
             }
+            if ("defaultImmutable".equals(d.methodInfo().name)) {
+                if ("1".equals(d.statementId())) {
+                    String reached = d.iteration() == 0 ? "initial_flow_value@Method_defaultImmutable_1-C" : "ALWAYS:2";
+                    assertEquals(reached, d.statementAnalysis().flowData().getGuaranteedToBeReachedInMethod().toString());
+                }
+                if ("4".equals(d.statementId())) {
+                    String reached = d.iteration() < 3 ? "initial_flow_value@Method_defaultImmutable_4-C" : "CONDITIONALLY:1";
+                    assertEquals(reached, d.statementAnalysis().flowData().getGuaranteedToBeReachedInMethod().toString());
+                }
+                if ("7".equals(d.statementId())) {
+                    String reached = d.iteration() < 4 ? "initial_flow_value@Method_defaultImmutable_7-C" : "CONDITIONALLY:1";
+                    assertEquals(reached, d.statementAnalysis().flowData().getGuaranteedToBeReachedInMethod().toString());
+                }
+                if ("8".equals(d.statementId())) {
+                    String expected = switch (d.iteration()) {
+                        case 0, 1, 2 -> "<m:isAtLeastE2Immutable>&&!<m:isEmpty>";
+                        case 3,4 -> "!parameterizedType.parameters.isEmpty()&&<m:isAtLeastE2Immutable>";
+                        default -> "!parameterizedType.parameters.isEmpty()&&this.isAtLeastE2Immutable(`dynamicValue.value`>=`this.getTypeAnalysisNullWhenAbsent(`parameterizedType.bestTypeInfo`).getProperty(AnalysisProvider_0.IMMUTABLE).value`?dynamicValue:this.getTypeAnalysisNullWhenAbsent(`parameterizedType.bestTypeInfo`).getProperty(AnalysisProvider_0.IMMUTABLE))";
+                    };
+                    assertEquals(expected,
+                            d.statementAnalysis().stateData().valueOfExpression.get().toString());
+                }
+                if ("8.0.1".equals(d.statementId())) {
+                    String reached = switch (d.iteration()) {
+                        case 0 -> "constructor-to-instance@Method_defaultImmutable_4-E;initial:parameterizedType.arrays@Method_defaultImmutable_1-C;initial:parameterizedType@Method_defaultImmutable_1-E;initial:this.value@Method_isDone_0-C;srv@Method_isDone";
+                        case 1 -> "constructor-to-instance@Method_defaultImmutable_4-E;initial:parameterizedType.arrays@Method_defaultImmutable_1-C;initial:parameterizedType@Method_defaultImmutable_1-E;initial:this.value@Method_isDone_0-C;srv@Method_bestTypeInfo;srv@Method_isDone";
+                        case 2 -> "cm@Parameter_name;constructor-to-instance@Method_defaultImmutable_4-E;initial:parameterizedType.arrays@Method_defaultImmutable_1-C;initial:parameterizedType@Method_defaultImmutable_1-E;initial:this.value@Method_isDone_0-C;mom@Parameter_name;srv@Method_bestTypeInfo;srv@Method_isDone";
+                        case 3 -> "cm@Parameter_name;de:baseValue@Method_defaultImmutable_6-E;mom@Parameter_name;srv@Method_bestTypeInfo";
+                        case 4 -> "initial@Field_EFFECTIVELY_E2IMMUTABLE_DV;initial@Field_NOT_INVOLVED_DV";
+                        default -> "CONDITIONALLY:1";
+                    };
+                    assertEquals(reached, d.statementAnalysis().flowData().getGuaranteedToBeReachedInMethod().toString());
+                }
+                if ("8.0.2".equals(d.statementId())) {
+                    String expected = switch (d.iteration()) {
+                        case 0, 1, 2, 3 -> "<m:valueIsTrue>";
+                        case 4 -> "<c:boolean>";
+                        default -> "1==`this.getTypeAnalysisNullWhenAbsent(`parameterizedType.bestTypeInfo`).immutableCanBeIncreasedByTypeParameters().value`";
+                    };
+                    assertEquals(expected, d.statementAnalysis().stateData().valueOfExpression.get().toString());
+                    String reached = d.iteration() < 5 ? "initial_flow_value@Method_defaultImmutable_8.0.2-C" : "CONDITIONALLY:1";
+                    assertEquals(reached, d.statementAnalysis().flowData().getGuaranteedToBeReachedInMethod().toString());
+                }
+            }
         };
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("containsCauseOfDelay".equals(d.methodInfo().name)) {
@@ -146,6 +172,19 @@ public class Test_AnalysisProvider extends CommonTestRunner {
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
             if ("IMMUTABLE".equals(d.fieldInfo().name)) {
                 assertEquals("new Property(){}", d.fieldAnalysis().getValue().toString());
+            }
+            if ("EFFECTIVELY_E1IMMUTABLE_DV".equals(d.fieldInfo().name)) {
+                assertEquals(d.iteration() > 0, d.fieldAnalysis().getLinkedVariables().isDone());
+                assertDv(d, 5, DV.FALSE_DV, Property.MODIFIED_OUTSIDE_METHOD);
+                assertDv(d, 5, MultiLevel.NOT_CONTAINER_DV, Property.CONTAINER_RESTRICTION);
+                String expected = d.iteration() < 4 ? "<f:EFFECTIVELY_E1IMMUTABLE_DV>" : "instance type DV";
+                assertEquals(expected, d.fieldAnalysis().getValue().toString());
+
+                assertDv(d, 2, MultiLevel.EFFECTIVELY_FINAL_FIELDS_DV, Property.EXTERNAL_IMMUTABLE);
+                assertDv(d, 3, MultiLevel.INDEPENDENT_DV, Property.INDEPENDENT);
+                assertDv(d, 4, MultiLevel.CONTAINER_DV, Property.CONTAINER);
+                assertDv(d, 0, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.EXTERNAL_NOT_NULL);
+                assertDv(d, 0, MultiLevel.NOT_IGNORE_MODS_DV, Property.EXTERNAL_IGNORE_MODIFICATIONS);
             }
         };
         testClass("AnalysisProvider_0", 0, 5,

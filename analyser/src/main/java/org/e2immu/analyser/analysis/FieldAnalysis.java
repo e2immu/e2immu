@@ -135,7 +135,7 @@ public interface FieldAnalysis extends Analysis {
                 Property.NOT_NULL_EXPRESSION, getProperty(Property.EXTERNAL_NOT_NULL),
                 Property.IMMUTABLE, getProperty(Property.EXTERNAL_IMMUTABLE),
                 Property.CONTAINER, getProperty(Property.CONTAINER),
-                Property.INDEPENDENT, getProperty(Property.INDEPENDENT),
+                Property.INDEPENDENT, MultiLevel.INDEPENDENT_DV,
                 Property.IGNORE_MODIFICATIONS, getProperty(Property.EXTERNAL_IGNORE_MODIFICATIONS),
                 Property.IDENTITY, Property.IDENTITY.falseDv));
     }

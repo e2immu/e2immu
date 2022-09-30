@@ -243,8 +243,8 @@ public class Test_16_Modification extends CommonTestRunner {
                     assertDv(d, MultiLevel.DEPENDENT_DV, Property.INDEPENDENT);
                 }
                 if ("FaultyImplementation".equals(d.methodInfo().typeInfo.simpleName)) {
-                    assertDv(d, 4, MultiLevel.CONTAINER_DV, Property.CONTAINER);
-                    assertDv(d, 4, MultiLevel.DEPENDENT_DV, Property.INDEPENDENT);
+                    assertDv(d, 1, MultiLevel.CONTAINER_DV, Property.CONTAINER);
+                    assertDv(d, 3, MultiLevel.DEPENDENT_DV, Property.INDEPENDENT);
                 }
             }
             if ("addError".equals(d.methodInfo().name)) {
@@ -258,7 +258,7 @@ public class Test_16_Modification extends CommonTestRunner {
                     assertDv(d.p(0), 2, MultiLevel.DEPENDENT_DV, Property.INDEPENDENT);
                 }
                 if ("FaultyImplementation".equals(d.methodInfo().typeInfo.simpleName)) {
-                    assertDv(d.p(0), 5, MultiLevel.CONTAINER_DV, Property.CONTAINER);
+                    assertDv(d.p(0), 3, MultiLevel.CONTAINER_DV, Property.CONTAINER);
                     assertDv(d.p(0), 3, MultiLevel.DEPENDENT_DV, Property.INDEPENDENT);
                 }
             }

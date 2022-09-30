@@ -38,7 +38,7 @@ public class Test_16_Modification_25 extends CommonTestRunner {
             if ("add".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof FieldReference fr && "ts".equals(fr.fieldInfo.name)) {
                     if ("1".equals(d.statementId())) {
-                        String linked = d.iteration() < 2 ? "as:-1,bs:-1,cs:-1,r:-1" : "as:4,bs:4,cs:4";
+                        String linked = d.iteration() == 0 ? "as:-1,bs:-1,cs:-1,r:-1" : "as:4,bs:4,cs:4";
                         assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
                     }
                 }

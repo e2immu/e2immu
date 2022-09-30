@@ -57,7 +57,7 @@ public class Test_25_FieldReference extends CommonTestRunner {
                     assertTrue(d.statementId().startsWith("0.0"), "Seen in " + d.statementId());
                 }
                 if (d.variable() instanceof FieldReference fr && "changeData".equals(fr.fieldInfo.name)) {
-                    assertCurrentValue(d, 3, "nullable instance type Map<String,ChangeData>");
+                    assertCurrentValue(d, 2, "nullable instance type Map<String,ChangeData>");
                     if ("0.0.0".equals(d.statementId())) {
                         assertDv(d, MultiLevel.NOT_CONTAINER_DV, Property.CONTEXT_CONTAINER);
                     }
@@ -79,7 +79,7 @@ public class Test_25_FieldReference extends CommonTestRunner {
                 // about hidden content, and therefore the algorithm says the factory method is immutable
                 assertDv(d, MultiLevel.MUTABLE_DV, Property.EXTERNAL_IMMUTABLE);
                 assertDv(d, 1, MultiLevel.NOT_CONTAINER_DV, Property.CONTAINER_RESTRICTION);
-                assertDv(d, 3, DV.FALSE_DV, Property.MODIFIED_OUTSIDE_METHOD);
+                assertDv(d, 2, DV.FALSE_DV, Property.MODIFIED_OUTSIDE_METHOD);
             }
         };
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {

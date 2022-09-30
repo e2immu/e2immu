@@ -127,7 +127,6 @@ public class Test_15_InlinedMethod_AAPI extends CommonTestRunner {
                 if ("1".equals(d.statementId())) {
                     String expected = switch (d.iteration()) {
                         case 0 -> "<p:i>+<m:nextInt>";
-                        case 1 -> "i+<m:nextInt>";
                         default -> "i+r";
                     };
                     assertEquals(expected, d.evaluationResult().value().toString());
@@ -137,17 +136,17 @@ public class Test_15_InlinedMethod_AAPI extends CommonTestRunner {
         };
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("plusRandom".equals(d.methodInfo().name)) {
-                String expected = d.iteration() < 2 ? "<m:plusRandom>" : "i+r";
+                String expected = d.iteration() == 0 ? "<m:plusRandom>" : "i+r";
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
-                if (d.iteration() >= 2) assertTrue(d.methodAnalysis().getSingleReturnValue() instanceof Sum);
+                if (d.iteration() >= 1) assertTrue(d.methodAnalysis().getSingleReturnValue() instanceof Sum);
                 assertDv(d, 1, DV.TRUE_DV, Property.MODIFIED_METHOD);
             }
             if ("difference31".equals(d.methodInfo().name)) {
-                String expected = d.iteration() < 2 ? "<m:difference31>" : "instance type int-(instance type int)";
+                String expected = d.iteration() == 0 ? "<m:difference31>" : "instance type int-(instance type int)";
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
             }
             if ("difference11".equals(d.methodInfo().name)) {
-                String expected = d.iteration() < 2 ? "<m:difference11>" : "instance type int-(instance type int)";
+                String expected = d.iteration() == 0 ? "<m:difference11>" : "instance type int-(instance type int)";
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
             }
         };
@@ -305,11 +304,11 @@ public class Test_15_InlinedMethod_AAPI extends CommonTestRunner {
             if ("subElements".equals(d.methodInfo().name)) {
                 if ("BinaryOperator".equals(d.methodInfo().typeInfo.simpleName)) {
                     if (d.variable() instanceof ReturnVariable) {
-                        String linked = d.iteration() <= 2 ? "this.lhs:-1,this.rhs:-1" : "";
+                        String linked = d.iteration() < 2 ? "this.lhs:-1,this.rhs:-1" : "";
                         assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
-                        String expected = d.iteration() <= 2 ? "<m:of>" : "List.of(lhs,rhs)";
+                        String expected = d.iteration() < 2 ? "<m:of>" : "List.of(lhs,rhs)";
                         assertEquals(expected, d.currentValue().toString());
-                        assertDv(d, 3, MultiLevel.MUTABLE_DV, Property.IMMUTABLE);
+                        assertDv(d, 2, MultiLevel.MUTABLE_DV, Property.IMMUTABLE);
                     }
                 }
             }
@@ -355,21 +354,21 @@ public class Test_15_InlinedMethod_AAPI extends CommonTestRunner {
                 assertEquals("compare", d.methodInfo().methodResolution.get().methodsOfOwnClassReachedSorted());
                 assertEquals("", d.methodInfo().methodResolution.get().callCycleSorted());
 
-                assertDv(d, 3, DV.FALSE_DV, Property.MODIFIED_METHOD);
+                assertDv(d, 2, DV.FALSE_DV, Property.MODIFIED_METHOD);
             }
             if ("subElements".equals(d.methodInfo().name)) {
                 if ("Expression".equals(d.methodInfo().typeInfo.simpleName)) {
                     assertDv(d, MultiLevel.MUTABLE_DV, Property.IMMUTABLE);
                     assertDv(d, MultiLevel.DEPENDENT_DV, Property.INDEPENDENT);
                 } else if ("BinaryOperator".equals(d.methodInfo().typeInfo.simpleName)) {
-                    String expected = d.iteration() <= 2 ? "<m:subElements>" : "/*inline subElements*/List.of(lhs,rhs)";
+                    String expected = d.iteration() < 2 ? "<m:subElements>" : "/*inline subElements*/List.of(lhs,rhs)";
                     assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
-                    assertDv(d, 3, MultiLevel.MUTABLE_DV, Property.IMMUTABLE);
+                    assertDv(d, 2, MultiLevel.MUTABLE_DV, Property.IMMUTABLE);
                 }
             }
             if ("lhs".equals(d.methodInfo().name)) {
                 assertFalse(d.allowBreakDelay());
-                assertDv(d, 3, MultiLevel.MUTABLE_DV, Property.IMMUTABLE);
+                assertDv(d, 2, MultiLevel.MUTABLE_DV, Property.IMMUTABLE);
             }
         };
 

@@ -196,8 +196,8 @@ public class Test_21_VariableInLoop extends CommonTestRunner {
         EvaluationResultVisitor evaluationResultVisitor = d -> {
             if ("loadBytes".equals(d.methodInfo().name)) {
                 if ("2.0.0".equals(d.statementId())) {
-                    assertEquals(d.iteration() < 2 ? 4 : 2, d.evaluationResult().changeData().size());
-                    String expected = d.iteration() < 2 ? "<m:get>" : "data.get(path.split(\"/\"))";
+                    assertEquals(d.iteration() == 0 ? 4 : 2, d.evaluationResult().changeData().size());
+                    String expected = d.iteration() == 0 ? "<m:get>" : "data.get(path.split(\"/\"))";
                     assertEquals(expected, d.evaluationResult().value().toString());
                     EvaluationResult.ChangeData cd = d.findValueChange("urls");
                     assertFalse(cd.properties().containsKey(Property.IN_NOT_NULL_CONTEXT));
@@ -208,15 +208,15 @@ public class Test_21_VariableInLoop extends CommonTestRunner {
             if ("loadBytes".equals(d.methodInfo().name)) {
                 if ("urls".equals(d.variableName())) {
                     if ("2.0.0".equals(d.statementId())) {
-                        String expected = d.iteration() < 2 ? "<m:get>" : "data.get(path.split(\"/\"))";
+                        String expected = d.iteration() == 0 ? "<m:get>" : "data.get(path.split(\"/\"))";
                         assertEquals(expected, d.currentValue().toString());
-                        assertDv(d, 2, MultiLevel.NULLABLE_DV, Property.NOT_NULL_EXPRESSION);
-                        assertDv(d, 2, MultiLevel.NULLABLE_DV, Property.CONTEXT_NOT_NULL);
+                        assertDv(d, 1, MultiLevel.NULLABLE_DV, Property.NOT_NULL_EXPRESSION);
+                        assertDv(d, 1, MultiLevel.NULLABLE_DV, Property.CONTEXT_NOT_NULL);
                     }
                 }
                 if ("url".equals(d.variableName())) {
                     if ("2.0.0".equals(d.statementId())) {
-                        String expected = d.iteration() < 2 ? "<vl:url>" : "nullable instance type URL";
+                        String expected = d.iteration() == 0 ? "<vl:url>" : "nullable instance type URL";
                         assertEquals(expected, d.currentValue().toString());
                         assertDv(d, MultiLevel.NULLABLE_DV, Property.CONTEXT_NOT_NULL);
                     }

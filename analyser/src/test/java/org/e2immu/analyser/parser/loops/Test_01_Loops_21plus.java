@@ -228,7 +228,7 @@ public class Test_01_Loops_21plus extends CommonTestRunner {
                         DV override = d.variableInfoContainer().propertyOverrides().getOrDefaultNull(CONTEXT_MODIFIED);
                         assertEquals(d.iteration() >= 4, DV.TRUE_DV.equals(override));
 
-                        String linked = switch(d.iteration()) {
+                        String linked = switch (d.iteration()) {
                             case 0 -> "array[i]:-1,av-32:21:-1,i:-1,outer:-1,outerMod:-1";
                             case 1, 2, 3 -> "array[i]:-1,av-32:21:-1,i:-1";
                             default -> "";
@@ -430,7 +430,11 @@ public class Test_01_Loops_21plus extends CommonTestRunner {
         };
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
             if ("xes".equals(d.fieldInfo().name)) {
-                String linked = d.iteration() == 0 ? "System.out:-1,all:-1,xesIn:-1" : "xesIn:0";
+                String linked = switch (d.iteration()) {
+                    case 0 -> "System.out:-1,all:-1,xesIn:-1";
+                    case 1, 2, 3, 4 -> "all:-1,xesIn:-1";
+                    default -> "xesIn:0";
+                };
                 assertEquals(linked, d.fieldAnalysis().getLinkedVariables().toString());
                 assertEquals("xesIn", d.fieldAnalysis().getValue().toString());
                 assertDv(d, 4, MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL_DV, Property.EXTERNAL_NOT_NULL);

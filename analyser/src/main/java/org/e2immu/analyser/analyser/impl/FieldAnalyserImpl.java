@@ -552,7 +552,7 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
                     .flatMap(m -> m.getFieldAsVariableStream(fieldInfo))
                     .filter(VariableInfo::isRead)
                     .map(vi -> vi.getProperty(CONTEXT_CONTAINER));
-            DV fromStream = StreamUtil.reduceWithCancel(containerStream, MultiLevel.NOT_CONTAINER_DV, DV::max, DV::isDelayed);
+            DV fromStream = containerStream.reduce(MultiLevel.NOT_CONTAINER_DV, DV::max);
             if (fromStream.isDelayed()) {
                 if (fromStream.containsCauseOfDelay(CauseOfDelay.Cause.CONTAINER_RESTRICTION, c -> c.variableIsField(fieldInfo))) {
                     // step 2, break: injected delay has returned

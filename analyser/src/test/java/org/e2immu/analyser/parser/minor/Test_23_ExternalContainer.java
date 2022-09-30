@@ -51,7 +51,7 @@ public class Test_23_ExternalContainer extends CommonTestRunner {
                         assertDv(d, MultiLevel.NOT_CONTAINER_DV, Property.CONTEXT_CONTAINER);
                     }
                     if ("1".equals(d.statementId())) {
-                        assertDv(d, 4, MultiLevel.NOT_CONTAINER_DV, Property.CONTEXT_CONTAINER);
+                        assertDv(d, 3, MultiLevel.NOT_CONTAINER_DV, Property.CONTEXT_CONTAINER);
                     }
                 }
             }
@@ -64,7 +64,7 @@ public class Test_23_ExternalContainer extends CommonTestRunner {
                 }
                 if (d.variable() instanceof FieldReference fr && "myContainerLinkedToParameter".equals(fr.fieldInfo.name)) {
                     if ("0.0.0".equals(d.statementId())) {
-                        assertDv(d, 6, MultiLevel.CONTAINER_DV, Property.CONTAINER);
+                        assertDv(d, 4, MultiLevel.CONTAINER_DV, Property.CONTAINER);
                         assertDv(d, 1, MultiLevel.CONTAINER_DV, Property.CONTAINER_RESTRICTION);
                         assertDv(d, MultiLevel.CONTAINER_DV, Property.CONTEXT_CONTAINER);
                     }
@@ -121,14 +121,14 @@ public class Test_23_ExternalContainer extends CommonTestRunner {
                 assertDv(d, MultiLevel.CONTAINER_DV, Property.CONTAINER);
                 assertDv(d, DV.FALSE_DV, Property.MODIFIED_OUTSIDE_METHOD);
                 assertDv(d, MultiLevel.EFFECTIVELY_IMMUTABLE_HC_DV, Property.EXTERNAL_IMMUTABLE);
-                String linked = d.iteration() < 5 ? "consumer:-1,this.myContainer:-1,this.myNonContainer:-1,this:-1" : "consumer:0";
+                String linked = d.iteration() < 4 ? "consumer:-1,this.myContainer:-1,this.myNonContainer:-1,this:-1" : "consumer:0";
                 assertEquals(linked, d.fieldAnalysis().getLinkedVariables().toString());
             }
             if ("iField".equals(d.fieldInfo().name)) {
                 // value TRUE but annotation will not be visible
                 assertDv(d, 1, MultiLevel.CONTAINER_DV, Property.CONTAINER);
-                assertDv(d, 4, MultiLevel.NOT_CONTAINER_DV, Property.CONTAINER_RESTRICTION);
-                assertDv(d, 4, DV.FALSE_DV, Property.MODIFIED_OUTSIDE_METHOD);
+                assertDv(d, 3, MultiLevel.NOT_CONTAINER_DV, Property.CONTAINER_RESTRICTION);
+                assertDv(d, 3, DV.FALSE_DV, Property.MODIFIED_OUTSIDE_METHOD);
             }
         };
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
@@ -163,13 +163,13 @@ public class Test_23_ExternalContainer extends CommonTestRunner {
                         assertDv(d, MultiLevel.NOT_CONTAINER_DV, Property.CONTEXT_CONTAINER);
                     }
                     if ("1".equals(d.statementId())) {
-                        assertDv(d, 4, MultiLevel.NOT_CONTAINER_DV, Property.CONTEXT_CONTAINER);
+                        assertDv(d, 3, MultiLevel.NOT_CONTAINER_DV, Property.CONTEXT_CONTAINER);
                     }
                 }
             }
             if ("go".equals(d.methodInfo().name)) {
                 if ("0".equals(d.statementId())) {
-                    assertEquals(d.iteration() == 8, d.allowBreakDelay());
+                    assertEquals(d.iteration() == 7, d.allowBreakDelay());
                 }
                 if (d.variable() instanceof FieldReference fr && "myNonContainer".equals(fr.fieldInfo.name)) {
                     if ("2".equals(d.statementId())) {
@@ -178,7 +178,7 @@ public class Test_23_ExternalContainer extends CommonTestRunner {
                 }
                 if (d.variable() instanceof FieldReference fr && "myContainerLinkedToParameter".equals(fr.fieldInfo.name)) {
                     if ("2".equals(d.statementId())) {
-                        assertDv(d, 8, MultiLevel.NOT_CONTAINER_DV, Property.CONTEXT_CONTAINER);
+                        assertDv(d, 7, MultiLevel.NOT_CONTAINER_DV, Property.CONTEXT_CONTAINER);
                     }
                 }
                 if (d.variable() instanceof FieldReference fr && "myContainer".equals(fr.fieldInfo.name)) {
@@ -225,10 +225,10 @@ public class Test_23_ExternalContainer extends CommonTestRunner {
                 assertDv(d, 4, MultiLevel.NOT_CONTAINER_DV, Property.CONTAINER_RESTRICTION);
             }
             if ("myContainerLinkedToParameter".equals(d.fieldInfo().name)) {
-                assertDv(d, 8, MultiLevel.NOT_CONTAINER_DV, Property.CONTAINER_RESTRICTION);
+                assertDv(d, 7, MultiLevel.NOT_CONTAINER_DV, Property.CONTAINER_RESTRICTION);
             }
             if ("iField".equals(d.fieldInfo().name)) {
-                assertDv(d, 4, MultiLevel.NOT_CONTAINER_DV, Property.CONTAINER_RESTRICTION);
+                assertDv(d, 3, MultiLevel.NOT_CONTAINER_DV, Property.CONTAINER_RESTRICTION);
                 assertDv(d, 1, MultiLevel.CONTAINER_DV, Property.CONTAINER);
                 assertDv(d, DV.TRUE_DV, Property.MODIFIED_OUTSIDE_METHOD);
             }
@@ -288,11 +288,11 @@ public class Test_23_ExternalContainer extends CommonTestRunner {
                 assertDv(d, 4, MultiLevel.NOT_CONTAINER_DV, Property.CONTAINER_RESTRICTION);
             }
             if ("myContainerLinkedToParameter".equals(d.fieldInfo().name)) {
-                assertDv(d, 8, MultiLevel.NOT_CONTAINER_DV, Property.CONTAINER_RESTRICTION);
+                assertDv(d, 7, MultiLevel.NOT_CONTAINER_DV, Property.CONTAINER_RESTRICTION);
             }
             if ("iField".equals(d.fieldInfo().name)) {
                 assertDv(d, 1, MultiLevel.CONTAINER_DV, Property.CONTAINER);
-                assertDv(d, 4, MultiLevel.NOT_CONTAINER_DV, Property.CONTAINER_RESTRICTION);
+                assertDv(d, 3, MultiLevel.NOT_CONTAINER_DV, Property.CONTAINER_RESTRICTION);
                 assertDv(d, 3, DV.TRUE_DV, Property.MODIFIED_OUTSIDE_METHOD);
             }
         };

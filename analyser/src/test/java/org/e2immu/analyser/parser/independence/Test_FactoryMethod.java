@@ -82,32 +82,32 @@ public class Test_FactoryMethod extends CommonTestRunner {
             }
             if ("getStream".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof ReturnVariable) {
-                    String linked = d.iteration() < 2 ? "this.list:-1" : "this.list:4";
+                    String linked = d.iteration() == 0 ? "this.list:-1" : "this.list:4";
                     assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
                 }
             }
             if ("copy".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof ReturnVariable) {
-                    String linked = d.iteration() < 2 ? "this.list:-1" : "this.list:4";
+                    String linked = d.iteration() == 0 ? "this.list:-1" : "this.list:4";
                     assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
                 }
             }
             if ("copy2".equals(d.methodInfo().name)) {
                 if("result".equals(d.variableName())) {
                     if("1".equals(d.statementId())) {
-                        String linked = d.iteration() < 2 ? "this.list:-1" : "this.list:4";
+                        String linked = d.iteration() == 0 ? "this.list:-1" : "this.list:4";
                         assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
                     }
                 }
                 if (d.variable() instanceof ReturnVariable) {
                     if("2".equals(d.statementId())) {
-                        String linked = d.iteration() < 2 ? "result:0,this.list:-1" : "result:0,this.list:4";
+                        String linked = d.iteration() == 0 ? "result:0,this.list:-1" : "result:0,this.list:4";
                         assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
                     }
                 }
                 if(d.variable() instanceof FieldReference fr && "list".equals(fr.fieldInfo.name)) {
                     if("1".equals(d.statementId())) {
-                        String linked = d.iteration() < 2 ? "result:-1" : "result:4";
+                        String linked = d.iteration() == 0 ? "result:-1" : "result:4";
                         assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
                     }
                 }

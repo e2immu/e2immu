@@ -45,7 +45,7 @@ public class Test_00_Basics_24 extends CommonTestRunner {
         EvaluationResultVisitor evaluationResultVisitor = d -> {
             if ("method".equals(d.methodInfo().name)) {
                 if ("2".equals(d.statementId())) {
-                    String expected = d.iteration() < 4 ? "<null-check>" : "null==map.getOrDefault(pos,a)";
+                    String expected = d.iteration() < 3 ? "<null-check>" : "null==map.getOrDefault(pos,a)";
                     assertEquals(expected, d.evaluationResult().value().toString());
                 }
             }
@@ -65,12 +65,12 @@ public class Test_00_Basics_24 extends CommonTestRunner {
                 }
                 if (d.variable() instanceof FieldReference fr && "s".equals(fr.fieldInfo.name)) {
                     if ("1".equals(d.statementId())) {
-                        String expected = d.iteration() < 4 ? "<m:getOrDefault>" : "map.getOrDefault(pos,a)";
+                        String expected = d.iteration() < 3 ? "<m:getOrDefault>" : "map.getOrDefault(pos,a)";
                         assertEquals(expected, d.currentValue().toString());
                     }
                     if ("2".equals(d.statementId())) {
                         String expected = switch (d.iteration()) {
-                            case 0, 1, 2, 3 -> "<null-check>?\"b\":<m:getOrDefault>";
+                            case 0, 1, 2 -> "<null-check>?\"b\":<m:getOrDefault>";
                             default -> "null==map.getOrDefault(pos,a)?\"b\":map.getOrDefault(pos,a)";
                         };
                         assertEquals(expected, d.currentValue().toString());
@@ -78,13 +78,12 @@ public class Test_00_Basics_24 extends CommonTestRunner {
                 }
                 if (d.variable() instanceof FieldReference fr && "map".equals(fr.fieldInfo.name)) {
                     if (d.statementId().compareTo("1") >= 0) {
-                        String expected = d.iteration() < 4 ? "<f:map>" : "instance type Map<Integer,String>";
+                        String expected = d.iteration() < 3 ? "<f:map>" : "instance type Map<Integer,String>";
                         assertEquals(expected, d.currentValue().toString());
                     }
                     if ("3".equals(d.statementId())) {
                         String linked = switch (d.iteration()) {
-                            case 0, 1, 2, 3 -> "a:-1,pos:-1,x.s:-1,x:-1";
-                            //  case  2 -> "a:-1,pos:-1,x.s:-1";
+                            case 0, 1, 2 -> "a:-1,pos:-1,x.s:-1,x:-1";
                             default -> "";
                         };
                         assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
@@ -93,7 +92,7 @@ public class Test_00_Basics_24 extends CommonTestRunner {
                 if (d.variable() instanceof ReturnVariable) {
                     if ("3".equals(d.statementId())) {
                         String linked = switch (d.iteration()) {
-                            case 0, 1, 2, 3 -> "a:-1,pos:-1,this.map:-1,x.s:0,x:-1";
+                            case 0, 1, 2 -> "a:-1,pos:-1,this.map:-1,x.s:0,x:-1";
                             default -> "x.s:0,x:2";
                         };
                         assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
@@ -106,14 +105,12 @@ public class Test_00_Basics_24 extends CommonTestRunner {
             if ("s".equals(d.fieldInfo().name)) {
                 String delay = switch (d.iteration()) {
                     case 0 -> "cm@Parameter_s;constructor-to-instance@Method_method_0-E;initial:pos@Method_method_0-E;initial:this.map@Method_method_1-C;mom@Parameter_s";
-                    case 1 -> "constructor-to-instance@Method_method_0-E;link@Field_map;mom@Parameter_s";
-                    case 2, 3 -> "constructor-to-instance@Method_method_0-E;mom@Parameter_s";
+                    case 1, 2 -> "constructor-to-instance@Method_method_0-E;mom@Parameter_s";
                     default -> "condition@Method_method_2:M";
                 };
-                assertDv(d, delay, 4, DV.FALSE_DV, Property.MODIFIED_OUTSIDE_METHOD);
+                assertDv(d, delay, 3, DV.FALSE_DV, Property.MODIFIED_OUTSIDE_METHOD);
                 String linked = switch (d.iteration()) {
-                    case 0, 1, 2, 3 -> "a:-1,pos:-1,s:-1,this.map:-1,x:-1";
-                    //case 1, 2 -> "a:-1,pos:-1,s:-1,this.map:-1";
+                    case 0, 1, 2 -> "a:-1,pos:-1,s:-1,this.map:-1,x:-1";
                     default -> "s:0";
                 };
                 assertEquals(linked, d.fieldAnalysis().getLinkedVariables().toString());
@@ -122,14 +119,14 @@ public class Test_00_Basics_24 extends CommonTestRunner {
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("X".equals(d.methodInfo().name)) {
                 assertTrue(d.methodInfo().isConstructor);
-                assertEquals(d.iteration() == 4, d.allowBreakDelay());
+                assertEquals(d.iteration() == 3, d.allowBreakDelay());
                 String delay = d.iteration() == 0 ? "cm@Parameter_s;mom@Parameter_s" : "mom@Parameter_s";
-                assertDv(d.p(0), delay, 5, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
+                assertDv(d.p(0), delay, 4, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
             }
         };
 
         BreakDelayVisitor breakDelayVisitor = d -> {
-            assertEquals("----M--", d.delaySequence());
+            assertEquals("---M--", d.delaySequence());
             assertEquals(1, d.breaks());
         };
 

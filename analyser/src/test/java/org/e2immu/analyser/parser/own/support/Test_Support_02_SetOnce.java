@@ -183,7 +183,8 @@ public class Test_Support_02_SetOnce extends CommonTestRunner {
                         // identity is computed from the value, which is "<m:get>" in the first iteration
                         // then 't'
                         assertDv(d, 2, DV.FALSE_DV, Property.IDENTITY);
-                        assertDv(d, 2, MultiLevel.INDEPENDENT_HC_DV, Property.INDEPENDENT);
+                        // fields are always independent inside the statement analyser
+                        assertDv(d, 2, MultiLevel.INDEPENDENT_DV, Property.INDEPENDENT);
                     }
                     if ("0".equals(d.statementId())) {
                         String expect = switch (d.iteration()) {
