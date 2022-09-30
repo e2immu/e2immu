@@ -94,12 +94,12 @@ public class Test_Util_06_DependencyGraph extends CommonTestRunner {
             if ("addNode".equals(d.methodInfo().name) && 2 == n) {
                 if (d.variable() instanceof ParameterInfo pi && "t".equals(pi.name)) {
                     if ("0".equals(d.statementId())) {
-                        assertDv(d, 4, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                        assertDv(d, 5, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     }
                 }
                 if (d.variable() instanceof This) {
                     if ("0".equals(d.statementId())) {
-                        assertDv(d, 2, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
+                        assertDv(d, 3, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
                     }
                 }
             }
@@ -108,7 +108,7 @@ public class Test_Util_06_DependencyGraph extends CommonTestRunner {
                     if ("nodeMap".equals(fr.fieldInfo.name)) {
                         assertEquals("this", fr.scope.toString());
                         if ("4".equals(d.statementId())) {
-                            String expected = d.iteration() == 0 ? "<f:nodeMap>" : "instance type HashMap<T,Node<T>>";
+                            String expected = d.iteration() < 3 ? "<f:nodeMap>" : "instance type HashMap<T,Node<T>>";
                             assertEquals(expected, d.currentValue().toString());
                             assertEquals("", d.variableInfo().getAssignmentIds().toString());
                         }
@@ -118,19 +118,14 @@ public class Test_Util_06_DependencyGraph extends CommonTestRunner {
                             assertNotEquals("4", d.statementId());
                         } else if ("scope-scope-230:40:3.0.1".equals(fr.scope.toString())) {
                             if ("4".equals(d.statementId())) {
-                                assertCurrentValue(d, 28, "nullable instance type List<T>");
+                                // IMPROVE null = correct?
+                                assertCurrentValue(d, 14, "null");
                                 assertEquals("", d.variableInfo().getAssignmentIds().toString());
                             }
                         } else fail("Scope " + fr.scope);
                     } else fail("Field " + fr);
                 }
                 if ("result".equals(d.variableName())) {
-                    if ("3.0.2".equals(d.statementId())) {
-                        assertEquals("backupComparator:-1,done:-1,keys:-1,reportIndependent:-1,reportPartOfCycle:-1,scope-230:40:-1,scope-scope-230:40:3.0.1.dependsOn:-1,scope-scope-230:40:3.0.1:-1,this.nodeMap:-1,this:-1,toDo:-1", d.variableInfo().getLinkedVariables().toString());
-                    }
-                    if ("3.0.2.0.0".equals(d.statementId()) || "3.0.2.0.1".equals(d.statementId())) {
-                        fail(); // hasn't occurred yet
-                    }
                     if ("3.0.2.0.2".equals(d.statementId())) {
                         assertTrue(d.variableInfoContainer().hasEvaluation());
                         VariableInfo eval = d.variableInfoContainer().best(Stage.EVALUATION);
@@ -138,13 +133,10 @@ public class Test_Util_06_DependencyGraph extends CommonTestRunner {
                         assertEquals("?", d.variableInfo().getLinkedVariables().toString());
                     }
                     if ("4".equals(d.statementId())) {
-                        String expected = d.iteration() <= 34 ? "<m:isEmpty>?<new:ArrayList<T>>:<vl:result>"
+                        String expected = d.iteration() < 21 ? "<m:isEmpty>?<new:ArrayList<T>>:<vl:result>"
                                 : "toDo$3.isEmpty()?new ArrayList<>(nodeMap.size())/*0==this.size()*/:instance type List<T>";
                         assertEquals(expected, d.currentValue().toString());
-                        String lvs = d.iteration() <= 34 ? "backupComparator:-1,done:-1,reportIndependent:-1,reportPartOfCycle:-1,scope-230:40:-1,scope-scope-230:40:3.0.1.dependsOn:-1,scope-scope-230:40:3.0.1:-1,this.nodeMap:-1,this:-1,toDo:-1"
-                                : "done:3,reportIndependent:3,scope-230:40:3,scope-scope-230:40:3.0.1.dependsOn:3,scope-scope-230:40:3.0.1:3,this.nodeMap:3,toDo:3";
-                        assertEquals(lvs, d.variableInfo().getLinkedVariables().toString());
-                        assertDv(d, 28, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
+                        assertDv(d, 14, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
                     }
                 }
                 if ("cycle".equals(d.variableName())) {
@@ -159,10 +151,10 @@ public class Test_Util_06_DependencyGraph extends CommonTestRunner {
                         assertDv(d, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     }
                     if ("3.0.2.0.03".equals(d.statementId())) {
-                        assertDv(d, 35, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                        assertDv(d, 21, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     }
                     if ("3.0.2.0.04".equals(d.statementId())) {
-                        assertDv(d, 35, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                        assertDv(d, 21, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     }
                     if ("3.0.2.1.1".equals(d.statementId())) {
                         assertDv(d, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
@@ -172,9 +164,9 @@ public class Test_Util_06_DependencyGraph extends CommonTestRunner {
             if ("sorted".equals(d.methodInfo().name) && 0 == n) {
                 if (d.variable() instanceof ReturnVariable) {
                     assertEquals("0", d.statementId());
-                    String lvs = d.iteration() <= 34 ? "this:-1" : "";
+                    String lvs = d.iteration() < 21 ? "this:-1" : "";
                     assertEquals(lvs, d.variableInfo().getLinkedVariables().toString());
-                    String expected = d.iteration() <= 34 ? "<m:sorted>"
+                    String expected = d.iteration() < 21 ? "<m:sorted>"
                             : "`toDo`.isEmpty()?new ArrayList<>(`nodeMap`.size())/*0==this.size()*/:instance type List<T>";
                     assertEquals(expected, d.currentValue().toString());
                 }
@@ -187,39 +179,40 @@ public class Test_Util_06_DependencyGraph extends CommonTestRunner {
                         assertDv(d, MultiLevel.DEPENDENT_DV, Property.INDEPENDENT); // myself
                     }
                     if ("1.0.0".equals(d.statementId())) {
-                        String expected = d.iteration() <= 2 ? "<vl:dg>" : "instance type DependencyGraph<T>";
+                        String expected = d.iteration() < 4 ? "<vl:dg>" : "instance type DependencyGraph<T>";
                         assertEquals(expected, d.currentValue().toString());
-                        assertDv(d, 3, MultiLevel.MUTABLE_DV, Property.IMMUTABLE); // myself
-                        assertDv(d, 3, MultiLevel.DEPENDENT_DV, Property.INDEPENDENT); // myself
+                        assertDv(d, 4, MultiLevel.MUTABLE_DV, Property.IMMUTABLE); // myself
+                        assertDv(d, 4, MultiLevel.DEPENDENT_DV, Property.INDEPENDENT); // myself
                     }
                     if ("2".equals(d.statementId())) {
-                        String expected = d.iteration() <= 2 ? "set.isEmpty()?new DependencyGraph<>():<vl:dg>"
+                        String expected = d.iteration() < 4 ? "set.isEmpty()?new DependencyGraph<>():<vl:dg>"
                                 : "set.isEmpty()?new DependencyGraph<>():instance type DependencyGraph<T>";
                         assertEquals(expected, d.currentValue().toString());
-                        assertDv(d, 3, MultiLevel.MUTABLE_DV, Property.IMMUTABLE);
-                        assertDv(d, 3, MultiLevel.DEPENDENT_DV, Property.INDEPENDENT);
+                        assertDv(d, 4, MultiLevel.MUTABLE_DV, Property.IMMUTABLE);
+                        assertDv(d, 4, MultiLevel.DEPENDENT_DV, Property.INDEPENDENT);
                     }
                 }
             }
             if ("dependenciesWithoutStartingPoint".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof ParameterInfo pi && "t".equals(pi.name)) {
                     if ("1".equals(d.statementId())) {
-                        assertDv(d, 3, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.CONTEXT_NOT_NULL);
+                        assertDv(d, 4, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.CONTEXT_NOT_NULL);
                     }
                 }
             }
             if ("removeAsManyAsPossible".equals(d.methodInfo().name)) {
                 if ("reverse".equals(d.variableName())) {
                     if ("2.0.3".equals(d.statementId())) {
-                        assertCurrentValue(d, 35, "set.isEmpty()?new DependencyGraph<>():instance type DependencyGraph<T>");
+                        assertCurrentValue(d, 21,
+                                "set.isEmpty()?new DependencyGraph<>():instance type DependencyGraph<T>");
                     }
                 }
                 if (d.variable() instanceof This thisVar && "DependencyGraph".equals(thisVar.typeInfo.simpleName)) {
                     if ("2.0.1".equals(d.statementId()) || "2.0.2".equals(d.statementId())) {
-                        assertDv(d, 3, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                        assertDv(d, 4, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     }
                     if ("2.0.3".equals(d.statementId())) {
-                        assertDv(d, 35, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                        assertDv(d, 21, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     }
                 }
             }
@@ -236,11 +229,12 @@ public class Test_Util_06_DependencyGraph extends CommonTestRunner {
             if ("accept".equals(d.methodInfo().name)) {
                 if ("result".equals(d.variableName())) {
                     if ("0".equals(d.statementId())) {
-                        String expected = d.iteration() <= 27 ? "<vl:result>" : "instance type Map<T,Node<T>>";
+                        String expected = d.iteration() < 14 ? "<vl:result>"
+                                : "instance type List<T>/*this.contains(t)&&this.size()>=1*/";
                         assertEquals(expected, d.currentValue().toString());
                         String linked = switch (d.iteration()) {
                             case 0 -> "NOT_YET_SET";
-                            case 1 -> "cycle:-1,done:-1,keys:-1,removed:-1,reportIndependent:-1,scope-230:40:-1,scope-scope-230:40:3.0.1.dependsOn:-1,scope-scope-230:40:3.0.1:-1,this.nodeMap:-1,this:-1,toDo:-1";
+                            case 1, 2 -> "cycle:-1,done:-1,keys:-1,removed:-1,reportIndependent:-1,scope-230:40:-1,scope-scope-230:40:3.0.1.dependsOn:-1,scope-scope-230:40:3.0.1:-1,this.nodeMap:-1,this:-1,toDo:-1";
                             default -> "";
                         };
                         assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
@@ -250,23 +244,23 @@ public class Test_Util_06_DependencyGraph extends CommonTestRunner {
                         && "$7".equals(d.methodInfo().typeInfo.simpleName)) {
                     assertEquals("sorted", d.enclosingMethod().name);
                     if ("0".equals(d.statementId())) {
-                        // FIXME no delays??
-                        assertEquals("<p:t>", d.currentValue().toString());
+                        String expected = d.iteration() < 14 ? "<p:t>" : "nullable instance type T/*@Identity*/";
+                        assertEquals(expected, d.currentValue().toString());
                         String linked = switch (d.iteration()) {
                             case 0 -> "result:-1";
-                            case 1 -> "cycle:-1,done:-1,keys:-1,removed:-1,reportIndependent:-1,result:-1,scope-230:40:-1,scope-scope-230:40:3.0.1.dependsOn:-1,scope-scope-230:40:3.0.1:-1,this.nodeMap:-1,this:-1,toDo:-1";
-                            default -> "";
+                            case 1, 2 -> "cycle:-1,done:-1,keys:-1,removed:-1,reportIndependent:-1,result:-1,scope-230:40:-1,scope-scope-230:40:3.0.1.dependsOn:-1,scope-scope-230:40:3.0.1:-1,this.nodeMap:-1,this:-1,toDo:-1";
+                            default -> "result:3";
                         };
                         assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
                         assertDv(d, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     }
                     if ("1".equals(d.statementId())) {
-                        assertDv(d, BIG, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                        assertDv(d, 3, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     }
                 }
                 if ("toDo".equals(d.variableName())) {
                     if ("0".equals(d.statementId())) {
-                        String expected = d.iteration() <= 27 ? "<vl:toDo>" : "instance type Map<T,Node<T>>";
+                        String expected = d.iteration() < 14 ? "<vl:toDo>" : "instance type Map<T,Node<T>>";
                         assertEquals(expected, d.currentValue().toString());
                     }
                 }
@@ -284,15 +278,13 @@ public class Test_Util_06_DependencyGraph extends CommonTestRunner {
             }
             if ("reverse".equals(d.methodInfo().name)) {
                 if ("1.0.0".equals(d.statementId())) {
-                    String expected = d.iteration() <= 2 ? "Precondition[expression=<precondition>, causes=[]]"
+                    String expected = d.iteration() < 4 ? "Precondition[expression=<precondition>, causes=[]]"
                             : "Precondition[expression=!dg$1.frozen, causes=[methodCall:addNode]]";
                     assertEquals(expected, d.statementAnalysis().stateData().getPrecondition().toString());
                 }
                 if ("2".equals(d.statementId())) {
-                    String expected = switch (d.iteration()) {
-                        case 0, 1, 2 -> "Precondition[expression=<precondition>&&<precondition>, causes=[]]";
-                        default -> "Precondition[expression=!dg$1.frozen&&!dg$1.0.2.0.0.frozen, causes=[methodCall:addNode, methodCall:addNode]]";
-                    };
+                    String expected = d.iteration() < 4 ? "Precondition[expression=<precondition>&&<precondition>, causes=[]]"
+                            : "Precondition[expression=!dg$1.frozen&&!dg$1.0.2.0.0.frozen, causes=[methodCall:addNode, methodCall:addNode]]";
                     assertEquals(expected, d.statementAnalysis().methodLevelData().combinedPreconditionGet().toString());
                 }
             }
@@ -310,45 +302,44 @@ public class Test_Util_06_DependencyGraph extends CommonTestRunner {
         };
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("DependencyGraph".equals(d.typeInfo().simpleName)) {
-                assertDv(d, 34, MultiLevel.EVENTUALLY_FINAL_FIELDS_DV, Property.IMMUTABLE);
-                assertDv(d, 34, MultiLevel.DEPENDENT_INCONCLUSIVE, Property.INDEPENDENT);
+                assertDv(d, 20, MultiLevel.EVENTUALLY_IMMUTABLE_HC_DV, Property.IMMUTABLE);
+                assertDv(d, 20, MultiLevel.INDEPENDENT_HC_INCONCLUSIVE, Property.INDEPENDENT);
             }
             if ("$4".equals(d.typeInfo().simpleName)) {
-                assertDv(d, 10, MultiLevel.MUTABLE_INCONCLUSIVE, Property.IMMUTABLE);
-                assertDv(d, 35, MultiLevel.DEPENDENT_INCONCLUSIVE, Property.INDEPENDENT);
-                assertDv(d, 35, MultiLevel.CONTAINER_DV, Property.CONTAINER);
-                assertDv(d, 3, MultiLevel.CONTAINER_DV, Property.PARTIAL_CONTAINER);
+                assertDv(d, 21, MultiLevel.EVENTUALLY_IMMUTABLE_HC_DV, Property.IMMUTABLE);
+                assertDv(d, 21, MultiLevel.INDEPENDENT_HC_INCONCLUSIVE, Property.INDEPENDENT);
+                assertDv(d, 21, MultiLevel.NOT_CONTAINER_DV, Property.CONTAINER);
+                assertDv(d, 4, MultiLevel.CONTAINER_DV, Property.PARTIAL_CONTAINER);
             }
         };
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             int n = d.methodInfo().methodInspection.get().getParameters().size();
             String methodName = d.methodInfo().name;
             if ("sorted".equals(methodName) && 3 == n) {
-                String srv = d.iteration() <= 34 ? "<m:sorted>"
+                String srv = d.iteration() < 21 ? "<m:sorted>"
                         : "/*inline sorted*/toDo$3.isEmpty()?new ArrayList<>(nodeMap.size())/*0==this.size()*/:instance type List<T>";
                 assertEquals(srv, d.methodAnalysis().getSingleReturnValue().toString());
-                assertDv(d, 35, MultiLevel.INDEPENDENT_HC_DV, Property.INDEPENDENT);
-                assertDv(d, 35, DV.FALSE_DV, Property.MODIFIED_METHOD);
+                assertDv(d, 21, MultiLevel.INDEPENDENT_HC_DV, Property.INDEPENDENT);
+                assertDv(d, 21, DV.FALSE_DV, Property.MODIFIED_METHOD);
             }
             if ("sorted".equals(methodName) && 0 == n) {
-                String srv = d.iteration() <= 34 ? "<m:sorted>"
+                String srv = d.iteration() < 21 ? "<m:sorted>"
                         : "/*inline sorted*/`toDo`.isEmpty()?new ArrayList<>(`nodeMap`.size())/*0==this.size()*/:instance type List<T>";
                 assertEquals(srv, d.methodAnalysis().getSingleReturnValue().toString());
-                assertDv(d, 35, MultiLevel.INDEPENDENT_DV, Property.INDEPENDENT); // IMPROVE wrong!
-                assertDv(d, 35, DV.FALSE_DV, Property.MODIFIED_METHOD);
+                assertDv(d, 21, MultiLevel.INDEPENDENT_DV, Property.INDEPENDENT); // IMPROVE wrong!
+                assertDv(d, 21, DV.FALSE_DV, Property.MODIFIED_METHOD);
             }
             if ("reverse".equals(methodName)) {
-                assertDv(d, 35, DV.FALSE_DV, Property.FLUENT);
-                assertDv(d, 5, MultiLevel.INDEPENDENT_DV, Property.INDEPENDENT); // IMPROVE wrong
-                assertDv(d, 5, DV.FALSE_DV, Property.MODIFIED_METHOD);
-                String pre = switch (d.iteration()) {
-                    case 0, 1, 2 -> "Precondition[expression=<precondition>&&<precondition>, causes=[]]";
-                    default -> "Precondition[expression=!dg$1.frozen&&!dg$1.0.2.0.0.frozen, causes=[methodCall:addNode, methodCall:addNode]]";
-                };
+                assertDv(d, 21, DV.FALSE_DV, Property.FLUENT);
+                assertDv(d, 21, MultiLevel.INDEPENDENT_DV, Property.INDEPENDENT); // IMPROVE wrong
+                assertDv(d, 6, DV.FALSE_DV, Property.MODIFIED_METHOD);
+                String pre = d.iteration() < 4
+                        ? "Precondition[expression=<precondition>&&<precondition>, causes=[]]"
+                        : "Precondition[expression=!dg$1.frozen&&!dg$1.0.2.0.0.frozen, causes=[methodCall:addNode, methodCall:addNode]]";
                 assertEquals(pre, d.methodAnalysis().getPrecondition().toString());
             }
             if ("singleRemoveStep".equals(methodName)) {
-                assertDv(d, 2, DV.FALSE_DV, Property.MODIFIED_METHOD);
+                assertDv(d, 3, DV.FALSE_DV, Property.MODIFIED_METHOD);
                 assertEquals("Precondition[expression=true, causes=[]]",
                         d.methodAnalysis().getPrecondition().toString());
             }
@@ -357,36 +348,38 @@ public class Test_Util_06_DependencyGraph extends CommonTestRunner {
                 assertDv(d, 2, DV.FALSE_DV, Property.MODIFIED_METHOD);
             }
             if ("addNode".equals(methodName) && 3 == n) {
-                assertDv(d, 2, DV.TRUE_DV, Property.MODIFIED_METHOD);
-                String addNodePCE = d.iteration() == 0 ? "Precondition[expression=<precondition>, causes=[]]"
+                assertDv(d, 3, DV.TRUE_DV, Property.MODIFIED_METHOD);
+                String addNodePCE = d.iteration() == 0
+                        ? "Precondition[expression=<precondition>, causes=[]]"
                         : "Precondition[expression=!frozen, causes=[methodCall:getOrCreate, methodCall:getOrCreate, methodCall:ensureNotFrozen]]";
                 assertEquals(addNodePCE, d.methodAnalysis().getPreconditionForEventual().toString());
-                assertDv(d.p(0), 4, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_PARAMETER);
-            }
-            if ("addNode".equals(methodName) && 2 == n) {
-                String addNodePCE = d.iteration() == 0 ? "Precondition[expression=<precondition>, causes=[]]"
-                        : "Precondition[expression=!frozen, causes=[methodCall:addNode]]";
-                assertEquals(addNodePCE, d.methodAnalysis().getPreconditionForEventual().toString());
-                assertDv(d, 2, DV.TRUE_DV, Property.MODIFIED_METHOD);
                 assertDv(d.p(0), 5, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_PARAMETER);
             }
+            if ("addNode".equals(methodName) && 2 == n) {
+                String addNodePCE = d.iteration() == 0
+                        ? "Precondition[expression=<precondition>, causes=[]]"
+                        : "Precondition[expression=!frozen, causes=[methodCall:addNode]]";
+                assertEquals(addNodePCE, d.methodAnalysis().getPreconditionForEventual().toString());
+                assertDv(d, 3, DV.TRUE_DV, Property.MODIFIED_METHOD);
+                assertDv(d.p(0), 6, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_PARAMETER);
+            }
             if ("getOrCreate".equals(methodName)) {
-                assertDv(d, 2, DV.TRUE_DV, Property.MODIFIED_METHOD);
-                String pre = d.iteration() == 0 ? "Precondition[expression=<precondition>, causes=[]]"
+                assertDv(d, 3, DV.TRUE_DV, Property.MODIFIED_METHOD);
+                String pre = d.iteration() == 0
+                        ? "Precondition[expression=<precondition>, causes=[]]"
                         : "Precondition[expression=!frozen, causes=[methodCall:ensureNotFrozen]]";
                 assertEquals(pre, d.methodAnalysis().getPreconditionForEventual().toString());
-                assertDv(d, 2, MultiLevel.INDEPENDENT_HC_DV, Property.INDEPENDENT);
+                assertDv(d, 3, MultiLevel.INDEPENDENT_HC_DV, Property.INDEPENDENT);
             }
             if ("removeAsManyAsPossible".equals(methodName)) {
-                String pre = switch (d.iteration()) {
-                    case 0, 1, 2 -> "Precondition[expression=<precondition>, causes=[]]";
-                    default -> "Precondition[expression=!`dg`.frozen, causes=[methodCall:reverse]]";
-                };
+                String pre = d.iteration() < 4
+                        ? "Precondition[expression=<precondition>, causes=[]]"
+                        : "Precondition[expression=!`dg`.frozen, causes=[methodCall:reverse]]";
                 assertEquals(pre, d.methodAnalysis().getPrecondition().toString());
-                assertDv(d, 35, DV.FALSE_DV, Property.MODIFIED_METHOD);
+                assertDv(d, 21, DV.FALSE_DV, Property.MODIFIED_METHOD);
             }
             if ("recursivelyComputeDependenciesWithoutStartingPoint".equals(methodName)) {
-                assertDv(d.p(0), 3, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_PARAMETER);
+                assertDv(d.p(0), 4, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_PARAMETER);
                 MethodResolution methodResolution = d.methodInfo().methodResolution.get();
                 assertFalse(methodResolution.ignoreMeBecauseOfPartOfCallCycle());
                 assertEquals("accept, recursivelyComputeDependenciesWithoutStartingPoint", methodResolution.callCycleSorted());
@@ -398,7 +391,7 @@ public class Test_Util_06_DependencyGraph extends CommonTestRunner {
                 MethodResolution methodResolution = d.methodInfo().methodResolution.get();
                 assertFalse(methodResolution.ignoreMeBecauseOfPartOfCallCycle());
                 assertEquals("", methodResolution.callCycleSorted());
-                assertDv(d.p(0), 4, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_PARAMETER);
+                assertDv(d.p(0), 5, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_PARAMETER);
             }
             if ("recursivelyAddToSubGraph".equals(methodName)) {
                 assertDv(d, 1, DV.FALSE_DV, Property.MODIFIED_METHOD);
@@ -408,7 +401,7 @@ public class Test_Util_06_DependencyGraph extends CommonTestRunner {
                 assertEquals("recursivelyAddToSubGraph", methodResolution.methodsOfOwnClassReachedSorted());
             }
             if ("startArbitrarily".equals(methodName)) {
-                assertDv(d, 3, DV.FALSE_DV, Property.MODIFIED_METHOD);
+                assertDv(d, 2, DV.FALSE_DV, Property.MODIFIED_METHOD);
                 MethodResolution methodResolution = d.methodInfo().methodResolution.get();
                 assertFalse(methodResolution.ignoreMeBecauseOfPartOfCallCycle());
                 assertEquals("", methodResolution.callCycleSorted());
@@ -423,14 +416,22 @@ public class Test_Util_06_DependencyGraph extends CommonTestRunner {
                 assertEquals("compare", methodResolution.methodsOfOwnClassReachedSorted());
             }
         };
-        testSupportAndUtilClasses(List.of(DependencyGraph.class, Freezable.class), 25, DONT_CARE,
+
+        BreakDelayVisitor breakDelayVisitor = d -> {
+            if ("DependencyGraph".equals(d.typeInfo().simpleName)) {
+                assertEquals("---------M-M--M-M-MFT--", d.delaySequence());
+            }
+        };
+
+        testSupportAndUtilClasses(List.of(DependencyGraph.class, Freezable.class), 26, DONT_CARE,
                 new DebugConfiguration.Builder()
-                        //  .addAfterMethodAnalyserVisitor(mavForFreezable)
-                        //   .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
-                        //   .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-                        //    .addStatementAnalyserVisitor(statementAnalyserVisitor)
-                        //   .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
+                        .addAfterMethodAnalyserVisitor(mavForFreezable)
+                        .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                        .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                        .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                        .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
                         .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+                        .addBreakDelayVisitor(breakDelayVisitor)
                         .build(),
                 new AnalyserConfiguration.Builder().setComputeFieldAnalyserAcrossAllMethods(false).build());
     }
@@ -439,10 +440,13 @@ public class Test_Util_06_DependencyGraph extends CommonTestRunner {
     public void test_1() throws IOException {
         EvaluationResultVisitor evaluationResultVisitor = d -> {
             if ("accept".equals(d.methodInfo().name) && "visit".equals(d.enclosingMethod().name)) {
-                if (d.iteration() == 0) {
-                    String expected = "EvaluationResult{evaluationContext=SAEvaluationContext{0}, statementTime=0, value=<m:accept>, storedValues=null, causesOfDelay=constructor-to-instance@Method_accept_0-E;initial:n.dependsOn@Method_accept_0-C;initial:n.t@Method_accept_0-C, messages=messages=, changeData=n.dependsOn:ChangeData{value=<f:n.dependsOn>, delays=constructor-to-instance@Method_accept_0-E;initial:n.dependsOn@Method_accept_0-C, stateIsDelayed=, markAssignment=false, readAtStatementTime=0, linkedVariables=consumer:3,n.dependsOn:0,n:-1, toRemoveFromLinkedVariables=, properties=context-container->not_container:1,context-modified->initial:n.dependsOn@Method_accept_0-C};n.t:ChangeData{value=<f:n.t>, delays=constructor-to-instance@Method_accept_0-E;initial:n.t@Method_accept_0-C, stateIsDelayed=, markAssignment=false, readAtStatementTime=0, linkedVariables=consumer:3,n.t:0,n:-1, toRemoveFromLinkedVariables=, properties=context-container->not_container:1,context-modified->initial:n.t@Method_accept_0-C};org.e2immu.analyser.util.DependencyGraph.$5.accept(org.e2immu.analyser.util.DependencyGraph.Node<T>):0:n:ChangeData{value=<f:n.dependsOn>, delays=constructor-to-instance@Method_accept_0-E;initial:n.dependsOn@Method_accept_0-C;initial:n.t@Method_accept_0-C, stateIsDelayed=, markAssignment=false, readAtStatementTime=0, linkedVariables=consumer:4, toRemoveFromLinkedVariables=, properties=context-container->not_container:1,context-modified->initial:n.dependsOn@Method_accept_0-C;initial:n.t@Method_accept_0-C,context-not-null->not_null:5,in-not-null-context->not_null:5};org.e2immu.analyser.util.DependencyGraph.visit(java.util.function.BiConsumer<T,java.util.List<T>>):0:consumer:ChangeData{value=null, delays=, stateIsDelayed=, markAssignment=false, readAtStatementTime=0, linkedVariables=n:4, toRemoveFromLinkedVariables=, properties=context-container->not_container:1,context-modified->false:0,context-not-null->not_null:5,in-not-null-context->not_null:5}, precondition=Precondition[expression=true, causes=[]]}";
-                    assertEquals(expected, d.evaluationResult().toString());
-                }
+                String expected = switch (d.iteration()) {
+                    case 0 -> "EvaluationResult{evaluationContext=SAEvaluationContext{0}, statementTime=0, value=<m:accept>, storedValues=null, causesOfDelay=constructor-to-instance@Method_accept_0-E;initial:n.dependsOn@Method_accept_0-C;initial:n.t@Method_accept_0-C, messages=messages=, changeData=n.dependsOn:ChangeData{value=<f:n.dependsOn>, delays=constructor-to-instance@Method_accept_0-E;initial:n.dependsOn@Method_accept_0-C, stateIsDelayed=, markAssignment=false, readAtStatementTime=0, linkedVariables=consumer:3,n.dependsOn:0,n:-1, toRemoveFromLinkedVariables=, properties=context-container->not_container:1,context-modified->initial:n.dependsOn@Method_accept_0-C};n.t:ChangeData{value=<f:n.t>, delays=constructor-to-instance@Method_accept_0-E;initial:n.t@Method_accept_0-C, stateIsDelayed=, markAssignment=false, readAtStatementTime=0, linkedVariables=consumer:3,n.t:0,n:-1, toRemoveFromLinkedVariables=, properties=context-container->not_container:1,context-modified->initial:n.t@Method_accept_0-C};org.e2immu.analyser.util.DependencyGraph.$5.accept(org.e2immu.analyser.util.DependencyGraph.Node<T>):0:n:ChangeData{value=<f:n.dependsOn>, delays=constructor-to-instance@Method_accept_0-E;initial:n.dependsOn@Method_accept_0-C;initial:n.t@Method_accept_0-C, stateIsDelayed=, markAssignment=false, readAtStatementTime=0, linkedVariables=consumer:4, toRemoveFromLinkedVariables=, properties=context-container->not_container:1,context-modified->initial:n.dependsOn@Method_accept_0-C;initial:n.t@Method_accept_0-C,context-not-null->not_null:5,in-not-null-context->not_null:5};org.e2immu.analyser.util.DependencyGraph.visit(java.util.function.BiConsumer<T,java.util.List<T>>):0:consumer:ChangeData{value=null, delays=, stateIsDelayed=, markAssignment=false, readAtStatementTime=0, linkedVariables=n:4, toRemoveFromLinkedVariables=, properties=context-container->not_container:1,context-modified->false:0,context-not-null->not_null:5,in-not-null-context->not_null:5}, precondition=Precondition[expression=true, causes=[]]}";
+                    case 1 -> "EvaluationResult{evaluationContext=SAEvaluationContext{0}, statementTime=0, value=<m:accept>, storedValues=null, causesOfDelay=constructor-to-instance@Method_accept_0-E;link@Field_dependsOn;link@Field_t, messages=messages=, changeData=n.dependsOn:ChangeData{value=<vp:dependsOn:link@Field_dependsOn>, delays=constructor-to-instance@Method_accept_0-E;link@Field_dependsOn, stateIsDelayed=, markAssignment=false, readAtStatementTime=0, linkedVariables=consumer:3,n.dependsOn:0,n:-1, toRemoveFromLinkedVariables=, properties=context-container->not_container:1,context-modified->true:1};n.t:ChangeData{value=null, delays=, stateIsDelayed=, markAssignment=false, readAtStatementTime=0, linkedVariables=consumer:3, toRemoveFromLinkedVariables=, properties=context-container->not_container:1,context-modified->false:0};org.e2immu.analyser.util.DependencyGraph.$5.accept(org.e2immu.analyser.util.DependencyGraph.Node<T>):0:n:ChangeData{value=<vp:dependsOn:link@Field_dependsOn>, delays=constructor-to-instance@Method_accept_0-E;link@Field_dependsOn, stateIsDelayed=, markAssignment=false, readAtStatementTime=0, linkedVariables=consumer:4, toRemoveFromLinkedVariables=, properties=context-container->not_container:1,context-modified->true:1,context-not-null->not_null:5,in-not-null-context->not_null:5};org.e2immu.analyser.util.DependencyGraph.visit(java.util.function.BiConsumer<T,java.util.List<T>>):0:consumer:ChangeData{value=null, delays=, stateIsDelayed=, markAssignment=false, readAtStatementTime=0, linkedVariables=n:4, toRemoveFromLinkedVariables=, properties=context-container->not_container:1,context-modified->false:0,context-not-null->not_null:5,in-not-null-context->not_null:5}, precondition=Precondition[expression=true, causes=[]]}";
+                    case 2, 3, 4 -> "EvaluationResult{evaluationContext=SAEvaluationContext{0}, statementTime=0, value=<m:accept>, storedValues=null, causesOfDelay=link@Field_t, messages=messages=, changeData=n.dependsOn:ChangeData{value=null, delays=, stateIsDelayed=, markAssignment=false, readAtStatementTime=0, linkedVariables=consumer:3, toRemoveFromLinkedVariables=, properties=context-container->not_container:1,context-modified->true:1};n.t:ChangeData{value=null, delays=, stateIsDelayed=, markAssignment=false, readAtStatementTime=0, linkedVariables=consumer:3, toRemoveFromLinkedVariables=, properties=context-container->not_container:1,context-modified->false:0};org.e2immu.analyser.util.DependencyGraph.$5.accept(org.e2immu.analyser.util.DependencyGraph.Node<T>):0:n:ChangeData{value=null, delays=, stateIsDelayed=, markAssignment=false, readAtStatementTime=0, linkedVariables=consumer:4, toRemoveFromLinkedVariables=, properties=context-container->not_container:1,context-modified->true:1,context-not-null->not_null:5,in-not-null-context->not_null:5};org.e2immu.analyser.util.DependencyGraph.visit(java.util.function.BiConsumer<T,java.util.List<T>>):0:consumer:ChangeData{value=null, delays=, stateIsDelayed=, markAssignment=false, readAtStatementTime=0, linkedVariables=n:4, toRemoveFromLinkedVariables=, properties=context-container->not_container:1,context-modified->false:0,context-not-null->not_null:5,in-not-null-context->not_null:5}, precondition=Precondition[expression=true, causes=[]]}";
+                    default -> "EvaluationResult{evaluationContext=SAEvaluationContext{0}, statementTime=0, value=<no return value>, storedValues=null, causesOfDelay=, messages=messages=, changeData=n.dependsOn:ChangeData{value=null, delays=, stateIsDelayed=, markAssignment=false, readAtStatementTime=0, linkedVariables=consumer:3, toRemoveFromLinkedVariables=, properties=context-container->not_container:1,context-modified->true:1};n.t:ChangeData{value=null, delays=, stateIsDelayed=, markAssignment=false, readAtStatementTime=0, linkedVariables=consumer:3, toRemoveFromLinkedVariables=, properties=context-container->not_container:1,context-modified->false:0};org.e2immu.analyser.util.DependencyGraph.$5.accept(org.e2immu.analyser.util.DependencyGraph.Node<T>):0:n:ChangeData{value=null, delays=, stateIsDelayed=, markAssignment=false, readAtStatementTime=0, linkedVariables=consumer:4, toRemoveFromLinkedVariables=, properties=context-container->not_container:1,context-modified->true:1,context-not-null->not_null:5,in-not-null-context->not_null:5};org.e2immu.analyser.util.DependencyGraph.visit(java.util.function.BiConsumer<T,java.util.List<T>>):0:consumer:ChangeData{value=null, delays=, stateIsDelayed=, markAssignment=false, readAtStatementTime=0, linkedVariables=n:4, toRemoveFromLinkedVariables=, properties=context-container->not_container:1,context-modified->false:0,context-not-null->not_null:5,in-not-null-context->not_null:5}, precondition=Precondition[expression=true, causes=[]]}";
+                };
+                assertEquals(expected, d.evaluationResult().toString());
             }
         };
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
@@ -455,6 +459,12 @@ public class Test_Util_06_DependencyGraph extends CommonTestRunner {
                         default -> "true:1";
                     };
                     assertEquals(expectCm, cm.toString());
+                    assertDv(d, 5, MultiLevel.INDEPENDENT_HC_DV, Property.INDEPENDENT);
+                }
+            }
+            if ("visit".equals(d.methodInfo().name)) {
+                if (d.variable() instanceof ParameterInfo pi && "consumer".equals(pi.name)) {
+                    assertDv(d, 3, MultiLevel.INDEPENDENT_HC_DV, Property.INDEPENDENT);
                 }
             }
         };
@@ -487,10 +497,16 @@ public class Test_Util_06_DependencyGraph extends CommonTestRunner {
                 assertEquals(expected, d.statementAnalysis().propertiesFromSubAnalysersSortedToString());
             }
         };
-        testSupportAndUtilClasses(List.of(DependencyGraph.class, Freezable.class), 5, DONT_CARE,
+        MethodAnalyserVisitor methodAnalyserVisitor = d -> {
+            if ("visit".equals(d.methodInfo().name)) {
+                assertDv(d.p(0), 4, MultiLevel.DEPENDENT_DV, Property.INDEPENDENT);
+            }
+        };
+        testSupportAndUtilClasses(List.of(DependencyGraph.class, Freezable.class), 6, DONT_CARE,
                 new DebugConfiguration.Builder()
                         .addEvaluationResultVisitor(evaluationResultVisitor)
                         .addAfterMethodAnalyserVisitor(mavForFreezable)
+                        .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                         .addStatementAnalyserVisitor(statementAnalyserVisitor)
                         .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                         .build(),

@@ -367,10 +367,10 @@ public record ComputeIndependent(AnalyserContext analyserContext,
                 if (immutable.isDelayed()) {
                     causes = causes.merge(immutable.causesOfDelay());
                 } else if (MultiLevel.isMutable(immutable)) {
-                    min = MultiLevel.MUTABLE_DV;
+                    min = min.min(MultiLevel.MUTABLE_DV);
                 } else if (!MultiLevel.isAtLeastEventuallyRecursivelyImmutable(immutable)) {
                     hcTypes.add(type);
-                    min = MultiLevel.EFFECTIVELY_IMMUTABLE_HC_DV;
+                    min = min.min(MultiLevel.EFFECTIVELY_IMMUTABLE_HC_DV);
                 }
             }
         }
