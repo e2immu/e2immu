@@ -638,7 +638,7 @@ public class ComputeLinkedVariables {
                         if (!inFinal.valueIsTrue()) {
                             if (withExtraDelay.isDelayed()) {
                                 // once true, always true; but one delay is a delay for everyone in the path
-                                finalModified.put(reached, withExtraDelay);
+                                finalModified.put(reached, withExtraDelay.merge(inFinal.causesOfDelay()));
                             } else if (inPropertyMap.valueIsTrue()) {
                                 // non-delay linked to a TRUE, so this travels
                                 finalModified.put(reached, DV.TRUE_DV);

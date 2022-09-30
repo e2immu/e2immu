@@ -17,7 +17,6 @@ package org.e2immu.analyser.analyser;
 import org.e2immu.analyser.analyser.delay.DelayFactory;
 import org.e2immu.analyser.analyser.delay.SimpleCause;
 import org.e2immu.analyser.analyser.delay.VariableCause;
-import org.e2immu.analyser.analyser.impl.util.BreakDelayLevel;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.DelayedExpression;
 import org.e2immu.analyser.model.expression.DelayedVariableExpression;
@@ -78,6 +77,20 @@ public record EvaluationResult(EvaluationContext evaluationContext,
         assert evaluationContext != null;
         assert causesOfDelay.causesStream().noneMatch(cause -> cause.cause() == CauseOfDelay.Cause.MIN_INT)
                 : "Causes of delay: " + causesOfDelay;
+    }
+
+    @Override
+    public String toString() {
+        return "EvaluationResult{" +
+                "evaluationContext=" + evaluationContext +
+                ", statementTime=" + statementTime +
+                ", value=" + value +
+                ", storedValues=" + storedValues +
+                ", causesOfDelay=" + causesOfDelay +
+                ", messages=" + messages +
+                ", changeData=" + changeData.entrySet().stream().map(e -> e.getKey() + ":" + e.getValue()).sorted().collect(Collectors.joining(";")) +
+                ", precondition=" + precondition +
+                '}';
     }
 
     public EvaluationResult copy(EvaluationContext evaluationContext) {
@@ -241,6 +254,20 @@ public record EvaluationResult(EvaluationContext evaluationContext,
         public ChangeData {
             Objects.requireNonNull(readAtStatementTime);
             Objects.requireNonNull(properties);
+        }
+
+        @Override
+        public String toString() {
+            return "ChangeData{" +
+                    "value=" + value +
+                    ", delays=" + delays +
+                    ", stateIsDelayed=" + stateIsDelayed +
+                    ", markAssignment=" + markAssignment +
+                    ", readAtStatementTime=" + readAtStatementTime.stream().map(Object::toString).sorted().collect(Collectors.joining(",")) +
+                    ", linkedVariables=" + linkedVariables +
+                    ", toRemoveFromLinkedVariables=" + toRemoveFromLinkedVariables +
+                    ", properties=" + properties.entrySet().stream().map(e -> e.getKey() + "->" + e.getValue()).sorted().collect(Collectors.joining(",")) +
+                    '}';
         }
 
         public ChangeData merge(ChangeData other) {

@@ -122,11 +122,6 @@ public class DelayedVariableExpression extends BaseExpression implements IsVaria
         return new DelayedVariableExpression(msg, variable, statementTime, causesOfDelay, properties);
     }
 
-    public static Expression forDelayedModificationInMethodCall(Variable variable, CausesOfDelay causesOfDelay) {
-        String msg = "<mmc:" + variable.simpleName() + ">";
-        return new DelayedVariableExpression(msg, variable, variable.statementTime(), causesOfDelay);
-    }
-
     public static Expression forMerge(Variable variable, CausesOfDelay causes) {
         String msg = "<merge:" + variable.simpleName() + ">";
         return new DelayedVariableExpression(msg, variable, variable.statementTime(), causes);

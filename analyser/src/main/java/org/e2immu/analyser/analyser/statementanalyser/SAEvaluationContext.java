@@ -129,6 +129,11 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
     }
 
     @Override
+    public String toString() {
+        return "SAEvaluationContext{" + statementAnalysis.index() + "}";
+    }
+
+    @Override
     public boolean delayStatementBecauseOfECI() {
         return delayStatementBecauseOfECI;
     }

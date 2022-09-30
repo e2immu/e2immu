@@ -647,9 +647,11 @@ public class StatementAnalyserImpl implements StatementAnalyser {
         }
 
         VariableAccessReport.Builder builder = new VariableAccessReport.Builder();
-        AtomicReference<CausesOfDelay> causes = new AtomicReference<>(CausesOfDelay.EMPTY);
         TypeInfo currentType = statementAnalyserSharedState.evaluationContext().getCurrentType();
         CausesOfDelay linksEstablished = statementAnalysis.methodLevelData().getLinksHaveBeenEstablished();
+        boolean linksHaveBeenEstablished = linksEstablished.isDone();
+        AtomicReference<CausesOfDelay> causes = new AtomicReference<>(linksEstablished.causesOfDelay());
+
         statementAnalysis.variableStream()
                 .filter(vi -> closure.acceptForVariableAccessReport(vi.variable(), currentType))
                 .forEach(vi -> {
@@ -658,12 +660,12 @@ public class StatementAnalyserImpl implements StatementAnalyser {
                         builder.addVariableRead(variable);
                     }
                     DV modified = vi.getProperty(Property.CONTEXT_MODIFIED);
-                    CausesOfDelay delays = modified.causesOfDelay().merge(linksEstablished);
-                    if (delays.isDone()) {
-                        builder.addContextProperty(variable, Property.CONTEXT_MODIFIED, modified); // also when delayed!!!
+                    if (modified.isDone() && linksHaveBeenEstablished) {
+                        builder.addContextProperty(variable, Property.CONTEXT_MODIFIED, modified);
                     } else {
+                        CausesOfDelay delays = modified.causesOfDelay().merge(linksEstablished.causesOfDelay());
                         builder.addContextProperty(variable, Property.CONTEXT_MODIFIED, delays);
-                        causes.set(causes.get().merge(delays.causesOfDelay()));
+                        causes.set(causes.get().merge(modified.causesOfDelay()));
                     }
                     if (!(variable instanceof This)) {
                         DV notNull = vi.getProperty(Property.CONTEXT_NOT_NULL);

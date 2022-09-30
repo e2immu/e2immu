@@ -73,5 +73,9 @@ public interface EvaluationResultVisitor {
                             evaluationResult.getExpressionChangeStream().map(
                                     e -> e.getKey().toString()).collect(Collectors.toUnmodifiableSet())));
         }
+
+        public MethodInfo enclosingMethod() {
+            return methodInfo().typeInfo.typeInspection.get().enclosingMethod();
+        }
     }
 }

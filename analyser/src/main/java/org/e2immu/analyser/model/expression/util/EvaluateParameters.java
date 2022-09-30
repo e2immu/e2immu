@@ -102,11 +102,11 @@ public class EvaluateParameters {
                                             Expression parameterExpression,
                                             DV scopeIsContainer,
                                             DV scopeIsIndependent) {
-        Expression parameterValue;
-        EvaluationResult parameterResult;
         DV contextNotNull;
         DV contextModified;
         ParameterInfo parameterInfo = methodInfo == null ? null : getParameterInfo(methodInfo, position);
+        ForwardEvaluationInfo forward;
+
         if (methodInfo != null) {
             // NOT_NULL, NOT_MODIFIED
             Map<Property, DV> map;
@@ -167,22 +167,21 @@ public class EvaluateParameters {
                 map.put(Property.CONTEXT_MODIFIED, scopeIsIndependent.max(cm)); // merge with current delays, if any
             }
 
-            ForwardEvaluationInfo forward = forwardEvaluationInfo.copy().setNotAssignmentTarget()
-                    .addProperties(map).build();
-            parameterResult = parameterExpression.evaluate(context, forward);
-            parameterValue = parameterResult.value();
+            forward = forwardEvaluationInfo.copy().setNotAssignmentTarget().addProperties(map).build();
             contextModified = map.getOrDefault(Property.CONTEXT_MODIFIED, DV.FALSE_DV);
         } else {
-            parameterResult = parameterExpression.evaluate(context, ForwardEvaluationInfo.DEFAULT);
-            parameterValue = parameterResult.value();
+            forward = ForwardEvaluationInfo.DEFAULT;
             contextNotNull = Property.CONTEXT_NOT_NULL.bestDv;
             contextModified = Property.CONTEXT_MODIFIED.bestDv;
         }
+
+        EvaluationResult parameterResult = parameterExpression.evaluate(context, forward);
         builder.compose(parameterResult);
 
         Expression afterModification;
         // we don't want delays when processing companion expressions, which are never modifying and cause
         // unnecessary stress to the shallow analyser
+        Expression parameterValue = parameterResult.value();
         if (!contextModified.valueIsFalse() && !forwardEvaluationInfo.isInCompanionExpression()) {
             EvaluationResult er = potentiallyModifyConstructorCall(context, parameterInfo, parameterExpression,
                     parameterValue, contextModified);
