@@ -23,7 +23,6 @@ import org.e2immu.analyser.inspector.MethodTypeParameterMap;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.*;
 import org.e2immu.analyser.model.impl.TranslationMapImpl;
-import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.This;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.parser.InspectionProvider;
@@ -89,17 +88,21 @@ public class LinkParameters {
         MethodTypeParameterMap sam = parameterExpression.returnType().findSingleAbstractMethodOfInterface(InspectionProvider.DEFAULT);
         assert sam != null;
         MethodInfo methodInfo;
+        TypeInfo nestedType;
         if (parameterExpression instanceof Lambda lambda) {
             methodInfo = lambda.methodInfo;
+            nestedType = lambda.methodInfo.typeInfo;
         } else if (parameterExpression instanceof ConstructorCall cc && cc.anonymousClass() != null) {
             methodInfo = cc.anonymousClass().findOverriddenSingleAbstractMethod(context.getAnalyserContext());
+            nestedType = cc.anonymousClass();
         } else if (parameterExpression instanceof MethodReference methodReference) {
             if (parameterValue instanceof MethodReference mr) {
                 // do we have access to the code?
                 if (methodReference.methodInfo.typeInfo.primaryType().equals(context.getCurrentType().primaryType())) {
                     methodInfo = methodReference.methodInfo;
                     // yes, access to the code!!
-                    List<LinkedVariables> res = additionalLinkingConsumer(context.evaluationContext(), methodReference.methodInfo);
+                    List<LinkedVariables> res = additionalLinkingConsumer(context.evaluationContext(),
+                            methodReference.methodInfo, null);
                     if (mr.scope instanceof TypeExpression) {
                         /*
                          methods which only have a scope, no argument... could be static suppliers, but more likely
@@ -130,9 +133,11 @@ public class LinkParameters {
             }
         } else {
             methodInfo = null;
+            nestedType = null;
         }
         if (methodInfo != null && sam.methodInspection.getMethodInfo().isVoid()) {
-            return additionalLinkingConsumer(context.evaluationContext(), methodInfo);
+            assert nestedType != null;
+            return additionalLinkingConsumer(context.evaluationContext(), methodInfo, nestedType);
         }
         // not yet implemented
         return List.of();
@@ -145,7 +150,7 @@ public class LinkParameters {
         LinkedVariables allLinkedVariablesOfScope = methodReference.scope.linkedVariables(context);
         if (allLinkedVariablesOfScope.isEmpty()) return List.of();
         LinkedVariables linkedVariablesOfScope = allLinkedVariablesOfScope
-                .remove(v -> rejectVariable(context.evaluationContext(), v));
+                .remove(v -> !context.evaluationContext().acceptForVariableAccessReport(v, null));
         if (linkedVariablesOfScope.isEmpty()) return List.of();
 
         MethodAnalysis methodAnalysis = context.getAnalyserContext().getMethodAnalysis(methodReference.methodInfo);
@@ -168,10 +173,10 @@ public class LinkParameters {
     }
 
     private static List<LinkedVariables> additionalLinkingConsumer(EvaluationContext evaluationContext,
-                                                                   MethodInfo concreteMethod) {
+                                                                   MethodInfo concreteMethod,
+                                                                   TypeInfo nestedType) {
 
-        MethodAnalysis methodAnalysis = evaluationContext.getAnalyserContext()
-                .getMethodAnalysis(concreteMethod);
+        MethodAnalysis methodAnalysis = evaluationContext.getAnalyserContext().getMethodAnalysis(concreteMethod);
         StatementAnalysis lastStatement = methodAnalysis.getLastStatement();
         if (lastStatement == null) {
             return List.of();
@@ -180,21 +185,11 @@ public class LinkParameters {
         List<LinkedVariables> result = new ArrayList<>(methodInspection.getParameters().size());
         for (ParameterInfo pi : methodInspection.getParameters()) {
             VariableInfo vi = lastStatement.getLatestVariableInfo(pi.fullyQualifiedName);
-            LinkedVariables lv = vi.getLinkedVariables().remove(v -> rejectVariable(evaluationContext, v));
+            LinkedVariables lv = vi.getLinkedVariables().remove(v ->
+                    !evaluationContext.acceptForVariableAccessReport(v, nestedType));
             result.add(lv);
         }
         return result;
-    }
-
-    /*
-     fields don't exist in the first iteration, but their scope should!
-     */
-    private static boolean rejectVariable(EvaluationContext evaluationContext, Variable variable) {
-        if (variable instanceof FieldReference fr) {
-            if(fr.scopeVariable == null) return false; // static!
-            return rejectVariable(evaluationContext, fr.scopeVariable);
-        }
-        return !evaluationContext.isPresent(variable);
     }
 
     /*

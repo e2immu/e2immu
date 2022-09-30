@@ -418,17 +418,17 @@ public interface EvaluationContext {
 
     /**
      * @param variable   the variable in the nested type
-     * @param nestedType the nested type
+     * @param nestedType the nested type, can be null in case of method references
      * @return true when we want to transfer properties from the nested type to the current type
      */
     default boolean acceptForVariableAccessReport(Variable variable, TypeInfo nestedType) {
-        if (isPresent(variable)) return true;
-        return variable instanceof FieldReference fr
-                && fr.fieldInfo.owner != nestedType
-                && fr.fieldInfo.owner.primaryType().equals(nestedType.primaryType())
-                //  && !(fr.scope instanceof VariableExpression ve && ve.variable() instanceof ParameterInfo pi && pi.owner.typeInfo == nestedType)
-                //  && !(fr.isStatic);
-                && fr.scopeVariable != null && acceptForVariableAccessReport(fr.scopeVariable, nestedType);
+        if (variable instanceof FieldReference fr) {
+            return fr.fieldInfo.owner != nestedType
+                    && (nestedType == null || fr.fieldInfo.owner.primaryType().equals(nestedType.primaryType()))
+                    && fr.scopeVariable != null
+                    && acceptForVariableAccessReport(fr.scopeVariable, nestedType);
+        }
+        return isPresent(variable);
     }
 
     default DependentVariable searchInEquivalenceGroupForLatestAssignment(DependentVariable variable,

@@ -274,4 +274,16 @@ public class JavaIo {
         @Modified
         void setOffset(int offset);
     }
+
+    @Container
+    @Independent
+    interface FileFilter$ {
+
+    }
+
+    @Container
+    @Independent
+    interface FilenameFilter$ {
+
+    }
 }
