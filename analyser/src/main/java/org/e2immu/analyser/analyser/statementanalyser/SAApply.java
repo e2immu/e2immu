@@ -499,11 +499,10 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
 
      Compounding the problem is that we must know the modification to obtain a value inside the loop,
      and we cannot know the modification inside the loop before we have a value. This represents a cycle.
-     FIXME introduce CM_NO_VALUE?
 
      IMPORTANT this part should not clash with the code that deals with the value AFTER the loop, which sits
      in SASubBlocks.conditionManagerForFirstBlock.
-     FIXME Problem is that that one uses -E as the basis for the "previous value", messing up the value afterwards
+     ?? Problem is that that one uses -E as the basis for the "previous value", messing up the value afterwards
 
      (also interfering is the erasure of companion info during the evaluation of a modifying method (MethodCall))
      See Loops_8
@@ -591,7 +590,16 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
             Identifier identifier = statement().getIdentifier();
             value = Instance.forVariableInLoopDefinedOutside(identifier, variable.parameterizedType(), valueProperties);
         }
-        boolean progress = vic.setValue(value, null, valueProperties, EVALUATION);
+        boolean progress;
+        if (vic.hasEvaluation() && vic.best(EVALUATION).getValue().isDelayed()) {
+            progress = vic.setValue(value, null, valueProperties, EVALUATION);
+        } else {
+            /*
+             don't try to overwrite, this happens when the modification is inside a loop within a loop
+             See e.g. ParameterizedType_2, _2_1. Both will be instances, but with different identifiers.
+             */
+            progress = false;
+        }
         Map<Property, DV> previous = vic.getPreviousOrInitial().getProperties();
         SAHelper.mergePreviousAndChangeOnlyGroupPropertyValues(sharedState.evaluationContext(), variable,
                 previous, changeData == null ? null : changeData.properties(), groupPropertyValues);

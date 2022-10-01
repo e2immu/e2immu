@@ -53,7 +53,7 @@ public class ParameterizedType_2 {
     }
 
     static class ParameterizedType {
-        static ParameterizedType WILDCARD_PARAMETERIZED_TYPE = new ParameterizedType();
+        private static ParameterizedType WILDCARD_PARAMETERIZED_TYPE = new ParameterizedType();
 
         public ParameterizedType() {
             this.typeInfo = null;
