@@ -15,6 +15,7 @@
 package org.e2immu.analyser.parser.own.snippet.testexample;
 
 
+import org.e2immu.annotation.ImmutableContainer;
 import org.e2immu.annotation.NotNull;
 
 import java.util.ArrayList;
@@ -25,6 +26,7 @@ import java.util.Map;
 // trying to catch an error
 public class Expressions_0 {
 
+    @ImmutableContainer
     interface Expression {
         default boolean isInstanceOf(Class<? extends Expression> clazz) {
             return clazz.isAssignableFrom(getClass());
@@ -46,14 +48,17 @@ public class Expressions_0 {
 
     }
 
+    @ImmutableContainer
     interface Inequality {
 
     }
 
+    @ImmutableContainer
     interface OneVariable {
         Variable variable();
     }
 
+    @ImmutableContainer
     interface Variable extends OneVariable {
 
     }

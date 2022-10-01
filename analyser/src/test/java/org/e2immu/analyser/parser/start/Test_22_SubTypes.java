@@ -78,14 +78,16 @@ public class Test_22_SubTypes extends CommonTestRunner {
             if (SUBTYPE_CONSTRUCTOR.equals(d.methodInfo().name)) {
                 assertTrue(d.methodInfo().isConstructor);
                 if ("1".equals(d.statementId())) {
-                    assertEquals("s={context-modified=false:0, context-not-null=nullable:1, read=true:1}, this={context-modified=false:0}",
-                            d.variableAccessReport().toString());
+                    String report = d.iteration() == 0
+                            ? "s={context-modified=link@NOT_YET_SET, context-not-null=nullable:1, read=true:1}, this={context-modified=false:0}"
+                            : "s={context-modified=false:0, context-not-null=nullable:1, read=true:1}, this={context-modified=false:0}";
+                    assertEquals(report, d.variableAccessReport().toString());
                 }
             }
             if ("methodWithSubType".equals(d.methodInfo().name)) {
                 if ("1".equals(d.statementId())) {
                     String expected = d.iteration() == 0
-                            ? "s={context-modified=initial:this.key@Method_toString_0-C;initial:this.value@Method_toString_0-C, context-not-null=nullable:1, read=true:1}, this={context-modified=initial:this.key@Method_toString_0-C;initial:this.value@Method_toString_0-C}"
+                            ? "s={context-modified=initial:this.key@Method_toString_0-C;initial:this.value@Method_toString_0-C;link@NOT_YET_SET, context-not-null=nullable:1, read=true:1}, this={context-modified=initial:this.key@Method_toString_0-C;initial:this.value@Method_toString_0-C}"
                             : "s={context-modified=false:0, context-not-null=nullable:1, read=true:1}, this={context-modified=false:0}";
                     assertEquals(expected, d.statementAnalysis().propertiesFromSubAnalysersSortedToString());
                 }

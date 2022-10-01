@@ -403,8 +403,8 @@ public class Test_ParameterizedType extends CommonTestRunner {
             }
             if ("get".equals(d.methodInfo().name)) {
                 assertEquals("TypeContext", d.methodInfo().typeInfo.simpleName);
-                assertDv(d, 1, MultiLevel.EFFECTIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
-                assertDv(d, 1, MultiLevel.INDEPENDENT_DV, Property.INDEPENDENT);
+                assertDv(d, MultiLevel.EFFECTIVELY_IMMUTABLE_HC_DV, Property.IMMUTABLE);
+                assertDv(d, MultiLevel.INDEPENDENT_HC_DV, Property.INDEPENDENT);
             }
         };
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
@@ -422,8 +422,8 @@ public class Test_ParameterizedType extends CommonTestRunner {
                 assertDv(d, 1, MultiLevel.INDEPENDENT_HC_DV, Property.INDEPENDENT);
             }
             if ("NamedType".equals(d.typeInfo().simpleName)) {
-                assertDv(d, MultiLevel.EFFECTIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
-                assertDv(d, MultiLevel.INDEPENDENT_DV, Property.INDEPENDENT);
+                assertDv(d, MultiLevel.EFFECTIVELY_IMMUTABLE_HC_DV, Property.IMMUTABLE);
+                assertDv(d, MultiLevel.INDEPENDENT_HC_DV, Property.INDEPENDENT);
             }
         };
 

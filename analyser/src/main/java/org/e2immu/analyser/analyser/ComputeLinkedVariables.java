@@ -613,7 +613,8 @@ public class ComputeLinkedVariables {
     only when we looped over all, we can start writing out values
 
      */
-    public ProgressAndDelay writeContextModified(Map<Variable, DV> propertyMap, CausesOfDelay extraDelay,
+    public ProgressAndDelay writeContextModified(Map<Variable, DV> propertyMap,
+                                                 CausesOfDelay extraDelayIn,
                                                  boolean noAssignments) {
         Map<Variable, DV> finalModified;
         if (noAssignments && propertyMap.values().stream().allMatch(DV::valueIsFalse)) {
@@ -621,14 +622,14 @@ public class ComputeLinkedVariables {
             assert propertyMap.keySet().containsAll(variablesInClusters);
         } else {
             finalModified = new HashMap<>();
-
             for (Variable variable : variablesInClusters) {
                 DV inPropertyMap = potentiallyBreakContextModifiedDelay(variable, propertyMap.get(variable));
                 Map<Variable, DV> map = weightedGraph.links(variable, LinkedVariables.LINK_IS_HC_OF, true);
 
-                DV delays = map.values().stream().reduce(DV.MIN_INT_DV, DV::max);
-                CausesOfDelay clusterDelay = delays == DV.MIN_INT_DV ? CausesOfDelay.EMPTY : delays.causesOfDelay();
-                CausesOfDelay withExtraDelay = clusterDelay.merge(extraDelay);
+                DV max = map.values().stream().reduce(DV.MIN_INT_DV, DV::max);
+                CausesOfDelay clusterDelay = max == DV.MIN_INT_DV ? CausesOfDelay.EMPTY : max.causesOfDelay();
+                CausesOfDelay notYetSet = this.linkingNotYetSet.contains(variable) ? LinkedVariables.NOT_YET_SET_DELAY : CausesOfDelay.EMPTY;
+                CausesOfDelay delays = clusterDelay.merge(extraDelayIn).merge(notYetSet);
 
                 for (Variable reached : map.keySet()) {
                     if (reached == variable && inPropertyMap.valueIsTrue()) {
@@ -636,9 +637,9 @@ public class ComputeLinkedVariables {
                     } else {
                         DV inFinal = finalModified.getOrDefault(reached, DV.FALSE_DV);
                         if (!inFinal.valueIsTrue()) {
-                            if (withExtraDelay.isDelayed()) {
+                            if (delays.isDelayed()) {
                                 // once true, always true; but one delay is a delay for everyone in the path
-                                finalModified.put(reached, withExtraDelay.merge(inFinal.causesOfDelay()));
+                                finalModified.put(reached, delays.merge(inFinal.causesOfDelay()));
                             } else if (inPropertyMap.valueIsTrue()) {
                                 // non-delay linked to a TRUE, so this travels
                                 finalModified.put(reached, DV.TRUE_DV);

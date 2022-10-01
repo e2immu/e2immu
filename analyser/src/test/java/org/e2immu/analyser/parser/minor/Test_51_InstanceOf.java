@@ -1100,7 +1100,7 @@ public class Test_51_InstanceOf extends CommonTestRunner {
                     };
                     assertEquals(value, d.currentValue().toString());
                     assertTrue(d.variableInfoContainer().hasEvaluation());
-                    assertDv(d, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                    assertDv(d, 1, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
 
                     String linked = d.iteration() == 0 ? "NOT_YET_SET" : "expression:2,unaryOperator:2";
                     assertEquals(linked, lvs);
@@ -1122,7 +1122,7 @@ public class Test_51_InstanceOf extends CommonTestRunner {
                     };
                     assertEquals(linked, lvs);
                 } else if (d.variable() instanceof ParameterInfo pi && "expression".equals(pi.name)) {
-                    assertDv(d, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                    assertDv(d, 1, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     String linked = switch (d.iteration()) {
                         case 0 -> "NOT_YET_SET";
                         default -> "unaryOperator:1";
@@ -1130,9 +1130,8 @@ public class Test_51_InstanceOf extends CommonTestRunner {
                     assertEquals(linked, lvs);
                 } else if ("scope-negation:0".equals(d.variableName())) {
                     assertTrue(d.variableInfoContainer().hasEvaluation());
-                    if (d.iteration() > BIG) {
-                        assertDv(d, 3, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
-                    }
+                    assertDv(d, 1, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+
                     String expected = switch (d.iteration()) {
                         case 0 -> "NOT_YET_SET";
                         default -> "";//""expression:2,scope-negation:0.en:2,unaryOperator:2";
@@ -1140,9 +1139,8 @@ public class Test_51_InstanceOf extends CommonTestRunner {
                     assertEquals(expected, lvs);
                 } else if ("unaryOperator".equals(d.variableName())) {
                     assertTrue(d.variableInfoContainer().hasEvaluation());
-                    if (d.iteration() > 0) { // so that there is an Evaluation
-                        assertDv(d, 1, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
-                    }
+                    assertDv(d, 1, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+
                     String expected = switch (d.iteration()) {
                         case 0 -> "NOT_YET_SET";
                         default -> "expression:1";

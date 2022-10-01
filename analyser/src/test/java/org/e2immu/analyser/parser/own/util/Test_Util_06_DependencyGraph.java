@@ -450,7 +450,7 @@ public class Test_Util_06_DependencyGraph extends CommonTestRunner {
                 if (d.variable() instanceof ParameterInfo pi && "consumer".equals(pi.name)) {
                     DV cm = d.getProperty(Property.CONTEXT_MODIFIED);
                     String expectCm = switch (d.iteration()) {
-                        case 0 -> "initial:n.dependsOn@Method_accept_0-C;initial:n.t@Method_accept_0-C";
+                        case 0 -> "initial:n.dependsOn@Method_accept_0-C;initial:n.t@Method_accept_0-C;link@NOT_YET_SET";
                         default -> "true:1";
                     };
                     assertEquals(expectCm, cm.toString());
