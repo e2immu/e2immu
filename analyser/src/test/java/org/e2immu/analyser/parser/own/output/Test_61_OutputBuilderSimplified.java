@@ -133,7 +133,7 @@ public class Test_61_OutputBuilderSimplified extends CommonTestRunner {
         EvaluationResultVisitor evaluationResultVisitor = d -> {
             if ("combiner".equals(d.methodInfo().name)) {
                 if ("0".equals(d.statementId())) {
-                    String expectValue = d.iteration() < 2 ? "<m:isEmpty>" : "`a.list`.isEmpty()";
+                    String expectValue = d.iteration() == 0 ? "<m:isEmpty>" : "`a.list`.isEmpty()";
                     assertEquals(expectValue, d.evaluationResult().value().toString());
                 }
             }
@@ -142,13 +142,13 @@ public class Test_61_OutputBuilderSimplified extends CommonTestRunner {
             if ("combiner".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof ParameterInfo p && "a".equals(p.name)) {
                     if ("0".equals(d.statementId()) || "1".equals(d.statementId())) {
-                        String expected = d.iteration() < 2 ? "<p:a>"
+                        String expected = d.iteration() == 0 ? "<p:a>"
                                 : "nullable instance type OutputBuilderSimplified_3/*@Identity*/";
                         assertEquals(expected, d.currentValue().toString(),
                                 "Statement " + d.statementId() + " it " + d.iteration());
                     }
                     if ("2.0.0".equals(d.statementId())) {
-                        String expected = d.iteration() < 2 ? "<p:a>"
+                        String expected = d.iteration() == 0 ? "<p:a>"
                                 : "nullable instance type OutputBuilderSimplified_3/*@Identity*/";
                         assertEquals(expected, d.currentValue().toString(),
                                 "Statement " + d.statementId() + " it " + d.iteration());
@@ -156,12 +156,12 @@ public class Test_61_OutputBuilderSimplified extends CommonTestRunner {
                 }
                 if (d.variable() instanceof ReturnVariable) {
                     if ("0".equals(d.statementId())) {
-                        String expectValue = d.iteration() < 2 ? "<m:isEmpty>?b:<return value>"
+                        String expectValue = d.iteration() == 0 ? "<m:isEmpty>?b:<return value>"
                                 : "`a.list`.isEmpty()?b:<return value>";
                         assertEquals(expectValue, d.currentValue().toString());
                     }
                     if ("1".equals(d.statementId()) || "2".equals(d.statementId())) {
-                        String expectValue = d.iteration() < 2 ? "<m:isEmpty>?<p:a>:<m:isEmpty>?b:<return value>"
+                        String expectValue = d.iteration() == 0 ? "<m:isEmpty>?<p:a>:<m:isEmpty>?b:<return value>"
                                 : "`b.list`.isEmpty()?a:`a.list`.isEmpty()?b:<return value>";
                         assertEquals(expectValue, d.currentValue().toString());
                     }
@@ -266,23 +266,23 @@ public class Test_61_OutputBuilderSimplified extends CommonTestRunner {
                         String expected = switch (d.iteration()) {
                             case 0 -> "<f:NONE>==nullable instance type OutputElement?nullable instance type OutputElement:<p:start>";
                             case 1 -> "<vp:NONE:container@Class_Space>==nullable instance type OutputElement?nullable instance type OutputElement:<p:start>";
-                            case 2, 3 -> "Space.NONE==nullable instance type OutputElement?nullable instance type OutputElement:<mod:OutputElement>";
+                            case 2 -> "Space.NONE==nullable instance type OutputElement?nullable instance type OutputElement:<mod:OutputElement>";
                             default -> "nullable instance type OutputElement";
                         };
                         assertEquals(expected, d.currentValue().toString());
-                        assertDv(d, 4, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                        assertDv(d, 3, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     }
                     if ("1.0.0".equals(d.statementId())) {
                         String linked = switch (d.iteration()) {
                             case 0 -> "NOT_YET_SET";
-                            case 1, 2, 3 -> "result:-1";
+                            case 1, 2 -> "result:-1";
                             default -> "result:3";
                         };
                         assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
-                        assertDv(d, 4, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                        assertDv(d, 3, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     }
                     if ("4".equals(d.statementId())) {
-                        assertDv(d, 4, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                        assertDv(d, 3, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     }
                 }
                 if (d.variable() instanceof ParameterInfo pi && "end".equals(pi.name)) {
@@ -293,32 +293,32 @@ public class Test_61_OutputBuilderSimplified extends CommonTestRunner {
                     if ("3.0.0".equals(d.statementId())) {
                         String expected = switch (d.iteration()) {
                             case 0, 1 -> "<p:end>";
-                            case 2, 3 -> "<mod:OutputElement>";
+                            case 2 -> "<mod:OutputElement>";
                             default -> "nullable instance type OutputElement";
                         };
                         assertEquals(expected, d.currentValue().toString());
-                        assertDv(d, 4, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                        assertDv(d, 3, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     }
                     if ("3".equals(d.statementId())) {
                         String expected = switch (d.iteration()) {
                             case 0, 1 -> "<f:NONE>==nullable instance type OutputElement?nullable instance type OutputElement:<p:end>";
-                            case 2, 3 -> "Space.NONE==nullable instance type OutputElement?nullable instance type OutputElement:<mod:OutputElement>";
+                            case 2 -> "Space.NONE==nullable instance type OutputElement?nullable instance type OutputElement:<mod:OutputElement>";
                             default -> "nullable instance type OutputElement";
                         };
                         assertEquals(expected, d.currentValue().toString());
-                        assertDv(d, 4, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                        assertDv(d, 3, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     }
                     if ("4".equals(d.statementId())) {
-                        assertDv(d, 4, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                        assertDv(d, 3, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     }
                 }
             }
             if ("combiner".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof ReturnVariable) {
                     // modifying method, so the lambda becomes an instance
-                    String expect = d.iteration() < 5 ? "<m:apply>" : "instance type $5";
+                    String expect = d.iteration() < 4 ? "<m:apply>" : "instance type $5";
                     assertEquals(expect, d.currentValue().toString());
-                    assertDv(d, 5, MultiLevel.EFFECTIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
+                    assertDv(d, 4, MultiLevel.EFFECTIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
                 }
             }
             if ("accumulator".equals(d.methodInfo().name)) {
@@ -329,13 +329,13 @@ public class Test_61_OutputBuilderSimplified extends CommonTestRunner {
             }
             if ("joining".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof ParameterInfo pi && "separator".equals(pi.name)) {
-                    assertDv(d, 5, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                    assertDv(d, 4, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                 } else if (d.variable() instanceof ParameterInfo pi && "start".equals(pi.name)) {
-                    assertDv(d, 5, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                    assertDv(d, 4, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                 } else if (d.variable() instanceof ParameterInfo pi && "end".equals(pi.name)) {
-                    assertDv(d, 5, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                    assertDv(d, 4, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                 } else if (d.variable() instanceof This) {
-                    assertDv(d, 5, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                    assertDv(d, 4, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                 } else if (d.variable() instanceof FieldReference fr && "list".equals(fr.fieldInfo.name)) {
                     fail("list does not occur without in a scope known to the top-level method");
                 } else if (d.variable() instanceof FieldReference fr && "NONE".equals(fr.fieldInfo.name)) {
@@ -349,7 +349,7 @@ public class Test_61_OutputBuilderSimplified extends CommonTestRunner {
                 } else if (d.variable() instanceof ParameterInfo pi && "bb".equals(pi.name)) {
                     fail("Variable should not have been transferred");
                 } else if (d.variable() instanceof ReturnVariable) {
-                    String expected = d.iteration() < 7 ? "<new:Collector<OutputBuilderSimplified_7,OutputBuilderSimplified_7,OutputBuilderSimplified_7>>"
+                    String expected = d.iteration() < 6 ? "<new:Collector<OutputBuilderSimplified_7,OutputBuilderSimplified_7,OutputBuilderSimplified_7>>"
                             : "new Collector<>(){final AtomicInteger countMid=new AtomicInteger();public Supplier<OutputBuilderSimplified_7> supplier(){return OutputBuilderSimplified_7::new;}public BiConsumer<OutputBuilderSimplified_7,OutputBuilderSimplified_7> accumulator(){return (a,b)->{... debugging ...};}public BinaryOperator<OutputBuilderSimplified_7> combiner(){return (a,b)->{... debugging ...};}public Function<OutputBuilderSimplified_7,OutputBuilderSimplified_7> finisher(){return t->{... debugging ...};}public Set<Characteristics> characteristics(){return Set.of(Characteristics.CONCURRENT);}}";
                     assertEquals(expected, d.currentValue().toString());
                 } else fail("Variable " + d.variableName());
@@ -361,24 +361,24 @@ public class Test_61_OutputBuilderSimplified extends CommonTestRunner {
             }
             if ("OutputBuilderSimplified_7".equals(d.typeInfo().simpleName)) {
                 assertDv(d, 1, MultiLevel.EFFECTIVELY_FINAL_FIELDS_DV, Property.IMMUTABLE);
-                assertDv(d, 6, MultiLevel.CONTAINER_DV, Property.CONTAINER);
+                assertDv(d, 5, MultiLevel.CONTAINER_DV, Property.CONTAINER);
                 if (d.iteration() == 3) {
                     assertEquals("cm@Parameter_end;cm@Parameter_separator;cm@Parameter_start",
                             d.typeAnalysis().getProperty(Property.CONTAINER).causesOfDelay().toString());
                 }
             }
             if ("$2".equals(d.typeInfo().simpleName)) {
-                assertEquals(d.iteration() < 4, d.typeAnalysis().approvedPreconditionsStatus(true).isDelayed());
+                assertEquals(d.iteration() < 3, d.typeAnalysis().approvedPreconditionsStatus(true).isDelayed());
+                assertDv(d, 3, MultiLevel.EFFECTIVELY_FINAL_FIELDS_DV, Property.IMMUTABLE);
+                assertDv(d, 6, MultiLevel.CONTAINER_DV, Property.CONTAINER);
+            }
+            if ("$5".equals(d.typeInfo().simpleName)) {
                 assertDv(d, 4, MultiLevel.EFFECTIVELY_FINAL_FIELDS_DV, Property.IMMUTABLE);
                 assertDv(d, 7, MultiLevel.CONTAINER_DV, Property.CONTAINER);
             }
-            if ("$5".equals(d.typeInfo().simpleName)) {
-                assertDv(d, 5, MultiLevel.EFFECTIVELY_FINAL_FIELDS_DV, Property.IMMUTABLE);
-                assertDv(d, 8, MultiLevel.CONTAINER_DV, Property.CONTAINER);
-            }
             if ("$6".equals(d.typeInfo().simpleName)) {
-                assertDv(d, 5, MultiLevel.EFFECTIVELY_FINAL_FIELDS_DV, Property.IMMUTABLE);
-                assertDv(d, 8, MultiLevel.CONTAINER_DV, Property.CONTAINER);
+                assertDv(d, 4, MultiLevel.EFFECTIVELY_FINAL_FIELDS_DV, Property.IMMUTABLE);
+                assertDv(d, 7, MultiLevel.CONTAINER_DV, Property.CONTAINER);
             }
         };
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
@@ -386,15 +386,15 @@ public class Test_61_OutputBuilderSimplified extends CommonTestRunner {
                 TypeInfo t0 = d.methodInfo().methodInspection.get().getParameters().get(0).parameterizedType.typeInfo;
                 if ("OutputElement".equals(t0.simpleName)) {
                     assertDv(d, DV.TRUE_DV, Property.MODIFIED_METHOD);
-                    assertDv(d.p(0), 3, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
+                    assertDv(d.p(0), 2, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
                 } else if ("OutputBuilderSimplified_7".equals(t0.simpleName)) {
                     assertDv(d, DV.TRUE_DV, Property.MODIFIED_METHOD);
-                    assertDv(d.p(0), 3, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
+                    assertDv(d.p(0), 2, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
 
                 } else fail("Add? " + d.methodInfo().fullyQualifiedName);
             }
             if ("joining".equals(d.methodInfo().name)) {
-                assertDv(d, 5, DV.FALSE_DV, Property.MODIFIED_METHOD);
+                assertDv(d, 4, DV.FALSE_DV, Property.MODIFIED_METHOD);
             }
 
             if ("apply".equals(d.methodInfo().name) && "$4".equals(d.methodInfo().typeInfo.simpleName)) {
@@ -409,11 +409,11 @@ public class Test_61_OutputBuilderSimplified extends CommonTestRunner {
                 assertEquals(MultiLevel.NOT_INVOLVED_DV, p1.getProperty(Property.EXTERNAL_IMMUTABLE));
             }
             if ("combiner".equals(d.methodInfo().name)) {
-                String expected = d.iteration() < 5 ? "<m:combiner>" : "instance type $5";
+                String expected = d.iteration() < 4 ? "<m:combiner>" : "instance type $5";
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
-                assertDv(d, 5, MultiLevel.EFFECTIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
-                assertDv(d, 5, MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL_DV, Property.NOT_NULL_EXPRESSION);
-                assertDv(d, 4, DV.TRUE_DV, Property.MODIFIED_METHOD);
+                assertDv(d, 4, MultiLevel.EFFECTIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
+                assertDv(d, 4, MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL_DV, Property.NOT_NULL_EXPRESSION);
+                assertDv(d, 3, DV.TRUE_DV, Property.MODIFIED_METHOD);
             }
             if ("supplier".equals(d.methodInfo().name)) {
                 assertEquals("/*inline supplier*/OutputBuilderSimplified_7::new", d.methodAnalysis().getSingleReturnValue().toString());
@@ -422,17 +422,17 @@ public class Test_61_OutputBuilderSimplified extends CommonTestRunner {
             }
             if ("apply".equals(d.methodInfo().name) && "$6".equals(d.methodInfo().typeInfo.simpleName)) {
                 assertEquals("$2", d.methodInfo().typeInfo.packageNameOrEnclosingType.getRight().simpleName);
-                String expected = d.iteration() < 4 ? "<m:apply>" : "/*inline apply*/result";
+                String expected = d.iteration() < 3 ? "<m:apply>" : "/*inline apply*/result";
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
 
-                assertDv(d.p(0), 5, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_PARAMETER);
+                assertDv(d.p(0), 4, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_PARAMETER);
                 assertDv(d, 2, DV.FALSE_DV, Property.MODIFIED_METHOD);
             }
             if ("accumulator".equals(d.methodInfo().name)) {
-                assertDv(d, 4, DV.TRUE_DV, Property.MODIFIED_METHOD);
+                assertDv(d, 3, DV.TRUE_DV, Property.MODIFIED_METHOD);
             }
             if ("finisher".equals(d.methodInfo().name)) {
-                assertDv(d, 4, DV.FALSE_DV, Property.MODIFIED_METHOD);
+                assertDv(d, 3, DV.FALSE_DV, Property.MODIFIED_METHOD);
             }
             if ("characteristics".equals(d.methodInfo().name)) {
                 assertDv(d, DV.FALSE_DV, Property.MODIFIED_METHOD);
@@ -535,13 +535,13 @@ public class Test_61_OutputBuilderSimplified extends CommonTestRunner {
             if ("joining".equals(d.methodInfo().name)) {
                 assertFalse(d.allowBreakDelay());
                 if (d.variable() instanceof ParameterInfo pi && "separator".equals(pi.name)) {
-                    assertDv(d, 5, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                    assertDv(d, 4, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                 } else if (d.variable() instanceof ParameterInfo pi && "start".equals(pi.name)) {
-                    assertDv(d, 5, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                    assertDv(d, 4, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                 } else if (d.variable() instanceof ParameterInfo pi && "end".equals(pi.name)) {
-                    assertDv(d, 5, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                    assertDv(d, 4, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                 } else if (d.variable() instanceof This) {
-                    assertDv(d, 5, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                    assertDv(d, 4, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                 } else if (d.variable() instanceof FieldReference fr && "list".equals(fr.fieldInfo.name)) {
                     fail("list does not occur without in a scope known to the top-level method");
                 } else if (d.variable() instanceof FieldReference fr && "NONE".equals(fr.fieldInfo.name)) {
@@ -573,11 +573,11 @@ public class Test_61_OutputBuilderSimplified extends CommonTestRunner {
 
                         String linked = switch (d.iteration()) {
                             case 0 -> "NOT_YET_SET";
-                            case 1, 2, 3 -> "aa:-1";
+                            case 1, 2 -> "aa:-1";
                             default -> "aa:3";
                         };
                         assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
-                        assertDv(d, 4, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                        assertDv(d, 3, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     }
                 }
             }
@@ -587,16 +587,16 @@ public class Test_61_OutputBuilderSimplified extends CommonTestRunner {
                 TypeInfo t0 = d.methodInfo().methodInspection.get().getParameters().get(0).parameterizedType.typeInfo;
                 if ("OutputElement".equals(t0.simpleName)) {
                     assertDv(d, DV.TRUE_DV, Property.MODIFIED_METHOD);
-                    assertDv(d.p(0), 3, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
-                    assertDv(d.p(0), 3, MultiLevel.INDEPENDENT_HC_DV, Property.INDEPENDENT);
+                    assertDv(d.p(0), 2, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
+                    assertDv(d.p(0), 2, MultiLevel.INDEPENDENT_HC_DV, Property.INDEPENDENT);
                 } else if ("OutputBuilderSimplified_12".equals(t0.simpleName)) {
                     assertDv(d, DV.TRUE_DV, Property.MODIFIED_METHOD);
-                    assertDv(d.p(0), 3, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
-                    assertDv(d.p(0), 3, MultiLevel.INDEPENDENT_DV, Property.INDEPENDENT);
+                    assertDv(d.p(0), 2, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
+                    assertDv(d.p(0), 2, MultiLevel.INDEPENDENT_DV, Property.INDEPENDENT);
                 } else fail("Add? " + d.methodInfo().fullyQualifiedName);
             }
             if ("joining".equals(d.methodInfo().name)) {
-                assertDv(d, 5, DV.FALSE_DV, Property.MODIFIED_METHOD);
+                assertDv(d, 4, DV.FALSE_DV, Property.MODIFIED_METHOD);
             }
             if ("supplier".equals(d.methodInfo().name)) {
                 assertEquals("$2", d.methodInfo().typeInfo.simpleName);
@@ -607,25 +607,25 @@ public class Test_61_OutputBuilderSimplified extends CommonTestRunner {
                 assertEquals("$3", d.methodInfo().typeInfo.simpleName);
                 assertEquals("$2", d.methodInfo().typeInfo.packageNameOrEnclosingType.getRight().simpleName);
                 // accumulator!
-                assertDv(d, 4, DV.TRUE_DV, Property.MODIFIED_METHOD);
+                assertDv(d, 3, DV.TRUE_DV, Property.MODIFIED_METHOD);
             }
             if ("apply".equals(d.methodInfo().name) && "$5".equals(d.methodInfo().typeInfo.simpleName)) {
                 assertEquals("$2", d.methodInfo().typeInfo.packageNameOrEnclosingType.getRight().simpleName);
                 // combiner!
-                String expected = d.iteration() < 4 ? "<m:apply>"
+                String expected = d.iteration() < 3 ? "<m:apply>"
                         : "bb.list.isEmpty()?aa:aa.list.isEmpty()?bb:nullable instance type OutputBuilderSimplified_12/*@Identity*//*{L aa:0}*//*@NotNull*/";
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
 
-                assertDv(d.p(0), 5, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_PARAMETER);
-                assertDv(d, 4, DV.TRUE_DV, Property.MODIFIED_METHOD);
+                assertDv(d.p(0), 4, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_PARAMETER);
+                assertDv(d, 3, DV.TRUE_DV, Property.MODIFIED_METHOD);
             }
             if ("apply".equals(d.methodInfo().name) && "$6".equals(d.methodInfo().typeInfo.simpleName)) {
                 assertEquals("$2", d.methodInfo().typeInfo.packageNameOrEnclosingType.getRight().simpleName);
                 // finisher!
-                String expected = d.iteration() < 4 ? "<m:apply>" : "/*inline apply*/result";
+                String expected = d.iteration() < 3 ? "<m:apply>" : "/*inline apply*/result";
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
 
-                assertDv(d.p(0), 5, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_PARAMETER);
+                assertDv(d.p(0), 4, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_PARAMETER);
                 assertDv(d, 2, DV.FALSE_DV, Property.MODIFIED_METHOD);
             }
         };
@@ -643,13 +643,13 @@ public class Test_61_OutputBuilderSimplified extends CommonTestRunner {
                 assertDv(d, 1, MultiLevel.EFFECTIVELY_FINAL_FIELDS_DV, Property.IMMUTABLE);
             }
             if ("$2".equals(d.typeInfo().simpleName)) {
-                assertDv(d, 4, MultiLevel.EFFECTIVELY_FINAL_FIELDS_DV, Property.IMMUTABLE);
+                assertDv(d, 3, MultiLevel.EFFECTIVELY_FINAL_FIELDS_DV, Property.IMMUTABLE);
             }
             if ("$5".equals(d.typeInfo().simpleName)) {
-                assertDv(d, 5, MultiLevel.EFFECTIVELY_FINAL_FIELDS_DV, Property.IMMUTABLE);
+                assertDv(d, 4, MultiLevel.EFFECTIVELY_FINAL_FIELDS_DV, Property.IMMUTABLE);
             }
             if ("$6".equals(d.typeInfo().simpleName)) {
-                assertDv(d, 5, MultiLevel.EFFECTIVELY_FINAL_FIELDS_DV, Property.IMMUTABLE);
+                assertDv(d, 4, MultiLevel.EFFECTIVELY_FINAL_FIELDS_DV, Property.IMMUTABLE);
             }
         };
 
@@ -685,12 +685,11 @@ public class Test_61_OutputBuilderSimplified extends CommonTestRunner {
 
                         String linked = switch (d.iteration()) {
                             case 0 -> "NOT_YET_SET";
-                            case 1, 2 -> "a.list:-1,a:-1,notStart:-1";
-                            case 3 -> "a:-1";
+                            case 1 -> "a:-1";
                             default -> "a:2"; // !!
                         };
                         assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
-                        assertDv(d, 4, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
+                        assertDv(d, 2, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
                     }
                 }
             }
@@ -705,11 +704,11 @@ public class Test_61_OutputBuilderSimplified extends CommonTestRunner {
 
                         String linked = switch (d.iteration()) {
                             case 0 -> "NOT_YET_SET";
-                            case 1, 2, 3 -> "aa:-1";
+                            case 1 -> "aa:-1";
                             default -> "aa:2";
                         };
                         assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
-                        assertDv(d, 4, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
+                        assertDv(d, 2, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
                     }
                 }
             }
@@ -717,7 +716,7 @@ public class Test_61_OutputBuilderSimplified extends CommonTestRunner {
                 if (d.variable() instanceof ParameterInfo pi && "outputElements".equals(pi.name)) {
                     if ("0".equals(d.statementId())) {
                         // OutputElements are part of the HC of list, so must have 4
-                        String linked = d.iteration() < 3 ? "this.list:-1" : "this.list:4";
+                        String linked = d.iteration() == 0 ? "this.list:-1" : "this.list:4";
                         assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
                     }
                 }
@@ -729,9 +728,9 @@ public class Test_61_OutputBuilderSimplified extends CommonTestRunner {
                 TypeInfo t0 = d.methodInfo().methodInspection.get().getParameters().get(0).parameterizedType.typeInfo;
                 if ("OutputElement".equals(t0.simpleName)) {
                     assertDv(d, DV.TRUE_DV, Property.MODIFIED_METHOD);
-                    assertDv(d.p(0), 4, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
+                    assertDv(d.p(0), 2, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
                     // IMPORTANT: dependent means a.add(oe) implies mod on oe
-                    assertDv(d.p(0), 4, MultiLevel.DEPENDENT_DV, Property.INDEPENDENT); // different from _12!!
+                    assertDv(d.p(0), 2, MultiLevel.DEPENDENT_DV, Property.INDEPENDENT); // different from _12!!
                 }
             }
         };

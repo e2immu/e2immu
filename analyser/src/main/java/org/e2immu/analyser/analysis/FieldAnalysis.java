@@ -135,6 +135,11 @@ public interface FieldAnalysis extends Analysis {
                 Property.NOT_NULL_EXPRESSION, getProperty(Property.EXTERNAL_NOT_NULL),
                 Property.IMMUTABLE, getProperty(Property.EXTERNAL_IMMUTABLE),
                 Property.CONTAINER, getProperty(Property.CONTAINER),
+                /*
+                 DGSimplified_0 is the one example where the constant, instead of getProperty(INDEPENDENT),
+                 causes a significant delay (5 -> 22). It solves an infinite loop for AnalyserContext_0, and
+                 in general speeds up the first few iterations, but occasionally causes some more iterations in the end.
+                 */
                 Property.INDEPENDENT, MultiLevel.INDEPENDENT_DV,
                 Property.IGNORE_MODIFICATIONS, getProperty(Property.EXTERNAL_IGNORE_MODIFICATIONS),
                 Property.IDENTITY, Property.IDENTITY.falseDv));

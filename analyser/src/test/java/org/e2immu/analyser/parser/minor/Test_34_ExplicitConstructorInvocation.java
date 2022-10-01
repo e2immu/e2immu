@@ -444,19 +444,19 @@ public class Test_34_ExplicitConstructorInvocation extends CommonTestRunner {
                 assertEquals("0", d.statementId());
                 if (d.variable() instanceof FieldReference fr && "parent".equals(fr.fieldInfo.name)) {
                     assertTrue(fr.scopeIsThis());
-                    assertCurrentValue(d, 5, "nullable instance type C");
+                    assertCurrentValue(d, 4, "nullable instance type C");
                     String linked = d.iteration() == 0 ? "NOT_YET_SET" : "";
                     assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
                     assertDv(d, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
                 }
                 if (d.variable() instanceof FieldReference fr && "condition".equals(fr.fieldInfo.name)) {
                     if ("parent".equals(fr.scope.toString())) {
-                        assertCurrentValue(d, 5, "instance type Expression");
-                        String linked = d.iteration() < 5 ? "this.parent:-1" : "this.parent:2";
+                        assertCurrentValue(d, 4, "instance type Expression");
+                        String linked = d.iteration() < 4 ? "this.parent:-1" : "this.parent:2";
                         assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
                         assertDv(d, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
                     } else if (fr.scopeIsThis()) {
-                        assertCurrentValue(d, 5, "instance type Expression");
+                        assertCurrentValue(d, 4, "instance type Expression");
                         assertEquals("", d.variableInfo().getLinkedVariables().toString());
                         assertDv(d, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     } else fail("Found " + fr.scope);
@@ -495,7 +495,7 @@ public class Test_34_ExplicitConstructorInvocation extends CommonTestRunner {
                 assertDv(d.p(0), 1, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
             }
             if ("absolute".equals(d.methodInfo().name)) {
-                String expected = d.iteration() < 5 ? "<m:absolute>"
+                String expected = d.iteration() < 4 ? "<m:absolute>"
                         : "null==parent?condition:condition.merge(parent.condition)";
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
                 assertDv(d, DV.TRUE_DV, Property.MODIFIED_METHOD);
