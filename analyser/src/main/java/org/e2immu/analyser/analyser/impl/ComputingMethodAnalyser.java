@@ -676,6 +676,10 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
     }
 
     private DV computeContainerValue(BreakDelayLevel breakDelayLevel) {
+        DV formal = analyserContext.safeContainer(methodInfo.returnType());
+        if (MultiLevel.CONTAINER_DV.equals(formal)) {
+            return formal;
+        }
         Expression expression = methodAnalysis.getSingleReturnValue();
         if (expression.isDelayed()) {
             if (breakDelayLevel.acceptMethod()) {

@@ -172,13 +172,13 @@ public class Test_04_Assert extends CommonTestRunner {
             }
             if ("causesOfDelay".equals(d.methodInfo().name)) {
                 if ("SimpleSet".equals(d.methodInfo().typeInfo.simpleName)) {
-                    assertDv(d, 4, MultiLevel.CONTAINER_DV, Property.CONTAINER);
+                    assertDv(d, MultiLevel.CONTAINER_DV, Property.CONTAINER);
                 }
                 if ("AnalysisStatus".equals(d.methodInfo().typeInfo.simpleName)) {
                     assertDv(d, MultiLevel.CONTAINER_DV, Property.CONTAINER);
                 }
                 if ("NotDelayed".equals(d.methodInfo().typeInfo.simpleName)) {
-                    assertDv(d, 5, MultiLevel.CONTAINER_DV, Property.CONTAINER);
+                    assertDv(d, MultiLevel.CONTAINER_DV, Property.CONTAINER);
                 }
             }
             if ("merge".equals(d.methodInfo().name)) {

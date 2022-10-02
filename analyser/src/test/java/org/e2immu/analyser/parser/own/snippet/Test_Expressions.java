@@ -264,6 +264,8 @@ public class Test_Expressions extends CommonTestRunner {
                 assertDv(d, 1, DV.FALSE_DV, Property.MODIFIED_METHOD);
             }
             if ("accept3".equals(d.methodInfo().name)) {
+                assertDv(d, MultiLevel.CONTAINER_DV, CONTAINER);
+                assertDv(d, MultiLevel.CONTAINER_DV, CONTAINER);
                 assertDv(d, 13, DV.FALSE_DV, Property.MODIFIED_METHOD);
                 String expected = d.iteration() < BIG ? "<m:accept3>" : "<undetermined return value>";
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());

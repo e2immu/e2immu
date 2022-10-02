@@ -1460,10 +1460,10 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
                 LOGGER.debug("LinkedVariables not yet set for {} -- ignore CM? {}", fieldInfo, ignoreContextModified);
                 CausesOfDelay linkDelay = fieldInfo.delay(CauseOfDelay.Cause.LINKING);
                 Set<Variable> vars = allMethodsAndConstructors(true)
-                        .peek(m -> LOGGER.debug("   examining {}", m.getMethodInfo().name))
+                        //.peek(m -> LOGGER.debug("   examining {}", m.getMethodInfo().name))
                         .flatMap(m -> m.getFieldAsVariableStream(fieldInfo))
                         .filter(vi -> vi.isAssigned() || !ignoreContextModified && !vi.getProperty(CONTEXT_MODIFIED).valueIsFalse())
-                        .peek(vi -> LOGGER.debug("      -- {}", vi.getLinkedVariables()))
+                        //.peek(vi -> LOGGER.debug("      -- {}", vi.getLinkedVariables()))
                         .flatMap(vi -> vi.getLinkedVariables().variables().keySet().stream()).
                         collect(Collectors.toUnmodifiableSet());
                 LinkedVariables lv = LinkedVariables.of(vars.stream().collect(Collectors.toUnmodifiableMap(v -> v, v -> linkDelay)));
