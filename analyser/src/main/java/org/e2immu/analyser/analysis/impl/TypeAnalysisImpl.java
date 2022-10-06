@@ -23,6 +23,7 @@ import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.annotation.FinalFields;
 import org.e2immu.annotation.Independent;
+import org.e2immu.annotation.type.UtilityClass;
 import org.e2immu.support.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -377,19 +378,22 @@ public class TypeAnalysisImpl extends AnalysisImpl implements TypeAnalysis {
 
         public void transferPropertiesToAnnotations(E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions) {
 
+            boolean extensionOrUtility;
             // @ExtensionClass
             if (getProperty(Property.EXTENSION_CLASS).valueIsTrue()) {
                 addAnnotation(e2ImmuAnnotationExpressions.extensionClass);
+                addAnnotation(E2ImmuAnnotationExpressions.create(primitives, UtilityClass.class, E2ImmuAnnotationExpressions.IMPLIED, true));
+                extensionOrUtility = true;
+            } else if (getProperty(Property.UTILITY_CLASS).valueIsTrue()) { // @UtilityClass
+                addAnnotation(e2ImmuAnnotationExpressions.utilityClass);
+                extensionOrUtility = true;
+            } else {
+                extensionOrUtility = false;
             }
 
             // @Finalizer
             if (getProperty(Property.FINALIZER).valueIsTrue()) {
                 addAnnotation(e2ImmuAnnotationExpressions.finalizer);
-            }
-
-            // @UtilityClass
-            if (getProperty(Property.UTILITY_CLASS).valueIsTrue()) {
-                addAnnotation(e2ImmuAnnotationExpressions.utilityClass);
             }
 
             // @Singleton
@@ -399,7 +403,7 @@ public class TypeAnalysisImpl extends AnalysisImpl implements TypeAnalysis {
 
             DV immutable = getProperty(Property.IMMUTABLE);
             DV container = getProperty(Property.CONTAINER);
-            doImmutableContainer(e2ImmuAnnotationExpressions, immutable, container, true,
+            doImmutableContainer(e2ImmuAnnotationExpressions, immutable, container, !extensionOrUtility,
                     true, null, false);
 
             // @Independent

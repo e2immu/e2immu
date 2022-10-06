@@ -14,14 +14,14 @@
 
 package org.e2immu.analyser.parser.basics.testexample;
 
-import org.e2immu.annotation.ImmutableContainer;
 import org.e2immu.annotation.type.ExtensionClass;
 
 import java.util.stream.Stream;
 
-@ImmutableContainer
 @ExtensionClass(of = String.class)
 public class Basics_5 {
+
+    private Basics_5() {}
 
     public static String add(String input) {
         return Stream.of(input).map(s -> {

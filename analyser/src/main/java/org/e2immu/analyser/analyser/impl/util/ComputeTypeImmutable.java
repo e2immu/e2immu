@@ -565,7 +565,8 @@ public record ComputeTypeImmutable(AnalyserContext analyserContext,
             typeAnalysis.setProperty(Property.IMMUTABLE, w.fromParentOrEnclosing);
             if (partialImmutable.isDone()) {
                 if (sharedState.breakDelayLevel().acceptType()) {
-                    return delayImmutable(w.fromParentOrEnclosing.causesOfDelay(), BreakDelayLevel.TYPE, MultiLevel.MUTABLE_DV);
+                    return delayImmutable(w.fromParentOrEnclosing.causesOfDelay(),
+                            sharedState.breakDelayLevel(), MultiLevel.MUTABLE_DV);
                 }
                 LOGGER.debug("We've done what we can, waiting for parent-enclosing now");
                 return AnalysisStatus.of(w.fromParentOrEnclosing);

@@ -18,10 +18,11 @@ import org.e2immu.annotation.*;
 import org.e2immu.annotation.type.ExtensionClass;
 import org.e2immu.annotation.type.UtilityClass;
 
-@UtilityClass(absent = true)
 @ExtensionClass(of = String.class)
 @ImmutableContainer
 public class UtilityClass_2 {
+
+    private UtilityClass_2() {}
 
     @NotModified
     static void print(@NotModified String toPrint) {

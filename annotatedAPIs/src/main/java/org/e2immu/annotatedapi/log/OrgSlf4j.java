@@ -62,6 +62,7 @@ public class OrgSlf4j {
     interface ILoggerFactory$ {
         @NotNull
         @NotModified
+        @ImmutableContainer
         org.slf4j.Logger getLogger(String name);
     }
 
@@ -70,9 +71,11 @@ public class OrgSlf4j {
     interface LoggerFactory$ {
         @NotNull
         @NotModified
+        @ImmutableContainer
         org.slf4j.Logger getLogger(@NotNull Class<?> clazz);
 
         @NotNull
+        @ImmutableContainer
         @NotModified
         org.slf4j.Logger getLogger(@NotNull String string);
 

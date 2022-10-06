@@ -70,7 +70,7 @@ public class PrimaryTypeAnalyserImpl implements PrimaryTypeAnalyser {
     private final Set<PrimaryTypeAnalyser> localPrimaryTypeAnalysers = new HashSet<>();
     private final AnalyserComponents<Analyser, SharedState> analyserComponents;
     private final FlipSwitch unreachable = new FlipSwitch();
-    private final StringBuilder delaySequence = new StringBuilder();
+    private final List<BreakDelayLevel> delaySequence = new LinkedList<>();
 
     public PrimaryTypeAnalyserImpl(AnalyserContext parent,
                                    TypeCycle typeCycle,
@@ -191,9 +191,9 @@ public class PrimaryTypeAnalyserImpl implements PrimaryTypeAnalyser {
         BreakDelayLevel breakDelayLevel = BreakDelayLevel.NONE;
         AnalysisStatus analysisStatus;
 
-        int MAX_ITERATION = 100;
+        int MAX_ITERATION = 1000;
         do {
-            delaySequence.append(breakDelayLevel.symbol);
+            delaySequence.add(breakDelayLevel);
 
             LOGGER.debug("\n******\nStarting iteration {} (break? {}) of the primary type analyser on {}; sequence {}\n******",
                     iteration, breakDelayLevel, name, delaySequence);
@@ -220,12 +220,16 @@ public class PrimaryTypeAnalyserImpl implements PrimaryTypeAnalyser {
             analysisStatus = analyserResult.analysisStatus();
             if (analysisStatus == AnalysisStatus.DONE) break;
             if (!analysisStatus.isProgress()) {
-                if (BreakDelayLevel.TYPE == breakDelayLevel) {
+                if (breakDelayLevel.stop()) {
                     // no point in continuing
                     break;
                 }
                 breakDelayLevel = breakDelayLevel.next();
             } else {
+                /* should we have the type analyser do only one type?
+                  assert delaySequence.stream().filter(b -> BreakDelayLevel.TYPE == b).count() < 2L
+                        : "Only once can we have progress from Type!";
+                 */
                 breakDelayLevel = BreakDelayLevel.NONE;
             }
         } while (iteration < MAX_ITERATION);
@@ -233,7 +237,10 @@ public class PrimaryTypeAnalyserImpl implements PrimaryTypeAnalyser {
         List<BreakDelayVisitor> visitors = configuration.debugConfiguration().breakDelayVisitors();
         for (BreakDelayVisitor breakDelayVisitor : visitors) {
             for (TypeInfo typeInfo : primaryTypes) {
-                breakDelayVisitor.visit(new BreakDelayVisitor.Data(iteration, delaySequence.toString(), typeInfo));
+                String delaySequenceString = delaySequence
+                        .stream().map(b -> Character.toString(b.symbol))
+                        .collect(Collectors.joining());
+                breakDelayVisitor.visit(new BreakDelayVisitor.Data(iteration, delaySequenceString, typeInfo));
             }
         }
 

@@ -32,11 +32,10 @@ package org.e2immu.analyser.parser.start.testexample;
 import org.e2immu.annotation.ImmutableContainer;
 import org.e2immu.annotation.type.ExtensionClass;
 
-@ImmutableContainer
 @ExtensionClass(of=boolean.class)
 public class Warnings_1 {
 
-    public Warnings_1() {
+    private Warnings_1() {
         int a = 0;
         // ERROR: private variable a is not used, useless assignment
     }

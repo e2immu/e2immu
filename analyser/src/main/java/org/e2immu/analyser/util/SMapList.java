@@ -25,7 +25,6 @@ import java.util.Map.Entry;
 
 // extension class: implies @NotNull on first argument
 @ExtensionClass(of = Map.class)
-@Immutable // not container, addAll modifies argument
 public class SMapList {
 
     private static final String NULL_KEY = "Adding null key to map-list";
@@ -35,6 +34,7 @@ public class SMapList {
         return new HashMap<>();
     }
 
+    private SMapList() {}
     /*
     IMPROVE: we have to contract the @NotModified, because the computation is currently not able
     to determine that it is not modifying (semantically, the "new LinkedList()" is ignored).

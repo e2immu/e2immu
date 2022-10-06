@@ -154,7 +154,18 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
             typeAnalysis.setPropertyIfAbsentOrDelayed(PARTIAL_IMMUTABLE, MultiLevel.MUTABLE_DV);
             return DONE;
         }
-        return computeTypeImmutable.analyseImmutable(sharedState);
+        AnalysisStatus analysisStatus = computeTypeImmutable.analyseImmutable(sharedState);
+        if (analysisStatus.isDelayed() && sharedState.breakDelayLevel().acceptType()) {
+            DV partial = typeAnalysis.getPropertyFromMapDelayWhenAbsent(PARTIAL_IMMUTABLE);
+            if (partial.isDone()) {
+                typeAnalysis.setProperty(IMMUTABLE, new Inconclusive(partial));
+            } else {
+                typeAnalysis.setProperty(IMMUTABLE, MultiLevel.MUTABLE_INCONCLUSIVE);
+                typeAnalysis.setPropertyIfAbsentOrDelayed(PARTIAL_IMMUTABLE, MultiLevel.MUTABLE_INCONCLUSIVE);
+            }
+            return DONE;
+        }
+        return analysisStatus;
     }
 
     @Override
@@ -371,6 +382,7 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
 
         Map<FieldReference, Expression> tempApproved = new HashMap<>();
         Map<FieldReference, Set<MethodInfo>> methodsForApprovedField = new HashMap<>();
+        CausesOfDelay causes = CausesOfDelay.EMPTY;
         for (MethodAnalyser methodAnalyser : assigningMethods) {
             Precondition precondition = methodAnalyser.getMethodAnalysis().getPreconditionForEventual();
             if (precondition != null) {
@@ -378,22 +390,30 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
                 if (hp.causesOfDelay.isDelayed()) {
                     LOGGER.debug("Delaying approved preconditions (no incompatible found yet) in {}", typeInfo);
                     typeAnalysis.setApprovedPreconditionsE1Delays(hp.causesOfDelay);
-                    return hp.causesOfDelay;
-                }
-                for (FieldToCondition fieldToCondition : hp.fieldToConditions) {
-                    Expression inMap = fieldToCondition.overwrite ?
-                            tempApproved.put(fieldToCondition.fieldReference, fieldToCondition.condition) :
-                            !tempApproved.containsKey(fieldToCondition.fieldReference) ?
-                                    tempApproved.put(fieldToCondition.fieldReference, fieldToCondition.condition) : null;
-                    if (inMap != null && !inMap.equals(fieldToCondition.condition) && !inMap.equals(fieldToCondition.negatedCondition)) {
-                        analyserResultBuilder.add(Message.newMessage
-                                (fieldToCondition.fieldReference.fieldInfo.newLocation(),
-                                        Message.Label.DUPLICATE_MARK_CONDITION, "Field: " + fieldToCondition.fieldReference));
+                    causes = causes.merge(hp.causesOfDelay);
+                } else {
+                    for (FieldToCondition fieldToCondition : hp.fieldToConditions) {
+                        Expression inMap = fieldToCondition.overwrite ?
+                                tempApproved.put(fieldToCondition.fieldReference, fieldToCondition.condition) :
+                                !tempApproved.containsKey(fieldToCondition.fieldReference) ?
+                                        tempApproved.put(fieldToCondition.fieldReference, fieldToCondition.condition) : null;
+                        if (inMap != null && !inMap.equals(fieldToCondition.condition) && !inMap.equals(fieldToCondition.negatedCondition)) {
+                            analyserResultBuilder.add(Message.newMessage
+                                    (fieldToCondition.fieldReference.fieldInfo.newLocation(),
+                                            Message.Label.DUPLICATE_MARK_CONDITION, "Field: " + fieldToCondition.fieldReference));
+                        }
+                        methodsForApprovedField.merge(fieldToCondition.fieldReference, Set.of(methodAnalyser.getMethodInfo()),
+                                (s1, s2) -> Stream.concat(s1.stream(), s2.stream()).collect(Collectors.toUnmodifiableSet()));
                     }
-                    methodsForApprovedField.merge(fieldToCondition.fieldReference, Set.of(methodAnalyser.getMethodInfo()),
-                            (s1, s2) -> Stream.concat(s1.stream(), s2.stream()).collect(Collectors.toUnmodifiableSet()));
                 }
             }
+        }
+        if (causes.isDelayed()) {
+            if (sharedState.breakDelayLevel().acceptType()) {
+                typeAnalysis.freezeApprovedPreconditionsFinalFields();
+                return DONE;
+            }
+            return AnalysisStatus.of(causes);
         }
         tempApproved.putAll(approvedPreconditionsFromParent(typeInfo, false));
 
@@ -500,6 +520,8 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
 
         Map<FieldReference, Expression> tempApproved = new HashMap<>();
         Map<FieldReference, Set<MethodInfo>> methodsForApprovedField = new HashMap<>();
+        CausesOfDelay causes = CausesOfDelay.EMPTY;
+
         for (MethodAnalyser methodAnalyser : methodList) {
             if (exclude.contains(methodAnalyser))
                 continue;
@@ -511,22 +533,30 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
                     if (hp.causesOfDelay.isDelayed()) {
                         LOGGER.debug("Delaying approved preconditions (no incompatible found yet) in {}", typeInfo);
                         typeAnalysis.setApprovedPreconditionsImmutableDelays(hp.causesOfDelay);
-                        return hp.causesOfDelay;
-                    }
-                    for (FieldToCondition fieldToCondition : hp.fieldToConditions) {
-                        Expression inMap = fieldToCondition.overwrite ?
-                                tempApproved.put(fieldToCondition.fieldReference, fieldToCondition.condition) :
-                                !tempApproved.containsKey(fieldToCondition.fieldReference) ?
-                                        tempApproved.put(fieldToCondition.fieldReference, fieldToCondition.condition) : null;
-                        if (inMap != null && !inMap.equals(fieldToCondition.condition) && !inMap.equals(fieldToCondition.negatedCondition)) {
-                            analyserResultBuilder.add(Message.newMessage(fieldToCondition.fieldReference.fieldInfo.newLocation(),
-                                    Message.Label.DUPLICATE_MARK_CONDITION, fieldToCondition.fieldReference.fullyQualifiedName()));
+                        causes = causes.merge(hp.causesOfDelay);
+                    } else {
+                        for (FieldToCondition fieldToCondition : hp.fieldToConditions) {
+                            Expression inMap = fieldToCondition.overwrite ?
+                                    tempApproved.put(fieldToCondition.fieldReference, fieldToCondition.condition) :
+                                    !tempApproved.containsKey(fieldToCondition.fieldReference) ?
+                                            tempApproved.put(fieldToCondition.fieldReference, fieldToCondition.condition) : null;
+                            if (inMap != null && !inMap.equals(fieldToCondition.condition) && !inMap.equals(fieldToCondition.negatedCondition)) {
+                                analyserResultBuilder.add(Message.newMessage(fieldToCondition.fieldReference.fieldInfo.newLocation(),
+                                        Message.Label.DUPLICATE_MARK_CONDITION, fieldToCondition.fieldReference.fullyQualifiedName()));
+                            }
+                            methodsForApprovedField.merge(fieldToCondition.fieldReference, Set.of(methodAnalyser.getMethodInfo()),
+                                    (s1, s2) -> Stream.concat(s1.stream(), s2.stream()).collect(Collectors.toUnmodifiableSet()));
                         }
-                        methodsForApprovedField.merge(fieldToCondition.fieldReference, Set.of(methodAnalyser.getMethodInfo()),
-                                (s1, s2) -> Stream.concat(s1.stream(), s2.stream()).collect(Collectors.toUnmodifiableSet()));
                     }
                 }
             }
+        }
+        if (causes.isDelayed()) {
+            if (sharedState.breakDelayLevel().acceptType()) {
+                typeAnalysis.freezeApprovedPreconditionsFinalFields();
+                return DONE;
+            }
+            return AnalysisStatus.of(causes);
         }
         tempApproved.putAll(approvedPreconditionsFromParent(typeInfo, true));
 
@@ -1012,22 +1042,17 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
     private AnalysisStatus analyseExtensionClass() {
         DV extensionClass = typeAnalysis.getProperty(Property.EXTENSION_CLASS);
         if (extensionClass.isDone()) return DONE;
-        if (!typeInfo.isStatic()) {
-            LOGGER.debug("Type {} is not an @ExtensionClass, not static", typeInfo);
-            typeAnalysis.setProperty(Property.EXTENSION_CLASS, DV.FALSE_DV);
+        DV utility = typeAnalysis.getProperty(UTILITY_CLASS);
+        if (utility.isDelayed()) {
+            typeAnalysis.setProperty(EXTENSION_CLASS, utility);
+            LOGGER.debug("Delaying @ExtensionClass for {}", typeInfo);
+            return utility.causesOfDelay();
+        }
+        if (utility.valueIsFalse()) {
+            typeAnalysis.setProperty(EXTENSION_CLASS, DV.FALSE_DV);
+            LOGGER.debug("Refusing @ExtensionClass for {}, not a @UtilityClass", typeInfo);
             return DONE;
         }
-        DV immutable = typeAnalysis.getProperty(Property.IMMUTABLE);
-        if (immutable.isDelayed()) {
-            LOGGER.debug("Extension class: don't know yet about @Immutable on {}, delaying", typeInfo);
-            return immutable.causesOfDelay();
-        }
-        if (immutable.lt(MultiLevel.EVENTUALLY_IMMUTABLE_HC_DV)) {
-            LOGGER.debug("Type {} is not an @ExtensionClass, not (eventually) @Immutable", typeInfo);
-            typeAnalysis.setProperty(Property.EXTENSION_CLASS, DV.FALSE_DV);
-            return DONE;
-        }
-
         boolean haveFirstParameter = false;
         ParameterizedType commonTypeOfFirstParameter = null;
         for (MethodInfo methodInfo : typeInspection.methods()) {

@@ -14,6 +14,7 @@
 
 package org.e2immu.analyser.analyser.impl;
 
+import org.e2immu.analyser.analyser.Properties;
 import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.analyser.impl.util.BreakDelayLevel;
 import org.e2immu.analyser.analyser.nonanalyserimpl.AbstractEvaluationContextImpl;
@@ -143,7 +144,7 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
         };
 
         builder.add(STATEMENT_ANALYSER, AnalyserProgram.Step.INITIALISE, statementAnalyser)
-                .add(COMPUTE_MODIFIED, AnalyserProgram.Step.MODIFIED, (sharedState) -> computeModified())
+                .add(COMPUTE_MODIFIED, AnalyserProgram.Step.MODIFIED, this::computeModified)
                 .add(COMPUTE_MODIFIED_CYCLES, AnalyserProgram.Step.MODIFIED,
                         (sharedState -> methodInfo.isConstructor ? DONE : computeModifiedInternalCycles()))
                 .add(OBTAIN_MOST_COMPLETE_PRECONDITION, (sharedState) -> obtainMostCompletePrecondition())
@@ -411,6 +412,11 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
 
         if (methodAnalysis.precondition.isVariable()) {
             assert methodAnalysis.preconditionStatus().isDelayed();
+            if (sharedState.breakDelayLevel.acceptMethodOverride()) {
+                LOGGER.debug("Method override: no precondition for eventual");
+                methodAnalysis.setPreconditionForEventual(Precondition.empty(primitives));
+                return DONE;
+            }
             LOGGER.debug("Delaying compute @Only and @Mark, precondition not set (weird, should be set by now)");
             methodAnalysis.setPreconditionForEventual(methodAnalysis.precondition.get());
             return methodAnalysis.precondition.get().causesOfDelay();
@@ -554,11 +560,36 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
                 methodAnalysis.setProperty(Property.IMMUTABLE, MultiLevel.EFFECTIVELY_IMMUTABLE_DV);
                 methodAnalysis.setProperty(INDEPENDENT, MultiLevel.INDEPENDENT_DV);
                 methodAnalysis.setProperty(Property.CONTAINER, MultiLevel.CONTAINER_DV);
+                methodAnalysis.setProperty(CONSTANT, DV.FALSE_DV);
                 return DONE;
             }
             LOGGER.debug("It {} method {} has return value {}, delaying", sharedState.evaluationContext.getIteration(),
                     methodInfo, value.minimalOutput());
             if (value.isDelayed()) {
+                if (sharedState.breakDelayLevel.acceptMethodOverride()) {
+                    LOGGER.debug("Method override: set rescue value for {}", methodInfo);
+                    Properties valueProps = Properties.of(Map.of(
+                            IDENTITY, methodAnalysis.getPropertyFromMapNeverDelay(IDENTITY),
+                            IGNORE_MODIFICATIONS, methodAnalysis.getPropertyFromMapNeverDelay(IGNORE_MODIFICATIONS),
+                            NOT_NULL_EXPRESSION, methodAnalysis.getPropertyFromMapNeverDelay(NOT_NULL_EXPRESSION),
+                            IMMUTABLE, methodAnalysis.getPropertyFromMapNeverDelay(IMMUTABLE),
+                            INDEPENDENT, methodAnalysis.getPropertyFromMapNeverDelay(INDEPENDENT),
+                            CONTAINER, methodAnalysis.getPropertyFromMapNeverDelay(CONTAINER)
+                    ));
+                    Expression instance = Instance.forMethodResult(methodInfo.getIdentifier(), methodInfo.returnType(), valueProps);
+                    methodAnalysis.setSingleReturnValue(instance);
+                    methodAnalysis.setProperty(Property.IDENTITY, valueProps.get(IDENTITY));
+                    methodAnalysis.setProperty(IGNORE_MODIFICATIONS, valueProps.get(IGNORE_MODIFICATIONS));
+                    methodAnalysis.setProperty(Property.FLUENT, DV.FALSE_DV);
+                    methodAnalysis.setProperty(Property.NOT_NULL_EXPRESSION, valueProps.get(NOT_NULL_EXPRESSION));
+                    methodAnalysis.setProperty(Property.IMMUTABLE, valueProps.get(IMMUTABLE));
+                    /*
+                     INDEPENDENT of a method is not necessarily determined by the return type's INDEPENDENT
+                     */
+                    methodAnalysis.setProperty(Property.CONTAINER, valueProps.get(CONTAINER));
+                    methodAnalysis.setProperty(CONSTANT, DV.FALSE_DV);
+                    return DONE;
+                }
                 return delayedSrv(concreteReturnType, value, variableInfo.getValue().causesOfDelay(), true);
             }
             throw new UnsupportedOperationException("? no delays, and initial return expression even though return statements are reachable");
@@ -661,7 +692,13 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
         if (methodAnalysis.getPropertyFromMapDelayWhenAbsent(IMMUTABLE).isDone()) return DONE;
         DV immutable = computeImmutableValue(sharedState.breakDelayLevel());
         methodAnalysis.setProperty(IMMUTABLE, immutable);
-        if (immutable.isDelayed()) return immutable.causesOfDelay();
+        if (immutable.isDelayed()) {
+            if (sharedState.breakDelayLevel.acceptMethodOverride()) {
+                methodAnalysis.setProperty(IMMUTABLE, IMMUTABLE.falseDv);
+                return DONE;
+            }
+            return immutable.causesOfDelay();
+        }
         LOGGER.debug("Set @Immutable to {} on {}", immutable, methodInfo);
         return DONE;
     }
@@ -669,7 +706,13 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
     private AnalysisStatus computeContainer(SharedState sharedState) {
         if (methodAnalysis.getPropertyFromMapDelayWhenAbsent(CONTAINER).isDone()) return DONE;
         DV container = computeContainerValue(sharedState.breakDelayLevel());
-        if (container.isDelayed()) return container.causesOfDelay();
+        if (container.isDelayed()) {
+            if (sharedState.breakDelayLevel.acceptMethodOverride()) {
+                methodAnalysis.setProperty(CONTAINER, CONTAINER.falseDv);
+                return DONE;
+            }
+            return container.causesOfDelay();
+        }
         methodAnalysis.setProperty(CONTAINER, container);
         LOGGER.debug("Set @Container to {} on {}", container, methodInfo);
         return DONE;
@@ -832,7 +875,7 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
         return modified.causesOfDelay();
     }
 
-    private AnalysisStatus computeModified() {
+    private AnalysisStatus computeModified(SharedState sharedState) {
         boolean isCycle = methodInfo.methodResolution.get().partOfCallCycle();
         Property property = isCycle ? Property.TEMP_MODIFIED_METHOD : Property.MODIFIED_METHOD;
 
@@ -849,6 +892,10 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
                 .map(vi -> connectedToMyTypeHierarchy((FieldReference) vi.variable()))
                 .reduce(CausesOfDelay.EMPTY, DV::max);
         if (scopeDelays.isDelayed()) {
+            if (sharedState.breakDelayLevel.acceptMethodOverride()) {
+                methodAnalysis.setProperty(MODIFIED_METHOD, MODIFIED_METHOD.falseDv);
+                return DONE;
+            }
             methodAnalysis.setProperty(property, scopeDelays);
             LOGGER.debug("Delaying @Modified of method {}, scope is delayed", methodInfo);
             return scopeDelays.causesOfDelay();
@@ -873,6 +920,10 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
         DV contextModified = relevantVariableInfos.stream().map(vi -> vi.getProperty(CONTEXT_MODIFIED))
                 .reduce(DV.FALSE_DV, DV::max);
         if (contextModified.isDelayed()) {
+            if (sharedState.breakDelayLevel.acceptMethodOverride()) {
+                methodAnalysis.setProperty(MODIFIED_METHOD, MODIFIED_METHOD.falseDv);
+                return DONE;
+            }
             LOGGER.debug("Method {}: Not deciding on @Modified yet: no context modified", methodInfo);
             methodAnalysis.setProperty(property, contextModified);
             return contextModified.causesOfDelay();
@@ -883,6 +934,10 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
             if (thisVariable != null) {
                 DV thisModified = thisVariable.getProperty(Property.CONTEXT_MODIFIED);
                 if (thisModified.isDelayed()) {
+                    if (sharedState.breakDelayLevel.acceptMethodOverride()) {
+                        methodAnalysis.setProperty(MODIFIED_METHOD, MODIFIED_METHOD.falseDv);
+                        return DONE;
+                    }
                     LOGGER.debug("In {}: CONTEXT_MODIFIED of this is delayed", methodInfo);
                     methodAnalysis.setProperty(property, thisModified);
                     return thisModified.causesOfDelay();
@@ -897,6 +952,10 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
                     .reduce(DV.MIN_INT_DV, DV::max);
             if (maxModified != DV.MIN_INT_DV) {
                 if (maxModified.isDelayed()) {
+                    if (sharedState.breakDelayLevel.acceptMethodOverride()) {
+                        methodAnalysis.setProperty(MODIFIED_METHOD, MODIFIED_METHOD.falseDv);
+                        return DONE;
+                    }
                     LOGGER.debug("Delaying modification on method {}, waiting to copy", methodInfo);
                     methodAnalysis.setProperty(property, maxModified);
                     return maxModified.causesOfDelay();
@@ -975,11 +1034,19 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
             VariableInfo variableInfo = getReturnAsVariable();
             LinkedVariables linkedVariables = variableInfo.getLinkedVariables();
             if (linkedVariables.isDelayed()) {
+                if (sharedState.breakDelayLevel.acceptMethodOverride()) {
+                    methodAnalysis.setProperty(INDEPENDENT, INDEPENDENT.falseDv);
+                    return DONE;
+                }
                 LOGGER.debug("Delaying independent of {}, linked variables not known", methodInfo);
                 methodAnalysis.setProperty(INDEPENDENT, linkedVariables.causesOfDelay());
                 return linkedVariables.causesOfDelay();
             }
             if (typeAnalysis.hiddenContentDelays().isDelayed()) {
+                if (sharedState.breakDelayLevel.acceptMethodOverride()) {
+                    methodAnalysis.setProperty(INDEPENDENT, INDEPENDENT.falseDv);
+                    return DONE;
+                }
                 LOGGER.debug("Delaying independent of {}, hidden content not yet known", methodInfo);
                 CausesOfDelay delay = typeAnalysis.hiddenContentDelays().causesOfDelay();
                 methodAnalysis.setProperty(INDEPENDENT, delay);
@@ -1017,6 +1084,10 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
              */
             DV fromImmutable = MultiLevel.independentCorrespondingToImmutable(immutable);
             independent = computed.max(fromImmutable);
+        }
+        if (sharedState.breakDelayLevel.acceptMethodOverride() && independent.isDelayed()) {
+            methodAnalysis.setProperty(INDEPENDENT, INDEPENDENT.falseDv);
+            return DONE;
         }
         methodAnalysis.setProperty(INDEPENDENT, independent);
         return AnalysisStatus.of(independent);
