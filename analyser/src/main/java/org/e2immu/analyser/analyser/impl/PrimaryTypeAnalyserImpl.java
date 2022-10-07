@@ -41,9 +41,6 @@ import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static org.e2immu.analyser.config.AnalyserProgram.PROGRAM_ALL;
-import static org.e2immu.analyser.config.AnalyserProgram.Step.*;
-
 /*
 Recursive, but only for types inside statements, not for subtypes.
 
@@ -101,7 +98,7 @@ public class PrimaryTypeAnalyserImpl implements PrimaryTypeAnalyser {
         // all important fields of the interface have been set.
         analysers.forEach(Analyser::initialize);
 
-        AnalyserComponents.Builder<Analyser, SharedState> builder = new AnalyserComponents.Builder<>(PROGRAM_ALL);
+        AnalyserComponents.Builder<Analyser, SharedState> builder = new AnalyserComponents.Builder<>();
         builder.setLimitCausesOfDelay(true);
 
         for (Analyser analyser : analysers) {
@@ -186,7 +183,6 @@ public class PrimaryTypeAnalyserImpl implements PrimaryTypeAnalyser {
             LOGGER.info("Starting to process {} types, {} methods, {} fields", typeAnalysers.size(), methodAnalysers.size(), fieldAnalysers.size());
         }
 
-        if (!configuration.analyserConfiguration().analyserProgram().accepts(ITERATION_0)) return;
         int iteration = 0;
         BreakDelayLevel breakDelayLevel = BreakDelayLevel.NONE;
         AnalysisStatus analysisStatus;
@@ -205,18 +201,6 @@ public class PrimaryTypeAnalyserImpl implements PrimaryTypeAnalyser {
 
             dumpDelayHistogram(analyserComponents.getDelayHistogram());
 
-            if (!configuration.analyserConfiguration().analyserProgram().accepts(ITERATION_1PLUS)) {
-                LOGGER.debug("\n******\nStopping after iteration 0 according to program\n******");
-                return;
-            }
-            if (iteration > 1 && !configuration.analyserConfiguration().analyserProgram().accepts(ITERATION_2)) {
-                LOGGER.debug("\n******\nStopping after iteration 1 according to program\n******");
-                return;
-            }
-            if (iteration > 2 && !configuration.analyserConfiguration().analyserProgram().accepts(ALL)) {
-                LOGGER.debug("\n******\nStopping after iteration 2 according to program\n******");
-                return;
-            }
             analysisStatus = analyserResult.analysisStatus();
             if (analysisStatus == AnalysisStatus.DONE) break;
             if (!analysisStatus.isProgress()) {

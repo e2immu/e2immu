@@ -16,7 +16,6 @@ package org.e2immu.analyser.analysis;
 
 import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.analyser.util.AnalyserResult;
-import org.e2immu.analyser.config.AnalyserProgram;
 import org.e2immu.analyser.model.MethodInfo;
 import org.e2immu.analyser.model.variable.LocalVariableReference;
 import org.e2immu.analyser.model.variable.ReturnVariable;
@@ -93,7 +92,7 @@ public class MethodLevelData {
     }
 
     public final AnalyserComponents<String, SharedState> analyserComponents =
-            new AnalyserComponents.Builder<String, SharedState>(AnalyserProgram.PROGRAM_ALL)
+            new AnalyserComponents.Builder<String, SharedState>()
                     .add(LINKS_HAVE_BEEN_ESTABLISHED, this::linksHaveBeenEstablished)
                     .add(COMBINE_PRECONDITION, this::combinePrecondition)
                     .build();

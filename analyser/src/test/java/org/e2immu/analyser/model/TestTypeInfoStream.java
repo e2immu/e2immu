@@ -183,9 +183,11 @@ public class TestTypeInfoStream {
                                                         .addStatement(new IfElseStatement(newId(),
                                                                 new BooleanConstant(primitives, true),
                                                                 new Block.BlockBuilder(newId()).build(),
-                                                                Block.emptyBlock(newId())
+                                                                Block.emptyBlock(newId()),
+                                                                null
                                                         ))
-                                                        .build()
+                                                        .build(),
+                                                null
                                         )
                                 )
                                 .build())

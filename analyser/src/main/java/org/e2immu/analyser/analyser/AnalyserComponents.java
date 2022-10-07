@@ -14,7 +14,6 @@
 
 package org.e2immu.analyser.analyser;
 
-import org.e2immu.analyser.config.AnalyserProgram;
 import org.e2immu.analyser.model.WithInspectionAndAnalysis;
 import org.e2immu.analyser.util.Pair;
 import org.slf4j.Logger;
@@ -26,7 +25,6 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static org.e2immu.analyser.analyser.AnalysisStatus.*;
-import static org.e2immu.analyser.config.AnalyserProgram.Step.ALL;
 
 /**
  * @param <T> typically String, as the label of the component. In case of the primary type analyser, T is Analyser.
@@ -38,9 +36,6 @@ public class AnalyserComponents<T, S> {
     public static class Info {
         private int cnt;
         private final Map<CauseOfDelay.Cause, Integer> causes = new HashMap<>();
-
-        public Info() {
-        }
 
         public Info(CauseOfDelay c) {
             add(c);
@@ -96,14 +91,10 @@ public class AnalyserComponents<T, S> {
 
     public static class Builder<T, S> {
         private final LinkedHashMap<T, AnalysisStatus.AnalysisResultSupplier<S>> suppliers = new LinkedHashMap<>();
-        private final AnalyserProgram analyserProgram;
         private boolean limitCausesOfDelay;
         private Function<S, S> updateUponProgress;
         private BiPredicate<T, S> executeConditionally;
 
-        public Builder(AnalyserProgram analyserProgram) {
-            this.analyserProgram = analyserProgram;
-        }
 
         public Builder<T, S> setLimitCausesOfDelay(boolean limitCausesOfDelay) {
             this.limitCausesOfDelay = limitCausesOfDelay;
@@ -111,13 +102,7 @@ public class AnalyserComponents<T, S> {
         }
 
         public Builder<T, S> add(T t, AnalysisResultSupplier<S> supplier) {
-            return add(t, ALL, supplier);
-        }
-
-        public Builder<T, S> add(T t, AnalyserProgram.Step step, AnalysisResultSupplier<S> supplier) {
-            if (this.analyserProgram.accepts(step)) {
-                if (suppliers.put(t, supplier) != null) throw new UnsupportedOperationException();
-            }
+            if (suppliers.put(t, supplier) != null) throw new UnsupportedOperationException();
             return this;
         }
 

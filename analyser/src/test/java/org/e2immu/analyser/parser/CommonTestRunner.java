@@ -28,7 +28,6 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.util.List;
 
-import static org.e2immu.analyser.config.AnalyserProgram.Step.*;
 import static org.junit.jupiter.api.Assertions.*;
 
 public abstract class CommonTestRunner extends VisitorTestSupport {
@@ -81,7 +80,6 @@ public abstract class CommonTestRunner extends VisitorTestSupport {
                                     DebugConfiguration debugConfiguration,
                                     AnalyserConfiguration analyserConfiguration,
                                     AnnotatedAPIConfiguration annotatedAPIConfiguration) throws IOException {
-        assertTrue(analyserConfiguration.analyserProgram().accepts(ALL));
         // parsing the annotatedAPI files needs them being backed up by .class files, so we'll add the Java
         // test runner's classpath to ours
         InputConfiguration.Builder inputConfigurationBuilder = new InputConfiguration.Builder()

@@ -25,6 +25,7 @@ public class Basics_1 {
     }
 
     public void test() {
+        /*   another comment */
         System.out.println(method("s"));
     }
 }

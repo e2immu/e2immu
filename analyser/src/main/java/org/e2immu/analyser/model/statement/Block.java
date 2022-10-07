@@ -32,17 +32,16 @@ import java.util.stream.Collectors;
 
 public class Block extends StatementWithStructure {
     public final String label;
-    public final Structure structure;
 
     public static Block emptyBlock(Identifier identifier) {
-        return new Block(identifier, List.of(), null);
+        return new Block(identifier, List.of(), null, null);
     }
 
-    private Block(Identifier identifier, @NotNull List<Statement> statements, String label) {
-        super(identifier);
-        structure = new Structure.Builder()
+    private Block(Identifier identifier, @NotNull List<Statement> statements, String label, Comment comment) {
+        super(identifier, new Structure.Builder()
                 .setStatementExecution(StatementExecution.ALWAYS)
-                .setStatements(statements).build();
+                .setComment(comment)
+                .setStatements(statements).build());
         this.label = label;
     }
 
@@ -65,6 +64,7 @@ public class Block extends StatementWithStructure {
         private final List<Statement> statements = new ArrayList<>();
         private String label;
         private final Identifier identifier;
+        private Comment comment;
 
         public BlockBuilder(Identifier identifier) {
             this.identifier = identifier;
@@ -82,12 +82,16 @@ public class Block extends StatementWithStructure {
             return this;
         }
 
+        public void setComment(Comment comment) {
+            this.comment = comment;
+        }
+
         @NotModified
         @NotNull
         public Block build() {
             if (statements.isEmpty()) return emptyBlock(identifier);
             // NOTE: we don't do labels on empty blocks. that's pretty useless anyway
-            return new Block(identifier, List.copyOf(statements), label);
+            return new Block(identifier, List.copyOf(statements), label, comment);
         }
 
         public int size() {
@@ -273,7 +277,7 @@ public class Block extends StatementWithStructure {
         return List.of(new Block(identifier, structure.statements().stream()
                 .flatMap(st -> Objects.requireNonNull(st.translate(inspectionProvider, translationMap),
                         "Translation of statement of " + st.getClass() + " returns null: " + st).stream())
-                .collect(Collectors.toList()), label));
+                .collect(Collectors.toList()), label, structure.comment()));
     }
 
     public boolean isEmpty() {

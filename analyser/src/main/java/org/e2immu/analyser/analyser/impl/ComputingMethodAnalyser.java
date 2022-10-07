@@ -26,7 +26,6 @@ import org.e2immu.analyser.analyser.util.DetectEventual;
 import org.e2immu.analyser.analysis.*;
 import org.e2immu.analyser.analysis.impl.MethodAnalysisImpl;
 import org.e2immu.analyser.analysis.impl.TypeAnalysisImpl;
-import org.e2immu.analyser.config.AnalyserProgram;
 import org.e2immu.analyser.inspector.MethodResolution;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.*;
@@ -49,7 +48,6 @@ import java.util.stream.Stream;
 
 import static org.e2immu.analyser.analyser.AnalysisStatus.DONE;
 import static org.e2immu.analyser.analyser.Property.*;
-import static org.e2immu.analyser.config.AnalyserProgram.Step.ALL;
 
 public class ComputingMethodAnalyser extends MethodAnalyserImpl {
     private static final Logger LOGGER = LoggerFactory.getLogger(ComputingMethodAnalyser.class);
@@ -107,16 +105,15 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
             methodAnalysis.setFirstStatement(firstStatementAnalyser.statementAnalysis);
         }
 
-        AnalyserProgram analyserProgram = analyserContextInput.getAnalyserProgram();
-        AnalyserComponents.Builder<String, SharedState> builder = new AnalyserComponents.Builder<>(analyserProgram);
-        builder.add("mark first iteration", AnalyserProgram.Step.ITERATION_0, this::markFirstIteration);
+        AnalyserComponents.Builder<String, SharedState> builder = new AnalyserComponents.Builder<>();
+        builder.add("mark first iteration", this::markFirstIteration);
         assert firstStatementAnalyser != null;
 
         // order: Companion analyser, Parameter analysers, Statement analysers, Method analyser parts
         // rest of the order (as determined in PrimaryTypeAnalyser): fields, types
 
         for (CompanionAnalyser companionAnalyser : companionAnalysers.values()) {
-            builder.add(companionAnalyser.companionMethodName.toString(), AnalyserProgram.Step.INITIALISE,
+            builder.add(companionAnalyser.companionMethodName.toString(),
                     (sharedState -> companionAnalyser.analyse(sharedState.evaluationContext.getIteration())));
         }
 
@@ -129,8 +126,7 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
                 return result.analysisStatus();
             };
 
-            builder.add("Parameter " + parameterAnalyser.getParameterInfo().name, AnalyserProgram.Step.INITIALISE,
-                    parameterAnalyserAction);
+            builder.add("Parameter " + parameterAnalyser.getParameterInfo().name, parameterAnalyserAction);
         }
 
         AnalysisStatus.AnalysisResultSupplier<SharedState> statementAnalyser = (sharedState) -> {
@@ -143,10 +139,9 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
             return result.analysisStatus();
         };
 
-        builder.add(STATEMENT_ANALYSER, AnalyserProgram.Step.INITIALISE, statementAnalyser)
-                .add(COMPUTE_MODIFIED, AnalyserProgram.Step.MODIFIED, this::computeModified)
-                .add(COMPUTE_MODIFIED_CYCLES, AnalyserProgram.Step.MODIFIED,
-                        (sharedState -> methodInfo.isConstructor ? DONE : computeModifiedInternalCycles()))
+        builder.add(STATEMENT_ANALYSER, statementAnalyser)
+                .add(COMPUTE_MODIFIED, this::computeModified)
+                .add(COMPUTE_MODIFIED_CYCLES, (sharedState -> methodInfo.isConstructor ? DONE : computeModifiedInternalCycles()))
                 .add(OBTAIN_MOST_COMPLETE_PRECONDITION, (sharedState) -> obtainMostCompletePrecondition())
                 .add(COMPUTE_RETURN_VALUE, (sharedState) -> methodInfo.noReturnValue() ? DONE : computeReturnValue(sharedState))
                 .add(COMPUTE_IMMUTABLE, sharedState -> methodInfo.noReturnValue() ? DONE : computeImmutable(sharedState))
@@ -210,8 +205,7 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
 
         try {
             AnalysisStatus analysisStatus = analyserComponents.run(state);
-            if (analysisStatus.isDone() && analyserContext.getConfiguration().analyserConfiguration().analyserProgram().accepts(ALL))
-                methodAnalysis.internalAllDoneCheck();
+            if (analysisStatus.isDone()) methodAnalysis.internalAllDoneCheck();
             analyserResultBuilder.setAnalysisStatus(analysisStatus);
 
             List<MethodAnalyserVisitor> visitors = analyserContext.getConfiguration()

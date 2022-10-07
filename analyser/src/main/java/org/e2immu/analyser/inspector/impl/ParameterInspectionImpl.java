@@ -28,8 +28,8 @@ public class ParameterInspectionImpl extends InspectionImpl implements Parameter
 
     public final boolean varArgs;
 
-    private ParameterInspectionImpl(List<AnnotationExpression> annotations, boolean varArgs) {
-        super(annotations, Access.PUBLIC, false);
+    private ParameterInspectionImpl(List<AnnotationExpression> annotations, Comment comment, boolean varArgs) {
+        super(annotations, Access.PUBLIC, comment, false);
         this.varArgs = varArgs;
     }
 
@@ -108,7 +108,7 @@ public class ParameterInspectionImpl extends InspectionImpl implements Parameter
         public ParameterInfo build(MethodInfo owner) {
             assert owner != null : "No owner for parameter " + name;
             assert index >= 0 : "Forgot to set index";
-            ParameterInspectionImpl inspection = new ParameterInspectionImpl(getAnnotations(), varArgs);
+            ParameterInspectionImpl inspection = new ParameterInspectionImpl(getAnnotations(), getComment(), varArgs);
             ParameterInfo parameterInfo = new ParameterInfo(identifier, owner, parameterizedType, name, index);
             parameterInfo.parameterInspection.set(inspection);
             return parameterInfo;

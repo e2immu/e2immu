@@ -71,6 +71,7 @@ public class ParseObjectCreationExpr {
 
             expressionContext.resolver().resolve(typeContext,
                     typeContext.typeMap.getE2ImmuAnnotationExpressions(), false,
+                    expressionContext.resolver().parseComments(),
                     Map.of(anonymousType, expressionContext.newVariableContext("Anonymous subtype")));
 
             return ConstructorCall.withAnonymousClass(id, parameterizedType, anonymousType, diamond);

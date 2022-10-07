@@ -26,8 +26,8 @@ import java.util.Objects;
 
 public class ContinueStatement extends BreakOrContinueStatement {
 
-    public ContinueStatement(Identifier identifier, String label) {
-        super(identifier, label);
+    public ContinueStatement(Identifier identifier, String label, Comment comment) {
+        super(identifier, label, comment);
     }
 
     @Override

@@ -35,7 +35,6 @@ import org.e2immu.analyser.analysis.FieldAnalysis;
 import org.e2immu.analyser.analysis.TypeAnalysis;
 import org.e2immu.analyser.analysis.impl.FieldAnalysisImpl;
 import org.e2immu.analyser.analysis.impl.ValueAndPropertyProxy;
-import org.e2immu.analyser.config.AnalyserProgram;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.*;
 import org.e2immu.analyser.model.expression.util.MultiExpression;
@@ -60,7 +59,6 @@ import java.util.stream.Stream;
 import static org.e2immu.analyser.analyser.AnalysisStatus.DONE;
 import static org.e2immu.analyser.analyser.AnalysisStatus.NOT_YET_EXECUTED;
 import static org.e2immu.analyser.analyser.Property.*;
-import static org.e2immu.analyser.config.AnalyserProgram.Step.*;
 
 public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser {
     private static final Logger LOGGER = LoggerFactory.getLogger(FieldAnalyserImpl.class);
@@ -114,7 +112,6 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
         fieldCanBeWrittenFromOutsideThisPrimaryType = !fieldInfo.fieldInspection.get().isPrivate() &&
                 !fieldInfo.isExplicitlyFinal();
         haveInitialiser = fieldInspection.fieldInitialiserIsSet() && fieldInspection.getFieldInitialiser().initialiser() != EmptyExpression.EMPTY_EXPRESSION;
-        AnalyserProgram analyserProgram = nonExpandableAnalyserContext.getAnalyserProgram();
 
         AnalysisStatus.AnalysisResultSupplier<SharedState> anonymousTypeAnalyser = (sharedState) -> {
             AnalyserResult analyserResult = runAnonymousTypeAnalyser(sharedState);
@@ -122,10 +119,10 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
             return analyserResult.analysisStatus();
         };
 
-        analyserComponents = new AnalyserComponents.Builder<String, SharedState>(analyserProgram)
-                .add(ANONYMOUS_TYPE_ANALYSER, INITIALISE, anonymousTypeAnalyser)
-                .add(EVALUATE_INITIALISER, FIELD_FINAL, this::evaluateInitializer)
-                .add(ANALYSE_FINAL, FIELD_FINAL, this::analyseFinal)
+        analyserComponents = new AnalyserComponents.Builder<String, SharedState>()
+                .add(ANONYMOUS_TYPE_ANALYSER, anonymousTypeAnalyser)
+                .add(EVALUATE_INITIALISER, this::evaluateInitializer)
+                .add(ANALYSE_FINAL, this::analyseFinal)
                 .add(ANALYSE_VALUES, sharedState -> analyseValues())
                 .add(ANALYSE_IMMUTABLE, this::analyseImmutable)
                 .add(ANALYSE_NOT_NULL, this::analyseNotNull)
@@ -265,8 +262,7 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
         // analyser visitors
         try {
             AnalysisStatus analysisStatus = analyserComponents.run(sharedState);
-            if (analysisStatus.isDone() && analyserContext.getConfiguration().analyserConfiguration().analyserProgram().accepts(ALL))
-                fieldAnalysis.internalAllDoneCheck();
+            if (analysisStatus.isDone()) fieldAnalysis.internalAllDoneCheck();
             analyserResultBuilder.setAnalysisStatus(analysisStatus);
 
             List<FieldAnalyserVisitor> visitors = analyserContext.getConfiguration()
@@ -1679,32 +1675,26 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
     @Override
     public void check() {
         E2ImmuAnnotationExpressions e2 = analyserContext.getE2ImmuAnnotationExpressions();
+        LOGGER.debug("Checking field {}", fqn);
 
-        AnalyserProgram analyserProgram = analyserContext.getAnalyserProgram();
-        if (analyserProgram.accepts(FIELD_FINAL)) {
-            analyserResultBuilder.add(CheckFinalNotModified.check(fieldInfo, e2.effectivelyFinal, fieldAnalysis));
-        }
-        if (analyserProgram.accepts(ALL)) {
-            LOGGER.debug("Checking field {}", fqn);
+        analyserResultBuilder.add(CheckFinalNotModified.check(fieldInfo, e2.effectivelyFinal, fieldAnalysis));
+        analyserResultBuilder.add(CheckNotNull.check(fieldInfo, e2.notNull, fieldAnalysis, EXTERNAL_NOT_NULL));
+        analyserResultBuilder.add(CheckFinalNotModified.check(fieldInfo, e2.notModified, fieldAnalysis));
 
-            analyserResultBuilder.add(CheckNotNull.check(fieldInfo, e2.notNull, fieldAnalysis, EXTERNAL_NOT_NULL));
-            analyserResultBuilder.add(CheckFinalNotModified.check(fieldInfo, e2.notModified, fieldAnalysis));
+        // dynamic type annotations
+        check(e2.container);
 
-            // dynamic type annotations
-            check(e2.container);
+        DV constant = fieldAnalysis.getProperty(CONSTANT);
+        String constantValue = fieldAnalysis.getValue() != null && constant.valueIsTrue()
+                ? fieldAnalysis.getValue().unQuotedString() : "";
+        analyserResultBuilder.add(CheckImmutable.check(fieldInfo, e2.finalFields, fieldAnalysis, null));
+        analyserResultBuilder.add(CheckImmutable.check(fieldInfo, e2.immutable, fieldAnalysis, null));
+        analyserResultBuilder.add(CheckImmutable.check(fieldInfo, e2.immutableContainer, fieldAnalysis, constantValue));
 
-            DV constant = fieldAnalysis.getProperty(CONSTANT);
-            String constantValue = fieldAnalysis.getValue() != null && constant.valueIsTrue()
-                    ? fieldAnalysis.getValue().unQuotedString() : "";
-            analyserResultBuilder.add(CheckImmutable.check(fieldInfo, e2.finalFields, fieldAnalysis, null));
-            analyserResultBuilder.add(CheckImmutable.check(fieldInfo, e2.immutable, fieldAnalysis, null));
-            analyserResultBuilder.add(CheckImmutable.check(fieldInfo, e2.immutableContainer, fieldAnalysis, constantValue));
-
-            analyserResultBuilder.add(CheckIndependent.check(fieldInfo, e2.independent, fieldAnalysis));
-            check(e2.modified);
-            check(e2.nullable);
-            check(e2.beforeMark);
-        }
+        analyserResultBuilder.add(CheckIndependent.check(fieldInfo, e2.independent, fieldAnalysis));
+        check(e2.modified);
+        check(e2.nullable);
+        check(e2.beforeMark);
     }
 
     private void check(AnnotationExpression annotationKey) {

@@ -33,14 +33,15 @@ public class ParseExplicitConstructorInvocation {
     public static Statement parse(ExpressionContext expressionContext,
                                   TypeInfo enclosingType,
                                   ExplicitConstructorInvocationStmt statement,
-                                  Identifier identifier) {
+                                  Identifier identifier,
+                                  Comment comment) {
         Result result = findConstructor(expressionContext,
                 enclosingType,
                 statement.getArguments(),
                 statement.isThis(),
                 statement.getBegin().orElseThrow());
         return new ExplicitConstructorInvocation(identifier, !statement.isThis(),
-                result.constructor, result.expressions);
+                result.constructor, result.expressions, comment);
     }
 
     /*

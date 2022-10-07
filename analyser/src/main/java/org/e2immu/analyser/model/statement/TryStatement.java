@@ -62,8 +62,9 @@ public class TryStatement extends StatementWithStructure {
                         List<Expression> resources,
                         Block tryBlock,
                         List<Pair<CatchParameter, Block>> catchClauses,
-                        Block finallyBlock) {
-        super(identifier, codeOrganization(resources, tryBlock, catchClauses, finallyBlock));
+                        Block finallyBlock,
+                        Comment comment) {
+        super(identifier, codeOrganization(resources, tryBlock, catchClauses, finallyBlock, comment));
         this.resources = List.copyOf(resources);
         this.catchClauses = List.copyOf(catchClauses);
         this.finallyBlock = finallyBlock;
@@ -74,7 +75,8 @@ public class TryStatement extends StatementWithStructure {
     private static Structure codeOrganization(List<Expression> resources,
                                               Block tryBlock,
                                               List<Pair<CatchParameter, Block>> catchClauses,
-                                              Block finallyBlock) {
+                                              Block finallyBlock,
+                                              Comment comment) {
         Structure.Builder builder = new Structure.Builder()
                 .setCreateVariablesInsideBlock(true)
                 .addInitialisers(resources)
@@ -95,7 +97,9 @@ public class TryStatement extends StatementWithStructure {
                     .setStatementExecution(StatementExecution.ALWAYS)
                     .build());
         }
-        return builder.build();
+        return builder
+                .setComment(comment)
+                .build();
     }
 
 
@@ -133,7 +137,8 @@ public class TryStatement extends StatementWithStructure {
                                 TranslationMapImpl.ensureExpressionType(p.k.translate(inspectionProvider, translationMap), CatchParameter.class),
                                 ensureBlock(p.v.identifier, p.v.translate(inspectionProvider, translationMap))))
                         .collect(Collectors.toList()),
-                ensureBlock(finallyBlock.identifier, translatedFinally)));
+                ensureBlock(finallyBlock.identifier, translatedFinally),
+                structure.comment()));
     }
 
     public static class CatchParameter extends BaseExpression implements Expression {

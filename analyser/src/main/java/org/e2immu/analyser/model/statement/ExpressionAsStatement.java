@@ -31,11 +31,11 @@ public class ExpressionAsStatement extends StatementWithExpression {
     private final boolean synthetic;
 
     public ExpressionAsStatement(Identifier identifier, Expression expression) {
-        this(identifier, expression, false);
+        this(identifier, expression, null, false);
     }
 
-    public ExpressionAsStatement(Identifier identifier, Expression expression, boolean synthetic) {
-        super(identifier, createCodeOrganization(expression), expression);
+    public ExpressionAsStatement(Identifier identifier, Expression expression, Comment comment, boolean synthetic) {
+        super(identifier, createCodeOrganization(expression, comment), expression);
         this.synthetic = synthetic;
     }
 
@@ -59,7 +59,7 @@ public class ExpressionAsStatement extends StatementWithExpression {
         return synthetic;
     }
 
-    private static Structure createCodeOrganization(Expression expression) {
+    private static Structure createCodeOrganization(Expression expression, Comment comment) {
         Structure.Builder builder = new Structure.Builder();
         builder.setForwardEvaluationInfo(ForwardEvaluationInfo.DEFAULT);
         if (expression instanceof LocalVariableCreation) {
@@ -70,7 +70,7 @@ public class ExpressionAsStatement extends StatementWithExpression {
         if (expression instanceof Lambda) {
             builder.setBlock(((Lambda) expression).block);
         }
-        return builder.build();
+        return builder.setComment(comment).build();
     }
 
     @Override

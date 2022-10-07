@@ -34,8 +34,12 @@ public class ExplicitConstructorInvocation extends StatementWithStructure {
     public ExplicitConstructorInvocation(Identifier identifier,
                                          boolean isSuper,
                                          MethodInfo methodInfo,
-                                         List<Expression> parameterExpressions) {
-        super(identifier, new Structure.Builder().setUpdaters(parameterExpressions).build());
+                                         List<Expression> parameterExpressions,
+                                         Comment comment) {
+        super(identifier, new Structure.Builder()
+                .setUpdaters(parameterExpressions)
+                .setComment(comment)
+                .build());
         this.isSuper = isSuper;
         this.methodInfo = methodInfo;
     }
@@ -64,7 +68,7 @@ public class ExplicitConstructorInvocation extends StatementWithStructure {
 
         return List.of(new ExplicitConstructorInvocation(identifier, isSuper, methodInfo, structure.updaters().stream()
                 .map(updater -> updater.translate(inspectionProvider, translationMap))
-                .collect(Collectors.toList())));
+                .collect(Collectors.toList()), structure.comment()));
     }
 
     @Override

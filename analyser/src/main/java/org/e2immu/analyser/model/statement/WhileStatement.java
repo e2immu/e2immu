@@ -30,7 +30,8 @@ public class WhileStatement extends LoopStatement {
     public WhileStatement(Identifier identifier,
                           String label,
                           Expression expression,
-                          Block block) {
+                          Block block,
+                          Comment comment) {
         super(identifier, new Structure.Builder()
                 .setStatementExecution((v, ec) -> {
                     if (v.isDelayed()) return v.causesOfDelay();
@@ -41,7 +42,9 @@ public class WhileStatement extends LoopStatement {
                 .setForwardEvaluationInfo(ForwardEvaluationInfo.NOT_NULL)
                 .setExpression(expression)
                 .setExpressionIsCondition(true)
-                .setBlock(block).build(), label);
+                .setBlock(block)
+                .setComment(comment)
+                .build(), label);
     }
 
     @Override
@@ -74,7 +77,10 @@ public class WhileStatement extends LoopStatement {
         Expression tex = expression.translate(inspectionProvider, translationMap);
         List<Statement> translatedBlock = structure.block().translate(inspectionProvider, translationMap);
         if (tex == expression && !haveDirectTranslation(translatedBlock, structure.block())) return List.of(this);
-        return List.of(new WhileStatement(identifier, label, tex, ensureBlock(structure.block().identifier, translatedBlock)));
+        return List.of(
+                new WhileStatement(identifier, label, tex,
+                        ensureBlock(structure.block().identifier, translatedBlock),
+                        structure.comment()));
     }
 
 

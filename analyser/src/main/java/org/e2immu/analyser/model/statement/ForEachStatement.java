@@ -39,13 +39,16 @@ public class ForEachStatement extends LoopStatement {
                             LocalVariableCreation localVariableCreation,
                             Expression expression,
                             Identifier.PositionalIdentifier positionOfExpression,
-                            Block block) {
+                            Block block,
+                            Comment comment) {
         super(identifier, new Structure.Builder()
                 .setStatementExecution(ForEachStatement::computeExecution)
                 .setForwardEvaluationInfo(ForwardEvaluationInfo.NOT_NULL)
                 .addInitialisers(List.of(localVariableCreation))
                 .setExpression(expression)
-                .setBlock(block).build(), label);
+                .setBlock(block)
+                .setComment(comment)
+                .build(), label);
         this.positionOfExpression = positionOfExpression;
     }
 
@@ -92,7 +95,8 @@ public class ForEachStatement extends LoopStatement {
                 translatedLvc,
                 expression.translate(inspectionProvider, translationMap),
                 positionOfExpression,
-                ensureBlock(structure.block().identifier, translatedBlock)));
+                ensureBlock(structure.block().identifier, translatedBlock),
+                getStructure().comment()));
     }
 
     @Override

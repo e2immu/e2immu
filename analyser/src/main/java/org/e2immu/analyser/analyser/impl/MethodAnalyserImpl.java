@@ -20,7 +20,6 @@ import org.e2immu.analyser.analysis.Analysis;
 import org.e2immu.analyser.analysis.ParameterAnalysis;
 import org.e2immu.analyser.analysis.StatementAnalysis;
 import org.e2immu.analyser.analysis.impl.MethodAnalysisImpl;
-import org.e2immu.analyser.config.AnalyserProgram;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.DelayedExpression;
 import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
@@ -32,7 +31,6 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 import static org.e2immu.analyser.analyser.Property.*;
-import static org.e2immu.analyser.config.AnalyserProgram.Step.ALL;
 
 public abstract class MethodAnalyserImpl extends AbstractAnalyser implements MethodAnalyser {
     private static final Logger LOGGER = LoggerFactory.getLogger(MethodAnalyserImpl.class);
@@ -152,43 +150,40 @@ public abstract class MethodAnalyserImpl extends AbstractAnalyser implements Met
 
         LOGGER.debug("Checking method {}", methodInfo.fullyQualifiedName());
 
-        AnalyserProgram analyserProgram = analyserContext.getAnalyserProgram();
-        if (analyserProgram.accepts(ALL)) {
-            if (!methodInfo.isConstructor) {
-                if (!methodInfo.isVoid()) {
-                    internalCheckImmutableIndependent();
+        if (!methodInfo.isConstructor) {
+            if (!methodInfo.isVoid()) {
+                internalCheckImmutableIndependent();
 
-                    analyserResultBuilder.add(CheckNotNull.check(methodInfo, e2.notNull, methodAnalysis, NOT_NULL_EXPRESSION));
+                analyserResultBuilder.add(CheckNotNull.check(methodInfo, e2.notNull, methodAnalysis, NOT_NULL_EXPRESSION));
 
-                    check(e2.fluent);
-                    check(e2.identity);
-                    check(e2.container);
+                check(e2.fluent);
+                check(e2.identity);
+                check(e2.container);
 
-                    DV constant = getMethodAnalysis().getProperty(CONSTANT);
-                    String constantValue = constant.valueIsTrue() ? methodAnalysis.getSingleReturnValue().unQuotedString() : "";
-                    analyserResultBuilder.add(CheckImmutable.check(methodInfo, e2.finalFields, methodAnalysis, null));
-                    analyserResultBuilder.add(CheckImmutable.check(methodInfo, e2.immutable, methodAnalysis, null));
-                    analyserResultBuilder.add(CheckImmutable.check(methodInfo, e2.immutableContainer, methodAnalysis, constantValue));
+                DV constant = getMethodAnalysis().getProperty(CONSTANT);
+                String constantValue = constant.valueIsTrue() ? methodAnalysis.getSingleReturnValue().unQuotedString() : "";
+                analyserResultBuilder.add(CheckImmutable.check(methodInfo, e2.finalFields, methodAnalysis, null));
+                analyserResultBuilder.add(CheckImmutable.check(methodInfo, e2.immutable, methodAnalysis, null));
+                analyserResultBuilder.add(CheckImmutable.check(methodInfo, e2.immutableContainer, methodAnalysis, constantValue));
 
-                    check(e2.beforeMark);
-                    check(e2.nullable);
-                    analyserResultBuilder.add(CheckIndependent.check(methodInfo, e2.independent, methodAnalysis));
-                }
-
-                check(e2.notModified);
-                analyserResultBuilder.add(CheckModified.check(methodInfo, e2.modified, methodAnalysis));
+                check(e2.beforeMark);
+                check(e2.nullable);
+                analyserResultBuilder.add(CheckIndependent.check(methodInfo, e2.independent, methodAnalysis));
             }
 
-            analyserResultBuilder.add(CheckPrecondition.checkPrecondition(methodInfo, methodAnalysis, companionAnalyses));
-            analyserResultBuilder.add(CheckEventual.checkOnly(methodInfo, e2.only, methodAnalysis));
-            analyserResultBuilder.add(CheckEventual.checkMark(methodInfo, e2.mark, methodAnalysis));
-            analyserResultBuilder.add(CheckEventual.checkTestMark(methodInfo, e2.testMark, methodAnalysis));
-
-            checkWorseThanOverriddenMethod();
+            check(e2.notModified);
+            analyserResultBuilder.add(CheckModified.check(methodInfo, e2.modified, methodAnalysis));
         }
+
+        analyserResultBuilder.add(CheckPrecondition.checkPrecondition(methodInfo, methodAnalysis, companionAnalyses));
+        analyserResultBuilder.add(CheckEventual.checkOnly(methodInfo, e2.only, methodAnalysis));
+        analyserResultBuilder.add(CheckEventual.checkMark(methodInfo, e2.mark, methodAnalysis));
+        analyserResultBuilder.add(CheckEventual.checkTestMark(methodInfo, e2.testMark, methodAnalysis));
+
+        checkWorseThanOverriddenMethod();
+
         getParameterAnalysers().forEach(ParameterAnalyser::check);
         getLocallyCreatedPrimaryTypeAnalysers().forEach(PrimaryTypeAnalyser::check);
-
     }
 
     private void internalCheckImmutableIndependent() {

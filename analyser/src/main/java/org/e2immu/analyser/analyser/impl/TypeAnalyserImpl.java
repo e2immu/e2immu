@@ -20,7 +20,6 @@ import org.e2immu.analyser.analyser.check.CheckIndependent;
 import org.e2immu.analyser.analyser.nonanalyserimpl.ExpandableAnalyserContextImpl;
 import org.e2immu.analyser.analysis.Analysis;
 import org.e2immu.analyser.analysis.impl.TypeAnalysisImpl;
-import org.e2immu.analyser.config.AnalyserProgram;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
 import org.e2immu.analyser.parser.Message;
@@ -31,7 +30,6 @@ import org.slf4j.LoggerFactory;
 import java.util.Objects;
 
 import static org.e2immu.analyser.analyser.AnalysisStatus.DONE;
-import static org.e2immu.analyser.config.AnalyserProgram.Step.ALL;
 
 /**
  * In the type analysis record we state whether this type has "free fields" or not.
@@ -120,21 +118,18 @@ public abstract class TypeAnalyserImpl extends AbstractAnalyser implements TypeA
         // before we check, we copy the properties into annotations
         LOGGER.debug("\n******\nAnnotation validation on type {}\n******", typeInfo.fullyQualifiedName);
 
-        AnalyserProgram analyserProgram = analyserContext.getAnalyserProgram();
-        if (analyserProgram.accepts(ALL)) {
-            internalCheckImmutableIndependent(); // do not run when program is partial, some data may not be available
+        internalCheckImmutableIndependent(); // do not run when program is partial, some data may not be available
 
-            check(typeInfo, e2.utilityClass);
-            check(typeInfo, e2.extensionClass);
-            check(typeInfo, e2.container);
-            check(typeInfo, e2.singleton);
+        check(typeInfo, e2.utilityClass);
+        check(typeInfo, e2.extensionClass);
+        check(typeInfo, e2.container);
+        check(typeInfo, e2.singleton);
 
-            analyserResultBuilder.add(CheckIndependent.check(typeInfo, e2.independent, typeAnalysis));
+        analyserResultBuilder.add(CheckIndependent.check(typeInfo, e2.independent, typeAnalysis));
 
-            analyserResultBuilder.add(CheckImmutable.check(typeInfo, e2.finalFields, typeAnalysis, null));
-            analyserResultBuilder.add(CheckImmutable.check(typeInfo, e2.immutable, typeAnalysis, null));
-            analyserResultBuilder.add(CheckImmutable.check(typeInfo, e2.immutableContainer, typeAnalysis, null));
-        }
+        analyserResultBuilder.add(CheckImmutable.check(typeInfo, e2.finalFields, typeAnalysis, null));
+        analyserResultBuilder.add(CheckImmutable.check(typeInfo, e2.immutable, typeAnalysis, null));
+        analyserResultBuilder.add(CheckImmutable.check(typeInfo, e2.immutableContainer, typeAnalysis, null));
     }
 
     private void internalCheckImmutableIndependent() {

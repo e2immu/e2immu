@@ -28,9 +28,11 @@ import java.util.function.Predicate;
 
 public class ThrowStatement extends StatementWithExpression {
 
-    public ThrowStatement(Identifier identifier, Expression expression) {
+    public ThrowStatement(Identifier identifier, Expression expression, Comment comment) {
         super(identifier, new Structure.Builder().setExpression(expression)
-                .setForwardEvaluationInfo(ForwardEvaluationInfo.NOT_NULL).build(), expression);
+                .setForwardEvaluationInfo(ForwardEvaluationInfo.NOT_NULL)
+                .setComment(comment)
+                .build(), expression);
     }
 
     @Override
@@ -66,7 +68,8 @@ public class ThrowStatement extends StatementWithExpression {
 
         Expression tex = expression.translate(inspectionProvider, translationMap);
         if (tex == expression) return List.of(this);
-        return List.of(new ThrowStatement(identifier, translationMap.translateExpression(expression)));
+        return List.of(new ThrowStatement(identifier, translationMap.translateExpression(expression),
+                structure.comment()));
     }
 
     @Override

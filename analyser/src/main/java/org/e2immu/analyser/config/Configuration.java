@@ -34,6 +34,7 @@ public record Configuration(InputConfiguration inputConfiguration,
                             boolean quiet,
                             boolean ignoreErrors,
                             boolean skipAnalysis,
+                            InspectorConfiguration inspectorConfiguration,
                             AnalyserConfiguration analyserConfiguration,
                             UploadConfiguration uploadConfiguration,
                             AnnotatedAPIConfiguration annotatedAPIConfiguration,
@@ -50,6 +51,9 @@ public record Configuration(InputConfiguration inputConfiguration,
                 "\n    ignoreErrors: " + ignoreErrors +
                 "\n" +
                 inputConfiguration + "\n" +
+                inspectorConfiguration + "\n" +
+                analyserConfiguration + "\n" +
+                debugConfiguration + "\n" +
                 uploadConfiguration + "\n" +
                 annotatedAPIConfiguration + "\n" +
                 annotationXmlConfiguration;
@@ -69,14 +73,18 @@ public record Configuration(InputConfiguration inputConfiguration,
                 logTargets.equals(that.logTargets) &&
                 uploadConfiguration.equals(that.uploadConfiguration) &&
                 annotatedAPIConfiguration.equals(that.annotatedAPIConfiguration) &&
-                annotationXmlConfiguration.equals(that.annotationXmlConfiguration);
+                annotationXmlConfiguration.equals(that.annotationXmlConfiguration) &&
+                debugConfiguration.equals(that.debugConfiguration) &&
+                inspectorConfiguration.equals(that.inspectorConfiguration) &&
+                analyserConfiguration.equals(that.analyserConfiguration);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(inputConfiguration, logTargets, quiet, ignoreErrors,
-                skipAnalysis,
-                uploadConfiguration, annotatedAPIConfiguration, annotationXmlConfiguration);
+        return Objects.hash(logTargets, quiet, ignoreErrors, skipAnalysis,
+                inputConfiguration,
+                uploadConfiguration, annotatedAPIConfiguration, annotationXmlConfiguration,
+                analyserConfiguration, inspectorConfiguration, debugConfiguration);
     }
 
     public void initializeLoggers() {
@@ -96,18 +104,18 @@ public record Configuration(InputConfiguration inputConfiguration,
 
     @Container
     public static class Builder {
-        private InputConfiguration inputConfiguration;
-
         private boolean quiet;
         private boolean ignoreErrors;
         private boolean skipAnalysis;
         private final Set<String> logTargets = new HashSet<>();
 
+        private InputConfiguration inputConfiguration;
         private UploadConfiguration uploadConfiguration;
         private AnnotatedAPIConfiguration annotatedAPIConfiguration;
         private AnnotationXmlConfiguration annotationXmlConfiguration;
         private DebugConfiguration debugConfiguration;
         private AnalyserConfiguration analyserConfiguration;
+        private InspectorConfiguration inspectorConfiguration;
 
         public Configuration build() {
             return new Configuration(inputConfiguration != null ? inputConfiguration : new InputConfiguration.Builder().build(),
@@ -115,12 +123,19 @@ public record Configuration(InputConfiguration inputConfiguration,
                     quiet,
                     ignoreErrors,
                     skipAnalysis,
+                    inspectorConfiguration != null ? inspectorConfiguration : new InspectorConfiguration.Builder().build(),
                     analyserConfiguration != null ? analyserConfiguration : new AnalyserConfiguration.Builder().build(),
                     uploadConfiguration != null ? uploadConfiguration : new UploadConfiguration.Builder().build(),
                     annotatedAPIConfiguration != null ? annotatedAPIConfiguration : new AnnotatedAPIConfiguration.Builder().build(),
                     annotationXmlConfiguration != null ? annotationXmlConfiguration : new AnnotationXmlConfiguration.Builder().build(),
                     debugConfiguration != null ? debugConfiguration : new DebugConfiguration.Builder().build()
             );
+        }
+
+        @Fluent
+        public Builder setInspectorConfiguration(InspectorConfiguration inspectorConfiguration) {
+            this.inspectorConfiguration = inspectorConfiguration;
+            return this;
         }
 
         @Fluent

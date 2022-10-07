@@ -25,7 +25,6 @@ import org.e2immu.analyser.analyser.util.AssignmentIncompatibleWithPrecondition;
 import org.e2immu.analyser.analyser.util.ComputeHiddenContentTypes;
 import org.e2immu.analyser.analysis.*;
 import org.e2immu.analyser.analysis.impl.TypeAnalysisImpl;
-import org.e2immu.analyser.config.AnalyserProgram;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.*;
 import org.e2immu.analyser.model.variable.DependentVariable;
@@ -49,8 +48,7 @@ import static org.e2immu.analyser.analyser.AnalysisStatus.DONE;
 import static org.e2immu.analyser.analyser.Property.*;
 import static org.e2immu.analyser.analyser.impl.util.ComputeTypeImmutable.correctIndependentFunctionalInterface;
 import static org.e2immu.analyser.analyser.impl.util.ComputeTypeImmutable.isOfOwnOrInnerClassType;
-import static org.e2immu.analyser.config.AnalyserProgram.Step.ALL;
-import static org.e2immu.analyser.config.AnalyserProgram.Step.TRANSPARENT;
+
 
 /**
  * In the type analysis record we state whether this type has "free fields" or not.
@@ -103,8 +101,7 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
                                  AnalyserContext analyserContextInput) {
         super(typeInfo, primaryType, analyserContextInput, Analysis.AnalysisMode.COMPUTED);
 
-        AnalyserProgram analyserProgram = analyserContextInput.getAnalyserProgram();
-        AnalyserComponents.Builder<String, SharedState> builder = new AnalyserComponents.Builder<String, SharedState>(analyserProgram)
+        AnalyserComponents.Builder<String, SharedState> builder = new AnalyserComponents.Builder<String, SharedState>()
                 .add(FIND_ASPECTS, iteration -> findAspects())
                 .add(ANALYSE_HC_TYPES, iteration -> analyseHiddenContentTypes())
                 .add(ANALYSE_IMMUTABLE_CAN_BE_INCREASED, iteration -> analyseImmutableDeterminedByTypeParameters());
@@ -113,7 +110,7 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
             typeAnalysis.freezeApprovedPreconditionsFinalFields();
             typeAnalysis.freezeApprovedPreconditionsImmutable();
         } else {
-            builder.add(COMPUTE_APPROVED_PRECONDITIONS_FINAL_FIELDS, TRANSPARENT, this::computeApprovedPreconditionsFinalFields)
+            builder.add(COMPUTE_APPROVED_PRECONDITIONS_FINAL_FIELDS, this::computeApprovedPreconditionsFinalFields)
                     .add(COMPUTE_APPROVED_PRECONDITIONS_IMMUTABLE, this::computeApprovedPreconditionsImmutable);
         }
         builder.add(ANALYSE_IMMUTABLE, this::analyseImmutable)
@@ -252,8 +249,7 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
         LOGGER.info("Analysing type {}, it {}, call #{}", typeInfo, iteration, callCounterForDebugging.incrementAndGet());
         try {
             AnalysisStatus analysisStatus = analyserComponents.run(sharedState);
-            if (analysisStatus.isDone() && analyserContext.getConfiguration().analyserConfiguration().analyserProgram().accepts(ALL))
-                typeAnalysis.internalAllDoneCheck();
+            if (analysisStatus.isDone()) typeAnalysis.internalAllDoneCheck();
             analyserResultBuilder.setAnalysisStatus(analysisStatus);
             for (TypeAnalyserVisitor typeAnalyserVisitor : analyserContext.getConfiguration()
                     .debugConfiguration().afterTypePropertyComputations()) {

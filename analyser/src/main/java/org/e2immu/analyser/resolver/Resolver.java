@@ -32,7 +32,8 @@ public interface Resolver extends ExpressionContext.ResolverRecursion {
     @NotNull
     Resolver child(InspectionProvider inspectionProvider,
                    E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions,
-                   boolean shallowResolver);
+                   boolean shallowResolver,
+                   boolean parseComments);
 
     @Modified
     @NotNull(content = true)
@@ -44,8 +45,9 @@ public interface Resolver extends ExpressionContext.ResolverRecursion {
     default SortedTypes resolve(InspectionProvider inspectionProvider,
                                      E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions,
                                      boolean shallowResolver,
+                                     boolean parseComments,
                                      Map<TypeInfo, ExpressionContext> inspectedTypes) {
-        Resolver child = child(inspectionProvider, e2ImmuAnnotationExpressions, shallowResolver);
+        Resolver child = child(inspectionProvider, e2ImmuAnnotationExpressions, shallowResolver, parseComments);
         return child.resolve(inspectedTypes);
     }
 }

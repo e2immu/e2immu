@@ -46,7 +46,6 @@ import static org.e2immu.analyser.analyser.AnalysisStatus.DONE;
 import static org.e2immu.analyser.analyser.AnalysisStatus.DONE_ALL;
 import static org.e2immu.analyser.analyser.LinkedVariables.LINK_ASSIGNED;
 import static org.e2immu.analyser.analyser.Property.*;
-import static org.e2immu.analyser.config.AnalyserProgram.Step.*;
 import static org.e2immu.analyser.model.MultiLevel.*;
 import static org.e2immu.analyser.model.MultiLevel.Effective.*;
 
@@ -64,17 +63,17 @@ public class ComputedParameterAnalyser extends ParameterAnalyserImpl {
 
     public ComputedParameterAnalyser(AnalyserContext analyserContext, ParameterInfo parameterInfo) {
         super(analyserContext, parameterInfo);
-        AnalyserComponents.Builder<String, SharedState> ac = new AnalyserComponents.Builder<String, SharedState>(analyserContext.getAnalyserProgram())
-                .add(CHECK_UNUSED_PARAMETER, ITERATION_0, this::checkUnusedParameter)
-                .add(ANALYSE_FIRST_ITERATION, ITERATION_0, this::analyseFirstIteration)
-                .add(ANALYSE_CONTEXT, ITERATION_1PLUS, this::analyseContext);
+        AnalyserComponents.Builder<String, SharedState> ac = new AnalyserComponents.Builder<String, SharedState>()
+                .add(CHECK_UNUSED_PARAMETER, this::checkUnusedParameter)
+                .add(ANALYSE_FIRST_ITERATION, this::analyseFirstIteration)
+                .add(ANALYSE_CONTEXT, this::analyseContext);
         if (parameterInfo.owner.methodInspection.get().isFactoryMethod()) {
             ac.add(ANALYSE_INDEPENDENT_OF_RETURN_VALUE, this::analyseIndependentOfReturnValue);
         } else {
-            ac.add(ANALYSE_FIELD_ASSIGNMENTS, ITERATION_1PLUS, this::analyseFieldAssignments)
-                    .add(ANALYSE_INDEPENDENT_NO_ASSIGNMENT, ITERATION_1PLUS, this::analyseIndependentNoAssignment);
+            ac.add(ANALYSE_FIELD_ASSIGNMENTS, this::analyseFieldAssignments)
+                    .add(ANALYSE_INDEPENDENT_NO_ASSIGNMENT, this::analyseIndependentNoAssignment);
         }
-        ac.add(ANALYSE_CONTAINER_NO_ASSIGNMENT, ITERATION_1PLUS, this::analyseContainerNoAssignment)
+        ac.add(ANALYSE_CONTAINER_NO_ASSIGNMENT, this::analyseContainerNoAssignment)
                 .add("followExtImm", this::followExternalImmutable);
         analyserComponents = ac.build();
 
@@ -409,8 +408,7 @@ public class ComputedParameterAnalyser extends ParameterAnalyserImpl {
         assert !isUnreachable();
         try {
             AnalysisStatus analysisStatus = analyserComponents.run(sharedState);
-            if (analysisStatus.isDone() && analyserContext.getConfiguration().analyserConfiguration().analyserProgram().accepts(ALL))
-                parameterAnalysis.internalAllDoneCheck();
+            if (analysisStatus.isDone()) parameterAnalysis.internalAllDoneCheck();
             analyserResultBuilder.setAnalysisStatus(analysisStatus);
             return analyserResultBuilder.build();
         } catch (RuntimeException rte) {

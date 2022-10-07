@@ -57,6 +57,7 @@ public class TypeInspectionImpl extends InspectionImpl implements TypeInspection
                                MethodInfo enclosingMethod,
                                TypeNature typeNature,
                                Access access,
+                               Comment comment,
                                List<TypeParameter> typeParameters,
                                ParameterizedType parentClass,
                                List<ParameterizedType> interfacesImplemented,
@@ -71,7 +72,7 @@ public class TypeInspectionImpl extends InspectionImpl implements TypeInspection
                                boolean synthetic,
                                boolean functionalInterface,
                                Identifier.PositionalIdentifier positionalIdentifier) {
-        super(annotations, access, synthetic);
+        super(annotations, access, comment, synthetic);
         this.enclosingMethod = enclosingMethod;
         this.parentClass = parentClass;
         this.interfacesImplemented = interfacesImplemented;
@@ -374,6 +375,7 @@ public class TypeInspectionImpl extends InspectionImpl implements TypeInspection
                     enclosingMethod,
                     typeNature,
                     getAccess(),
+                    getComment(),
                     typeParameters(),
                     parentClass,
                     interfacesImplemented(),

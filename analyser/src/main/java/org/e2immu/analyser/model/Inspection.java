@@ -46,6 +46,8 @@ public interface Inspection {
 
     Access getAccess();
 
+    Comment getComment();
+
     boolean isSynthetic();
 
     default boolean isPublic() {

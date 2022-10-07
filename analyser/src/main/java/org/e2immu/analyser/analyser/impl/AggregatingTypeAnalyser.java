@@ -18,7 +18,6 @@ import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.analyser.util.AnalyserResult;
 import org.e2immu.analyser.analysis.Analysis;
 import org.e2immu.analyser.analysis.TypeAnalysis;
-import org.e2immu.analyser.config.AnalyserProgram;
 import org.e2immu.analyser.model.TypeInfo;
 import org.e2immu.analyser.model.TypeInspection;
 import org.e2immu.analyser.visitor.TypeAnalyserVisitor;
@@ -30,7 +29,6 @@ import java.util.List;
 import java.util.stream.Stream;
 
 import static org.e2immu.analyser.analyser.AnalysisStatus.DONE;
-import static org.e2immu.analyser.config.AnalyserProgram.Step.ALL;
 
 public class AggregatingTypeAnalyser extends TypeAnalyserImpl {
     private static final Logger LOGGER = LoggerFactory.getLogger(AggregatingTypeAnalyser.class);
@@ -53,8 +51,7 @@ public class AggregatingTypeAnalyser extends TypeAnalyserImpl {
         // IMPROVE but we have not thought yet about how to deal with eventual immutability and sealed types
         typeAnalysis.freezeApprovedPreconditionsFinalFields();
         typeAnalysis.freezeApprovedPreconditionsImmutable();
-        AnalyserProgram analyserProgram = analyserContextInput.getAnalyserProgram();
-        AnalyserComponents.Builder<String, Integer> builder = new AnalyserComponents.Builder<String, Integer>(analyserProgram)
+        AnalyserComponents.Builder<String, Integer> builder = new AnalyserComponents.Builder<String, Integer>()
                 .add(IMMUTABLE, iteration -> this.aggregate(Property.IMMUTABLE))
                 .add(INDEPENDENT, iteration -> this.aggregate(Property.INDEPENDENT))
                 .add(CONTAINER, iteration -> this.aggregate(Property.CONTAINER))
@@ -102,8 +99,7 @@ public class AggregatingTypeAnalyser extends TypeAnalyserImpl {
     @Override
     public AnalyserResult analyse(SharedState sharedState) {
         AnalysisStatus analysisStatus = analyserComponents.run(sharedState.iteration());
-        if (analysisStatus.isDone() && analyserContext.getConfiguration().analyserConfiguration().analyserProgram().accepts(ALL))
-            typeAnalysis.internalAllDoneCheck();
+        if (analysisStatus.isDone()) typeAnalysis.internalAllDoneCheck();
         analyserResultBuilder.setAnalysisStatus(analysisStatus);
 
         List<TypeAnalyserVisitor> visitors = analyserContext.getConfiguration()

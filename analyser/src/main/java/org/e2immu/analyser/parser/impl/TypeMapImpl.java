@@ -102,18 +102,6 @@ public class TypeMapImpl implements TypeMap {
         trie.visit(prefix, consumer);
     }
 
-    public static boolean containsPrefix(Trie<TypeInfo> trie, String fullyQualifiedName) {
-        String[] split = fullyQualifiedName.split("\\.");
-        // we believe it is going to be a lot faster if we go from 1 to max length rather than the other way round
-        // (there'll be more hits outside the source than inside the source dir)
-        for (int i = 1; i <= split.length; i++) {
-            List<TypeInfo> typeInfoList = trie.get(split, i);
-            if (typeInfoList == null) return false;
-            if (!typeInfoList.isEmpty()) return true;
-        }
-        return false;
-    }
-
     @Override
     public E2ImmuAnnotationExpressions getE2ImmuAnnotationExpressions() {
         return e2ImmuAnnotationExpressions;

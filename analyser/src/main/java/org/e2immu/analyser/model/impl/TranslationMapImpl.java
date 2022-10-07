@@ -69,15 +69,15 @@ public class TranslationMapImpl implements TranslationMap {
     public final boolean recurseIntoScopeVariables;
     public final boolean yieldIntoReturn;
 
-    public TranslationMapImpl(Map<? extends Statement, List<Statement>> statements,
-                              Map<? extends Expression, ? extends Expression> expressions,
-                              Map<? extends Variable, ? extends Expression> variableExpressions,
-                              Map<? extends Variable, ? extends Variable> variables,
-                              Map<MethodInfo, MethodInfo> methods,
-                              Map<ParameterizedType, ParameterizedType> types,
-                              boolean expandDelayedWrappedExpressions,
-                              boolean recurseIntoScopeVariables,
-                              boolean yieldIntoReturn) {
+    private TranslationMapImpl(Map<? extends Statement, List<Statement>> statements,
+                               Map<? extends Expression, ? extends Expression> expressions,
+                               Map<? extends Variable, ? extends Expression> variableExpressions,
+                               Map<? extends Variable, ? extends Variable> variables,
+                               Map<MethodInfo, MethodInfo> methods,
+                               Map<ParameterizedType, ParameterizedType> types,
+                               boolean expandDelayedWrappedExpressions,
+                               boolean recurseIntoScopeVariables,
+                               boolean yieldIntoReturn) {
         this.variables = variables;
         this.expressions = expressions;
         this.variableExpressions = variableExpressions;
@@ -161,13 +161,6 @@ public class TranslationMapImpl implements TranslationMap {
     }
 
     @Override
-    public Block translateBlock(InspectionProvider inspectionProvider, Block block) {
-        List<Statement> list = translateStatement(inspectionProvider, block);
-        if (list.size() != 1) throw new UnsupportedOperationException();
-        return (Block) list.get(0);
-    }
-
-    @Override
     public ParameterizedType translateType(ParameterizedType parameterizedType) {
         ParameterizedType inMap = types.get(parameterizedType);
         if (inMap != null) return inMap;
@@ -196,6 +189,36 @@ public class TranslationMapImpl implements TranslationMap {
                 types.isEmpty() && variables.isEmpty() && localVariables.isEmpty() && variableExpressions.isEmpty();
     }
 
+    @Override
+    public Map<? extends Variable, ? extends Variable> variables() {
+        return variables;
+    }
+
+    @Override
+    public Map<? extends Expression, ? extends Expression> expressions() {
+        return expressions;
+    }
+
+    @Override
+    public Map<? extends Variable, ? extends Expression> variableExpressions() {
+        return variableExpressions;
+    }
+
+    @Override
+    public Map<MethodInfo, MethodInfo> methods() {
+        return methods;
+    }
+
+    @Override
+    public Map<ParameterizedType, ParameterizedType> types() {
+        return types;
+    }
+
+    @Override
+    public Map<? extends Statement, List<Statement>> statements() {
+        return statements;
+    }
+
     @Container(builds = TranslationMapImpl.class)
     public static class Builder {
         private final Map<Variable, Variable> variables = new HashMap<>();
@@ -207,6 +230,21 @@ public class TranslationMapImpl implements TranslationMap {
         private boolean expandDelayedWrappedExpressions;
         private boolean recurseIntoScopeVariables;
         private boolean yieldIntoReturn;
+
+        public Builder() {
+        }
+
+        public Builder(TranslationMap other) {
+            variables.putAll(other.variables());
+            expressions.putAll(other.expressions());
+            variableExpressions.putAll(other.variableExpressions());
+            methods.putAll(other.methods());
+            statements.putAll(other.statements());
+            types.putAll(other.types());
+            expandDelayedWrappedExpressions = other.expandDelayedWrappedExpressions();
+            recurseIntoScopeVariables = other.recurseIntoScopeVariables();
+            yieldIntoReturn = other.translateYieldIntoReturn();
+        }
 
         public TranslationMapImpl build() {
             return new TranslationMapImpl(statements, expressions, variableExpressions, variables, methods, types,
@@ -260,17 +298,22 @@ public class TranslationMapImpl implements TranslationMap {
             return this;
         }
 
+        public Builder setExpandDelayedWrapperExpressions(boolean expandDelayedWrappedExpressions) {
+            this.expandDelayedWrappedExpressions = expandDelayedWrappedExpressions;
+            return this;
+        }
+
         public boolean translateMethod(MethodInfo methodInfo) {
             return methods.containsKey(methodInfo);
         }
 
         public boolean isEmpty() {
-            return statements.isEmpty() && expressions.isEmpty() && variables.isEmpty() && methods.isEmpty() && types.isEmpty();
-        }
-
-        public Builder setExpandDelayedWrapperExpressions(boolean expandDelayedWrappedExpressions) {
-            this.expandDelayedWrappedExpressions = expandDelayedWrappedExpressions;
-            return this;
+            return statements.isEmpty()
+                    && expressions.isEmpty()
+                    && variables.isEmpty()
+                    && methods.isEmpty()
+                    && types.isEmpty()
+                    && variableExpressions.isEmpty();
         }
     }
 }

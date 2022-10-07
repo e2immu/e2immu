@@ -28,8 +28,11 @@ import java.util.Objects;
 import java.util.function.Predicate;
 
 public class YieldStatement extends StatementWithExpression {
-
     public YieldStatement(Identifier identifier, Expression expression) {
+        this(identifier, expression, null);
+    }
+
+    public YieldStatement(Identifier identifier, Expression expression, Comment comment) {
         super(identifier, new Structure.Builder()
                 .setExpression(expression)
                 .setForwardEvaluationInfo(ForwardEvaluationInfo.DEFAULT).build(), expression);

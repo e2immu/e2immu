@@ -99,11 +99,13 @@ public class Parser {
             sortedAnnotatedAPITypes = SortedTypes.EMPTY;
         } else {
             sortedAnnotatedAPITypes = inspectAndResolve(input.annotatedAPIs(), input.annotatedAPITypes(),
-                    configuration.annotatedAPIConfiguration().reportWarnings(), true);
+                    configuration.annotatedAPIConfiguration().reportWarnings(), true,
+                    configuration.inspectorConfiguration().storeComments());
         }
 
         // and the inspection and resolution of Java sources (Java parser)
-        SortedTypes resolvedSourceTypes = inspectAndResolve(input.sourceURLs(), input.sourceTypes(), true, false);
+        SortedTypes resolvedSourceTypes = inspectAndResolve(input.sourceURLs(), input.sourceTypes(), true,
+                false, configuration.inspectorConfiguration().storeComments());
 
         TypeMap typeMap;
 
@@ -126,15 +128,18 @@ public class Parser {
 
     public TypeMap.Builder inspectOnlyForTesting() {
         inspectAndResolve(input.annotatedAPIs(), input.annotatedAPITypes(),
-                configuration.annotatedAPIConfiguration().reportWarnings(), true);
+                configuration.annotatedAPIConfiguration().reportWarnings(), true,
+                configuration.inspectorConfiguration().storeComments());
         return input.globalTypeContext().typeMap;
     }
 
     public SortedTypes inspectAndResolve(Map<TypeInfo, URL> urls, Trie<TypeInfo> typesForWildcardImport,
                                          boolean reportWarnings,
-                                         boolean shallowResolver) {
+                                         boolean shallowResolver,
+                                         boolean parseComments) {
         ResolverImpl resolver = new ResolverImpl(anonymousTypeCounters, input.globalTypeContext(),
-                input.globalTypeContext().typeMap.getE2ImmuAnnotationExpressions(), shallowResolver);
+                input.globalTypeContext().typeMap.getE2ImmuAnnotationExpressions(), shallowResolver,
+                parseComments);
 
         TypeMap.Builder typeMapBuilder = input.globalTypeContext().typeMap;
         InspectWithJavaParserImpl onDemandSourceInspection = new InspectWithJavaParserImpl(urls, typesForWildcardImport, resolver);

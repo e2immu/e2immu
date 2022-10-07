@@ -29,13 +29,16 @@ public class DoStatement extends LoopStatement {
     public DoStatement(Identifier identifier,
                        String label,
                        Expression expression,
-                       Block block) {
+                       Block block,
+                       Comment comment) {
         super(identifier, new Structure.Builder()
                 .setStatementExecution(StatementExecution.ALWAYS)
                 .setForwardEvaluationInfo(ForwardEvaluationInfo.NOT_NULL)
                 .setExpression(expression)
                 .setExpressionIsCondition(true)
-                .setBlock(block).build(), label);
+                .setBlock(block)
+                .setComment(comment)
+                .build(), label);
     }
 
     @Override
@@ -68,7 +71,8 @@ public class DoStatement extends LoopStatement {
         Expression tex = expression.translate(inspectionProvider, translationMap);
         List<Statement> translatedBlock = structure.block().translate(inspectionProvider, translationMap);
         if (tex == expression && !haveDirectTranslation(translatedBlock, structure.block())) return List.of(this);
-        return List.of(new DoStatement(identifier, label, tex, ensureBlock(structure.block().identifier, translatedBlock)));
+        return List.of(new DoStatement(identifier, label, tex,
+                ensureBlock(structure.block().identifier, translatedBlock), structure.comment()));
     }
 
 

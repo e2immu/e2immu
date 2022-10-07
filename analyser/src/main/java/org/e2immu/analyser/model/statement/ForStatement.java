@@ -43,7 +43,8 @@ public class ForStatement extends LoopStatement {
                         List<Expression> initialisers,
                         Expression condition,
                         List<Expression> updaters,
-                        Block block) {
+                        Block block,
+                        Comment comment) {
         super(identifier, new Structure.Builder()
                 .setStatementExecution(StatementExecution.CONDITIONALLY)
                 .setCreateVariablesInsideBlock(true)
@@ -51,7 +52,9 @@ public class ForStatement extends LoopStatement {
                 .setExpression(condition)
                 .setExpressionIsCondition(true)
                 .setUpdaters(updaters)
-                .setBlock(block).build(), label);
+                .setBlock(block)
+                .setComment(comment)
+                .build(), label);
     }
 
 
@@ -96,7 +99,7 @@ public class ForStatement extends LoopStatement {
                 .map(init -> init.translate(inspectionProvider, translationMap))
                 .collect(Collectors.toList());
         return List.of(new ForStatement(identifier, label, initializers, tex, updaters,
-                ensureBlock(structure.block().identifier, translatedBlock)));
+                ensureBlock(structure.block().identifier, translatedBlock), structure.comment()));
     }
 
     @Override

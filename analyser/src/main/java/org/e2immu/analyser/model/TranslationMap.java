@@ -19,48 +19,108 @@ import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.annotation.NotNull;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Translation takes place from statement, over expression, down to variable and type.
  * <p>
  * Blocks can only translate into blocks;
  * statements can translate into lists of statements.
+ * <p>
+ * If no translation takes place, the default behavior is to return the non-translated object.
  */
 public interface TranslationMap {
 
     @NotNull
-    Expression translateExpression(Expression expression);
+    default Expression translateExpression(Expression expression) {
+        return expression;
+    }
 
     @NotNull
-    MethodInfo translateMethod(MethodInfo methodInfo);
+    default MethodInfo translateMethod(MethodInfo methodInfo) {
+        return methodInfo;
+    }
 
     @NotNull
-    Variable translateVariable(InspectionProvider inspectionProvider, Variable variable);
+    default Variable translateVariable(InspectionProvider inspectionProvider, Variable variable) {
+        return variable;
+    }
 
     @NotNull(content = true)
-    List<Statement> translateStatement(InspectionProvider inspectionProvider, Statement statement);
+    default List<Statement> translateStatement(InspectionProvider inspectionProvider, Statement statement) {
+        return List.of(statement);
+    }
 
     @NotNull
-    Block translateBlock(InspectionProvider inspectionProvider, Block block);
+    default Block translateBlock(InspectionProvider inspectionProvider, Block block) {
+        List<Statement> list = translateStatement(inspectionProvider, block);
+        if (list.size() != 1) throw new UnsupportedOperationException();
+        return (Block) list.get(0);
+    }
 
     @NotNull
-    ParameterizedType translateType(ParameterizedType parameterizedType);
-
-    boolean expandDelayedWrappedExpressions();
+    default ParameterizedType translateType(ParameterizedType parameterizedType) {
+        return parameterizedType;
+    }
 
     @NotNull
-    LocalVariable translateLocalVariable(LocalVariable localVariable);
+    default LocalVariable translateLocalVariable(LocalVariable localVariable) {
+        return localVariable;
+    }
 
-    boolean isEmpty();
+    default boolean isEmpty() {
+        return true;
+    }
 
-    boolean hasVariableTranslations();
+    /*
+     because equality of delayed variables is based on ==
+     */
+    default Expression translateVariableExpressionNullIfNotTranslated(Variable variable) {
+        return null;
+    }
 
-    // unlike in merge, in the case of ExplicitConstructorInvocation, we cannot predict which fields need their scope translating
-    boolean recurseIntoScopeVariables();
+    default boolean hasVariableTranslations() {
+        return false;
+    }
 
-    // because equality of delayed variables is based on ==
-    Expression translateVariableExpressionNullIfNotTranslated(Variable variable);
+    /*
+     unlike in merge, in the case of ExplicitConstructorInvocation, we cannot predict which fields need their scope translating
+     */
+    default boolean recurseIntoScopeVariables() {
+        return false;
+    }
 
-    boolean translateYieldIntoReturn();
+    default boolean expandDelayedWrappedExpressions() {
+        return false;
+    }
+
+    default boolean translateYieldIntoReturn() {
+        return false;
+    }
+
+    default Map<? extends Variable, ? extends Variable> variables() {
+        return Map.of();
+    }
+
+    default Map<? extends Expression, ? extends Expression> expressions() {
+        return Map.of();
+    }
+
+    default Map<? extends Variable, ? extends  Expression> variableExpressions() {
+        return Map.of();
+    }
+
+    default Map<MethodInfo, MethodInfo> methods() {
+        return Map.of();
+    }
+
+    default Map<? extends Statement, List<Statement>> statements() {
+        return Map.of();
+    }
+
+    default Map<ParameterizedType, ParameterizedType> types() {
+        return Map.of();
+    }
 }

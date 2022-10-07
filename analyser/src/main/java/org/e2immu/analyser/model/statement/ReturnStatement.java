@@ -28,10 +28,14 @@ import java.util.Objects;
 import java.util.function.Predicate;
 
 public class ReturnStatement extends StatementWithExpression {
-
     public ReturnStatement(Identifier identifier, Expression expression) {
+        this(identifier, expression, null);
+    }
+
+    public ReturnStatement(Identifier identifier, Expression expression, Comment comment) {
         super(identifier,
                 new Structure.Builder().setExpression(expression)
+                        .setComment(comment)
                         .setForwardEvaluationInfo(ForwardEvaluationInfo.DEFAULT).build(),
                 expression);
     }

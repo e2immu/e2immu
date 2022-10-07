@@ -96,7 +96,6 @@ public class TestAnalyseTest {
 
         AnalyserConfiguration analyserConfiguration = new AnalyserConfiguration.Builder()
                 .setComputeFieldAnalyserAcrossAllMethods(true)
-                .setAnalyserProgram(AnalyserProgram.from(AnalyserProgram.Step.ALL))
                 .build();
 
         DebugConfiguration debugConfiguration = new DebugConfiguration.Builder()

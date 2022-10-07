@@ -16,6 +16,7 @@ package org.e2immu.analyser.inspector;
 
 
 import org.e2immu.analyser.model.AnnotationExpression;
+import org.e2immu.analyser.model.Comment;
 import org.e2immu.analyser.model.Inspection;
 import org.e2immu.support.AddOnceSet;
 
@@ -27,6 +28,7 @@ public abstract class AbstractInspectionBuilder<B> implements Inspection, Inspec
     protected final AddOnceSet<AnnotationExpression> annotations = new AddOnceSet<>();
     private boolean synthetic;
     private Access access;
+    private Comment comment;
 
     @SuppressWarnings("unchecked")
     public B addAnnotation(AnnotationExpression annotationExpression) {
@@ -67,5 +69,14 @@ public abstract class AbstractInspectionBuilder<B> implements Inspection, Inspec
 
     protected boolean accessNotYetComputed() {
         return access == null;
+    }
+
+    public void setComment(Comment comment) {
+        this.comment = comment;
+    }
+
+    @Override
+    public Comment getComment() {
+        return comment;
     }
 }

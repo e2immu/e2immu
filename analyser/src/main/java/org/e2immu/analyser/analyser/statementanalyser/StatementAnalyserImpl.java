@@ -25,7 +25,6 @@ import org.e2immu.analyser.analyser.util.VariableAccessReport;
 import org.e2immu.analyser.analysis.FlowData;
 import org.e2immu.analyser.analysis.StatementAnalysis;
 import org.e2immu.analyser.analysis.impl.StatementAnalysisImpl;
-import org.e2immu.analyser.config.AnalyserProgram;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.BooleanConstant;
 import org.e2immu.analyser.model.expression.DelayedExpression;
@@ -426,8 +425,7 @@ public class StatementAnalyserImpl implements StatementAnalyser {
 
                 // no program restrictions at the moment
                 // be careful with limiting causes of delay, at least Cause.ECI has to pass!
-                AnalyserProgram analyserProgram = AnalyserProgram.PROGRAM_ALL;
-                analyserComponents = new AnalyserComponents.Builder<String, StatementAnalyserSharedState>(analyserProgram)
+                analyserComponents = new AnalyserComponents.Builder<String, StatementAnalyserSharedState>()
                         .add(CHECK_UNREACHABLE_STATEMENT, this::checkUnreachableStatement)
                         .add(INITIALISE_OR_UPDATE_VARIABLES, this::initialiseOrUpdateVariables)
                         .add(ANALYSE_TYPES_IN_STATEMENT, typesInStatement)

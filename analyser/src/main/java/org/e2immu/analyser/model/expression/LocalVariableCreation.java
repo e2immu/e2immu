@@ -59,6 +59,19 @@ public class LocalVariableCreation extends BaseExpression implements Expression 
         this.isVar = isVar;
     }
 
+    /*
+    convenience factory method
+     */
+    public static LocalVariableCreation of(Identifier identifier,
+                                           Primitives primitives,
+                                           String name,
+                                           ParameterizedType type,
+                                           Expression expression) {
+        LocalVariable localVariable = new LocalVariable(name, type);
+        Declaration declaration = new Declaration(identifier, localVariable, expression);
+        return new LocalVariableCreation(primitives, List.of(declaration), false);
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;

@@ -36,7 +36,7 @@ import static org.junit.jupiter.api.Assertions.*;
 public class TestBasics extends CommonTest {
     private static final Logger LOGGER = LoggerFactory.getLogger(TestBasics.class);
 
-    private TypeMap inspectAndResolve(Class<?> clazz, String methodFqn) throws IOException {
+    private TypeMap inspectAndResolve(Class<?> clazz, String methodFqn, String comment) throws IOException {
         TypeMap typeMap = inspectAndResolve(clazz);
         TypeInfo typeInfo = typeMap.get(clazz);
         MethodInfo methodInfo = typeInfo.findUniqueMethod("test", 0);
@@ -46,13 +46,19 @@ public class TestBasics extends CommonTest {
                 LOGGER.info("Accept: {}", methodCall);
                 assertEquals(methodFqn, methodCall.methodInfo.fullyQualifiedName);
             } else fail();
+            if (comment == null) {
+                assertNull(eas.structure.comment());
+            } else {
+                assertEquals(comment, eas.structure.comment().text());
+            }
         } else fail();
         return typeMap;
     }
 
     @Test
     public void test_0() throws IOException {
-        TypeMap typeMap = inspectAndResolve(Basics_0.class, "java.io.PrintStream.println(java.lang.String)");
+        TypeMap typeMap = inspectAndResolve(Basics_0.class, "java.io.PrintStream.println(java.lang.String)",
+                "a comment");
         TypeInfo typeInfo = typeMap.get(Basics_0.class);
         TypeInspection typeInspection = typeMap.getTypeInspection(typeInfo);
 
@@ -64,7 +70,7 @@ public class TestBasics extends CommonTest {
 
     @Test
     public void test_1() throws IOException {
-        inspectAndResolve(Basics_1.class, "java.io.PrintStream.println(int)");
+        inspectAndResolve(Basics_1.class, "java.io.PrintStream.println(int)", "another comment");
     }
 
     @Test

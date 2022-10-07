@@ -36,8 +36,9 @@ public class IfElseStatement extends StatementWithExpression {
     public IfElseStatement(Identifier identifier,
                            Expression expression,
                            Block ifBlock,
-                           Block elseBlock) {
-        super(identifier, createCodeOrganization(expression, ifBlock, elseBlock), expression);
+                           Block elseBlock,
+                           Comment comment) {
+        super(identifier, createCodeOrganization(expression, ifBlock, elseBlock, comment), expression);
         this.elseBlock = elseBlock;
     }
 
@@ -60,7 +61,7 @@ public class IfElseStatement extends StatementWithExpression {
     }
 
     // note that we add the expression only once
-    private static Structure createCodeOrganization(Expression expression, Block ifBlock, Block elseBlock) {
+    private static Structure createCodeOrganization(Expression expression, Block ifBlock, Block elseBlock, Comment comment) {
         Structure.Builder builder = new Structure.Builder()
                 .setExpression(expression)
                 .setExpressionIsCondition(true)
@@ -71,6 +72,7 @@ public class IfElseStatement extends StatementWithExpression {
             builder.addSubStatement(new Structure.Builder().setExpression(EmptyExpression.DEFAULT_EXPRESSION)
                     .setStatementExecution(StatementExecution.DEFAULT)
                     .setBlock(elseBlock)
+                    .setComment(comment)
                     .build());
         }
         return builder.build();
@@ -93,7 +95,7 @@ public class IfElseStatement extends StatementWithExpression {
         return List.of(new IfElseStatement(identifier,
                 expression.translate(inspectionProvider, translationMap),
                 ensureBlock(structure.block().getIdentifier(), translatedIf),
-                ensureBlock(elseBlock.identifier, translatedElse)));
+                ensureBlock(elseBlock.identifier, translatedElse), structure.comment()));
     }
 
     @Override

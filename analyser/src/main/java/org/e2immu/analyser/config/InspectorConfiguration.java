@@ -12,28 +12,31 @@
  * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.e2immu.analyser.program;
+package org.e2immu.analyser.config;
 
-import org.e2immu.analyser.config.AnalyserProgram;
-import org.e2immu.analyser.config.DebugConfiguration;
-import org.junit.jupiter.api.Test;
+import org.e2immu.annotation.Container;
+import org.e2immu.annotation.Fluent;
 
-import java.io.IOException;
+public record InspectorConfiguration(boolean storeComments) {
 
-public class TestBasics_2 extends CommonTestRunner {
-
-    @Test
-    public void testALL() throws IOException {
-        testClass("Basics_2", 0, 1, AnalyserProgram.from(AnalyserProgram.Step.ALL),
-                new DebugConfiguration.Builder()
-                        .build());
+    @Override
+    public String toString() {
+        return "InspectionConfiguration:" +
+                "\n    storeComments=" + storeComments;
     }
 
-    @Test
-    public void testFieldFinal() throws IOException {
-        // the null pointer exception warning is never raised
-        testClass("Basics_2", 0, 0,
-                AnalyserProgram.from(AnalyserProgram.Step.FIELD_FINAL),
-                new DebugConfiguration.Builder().build());
+    @Container
+    public static class Builder {
+        private boolean storeComments;
+
+        public InspectorConfiguration build() {
+            return new InspectorConfiguration(storeComments);
+        }
+
+        @Fluent
+        public Builder setStoreComments(boolean storeComments) {
+            this.storeComments = storeComments;
+            return this;
+        }
     }
 }

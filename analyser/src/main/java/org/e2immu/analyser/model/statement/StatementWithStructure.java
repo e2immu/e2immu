@@ -14,6 +14,7 @@
 
 package org.e2immu.analyser.model.statement;
 
+import org.e2immu.analyser.model.Comment;
 import org.e2immu.analyser.model.Identifier;
 import org.e2immu.analyser.model.Statement;
 import org.e2immu.analyser.model.impl.ElementImpl;
@@ -22,9 +23,9 @@ public abstract class StatementWithStructure extends ElementImpl implements Stat
     public final Structure structure;
     public static final Structure EMPTY_CODE_ORGANIZATION = new Structure.Builder().build();
 
-    public StatementWithStructure(Identifier identifier) {
+    public StatementWithStructure(Identifier identifier, Comment comment) {
         super(identifier);
-        structure = EMPTY_CODE_ORGANIZATION;
+        structure = comment == null ? EMPTY_CODE_ORGANIZATION : new Structure.Builder().setComment(comment).build();
     }
 
     public StatementWithStructure(Identifier identifier, Structure structure) {

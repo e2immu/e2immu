@@ -23,7 +23,6 @@ import org.e2immu.analyser.analyser.check.CheckNotNull;
 import org.e2immu.analyser.analysis.Analysis;
 import org.e2immu.analyser.analysis.ParameterAnalysis;
 import org.e2immu.analyser.analysis.impl.ParameterAnalysisImpl;
-import org.e2immu.analyser.config.AnalyserProgram;
 import org.e2immu.analyser.model.AnnotationExpression;
 import org.e2immu.analyser.model.ParameterInfo;
 import org.e2immu.analyser.model.WithInspectionAndAnalysis;
@@ -35,7 +34,6 @@ import org.slf4j.LoggerFactory;
 import java.util.Set;
 
 import static org.e2immu.analyser.analyser.Property.*;
-import static org.e2immu.analyser.config.AnalyserProgram.Step.ALL;
 
 public abstract class ParameterAnalyserImpl extends AbstractAnalyser implements ParameterAnalyser {
     private static final Logger LOGGER = LoggerFactory.getLogger(ParameterAnalyserImpl.class);
@@ -76,26 +74,24 @@ public abstract class ParameterAnalyserImpl extends AbstractAnalyser implements 
 
     public void check() {
         if (isUnreachable()) return;
-        AnalyserProgram analyserProgram = analyserContext.getAnalyserProgram();
-        if (analyserProgram.accepts(ALL)) {
-            LOGGER.debug("Checking parameter {}", parameterInfo.fullyQualifiedName());
-            E2ImmuAnnotationExpressions e2 = analyserContext.getE2ImmuAnnotationExpressions();
-            check(e2.notModified);
-            check(e2.modified);
 
-            analyserResultBuilder.add(CheckNotNull.check(parameterInfo, e2.notNull,
-                    parameterAnalysis, NOT_NULL_PARAMETER));
-            check(e2.nullable);
+        LOGGER.debug("Checking parameter {}", parameterInfo.fullyQualifiedName());
+        E2ImmuAnnotationExpressions e2 = analyserContext.getE2ImmuAnnotationExpressions();
+        check(e2.notModified);
+        check(e2.modified);
 
-            analyserResultBuilder.add(CheckIndependent.check(parameterInfo, e2.independent, parameterAnalysis));
-            check(e2.beforeMark);
+        analyserResultBuilder.add(CheckNotNull.check(parameterInfo, e2.notNull,
+                parameterAnalysis, NOT_NULL_PARAMETER));
+        check(e2.nullable);
 
-            check(e2.container);
-            check(e2.immutableContainer);
-            check(e2.immutable);
+        analyserResultBuilder.add(CheckIndependent.check(parameterInfo, e2.independent, parameterAnalysis));
+        check(e2.beforeMark);
 
-            checkWorseThanParent();
-        }
+        check(e2.container);
+        check(e2.immutableContainer);
+        check(e2.immutable);
+
+        checkWorseThanParent();
     }
 
     @Override

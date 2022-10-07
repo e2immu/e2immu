@@ -30,8 +30,11 @@ import java.util.stream.Stream;
 public class SwitchStatementNewStyle extends StatementWithExpression implements HasSwitchLabels {
     public final List<SwitchEntry> switchEntries;
 
-    public SwitchStatementNewStyle(Identifier identifier, Expression selector, List<SwitchEntry> switchEntries) {
-        super(identifier, codeOrganization(selector, switchEntries), selector);
+    public SwitchStatementNewStyle(Identifier identifier,
+                                   Expression selector,
+                                   List<SwitchEntry> switchEntries,
+                                   Comment comment) {
+        super(identifier, codeOrganization(selector, switchEntries, comment), selector);
         this.switchEntries = List.copyOf(switchEntries);
     }
 
@@ -40,13 +43,15 @@ public class SwitchStatementNewStyle extends StatementWithExpression implements 
         return switchEntries.stream().flatMap(e -> e.labels.stream());
     }
 
-    private static Structure codeOrganization(Expression expression, List<SwitchEntry> switchEntries) {
+    private static Structure codeOrganization(Expression expression,
+                                              List<SwitchEntry> switchEntries,
+                                              Comment comment) {
         Structure.Builder builder = new Structure.Builder()
                 .setExpression(expression)
                 .setStatementExecution(StatementExecution.NEVER) // will be ignored
                 .setForwardEvaluationInfo(ForwardEvaluationInfo.NOT_NULL);
         switchEntries.forEach(se -> builder.addSubStatement(se.getStructure()));
-        return builder.build();
+        return builder.setComment(comment).build();
     }
 
     @Override
@@ -58,7 +63,8 @@ public class SwitchStatementNewStyle extends StatementWithExpression implements 
         List<SwitchEntry> translatedEntries = switchEntries.stream()
                 .map(l -> (SwitchEntry) l.translate(inspectionProvider, translationMap).get(0)).toList();
 
-        return List.of(new SwitchStatementNewStyle(identifier, translatedVariable, translatedEntries));
+        return List.of(new SwitchStatementNewStyle(identifier, translatedVariable, translatedEntries,
+                structure.comment()));
     }
 
     @Override

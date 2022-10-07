@@ -47,8 +47,9 @@ public class FieldInspectionImpl extends InspectionImpl implements FieldInspecti
                                 @NotNull FieldInspection.FieldInitialiser fieldInitialiser,
                                 @NotNull List<AnnotationExpression> annotations,
                                 @NotNull Access access,
+                                Comment comment,
                                 boolean synthetic) {
-        super(annotations, access, synthetic);
+        super(annotations, access, comment, synthetic);
         Objects.requireNonNull(modifiers);
         this.fieldInitialiser = fieldInitialiser;
         this.modifiers = modifiers;
@@ -117,7 +118,7 @@ public class FieldInspectionImpl extends InspectionImpl implements FieldInspecti
                     inspectedInitialiserExpression == null
                             ? null : new FieldInitialiser(inspectedInitialiserExpression, id);
             if (accessNotYetComputed()) computeAccess(inspectionProvider);
-            return new FieldInspectionImpl(getModifiers(), fi, getAnnotations(), getAccess(), isSynthetic());
+            return new FieldInspectionImpl(getModifiers(), fi, getAnnotations(), getAccess(), getComment(), isSynthetic());
         }
 
         @Override

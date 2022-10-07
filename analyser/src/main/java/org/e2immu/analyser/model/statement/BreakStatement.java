@@ -26,8 +26,8 @@ import java.util.Objects;
 
 public class BreakStatement extends BreakOrContinueStatement {
 
-    public BreakStatement(Identifier identifier, String label) {
-        super(identifier, label);
+    public BreakStatement(Identifier identifier, String label, Comment comment) {
+        super(identifier, label, comment);
     }
 
     @Override

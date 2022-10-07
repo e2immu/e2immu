@@ -22,15 +22,12 @@ import org.e2immu.annotation.Container;
 
 import java.util.Objects;
 
-import static org.e2immu.analyser.config.AnalyserProgram.Step.ALL;
-
 public record AnalyserConfiguration(boolean skipTransformations,
                                     boolean computeContextPropertiesOverAllMethods,
                                     boolean computeFieldAnalyserAcrossAllMethods,
                                     boolean forceExtraDelayForTesting,
                                     boolean forceAlphabeticAnalysisInPrimaryType,
-                                    PatternMatcherProvider<StatementAnalyser> patternMatcherProvider,
-                                    AnalyserProgram analyserProgram) {
+                                    PatternMatcherProvider<StatementAnalyser> patternMatcherProvider) {
 
     public AnalyserConfiguration {
         Objects.requireNonNull(patternMatcherProvider);
@@ -52,8 +49,6 @@ public record AnalyserConfiguration(boolean skipTransformations,
         private boolean forceAlphabeticAnalysisInPrimaryType;
 
         private PatternMatcherProvider<StatementAnalyser> patternMatcherProvider;
-
-        private AnalyserProgram analyserProgram = AnalyserProgram.from(ALL);
 
         public Builder setSkipTransformations(boolean skipTransformations) {
             this.skipTransformations = skipTransformations;
@@ -85,11 +80,6 @@ public record AnalyserConfiguration(boolean skipTransformations,
             return this;
         }
 
-        public Builder setAnalyserProgram(AnalyserProgram analyserProgram) {
-            this.analyserProgram = analyserProgram;
-            return this;
-        }
-
         public AnalyserConfiguration build() {
             return new AnalyserConfiguration(skipTransformations,
                     computeContextPropertiesOverAllMethods,
@@ -97,8 +87,7 @@ public record AnalyserConfiguration(boolean skipTransformations,
                     forceExtraDelayForTesting,
                     forceAlphabeticAnalysisInPrimaryType,
                     patternMatcherProvider == null ?
-                            (ip, ap) -> PatternMatcher.NO_PATTERN_MATCHER : patternMatcherProvider,
-                    analyserProgram);
+                            (ip, ap) -> PatternMatcher.NO_PATTERN_MATCHER : patternMatcherProvider);
         }
     }
 
@@ -108,7 +97,6 @@ public record AnalyserConfiguration(boolean skipTransformations,
                 "\n    skipTransformations=" + skipTransformations +
                 "\n    computeContextPropertiesOverAllMethods=" + computeContextPropertiesOverAllMethods +
                 "\n    computeFieldAnalyserAcrossAllMethods=" + computeFieldAnalyserAcrossAllMethods +
-                "\n    forceExtraDelayForTesting=" + forceExtraDelayForTesting +
-                "\n    analyserProgram=" + analyserProgram;
+                "\n    forceExtraDelayForTesting=" + forceExtraDelayForTesting;
     }
 }

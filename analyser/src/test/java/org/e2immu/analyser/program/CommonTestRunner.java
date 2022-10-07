@@ -43,13 +43,12 @@ public abstract class CommonTestRunner extends VisitorTestSupport {
     protected TypeContext testClass(String className,
                                     int errorsToExpect,
                                     int warningsToExpect,
-                                    AnalyserProgram analyserProgram,
                                     DebugConfiguration debugConfiguration) throws IOException {
         AnnotatedAPIConfiguration.Builder builder = new AnnotatedAPIConfiguration.Builder();
         builder.addAnnotatedAPISourceDirs(DEFAULT_ANNOTATED_API_DIRS);
         builder.addReadAnnotatedAPIPackages("org.e2immu.annotatedapi.java", "org.e2immu.annotatedapi.log");
         return testClass(List.of(className), List.of(), errorsToExpect, warningsToExpect, debugConfiguration,
-                new AnalyserConfiguration.Builder().setAnalyserProgram(analyserProgram).build(),
+                new AnalyserConfiguration.Builder().build(),
                 builder.build());
     }
 

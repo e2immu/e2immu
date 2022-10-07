@@ -69,6 +69,7 @@ public class ResolverImpl implements Resolver {
     private final AnonymousTypeCounters anonymousTypeCounters;
     private final AtomicInteger typeCounterForDebugging = new AtomicInteger();
     private final DependencyGraph<MethodInfo> methodCallGraph;
+    private final boolean parseComments;
 
     @Override
     public Stream<Message> getMessageStream() {
@@ -76,34 +77,44 @@ public class ResolverImpl implements Resolver {
     }
 
     @Override
+    public boolean parseComments() {
+        return parseComments;
+    }
+
+    @Override
     public Resolver child(InspectionProvider inspectionProvider,
                           E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions,
-                          boolean shallowResolver) {
-        return new ResolverImpl(this, inspectionProvider, e2ImmuAnnotationExpressions, shallowResolver);
+                          boolean shallowResolver,
+                          boolean parseComments) {
+        return new ResolverImpl(this, inspectionProvider, e2ImmuAnnotationExpressions, shallowResolver, parseComments);
     }
 
     private ResolverImpl(ResolverImpl parent,
                          InspectionProvider inspectionProvider,
                          E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions,
-                         boolean shallowResolver) {
+                         boolean shallowResolver,
+                         boolean parseComments) {
         this.shallowResolver = shallowResolver;
         this.e2ImmuAnnotationExpressions = e2ImmuAnnotationExpressions;
         this.inspectionProvider = inspectionProvider;
         this.parent = parent;
         this.anonymousTypeCounters = parent.anonymousTypeCounters;
         methodCallGraph = parent.methodCallGraph;
+        this.parseComments = parseComments;
     }
 
     public ResolverImpl(AnonymousTypeCounters anonymousTypeCounters,
                         InspectionProvider inspectionProvider,
                         E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions,
-                        boolean shallowResolver) {
+                        boolean shallowResolver,
+                        boolean parseComments) {
         this.shallowResolver = shallowResolver;
         this.e2ImmuAnnotationExpressions = e2ImmuAnnotationExpressions;
         this.inspectionProvider = inspectionProvider;
         this.parent = null;
         this.anonymousTypeCounters = anonymousTypeCounters;
         methodCallGraph = new DependencyGraph<>();
+        this.parseComments = parseComments;
     }
 
     /**
@@ -422,7 +433,7 @@ public class ResolverImpl implements Resolver {
                         (MethodReference) parsedExpression, expressionContext);
                 anonymousType = sam.typeInfo;
                 Resolver child = child(expressionContext.typeContext(), expressionContext.typeContext().typeMap()
-                        .getE2ImmuAnnotationExpressions(), false);
+                        .getE2ImmuAnnotationExpressions(), false, parseComments);
                 child.resolve(Map.of(sam.typeInfo, subContext));
                 callGetOnSam = false;
             } else if (hasTypesDefined(parsedExpression)) {
@@ -439,7 +450,9 @@ public class ResolverImpl implements Resolver {
                     sam = convertExpressionIntoSupplier(fieldInfo.type, fieldInspectionBuilder.isStatic(), fieldInfo.owner,
                             parsedExpression, expressionContext, Identifier.from(expression));
                     anonymousType = sam.typeInfo;
-                    Resolver child = child(expressionContext.typeContext(), expressionContext.typeContext().typeMap().getE2ImmuAnnotationExpressions(), false);
+                    Resolver child = child(expressionContext.typeContext(),
+                            expressionContext.typeContext().typeMap().getE2ImmuAnnotationExpressions(),
+                            false, parseComments);
                     child.resolve(Map.of(sam.typeInfo, subContext));
                     callGetOnSam = true;
                 }
@@ -597,7 +610,7 @@ public class ResolverImpl implements Resolver {
                     VariableExpression parameter = new VariableExpression(methodInspection.getParameters().get(i++));
                     Assignment assignment = new Assignment(inspectionProvider.getPrimitives(), target, parameter);
                     Identifier id = Identifier.generate("synthetic assignment compact constructor");
-                    blockBuilder.addStatement(new ExpressionAsStatement(id, assignment, true));
+                    blockBuilder.addStatement(new ExpressionAsStatement(id, assignment, null, true));
                 }
             }
         };

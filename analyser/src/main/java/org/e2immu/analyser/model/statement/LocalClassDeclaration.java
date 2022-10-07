@@ -30,8 +30,9 @@ public class LocalClassDeclaration extends StatementWithStructure {
 
     public LocalClassDeclaration(Identifier identifier,
                                  TypeInfo typeInfo,
-                                 List<MethodInspection> methodAndConstructorInspections) {
-        super(identifier);
+                                 List<MethodInspection> methodAndConstructorInspections,
+                                 Comment comment) {
+        super(identifier, comment);
         this.typeInfo = typeInfo;
         this.methodAndConstructorInspections = methodAndConstructorInspections;
         assert methodAndConstructorInspections.stream().noneMatch(Objects::isNull);

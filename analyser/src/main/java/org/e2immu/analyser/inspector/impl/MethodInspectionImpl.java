@@ -65,6 +65,7 @@ public class MethodInspectionImpl extends InspectionImpl implements MethodInspec
                                  boolean synchronizedMethod,
                                  boolean finalMethod,
                                  Access access,
+                                 Comment comment,
                                  MethodType methodType,
                                  Set<MethodModifier> parsedModifiers,
                                  List<ParameterInfo> parameters,
@@ -74,7 +75,7 @@ public class MethodInspectionImpl extends InspectionImpl implements MethodInspec
                                  List<ParameterizedType> exceptionTypes,
                                  Map<CompanionMethodName, MethodInfo> companionMethods,
                                  Block methodBody) {
-        super(annotations, access, synthetic);
+        super(annotations, access, comment, synthetic);
         this.fullyQualifiedName = fullyQualifiedName;
         this.distinguishingName = distinguishingName;
         this.companionMethods = companionMethods;
@@ -430,6 +431,7 @@ public class MethodInspectionImpl extends InspectionImpl implements MethodInspec
                     isSynchronized(),
                     isFinal(),
                     getAccess(),
+                    getComment(),
                     methodType(),
                     Set.copyOf(modifiers),
                     List.copyOf(immutableParameters),

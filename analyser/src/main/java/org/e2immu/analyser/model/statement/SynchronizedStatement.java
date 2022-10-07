@@ -29,12 +29,15 @@ public class SynchronizedStatement extends StatementWithExpression {
 
     public SynchronizedStatement(Identifier identifier,
                                  Expression expression,
-                                 Block block) {
+                                 Block block,
+                                 Comment comment) {
         super(identifier, new Structure.Builder()
                 .setExpression(expression)
                 .setForwardEvaluationInfo(ForwardEvaluationInfo.NOT_NULL)
                 .setStatementExecution(StatementExecution.ALWAYS)
-                .setBlock(block).build(), expression);
+                .setBlock(block)
+                .setComment(comment)
+                .build(), expression);
     }
 
 
@@ -64,7 +67,7 @@ public class SynchronizedStatement extends StatementWithExpression {
             return List.of(this);
         }
         if (translatedBlock.size() == 1 && translatedBlock.get(0) instanceof Block block) {
-            return List.of(new SynchronizedStatement(identifier, tex, block));
+            return List.of(new SynchronizedStatement(identifier, tex, block, structure.comment()));
         }
         throw new UnsupportedOperationException();
     }
