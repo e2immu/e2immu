@@ -162,7 +162,8 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
         StatementAnalysis previous = null;
 
         for (Statement statement : statements) {
-            String iPlusSt = indices + "." + pad(statementIndex, statements.size());
+            String padded = pad(statementIndex, statements.size());
+            String iPlusSt = indices.isEmpty() ? padded : indices + "." + padded;
             StatementAnalysis statementAnalysis = new StatementAnalysisImpl(primitives, methodAnalysis, statement, parent, iPlusSt, inSyncBlock);
             if (previous != null) {
                 previous.navigationData().next.set(Optional.of(statementAnalysis));
@@ -177,8 +178,12 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
             Structure structure = statement.getStructure();
             if (structure.haveStatements()) {
                 String indexWithBlock = iPlusSt + "." + pad(blockIndex, structure.subStatements().size() + 1);
+                List<Statement> listOfSubStatements = structure.getStatements();
+                assert listOfSubStatements != null :
+                        "Statement " + statementAnalysis.index() + " of class " + statement.getClass().getSimpleName()
+                                + " has statements, but the statements() call returns null";
                 StatementAnalysis subStatementAnalysis = recursivelyCreateAnalysisObjects(primitives, methodAnalysis, parent,
-                        structure.statements(), indexWithBlock, true, newInSyncBlock);
+                        listOfSubStatements, indexWithBlock, true, newInSyncBlock);
                 analysisBlocks.add(Optional.of(subStatementAnalysis));
             } else {
                 analysisBlocks.add(Optional.empty());
@@ -187,8 +192,13 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
             for (Structure subStatements : structure.subStatements()) {
                 if (subStatements.haveStatements()) {
                     String indexWithBlock = iPlusSt + "." + pad(blockIndex, structure.subStatements().size() + 1);
+                    List<Statement> listOfSubStatements = subStatements.getStatements();
+                    assert listOfSubStatements != null :
+                            "Sub-block " + blockIndex + " of statement " + statementAnalysis.index()
+                                    + " of class " + statement.getClass().getSimpleName()
+                                    + " has statements, but the subStatements.statements() call returns null";
                     StatementAnalysis subStatementAnalysis = recursivelyCreateAnalysisObjects(primitives, methodAnalysis, parent,
-                            subStatements.statements(), indexWithBlock, true, newInSyncBlock);
+                            listOfSubStatements, indexWithBlock, true, newInSyncBlock);
                     analysisBlocks.add(Optional.of(subStatementAnalysis));
                 } else {
                     analysisBlocks.add(Optional.empty());
