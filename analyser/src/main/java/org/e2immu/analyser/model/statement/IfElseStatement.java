@@ -72,10 +72,9 @@ public class IfElseStatement extends StatementWithExpression {
             builder.addSubStatement(new Structure.Builder().setExpression(EmptyExpression.DEFAULT_EXPRESSION)
                     .setStatementExecution(StatementExecution.DEFAULT)
                     .setBlock(elseBlock)
-                    .setComment(comment)
                     .build());
         }
-        return builder.build();
+        return builder.setComment(comment).build();
     }
 
     private static DV standardExecution(Expression v, EvaluationResult evaluationContext) {

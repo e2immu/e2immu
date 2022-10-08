@@ -21,6 +21,7 @@ import org.e2immu.analyser.model.expression.MethodCall;
 import org.e2immu.analyser.model.expression.UnevaluatedAnnotationParameterValue;
 import org.e2immu.analyser.model.statement.Block;
 import org.e2immu.analyser.model.statement.ExpressionAsStatement;
+import org.e2immu.analyser.model.statement.IfElseStatement;
 import org.e2immu.analyser.model.variable.VariableNature;
 import org.e2immu.analyser.parser.TypeMap;
 import org.e2immu.analyser.resolver.testexample.*;
@@ -152,5 +153,23 @@ public class TestBasics extends CommonTest {
         assertTrue(nameInspection.isAbstract());
         assertTrue(nameInspection.isPublic()); // computed, on type
         assertFalse(nameInspection.isDefault()); // modifier
+    }
+
+    @Test
+    public void test_7() throws IOException {
+        inspectAndResolve(Basics_7.class);
+    }
+
+    @Test
+    public void test_8() throws IOException {
+        TypeMap typeMap = inspectAndResolve(Basics_8.class);
+        TypeInfo typeInfo = typeMap.get(Basics_8.class);
+        MethodInfo methodInfo = typeInfo.findUniqueMethod("method", 1);
+        Block block = methodInfo.methodInspection.get().getMethodBody();
+        if (block.structure.statements().get(0) instanceof IfElseStatement ifElseStatement) {
+            Comment comment = ifElseStatement.structure.comment();
+            assertNotNull(comment);
+            assertEquals("comment on 'if'", comment.text());
+        } else fail();
     }
 }

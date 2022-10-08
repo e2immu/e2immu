@@ -14,11 +14,14 @@
 
 package org.e2immu.analyser.resolver.testexample;
 
-import java.util.function.Supplier;
 
-public class Basics_7 implements Supplier<String> {
-    @Override
-    public String get() {
-        return "hello";
+public class Basics_8 {
+    public static int method(int in) {
+        // comment on 'if'
+        if (in > 9) {
+            return 1;
+        }
+        System.out.println("in = " + in);
+        return in;
     }
 }
