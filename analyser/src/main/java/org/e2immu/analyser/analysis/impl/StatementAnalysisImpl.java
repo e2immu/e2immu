@@ -141,7 +141,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
         rangeData = statement instanceof LoopStatement ? new RangeDataImpl(location) : null;
     }
 
-    static StatementAnalysis recursivelyCreateAnalysisObjects(
+    public static StatementAnalysis recursivelyCreateAnalysisObjects(
             Primitives primitives,
             MethodAnalysis methodAnalysis,
             StatementAnalysis parent,

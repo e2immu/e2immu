@@ -283,6 +283,12 @@ public class TranslationMapImpl implements TranslationMap {
             return this;
         }
 
+        // used by CodeModernizer
+        public Builder renameVariable(Variable variable, Expression actual) {
+            variableExpressions.put(variable, actual);
+            return this;
+        }
+
         public Builder put(ParameterizedType template, ParameterizedType actual) {
             types.put(template, actual);
             return this;
