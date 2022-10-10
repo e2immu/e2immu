@@ -333,6 +333,12 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
                 context, forwardEvaluationInfo, concreteMethod,
                 firstInCallCycle, objectValue, allowUpgradeCnnOfScope);
         List<Expression> parameterValues = res.v;
+        if (identifier instanceof Identifier.PositionalIdentifier &&
+                !(object instanceof VariableExpression ve && ve.variable() instanceof This
+                        && parameterValues.isEmpty())) {
+            builder.addEvaluatedExpression(identifier, objectValue);
+            builder.addEvaluatedExpressions(identifier, parameterValues);
+        }
         builder.compose(objectResult, res.k.build());
 
         // precondition

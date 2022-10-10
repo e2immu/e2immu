@@ -53,7 +53,8 @@ public class LocalVariableCreation extends BaseExpression implements Expression 
     }
 
     public LocalVariableCreation(Primitives primitives, List<Declaration> declarations, boolean isVar) {
-        super(declarations.get(0).identifier);
+        super(declarations.get(0).identifier,
+                declarations.stream().mapToInt(d -> d.expression.getComplexity()).sum());
         this.declarations = declarations;
         this.primitives = primitives;
         this.isVar = isVar;

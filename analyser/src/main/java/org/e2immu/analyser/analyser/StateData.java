@@ -24,6 +24,7 @@ import org.e2immu.analyser.model.expression.VariableExpression;
 import org.e2immu.analyser.model.statement.LoopStatement;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.support.EventuallyFinal;
+import org.e2immu.support.SetOnce;
 import org.e2immu.support.SetOnceMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -47,6 +48,7 @@ public class StateData {
     private final SetOnceMap<String, EventuallyFinal<Expression>> statesOfInterrupts;
     private final SetOnceMap<String, EventuallyFinal<Expression>> statesOfReturnInLoop;
     public final EventuallyFinal<Expression> valueOfExpression = new EventuallyFinal<>();
+    public final EventuallyFinal<EvaluatedExpressionCache> evaluatedExpressionCache = new EventuallyFinal<>();
 
     public StateData(Location location, boolean isLoop, Primitives primitives) {
         statesOfInterrupts = isLoop ? new SetOnceMap<>() : null;
@@ -60,6 +62,7 @@ public class StateData {
         assert precondition.isFinal();
         assert preconditionFromMethodCalls.isFinal();
         assert valueOfExpression.isFinal();
+        assert evaluatedExpressionCache.isFinal();
         assert statesOfInterrupts == null || statesOfInterrupts.valueStream().allMatch(EventuallyFinal::isFinal);
         assert statesOfReturnInLoop == null || statesOfReturnInLoop.valueStream().allMatch(EventuallyFinal::isFinal);
     }
@@ -87,6 +90,16 @@ public class StateData {
             statesOfReturnInLoop.valueStream().forEach(v -> {
                 if (v.isVariable()) v.setFinal(unreachable);
             });
+        }
+    }
+
+    public void setEvaluatedExpressionCache(EvaluatedExpressionCache cache) {
+        if (cache.delays().isDone()) {
+            if (evaluatedExpressionCache.isVariable()) {
+                evaluatedExpressionCache.setFinal(cache);
+            }
+        } else {
+            evaluatedExpressionCache.setVariable(cache);
         }
     }
 

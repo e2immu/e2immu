@@ -191,6 +191,7 @@ record SAEvaluationOfMainExpression(StatementAnalysis statementAnalysis,
                     sharedState.localConditionManager().causesOfDelay());
         }
         statementAnalysis.stateData().setValueOfExpression(value);
+        statementAnalysis.stateData().setEvaluatedExpressionCache(result.evaluatedExpressionCache());
 
         ProgressAndDelay endResult = ennStatus.combine(statusPost).merge(stateForLoop);
         return endResult.toAnalysisStatus();

@@ -63,11 +63,16 @@ Important value changes are:
 - the linked variables of a variable have been computed
 
 We track delays in state change
+
+
+EvaluatedExpressionCache will be stored in StatementAnalysis.stateData() for use by CodeModernizer.
+
  */
 public record EvaluationResult(EvaluationContext evaluationContext,
                                int statementTime,
                                Expression value,
                                List<Expression> storedValues,
+                               EvaluatedExpressionCache evaluatedExpressionCache,
                                CausesOfDelay causesOfDelay,
                                Messages messages,
                                Map<Variable, ChangeData> changeData,
@@ -94,12 +99,13 @@ public record EvaluationResult(EvaluationContext evaluationContext,
     }
 
     public EvaluationResult copy(EvaluationContext evaluationContext) {
-        return new EvaluationResult(evaluationContext, statementTime, value, storedValues, causesOfDelay, messages,
-                changeData, precondition);
+        return new EvaluationResult(evaluationContext, statementTime, value, storedValues, evaluatedExpressionCache,
+                causesOfDelay, messages, changeData, precondition);
     }
 
     public static EvaluationResult from(EvaluationContext evaluationContext) {
         return new EvaluationResult(evaluationContext, VariableInfoContainer.NOT_RELEVANT, null, List.of(),
+                EvaluatedExpressionCache.EMPTY,
                 CausesOfDelay.EMPTY, Messages.EMPTY, Map.of(), Precondition.empty(evaluationContext.getPrimitives()));
     }
 
@@ -210,12 +216,15 @@ public record EvaluationResult(EvaluationContext evaluationContext,
                 storedValues.stream().map(e -> e.translate(inspectionProvider, translationMap)).toList();
         CausesOfDelay translatedCauses = causesOfDelay.translate(inspectionProvider, translationMap);
         Precondition translatedPrecondition = precondition == null ? null : precondition.translate(inspectionProvider, translationMap);
-        return new EvaluationResult(evaluationContext, statementTime, translatedValue, translatedStoredValues, translatedCauses, messages, newMap, translatedPrecondition);
+        EvaluatedExpressionCache translatedEvaluatedExpressionCache = evaluatedExpressionCache.translate(inspectionProvider, translationMap);
+        return new EvaluationResult(evaluationContext, statementTime, translatedValue, translatedStoredValues,
+                translatedEvaluatedExpressionCache,
+                translatedCauses, messages, newMap, translatedPrecondition);
     }
 
     public EvaluationResult withNewEvaluationContext(EvaluationContext newEc) {
-        return new EvaluationResult(newEc, statementTime, value, storedValues, causesOfDelay, messages, changeData,
-                precondition);
+        return new EvaluationResult(newEc, statementTime, value, storedValues, evaluatedExpressionCache,
+                causesOfDelay, messages, changeData, precondition);
     }
 
     public LinkedVariables linkedVariables(Variable variable) {
@@ -230,8 +239,8 @@ public record EvaluationResult(EvaluationContext evaluationContext,
         CausesOfDelay newChangeDataDelays = newChangeData.values()
                 .stream().map(e -> e.delays).reduce(CausesOfDelay.EMPTY, CausesOfDelay::merge);
         CausesOfDelay newCauses = value.causesOfDelay().merge(newChangeDataDelays);
-        return new EvaluationResult(evaluationContext, statementTime, value, storedValues, newCauses, messages, newChangeData,
-                precondition);
+        return new EvaluationResult(evaluationContext, statementTime, value, storedValues, evaluatedExpressionCache,
+                newCauses, messages, newChangeData, precondition);
     }
 
     /**
@@ -333,6 +342,7 @@ public record EvaluationResult(EvaluationContext evaluationContext,
         private int statementTime;
         private final Map<Variable, ChangeData> valueChanges = new HashMap<>();
         private Precondition precondition;
+        private final Map<Identifier, List<Expression>> evaluatedExpressions = new HashMap<>();
 
         public Builder(EvaluationResult evaluationResult) {
             this.previousResult = Objects.requireNonNull(evaluationResult);
@@ -380,6 +390,7 @@ public record EvaluationResult(EvaluationContext evaluationContext,
             }
             this.causesOfDelay = this.causesOfDelay.merge(evaluationResult.causesOfDelay);
             this.messages.addAll(evaluationResult.getMessageStream());
+            evaluatedExpressions.putAll(evaluationResult.evaluatedExpressionCache().map());
 
             for (Map.Entry<Variable, ChangeData> e : evaluationResult.changeData.entrySet()) {
                 valueChanges.merge(e.getKey(), e.getValue(), ChangeData::merge);
@@ -435,9 +446,20 @@ public record EvaluationResult(EvaluationContext evaluationContext,
                     addCausesOfDelay(value.causesOfDelay());
                 }
             }
+            EvaluatedExpressionCache evaluatedExpressionCache = new EvaluatedExpressionCache(evaluatedExpressions);
             return new EvaluationResult(evaluationContext, statementTime, value,
-                    storedExpressions == null ? null : List.copyOf(storedExpressions),
+                    storedExpressions == null ? null : List.copyOf(storedExpressions), evaluatedExpressionCache,
                     causesOfDelay, messages, valueChanges, precondition);
+        }
+
+        public void addEvaluatedExpression(Identifier identifier, Expression expression) {
+            addEvaluatedExpressions(identifier, List.of(expression));
+        }
+
+        public void addEvaluatedExpressions(Identifier identifier, List<Expression> parameterValues) {
+            assert identifier instanceof Identifier.PositionalIdentifier;
+            evaluatedExpressions.merge(identifier, parameterValues,
+                    (l1, l2) -> Stream.concat(l1.stream(), l2.stream()).toList());
         }
 
         /**
