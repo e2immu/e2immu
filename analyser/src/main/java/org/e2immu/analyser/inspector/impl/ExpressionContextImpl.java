@@ -26,6 +26,7 @@ import org.e2immu.analyser.inspector.expr.*;
 import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.*;
+import org.e2immu.analyser.model.impl.CommentFactory;
 import org.e2immu.analyser.model.impl.UntypedComment;
 import org.e2immu.analyser.model.statement.SwitchEntry;
 import org.e2immu.analyser.model.statement.*;
@@ -200,7 +201,7 @@ public record ExpressionContextImpl(ExpressionContext.ResolverRecursion resolver
                 parseStatement(blockBuilder, statement.asLabeledStmt().getStatement(), label);
                 return;
             }
-            Comment comment = resolver.parseComments() ? parseComment(statement) : null;
+            Comment comment = resolver.parseComments() ? CommentFactory.from(statement) : null;
 
             org.e2immu.analyser.model.Statement newStatement;
             if (statement.isReturnStmt()) {
@@ -273,16 +274,6 @@ public record ExpressionContextImpl(ExpressionContext.ResolverRecursion resolver
             LOGGER.warn("Caught runtime exception while parsing statement at line {}", statement.getBegin().orElse(null));
             throw rte;
         }
-    }
-
-    private Comment parseComment(Statement statement) {
-        UntypedComment.Builder builder =
-                statement.getComment().map(c -> new UntypedComment.Builder().add(c.getContent())).orElse(null);
-        for (com.github.javaparser.ast.comments.Comment orphan : statement.getOrphanComments()) {
-            if (builder == null) builder = new UntypedComment.Builder();
-            builder.add(orphan.getContent());
-        }
-        return builder == null ? null : builder.build();
     }
 
     private org.e2immu.analyser.model.Statement switchStatement(@NotNull SwitchStmt switchStmt, Identifier identifier,

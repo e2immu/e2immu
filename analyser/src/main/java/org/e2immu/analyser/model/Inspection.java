@@ -78,5 +78,7 @@ public interface Inspection {
 
         @Fluent
         B setAccess(Access access);
+
+        void setComment(Comment comment);
     }
 }

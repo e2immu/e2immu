@@ -22,6 +22,7 @@ import com.github.javaparser.ast.type.ReferenceType;
 import org.e2immu.analyser.inspector.*;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.EmptyExpression;
+import org.e2immu.analyser.model.impl.CommentFactory;
 import org.e2immu.analyser.model.impl.TypeParameterImpl;
 import org.e2immu.analyser.model.statement.Block;
 import org.e2immu.analyser.model.statement.ReturnStatement;
@@ -72,6 +73,8 @@ public class MethodInspectorImpl implements MethodInspector {
         MethodInspection.Builder tempBuilder = new MethodInspectionImpl.Builder(Identifier.from(amd), typeInfo, name);
         MethodInspection.Builder builder = fqnIsKnown(expressionContext.typeContext(), tempBuilder, false);
         assert builder != null;
+
+        builder.setComment(CommentFactory.from(amd));
 
         addAnnotations(builder, amd.getAnnotations(), expressionContext);
         if (fullInspection) {
@@ -211,6 +214,7 @@ public class MethodInspectorImpl implements MethodInspector {
         if (ccd != null) {
             builder.addCompanionMethods(companionMethods);
             checkCompanionMethods(companionMethods, typeInfo.simpleName);
+            builder.setComment(CommentFactory.from(ccd));
             addAnnotations(builder, ccd.getAnnotations(), expressionContext);
             if (fullInspection) {
                 addModifiers(builder, ccd.getModifiers());
@@ -238,6 +242,7 @@ public class MethodInspectorImpl implements MethodInspector {
         assert fullInspection : "? otherwise we would not see them";
         assert builder != null;
         typeMapBuilder.registerMethodInspection(builder);
+        builder.setComment(CommentFactory.from(id));
         builder.setBlock(id.getBody());
     }
 
@@ -263,6 +268,7 @@ public class MethodInspectorImpl implements MethodInspector {
         }
         builder.addCompanionMethods(companionMethods);
         checkCompanionMethods(companionMethods, typeInfo.simpleName);
+        builder.setComment(CommentFactory.from(cd));
         addAnnotations(builder, cd.getAnnotations(), newContext);
         if (fullInspection) {
             addModifiers(builder, cd.getModifiers());
@@ -300,7 +306,7 @@ public class MethodInspectorImpl implements MethodInspector {
 
             builder.addCompanionMethods(companionMethods);
             checkCompanionMethods(companionMethods, methodName);
-
+            builder.setComment(CommentFactory.from(md));
             addAnnotations(builder, md.getAnnotations(), newContext);
             if (fullInspection) {
                 addModifiers(builder, md.getModifiers());
@@ -379,6 +385,7 @@ public class MethodInspectorImpl implements MethodInspector {
                     pt, parameter.getNameAsString(), i++);
             pib.setVarArgs(parameter.isVarArgs());
             // we do not copy annotations yet, that happens after readFQN
+            builder.setComment(CommentFactory.from(parameter));
             builder.addParameter(pib);
         }
     }

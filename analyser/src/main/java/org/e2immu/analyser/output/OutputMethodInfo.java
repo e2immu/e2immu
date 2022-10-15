@@ -87,8 +87,10 @@ public class OutputMethodInfo {
             afterAnnotations.add(inspection.getMethodBody().output(bodyQualification, firstStatement));
         }
 
+        Stream<OutputBuilder> commentStream = inspection.getComment() == null ? Stream.of()
+                : Stream.of(inspection.getComment().output(qualification));
         Stream<OutputBuilder> annotationStream = methodInfo.buildAnnotationOutput(qualification);
-        OutputBuilder mainMethod = Stream.concat(annotationStream, Stream.of(afterAnnotations))
+        OutputBuilder mainMethod = Stream.concat(commentStream, Stream.concat(annotationStream, Stream.of(afterAnnotations)))
                 .collect(OutputBuilder.joining(Space.ONE_REQUIRED_EASY_SPLIT, Guide.generatorForAnnotationList()));
 
         Stream<OutputBuilder> companions = outputCompanions(inspection, methodAnalysisOrNull, qualification);

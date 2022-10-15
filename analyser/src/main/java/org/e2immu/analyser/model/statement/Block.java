@@ -116,7 +116,7 @@ public class Block extends StatementWithStructure {
             if (!structure.statements().isEmpty()) {
                 outputBuilder.add(structure.statements().stream()
                         .filter(s -> !s.isSynthetic())
-                        .map(s -> s.output(qualification, null))
+                        .map(s -> outputStatement(s, qualification))
                         .collect(OutputBuilder.joining(Space.NONE, Guide.generatorForBlock())));
             }
         } else {
@@ -135,6 +135,15 @@ public class Block extends StatementWithStructure {
         }
         outputBuilder.add(Symbol.RIGHT_BRACE);
         return outputBuilder;
+    }
+
+    private OutputBuilder outputStatement(Statement statement, Qualification qualification) {
+        OutputBuilder ob = statement.output(qualification, null);
+        Comment comment = statement.getStructure().comment();
+        if (comment != null) {
+            return comment.output(qualification).add(ob);
+        }
+        return ob;
     }
 
     public static void statementsString(Qualification qualification,

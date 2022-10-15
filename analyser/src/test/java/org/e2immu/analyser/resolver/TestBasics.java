@@ -23,6 +23,9 @@ import org.e2immu.analyser.model.statement.Block;
 import org.e2immu.analyser.model.statement.ExpressionAsStatement;
 import org.e2immu.analyser.model.statement.IfElseStatement;
 import org.e2immu.analyser.model.variable.VariableNature;
+import org.e2immu.analyser.output.Formatter;
+import org.e2immu.analyser.output.FormattingOptions;
+import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.parser.TypeMap;
 import org.e2immu.analyser.resolver.testexample.*;
 import org.junit.jupiter.api.Test;
@@ -164,12 +167,39 @@ public class TestBasics extends CommonTest {
     public void test_8() throws IOException {
         TypeMap typeMap = inspectAndResolve(Basics_8.class);
         TypeInfo typeInfo = typeMap.get(Basics_8.class);
+        TypeInspection typeInspection = typeInfo.typeInspection.get();
+        assertNotNull(typeInspection.getComment());
+        assertEquals("orphan to type\ncomment on type", typeInspection.getComment().text());
+
         MethodInfo methodInfo = typeInfo.findUniqueMethod("method", 1);
-        Block block = methodInfo.methodInspection.get().getMethodBody();
+        MethodInspection methodInspection = methodInfo.methodInspection.get();
+        assertNotNull(methodInspection.getComment());
+        assertEquals("orphan to method\ncomment on method", methodInspection.getComment().text());
+
+        Block block = methodInspection.getMethodBody();
         if (block.structure.statements().get(0) instanceof IfElseStatement ifElseStatement) {
             Comment comment = ifElseStatement.structure.comment();
             assertNotNull(comment);
-            assertEquals("comment on 'if'", comment.text());
+            assertEquals("orphan on if\ncomment on 'if'", comment.text());
+
+            OutputBuilder output = block.output(Qualification.EMPTY, null);
+            Formatter formatter = new Formatter(FormattingOptions.DEFAULT);
+            assertEquals("{ /*orphan on if comment on 'if'*/ if(in > 9) { return 1; } System.out.println(\"in = \" + in); return in; }\n", formatter.write(output));
         } else fail();
+
+        {
+            FieldInfo fieldInfo = typeInfo.getFieldByName("CONSTANT_1", true);
+            FieldInspection fieldInspection = fieldInfo.fieldInspection.get();
+            Comment comment = fieldInspection.getComment();
+            assertNotNull(comment);
+            assertEquals("orphan to field 1\ncomment on field 1", comment.text());
+        }
+        {
+            FieldInfo fieldInfo2 = typeInfo.getFieldByName("CONSTANT_2", true);
+            FieldInspection fieldInspection2 = fieldInfo2.fieldInspection.get();
+            Comment comment2 = fieldInspection2.getComment();
+            assertNotNull(comment2);
+            assertEquals("orphan to field 2\ncomment on field 2", comment2.text());
+        }
     }
 }

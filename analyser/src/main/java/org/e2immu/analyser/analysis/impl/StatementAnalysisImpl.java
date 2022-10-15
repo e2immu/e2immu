@@ -860,10 +860,14 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
 
     /*
     output the statement, but take into account the list of variables, there may be name clashes to be resolved
-
      */
     public OutputBuilder output(Qualification qualification) {
-        return statement.output(qualification, this);
+        OutputBuilder ob = statement.output(qualification, this);
+        Comment comment = statement.getStructure().comment();
+        if (comment != null) {
+            return comment.output(qualification).add(ob);
+        }
+        return ob;
     }
 
     @Override

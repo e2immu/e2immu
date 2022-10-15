@@ -14,9 +14,18 @@
 
 package org.e2immu.analyser.resolver.testexample;
 
-
+// orphan to type
+// comment on type
 public class Basics_8 {
+
+    // orphan to field 1
+    // comment on field 1
+    public static final int CONSTANT_1 = 3;
+
+    // orphan to method
+    // comment on method
     public static int method(int in) {
+        // orphan on if
         // comment on 'if'
         if (in > 9) {
             return 1;
@@ -24,4 +33,8 @@ public class Basics_8 {
         System.out.println("in = " + in);
         return in;
     }
+
+    // orphan to field 2
+    // comment on field 2
+    public static final int CONSTANT_2 = 3;
 }

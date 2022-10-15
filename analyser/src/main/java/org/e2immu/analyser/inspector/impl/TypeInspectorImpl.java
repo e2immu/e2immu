@@ -26,6 +26,7 @@ import org.e2immu.analyser.inspector.*;
 import org.e2immu.analyser.inspector.util.EnumMethods;
 import org.e2immu.analyser.inspector.util.RecordSynthetics;
 import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.model.impl.CommentFactory;
 import org.e2immu.analyser.model.impl.TypeParameterImpl;
 import org.e2immu.analyser.model.statement.Block;
 import org.e2immu.analyser.model.variable.FieldReference;
@@ -147,6 +148,9 @@ public class TypeInspectorImpl implements TypeInspector {
         builder.setPositionalIdentifier(Identifier.from(typeDeclaration.getBegin().orElse(null),
                 typeDeclaration.getEnd().orElse(null)));
 
+        Comment comment = CommentFactory.from(typeDeclaration);
+        builder.setComment(comment);
+
         TypeContext typeContext = expressionContext.typeContext();
 
         DollarResolver dollarResolver = getDollarResolver(typeDeclaration, dollarResolverInput, typeContext);
@@ -164,7 +168,7 @@ public class TypeInspectorImpl implements TypeInspector {
           See Record_0 vs Record_1
          */
         for (BodyDeclaration<?> bodyDeclaration : typeDeclaration.getMembers()) {
-            if (bodyDeclaration instanceof TypeDeclaration cid) {
+            if (bodyDeclaration instanceof TypeDeclaration<?> cid) {
                 prepareSubType(typeContext, dollarResolver, cid.getNameAsString());
             }
         }
@@ -435,7 +439,7 @@ public class TypeInspectorImpl implements TypeInspector {
         List<FieldDeclaration> fieldDeclarations = new LinkedList<>();
 
         for (BodyDeclaration<?> bodyDeclaration : members) {
-            if (bodyDeclaration instanceof TypeDeclaration cid) typeDeclarations.add(cid);
+            if (bodyDeclaration instanceof TypeDeclaration<?> cid) typeDeclarations.add(cid);
             else if (bodyDeclaration instanceof CompactConstructorDeclaration) ++countCompactConstructors;
             else if (bodyDeclaration instanceof ConstructorDeclaration) ++countNormalConstructors;
             else if (bodyDeclaration instanceof FieldDeclaration fd) fieldDeclarations.add(fd);
@@ -549,8 +553,9 @@ public class TypeInspectorImpl implements TypeInspector {
         List<FieldModifier> modifiers = fd.getModifiers().stream()
                 .map(FieldModifier::from)
                 .collect(Collectors.toList());
+        Comment comment = CommentFactory.from(fd);
         for (VariableDeclarator vd : fd.getVariables()) {
-            singleFieldDeclaration(expressionContext, isInterface, typeContext, fd, annotations, modifiers, vd);
+            singleFieldDeclaration(expressionContext, isInterface, typeContext, fd, annotations, modifiers, vd, comment);
         }
     }
 
@@ -560,7 +565,8 @@ public class TypeInspectorImpl implements TypeInspector {
                                         FieldDeclaration fd,
                                         List<AnnotationExpression> annotations,
                                         List<FieldModifier> modifiers,
-                                        VariableDeclarator vd) {
+                                        VariableDeclarator vd,
+                                        Comment comment) {
         ParameterizedType pt = ParameterizedTypeFactory.from(typeContext, vd.getType());
 
         String name = vd.getNameAsString();
@@ -571,11 +577,11 @@ public class TypeInspectorImpl implements TypeInspector {
         if (inMap == null) {
             fieldInspectionBuilder = new FieldInspectionImpl.Builder(fieldInfo);
             typeContext.typeMap.registerFieldInspection(fieldInfo, fieldInspectionBuilder);
-        } else if (inMap instanceof FieldInspectionImpl.Builder builder) fieldInspectionBuilder = builder;
+        } else if (inMap instanceof FieldInspectionImpl.Builder fib) fieldInspectionBuilder = fib;
         else throw new UnsupportedOperationException();
 
         expressionContext.variableContext().add(new FieldReference(typeContext, fieldInfo));
-
+        fieldInspectionBuilder.setComment(comment);
         fieldInspectionBuilder.addAnnotations(annotations);
         if (fullInspection) {
             fieldInspectionBuilder.addModifiers(modifiers);
