@@ -91,16 +91,21 @@ public class StateData {
                 if (v.isVariable()) v.setFinal(unreachable);
             });
         }
+        if(evaluatedExpressionCache.isVariable()) {
+            evaluatedExpressionCache.setFinal(EvaluatedExpressionCache.EMPTY);
+        }
     }
 
-    public void setEvaluatedExpressionCache(EvaluatedExpressionCache cache) {
+    public boolean setEvaluatedExpressionCache(EvaluatedExpressionCache cache) {
         if (cache.delays().isDone()) {
             if (evaluatedExpressionCache.isVariable()) {
                 evaluatedExpressionCache.setFinal(cache);
+                return true;
             }
         } else {
             evaluatedExpressionCache.setVariable(cache);
         }
+        return false;
     }
 
     public boolean equalityAccordingToStateIsSet(VariableExpression variable) {

@@ -69,7 +69,7 @@ public class ResolverImpl implements Resolver {
     private final AnonymousTypeCounters anonymousTypeCounters;
     private final AtomicInteger typeCounterForDebugging = new AtomicInteger();
     private final DependencyGraph<MethodInfo> methodCallGraph;
-    private final boolean parseComments;
+    private final boolean storeComments;
 
     @Override
     public Stream<Message> getMessageStream() {
@@ -77,8 +77,8 @@ public class ResolverImpl implements Resolver {
     }
 
     @Override
-    public boolean parseComments() {
-        return parseComments;
+    public boolean storeComments() {
+        return storeComments;
     }
 
     @Override
@@ -93,28 +93,28 @@ public class ResolverImpl implements Resolver {
                          InspectionProvider inspectionProvider,
                          E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions,
                          boolean shallowResolver,
-                         boolean parseComments) {
+                         boolean storeComments) {
         this.shallowResolver = shallowResolver;
         this.e2ImmuAnnotationExpressions = e2ImmuAnnotationExpressions;
         this.inspectionProvider = inspectionProvider;
         this.parent = parent;
         this.anonymousTypeCounters = parent.anonymousTypeCounters;
         methodCallGraph = parent.methodCallGraph;
-        this.parseComments = parseComments;
+        this.storeComments = storeComments;
     }
 
     public ResolverImpl(AnonymousTypeCounters anonymousTypeCounters,
                         InspectionProvider inspectionProvider,
                         E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions,
                         boolean shallowResolver,
-                        boolean parseComments) {
+                        boolean storeComments) {
         this.shallowResolver = shallowResolver;
         this.e2ImmuAnnotationExpressions = e2ImmuAnnotationExpressions;
         this.inspectionProvider = inspectionProvider;
         this.parent = null;
         this.anonymousTypeCounters = anonymousTypeCounters;
         methodCallGraph = new DependencyGraph<>();
-        this.parseComments = parseComments;
+        this.storeComments = storeComments;
     }
 
     /**
@@ -433,7 +433,7 @@ public class ResolverImpl implements Resolver {
                         (MethodReference) parsedExpression, expressionContext);
                 anonymousType = sam.typeInfo;
                 Resolver child = child(expressionContext.typeContext(), expressionContext.typeContext().typeMap()
-                        .getE2ImmuAnnotationExpressions(), false, parseComments);
+                        .getE2ImmuAnnotationExpressions(), false, storeComments);
                 child.resolve(Map.of(sam.typeInfo, subContext));
                 callGetOnSam = false;
             } else if (hasTypesDefined(parsedExpression)) {
@@ -452,7 +452,7 @@ public class ResolverImpl implements Resolver {
                     anonymousType = sam.typeInfo;
                     Resolver child = child(expressionContext.typeContext(),
                             expressionContext.typeContext().typeMap().getE2ImmuAnnotationExpressions(),
-                            false, parseComments);
+                            false, storeComments);
                     child.resolve(Map.of(sam.typeInfo, subContext));
                     callGetOnSam = true;
                 }

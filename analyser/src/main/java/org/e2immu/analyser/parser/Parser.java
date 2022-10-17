@@ -136,10 +136,10 @@ public class Parser {
     public SortedTypes inspectAndResolve(Map<TypeInfo, URL> urls, Trie<TypeInfo> typesForWildcardImport,
                                          boolean reportWarnings,
                                          boolean shallowResolver,
-                                         boolean parseComments) {
+                                         boolean storeComments) {
         ResolverImpl resolver = new ResolverImpl(anonymousTypeCounters, input.globalTypeContext(),
                 input.globalTypeContext().typeMap.getE2ImmuAnnotationExpressions(), shallowResolver,
-                parseComments);
+                storeComments);
 
         TypeMap.Builder typeMapBuilder = input.globalTypeContext().typeMap;
         InspectWithJavaParserImpl onDemandSourceInspection = new InspectWithJavaParserImpl(urls, typesForWildcardImport, resolver);
@@ -177,6 +177,11 @@ public class Parser {
             this.urls = urls;
             this.resolver = resolver;
             this.typesForWildcardImport = typesForWildcardImport;
+        }
+
+        @Override
+        public boolean storeComments() {
+            return configuration.inspectorConfiguration().storeComments();
         }
 
         @Override

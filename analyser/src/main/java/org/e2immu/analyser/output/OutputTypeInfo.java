@@ -49,6 +49,7 @@ public class OutputTypeInfo {
         ParameterizedType parentClass;
         boolean isInterface;
         boolean isRecord;
+        Comment comment;
 
         if (typeInfo.hasBeenInspected()) {
             TypeInspection typeInspection = typeInfo.typeInspection.get();
@@ -63,6 +64,7 @@ public class OutputTypeInfo {
             typeParameters = typeInspection.typeParameters();
             parentClass = typeInfo.parentIsNotJavaLangObject() ? typeInspection.parentClass() : null;
             interfaces = typeInspection.interfacesImplemented();
+            comment = typeInspection.getComment();
 
             // add the methods that we can call without having to qualify (method() instead of super.method())
             if (insideType instanceof QualificationImpl qi) {
@@ -81,6 +83,7 @@ public class OutputTypeInfo {
             parentClass = null;
             isInterface = false;
             isRecord = false;
+            comment = null;
         }
 
         // PACKAGE AND IMPORTS
@@ -147,6 +150,7 @@ public class OutputTypeInfo {
 
         // annotations and the rest of the type are at the same level
         Stream<OutputBuilder> annotationStream = doTypeDeclaration ? typeInfo.buildAnnotationOutput(insideType) : Stream.of();
+        if(comment != null) packageAndImports.add(comment.output(qualification));
         return packageAndImports.add(Stream.concat(annotationStream, Stream.of(afterAnnotations))
                 .collect(OutputBuilder.joining(Space.ONE_REQUIRED_EASY_SPLIT,
                         Guide.generatorForAnnotationList())));

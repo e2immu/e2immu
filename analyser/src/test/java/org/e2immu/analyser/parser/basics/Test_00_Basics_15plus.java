@@ -24,6 +24,7 @@ import org.e2immu.analyser.parser.CommonTestRunner;
 import org.e2immu.analyser.visitor.FieldAnalyserVisitor;
 import org.e2immu.analyser.visitor.MethodAnalyserVisitor;
 import org.e2immu.analyser.visitor.StatementAnalyserVariableVisitor;
+import org.e2immu.analyser.visitor.TypeAnalyserVisitor;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
@@ -141,7 +142,13 @@ public class Test_00_Basics_15plus extends CommonTestRunner {
 
     @Test
     public void test_19() throws IOException {
+        TypeAnalyserVisitor typeAnalyserVisitor = d -> {
+          if("Basics_19".equals(d.typeInfo().simpleName)) {
+           //   assertEquals("", d.typeInspection().getComment().text());
+          }
+        };
         testClass("Basics_19", 0, 0, new DebugConfiguration.Builder()
+                .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
                 .build());
     }
 

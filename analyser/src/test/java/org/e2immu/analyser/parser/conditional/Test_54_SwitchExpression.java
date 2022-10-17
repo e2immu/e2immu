@@ -50,7 +50,17 @@ public class Test_54_SwitchExpression extends CommonTestRunner {
 
     @Test
     public void test_1() throws IOException {
+        MethodAnalyserVisitor methodAnalyserVisitor = d -> {
+            if ("method".equals(d.methodInfo().name)) {
+                assertEquals("should raise a warning that the condition is always false, plus that b is never used\n" +
+                                "as a consequence, default always returns \"c\" so we have @NotNull",
+                        d.methodInfo().methodInspection.get().getComment().text());
+                boolean store = d.evaluationContext().getAnalyserContext().getConfiguration().inspectorConfiguration().storeComments();
+                assertTrue(store, "Storing comments, had an assertion error in Formatter line 193");
+            }
+        };
         testClass("SwitchExpression_1", 1, 0, new DebugConfiguration.Builder()
+                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .build());
     }
 

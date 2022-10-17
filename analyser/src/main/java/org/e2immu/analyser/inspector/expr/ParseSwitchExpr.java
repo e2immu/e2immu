@@ -151,7 +151,7 @@ public class ParseSwitchExpr {
 
         expressionContext.resolver().resolve(typeContext,
                 typeContext.typeMap.getE2ImmuAnnotationExpressions(), false,
-                expressionContext.resolver().parseComments(),
+                expressionContext.resolver().storeComments(),
                 Map.of(anonymousType, expressionContext.newVariableContext("Lambda")));
 
         LOGGER.debug("End parsing lambda as block, inferred functional type {}, new type {}",

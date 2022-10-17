@@ -27,7 +27,6 @@ import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.*;
 import org.e2immu.analyser.model.impl.CommentFactory;
-import org.e2immu.analyser.model.impl.UntypedComment;
 import org.e2immu.analyser.model.statement.SwitchEntry;
 import org.e2immu.analyser.model.statement.*;
 import org.e2immu.analyser.model.variable.*;
@@ -201,7 +200,7 @@ public record ExpressionContextImpl(ExpressionContext.ResolverRecursion resolver
                 parseStatement(blockBuilder, statement.asLabeledStmt().getStatement(), label);
                 return;
             }
-            Comment comment = resolver.parseComments() ? CommentFactory.from(statement) : null;
+            Comment comment = resolver.storeComments() ? CommentFactory.from(statement) : null;
 
             org.e2immu.analyser.model.Statement newStatement;
             if (statement.isReturnStmt()) {
@@ -485,7 +484,7 @@ public record ExpressionContextImpl(ExpressionContext.ResolverRecursion resolver
                 .stream().map(typeContext::getMethodInspection).toList();
 
         resolver.resolve(typeContext, typeContext.typeMap.getE2ImmuAnnotationExpressions(),
-                false, resolver.parseComments(), Map.of(typeInfo, this));
+                false, resolver.storeComments(), Map.of(typeInfo, this));
 
         typeContext.addToContext(localName, typeInfo, true);
         return new LocalClassDeclaration(identifier, typeInfo, methodAndConstructorInspections, comment);

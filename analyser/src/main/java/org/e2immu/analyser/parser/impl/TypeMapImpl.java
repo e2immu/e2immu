@@ -428,7 +428,8 @@ public class TypeMapImpl implements TypeMap {
 
         @Override
         public TypeInspector newTypeInspector(TypeInfo typeInfo, boolean fullInspection, boolean dollarTypesAreNormalTypes) {
-            return new TypeInspectorImpl(this, typeInfo, fullInspection, dollarTypesAreNormalTypes);
+            return new TypeInspectorImpl(this, typeInfo, fullInspection, dollarTypesAreNormalTypes,
+                    inspectWithJavaParser.storeComments());
         }
 
         // inspect from class path

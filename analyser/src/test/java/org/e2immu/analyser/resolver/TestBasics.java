@@ -165,11 +165,15 @@ public class TestBasics extends CommonTest {
 
     @Test
     public void test_8() throws IOException {
+        Formatter formatter = new Formatter(FormattingOptions.DEFAULT);
+
         TypeMap typeMap = inspectAndResolve(Basics_8.class);
         TypeInfo typeInfo = typeMap.get(Basics_8.class);
         TypeInspection typeInspection = typeInfo.typeInspection.get();
         assertNotNull(typeInspection.getComment());
         assertEquals("orphan to type\ncomment on type", typeInspection.getComment().text());
+        OutputBuilder ob = typeInspection.getComment().output(Qualification.EMPTY);
+        assertEquals("/*orphan to type comment on type*/\n", formatter.write(ob));
 
         MethodInfo methodInfo = typeInfo.findUniqueMethod("method", 1);
         MethodInspection methodInspection = methodInfo.methodInspection.get();
@@ -183,7 +187,6 @@ public class TestBasics extends CommonTest {
             assertEquals("orphan on if\ncomment on 'if'", comment.text());
 
             OutputBuilder output = block.output(Qualification.EMPTY, null);
-            Formatter formatter = new Formatter(FormattingOptions.DEFAULT);
             assertEquals("{ /*orphan on if comment on 'if'*/ if(in > 9) { return 1; } System.out.println(\"in = \" + in); return in; }\n", formatter.write(output));
         } else fail();
 

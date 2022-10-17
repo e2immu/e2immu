@@ -27,4 +27,6 @@ import org.e2immu.analyser.model.TypeInspection;
 public interface InspectWithJavaParser {
 
     void inspect(TypeInfo typeInfo, TypeInspection.Builder typeInspectionBuilder) throws ParseException;
+
+    boolean storeComments();
 }

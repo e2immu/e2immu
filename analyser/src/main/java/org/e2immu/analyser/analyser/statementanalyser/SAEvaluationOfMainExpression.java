@@ -236,11 +236,13 @@ record SAEvaluationOfMainExpression(StatementAnalysis statementAnalysis,
     private AnalysisStatus emptyExpression(StatementAnalyserSharedState sharedState, CausesOfDelay causes) {
         // try-statement has no main expression, and it may not have initializers; break; continue; ...
         boolean progress = false;
-        if (statementAnalysis.stateData().valueOfExpression.isVariable()) {
-            progress = setFinalAllowEquals(statementAnalysis.stateData().valueOfExpression, EmptyExpression.EMPTY_EXPRESSION);
+        StateData stateData = statementAnalysis.stateData();
+        if (stateData.valueOfExpression.isVariable()) {
+            progress = setFinalAllowEquals(stateData.valueOfExpression, EmptyExpression.EMPTY_EXPRESSION);
         }
-        progress |= statementAnalysis.stateData().setPrecondition(Precondition.empty(sharedState.context().getPrimitives()));
-        progress |= statementAnalysis.stateData().setPreconditionFromMethodCalls(Precondition.empty(sharedState.context().getPrimitives()));
+        progress |= stateData.setPrecondition(Precondition.empty(sharedState.context().getPrimitives()));
+        progress |= stateData.setPreconditionFromMethodCalls(Precondition.empty(sharedState.context().getPrimitives()));
+        progress |= stateData.setEvaluatedExpressionCache(EvaluatedExpressionCache.EMPTY);
 
         if (statementAnalysis.flowData().timeAfterExecutionNotYetSet()) {
             statementAnalysis.flowData().copyTimeAfterExecutionFromInitialTime();

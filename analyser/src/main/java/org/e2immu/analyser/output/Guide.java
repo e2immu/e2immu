@@ -67,6 +67,10 @@ public record Guide(int index,
         return new GuideGenerator(1, false, false, false, false);
     }
 
+    public static GuideGenerator generatorForMultilineComment() {
+        return new GuideGenerator(0, true, true, true, true);
+    }
+
     public static GuideGenerator generatorForParameterDeclaration() {
         return new GuideGenerator(1, false, true, false, false);
     }

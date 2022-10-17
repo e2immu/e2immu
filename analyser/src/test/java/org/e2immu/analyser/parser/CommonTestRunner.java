@@ -103,6 +103,7 @@ public abstract class CommonTestRunner extends VisitorTestSupport {
                 .setAnnotatedAPIConfiguration(annotatedAPIConfiguration)
                 .addDebugLogTargets("analyser")
                 .setInputConfiguration(inputConfigurationBuilder.build())
+                .setInspectorConfiguration(new InspectorConfiguration.Builder().setStoreComments(true).build())
                 .build();
         return execute(configuration, errorsToExpect, warningsToExpect);
     }
@@ -146,6 +147,7 @@ public abstract class CommonTestRunner extends VisitorTestSupport {
                 .setDebugConfiguration(debugConfiguration)
                 .setInputConfiguration(builder.build())
                 .setAnalyserConfiguration(analyserConfiguration)
+                .setInspectorConfiguration(new InspectorConfiguration.Builder().setStoreComments(true).build())
                 .build();
         return execute(configuration, errorsToExpect, warningsToExpect);
     }
