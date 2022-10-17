@@ -76,7 +76,8 @@ public class SwitchStatementNewStyle extends StatementWithExpression implements 
         outputBuilder.add(guideGenerator.start());
         int i = 0;
         for (SwitchEntry switchEntry : switchEntries) {
-            outputBuilder.add(switchEntry.output(qualification, guideGenerator, LimitedStatementAnalysis.startOfBlock(statementAnalysis, i)));
+            if (i > 0) outputBuilder.add(guideGenerator.mid());
+            outputBuilder.add(switchEntry.output(qualification, LimitedStatementAnalysis.startOfBlock(statementAnalysis, i)));
             i++;
         }
         return outputBuilder.add(guideGenerator.end()).add(Symbol.RIGHT_BRACE);

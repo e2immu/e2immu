@@ -663,7 +663,7 @@ public class TestFormatter1 {
             System.out.println(fi);
             return false;
         }, 0, 15);
-        assertEquals(2, info.size());
+        assertEquals(3, info.size());
     }
 
     // public method(int p1, int p2); with guides

@@ -61,11 +61,11 @@ public abstract class SwitchEntry extends StatementWithStructure {
         return Objects.hash(labels);
     }
 
-    protected void appendLabels(OutputBuilder outputBuilder, Qualification qualification, Guide.GuideGenerator guideGenerator) {
+    protected void appendLabels(OutputBuilder outputBuilder, Qualification qualification) {
         if (labels.isEmpty()) {
-            outputBuilder.add(guideGenerator.mid()).add(new Text("default")).add(Symbol.LAMBDA);
+            outputBuilder.add(new Text("default")).add(Symbol.LAMBDA);
         } else {
-            outputBuilder.add(guideGenerator.mid())
+            outputBuilder
                     .add(labels.stream().map(expression -> expression.output(qualification)).collect(OutputBuilder.joining(Symbol.COMMA)))
                     .add(Symbol.LAMBDA);
         }
@@ -98,10 +98,6 @@ public abstract class SwitchEntry extends StatementWithStructure {
         boolean primitive = switchVariableAsExpression.returnType().isPrimitiveExcludingVoid();
         return primitive ? primitives.equalsOperatorInt() : primitives.equalsOperatorObject();
     }
-
-    public abstract OutputBuilder output(Qualification qualification,
-                                         Guide.GuideGenerator guideGenerator,
-                                         LimitedStatementAnalysis statementAnalysis);
 
     public static DV statementExecution(List<Expression> labels,
                                         Expression value,
@@ -152,28 +148,22 @@ public abstract class SwitchEntry extends StatementWithStructure {
 
         @Override
         public OutputBuilder output(Qualification qualification, LimitedStatementAnalysis statementAnalysis) {
-            throw new UnsupportedOperationException(); // need to use a different method!
-        }
-
-        @Override
-        public OutputBuilder output(Qualification qualification,
-                                    Guide.GuideGenerator guideGenerator,
-                                    LimitedStatementAnalysis statementAnalysis) {
             OutputBuilder outputBuilder = new OutputBuilder();
-            appendLabels(outputBuilder, qualification, guideGenerator);
+            appendLabels(outputBuilder, qualification);
 
-            Guide.GuideGenerator ggStatements = Guide.defaultGuideGenerator();
-            outputBuilder.add(ggStatements.start());
             if (statementAnalysis != null) {
+                Guide.GuideGenerator ggStatements = Guide.defaultGuideGenerator();
+                outputBuilder.add(ggStatements.start());
                 Block.statementsString(qualification, outputBuilder, ggStatements, statementAnalysis);
+                outputBuilder.add(ggStatements.end());
+            } else if (structure.statements().size() == 1) {
+                outputBuilder.add(structure.statements().get(0).output(qualification, null));
             } else {
                 outputBuilder.add(structure.statements().stream()
                         .filter(s -> !s.isSynthetic())
                         .map(s -> s.output(qualification, null))
                         .collect(OutputBuilder.joining(Space.NONE, Guide.generatorForBlock())));
             }
-            outputBuilder.add(ggStatements.end());
-
             return outputBuilder;
         }
 
@@ -227,13 +217,8 @@ public abstract class SwitchEntry extends StatementWithStructure {
 
         @Override
         public OutputBuilder output(Qualification qualification, LimitedStatementAnalysis statementAnalysis) {
-            throw new UnsupportedOperationException(); // need to use a different method!
-        }
-
-        @Override
-        public OutputBuilder output(Qualification qualification, Guide.GuideGenerator guideGenerator, LimitedStatementAnalysis statementAnalysis) {
             OutputBuilder outputBuilder = new OutputBuilder();
-            appendLabels(outputBuilder, qualification, guideGenerator);
+            appendLabels(outputBuilder, qualification);
             outputBuilder.add(structure.block().output(qualification, statementAnalysis));
             return outputBuilder;
         }

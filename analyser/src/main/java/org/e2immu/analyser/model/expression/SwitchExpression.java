@@ -74,14 +74,24 @@ public class SwitchExpression extends BaseExpression implements Expression, HasS
     @Override
     public OutputBuilder output(Qualification qualification) {
         Guide.GuideGenerator blockGenerator = Guide.generatorForBlock();
-        return new OutputBuilder().add(new Text("switch"))
+        OutputBuilder ob = new OutputBuilder().add(new Text("switch"))
                 .add(Symbol.LEFT_PARENTHESIS)
                 .add(selector.output(qualification))
                 .add(Symbol.RIGHT_PARENTHESIS)
-                .add(switchEntries.stream().map(switchEntry ->
-                                switchEntry.output(qualification, blockGenerator, null))
-                        .collect(OutputBuilder.joining(Space.ONE_IS_NICE_EASY_SPLIT, Symbol.LEFT_BRACE,
-                                Symbol.RIGHT_BRACE, blockGenerator)));
+                .add(Symbol.LEFT_BRACE)
+                .add(blockGenerator.start());
+        boolean addMid = false;
+        for (SwitchEntry switchEntry : switchEntries) {
+            if (addMid) {
+                ob.add(blockGenerator.mid());
+            } else {
+                addMid = true;
+            }
+            ob.add(switchEntry.output(qualification, null));
+        }
+        ob.add(blockGenerator.end())
+                .add(Symbol.RIGHT_BRACE);
+        return ob;
     }
 
     @Override

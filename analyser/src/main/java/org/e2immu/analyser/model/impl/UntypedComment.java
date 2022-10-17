@@ -23,9 +23,7 @@ public record UntypedComment(String text) implements Comment {
                         Symbol.LEFT_BLOCK_COMMENT,
                         Symbol.RIGHT_BLOCK_COMMENT,
                         gg));
-        OutputBuilder ob = new OutputBuilder().add(joinedText);
-        //if (multiLine) ob.add(Space.NEWLINE);
-        return ob;
+        return new OutputBuilder().add(joinedText);
     }
 
 }

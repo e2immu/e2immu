@@ -69,7 +69,8 @@ public record Guide(String name,
     }
 
     public static GuideGenerator generatorForMultilineComment() {
-        return new GuideGenerator("multiLineComment", 0, true, true, true, true);
+        // EXPLAIN prioritySplit must be false, otherwise empty stack exception in Formatter; see TestFormatter5
+        return new GuideGenerator("multiLineComment", 0, false, true, true, true);
     }
 
     public static GuideGenerator generatorForParameterDeclaration() {
