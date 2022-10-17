@@ -21,6 +21,7 @@ import org.e2immu.analyser.config.Configuration;
 import org.e2immu.analyser.config.InputConfiguration;
 import org.e2immu.analyser.inspector.TypeContext;
 import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.model.impl.LocationImpl;
 import org.e2immu.analyser.model.variable.LocalVariableReference;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.parser.Input;
@@ -91,6 +92,27 @@ public class TestLinkingExpression {
             public DV getPropertyFromPreviousOrInitial(Variable variable, Property property) {
                 return property.falseDv;
             }
+
+            @Override
+            public Expression currentValue(Variable variable) {
+                return currentValue(variable, null, null, null);
+            }
+
+            @Override
+            public Expression currentValue(Variable variable, Expression scopeValue, Expression indexValue, ForwardEvaluationInfo forwardEvaluationInfo) {
+                if ("v".equals(variable.simpleName())) return new IntConstant(getPrimitives(), 3);
+                throw new UnsupportedOperationException("var = " + variable.fullyQualifiedName());
+            }
+
+            @Override
+            public Location getLocation(Stage level) {
+                return new LocationImpl(getPrimitives().stringTypeInfo());
+            }
+
+            @Override
+            public TypeInfo getCurrentType() {
+                return getPrimitives().stringTypeInfo();
+            }
         };
         context = EvaluationResult.from(ec);
     }
@@ -135,7 +157,7 @@ public class TestLinkingExpression {
                 List.of(newInt(0)));
 
         LinkedVariables lvGet = get0.linkedVariables(context);
-        assertEquals("v:3", lvGet.toString());
+        assertEquals("v:4", lvGet.toString());
 
         // new ArrayList<>(v).subList(1, 2)
         MethodInfo listSubList = arrayList.findUniqueMethod("subList", 2);
@@ -185,7 +207,7 @@ public class TestLinkingExpression {
         MethodInfo addAll = collections.findUniqueMethod("addAll", 2);
 
 
-        assertEquals("{java.util.Collections.addAll(java.util.Collection<? super T>,T...):0:c=elements:3}",
+        assertEquals("{java.util.Collections.addAll(java.util.Collection<? super T>,T...):0:c=elements:4}",
                 addAll.crossLinks(context.getAnalyserContext()).toString());
 
         TypeInfo collection = typeContext.getFullyQualified(Collection.class);
@@ -211,8 +233,7 @@ public class TestLinkingExpression {
                 List.of(LinkedVariables.of(Map.of(v, LinkedVariables.LINK_ASSIGNED)),
                         LinkedVariables.of(Map.of(i, LinkedVariables.LINK_ASSIGNED)),
                         LinkedVariables.of(Map.of(j, LinkedVariables.LINK_ASSIGNED))));
-        // because v, i and j are integers, there are no links!
-        assertNull(builder.build().changeData().get(v));
+        assertEquals("i:4,j:4", builder.build().changeData().get(v).linkedVariables().toString());
     }
 
     @Test
@@ -246,9 +267,9 @@ public class TestLinkingExpression {
                         LinkedVariables.of(Map.of(i, LinkedVariables.LINK_ASSIGNED)),
                         LinkedVariables.of(Map.of(j, LinkedVariables.LINK_ASSIGNED))));
 
-        assertNull(builder.build().changeData().get(i));
-        assertNull(builder.build().changeData().get(j));
-        assertEquals("i:2,j:2", builder.build().changeData().get(v).linkedVariables().toString());
+        assertEquals("v:4", builder.build().changeData().get(i).linkedVariables().toString());
+        assertEquals("v:4", builder.build().changeData().get(j).linkedVariables().toString());
+        assertEquals("i:4,j:4", builder.build().changeData().get(v).linkedVariables().toString());
     }
 
     private IntConstant newInt(int i) {

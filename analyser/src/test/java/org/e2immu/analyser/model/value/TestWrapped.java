@@ -38,7 +38,7 @@ public class TestWrapped extends CommonAbstractValue {
         assertTrue(eq(stringA, stringA).isBoolValueTrue());
 
         Expression bWrapped = PropertyWrapper.propertyWrapper(stringB, LinkedVariables.of(Map.of(va, LinkedVariables.LINK_ASSIGNED)));
-        assertEquals("\"b\"/*{L a:assigned:1}*/", bWrapped.toString());
+        assertEquals("\"b\"/*{L a:1}*/", bWrapped.toString());
 
         assertTrue(eq(bWrapped, stringB).isBoolValueTrue());
         assertTrue(eq(stringA, bWrapped).isBoolValueFalse());

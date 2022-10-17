@@ -29,8 +29,7 @@ import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 
 public class TestMethodReference extends CommonTest {
@@ -51,20 +50,22 @@ public class TestMethodReference extends CommonTest {
         TypeMap typeMap = inspectAndResolve(MethodReference_2.class);
         TypeInfo typeInfo = typeMap.get(MethodReference_2.class);
 
-
-        testMethod("getFunction3", typeMap, typeInfo, S_FUNCTION);
-        testMethod("getFunction", typeMap, typeInfo, O_FUNCTION);
-        testMethod("getFunction2", typeMap, typeInfo, S_FUNCTION);
+        testMethod("getFunction", typeMap, typeInfo, O_FUNCTION, "java.util.Map.get(java.lang.Object)");
+        testMethod("getFunction2", typeMap, typeInfo, S_FUNCTION, "org.e2immu.analyser.resolver.testexample.MethodReference_2.get(java.lang.String)");
+        testMethod("getFunction3", typeMap, typeInfo, S_FUNCTION, "java.lang.String.length()");
+        testMethod("getFunction4", typeMap, typeInfo, S_FUNCTION, "java.lang.String.length()");
     }
 
     private static final String S_FUNCTION = "Type java.util.function.Function<java.lang.String,java.lang.Integer>";
     private static final String O_FUNCTION = "Type java.util.function.Function<java.lang.Object,java.lang.Integer>";
 
-    private void testMethod(String methodName, TypeMap typeMap, TypeInfo typeInfo, String result) {
+    private void testMethod(String methodName, TypeMap typeMap, TypeInfo typeInfo, String returnType, String methodFqn) {
         MethodInfo getFunction = typeInfo.findUniqueMethod(methodName, 0);
         Block block = typeMap.getMethodInspection(getFunction).getMethodBody();
         Expression expression = ((ReturnStatement) block.structure.getStatements().get(0)).expression;
-        assertTrue(expression instanceof MethodReference);
-        assertEquals(result, expression.returnType().toString());
+        if (expression instanceof MethodReference mr) {
+            assertEquals(methodFqn, mr.methodInfo.fullyQualifiedName);
+        } else fail();
+        assertEquals(returnType, expression.returnType().toString());
     }
 }

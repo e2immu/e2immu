@@ -602,31 +602,7 @@ public record ExpressionContextImpl(ExpressionContext.ResolverRecursion resolver
             if (expression.isTypeExpr()) {
                 // note that "System.out" is a type expression; ParameterizedType.from can handle this, but we'd rather see a field access
                 TypeExpr typeExpr = (TypeExpr) expression;
-                if (typeExpr.getType().isClassOrInterfaceType()) {
-                    ClassOrInterfaceType cit = typeExpr.getType().asClassOrInterfaceType();
-                    if (cit.getScope().isPresent()) {
-                        // System.out, we'll return a field access, scope is System
-                        // but: expressionContext.typeContext, scope is expressionContext = variable!
-                        Variable variable = variableContext.get(cit.getScope().get().getNameAsString(), false);
-                        Expression scope;
-                        if (variable != null) {
-                            scope = new VariableExpression(Identifier.from(typeExpr), variable);
-                        } else {
-                            ParameterizedType parameterizedType = ParameterizedTypeFactory.from(typeContext, cit.getScope().get());
-                            scope = new TypeExpression(identifier, parameterizedType, Diamond.NO);
-                        }
-                        return ParseFieldAccessExpr.createFieldAccess(typeContext, scope, cit.getNameAsString(),
-                                identifier, enclosingType);
-                    }
-                    // there is a real possibility that the type expression is NOT a type but a local field...
-                    // therefore, we check the variable context first
-                    Variable variable = variableContext.get(typeExpr.getTypeAsString(), false);
-                    if (variable != null) {
-                        return new VariableExpression(identifier, variable);
-                    }
-                }
-                ParameterizedType parameterizedType = ParameterizedTypeFactory.from(typeContext, typeExpr.getType());
-                return new TypeExpression(identifier, parameterizedType, Diamond.SHOW_ALL);
+                return parseTypeExpression(identifier, typeExpr);
             }
             if (expression.isClassExpr()) {
                 ClassExpr classExpr = (ClassExpr) expression;
@@ -800,6 +776,56 @@ public record ExpressionContextImpl(ExpressionContext.ResolverRecursion resolver
                     expression.getBegin().orElse(null), expression.getEnd().orElse(null));
             throw rte;
         }
+    }
+
+
+    /*
+    problem here is that there's quite a few TypeExpr occurrences, see resolver.testexample.MethodReference_2,
+    FieldAccess_2.
+    anything left of a :: is a TypeExpr.
+
+    ParameterizedTypeFactory.from deals with everything that is a ParameterizedType;
+    here, we want to detect the fields, because we then have to return a FieldAccess expression.
+
+    input can be
+
+    String[] type is an array type -> PTF
+    System.out (scope is type, typeExpr is variable) -> HERE
+    Map.Entry (scope is type, typeExpr is type) -> PTF
+    expressionContext.typeContext (scope is variable, typeExpr is variable) -> HERE
+    java.lang.String (scape is package, typeExpr is type) -> PTF
+
+     */
+
+    private Expression parseTypeExpression(Identifier identifier, TypeExpr typeExpr) {
+        ParameterizedType parameterizedType = ParameterizedTypeFactory.fromDoNotComplain(typeContext, typeExpr.getType());
+        if (parameterizedType != null) {
+            return new TypeExpression(identifier, parameterizedType, Diamond.SHOW_ALL);
+        }
+
+        if (typeExpr.getType().isClassOrInterfaceType()) {
+            ClassOrInterfaceType cit = typeExpr.getType().asClassOrInterfaceType();
+            if (cit.getScope().isPresent()) {
+                Variable variable = variableContext.get(cit.getScope().get().getNameAsString(), false);
+                Expression scope;
+                if (variable != null) {
+                    scope = new VariableExpression(Identifier.from(typeExpr), variable);
+                } else {
+                    ParameterizedType scopeType = ParameterizedTypeFactory.from(typeContext, cit.getScope().get());
+                    scope = new TypeExpression(identifier, scopeType, Diamond.NO);
+                }
+                String nameAsString = cit.getNameAsString();
+                return ParseFieldAccessExpr.createFieldAccess(typeContext, scope, nameAsString,
+                        identifier, enclosingType);
+            }
+            // there is a real possibility that the type expression is NOT a type but a local field...
+            // therefore, we check the variable context first
+            Variable variable = variableContext.get(typeExpr.getTypeAsString(), false);
+            if (variable != null) {
+                return new VariableExpression(identifier, variable);
+            }
+        }
+        throw new UnsupportedOperationException();
     }
 
     @Override
