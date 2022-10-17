@@ -21,7 +21,8 @@ import org.e2immu.annotation.rare.IgnoreModifications;
 import java.util.concurrent.atomic.AtomicInteger;
 
 @ImmutableContainer
-public record Guide(int index,
+public record Guide(String name,
+                    int index,
                     Position position,
                     int tabs,
                     boolean prioritySplit,
@@ -52,35 +53,36 @@ public record Guide(int index,
     }
 
     public static GuideGenerator generatorForBlock() {
-        return new GuideGenerator(1, true, true, true, true);
+        return new GuideGenerator("block", 1, true, true, true, true);
     }
 
     public static GuideGenerator generatorForEnumDefinitions() {
-        return new GuideGenerator(0, false, false, true, true);
+        return new GuideGenerator("enum", 0, false, false, true, true);
     }
 
     public static GuideGenerator generatorForCompanionList() {
-        return new GuideGenerator(0, true, false, false, true);
+        return new GuideGenerator("companion", 0, true, false, false, true);
     }
 
     public static GuideGenerator defaultGuideGenerator() {
-        return new GuideGenerator(1, false, false, false, false);
+        return new GuideGenerator("default", 1, false, false, false, false);
     }
 
     public static GuideGenerator generatorForMultilineComment() {
-        return new GuideGenerator(0, true, true, true, true);
+        return new GuideGenerator("multiLineComment", 0, true, true, true, true);
     }
 
     public static GuideGenerator generatorForParameterDeclaration() {
-        return new GuideGenerator(1, false, true, false, false);
+        return new GuideGenerator("params", 1, false, true, false, false);
     }
 
     public static GuideGenerator generatorForAnnotationList() {
-        return new GuideGenerator(0, false, false, false, false);
+        return new GuideGenerator("annotations", 0, false, false, false, false);
     }
 
     @ImmutableContainer
     public static class GuideGenerator {
+        public final String name;
         public final int index;
         private final int tabs;
         private final boolean prioritySplit;
@@ -88,8 +90,14 @@ public record Guide(int index,
         private final boolean endWithNewLine;
         private final boolean allowNewLineBefore;
 
-        private GuideGenerator(int tabs, boolean prioritySplit, boolean startWithNewLine, boolean endWithNewLine, boolean allowNewLineBefore) {
+        private GuideGenerator(String name,
+                               int tabs,
+                               boolean prioritySplit,
+                               boolean startWithNewLine,
+                               boolean endWithNewLine,
+                               boolean allowNewLineBefore) {
             index = generator.incrementAndGet();
+            this.name = name;
             this.tabs = tabs;
             this.startWithNewLine = startWithNewLine;
             this.endWithNewLine = endWithNewLine;
@@ -98,15 +106,15 @@ public record Guide(int index,
         }
 
         public Guide start() {
-            return new Guide(index, Position.START, tabs, prioritySplit, startWithNewLine, endWithNewLine, allowNewLineBefore);
+            return new Guide(name, index, Position.START, tabs, prioritySplit, startWithNewLine, endWithNewLine, allowNewLineBefore);
         }
 
         public Guide mid() {
-            return new Guide(index, Position.MID, tabs, prioritySplit, startWithNewLine, endWithNewLine, allowNewLineBefore);
+            return new Guide(name, index, Position.MID, tabs, prioritySplit, startWithNewLine, endWithNewLine, allowNewLineBefore);
         }
 
         public Guide end() {
-            return new Guide(index, Position.END, tabs, prioritySplit, startWithNewLine, endWithNewLine, allowNewLineBefore);
+            return new Guide(name, index, Position.END, tabs, prioritySplit, startWithNewLine, endWithNewLine, allowNewLineBefore);
         }
 
         public boolean keepGuidesWithoutMid() {
