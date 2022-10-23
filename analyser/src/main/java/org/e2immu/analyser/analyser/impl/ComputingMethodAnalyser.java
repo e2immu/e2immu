@@ -790,7 +790,9 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
         assert value.isDone();
         Identifier identifier = Identifier.generate("inline method");
         if (value.getComplexity() > Expression.COMPLEXITY_LIMIT_OF_INLINED_METHOD) {
-            return UnknownExpression.forUnknownReturnValue(identifier, methodInfo.returnType());
+            VariableInfo variableInfo = getReturnAsVariable();
+            Properties properties = variableInfo.valueProperties();
+            return Instance.forTooComplex(identifier, value.returnType(), properties);
         }
         return InlinedMethod.of(identifier, methodInfo, value, analyserContext);
     }

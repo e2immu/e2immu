@@ -102,7 +102,25 @@ public class InlineConditional extends BaseExpression implements Expression {
 
     @Override
     public int internalCompareTo(Expression v) {
-        return condition.internalCompareTo(v);
+        if (v instanceof InlineConditional other) {
+            int c = condition.compareTo(other.condition);
+            if (c == 0) {
+                int d = ifTrue.compareTo(other.ifTrue);
+                if (d == 0) {
+                    return ifFalse.compareTo(other.ifFalse);
+                }
+                return d;
+            }
+            return c;
+        }
+        // because the internal order of an inline is equal to that of the condition, we can encounter every other expression
+        // type here
+        int c = condition.compareTo(v);
+        if (c == 0) {
+            // let's put the inline conditional at the back
+            return 1;
+        }
+        return c;
     }
 
     @Override
@@ -221,12 +239,14 @@ public class InlineConditional extends BaseExpression implements Expression {
 
         Expression t = ifTrueResult.value();
         Expression f = ifFalseResult.value();
-
         if (condition.isEmpty() || t.isEmpty() || f.isEmpty()) {
             throw new UnsupportedOperationException();
         }
+        DV modifying = ifTrueResult.containsModification()
+                .max(ifFalseResult.containsModification())
+                .max(conditionResult.containsModification());
         EvaluationResult cv = EvaluateInlineConditional.conditionalValueConditionResolved(context,
-                conditionAfterState, t, f, forwardEvaluationInfo.isComplainInlineConditional(), null);
+                conditionAfterState, t, f, forwardEvaluationInfo.isComplainInlineConditional(), null, modifying);
         return builder.compose(cv).build();
     }
 
@@ -249,7 +269,7 @@ public class InlineConditional extends BaseExpression implements Expression {
             return EvaluateInlineConditional.conditionalValueCurrentState(evaluationContext, condition, t, f).getExpression();
         }
         return EvaluateInlineConditional.conditionalValueConditionResolved(evaluationContext, condition, t, f,
-                false, myself).getExpression();
+                false, myself, DV.FALSE_DV).getExpression();
 
     }
 

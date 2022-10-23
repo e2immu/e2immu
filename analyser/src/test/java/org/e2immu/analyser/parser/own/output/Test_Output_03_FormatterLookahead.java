@@ -77,11 +77,11 @@ public class Test_Output_03_FormatterLookahead extends CommonTestRunner {
                 assertEquals("$1", d.methodInfo().typeInfo.simpleName);
                 String expected = d.iteration() <= 1
                         ? "<m:apply>"
-                        : "/*inline apply*/null==`forwardInfo.string`?instance type boolean:-1-lineLength+`forwardInfo.chars`+(null==`forwardInfo.string`?0:`forwardInfo.string`.length())>=0?(!startOfGuides.isEmpty()||!`forwardInfo.symbol`||null!=prioritySplit.get()||list.get(`forwardInfo.pos`)==Space.NEWLINE)&&(!startOfGuides.isEmpty()||null!=`forwardInfo.string`||null!=prioritySplit.get()||list.get(`forwardInfo.pos`)==Space.NEWLINE):list.get(`forwardInfo.pos`)==Space.NEWLINE";
+                        : "instance type boolean";
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
                 String vars = d.iteration() <= 1
                         ? "NEWLINE,forwardInfo,lineLength,list,prioritySplit,startOfGuides"
-                        : "NEWLINE,lineLength,list,prioritySplit,startOfGuides";
+                        : "";//NEWLINE,lineLength,list,prioritySplit,startOfGuides";
                 assertEquals(vars,
                         d.methodAnalysis().getSingleReturnValue().variables(true)
                                 .stream().map(Variable::simpleName).sorted().distinct().collect(Collectors.joining(",")));

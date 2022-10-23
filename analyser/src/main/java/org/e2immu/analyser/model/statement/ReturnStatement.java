@@ -68,7 +68,9 @@ public class ReturnStatement extends StatementWithExpression {
     public List<Statement> translate(InspectionProvider inspectionProvider, TranslationMap translationMap) {
         List<Statement> direct = translationMap.translateStatement(inspectionProvider, this);
         if (haveDirectTranslation(direct, this)) return direct;
-        return List.of(new ReturnStatement(identifier, translationMap.translateExpression(expression)));
+        Expression translated = expression.translate(inspectionProvider, translationMap);
+        if (translated == expression) return List.of(this);
+        return List.of(new ReturnStatement(identifier, translated));
     }
 
     @Override

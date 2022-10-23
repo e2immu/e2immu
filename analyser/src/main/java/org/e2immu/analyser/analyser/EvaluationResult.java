@@ -243,6 +243,11 @@ public record EvaluationResult(EvaluationContext evaluationContext,
                 newCauses, messages, newChangeData, precondition);
     }
 
+    public DV containsModification() {
+        return changeData.values().stream().map(cd -> cd.properties.getOrDefault(Property.CONTEXT_MODIFIED, DV.FALSE_DV))
+                .reduce(DV.FALSE_DV, DV::max);
+    }
+
     /**
      * Any of [value, markAssignment, linkedVariables]
      * can be used independently: possibly we want to mark assignment, but still have NO_VALUE for the value.

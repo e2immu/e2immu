@@ -258,11 +258,10 @@ public class Lambda extends BaseExpression implements Expression {
                 assert nneParam != DV.MAX_INT_DV;
             }
             if (srv.isDone() && modified.isDone() && nneParam.isDone()) {
-                if (modified.valueIsFalse()) {
+                if (modified.valueIsFalse() && (srv instanceof InlinedMethod || srv.isConstant())) {
                     result = srv;
-                    assert result instanceof InlinedMethod || result.isConstant();
                 } else {
-                    // modifying method, we cannot simply substitute
+                    // modifying method, we cannot simply substitute; or: non-modifying, too complex
                     DV nne = MultiLevel.composeOneLevelMoreNotNull(nneParam);
                     assert nne.isDone();
                     result = makeInstance(parameterizedType, nne);

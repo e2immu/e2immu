@@ -37,7 +37,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 public class Test_02_ConditionalChecks extends CommonTestRunner {
 
-    public static final String RETURN_VALUE = "null!=o&&o.getClass()==this.getClass()&&(o==this||o/*(ConditionalChecks_4)*/.i==i)";
+    public static final String RETURN_VALUE = "(null!=o||o==this)&&(o.getClass()==this.getClass()||o==this)&&(o==this||o/*(ConditionalChecks_4)*/.i==i)";
 
     public Test_02_ConditionalChecks() {
         super(false);
@@ -46,7 +46,7 @@ public class Test_02_ConditionalChecks extends CommonTestRunner {
     @Test
     public void test0() throws IOException {
         final String RETURN1 = "org.e2immu.analyser.parser.conditional.testexample.ConditionalChecks_0.method1(boolean,boolean)";
-        final String RETURN_1_VALUE = "!a&&b?4:a&&!b?3:!a&&!b?2:a&&b?1:<return value>";
+        final String RETURN_1_VALUE = "a&&b?1:!a&&!b?2:a&&!b?3:!a&&b?4:<return value>";
 
         StatementAnalyserVisitor statementAnalyserVisitor = d -> {
             DV inBlock = d.statementAnalysis().flowData().getGuaranteedToBeReachedInCurrentBlock();
@@ -138,14 +138,10 @@ public class Test_02_ConditionalChecks extends CommonTestRunner {
                 }
                 // after if (!a && !b) return 2;
                 if ("1".equals(d.statementId())) {
-                    // we do NOT expect a regression to the ReturnVariable
-                    assertEquals("!a&&!b?2:a&&b?1:<return value>",
-                            d.currentValue().toString());
+                    assertEquals("a&&b?1:!a&&!b?2:<return value>", d.currentValue().toString());
                 }
                 if ("2".equals(d.statementId())) {
-                    // we do NOT expect a regression to the ReturnVariable
-                    assertEquals("a&&!b?3:!a&&!b?2:a&&b?1:<return value>",
-                            d.currentValue().toString());
+                    assertEquals("a&&b?1:!a&&!b?2:a&&!b?3:<return value>", d.currentValue().toString());
                 }
                 if ("3.0.0".equals(d.statementId())) {
                     assertEquals("4", d.currentValue().toString());
@@ -326,7 +322,7 @@ public class Test_02_ConditionalChecks extends CommonTestRunner {
                 }
                 if ("1".equals(d.statementId())) {
                     if (RETURN5.equals(d.variableName())) {
-                        assertEquals("null!=o&&o.getClass()==this.getClass()&&(<return value>||o==this)",
+                        assertEquals("<return value>&&null!=o&&o.getClass()==this.getClass()||o==this",
                                 d.currentValue().toString());
                     }
                 }
@@ -352,8 +348,10 @@ public class Test_02_ConditionalChecks extends CommonTestRunner {
                     }
                     if (RETURN5.equals(d.variableName())) {
                         String expectValue = switch (d.iteration()) {
-                            case 0 -> "null!=o&&o.getClass()==this.getClass()&&(o==this||<f:i>==<f:conditionalChecks.i>)";
-                            case 1 -> "null!=o&&o.getClass()==this.getClass()&&(o==this||<f:conditionalChecks.i>==i)";
+                            case 0 ->
+                                    "(null!=o||o==this)&&(o.getClass()==this.getClass()||o==this)&&(o==this||<f:i>==<f:conditionalChecks.i>)";
+                            case 1 ->
+                                    "(null!=o||o==this)&&(o.getClass()==this.getClass()||o==this)&&(o==this||<f:conditionalChecks.i>==i)";
                             default -> RETURN_VALUE;
                         };
                         assertEquals(expectValue, d.currentValue().toString());
@@ -377,7 +375,7 @@ public class Test_02_ConditionalChecks extends CommonTestRunner {
                     assertEquals("null!=o&&o.getClass()==this.getClass()&&o!=this", d.absoluteState().toString());
                 }
                 if ("2".equals(d.statementId())) {
-                    assertFalse( d.allowBreakDelay());
+                    assertFalse(d.allowBreakDelay());
                     assertEquals("null!=o&&o.getClass()==this.getClass()&&o!=this", d.absoluteState().toString());
                 }
             }
@@ -417,8 +415,10 @@ public class Test_02_ConditionalChecks extends CommonTestRunner {
                 }
                 if ("3".equals(d.statementId())) {
                     String expectValueString = switch (d.iteration()) {
-                        case 0 -> "null!=o&&o.getClass()==this.getClass()&&(o==this||<f:i>==<f:conditionalChecks.i>)";
-                        case 1 -> "null!=o&&o.getClass()==this.getClass()&&(o==this||<f:conditionalChecks.i>==i)";
+                        case 0 ->
+                                "(null!=o||o==this)&&(o.getClass()==this.getClass()||o==this)&&(o==this||<f:i>==<f:conditionalChecks.i>)";
+                        case 1 ->
+                                "(null!=o||o==this)&&(o.getClass()==this.getClass()||o==this)&&(o==this||<f:conditionalChecks.i>==i)";
                         default -> RETURN_VALUE;
                     };
                     assertEquals(expectValueString, d.evaluationResult().value().toString());

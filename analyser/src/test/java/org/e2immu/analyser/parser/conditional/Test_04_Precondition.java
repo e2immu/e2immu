@@ -525,4 +525,18 @@ public class Test_04_Precondition extends CommonTestRunner {
                         .build());
     }
 
+
+    @Test
+    public void test_8() throws IOException {
+        MethodAnalyserVisitor methodAnalyserVisitor = d -> {
+            if("test".equals(d.methodInfo().name)) {
+                assertEquals("Precondition[expression=!\"escape\".equals(in), causes=[escape]]",
+                        d.methodAnalysis().getPrecondition().toString());
+            }
+        };
+        testClass("Precondition_8", 0, 0,
+                new DebugConfiguration.Builder()
+                        .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                        .build());
+    }
 }

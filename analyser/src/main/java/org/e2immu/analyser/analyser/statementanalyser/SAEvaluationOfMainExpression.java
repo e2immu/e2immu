@@ -76,6 +76,8 @@ record SAEvaluationOfMainExpression(StatementAnalysis statementAnalysis,
     }
 
     private AnalysisStatus evaluationOfMainExpression0(StatementAnalyserSharedState sharedState) {
+        statementAnalysis.stateData().setAbsoluteState(sharedState.evaluationContext());
+
         List<Expression> expressionsFromInitAndUpdate = new SAInitializersAndUpdaters(statementAnalysis)
                 .initializersAndUpdaters(sharedState.forwardAnalysisInfo(), sharedState.evaluationContext());
         /*
@@ -191,7 +193,6 @@ record SAEvaluationOfMainExpression(StatementAnalysis statementAnalysis,
                     sharedState.localConditionManager().causesOfDelay());
         }
         statementAnalysis.stateData().setValueOfExpression(value);
-        statementAnalysis.stateData().setEvaluatedExpressionCache(result.evaluatedExpressionCache());
 
         ProgressAndDelay endResult = ennStatus.combine(statusPost).merge(stateForLoop);
         return endResult.toAnalysisStatus();
@@ -242,7 +243,6 @@ record SAEvaluationOfMainExpression(StatementAnalysis statementAnalysis,
         }
         progress |= stateData.setPrecondition(Precondition.empty(sharedState.context().getPrimitives()));
         progress |= stateData.setPreconditionFromMethodCalls(Precondition.empty(sharedState.context().getPrimitives()));
-        progress |= stateData.setEvaluatedExpressionCache(EvaluatedExpressionCache.EMPTY);
 
         if (statementAnalysis.flowData().timeAfterExecutionNotYetSet()) {
             statementAnalysis.flowData().copyTimeAfterExecutionFromInitialTime();

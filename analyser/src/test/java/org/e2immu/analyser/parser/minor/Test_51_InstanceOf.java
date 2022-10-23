@@ -427,9 +427,9 @@ public class Test_51_InstanceOf extends CommonTestRunner {
                     }
                     if ("1".equals(d.statementId())) {
                         String expected = switch (d.iteration()) {
-                            case 0 -> "object instanceof Boolean&&null!=object?<new:BooleanConstant>:object instanceof String&&null!=object?<new:StringConstant>:<return value>";
-                            case 1 -> "object instanceof Boolean&&null!=object?new BooleanConstant(object/*(Boolean)*/):object instanceof String&&null!=object?<new:StringConstant>:<return value>";
-                            default -> "object instanceof Boolean&&null!=object?new BooleanConstant(object/*(Boolean)*/):object instanceof String&&null!=object?new StringConstant(object/*(String)*/):<return value>";
+                            case 0 -> "object instanceof String&&null!=object?<new:StringConstant>:object instanceof Boolean&&null!=object?<new:BooleanConstant>:<return value>";
+                            case 1 -> "object instanceof String&&null!=object?<new:StringConstant>:object instanceof Boolean&&null!=object?new BooleanConstant(object/*(Boolean)*/):<return value>";
+                            default -> "object instanceof String&&null!=object?new StringConstant(object/*(String)*/):object instanceof Boolean&&null!=object?new BooleanConstant(object/*(Boolean)*/):<return value>";
                         };
                         assertEquals(expected, d.currentValue().toString());
                     }
@@ -998,9 +998,9 @@ public class Test_51_InstanceOf extends CommonTestRunner {
                 }
                 if ("3".equals(d.statementId())) {
                     String expected = switch (d.iteration()) {
-                        case 0 -> "<instanceOf:InstanceOf>?<m:of>:<simplification>?<m:toList>:<simplification>?<m:toList>:<m:toList>";
-                        case 1, 2, 3 -> "expression instanceof InstanceOf&&null!=expression?<m:of>:<m:isUnaryNot>&&expression instanceof UnaryOperator&&null!=expression?<m:toList>:expression instanceof Negation&&null!=expression&&(!<m:isUnaryNot>||!(expression instanceof UnaryOperator))?<m:toList>:(nullable instance type List<Expression>).stream().flatMap(instance type $3).toList()";
-                        default -> "expression instanceof InstanceOf&&null!=expression?List.of(new InstanceOfPositive(expression/*(InstanceOf)*/,true)):expression/*(UnaryOperator)*/.operator.isUnaryNot()&&expression instanceof UnaryOperator&&null!=expression?FindInstanceOfPatterns.find(expression/*(UnaryOperator)*/.eu).stream().map(/*inline apply*/new InstanceOfPositive(iop.instanceOf,!iop.positive)).toList():expression instanceof Negation&&null!=expression&&(!expression/*(UnaryOperator)*/.operator.isUnaryNot()||!(expression instanceof UnaryOperator))?FindInstanceOfPatterns.find(expression/*(Negation)*/.en).stream().map(/*inline apply*/new InstanceOfPositive(iop.instanceOf,!iop.positive)).toList():(nullable instance type List<Expression>).stream().flatMap(instance type $3).toList()";
+                        case 0 -> "<simplification>?<m:toList>:<simplification>?<m:toList>:<instanceOf:InstanceOf>?<m:of>:<m:toList>";
+                        case 1, 2, 3 -> "expression instanceof Negation&&null!=expression?<m:toList>:<m:isUnaryNot>&&expression instanceof UnaryOperator&&null!=expression?<m:toList>:expression instanceof InstanceOf&&null!=expression&&(!<m:isUnaryNot>||!(expression instanceof UnaryOperator))?<m:of>:(nullable instance type List<Expression>).stream().flatMap(instance type $3).toList()";
+                        default -> "expression instanceof Negation&&null!=expression?FindInstanceOfPatterns.find(expression/*(Negation)*/.en).stream().map(/*inline apply*/new InstanceOfPositive(iop.instanceOf,!iop.positive)).toList():expression/*(UnaryOperator)*/.operator.isUnaryNot()&&expression instanceof UnaryOperator&&null!=expression?FindInstanceOfPatterns.find(expression/*(UnaryOperator)*/.eu).stream().map(/*inline apply*/new InstanceOfPositive(iop.instanceOf,!iop.positive)).toList():expression instanceof InstanceOf&&null!=expression&&(!expression/*(UnaryOperator)*/.operator.isUnaryNot()||!(expression instanceof UnaryOperator))?List.of(new InstanceOfPositive(expression/*(InstanceOf)*/,true)):(nullable instance type List<Expression>).stream().flatMap(instance type $3).toList()";
                     };
                     assertEquals(expected, d.evaluationResult().value().toString());
                 }

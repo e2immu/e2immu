@@ -112,9 +112,13 @@ public interface MethodInspection extends Inspection {
      * @return true for equals, hashCode etc.
      */
     default boolean isOverloadOfJLOMethod() {
-        if ("equals".equals(getMethodInfo().name) && getParameters().size() == 1) return true;
+        if (isEquals()) return true;
         if ("hashCode".equals(getMethodInfo().name) && getParameters().size() == 0) return true;
         return "toString".equals(getMethodInfo().name) && getParameters().size() == 0;
+    }
+
+    default boolean isEquals() {
+        return "equals".equals(getMethodInfo().name) && getParameters().size() == 1;
     }
 
     boolean isSynchronized();

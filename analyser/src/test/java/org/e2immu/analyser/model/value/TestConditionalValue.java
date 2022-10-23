@@ -14,13 +14,11 @@
 
 package org.e2immu.analyser.model.value;
 
-import org.e2immu.analyser.analyser.CauseOfDelay;
-import org.e2immu.analyser.analyser.CausesOfDelay;
-import org.e2immu.analyser.analyser.EvaluationResult;
-import org.e2immu.analyser.analyser.ForwardEvaluationInfo;
+import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.analyser.delay.DelayFactory;
 import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.Identifier;
+import org.e2immu.analyser.model.LocalVariable;
 import org.e2immu.analyser.model.ParameterizedType;
 import org.e2immu.analyser.model.expression.*;
 import org.e2immu.analyser.model.expression.util.EvaluateInlineConditional;
@@ -47,7 +45,7 @@ public class TestConditionalValue extends CommonAbstractValue {
 
     private static Expression inline(Expression c, Expression t, Expression f) {
         return EvaluateInlineConditional.conditionalValueConditionResolved(context,
-                c, t, f, true, null).value();
+                c, t, f, true, null, DV.FALSE_DV).value();
     }
 
     @Test
@@ -332,5 +330,64 @@ public class TestConditionalValue extends CommonAbstractValue {
         assertEquals("false", newAndAppend(vIsNull, vIsNotNull).toString());
         LOGGER.debug("*****  end  *****");
         assertEquals("false", newAndAppend(vIsNotNull, vIsNull).toString());
+    }
+
+
+    @Test
+    public void testComparison() {
+        Expression abc = new StringConstant(PRIMITIVES, "abc");
+        Expression empty = new StringConstant(PRIMITIVES, "");
+        Expression test = inline(a, empty, abc);
+        assertEquals(27, test.compareTo(abc));
+        assertEquals(-27, abc.compareTo(test));
+
+        Expression string = new ExpandedVariable(Identifier.CONSTANT, vs, Properties.EMPTY, LinkedVariables.EMPTY);
+        Expression inline1 = inline(b, string, test);
+        Expression inline2 = inline(b, string, abc);
+        assertEquals(27, inline1.compareTo(inline2));
+        assertEquals(-27, inline2.compareTo(inline1));
+    }
+
+    // a second test in TestEqualsMethod
+    @Test
+    public void testNormalizeRepeated1() {
+        Expression c1 = new StringConstant(PRIMITIVES, "1");
+        Expression c2 = new StringConstant(PRIMITIVES, "2");
+        Expression c3 = new StringConstant(PRIMITIVES, "3");
+
+        Expression e1 = inline(equals(i, newInt(1)), c1, inline(equals(i, newInt(2)), c2, c3));
+        assertEquals("1==i?\"1\":2==i?\"2\":\"3\"", e1.toString());
+
+        Expression e2 = inline(equals(i, newInt(2)), c2, inline(equals(i, newInt(1)), c1, c3));
+        assertEquals("1==i?\"1\":2==i?\"2\":\"3\"", e2.toString());
+    }
+
+    @Test
+    public void testNormalizeRepeated3() {
+        Expression c1 = new StringConstant(PRIMITIVES, "1");
+        Expression c2 = new StringConstant(PRIMITIVES, "2");
+        Expression c3 = new StringConstant(PRIMITIVES, "3");
+        Expression c4 = new StringConstant(PRIMITIVES, "4");
+
+        Expression e1 = inline(equals(i, newInt(1)), c1, inline(equals(i, newInt(2)), c2, inline(equals(i, newInt(3)), c3, c4)));
+        String expected = """
+                1==i?"1":2==i?"2":3==i?"3":"4"\
+                """;
+        assertEquals(expected, e1.toString());
+
+        Expression e2 = inline(equals(i, newInt(3)), c3, inline(equals(i, newInt(1)), c1, inline(equals(i, newInt(2)), c2, c4)));
+        assertEquals(expected, e2.toString());
+
+        Expression e3 = inline(equals(i, newInt(3)), c3, inline(equals(i, newInt(2)), c2, inline(equals(i, newInt(1)), c1, c4)));
+        assertEquals(expected, e3.toString());
+
+        Expression e4 = inline(equals(i, newInt(2)), c2, inline(equals(i, newInt(3)), c3, inline(equals(i, newInt(1)), c1, c4)));
+        assertEquals(expected, e4.toString());
+
+        Expression e5 = inline(equals(i, newInt(2)), c2, inline(equals(i, newInt(1)), c1, inline(equals(i, newInt(3)), c3, c4)));
+        assertEquals(expected, e5.toString());
+
+        Expression e6 = inline(equals(i, newInt(1)), c1, inline(equals(i, newInt(3)), c3, inline(equals(i, newInt(2)), c2, c4)));
+        assertEquals(expected, e6.toString());
     }
 }

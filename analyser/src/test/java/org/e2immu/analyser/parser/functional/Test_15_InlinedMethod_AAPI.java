@@ -512,7 +512,7 @@ public class Test_15_InlinedMethod_AAPI extends CommonTestRunner {
             }
             if ("concatImmutable".equals(d.methodInfo().name)) {
                 String expected = d.iteration() <= 1 ? "<m:concatImmutable>"
-                        : "/*inline concatImmutable*/list2.isEmpty()?list1:list1.isEmpty()?list2:List.copyOf(instance type List<T>)";
+                        : "/*inline concatImmutable*/list1.isEmpty()?list2:list2.isEmpty()?list1:List.copyOf(instance type List<T>)";
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
             }
         };

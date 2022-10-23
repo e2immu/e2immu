@@ -460,7 +460,7 @@ public record MergeHelper(EvaluationContext evaluationContext,
                 return inlineConditionalIfFalseIsExisting(stateOfParent, two);
             }
 
-            Merge.ExpressionAndProperties two = inlineConditional(firstCondition, e1, e2);
+            Merge.ExpressionAndProperties two = inlineConditional(firstCondition, e1, e2, false);
             if (stateOfParent.isBoolValueTrue()) return two;
             if (stateOfParent.isBoolValueFalse()) throw new UnsupportedOperationException(); // unreachable statement
             VariableInfoImpl vii = new VariableInfoImpl(evaluationContext.getLocation(MERGE),
@@ -470,7 +470,7 @@ public record MergeHelper(EvaluationContext evaluationContext,
 
         if (firstCondition.isBoolValueTrue()) return valueProperties(e1); // to bypass the error check on "safe"
         if (firstCondition.isBoolValueFalse()) return valueProperties(e2);
-        return inlineConditional(firstCondition, e1, e2);
+        return inlineConditional(firstCondition, e1, e2, false);
     }
 
     /* condition and ifFalse have been evaluated in the same expression
@@ -490,10 +490,10 @@ public record MergeHelper(EvaluationContext evaluationContext,
         } else {
             c = condition;
         }
-        return inlineConditional(c, ifTrue, vi);
+        return inlineConditional(c, ifTrue, vi, true);
     }
 
-    private Merge.ExpressionAndProperties inlineConditional(Expression condition, VariableInfo ifTrue, VariableInfo ifFalse) {
+    private Merge.ExpressionAndProperties inlineConditional(Expression condition, VariableInfo ifTrue, VariableInfo ifFalse, boolean one) {
         if (ifTrue.isDelayed() && !ifFalse.isDelayed() && conditionsMetForBreakingInitialisationDelay(ifTrue)) {
             return valuePropertiesWrapToBreakFieldInitDelay(ifFalse);
         }
@@ -501,8 +501,20 @@ public record MergeHelper(EvaluationContext evaluationContext,
             return valuePropertiesWrapToBreakFieldInitDelay(ifTrue);
         }
         EvaluationResult context = EvaluationResult.from(evaluationContext);
-        Expression safe = safe(EvaluateInlineConditional.conditionalValueConditionResolved(context,
-                condition, ifTrue.getValue(), ifFalse.getValue(), false, vi.variable()));
+        Expression safe;
+        if (vi.variable() instanceof ReturnVariable rv) {
+            MethodInfo methodInfo = evaluationContext.getCurrentMethod().getMethodInfo();
+            ReturnVariable returnVariable = new ReturnVariable(methodInfo);
+            Expression returnExpression = UnknownExpression.forReturnVariable(methodInfo.identifier, returnVariable.returnType);
+            Expression secondValue = one ? returnExpression : ifFalse.getValue();
+            Expression ternary = safe(EvaluateInlineConditional.conditionalValueConditionResolved(context, condition,
+                    ifTrue.getValue(), secondValue, false, vi.variable(), DV.FALSE_DV));
+            TranslationMap tm = new TranslationMapImpl.Builder().put(returnExpression, ternary).build();
+            safe = vi.getValue().translate(evaluationContext.getAnalyserContext(), tm);
+        } else {
+            safe = safe(EvaluateInlineConditional.conditionalValueConditionResolved(context,
+                    condition, ifTrue.getValue(), ifFalse.getValue(), false, vi.variable(), DV.FALSE_DV));
+        }
         // 2nd check (safe.isDelayed) because safe could be "true" even if the condition is delayed
         if (condition.isDelayed() && safe.isDelayed()) {
             CausesOfDelay delay = DelayFactory.createDelay(new VariableCause(vi.variable(),

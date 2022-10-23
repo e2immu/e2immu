@@ -43,6 +43,8 @@ public class TestDependencyGraph {
         assertEquals("[a]", graph.dependencies('a').toString());
         assertEquals("[b]", graph.dependencies('b').toString());
         assertEquals("[a, b, c]", graph.dependencies('c').toString());
+
+        assertEquals("[a:0, b:0, c:1]", graph.sortedSequenceOfParallel().toString());
     }
 
     @Test
@@ -58,6 +60,8 @@ public class TestDependencyGraph {
         assertEquals("[a]", graph.dependencies('a').toString());
         assertEquals("[a, b, c]", graph.dependencies('b').toString());
         assertEquals("[a, c]", graph.dependencies('c').toString());
+
+        assertEquals("[a:0, c:1, b:2]", graph.sortedSequenceOfParallel().toString());
     }
 
     @Test
@@ -73,6 +77,8 @@ public class TestDependencyGraph {
         assertEquals("[a, c]", graph.dependencies('a').toString());
         assertEquals("[b, c]", graph.dependencies('b').toString());
         assertEquals("[c]", graph.dependencies('c').toString());
+
+        assertEquals("[c:0, a:1, b:1]", graph.sortedSequenceOfParallel().toString());
     }
 
     @Test
@@ -96,6 +102,11 @@ public class TestDependencyGraph {
         assertEquals(3, graph.size());
         assertFalse(graph.isEmpty());
         assertEquals(3, graph.relations());
+
+        try {
+            graph.sortedSequenceOfParallel();
+            fail();
+        } catch(UnsupportedOperationException ignored) {}
     }
 
     @Test
@@ -135,6 +146,11 @@ public class TestDependencyGraph {
         } catch (IllegalStateException e) {
             // normal behaviour
         }
+
+        try {
+            graph.sortedSequenceOfParallel();
+            fail();
+        } catch(UnsupportedOperationException ignored) {}
     }
 
     @Test

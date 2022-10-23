@@ -85,9 +85,9 @@ public class Test_21_VariableInLoop extends CommonTestRunner {
                 if (d.variable() instanceof ReturnVariable) {
                     if ("1".equals(d.statementId())) {
                         String expected = switch (d.iteration()) {
-                            case 0 -> "<null-check>&&(<null-check>||!<m:isPresent>)?<v:sa>:<return value>";
-                            case 1 -> "(<m:isPresent>||null==sa$1)&&(!<null-check>||null==sa$1)?<return value>:<vl:sa>";
-                            default -> "((sa$1.navigationData()).next.isPresent()||null==sa$1)&&(null==sa$1||null!=(sa$1.navigationData()).next.get().orElse(null))?<return value>:sa$1";
+                            case 0 -> "<null-check>?<m:isPresent>?<null-check>?<v:sa>:<return value>:<v:sa>:<return value>";
+                            case 1 -> "null==sa$1?<return value>:<m:isPresent>?<null-check>?<vl:sa>:<return value>:<vl:sa>";
+                            default -> "null==sa$1?<return value>:(sa$1.navigationData()).next.isPresent()?null==(sa$1.navigationData()).next.get().orElse(null)?sa$1:<return value>:sa$1";
                         };
                         assertEquals(expected, d.currentValue().toString());
                         assertDv(d, 2, MultiLevel.NOT_INVOLVED_DV, Property.EXTERNAL_IMMUTABLE);
@@ -95,8 +95,8 @@ public class Test_21_VariableInLoop extends CommonTestRunner {
                     if ("2".equals(d.statementId())) {
                         String expected = switch (d.iteration()) {
                             case 0 -> "<null-check>&&(<null-check>||!<m:isPresent>)?<v:sa>:null";
-                            case 1 -> "(<m:isPresent>||<null-check>)&&(<null-check>||!<null-check>)?null:<vl:sa>";
-                            default -> "([(sa$1.navigationData()).next.get().get(),((null==sa$1?firstStatementAnalyser:(sa$1.navigationData()).next.isPresent()&&null!=(sa$1.navigationData()).next.get().orElse(null)?(sa$1.navigationData()).next.get().get():sa$1).navigationData()).next.isPresent(),(sa$1.navigationData()).next.isPresent(),((null==sa$1?firstStatementAnalyser:(sa$1.navigationData()).next.isPresent()&&null!=(sa$1.navigationData()).next.get().orElse(null)?(sa$1.navigationData()).next.get().get():sa$1).navigationData()).next.get().orElse(null),(sa$1.navigationData()).next.get().orElse(null),firstStatementAnalyser,sa$1,instance type boolean])?null:null==sa$1?firstStatementAnalyser:(sa$1.navigationData()).next.isPresent()&&null!=(sa$1.navigationData()).next.get().orElse(null)?(sa$1.navigationData()).next.get().get():sa$1";
+                            case 1 -> "(<null-check>||<m:isPresent>)&&(<null-check>||!<null-check>)?null:<vl:sa>";
+                            default -> "null==sa$1?firstStatementAnalyser:(sa$1.navigationData()).next.isPresent()&&null!=(sa$1.navigationData()).next.get().orElse(null)?(sa$1.navigationData()).next.get().get():sa$1";
                         };
                         assertEquals(expected, d.currentValue().toString());
                     }

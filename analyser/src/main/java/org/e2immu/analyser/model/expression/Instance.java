@@ -156,6 +156,12 @@ public final class Instance extends BaseExpression implements Expression {
         return new Instance(identifier, parameterizedType, EvaluationContext.PRIMITIVE_VALUE_PROPERTIES);
     }
 
+    public static Instance forTooComplex(Identifier identifier,
+                                         ParameterizedType parameterizedType,
+                                         Properties properties) {
+        return new Instance(identifier, parameterizedType, properties);
+    }
+
     public Instance(Identifier identifier,
                     ParameterizedType parameterizedType,
                     Properties valueProperties) {

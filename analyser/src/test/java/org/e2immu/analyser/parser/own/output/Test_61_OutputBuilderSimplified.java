@@ -161,8 +161,8 @@ public class Test_61_OutputBuilderSimplified extends CommonTestRunner {
                         assertEquals(expectValue, d.currentValue().toString());
                     }
                     if ("1".equals(d.statementId()) || "2".equals(d.statementId())) {
-                        String expectValue = d.iteration() == 0 ? "<m:isEmpty>?<p:a>:<m:isEmpty>?b:<return value>"
-                                : "`b.list`.isEmpty()?a:`a.list`.isEmpty()?b:<return value>";
+                        String expectValue = d.iteration() == 0 ? "<m:isEmpty>?b:<m:isEmpty>?<p:a>:<return value>"
+                                : "`a.list`.isEmpty()?b:`b.list`.isEmpty()?a:<return value>";
                         assertEquals(expectValue, d.currentValue().toString());
                     }
                 }
@@ -613,7 +613,7 @@ public class Test_61_OutputBuilderSimplified extends CommonTestRunner {
                 assertEquals("$2", d.methodInfo().typeInfo.packageNameOrEnclosingType.getRight().simpleName);
                 // combiner!
                 String expected = d.iteration() < 3 ? "<m:apply>"
-                        : "bb.list.isEmpty()?aa:aa.list.isEmpty()?bb:nullable instance type OutputBuilderSimplified_12/*@Identity*//*{L aa:0}*//*@NotNull*/";
+                        : "aa.list.isEmpty()?bb:bb.list.isEmpty()?aa:nullable instance type OutputBuilderSimplified_12/*@Identity*//*{L aa:0}*//*@NotNull*/";
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
 
                 assertDv(d.p(0), 4, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_PARAMETER);

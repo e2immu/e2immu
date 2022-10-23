@@ -462,7 +462,7 @@ public class Test_63_TrieSimplified extends CommonTestRunner {
                     }
                     if ("1".equals(d.statementId())) {
                         String expectValue = d.iteration() == 0
-                                ? "<loopIsNotEmptyCondition>&&(<null-check>||<null-check>)?<vp::container@Class_TrieNode>:<return value>"
+                                ? "<loopIsNotEmptyCondition>?<null-check>?<vp::container@Class_TrieNode>:<null-check>?<vp::container@Class_TrieNode>:<return value>:<return value>"
                                 : "-1-(instance type int)+upToPosition>=0?null:<return value>";
                         assertEquals(expectValue, d.currentValue().toString(), d.variableName());
                     }

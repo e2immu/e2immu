@@ -156,7 +156,7 @@ public class Test_12_IfStatement extends CommonTestRunner {
 
         testClass("IfStatement_4", 0, 0, new DebugConfiguration.Builder()
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-               .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .build());
     }
 
@@ -312,6 +312,78 @@ public class Test_12_IfStatement extends CommonTestRunner {
         };
         testClass("IfStatement_8", 0, 0, new DebugConfiguration.Builder()
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                .build());
+    }
+
+    @Test
+    public void test_9() throws IOException {
+        StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+            if ("expensiveCall".equals(d.methodInfo().name)) {
+                if (d.variable() instanceof ReturnVariable) {
+                    if ("0".equals(d.statementId())) {
+                        assertEquals("null==in?null:<return value>", d.currentValue().toString());
+                    }
+                    if ("1.0.0".equals(d.statementId())) {
+                        assertEquals("\"empty\"", d.currentValue().toString());
+                    }
+                    if ("1".equals(d.statementId())) {
+                        assertEquals("null==in?null:in.isEmpty()?\"empty\":<return value>",
+                                d.currentValue().toString());
+                    }
+                    if ("2".equals(d.statementId())) {
+                        assertEquals("null==in?null:in.isEmpty()?\"empty\":Character.isAlphabetic(in.charAt(0))?in:\"non-alpha\"",
+                                d.currentValue().toString());
+                    }
+                }
+            }
+            if ("method".equals(d.methodInfo().name)) {
+                if (d.variable() instanceof ReturnVariable) {
+                    if ("0".equals(d.statementId())) {
+                        String expected = d.iteration() == 0
+                                ? "<simplification>?null:<return value>" : "null==in?null:<return value>";
+                        assertEquals(expected, d.currentValue().toString());
+                    }
+                }
+            }
+        };
+        StatementAnalyserVisitor statementAnalyserVisitor = d -> {
+            if ("expensiveCall".equals(d.methodInfo().name)) {
+                if ("0".equals(d.statementId())) {
+                    assertEquals("null!=in", d.state().toString());
+                }
+                if ("1.0.0".equals(d.statementId())) {
+                    assertEquals("in.isEmpty()", d.condition().toString());
+                    /* IMPORTANT: the order is wrong from a shortcut operator point of view, but the And class will sort
+                      the clauses first thing.
+                     */
+                    assertEquals("in.isEmpty()&&null!=in", d.absoluteState().toString());
+                }
+                if ("1".equals(d.statementId()) || "2".equals(d.statementId())) {
+                    assertEquals("!in.isEmpty()&&null!=in", d.state().toString());
+                }
+            }
+            if ("method".equals(d.methodInfo().name)) {
+                if ("0".equals(d.statementId())) {
+                    String state = d.iteration() == 0 ? "!<simplification>" : "null!=in";
+                    assertEquals(state, d.state().toString());
+                }
+            }
+        };
+        MethodAnalyserVisitor methodAnalyserVisitor = d -> {
+            if ("expensiveCall".equals(d.methodInfo().name)) {
+                String expected = "/*inline expensiveCall*/null==in?null:in.isEmpty()?\"empty\":Character.isAlphabetic(in.charAt(0))?in:\"non-alpha\"";
+                assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
+            }
+            if ("method".equals(d.methodInfo().name)) {
+                String expected = d.iteration() == 0 ? "<m:method>"
+                        : "/*inline method*/null==in?null:\"Not null: \"+(in.isEmpty()?\"empty\":Character.isAlphabetic(in.charAt(0))?in:\"non-alpha\")";
+                assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
+            }
+        };
+        testClass("IfStatement_9", 0, 0, new DebugConfiguration.Builder()
+                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addStatementAnalyserVisitor(statementAnalyserVisitor)
                 .build());
     }
 }

@@ -94,7 +94,7 @@ public class Test_Output_03_Formatter extends CommonTestRunner {
                     }
                     if ("5.0.6.1.0.1.4.0.1".equals(d.statementId())) {
                         String expected = d.iteration() < 6 ? "<f:newLineDouble.writeNewLine>"
-                                : "(`Position.END`==`guide.position`?new NewLineDouble(``new CurrentExceeds(`currentForwardInfo`.get(),`exceeds`.get()).current`.guide`.endWithNewLine(),`writeNewLineBefore`,false,true):`Position.START`==`guide.position`?new NewLineDouble(``new CurrentExceeds(`currentForwardInfo`.get(),`exceeds`.get()).current`.guide`.startWithNewLine(),false,false,false):new NewLineDouble(true,`writeNewLineBefore`,true,false)).writeNewLine";
+                                : "(`Position.START`==`guide.position`?new NewLineDouble(``new CurrentExceeds(`currentForwardInfo`.get(),`exceeds`.get()).current`.guide`.startWithNewLine(),false,false,false):`Position.END`==`guide.position`?new NewLineDouble(``new CurrentExceeds(`currentForwardInfo`.get(),`exceeds`.get()).current`.guide`.endWithNewLine(),`writeNewLineBefore`,false,true):new NewLineDouble(true,`writeNewLineBefore`,true,false)).writeNewLine";
                         assertEquals(expected, d.currentValue().toString());
                         assertEquals(d.iteration() >= 6, d.currentValue().isDone());
                         assertDv(d, 1, MultiLevel.EFFECTIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
