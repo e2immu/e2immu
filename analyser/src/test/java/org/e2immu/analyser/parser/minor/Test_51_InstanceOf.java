@@ -367,7 +367,7 @@ public class Test_51_InstanceOf extends CommonTestRunner {
 
                         String expect = d.iteration() == 0 ? "<mod:String>" : "nullable instance type Object/*@Identity*/";
                         assertEquals(expect, d.currentValue().toString());
-                        assertEquals("Type java.lang.Object", p.parameterizedType.toString());
+                        assertEquals("Type Object", p.parameterizedType.toString());
 
                         String linked = d.iteration() == 0 ? "string:-1" : "string:1";
                         assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
@@ -385,7 +385,7 @@ public class Test_51_InstanceOf extends CommonTestRunner {
 
                         String expected = d.iteration() == 0 ? "<mod:String>" : "object/*(String)*/";
                         assertEquals(expected, d.currentValue().toString());
-                        assertEquals("Type java.lang.String", d.currentValue().returnType().toString());
+                        assertEquals("Type String", d.currentValue().returnType().toString());
 
                         assertTrue(d.variableInfoContainer().variableNature() instanceof VariableNature.Pattern);
                         assertEquals("object:1", d.variableInfo().getLinkedVariables().toString());
@@ -403,7 +403,7 @@ public class Test_51_InstanceOf extends CommonTestRunner {
                         String expected = d.iteration() == 0 ? "<v:bool>" : "object/*(Boolean)*/";
                         assertEquals(expected, d.currentValue().toString());
                         assertDv(d, 1, MultiLevel.NULLABLE_DV, Property.NOT_NULL_EXPRESSION);
-                        assertEquals("Type java.lang.Boolean", d.currentValue().returnType().toString());
+                        assertEquals("Type Boolean", d.currentValue().returnType().toString());
                     }
                 }
                 if ("integer".equals(d.variableName())) {
@@ -414,7 +414,7 @@ public class Test_51_InstanceOf extends CommonTestRunner {
                         assertEquals("object/*(Integer)*/", prev.getValue().toString());
                         String expected = d.iteration() == 0 ? "<v:integer>" : "object/*(Integer)*/";
                         assertEquals(expected, d.currentValue().toString());
-                        assertEquals("Type java.lang.Integer", d.currentValue().returnType().toString());
+                        assertEquals("Type Integer", d.currentValue().returnType().toString());
                     }
                 }
                 if (d.variable() instanceof ReturnVariable) {
@@ -1218,7 +1218,7 @@ public class Test_51_InstanceOf extends CommonTestRunner {
             }
             if ("clazz".equals(d.methodInfo().name)) {
                 ParameterizedType returnType = d.methodInfo().returnType();
-                assertEquals("Type java.lang.Class<?>", returnType.toString());
+                assertEquals("Type Class<?>", returnType.toString());
                 DV classImmutable = d.evaluationContext().getAnalyserContext().typeImmutable(returnType);
                 assertEquals(MultiLevel.MUTABLE_DV, classImmutable);
             }

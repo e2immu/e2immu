@@ -399,4 +399,9 @@ public final class PropertyWrapper extends BaseExpression implements Expression,
         if (linkedVariables == null && properties == null && castType == null) return expression;
         return new PropertyWrapper(expression, null, properties, linkedVariables, castType);
     }
+
+    @Override
+    public boolean isNegatedOrNumericNegative() {
+        return expression.isNegatedOrNumericNegative();
+    }
 }

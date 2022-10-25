@@ -265,4 +265,8 @@ public interface Expression extends Element, Comparable<Expression> {
     default String unQuotedString() {
         return toString();
     }
+
+    default boolean isNegatedOrNumericNegative() {
+        return false;
+    }
 }

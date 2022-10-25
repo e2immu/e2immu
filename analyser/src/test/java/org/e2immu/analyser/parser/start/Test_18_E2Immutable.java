@@ -583,7 +583,7 @@ public class Test_18_E2Immutable extends CommonTestRunner {
                 Expression v = d.evaluationResult().value();
                 String expectValue = d.iteration() == 0 ? "<m:of>" : "Stream.of(map.firstEntry())";
                 assertEquals(expectValue, v.toString());
-                assertEquals("Type java.util.stream.Stream<java.util.Map.Entry<java.lang.String,T>>",
+                assertEquals("Type java.util.stream.Stream<java.util.Map.Entry<String,T>>",
                         v.returnType().toString());
             }
         };

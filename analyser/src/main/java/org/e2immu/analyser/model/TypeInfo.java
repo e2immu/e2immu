@@ -80,6 +80,10 @@ public final class TypeInfo implements NamedType, WithInspectionAndAnalysis, Com
         return isNotJavaLang() && !isPrimitiveExcludingVoid() && !isVoid();
     }
 
+    public boolean packageIsExactlyJavaLang() {
+        return "java.lang".equals(packageName());
+    }
+
     public boolean isNotJavaLang() {
         return !this.fullyQualifiedName.startsWith("java.lang.");
     }
@@ -721,7 +725,8 @@ public final class TypeInfo implements NamedType, WithInspectionAndAnalysis, Com
 
 
     public TypeName typeName(TypeName.Required requiresQualifier) {
-        return new TypeName(simpleName, fullyQualifiedName, isPrimaryType() ? simpleName : fromPrimaryTypeDownwards(),
+        String fqn = packageIsExactlyJavaLang() ? simpleName : fullyQualifiedName;
+        return new TypeName(simpleName, fqn, isPrimaryType() ? simpleName : fromPrimaryTypeDownwards(),
                 requiresQualifier);
     }
 

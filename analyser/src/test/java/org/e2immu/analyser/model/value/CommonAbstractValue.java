@@ -22,6 +22,8 @@ import org.e2immu.analyser.analyser.nonanalyserimpl.AbstractEvaluationContextImp
 import org.e2immu.analyser.analysis.Analysis;
 import org.e2immu.analyser.analysis.impl.ParameterAnalysisImpl;
 import org.e2immu.analyser.analysis.impl.TypeAnalysisImpl;
+import org.e2immu.analyser.config.AnalyserConfiguration;
+import org.e2immu.analyser.config.Configuration;
 import org.e2immu.analyser.inspector.InspectionState;
 import org.e2immu.analyser.inspector.impl.MethodInspectionImpl;
 import org.e2immu.analyser.inspector.impl.ParameterInspectionImpl;
@@ -188,6 +190,10 @@ public abstract class CommonAbstractValue {
         return new Equals(Identifier.constant("newEquals"), PRIMITIVES, l, r);
     }
 
+    protected static Expression sum(Expression l, Expression r) {
+        return Sum.sum(Identifier.CONSTANT, context, l, r);
+    }
+
     static ParameterInfo createParameter() {
         assert PRIMITIVES != null;
         if (!PRIMITIVES.objectTypeInfo().typeInspection.isSet()) {
@@ -217,7 +223,19 @@ public abstract class CommonAbstractValue {
         return p0;
     }
 
-    protected final static AnalyserContext analyserContext = () -> PRIMITIVES;
+    protected final static AnalyserContext analyserContext = new AnalyserContext() {
+        @Override
+        public Primitives getPrimitives() {
+            return PRIMITIVES;
+        }
+
+        @Override
+        public Configuration getConfiguration() {
+            return new Configuration.Builder()
+                    .setAnalyserConfiguration(new AnalyserConfiguration.Builder().setNormalizeMore(true).build())
+                    .build();
+        }
+    };
 
     protected static EvaluationResult context;
 

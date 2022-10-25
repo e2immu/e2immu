@@ -42,6 +42,10 @@ public class IfElseStatement extends StatementWithExpression {
         this.elseBlock = elseBlock;
     }
 
+    @Override
+    public Statement replaceComment(Comment newCommentOrNullToRemove) {
+        return new IfElseStatement(identifier, expression, structure.block(), elseBlock, newCommentOrNullToRemove);
+    }
 
     @Override
     public boolean equals(Object obj) {

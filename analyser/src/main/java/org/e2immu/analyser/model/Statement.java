@@ -67,4 +67,8 @@ public interface Statement extends Element {
     default boolean isSynthetic() {
         return false;
     }
+
+    default Statement replaceComment(Comment newCommentOrNullToRemove) {
+        throw new UnsupportedOperationException("Not yet implemented for " + getClass());
+    }
 }

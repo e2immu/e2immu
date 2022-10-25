@@ -41,6 +41,11 @@ public class ReturnStatement extends StatementWithExpression {
     }
 
     @Override
+    public Statement replaceComment(Comment newCommentOrNullToRemove) {
+        return new ReturnStatement(identifier, expression, newCommentOrNullToRemove);
+    }
+
+    @Override
     public boolean equals(Object obj) {
         if (obj == this) return true;
         if (obj instanceof ReturnStatement other) {

@@ -19,7 +19,6 @@ import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.annotation.NotNull;
 
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -108,7 +107,7 @@ public interface TranslationMap {
         return Map.of();
     }
 
-    default Map<? extends Variable, ? extends  Expression> variableExpressions() {
+    default Map<? extends Variable, ? extends Expression> variableExpressions() {
         return Map.of();
     }
 
@@ -122,5 +121,13 @@ public interface TranslationMap {
 
     default Map<ParameterizedType, ParameterizedType> types() {
         return Map.of();
+    }
+
+    /*
+    prevents translation of the original expression in a delayed expression, because
+    that may lead to circular replacements.
+     */
+    default boolean translateToDelayedExpression() {
+        return true;
     }
 }

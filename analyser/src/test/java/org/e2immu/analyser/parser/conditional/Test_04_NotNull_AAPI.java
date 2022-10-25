@@ -21,10 +21,7 @@ import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.ReturnVariable;
 import org.e2immu.analyser.parser.CommonTestRunner;
-import org.e2immu.analyser.visitor.BreakDelayVisitor;
-import org.e2immu.analyser.visitor.EvaluationResultVisitor;
-import org.e2immu.analyser.visitor.MethodAnalyserVisitor;
-import org.e2immu.analyser.visitor.StatementAnalyserVariableVisitor;
+import org.e2immu.analyser.visitor.*;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
@@ -101,7 +98,8 @@ public class Test_04_NotNull_AAPI extends CommonTestRunner {
 
                             String expected = switch (d.iteration()) {
                                 case 0 -> "<null-check>?new LinkedList<>()/*0==this.size()*/:<f:node.data>";
-                                default -> "null==nullable instance type List<T>?new LinkedList<>()/*0==this.size()*/:nullable instance type List<T>";
+                                default ->
+                                        "null==nullable instance type List<T>?new LinkedList<>()/*0==this.size()*/:nullable instance type List<T>";
                             };
                             assertEquals(expected, d.currentValue().toString());
                             assertEquals("Type java.util.List<T>", d.currentValue().returnType().toString());
@@ -268,4 +266,69 @@ public class Test_04_NotNull_AAPI extends CommonTestRunner {
                 .build(), new AnalyserConfiguration.Builder().setComputeContextPropertiesOverAllMethods(true).build());
     }
 
+    /*
+    show that the null-check excludes a check on in.toUpperCase()
+
+    show that in method3, the in!=null situation does not contain an 'in == null' check anymore
+     */
+    @Test
+    public void test_6() throws IOException {
+        EvaluationResultVisitor evaluationResultVisitor = d -> {
+            if ("method3".equals(d.methodInfo().name)) {
+                if("2".equals(d.statementId())) {
+                    String expected = d.iteration()==0
+                            ?"<null-check>?null:\"Not null: \"+(null==in?null:in.toUpperCase())+\" == \"+(null==in?null:in.toUpperCase())"
+                            :"null==in?null:\"Not null: \"+in.toUpperCase()+\" == \"+in.toUpperCase()";
+                    assertEquals(expected, d.evaluationResult().getExpression().toString());
+                }
+            }
+        };
+        StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+            if ("method2".equals(d.methodInfo().name)) {
+                if (d.variable() instanceof ReturnVariable) {
+                    if ("1".equals(d.statementId())) {
+                        String expected = d.iteration() == 0
+                                ? "<simplification>?null:\"Not null: \"+<m:compute>+\" == \"+<m:compute>"
+                                : "null==in?null:\"Not null: \"+in.toUpperCase()+\" == \"+in.toUpperCase()";
+                        assertEquals(expected, d.currentValue().toString());
+                    }
+                }
+            }
+        };
+        StatementAnalyserVisitor statementAnalyserVisitor = d -> {
+            if ("method2".equals(d.methodInfo().name)) {
+                if ("1".equals(d.statementId())) {
+                    String state = d.iteration() == 0 ? "!<simplification>" : "null!=in";
+                    assertEquals(state, d.statementAnalysis().stateData().getAbsoluteState().toString());
+                }
+            }
+        };
+
+        MethodAnalyserVisitor methodAnalyserVisitor = d -> {
+            if ("compute".equals(d.methodInfo().name)) {
+                String expected = "/*inline compute*/null==in?null:in.toUpperCase()";
+                assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
+            }
+            if ("method".equals(d.methodInfo().name)) {
+                String expected = d.iteration() == 0 ? "<m:method>" : "/*inline method*/null==s";
+                assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
+            }
+            if ("method2".equals(d.methodInfo().name)) {
+                String expected = d.iteration() == 0 ? "<m:method2>"
+                        : "/*inline method2*/null==in?null:\"Not null: \"+in.toUpperCase()+\" == \"+in.toUpperCase()";
+                assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
+            }
+            if ("method3".equals(d.methodInfo().name)) {
+                String expected = d.iteration() == 0 ? "<m:method3>"
+                        : "/*inline method3*/null==in?null:\"Not null: \"+in.toUpperCase()+\" == \"+in.toUpperCase()";
+                assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
+            }
+        };
+        testClass("NotNull_6", 0, 0, new DebugConfiguration.Builder()
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                .addEvaluationResultVisitor(evaluationResultVisitor)
+                .build(), new AnalyserConfiguration.Builder().setNormalizeMore(true).build());
+    }
 }

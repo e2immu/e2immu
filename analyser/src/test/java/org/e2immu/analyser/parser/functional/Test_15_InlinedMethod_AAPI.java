@@ -233,7 +233,7 @@ public class Test_15_InlinedMethod_AAPI extends CommonTestRunner {
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("find".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof ParameterInfo pi && "s".equals(pi.name)) {
-                    assertDv(d, 2, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.CONTEXT_NOT_NULL);
+                    assertDv(d, 3, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.CONTEXT_NOT_NULL);
                 }
             }
             if ("find2".equals(d.methodInfo().name)) {
@@ -253,15 +253,15 @@ public class Test_15_InlinedMethod_AAPI extends CommonTestRunner {
                 assertEquals(CALL_CYCLE, d.methodInfo().methodResolution.get().methodsOfOwnClassReachedSorted());
                 assertTrue(d.methodInfo().methodResolution.get().ignoreMeBecauseOfPartOfCallCycle());
 
-                String expected = d.iteration() <= 1 ? "<m:find>"
+                String expected = d.iteration() <= 2 ? "<m:find>"
                         : "/*inline find*/s.length()<=1?s.length()<=0?InlinedMethod_10.find(stream,s):stream.filter(/*inline test*/ff.equals(s)).findAny().orElse(s):stream.filter(/*inline test*/f.contains(s)).findFirst().orElse(null)";
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
-                if (d.iteration() >= 2) {
+                if (d.iteration() >= 3) {
                     if (d.methodAnalysis().getSingleReturnValue() instanceof InlinedMethod inlinedMethod) {
                         assertEquals("s, stream", inlinedMethod.variablesOfExpressionSorted());
                     } else fail();
                 }
-                assertDv(d.p(1), 3, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_PARAMETER);
+                assertDv(d.p(1), 4, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_PARAMETER);
             }
         };
         testClass("InlinedMethod_10", 0, 3, new DebugConfiguration.Builder()

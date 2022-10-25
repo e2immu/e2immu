@@ -61,7 +61,7 @@ public class TestBasics extends CommonTest {
 
     @Test
     public void test_0() throws IOException {
-        TypeMap typeMap = inspectAndResolve(Basics_0.class, "java.io.PrintStream.println(java.lang.String)",
+        TypeMap typeMap = inspectAndResolve(Basics_0.class, "java.io.PrintStream.println(String)",
                 "a comment");
         TypeInfo typeInfo = typeMap.get(Basics_0.class);
         TypeInspection typeInspection = typeMap.getTypeInspection(typeInfo);

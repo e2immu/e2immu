@@ -15,10 +15,10 @@
 package org.e2immu.analyser.model.impl;
 
 import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.model.expression.DelayedExpression;
 import org.e2immu.analyser.model.expression.DelayedVariableExpression;
 import org.e2immu.analyser.model.expression.VariableExpression;
 import org.e2immu.analyser.model.expression.util.TranslationCollectors;
-import org.e2immu.analyser.model.statement.Block;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.LocalVariableReference;
 import org.e2immu.analyser.model.variable.Variable;
@@ -30,6 +30,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * Translation takes place from statement, over expression, down to variable and type.
@@ -68,6 +69,7 @@ public class TranslationMapImpl implements TranslationMap {
     public final boolean expandDelayedWrappedExpressions;
     public final boolean recurseIntoScopeVariables;
     public final boolean yieldIntoReturn;
+    public final boolean translateToDelays;
 
     private TranslationMapImpl(Map<? extends Statement, List<Statement>> statements,
                                Map<? extends Expression, ? extends Expression> expressions,
@@ -91,6 +93,8 @@ public class TranslationMapImpl implements TranslationMap {
                         e -> ((LocalVariableReference) e.getValue()).variable));
         this.expandDelayedWrappedExpressions = expandDelayedWrappedExpressions;
         this.recurseIntoScopeVariables = recurseIntoScopeVariables;
+        translateToDelays = Stream.concat(expressions.values().stream(), variableExpressions.values().stream())
+                .anyMatch(Expression::isDelayed);
     }
 
     @Override
@@ -103,6 +107,11 @@ public class TranslationMapImpl implements TranslationMap {
         return "TM{" + variables.size() + "," + methods.size() + "," + expressions.size() + "," + statements.size()
                 + "," + types.size() + "," + localVariables.size() + "," + variableExpressions.size() +
                 (expandDelayedWrappedExpressions ? ",expand" : "") + "}";
+    }
+
+    @Override
+    public boolean translateToDelayedExpression() {
+        return translateToDelays;
     }
 
     @Override

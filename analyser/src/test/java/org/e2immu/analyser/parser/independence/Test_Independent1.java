@@ -265,7 +265,7 @@ public class Test_Independent1 extends CommonTestRunner {
                 String expected = d.iteration() <= 1 ? "<m:apply>" : "/*inline apply*/generator.get()";
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
                 List<Variable> vars = d.methodAnalysis().getSingleReturnValue().variables(true);
-                assertEquals("[org.e2immu.analyser.parser.independence.testexample.Independent1_5.ImmutableArrayOfTransparentOnes.ImmutableArrayOfTransparentOnes(org.e2immu.analyser.parser.independence.testexample.Independent1_5.One<java.lang.Integer>[],java.util.function.Supplier<org.e2immu.analyser.parser.independence.testexample.Independent1_5.One<java.lang.Integer>>):1:generator]", vars.toString());
+                assertEquals("[org.e2immu.analyser.parser.independence.testexample.Independent1_5.ImmutableArrayOfTransparentOnes.ImmutableArrayOfTransparentOnes(org.e2immu.analyser.parser.independence.testexample.Independent1_5.One<Integer>[],java.util.function.Supplier<org.e2immu.analyser.parser.independence.testexample.Independent1_5.One<Integer>>):1:generator]", vars.toString());
             }
         };
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
@@ -421,7 +421,7 @@ public class Test_Independent1 extends CommonTestRunner {
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("putAll".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof ParameterInfo pi && "other".equals(pi.name)) {
-                    String linked = d.iteration() < 14 ? "this:-1" : "this:4";
+                    String linked = d.iteration() < 15 ? "this:-1" : "this:4";
                     assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
                 }
             }
@@ -441,7 +441,7 @@ public class Test_Independent1 extends CommonTestRunner {
                             "`map`.entrySet().stream().map(/*inline apply*/new ImmutableEntry<>(e.getKey(),e.getValue())).toList()");
                     if (d.iteration() >= 14) {
                         // NOTE: there is no ImmutableEntry here!
-                        assertEquals("Type java.util.List<java.util.Map.Entry<T,java.lang.Boolean>>",
+                        assertEquals("Type java.util.List<java.util.Map.Entry<T,Boolean>>",
                                 d.variableInfo().getValue().returnType().toString());
                     }
                     assertDv(d, 14, MultiLevel.EFFECTIVELY_IMMUTABLE_HC_DV, Property.IMMUTABLE);
@@ -450,7 +450,7 @@ public class Test_Independent1 extends CommonTestRunner {
             if ("of".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof ReturnVariable) {
                     if ("2".equals(d.statementId())) {
-                        String linked = d.iteration() < 15 ? "maps:-1,result:0" : "maps:4,result:0";
+                        String linked = d.iteration() < 16 ? "maps:-1,result:0" : "maps:4,result:0";
                         assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
                     }
                 }
@@ -477,7 +477,7 @@ public class Test_Independent1 extends CommonTestRunner {
                  return value rather than at the fields.  A complication will be that variables do not link to the return
                  value currently.
                  */
-                assertDv(d.p(0), 16, MultiLevel.INDEPENDENT_DV, Property.INDEPENDENT);
+                assertDv(d.p(0), 17, MultiLevel.INDEPENDENT_DV, Property.INDEPENDENT);
             }
         };
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {

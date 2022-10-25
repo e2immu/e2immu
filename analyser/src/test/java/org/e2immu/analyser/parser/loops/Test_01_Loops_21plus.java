@@ -45,7 +45,7 @@ public class Test_01_Loops_21plus extends CommonTestRunner {
     private final StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
         if ("method".equals(d.methodInfo().name)) {
             if ("array".equals(d.variableName())) {
-                assertEquals("Type java.lang.String[][]", d.currentValue().returnType().toString());
+                assertEquals("Type String[][]", d.currentValue().returnType().toString());
             }
             if ("inner".equals(d.variableName())) {
                 assertTrue(d.statementId().startsWith("2"), "Known in statement " + d.statementId());

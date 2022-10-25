@@ -208,7 +208,7 @@ public class Test_15_InlinedMethod extends CommonTestRunner {
             if ("method".equals(d.methodInfo().name)) {
                 String expected = d.iteration() == 0
                         ? "<m:get>+<m:get>"
-                        : "`org.e2immu.analyser.parser.functional.testexample.InlinedMethod_9.get(java.lang.String[],int):0:input[org.e2immu.analyser.parser.functional.testexample.InlinedMethod_9.get(java.lang.String[],int):1:index]`+`org.e2immu.analyser.parser.functional.testexample.InlinedMethod_9.get(java.lang.String[],int):0:input[org.e2immu.analyser.parser.functional.testexample.InlinedMethod_9.get(java.lang.String[],int):1:index]`";
+                        : "`org.e2immu.analyser.parser.functional.testexample.InlinedMethod_9.get(String[],int):0:input[org.e2immu.analyser.parser.functional.testexample.InlinedMethod_9.get(String[],int):1:index]`+`org.e2immu.analyser.parser.functional.testexample.InlinedMethod_9.get(String[],int):0:input[org.e2immu.analyser.parser.functional.testexample.InlinedMethod_9.get(String[],int):1:index]`";
                 assertEquals(expected, d.evaluationResult().value().toString());
             }
         };
@@ -224,7 +224,7 @@ public class Test_15_InlinedMethod extends CommonTestRunner {
             }
             if ("method".equals(d.methodInfo().name)) {
                 String expected = d.iteration() == 0 ? "<m:method>"
-                        : "/*inline method*/`org.e2immu.analyser.parser.functional.testexample.InlinedMethod_9.get(java.lang.String[],int):0:input[org.e2immu.analyser.parser.functional.testexample.InlinedMethod_9.get(java.lang.String[],int):1:index]`+`org.e2immu.analyser.parser.functional.testexample.InlinedMethod_9.get(java.lang.String[],int):0:input[org.e2immu.analyser.parser.functional.testexample.InlinedMethod_9.get(java.lang.String[],int):1:index]`";
+                        : "/*inline method*/`org.e2immu.analyser.parser.functional.testexample.InlinedMethod_9.get(String[],int):0:input[org.e2immu.analyser.parser.functional.testexample.InlinedMethod_9.get(String[],int):1:index]`+`org.e2immu.analyser.parser.functional.testexample.InlinedMethod_9.get(String[],int):0:input[org.e2immu.analyser.parser.functional.testexample.InlinedMethod_9.get(String[],int):1:index]`";
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
                 if (d.iteration() >= 1) assertTrue(d.methodAnalysis().getSingleReturnValue() instanceof InlinedMethod);
             }

@@ -75,7 +75,7 @@ public class TestSynthetics {
                             typeMap.getPrimitives().stringParameterizedType()));
             assertTrue(map.isSingleAbstractMethod());
             ParameterizedType c = map.getConcreteTypeOfParameter(typeMap.getPrimitives(), 0);
-            assertEquals("Type java.lang.String", c.toString());
+            assertEquals("Type String", c.toString());
         }
         {
             TypeInfo f2 = typeMap.syntheticFunction(2, false);

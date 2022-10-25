@@ -36,10 +36,13 @@ public class Sum extends BinaryOperator {
 
     @Override
     public Expression translate(InspectionProvider inspectionProvider, TranslationMap translationMap) {
+        Expression translated = translationMap.translateExpression(this);
+        if (translated != this) return translated;
         Expression tl = lhs.translate(inspectionProvider, translationMap);
         Expression tr = rhs.translate(inspectionProvider, translationMap);
         if (tl == lhs && tr == rhs) return this;
-        return new Sum(identifier, primitives, tl, tr);
+        return new Sum(identifier, primitives, tl, tr)
+                .translate(inspectionProvider, translationMap);
     }
 
     private Sum(Identifier identifier, Primitives primitives, Expression lhs, Expression rhs) {

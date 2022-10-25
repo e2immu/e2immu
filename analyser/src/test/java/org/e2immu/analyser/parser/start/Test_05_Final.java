@@ -51,7 +51,7 @@ public class Test_05_Final extends CommonTestRunner {
         final String FINAL_CHECKS = "Final_0";
         final String TYPE = "org.e2immu.analyser.parser.start.testexample." + FINAL_CHECKS;
         // there are 2 constructors, with different parameter lists
-        final String FINAL_CHECKS_FQN = TYPE + "." + FINAL_CHECKS + "(java.lang.String,java.lang.String)";
+        final String FINAL_CHECKS_FQN = TYPE + "." + FINAL_CHECKS + "(String,String)";
 
         final String S1 = TYPE + ".s1";
         final String S4 = TYPE + ".s4";

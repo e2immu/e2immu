@@ -49,6 +49,9 @@ public class Negation extends UnaryOperator implements ExpressionWrapper {
     public Expression translate(InspectionProvider inspectionProvider, TranslationMap translationMap) {
         Expression translated = expression.translate(inspectionProvider, translationMap);
         if (translated == expression) return this;
+        if (translated instanceof Negation negation) {
+            return negation.expression; // double negation gets cancelled
+        }
         return new Negation(identifier, operator, translated);
     }
 
@@ -181,5 +184,10 @@ public class Negation extends UnaryOperator implements ExpressionWrapper {
     public Expression extractConditions(Primitives primitives) {
         if (returnType().isBooleanOrBoxedBoolean()) return this;
         return new BooleanConstant(primitives, true);
+    }
+
+    @Override
+    public boolean isNegatedOrNumericNegative() {
+        return true;
     }
 }

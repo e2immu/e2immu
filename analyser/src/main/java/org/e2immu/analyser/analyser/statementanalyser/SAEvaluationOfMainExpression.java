@@ -89,7 +89,8 @@ record SAEvaluationOfMainExpression(StatementAnalysis statementAnalysis,
         Statement statement = statementAnalysis.statement();
         Structure structure = statement.getStructure();
         if (structure.expression() == EmptyExpression.EMPTY_EXPRESSION && expressionsFromInitAndUpdate.isEmpty()) {
-            return emptyExpression(sharedState, causes);
+            CausesOfDelay absoluteStateDelays = statementAnalysis.stateData().getAbsoluteState().causesOfDelay();
+            return emptyExpression(sharedState, causes.merge(absoluteStateDelays));
         }
 
         if (structure.expression() != EmptyExpression.EMPTY_EXPRESSION) {

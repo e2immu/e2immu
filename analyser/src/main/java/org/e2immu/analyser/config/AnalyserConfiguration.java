@@ -27,6 +27,7 @@ public record AnalyserConfiguration(boolean skipTransformations,
                                     boolean computeFieldAnalyserAcrossAllMethods,
                                     boolean forceExtraDelayForTesting,
                                     boolean forceAlphabeticAnalysisInPrimaryType,
+                                    boolean normalizeMore,
                                     PatternMatcherProvider<StatementAnalyser> patternMatcherProvider) {
 
     public AnalyserConfiguration {
@@ -47,6 +48,7 @@ public record AnalyserConfiguration(boolean skipTransformations,
         private boolean computeFieldAnalyserAcrossAllMethods;
         private boolean forceExtraDelayForTesting;
         private boolean forceAlphabeticAnalysisInPrimaryType;
+        private boolean normalizeMore;
 
         private PatternMatcherProvider<StatementAnalyser> patternMatcherProvider;
 
@@ -57,6 +59,11 @@ public record AnalyserConfiguration(boolean skipTransformations,
 
         public Builder setPatternMatcherProvider(PatternMatcherProvider<StatementAnalyser> patternMatcherProvider) {
             this.patternMatcherProvider = patternMatcherProvider;
+            return this;
+        }
+
+        public Builder setNormalizeMore(boolean normalizeMore) {
+            this.normalizeMore = normalizeMore;
             return this;
         }
 
@@ -86,6 +93,7 @@ public record AnalyserConfiguration(boolean skipTransformations,
                     computeFieldAnalyserAcrossAllMethods,
                     forceExtraDelayForTesting,
                     forceAlphabeticAnalysisInPrimaryType,
+                    normalizeMore,
                     patternMatcherProvider == null ?
                             (ip, ap) -> PatternMatcher.NO_PATTERN_MATCHER : patternMatcherProvider);
         }
@@ -97,6 +105,7 @@ public record AnalyserConfiguration(boolean skipTransformations,
                 "\n    skipTransformations=" + skipTransformations +
                 "\n    computeContextPropertiesOverAllMethods=" + computeContextPropertiesOverAllMethods +
                 "\n    computeFieldAnalyserAcrossAllMethods=" + computeFieldAnalyserAcrossAllMethods +
-                "\n    forceExtraDelayForTesting=" + forceExtraDelayForTesting;
+                "\n    forceExtraDelayForTesting=" + forceExtraDelayForTesting +
+                "\n    normalizeMore=" + normalizeMore;
     }
 }

@@ -54,13 +54,13 @@ public class EvaluateParameters {
         int i = 0;
         DV minCnnOverParameters = MultiLevel.EFFECTIVELY_NOT_NULL_DV;
 
-        EvaluationResult.Builder builder = new EvaluationResult.Builder(context);
+        EvaluationResult.Builder builder = new EvaluationResult.Builder(context).compose(context);
 
         DV scopeIsContainer = scopeIsContainer(context, recursiveOrPartOfCallCycle, scopeObject);
         DV scopeIsIndependent = scopeIsIndependent(context, recursiveOrPartOfCallCycle, scopeObject);
 
         for (Expression parameterExpression : parameterExpressions) {
-            minCnnOverParameters = oneParameterReturnCnn(context, forwardEvaluationInfo,
+            minCnnOverParameters = oneParameterReturnCnn(forwardEvaluationInfo,
                     methodInfo, recursiveOrPartOfCallCycle, parameterValues, i, builder, parameterExpression,
                     scopeIsContainer, scopeIsIndependent);
             i++;
@@ -92,8 +92,7 @@ public class EvaluateParameters {
         return MultiLevel.DEPENDENT_DV; // inactive
     }
 
-    private static DV oneParameterReturnCnn(EvaluationResult context,
-                                            ForwardEvaluationInfo forwardEvaluationInfo,
+    private static DV oneParameterReturnCnn(ForwardEvaluationInfo forwardEvaluationInfo,
                                             MethodInfo methodInfo,
                                             boolean recursiveOrPartOfCallCycle,
                                             List<Expression> parameterValues,
@@ -106,6 +105,12 @@ public class EvaluateParameters {
         DV contextModified;
         ParameterInfo parameterInfo = methodInfo == null ? null : getParameterInfo(methodInfo, position);
         ForwardEvaluationInfo forward;
+
+        /*
+        we start with the accumulated information from previous parameter evaluations
+        See e.g. Basics_26
+         */
+        EvaluationResult context = builder.build();
 
         if (methodInfo != null) {
             // NOT_NULL, NOT_MODIFIED

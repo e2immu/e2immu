@@ -349,7 +349,9 @@ public final class DelayedExpression extends BaseExpression implements Expressio
     // list need to be replaced as well.
     @Override
     public Expression translate(InspectionProvider inspectionProvider, TranslationMap translationMap) {
-        Expression translated = original.translate(inspectionProvider, translationMap);
+        Expression translated = translationMap.translateToDelayedExpression()
+                ? original
+                : original.translate(inspectionProvider, translationMap);
         ParameterizedType translatedType = translationMap.translateType(parameterizedType);
         if (translated == original && translatedType == parameterizedType) return this;
         return new DelayedExpression(identifier, msg, translatedType, translated, causesOfDelay);

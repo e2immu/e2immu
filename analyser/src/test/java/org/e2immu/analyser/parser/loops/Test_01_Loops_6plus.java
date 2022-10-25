@@ -403,8 +403,8 @@ public class Test_01_Loops_6plus extends CommonTestRunner {
                     }
                     if ("2.0.1".equals(d.statementId()) || "2.0.2".equals(d.statementId())) {
                         String expect = d.iteration() == 0
-                                ? "6==<v:i>?11:3==<v:i>?10:<vl:j>"
-                                : "6==i$2?11:3==i$2?10:instance type int";
+                                ? "3==<v:i>?10:6==<v:i>?11:<vl:j>"
+                                : "3==i$2?10:6==i$2?11:instance type int";
                         assertEquals(expect, d.currentValue().toString());
                     }
                 }

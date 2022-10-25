@@ -97,6 +97,9 @@ public class InlineConditional extends BaseExpression implements Expression {
         Expression tt = ifTrue.translate(inspectionProvider, translationMap);
         Expression tf = ifFalse.translate(inspectionProvider, translationMap);
         if (tc == condition && tt == ifTrue && tf == ifFalse) return this;
+        if (tc instanceof Negation negation) {
+            return new InlineConditional(identifier, this.inspectionProvider, negation.expression, tf, tt);
+        }
         return new InlineConditional(identifier, this.inspectionProvider, tc, tt, tf);
     }
 

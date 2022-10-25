@@ -98,7 +98,7 @@ public class Test_14_Warnings extends CommonTestRunner {
                 if ("2".equals(d.statementId())) {
                     // ERROR: unused variable "s"
                     LocationImpl location = (LocationImpl) d.haveError(Message.Label.UNUSED_LOCAL_VARIABLE).location();
-                    assertEquals("org.e2immu.analyser.parser.start.testexample.Warnings_1.method1(java.lang.String)",
+                    assertEquals("org.e2immu.analyser.parser.start.testexample.Warnings_1.method1(String)",
                             location.info.fullyQualifiedName());
                     assertNull(d.haveError(Message.Label.USELESS_ASSIGNMENT));
                     if (d.iteration() >= 2) {
@@ -312,7 +312,7 @@ public class Test_14_Warnings extends CommonTestRunner {
                 assertEquals("0", d.statementId());
                 if (d.variable() instanceof FieldReference fr && "set".equals(fr.fieldInfo.name)) {
                     assertEquals("Set.copyOf(input)", d.currentValue().toString());
-                    assertEquals("Type java.util.Set<java.lang.String>", d.currentValue().returnType().toString());
+                    assertEquals("Type java.util.Set<String>", d.currentValue().returnType().toString());
                     assertDv(d, MultiLevel.EFFECTIVELY_IMMUTABLE_DV, IMMUTABLE);
                     // if recursively immutable, then cannot link
                     assertTrue(d.variableInfo().getLinkedVariables().isEmpty(),

@@ -226,6 +226,23 @@ public class EvaluateInlineConditional {
             }
         }
 
+        if (evaluationResult.getAnalyserContext().getConfiguration().analyserConfiguration().normalizeMore()
+                && condition instanceof GreaterThanZero ge0
+                && ge0.expression() instanceof Sum sum) {
+            /*
+            if lhs is negative, and rhs is positive, keep: a<=b?t:f === -a+b>0?t:f
+            if lhs is positive, and lhs is negative, swap: b>a?t:f  === a-b>0?t:f  === a<=b?f:t
+             */
+            boolean lhsNegative = sum.lhs.isNegatedOrNumericNegative();
+            boolean rhsNegative = sum.rhs.isNegatedOrNumericNegative();
+            if(!lhsNegative && rhsNegative) {
+                Expression newCondition = Negation.negate(evaluationResult, condition);
+                InlineConditional inline = new InlineConditional(evaluationResult.getAnalyserContext(),
+                        newCondition, ifFalse, ifTrue);
+                return builder.setExpression(inline).build();
+            }
+        }
+
         // standardization... we swap!
         // this will result in  a != null ? a: x ==>  null == a ? x : a as the default form
 

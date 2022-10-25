@@ -318,7 +318,11 @@ public class TestConditionalValue extends CommonAbstractValue {
         Expression a = GreaterThanZero.greater(context, i, Sum.sum(context, j, newInt(1)), true);
         Expression v = inline(newAndAppend(a, newOrAppend(equals(NULL_CONSTANT, s),
                 equals(NULL_CONSTANT, s1))), NULL_CONSTANT, inline(a, s1, new StringConstant(PRIMITIVES, "x")));
+        /*
         assertEquals("-1+i>=j&&(null==s||null==s1)?null:-1+i>=j?s1:\"x\"", v.toString());
+        before extra normalization
+         */
+        assertEquals("-1+i>=j&&(null==s||null==s1)?null:j>=i?\"x\":s1", v.toString());
 
         Expression vIsNull = equals(NULL_CONSTANT, v);
         assertEquals("-1+i>=j&&(null==s||null==s1)", vIsNull.toString());
@@ -389,5 +393,15 @@ public class TestConditionalValue extends CommonAbstractValue {
 
         Expression e6 = inline(equals(i, newInt(1)), c1, inline(equals(i, newInt(3)), c3, inline(equals(i, newInt(2)), c2, c4)));
         assertEquals(expected, e6.toString());
+    }
+
+    @Test
+    public void testNormalizeConditional() {
+        Expression iMinJ = sum(i, negate(j));
+        assertEquals("i-j", iMinJ.toString());
+        Expression inline = inline(new GreaterThanZero(Identifier.CONSTANT, PRIMITIVES, iMinJ, true), a, b);
+        // expect i>=j?a:b without more normalization
+        // we normalize to i>=j?a:b === i-j>=0?a:b to j-i>0?b:a to -1-i+j>=0?b:a
+        assertEquals("-1-i+j>=0?b:a", inline.toString());
     }
 }

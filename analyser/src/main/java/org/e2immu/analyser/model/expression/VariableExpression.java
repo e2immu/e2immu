@@ -15,6 +15,7 @@
 package org.e2immu.analyser.model.expression;
 
 import org.e2immu.analyser.analyser.*;
+import org.e2immu.analyser.analyser.Properties;
 import org.e2immu.analyser.analyser.delay.DelayFactory;
 import org.e2immu.analyser.analyser.delay.VariableCause;
 import org.e2immu.analyser.analysis.FieldAnalysis;
@@ -31,10 +32,7 @@ import org.e2immu.analyser.util.ListUtil;
 import org.e2immu.analyser.util.UpgradableBooleanMap;
 import org.e2immu.support.Either;
 
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
+import java.util.*;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
 
@@ -336,6 +334,19 @@ public class VariableExpression extends BaseExpression implements IsVariableExpr
         Expression currentValue = builder.currentExpression(source, scopeResult == null ? null : scopeResult.value(),
                 indexResult == null ? null : indexResult.value(), forwardEvaluationInfo);
 
+        // FIXME emergency code, simply trying something out; we may have been here before, though....
+        if (currentValue instanceof InlineConditional inlineConditional) {
+            List<Variable> variablesInCondition = inlineConditional.condition.variables(true);
+            if (Collections.disjoint(variablesInCondition, forwardEvaluationInfo.getEvaluating())) {
+                ConditionManager cm = context.evaluationContext().getConditionManager();
+                Expression newCondition = cm.evaluate(context, inlineConditional.condition, false);
+                if (newCondition.isBoolValueTrue()) {
+                    currentValue = inlineConditional.ifTrue;
+                } else if (newCondition.isBoolValueFalse()) {
+                    currentValue = inlineConditional.ifFalse;
+                }
+            }
+        }
         builder.setExpression(currentValue);
 
         // no statement analyser... no need to compute all these properties

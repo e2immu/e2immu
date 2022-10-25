@@ -93,11 +93,15 @@ public class BinaryOperator extends BaseExpression implements Expression {
 
     @Override
     public Expression translate(InspectionProvider inspectionProvider, TranslationMap translationMap) {
+        Expression translated = translationMap.translateExpression(this);
+        if (translated != this) return translated;
         Expression translatedLhs = lhs.translate(inspectionProvider, translationMap);
         Expression translatedRhs = rhs.translate(inspectionProvider, translationMap);
         if (translatedRhs == this.rhs && translatedLhs == this.lhs) return this;
         return new BinaryOperator(identifier, primitives, translatedLhs,
-                operator, translatedRhs, precedence);
+                operator, translatedRhs, precedence)
+                // try again, may be recursion
+                .translate(inspectionProvider, translationMap);
     }
 
     @Override
@@ -141,7 +145,7 @@ public class BinaryOperator extends BaseExpression implements Expression {
         ForwardEvaluationInfo forward = forwardBuilder.removeContextContainer().build();
 
         EvaluationResult leftResult = lhs.evaluate(context, forward);
-        EvaluationResult rightResult = rhs.evaluate(context, forward);
+        EvaluationResult rightResult = rhs.evaluate(leftResult, forward);
         EvaluationResult.Builder builder = new EvaluationResult.Builder(context).compose(leftResult, rightResult);
         builder.setExpression(determineValueProtect(primitives, builder, leftResult, rightResult, context, forward));
         return builder.build();

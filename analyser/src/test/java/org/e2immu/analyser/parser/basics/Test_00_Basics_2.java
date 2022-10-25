@@ -41,12 +41,12 @@ import static org.junit.jupiter.api.Assertions.*;
 public class Test_00_Basics_2 extends CommonTestRunner {
 
     private static final String TYPE = "org.e2immu.analyser.parser.basics.testexample.Basics_2";
-    private static final String STRING_PARAMETER = TYPE + ".setString(java.lang.String):0:string";
+    private static final String STRING_PARAMETER = TYPE + ".setString(String):0:string";
     private static final String STRING_FIELD = TYPE + ".string";
 
     private static final String THIS = TYPE + ".this";
-    private static final String COLLECTION = TYPE + ".add(java.util.Collection<java.lang.String>):0:collection";
-    private static final String ADD = TYPE + ".add(java.util.Collection<java.lang.String>)";
+    private static final String COLLECTION = TYPE + ".add(java.util.Collection<String>):0:collection";
+    private static final String ADD = TYPE + ".add(java.util.Collection<String>)";
 
     public Test_00_Basics_2() {
         super(true);

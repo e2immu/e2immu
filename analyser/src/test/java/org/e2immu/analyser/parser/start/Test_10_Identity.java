@@ -41,7 +41,7 @@ public class Test_10_Identity extends CommonTestRunner {
     TypeMapVisitor typeMapVisitor = typeMap -> {
         TypeInfo logger = typeMap.get(Logger.class);
         MethodInfo debug = logger.typeInspection.get().methodStream(TypeInspection.Methods.THIS_TYPE_ONLY)
-                .filter(m -> "org.slf4j.Logger.debug(java.lang.String,java.lang.Object...)".equals(m.fullyQualifiedName))
+                .filter(m -> "org.slf4j.Logger.debug(String,Object...)".equals(m.fullyQualifiedName))
                 .findFirst().orElseThrow();
         assertEquals(DV.FALSE_DV, debug.methodAnalysis.get().getProperty(Property.MODIFIED_METHOD));
 
@@ -65,7 +65,7 @@ public class Test_10_Identity extends CommonTestRunner {
                     assertDv(d, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     assertTrue(d.variableInfo().isRead());
                     ParameterizedType stringPt = d.variable().parameterizedType();
-                    assertEquals("Type java.lang.String", stringPt.toString());
+                    assertEquals("Type String", stringPt.toString());
                     assertEquals(MultiLevel.EFFECTIVELY_IMMUTABLE_DV,
                             d.context().getAnalyserContext().typeImmutable(stringPt));
 
@@ -213,8 +213,7 @@ public class Test_10_Identity extends CommonTestRunner {
                 if (d.variable() instanceof ReturnVariable) {
                     if ("1".equals(d.statementId())) {
                         assertEquals("s:0", d.variableInfo().getLinkedVariables().toString());
-                        String expected = d.iteration() == 0 ? "<m:equals>?<m:idem>:<p:s>"
-                                : "\"a\".equals(s)?\"a\"/*@Identity {L s:0}*/:s";
+                        String expected = d.iteration() == 0 ? "<m:equals>?<m:idem>:<p:s>" : "s";
                         assertEquals(expected, d.currentValue().toString());
                         assertDv(d, 1, DV.TRUE_DV, IDENTITY);
                     }
@@ -224,8 +223,7 @@ public class Test_10_Identity extends CommonTestRunner {
 
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("idem3".equals(d.methodInfo().name)) {
-                String expected = d.iteration() == 0 ? "<m:idem3>"
-                        : "/*inline idem3*/\"a\".equals(s)?\"a\"/*@Identity {L s:0}*/:s";
+                String expected = d.iteration() == 0 ? "<m:idem3>" : "/*inline idem3*/s";
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
                 assertDv(d, 1, DV.TRUE_DV, Property.IDENTITY);
                 assertDv(d, DV.FALSE_DV, Property.MODIFIED_METHOD);

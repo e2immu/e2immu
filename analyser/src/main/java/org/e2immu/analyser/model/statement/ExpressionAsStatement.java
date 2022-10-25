@@ -39,6 +39,10 @@ public class ExpressionAsStatement extends StatementWithExpression {
         this.synthetic = synthetic;
     }
 
+    @Override
+    public Statement replaceComment(Comment newCommentOrNullToRemove) {
+        return new ExpressionAsStatement(identifier, expression, newCommentOrNullToRemove, synthetic);
+    }
 
     @Override
     public boolean equals(Object obj) {

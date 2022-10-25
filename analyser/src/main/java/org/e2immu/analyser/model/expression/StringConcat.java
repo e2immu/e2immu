@@ -31,10 +31,14 @@ public class StringConcat extends BinaryOperator {
 
     @Override
     public Expression translate(InspectionProvider inspectionProvider, TranslationMap translationMap) {
+        Expression translated = translationMap.translateExpression(this);
+        if (translated != this) return translated;
         Expression tl = lhs.translate(inspectionProvider, translationMap);
         Expression tr = rhs.translate(inspectionProvider, translationMap);
-        if(tl == lhs && tr == rhs) return this;
-        return new StringConcat(identifier, primitives, tl, tr);
+        if (tl == lhs && tr == rhs) return this;
+        return new StringConcat(identifier, primitives, tl, tr)
+                // for recursions:
+                .translate(inspectionProvider, translationMap);
     }
 
     public static Expression stringConcat(Identifier identifier, EvaluationResult evaluationContext, Expression l, Expression r) {

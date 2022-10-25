@@ -117,18 +117,23 @@ public class ParameterInfo implements Variable, WithInspectionAndAnalysis {
         return parameterInspection.isSet();
     }
 
+    /*
+    the reason we want all three fields (index, name, owner) in the equality, where name or index seems redundant,
+    is that translations which change name and swap parameters should not pick up the wrong variable.
+     */
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         ParameterInfo that = (ParameterInfo) o;
-        return index == that.index &&
-                owner.equals(that.owner);
+        return index == that.index
+                && name.equals(that.name)
+                && owner.equals(that.owner);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(index, owner);
+        return Objects.hash(index, name, owner);
     }
 
     @Override

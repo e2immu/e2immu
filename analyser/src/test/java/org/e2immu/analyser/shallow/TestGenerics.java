@@ -101,7 +101,7 @@ public class TestGenerics extends CommonAnnotatedAPI {
         ParameterizedType entryStringIntegerPt = new ParameterizedType(entry, List.of(stringPt, integerPt));
 
         ParameterizedType streamOfEntryStringIntegers = new ParameterizedType(stream, List.of(entryStringIntegerPt));
-        assertEquals("Type java.util.stream.Stream<java.util.Map.Entry<java.lang.String,java.lang.Integer>>",
+        assertEquals("Type java.util.stream.Stream<java.util.Map.Entry<String,Integer>>",
                 streamOfEntryStringIntegers.toString());
 
         assertEquals(MultiLevel.MUTABLE_DV, AnalysisProvider.DEFAULT_PROVIDER.typeImmutable(streamOfEntryStringIntegers));

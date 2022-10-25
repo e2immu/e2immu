@@ -23,4 +23,9 @@ public interface Numeric extends Negatable {
     default double doubleValue() {
         return getNumber().doubleValue();
     }
+
+    @Override
+    default boolean isNegatedOrNumericNegative() {
+        return doubleValue() < 0;
+    }
 }

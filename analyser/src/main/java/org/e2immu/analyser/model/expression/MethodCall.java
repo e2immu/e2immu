@@ -121,7 +121,8 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
             return DelayedExpression.forMethod(identifier, translatedMethod, translatedMethod.returnType(),
                     translatedMc, causesOfDelay, Map.of());
         }
-        return translatedMc;
+        // there was a change, try again. We could have multiple recursive changes
+        return translatedMc.translate(inspectionProvider, translationMap);
     }
 
     @Override
@@ -330,7 +331,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
 
         // process parameters
         Pair<EvaluationResult.Builder, List<Expression>> res = EvaluateParameters.transform(parameterExpressions,
-                context, forwardEvaluationInfo, concreteMethod,
+                objectResult, forwardEvaluationInfo, concreteMethod,
                 firstInCallCycle, objectValue, allowUpgradeCnnOfScope);
         List<Expression> parameterValues = res.v;
         builder.compose(objectResult, res.k.build());

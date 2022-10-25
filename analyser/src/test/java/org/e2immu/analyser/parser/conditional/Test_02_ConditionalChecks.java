@@ -300,12 +300,12 @@ public class Test_02_ConditionalChecks extends CommonTestRunner {
     @Test
     public void test4() throws IOException {
         final String TYPE = "org.e2immu.analyser.parser.conditional.testexample.ConditionalChecks_4";
-        final String RETURN5 = TYPE + ".method5(java.lang.Object)";
+        final String RETURN5 = TYPE + ".method5(Object)";
         final String O5 = RETURN5 + ":0:o";
         final String I = TYPE + ".i";
         final String CC_I = TYPE + ".i#" + O5;
         final String CONDITIONAL_CHECKS = "conditionalChecks";
-        final String O_I_DELAYED = "<field:org.e2immu.analyser.parser.conditional.testexample.ConditionalChecks_4.i#org.e2immu.analyser.parser.conditional.testexample.ConditionalChecks_4.method5(java.lang.Object):0:o>";
+        final String O_I_DELAYED = "<field:org.e2immu.analyser.parser.conditional.testexample.ConditionalChecks_4.i#org.e2immu.analyser.parser.conditional.testexample.ConditionalChecks_4.method5(Object):0:o>";
 
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("method5".equals(d.methodInfo().name)) {

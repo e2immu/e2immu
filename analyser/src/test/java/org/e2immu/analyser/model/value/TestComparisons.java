@@ -338,7 +338,7 @@ public class TestComparisons extends CommonAbstractValue {
     public void testDelayed() {
         Expression delayedPGe0 = GreaterThanZero.greater(context, delayedP, newInt(0), true);
         assertEquals("<p:p>>=0", delayedPGe0.toString());
-        assertEquals("[some.type.type(java.lang.String):0:p]", delayedPGe0.variables(true).toString());
+        assertEquals("[some.type.type(String):0:p]", delayedPGe0.variables(true).toString());
         assertTrue(delayedPGe0.variables(true).stream()
                 .allMatch(v -> v instanceof ParameterInfo || v instanceof FieldReference));
     }
