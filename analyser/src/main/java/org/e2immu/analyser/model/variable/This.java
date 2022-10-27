@@ -133,4 +133,9 @@ public class This implements Variable {
         }
         return UpgradableBooleanMap.of(typeInfo, explicitlyWriteType == typeInfo);
     }
+
+    @Override
+    public int getComplexity() {
+        return 1;
+    }
 }

@@ -46,12 +46,18 @@ public class QualificationImpl implements Qualification {
     private final Set<String> simpleTypeNames;
     private final QualificationImpl parent;
     private final QualificationImpl top;
+    private final boolean doNotQualifyImplicit;
 
     public QualificationImpl() {
+        this(false);
+    }
+
+    public QualificationImpl(boolean doNotQualifyImplicit) {
         parent = null;
         top = this;
         typesNotImported = new HashMap<>();
         simpleTypeNames = new HashSet<>();
+        this.doNotQualifyImplicit = doNotQualifyImplicit;
     }
 
     public QualificationImpl(Qualification parent) {
@@ -59,6 +65,12 @@ public class QualificationImpl implements Qualification {
         top = ((QualificationImpl) parent).top;
         typesNotImported = null;
         simpleTypeNames = null;
+        doNotQualifyImplicit = this.parent.doNotQualifyImplicit;
+    }
+
+    @Override
+    public boolean doNotQualifyImplicit() {
+        return doNotQualifyImplicit;
     }
 
     @Override
@@ -71,7 +83,8 @@ public class QualificationImpl implements Qualification {
             QualificationImpl levelWithData = this;
             while (levelWithData.unqualifiedThis.isEmpty()) {
                 levelWithData = levelWithData.parent;
-                if(levelWithData == null) return false; // we did not start properly at the top, we're e.g. only outputting a method
+                if (levelWithData == null)
+                    return false; // we did not start properly at the top, we're e.g. only outputting a method
             }
             return !levelWithData.unqualifiedThis.contains(thisVar);
         }

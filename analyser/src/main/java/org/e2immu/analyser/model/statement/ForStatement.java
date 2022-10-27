@@ -72,6 +72,14 @@ public class ForStatement extends LoopStatement {
         return Objects.hash(identifier, subElements());
     }
 
+    @Override
+    public int getComplexity() {
+        return 1 + expression.getComplexity()
+                + structure.initialisers().stream().mapToInt(Expression::getComplexity).sum()
+                + structure.updaters().stream().mapToInt(Expression::getComplexity).sum()
+                + structure.block().getComplexity();
+    }
+
     // for(int i=0; i<x; i++) has no exit condition: 'i' in 'i<x' is a locally created variable
     // int i; for(i=0; i<x; i++) has one... the variable 'i' in 'i<x' persists after the loop
     @Override

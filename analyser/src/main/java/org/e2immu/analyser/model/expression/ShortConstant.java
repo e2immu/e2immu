@@ -33,7 +33,7 @@ public final class ShortConstant extends BaseExpression implements ConstantExpre
     private final short constant;
 
     public ShortConstant(Primitives primitives, short constant) {
-        super(Identifier.constant(constant));
+        super(Identifier.constant(constant), constant == 0 ? 1 : 2);
         this.primitives = primitives;
         this.constant = constant;
     }

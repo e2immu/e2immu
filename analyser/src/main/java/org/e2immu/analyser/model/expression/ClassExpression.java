@@ -37,7 +37,7 @@ public class ClassExpression extends BaseExpression implements ConstantExpressio
     private final ParameterizedType parameterizedClassType; // Class<String>
 
     public ClassExpression(Primitives primitives, ParameterizedType parameterizedType, ParameterizedType parameterizedClassType) {
-        super(Identifier.constant(parameterizedType));
+        super(Identifier.constant(parameterizedType), 2);
         this.primitives = primitives;
         this.parameterizedType = parameterizedType;
         this.parameterizedClassType = parameterizedClassType;

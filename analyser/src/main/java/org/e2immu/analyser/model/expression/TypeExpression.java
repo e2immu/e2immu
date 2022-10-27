@@ -34,7 +34,7 @@ public class TypeExpression extends BaseExpression implements Expression {
     public final Diamond diamond;
 
     public TypeExpression(Identifier identifier, ParameterizedType parameterizedType, Diamond diamond) {
-        super(identifier);
+        super(identifier, 1);
         this.parameterizedType = Objects.requireNonNull(parameterizedType);
         this.diamond = diamond;
     }

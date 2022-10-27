@@ -133,7 +133,7 @@ public class VariableExpression extends BaseExpression implements IsVariableExpr
     }
 
     public VariableExpression(Identifier identifier, Variable variable, Suffix suffix, Expression scopeValue, Expression indexValue) {
-        super(identifier);
+        super(identifier, variable.getComplexity());
         this.variable = variable;
         this.suffix = Objects.requireNonNull(suffix);
         if (variable instanceof FieldReference fieldReference && !fieldReference.isStatic ||

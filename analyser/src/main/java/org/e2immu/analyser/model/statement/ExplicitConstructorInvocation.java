@@ -62,6 +62,11 @@ public class ExplicitConstructorInvocation extends StatementWithStructure {
     }
 
     @Override
+    public int getComplexity() {
+        return 1 + structure.updaters().stream().mapToInt(Expression::getComplexity).sum();
+    }
+
+    @Override
     public List<Statement> translate(InspectionProvider inspectionProvider, TranslationMap translationMap) {
         List<Statement> direct = translationMap.translateStatement(inspectionProvider, this);
         if (haveDirectTranslation(direct, this)) return direct;

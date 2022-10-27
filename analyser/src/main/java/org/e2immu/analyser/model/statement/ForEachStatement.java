@@ -79,6 +79,13 @@ public class ForEachStatement extends LoopStatement {
     }
 
     @Override
+    public int getComplexity() {
+        return 1 + expression.getComplexity()
+                + structure.initialisers().stream().mapToInt(Expression::getComplexity).sum()
+                + structure.block().getComplexity();
+    }
+
+    @Override
     public boolean hasExitCondition() {
         return false;
     }

@@ -49,7 +49,7 @@ public class ArrayAccess extends BaseExpression implements Expression {
                        @NotNull Expression index,
                        Identifier indexIdentifier,
                        TypeInfo owningType) {
-        super(identifier);
+        super(identifier, expression.getComplexity() + index.getComplexity() + 1);
         this.expression = Objects.requireNonNull(expression);
         this.index = Objects.requireNonNull(index);
         this.returnType = expression.returnType().copyWithOneFewerArrays();

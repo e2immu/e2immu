@@ -88,4 +88,9 @@ public class YieldStatement extends StatementWithExpression {
             expression.visit(predicate);
         }
     }
+
+    @Override
+    public int getComplexity() {
+        return 1 + expression.getComplexity();
+    }
 }

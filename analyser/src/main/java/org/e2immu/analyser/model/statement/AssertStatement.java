@@ -51,6 +51,11 @@ public class AssertStatement extends StatementWithStructure {
     }
 
     @Override
+    public int getComplexity() {
+        return 1 + structure.expression().getComplexity() + (message == null ? 0 : message.getComplexity());
+    }
+
+    @Override
     public int hashCode() {
         return Objects.hash(identifier, structure.expression(), message);
     }

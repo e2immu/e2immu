@@ -31,7 +31,8 @@ public class CommaExpression extends BaseExpression implements Expression {
     private final List<Expression> expressions;
 
     public CommaExpression(List<Expression> expressions) {
-        super(Identifier.joined("comma expression", expressions.stream().map(Expression::getIdentifier).toList()));
+        super(Identifier.joined("comma expression", expressions.stream().map(Expression::getIdentifier).toList()),
+                1 + expressions.stream().mapToInt(Expression::getComplexity).sum());
         this.expressions = expressions;
     }
 

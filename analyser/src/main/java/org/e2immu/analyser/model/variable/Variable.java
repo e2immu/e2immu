@@ -119,4 +119,6 @@ public interface Variable extends OneVariable, Comparable<Variable> {
     scope variable or index variable is contained in set?
      */
     default boolean containsAtLeastOneOf(Set<? extends Variable> variables) { return false; }
+
+    default int getComplexity() { return 1; }
 }

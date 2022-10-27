@@ -44,7 +44,7 @@ public class InstanceOf extends BaseExpression implements Expression {
                       ParameterizedType parameterizedType,
                       Expression expression,
                       LocalVariableReference patternVariable) {
-        super(identifier);
+        super(identifier, 2 + expression.getComplexity());
         this.parameterizedType = Objects.requireNonNull(parameterizedType);
         this.expression = Objects.requireNonNull(expression);
         this.primitives = Objects.requireNonNull(primitives);

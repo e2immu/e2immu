@@ -34,7 +34,7 @@ public final class MethodCallErasure extends BaseExpression implements ErasureEx
     private final String methodName;
 
     public MethodCallErasure(Set<ParameterizedType> returnTypes, String methodName) {
-        super(Identifier.CONSTANT);
+        super(Identifier.CONSTANT, 10);
         this.returnTypes = returnTypes;
         this.methodName = methodName;
     }

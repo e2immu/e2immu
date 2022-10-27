@@ -60,6 +60,11 @@ public class ReturnStatement extends StatementWithExpression {
     }
 
     @Override
+    public int getComplexity() {
+        return 1 + expression.getComplexity();
+    }
+
+    @Override
     public OutputBuilder output(Qualification qualification, LimitedStatementAnalysis statementAnalysis) {
         OutputBuilder outputBuilder = new OutputBuilder().add(new Text("return"));
         if (expression != EmptyExpression.EMPTY_EXPRESSION) {

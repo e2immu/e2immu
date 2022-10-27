@@ -39,7 +39,7 @@ public class GreaterThanZero extends BaseExpression implements Expression {
                            Primitives primitives,
                            Expression expression,
                            boolean allowEquals) {
-        super(identifier);
+        super(identifier, expression.getComplexity());
         this.primitives = Objects.requireNonNull(primitives);
         this.expression = Objects.requireNonNull(expression);
         assert !expression.returnType().equals(primitives.intParameterizedType()) || allowEquals :

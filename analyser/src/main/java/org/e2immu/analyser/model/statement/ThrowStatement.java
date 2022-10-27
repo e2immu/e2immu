@@ -50,6 +50,11 @@ public class ThrowStatement extends StatementWithExpression {
     }
 
     @Override
+    public int getComplexity() {
+        return 1 + expression.getComplexity();
+    }
+
+    @Override
     public List<? extends Element> subElements() {
         return List.of(structure.expression());
     }

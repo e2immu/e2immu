@@ -153,4 +153,9 @@ public class DependentVariable extends VariableWithConcreteReturnType {
         return arrayVariable != null && (variables.contains(arrayVariable) || arrayVariable.containsAtLeastOneOf(variables))
                 || indexVariable != null && (variables.contains(indexVariable) || indexVariable.containsAtLeastOneOf(variables));
     }
+
+    @Override
+    public int getComplexity() {
+        return arrayExpression.getComplexity() + indexExpression.getComplexity();
+    }
 }

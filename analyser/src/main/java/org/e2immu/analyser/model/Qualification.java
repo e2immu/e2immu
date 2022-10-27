@@ -66,4 +66,6 @@ public interface Qualification {
     }
 
     TypeName.Required qualifierRequired(TypeInfo typeInfo);
+
+    default boolean doNotQualifyImplicit() { return false; }
 }

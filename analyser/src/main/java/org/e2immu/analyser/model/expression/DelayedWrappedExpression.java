@@ -50,7 +50,7 @@ public final class DelayedWrappedExpression extends BaseExpression implements Ex
                                     Properties properties,
                                     LinkedVariables linkedVariables,
                                     CausesOfDelay causesOfDelay) {
-        super(identifier);
+        super(identifier, expression.getComplexity());
         this.properties = properties;
         this.linkedVariables = linkedVariables;
         this.causesOfDelay = causesOfDelay;

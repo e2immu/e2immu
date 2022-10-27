@@ -327,7 +327,8 @@ public class MethodInfo implements WithInspectionAndAnalysis {
     }
 
     public int getComplexity() {
-        return 1;
+        return 1 + (methodInspection.isSet() && hasBeenAnalysed()
+                ? methodInspection.get().getMethodBody().getComplexity() : 10);
     }
 
     /*

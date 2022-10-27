@@ -37,7 +37,7 @@ public final class EmptyExpression extends BaseExpression implements Expression 
     private final String msg;
 
     public EmptyExpression(String msg) {
-        super(Identifier.constant("__unknown_" + msg + "__"));
+        super(Identifier.constant("__unknown_" + msg + "__"), 1);
         this.msg = msg;
     }
 

@@ -28,7 +28,7 @@ final class PackagePrefixExpression extends BaseExpression implements Expression
     private final PackagePrefix packagePrefix;
 
     PackagePrefixExpression(PackagePrefix packagePrefix) {
-        super(Identifier.constant(packagePrefix));
+        super(Identifier.constant(packagePrefix), 1);
         this.packagePrefix = packagePrefix;
     }
 

@@ -165,7 +165,7 @@ public final class Instance extends BaseExpression implements Expression {
     public Instance(Identifier identifier,
                     ParameterizedType parameterizedType,
                     Properties valueProperties) {
-        super(identifier);
+        super(identifier, 3);
         this.parameterizedType = Objects.requireNonNull(parameterizedType);
         this.valueProperties = valueProperties;
         assert internalChecks();

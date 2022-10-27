@@ -29,11 +29,6 @@ public abstract class BaseExpression extends ElementImpl implements Expression {
 
     public final int complexity;
 
-    protected BaseExpression(Identifier identifier) {
-        super(identifier);
-        this.complexity = 1;
-    }
-
     protected BaseExpression(Identifier identifier, int complexity) {
         super(identifier);
         this.complexity = complexity;

@@ -88,4 +88,9 @@ public class ReturnVariable implements Variable {
     public MethodInfo getMethodInfo() {
         return methodInfo;
     }
+
+    @Override
+    public int getComplexity() {
+        return 1;
+    }
 }

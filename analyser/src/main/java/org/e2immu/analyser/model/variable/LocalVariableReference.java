@@ -27,6 +27,7 @@ import java.util.Objects;
 public class LocalVariableReference extends VariableWithConcreteReturnType {
     public final LocalVariable variable;
     public final Expression assignmentExpression;
+    public static final int COMPLEXITY = 2;
 
     public LocalVariableReference(LocalVariable localVariable) {
         this(localVariable, EmptyExpression.EMPTY_EXPRESSION);
@@ -97,5 +98,10 @@ public class LocalVariableReference extends VariableWithConcreteReturnType {
     public boolean hasScopeVariableCreatedAt(String index) {
         assert index != null;
         return variableNature() instanceof VariableNature.ScopeVariable sv && index.equals(sv.getIndexCreatedInMerge());
+    }
+
+    @Override
+    public int getComplexity() {
+        return COMPLEXITY;
     }
 }

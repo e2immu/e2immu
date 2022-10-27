@@ -30,6 +30,7 @@ import org.e2immu.analyser.inspector.impl.ParameterInspectionImpl;
 import org.e2immu.analyser.inspector.impl.TypeInspectionImpl;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.*;
+import org.e2immu.analyser.model.variable.LocalVariableReference;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.QualifiedName;
@@ -153,6 +154,11 @@ public abstract class CommonAbstractValue {
             @Override
             public String toString() {
                 return name;
+            }
+
+            @Override
+            public int getComplexity() {
+                return LocalVariableReference.COMPLEXITY;
             }
         };
     }

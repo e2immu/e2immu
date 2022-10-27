@@ -37,7 +37,7 @@ public final class MemberValuePair extends BaseExpression implements Expression 
     private final EventuallyFinal<Expression> value;
 
     public MemberValuePair(String name, EventuallyFinal<Expression> value) {
-        super(Identifier.constant(MemberValuePair.class));
+        super(Identifier.constant(MemberValuePair.class), 10);
         this.name = name;
         this.value = value;
     }

@@ -59,6 +59,11 @@ public class DoStatement extends LoopStatement {
     }
 
     @Override
+    public int getComplexity() {
+        return 1 + expression.getComplexity() + structure.block().getComplexity();
+    }
+
+    @Override
     public boolean hasExitCondition() {
         return true;
     }

@@ -41,7 +41,7 @@ public class MultiExpressions extends BaseExpression implements Expression {
     public MultiExpressions(Identifier identifier,
                             InspectionProvider inspectionProvider,
                             MultiExpression multiExpression) {
-        super(identifier);
+        super(identifier, 1 + multiExpression.getComplexity());
         assert multiExpression.expressions().length > 0;
         this.multiExpression = multiExpression;
         this.inspectionProvider = inspectionProvider;

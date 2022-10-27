@@ -86,4 +86,8 @@ public record MultiExpression(Expression... expressions) {
         e[expressions.length - 1] = expressions[expressions.length - 1].mergeDelays(causesOfDelay);
         return new MultiExpression(e);
     }
+
+    public int getComplexity() {
+        return Arrays.stream(expressions).mapToInt(Expression::getComplexity).sum();
+    }
 }

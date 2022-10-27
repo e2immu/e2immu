@@ -74,7 +74,7 @@ public class Assignment extends BaseExpression implements Expression {
                        boolean allowStaticallyAssigned,
                        EvaluationResult evaluationOfValue,
                        Set<Variable> directAssignmentVariables) {
-        super(identifier);
+        super(identifier, 1 + target.getComplexity() + value.getComplexity());
         this.primitives = primitives;
         this.target = target;
         this.value = value;
@@ -128,7 +128,7 @@ public class Assignment extends BaseExpression implements Expression {
                       boolean allowStaticallyAssigned,
                       EvaluationResult evaluationOfValue,
                       Set<Variable> directAssignmentVariables) {
-        super(identifier);
+        super(identifier, 1 + target.getComplexity() + value.getComplexity());
         this.complainAboutAssignmentOutsideType = complainAboutAssignmentOutsideType;
         this.target = Objects.requireNonNull(target);
         this.value = Objects.requireNonNull(value);

@@ -111,6 +111,8 @@ public abstract class SwitchEntry extends StatementWithStructure {
         return FlowData.CONDITIONALLY;
     }
 
+    public abstract int getComplexity();
+
     //****************************************************************************************************************
 
     public static class StatementsEntry extends SwitchEntry {
@@ -179,6 +181,12 @@ public abstract class SwitchEntry extends StatementWithStructure {
                 structure.statements().forEach(st -> st.visit(predicate));
             }
         }
+
+        @Override
+        public int getComplexity() {
+            return labels.stream().mapToInt(Expression::getComplexity).sum() +
+                    structure.statements().stream().mapToInt(Statement::getComplexity).sum();
+        }
     }
 
     //****************************************************************************************************************
@@ -234,6 +242,12 @@ public abstract class SwitchEntry extends StatementWithStructure {
                 labels.forEach(l -> l.visit(predicate));
                 structure.block().visit(predicate);
             }
+        }
+
+        @Override
+        public int getComplexity() {
+            return labels.stream().mapToInt(Expression::getComplexity).sum() +
+                    structure.block().getComplexity();
         }
     }
 }

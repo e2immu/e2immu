@@ -84,7 +84,7 @@ public class Lambda extends BaseExpression implements Expression {
                   ParameterizedType implementation,
                   ParameterizedType concreteReturnType,
                   List<OutputVariant> outputVariants) {
-        super(identifier);
+        super(identifier, 10);
         methodInfo = inspectionProvider.getTypeInspection(implementation.typeInfo).methods().get(0);
         MethodInspection methodInspection = inspectionProvider.getMethodInspection(methodInfo);
         this.block = methodInspection.getMethodBody();

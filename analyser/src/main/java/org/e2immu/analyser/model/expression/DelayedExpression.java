@@ -62,7 +62,7 @@ public final class DelayedExpression extends BaseExpression implements Expressio
                               Properties properties,
                               Map<Variable, DV> cnnMap,
                               Map<FieldInfo, Expression> shortCutMap) {
-        super(identifier);
+        super(identifier, original.getComplexity());
         this.msg = msg;
         this.parameterizedType = parameterizedType;
         this.causesOfDelay = causesOfDelay;

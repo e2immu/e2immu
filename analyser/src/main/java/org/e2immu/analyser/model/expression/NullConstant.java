@@ -33,7 +33,7 @@ public class NullConstant extends BaseExpression implements ConstantExpression<O
     public static final NullConstant NULL_CONSTANT = new NullConstant();
 
     protected NullConstant() {
-        super(Identifier.constant(NullConstant.class));
+        super(Identifier.constant(NullConstant.class), 1);
     }
 
     @Override

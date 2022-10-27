@@ -35,7 +35,7 @@ public class UnaryOperator extends BaseExpression implements Expression {
     public final Expression expression;
     public final Precedence precedence;
     public final MethodInfo operator;
-    public static final int COMPLEXITY = 2;
+    public static final int COMPLEXITY = 1;
 
     public UnaryOperator(Identifier identifier,
                          @NotNull MethodInfo operator, @NotNull Expression expression, Precedence precedence) {

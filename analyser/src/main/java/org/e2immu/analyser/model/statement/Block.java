@@ -55,6 +55,11 @@ public class Block extends StatementWithStructure {
     }
 
     @Override
+    public int getComplexity() {
+        return 1 + structure.statements().stream().mapToInt(Statement::getComplexity).sum();
+    }
+
+    @Override
     public int hashCode() {
         return Objects.hash(label, structure);
     }

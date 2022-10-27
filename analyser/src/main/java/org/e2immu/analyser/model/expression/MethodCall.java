@@ -81,7 +81,9 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
                        List<Expression> parameterExpressions,
                        boolean checkDelays) {
         super(identifier,
-                object.getComplexity() + 1 + parameterExpressions.stream().mapToInt(Expression::getComplexity).sum(),
+                object.getComplexity()
+                        + methodInfo.getComplexity()
+                        + parameterExpressions.stream().mapToInt(Expression::getComplexity).sum(),
                 methodInfo, returnType);
         this.object = Objects.requireNonNull(object);
         this.parameterExpressions = Objects.requireNonNull(parameterExpressions);
@@ -185,7 +187,9 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         boolean last = false;
         boolean start = false;
         Guide.GuideGenerator gg = null;
-        if (object != null) {
+        if (objectIsImplicit && qualification.doNotQualifyImplicit()) {
+            outputBuilder.add(new Text(methodInfo.name));
+        } else {
             VariableExpression ve;
             if (object instanceof MethodCall methodCall) {
                 // chaining!

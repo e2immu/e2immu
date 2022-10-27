@@ -71,4 +71,6 @@ public interface Statement extends Element {
     default Statement replaceComment(Comment newCommentOrNullToRemove) {
         throw new UnsupportedOperationException("Not yet implemented for " + getClass());
     }
+
+    int getComplexity();
 }

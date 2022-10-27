@@ -269,4 +269,10 @@ public class FieldReference extends VariableWithConcreteReturnType {
     public boolean containsAtLeastOneOf(Set<? extends Variable> variables) {
         return scopeVariable != null && (variables.contains(scopeVariable) || scopeVariable.containsAtLeastOneOf(variables));
     }
+
+    @Override
+    public int getComplexity() {
+        if(isStatic) return 2;
+        return 1 + scope.getComplexity();
+    }
 }

@@ -159,4 +159,9 @@ public class SwitchStatementOldStyle extends StatementWithExpression implements 
             labelExpressions.forEach(e -> e.visit(predicate));
         }
     }
+
+    @Override
+    public int getComplexity() {
+        return 100; // TODO
+    }
 }

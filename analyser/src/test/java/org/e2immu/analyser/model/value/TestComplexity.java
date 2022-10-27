@@ -17,14 +17,56 @@ package org.e2immu.analyser.model.value;
 import org.e2immu.analyser.analyser.EvaluationResult;
 import org.e2immu.analyser.analyser.ForwardEvaluationInfo;
 import org.e2immu.analyser.model.Expression;
-import org.e2immu.analyser.model.expression.Assignment;
-import org.e2immu.analyser.model.expression.InlineConditional;
-import org.e2immu.analyser.model.expression.NullConstant;
+import org.e2immu.analyser.model.expression.*;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class TestComplexity extends CommonAbstractValue {
+
+    @Test
+    public void testSimple1() {
+        // a
+        assertEquals(2, a.getComplexity());
+
+        // !a
+        assertEquals(3, negate(a).getComplexity());
+
+        // !a && b
+        assertEquals(6, newAndAppend(b, negate(a)).getComplexity()); // &&=1, a=2, b=2, !=1
+
+        // i >= 0
+        assertEquals(2, GreaterThanZero.greater(context, i, newInt(0), true).getComplexity());
+
+        // i > 0  === i + -1 >= 0 (2 for 1, 1 for +, 1 for -1)
+        assertEquals(4, GreaterThanZero.greater(context, i, newInt(0), false).getComplexity());
+
+        // i <= 0
+        assertEquals(3, GreaterThanZero.less(context, i, newInt(0), true).getComplexity());
+
+        // i < 0  === -1 - i >= 0 (1 for -1, 1 for +, 1 for unary -, 2 for i)
+        Expression iLt0 = GreaterThanZero.less(context, i, newInt(0), false);
+        assertEquals(5, iLt0.getComplexity());
+
+        // s == null
+        assertEquals(3, equals(s, NullConstant.NULL_CONSTANT).getComplexity());
+
+        // s != null
+        assertEquals(4, negate(equals(s, NullConstant.NULL_CONSTANT)).getComplexity());
+
+        // i + j
+        assertEquals(5, sum(i, j).getComplexity());
+
+        // i + 1
+        assertEquals(4, sum(i, newInt(1)).getComplexity());
+
+        // i - 1
+        assertEquals(4, sum(i, newInt(-1)).getComplexity());
+
+        // i + 2
+        assertEquals(5, sum(i, newInt(2)).getComplexity());
+    }
+
     /*
     (<m:interfacesImplemented>.isEmpty()||null==<m:mapInTermsOfParametersOfSubType>)&&(<m:interfacesImplemented>.isEmpty()
     ||<f:typeInfo>!=<f:typeInfo>)?null:<m:interfacesImplemented>.isEmpty()?

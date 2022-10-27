@@ -67,6 +67,11 @@ public class LocalClassDeclaration extends StatementWithStructure {
     }
 
     @Override
+    public int getComplexity() {
+        return 100; // TODO
+    }
+
+    @Override
     public void visit(Predicate<Element> predicate) {
         if (predicate.test(this)) {
             methodAndConstructorInspections.forEach(i -> i.getMethodBody().visit(predicate));

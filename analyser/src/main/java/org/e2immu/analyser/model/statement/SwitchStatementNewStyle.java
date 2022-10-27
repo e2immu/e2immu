@@ -43,6 +43,11 @@ public class SwitchStatementNewStyle extends StatementWithExpression implements 
         return switchEntries.stream().flatMap(e -> e.labels.stream());
     }
 
+    @Override
+    public int getComplexity() {
+        return 1 + switchEntries.stream().mapToInt(SwitchEntry::getComplexity).sum() + expression.getComplexity();
+    }
+
     private static Structure codeOrganization(Expression expression,
                                               List<SwitchEntry> switchEntries,
                                               Comment comment) {

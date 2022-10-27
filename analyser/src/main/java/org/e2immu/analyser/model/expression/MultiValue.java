@@ -47,7 +47,7 @@ public class MultiValue extends BaseExpression implements Expression {
                       InspectionProvider inspectionProvider,
                       MultiExpression multiExpression,
                       ParameterizedType formalCommonType) {
-        super(identifier);
+        super(identifier, multiExpression.getComplexity());
         this.commonType = formalCommonType.commonType(inspectionProvider, multiExpression.commonType(inspectionProvider));
         this.multiExpression = multiExpression;
         this.inspectionProvider = inspectionProvider;

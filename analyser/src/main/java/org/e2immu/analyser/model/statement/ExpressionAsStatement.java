@@ -59,6 +59,11 @@ public class ExpressionAsStatement extends StatementWithExpression {
     }
 
     @Override
+    public int getComplexity() {
+        return expression.getComplexity();
+    }
+
+    @Override
     public boolean isSynthetic() {
         return synthetic;
     }

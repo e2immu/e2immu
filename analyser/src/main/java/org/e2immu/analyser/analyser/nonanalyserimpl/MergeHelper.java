@@ -485,7 +485,9 @@ public record MergeHelper(EvaluationContext evaluationContext,
     private Merge.ExpressionAndProperties inlineConditionalIfFalseIsExisting(Expression condition, VariableInfo ifTrue) {
         Expression c;
         if (vi.getValue().isInstanceOf(Instance.class)) {
-            TranslationMap translationMap = new TranslationMapImpl.Builder().addVariableExpression(vi.variable(), vi.getValue()).build();
+            TranslationMap translationMap = new TranslationMapImpl.Builder()
+                    .addVariableExpression(vi.variable(), vi.getValue())
+                    .build();
             c = condition.translate(evaluationContext.getAnalyserContext(), translationMap);
         } else {
             c = condition;
@@ -509,7 +511,14 @@ public record MergeHelper(EvaluationContext evaluationContext,
             Expression secondValue = one ? returnExpression : ifFalse.getValue();
             Expression ternary = safe(EvaluateInlineConditional.conditionalValueConditionResolved(context, condition,
                     ifTrue.getValue(), secondValue, false, vi.variable(), DV.FALSE_DV));
-            TranslationMap tm = new TranslationMapImpl.Builder().put(returnExpression, ternary).build();
+            /*
+             the <return value> is both in returnExpression and ternary, so we can't recurse.
+             see Basics_27, InlineConditional.translate
+             */
+            TranslationMap tm = new TranslationMapImpl.Builder()
+                    .put(returnExpression, ternary)
+                    .setDoNotTryToTranslateAgain(true)
+                    .build();
             safe = vi.getValue().translate(evaluationContext.getAnalyserContext(), tm);
         } else {
             safe = safe(EvaluateInlineConditional.conditionalValueConditionResolved(context,

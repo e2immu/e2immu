@@ -45,7 +45,7 @@ public class UnknownExpression extends BaseExpression implements Expression {
     private final String msg;
 
     private UnknownExpression(Identifier identifier, ParameterizedType parameterizedType, String msg) {
-        super(identifier);
+        super(identifier, 10);
         this.parameterizedType = Objects.requireNonNull(parameterizedType);
         this.msg = Objects.requireNonNull(msg);
     }

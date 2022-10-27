@@ -65,6 +65,9 @@ public final class PropertyWrapper extends BaseExpression implements Expression,
 
     @Override
     public Expression translate(InspectionProvider inspectionProvider, TranslationMap translationMap) {
+        Expression translated = translationMap.translateExpression(this);
+        if(translated != this) return translated;
+        
         Expression transState = state == null ? null : state.translate(inspectionProvider, translationMap);
         Expression tex = expression.translate(inspectionProvider, translationMap);
         LinkedVariables transLv = linkedVariables == null ? null

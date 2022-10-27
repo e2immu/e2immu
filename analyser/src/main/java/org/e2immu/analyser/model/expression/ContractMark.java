@@ -36,7 +36,7 @@ public final class ContractMark extends BaseExpression implements Expression {
     /**
      */
     public ContractMark(Set<FieldInfo> fields) {
-        super(Identifier.constant(ContractMark.class));
+        super(Identifier.constant(ContractMark.class), 10);
         this.fields = fields;
     }
 

@@ -55,6 +55,11 @@ public class ContinueStatement extends BreakOrContinueStatement {
     }
 
     @Override
+    public int getComplexity() {
+        return 1;
+    }
+
+    @Override
     public List<Statement> translate(InspectionProvider inspectionProvider, TranslationMap translationMap) {
         List<Statement> direct = translationMap.translateStatement(inspectionProvider, this);
         if (haveDirectTranslation(direct, this)) return direct;

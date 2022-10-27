@@ -36,7 +36,7 @@ public final class Or extends ExpressionCanBeTooComplex {
 
     private final Primitives primitives;
     private final List<Expression> expressions;
-    public static final int COMPLEXITY = 4;
+    public static final int COMPLEXITY = 2;
 
     public Or(Primitives primitives, List<Expression> expressions) {
         this(Identifier.joined("or", expressions.stream().map(Expression::getIdentifier).toList()), primitives, expressions);

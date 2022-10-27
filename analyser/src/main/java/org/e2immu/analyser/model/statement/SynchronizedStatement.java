@@ -57,6 +57,11 @@ public class SynchronizedStatement extends StatementWithExpression {
     }
 
     @Override
+    public int getComplexity() {
+        return 1 + structure.expression().getComplexity() + structure.block().getComplexity();
+    }
+
+    @Override
     public List<Statement> translate(InspectionProvider inspectionProvider, TranslationMap translationMap) {
         List<Statement> direct = translationMap.translateStatement(inspectionProvider, this);
         if (haveDirectTranslation(direct, this)) return direct;

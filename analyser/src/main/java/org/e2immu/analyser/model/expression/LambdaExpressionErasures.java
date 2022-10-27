@@ -39,7 +39,7 @@ public final class LambdaExpressionErasures extends BaseExpression implements Er
     private final Location location;
 
     public LambdaExpressionErasures(Set<Count> counts, Location location) {
-        super(Identifier.CONSTANT);
+        super(Identifier.CONSTANT, 10);
         Objects.requireNonNull(counts);
         Objects.requireNonNull(location);
         this.counts = counts;

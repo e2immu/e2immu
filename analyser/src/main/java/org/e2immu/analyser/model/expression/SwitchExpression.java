@@ -47,7 +47,8 @@ public class SwitchExpression extends BaseExpression implements Expression, HasS
                             List<SwitchEntry> switchEntries,
                             ParameterizedType returnType,
                             MultiExpression expressions) {
-        super(identifier);
+        super(identifier, 1 + selector.getComplexity() +
+                switchEntries.stream().mapToInt(SwitchEntry::getComplexity).sum());
         switchEntries.forEach(e -> {
             Objects.requireNonNull(e.switchVariableAsExpression);
             Objects.requireNonNull(e.labels);

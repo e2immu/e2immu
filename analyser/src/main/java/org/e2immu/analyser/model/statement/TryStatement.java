@@ -120,6 +120,14 @@ public class TryStatement extends StatementWithStructure {
     }
 
     @Override
+    public int getComplexity() {
+        return resources.stream().mapToInt(Expression::getComplexity).sum()
+                + structure.block().getComplexity()
+                + catchClauses.stream().mapToInt(cc -> cc.v.getComplexity() + 2).sum()
+                + finallyBlock.getComplexity();
+    }
+
+    @Override
     public List<Statement> translate(InspectionProvider inspectionProvider, TranslationMap translationMap) {
         List<Statement> direct = translationMap.translateStatement(inspectionProvider, this);
         if (haveDirectTranslation(direct, this)) return direct;
@@ -148,7 +156,7 @@ public class TryStatement extends StatementWithStructure {
         public CatchParameter(Identifier identifier,
                               LocalVariableCreation localVariableCreation,
                               List<ParameterizedType> unionOfTypes) {
-            super(identifier);
+            super(identifier, 2);
             this.localVariableCreation = localVariableCreation;
             this.unionOfTypes = List.copyOf(unionOfTypes);
         }

@@ -38,7 +38,7 @@ public class ArrayInitializer extends BaseExpression implements Expression {
     private final InspectionProvider inspectionProvider;
 
     public ArrayInitializer(Identifier identifier, InspectionProvider inspectionProvider, List<Expression> values) {
-        super(identifier);
+        super(identifier, values.stream().mapToInt(Expression::getComplexity).sum() + 1);
         this.multiExpression = MultiExpression.create(values);
         this.commonType = multiExpression.commonType(inspectionProvider);
         this.inspectionProvider = inspectionProvider;
@@ -55,14 +55,15 @@ public class ArrayInitializer extends BaseExpression implements Expression {
                             InspectionProvider inspectionProvider,
                             List<Expression> values,
                             ParameterizedType formalCommonType) {
-        super(identifier);
+        super(identifier, values.stream().mapToInt(Expression::getComplexity).sum() + 1);
         this.multiExpression = MultiExpression.create(values);
         this.commonType = formalCommonType.commonType(inspectionProvider, multiExpression.commonType(inspectionProvider));
         this.inspectionProvider = inspectionProvider;
     }
 
     private ArrayInitializer(Identifier identifier, MultiExpression multiExpression, ParameterizedType commonType, InspectionProvider inspectionProvider) {
-        super(identifier);
+        super(identifier, Arrays.stream(multiExpression.expressions())
+                .mapToInt(Expression::getComplexity).sum() + 1);
         this.multiExpression = multiExpression;
         this.commonType = commonType;
         this.inspectionProvider = inspectionProvider;

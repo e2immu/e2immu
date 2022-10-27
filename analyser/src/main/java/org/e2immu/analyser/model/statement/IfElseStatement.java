@@ -64,6 +64,11 @@ public class IfElseStatement extends StatementWithExpression {
         return Objects.hash(identifier, expression, structure.block(), elseBlock);
     }
 
+    @Override
+    public int getComplexity() {
+        return 1 + expression.getComplexity() + structure.block().getComplexity() + elseBlock.getComplexity();
+    }
+
     // note that we add the expression only once
     private static Structure createCodeOrganization(Expression expression, Block ifBlock, Block elseBlock, Comment comment) {
         Structure.Builder builder = new Structure.Builder()

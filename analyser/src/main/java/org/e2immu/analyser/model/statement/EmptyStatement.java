@@ -58,5 +58,10 @@ public class EmptyStatement extends StatementWithStructure {
     public void visit(Predicate<Element> predicate) {
         // do nothing
     }
+
+    @Override
+    public int getComplexity() {
+        return 1;
+    }
 }
 

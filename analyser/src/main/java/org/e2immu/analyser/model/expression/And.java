@@ -38,10 +38,11 @@ public class And extends ExpressionCanBeTooComplex {
 
     private final Primitives primitives;
     private final List<Expression> expressions;
-    public static final int COMPLEXITY = 3;
+    public static final int COMPLEXITY = 1;
 
     public And(Primitives primitives, List<Expression> expressions) {
-        this(Identifier.joined("and", expressions.stream().map(Expression::getIdentifier).toList()), primitives, expressions);
+        this(Identifier.joined("and", expressions.stream().map(Expression::getIdentifier).toList()),
+                primitives, expressions);
     }
 
     private And(Identifier identifier, Primitives primitives, List<Expression> expressions) {

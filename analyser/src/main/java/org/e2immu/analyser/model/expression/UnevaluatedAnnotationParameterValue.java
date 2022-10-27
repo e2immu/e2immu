@@ -37,7 +37,7 @@ public final class UnevaluatedAnnotationParameterValue extends BaseExpression im
     public UnevaluatedAnnotationParameterValue(Identifier identifier,
                                                ForwardReturnTypeInfo forwardReturnTypeInfo,
                                                com.github.javaparser.ast.expr.Expression expression) {
-        super(identifier);
+        super(identifier, 10);
         this.forwardReturnTypeInfo = forwardReturnTypeInfo;
         this.expression = expression;
     }

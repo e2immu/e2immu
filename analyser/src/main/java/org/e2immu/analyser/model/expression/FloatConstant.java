@@ -32,7 +32,7 @@ public final class FloatConstant extends BaseExpression implements ConstantExpre
     private final float constant;
 
     public FloatConstant(Primitives primitives, float constant) {
-        super(Identifier.constant(constant));
+        super(Identifier.constant(constant), constant == 0 ? 1 : 2);
         this.primitives = primitives;
         this.constant = constant;
     }

@@ -34,7 +34,7 @@ public class ByteConstant extends BaseExpression implements ConstantExpression<B
     private final byte constant;
 
     public ByteConstant(Primitives primitives, byte constant) {
-        super(Identifier.constant(constant));
+        super(Identifier.constant(constant), constant == 0 ? 1 : 2);
         this.primitives = primitives;
         this.constant = constant;
     }
