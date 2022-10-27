@@ -32,8 +32,8 @@ dependencies {
     implementation group: 'commons-cli', name: 'commons-cli', version: '1.4' // Apache License 2.0
     implementation group: 'org.slf4j', name: 'slf4j-api', version: '1.7.25'  // MIT X-11 License
 
-    testImplementation 'org.junit.jupiter:junit-jupiter-api:5.8.2'           // EPL v2 License
-    testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.8.2'
+    testImplementation 'org.junit.jupiter:junit-jupiter-api:5.9.0'           // EPL v2 License
+    testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.9.0'
 }
 
 test {

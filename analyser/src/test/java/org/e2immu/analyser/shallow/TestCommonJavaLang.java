@@ -79,6 +79,8 @@ public class TestCommonJavaLang extends CommonAnnotatedAPI {
         assertFalse(methodInspection.isAbstract());
         assertFalse(methodInspection.isDefault());
         assertFalse(methodInspection.isStatic());
+
+        assertEquals(MethodInfo.COMPLEXITY_METHOD_WITHOUT_CODE, toLowerCase.getComplexity());
     }
 
     @Test

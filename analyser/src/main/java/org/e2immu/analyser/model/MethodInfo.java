@@ -37,6 +37,8 @@ import java.util.stream.Collectors;
 
 public class MethodInfo implements WithInspectionAndAnalysis {
     public static final String UNARY_MINUS_OPERATOR_INT = "int.-(int)";
+    public static final int COMPLEXITY_METHOD_WITHOUT_CODE = 10;
+
     public final Identifier identifier;
     public final TypeInfo typeInfo; // back reference, only @ContextClass after...
     public final String name;
@@ -327,8 +329,8 @@ public class MethodInfo implements WithInspectionAndAnalysis {
     }
 
     public int getComplexity() {
-        return 1 + (methodInspection.isSet() && hasBeenAnalysed()
-                ? methodInspection.get().getMethodBody().getComplexity() : 10);
+        return methodInspection.isSet() && !methodInspection.get().getMethodBody().isEmpty()
+                ? methodInspection.get().getMethodBody().getComplexity() : COMPLEXITY_METHOD_WITHOUT_CODE;
     }
 
     /*
