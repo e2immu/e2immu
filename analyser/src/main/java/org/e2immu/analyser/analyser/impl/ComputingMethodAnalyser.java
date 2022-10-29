@@ -593,7 +593,11 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
 
         Expression valueBeforeInlining = value;
         if (!value.isConstant()) {
-            DV modified = methodAnalysis.getProperty(MODIFIED_METHOD_ALT_TEMP);
+            DV modifiesInstance = methodAnalysis.getProperty(MODIFIED_METHOD_ALT_TEMP);
+            DV modifiesParameters = methodAnalysis.parameterAnalyses.stream()
+                    .map(pa -> pa.getProperty(MODIFIED_VARIABLE))
+                    .reduce(DV.FALSE_DV,DV::max);
+            DV modified = modifiesInstance.max(modifiesParameters);
             if (modified.isDelayed()) {
                 LOGGER.debug("Delaying return value of {}, waiting for MODIFIED (we may try to inline!)", methodInfo);
                 return delayedSrv(concreteReturnType, value, modified.causesOfDelay(), false);

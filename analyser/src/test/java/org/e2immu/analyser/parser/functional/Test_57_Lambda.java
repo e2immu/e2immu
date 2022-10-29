@@ -229,8 +229,9 @@ public class Test_57_Lambda extends CommonTestRunner {
         };
 
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
-            if ("method".equals(d.methodInfo().name) && d.iteration() > 0) {
-                assertEquals("/*inline method*/x.k<=2?3:i$0*`x.k`", d.methodAnalysis().getSingleReturnValue().toString());
+            if ("method".equals(d.methodInfo().name)) {
+                String expected = d.iteration() < 2 ? "<m:method>" : "/*inline method*/x.k<=2?3:i$0*`x.k`";
+                assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
             }
             if ("get".equals(d.methodInfo().name)) {
                 assertDv(d, DV.FALSE_DV, Property.MODIFIED_METHOD);
@@ -344,8 +345,9 @@ public class Test_57_Lambda extends CommonTestRunner {
             }
         };
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
-            if ("method".equals(d.methodInfo().name) && d.iteration() > 0) {
-                assertEquals("/*inline method*/x.k<=2?3:i$0*`x.k`", d.methodAnalysis().getSingleReturnValue().toString());
+            if ("method".equals(d.methodInfo().name)) {
+                String expected = d.iteration() < 2 ? "<m:method>" : "/*inline method*/x.k<=2?3:i$0*`x.k`";
+                assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
             }
         };
         testClass("Lambda_4", 0, 0, new DebugConfiguration.Builder()
@@ -450,7 +452,7 @@ public class Test_57_Lambda extends CommonTestRunner {
                 assertEquals("/*inline get*/i$0", d.methodAnalysis().getSingleReturnValue().toString());
             }
             if ("method".equals(d.methodInfo().name) && d.iteration() > 0) {
-                String expected = d.iteration() < 2 ? "<m:method>" : "/*inline method*/`inner.i`.get()*inner.i$0";
+                String expected = d.iteration() < 3 ? "<m:method>" : "/*inline method*/`inner.i`.get()*inner.i$0";
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
             }
         };

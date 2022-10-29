@@ -695,7 +695,10 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
                 return linked.causesOfDelay();
             }
             linked.variables()
-                    .keySet()
+                    .entrySet()
+                    .stream()
+                    .filter(e -> e.getValue().le(LinkedVariables.LINK_DEPENDENT))
+                    .map(Map.Entry::getKey)
                     .forEach(v -> raiseErrorForFinalizer(context, builder, v));
         }
         return CausesOfDelay.EMPTY;

@@ -108,7 +108,8 @@ public class Test_16_Modification_11 extends CommonTestRunner {
                     }
                 }
                 if (d.variable() instanceof ReturnVariable && "2".equals(d.statementId())) {
-                    String expectValue = d.iteration() < 3 ? "<m:addAll>" : "instance type boolean";
+                    String expectValue = d.iteration() < 3 ? "<m:addAll>"
+                            : "Modification_11.addAll(s2,Set.of(\"a\",\"b\",\"c\"))";
                     assertEquals(expectValue, d.currentValue().toString());
                 }
             }

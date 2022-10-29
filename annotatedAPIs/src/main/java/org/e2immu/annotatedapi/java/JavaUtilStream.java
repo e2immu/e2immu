@@ -15,6 +15,7 @@
 package org.e2immu.annotatedapi.java;
 
 import org.e2immu.annotation.*;
+import org.e2immu.annotation.rare.Finalizer;
 import org.e2immu.annotation.type.UtilityClass;
 
 import java.util.Comparator;
@@ -80,13 +81,17 @@ public class JavaUtilStream {
         }
     }
 
-    @ImmutableContainer
-    @Independent(contract = true)
+    @Container
     interface IntStream$ {
+        @Modified
+        @Finalizer
         long count();
 
+        @Modified
+        @Finalizer
         int sum();
 
+        // dependent, not modified
         @NotNull
         IntStream sorted();
 
@@ -96,12 +101,14 @@ public class JavaUtilStream {
         }
     }
 
-    // contract=true to override the bump-up from hidden content to no hidden content without warning/error
-    @ImmutableContainer
-    @Independent(contract = true)
+    @Container
     interface DoubleStream$ {
+        @Modified
+        @Finalizer
         long count();
 
+        @Modified
+        @Finalizer
         double sum();
 
         @NotNull
@@ -113,11 +120,14 @@ public class JavaUtilStream {
         }
     }
 
-    @ImmutableContainer
-    @Independent(contract = true)
+    @Container
     interface LongStream$ {
+        @Modified
+        @Finalizer
         long count();
 
+        @Modified
+        @Finalizer
         long sum();
 
         @NotNull
@@ -129,96 +139,88 @@ public class JavaUtilStream {
         }
     }
 
-    /*
-     Analyser adds hc=true, because Stream is an interface.
-     */
-    @ImmutableContainer
+    @Container
     interface Stream$<T> {
 
         /*
-         Factory method, the hidden content in the result comes from the parameters
+         Factory method, result dependent on parameters
          */
         @NotNull
         <TT> Stream<TT> concat(@NotNull Stream<? extends TT> s1, @NotNull Stream<? extends TT> s2);
 
         /*
-         Independent, immutable
+         Independent, yet mutable
          */
         @NotNull
-        @ImmutableContainer
+        @Independent
         <TT> Stream<TT> empty();
 
         /*
          Factory method, the hidden content in the result comes from the parameter
          */
         @NotNull
+        @Independent(hc = true)
         <TT> Stream<TT> of(@NotNull TT t);
 
         /*
          Factory method, the hidden content in the result comes from the parameter
          */
         @NotNull
+        @Independent(hc = true)
         <TT> Stream<TT> of(@NotNull TT... t);
 
         /*
-         The mapper is not supposed to modify the hidden content received as argument in the "apply()" method.
-         For that reason, we add @Independent rather than @Independent(hc=true).
+         The resulting stream is dependent on the object stream, but the method is not modifying.
          Note that the functional interface implies @IgnoreModifications, which allows modifications external to the type,
          */
         @NotNull
-        @Independent(hc = true)
         <R> Stream<R> map(@NotNull Function<? super T, ? extends R> mapper);
 
-        /*
-         The mapper is not supposed to modify the hidden content presented to it.
-         For that reason, we do not add @Independent(hc=true). FIXME independent means we can access but not modify
-         */
         @NotNull
-        @Independent(hc = true)
         <R> Stream<R> flatMap(@NotNull Function<? super T, ? extends Stream<? extends R>> mapper);
 
         @NotNull
-        @Independent(hc = true)
+        @Modified
+        @Finalizer
         <R, A> R collect(@NotNull Collector<? super T, A, R> collector);
 
         @NotNull
-        @Independent(hc = true)
         Stream<T> filter(@NotNull Predicate<? super T> predicate);
 
-        /*
-         @Independent!
-         */
         @NotNull
         IntStream mapToInt(@NotNull ToIntFunction<? super T> mapper);
 
         @NotNull
-        @Independent(hc = true)
+        @Modified
+        @Finalizer
         Optional<T> min(@NotNull Comparator<? super T> comparator);
 
         @NotNull
-        @Independent(hc = true)
         Stream<T> sorted();
 
         @NotNull
-        @Independent(hc = true)
         Stream<T> sorted(@NotNull Comparator<? super T> comparator);
 
         @NotNull
-        @Independent(hc = true)
+        @Modified
+        @Finalizer
         Optional<T> findAny();
 
         @NotNull
-        @Independent(hc = true)
+        @Modified
+        @Finalizer
         Optional<T> findFirst();
 
         /*
          The action is perfectly allowed to modify the hidden content presented to it, as opposed to the mappers.
          */
         @NotNull
-        @NotModified
+        @Modified
         void forEach(@Independent(hc = true) @NotNull Consumer<? super T> action);
 
         @NotNull
+        @Modified
+        @Finalizer
         @Independent(hc = true)
         @ImmutableContainer(hc = true)
         List<T> toList();

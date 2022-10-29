@@ -17,15 +17,18 @@ package org.e2immu.analyser.parser.modification;
 import org.e2immu.analyser.analyser.DV;
 import org.e2immu.analyser.analyser.Property;
 import org.e2immu.analyser.config.DebugConfiguration;
+import org.e2immu.analyser.model.expression.InlinedMethod;
 import org.e2immu.analyser.parser.CommonTestRunner;
 import org.e2immu.analyser.visitor.EvaluationResultVisitor;
 import org.e2immu.analyser.visitor.FieldAnalyserVisitor;
+import org.e2immu.analyser.visitor.MethodAnalyserVisitor;
 import org.e2immu.analyser.visitor.StatementAnalyserVariableVisitor;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class Test_16_Modification_2 extends CommonTestRunner {
 
@@ -35,7 +38,9 @@ public class Test_16_Modification_2 extends CommonTestRunner {
 
     @Test
     public void test2() throws IOException {
-        final String GET_FIRST_VALUE = "set2ter.isEmpty()?\"\":set2ter.stream().findAny().orElseThrow()";
+        final String GET_FIRST_VALUE = """
+                set2ter.isEmpty()?"":(instance type Optional<String>).orElseThrow()\
+                """;
         final String GET_FIRST_VALUE_DELAYED = "<m:isEmpty>?\"\":<m:orElseThrow>";
         EvaluationResultVisitor evaluationResultVisitor = d -> {
             if ("getFirst".equals(d.methodInfo().name) && "0".equals(d.statementId())) {
@@ -63,10 +68,23 @@ public class Test_16_Modification_2 extends CommonTestRunner {
             }
         };
 
+        MethodAnalyserVisitor methodAnalyserVisitor = d -> {
+            if ("getFirst".equals(d.methodInfo().name)) {
+                String expected = d.iteration() == 0 ? "<m:getFirst>" : """
+                        /*inline getFirst*/set2ter.isEmpty()?"":(instance type Optional<String>).orElseThrow()\
+                        """;
+                assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
+                if (d.iteration() > 0) {
+                    assertTrue(d.methodAnalysis().getSingleReturnValue() instanceof InlinedMethod);
+                }
+            }
+        };
+
         testClass("Modification_2", 1, 2, new DebugConfiguration.Builder()
                 .addEvaluationResultVisitor(evaluationResultVisitor)
                 .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .build());
 
     }

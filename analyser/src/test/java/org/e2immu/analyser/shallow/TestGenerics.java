@@ -36,8 +36,8 @@ public class TestGenerics extends CommonAnnotatedAPI {
     public void testStreamInteger() {
         TypeInfo stream = typeContext.getFullyQualified(Stream.class);
         TypeAnalysis streamAnalysis = stream.typeAnalysis.get();
-        assertEquals(MultiLevel.INDEPENDENT_HC_DV, streamAnalysis.getProperty(Property.INDEPENDENT));
-        assertEquals(MultiLevel.EFFECTIVELY_IMMUTABLE_HC_DV, streamAnalysis.getProperty(Property.IMMUTABLE));
+        assertEquals(MultiLevel.DEPENDENT_DV, streamAnalysis.getProperty(Property.INDEPENDENT));
+        assertEquals(MultiLevel.MUTABLE_DV, streamAnalysis.getProperty(Property.IMMUTABLE));
         assertEquals(DV.TRUE_DV, streamAnalysis.immutableDeterminedByTypeParameters());
 
         TypeInfo integer = typeContext.getFullyQualified(Integer.class);
@@ -48,10 +48,13 @@ public class TestGenerics extends CommonAnnotatedAPI {
         ParameterizedType integerPt = new ParameterizedType(integer, 0);
 
         ParameterizedType streamOfIntegers = new ParameterizedType(stream, List.of(integerPt));
-        assertEquals("Type java.util.stream.Stream<java.lang.Integer>", streamOfIntegers.toString());
+        assertEquals("Type java.util.stream.Stream<Integer>", streamOfIntegers.toString());
 
-        assertEquals(MultiLevel.EFFECTIVELY_IMMUTABLE_DV, AnalysisProvider.DEFAULT_PROVIDER
-                .typeImmutable(streamOfIntegers));
+        /*
+         immutableDeterminedByTypeParameters only works on immutable types with hidden content.
+         Stream itself is always mutable, so Stream<Integer> stays mutable.
+         */
+        assertEquals(MultiLevel.MUTABLE_DV, AnalysisProvider.DEFAULT_PROVIDER.typeImmutable(streamOfIntegers));
     }
 
     @Test
@@ -69,12 +72,10 @@ public class TestGenerics extends CommonAnnotatedAPI {
         ParameterizedType optionalIntegerPt = new ParameterizedType(optional, List.of(integerPt));
 
         ParameterizedType streamOfOptionalIntegers = new ParameterizedType(stream, List.of(optionalIntegerPt));
-        assertEquals("Type java.util.stream.Stream<java.util.Optional<java.lang.Integer>>",
+        assertEquals("Type java.util.stream.Stream<java.util.Optional<Integer>>",
                 streamOfOptionalIntegers.toString());
 
-        assertEquals(MultiLevel.EFFECTIVELY_IMMUTABLE_DV,
-                AnalysisProvider.DEFAULT_PROVIDER.typeImmutable(streamOfOptionalIntegers));
-        assertEquals(MultiLevel.EFFECTIVELY_IMMUTABLE_DV,
+        assertEquals(MultiLevel.MUTABLE_DV,
                 AnalysisProvider.DEFAULT_PROVIDER.typeImmutable(streamOfOptionalIntegers));
     }
 

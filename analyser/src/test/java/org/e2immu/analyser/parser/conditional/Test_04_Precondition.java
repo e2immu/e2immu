@@ -70,7 +70,8 @@ public class Test_04_Precondition extends CommonTestRunner {
             }
             if ("useEither3".equals(d.methodInfo().name)) {
                 assertEquals("0", d.statementId());
-                assertEquals("f1+f2", d.evaluationResult().value().toString());
+                String expected = d.iteration() == 0 ? "<m:either>" : "f1+f2";
+                assertEquals(expected, d.evaluationResult().value().toString());
             }
         };
 
@@ -88,7 +89,8 @@ public class Test_04_Precondition extends CommonTestRunner {
             if ("either".equals(name)) {
                 MethodAnalysis methodAnalysis = d.methodAnalysis();
                 assertEquals("null!=e1||null!=e2", methodAnalysis.getPrecondition().expression().toString());
-                assertEquals("/*inline either*/e1+e2", d.methodAnalysis().getSingleReturnValue().toString());
+                String expected = d.iteration() == 0 ? "<m:either>" : "/*inline either*/e1+e2";
+                assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
                 assertDv(d.p(0), 1, MultiLevel.NULLABLE_DV, CONTEXT_NOT_NULL);
                 assertDv(d.p(0), 1, MultiLevel.NULLABLE_DV, NOT_NULL_PARAMETER);
             }
@@ -529,7 +531,7 @@ public class Test_04_Precondition extends CommonTestRunner {
     @Test
     public void test_8() throws IOException {
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
-            if("test".equals(d.methodInfo().name)) {
+            if ("test".equals(d.methodInfo().name)) {
                 assertEquals("Precondition[expression=!\"escape\".equals(in), causes=[escape]]",
                         d.methodAnalysis().getPrecondition().toString());
             }

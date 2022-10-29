@@ -752,9 +752,10 @@ public class JavaUtil extends AnnotatedAPI {
     @UtilityClass
     interface Arrays$ {
         /*
-        Note that 'array' is @Independent by default, because a utility class is @Immutable
+        Note that the parameter 'array' is @Independent by default, because a utility class is @Immutable
          */
         @NotNull
+        @Independent
         IntStream stream(@NotNull @NotModified int[] array);
 
         /*
@@ -765,6 +766,7 @@ public class JavaUtil extends AnnotatedAPI {
         <T> Stream<T> stream(@NotNull @NotModified T[] array);
 
         @NotNull
+        @Independent(hc = true)
         <T> List<T> asList(T... ts);
 
         <T> void setAll(@NotNull T[] array, @NotNull @Independent(parameters = {0}, hc = true) IntFunction<? extends T> generator);

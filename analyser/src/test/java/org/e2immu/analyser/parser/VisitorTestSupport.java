@@ -113,6 +113,13 @@ public abstract class VisitorTestSupport {
         mustSeeIteration(d, delayedBeforeIteration);
     }
 
+    public void assertValue(StatementAnalyserVariableVisitor.Data d, String s0, String s1, String s) {
+        String value = d.currentValue().toString();
+        if (d.iteration() == 0) assertEquals(s0, value);
+        else if (d.iteration() == 1) assertEquals(s1, value);
+        else assertEquals(s, value);
+    }
+
     public void assertCurrentValue(StatementAnalyserVariableVisitor.Data d, int delayedBeforeIteration, String value) {
         if (d.iteration() < delayedBeforeIteration) {
             assertTrue(d.currentValue().isDelayed(), "Expected current value to be delayed in iteration " + d.iteration() + "<" + delayedBeforeIteration + ", but was " + d.currentValue() + " for variable " + d.variableName());

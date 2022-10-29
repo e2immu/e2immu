@@ -112,7 +112,7 @@ public class Test_54_SwitchExpression extends CommonTestRunner {
             }
             if ("method".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof ReturnVariable) {
-                    String expected = d.iteration() <= 1 ? "<m:apply>"
+                    String expected = d.iteration() < 3 ? "<m:apply>"
                             : "c==`Choice.ONE`?\"a\":c==`Choice.TWO`?\"b\":c==`Choice.THREE`?b?\"It's \"+c:\"or \"+c:<return value>";
                     assertEquals(expected, d.currentValue().toString());
                 }

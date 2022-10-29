@@ -340,7 +340,7 @@ public class Test_12_IfStatement extends CommonTestRunner {
                 if (d.variable() instanceof ReturnVariable) {
                     if ("0".equals(d.statementId())) {
                         String expected = d.iteration() == 0
-                                ? "<simplification>?null:<return value>" : "null==in?null:<return value>";
+                                ? "<null-check>?null:<return value>" : "null==in?null:<return value>";
                         assertEquals(expected, d.currentValue().toString());
                     }
                 }
@@ -364,18 +364,19 @@ public class Test_12_IfStatement extends CommonTestRunner {
             }
             if ("method".equals(d.methodInfo().name)) {
                 if ("0".equals(d.statementId())) {
-                    String state = d.iteration() == 0 ? "!<simplification>" : "null!=in";
+                    String state = d.iteration() == 0 ? "!<null-check>" : "null!=in";
                     assertEquals(state, d.state().toString());
                 }
             }
         };
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("expensiveCall".equals(d.methodInfo().name)) {
-                String expected = "/*inline expensiveCall*/null==in?null:in.isEmpty()?\"empty\":Character.isAlphabetic(in.charAt(0))?in:\"non-alpha\"";
+                String expected = d.iteration() == 0 ? "<m:expensiveCall>"
+                        : "/*inline expensiveCall*/null==in?null:in.isEmpty()?\"empty\":Character.isAlphabetic(in.charAt(0))?in:\"non-alpha\"";
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
             }
             if ("method".equals(d.methodInfo().name)) {
-                String expected = d.iteration() == 0 ? "<m:method>"
+                String expected = d.iteration() < 2 ? "<m:method>"
                         : "/*inline method*/null==in?null:\"Not null: \"+(in.isEmpty()?\"empty\":Character.isAlphabetic(in.charAt(0))?in:\"non-alpha\")";
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
             }
