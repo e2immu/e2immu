@@ -885,8 +885,6 @@ public class Test_66_VariableScope extends CommonTestRunner {
                             default -> "scope-vdol:1.statementIndex.startsWith(index+\".\")&&vn$1 instanceof VariableDefinedOutsideLoop?scope-vdol:1.previousVariableNature:this";
                         };
                         assertEquals(merge, d.currentValue().toString());
-                        List<Variable> variables = d.currentValue().variables(true);
-                        assertFalse(variables.toString().contains("vdol.statementIndex"));
                     }
                 }
                 if ("vdol".equals(d.variableName())) {

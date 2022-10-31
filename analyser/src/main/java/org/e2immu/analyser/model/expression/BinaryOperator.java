@@ -334,6 +334,19 @@ public class BinaryOperator extends BaseExpression implements Expression {
         }
 
         Expression state = and ? l.value() : Negation.negate(context, l.value());
+        if (!lhs.equals(l.value())) {
+            Expression literalNotNull = lhs.keepLiteralNotNull(context, and);
+            if (literalNotNull != null) {
+                /*
+                sometimes, the expanded state cannot be related to a variable anymore, which causes
+                null-pointer problems in the RHS. See e.g. DGSimplified_0, _1, SubTypes_12, NotNull_AAPI_3_1...
+                We take care NOT to evaluate the LHS, but to put it in a form so that the null-check
+                is recognized. (Evaluation would have to be without expansion of variables, but that
+                causes problems when working with companion methods.)
+                 */
+                state = And.and(context, state, literalNotNull);
+            }
+        }
         Set<Variable> stateVariables = Stream.concat(state.variables(true).stream(),
                 lhs.variables(true).stream()).collect(Collectors.toUnmodifiableSet());
         EvaluationResult child = context.childState(state, stateVariables);

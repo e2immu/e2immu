@@ -29,7 +29,7 @@ public class SubTypes_6 {
 
     @NotModified
     @Final
-    @NotNull
+    @NotNull(content = true)
     private static Function<Set<String>, Set<String>> removeElement =
             (@NotNull @Modified Set<String> set1) -> {
                 Iterator<String> it1 = set1.iterator();

@@ -56,14 +56,16 @@ public class EvaluateParameters {
 
         EvaluationResult.Builder builder = new EvaluationResult.Builder(context).compose(context);
 
-        DV scopeIsContainer = scopeIsContainer(context, recursiveOrPartOfCallCycle, scopeObject);
-        DV scopeIsIndependent = scopeIsIndependent(context, recursiveOrPartOfCallCycle, scopeObject);
+        if (!parameterExpressions.isEmpty()) {
+            DV scopeIsContainer = scopeIsContainer(context, recursiveOrPartOfCallCycle, scopeObject);
+            DV scopeIsIndependent = scopeIsIndependent(context, recursiveOrPartOfCallCycle, scopeObject);
 
-        for (Expression parameterExpression : parameterExpressions) {
-            minCnnOverParameters = oneParameterReturnCnn(forwardEvaluationInfo,
-                    methodInfo, recursiveOrPartOfCallCycle, parameterValues, i, builder, parameterExpression,
-                    scopeIsContainer, scopeIsIndependent);
-            i++;
+            for (Expression parameterExpression : parameterExpressions) {
+                minCnnOverParameters = oneParameterReturnCnn(forwardEvaluationInfo,
+                        methodInfo, recursiveOrPartOfCallCycle, parameterValues, i, builder, parameterExpression,
+                        scopeIsContainer, scopeIsIndependent);
+                i++;
+            }
         }
 
         VariableExpression scopeVariable;

@@ -15,10 +15,7 @@
 package org.e2immu.analyser.parser.start.testexample;
 
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 
 public class SubTypes_12 {
 
@@ -27,6 +24,10 @@ public class SubTypes_12 {
     }
 
     record DVImpl(String s) implements DV {
+        public DVImpl {
+            assert s != null;
+        }
+
         @Override
         public boolean isDelayed() {
             return s.length() == 1;
@@ -48,6 +49,10 @@ public class SubTypes_12 {
     }
 
     record VariableInfoImpl(Map<String, String> map) implements VariableInfo {
+
+        public VariableInfoImpl {
+            Objects.requireNonNull(map);
+        }
 
         void setProperty(String k, String v) {
             map.put(k, v);

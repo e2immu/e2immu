@@ -16,8 +16,7 @@ package org.e2immu.analyser.model;
 
 import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.inspector.TypeContext;
-import org.e2immu.analyser.model.expression.BooleanConstant;
-import org.e2immu.analyser.model.expression.Precedence;
+import org.e2immu.analyser.model.expression.*;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.LocalVariableReference;
 import org.e2immu.analyser.model.variable.Variable;
@@ -269,5 +268,49 @@ public interface Expression extends Element, Comparable<Expression> {
 
     default boolean isNegatedOrNumericNegative() {
         return false;
+    }
+
+    /*
+    See explanation in BinaryOperator, where this method is used. A small normalization step
+    without actually evaluating the expression.
+     */
+    default Expression keepLiteralNotNull(EvaluationResult context, boolean doNotNegate) {
+        Primitives primitives = context.getPrimitives();
+        if (this instanceof BinaryOperator bo && primitives.equalsOperatorObject() == bo.operator) {
+            if (bo.lhs instanceof NullConstant) {
+                // null == XXX
+                return doNotNegate ? this : Negation.negate(context, this);
+            }
+            if (bo.rhs instanceof NullConstant) {
+                // XXX == null
+                Expression eq = new Equals(bo.identifier, primitives, bo.rhs, bo.lhs);
+                return doNotNegate ? eq : Negation.negate(context, eq);
+            }
+        }
+        if (this instanceof BinaryOperator bo && primitives.notEqualsOperatorObject() == bo.operator) {
+            if (bo.lhs instanceof NullConstant) {
+                // null != XXX
+                Expression eq = new Equals(bo.identifier, primitives, bo.rhs, bo.lhs);
+                return doNotNegate ? Negation.negate(context, eq) : eq;
+            }
+            if (bo.rhs instanceof NullConstant) {
+                // XXX != null
+                Expression eq = new Equals(bo.identifier, primitives, bo.rhs, bo.lhs);
+                return doNotNegate ? Negation.negate(context, eq) : eq;
+            }
+        }
+        if (this instanceof Negation negation && negation.expression instanceof BinaryOperator bo
+                && primitives.equalsOperatorObject() == bo.operator) {
+            if (bo.lhs instanceof NullConstant) {
+                // !(null == XXX)
+                return doNotNegate ? this : negation.expression;
+            }
+            if (bo.rhs instanceof NullConstant) {
+                // !(XXX == null)
+                Expression eq = new Equals(bo.identifier, primitives, bo.rhs, bo.lhs);
+                return doNotNegate ? Negation.negate(context, eq) : eq;
+            }
+        }
+        return null;
     }
 }
