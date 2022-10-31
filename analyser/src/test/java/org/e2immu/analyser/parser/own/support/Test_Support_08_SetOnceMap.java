@@ -23,6 +23,7 @@ import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.ParameterInfo;
 import org.e2immu.analyser.model.TypeInfo;
 import org.e2immu.analyser.model.variable.FieldReference;
+import org.e2immu.analyser.model.variable.ReturnVariable;
 import org.e2immu.analyser.model.variable.This;
 import org.e2immu.analyser.parser.CommonTestRunner;
 import org.e2immu.analyser.visitor.*;
@@ -173,6 +174,15 @@ public class Test_Support_08_SetOnceMap extends CommonTestRunner {
                     assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
                 }
             }
+            if ("stream".equals(d.methodInfo().name)) {
+                assertEquals("0", d.statementId());
+                if (d.variable() instanceof ReturnVariable) {
+                    assertCurrentValue(d, 2,
+                            "map.entrySet().stream().map(/*inline apply*/new Entry<>(e.getKey(),e.getValue()))");
+                    String linked = d.iteration() < 2 ? "this.map:-1" : "this.map:4";
+                    assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
+                }
+            }
         };
 
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
@@ -198,20 +208,22 @@ public class Test_Support_08_SetOnceMap extends CommonTestRunner {
                         .stream().map(m -> m.name).sorted().collect(Collectors.joining(",")));
 
                 assertDv(d, 1, DV.FALSE_DV, Property.MODIFIED_METHOD);
-                assertDv(d, 1, DV.FALSE_DV, Property.IDENTITY);
+                assertDv(d, 2, DV.FALSE_DV, Property.IDENTITY);
 
                 assertDv(d.p(0), 2, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                 assertDv(d.p(0), 2, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
 
-                String expected = d.iteration() == 0 ? "<m:get>" : "/*inline get*/map.get(k)/*@NotNull*/";
+                String expected = d.iteration() < 2 ? "<m:get>" : "/*inline get*/map.get(k)/*@NotNull*/";
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
             }
             if ("stream".equals(d.methodInfo().name)) {
                 assertEquals("apply", d.methodInfo().methodResolution.get().methodsOfOwnClassReached()
                         .stream().map(m -> m.name).sorted().collect(Collectors.joining(",")));
 
+                // contracted, not computed!
+                assertDv(d, MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL_DV, Property.NOT_NULL_EXPRESSION);
                 assertDv(d, 2, DV.FALSE_DV, Property.MODIFIED_METHOD);
-                assertDv(d, 2, MultiLevel.EFFECTIVELY_IMMUTABLE_HC_DV, Property.IMMUTABLE);
+                assertDv(d, 2, MultiLevel.MUTABLE_DV, Property.IMMUTABLE);
                 assertDv(d, 2, MultiLevel.INDEPENDENT_HC_DV, Property.INDEPENDENT);
             }
             if ("apply".equals(d.methodInfo().name)) {

@@ -266,7 +266,8 @@ public class ParameterizedType {
 
     @Override
     public int hashCode() {
-        return Objects.hash(typeInfo, parameters, typeParameter, arrays, wildCard);
+        // there's a significant risk at infinite loops because the parameters may contain cycles.
+        return Objects.hash(typeInfo, parameters.size(), typeParameter, arrays, wildCard);
     }
 
     public static boolean notEqualsTypeParametersOnlyIndex(ParameterizedType pt1, ParameterizedType pt2) {

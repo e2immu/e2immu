@@ -90,9 +90,12 @@ public class TypeExpression extends BaseExpression implements Expression {
 
     @Override
     public Expression translate(InspectionProvider inspectionProvider, TranslationMap translationMap) {
-        ParameterizedType translated = translationMap.translateType(parameterizedType);
-        if (translated == parameterizedType) return this;
-        return new TypeExpression(identifier, translated, diamond);
+        Expression translated = translationMap.translateExpression(this);
+        if(translated != this) return translated;
+
+        ParameterizedType translatedType = translationMap.translateType(parameterizedType);
+        if (translatedType == parameterizedType) return this;
+        return new TypeExpression(identifier, translatedType, diamond);
     }
 
     @Override

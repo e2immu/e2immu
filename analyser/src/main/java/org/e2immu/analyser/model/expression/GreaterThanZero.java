@@ -323,9 +323,12 @@ public class GreaterThanZero extends BaseExpression implements Expression {
 
     @Override
     public Expression translate(InspectionProvider inspectionProvider, TranslationMap translationMap) {
-        Expression translate = expression.translate(inspectionProvider, translationMap);
-        if (translate == expression) return this;
-        return new GreaterThanZero(identifier, primitives, translate, allowEquals);
+        Expression translated = translationMap.translateExpression(this);
+        if(translated != this) return translated;
+
+        Expression translatedExpression = expression.translate(inspectionProvider, translationMap);
+        if (translatedExpression == expression) return this;
+        return new GreaterThanZero(identifier, primitives, translatedExpression, allowEquals);
     }
 
     @Override

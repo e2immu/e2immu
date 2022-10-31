@@ -127,9 +127,7 @@ public class Lambda extends BaseExpression implements Expression {
 
     @Override
     public Expression translate(InspectionProvider inspectionProvider, TranslationMap translationMap) {
-        return this; // translation will be used by DelayedExpression, we cannot simply throw an exception
-        //throw new UnsupportedOperationException();
-        //return new Lambda(translationMap.translateType(abstractFunctionalType), translationMap.translateType(implementation));
+        return translationMap.translateExpression(this);
     }
 
     @Override

@@ -95,15 +95,14 @@ public class InlineConditional extends BaseExpression implements Expression {
     public Expression translate(InspectionProvider inspectionProvider, TranslationMap translationMap) {
         Expression translated = translationMap.translateExpression(this);
         if (translated != this) return translated;
+
         Expression tc = condition.translate(inspectionProvider, translationMap);
         Expression tt = ifTrue.translate(inspectionProvider, translationMap);
         Expression tf = ifFalse.translate(inspectionProvider, translationMap);
         if (tc == condition && tt == ifTrue && tf == ifFalse) return this;
-        InlineConditional newConditional = tc instanceof Negation negation
+        return tc instanceof Negation negation
                 ? new InlineConditional(identifier, this.inspectionProvider, negation.expression, tf, tt)
                 : new InlineConditional(identifier, this.inspectionProvider, tc, tt, tf);
-        if (translationMap.doNotTryToTranslateAgain()) return newConditional;
-        return newConditional.translate(inspectionProvider, translationMap);
     }
 
     @Override

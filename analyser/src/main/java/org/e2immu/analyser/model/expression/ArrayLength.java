@@ -56,9 +56,12 @@ public class ArrayLength extends BaseExpression implements Expression {
 
     @Override
     public Expression translate(InspectionProvider inspectionProvider, TranslationMap translationMap) {
-        Expression translated = scope.translate(inspectionProvider, translationMap);
-        if (translated == scope) return this;
-        return new ArrayLength(identifier, primitives, translated);
+        Expression translated = translationMap.translateExpression(this);
+        if (translated != this) return translated;
+
+        Expression translatedScope = scope.translate(inspectionProvider, translationMap);
+        if (translatedScope == scope) return this;
+        return new ArrayLength(identifier, primitives, translatedScope);
     }
 
     @Override

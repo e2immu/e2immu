@@ -515,10 +515,7 @@ public record MergeHelper(EvaluationContext evaluationContext,
              the <return value> is both in returnExpression and ternary, so we can't recurse.
              see Basics_27, InlineConditional.translate
              */
-            TranslationMap tm = new TranslationMapImpl.Builder()
-                    .put(returnExpression, ternary)
-                    .setDoNotTryToTranslateAgain(true)
-                    .build();
+            TranslationMap tm = new TranslationMapImpl.Builder().put(returnExpression, ternary).build();
             safe = vi.getValue().translate(evaluationContext.getAnalyserContext(), tm);
         } else {
             safe = safe(EvaluateInlineConditional.conditionalValueConditionResolved(context,

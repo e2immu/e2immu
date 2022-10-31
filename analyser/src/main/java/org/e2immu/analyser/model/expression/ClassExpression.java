@@ -63,6 +63,9 @@ public class ClassExpression extends BaseExpression implements ConstantExpressio
 
     @Override
     public Expression translate(InspectionProvider inspectionProvider, TranslationMap translationMap) {
+        Expression translated = translationMap.translateExpression(this);
+        if (translated != this) return translated;
+
         ParameterizedType translatedType = translationMap.translateType(this.parameterizedType);
         if (this.parameterizedType == translatedType) return this;
         return new ClassExpression(primitives, translatedType);

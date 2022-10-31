@@ -130,6 +130,4 @@ public interface TranslationMap {
     default boolean translateToDelayedExpression() {
         return true;
     }
-
-    default boolean doNotTryToTranslateAgain() { return false; }
 }

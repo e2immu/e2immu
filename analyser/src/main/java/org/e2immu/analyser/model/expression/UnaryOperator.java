@@ -61,9 +61,12 @@ public class UnaryOperator extends BaseExpression implements Expression {
 
     @Override
     public Expression translate(InspectionProvider inspectionProvider, TranslationMap translationMap) {
-        Expression translated = expression.translate(inspectionProvider, translationMap);
-        if (translated == expression) return this;
-        return new UnaryOperator(identifier, operator, translated, precedence);
+        Expression translated = translationMap.translateExpression(this);
+        if(translated != this) return translated;
+
+        Expression translatedExpression = expression.translate(inspectionProvider, translationMap);
+        if (translatedExpression == expression) return this;
+        return new UnaryOperator(identifier, operator, translatedExpression, precedence);
     }
 
     @Override

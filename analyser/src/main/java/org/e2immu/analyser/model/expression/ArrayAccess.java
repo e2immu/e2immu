@@ -97,6 +97,8 @@ public class ArrayAccess extends BaseExpression implements Expression {
 
     @Override
     public Expression translate(InspectionProvider inspectionProvider, TranslationMap translationMap) {
+        Expression translated = translationMap.translateExpression(this);
+        if (translated != this) return translated;
         Expression translatedExpression = expression.translate(inspectionProvider, translationMap);
         Expression translatedIndex = index.translate(inspectionProvider, translationMap);
         if (translatedIndex == this.index && translatedExpression == this.expression) return this;

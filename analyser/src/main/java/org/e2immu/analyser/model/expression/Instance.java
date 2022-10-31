@@ -46,6 +46,7 @@ public final class Instance extends BaseExpression implements Expression {
                                             Properties properties) {
         return new Instance(identifier, parameterizedType, properties);
     }
+
     public static Expression forUnspecifiedLoopCondition(String index, Primitives primitives) {
         return new Instance(Identifier.loopCondition(index), primitives.booleanParameterizedType(),
                 EvaluationContext.PRIMITIVE_VALUE_PROPERTIES);
@@ -215,9 +216,12 @@ public final class Instance extends BaseExpression implements Expression {
 
     @Override
     public Expression translate(InspectionProvider inspectionProvider, TranslationMap translationMap) {
-        ParameterizedType translated = translationMap.translateType(this.parameterizedType);
-        if (translated == this.parameterizedType) return this;
-        return new Instance(identifier, translated, valueProperties);
+        Expression translated = translationMap.translateExpression(this);
+        if (translated != this) return translated;
+
+        ParameterizedType translatedType = translationMap.translateType(this.parameterizedType);
+        if (translatedType == this.parameterizedType) return this;
+        return new Instance(identifier, translatedType, valueProperties);
     }
 
     @Override
@@ -248,7 +252,8 @@ public final class Instance extends BaseExpression implements Expression {
     @Override
     public DV getProperty(EvaluationResult context, Property property, boolean duringEvaluation) {
         return switch (property) {
-            case IGNORE_MODIFICATIONS, IDENTITY, IMMUTABLE, NOT_NULL_EXPRESSION, CONTAINER, INDEPENDENT -> valueProperties.get(property);
+            case IGNORE_MODIFICATIONS, IDENTITY, IMMUTABLE, NOT_NULL_EXPRESSION, CONTAINER, INDEPENDENT ->
+                    valueProperties.get(property);
             case CONTEXT_MODIFIED -> DV.FALSE_DV;
             default -> throw new UnsupportedOperationException("NewObject has no value for " + property);
         };

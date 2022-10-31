@@ -99,13 +99,12 @@ public class BinaryOperator extends BaseExpression implements Expression {
     public Expression translate(InspectionProvider inspectionProvider, TranslationMap translationMap) {
         Expression translated = translationMap.translateExpression(this);
         if (translated != this) return translated;
+
         Expression translatedLhs = lhs.translate(inspectionProvider, translationMap);
         Expression translatedRhs = rhs.translate(inspectionProvider, translationMap);
         if (translatedRhs == this.rhs && translatedLhs == this.lhs) return this;
         return new BinaryOperator(identifier, primitives, translatedLhs,
-                operator, translatedRhs, precedence)
-                // try again, may be recursion
-                .translate(inspectionProvider, translationMap);
+                operator, translatedRhs, precedence);
     }
 
     @Override

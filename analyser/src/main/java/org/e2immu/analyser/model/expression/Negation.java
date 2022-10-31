@@ -47,14 +47,15 @@ public class Negation extends UnaryOperator implements ExpressionWrapper {
 
     @Override
     public Expression translate(InspectionProvider inspectionProvider, TranslationMap translationMap) {
-        Expression tr = translationMap.translateExpression(this);
-        if(tr != this) return tr;
-        Expression translated = expression.translate(inspectionProvider, translationMap);
-        if (translated == expression) return this;
-        if (translated instanceof Negation negation) {
+        Expression translated = translationMap.translateExpression(this);
+        if (translated != this) return translated;
+
+        Expression translatedExpression = expression.translate(inspectionProvider, translationMap);
+        if (translatedExpression == expression) return this;
+        if (translatedExpression instanceof Negation negation) {
             return negation.expression; // double negation gets cancelled
         }
-        return new Negation(identifier, operator, translated);
+        return new Negation(identifier, operator, translatedExpression);
     }
 
     public static Expression negate(EvaluationResult context, @NotNull Expression v) {

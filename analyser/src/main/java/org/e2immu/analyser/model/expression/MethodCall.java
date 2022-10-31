@@ -103,6 +103,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
     public Expression translate(InspectionProvider inspectionProvider, TranslationMap translationMap) {
         Expression asExpression = translationMap.translateExpression(this);
         if (asExpression != this) return asExpression;
+
         MethodInfo translatedMethod = translationMap.translateMethod(methodInfo);
         Expression translatedObject = object.translate(inspectionProvider, translationMap);
         ParameterizedType translatedReturnType = translationMap.translateType(concreteReturnType);
@@ -123,8 +124,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
             return DelayedExpression.forMethod(identifier, translatedMethod, translatedMethod.returnType(),
                     translatedMc, causesOfDelay, Map.of());
         }
-        // there was a change, try again. We could have multiple recursive changes
-        return translatedMc.translate(inspectionProvider, translationMap);
+        return translatedMc;
     }
 
     @Override
@@ -1364,6 +1364,9 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
             //          linkedVariables, object.returnType(), true);
         }
 
+        // FIXME the problem in Independent1_12 is to do with the mix-up between using the object (variable 'stream')
+        //   and the object value, map.entrySet().stream(). Coming from Assignment, we only see the latter.
+        //   we should see both, link 'stream' :2 and add the max(...) for the object value so as to link :4 to 'map'
         // RULE 4: otherwise, we link to the object, even if the object is 'this'
         // note that we cannot use STATICALLY_ASSIGNED here
         Expression objectOrItsValue;
@@ -1404,15 +1407,17 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
             CausesOfDelay causesOfDelay = CausesOfDelay.EMPTY;
             for (Map.Entry<Variable, DV> e : linkedVariablesOfObject) {
                 DV immutable = context.getAnalyserContext().typeImmutable(e.getKey().parameterizedType());
+                assert e.getValue().lt(LinkedVariables.LINK_INDEPENDENT);
+
                 if (variable() instanceof This) {
                     /*
                      without this line, we get loops of CONTEXT_IMMUTABLE delays, see e.g., Test_Util_07_Trie
                      */
-                    newLinked.put(e.getKey(), LinkedVariables.LINK_DEPENDENT);
+                    newLinked.put(e.getKey(), LinkedVariables.LINK_DEPENDENT.max(e.getValue()));
                 } else if (immutable.isDelayed()) {
                     causesOfDelay = causesOfDelay.merge(immutable.causesOfDelay());
                 } else if (MultiLevel.isMutable(immutable)) {
-                    newLinked.put(e.getKey(), LinkedVariables.LINK_DEPENDENT);
+                    newLinked.put(e.getKey(), LinkedVariables.LINK_DEPENDENT.max(e.getValue()));
                 } else if (!MultiLevel.isAtLeastEventuallyRecursivelyImmutable(immutable)) {
                     newLinked.put(e.getKey(), LinkedVariables.LINK_COMMON_HC);
                 }

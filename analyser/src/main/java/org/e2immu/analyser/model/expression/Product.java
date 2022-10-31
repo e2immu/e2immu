@@ -31,11 +31,11 @@ public class Product extends BinaryOperator {
     public Expression translate(InspectionProvider inspectionProvider, TranslationMap translationMap) {
         Expression translated = translationMap.translateExpression(this);
         if (translated != this) return translated;
+
         Expression tl = lhs.translate(inspectionProvider, translationMap);
         Expression tr = rhs.translate(inspectionProvider, translationMap);
         if (tl == lhs && tr == rhs) return this;
-        return new Product(identifier, primitives, tl, tr)
-                .translate(inspectionProvider, translationMap);
+        return new Product(identifier, primitives, tl, tr);
     }
 
     private Product(Identifier identifier, Primitives primitives, Expression lhs, Expression rhs) {

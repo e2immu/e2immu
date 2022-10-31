@@ -88,14 +88,17 @@ public class LocalVariableCreation extends BaseExpression implements Expression 
 
     @Override
     public Expression translate(InspectionProvider inspectionProvider, TranslationMap translationMap) {
-        List<Declaration> translated = declarations.stream().map(d -> {
+        Expression translated = translationMap.translateExpression(this);
+        if (translated != this) return translated;
+
+        List<Declaration> translatedDeclarations = declarations.stream().map(d -> {
             LocalVariable tlv = translationMap.translateLocalVariable(d.localVariable);
             Expression tex = d.expression.translate(inspectionProvider, translationMap);
             if (tlv == d.localVariable && tex == d.expression) return d;
             return new Declaration(d.identifier, tlv, tex);
         }).collect(TranslationCollectors.toList(declarations));
-        if (translated == declarations) return this;
-        return new LocalVariableCreation(primitives, translated, isVar);
+        if (translatedDeclarations == declarations) return this;
+        return new LocalVariableCreation(primitives, translatedDeclarations, isVar);
     }
 
     @Override

@@ -168,16 +168,20 @@ public class Assignment extends BaseExpression implements Expression {
 
     @Override
     public Expression translate(InspectionProvider inspectionProvider, TranslationMap translationMap) {
+        Expression translated = translationMap.translateExpression(this);
+        if (translated != this) return translated;
+
         Expression translatedTarget = target.translate(inspectionProvider, translationMap);
         Expression translatedValue = value.translate(inspectionProvider, translationMap);
         Set<Variable> translatedDirect;
         if (directAssignmentVariables == null) {
             translatedDirect = null;
         } else {
-            Set<Variable> translated = directAssignmentVariables.stream()
+            Set<Variable> translatedVariables = directAssignmentVariables.stream()
                     .map(v -> translationMap.translateVariable(inspectionProvider, v))
                     .collect(Collectors.toUnmodifiableSet());
-            translatedDirect = translated.equals(directAssignmentVariables) ? directAssignmentVariables : translated;
+            translatedDirect = translatedVariables.equals(directAssignmentVariables)
+                    ? directAssignmentVariables : translatedVariables;
         }
         if (translatedValue == this.value && translatedTarget == this.target && translatedDirect == directAssignmentVariables)
             return this;
@@ -487,8 +491,11 @@ public class Assignment extends BaseExpression implements Expression {
         computation simplifications, etc. etc., which are present in the latter.
 
         We choose the former approach! this has repercussions...
+        Update 20221030: we do both! See Independent1_12 for why this is necessary (stream:2)
          */
-        LinkedVariables lvExpression = resultOfExpression.linkedVariables(context).minimum(LinkedVariables.LINK_ASSIGNED);
+        LinkedVariables lvExpression = resultOfExpression.linkedVariables(context)
+                .merge(value.linkedVariables(context))
+                .minimum(LinkedVariables.LINK_ASSIGNED);
         LinkedVariables linkedVariables;
         if (allowStaticallyAssigned) {
             Set<Variable> directAssignment = directAssignmentVariables != null ? directAssignmentVariables

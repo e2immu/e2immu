@@ -744,11 +744,13 @@ public class And extends ExpressionCanBeTooComplex {
 
     @Override
     public Expression translate(InspectionProvider inspectionProvider, TranslationMap translationMap) {
-        List<Expression> translated = expressions.isEmpty() ? expressions : expressions.stream()
+        Expression translated = translationMap.translateExpression(this);
+        if (translated != this) return translated;
+        List<Expression> translatedExpressions = expressions.isEmpty() ? expressions : expressions.stream()
                 .map(e -> e.translate(inspectionProvider, translationMap))
                 .collect(TranslationCollectors.toList(expressions));
-        if (expressions == translated) return this;
-        return new And(identifier, primitives, translated);
+        if (expressions == translatedExpressions) return this;
+        return new And(identifier, primitives, translatedExpressions);
     }
 
     @Override

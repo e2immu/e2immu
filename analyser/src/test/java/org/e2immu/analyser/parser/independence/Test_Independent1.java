@@ -17,6 +17,7 @@ package org.e2immu.analyser.parser.independence;
 
 
 import org.e2immu.analyser.analyser.DV;
+import org.e2immu.analyser.analyser.EvaluationResult;
 import org.e2immu.analyser.analyser.Property;
 import org.e2immu.analyser.analyser.VariableInfo;
 import org.e2immu.analyser.config.DebugConfiguration;
@@ -615,5 +616,64 @@ public class Test_Independent1 extends CommonTestRunner {
                 .build());
     }
 
+    // copied from SetOnceMap
+    @Test
+    public void test_12() throws IOException {
+        EvaluationResultVisitor evaluationResultVisitor = d -> {
+            if ("stream2".equals(d.methodInfo().name)) {
+                if ("2".equals(d.statementId())) {
+                    String expected = d.iteration() < 2 ? "<m:map>"
+                            : "map.entrySet().stream().map(/*inline apply*/new Entry<>(e.getKey(),e.getValue()))";
+                    assertEquals(expected, d.evaluationResult().getExpression().toString());
+/*
+                    // there is no information about linking to stream in statement 2
+                    // the dependency on the stream() is gone because of the variable substitution.
+                    if (d.iteration() >= 2) {
+                        assertTrue(d.evaluationResult().changeData().values().stream()
+                                .map(EvaluationResult.ChangeData::linkedVariables)
+                                .allMatch(lv -> lv.isEmpty() || "mapped:4".equals(lv.toString())
+                                        || "this.map:4".equals(lv.toString())));
+                    }*/
+                }
+            }
+        };
+        StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+            if ("stream".equals(d.methodInfo().name)) {
+                if ("entries".equals(d.variableName()) && "0".equals(d.statementId())) {
+                    String expected = d.iteration() == 0 ? "this.map:-1" : "this.map:2";
+                    assertEquals(expected, d.variableInfo().getLinkedVariables().toString());
+                }
+                if ("stream".equals(d.variableName()) && "1".equals(d.statementId())) {
+                    String expected = d.iteration() == 0 ? "entries:-1,this.map:-1" : "entries:4,this.map:4";
+                    assertEquals(expected, d.variableInfo().getLinkedVariables().toString());
+                }
+                if (d.variable() instanceof ReturnVariable && "2".equals(d.statementId())) {
+                    String expected = d.iteration() < 2
+                            ? "entries:-1,stream:-1,this.map:-1"
+                            : "entries:4,stream:2,this.map:4"; // FIXME stream:2
+                    assertEquals(expected, d.variableInfo().getLinkedVariables().toString());
+                }
+            }
+
+            if ("stream2".equals(d.methodInfo().name)) {
+                if ("mapped".equals(d.variableName()) && "2".equals(d.statementId())) {
+                    String expected = d.iteration() < 2
+                            ? "entries:-1,stream:-1,this.map:-1"
+                            : "entries:4,stream:2,this.map:4"; // FIXME: stream:2
+                    assertEquals(expected, d.variableInfo().getLinkedVariables().toString());
+                }
+                if (d.variable() instanceof ReturnVariable && "3".equals(d.statementId())) {
+                    String expected = d.iteration() < 2
+                            ? "entries:-1,mapped:0,stream:-1,this.map:-1"
+                            : "entries:4,mapped:0,stream:2,this.map:4"; // FIXME: stream:2
+                    assertEquals(expected, d.variableInfo().getLinkedVariables().toString());
+                }
+            }
+        };
+        testClass("Independent1_12", 0, 2, new DebugConfiguration.Builder()
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addEvaluationResultVisitor(evaluationResultVisitor)
+                .build());
+    }
 
 }
