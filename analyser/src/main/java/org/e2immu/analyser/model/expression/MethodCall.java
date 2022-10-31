@@ -348,6 +348,12 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         // links from parameter into object
         // (the other direction, object into parameter, yields MODIFIED on the parameter)
         LinkedVariables linkedVariablesOfObject = linkedVariablesOfObject(context, objectValue);
+
+        // see InlinedMethod_10, find3 vs find4
+        if(modified.valueIsTrue()) {
+            linkedVariablesOfObject.dependentVariables().forEach(v -> builder.markContextModified(v, DV.TRUE_DV));
+        }
+
         List<LinkedVariables> linkedVariablesOfParameters;
         CausesOfDelay linkDelays = CausesOfDelay.EMPTY;
         if (!linkedVariablesOfObject.isEmpty()) {

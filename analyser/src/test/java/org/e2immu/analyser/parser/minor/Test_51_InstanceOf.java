@@ -808,6 +808,12 @@ public class Test_51_InstanceOf extends CommonTestRunner {
                         assertDv(d, 9, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     }
                 }
+                if("d".equals(d.variableName())) {
+                    if("0.0.0".equals(d.statementId())) {
+                        assertCurrentValue(d, 9,
+                                "`expression/*(Sum)*/.lhs`.equals(`expression/*(Sum)*/.rhs`)?3.0:null");
+                    }
+                }
             }
         };
         StatementAnalyserVisitor statementAnalyserVisitor = d -> {

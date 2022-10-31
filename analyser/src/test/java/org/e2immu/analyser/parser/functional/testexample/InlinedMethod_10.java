@@ -14,7 +14,10 @@
 
 package org.e2immu.analyser.parser.functional.testexample;
 
+import org.e2immu.annotation.Modified;
+
 import java.util.Arrays;
+import java.util.Optional;
 import java.util.stream.Stream;
 
 public record InlinedMethod_10(String[] input) {
@@ -23,8 +26,10 @@ public record InlinedMethod_10(String[] input) {
         return mode < 1 ? find(stream, s) : stream.filter(ff -> ff.equals(s)).findAny().orElse(s);
     }
 
-    private static String find(Stream<String> stream, String s) {
-        return s.length() < 2 ? find2(stream, s, s.length()) : stream.filter(f -> f.contains(s)).findFirst().orElse(null);
+    private static String find(@Modified Stream<String> stream, String s) {
+        return s.length() < 2
+                ? find2(stream, s, s.length())
+                : stream.filter(f -> f.contains(s)).findFirst().orElse(null);
     }
 
     public String method(String t) {
@@ -33,5 +38,16 @@ public record InlinedMethod_10(String[] input) {
 
     public String method2(Stream<String> stream) {
         return method(stream.filter(u -> u.startsWith("a")).findFirst().orElse("b"));
+    }
+
+    private static String find3(@Modified Stream<String> stream, String s) {
+        Stream<String> filtered = stream.filter(f -> f.contains(s));
+        Optional<String> first = filtered.findFirst();
+        return first.orElse(null);
+    }
+
+    private static String find4(@Modified Stream<String> stream, String s) {
+        Optional<String> first = stream.filter(f -> f.contains(s)).findFirst();
+        return first.orElse(null);
     }
 }

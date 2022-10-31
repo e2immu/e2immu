@@ -186,6 +186,20 @@ public class Test_04_NotNull_AAPI extends CommonTestRunner {
                     }
                 }
             }
+            if ("isStrictPrefix".equals(d.methodInfo().name)) {
+                if ("node".equals(d.variableName())) {
+                    if ("0".equals(d.statementId())) {
+                        assertDv(d, MultiLevel.NULLABLE_DV, Property.CONTEXT_NOT_NULL);
+                        // FIXME this is very wrong
+                        assertCurrentValue(d, 8, "-1-(instance type int)+prefix.length>=0?null:`root`");
+                    }
+                }
+                if (d.variable() instanceof ReturnVariable) {
+                    if ("1".equals(d.statementId())) {
+                        assertCurrentValue(d, 8, "instance type int>=prefix.length");
+                    }
+                }
+            }
         };
         testClass("NotNull_3", 6, 0, new DebugConfiguration.Builder()
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
@@ -202,6 +216,8 @@ public class Test_04_NotNull_AAPI extends CommonTestRunner {
                 if ("1".equals(d.statementId())) {
                     String expected = d.iteration() <= 1 ? "<null-check>?null:<f:node.data>" : "null";
                     assertEquals(expected, d.evaluationResult().value().toString());
+
+                    // important: whatever happens, 'node' cannot have CNN not null!
                     EvaluationResult.ChangeData cd = d.findValueChangeByToString("node");
                     DV cnn = cd.getProperty(Property.CONTEXT_NOT_NULL);
                     assertNotEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, cnn);
@@ -215,6 +231,11 @@ public class Test_04_NotNull_AAPI extends CommonTestRunner {
                         String expected = d.iteration() <= 1 ? "<m:goTo>" : "upToPosition>=strings.length?null:`root`";
                         assertEquals(expected, d.currentValue().toString());
                         assertDv(d, 2, MultiLevel.NULLABLE_DV, Property.NOT_NULL_EXPRESSION);
+                    }
+                }
+                if (d.variable() instanceof ReturnVariable) {
+                    if ("1".equals(d.statementId())) {
+                        assertCurrentValue(d, 2, "null");
                     }
                 }
             }

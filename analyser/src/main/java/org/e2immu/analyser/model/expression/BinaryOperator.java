@@ -148,7 +148,14 @@ public class BinaryOperator extends BaseExpression implements Expression {
         ForwardEvaluationInfo forward = forwardBuilder.removeContextContainer().build();
 
         EvaluationResult leftResult = lhs.evaluate(context, forward);
-        EvaluationResult rightResult = rhs.evaluate(leftResult, forward);
+        /*
+        IMPORTANT: we want the changeData of "context" to be available to the rhs evaluation (See InstanceOf_13)
+        Therefore we actively compose "context" into the context for rhs
+         */
+        EvaluationResult leftResultContext = new EvaluationResult.Builder(context)
+                .compose(context)
+                .compose(leftResult).build();
+        EvaluationResult rightResult = rhs.evaluate(leftResultContext, forward);
         EvaluationResult.Builder builder = new EvaluationResult.Builder(context).compose(leftResult, rightResult);
         builder.setExpression(determineValueProtect(primitives, builder, leftResult, rightResult, context, forward));
         return builder.build();

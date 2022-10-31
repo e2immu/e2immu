@@ -25,8 +25,7 @@ import org.junit.jupiter.api.Test;
 import java.util.stream.Collector;
 import java.util.stream.Stream;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 public class TestCommonJavaUtilStream extends CommonAnnotatedAPI {
 
@@ -104,5 +103,29 @@ public class TestCommonJavaUtilStream extends CommonAnnotatedAPI {
         assertEquals(DV.FALSE_DV, methodAnalysis.getProperty(Property.MODIFIED_METHOD));
         assertEquals(MultiLevel.INDEPENDENT_DV, methodAnalysis.getProperty(Property.INDEPENDENT));
         assertEquals(MultiLevel.MUTABLE_DV, methodAnalysis.getProperty(Property.IMMUTABLE));
+    }
+
+    @Test
+    public void testStreamFilter() {
+        TypeInfo typeInfo = typeContext.getFullyQualified(Stream.class);
+        MethodInfo methodInfo = typeInfo.findUniqueMethod("filter", 1);
+        assertFalse(methodInfo.methodInspection.get().isStatic());
+
+        MethodAnalysis methodAnalysis = methodInfo.methodAnalysis.get();
+        assertEquals(DV.FALSE_DV, methodAnalysis.getProperty(Property.MODIFIED_METHOD));
+        assertEquals(MultiLevel.DEPENDENT_DV, methodAnalysis.getProperty(Property.INDEPENDENT));
+        assertEquals(MultiLevel.MUTABLE_DV, methodAnalysis.getProperty(Property.IMMUTABLE));
+    }
+
+    @Test
+    public void testStreamFindFirst() {
+        TypeInfo typeInfo = typeContext.getFullyQualified(Stream.class);
+        MethodInfo methodInfo = typeInfo.findUniqueMethod("findFirst", 0);
+        assertFalse(methodInfo.methodInspection.get().isStatic());
+
+        MethodAnalysis methodAnalysis = methodInfo.methodAnalysis.get();
+        assertEquals(DV.TRUE_DV, methodAnalysis.getProperty(Property.MODIFIED_METHOD));
+        assertEquals(MultiLevel.INDEPENDENT_HC_DV, methodAnalysis.getProperty(Property.INDEPENDENT));
+        assertEquals(MultiLevel.EFFECTIVELY_IMMUTABLE_HC_DV, methodAnalysis.getProperty(Property.IMMUTABLE));
     }
 }

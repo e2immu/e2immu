@@ -48,6 +48,7 @@ public interface InlinedMethod_15 {
         return concatImmutable(methods(), constructors());
     }
 
+    @NotNull
     List<MethodInfo> methods();
 
     List<MethodInfo> constructors();

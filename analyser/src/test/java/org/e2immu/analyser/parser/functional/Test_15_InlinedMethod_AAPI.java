@@ -237,10 +237,35 @@ public class Test_15_InlinedMethod_AAPI extends CommonTestRunner {
                 if (d.variable() instanceof ParameterInfo pi && "s".equals(pi.name)) {
                     assertDv(d, 3, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.CONTEXT_NOT_NULL);
                 }
+                if (d.variable() instanceof ParameterInfo pi && "stream".equals(pi.name)) {
+                    assertEquals("", d.variableInfo().getLinkedVariables().toString());
+                }
+                if (d.variable() instanceof ReturnVariable) {
+                    String linked = d.iteration() < 3 ? "s:-1,stream:-1" : "";
+                    assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
+                }
             }
             if ("find2".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof ParameterInfo pi && "s".equals(pi.name)) {
                     assertDv(d, MultiLevel.NULLABLE_DV, Property.CONTEXT_NOT_NULL);
+                }
+            }
+            if ("find3".equals(d.methodInfo().name)) {
+                if ("filtered".equals(d.variableName()) && "0".equals(d.statementId())) {
+                    String linked = d.iteration() == 0 ? "stream:-1" : "stream:2";
+                    assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
+                }
+                if (d.variable() instanceof ParameterInfo pi && "stream".equals(pi.name)) {
+                    if ("1".equals(d.statementId())) {
+                        assertDv(d, 1, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
+                    }
+                }
+            }
+            if ("find4".equals(d.methodInfo().name)) {
+                if (d.variable() instanceof ParameterInfo pi && "stream".equals(pi.name)) {
+                    if ("0".equals(d.statementId())) {
+                        assertDv(d, 1, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
+                    }
                 }
             }
         };
@@ -256,17 +281,17 @@ public class Test_15_InlinedMethod_AAPI extends CommonTestRunner {
                 assertTrue(d.methodInfo().methodResolution.get().ignoreMeBecauseOfPartOfCallCycle());
 
                 String expected = d.iteration() < 4 ? "<m:find>"
-                        : "/*inline find*/s.length()<=1?s.length()<=0?InlinedMethod_10.find(stream,s):stream.filter(/*inline test*/ff.equals(s)).findAny().orElse(s):stream.filter(/*inline test*/f.contains(s)).findFirst().orElse(null)";
+                        : "s.length()<=1?InlinedMethod_10.find2(stream,s,s.length()):stream.filter(/*inline test*/f.contains(s)).findFirst().orElse(null)";
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
-                if (d.iteration() >= 4) {
-                    if (d.methodAnalysis().getSingleReturnValue() instanceof InlinedMethod inlinedMethod) {
-                        assertEquals("s, stream", inlinedMethod.variablesOfExpressionSorted());
-                    } else fail();
-                }
+                assertFalse(d.methodAnalysis().getSingleReturnValue() instanceof InlinedMethod);
                 assertDv(d.p(1), 4, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_PARAMETER);
             }
         };
-        testClass("InlinedMethod_10", 0, 3, new DebugConfiguration.Builder()
+        /*
+         IMPORTANT 20221031: for the moment, we stand by the decision to raise an error when a stream is finalized on a parameter.
+         All 5 errors are of this type.
+         */
+        testClass("InlinedMethod_10", 5, 3, new DebugConfiguration.Builder()
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .build());
@@ -517,10 +542,14 @@ public class Test_15_InlinedMethod_AAPI extends CommonTestRunner {
                         : "/*inline concatImmutable*/list1.isEmpty()?list2:list2.isEmpty()?list1:List.copyOf(instance type List<T>)";
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
             }
+            if("methods".equals(d.methodInfo().name)) {
+                assertDv(d, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_EXPRESSION);
+            }
+            if("constructors".equals(d.methodInfo().name)) {
+                assertDv(d, MultiLevel.NULLABLE_DV, Property.NOT_NULL_EXPRESSION);
+            }
         };
-        // both warnings potential null pointer, for arguments methods(), constructors()
-        // warnings are present/absent depending on the current implementation
-        testClass("InlinedMethod_15", 0, 0, new DebugConfiguration.Builder()
+        testClass("InlinedMethod_15", 0, 1, new DebugConfiguration.Builder()
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .build());
     }
