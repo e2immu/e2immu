@@ -421,15 +421,19 @@ public class Test_51_InstanceOf extends CommonTestRunner {
                     if ("0".equals(d.statementId())) {
                         String expected = switch (d.iteration()) {
                             case 0, 1 -> "object instanceof String&&null!=object?<new:StringConstant>:<return value>";
-                            default -> "object instanceof String&&null!=object?new StringConstant(object/*(String)*/):<return value>";
+                            default ->
+                                    "object instanceof String&&null!=object?new StringConstant(object/*(String)*/):<return value>";
                         };
                         assertEquals(expected, d.currentValue().toString());
                     }
                     if ("1".equals(d.statementId())) {
                         String expected = switch (d.iteration()) {
-                            case 0 -> "object instanceof String&&null!=object?<new:StringConstant>:object instanceof Boolean&&null!=object?<new:BooleanConstant>:<return value>";
-                            case 1 -> "object instanceof String&&null!=object?<new:StringConstant>:object instanceof Boolean&&null!=object?new BooleanConstant(object/*(Boolean)*/):<return value>";
-                            default -> "object instanceof String&&null!=object?new StringConstant(object/*(String)*/):object instanceof Boolean&&null!=object?new BooleanConstant(object/*(Boolean)*/):<return value>";
+                            case 0 ->
+                                    "object instanceof String&&null!=object?<new:StringConstant>:object instanceof Boolean&&null!=object?<new:BooleanConstant>:<return value>";
+                            case 1 ->
+                                    "object instanceof String&&null!=object?<new:StringConstant>:object instanceof Boolean&&null!=object?new BooleanConstant(object/*(Boolean)*/):<return value>";
+                            default ->
+                                    "object instanceof String&&null!=object?new StringConstant(object/*(String)*/):object instanceof Boolean&&null!=object?new BooleanConstant(object/*(Boolean)*/):<return value>";
                         };
                         assertEquals(expected, d.currentValue().toString());
                     }
@@ -538,7 +542,8 @@ public class Test_51_InstanceOf extends CommonTestRunner {
                         if ("2".equals(d.statementId())) {
                             String expected = switch (d.iteration()) {
                                 case 0 -> "<f:expression>";
-                                case 1 -> "expression instanceof Negation&&null!=expression?<f:expression>:nullable instance type Expression";
+                                case 1 ->
+                                        "expression instanceof Negation&&null!=expression?<f:expression>:nullable instance type Expression";
                                 default -> "nullable instance type Expression";
                             };
                             assertEquals(expected, d.currentValue().toString());
@@ -888,8 +893,10 @@ public class Test_51_InstanceOf extends CommonTestRunner {
                     assertDv(d, MultiLevel.MUTABLE_DV, Property.IMMUTABLE);
                 }
                 case "Negation", "Sum" -> assertDv(d, MultiLevel.CONTAINER_DV, Property.CONTAINER);
-                case "InstanceOf_11" -> assertDv(d, "cm@Parameter_evaluationContext", 10, MultiLevel.CONTAINER_DV, Property.CONTAINER);
-                case "XB" -> assertDv(d, "cm@Parameter_x;mom@Parameter_x", 1, MultiLevel.CONTAINER_DV, Property.CONTAINER);
+                case "InstanceOf_11" ->
+                        assertDv(d, "cm@Parameter_evaluationContext", 10, MultiLevel.CONTAINER_DV, Property.CONTAINER);
+                case "XB" ->
+                        assertDv(d, "cm@Parameter_x;mom@Parameter_x", 1, MultiLevel.CONTAINER_DV, Property.CONTAINER);
                 default -> fail("? " + d.typeInfo().simpleName);
             }
         };
@@ -917,6 +924,7 @@ public class Test_51_InstanceOf extends CommonTestRunner {
     public void test_13() throws IOException {
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("method".equals(d.methodInfo().name)) {
+                assertEquals("0", d.statementId());
                 if (d.variable() instanceof ReturnVariable) {
                     String expected = "in instanceof Number&&null!=in?\"Number: \"+in/*(Number)*/:\"\"+in";
                     assertEquals(expected, d.currentValue().toString());
@@ -980,7 +988,8 @@ public class Test_51_InstanceOf extends CommonTestRunner {
                 if ("1".equals(d.statementId())) {
                     String expected = switch (d.iteration()) {
                         case 0 -> "<m:isUnaryNot>&&expression instanceof UnaryOperator&&null!=expression";
-                        default -> "expression/*(UnaryOperator)*/.operator.isUnaryNot()&&expression instanceof UnaryOperator&&null!=expression";
+                        default ->
+                                "expression/*(UnaryOperator)*/.operator.isUnaryNot()&&expression instanceof UnaryOperator&&null!=expression";
                     };
                     assertEquals(expected, d.evaluationResult().value().toString());
                     assertEquals(d.iteration() == 0, d.evaluationResult().causesOfDelay().isDelayed());
@@ -998,9 +1007,12 @@ public class Test_51_InstanceOf extends CommonTestRunner {
                 }
                 if ("3".equals(d.statementId())) {
                     String expected = switch (d.iteration()) {
-                        case 0 -> "<simplification>?<m:toList>:<simplification>?<m:toList>:<instanceOf:InstanceOf>?<m:of>:<m:toList>";
-                        case 1, 2, 3 -> "expression instanceof Negation&&null!=expression?<m:toList>:<m:isUnaryNot>&&expression instanceof UnaryOperator&&null!=expression?<m:toList>:expression instanceof InstanceOf&&null!=expression&&(!<m:isUnaryNot>||!(expression instanceof UnaryOperator))?<m:of>:(nullable instance type List<Expression>).stream().flatMap(instance type $3).toList()";
-                        default -> "expression instanceof Negation&&null!=expression?FindInstanceOfPatterns.find(expression/*(Negation)*/.en).stream().map(/*inline apply*/new InstanceOfPositive(iop.instanceOf,!iop.positive)).toList():expression/*(UnaryOperator)*/.operator.isUnaryNot()&&expression instanceof UnaryOperator&&null!=expression?FindInstanceOfPatterns.find(expression/*(UnaryOperator)*/.eu).stream().map(/*inline apply*/new InstanceOfPositive(iop.instanceOf,!iop.positive)).toList():expression instanceof InstanceOf&&null!=expression&&(!expression/*(UnaryOperator)*/.operator.isUnaryNot()||!(expression instanceof UnaryOperator))?List.of(new InstanceOfPositive(expression/*(InstanceOf)*/,true)):(nullable instance type List<Expression>).stream().flatMap(instance type $3).toList()";
+                        case 0 ->
+                                "<simplification>?<m:toList>:<simplification>?<m:toList>:<instanceOf:InstanceOf>?<m:of>:<m:toList>";
+                        case 1, 2, 3 ->
+                                "expression instanceof Negation&&null!=expression?<m:toList>:<m:isUnaryNot>&&expression instanceof UnaryOperator&&null!=expression?<m:toList>:expression instanceof InstanceOf&&null!=expression&&(!<m:isUnaryNot>||!(expression instanceof UnaryOperator))?<m:of>:(nullable instance type List<Expression>).stream().flatMap(instance type $3).toList()";
+                        default ->
+                                "expression instanceof Negation&&null!=expression?FindInstanceOfPatterns.find(expression/*(Negation)*/.en).stream().map(/*inline apply*/new InstanceOfPositive(iop.instanceOf,!iop.positive)).toList():expression/*(UnaryOperator)*/.operator.isUnaryNot()&&expression instanceof UnaryOperator&&null!=expression?FindInstanceOfPatterns.find(expression/*(UnaryOperator)*/.eu).stream().map(/*inline apply*/new InstanceOfPositive(iop.instanceOf,!iop.positive)).toList():expression instanceof InstanceOf&&null!=expression&&(!expression/*(UnaryOperator)*/.operator.isUnaryNot()||!(expression instanceof UnaryOperator))?List.of(new InstanceOfPositive(expression/*(InstanceOf)*/,true)):(nullable instance type List<Expression>).stream().flatMap(instance type $3).toList()";
                     };
                     assertEquals(expected, d.evaluationResult().value().toString());
                 }
@@ -1032,7 +1044,8 @@ public class Test_51_InstanceOf extends CommonTestRunner {
                             assertTrue(eval.getProperty(Property.CONTEXT_MODIFIED).isDelayed());
                         }
                         String delay = switch (d.iteration()) {
-                            case 0 -> "initial:expression@Method_find_1-E;initial:unaryOperator.operator@Method_find_1-C";
+                            case 0 ->
+                                    "initial:expression@Method_find_1-E;initial:unaryOperator.operator@Method_find_1-C";
                             default -> "";
                         };
                         assertEquals(delay, eval.getLinkedVariables().causesOfDelay().toString());
@@ -1203,7 +1216,7 @@ public class Test_51_InstanceOf extends CommonTestRunner {
             }
             // $3 is the lambda in statement 3 of FindInstanceOfPatterns.find
             if ("apply".equals(d.methodInfo().name) && "$3".equals(d.methodInfo().typeInfo.simpleName)) {
-                assertDv(d, MultiLevel.MUTABLE_DV, Property.IMMUTABLE);
+                assertDv(d, 1, MultiLevel.MUTABLE_DV, Property.IMMUTABLE);
             }
             if ("find".equals(d.methodInfo().name)) {
                 assertFalse(d.methodInfo().methodResolution.get().ignoreMeBecauseOfPartOfCallCycle());

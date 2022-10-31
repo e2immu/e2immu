@@ -100,7 +100,8 @@ public class Test_34_ExplicitConstructorInvocation extends CommonTestRunner {
                     && "ExplicitConstructorInvocation_5".equals(parameters.get(0).parameterizedType.typeInfo.simpleName)) {
                 if (d.variable() instanceof FieldReference fr && "parent".equals(fr.fieldInfo.name)) {
                     String linked = switch (d.iteration()) {
-                        case 0 -> "parent1.packageName:-1,parent1.typeMap:-1,parent1:-1,this.packageName:-1,this.typeMap:-1,this:-1";
+                        case 0 ->
+                                "parent1.packageName:-1,parent1.typeMap:-1,parent1:-1,this.packageName:-1,this.typeMap:-1,this:-1";
                         case 1 -> "parent1.typeMap:-1,parent1:-1,this.typeMap:-1";
                         default -> "parent1:1";
                     };
@@ -159,7 +160,7 @@ public class Test_34_ExplicitConstructorInvocation extends CommonTestRunner {
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
             if ("fullyQualifiedName".equals(d.fieldInfo().name)) {
                 String expected = d.iteration() == 0 ? "<f:fullyQualifiedName>" :
-                        "[instance type String,instance type String,\"\".equals(packageName2)?simpleName2:packageName2+\".\"+simpleName2,\"\".equals(packageName1)?simpleName1:packageName1+\".\"+simpleName1]";
+                        "[instance type String,instance type String,\"\".equals(packageName1)?simpleName1:packageName1+\".\"+simpleName1,\"\".equals(packageName2)?simpleName2:packageName2+\".\"+simpleName2]";
                 assertEquals(expected, d.fieldAnalysis().getValue().toString());
             }
         };
@@ -183,9 +184,9 @@ public class Test_34_ExplicitConstructorInvocation extends CommonTestRunner {
                     assertTrue(cd.markAssignment());
 
                     Expression value = cd.value();
-                    String expected = d.iteration() == 0 ? "<m:requireNonNull>" : "primitives1/*@NotNull*/";
+                    String expected = d.iteration() < 2 ? "<m:requireNonNull>" : "primitives1/*@NotNull*/";
                     assertEquals(expected, value.toString());
-                    if (d.iteration() == 0) {
+                    if (d.iteration() < 2) {
                         if (value instanceof DelayedExpression de) {
                             List<String> parameters = de.variables(true).stream()
                                     .filter(v -> v instanceof ParameterInfo).map(Variable::simpleName).toList();
@@ -204,17 +205,26 @@ public class Test_34_ExplicitConstructorInvocation extends CommonTestRunner {
                 if ("Primitives".equals(typeOfParam1.typeInfo.simpleName) && numParams == 2) {
                     assertEquals("0", d.statementId());
                     if (d.variable() instanceof FieldReference fr && "primitives".equals(fr.fieldInfo.name)) {
-                        String expected = d.iteration() == 0 ? "<eci>" : "primitives3/*@NotNull*/";
+                        String expected = switch (d.iteration()) {
+                            case 0 -> "<eci>";
+                            case 1 -> "<m:requireNonNull>";
+                            default -> "primitives3/*@NotNull*/";
+                        };
                         assertEquals(expected, d.currentValue().toString());
-                        String linked = d.iteration() == 0 ? "identifier:-1,primitives3:-1,this.complexity:-1,this.expressions:-1,this:-1"
-                                : "primitives3:1";
+                        String linked = switch (d.iteration()) {
+                            case 0 -> "identifier:-1,primitives3:-1,this.complexity:-1,this.expressions:-1,this:-1";
+                            case 1 -> "primitives3:-1";
+                            default -> "primitives3:1";
+                        };
                         assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
                     }
                     if (d.variable() instanceof FieldReference fr && "complexity".equals(fr.fieldInfo.name)) {
                         String expected = switch (d.iteration()) {
                             case 0 -> "<eci>";
-                            case 1 -> "List.of().stream().mapToInt(Expression::getComplexity).sum()+`ExplicitConstructorInvocation_7.COMPLEXITY`+(null==identifier?0:<m:getComplexity>)";
-                            default -> "3+List.of().stream().mapToInt(Expression::getComplexity).sum()+(null==identifier?0:identifier.getComplexity())";
+                            case 1 ->
+                                    "List.of().stream().mapToInt(Expression::getComplexity).sum()+`ExplicitConstructorInvocation_7.COMPLEXITY`+(null==identifier?0:<m:getComplexity>)";
+                            default ->
+                                    "3+List.of().stream().mapToInt(Expression::getComplexity).sum()+(null==identifier?0:identifier.getComplexity())";
                         };
                         assertEquals(expected, d.currentValue().toString());
                         String linked = switch (d.iteration()) {
@@ -227,12 +237,15 @@ public class Test_34_ExplicitConstructorInvocation extends CommonTestRunner {
                 } else if ("List".equals(typeOfParam1.typeInfo.simpleName) && numParams == 2) {
                     assertEquals("0", d.statementId());
                     if (d.variable() instanceof FieldReference fr && "primitives".equals(fr.fieldInfo.name)) {
-                        String expected = d.iteration() == 0 ? "<m:requireNonNull>" : "primitives1/*@NotNull*/";
+                        String expected = d.iteration() < 2 ? "<m:requireNonNull>" : "primitives1/*@NotNull*/";
 
                         assertEquals(expected, d.currentValue().toString());
-                        String linked = d.iteration() == 0
-                                ? "ExplicitConstructorInvocation_7.COMPLEXITY:-1,expressions:-1,primitives1:-1,this.complexity:-1,this.expressions:-1,this:-1"
-                                : "primitives1:1";
+                        String linked = switch (d.iteration()) {
+                            case 0 ->
+                                    "ExplicitConstructorInvocation_7.COMPLEXITY:-1,expressions:-1,primitives1:-1,this.complexity:-1,this.expressions:-1,this:-1";
+                            case 1 -> "primitives1:-1";
+                            default -> "primitives1:1";
+                        };
                         assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
                     }
                     if (d.variable() instanceof FieldReference fr && "complexity".equals(fr.fieldInfo.name)) {
@@ -253,7 +266,8 @@ public class Test_34_ExplicitConstructorInvocation extends CommonTestRunner {
                             String expected = d.iteration() == 0 ? "<s:Primitives>" : "primitives2/*@NotNull*/";
                             assertEquals(expected, d.currentValue().toString());
                             String linked = switch (d.iteration()) {
-                                case 1 -> "ExplicitConstructorInvocation_7.COMPLEXITY:-1,expressions:-1,identifier:-1,primitives2:-1,this.complexity:-1,this.expressions:-1";
+                                case 1 ->
+                                        "ExplicitConstructorInvocation_7.COMPLEXITY:-1,expressions:-1,identifier:-1,primitives2:-1,this.complexity:-1,this.expressions:-1";
                                 case 0 -> "primitives2:-1";
                                 default -> "primitives2:1";
                             };
@@ -267,7 +281,7 @@ public class Test_34_ExplicitConstructorInvocation extends CommonTestRunner {
 
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("requireNonNull".equals(d.methodInfo().name)) {
-                assertDv(d, DV.TRUE_DV, Property.IDENTITY);
+                assertDv(d, 1, DV.TRUE_DV, Property.IDENTITY);
                 assertDv(d.p(0), 1, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
             }
             if ("getPrimitives".equals(d.methodInfo().name)) {
@@ -298,11 +312,12 @@ public class Test_34_ExplicitConstructorInvocation extends CommonTestRunner {
             if (d.methodInfo().isConstructor && parameters.size() == 3) {
                 if (d.variable() instanceof FieldReference fr && "primitives".equals(fr.fieldInfo.name)) {
                     if ("1".equals(d.statementId())) {
-                        assertEquals("primitives2/*@NotNull*/", d.currentValue().toString());
+                        String expected = d.iteration() == 0 ? "<m:requireNonNull>" : "primitives2/*@NotNull*/";
+                        assertEquals(expected, d.currentValue().toString());
                     }
                     if ("2".equals(d.statementId())) {
                         // goes through SAApply.delayVariablesNotMentioned(), so no value yet in iteration 0
-                        String expected = d.iteration() == 0 ? "<f:primitives>" : "primitives2/*@NotNull*/";
+                        String expected = d.iteration() == 0 ? "<m:requireNonNull>" : "primitives2/*@NotNull*/";
                         assertEquals(expected, d.currentValue().toString());
                     }
                 }
@@ -385,7 +400,8 @@ public class Test_34_ExplicitConstructorInvocation extends CommonTestRunner {
                     String expected = switch (d.iteration()) {
                         case 0 -> "<f:E1>/*@NotNull*/"; // Objects.requireNotNull(E1), identity + @NN property
                         case 1 -> "<vp:E1:container@Record_UnknownExpression>";
-                        case 2 -> "<vp:E1:break_imm_delay@Method_merge;cm@Parameter_condition;initial:this.v@Method_merge_0-C;srv@Method_merge>";
+                        case 2 ->
+                                "<vp:E1:break_imm_delay@Method_merge;cm@Parameter_condition;initial:this.v@Method_merge_0-C;srv@Method_merge>";
                         default -> "UnknownExpression.E1";
                     };
                     assertEquals(expected, d.currentValue().toString());
@@ -396,7 +412,8 @@ public class Test_34_ExplicitConstructorInvocation extends CommonTestRunner {
                     String expected = switch (d.iteration()) {
                         case 0 -> "<dv:UnknownExpression.E2>";
                         case 1 -> "<vp:E2:container@Record_UnknownExpression>";
-                        case 2 -> "<vp:E2:break_imm_delay@Method_merge;cm@Parameter_condition;initial:this.v@Method_merge_0-C;srv@Method_merge>";
+                        case 2 ->
+                                "<vp:E2:break_imm_delay@Method_merge;cm@Parameter_condition;initial:this.v@Method_merge_0-C;srv@Method_merge>";
                         default -> "UnknownExpression.E2";
                     };
                     assertEquals(expected, d.currentValue().toString());
@@ -716,8 +733,10 @@ public class Test_34_ExplicitConstructorInvocation extends CommonTestRunner {
                     String expected = d.iteration() == 0 ? "<eci>" : "value/*@NotNull*/";
                     assertEquals(expected, d.currentValue().toString());
                     String linked = switch (d.iteration()) {
-                        case 0 -> "identifier:-1,primitives:-1,target:-1,this.assignmentOperator:-1,this.binaryOperator:-1,this.complainAboutAssignmentOutsideType:-1,this.hackForUpdatersInForLoop:-1,this.identifier:-1,this.prefixPrimitiveOperator:-1,this.primitives:-1,this.target:-1,this.variableTarget:-1,this:-1,value:-1";
-                        case 1 -> "identifier:-1,primitives:-1,target:-1,this.identifier:-1,this.primitives:-1,this.target:-1,this.variableTarget:-1,value:-1";
+                        case 0 ->
+                                "identifier:-1,primitives:-1,target:-1,this.assignmentOperator:-1,this.binaryOperator:-1,this.complainAboutAssignmentOutsideType:-1,this.hackForUpdatersInForLoop:-1,this.identifier:-1,this.prefixPrimitiveOperator:-1,this.primitives:-1,this.target:-1,this.variableTarget:-1,this:-1,value:-1";
+                        case 1 ->
+                                "identifier:-1,primitives:-1,target:-1,this.identifier:-1,this.primitives:-1,this.target:-1,value:-1";
                         default -> "value:1";
                     };
                     assertEquals(linked, d.variableInfo().getLinkedVariables().toString());

@@ -115,7 +115,7 @@ public class Test_FactoryMethod extends CommonTestRunner {
         };
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("of".equals(d.methodInfo().name)) {
-                assertDv(d, 3, MultiLevel.INDEPENDENT_HC_DV, Property.INDEPENDENT);
+                assertDv(d, 4, MultiLevel.INDEPENDENT_HC_DV, Property.INDEPENDENT);
             }
         };
 

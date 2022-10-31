@@ -55,7 +55,7 @@ public class Test_Util_03_StringUtil extends CommonTestRunner {
                     if ("3".equals(d.statementId())) {
                         assertEquals("n<=10?Integer.toString(i):n<=100?i<=9?\"0\"+Integer.toString(i):Integer.toString(i):n<=1000?i<=9?\"00\"+Integer.toString(i):i<=99?\"0\"+Integer.toString(i):Integer.toString(i):<return value>",
                                 d.currentValue().toString());
-                        assertEquals(91, d.currentValue().getComplexity());
+                        assertEquals(193, d.currentValue().getComplexity());
                     }
                 }
             }

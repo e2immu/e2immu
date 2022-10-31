@@ -33,8 +33,9 @@ import java.util.List;
 import java.util.Set;
 
 public interface Expression extends Element, Comparable<Expression> {
-    int HARD_LIMIT_ON_COMPLEXITY = 1000;
-    int COMPLEXITY_LIMIT_OF_INLINED_METHOD = 300;
+    int HARD_LIMIT_ON_COMPLEXITY = 5000;
+    int SOFT_LIMIT_ON_COMPLEXITY = 500;
+    int COMPLEXITY_LIMIT_OF_INLINED_METHOD = 1000;
 
     int getComplexity();
 

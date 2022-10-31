@@ -45,7 +45,7 @@ public interface EvaluationContext {
     Logger LOGGER = LoggerFactory.getLogger(EvaluationContext.class);
 
     default int limitOnComplexity() {
-        return 100; // can be overridden for testing
+        return Expression.SOFT_LIMIT_ON_COMPLEXITY; // can be overridden for testing
     }
 
     default int getIteration() {

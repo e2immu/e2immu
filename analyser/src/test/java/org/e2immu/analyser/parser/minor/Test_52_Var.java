@@ -83,7 +83,7 @@ public class Test_52_Var extends CommonTestRunner {
     @Test
     public void test_3_0() throws IOException {
         testClass("Var_3", 0, 0, new DebugConfiguration.Builder()
-                .build(),
+                        .build(),
                 new AnalyserConfiguration.Builder().setComputeContextPropertiesOverAllMethods(true).build());
     }
 
@@ -100,11 +100,12 @@ public class Test_52_Var extends CommonTestRunner {
         };
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("apply".equals(d.methodInfo().name) && "$1".equals(d.methodInfo().typeInfo.simpleName)) {
-                if (d.methodAnalysis().getSingleReturnValue() instanceof InlinedMethod inlinedMethod) {
-                    assertEquals("apply", inlinedMethod.methodInfo().name);
-                    assertEquals("/*inline apply*/x.repeat(i)", d.methodAnalysis().getSingleReturnValue().toString());
-                } else fail();
-
+                if (d.iteration() > 0) {
+                    if (d.methodAnalysis().getSingleReturnValue() instanceof InlinedMethod inlinedMethod) {
+                        assertEquals("apply", inlinedMethod.methodInfo().name);
+                        assertEquals("/*inline apply*/x.repeat(i)", d.methodAnalysis().getSingleReturnValue().toString());
+                    } else fail();
+                }
                 // @NotNull on parameter of apply
                 assertDv(d.p(0), 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_PARAMETER);
                 assertEquals(DV.FALSE_DV, d.methodAnalysis().getProperty(Property.MODIFIED_METHOD));

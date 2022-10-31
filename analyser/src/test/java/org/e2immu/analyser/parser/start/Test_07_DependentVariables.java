@@ -260,8 +260,7 @@ public class Test_07_DependentVariables extends CommonTestRunner {
             if ("getX".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof ReturnVariable) {
                     String expectLinked = switch (d.iteration()) {
-                        case 0 -> "index:-1,this.xs:-1,xs[index]:-1";
-                        case 1 -> "index:-1,this.xs:-1";
+                        case 0, 1 -> "index:-1,this.xs:-1,xs[index]:-1";
                         default -> "this.xs:2,xs[index]:1";
                     };
                     assertEquals(expectLinked, d.variableInfo().getLinkedVariables().toString());
@@ -272,8 +271,7 @@ public class Test_07_DependentVariables extends CommonTestRunner {
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
             if ("xs".equals(d.fieldInfo().name)) {
                 String linked = switch (d.iteration()) {
-                    case 0 -> "index:-1,scope-52:20:-1,xs:-1,xs[index]:-1";
-                    case 1 -> "index:-1,scope-52:20:-1,xs:-1";
+                    case 0, 1 -> "index:-1,scope-52:20:-1,xs:-1,xs[index]:-1";
                     default -> "xs:4";
                 };
                 assertEquals(linked, d.fieldAnalysis().getLinkedVariables().toString());

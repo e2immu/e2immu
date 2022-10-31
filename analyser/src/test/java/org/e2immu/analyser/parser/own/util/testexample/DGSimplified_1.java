@@ -182,7 +182,7 @@ public class DGSimplified_1<T> extends Freezable {
         }
     }
 
-    @Independent
+    @Independent(hc = true)
     public List<T> sorted() {
         return sorted(null, null, null);
     }
@@ -197,7 +197,7 @@ public class DGSimplified_1<T> extends Freezable {
         };
     }
 
-    @Independent
+    @Independent(hc = true)
     public List<T> sorted(Consumer<T> reportPartOfCycle,
                           Consumer<T> reportIndependent,
                           Comparator<T> backupComparator) {

@@ -309,8 +309,8 @@ public class Test_63_DGSimplified extends CommonTestRunner {
                 assertEquals(expected, ((FieldAnalysisImpl.Builder) d.fieldAnalysis()).sortedValuesString());
             }
         };
-        BreakDelayVisitor breakDelayVisitor = d -> assertEquals("----M-M-M-M--M--MF-MFT-----", d.delaySequence());
-        testClass("DGSimplified_1", 5, 1, new DebugConfiguration.Builder()
+        BreakDelayVisitor breakDelayVisitor = d -> assertEquals("----M-M-M-M--M--MF-MFT------", d.delaySequence());
+        testClass("DGSimplified_1", 4, 1, new DebugConfiguration.Builder()
              //   .addEvaluationResultVisitor(evaluationResultVisitor)
              //   .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)

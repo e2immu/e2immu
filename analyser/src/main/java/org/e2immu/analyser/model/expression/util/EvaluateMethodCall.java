@@ -239,7 +239,8 @@ public class EvaluateMethodCall {
         }
 
         Expression methodValue;
-        if (modified.valueIsFalse()) {
+        // TODO: delay on finalizer!
+        if (modified.valueIsFalse() || methodAnalysis.getProperty(Property.FINALIZER).valueIsTrue()) {
             methodValue = new MethodCall(identifier, objectIsImplicit, objectValue, methodInfo, concreteReturnType,
                     parameters);
         } else {

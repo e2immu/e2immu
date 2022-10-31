@@ -89,7 +89,8 @@ public class Test_23_TryStatement extends CommonTestRunner {
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("method".equals(d.methodInfo().name)) {
                 Expression srv = d.methodAnalysis().getSingleReturnValue();
-                assertEquals("/*inline method*/instance type String", srv.toString());
+                String expected = d.iteration() == 0 ? "<m:method>" : "/*inline method*/instance type String";
+                assertEquals(expected, srv.toString());
             }
         };
 
@@ -176,7 +177,7 @@ public class Test_23_TryStatement extends CommonTestRunner {
             if ("writeLine".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof ParameterInfo pi && "list".equals(pi.simpleName())) {
                     if ("0.0.0".equals(d.statementId())) {
-                        assertDv(d, MultiLevel.NULLABLE_DV,Property.CONTEXT_NOT_NULL);
+                        assertDv(d, MultiLevel.NULLABLE_DV, Property.CONTEXT_NOT_NULL);
                     }
                 }
             }
@@ -193,7 +194,7 @@ public class Test_23_TryStatement extends CommonTestRunner {
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("method".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof ReturnVariable) {
-                    if("1.0.0".equals(d.statementId())) {
+                    if ("1.0.0".equals(d.statementId())) {
                         assertEquals("\"Hi\"+Integer.parseInt(s)", d.currentValue().toString());
                     }
                     if ("1".equals(d.statementId())) {

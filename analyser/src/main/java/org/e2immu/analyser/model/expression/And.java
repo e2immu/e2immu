@@ -38,7 +38,6 @@ public class And extends ExpressionCanBeTooComplex {
 
     private final Primitives primitives;
     private final List<Expression> expressions;
-    public static final int COMPLEXITY = 1;
 
     public And(Primitives primitives, List<Expression> expressions) {
         this(Identifier.joined("and", expressions.stream().map(Expression::getIdentifier).toList()),
@@ -46,7 +45,7 @@ public class And extends ExpressionCanBeTooComplex {
     }
 
     private And(Identifier identifier, Primitives primitives, List<Expression> expressions) {
-        super(identifier, COMPLEXITY + expressions.stream().mapToInt(Expression::getComplexity).sum());
+        super(identifier, 1 + expressions.stream().mapToInt(Expression::getComplexity).sum());
         this.primitives = Objects.requireNonNull(primitives);
         this.expressions = Objects.requireNonNull(expressions);
     }

@@ -74,8 +74,8 @@ public class Test_Independent extends CommonTestRunner {
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("methodAnalyserStream".equals(d.methodInfo().name)) {
                 if ("AnalyserContext".equals(d.methodInfo().typeInfo.simpleName)) {
-                    assertDv(d, 1, MultiLevel.INDEPENDENT_DV, Property.INDEPENDENT);
-                    assertDv(d, 1, MultiLevel.EFFECTIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
+                    assertDv(d, MultiLevel.INDEPENDENT_DV, Property.INDEPENDENT);
+                    assertDv(d, MultiLevel.EFFECTIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
                 }
                 if ("AnalyserContextImpl".equals(d.methodInfo().typeInfo.simpleName)) {
                     assertDv(d, 2, MultiLevel.DEPENDENT_DV, Property.INDEPENDENT);
@@ -84,10 +84,10 @@ public class Test_Independent extends CommonTestRunner {
             }
             if ("parallelMethodAnalyserStream".equals(d.methodInfo().name)) {
                 if ("AnalyserContext".equals(d.methodInfo().typeInfo.simpleName)) {
-                    assertDv(d, 1, MultiLevel.INDEPENDENT_DV, Property.INDEPENDENT);
-                    assertDv(d, 1, MultiLevel.EFFECTIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
+                    assertDv(d, MultiLevel.INDEPENDENT_DV, Property.INDEPENDENT);
+                    assertDv(d, MultiLevel.EFFECTIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
                     // IMPROVE this is very debatable, should we use or discard the value??
-                    assertDv(d, 1, DV.TRUE_DV, Property.CONSTANT);
+                    assertDv(d, DV.TRUE_DV, Property.CONSTANT);
                 }
             }
             if ("getMethodInfo".equals(d.methodInfo().name) && "MethodAnalyser".equals(d.methodInfo().typeInfo.simpleName)) {

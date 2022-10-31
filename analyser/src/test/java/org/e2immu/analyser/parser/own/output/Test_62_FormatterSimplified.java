@@ -67,7 +67,7 @@ public class Test_62_FormatterSimplified extends CommonTestRunner {
                 if ("0".equals(d.statementId())) {
                     String expected = d.iteration() == 0 ? "<m:apply>" : "writer.apply(new ForwardInfo(start,9,null,false))";
                     assertEquals(expected, d.evaluationResult().getExpression().toString());
-                    assertEquals("Type java.lang.Boolean", d.evaluationResult().getExpression().returnType().toString());
+                    assertEquals("Type Boolean", d.evaluationResult().getExpression().returnType().toString());
                 }
             }
         };
@@ -139,7 +139,7 @@ public class Test_62_FormatterSimplified extends CommonTestRunner {
                         assertDv(d, 3, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_EXPRESSION);
                         if (d.iteration() == 0) {
                             if (d.currentValue() instanceof InlineConditional ic && ic.ifTrue instanceof DelayedExpression de) {
-                                assertEquals("<oos:symbol>.symbol()", de.getDoneOriginal().toString());
+                                assertEquals("symbol.symbol()", de.getDoneOriginal().toString());
                             } else fail();
                         }
                     }

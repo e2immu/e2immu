@@ -177,7 +177,7 @@ public class DGSimplified_0<T> extends Freezable {
         }
     }
 
-    @Independent
+    @Independent(hc = true)
     public List<T> sorted() {
         return sorted(null, null, null);
     }

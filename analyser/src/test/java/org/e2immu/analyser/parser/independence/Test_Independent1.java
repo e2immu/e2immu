@@ -320,8 +320,7 @@ public class Test_Independent1 extends CommonTestRunner {
             if ("get".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof ReturnVariable) {
                     String linked = switch (d.iteration()) {
-                        case 0 -> "index:-1,ones[index]:-1,this.ones:-1";
-                        case 1 -> "index:-1,this.ones:-1";
+                        case 0, 1 -> "index:-1,ones[index]:-1,this.ones:-1";
                         default -> "ones[index]:1,this.ones:3";
                     };
                     assertEquals(linked, d.variableInfo().getLinkedVariables().toString());

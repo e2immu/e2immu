@@ -275,10 +275,10 @@ public class Test_04_NotNull_AAPI extends CommonTestRunner {
     public void test_6() throws IOException {
         EvaluationResultVisitor evaluationResultVisitor = d -> {
             if ("method3".equals(d.methodInfo().name)) {
-                if("2".equals(d.statementId())) {
-                    String expected = d.iteration()==0
-                            ?"<null-check>?null:\"Not null: \"+(null==in?null:in.toUpperCase())+\" == \"+(null==in?null:in.toUpperCase())"
-                            :"null==in?null:\"Not null: \"+in.toUpperCase()+\" == \"+in.toUpperCase()";
+                if ("2".equals(d.statementId())) {
+                    String expected = d.iteration() == 0
+                            ? "<null-check>?null:\"Not null: \"+<m:compute>+\" == \"+<m:compute>"
+                            : "null==in?null:\"Not null: \"+in.toUpperCase()+\" == \"+in.toUpperCase()";
                     assertEquals(expected, d.evaluationResult().getExpression().toString());
                 }
             }
@@ -288,7 +288,7 @@ public class Test_04_NotNull_AAPI extends CommonTestRunner {
                 if (d.variable() instanceof ReturnVariable) {
                     if ("1".equals(d.statementId())) {
                         String expected = d.iteration() == 0
-                                ? "<simplification>?null:\"Not null: \"+<m:compute>+\" == \"+<m:compute>"
+                                ? "<null-check>?null:\"Not null: \"+<m:compute>+\" == \"+<m:compute>"
                                 : "null==in?null:\"Not null: \"+in.toUpperCase()+\" == \"+in.toUpperCase()";
                         assertEquals(expected, d.currentValue().toString());
                     }
@@ -298,7 +298,7 @@ public class Test_04_NotNull_AAPI extends CommonTestRunner {
         StatementAnalyserVisitor statementAnalyserVisitor = d -> {
             if ("method2".equals(d.methodInfo().name)) {
                 if ("1".equals(d.statementId())) {
-                    String state = d.iteration() == 0 ? "!<simplification>" : "null!=in";
+                    String state = d.iteration() == 0 ? "!<null-check>" : "null!=in";
                     assertEquals(state, d.statementAnalysis().stateData().getAbsoluteState().toString());
                 }
             }
@@ -306,20 +306,20 @@ public class Test_04_NotNull_AAPI extends CommonTestRunner {
 
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("compute".equals(d.methodInfo().name)) {
-                String expected = "/*inline compute*/null==in?null:in.toUpperCase()";
+                String expected = d.iteration() == 0 ? "<m:compute>" : "/*inline compute*/null==in?null:in.toUpperCase()";
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
             }
             if ("method".equals(d.methodInfo().name)) {
-                String expected = d.iteration() == 0 ? "<m:method>" : "/*inline method*/null==s";
+                String expected = d.iteration() < 2 ? "<m:method>" : "/*inline method*/null==s";
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
             }
             if ("method2".equals(d.methodInfo().name)) {
-                String expected = d.iteration() == 0 ? "<m:method2>"
+                String expected = d.iteration() < 2 ? "<m:method2>"
                         : "/*inline method2*/null==in?null:\"Not null: \"+in.toUpperCase()+\" == \"+in.toUpperCase()";
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
             }
             if ("method3".equals(d.methodInfo().name)) {
-                String expected = d.iteration() == 0 ? "<m:method3>"
+                String expected = d.iteration() < 2 ? "<m:method3>"
                         : "/*inline method3*/null==in?null:\"Not null: \"+in.toUpperCase()+\" == \"+in.toUpperCase()";
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
             }
