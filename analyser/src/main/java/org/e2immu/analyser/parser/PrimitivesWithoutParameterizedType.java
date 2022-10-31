@@ -137,4 +137,12 @@ public interface PrimitivesWithoutParameterizedType {
     Map<String, TypeInfo> getTypeByName();
 
     Map<String, TypeInfo> getPrimitiveByName();
+
+    default boolean isEqualsOperator(MethodInfo operator) {
+        return operator == equalsOperatorInt() || operator == equalsOperatorObject();
+    }
+
+    default boolean isNotEqualsOperator(MethodInfo operator) {
+        return operator == notEqualsOperatorInt() || operator == notEqualsOperatorObject();
+    }
 }

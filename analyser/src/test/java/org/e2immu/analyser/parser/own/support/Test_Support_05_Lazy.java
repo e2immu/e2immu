@@ -79,7 +79,7 @@ public class Test_Support_05_Lazy extends CommonTestRunner {
                     String value = switch (d.iteration()) {
                         case 0 -> "<f:t>";
                         case 1, 2, 3 -> "<null-check>?<f*:t>:<m:requireNonNull>";
-                        case 4, 5, 6, 7 -> "<null-check>?<m:requireNonNull>:<f*:t>";
+                        case 4, 5, 6, 7 -> "<null-check>&&null==<vp:t:break_init_delay:this.t@Method_get_0.0.0-C;constructor-to-instance@Method_get_1-E;de:this.t@Method_get_2-E;ext_not_null@Field_supplier;initial:this.supplier@Method_get_1-C;initial:this.t@Method_get_0.0.0-C;values:this.t@Field_t>?<m:requireNonNull>:<f*:t>";
                         case 8, 9 -> "<wrapped:t>";
                         default -> "supplier.get()/*@NotNull*/";
                     };

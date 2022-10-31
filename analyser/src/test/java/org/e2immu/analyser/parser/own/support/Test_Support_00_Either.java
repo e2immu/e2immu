@@ -51,7 +51,7 @@ public class Test_Support_00_Either extends CommonTestRunner {
         if ("getLeftOrElse".equals(d.methodInfo().name)) {
             if (d.variable() instanceof ParameterInfo orElse && "orElse".equals(orElse.name)) {
                 if ("0".equals(d.statementId())) {
-           // FIXME what do we want here?         assertEquals(MultiLevel.NOT_CONTAINER_DV, d.getProperty(Property.CONTAINER));
+                    // FIXME what do we want here?         assertEquals(MultiLevel.NOT_CONTAINER_DV, d.getProperty(Property.CONTAINER));
                 }
                 if ("1".equals(d.statementId())) {
                     String expectValue = d.iteration() == 0 ? "<p:orElse>" : "nullable instance type A/*@Identity*/";
@@ -60,8 +60,9 @@ public class Test_Support_00_Either extends CommonTestRunner {
             }
             if (d.variable() instanceof ReturnVariable) {
                 if ("1".equals(d.statementId())) {
-                    String expectValue = d.iteration() == 0 ? "<null-check>?<f:left>:orElse/*@NotNull*/" :
-                            "null==left?orElse/*@NotNull*/:left";
+                    String expectValue = d.iteration() == 0
+                            ? "<null-check>&&null!=local?<f:left>:orElse/*@NotNull*/"
+                            : "null!=local&&null!=left?left:orElse/*@NotNull*/";
                     assertEquals(expectValue, d.currentValue().toString());
                     assertDv(d, 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_EXPRESSION);
                 }
@@ -116,8 +117,9 @@ public class Test_Support_00_Either extends CommonTestRunner {
             Expression retVal = tv.getValue();
             assertTrue(retVal instanceof InlineConditional);
             InlineConditional conditionalValue = (InlineConditional) retVal;
-            String expectValue = d.iteration() == 0 ? "<null-check>?<f:left>:orElse/*@NotNull*/" :
-                    "null==left?orElse/*@NotNull*/:left";
+            String expectValue = d.iteration() == 0
+                    ? "<null-check>&&null!=local?<f:left>:orElse/*@NotNull*/"
+                    : "null!=local&&null!=left?left:orElse/*@NotNull*/";
             assertEquals(expectValue, conditionalValue.toString());
             assertDv(d, 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_EXPRESSION);
         }

@@ -276,8 +276,10 @@ public interface Expression extends Element, Comparable<Expression> {
      */
     default Expression keepLiteralNotNull(EvaluationResult context, boolean doNotNegate) {
         Primitives primitives = context.getPrimitives();
-        if (this instanceof BinaryOperator bo && primitives.equalsOperatorObject() == bo.operator) {
-            if (bo.lhs instanceof NullConstant) {
+        if (this instanceof BinaryOperator bo && primitives.isEqualsOperator(bo.operator)) {
+            // check needed for translations in ExplicitConstructorInvocation, see test ECI_7, _7_1
+            if (bo.lhs instanceof NullConstant && bo.rhs instanceof NullConstant) return null;
+            if (bo.lhs instanceof NullConstant && !bo.rhs.returnType().isPrimitiveExcludingVoid()) {
                 // null == XXX
                 return doNotNegate ? this : Negation.negate(context, this);
             }
@@ -287,7 +289,7 @@ public interface Expression extends Element, Comparable<Expression> {
                 return doNotNegate ? eq : Negation.negate(context, eq);
             }
         }
-        if (this instanceof BinaryOperator bo && primitives.notEqualsOperatorObject() == bo.operator) {
+        if (this instanceof BinaryOperator bo && primitives.isNotEqualsOperator(bo.operator)) {
             if (bo.lhs instanceof NullConstant) {
                 // null != XXX
                 Expression eq = new Equals(bo.identifier, primitives, bo.rhs, bo.lhs);
@@ -300,7 +302,7 @@ public interface Expression extends Element, Comparable<Expression> {
             }
         }
         if (this instanceof Negation negation && negation.expression instanceof BinaryOperator bo
-                && primitives.equalsOperatorObject() == bo.operator) {
+                && primitives.isEqualsOperator(bo.operator)) {
             if (bo.lhs instanceof NullConstant) {
                 // !(null == XXX)
                 return doNotNegate ? this : negation.expression;

@@ -63,7 +63,7 @@ public class Test_12_IfStatement extends CommonTestRunner {
                 if (d.variable() instanceof ReturnVariable) {
                     if ("1".equals(d.statementId())) {
                         String expected = d.iteration() == 0
-                                ? "null==(null==nullable instance type String/*@Identity*/?nullable instance type String/*@Identity*/:<p:a>)?\"b\":null==nullable instance type String/*@Identity*/?nullable instance type String/*@Identity*/:<p:a>"
+                                ? "null==a&&null==(null==nullable instance type String/*@Identity*/?nullable instance type String/*@Identity*/:<p:a>)?\"b\":null==nullable instance type String/*@Identity*/?nullable instance type String/*@Identity*/:<p:a>"
                                 : "null==a?\"b\":a";
                         assertEquals(expected, d.currentValue().toString());
                     }
@@ -132,7 +132,7 @@ public class Test_12_IfStatement extends CommonTestRunner {
                 assertDv(d, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
             }
             if ("get1".equals(d.methodInfo().name) && d.variable() instanceof ReturnVariable) {
-                String expected = d.iteration() == 0 ? "<null-check>?defaultValue1:<m:get>"
+                String expected = d.iteration() == 0 ? "<null-check>&&null==map.get(label1)?defaultValue1:<m:get>"
                         : "null==map.get(label1)?defaultValue1:map.get(label1)";
                 assertEquals(expected, d.currentValue().toString());
                 assertDv(d, 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_EXPRESSION);
@@ -149,7 +149,7 @@ public class Test_12_IfStatement extends CommonTestRunner {
                         d.methodAnalysis().getSingleReturnValue().toString());
             }
             if ("get3".equals(d.methodInfo().name) && d.iteration() >= 2) {
-                assertEquals("/*inline get3*/null==map.get(label3)?defaultValue3:map.get(label3)",
+                assertEquals("/*inline get3*/null!=i3&&null!=map.get(label3)?map.get(label3):defaultValue3",
                         d.methodAnalysis().getSingleReturnValue().toString());
             }
         };
@@ -220,7 +220,7 @@ public class Test_12_IfStatement extends CommonTestRunner {
                         d.methodAnalysis().getSingleReturnValue().toString());
             }
             if ("get3".equals(d.methodInfo().name) && d.iteration() >= 2) {
-                assertEquals("/*inline get3*/null==map.get(label3)?defaultValue3:map.get(label3)",
+                assertEquals("/*inline get3*/null!=i3&&null!=map.get(label3)?map.get(label3):defaultValue3",
                         d.methodAnalysis().getSingleReturnValue().toString());
             }
         };

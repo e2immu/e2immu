@@ -111,7 +111,7 @@ public class Test_04_NotNull_AAPI extends CommonTestRunner {
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("goTo".equals(d.methodInfo().name)) {
                 String expected = d.iteration() < 2 ? "<m:goTo>"
-                        : "/*inline goTo*/-1-(instance type int)+upToPosition>=0?null==(null==node$1.map$0?node$1:node$1.map$0.get(nullable instance type String)).map$1.get(nullable instance type String)||null==(null==node$1.map$0?node$1:node$1.map$0.get(nullable instance type String)).map$1?null:null==node$1.map$0?node$1:node$1.map$0.get(nullable instance type String):root";
+                        : "/*inline goTo*/-1-(instance type int)+upToPosition>=0?(-1-(instance type int)+upToPosition>=0||null==(node$1.map$0.get(nullable instance type String)).map$1.get(nullable instance type String))&&(null==(node$1.map$0.get(nullable instance type String)).map$1.get(nullable instance type String)||null==node$1.map$0)&&(null==(node$1.map$0.get(nullable instance type String)).map$1.get(nullable instance type String)||null==(null==node$1.map$0?node$1:node$1.map$0.get(nullable instance type String)).map$1)?null:null==node$1.map$0?node$1:node$1.map$0.get(nullable instance type String):root";
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
                 assertDv(d, 2, MultiLevel.NULLABLE_DV, Property.NOT_NULL_EXPRESSION);
             }
@@ -214,7 +214,7 @@ public class Test_04_NotNull_AAPI extends CommonTestRunner {
         EvaluationResultVisitor evaluationResultVisitor = d -> {
             if ("get".equals(d.methodInfo().name)) {
                 if ("1".equals(d.statementId())) {
-                    String expected = d.iteration() <= 1 ? "<null-check>?null:<f:node.data>" : "null";
+                    String expected = d.iteration() <= 1 ? "<null-check>&&null==node?null:<f:node.data>" : "null";
                     assertEquals(expected, d.evaluationResult().value().toString());
 
                     // important: whatever happens, 'node' cannot have CNN not null!
@@ -283,7 +283,7 @@ public class Test_04_NotNull_AAPI extends CommonTestRunner {
 
     @Test
     public void test_4_1() throws IOException {
-        testClass("NotNull_4_1", 3, 1, new DebugConfiguration.Builder()
+        testClass("NotNull_4_1", 2, 1, new DebugConfiguration.Builder()
                 .build(), new AnalyserConfiguration.Builder().setComputeContextPropertiesOverAllMethods(true).build());
     }
 

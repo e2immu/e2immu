@@ -334,7 +334,7 @@ public class BinaryOperator extends BaseExpression implements Expression {
         }
 
         Expression state = and ? l.value() : Negation.negate(context, l.value());
-        if (!lhs.equals(l.value())) {
+        if (!lhs.equals(l.value())&& !forwardEvaluationInfo.isInCompanionExpression()) {
             Expression literalNotNull = lhs.keepLiteralNotNull(context, and);
             if (literalNotNull != null) {
                 /*

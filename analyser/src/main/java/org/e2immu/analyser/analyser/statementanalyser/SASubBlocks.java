@@ -728,9 +728,17 @@ record SASubBlocks(StatementAnalysis statementAnalysis, StatementAnalyser statem
         }
         // there are loop statements which are not forEach, and do not have a range, but do have a condition!
         if (structure.expressionIsCondition()) {
+            Expression condition = value;
+            // this block is needed for InstanceOf_11, the literal null check
+            if (!condition.equals(structure.expression())) {
+                Expression literal = structure.expression().keepLiteralNotNull(context, true);
+                if (literal != null) {
+                //    condition = And.and(context, condition, literal);
+                }
+            }
             Set<Variable> conditionVariables = Stream.concat(structure.expression().variables(true).stream(),
-                    value.variables(true).stream()).collect(Collectors.toUnmodifiableSet());
-            return localConditionManager.newAtStartOfNewBlockDoNotChangePrecondition(primitives, value, conditionVariables);
+                    condition.variables(true).stream()).collect(Collectors.toUnmodifiableSet());
+            return localConditionManager.newAtStartOfNewBlockDoNotChangePrecondition(primitives, condition, conditionVariables);
         }
         return localConditionManager;
     }
@@ -771,6 +779,7 @@ record SASubBlocks(StatementAnalysis statementAnalysis, StatementAnalyser statem
                 .filter(Objects::nonNull)
                 .map(c -> Negation.negate(context, c))
                 .toArray(Expression[]::new);
+        // FIXME add keepLiteral!!
         return And.and(context, negated);
     }
 

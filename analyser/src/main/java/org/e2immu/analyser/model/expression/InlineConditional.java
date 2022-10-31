@@ -224,6 +224,18 @@ public class InlineConditional extends BaseExpression implements Expression {
         // UNLESS the result is of boolean type. There is sufficient logic in EvaluateInlineConditional to deal
         // with the boolean case.
         Expression condition = conditionResult.value();
+        Expression notCondition = Negation.negate(context, condition);
+        if (!condition.equals(this.condition) && !forwardEvaluationInfo.isInCompanionExpression()) {
+            Expression literal = this.condition.keepLiteralNotNull(context, true);
+            if (literal != null) {
+                condition = And.and(context, condition, literal);
+                Expression notLiteral = this.condition.keepLiteralNotNull(context, false);
+                notCondition = And.and(context, notCondition, notLiteral);
+            }
+        }
+        if(condition instanceof BooleanConstant && forwardEvaluationInfo.isComplainInlineConditional()) {
+            builder.raiseError(this.condition.getIdentifier(), Message.Label.INLINE_CONDITION_EVALUATES_TO_CONSTANT);
+        }
         Set<Variable> conditionVariables = Stream.concat(this.condition.variables(true).stream(),
                 condition.variables(true).stream()).collect(Collectors.toUnmodifiableSet());
         if (condition.isInstanceOf(NullConstant.class) && forwardEvaluationInfo.isComplainInlineConditional()) {
@@ -237,8 +249,7 @@ public class InlineConditional extends BaseExpression implements Expression {
         EvaluationResult ifTrueResult = ifTrue.evaluate(copyForThen, forwardEvaluationInfo);
         builder.compose(ifTrueResult);
 
-        EvaluationResult copyForElse = resultIsBoolean ? context :
-                context.child(Negation.negate(context, condition), conditionVariables);
+        EvaluationResult copyForElse = resultIsBoolean ? context : context.child(notCondition, conditionVariables);
         EvaluationResult ifFalseResult = ifFalse.evaluate(copyForElse, forwardEvaluationInfo);
         builder.compose(ifFalseResult);
 
