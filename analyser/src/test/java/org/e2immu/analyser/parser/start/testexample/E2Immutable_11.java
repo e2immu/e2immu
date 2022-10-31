@@ -14,10 +14,7 @@
 
 package org.e2immu.analyser.parser.start.testexample;
 
-import org.e2immu.annotation.ImmutableContainer;
-import org.e2immu.annotation.NotModified;
-import org.e2immu.annotation.NotNull;
-import org.e2immu.annotation.Nullable;
+import org.e2immu.annotation.*;
 
 import java.util.Map;
 import java.util.TreeMap;
@@ -53,7 +50,7 @@ public class E2Immutable_11 {
 
     @NotNull
     @NotModified
-    @ImmutableContainer
+    @Independent
     // The firstEntry result is @ImmutableContainer, no hidden content
     public Stream<Map.Entry<String, Integer>> stream() {
         return Stream.of(map.firstEntry());

@@ -109,7 +109,7 @@ public class Test_66_VariableScope extends CommonTestRunner {
                         // there should be no j here!
                         String expect = d.iteration() <= 1
                                 ? "<loopIsNotEmptyCondition>?<oos:j>+<m:nextInt>:0"
-                                : "instance type int<=9&&instance type int>=0?instance type int+(instance type int<=9&&instance type int>=0?instance type int+instance type int:0):0";
+                                : "instance type int<=9&&instance type int>=0?instance type int+instance type int:0";
                         assertEquals(expect, d.currentValue().toString());
                     }
                 }

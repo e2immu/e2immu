@@ -161,7 +161,9 @@ public class Test_E2ImmutableComposition extends CommonTestRunner {
                     String expected = d.iteration() < 4 ? "<array-access:HasSize>"
                             : "nullable instance type HasSize/*{L one:3}*/";
                     assertEquals(expected, d.currentValue().toString());
-                    String linked = d.iteration() < 4 ? "av-480:20:-1,av-480:20[0]:-1,this.one:-1,this:-1" : "this.one:3";
+                    String linked = d.iteration() < 4
+                            ? "av-480:20:-1,av-480:20[0]:-1,this.one:-1,this:-1"
+                            : "av-480:20:3,av-480:20[0]:1,this.one:3";
                     assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
                 }
                 if (d.variableName().startsWith("av-")) {

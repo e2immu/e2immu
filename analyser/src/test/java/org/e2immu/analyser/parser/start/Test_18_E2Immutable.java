@@ -556,7 +556,7 @@ public class Test_18_E2Immutable extends CommonTestRunner {
                 assertDv(d, 1, MultiLevel.EFFECTIVELY_IMMUTABLE_DV, IMMUTABLE);
             }
             if ("stream".equals(d.methodInfo().name)) {
-                assertDv(d, 1, MultiLevel.EFFECTIVELY_IMMUTABLE_DV, IMMUTABLE);
+                assertDv(d, 1, MultiLevel.MUTABLE_DV, IMMUTABLE);
             }
         };
 
@@ -590,7 +590,7 @@ public class Test_18_E2Immutable extends CommonTestRunner {
 
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("stream".equals(d.methodInfo().name)) {
-                assertDv(d, 1, MultiLevel.EFFECTIVELY_IMMUTABLE_HC_DV, IMMUTABLE);
+                assertDv(d, 1, MultiLevel.MUTABLE_DV, IMMUTABLE);
             }
         };
 

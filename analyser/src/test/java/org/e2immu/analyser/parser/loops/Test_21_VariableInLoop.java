@@ -96,7 +96,7 @@ public class Test_21_VariableInLoop extends CommonTestRunner {
                         String expected = switch (d.iteration()) {
                             case 0 -> "<null-check>&&(<null-check>||!<m:isPresent>)?<v:sa>:null";
                             case 1 -> "(<null-check>||<m:isPresent>)&&(<null-check>||!<null-check>)?null:<vl:sa>";
-                            default -> "null==sa$1?firstStatementAnalyser:(sa$1.navigationData()).next.isPresent()&&null!=(sa$1.navigationData()).next.get().orElse(null)?(sa$1.navigationData()).next.get().get():sa$1";
+                            default -> "(((null==sa$1?firstStatementAnalyser:(sa$1.navigationData()).next.isPresent()&&null!=(sa$1.navigationData()).next.get().orElse(null)?(sa$1.navigationData()).next.get().get():sa$1).navigationData()).next.isPresent()||null==(null==sa$1?firstStatementAnalyser:(sa$1.navigationData()).next.isPresent()&&null!=(sa$1.navigationData()).next.get().orElse(null)?(sa$1.navigationData()).next.get().get():sa$1))&&(null!=((null==sa$1?firstStatementAnalyser:(sa$1.navigationData()).next.isPresent()&&null!=(sa$1.navigationData()).next.get().orElse(null)?(sa$1.navigationData()).next.get().get():sa$1).navigationData()).next.get().orElse(null)||null==(null==sa$1?firstStatementAnalyser:(sa$1.navigationData()).next.isPresent()&&null!=(sa$1.navigationData()).next.get().orElse(null)?(sa$1.navigationData()).next.get().get():sa$1))?null:null==sa$1?firstStatementAnalyser:(sa$1.navigationData()).next.isPresent()&&null!=(sa$1.navigationData()).next.get().orElse(null)?(sa$1.navigationData()).next.get().get():sa$1";
                         };
                         assertEquals(expected, d.currentValue().toString());
                     }

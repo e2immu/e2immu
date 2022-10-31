@@ -335,7 +335,7 @@ public class Test_63_TrieSimplified extends CommonTestRunner {
                 }
                 if ("2".equals(d.statementId())) {
                     String expected = switch (d.iteration()) {
-                        case 0 -> "<loopIsNotEmptyCondition>&&(<null-check>||<null-check>)?<vp::container@Class_TrieNode>:<loopIsNotEmptyCondition>?<m:get>:<f:root>";
+                        case 0 -> "<loopIsNotEmptyCondition>?<null-check>||<null-check>?<vp::container@Class_TrieNode>:<m:get>:<f:root>";
                         case 1 -> "-1-(instance type int)+upToPosition>=0?null:<f:root>";
                         default -> "-1-(instance type int)+upToPosition>=0?null:root";
                     };
@@ -468,7 +468,7 @@ public class Test_63_TrieSimplified extends CommonTestRunner {
                     }
                     if ("2".equals(d.statementId())) {
                         String expectValue = switch (d.iteration()) {
-                            case 0 -> "<loopIsNotEmptyCondition>&&(<null-check>||<null-check>)?<vp::container@Class_TrieNode>:<loopIsNotEmptyCondition>?<m:get>:<f:root>";
+                            case 0 -> "<loopIsNotEmptyCondition>?<null-check>||<null-check>?<vp::container@Class_TrieNode>:<m:get>:<f:root>";
                             case 1 -> "-1-(instance type int)+upToPosition>=0?null:<f:root>";
                             default -> "-1-(instance type int)+upToPosition>=0?null:root";
                         };
@@ -497,7 +497,7 @@ public class Test_63_TrieSimplified extends CommonTestRunner {
             int n = d.methodInfo().methodInspection.get().getParameters().size();
             if ("goTo".equals(d.methodInfo().name) && n == 1) {
                 assertDv(d, 2, DV.FALSE_DV, Property.MODIFIED_METHOD);
-                String expected = d.iteration() <= 1 ? "<m:goTo>"
+                String expected = d.iteration() < 3 ? "<m:goTo>"
                         : "/*inline goTo*/-1-(instance type int)+strings.length>=0?null:`root`";
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
             }

@@ -54,7 +54,7 @@ public class Independent1_9_1<T> {
     }
 
 
-    @ImmutableContainer(hc = true)
+    @ImmutableContainer(absent = true)
     @Independent(hc = true)
     public Stream<T> stream() {
         return map.keySet().stream();

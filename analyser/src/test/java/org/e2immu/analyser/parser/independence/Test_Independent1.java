@@ -526,11 +526,11 @@ public class Test_Independent1 extends CommonTestRunner {
         };
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("of".equals(d.methodInfo().name)) {
-                String expected = d.iteration() < 11 ? "<m:of>"
+                String expected = d.iteration() < 12 ? "<m:of>"
                         : "/*inline of*/null==maps||maps.length<=0?new Independent1_9_1<>():instance type Independent1_9_1<T>";
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
                 assertDv(d, MultiLevel.INDEPENDENT_HC_DV, Property.INDEPENDENT);
-                assertDv(d, 11, MultiLevel.EFFECTIVELY_IMMUTABLE_HC_DV, Property.IMMUTABLE);
+                assertDv(d, 12, MultiLevel.EFFECTIVELY_IMMUTABLE_HC_DV, Property.IMMUTABLE);
                 assertDv(d.p(0), 12, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                 assertDv(d.p(0), 12, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
             }
@@ -538,7 +538,7 @@ public class Test_Independent1 extends CommonTestRunner {
                 String expected = d.iteration() < 10 ? "<m:stream>" : "/*inline stream*/map.keySet().stream()";
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
                 assertDv(d, 10, MultiLevel.INDEPENDENT_HC_DV, Property.INDEPENDENT);
-                assertDv(d, 10, MultiLevel.EFFECTIVELY_IMMUTABLE_HC_DV, Property.IMMUTABLE);
+                assertDv(d, 10, MultiLevel.MUTABLE_DV, Property.IMMUTABLE);
             }
             if ("keys".equals(d.methodInfo().name)) {
                 String expected = d.iteration() < 10 ? "<m:keys>" : "/*inline keys*/`map`.keySet().stream().toList()";

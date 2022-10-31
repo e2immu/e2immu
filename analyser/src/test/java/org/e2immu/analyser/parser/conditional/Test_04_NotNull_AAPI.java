@@ -40,7 +40,7 @@ public class Test_04_NotNull_AAPI extends CommonTestRunner {
                 if ("node".equals(d.variableName())) {
                     if ("0".equals(d.statementId())) {
                         String expected = d.iteration() < 2 ? "<m:goTo>"
-                                : "-1-(instance type int)+prefix.length>=0&&(null==``node`.map`.get(nullable instance type String)||null==``node`.map`)?null:-1-(instance type int)+prefix.length>=0?``node`.map`.get(nullable instance type String):`root`";
+                                : "-1-(instance type int)+prefix.length>=0?null==``node`.map`.get(nullable instance type String)||null==``node`.map`?null:``node`.map`.get(nullable instance type String):`root`";
                         assertEquals(expected, d.currentValue().toString());
                         assertDv(d, 2, MultiLevel.NULLABLE_DV, Property.NOT_NULL_EXPRESSION);
                     }
@@ -111,7 +111,7 @@ public class Test_04_NotNull_AAPI extends CommonTestRunner {
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("goTo".equals(d.methodInfo().name)) {
                 String expected = d.iteration() < 2 ? "<m:goTo>"
-                        : "/*inline goTo*/-1-(instance type int)+upToPosition>=0&&(null==(null==node$1.map$0?node$1:node$1.map$0.get(nullable instance type String)).map$1.get(nullable instance type String)||null==(null==node$1.map$0?node$1:node$1.map$0.get(nullable instance type String)).map$1)?null:-1-(instance type int)+upToPosition>=0?null==node$1.map$0?node$1:node$1.map$0.get(nullable instance type String):root";
+                        : "/*inline goTo*/-1-(instance type int)+upToPosition>=0?null==(null==node$1.map$0?node$1:node$1.map$0.get(nullable instance type String)).map$1.get(nullable instance type String)||null==(null==node$1.map$0?node$1:node$1.map$0.get(nullable instance type String)).map$1?null:null==node$1.map$0?node$1:node$1.map$0.get(nullable instance type String):root";
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
                 assertDv(d, 2, MultiLevel.NULLABLE_DV, Property.NOT_NULL_EXPRESSION);
             }

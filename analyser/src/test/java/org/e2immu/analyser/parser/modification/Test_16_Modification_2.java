@@ -39,7 +39,7 @@ public class Test_16_Modification_2 extends CommonTestRunner {
     @Test
     public void test2() throws IOException {
         final String GET_FIRST_VALUE = """
-                set2ter.isEmpty()?"":(instance type Optional<String>).orElseThrow()\
+                set2ter.isEmpty()?"":set2ter.stream().findAny().orElseThrow()\
                 """;
         final String GET_FIRST_VALUE_DELAYED = "<m:isEmpty>?\"\":<m:orElseThrow>";
         EvaluationResultVisitor evaluationResultVisitor = d -> {
@@ -71,7 +71,7 @@ public class Test_16_Modification_2 extends CommonTestRunner {
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("getFirst".equals(d.methodInfo().name)) {
                 String expected = d.iteration() == 0 ? "<m:getFirst>" : """
-                        /*inline getFirst*/set2ter.isEmpty()?"":(instance type Optional<String>).orElseThrow()\
+                        /*inline getFirst*/set2ter.isEmpty()?"":set2ter.stream().findAny().orElseThrow()\
                         """;
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
                 if (d.iteration() > 0) {
