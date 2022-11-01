@@ -345,13 +345,14 @@ public final class DelayedExpression extends BaseExpression implements Expressio
         return causesOfDelay;
     }
 
-    // See Loops_19: during merging, local loop variables are replaced. The variables in the DelayedExpression.variables
-    // list need to be replaced as well.
+    /*
+     See Loops_19: during merging, local loop variables are replaced. The variables in the DelayedExpression.variables
+     list need to be replaced as well. We also need these replacements in merging (See e.g. FormatterSimplified_2, where
+     a pattern variable has to be replaced by an out of scope delayed variable).
+     */
     @Override
     public Expression translate(InspectionProvider inspectionProvider, TranslationMap translationMap) {
-        Expression translated = translationMap.translateToDelayedExpression()
-                ? original
-                : original.translate(inspectionProvider, translationMap);
+        Expression translated = original.translate(inspectionProvider, translationMap);
         ParameterizedType translatedType = translationMap.translateType(parameterizedType);
         if (translated == original && translatedType == parameterizedType) return this;
         return new DelayedExpression(identifier, msg, translatedType, translated, causesOfDelay);

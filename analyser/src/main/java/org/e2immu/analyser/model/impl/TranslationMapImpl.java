@@ -69,7 +69,6 @@ public class TranslationMapImpl implements TranslationMap {
     public final boolean expandDelayedWrappedExpressions;
     public final boolean recurseIntoScopeVariables;
     public final boolean yieldIntoReturn;
-    public final boolean translateToDelays;
 
     private TranslationMapImpl(Map<? extends Statement, List<Statement>> statements,
                                Map<? extends Expression, ? extends Expression> expressions,
@@ -93,8 +92,6 @@ public class TranslationMapImpl implements TranslationMap {
                         e -> ((LocalVariableReference) e.getValue()).variable));
         this.expandDelayedWrappedExpressions = expandDelayedWrappedExpressions;
         this.recurseIntoScopeVariables = recurseIntoScopeVariables;
-        translateToDelays = Stream.concat(expressions.values().stream(), variableExpressions.values().stream())
-                .anyMatch(Expression::isDelayed);
     }
 
     @Override
@@ -107,11 +104,6 @@ public class TranslationMapImpl implements TranslationMap {
         return "TM{" + variables.size() + "," + methods.size() + "," + expressions.size() + "," + statements.size()
                 + "," + types.size() + "," + localVariables.size() + "," + variableExpressions.size() +
                 (expandDelayedWrappedExpressions ? ",expand" : "") + "}";
-    }
-
-    @Override
-    public boolean translateToDelayedExpression() {
-        return translateToDelays;
     }
 
     @Override

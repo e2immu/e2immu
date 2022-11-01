@@ -736,7 +736,7 @@ public class Test_34_ExplicitConstructorInvocation extends CommonTestRunner {
                         case 0 ->
                                 "identifier:-1,primitives:-1,target:-1,this.assignmentOperator:-1,this.binaryOperator:-1,this.complainAboutAssignmentOutsideType:-1,this.hackForUpdatersInForLoop:-1,this.identifier:-1,this.prefixPrimitiveOperator:-1,this.primitives:-1,this.target:-1,this.variableTarget:-1,this:-1,value:-1";
                         case 1 ->
-                                "identifier:-1,primitives:-1,target:-1,this.identifier:-1,this.primitives:-1,this.target:-1,value:-1";
+                                "identifier:-1,primitives:-1,target:-1,this.identifier:-1,this.primitives:-1,this.target:-1,this.variableTarget:-1,value:-1";
                         default -> "value:1";
                     };
                     assertEquals(linked, d.variableInfo().getLinkedVariables().toString());

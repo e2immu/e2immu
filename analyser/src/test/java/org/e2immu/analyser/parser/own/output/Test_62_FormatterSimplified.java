@@ -29,12 +29,17 @@ import org.e2immu.analyser.model.expression.InlineConditional;
 import org.e2immu.analyser.model.expression.VariableExpression;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.ReturnVariable;
+import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.parser.CommonTestRunner;
 import org.e2immu.analyser.visitor.*;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
+import java.util.Comparator;
+import java.util.List;
+import java.util.Set;
 import java.util.Stack;
+import java.util.stream.Collectors;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -133,13 +138,15 @@ public class Test_62_FormatterSimplified extends CommonTestRunner {
                         String expected = switch (d.iteration()) {
                             case 0 -> "<instanceOf:Symbol>?<m:symbol>:<instanceOf:Guide>?\"\":<m:write>";
                             case 1, 2 -> "<c:boolean>?<m:symbol>:<c:boolean>?\"\":\"abc\"";
-                            default -> "outputElement instanceof Symbol symbol?`list.get(pos$8)/*(Symbol)*/.symbol`:outputElement instanceof Guide?\"\":\"abc\"";
+                            default ->
+                                    "outputElement instanceof Symbol symbol?`list.get(pos$8)/*(Symbol)*/.symbol`:outputElement instanceof Guide?\"\":\"abc\"";
                         };
                         assertEquals(expected, d.currentValue().toString());
                         assertDv(d, 3, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_EXPRESSION);
                         if (d.iteration() == 0) {
                             if (d.currentValue() instanceof InlineConditional ic && ic.ifTrue instanceof DelayedExpression de) {
-                                assertEquals("symbol.symbol()", de.getDoneOriginal().toString());
+                                String symbol = d.iteration() == 0 ? "<oos:symbol>.symbol()" : "symbol.symbol()";
+                                assertEquals(symbol, de.getDoneOriginal().toString());
                             } else fail();
                         }
                     }
@@ -176,10 +183,14 @@ public class Test_62_FormatterSimplified extends CommonTestRunner {
                 if (d.variable() instanceof ReturnVariable) {
                     if ("9".equals(d.statementId())) {
                         String expected = switch (d.iteration()) {
-                            case 0 -> "!<instanceOf:Space>&&(<instanceOf:Guide>?<m:apply>&&-1-<v:chars>+(!<instanceOf:Space>&&-1+<v:end>>=<v:pos>&&<f:NEWLINE>!=<m:get>&&(<instanceOf:Guide>||<m:length>>=1)?<p:maxChars>:instance type int)>=0:<m:apply>&&<m:length>>=1&&(!<v:allowBreak>||!<v:wroteOnce>||-<v:chars>+<p:maxChars>-<m:length>>=(<v:wroteOnce>&&<m:apply>&&!<instanceOf:Guide>&&!<instanceOf:Space>&&<m:length>>=1&&-1+<v:end>>=<v:pos>&&<v:lastOneWasSpace>!=<f:NONE>&&<v:lastOneWasSpace>!=<f:RELAXED_NONE>&&<f:NEWLINE>!=<m:get>?1:0)))&&-1+<v:end>>=<v:pos>&&<f:NEWLINE>!=<m:get>";
-                            case 1 -> "!<c:boolean>&&(<c:boolean>?<m:apply>&&!<c:boolean>:<m:apply>&&<m:length>>=1&&(!<vl:wroteOnce>||!(<c:boolean>?instance type boolean&&<dv:scope-scope-81:25:8.0.3.split>!=<f:NEVER>:instance type boolean)||-<m:length>!(<m:apply>&&!<c:boolean>&&!<c:boolean>&&<m:length>>=1&&-1+end$8>=pos$8&&<vp:NONE:container@Class_ElementarySpace>!=(<c:boolean>?<m:combine>:nullable instance type ElementarySpace)&&<f:RELAXED_NONE>!=(<c:boolean>?<m:combine>:nullable instance type ElementarySpace)&&list.get(pos$8)!=<vp:NEWLINE:container@Record_Space>&&<vp:NEWLINE:container@Record_Space>!=<m:get>&&-1+<vl:end>>=(-1+end$8>=pos$8&&list.get(pos$8)!=<vp:NEWLINE:container@Record_Space>?1+(<c:boolean>?<vl:pos>:<c:boolean>?<new:ForwardInfo>:<m:length>>=1?<vl:pos>:instance type int):start)&&(<c:boolean>||<c:boolean>||<m:length><=0?instance type boolean:<s:boolean>)?1:0)+(!<c:boolean>&&!<c:boolean>&&<m:length>>=1&&-1+end$8>=pos$8&&list.get(pos$8)!=<vp:NEWLINE:container@Record_Space>?<p:maxChars>:instance type int)>=(-1+end$8>=pos$8&&list.get(pos$8)!=<vp:NEWLINE:container@Record_Space>?<instanceOf:Space>||<instanceOf:Guide>||<m:length><=0?<vl:chars>:<v:chars>+<m:length>+(<v:wroteOnce>&&!<m:apply>&&!<instanceOf:Guide>&&!<instanceOf:Space>&&<m:length>>=1&&-1+<v:end>>=<v:pos>&&<v:lastOneWasSpace>!=<f:NONE>&&<v:lastOneWasSpace>!=<f:RELAXED_NONE>&&<f:NEWLINE>!=<m:get>?1:0):0)))&&<vp:NEWLINE:container@Record_Space>!=<m:get>&&-1+<vl:end>>=(-1+end$8>=pos$8&&list.get(pos$8)!=<vp:NEWLINE:container@Record_Space>?1+(<c:boolean>?<vl:pos>:<c:boolean>?<new:ForwardInfo>:<m:length>>=1?<vl:pos>:instance type int):start)";
-                            case 2 -> "!<c:boolean>&&(<c:boolean>?<m:apply>&&!<c:boolean>:<m:apply>&&<m:length>>=1&&(!<vl:wroteOnce>||!(<c:boolean>?instance type boolean&&<dv:scope-scope-81:25:8.0.3.split>!=<f:NEVER>:instance type boolean)||-<m:length>!(<m:apply>&&!<c:boolean>&&!<c:boolean>&&<m:length>>=1&&-1+end$8>=pos$8&&list.get(pos$8)!=<vp:NEWLINE:cm@Parameter_split;mom@Parameter_split>&&<vp:NEWLINE:cm@Parameter_split;mom@Parameter_split>!=<m:get>&&(<c:boolean>?<m:combine>:nullable instance type ElementarySpace)!=(-1+end$8>=pos$8&&list.get(pos$8)!=<vp:NEWLINE:cm@Parameter_split;mom@Parameter_split>?<f:NONE>:instance type ElementarySpace/*new ElementarySpace()*/)&&-1+<vl:end>>=(-1+end$8>=pos$8&&list.get(pos$8)!=<vp:NEWLINE:cm@Parameter_split;mom@Parameter_split>?1+(<c:boolean>?instance type int:<c:boolean>?<new:ForwardInfo>:<m:length>>=1?<vl:pos>:instance type int):start)&&(<c:boolean>||<c:boolean>||<m:length><=0?instance type boolean:<s:boolean>)&&(nullable instance type ElementarySpace!=instance type ElementarySpace/*new ElementarySpace()*/||<f:RELAXED_NONE>!=<m:combine>)?1:0)+(!<c:boolean>&&!<c:boolean>&&<m:length>>=1&&-1+end$8>=pos$8&&list.get(pos$8)!=<vp:NEWLINE:cm@Parameter_split;mom@Parameter_split>?<p:maxChars>:instance type int)>=(-1+end$8>=pos$8&&list.get(pos$8)!=<vp:NEWLINE:cm@Parameter_split;mom@Parameter_split>?<instanceOf:Space>||<instanceOf:Guide>||<m:length><=0?<vl:chars>:<v:chars>+<m:length>+(<v:wroteOnce>&&!<m:apply>&&!<instanceOf:Guide>&&!<instanceOf:Space>&&<m:length>>=1&&-1+<v:end>>=<v:pos>&&<v:lastOneWasSpace>!=<f:NONE>&&<v:lastOneWasSpace>!=<f:RELAXED_NONE>&&<f:NEWLINE>!=<m:get>?1:0):0)))&&<vp:NEWLINE:cm@Parameter_split;mom@Parameter_split>!=<m:get>&&-1+<vl:end>>=(-1+end$8>=pos$8&&list.get(pos$8)!=<vp:NEWLINE:cm@Parameter_split;mom@Parameter_split>?1+(<c:boolean>?instance type int:<c:boolean>?<new:ForwardInfo>:<m:length>>=1?<vl:pos>:instance type int):start)";
-                            default -> "[(outputElement instanceof Symbol symbol?`list.get(pos$8)/*(Symbol)*/.symbol`:\"abc\").length(),(outputElement instanceof Symbol symbol?`list.get(pos$8)/*(Symbol)*/.symbol`:outputElement instanceof Guide?\"\":\"abc\").length(),list.get(pos$8),list.get(-1+end$8>=pos$8&&list.get(pos$8)!=Space.NEWLINE?1+pos$8:start),list.size(),writer.apply(new ForwardInfo(pos,chars,null,Split.NEVER,list.get(pos$8)/*(Guide)*/,false)),writer.apply(new ForwardInfo(pos,chars,wroteOnce$8&&!(outputElement instanceof Guide guide)&&!(outputElement instanceof Space space)&&(outputElement instanceof Symbol symbol?`list.get(pos$8)/*(Symbol)*/.symbol`:outputElement instanceof Guide?\"\":\"abc\").length()>=1&&-1+end$8>=pos$8&&lastOneWasSpace$8!=ElementarySpace.NONE&&lastOneWasSpace$8!=ElementarySpace.RELAXED_NONE&&list.get(pos$8)!=Space.NEWLINE&&(!(outputElement instanceof Symbol symbol?instance type boolean&&scope-scope-81:25:8.0.3.split!=Split.NEVER:instance type boolean)||-(outputElement instanceof Symbol symbol?`list.get(pos$8)/*(Symbol)*/.symbol`:outputElement instanceof Guide?\"\":\"abc\").length()-chars$8+maxChars>=(wroteOnce$8&&!(outputElement instanceof Guide guide)&&!(outputElement instanceof Space space)&&(outputElement instanceof Symbol symbol?`list.get(pos$8)/*(Symbol)*/.symbol`:outputElement instanceof Guide?\"\":\"abc\").length()>=1&&-1+end$8>=pos$8&&lastOneWasSpace$8!=ElementarySpace.NONE&&lastOneWasSpace$8!=ElementarySpace.RELAXED_NONE&&list.get(pos$8)!=Space.NEWLINE?1:0))?\" \"+(outputElement instanceof Symbol symbol?`list.get(pos$8)/*(Symbol)*/.symbol`:outputElement instanceof Guide?\"\":\"abc\"):outputElement instanceof Symbol symbol?`list.get(pos$8)/*(Symbol)*/.symbol`:outputElement instanceof Guide?\"\":\"abc\",split,null,outputElement instanceof Symbol)),chars$8,end$8,lastOneWasSpace$8,ElementarySpace.NICE,ElementarySpace.NONE,ElementarySpace.RELAXED_NONE,Space.NEWLINE,(-1+end$8>=pos$8&&list.get(pos$8)!=Space.NEWLINE?list.get(pos$8)/*(Symbol)*/.left():nullable instance type Space).split,scope-scope-81:25:8.0.3.split,Split.NEVER,start,maxChars,outputElement,pos$8,wroteOnce$8,instance type boolean]";
+                            case 0 ->
+                                    "!<instanceOf:Space>&&(<instanceOf:Guide>?<m:apply>&&-1-<v:chars>+(!<instanceOf:Space>&&-1+<v:end>>=<v:pos>&&<f:NEWLINE>!=<m:get>&&(<instanceOf:Guide>||<m:length>>=1)?<p:maxChars>:instance type int)>=0:<m:apply>&&<m:length>>=1&&(!<v:allowBreak>||!<v:wroteOnce>||-<v:chars>+<p:maxChars>-<m:length>>=(<v:wroteOnce>&&<m:apply>&&!<instanceOf:Guide>&&!<instanceOf:Space>&&<m:length>>=1&&-1+<v:end>>=<v:pos>&&<v:lastOneWasSpace>!=<f:NONE>&&<v:lastOneWasSpace>!=<f:RELAXED_NONE>&&<f:NEWLINE>!=<m:get>?1:0)))&&-1+<v:end>>=<v:pos>&&<f:NEWLINE>!=<m:get>";
+                            case 1 ->
+                                    "!<c:boolean>&&(<c:boolean>?<m:apply>&&!<c:boolean>:<m:apply>&&<m:length>>=1&&(!<vl:wroteOnce>||!(<c:boolean>?instance type boolean&&<dv:scope-scope-81:25:8.0.3.split>!=<f:NEVER>:instance type boolean)||-<m:length>!(<m:apply>&&!<c:boolean>&&!<c:boolean>&&<m:length>>=1&&-1+end$8>=pos$8&&<vp:NONE:container@Class_ElementarySpace>!=(<c:boolean>?<m:combine>:nullable instance type ElementarySpace)&&<f:RELAXED_NONE>!=(<c:boolean>?<m:combine>:nullable instance type ElementarySpace)&&list.get(pos$8)!=<vp:NEWLINE:container@Record_Space>&&<vp:NEWLINE:container@Record_Space>!=<m:get>&&-1+<vl:end>>=(-1+end$8>=pos$8&&list.get(pos$8)!=<vp:NEWLINE:container@Record_Space>?1+(<c:boolean>?<vl:pos>:<c:boolean>?<new:ForwardInfo>:<m:length>>=1?<vl:pos>:instance type int):start)&&(<c:boolean>||<c:boolean>||<m:length><=0?instance type boolean:<s:boolean>)?1:0)+(!<c:boolean>&&!<c:boolean>&&<m:length>>=1&&-1+end$8>=pos$8&&list.get(pos$8)!=<vp:NEWLINE:container@Record_Space>?<p:maxChars>:instance type int)>=(-1+end$8>=pos$8&&list.get(pos$8)!=<vp:NEWLINE:container@Record_Space>?<instanceOf:Space>||<instanceOf:Guide>||<m:length><=0?<vl:chars>:<v:chars>+<m:length>+(<v:wroteOnce>&&!<m:apply>&&!<instanceOf:Guide>&&!<instanceOf:Space>&&<m:length>>=1&&-1+<v:end>>=<v:pos>&&<v:lastOneWasSpace>!=<f:NONE>&&<v:lastOneWasSpace>!=<f:RELAXED_NONE>&&<f:NEWLINE>!=<m:get>?1:0):0)))&&<vp:NEWLINE:container@Record_Space>!=<m:get>&&-1+<vl:end>>=(-1+end$8>=pos$8&&list.get(pos$8)!=<vp:NEWLINE:container@Record_Space>?1+(<c:boolean>?<vl:pos>:<c:boolean>?<new:ForwardInfo>:<m:length>>=1?<vl:pos>:instance type int):start)";
+                            case 2 ->
+                                    "!<c:boolean>&&(<c:boolean>?<m:apply>&&!<c:boolean>:<m:apply>&&<m:length>>=1&&(!<vl:wroteOnce>||!(<c:boolean>?instance type boolean&&<dv:scope-scope-81:25:8.0.3.split>!=<f:NEVER>:instance type boolean)||-<m:length>!(<m:apply>&&!<c:boolean>&&!<c:boolean>&&<m:length>>=1&&-1+end$8>=pos$8&&list.get(pos$8)!=<vp:NEWLINE:cm@Parameter_split;mom@Parameter_split>&&<vp:NEWLINE:cm@Parameter_split;mom@Parameter_split>!=<m:get>&&(<c:boolean>?<m:combine>:nullable instance type ElementarySpace)!=(-1+end$8>=pos$8&&list.get(pos$8)!=<vp:NEWLINE:cm@Parameter_split;mom@Parameter_split>?<f:NONE>:instance type ElementarySpace/*new ElementarySpace()*/)&&-1+<vl:end>>=(-1+end$8>=pos$8&&list.get(pos$8)!=<vp:NEWLINE:cm@Parameter_split;mom@Parameter_split>?1+(<c:boolean>?instance type int:<c:boolean>?<new:ForwardInfo>:<m:length>>=1?<vl:pos>:instance type int):start)&&(<c:boolean>||<c:boolean>||<m:length><=0?instance type boolean:<s:boolean>)&&(nullable instance type ElementarySpace!=instance type ElementarySpace/*new ElementarySpace()*/||<f:RELAXED_NONE>!=<m:combine>)?1:0)+(!<c:boolean>&&!<c:boolean>&&<m:length>>=1&&-1+end$8>=pos$8&&list.get(pos$8)!=<vp:NEWLINE:cm@Parameter_split;mom@Parameter_split>?<p:maxChars>:instance type int)>=(-1+end$8>=pos$8&&list.get(pos$8)!=<vp:NEWLINE:cm@Parameter_split;mom@Parameter_split>?<instanceOf:Space>||<instanceOf:Guide>||<m:length><=0?<vl:chars>:<v:chars>+<m:length>+(<v:wroteOnce>&&!<m:apply>&&!<instanceOf:Guide>&&!<instanceOf:Space>&&<m:length>>=1&&-1+<v:end>>=<v:pos>&&<v:lastOneWasSpace>!=<f:NONE>&&<v:lastOneWasSpace>!=<f:RELAXED_NONE>&&<f:NEWLINE>!=<m:get>?1:0):0)))&&<vp:NEWLINE:cm@Parameter_split;mom@Parameter_split>!=<m:get>&&-1+<vl:end>>=(-1+end$8>=pos$8&&list.get(pos$8)!=<vp:NEWLINE:cm@Parameter_split;mom@Parameter_split>?1+(<c:boolean>?instance type int:<c:boolean>?<new:ForwardInfo>:<m:length>>=1?<vl:pos>:instance type int):start)";
+                            default ->
+                                    "[(outputElement instanceof Symbol symbol?`list.get(pos$8)/*(Symbol)*/.symbol`:\"abc\").length(),(outputElement instanceof Symbol symbol?`list.get(pos$8)/*(Symbol)*/.symbol`:outputElement instanceof Guide?\"\":\"abc\").length(),list.get(pos$8),list.get(-1+end$8>=pos$8&&list.get(pos$8)!=Space.NEWLINE?1+pos$8:start),list.size(),writer.apply(new ForwardInfo(pos,chars,null,Split.NEVER,list.get(pos$8)/*(Guide)*/,false)),writer.apply(new ForwardInfo(pos,chars,wroteOnce$8&&!(outputElement instanceof Guide guide)&&!(outputElement instanceof Space space)&&(outputElement instanceof Symbol symbol?`list.get(pos$8)/*(Symbol)*/.symbol`:outputElement instanceof Guide?\"\":\"abc\").length()>=1&&-1+end$8>=pos$8&&lastOneWasSpace$8!=ElementarySpace.NONE&&lastOneWasSpace$8!=ElementarySpace.RELAXED_NONE&&list.get(pos$8)!=Space.NEWLINE&&(!(outputElement instanceof Symbol symbol?instance type boolean&&scope-scope-81:25:8.0.3.split!=Split.NEVER:instance type boolean)||-(outputElement instanceof Symbol symbol?`list.get(pos$8)/*(Symbol)*/.symbol`:outputElement instanceof Guide?\"\":\"abc\").length()-chars$8+maxChars>=(wroteOnce$8&&!(outputElement instanceof Guide guide)&&!(outputElement instanceof Space space)&&(outputElement instanceof Symbol symbol?`list.get(pos$8)/*(Symbol)*/.symbol`:outputElement instanceof Guide?\"\":\"abc\").length()>=1&&-1+end$8>=pos$8&&lastOneWasSpace$8!=ElementarySpace.NONE&&lastOneWasSpace$8!=ElementarySpace.RELAXED_NONE&&list.get(pos$8)!=Space.NEWLINE?1:0))?\" \"+(outputElement instanceof Symbol symbol?`list.get(pos$8)/*(Symbol)*/.symbol`:outputElement instanceof Guide?\"\":\"abc\"):outputElement instanceof Symbol symbol?`list.get(pos$8)/*(Symbol)*/.symbol`:outputElement instanceof Guide?\"\":\"abc\",split,null,outputElement instanceof Symbol)),chars$8,end$8,lastOneWasSpace$8,ElementarySpace.NICE,ElementarySpace.NONE,ElementarySpace.RELAXED_NONE,Space.NEWLINE,(-1+end$8>=pos$8&&list.get(pos$8)!=Space.NEWLINE?list.get(pos$8)/*(Symbol)*/.left():nullable instance type Space).split,scope-scope-81:25:8.0.3.split,Split.NEVER,start,maxChars,outputElement,pos$8,wroteOnce$8,instance type boolean]";
                         };
                         assertEquals(expected, d.currentValue().toString());
                     }
@@ -194,8 +205,18 @@ public class Test_62_FormatterSimplified extends CommonTestRunner {
             }
             if ("forward".equals(d.methodInfo().name)) {
                 if ("8".equals(d.statementId())) {
-                    assertEquals(d.iteration() >= 3,
-                            d.statementAnalysis().stateData().conditionManagerForNextStatementStatus().isDone());
+                    assertTrue(d.statementAnalysis().stateData().conditionManagerForNextStatementStatus().isDone());
+                }
+                if ("8.0.3".equals(d.statementId())) {
+                    /*
+                     the variable "symbol" should go out of scope... it should not be contained in any of the
+                     values of the variables
+                     */
+                    Set<String> varsInValues = d.statementAnalysis().variableStream().flatMap(vi ->
+                                    vi.getValue().variables(true).stream())
+                            .map(Variable::fullyQualifiedName)
+                            .collect(Collectors.toUnmodifiableSet());
+                    assertFalse(varsInValues.contains("symbol"));
                 }
             }
         };
@@ -348,7 +369,8 @@ public class Test_62_FormatterSimplified extends CommonTestRunner {
                     String expect = switch (d.iteration()) {
                         case 0 -> "<f:(new Stack<GuideOnStack>()).peek().forwardInfo>";
                         case 1 -> "<vp:forwardInfo:container@Record_ForwardInfo>";
-                        case 2 -> "<vp:forwardInfo:cm@Parameter_guide;cm@Parameter_string;mom@Parameter_guide;mom@Parameter_string>";
+                        case 2 ->
+                                "<vp:forwardInfo:cm@Parameter_guide;cm@Parameter_string;mom@Parameter_guide;mom@Parameter_string>";
                         default -> "((new Stack<GuideOnStack>()/*0==this.size()*/).peek()).forwardInfo";
                     };
                     assertEquals(expect, d.evaluationResult().value().toString());
@@ -356,7 +378,8 @@ public class Test_62_FormatterSimplified extends CommonTestRunner {
                 if ("1".equals(d.statementId())) {
                     String expect = switch (d.iteration()) {
                         case 0, 1, 2 -> "<null-check>&&9==<m:index>";
-                        default -> "null!=((new Stack<GuideOnStack>()/*0==this.size()*/).peek()).forwardInfo&&9==((new Stack<GuideOnStack>()/*0==this.size()*/).peek()).forwardInfo.guide.index()";
+                        default ->
+                                "null!=((new Stack<GuideOnStack>()/*0==this.size()*/).peek()).forwardInfo&&9==((new Stack<GuideOnStack>()/*0==this.size()*/).peek()).forwardInfo.guide.index()";
                     };
                     assertEquals(expect, d.evaluationResult().value().toString());
                     assertEquals(d.iteration() < 3, d.evaluationResult().causesOfDelay().isDelayed());
@@ -378,7 +401,8 @@ public class Test_62_FormatterSimplified extends CommonTestRunner {
                         String expect = switch (d.iteration()) {
                             case 0 -> "<f:(new Stack<GuideOnStack>()).peek().forwardInfo>";
                             case 1 -> "<vp:forwardInfo:container@Record_ForwardInfo>";
-                            case 2 -> "<vp:forwardInfo:cm@Parameter_guide;cm@Parameter_string;mom@Parameter_guide;mom@Parameter_string>";
+                            case 2 ->
+                                    "<vp:forwardInfo:cm@Parameter_guide;cm@Parameter_string;mom@Parameter_guide;mom@Parameter_string>";
                             default -> "((new Stack<GuideOnStack>()/*0==this.size()*/).peek()).forwardInfo";
                         };
                         assertEquals(expect, d.currentValue().toString());

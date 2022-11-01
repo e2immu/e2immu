@@ -122,12 +122,4 @@ public interface TranslationMap {
     default Map<ParameterizedType, ParameterizedType> types() {
         return Map.of();
     }
-
-    /*
-    prevents translation of the original expression in a delayed expression, because
-    that may lead to circular replacements.
-     */
-    default boolean translateToDelayedExpression() {
-        return true;
-    }
 }
