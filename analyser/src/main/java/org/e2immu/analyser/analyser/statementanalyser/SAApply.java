@@ -481,16 +481,6 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
                                       EvaluationResult.ChangeData changeData,
                                       GroupPropertyValues groupPropertyValues,
                                       VariableInfo merge) {
-        VariableInfo vi1 = vic.getPreviousOrInitial();
-        // not assigned, but maybe modified? "new" will need to change...
-        // TODO check vi, if there was an assignment in this statement
-
-        // we'll apply this only when needed
-        // See ListUtilSimplified_0: not needed
-        // ListUtilSimplified_1: needed!
-        if (vi1.valueIsSet() && !mustChangeToInstance(vi1.getValue(), sharedState.evaluationContext())) {
-            return null;
-        }
     /*
 
      If the variable is modified somewhere in the loop, we cannot keep "new ..." and must switch to
@@ -536,14 +526,6 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
         // modified!
         return changeValueToInstanceInLoop(sharedState, variable, vic, changeData, valueProperties,
                 groupPropertyValues);
-    }
-
-    // new XX() -> instance type X
-    // instance type X/*size==...*/ -> instance type X
-    private static boolean mustChangeToInstance(Expression value, EvaluationContext evaluationContext) {
-        ConstructorCall cc;
-        return ((cc = value.asInstanceOf(ConstructorCall.class)) != null) && cc.hasConstructor() ||
-                evaluationContext.hasState(value);
     }
 
     private LoopResult delayValueForInstanceInLoop(StatementAnalyserSharedState sharedState,

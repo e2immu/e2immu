@@ -76,8 +76,8 @@ public class Test_63_ListUtilSimplified extends CommonTestRunner {
         };
         testClass("ListUtilSimplified_0", 1, 3,
                 new DebugConfiguration.Builder()
-                        .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-                        .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                     //   .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                     //   .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                         .build(),
                 new AnalyserConfiguration.Builder()
                         .setComputeContextPropertiesOverAllMethods(true)
@@ -130,8 +130,8 @@ public class Test_63_ListUtilSimplified extends CommonTestRunner {
         };
         testClass("ListUtilSimplified_1", 1, 1,
                 new DebugConfiguration.Builder()
-                        .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-                        .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                      //  .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                      //  .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                         .build(),
                 new AnalyserConfiguration.Builder()
                         .setComputeContextPropertiesOverAllMethods(true)

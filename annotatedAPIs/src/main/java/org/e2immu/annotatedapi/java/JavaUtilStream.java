@@ -216,6 +216,7 @@ public class JavaUtilStream {
          */
         @NotNull
         @Modified
+        @Finalizer
         void forEach(@Independent(hc = true) @NotNull Consumer<? super T> action);
 
         @NotNull

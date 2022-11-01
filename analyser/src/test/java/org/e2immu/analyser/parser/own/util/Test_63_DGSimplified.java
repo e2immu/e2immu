@@ -213,12 +213,12 @@ public class Test_63_DGSimplified extends CommonTestRunner {
             }
         };
 
-        BreakDelayVisitor breakDelayVisitor = d-> assertEquals("----M-M-M-M-M--MF-MFT----MF---", d.delaySequence());
+        BreakDelayVisitor breakDelayVisitor = d -> assertEquals("----M-M-M-M-M--MF-MFT----MF---", d.delaySequence());
 
         testClass("DGSimplified_0", 0, 1, new DebugConfiguration.Builder()
-             //   .addEvaluationResultVisitor(evaluationResultVisitor)
-             //   .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-             //   .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                //   .addEvaluationResultVisitor(evaluationResultVisitor)
+                //   .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                //   .addStatementAnalyserVisitor(statementAnalyserVisitor)
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                 .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
@@ -311,10 +311,10 @@ public class Test_63_DGSimplified extends CommonTestRunner {
         };
         BreakDelayVisitor breakDelayVisitor = d -> assertEquals("----M-M-M-M--M--MF-MFT------", d.delaySequence());
         testClass("DGSimplified_1", 4, 1, new DebugConfiguration.Builder()
-             //   .addEvaluationResultVisitor(evaluationResultVisitor)
-             //   .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                //   .addEvaluationResultVisitor(evaluationResultVisitor)
+                //   .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
-             //   .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                //   .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .addBreakDelayVisitor(breakDelayVisitor)
                 .build(), new AnalyserConfiguration.Builder().setComputeFieldAnalyserAcrossAllMethods(true).build());
     }
@@ -347,9 +347,9 @@ public class Test_63_DGSimplified extends CommonTestRunner {
         BreakDelayVisitor breakDelayVisitor = d -> assertEquals("----M---M--M-MF-MFT------", d.delaySequence());
 
         testClass("DGSimplified_2", 2, 0, new DebugConfiguration.Builder()
-              //  .addStatementAnalyserVisitor(statementAnalyserVisitor)
-              //  .addEvaluationResultVisitor(evaluationResultVisitor)
-              //  .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+                //  .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                //  .addEvaluationResultVisitor(evaluationResultVisitor)
+                //  .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                 .addBreakDelayVisitor(breakDelayVisitor)
                 .build(), new AnalyserConfiguration.Builder().setComputeFieldAnalyserAcrossAllMethods(true).build());
     }
@@ -379,8 +379,10 @@ public class Test_63_DGSimplified extends CommonTestRunner {
                     String expected = d.iteration() < 13 ? "<m:contains>" : "set.contains(d)";
                     assertEquals(expected, d.evaluationResult().value().toString());
                     String delays = switch (d.iteration()) {
-                        case 0 -> "initial:node@Method_reverse_0.0.1.0.0-C;initial:set@Method_reverse_0.0.0-E;initial:this.nodeMap@Method_reverse_0.0.0-C";
-                        case 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12 -> "initial:set@Method_reverse_0.0.0-E;initial:this.nodeMap@Method_reverse_0.0.0-C;link@Field_nodeMap";
+                        case 0 ->
+                                "initial:node@Method_reverse_0.0.1.0.0-C;initial:set@Method_reverse_0.0.0-E;initial:this.nodeMap@Method_reverse_0.0.0-C";
+                        case 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12 ->
+                                "initial:set@Method_reverse_0.0.0-E;initial:this.nodeMap@Method_reverse_0.0.0-C;link@Field_nodeMap";
                         default -> "";
                     };
                     assertEquals(delays, d.evaluationResult().causesOfDelay().toString());
@@ -437,7 +439,8 @@ public class Test_63_DGSimplified extends CommonTestRunner {
                         String expectedM = switch (d.iteration()) {
                             case 0 -> "<f:node.dependsOn>";
                             case 1, 2, 3, 4, 5, 6, 7, 8, 9 -> "<vp:dependsOn:link@Field_dependsOn>";
-                            case 10, 11, 12 -> "null==nullable instance type List<T>?nullable instance type List<T>:<f:node.dependsOn>";
+                            case 10, 11, 12 ->
+                                    "null==nullable instance type List<T>?nullable instance type List<T>:<f:node.dependsOn>";
                             default -> "nullable instance type List<T>";
                         };
                         assertEquals(expectedM, d.currentValue().toString());
@@ -461,8 +464,8 @@ public class Test_63_DGSimplified extends CommonTestRunner {
         BreakDelayVisitor breakDelayVisitor = d -> assertEquals("----M--MF-MF----", d.delaySequence());
 
         testClass("DGSimplified_3", 1, 2, new DebugConfiguration.Builder()
-             //   .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-            //    .addEvaluationResultVisitor(evaluationResultVisitor)
+                //   .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                //    .addEvaluationResultVisitor(evaluationResultVisitor)
                 .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                 .addBreakDelayVisitor(breakDelayVisitor)
                 .build(), new AnalyserConfiguration.Builder().setComputeFieldAnalyserAcrossAllMethods(true).build());
@@ -663,11 +666,56 @@ public class Test_63_DGSimplified extends CommonTestRunner {
         BreakDelayVisitor breakDelayVisitor = d -> assertEquals("----M--M--M--M-M-M-MF-MFT------", d.delaySequence());
 
         testClass("DGSimplified_4", 1, 3, new DebugConfiguration.Builder()
-             //   .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-            //    .addStatementAnalyserVisitor(statementAnalyserVisitor)
-            //    .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
-            //    .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
+                //   .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                //    .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                //    .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                //    .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
                 .addBreakDelayVisitor(breakDelayVisitor)
                 .build(), new AnalyserConfiguration.Builder().setComputeFieldAnalyserAcrossAllMethods(true).build());
+    }
+
+    /*
+    Goal of test:
+    - in the loop at 4.0.2.1.0, at iteration 2, 'result' already has a value because of the modification in the loop.
+    - it even has this value in the E section of the loop statement, because it may be seen before the modification.
+    - later, in iteration 5, a value comes along from the outside; it happens to be a value from a loop as well,
+      but that should be immaterial.
+    - FIXME this value should not take priority, but somehow it does
+     */
+    @Test
+    public void test_5() throws IOException {
+        StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+            if ("sortedSequenceOfParallel".equals(d.methodInfo().name)) {
+                if ("result".equals(d.variableName())) {
+                    if ("4.0.1".equals(d.statementId())) {
+                        assertTrue(d.variableInfoContainer().hasMerge());
+                        String merge = d.iteration() < 5 ? "<vl:result>" : "instance type List<SortResult<T>>";
+                        if (d.iteration() >= 5) {
+                            assertEquals("PositionalIdentifier[line=60, pos=13, endLine=74, endPos=13]",
+                                    d.currentValue().getIdentifier().toString());
+                        }
+                        assertEquals(merge, d.currentValue().toString());
+                    }
+                    if ("4.0.2.1.0".equals(d.statementId())) {
+                        assertTrue(d.variableInfoContainer().hasEvaluation());
+                        VariableInfo vi = d.variableInfoContainer().best(Stage.EVALUATION);
+                        String eval = d.iteration() < 2 ? "<vl:result>" : "instance type List<SortResult<T>>";
+                        assertEquals(eval, vi.getValue().toString());
+                        if (d.iteration() >= 2) {
+                            assertEquals("PositionalIdentifier[line=78, pos=17, endLine=78, endPos=80]",
+                                    vi.getValue().getIdentifier().toString());
+                        }
+                        assertTrue(d.variableInfoContainer().hasMerge());
+                        String merge = d.iteration() < 5
+                                ? "<vl:result>"
+                                : "(toDo$4.0.1.entrySet().isEmpty()?new LinkedList<>()/*0==this.size()*/:instance type List<T>).isEmpty()?instance type List<SortResult<T>>:instance type List<SortResult<T>>";
+                        assertEquals(merge, d.currentValue().toString());
+                    }
+                }
+            }
+        };
+        testClass("DGSimplified_5", 5, 0, new DebugConfiguration.Builder()
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .build(), new AnalyserConfiguration.Builder().build());
     }
 }

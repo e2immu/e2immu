@@ -93,11 +93,9 @@ public class Test_01_Loops_21plus extends CommonTestRunner {
                                 ? "<array-access:String[]>"
                                 : "instance type String[]";
                         assertEquals(expected, d.currentValue().toString());
-                        String linked = switch (d.iteration()) {
-                            case 0 -> "array:-1,av-32:17:-1,av-32:17[j]:-1,i:-1,inner:-1,innerMod:-1,j:-1,outer:-1,outerMod:-1";
-                            case 1, 2, 3 -> "array:-1,av-32:17:-1,i:-1";
-                            default -> "array:3,av-32:17:1";
-                        };
+                        String linked = d.iteration() < 4
+                                ? "array:-1,av-32:17:-1,av-32:17[j]:-1,i:-1,inner:-1,innerMod:-1,j:-1,outer:-1,outerMod:-1"
+                                : "array:3,av-32:17:1";
                         assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
                         assertDv(d, 4, DV.TRUE_DV, CONTEXT_MODIFIED);
                     } else if (!d.statementId().startsWith("2.0.1")) fail("In " + d.statementId());
@@ -109,34 +107,25 @@ public class Test_01_Loops_21plus extends CommonTestRunner {
                     if ("2.0.1.0.2".equals(d.statementId())) {
                         String expected = d.iteration() <= 3 ? "<vl:array>" : "instance type String[][]";
                         assertEquals(expected, d.currentValue().toString());
-                        String linked = switch (d.iteration()) {
-                            case 0 -> "array[i]:-1,av-32:17:-1,av-32:17[j]:-1,i:-1,inner:-1,innerMod:-1,j:-1,outer:-1,outerMod:-1";
-                            case 1, 2, 3 -> "array[i]:-1,av-32:17:-1,i:-1";
-                            default -> "";
-                        };
+                        String linked = d.iteration() < 4
+                                ? "array[i]:-1,av-32:17:-1,av-32:17[j]:-1,i:-1,inner:-1,innerMod:-1,j:-1,outer:-1,outerMod:-1"
+                                : "";
                         assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
-                        String linkDelays = switch (d.iteration()) {
-                            case 0 -> "initial:array@Method_method_2.0.1.0.2-C;initial:i@Method_method_2.0.1-C;initial:inner@Method_method_2.0.1.0.1-C;initial:j@Method_method_2.0.1-E;initial:outer@Method_method_2.0.1.0.0-C";
-                            case 1, 2, 3 -> "wait_for_modification:array@Method_method_2.0.1-E";
-                            default -> "";
-                        };
-                        assertEquals(linkDelays, d.variableInfo().getLinkedVariables().causesOfDelay().toString());
                         assertDv(d, 4, DV.TRUE_DV, CONTEXT_MODIFIED);
                     }
                     if ("2.0.1".equals(d.statementId())) {
-                        String expected = d.iteration() <= 3 ? "<vl:array>" : "instance type String[][]";
+                        String expected = d.iteration() < 4
+                                ? "<vl:array>"
+                                : "-1-(instance type int)+m>=0?instance type String[][]:instance type String[][]";
                         assertEquals(expected, d.currentValue().toString());
 
                         assertTrue(d.variableInfoContainer().hasEvaluation());
                         VariableInfo eval = d.variableInfoContainer().best(Stage.EVALUATION);
-                        assertEquals(expected, eval.getValue().toString());
+                        String expectedE = d.iteration() < 4 ? "<vl:array>" : "instance type String[][]";
+                        assertEquals(expectedE, eval.getValue().toString());
                         assertEquals("", eval.getLinkedVariables().toString());
 
-                        String linked = switch (d.iteration()) {
-                            case 0 -> "array[i]:-1,av-32:17:-1,i:-1,inner:-1,outer:-1";
-                            case 1, 2, 3 -> "array[i]:-1,av-32:17:-1,i:-1";
-                            default -> "";
-                        };
+                        String linked = d.iteration() < 4 ? "array[i]:-1,av-32:17:-1,i:-1,inner:-1,outer:-1" : "";
                         assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
                         assertDv(d, 4, DV.TRUE_DV, CONTEXT_MODIFIED);
                     }
@@ -145,11 +134,10 @@ public class Test_01_Loops_21plus extends CommonTestRunner {
                     assertTrue(d.variable() instanceof DependentVariable);
                     assertTrue(d.variableInfoContainer().variableNature() instanceof VariableNature.LoopVariable);
                     if ("2.0.1.0.2".equals(d.statementId())) {
-                        String linked = switch (d.iteration()) {
-                            case 0 -> "array:-1,array[i]:-1,av-32:17:-1,i:-1,inner:-1,innerMod:-1,j:-1,outer:-1,outerMod:-1";
-                            case 1, 2, 3 -> "array:-1,array[i]:-1,av-32:17:-1,i:-1";
-                            default -> "array:3,array[i]:3,av-32:17:3";
-                        };
+                        String linked = d.iteration() < 4
+                                ? "array:-1,array[i]:-1,av-32:17:-1,i:-1,inner:-1,innerMod:-1,j:-1,outer:-1,outerMod:-1"
+                                : "array:3,array[i]:3,av-32:17:3";
+
                         assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
                         assertEquals("2.0.1.0.2-E", d.variableInfo().getAssignmentIds().toString());
                     }
@@ -164,11 +152,9 @@ public class Test_01_Loops_21plus extends CommonTestRunner {
                 }
                 if ("av-32:17".equals(d.variableName())) {
                     if ("2.0.1.0.2".equals(d.statementId())) {
-                        String linked = switch (d.iteration()) {
-                            case 0 -> "array:-1,array[i]:-1,av-32:17[j]:-1,i:-1,inner:-1,innerMod:-1,j:-1,outer:-1,outerMod:-1";
-                            case 1, 2, 3 -> "array:-1,array[i]:-1,i:-1";
-                            default -> "array:3,array[i]:1";
-                        };
+                        String linked = d.iteration() < 4
+                                ? "array:-1,array[i]:-1,av-32:17[j]:-1,i:-1,inner:-1,innerMod:-1,j:-1,outer:-1,outerMod:-1"
+                                : "array:3,array[i]:1";
                         assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
                         assertDv(d, DV.TRUE_DV, CONTEXT_MODIFIED);
                     }
@@ -184,12 +170,6 @@ public class Test_01_Loops_21plus extends CommonTestRunner {
                 String range = d.iteration() == 0 ? "DELAYED RANGE" : "NO RANGE";
                 assertEquals(range, d.statementAnalysis().rangeData().getRange().toString());
 
-                String expected = switch (d.iteration()) {
-                    case 0 -> "var_missing:j@Method_method_2.0.1-C";
-                    case 1, 2, 3 -> "wait_for_modification:array@Method_method_2.0.1-E";
-                    default -> "";
-                };
-                assertEquals(expected, d.statementAnalysis().methodLevelData().linksHaveNotYetBeenEstablished().toString());
                 assertEquals(d.iteration() >= 5, d.statusesAsMap().values().stream().noneMatch(AnalysisStatus::isDelayed));
             }
             if (d.statementId().startsWith("2.0.1.")) {
@@ -214,7 +194,8 @@ public class Test_01_Loops_21plus extends CommonTestRunner {
                         String expected = switch (d.iteration()) {
                             case 0 -> "<loopIsNotEmptyCondition>?<vl:array>:new String[n][m]";
                             case 1, 2, 3 -> "-2-<oos:i>+n>=0?<vl:array>:new String[n][m]";
-                            default -> "-2-(instance type int)+n>=0?instance type String[][]:new String[n][m]";
+                            default ->
+                                    "-2!(-1-(instance type int)+m>=0?instance type int:instance type int)+n>=0?-1-(instance type int)+m>=0?instance type String[][]:instance type String[][]:new String[n][m]";
                         };
                         assertEquals(expected, d.currentValue().toString());
                         VariableInfo eval = d.variableInfoContainer().best(Stage.EVALUATION);
@@ -228,13 +209,10 @@ public class Test_01_Loops_21plus extends CommonTestRunner {
                         DV override = d.variableInfoContainer().propertyOverrides().getOrDefaultNull(CONTEXT_MODIFIED);
                         assertEquals(d.iteration() >= 4, DV.TRUE_DV.equals(override));
 
-                        String linked = switch (d.iteration()) {
-                            case 0 -> "array[i]:-1,av-32:21:-1,i:-1,outer:-1,outerMod:-1";
-                            case 1, 2, 3 -> "array[i]:-1,av-32:21:-1,i:-1";
-                            default -> "";
-                        };
+                        String linked = d.iteration() < 4 ? "array[i]:-1,av-32:21:-1,i:-1,outer:-1,outerMod:-1" : "";
+
                         assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
-                        String expected = d.iteration() <= 3 ? "<vl:array>" : "instance type String[][]";
+                        String expected = d.iteration() < 4 ? "<vl:array>" : "instance type String[][]";
                         assertEquals(expected, d.currentValue().toString());
 
                         // TRUE instead of false, at the moment, because we don't have a proper guessing
@@ -282,8 +260,7 @@ public class Test_01_Loops_21plus extends CommonTestRunner {
                     if ("av-32:17".equals(d.variableName())) {
                         if ("2.0.2.0.2".equals(d.statementId())) {
                             String expected = switch (d.iteration()) {
-                                case 0 -> "<dv:array[i]>";
-                                case 1, 2, 3 -> "<vl:array[i]>";
+                                case 0, 1, 2, 3 -> "<dv:array[i]>";
                                 default -> "array$2.0.2[i$2.0.2]$2.0.2";
                             };
                             assertEquals(expected, d.currentValue().toString());
@@ -291,18 +268,19 @@ public class Test_01_Loops_21plus extends CommonTestRunner {
                         if ("2.0.2".equals(d.statementId())) {
                             String expected = switch (d.iteration()) {
                                 case 0 -> "<loopIsNotEmptyCondition>?<dv:array[i]>:nullable instance type String[]";
-                                case 1, 2, 3 -> "-1-<oos:j>+m>=0?<vl:array[i]>:nullable instance type String[]";
-                                default -> "-1-(instance type int)+m>=0?array$2.0.2[i$2.0.2]$2.0.2:nullable instance type String[]";
+                                case 1, 2, 3 -> "-1-<oos:j>+m>=0?<dv:array[i]>:nullable instance type String[]";
+                                default ->
+                                        "-1-(instance type int)+m>=0?array$2.0.2[i$2.0.2]$2.0.2:nullable instance type String[]";
                             };
                             assertEquals(expected, d.currentValue().toString());
                         }
                     } else if ("av-32:17[j]".equals(d.variableName())) {
                         assertEquals("2.0.2.0.2", d.statementId());
-                        String expected = d.iteration() == 0
+                        String expected = d.iteration() < 4
                                 ? "<m:charAt>+\"->\"+<m:charAt>"
                                 : "outer$2.0.2.charAt(i$2.0.2%outer$2.0.2.length())+\"->\"+inner$2.0.2.charAt(j%inner$2.0.2.length())";
                         assertEquals(expected, d.currentValue().toString());
-                        assertDv(d, 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, NOT_NULL_EXPRESSION);
+                        assertDv(d, 4, MultiLevel.EFFECTIVELY_NOT_NULL_DV, NOT_NULL_EXPRESSION);
                     } else fail("?: " + d.variableName());
                 }
             }
@@ -349,17 +327,18 @@ public class Test_01_Loops_21plus extends CommonTestRunner {
                             String expected = switch (d.iteration()) {
                                 case 0 -> "<loopIsNotEmptyCondition>?<dv:array[i]>:nullable instance type String[]";
                                 case 1, 2, 3 -> "-1-<oos:j>+m>=0?<dv:array[i]>:nullable instance type String[]";
-                                default -> "-1-(instance type int)+m>=0?array$2.0.1[i$2.0.1]$2.0.1:nullable instance type String[]";
+                                default ->
+                                        "-1-(instance type int)+m>=0?array$2.0.1[i$2.0.1]$2.0.1:nullable instance type String[]";
                             };
                             assertEquals(expected, d.currentValue().toString());
                         }
                     } else if ("av-31:17[j]".equals(d.variableName())) {
                         assertEquals("2.0.1.0.2", d.statementId());
-                        String expected = d.iteration() == 0
+                        String expected = d.iteration() < 4
                                 ? "<m:charAt>+\"->\"+<m:charAt>"
                                 : "outer$2.0.1.charAt(i$2.0.1%outer$2.0.1.length())+\"->\"+inner$2.0.1.charAt(j%inner$2.0.1.length())";
                         assertEquals(expected, d.currentValue().toString());
-                        assertDv(d, 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, NOT_NULL_EXPRESSION);
+                        assertDv(d, 4, MultiLevel.EFFECTIVELY_NOT_NULL_DV, NOT_NULL_EXPRESSION);
                     } else fail("?: " + d.variableName());
                 }
             }
