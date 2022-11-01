@@ -142,7 +142,7 @@ public class UpgradableBooleanMap<T> {
         }
     }
 
-    @ImmutableContainer(hc = true)
+    @Independent(hc = true)
     @NotNull // TODO implement (content = true)
     public Stream<Map.Entry<T, Boolean>> stream() {
         return map.entrySet().stream().map(e -> new ImmutableEntry<>(e.getKey(), e.getValue()));

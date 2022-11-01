@@ -995,7 +995,9 @@ public record EvaluationResult(EvaluationContext evaluationContext,
                         linkedVariables, LinkedVariables.EMPTY,
                         Map.of());
             } else {
-                LinkedVariables lvs = linkedVariables == null ? current.linkedVariables : linkedVariables;
+                LinkedVariables lvs = linkedVariables == null
+                        ? current.linkedVariables
+                        : linkedVariables.merge(current.linkedVariables);
                 newVcd = new ChangeData(instance,
                         markDelays ? current.delays.merge(instance.causesOfDelay()) : current.delays,
                         current.stateIsDelayed, current.markAssignment,

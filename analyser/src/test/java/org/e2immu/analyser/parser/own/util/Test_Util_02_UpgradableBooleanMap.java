@@ -186,6 +186,7 @@ public class Test_Util_02_UpgradableBooleanMap extends CommonTestRunner {
                 if (d.variable() instanceof ParameterInfo pi && "other".equals(pi.name)) {
                     if ("0".equals(d.statementId())) {
                         String linked = d.iteration() < 24 ? "this:-1" : "this:4";
+                        // FIXME 21: this:-1, (22 only field), 23: empty, 24: this:4
                         assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
                     }
                 }
@@ -335,12 +336,12 @@ public class Test_Util_02_UpgradableBooleanMap extends CommonTestRunner {
 
         testSupportAndUtilClasses(List.of(UpgradableBooleanMap.class),
                 0, 0, new DebugConfiguration.Builder()
-                      //  .addStatementAnalyserVisitor(statementAnalyserVisitor)
-                      //  .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-                      //  .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
-                      //  .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
-                      //  .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
-                      //  .addBreakDelayVisitor(breakDelayVisitor)
+                   //     .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                    //    .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                        .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
+                    //    .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                    //    .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+                        .addBreakDelayVisitor(breakDelayVisitor)
                         .build());
     }
 
