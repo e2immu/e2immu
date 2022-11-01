@@ -470,7 +470,33 @@ public record MergeHelper(EvaluationContext evaluationContext,
 
         if (firstCondition.isBoolValueTrue()) return valueProperties(e1); // to bypass the error check on "safe"
         if (firstCondition.isBoolValueFalse()) return valueProperties(e2);
+        Merge.ExpressionAndProperties nullCheck = isNullCheckAndNull(firstCondition, e1, e2);
+        if (nullCheck != null) return nullCheck;
         return inlineConditional(firstCondition, e1, e2, false);
+    }
+
+    /*
+        special situation... if
+          firstCondition =  null==guideGenerator
+          e1.value =        null,  linked to guideGenerator
+          e2.value =        nullable instance type GuideGenerator
+        should simply return e2.value
+    */
+    private Merge.ExpressionAndProperties isNullCheckAndNull(Expression condition, VariableInfo e1, VariableInfo e2) {
+        IsVariableExpression ive;
+        if (condition instanceof Equals equals && equals.lhs.isNull()
+                && (ive = equals.rhs.asInstanceOf(IsVariableExpression.class)) != null
+                && ive.variable().equals(this.vi.variable())
+                && e1.getValue().isInstanceOf(NullConstant.class)) {
+            return valueProperties(e2);
+        }
+        if (condition instanceof Negation negation && negation.expression instanceof Equals equals && equals.lhs.isNull()
+                && (ive = equals.rhs.asInstanceOf(IsVariableExpression.class)) != null
+                && ive.variable().equals(this.vi.variable())
+                && e2.getValue().isInstanceOf(NullConstant.class)) {
+            return valueProperties(e1);
+        }
+        return null;
     }
 
     /* condition and ifFalse have been evaluated in the same expression

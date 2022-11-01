@@ -705,11 +705,11 @@ public class Test_66_VariableScope extends CommonTestRunner {
                 assertDv(d, DV.FALSE_DV, Property.MODIFIED_METHOD);
             }
             if ("output".equals(d.methodInfo().name) && "MethodCall".equals(d.methodInfo().typeInfo.simpleName)) {
-                assertDv(d, 20, DV.FALSE_DV, Property.MODIFIED_METHOD);
+                assertDv(d, 21, DV.FALSE_DV, Property.MODIFIED_METHOD);
             }
             if ("output2".equals(d.methodInfo().name)) {
                 assertDv(d, 20, DV.FALSE_DV, Property.MODIFIED_METHOD);
-                String expected = d.iteration() < 20 ? "<m:output2>"
+                String expected = d.iteration() < 21 ? "<m:output2>"
                         : "/*inline output2*/!(object instanceof MethodCall)||null==object?new OutputBuilder(new LinkedList<>()):instance type OutputBuilder";
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
 
@@ -772,7 +772,7 @@ public class Test_66_VariableScope extends CommonTestRunner {
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("output2".equals(d.methodInfo().name)) {
                 assertDv(d, 20, DV.FALSE_DV, Property.MODIFIED_METHOD);
-                String expected = d.iteration() < 20 ? "<m:output2>"
+                String expected = d.iteration() < 21 ? "<m:output2>"
                         : "/*inline output2*/!(object instanceof MethodCall)||null==object?new OutputBuilder(new LinkedList<>()):instance type OutputBuilder";
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
                 assertDv(d.p(0), 21, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
@@ -830,7 +830,7 @@ public class Test_66_VariableScope extends CommonTestRunner {
             if ("output2".equals(d.methodInfo().name)) {
                 assertDv(d, 2, DV.FALSE_DV, Property.MODIFIED_METHOD);
                 String expected = d.iteration() < 3 ? "<m:output2>"
-                        : "/*inline output2*/!(object instanceof MethodCall)||null==object?new OutputBuilder(new LinkedList<>()):instance type OutputBuilder";
+                        : "!(object instanceof MethodCall)||null==object?new OutputBuilder(new LinkedList<>()):instance type OutputBuilder";
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
                 assertDv(d.p(0), 1, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
                 assertDv(d.p(1), 3, DV.TRUE_DV, Property.MODIFIED_VARIABLE);
