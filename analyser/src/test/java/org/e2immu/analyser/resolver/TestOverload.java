@@ -19,6 +19,7 @@ import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.BinaryOperator;
 import org.e2immu.analyser.model.expression.MethodCall;
 import org.e2immu.analyser.model.statement.Block;
+import org.e2immu.analyser.model.statement.ExpressionAsStatement;
 import org.e2immu.analyser.model.statement.IfElseStatement;
 import org.e2immu.analyser.parser.TypeMap;
 import org.e2immu.analyser.resolver.testexample.*;
@@ -105,6 +106,7 @@ public class TestOverload extends CommonTest {
         assertFalse(methodInspection.isDefault());
         assertFalse(methodInspection.isStatic());
     }
+
     @Test
     public void test_6_2() throws IOException {
         TypeMap typeMap = inspectAndResolve(Overload_6.class);
@@ -122,5 +124,22 @@ public class TestOverload extends CommonTest {
         assertTrue(methodInspection.isPublic()); // FIXME but is not accessible...
         assertFalse(methodInspection.isDefault());
         assertFalse(methodInspection.isStatic());
+    }
+
+    @Test
+    public void test_7() throws IOException {
+        TypeMap typeMap = inspectAndResolve(Overload_7.class);
+        TypeInfo typeInfo = typeMap.get(Overload_7.class);
+        MethodInfo test1 = typeInfo.findUniqueMethod("test1", 0);
+        MethodInspection test1inspection = test1.methodInspection.get();
+        Block block = test1inspection.getMethodBody();
+        Statement s1 = block.structure.statements().get(1);
+        if (s1 instanceof ExpressionAsStatement eas) {
+            if (eas.expression instanceof MethodCall mc) {
+                // ensure we have the method with the type parameter!
+                assertEquals("org.e2immu.analyser.resolver.testexample.Overload_7.replace(S)",
+                        mc.methodInfo.fullyQualifiedName);
+            } else fail();
+        } else fail();
     }
 }
