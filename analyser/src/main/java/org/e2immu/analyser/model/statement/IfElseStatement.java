@@ -98,10 +98,13 @@ public class IfElseStatement extends StatementWithExpression {
         List<Statement> direct = translationMap.translateStatement(inspectionProvider, this);
         if (haveDirectTranslation(direct, this)) return direct;
 
+        // translations in order of appearance
+        Expression translatedExpression = expression.translate(inspectionProvider, translationMap);
         List<Statement> translatedIf = structure.block().translate(inspectionProvider, translationMap);
         List<Statement> translatedElse = elseBlock.translate(inspectionProvider, translationMap);
+
         return List.of(new IfElseStatement(identifier,
-                expression.translate(inspectionProvider, translationMap),
+                translatedExpression,
                 ensureBlock(structure.block().getIdentifier(), translatedIf),
                 ensureBlock(elseBlock.identifier, translatedElse), structure.comment()));
     }

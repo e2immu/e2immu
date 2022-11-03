@@ -66,6 +66,7 @@ public class SynchronizedStatement extends StatementWithExpression {
         List<Statement> direct = translationMap.translateStatement(inspectionProvider, this);
         if (haveDirectTranslation(direct, this)) return direct;
 
+        // translations in order of appearance
         Expression tex = translationMap.translateExpression(structure.expression());
         List<Statement> translatedBlock = structure.block().translate(inspectionProvider, translationMap);
         if (tex == structure.expression() && !haveDirectTranslation(translatedBlock, structure.block())) {

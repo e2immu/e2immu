@@ -98,14 +98,16 @@ public class ForStatement extends LoopStatement {
         List<Statement> direct = translationMap.translateStatement(inspectionProvider, this);
         if (haveDirectTranslation(direct, this)) return direct;
 
-        Expression tex = expression.translate(inspectionProvider, translationMap);
-        List<Statement> translatedBlock = structure.block().translate(inspectionProvider, translationMap);
-        List<Expression> updaters = structure.updaters().stream()
-                .map(updater -> updater.translate(inspectionProvider, translationMap)).
-                collect(Collectors.toList());
+        // translations in order of appearance
         List<Expression> initializers = structure.initialisers().stream()
                 .map(init -> init.translate(inspectionProvider, translationMap))
                 .collect(Collectors.toList());
+        Expression tex = expression.translate(inspectionProvider, translationMap);
+        List<Expression> updaters = structure.updaters().stream()
+                .map(updater -> updater.translate(inspectionProvider, translationMap)).
+                collect(Collectors.toList());
+        List<Statement> translatedBlock = structure.block().translate(inspectionProvider, translationMap);
+
         return List.of(new ForStatement(identifier, label, initializers, tex, updaters,
                 ensureBlock(structure.block().identifier, translatedBlock), structure.comment()));
     }

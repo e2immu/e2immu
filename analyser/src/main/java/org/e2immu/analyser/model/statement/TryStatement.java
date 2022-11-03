@@ -132,19 +132,21 @@ public class TryStatement extends StatementWithStructure {
         List<Statement> direct = translationMap.translateStatement(inspectionProvider, this);
         if (haveDirectTranslation(direct, this)) return direct;
 
-        List<Statement> translatedBlock = structure.block().translate(inspectionProvider, translationMap);
+        // translations in order of appearance
         List<Expression> resources = this.resources.stream()
                 .map(r -> r.translate(inspectionProvider, translationMap))
+                .collect(Collectors.toList());
+        List<Statement> translatedBlock = structure.block().translate(inspectionProvider, translationMap);
+        List<Pair<CatchParameter, Block>> translatedCatchClauses = catchClauses.stream()
+                .map(p -> new Pair<>(
+                        TranslationMapImpl.ensureExpressionType(p.k.translate(inspectionProvider, translationMap), CatchParameter.class),
+                        ensureBlock(p.v.identifier, p.v.translate(inspectionProvider, translationMap))))
                 .collect(Collectors.toList());
         List<Statement> translatedFinally = finallyBlock.translate(inspectionProvider, translationMap);
 
         return List.of(new TryStatement(identifier, resources,
                 ensureBlock(structure.block().identifier, translatedBlock),
-                catchClauses.stream()
-                        .map(p -> new Pair<>(
-                                TranslationMapImpl.ensureExpressionType(p.k.translate(inspectionProvider, translationMap), CatchParameter.class),
-                                ensureBlock(p.v.identifier, p.v.translate(inspectionProvider, translationMap))))
-                        .collect(Collectors.toList()),
+                translatedCatchClauses,
                 ensureBlock(finallyBlock.identifier, translatedFinally),
                 structure.comment()));
     }

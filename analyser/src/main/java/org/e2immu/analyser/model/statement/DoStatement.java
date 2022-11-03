@@ -73,8 +73,10 @@ public class DoStatement extends LoopStatement {
         List<Statement> direct = translationMap.translateStatement(inspectionProvider, this);
         if (haveDirectTranslation(direct, this)) return direct;
 
-        Expression tex = expression.translate(inspectionProvider, translationMap);
+        // translations in order of appearance
         List<Statement> translatedBlock = structure.block().translate(inspectionProvider, translationMap);
+        Expression tex = expression.translate(inspectionProvider, translationMap);
+
         if (tex == expression && !haveDirectTranslation(translatedBlock, structure.block())) return List.of(this);
         return List.of(new DoStatement(identifier, label, tex,
                 ensureBlock(structure.block().identifier, translatedBlock), structure.comment()));

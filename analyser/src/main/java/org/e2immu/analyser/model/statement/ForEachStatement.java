@@ -95,12 +95,15 @@ public class ForEachStatement extends LoopStatement {
         List<Statement> direct = translationMap.translateStatement(inspectionProvider, this);
         if (haveDirectTranslation(direct, this)) return direct;
 
+        // translations in order of appearance
         LocalVariableCreation translatedLvc = (LocalVariableCreation) structure.initialisers().get(0)
                 .translate(inspectionProvider, translationMap);
+        Expression translated = expression.translate(inspectionProvider, translationMap);
         List<Statement> translatedBlock = structure.block().translate(inspectionProvider, translationMap);
+
         return List.of(new ForEachStatement(identifier, label,
                 translatedLvc,
-                expression.translate(inspectionProvider, translationMap),
+                translated,
                 positionOfExpression,
                 ensureBlock(structure.block().identifier, translatedBlock),
                 getStructure().comment()));
