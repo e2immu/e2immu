@@ -26,7 +26,6 @@ allowsInterrupts == increases statement time
 public record MethodResolution(Set<MethodInfo> overrides,
                                Set<MethodInfo> methodsOfOwnClassReached,
                                CallStatus callStatus,
-                               boolean staticMethodCallsOnly,
                                boolean allowsInterrupts,
                                Set<MethodInfo> callCycle,
                                boolean ignoreMeBecauseOfPartOfCallCycle) {
@@ -63,7 +62,6 @@ public record MethodResolution(Set<MethodInfo> overrides,
                     getOverrides(),
                     getMethodsOfOwnClassReached(),
                     getPartOfConstruction(),
-                    isStaticMethodCallsOnly(),
                     isAllowsInterrupts(),
                     callCycle.getOrDefault(Set.of()),
                     isIgnoreMeBecauseOfPartOfCallCycle.getOrDefault(false));
@@ -102,13 +100,6 @@ public record MethodResolution(Set<MethodInfo> overrides,
         }
 
         // ************** VARIOUS ODDS AND ENDS
-        // used to check that in a utility class, no objects of the class itself are created
-
-        public final SetOnce<Boolean> staticMethodCallsOnly = new SetOnce<>();
-
-        public boolean isStaticMethodCallsOnly() {
-            return staticMethodCallsOnly.getOrDefault(false);
-        }
 
         public final SetOnce<Boolean> allowsInterrupts = new SetOnce<>();
 

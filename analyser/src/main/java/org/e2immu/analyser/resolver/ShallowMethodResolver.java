@@ -27,8 +27,7 @@ public class ShallowMethodResolver {
 
     public static MethodResolution onlyOverrides(InspectionProvider inspectionProvider, MethodInfo methodInfo) {
         return new MethodResolution(overrides(inspectionProvider, methodInfo), Set.of(),
-                MethodResolution.CallStatus.NOT_RESOLVED, false,
-                true, Set.of(), false);
+                MethodResolution.CallStatus.NOT_RESOLVED, true, Set.of(), false);
     }
 
     /**

@@ -245,21 +245,26 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
         return false;
     }
 
+    private static final String NOT_RAISING = "Not raising the 'method should be marked static' error ";
+
     private AnalysisStatus detectMissingStaticModifier() {
-        if (!methodInfo.methodInspection.get().isStatic() && !methodInfo.typeInfo.isInterface() && methodInfo.isNotATestMethod()) {
+        if (!methodInfo.methodInspection.get().isStatic()
+                && !methodInfo.typeInfo.isInterface()
+                && methodInfo.isNotATestMethod()) {
             // we need to check if there's fields being read/assigned/
-            if (absentUnlessStatic(VariableInfo::isRead) &&
-                    absentUnlessStatic(VariableInfo::isAssigned) &&
-                    !getThisAsVariable().isRead() &&
-                    methodInfo.isNotOverridingAnyOtherMethod() &&
-                    !methodInfo.methodInspection.get().isDefault()) {
-                MethodResolution methodResolution = methodInfo.methodResolution.get();
-                if (methodResolution.staticMethodCallsOnly()) {
-                    analyserResultBuilder.add(Message.newMessage(methodInfo.newLocation(),
-                            Message.Label.METHOD_SHOULD_BE_MARKED_STATIC));
-                    return DONE;
-                }
+            if (absentUnlessStatic(VariableInfo::isRead)
+                    && absentUnlessStatic(VariableInfo::isAssigned)
+                    && !getThisAsVariable().isRead()
+                    && methodInfo.isNotOverridingAnyOtherMethod()
+                    && !methodInfo.methodInspection.get().isDefault()) {
+                analyserResultBuilder.add(Message.newMessage(methodInfo.newLocation(),
+                        Message.Label.METHOD_SHOULD_BE_MARKED_STATIC));
+                LOGGER.info("Method should be marked 'static': {}", methodInfo);
+                return DONE;
             }
+            LOGGER.debug(NOT_RAISING + "(read, assigned): {}", methodInfo);
+        } else {
+            LOGGER.debug(NOT_RAISING + "(static, interface, test): {}", methodInfo);
         }
         return DONE;
     }
@@ -596,7 +601,7 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
             DV modifiesInstance = methodAnalysis.getProperty(MODIFIED_METHOD_ALT_TEMP);
             DV modifiesParameters = methodAnalysis.parameterAnalyses.stream()
                     .map(pa -> pa.getProperty(MODIFIED_VARIABLE))
-                    .reduce(DV.FALSE_DV,DV::max);
+                    .reduce(DV.FALSE_DV, DV::max);
             DV modified = modifiesInstance.max(modifiesParameters);
             if (modified.isDelayed()) {
                 LOGGER.debug("Delaying return value of {}, waiting for MODIFIED (we may try to inline!)", methodInfo);

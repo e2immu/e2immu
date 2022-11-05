@@ -63,10 +63,10 @@ public class Parser {
         input = Input.create(configuration);
     }
 
+    // used in CodeModernizer
     public Parser(Configuration newConfiguration, Parser previousParser) throws IOException {
         this.configuration = newConfiguration;
-        this.input = Input.createNext(newConfiguration, previousParser.input.classPath(),
-                previousParser.input.globalTypeContext(), previousParser.input.byteCodeInspector());
+        this.input = previousParser.input.copy(newConfiguration);
     }
 
     // meant for tests only!

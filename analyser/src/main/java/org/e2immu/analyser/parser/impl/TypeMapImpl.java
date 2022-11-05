@@ -129,20 +129,27 @@ public class TypeMapImpl implements TypeMap {
 
     public static class Builder implements TypeMap.Builder {
 
-        private final Trie<TypeInfo> trie = new Trie<>();
-        private final PrimitivesImpl primitives = new PrimitivesImpl();
-        private final E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions = new E2ImmuAnnotationExpressions();
+        private final Trie<TypeInfo> trie;
+        private final PrimitivesImpl primitives;
+        private final E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions;
         private final Resources classPath;
 
-        private final Map<TypeInfo, TypeInspection.Builder> typeInspections = new HashMap<>();
-        private final Map<FieldInfo, FieldInspection.Builder> fieldInspections = new HashMap<>();
-        private final Map<String, MethodInspection.Builder> methodInspections = new HashMap<>();
+        private final Map<TypeInfo, TypeInspection.Builder> typeInspections;
+        private final Map<FieldInfo, FieldInspection.Builder> fieldInspections;
+        private final Map<String, MethodInspection.Builder> methodInspections;
 
         private OnDemandInspection byteCodeInspector;
         private InspectWithJavaParser inspectWithJavaParser;
 
-        public Builder(Resources classPath) {
-            this.classPath = classPath;
+        public Builder(Resources resources) {
+            trie = new Trie<>();
+            primitives = new PrimitivesImpl();
+            classPath = resources;
+            e2ImmuAnnotationExpressions = new E2ImmuAnnotationExpressions();
+            typeInspections = new HashMap<>();
+            fieldInspections = new HashMap<>();
+            methodInspections = new HashMap<>();
+
             for (TypeInfo typeInfo : getPrimitives().getTypeByName().values()) {
                 if (!typeInfo.typeInspection.isSet())
                     add(typeInfo, TRIGGER_BYTECODE_INSPECTION);
@@ -152,6 +159,16 @@ public class TypeMapImpl implements TypeMap {
                     add(typeInfo, BY_HAND_WITHOUT_STATEMENTS);
             }
             e2ImmuAnnotationExpressions.streamTypes().forEach(typeInfo -> add(typeInfo, TRIGGER_BYTECODE_INSPECTION));
+        }
+
+        public Builder(TypeMapImpl.Builder source, Resources newClassPath) {
+            classPath = newClassPath;
+            trie = source.trie;
+            primitives = source.primitives;
+            e2ImmuAnnotationExpressions = source.e2ImmuAnnotationExpressions;
+            typeInspections = source.typeInspections;
+            fieldInspections = source.fieldInspections;
+            methodInspections = source.methodInspections;
         }
 
         public TypeInfo loadType(String fqn, boolean complain) {
@@ -462,9 +479,15 @@ public class TypeMapImpl implements TypeMap {
             TypeInfo typeInfo = new TypeInfo(Primitives.INTERNAL, name);
             TypeInspection.Builder builder = add(typeInfo, BY_HAND_WITHOUT_STATEMENTS);
 
-            AnnotationExpression independentHc = new AnnotationExpressionImpl(e2ImmuAnnotationExpressions.independent.typeInfo(),
-                    List.of(new MemberValuePair(E2ImmuAnnotationExpressions.HIDDEN_CONTENT, new BooleanConstant(primitives, true))));
-            builder.addAnnotation(independentHc);
+            boolean isIndependent = isVoid && numberOfParameters == 0;
+            if(isIndependent) {
+                // this is the equivalent of interface Runnable { void run(); }
+                builder.addAnnotation(e2ImmuAnnotationExpressions.independent);
+            } else {
+                AnnotationExpression independentHc = new AnnotationExpressionImpl(e2ImmuAnnotationExpressions.independent.typeInfo(),
+                        List.of(new MemberValuePair(E2ImmuAnnotationExpressions.HIDDEN_CONTENT, new BooleanConstant(primitives, true))));
+                builder.addAnnotation(independentHc);
+            }
             boolean isContainer = typeInfo.simpleName.equals(Primitives.SYNTHETIC_FUNCTION_0);
             if (isContainer) {
                 builder.addAnnotation(e2ImmuAnnotationExpressions.container);

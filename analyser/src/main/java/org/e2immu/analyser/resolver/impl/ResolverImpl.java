@@ -774,8 +774,6 @@ public class ResolverImpl implements Resolver {
                             .filter(m -> m.typeInfo.firstStaticEnclosingType(inspectionProvider) == staticEnclosingType)
                             .collect(Collectors.toUnmodifiableSet());
                     methodResolutionBuilder.setMethodsOfOwnClassReached(methodsOfOwnClassReached);
-
-                    computeStaticMethodCallsOnly(methodInfo, methodResolutionBuilder);
                     methodResolutionBuilder.setOverrides(methodInfo, ShallowMethodResolver.overrides(inspectionProvider, methodInfo));
 
                     computeAllowsInterrupt(methodResolutionBuilder, builders, methodInfo, methodsOfOwnClassReached, false);
@@ -883,36 +881,6 @@ public class ResolverImpl implements Resolver {
         }
     }
 
-    private void computeStaticMethodCallsOnly(MethodInfo methodInfo,
-                                              MethodResolution.Builder methodResolution) {
-        MethodInspection methodInspection = inspectionProvider.getMethodInspection(methodInfo);
-        if (!methodResolution.staticMethodCallsOnly.isSet()) {
-            if (methodInspection.isStatic()) {
-                methodResolution.staticMethodCallsOnly.set(true);
-            } else {
-                AtomicBoolean atLeastOneCallOnThis = new AtomicBoolean(false);
-                Block block = methodInspection.getMethodBody();
-                if (block != null) {
-                    block.visit(element -> {
-                        if (element instanceof MethodCall methodCall) {
-                            MethodInspection callInspection = inspectionProvider.getMethodInspection(methodCall.methodInfo);
-                            boolean callOnThis = !callInspection.isStatic() &&
-                                    (methodCall.object == null ||
-                                            methodCall.object instanceof VariableExpression ve
-                                                    && ve.variable() instanceof This thisVar
-                                                    && thisVar.typeInfo == methodInfo.typeInfo);
-                            if (callOnThis) atLeastOneCallOnThis.set(true);
-                        }
-                    });
-                }
-                boolean staticMethodCallsOnly = !atLeastOneCallOnThis.get();
-                LOGGER.debug("Method {} is not static, does it have no calls on <this> scope? {}",
-                        methodInfo.fullyQualifiedName(), staticMethodCallsOnly);
-                methodResolution.staticMethodCallsOnly.set(staticMethodCallsOnly);
-            }
-        }
-    }
-
     private boolean notPartOfConstruction(MethodInfo methodInfo, MethodInspection methodInspection) {
         return !methodInspection.isPrivate() &&
                 !methodInspection.isStatic() &&
@@ -930,19 +898,25 @@ public class ResolverImpl implements Resolver {
         TypeInspection typeInspection = inspectionProvider.getTypeInspection(methodInfo.typeInfo);
         for (MethodInfo other : typeInspection.methods()) {
             MethodInspection otherInspection = other.methodInspection.get();
-            if (other != methodInfo
-                    && notPartOfConstruction(other, otherInspection)
-                    && builders.get(other).getMethodsOfOwnClassReached().contains(methodInfo)) {
-                return true;
+            if (other != methodInfo && notPartOfConstruction(other, otherInspection)) {
+                MethodResolution.Builder builder = builders.get(other);
+                //assert builder != null : "No method resolution builder found for " + other.fullyQualifiedName;
+                if (builder != null && builder.getMethodsOfOwnClassReached().contains(methodInfo)) {
+                    return true;
+                }
             }
         }
         for (FieldInfo fieldInfo : typeInspection.fields()) {
             FieldInspection fieldInspection = fieldInfo.fieldInspection.get();
             if (!fieldInspection.isPrivate() && fieldInspection.fieldInitialiserIsSet()) {
                 FieldInspection.FieldInitialiser fieldInitialiser = fieldInspection.getFieldInitialiser();
-                if (fieldInitialiser.implementationOfSingleAbstractMethod() != null &&
-                        builders.get(fieldInitialiser.implementationOfSingleAbstractMethod()).getMethodsOfOwnClassReached().contains(methodInfo)) {
-                    return true;
+                MethodInfo implementation = fieldInitialiser.implementationOfSingleAbstractMethod();
+                if (implementation != null) {
+                    MethodResolution.Builder builder = builders.get(implementation);
+                    //assert builder != null : "No method resolution builder found for " + implementation.fullyQualifiedName;
+                    if (builder != null && builder.getMethodsOfOwnClassReached().contains(methodInfo)) {
+                        return true;
+                    }
                 }
             }
         }
@@ -953,15 +927,20 @@ public class ResolverImpl implements Resolver {
                                                             MethodInfo methodInfo) {
         TypeInspection typeInspection = inspectionProvider.getTypeInspection(methodInfo.typeInfo);
         for (MethodInfo other : typeInspection.constructors()) {
-            if (builders.get(other).getMethodsOfOwnClassReached().contains(methodInfo)) {
+            MethodResolution.Builder builder = builders.get(other);
+            //assert builder != null : "No method resolution builder found for " + other.fullyQualifiedName;
+            if (builder != null && builder.getMethodsOfOwnClassReached().contains(methodInfo)) {
                 return true;
             }
         }
         for (MethodInfo other : typeInspection.methods()) {
             MethodInspection otherInspection = other.methodInspection.get();
-            if (other != methodInfo && !notPartOfConstruction(other, otherInspection)
-                    && builders.get(other).getMethodsOfOwnClassReached().contains(methodInfo)) {
-                return true;
+            if (other != methodInfo && !notPartOfConstruction(other, otherInspection)) {
+                MethodResolution.Builder builder = builders.get(other);
+                //assert builder != null : "No method resolution builder found for " + other.fullyQualifiedName;
+                if (builder != null && builder.getMethodsOfOwnClassReached().contains(methodInfo)) {
+                    return true;
+                }
             }
         }
         for (FieldInfo fieldInfo : typeInspection.fields()) {

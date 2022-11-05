@@ -200,6 +200,10 @@ public abstract class CommonAbstractValue {
         return Sum.sum(Identifier.CONSTANT, context, l, r);
     }
 
+    protected static Expression product(Expression l, Expression r) {
+        return Product.product(Identifier.CONSTANT, context, l, r);
+    }
+
     static ParameterInfo createParameter() {
         assert PRIMITIVES != null;
         if (!PRIMITIVES.objectTypeInfo().typeInspection.isSet()) {
