@@ -150,7 +150,8 @@ public record EvaluationResult(EvaluationContext evaluationContext,
     of the expression.
      */
 
-    public DV isNotNull0(boolean useEnnInsteadOfCnn) {
+    public DV isNotNull0(boolean useEnnInsteadOfCnn, ForwardEvaluationInfo forwardEvaluationInfo) {
+        if (forwardEvaluationInfo.isOnlySort()) return DV.FALSE_DV;
         assert evaluationContext != null;
         if (value instanceof VariableExpression variableExpression) {
             ChangeData cd = changeData.get(variableExpression.variable());
@@ -159,7 +160,7 @@ public record EvaluationResult(EvaluationContext evaluationContext,
                 if (inChangeData != null && inChangeData.ge(MultiLevel.EFFECTIVELY_NOT_NULL_DV)) return DV.TRUE_DV;
             }
         }
-        return evaluationContext.isNotNull0(value, useEnnInsteadOfCnn, ForwardEvaluationInfo.DEFAULT);
+        return evaluationContext.isNotNull0(value, useEnnInsteadOfCnn, forwardEvaluationInfo);
     }
 
     public Expression currentValue(Variable variable) {

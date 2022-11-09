@@ -192,14 +192,14 @@ public class BinaryOperator extends BaseExpression implements Expression {
 
             // HERE are the ==null checks
             if (l == NullConstant.NULL_CONSTANT) {
-                DV dv = right.isNotNull0(false);
+                DV dv = right.isNotNull0(false, forwardEvaluationInfo);
                 if (dv.valueIsTrue()) return new BooleanConstant(primitives, false);
                 if (dv.isDelayed())
                     return DelayedExpression.forNullCheck(identifier, primitives,
                             right.getExpression(), dv.causesOfDelay().merge(r.causesOfDelay()));
             }
             if (r == NullConstant.NULL_CONSTANT) {
-                DV dv = left.isNotNull0(false);
+                DV dv = left.isNotNull0(false, forwardEvaluationInfo);
                 if (dv.valueIsTrue()) return new BooleanConstant(primitives, false);
                 if (dv.isDelayed())
                     return DelayedExpression.forNullCheck(identifier, primitives,
@@ -208,9 +208,11 @@ public class BinaryOperator extends BaseExpression implements Expression {
             // the following line ensures that a warning is sent when the ENN of a field/parameter is not NULLABLE
             // but the CNN is. The ENN trumps the annotation, but is not used in the computation of the constructor
             // see example in ExternalNotNull_0
-            if (l == NullConstant.NULL_CONSTANT && right.isNotNull0(true).valueIsTrue() && r instanceof IsVariableExpression ve) {
+            if (l == NullConstant.NULL_CONSTANT && right.isNotNull0(true,
+                    forwardEvaluationInfo).valueIsTrue() && r instanceof IsVariableExpression ve) {
                 builder.setProperty(ve.variable(), Property.CANDIDATE_FOR_NULL_PTR_WARNING, DV.TRUE_DV);
-            } else if (r == NullConstant.NULL_CONSTANT && left.isNotNull0(true).valueIsTrue() && l instanceof IsVariableExpression ve) {
+            } else if (r == NullConstant.NULL_CONSTANT && left.isNotNull0(true,
+                    forwardEvaluationInfo).valueIsTrue() && l instanceof IsVariableExpression ve) {
                 builder.setProperty(ve.variable(), Property.CANDIDATE_FOR_NULL_PTR_WARNING, DV.TRUE_DV);
             }
             return Equals.equals(identifier, context, l, r, forwardEvaluationInfo);
@@ -227,14 +229,14 @@ public class BinaryOperator extends BaseExpression implements Expression {
 
             // HERE are the !=null checks
             if (l == NullConstant.NULL_CONSTANT) {
-                DV dv = right.isNotNull0(false);
+                DV dv = right.isNotNull0(false, forwardEvaluationInfo);
                 if (dv.valueIsTrue()) return new BooleanConstant(primitives, true);
                 if (dv.isDelayed())
                     return DelayedExpression.forNullCheck(identifier, primitives,
                             right.getExpression(), dv.causesOfDelay().merge(r.causesOfDelay()));
             }
             if (r == NullConstant.NULL_CONSTANT) {
-                DV dv = left.isNotNull0(false);
+                DV dv = left.isNotNull0(false, forwardEvaluationInfo);
                 if (dv.valueIsTrue()) return new BooleanConstant(primitives, true);
                 if (dv.isDelayed())
                     return DelayedExpression.forNullCheck(identifier, primitives,
@@ -334,7 +336,7 @@ public class BinaryOperator extends BaseExpression implements Expression {
         }
 
         Expression state = and ? l.value() : Negation.negate(context, l.value());
-        if (!lhs.equals(l.value())&& !forwardEvaluationInfo.isInCompanionExpression()) {
+        if (!lhs.equals(l.value()) && !forwardEvaluationInfo.isInCompanionExpression()) {
             Expression literalNotNull = lhs.keepLiteralNotNull(context, and);
             if (literalNotNull != null) {
                 /*

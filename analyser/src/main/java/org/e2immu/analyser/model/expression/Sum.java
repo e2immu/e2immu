@@ -160,7 +160,7 @@ public class Sum extends BinaryOperator {
 
 
     // we have more than 2 terms, that's a sum of sums...
-    static Expression wrapInSum(EvaluationResult evaluationContext, Expression[] expressions, int i) {
+    public static Expression wrapInSum(EvaluationResult evaluationContext, Expression[] expressions, int i) {
         assert i >= 2;
         if (i == 2) return Sum.sum(evaluationContext, expressions[0], expressions[1]);
         return Sum.sum(evaluationContext, wrapInSum(evaluationContext, expressions, i - 1), expressions[i - 1]);

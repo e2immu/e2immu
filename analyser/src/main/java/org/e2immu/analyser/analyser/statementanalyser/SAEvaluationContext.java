@@ -242,6 +242,7 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
 
     @Override
     public DV isNotNull0(Expression value, boolean useEnnInsteadOfCnn, ForwardEvaluationInfo forwardEvaluationInfo) {
+        if (forwardEvaluationInfo.isOnlySort()) return DV.FALSE_DV;
         if (value instanceof IsVariableExpression ve) {
             VariableInfo variableInfo = findForReading(ve.variable(), true);
             DV cnn = variableInfo.getProperty(useEnnInsteadOfCnn ? EXTERNAL_NOT_NULL : CONTEXT_NOT_NULL);

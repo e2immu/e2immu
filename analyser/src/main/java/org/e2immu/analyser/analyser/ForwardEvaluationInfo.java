@@ -36,6 +36,7 @@ public class ForwardEvaluationInfo {
     private final Set<Variable> evaluating;
     private final boolean evaluatingFieldExpression;
     private final boolean noSwitchingToConcreteMethod;
+    private final boolean onlySort;
 
     private ForwardEvaluationInfo(Map<Property, DV> properties,
                                   boolean doNotReevaluateVariableExpressions,
@@ -47,7 +48,8 @@ public class ForwardEvaluationInfo {
                                   boolean evaluatingFieldExpression,
                                   boolean noSwitchingToConcreteMethod,
                                   Set<MethodInfo> inlining,
-                                  Set<Variable> evaluating) {
+                                  Set<Variable> evaluating,
+                                  boolean onlySort) {
         this.properties = Map.copyOf(properties);
         this.isAssignmentTarget = isAssignmentTarget;
         this.assignmentTarget = assignmentTarget;
@@ -59,6 +61,7 @@ public class ForwardEvaluationInfo {
         this.evaluating = evaluating;
         this.evaluatingFieldExpression = evaluatingFieldExpression;
         this.noSwitchingToConcreteMethod = noSwitchingToConcreteMethod;
+        this.onlySort = onlySort;
     }
 
     public boolean assignToField() {
@@ -126,6 +129,10 @@ public class ForwardEvaluationInfo {
         return !noSwitchingToConcreteMethod;
     }
 
+    public boolean isOnlySort() {
+        return onlySort;
+    }
+
     public static class Builder {
         private final Map<Property, DV> properties = new HashMap<>();
         private boolean doNotReevaluateVariableExpressions;
@@ -138,6 +145,7 @@ public class ForwardEvaluationInfo {
         private final Set<MethodInfo> inlining = new HashSet<>();
         private final Set<Variable> evaluating = new HashSet<>();
         private boolean noSwitchingToConcreteMethod;
+        private boolean onlySort;
 
         public Builder() {
             addProperty(Property.CONTEXT_NOT_NULL, MultiLevel.NULLABLE_DV);
@@ -155,13 +163,19 @@ public class ForwardEvaluationInfo {
             this.noSwitchingToConcreteMethod = fwd.noSwitchingToConcreteMethod;
             this.inlining.addAll(fwd.inlining);
             this.evaluating.addAll(fwd.evaluating);
+            this.onlySort = fwd.onlySort;
         }
 
         public ForwardEvaluationInfo build() {
             return new ForwardEvaluationInfo(Map.copyOf(properties), doNotReevaluateVariableExpressions,
                     isAssignmentTarget, assignmentTarget, doNotComplainInlineConditional, inCompanionExpression,
                     ignoreValueFromState, evaluatingFieldExpression, noSwitchingToConcreteMethod,
-                    Set.copyOf(inlining), Set.copyOf(evaluating));
+                    Set.copyOf(inlining), Set.copyOf(evaluating), onlySort);
+        }
+
+        public Builder setOnlySort(boolean onlySort) {
+            this.onlySort = onlySort;
+            return this;
         }
 
         public Builder addProperty(Property property, DV value) {

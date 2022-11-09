@@ -267,7 +267,9 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
     @Override
     public EvaluationResult evaluate(EvaluationResult context, ForwardEvaluationInfo forwardEvaluationInfo) {
         EvaluationResult.Builder builder = new EvaluationResult.Builder(context);
-
+        if (forwardEvaluationInfo.isOnlySort()) {
+            return evaluateComponents(context, forwardEvaluationInfo);
+        }
         MethodInfo concreteMethod = concreteMethod(context, forwardEvaluationInfo);
 
         boolean breakCallCycleDelay = concreteMethod.methodResolution.get().ignoreMeBecauseOfPartOfCallCycle();
@@ -350,7 +352,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         LinkedVariables linkedVariablesOfObject = linkedVariablesOfObject(context, objectValue);
 
         // see InlinedMethod_10, find3 vs find4
-        if(modified.valueIsTrue()) {
+        if (modified.valueIsTrue()) {
             linkedVariablesOfObject.dependentVariables().forEach(v -> builder.markContextModified(v, DV.TRUE_DV));
         }
 
@@ -444,6 +446,15 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         }
 
         return builder.build();
+    }
+
+    private EvaluationResult evaluateComponents(EvaluationResult context, ForwardEvaluationInfo forwardEvaluationInfo) {
+        EvaluationResult objectEval = object.evaluate(context, forwardEvaluationInfo);
+        List<Expression> evaluatedParams = parameterExpressions.stream()
+                .map(e -> e.evaluate(context, forwardEvaluationInfo).getExpression()).toList();
+        Expression mc = new MethodCall(identifier, objectIsImplicit, objectEval.getExpression(), methodInfo,
+                returnType(), evaluatedParams);
+        return new EvaluationResult.Builder(context).setExpression(mc).build();
     }
 
     private LinkedVariables linkedVariablesOfObject(EvaluationResult context, Expression objectValue) {

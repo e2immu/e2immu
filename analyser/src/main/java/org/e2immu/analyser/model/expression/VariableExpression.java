@@ -272,8 +272,11 @@ public class VariableExpression extends BaseExpression implements IsVariableExpr
 
     @Override
     public EvaluationResult evaluate(EvaluationResult context, ForwardEvaluationInfo forwardEvaluationInfoIn) {
-        ForwardEvaluationInfo forwardEvaluationInfo = overrideForward(forwardEvaluationInfoIn);
         EvaluationResult.Builder builder = new EvaluationResult.Builder(context);
+        if (forwardEvaluationInfoIn.isOnlySort()) {
+            return builder.setExpression(this).build();
+        }
+        ForwardEvaluationInfo forwardEvaluationInfo = overrideForward(forwardEvaluationInfoIn);
         if (forwardEvaluationInfo.isDoNotReevaluateVariableExpressions()) {
             return builder.setExpression(this).build();
         }

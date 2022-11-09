@@ -23,5 +23,10 @@ public class OrgJunitJupiterApi {
     @Independent
     interface Assertions$ {
 
+        @Independent
+        <V> V fail();
+
+        @Independent
+        <V> V fail(String msg);
     }
 }
