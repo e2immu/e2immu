@@ -295,6 +295,16 @@ public class Assignment extends BaseExpression implements Expression {
     @Override
     public EvaluationResult evaluate(EvaluationResult context, ForwardEvaluationInfo forwardEvaluationInfo) {
         EvaluationResult.Builder builder = new EvaluationResult.Builder(context);
+        if (forwardEvaluationInfo.isOnlySort()) {
+            Expression evalTarget = target.evaluate(context, forwardEvaluationInfo).getExpression();
+            Expression evalValue = value.evaluate(context, forwardEvaluationInfo).getExpression();
+            Expression newAssignment = new Assignment(identifier, primitives, evalTarget, evalValue, assignmentOperator,
+                    prefixPrimitiveOperator, complainAboutAssignmentOutsideType, variableTarget,
+                    binaryOperator, hackForUpdatersInForLoop, allowStaticallyAssigned,
+                    evaluationOfValue, directAssignmentVariables);
+            return builder.setExpression(newAssignment).build();
+        }
+
         VariableExpression ve = target.asInstanceOf(VariableExpression.class);
 
         // see Warnings_13, we want to raise a potential null pointer exception when a non-primitive is assigned to a primitive
