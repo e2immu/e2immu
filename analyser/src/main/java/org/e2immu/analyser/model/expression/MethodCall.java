@@ -124,6 +124,9 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
             return DelayedExpression.forMethod(identifier, translatedMethod, translatedMethod.returnType(),
                     translatedMc, causesOfDelay, Map.of());
         }
+        if(translationMap.translateAgain()) {
+            return translatedMc.translate(inspectionProvider, translationMap);
+        }
         return translatedMc;
     }
 

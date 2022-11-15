@@ -122,4 +122,9 @@ public interface TranslationMap {
     default Map<ParameterizedType, ParameterizedType> types() {
         return Map.of();
     }
+
+    /*
+    used by CM
+     */
+    default boolean translateAgain() { return false; }
 }

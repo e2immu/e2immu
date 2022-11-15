@@ -218,6 +218,11 @@ public class InlinedMethod extends BaseExpression implements Expression {
     }
 
     @Override
+    public List<? extends Element> subElements() {
+        return List.of(expression);
+    }
+
+    @Override
     public List<Variable> variables(boolean descendIntoFieldReferences) {
         return expression.variables(descendIntoFieldReferences);
     }

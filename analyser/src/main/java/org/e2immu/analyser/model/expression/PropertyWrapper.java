@@ -301,6 +301,11 @@ public final class PropertyWrapper extends BaseExpression implements Expression,
     }
 
     @Override
+    public List<? extends Element> subElements() {
+        return List.of(expression);
+    }
+    
+    @Override
     public <T extends Expression> T asInstanceOf(Class<T> clazz) {
         return expression.asInstanceOf(clazz);
     }

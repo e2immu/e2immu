@@ -272,6 +272,16 @@ public class Assignment extends BaseExpression implements Expression {
     }
 
     @Override
+    public int internalCompareTo(Expression v) {
+        if(v instanceof Assignment other) {
+            int c = target.compareTo(other.target);
+            if(c != 0) return c;
+            return value.compareTo(other.value);
+        }
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
     public Precedence precedence() {
         return Precedence.ASSIGNMENT;
     }
