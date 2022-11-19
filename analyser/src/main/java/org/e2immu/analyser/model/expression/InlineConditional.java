@@ -100,9 +100,13 @@ public class InlineConditional extends BaseExpression implements Expression {
         Expression tt = ifTrue.translate(inspectionProvider, translationMap);
         Expression tf = ifFalse.translate(inspectionProvider, translationMap);
         if (tc == condition && tt == ifTrue && tf == ifFalse) return this;
-        return tc instanceof Negation negation
+        InlineConditional result = tc instanceof Negation negation
                 ? new InlineConditional(identifier, this.inspectionProvider, negation.expression, tf, tt)
                 : new InlineConditional(identifier, this.inspectionProvider, tc, tt, tf);
+        if (translationMap.translateAgain()) {
+            return result.translate(inspectionProvider, translationMap);
+        }
+        return result;
     }
 
     @Override
@@ -233,7 +237,7 @@ public class InlineConditional extends BaseExpression implements Expression {
                 notCondition = And.and(context, notCondition, notLiteral);
             }
         }
-        if(condition instanceof BooleanConstant && forwardEvaluationInfo.isComplainInlineConditional()) {
+        if (condition instanceof BooleanConstant && forwardEvaluationInfo.isComplainInlineConditional()) {
             builder.raiseError(this.condition.getIdentifier(), Message.Label.INLINE_CONDITION_EVALUATES_TO_CONSTANT);
         }
         Set<Variable> conditionVariables = Stream.concat(this.condition.variables(true).stream(),
