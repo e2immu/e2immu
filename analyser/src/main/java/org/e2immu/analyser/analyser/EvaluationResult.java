@@ -69,7 +69,6 @@ EvaluatedExpressionCache will be stored in StatementAnalysis.stateData() for use
 
  */
 public record EvaluationResult(EvaluationContext evaluationContext,
-                               int statementTime,
                                Expression value,
                                List<Expression> storedValues,
                                EvaluatedExpressionCache evaluatedExpressionCache,
@@ -88,7 +87,6 @@ public record EvaluationResult(EvaluationContext evaluationContext,
     public String toString() {
         return "EvaluationResult{" +
                 "evaluationContext=" + evaluationContext +
-                ", statementTime=" + statementTime +
                 ", value=" + value +
                 ", storedValues=" + storedValues +
                 ", causesOfDelay=" + causesOfDelay +
@@ -99,12 +97,12 @@ public record EvaluationResult(EvaluationContext evaluationContext,
     }
 
     public EvaluationResult copy(EvaluationContext evaluationContext) {
-        return new EvaluationResult(evaluationContext, statementTime, value, storedValues, evaluatedExpressionCache,
+        return new EvaluationResult(evaluationContext, value, storedValues, evaluatedExpressionCache,
                 causesOfDelay, messages, changeData, precondition);
     }
 
     public static EvaluationResult from(EvaluationContext evaluationContext) {
-        return new EvaluationResult(evaluationContext, VariableInfoContainer.NOT_RELEVANT, null, List.of(),
+        return new EvaluationResult(evaluationContext, null, List.of(),
                 EvaluatedExpressionCache.EMPTY,
                 CausesOfDelay.EMPTY, Messages.EMPTY, Map.of(), Precondition.empty(evaluationContext.getPrimitives()));
     }
@@ -218,13 +216,13 @@ public record EvaluationResult(EvaluationContext evaluationContext,
         CausesOfDelay translatedCauses = causesOfDelay.translate(inspectionProvider, translationMap);
         Precondition translatedPrecondition = precondition == null ? null : precondition.translate(inspectionProvider, translationMap);
         EvaluatedExpressionCache translatedEvaluatedExpressionCache = evaluatedExpressionCache.translate(inspectionProvider, translationMap);
-        return new EvaluationResult(evaluationContext, statementTime, translatedValue, translatedStoredValues,
+        return new EvaluationResult(evaluationContext, translatedValue, translatedStoredValues,
                 translatedEvaluatedExpressionCache,
                 translatedCauses, messages, newMap, translatedPrecondition);
     }
 
     public EvaluationResult withNewEvaluationContext(EvaluationContext newEc) {
-        return new EvaluationResult(newEc, statementTime, value, storedValues, evaluatedExpressionCache,
+        return new EvaluationResult(newEc, value, storedValues, evaluatedExpressionCache,
                 causesOfDelay, messages, changeData, precondition);
     }
 
@@ -240,13 +238,17 @@ public record EvaluationResult(EvaluationContext evaluationContext,
         CausesOfDelay newChangeDataDelays = newChangeData.values()
                 .stream().map(e -> e.delays).reduce(CausesOfDelay.EMPTY, CausesOfDelay::merge);
         CausesOfDelay newCauses = value.causesOfDelay().merge(newChangeDataDelays);
-        return new EvaluationResult(evaluationContext, statementTime, value, storedValues, evaluatedExpressionCache,
+        return new EvaluationResult(evaluationContext, value, storedValues, evaluatedExpressionCache,
                 newCauses, messages, newChangeData, precondition);
     }
 
     public DV containsModification() {
         return changeData.values().stream().map(cd -> cd.properties.getOrDefault(Property.CONTEXT_MODIFIED, DV.FALSE_DV))
                 .reduce(DV.FALSE_DV, DV::max);
+    }
+
+    public int statementTime() {
+        return evaluationContext.getCurrentStatementTime();
     }
 
     /**
@@ -353,13 +355,13 @@ public record EvaluationResult(EvaluationContext evaluationContext,
         public Builder(EvaluationResult evaluationResult) {
             this.previousResult = Objects.requireNonNull(evaluationResult);
             this.evaluationContext = Objects.requireNonNull(evaluationResult.evaluationContext);
-            this.statementTime = evaluationContext.getInitialStatementTime();
+            this.statementTime = evaluationContext.getCurrentStatementTime();
         }
 
         public Builder(EvaluationContext evaluationContext) {
             this.previousResult = null;
             this.evaluationContext = evaluationContext;
-            this.statementTime = evaluationContext.getInitialStatementTime();
+            this.statementTime = evaluationContext.getCurrentStatementTime();
         }
 
         public Builder compose(EvaluationResult... previousResults) {
@@ -402,7 +404,7 @@ public record EvaluationResult(EvaluationContext evaluationContext,
                 valueChanges.merge(e.getKey(), e.getValue(), ChangeData::merge);
             }
 
-            statementTime = Math.max(statementTime, evaluationResult.statementTime);
+            statementTime = Math.max(statementTime, evaluationResult.evaluationContext.getCurrentStatementTime());
 
             if (evaluationResult.precondition != null) {
                 if (precondition == null) {
@@ -453,7 +455,8 @@ public record EvaluationResult(EvaluationContext evaluationContext,
                 }
             }
             EvaluatedExpressionCache evaluatedExpressionCache = new EvaluatedExpressionCache(evaluatedExpressions);
-            return new EvaluationResult(evaluationContext, statementTime, value,
+            EvaluationContext ec = evaluationContext.updateStatementTime(statementTime);
+            return new EvaluationResult(ec, value,
                     storedExpressions == null ? null : List.copyOf(storedExpressions), evaluatedExpressionCache,
                     causesOfDelay, messages, valueChanges, precondition);
         }

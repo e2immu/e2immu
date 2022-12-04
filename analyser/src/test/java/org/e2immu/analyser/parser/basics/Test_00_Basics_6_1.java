@@ -60,6 +60,10 @@ public class Test_00_Basics_6_1 extends CommonTestRunner {
                     String expect = d.iteration() == 0 ? "<f:field>" : "field$1";
                     assertEquals(expect, d.currentValue().toString());
                 }
+                if ("r".equals(d.variableName()) && "1".equals(d.statementId())) {
+                    String expected = d.iteration() == 0 ? "4+<f:field>+<f:field>" : "4+field$0+field$1";
+                    assertEquals(expected, d.currentValue().toString());
+                }
             }
             if ("test2".equals(d.methodInfo().name)) {
                 if ("f1".equals(d.variableName()) && "1".equals(d.statementId())) {
@@ -218,7 +222,7 @@ public class Test_00_Basics_6_1 extends CommonTestRunner {
             }
         };
 
-        testClass("Basics_6_1", 0, 1, new DebugConfiguration.Builder()
+        testClass("Basics_6_1", 2, 1, new DebugConfiguration.Builder()
                 .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                 .addStatementAnalyserVisitor(statementAnalyserVisitor)
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)

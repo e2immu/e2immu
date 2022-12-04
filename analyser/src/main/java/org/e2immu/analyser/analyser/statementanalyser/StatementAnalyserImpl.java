@@ -208,6 +208,7 @@ public class StatementAnalyserImpl implements StatementAnalyser {
      * Once the AnalysisStatus reaches DONE, this particular block is not analysed again.
      */
     public AnalyserResult analyseAllStatementsInBlock(int iteration,
+                                                      int statementTime,
                                                       ForwardAnalysisInfo forwardAnalysisInfoIn,
                                                       EvaluationContext closure) {
         try {
@@ -225,11 +226,13 @@ public class StatementAnalyserImpl implements StatementAnalyser {
             StatementAnalyserImpl statementAnalyser = (StatementAnalyserImpl) previousAndFirst.first;
             Expression switchCondition = new BooleanConstant(statementAnalysis.primitives(), true);
             ForwardAnalysisInfo forwardAnalysisInfo = forwardAnalysisInfoIn;
+            int currentStatementTime = statementTime;
             do {
                 boolean wasReplacement;
                 EvaluationContext evaluationContext = new SAEvaluationContext(statementAnalysis,
                         myMethodAnalyser, this, analyserContext,
-                        localAnalysers, iteration, forwardAnalysisInfo.conditionManager(), closure,
+                        localAnalysers, iteration, currentStatementTime,
+                        forwardAnalysisInfo.conditionManager(), closure,
                         delaySubsequentStatementBecauseOfECI, forwardAnalysisInfo.breakDelayLevel());
                 if (analyserContext.getConfiguration().analyserConfiguration().skipTransformations()) {
                     wasReplacement = false;
@@ -246,10 +249,10 @@ public class StatementAnalyserImpl implements StatementAnalyser {
                 ForwardAnalysisInfo statementInfo = forwardAnalysisInfo.otherConditionManager(forwardAnalysisInfo.conditionManager()
                         .withCondition(context, switchCondition, switchConditionVariables));
 
-                AnalyserResult result = statementAnalyser.analyseSingleStatement(iteration, closure,
+                AnalyserResult result = statementAnalyser.analyseSingleStatement(iteration, currentStatementTime, closure,
                         wasReplacement, previousStatementAnalysis, statementInfo, delaySubsequentStatementBecauseOfECI);
                 delaySubsequentStatementBecauseOfECI |= result.analysisStatus().causesOfDelay().containsCauseOfDelay(CauseOfDelay.Cause.ECI);
-
+                currentStatementTime = statementAnalyser.statementAnalysis.statementTime(Stage.MERGE);
                 builder.add(result);
                 previousStatement = statementAnalyser;
 
@@ -408,6 +411,7 @@ public class StatementAnalyserImpl implements StatementAnalyser {
      * Once the AnalysisStatus reaches DONE, this particular block is not analysed again.
      */
     private AnalyserResult analyseSingleStatement(int iteration,
+                                                  int statementTime,
                                                   EvaluationContext closure,
                                                   boolean wasReplacement,
                                                   StatementAnalysis previous,
@@ -473,7 +477,7 @@ public class StatementAnalyserImpl implements StatementAnalyser {
 
             EvaluationContext evaluationContext = new SAEvaluationContext(
                     statementAnalysis, myMethodAnalyser, this, analyserContext, localAnalysers,
-                    iteration, localConditionManager, closure, delaySubsequentStatementBecauseOfECI,
+                    iteration, statementTime, localConditionManager, closure, delaySubsequentStatementBecauseOfECI,
                     forwardAnalysisInfo.breakDelayLevel());
             StatementAnalyserSharedState sharedState = new StatementAnalyserSharedState(evaluationContext,
                     EvaluationResult.from(evaluationContext),
@@ -696,7 +700,7 @@ public class StatementAnalyserImpl implements StatementAnalyser {
     @Override
     public EvaluationContext newEvaluationContextForOutside() {
         return new SAEvaluationContext(statementAnalysis, myMethodAnalyser, this,
-                analyserContext, localAnalysers, 0,
+                analyserContext, localAnalysers, 0, statementAnalysis.flowData().getInitialTime(),
                 ConditionManager.initialConditionManager(statementAnalysis.primitives()), null,
                 false, BreakDelayLevel.NONE);
     }

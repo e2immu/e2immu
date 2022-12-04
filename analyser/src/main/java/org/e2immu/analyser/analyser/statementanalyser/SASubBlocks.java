@@ -258,6 +258,7 @@ record SASubBlocks(StatementAnalysis statementAnalysis, StatementAnalyser statem
                     }
                     AnalyserResult result = ((StatementAnalyserImpl) executionOfBlock.startOfBlock)
                             .analyseAllStatementsInBlock(evaluationContext.getIteration(),
+                                    statementAnalysis.flowData().getTimeAfterEvaluation(),
                                     forward, evaluationContext.getClosure());
                     sharedState.builder().add(result);
                     analysisStatus = analysisStatus.combine(result.analysisStatus());

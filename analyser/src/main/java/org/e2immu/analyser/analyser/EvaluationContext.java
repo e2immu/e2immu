@@ -105,6 +105,13 @@ public interface EvaluationContext {
         throw new UnsupportedOperationException();
     }
 
+    default EvaluationContext updateStatementTime(int statementTime) {
+        return this;
+    }
+
+    default int getCurrentStatementTime() {
+        return getInitialStatementTime();
+    }
     /*
      This default implementation is the correct one for basic tests and the companion analyser (we cannot use companions in the
      companion analyser, that would be chicken-and-egg).

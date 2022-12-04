@@ -27,17 +27,17 @@ public class Basics_6_1 {
 
     @Final(absent = true)
     private int field;
-/*
+
     public void test1() {
-        int f1, f2, n;
+        int f1, f2, n; // will cause an error: variable not used
         int r = (f1 = field) + (n = interrupting()) + (f2 = field);
-        assert r == f1 + f2 + n; // not necessarily true
+        assert r == 2 * f1 + n; // not necessarily true
     }
-*/
+
     public void test2() {
-        int f1, f2, n;
+        int f1, f2, n; // will cause an error: variable not used
         int r = (f1 = field) + (n = someMinorMethod(3)) + (f2 = field);
-        assert r == f1 + f2 + n; // should always be true
+        assert r == 2 * f1 + n; // should always be true
     }
 
     public int getField() {
