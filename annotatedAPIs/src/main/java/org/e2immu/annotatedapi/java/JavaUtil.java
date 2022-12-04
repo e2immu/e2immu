@@ -300,6 +300,9 @@ public class JavaUtil extends AnnotatedAPI {
          */
         boolean add(E e);
 
+        @Modified
+        void add(int index, @NotNull E e);
+
         default boolean addAll$Modification$Size(int i, Integer j, Collection<? extends E> c) {
             return i == (j == null ? 0 : j) + c.size();
         }

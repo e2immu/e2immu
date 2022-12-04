@@ -433,4 +433,10 @@ public class MethodInfo implements WithInspectionAndAnalysis {
                 && block.structure.statements().get(0) instanceof ReturnStatement rs
                 && rs.expression instanceof ConstantExpression<?>;
     }
+
+    public Set<MethodInfo> topOfOverloadingHierarchy() {
+        MethodResolution mr = this.methodResolution.get();
+        if (mr.overrides().isEmpty()) return Set.of(this);
+        return mr.overrides().stream().flatMap(mi -> mi.topOfOverloadingHierarchy().stream()).collect(Collectors.toUnmodifiableSet());
+    }
 }

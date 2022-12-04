@@ -16,6 +16,7 @@ package org.e2immu.analyser.util;
 
 import org.junit.jupiter.api.Test;
 
+import java.util.Comparator;
 import java.util.List;
 import java.util.Set;
 import java.util.TreeSet;
@@ -44,7 +45,7 @@ public class TestDependencyGraph {
         assertEquals("[b]", graph.dependencies('b').toString());
         assertEquals("[a, b, c]", graph.dependencies('c').toString());
 
-        assertEquals("[a:0, b:0, c:1]", graph.sortedSequenceOfParallel().toString());
+        assertEquals("[a:0, b:0, c:1]", graph.sortedSequenceOfParallel(Comparator.naturalOrder()).toString());
     }
 
     @Test
@@ -61,7 +62,7 @@ public class TestDependencyGraph {
         assertEquals("[a, b, c]", graph.dependencies('b').toString());
         assertEquals("[a, c]", graph.dependencies('c').toString());
 
-        assertEquals("[a:0, c:1, b:2]", graph.sortedSequenceOfParallel().toString());
+        assertEquals("[a:0, c:1, b:2]", graph.sortedSequenceOfParallel(Comparator.naturalOrder()).toString());
     }
 
     @Test
@@ -78,7 +79,7 @@ public class TestDependencyGraph {
         assertEquals("[b, c]", graph.dependencies('b').toString());
         assertEquals("[c]", graph.dependencies('c').toString());
 
-        assertEquals("[c:0, a:1, b:1]", graph.sortedSequenceOfParallel().toString());
+        assertEquals("[c:0, a:1, b:1]", graph.sortedSequenceOfParallel(Comparator.naturalOrder()).toString());
     }
 
     @Test
@@ -104,7 +105,7 @@ public class TestDependencyGraph {
         assertEquals(3, graph.relations());
 
         try {
-            graph.sortedSequenceOfParallel();
+            graph.sortedSequenceOfParallel(Comparator.naturalOrder());
             fail();
         } catch(UnsupportedOperationException ignored) {}
     }
@@ -148,7 +149,7 @@ public class TestDependencyGraph {
         }
 
         try {
-            graph.sortedSequenceOfParallel();
+            graph.sortedSequenceOfParallel(Comparator.naturalOrder());
             fail();
         } catch(UnsupportedOperationException ignored) {}
     }

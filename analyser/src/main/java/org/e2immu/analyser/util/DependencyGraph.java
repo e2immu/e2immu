@@ -306,14 +306,14 @@ public class DependencyGraph<T> extends Freezable {
      Return an element sort, the fewest dependencies first, with additional information about the dependencies
      between the elements.
      */
-    public List<SortResult<T>> sortedSequenceOfParallel() {
+    public List<SortResult<T>> sortedSequenceOfParallel(Comparator<T> parallelSorter) {
         Map<T, Node<T>> toDo = new HashMap<>(nodeMap);
         Set<T> done = new HashSet<>();
         List<SortResult<T>> result = new ArrayList<>(nodeMap.size());
         int iteration = 0;
 
         while (!toDo.isEmpty()) {
-            List<T> parallel = new LinkedList<>();
+            List<T> parallel = new ArrayList<>();
             for (Map.Entry<T, Node<T>> entry : toDo.entrySet()) {
                 List<T> dependencies = entry.getValue().dependsOn;
                 boolean safe;
@@ -332,6 +332,7 @@ public class DependencyGraph<T> extends Freezable {
             if (parallel.isEmpty()) {
                 throw new UnsupportedOperationException("Found a cycle; don't use this method");
             } else {
+                parallel.sort(parallelSorter);
                 for (T t : parallel) result.add(new SortResult<>(t, iteration));
                 parallel.forEach(toDo.keySet()::remove);
                 done.addAll(parallel);

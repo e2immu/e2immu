@@ -14,14 +14,12 @@
 
 package org.e2immu.analyser.analyser;
 
-import org.e2immu.analyser.inspector.MethodResolution;
 import org.e2immu.analyser.model.MethodInfo;
 import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.Variable;
 
 import java.util.*;
-import java.util.stream.Collectors;
 
 public class ForwardEvaluationInfo {
 
@@ -84,7 +82,7 @@ public class ForwardEvaluationInfo {
     }
 
     public boolean allowInline(MethodInfo methodInfo) {
-        Set<MethodInfo> top = topOfOverloadingHierarchy(methodInfo);
+        Set<MethodInfo> top = methodInfo.topOfOverloadingHierarchy();
         return Collections.disjoint(inlining, top);
     }
 
@@ -173,6 +171,7 @@ public class ForwardEvaluationInfo {
                     Set.copyOf(inlining), Set.copyOf(evaluating), onlySort);
         }
 
+        // used externally by CM
         public Builder setOnlySort(boolean onlySort) {
             this.onlySort = onlySort;
             return this;
@@ -281,7 +280,7 @@ public class ForwardEvaluationInfo {
         }
 
         public Builder addMethod(MethodInfo methodInfo) {
-            Set<MethodInfo> top = topOfOverloadingHierarchy(methodInfo);
+            Set<MethodInfo> top = methodInfo.topOfOverloadingHierarchy();
             assert Collections.disjoint(inlining, top);
             inlining.addAll(top);
             return this;
@@ -321,11 +320,5 @@ public class ForwardEvaluationInfo {
             doNotComplainInlineConditional = forwardEvaluationInfo.doNotComplainInlineConditional;
             return this;
         }
-    }
-
-    private static Set<MethodInfo> topOfOverloadingHierarchy(MethodInfo methodInfo) {
-        MethodResolution methodResolution = methodInfo.methodResolution.get();
-        if (methodResolution.overrides().isEmpty()) return Set.of(methodInfo);
-        return methodResolution.overrides().stream().flatMap(mi -> topOfOverloadingHierarchy(mi).stream()).collect(Collectors.toUnmodifiableSet());
     }
 }
