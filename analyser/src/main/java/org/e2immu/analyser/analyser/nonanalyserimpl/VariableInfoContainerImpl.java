@@ -139,7 +139,7 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
                                                              Instance value,
                                                              boolean statementHasSubBlocks) {
         VariableInfoImpl initial = new VariableInfoImpl(location, lvr, new AssignmentIds(index + Stage.INITIAL),
-                index + Stage.EVALUATION, Set.of(), null, NOT_A_FIELD);
+                index + Stage.EVALUATION, Set.of(), null, IGNORE_STATEMENT_TIME);
         initial.newVariable();
         initial.setValue(value);
         value.valueProperties().stream().forEach(e -> initial.setProperty(e.getKey(), e.getValue()));

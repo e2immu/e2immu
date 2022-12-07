@@ -99,7 +99,7 @@ public interface Variable extends OneVariable, Comparable<Variable> {
         if (variable() instanceof FieldReference fr && fr.scope instanceof DelayedVariableExpression dve) {
             return dve.statementTime;
         }
-        return VariableInfoContainer.NOT_A_FIELD;
+        return VariableInfoContainer.IGNORE_STATEMENT_TIME;
     }
 
     default void visit(Predicate<Element> predicate) {

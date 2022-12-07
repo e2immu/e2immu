@@ -229,14 +229,14 @@ public class InlineConditional extends BaseExpression implements Expression {
         // with the boolean case.
         Expression condition = conditionResult.value();
         Expression notCondition = Negation.negate(context, condition);
-        if (!condition.equals(this.condition) && !forwardEvaluationInfo.isInCompanionExpression()) {
+       /* if (!condition.equals(this.condition) && !forwardEvaluationInfo.isInCompanionExpression()) {
             Expression literal = this.condition.keepLiteralNotNull(context, true);
             if (literal != null) {
                 condition = And.and(context, condition, literal);
                 Expression notLiteral = this.condition.keepLiteralNotNull(context, false);
                 notCondition = And.and(context, notCondition, notLiteral);
             }
-        }
+        }*/
         if (condition instanceof BooleanConstant && forwardEvaluationInfo.isComplainInlineConditional()) {
             builder.raiseError(this.condition.getIdentifier(), Message.Label.INLINE_CONDITION_EVALUATES_TO_CONSTANT);
         }

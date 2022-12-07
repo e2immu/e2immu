@@ -765,7 +765,7 @@ record SASubBlocks(StatementAnalysis statementAnalysis, StatementAnalyser statem
             if (collection != null) {
                 MethodInfo isEmpty = collection.findUniqueMethod("isEmpty", 0);
                 return Negation.negate(context, new MethodCall(Identifier.generate("isEmpty call"), false, value, isEmpty,
-                        isEmpty.returnType(), List.of()));
+                        isEmpty.returnType(), List.of(), context.modificationTimesOf(value)));
             }
         }
         return Instance.forUnspecifiedLoopCondition(index(), context.getPrimitives());

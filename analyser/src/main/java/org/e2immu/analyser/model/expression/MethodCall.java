@@ -52,16 +52,19 @@ import static org.e2immu.analyser.output.QualifiedName.Required.YES;
 
 public class MethodCall extends ExpressionWithMethodReferenceResolution implements HasParameterExpressions, OneVariable {
     private static final Logger LOGGER = LoggerFactory.getLogger(MethodCall.class);
+    public static final String NO_MODIFICATION_TIMES = "";
 
     public final boolean objectIsImplicit; // irrelevant after evaluation
     public final Expression object;
     public final List<Expression> parameterExpressions;
+    public final String modificationTimes; // summary of modification times of object and arguments and their linked variables
 
     public MethodCall(Identifier identifier,
                       Expression object,
                       MethodInfo methodInfo,
                       List<Expression> parameterExpressions) {
-        this(identifier, false, object, methodInfo, methodInfo.returnType(), parameterExpressions, true);
+        this(identifier, false, object, methodInfo, methodInfo.returnType(), parameterExpressions,
+                NO_MODIFICATION_TIMES, true);
     }
 
     public MethodCall(Identifier identifier,
@@ -70,7 +73,17 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
                       MethodInfo methodInfo,
                       ParameterizedType returnType,
                       List<Expression> parameterExpressions) {
-        this(identifier, objectIsImplicit, object, methodInfo, returnType, parameterExpressions, true);
+        this(identifier, objectIsImplicit, object, methodInfo, returnType, parameterExpressions, NO_MODIFICATION_TIMES, true);
+    }
+
+    public MethodCall(Identifier identifier,
+                      boolean objectIsImplicit,
+                      Expression object,
+                      MethodInfo methodInfo,
+                      ParameterizedType returnType,
+                      List<Expression> parameterExpressions,
+                      String modificationTimes) {
+        this(identifier, objectIsImplicit, object, methodInfo, returnType, parameterExpressions, modificationTimes, true);
     }
 
     private MethodCall(Identifier identifier,
@@ -79,6 +92,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
                        MethodInfo methodInfo,
                        ParameterizedType returnType,
                        List<Expression> parameterExpressions,
+                       String modificationTimes,
                        boolean checkDelays) {
         super(identifier,
                 object.getComplexity()
@@ -90,6 +104,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         assert !checkDelays
                 || parameterExpressions.stream().noneMatch(Expression::isDelayed) : "Creating a method call with delayed arguments";
         this.objectIsImplicit = objectIsImplicit;
+        this.modificationTimes = Objects.requireNonNull(modificationTimes);
     }
 
     // only used in the inequality system
@@ -119,12 +134,12 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
                 .map(Expression::causesOfDelay).reduce(CausesOfDelay.EMPTY, CausesOfDelay::merge)
                 .merge(translatedObject.causesOfDelay());
         MethodCall translatedMc = new MethodCall(identifier, objectIsImplicit, translatedObject,
-                translatedMethod, translatedReturnType, translatedParameters, causesOfDelay.isDone());
+                translatedMethod, translatedReturnType, translatedParameters, modificationTimes, causesOfDelay.isDone());
         if (causesOfDelay.isDelayed()) {
             return DelayedExpression.forMethod(identifier, translatedMethod, translatedMethod.returnType(),
                     translatedMc, causesOfDelay, Map.of());
         }
-        if(translationMap.translateAgain()) {
+        if (translationMap.translateAgain()) {
             return translatedMc.translate(inspectionProvider, translationMap);
         }
         return translatedMc;
@@ -151,10 +166,10 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         MethodCall that = (MethodCall) o;
         boolean sameMethod = methodInfo.equals(that.methodInfo) ||
                 checkSpecialCasesWhereDifferentMethodsAreEqual(methodInfo, that.methodInfo);
-        return sameMethod &&
-                parameterExpressions.equals(that.parameterExpressions) &&
-                object.equals(that.object);
-        // IMPROVE does modification play a role here?
+        return sameMethod
+                && modificationTimes.equals(that.modificationTimes)
+                && parameterExpressions.equals(that.parameterExpressions)
+                && object.equals(that.object);
     }
 
     /*
@@ -171,7 +186,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
 
     @Override
     public int hashCode() {
-        return Objects.hash(object, parameterExpressions, methodInfo);
+        return Objects.hash(object, parameterExpressions, methodInfo, modificationTimes);
     }
 
     @Override
@@ -1507,5 +1522,9 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
             }
         }
         return EvaluationContext.NO_LOOP_SOURCE_VARIABLES;
+    }
+
+    public String getModificationTimes() {
+        return modificationTimes;
     }
 }

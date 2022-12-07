@@ -73,7 +73,7 @@ public class DelayedVariableExpression extends BaseExpression implements IsVaria
     public static DelayedVariableExpression forParameter(ParameterInfo parameterInfo,
                                                          CausesOfDelay causesOfDelay) {
         return new DelayedVariableExpression("<p:" + parameterInfo.name + ">", parameterInfo,
-                VariableInfoContainer.NOT_A_FIELD, causesOfDelay);
+                VariableInfoContainer.IGNORE_STATEMENT_TIME, causesOfDelay);
     }
 
     public static DelayedVariableExpression forField(FieldReference fieldReference,
@@ -106,13 +106,13 @@ public class DelayedVariableExpression extends BaseExpression implements IsVaria
             return forField(fieldReference, statementTime, causesOfDelay);
         if (variable instanceof ParameterInfo parameterInfo) return forParameter(parameterInfo, causesOfDelay);
         return new DelayedVariableExpression("<v:" + variable.simpleName() + ">", variable,
-                VariableInfoContainer.NOT_A_FIELD, causesOfDelay);
+                VariableInfoContainer.IGNORE_STATEMENT_TIME, causesOfDelay);
     }
 
 
     public static Expression forLocalVariableInLoop(Variable variable, CausesOfDelay causesOfDelay) {
         String msg = "<vl:" + variable.simpleName() + ">";
-        return new DelayedVariableExpression(msg, variable, VariableInfoContainer.NOT_A_FIELD, causesOfDelay);
+        return new DelayedVariableExpression(msg, variable, VariableInfoContainer.IGNORE_STATEMENT_TIME, causesOfDelay);
     }
 
     public static Expression forDelayedValueProperties(Variable variable,

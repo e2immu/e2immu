@@ -315,7 +315,7 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
                     Expression object = ConstructorCall.withAnonymousClass(fieldInitialiser.identifier(),
                             fieldInfo.type, sam.typeInfo, Diamond.NO);
                     toEvaluate = new MethodCall(expression.getIdentifier(), false, object, sam,
-                            sam.returnType(), List.of());
+                            sam.returnType(), List.of(), MethodCall.NO_MODIFICATION_TIMES);
                 } else {
                     toEvaluate = expression;
                 }
@@ -1662,7 +1662,7 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
         FieldAnalysis fieldAnalysis = analyserContext.getFieldAnalysis(fieldReference.fieldInfo);
         DV effectivelyFinal = fieldAnalysis.getProperty(Property.FINAL);
         if (effectivelyFinal.isDelayed()) {
-            return DelayedVariableExpression.forField(fieldReference, VariableInfoContainer.IN_FIELD_ANALYSER,
+            return DelayedVariableExpression.forField(fieldReference, VariableInfoContainer.IGNORE_STATEMENT_TIME,
                     new VariableCause(fieldReference, fieldInfo.newLocation(), CauseOfDelay.Cause.FIELD_FINAL));
         }
         if (effectivelyFinal.valueIsFalse()) {

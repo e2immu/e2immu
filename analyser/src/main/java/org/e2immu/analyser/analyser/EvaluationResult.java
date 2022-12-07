@@ -206,7 +206,8 @@ public record EvaluationResult(EvaluationContext evaluationContext,
                  */
                 ChangeData cd = e.getValue();
                 ChangeData ncd = new ChangeData(cd.value, cd.delays, cd.stateIsDelayed, cd.markAssignment,
-                        cd.readAtStatementTime, LinkedVariables.EMPTY, LinkedVariables.EMPTY, Map.of());
+                        cd.readAtStatementTime, LinkedVariables.EMPTY, LinkedVariables.EMPTY, Map.of(),
+                        cd.modificationTimeIncrement);
                 newMap.put(e.getKey(), ncd);
             }
         }
@@ -251,6 +252,28 @@ public record EvaluationResult(EvaluationContext evaluationContext,
         return evaluationContext.getCurrentStatementTime();
     }
 
+    public Integer modificationTime(Variable variable) {
+        ChangeData cd = changeData.get(variable);
+        int increment = cd == null ? 0 : cd.modificationTimeIncrement;
+        return increment; // FIXME
+    }
+
+    public Stream<Integer> modificationTimes(Expression expression) {
+        return expression.linkedVariables(this).assignedOrDependentVariables().map(this::modificationTime);
+    }
+
+    public String modificationTimesOf(Expression... values) {
+        return Arrays.stream(values).flatMap(this::modificationTimes).map(Object::toString)
+                .collect(Collectors.joining(","));
+    }
+
+    public String modificationTimesOf(Expression object, List<Expression> parameters) {
+        return Stream.concat(Stream.of(object), parameters.stream())
+                .flatMap(this::modificationTimes)
+                .map(Object::toString)
+                .collect(Collectors.joining(","));
+    }
+
     /**
      * Any of [value, markAssignment, linkedVariables]
      * can be used independently: possibly we want to mark assignment, but still have NO_VALUE for the value.
@@ -267,7 +290,8 @@ public record EvaluationResult(EvaluationContext evaluationContext,
                              Set<Integer> readAtStatementTime,
                              LinkedVariables linkedVariables,
                              LinkedVariables toRemoveFromLinkedVariables,
-                             Map<Property, DV> properties) {
+                             Map<Property, DV> properties,
+                             int modificationTimeIncrement) {
         public ChangeData {
             Objects.requireNonNull(readAtStatementTime);
             Objects.requireNonNull(properties);
@@ -284,6 +308,7 @@ public record EvaluationResult(EvaluationContext evaluationContext,
                     ", linkedVariables=" + linkedVariables +
                     ", toRemoveFromLinkedVariables=" + toRemoveFromLinkedVariables +
                     ", properties=" + properties.entrySet().stream().map(e -> e.getKey() + "->" + e.getValue()).sorted().collect(Collectors.joining(",")) +
+                    ", modificationTimeIncrement=" + modificationTimeIncrement +
                     '}';
         }
 
@@ -299,7 +324,8 @@ public record EvaluationResult(EvaluationContext evaluationContext,
                     combinedReadAtStatementTime,
                     combinedLinkedVariables,
                     combinedToRemove,
-                    combinedProperties);
+                    combinedProperties,
+                    modificationTimeIncrement + other.modificationTimeIncrement);
         }
 
         public DV getProperty(Property property) {
@@ -323,7 +349,7 @@ public record EvaluationResult(EvaluationContext evaluationContext,
                 return this;
             }
             return new ChangeData(translatedValue, translatedDelays, translatedStateIsDelayed, markAssignment,
-                    readAtStatementTime, translatedLv, translatedToRemove, properties);
+                    readAtStatementTime, translatedLv, translatedToRemove, properties, modificationTimeIncrement);
         }
     }
 
@@ -606,12 +632,12 @@ public record EvaluationResult(EvaluationContext evaluationContext,
             if (ecd == null) {
                 newEcd = new ChangeData(null,
                         CausesOfDelay.EMPTY, CausesOfDelay.EMPTY, false, Set.of(statementTime),
-                        LinkedVariables.EMPTY, LinkedVariables.EMPTY, Map.of());
+                        LinkedVariables.EMPTY, LinkedVariables.EMPTY, Map.of(), 0);
             } else {
                 newEcd = new ChangeData(ecd.value, ecd.delays, ecd.stateIsDelayed, ecd.markAssignment,
                         SetUtil.immutableUnion(ecd.readAtStatementTime, Set.of(statementTime)), ecd.linkedVariables,
                         ecd.toRemoveFromLinkedVariables,
-                        ecd.properties);
+                        ecd.properties, ecd.modificationTimeIncrement);
             }
             valueChanges.put(variable, newEcd);
 
@@ -839,12 +865,14 @@ public record EvaluationResult(EvaluationContext evaluationContext,
             CausesOfDelay stateDelaysFilteredForSelfReference = resultOfExpression.isDelayed() ? stateIsDelayed : breakSelfReferenceDelay(assignmentTarget, stateIsDelayed);
             if (ecd == null) {
                 newEcd = new ChangeData(value, value.causesOfDelay().merge(stateDelaysFilteredForSelfReference),
-                        stateDelaysFilteredForSelfReference, markAssignment, Set.of(), LinkedVariables.EMPTY, LinkedVariables.EMPTY, Map.of());
+                        stateDelaysFilteredForSelfReference, markAssignment, Set.of(), LinkedVariables.EMPTY,
+                        LinkedVariables.EMPTY, Map.of(), 0);
             } else {
                 CausesOfDelay mergedValueDelays = ecd.delays.merge(stateDelaysFilteredForSelfReference).merge(value.causesOfDelay());
                 newEcd = new ChangeData(value, mergedValueDelays,
                         ecd.stateIsDelayed.merge(stateDelaysFilteredForSelfReference), ecd.markAssignment || markAssignment,
-                        ecd.readAtStatementTime, ecd.linkedVariables, LinkedVariables.EMPTY, ecd.properties);
+                        ecd.readAtStatementTime, ecd.linkedVariables, LinkedVariables.EMPTY, ecd.properties,
+                        ecd.modificationTimeIncrement);
             }
             valueChanges.put(assignmentTarget, newEcd);
 
@@ -902,11 +930,11 @@ public record EvaluationResult(EvaluationContext evaluationContext,
             ChangeData ecd = valueChanges.get(variable);
             if (ecd == null) {
                 newEcd = new ChangeData(null, CausesOfDelay.EMPTY, CausesOfDelay.EMPTY, false,
-                        Set.of(), LinkedVariables.EMPTY, removeLv, Map.of());
+                        Set.of(), LinkedVariables.EMPTY, removeLv, Map.of(), 0);
             } else {
                 newEcd = new ChangeData(ecd.value, ecd.delays, ecd.stateIsDelayed, ecd.markAssignment,
                         ecd.readAtStatementTime, LinkedVariables.EMPTY,
-                        removeLv.merge(ecd.toRemoveFromLinkedVariables), ecd.properties);
+                        removeLv.merge(ecd.toRemoveFromLinkedVariables), ecd.properties, ecd.modificationTimeIncrement);
             }
             valueChanges.put(variable, newEcd);
         }
@@ -921,11 +949,11 @@ public record EvaluationResult(EvaluationContext evaluationContext,
             ChangeData ecd = valueChanges.get(variable);
             if (ecd == null) {
                 newEcd = new ChangeData(null, causesOfDelay, CausesOfDelay.EMPTY, false, Set.of(),
-                        LinkedVariables.EMPTY, LinkedVariables.EMPTY, Map.of(property, value));
+                        LinkedVariables.EMPTY, LinkedVariables.EMPTY, Map.of(property, value), 0);
             } else {
                 newEcd = new ChangeData(ecd.value, ecd.delays.merge(causesOfDelay), ecd.stateIsDelayed, ecd.markAssignment,
                         ecd.readAtStatementTime, ecd.linkedVariables, ecd.toRemoveFromLinkedVariables,
-                        mergeProperties(ecd.properties, Map.of(property, value)));
+                        mergeProperties(ecd.properties, Map.of(property, value)), ecd.modificationTimeIncrement);
             }
             valueChanges.put(variable, newEcd);
         }
@@ -961,11 +989,12 @@ public record EvaluationResult(EvaluationContext evaluationContext,
             LinkedVariables linked = LinkedVariables.of(to, level);
             if (ecd == null) {
                 newEcd = new ChangeData(null, level.causesOfDelay(),
-                        CausesOfDelay.EMPTY, false, Set.of(), linked, LinkedVariables.EMPTY, Map.of());
+                        CausesOfDelay.EMPTY, false, Set.of(), linked, LinkedVariables.EMPTY, Map.of(), 0);
             } else {
                 newEcd = new ChangeData(ecd.value, ecd.delays.merge(level.causesOfDelay()),
                         ecd.stateIsDelayed, ecd.markAssignment,
-                        ecd.readAtStatementTime, ecd.linkedVariables.merge(linked), ecd.toRemoveFromLinkedVariables, ecd.properties);
+                        ecd.readAtStatementTime, ecd.linkedVariables.merge(linked), ecd.toRemoveFromLinkedVariables,
+                        ecd.properties, ecd.modificationTimeIncrement);
             }
             valueChanges.put(from, newEcd);
         }
@@ -997,7 +1026,7 @@ public record EvaluationResult(EvaluationContext evaluationContext,
                         markDelays ? stateIsDelayed.merge(instance.causesOfDelay()) : stateIsDelayed,
                         stateIsDelayed, false, Set.of(),
                         linkedVariables, LinkedVariables.EMPTY,
-                        Map.of());
+                        Map.of(), 1); // FIXME is this the right place?
             } else {
                 LinkedVariables lvs = linkedVariables == null
                         ? current.linkedVariables
@@ -1005,7 +1034,8 @@ public record EvaluationResult(EvaluationContext evaluationContext,
                 newVcd = new ChangeData(instance,
                         markDelays ? current.delays.merge(instance.causesOfDelay()) : current.delays,
                         current.stateIsDelayed, current.markAssignment,
-                        current.readAtStatementTime, lvs, current.toRemoveFromLinkedVariables, current.properties);
+                        current.readAtStatementTime, lvs, current.toRemoveFromLinkedVariables, current.properties,
+                        current.modificationTimeIncrement + 1);
             }
             valueChanges.put(variable, newVcd);
         }

@@ -38,7 +38,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static org.e2immu.analyser.analyser.Property.*;
-import static org.e2immu.analyser.analyser.VariableInfoContainer.NOT_RELEVANT;
+import static org.e2immu.analyser.analyser.VariableInfoContainer.IGNORE_STATEMENT_TIME;
 import static org.e2immu.analyser.analyser.VariableInfoContainer.NOT_YET_READ;
 import static org.e2immu.analyser.util.EventuallyFinalExtension.setFinalAllowEquals;
 
@@ -68,16 +68,14 @@ public class VariableInfoImpl implements VariableInfo {
 
     // used to break initialisation delay
     public VariableInfoImpl(Location location, Variable variable, Expression value) {
-        this(location, variable, AssignmentIds.NOT_YET_ASSIGNED, NOT_YET_READ, Set.of(), value,
-                VariableInfoContainer.NOT_RELEVANT);
+        this(location, variable, AssignmentIds.NOT_YET_ASSIGNED, NOT_YET_READ, Set.of(), value, IGNORE_STATEMENT_TIME);
         assert location != Location.NOT_YET_SET;
     }
 
     // used as a temp in MergeHelper; make sure that this one is not used to generate VI objects for inclusion
     // in DelayedWrappedExpression: they need to be the original ones that will be updated in subsequent iterations
     public VariableInfoImpl(Location location, Variable variable, Expression value, Properties properties) {
-        this(location, variable, AssignmentIds.NOT_YET_ASSIGNED, NOT_YET_READ, Set.of(), value,
-                NOT_RELEVANT);
+        this(location, variable, AssignmentIds.NOT_YET_ASSIGNED, NOT_YET_READ, Set.of(), value, IGNORE_STATEMENT_TIME);
         properties.stream().forEach(e -> setProperty(e.getKey(), e.getValue()));
     }
 
@@ -93,7 +91,7 @@ public class VariableInfoImpl implements VariableInfo {
         if (variable instanceof FieldReference fr && fr.scope instanceof DelayedVariableExpression dve) {
             statementTime = dve.statementTime;
         } else {
-            statementTime = VariableInfoContainer.NOT_A_FIELD;
+            statementTime = IGNORE_STATEMENT_TIME;
         }
         value.setVariable(DelayedVariableExpression.forVariable(variable, statementTime, causesOfDelay));
         linkedVariables.setVariable(LinkedVariables.NOT_YET_SET);
