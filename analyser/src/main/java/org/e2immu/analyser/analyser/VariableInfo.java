@@ -122,6 +122,7 @@ public interface VariableInfo {
     @NotNull
     Properties contextProperties();
 
+    int getModificationTimeOrNegative();
 
     record MergeOp(Property property, BinaryOperator<DV> operator, DV initial) {
     }

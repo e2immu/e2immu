@@ -209,4 +209,6 @@ public interface VariableInfoContainer {
         return variableNature() == VariableNature.FROM_ENCLOSING_METHOD
                 ? LinkedVariables.NOT_YET_SET : LinkedVariables.EMPTY;
     }
+
+    void setModificationTimeIfNotYetSet(int modificationTime, Stage stage);
 }

@@ -243,7 +243,7 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
 
     @Override
     public EvaluationContext updateStatementTime(int statementTime) {
-        if(statementTime == currentStatementTime) return this;
+        if (statementTime == currentStatementTime) return this;
         return new SAEvaluationContext(statementAnalysis,
                 myMethodAnalyser, statementAnalyser, analyserContext, localAnalysers,
                 iteration, statementTime, conditionManager, closure,
@@ -613,6 +613,14 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
             return currentValue(ve.variable());
         }
         return value;
+    }
+
+    @Override
+    public int initialModificationTimeOrZero(Variable variable) {
+        VariableInfo vi = statementAnalysis.findOrNull(variable, INITIAL);
+        if (vi == null) return 0;
+        int time = vi.getModificationTimeOrNegative();
+        return Math.max(time, 0);
     }
 
     @Override

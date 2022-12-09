@@ -27,6 +27,7 @@ import org.e2immu.analyser.model.expression.VariableExpression;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.support.EventuallyFinal;
+import org.e2immu.support.SetOnce;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -59,6 +60,8 @@ public class VariableInfoImpl implements VariableInfo {
 
     // 20211023 needs to be frozen explicitly
     private final EventuallyFinal<LinkedVariables> linkedVariables = new EventuallyFinal<>();
+
+    private final SetOnce<Integer> modificationTime = new SetOnce<>();
 
     // used for returning delayed values
     public VariableInfoImpl(Location location, Variable variable, int statementTime) {
@@ -219,6 +222,17 @@ public class VariableInfoImpl implements VariableInfo {
         return readAtStatementTimes;
     }
 
+    @Override
+    public int getModificationTimeOrNegative() {
+        return modificationTime.getOrDefault(-2);
+    }
+
+    public void setModificationTimeIfNotYetSet(int modificationTime) {
+        if (!this.modificationTime.isSet()) {
+            this.modificationTime.set(modificationTime);
+        }
+    }
+
     // ***************************** NON-INTERFACE CODE: SETTERS ************************
 
     // return progress
@@ -302,5 +316,13 @@ public class VariableInfoImpl implements VariableInfo {
         setProperty(EXTERNAL_IMMUTABLE, EXTERNAL_IMMUTABLE.valueWhenAbsent());
         setProperty(CONTAINER_RESTRICTION, CONTAINER_RESTRICTION.valueWhenAbsent());
         setProperty(EXTERNAL_IGNORE_MODIFICATIONS, EXTERNAL_IGNORE_MODIFICATIONS.valueWhenAbsent());
+        modificationTime.set(0);
+    }
+
+    public void copyModificationTime(VariableInfo vi1) {
+        int mod = vi1.getModificationTimeOrNegative();
+        if (mod >= 0) {
+            setModificationTimeIfNotYetSet(mod);
+        }
     }
 }

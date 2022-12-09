@@ -113,6 +113,14 @@ public abstract class VisitorTestSupport {
         mustSeeIteration(d, delayedBeforeIteration);
     }
 
+    public void assertModificationTime(StatementAnalyserVariableVisitor.Data d, int delayedBeforeIteration, int value) {
+        if (d.iteration() < delayedBeforeIteration) {
+            assertTrue(d.variableInfo().getModificationTimeOrNegative() < 0, "Expected negative modification time");
+        } else {
+            assertEquals(value, d.variableInfo().getModificationTimeOrNegative());
+        }
+    }
+
     public void assertValue(StatementAnalyserVariableVisitor.Data d, String s0, String s1, String s) {
         String value = d.currentValue().toString();
         if (d.iteration() == 0) assertEquals(s0, value);

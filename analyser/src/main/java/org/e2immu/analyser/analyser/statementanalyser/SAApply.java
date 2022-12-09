@@ -837,8 +837,14 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
         ProgressAndDelay cContStatus = computeLinkedVariables.write(CONTEXT_CONTAINER, groupPropertyValues.getMap(CONTEXT_CONTAINER));
 
         // 7
-        ProgressAndDelay cmStatus = computeLinkedVariables.writeContextModified(groupPropertyValues.getMap(CONTEXT_MODIFIED),
-                CausesOfDelay.EMPTY, noAssignments);
+        Map<Variable, Integer> modificationTimeIncrements = evaluationResult.modificationTimeIncrements();
+        Map<Variable, Integer> modificationValues = statementAnalysis.rawVariableStream()
+                .map(e -> e.getValue().getPreviousOrInitial())
+                .collect(Collectors.toUnmodifiableMap(VariableInfo::variable, VariableInfo::getModificationTimeOrNegative));
+        int statementTimeDelta = evaluationResult.statementTime() - statementAnalysis.statementTime(INITIAL);
+        ProgressAndDelay cmStatus = computeLinkedVariables.writeContextModified(
+                analyserContext, groupPropertyValues.getMap(CONTEXT_MODIFIED),
+                modificationTimeIncrements, statementTimeDelta, modificationValues, CausesOfDelay.EMPTY, noAssignments);
 
         // 8
         ProgressAndDelay extIgnMod = computeLinkedVariables.write(EXTERNAL_IGNORE_MODIFICATIONS,

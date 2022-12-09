@@ -7,17 +7,14 @@ public class Mutable_0 {
 
     private final Set<String> set = new HashSet<>();
 
-    public int method(String s) {
-        if (set.contains(s)) {
-            return s.length();
-        }
-        set.add(s);
-        /*
-         core of the test: the return value "set.contains(s)?s.length():-1"
-         should not evaluate to s.length() because of the value for set:
-         "instance type HashSet<String> *this.contains(s)&&this.size()>=1*"
-         */
-        return -1;
+    public void method(String s) {
+        boolean b1 = set.contains(s);
+        set.add("hello"); // increases modification time of 'set'
+        boolean b2 = set.contains(s);
+        assert b1 != b2; // not always true/false
+        System.out.println("s is " + s); // increases statement time
+        boolean b3 = set.contains(s);
+        assert b2 != b3; // not necessarily false
     }
 
 }

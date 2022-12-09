@@ -124,6 +124,7 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
                                                         boolean statementHasSubBlocks) {
         VariableInfoImpl initial = new VariableInfoImpl(location, variable, NOT_YET_ASSIGNED, NOT_YET_READ,
                 Set.of(), null, variable.statementTime());
+        initial.setModificationTimeIfNotYetSet(0);
         // no newVariable, because either setValue is called immediately after this method, or the explicit newVariableWithoutValue()
         return new VariableInfoContainerImpl(variableNature, Either.right(initial),
                 statementHasSubBlocks ? new SetOnce<>() : null, null, new SetOnceMap<>());
@@ -212,8 +213,8 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
         return currentExcludingMerge();
     }
 
-    private VariableInfoImpl getToWrite(Stage level) {
-        return switch (level) {
+    private VariableInfoImpl getToWrite(Stage stage) {
+        return switch (stage) {
             case INITIAL -> (VariableInfoImpl) getRecursiveInitialOrNull();
             case EVALUATION -> evaluation.get();
             case MERGE -> merge.get();
@@ -427,6 +428,7 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
         VariableInfoImpl write = new VariableInfoImpl(location, vi1.variable(), vi1.getAssignmentIds(),
                 vi1.getReadId(), vi1.getReadAtStatementTimes(), vi1.valueIsSet() ? null : vi1.getValue(),
                 vi1.variable().statementTime());
+        write.copyModificationTime(vi1);
         write.setValue(vi1.getValue());
         vi1.propertyStream().filter(e -> !e.getKey().isGroupProperty())
                 .forEach(e -> {
@@ -645,5 +647,11 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
     @Override
     public SetOnceMap<Property, DV> propertyOverrides() {
         return propertyOverrides;
+    }
+
+    @Override
+    public void setModificationTimeIfNotYetSet(int modificationTime, Stage stage) {
+        VariableInfoImpl vii = getToWrite(stage);
+        vii.setModificationTimeIfNotYetSet(modificationTime);
     }
 }

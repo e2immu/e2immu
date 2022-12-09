@@ -47,6 +47,7 @@ import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 import static org.e2immu.analyser.analyser.Property.*;
@@ -1209,6 +1210,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
 
         CausesOfDelay delay = CausesOfDelay.EMPTY;
         boolean progress = false;
+        Map<Variable, Integer> modificationTimes = new HashMap<>();
 
         for (VariableInfoContainer vic : prepareMerge.toMerge) {
             VariableInfo current = vic.current();
@@ -1291,6 +1293,9 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
                         ensure(Message.newMessage(location(MERGE), Message.Label.OVERWRITING_PREVIOUS_ASSIGNMENT,
                                 variable.simpleName()));
                     }
+                    IntStream modificationTimeOfSubs = toMerge.stream().mapToInt(cav -> cav.variableInfo().getModificationTimeOrNegative());
+                    int maxMod = modificationTimeOfSubs.reduce(0, (t1, t2) -> t1 < 0 || t2 < 0 ? -1 : Math.max(t1, t2));
+                    modificationTimes.put(variable, maxMod);
                 } catch (Throwable throwable) {
                     LOGGER.warn("Caught exception while merging variable {} (rename to {}} in {}, {}", variable, renamed,
                             methodAnalysis.getMethodInfo().fullyQualifiedName, index);
@@ -1317,6 +1322,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
                 .reduce(CausesOfDelay.EMPTY, CausesOfDelay::merge);
         ProgressAndDelay soFar = new ProgressAndDelay(progress, delay);
         ProgressAndDelay mergeStatus = linkingAndGroupProperties(evaluationContext, groupPropertyValues, linkedVariablesMap,
+                modificationTimes, statementTime,
                 variablesWhereMergeOverwrites, newScopeVariables, prepareMerge, setCnnVariables, translationMap,
                 conditionCauses, soFar).addProgress(progress);
 
@@ -1391,6 +1397,8 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
     private ProgressAndDelay linkingAndGroupProperties(EvaluationContext evaluationContext,
                                                        GroupPropertyValues groupPropertyValues,
                                                        Map<Variable, LinkedVariables> linkedVariablesMap,
+                                                       Map<Variable, Integer> modificationTimes,
+                                                       int statementTime,
                                                        Set<Variable> variablesWhereMergeOverwrites,
                                                        Set<LocalVariableReference> newlyCreatedScopeVariables,
                                                        PrepareMerge prepareMerge,
@@ -1485,8 +1493,10 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
         ProgressAndDelay cContStatus = computeLinkedVariables.write(CONTEXT_CONTAINER,
                 groupPropertyValues.getMap(CONTEXT_CONTAINER));
 
-        ProgressAndDelay cmStatus = computeLinkedVariables.writeContextModified(groupPropertyValues
-                .getMap(CONTEXT_MODIFIED), conditionCauses, true);
+        int statementTimeDelta = statementTime - statementTime(EVALUATION);
+        ProgressAndDelay cmStatus = computeLinkedVariables.writeContextModified(evaluationContext.getAnalyserContext(),
+                groupPropertyValues.getMap(CONTEXT_MODIFIED), Map.of(), statementTimeDelta, modificationTimes,
+                conditionCauses, true);
 
         return delay
                 .combine(backLink.delays)

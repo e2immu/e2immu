@@ -485,6 +485,10 @@ public interface EvaluationContext {
                 && getCurrentType().recursivelyInConstructionOrStaticWithRespectTo(getAnalyserContext(), typeInfo);
     }
 
+    default int initialModificationTimeOrZero(Variable variable) {
+        return 0;
+    }
+
     /*
     if the formal type is T (hidden content), then the expression is returned is List.of(expression).
     It is important to return the expression, because it may have a dynamic immutability higher than its formal value,
