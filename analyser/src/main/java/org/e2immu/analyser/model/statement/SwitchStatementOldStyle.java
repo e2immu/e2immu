@@ -48,9 +48,9 @@ public class SwitchStatementOldStyle extends StatementWithExpression implements 
         public OutputBuilder output(Qualification qualification) {
             OutputBuilder outputBuilder = new OutputBuilder();
             if (expression == EmptyExpression.DEFAULT_EXPRESSION) {
-                outputBuilder.add(new Text("default"));
+                outputBuilder.add(Keyword.DEFAULT);
             } else {
-                outputBuilder.add(new Text("case"))
+                outputBuilder.add(Keyword.CASE)
                         .add(Space.ONE)
                         .add(expression.output(qualification));
             }
@@ -95,7 +95,7 @@ public class SwitchStatementOldStyle extends StatementWithExpression implements 
 
     @Override
     public OutputBuilder output(Qualification qualification, LimitedStatementAnalysis statementAnalysis) {
-        OutputBuilder outputBuilder = new OutputBuilder().add(new Text("switch"))
+        OutputBuilder outputBuilder = new OutputBuilder().add(Keyword.SWITCH)
                 .add(Symbol.LEFT_PARENTHESIS).add(expression.output(qualification)).add(Symbol.RIGHT_PARENTHESIS);
         outputBuilder.add(Symbol.LEFT_BRACE);
         if (statementAnalysis.navigationHasSubBlocks() &&

@@ -15,19 +15,25 @@
 package org.e2immu.analyser.model;
 
 import com.github.javaparser.ast.Modifier;
+import org.e2immu.analyser.output.Keyword;
 
 public enum MethodModifier {
-    PUBLIC, PRIVATE, PROTECTED,
-    ABSTRACT, DEFAULT,
-    FINAL, STATIC,
-    SYNCHRONIZED;
+    PUBLIC(Keyword.PUBLIC),
+    PRIVATE(Keyword.PRIVATE),
+    PROTECTED(Keyword.PROTECTED),
+    ABSTRACT(Keyword.ABSTRACT),
+    DEFAULT(Keyword.DEFAULT),
+    FINAL(Keyword.FINAL),
+    STATIC(Keyword.STATIC),
+    SYNCHRONIZED(Keyword.SYNCHRONIZED);
+
+    public final Keyword keyword;
+
+    MethodModifier(Keyword keyword) {
+        this.keyword = keyword;
+    }
 
     public static MethodModifier from(Modifier modifier) {
         return MethodModifier.valueOf(modifier.getKeyword().asString().toUpperCase());
     }
-
-    public String toJava() {
-        return name().toLowerCase();
-    }
-
 }

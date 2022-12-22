@@ -22,10 +22,7 @@ import org.e2immu.analyser.model.expression.LocalVariableCreation;
 import org.e2immu.analyser.model.expression.Precedence;
 import org.e2immu.analyser.model.impl.BaseExpression;
 import org.e2immu.analyser.model.impl.TranslationMapImpl;
-import org.e2immu.analyser.output.OutputBuilder;
-import org.e2immu.analyser.output.Space;
-import org.e2immu.analyser.output.Symbol;
-import org.e2immu.analyser.output.Text;
+import org.e2immu.analyser.output.*;
 import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.util.ListUtil;
 import org.e2immu.analyser.util.Pair;
@@ -207,7 +204,7 @@ public class TryStatement extends StatementWithStructure {
     // TODO we may want to change output to have the GuideGenerator in the parameter to align catch and finally
     @Override
     public OutputBuilder output(Qualification qualification, LimitedStatementAnalysis statementAnalysis) {
-        OutputBuilder outputBuilder = new OutputBuilder().add(new Text("try"));
+        OutputBuilder outputBuilder = new OutputBuilder().add(Keyword.TRY);
         if (!resources.isEmpty()) {
             outputBuilder.add(Symbol.LEFT_PARENTHESIS)
                     .add(resources.stream().map(expression -> expression
@@ -219,7 +216,7 @@ public class TryStatement extends StatementWithStructure {
                 .add(structure.block().output(qualification, startOfBlock(statementAnalysis, 0)));
         int i = 1;
         for (Pair<CatchParameter, Block> pair : catchClauses) {
-            outputBuilder.add(new Text("catch"))
+            outputBuilder.add(Keyword.CATCH)
                     .add(Symbol.LEFT_PARENTHESIS)
                     .add(pair.k.output(qualification)).add(Symbol.RIGHT_PARENTHESIS)
                     .add(pair.v.output(qualification, startOfBlock(statementAnalysis, i)));
@@ -227,7 +224,7 @@ public class TryStatement extends StatementWithStructure {
         }
         if (!finallyBlock.isEmpty()) {
             outputBuilder
-                    .add(new Text("finally"))
+                    .add(Keyword.FINALLY)
                     .add(finallyBlock.output(qualification, startOfBlock(statementAnalysis, i)));
         }
         return outputBuilder;

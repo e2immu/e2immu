@@ -63,7 +63,7 @@ public abstract class SwitchEntry extends StatementWithStructure {
 
     protected void appendLabels(OutputBuilder outputBuilder, Qualification qualification) {
         if (labels.isEmpty()) {
-            outputBuilder.add(new Text("default")).add(Symbol.LAMBDA);
+            outputBuilder.add(Keyword.DEFAULT).add(Symbol.LAMBDA);
         } else {
             outputBuilder
                     .add(labels.stream().map(expression -> expression.output(qualification)).collect(OutputBuilder.joining(Symbol.COMMA)))

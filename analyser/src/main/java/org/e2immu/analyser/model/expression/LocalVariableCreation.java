@@ -21,10 +21,7 @@ import org.e2immu.analyser.model.expression.util.TranslationCollectors;
 import org.e2immu.analyser.model.impl.BaseExpression;
 import org.e2immu.analyser.model.variable.LocalVariableReference;
 import org.e2immu.analyser.model.variable.Variable;
-import org.e2immu.analyser.output.OutputBuilder;
-import org.e2immu.analyser.output.Space;
-import org.e2immu.analyser.output.Symbol;
-import org.e2immu.analyser.output.Text;
+import org.e2immu.analyser.output.*;
 import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.util.UpgradableBooleanMap;
@@ -124,8 +121,8 @@ public class LocalVariableCreation extends BaseExpression implements Expression 
 
         // modifiers
         OutputBuilder mods = new OutputBuilder()
-                .add(Arrays.stream(LocalVariableModifier.toJava(lv0.modifiers()))
-                        .map(s -> new OutputBuilder().add(new Text(s)))
+                .add(lv0.modifiers().stream()
+                        .map(s -> new OutputBuilder().add(s.keyword))
                         .collect(OutputBuilder.joining(Space.ONE)));
         if (!mods.isEmpty()) {
             mods.add(Space.ONE);
@@ -134,7 +131,7 @@ public class LocalVariableCreation extends BaseExpression implements Expression 
 
         // var or type
         if (isVar) {
-            outputBuilder.add(new Text("var"));
+            outputBuilder.add(Keyword.VAR);
         } else {
             outputBuilder.add(lv0.parameterizedType().output(qualification));
         }

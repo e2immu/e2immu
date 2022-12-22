@@ -24,6 +24,7 @@ import org.e2immu.analyser.model.ParameterizedType;
 import org.e2immu.analyser.model.Qualification;
 import org.e2immu.analyser.model.expression.util.ExpressionComparator;
 import org.e2immu.analyser.model.impl.BaseExpression;
+import org.e2immu.analyser.output.Keyword;
 import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.Text;
 import org.e2immu.analyser.parser.Message;
@@ -49,7 +50,7 @@ public class NullConstant extends BaseExpression implements ConstantExpression<O
 
     @Override
     public OutputBuilder output(Qualification qualification) {
-        return new OutputBuilder().add(new Text("null"));
+        return new OutputBuilder().add(Keyword.NULL);
     }
 
     @Override

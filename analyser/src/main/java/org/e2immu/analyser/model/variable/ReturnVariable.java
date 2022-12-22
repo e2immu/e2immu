@@ -18,7 +18,9 @@ import org.e2immu.analyser.model.MethodInfo;
 import org.e2immu.analyser.model.ParameterizedType;
 import org.e2immu.analyser.model.Qualification;
 import org.e2immu.analyser.model.TypeInfo;
+import org.e2immu.analyser.output.Keyword;
 import org.e2immu.analyser.output.OutputBuilder;
+import org.e2immu.analyser.output.Space;
 import org.e2immu.analyser.output.Text;
 
 import java.util.Objects;
@@ -72,7 +74,7 @@ public class ReturnVariable implements Variable {
 
     @Override
     public OutputBuilder output(Qualification qualification) {
-        return new OutputBuilder().add(new Text("return "+simpleName));
+        return new OutputBuilder().add(Keyword.RETURN).add(Space.ONE).add(new Text(simpleName));
     }
 
     @Override

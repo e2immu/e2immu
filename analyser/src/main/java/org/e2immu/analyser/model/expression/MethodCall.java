@@ -125,16 +125,19 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         List<Expression> translatedParameters = parameterExpressions.isEmpty() ? parameterExpressions :
                 parameterExpressions.stream().map(e -> e.translate(inspectionProvider, translationMap))
                         .collect(TranslationCollectors.toList(parameterExpressions));
+        String newModificationTimes = Objects.requireNonNullElse(
+                translationMap.modificationTimes(this, translatedObject, translatedParameters), modificationTimes);
         if (translatedMethod == methodInfo && translatedObject == object
                 && translatedReturnType == concreteReturnType
-                && translatedParameters == parameterExpressions) {
+                && translatedParameters == parameterExpressions
+                && newModificationTimes.equals(modificationTimes)) {
             return this;
         }
         CausesOfDelay causesOfDelay = translatedParameters.stream()
                 .map(Expression::causesOfDelay).reduce(CausesOfDelay.EMPTY, CausesOfDelay::merge)
                 .merge(translatedObject.causesOfDelay());
         MethodCall translatedMc = new MethodCall(identifier, objectIsImplicit, translatedObject,
-                translatedMethod, translatedReturnType, translatedParameters, modificationTimes, causesOfDelay.isDone());
+                translatedMethod, translatedReturnType, translatedParameters, newModificationTimes, causesOfDelay.isDone());
         if (causesOfDelay.isDelayed()) {
             return DelayedExpression.forMethod(identifier, translatedMethod, translatedMethod.returnType(),
                     translatedMc, causesOfDelay, Map.of());
@@ -542,7 +545,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
                 } else {
                     if (lastStatement.flowData().timeAfterSubBlocksNotYetSet()) {
                         increment = false;
-                        // see e.g. Trie.recursivelyVisit: recursive call, but inside a lambda so we don't see this
+                        // see e.g. Trie.recursivelyVisit: recursive call, but inside a lambda, so we don't see this
                     } else {
                         increment = lastStatement.flowData().getTimeAfterSubBlocks() > 0;
                     }
@@ -754,6 +757,14 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         return false;
     }
 
+    public boolean hasEmptyModificationTimes() {
+        return NO_MODIFICATION_TIMES.equals(modificationTimes);
+    }
+
+    public MethodCall copy(String modificationTimes) {
+        return new MethodCall(identifier, objectIsImplicit, object, methodInfo, returnType(), parameterExpressions, modificationTimes);
+    }
+
     /*
     next => after the call; required => before the call.
     @Mark goes from BEFORE to AFTER
@@ -821,7 +832,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         Expression newInstance = createNewInstance(context, methodInfo, objectValue, iveValue, identifier, original);
         boolean inLoop = iveValue instanceof VariableExpression ve && ve.getSuffix() instanceof VariableExpression.VariableInLoop;
 
-        Expression newState = computeNewState(context, methodInfo, objectValue, parameterValues);
+        Expression newState = computeNewState(context, builder, methodInfo, objectValue, parameterValues);
         if (newState.isDelayed()) {
             return new ModReturn(null, delayMarker.merge(newState.causesOfDelay()));
         }
@@ -922,6 +933,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
     }
 
     private static Expression computeNewState(EvaluationResult context,
+                                              EvaluationResult.Builder builder,
                                               MethodInfo methodInfo,
                                               Expression objectValue,
                                               List<Expression> parameterValues) {
@@ -941,11 +953,13 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
             // modifying method, without instructions on how to change the state... we simply clear it!
             newState.set(TRUE);
         } else {
-
+            EvaluationResult temporaryContext = builder.build();
+            String objectModificationTimes = temporaryContext.modificationTimesOf(objectValue);
             cMap.keySet().stream()
                     .filter(cmn -> CompanionMethodName.MODIFYING_METHOD_OR_CONSTRUCTOR.contains(cmn.action()))
                     .sorted()
-                    .forEach(cmn -> companionMethod(context, methodInfo, parameterValues, newState, cmn, cMap.get(cmn)));
+                    .forEach(cmn -> companionMethod(context, temporaryContext, methodInfo, objectModificationTimes,
+                            parameterValues, newState, cmn, cMap.get(cmn)));
             if (containsEmptyExpression(newState.get())) {
                 newState.set(TRUE);
             }
@@ -954,7 +968,9 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
     }
 
     private static void companionMethod(EvaluationResult context,
+                                        EvaluationResult currentContext,
                                         MethodInfo methodInfo,
+                                        String objectModificationTimes,
                                         List<Expression> parameterValues,
                                         AtomicReference<Expression> newState,
                                         CompanionMethodName companionMethodName,
@@ -1000,8 +1016,8 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
 
         // we're not adding originals here  TODO would that be possible, necessary?
         Set<Variable> newStateVariables = newState.get().variables(true).stream().collect(Collectors.toUnmodifiableSet());
-        Expression companionValueTranslated = translateCompanionValue(context, companionAnalysis,
-                filterResult, newState.get(), newStateVariables, parameterValues);
+        Expression companionValueTranslated = translateCompanionValue(context, currentContext, companionAnalysis,
+                filterResult, newState.get(), newStateVariables, objectModificationTimes, parameterValues);
 
         boolean remove = companionMethodName.action() == CompanionMethodName.Action.REMOVE;
         if (remove) {
@@ -1062,10 +1078,12 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
      */
 
     private static Expression translateCompanionValue(EvaluationResult context,
+                                                      EvaluationResult currentContext,
                                                       CompanionAnalysis companionAnalysis,
                                                       Filter.FilterResult<MethodCall> filterResult,
                                                       Expression instanceState,
                                                       Set<Variable> instanceStateVariables,
+                                                      String objectModificationTimes,
                                                       List<Expression> parameterValues) {
         TranslationMapImpl.Builder translationMap = new TranslationMapImpl.Builder();
         if (filterResult != null) {
@@ -1077,6 +1095,11 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         }
         // parameters
         ListUtil.joinLists(companionAnalysis.getParameterValues(), parameterValues).forEach(pair -> translationMap.put(pair.k, pair.v));
+
+        translationMap.setModificationTimesHandler((beforeTranslation, translatedObject, translatedParameters) -> {
+            String params = currentContext.modificationTimesOf(translatedParameters.toArray(Expression[]::new));
+            return objectModificationTimes + (params.isEmpty() ? "" : ("," + params));
+        });
 
         Expression companionValue = companionAnalysis.getValue();
         Expression translated = companionValue.translate(context.getAnalyserContext(), translationMap.build());

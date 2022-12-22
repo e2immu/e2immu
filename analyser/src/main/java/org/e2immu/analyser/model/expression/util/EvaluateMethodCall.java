@@ -89,8 +89,13 @@ public class EvaluateMethodCall {
             return builder.setExpression(EmptyExpression.NO_RETURN_VALUE).build();
         }
 
+        String currentModificationTimes = context.modificationTimesOf(objectValue, parameters);
+        String modificationTimes = methodCall.hasEmptyModificationTimes() ? currentModificationTimes
+                : methodCall.getModificationTimes();
+
         if (firstInCallCycle) {
-            MethodCall methodValue = new MethodCall(identifier, objectValue, methodInfo, parameters);
+            MethodCall methodValue = new MethodCall(identifier, objectIsImplicit, objectValue, methodInfo,
+                    methodInfo.returnType(), parameters, modificationTimes);
             return builder.setExpression(methodValue).build();
         }
 
@@ -131,14 +136,15 @@ public class EvaluateMethodCall {
         }
 
        /*
-         if the condition contains a boolean method call expression, such as "this.contains("a")", an we are not
+         if the condition contains a boolean method call expression, such as "this.contains("a")", and we are not
          in companion expression mode, then evaluating this.contains("a") will result in TRUE.
          In companion expression mode, we work symbolically, and must leave this.contains("a") as an informational clause.
          Examples: BasicCompanionMethods_5 for the negative scenario; CyclicReferences_3 for the positive one
         */
         if (modified.valueIsFalse() && !forwardEvaluationInfo.isInCompanionExpression() && methodInfo.returnType().isBoolean()) {
             Expression condition = context.evaluationContext().getConditionManager().condition();
-            if (methodCall.equals(condition) || condition instanceof And and && and.getExpressions().stream().anyMatch(methodCall::equals)) {
+            if (methodCall.equals(condition) || condition instanceof And and
+                    && and.getExpressions().stream().anyMatch(methodCall::equals)) {
                 BooleanConstant TRUE = new BooleanConstant(context.getPrimitives(), true);
                 return builder.setExpression(TRUE).build();
             }
@@ -178,7 +184,7 @@ public class EvaluateMethodCall {
             if (!analyserContext.inAnnotatedAPIAnalysis()) {
                 // new object returned, with a transfer of the aspect; 5 == stringBuilder.length() in aspect -> 5 == stringBuilder.toString().length()
                 Expression newInstance = newInstanceWithTransferCompanion(context, objectValue, methodInfo,
-                        methodAnalysis, parameters);
+                        methodAnalysis, parameters, modificationTimes);
                 if (newInstance != null) {
                     return builder.setExpression(newInstance).build();
                 }
@@ -241,8 +247,9 @@ public class EvaluateMethodCall {
         Expression methodValue;
         // TODO: delay on finalizer!
         if (modified.valueIsFalse() || methodAnalysis.getProperty(Property.FINALIZER).valueIsTrue()) {
+            // only compute modification times if we don't have them yet!!! see e.g. Mutable_1
             methodValue = new MethodCall(identifier, objectIsImplicit, objectValue, methodInfo, concreteReturnType,
-                    parameters, context.modificationTimesOf(objectValue, parameters));
+                    parameters, modificationTimes);
         } else {
             assert modified.valueIsTrue();
             DV notNull = methodAnalysis.getProperty(NOT_NULL_EXPRESSION)
@@ -442,7 +449,8 @@ public class EvaluateMethodCall {
                                                         Expression objectValue,
                                                         MethodInfo methodInfo,
                                                         MethodAnalysis methodAnalysis,
-                                                        List<Expression> parameterValues) {
+                                                        List<Expression> parameterValues,
+                                                        String modificationTimes) {
         if (!context.evaluationContext().hasState(objectValue)) return null;
         Expression state = context.evaluationContext().state(objectValue);
 
@@ -455,14 +463,14 @@ public class EvaluateMethodCall {
                     CompanionMethodName cmn = e.getKey();
                     MethodInfo oldAspectMethod = analyserContext
                             .getTypeAnalysis(objectValue.returnType().typeInfo).getAspects().get(cmn.aspect());
-                    Expression oldValue = new MethodCall(identifier,
+                    Expression oldValue = new MethodCall(identifier, false,
                             new VariableExpression(new This(analyserContext, oldAspectMethod.typeInfo)),
-                            oldAspectMethod, List.of());
+                            oldAspectMethod, oldAspectMethod.returnType(), List.of(), modificationTimes);
                     MethodInfo newAspectMethod = analyserContext
                             .getTypeAnalysis(methodInfo.typeInfo).getAspects().get(cmn.aspect());
-                    Expression newValue = new MethodCall(identifier,
+                    Expression newValue = new MethodCall(identifier, false,
                             new VariableExpression(new This(analyserContext, newAspectMethod.typeInfo)),
-                            newAspectMethod, List.of());
+                            newAspectMethod, newAspectMethod.returnType(), List.of(), modificationTimes);
                     translationMap.put(oldValue, newValue);
                     CompanionAnalysis companionAnalysis = e.getValue();
                     ListUtil.joinLists(companionAnalysis.getParameterValues(), parameterValues)

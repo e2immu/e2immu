@@ -18,6 +18,7 @@ import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.impl.BaseExpression;
 import org.e2immu.analyser.model.variable.Variable;
+import org.e2immu.analyser.output.Keyword;
 import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.Symbol;
 import org.e2immu.analyser.output.Text;
@@ -106,7 +107,8 @@ public class ArrayLength extends BaseExpression implements Expression {
 
     @Override
     public OutputBuilder output(Qualification qualification) {
-        return new OutputBuilder().add(outputInParenthesis(qualification, precedence(), scope)).add(Symbol.DOT).add(new Text("length"));
+        return new OutputBuilder().add(outputInParenthesis(qualification, precedence(), scope))
+                .add(Symbol.DOT).add(Keyword.LENGTH);
     }
 
     @Override

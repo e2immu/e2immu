@@ -318,11 +318,4 @@ public class VariableInfoImpl implements VariableInfo {
         setProperty(EXTERNAL_IGNORE_MODIFICATIONS, EXTERNAL_IGNORE_MODIFICATIONS.valueWhenAbsent());
         modificationTime.set(0);
     }
-
-    public void copyModificationTime(VariableInfo vi1) {
-        int mod = vi1.getModificationTimeOrNegative();
-        if (mod >= 0) {
-            setModificationTimeIfNotYetSet(mod);
-        }
-    }
 }

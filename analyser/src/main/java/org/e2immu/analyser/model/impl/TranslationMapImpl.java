@@ -15,8 +15,8 @@
 package org.e2immu.analyser.model.impl;
 
 import org.e2immu.analyser.model.*;
-import org.e2immu.analyser.model.expression.DelayedExpression;
 import org.e2immu.analyser.model.expression.DelayedVariableExpression;
+import org.e2immu.analyser.model.expression.MethodCall;
 import org.e2immu.analyser.model.expression.VariableExpression;
 import org.e2immu.analyser.model.expression.util.TranslationCollectors;
 import org.e2immu.analyser.model.variable.FieldReference;
@@ -29,6 +29,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -70,6 +71,7 @@ public class TranslationMapImpl implements TranslationMap {
     public final boolean recurseIntoScopeVariables;
     public final boolean yieldIntoReturn;
     public final boolean translateAgain;
+    public final ModificationTimesHandler modificationTimesHandler;
 
     private TranslationMapImpl(Map<? extends Statement, List<Statement>> statements,
                                Map<? extends Expression, ? extends Expression> expressions,
@@ -80,7 +82,8 @@ public class TranslationMapImpl implements TranslationMap {
                                boolean expandDelayedWrappedExpressions,
                                boolean recurseIntoScopeVariables,
                                boolean yieldIntoReturn,
-                               boolean translateAgain) {
+                               boolean translateAgain,
+                               ModificationTimesHandler modificationTimesHandler) {
         this.variables = variables;
         this.expressions = expressions;
         this.variableExpressions = variableExpressions;
@@ -95,6 +98,7 @@ public class TranslationMapImpl implements TranslationMap {
         this.expandDelayedWrappedExpressions = expandDelayedWrappedExpressions;
         this.recurseIntoScopeVariables = recurseIntoScopeVariables;
         this.translateAgain = translateAgain;
+        this.modificationTimesHandler = modificationTimesHandler;
     }
 
     @Override
@@ -223,6 +227,17 @@ public class TranslationMapImpl implements TranslationMap {
         return statements;
     }
 
+    public interface ModificationTimesHandler {
+        String modificationTimes(MethodCall beforeTranslation,
+                                 Expression translatedObject, List<Expression> translatedParameters);
+    }
+    @Override
+    public String modificationTimes(MethodCall beforeTranslation,
+                                    Expression translatedObject, List<Expression> translatedParameters) {
+        if (modificationTimesHandler == null) return null;
+        return modificationTimesHandler.modificationTimes(beforeTranslation, translatedObject, translatedParameters);
+    }
+
     @Override
     public boolean translateAgain() {
         return translateAgain;
@@ -240,6 +255,7 @@ public class TranslationMapImpl implements TranslationMap {
         private boolean recurseIntoScopeVariables;
         private boolean yieldIntoReturn;
         private boolean translateAgain;
+        private ModificationTimesHandler modificationTimesHandler;
 
         public Builder() {
         }
@@ -259,7 +275,8 @@ public class TranslationMapImpl implements TranslationMap {
 
         public TranslationMapImpl build() {
             return new TranslationMapImpl(statements, expressions, variableExpressions, variables, methods, types,
-                    expandDelayedWrappedExpressions, recurseIntoScopeVariables, yieldIntoReturn, translateAgain);
+                    expandDelayedWrappedExpressions, recurseIntoScopeVariables, yieldIntoReturn, translateAgain,
+                    modificationTimesHandler);
         }
 
         // used externally be CM
@@ -337,6 +354,10 @@ public class TranslationMapImpl implements TranslationMap {
                     && methods.isEmpty()
                     && types.isEmpty()
                     && variableExpressions.isEmpty();
+        }
+
+        public void setModificationTimesHandler(ModificationTimesHandler modificationTimesHandler) {
+            this.modificationTimesHandler = modificationTimesHandler;
         }
     }
 }

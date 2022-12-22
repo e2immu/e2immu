@@ -20,6 +20,7 @@ import org.e2immu.analyser.analyser.ForwardEvaluationInfo;
 import org.e2immu.analyser.analysis.FlowData;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.EmptyExpression;
+import org.e2immu.analyser.output.Keyword;
 import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.Symbol;
 import org.e2immu.analyser.output.Text;
@@ -111,14 +112,14 @@ public class IfElseStatement extends StatementWithExpression {
 
     @Override
     public OutputBuilder output(Qualification qualification, LimitedStatementAnalysis statementAnalysis) {
-        OutputBuilder outputBuilder = new OutputBuilder().add(new Text("if"))
+        OutputBuilder outputBuilder = new OutputBuilder().add(Keyword.IF)
                 .add(Symbol.LEFT_PARENTHESIS)
                 .add(structure.expression().output(qualification))
                 .add(Symbol.RIGHT_PARENTHESIS)
                 .addIfNotNull(messageComment(statementAnalysis))
                 .add(structure.block().output(qualification, LimitedStatementAnalysis.startOfBlock(statementAnalysis, 0)));
         if (!elseBlock.isEmpty()) {
-            outputBuilder.add(new Text("else"))
+            outputBuilder.add(Keyword.ELSE)
                     .add(elseBlock.output(qualification, LimitedStatementAnalysis.startOfBlock(statementAnalysis, 1)));
         }
         return outputBuilder;

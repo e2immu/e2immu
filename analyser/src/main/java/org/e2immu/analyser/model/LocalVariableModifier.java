@@ -15,21 +15,20 @@
 package org.e2immu.analyser.model;
 
 import com.github.javaparser.ast.Modifier;
+import org.e2immu.analyser.output.Keyword;
 
 import java.util.Set;
 
 public enum LocalVariableModifier {
-    FINAL;
+    FINAL(Keyword.FINAL);
+
+    public final Keyword keyword;
+
+    LocalVariableModifier(Keyword keyword) {
+        this.keyword = keyword;
+    }
 
     public static LocalVariableModifier from(Modifier m) {
         return LocalVariableModifier.valueOf(m.getKeyword().toString().toUpperCase());
-    }
-
-    public String toJava() {
-        return name().toLowerCase();
-    }
-
-    public static String[] toJava(Set<LocalVariableModifier> modifiers) {
-        return modifiers.stream().map(LocalVariableModifier::toJava).toArray(String[]::new);
     }
 }

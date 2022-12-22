@@ -28,7 +28,7 @@ public class TestFormatter1 {
     // public int method  (17 chars)
     private OutputBuilder createExample0() {
         return new OutputBuilder()
-                .add(new Text("public")).add(Space.ONE)
+                .add(Keyword.PUBLIC).add(Space.ONE)
                 .add(new Text("int")).add(Space.ONE)
                 .add(new Text("method"));
     }
@@ -40,7 +40,7 @@ public class TestFormatter1 {
         Guide.GuideGenerator gg2 = Guide.generatorForBlock();
 
         return new OutputBuilder()
-                .add(new Text("public")).add(Space.ONE)
+                .add(Keyword.PUBLIC).add(Space.ONE)
                 .add(new Text("int")).add(Space.ONE)
                 .add(new Text("method"))
                 .add(Symbol.LEFT_PARENTHESIS)
@@ -49,7 +49,7 @@ public class TestFormatter1 {
                 .add(gg.end())
                 .add(Symbol.RIGHT_PARENTHESIS)
                 .add(Symbol.LEFT_BRACE)
-                .add(gg2.start()).add(new Text("return")).add(Space.ONE)
+                .add(gg2.start()).add(Keyword.RETURN).add(Space.ONE)
                 .add(new Text("p1")).add(Symbol.binaryOperator("+")).add(new Text("p2")).add(Symbol.SEMICOLON)
                 .add(gg2.end())
                 .add(Symbol.RIGHT_BRACE);
@@ -58,7 +58,7 @@ public class TestFormatter1 {
     @Test
     public void testLineSplit1() {
         String PACKAGE = "org.e2immu.analyser.output";
-        OutputBuilder outputBuilder = new OutputBuilder().add(new Text("package")).add(Space.ONE).add(new Text(PACKAGE));
+        OutputBuilder outputBuilder = new OutputBuilder().add(Keyword.PACKAGE).add(Space.ONE).add(new Text(PACKAGE));
         assertEquals("package " + PACKAGE, outputBuilder.toString());
         assertEquals("package " + PACKAGE + "\n", new Formatter(FormattingOptions.DEFAULT).write(outputBuilder));
 
@@ -83,9 +83,9 @@ public class TestFormatter1 {
         FormattingOptions options = new FormattingOptions.Builder().setLengthOfLine(8)
                 .setSpacesInTab(2).setTabsForLineSplit(1).build();
         OutputBuilder outputBuilder = new OutputBuilder()
-                .add(new Text("public")).add(Space.ONE)
-                .add(new Text("static")).add(Space.ONE)
-                .add(new Text("abstract")).add(Space.ONE)
+                .add(Keyword.PUBLIC).add(Space.ONE)
+                .add(Keyword.STATIC).add(Space.ONE)
+                .add(Keyword.ABSTRACT).add(Space.ONE)
                 .add(new Text("method")).add(Symbol.SEMICOLON);
 
         List<ForwardInfo> info = new ArrayList<>();

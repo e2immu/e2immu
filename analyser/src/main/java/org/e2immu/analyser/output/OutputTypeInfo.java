@@ -92,12 +92,12 @@ public class OutputTypeInfo {
         if (typeInfo.isPrimaryType()) {
             String packageName = typeInfo.packageNameOrEnclosingType.getLeftOrElse("");
             if (!packageName.isEmpty()) {
-                packageAndImports.add(new Text("package")).add(Space.ONE).add(new Text(packageName)).add(Symbol.SEMICOLON)
+                packageAndImports.add(Keyword.PACKAGE).add(Space.ONE).add(new Text(packageName)).add(Symbol.SEMICOLON)
                         .add(Space.NEWLINE);
             }
             if (!imports.isEmpty()) {
                 imports.stream().sorted().forEach(i ->
-                        packageAndImports.add(new Text("import")).add(Space.ONE).add(new Text(i)).add(Symbol.SEMICOLON)
+                        packageAndImports.add(Keyword.IMPORT).add(Space.ONE).add(new Text(i)).add(Symbol.SEMICOLON)
                                 .add(Space.NEWLINE));
             }
         }
@@ -106,7 +106,7 @@ public class OutputTypeInfo {
         if (doTypeDeclaration) {
             // the class name
             afterAnnotations
-                    .add(typeModifiers.stream().map(mod -> new OutputBuilder().add(new Text(mod.toJava())))
+                    .add(typeModifiers.stream().map(mod -> new OutputBuilder().add(mod.keyword))
                             .collect(OutputBuilder.joining(Space.ONE)))
                     .add(Space.ONE).add(new Text(typeNature))
                     .add(Space.ONE).add(new Text(typeInfo.simpleName));
@@ -122,10 +122,10 @@ public class OutputTypeInfo {
                 afterAnnotations.add(outputNonStaticFieldsAsParameters(insideType, fields));
             }
             if (parentClass != null) {
-                afterAnnotations.add(Space.ONE).add(new Text("extends")).add(Space.ONE).add(parentClass.output(insideType));
+                afterAnnotations.add(Space.ONE).add(Keyword.EXTENDS).add(Space.ONE).add(parentClass.output(insideType));
             }
             if (!interfaces.isEmpty()) {
-                afterAnnotations.add(Space.ONE).add(new Text(isInterface ? "extends" : "implements")).add(Space.ONE);
+                afterAnnotations.add(Space.ONE).add(isInterface ? Keyword.EXTENDS : Keyword.IMPLEMENTS).add(Space.ONE);
                 afterAnnotations.add(interfaces.stream().map(pi -> pi.output(insideType)).collect(OutputBuilder.joining(Symbol.COMMA)));
             }
         }
@@ -150,7 +150,7 @@ public class OutputTypeInfo {
 
         // annotations and the rest of the type are at the same level
         Stream<OutputBuilder> annotationStream = doTypeDeclaration ? typeInfo.buildAnnotationOutput(insideType) : Stream.of();
-        if(comment != null) packageAndImports.add(comment.output(qualification));
+        if (comment != null) packageAndImports.add(comment.output(qualification));
         return packageAndImports.add(Stream.concat(annotationStream, Stream.of(afterAnnotations))
                 .collect(OutputBuilder.joining(Space.ONE_REQUIRED_EASY_SPLIT,
                         Guide.generatorForAnnotationList())));

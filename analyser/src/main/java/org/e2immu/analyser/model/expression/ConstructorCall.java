@@ -21,10 +21,7 @@ import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.util.*;
 import org.e2immu.analyser.model.impl.BaseExpression;
 import org.e2immu.analyser.model.impl.TranslationMapImpl;
-import org.e2immu.analyser.output.OutputBuilder;
-import org.e2immu.analyser.output.Space;
-import org.e2immu.analyser.output.Symbol;
-import org.e2immu.analyser.output.Text;
+import org.e2immu.analyser.output.*;
 import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.Primitives;
@@ -311,7 +308,7 @@ public class ConstructorCall extends BaseExpression implements HasParameterExpre
     public OutputBuilder output(Qualification qualification) {
         OutputBuilder outputBuilder = new OutputBuilder();
         if (constructor != null || anonymousClass != null) {
-            outputBuilder.add(new Text("new")).add(Space.ONE)
+            outputBuilder.add(Keyword.NEW).add(Space.ONE)
                     .add(parameterizedType.copyWithoutArrays().output(qualification, false, diamond));
             if (arrayInitializer == null) {
                 if (parameterizedType.arrays > 0) {

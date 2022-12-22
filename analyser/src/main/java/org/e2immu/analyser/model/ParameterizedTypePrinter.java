@@ -14,10 +14,7 @@
 
 package org.e2immu.analyser.model;
 
-import org.e2immu.analyser.output.OutputBuilder;
-import org.e2immu.analyser.output.Space;
-import org.e2immu.analyser.output.Symbol;
-import org.e2immu.analyser.output.Text;
+import org.e2immu.analyser.output.*;
 import org.e2immu.analyser.parser.InspectionProvider;
 
 import java.util.ArrayList;
@@ -71,10 +68,10 @@ public class ParameterizedTypePrinter {
                 outputBuilder.add(new Text("?"));
                 break;
             case EXTENDS:
-                outputBuilder.add(new Text("?")).add(Space.ONE).add(new Text("extends")).add(Space.ONE);
+                outputBuilder.add(new Text("?")).add(Space.ONE).add(Keyword.EXTENDS).add(Space.ONE);
                 break;
             case SUPER:
-                outputBuilder.add(new Text("?")).add(Space.ONE).add(new Text("super")).add(Space.ONE);
+                outputBuilder.add(new Text("?")).add(Space.ONE).add(Keyword.SUPER).add(Space.ONE);
                 break;
             case NONE:
         }

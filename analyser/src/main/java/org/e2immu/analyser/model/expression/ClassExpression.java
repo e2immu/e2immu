@@ -17,6 +17,7 @@ package org.e2immu.analyser.model.expression;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.util.ExpressionComparator;
 import org.e2immu.analyser.model.impl.BaseExpression;
+import org.e2immu.analyser.output.Keyword;
 import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.Symbol;
 import org.e2immu.analyser.output.Text;
@@ -93,7 +94,7 @@ public class ClassExpression extends BaseExpression implements ConstantExpressio
 
     @Override
     public OutputBuilder output(Qualification qualification) {
-        return new OutputBuilder().add(parameterizedType.output(qualification)).add(Symbol.DOT).add(new Text("class"));
+        return new OutputBuilder().add(parameterizedType.output(qualification)).add(Symbol.DOT).add(Keyword.CLASS);
     }
 
     @Override

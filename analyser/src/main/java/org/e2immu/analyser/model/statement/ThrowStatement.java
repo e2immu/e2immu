@@ -16,10 +16,7 @@ package org.e2immu.analyser.model.statement;
 
 import org.e2immu.analyser.analyser.ForwardEvaluationInfo;
 import org.e2immu.analyser.model.*;
-import org.e2immu.analyser.output.OutputBuilder;
-import org.e2immu.analyser.output.Space;
-import org.e2immu.analyser.output.Symbol;
-import org.e2immu.analyser.output.Text;
+import org.e2immu.analyser.output.*;
 import org.e2immu.analyser.parser.InspectionProvider;
 
 import java.util.List;
@@ -79,7 +76,7 @@ public class ThrowStatement extends StatementWithExpression {
 
     @Override
     public OutputBuilder output(Qualification qualification, LimitedStatementAnalysis statementAnalysis) {
-        return new OutputBuilder().add(new Text("throw"))
+        return new OutputBuilder().add(Keyword.THROW)
                 .add(Space.ONE).add(expression.output(qualification))
                 .add(Symbol.SEMICOLON).addIfNotNull(messageComment(statementAnalysis));
     }

@@ -75,7 +75,7 @@ public class SwitchExpression extends BaseExpression implements Expression, HasS
     @Override
     public OutputBuilder output(Qualification qualification) {
         Guide.GuideGenerator blockGenerator = Guide.generatorForBlock();
-        OutputBuilder ob = new OutputBuilder().add(new Text("switch"))
+        OutputBuilder ob = new OutputBuilder().add(Keyword.SWITCH)
                 .add(Symbol.LEFT_PARENTHESIS)
                 .add(selector.output(qualification))
                 .add(Symbol.RIGHT_PARENTHESIS)

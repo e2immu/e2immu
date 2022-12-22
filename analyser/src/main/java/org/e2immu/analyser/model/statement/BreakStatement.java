@@ -15,10 +15,7 @@
 package org.e2immu.analyser.model.statement;
 
 import org.e2immu.analyser.model.*;
-import org.e2immu.analyser.output.OutputBuilder;
-import org.e2immu.analyser.output.Space;
-import org.e2immu.analyser.output.Symbol;
-import org.e2immu.analyser.output.Text;
+import org.e2immu.analyser.output.*;
 import org.e2immu.analyser.parser.InspectionProvider;
 
 import java.util.List;
@@ -32,7 +29,7 @@ public class BreakStatement extends BreakOrContinueStatement {
 
     @Override
     public OutputBuilder output(Qualification qualification, LimitedStatementAnalysis statementAnalysis) {
-        OutputBuilder outputBuilder = new OutputBuilder().add(new Text("break"));
+        OutputBuilder outputBuilder = new OutputBuilder().add(Keyword.BREAK);
         if (label != null) {
             outputBuilder.add(Space.ONE).add(new Text(label));
         }

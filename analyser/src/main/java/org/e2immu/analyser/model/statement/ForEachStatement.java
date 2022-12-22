@@ -21,10 +21,7 @@ import org.e2immu.analyser.analysis.FlowData;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.ArrayInitializer;
 import org.e2immu.analyser.model.expression.LocalVariableCreation;
-import org.e2immu.analyser.output.OutputBuilder;
-import org.e2immu.analyser.output.Space;
-import org.e2immu.analyser.output.Symbol;
-import org.e2immu.analyser.output.Text;
+import org.e2immu.analyser.output.*;
 import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.util.UpgradableBooleanMap;
 
@@ -125,10 +122,9 @@ public class ForEachStatement extends LoopStatement {
         }
         LocalVariableCreation lvc = (LocalVariableCreation) structure.initialisers().get(0);
         LocalVariable lv = lvc.declarations.get(0).localVariable();
-        return outputBuilder.add(new Text("for"))
+        return outputBuilder.add(Keyword.FOR)
                 .add(Symbol.LEFT_PARENTHESIS)
-                .add(lvc.isVar ? new OutputBuilder().add(new Text("var")) :
-                        lv.parameterizedType().output(qualification))
+                .add(lvc.isVar ? new OutputBuilder().add(Keyword.VAR) : lv.parameterizedType().output(qualification))
                 .add(Space.ONE)
                 .add(new Text(lv.name()))
                 .add(Symbol.COLON)

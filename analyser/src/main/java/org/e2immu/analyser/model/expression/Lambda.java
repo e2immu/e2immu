@@ -53,7 +53,7 @@ public class Lambda extends BaseExpression implements Expression {
                     ob.add(parameterInfo.parameterizedType.output(qualification)).add(Space.ONE);
                 }
                 if (this == VAR) {
-                    ob.add(new Text("var")).add(Space.ONE);
+                    ob.add(Keyword.VAR).add(Space.ONE);
                 }
                 if (!annotationOutput.isEmpty()) {
                     return annotationOutput.add(Space.ONE_REQUIRED_EASY_SPLIT).add(ob);

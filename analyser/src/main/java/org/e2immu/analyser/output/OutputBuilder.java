@@ -23,10 +23,11 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.*;
 import java.util.stream.Collector;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 @FinalFields
 @Container
-public class OutputBuilder implements Comparable<OutputBuilder> {
+public class OutputBuilder implements Comparable<OutputBuilder>, Iterable<OutputElement> {
     final List<OutputElement> list = new LinkedList<>();
 
     public OutputBuilder addIfNotNull(OutputBuilder outputBuilder) {
@@ -154,5 +155,14 @@ public class OutputBuilder implements Comparable<OutputBuilder> {
     @Override
     public int compareTo(OutputBuilder o) {
         return toString().compareTo(o.toString());
+    }
+
+    @Override
+    public Iterator<OutputElement> iterator() {
+        return list.iterator();
+    }
+
+    public Stream<OutputElement> stream() {
+        return list.stream();
     }
 }

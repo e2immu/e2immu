@@ -15,45 +15,32 @@
 package org.e2immu.analyser.model;
 
 import com.github.javaparser.ast.Modifier;
-
-import java.util.Arrays;
-import java.util.Set;
+import org.e2immu.analyser.output.Keyword;
 
 public enum TypeModifier {
-    PUBLIC(0), PROTECTED(0), PRIVATE(0),
+    PUBLIC(Keyword.PUBLIC),
+    PROTECTED(Keyword.PROTECTED),
+    PRIVATE(Keyword.PRIVATE),
+
     // added to be able to use this type for access privileges
-    PACKAGE(0),
+    PACKAGE(Keyword.PACKAGE),
 
-    ABSTRACT(1),
+    ABSTRACT(Keyword.ABSTRACT),
 
-    STATIC(2),
+    STATIC(Keyword.STATIC),
 
-    FINAL(3), SEALED(3), NON_SEALED(3);
+    FINAL(Keyword.FINAL),
+    SEALED(Keyword.SEALED),
+    NON_SEALED(Keyword.NON_SEALED);
 
-    TypeModifier(int group) {
-        this.group = group;
+    TypeModifier(Keyword keyword) {
+        this.keyword = keyword;
     }
 
-    private final int group;
-    private static final int GROUPS = 4;
+    public final Keyword keyword;
 
     public static TypeModifier from(Modifier modifier) {
         Modifier.Keyword keyword = modifier.getKeyword();
         return TypeModifier.valueOf(keyword.asString().toUpperCase());
-    }
-
-    public String toJava() {
-        if (this == NON_SEALED) return "non-sealed";
-        return name().toLowerCase();
-    }
-
-    public static String[] sort(Set<TypeModifier> modifiers) {
-        TypeModifier[] array = new TypeModifier[GROUPS];
-        for (TypeModifier modifier : modifiers) {
-            if (array[modifier.group] != null)
-                throw new UnsupportedOperationException("? already have " + array[modifier.group] + ", want to add " + modifier);
-            array[modifier.group] = modifier;
-        }
-        return Arrays.stream(array).filter(m -> m != null && m != PACKAGE).map(TypeModifier::toJava).toArray(String[]::new);
     }
 }

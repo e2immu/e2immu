@@ -36,7 +36,7 @@ public class OutputMethodInfo {
     public static OutputBuilder output(MethodInfo methodInfo, Qualification qualification, AnalysisProvider analysisProvider) {
         MethodInspection inspection = methodInfo.methodInspection.get();
         if (inspection.isStaticBlock()) {
-            OutputBuilder result = new OutputBuilder().add(new Text("static"));
+            OutputBuilder result = new OutputBuilder().add(Keyword.STATIC);
             Qualification bodyQualification = makeBodyQualification(qualification, inspection);
             MethodAnalysis methodAnalysisOrNull = analysisProvider.getMethodAnalysis(methodInfo);
             StatementAnalysis firstStatement = methodAnalysisOrNull != null ? methodAnalysisOrNull.getFirstStatement() : null;
@@ -47,7 +47,7 @@ public class OutputMethodInfo {
         OutputBuilder afterAnnotations = new OutputBuilder();
         List<MethodModifier> modifiers = inspection.minimalModifiers();
         afterAnnotations.add(modifiers.stream()
-                .map(mod -> new OutputBuilder().add(new Text(mod.toJava())))
+                .map(mod -> new OutputBuilder().add(mod.keyword))
                 .collect(OutputBuilder.joining(Space.ONE)));
         if (!modifiers.isEmpty()) afterAnnotations.add(Space.ONE);
 
@@ -74,7 +74,7 @@ public class OutputMethodInfo {
             }
         }
         if (!inspection.getExceptionTypes().isEmpty()) {
-            afterAnnotations.add(Space.ONE_REQUIRED_EASY_SPLIT).add(new Text("throws")).add(Space.ONE)
+            afterAnnotations.add(Space.ONE_REQUIRED_EASY_SPLIT).add(Keyword.THROWS).add(Space.ONE)
                     .add(inspection.getExceptionTypes().stream()
                             .map(pi -> pi.output(qualification)).collect(OutputBuilder.joining(Symbol.COMMA)));
         }

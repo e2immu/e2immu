@@ -428,7 +428,6 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
         VariableInfoImpl write = new VariableInfoImpl(location, vi1.variable(), vi1.getAssignmentIds(),
                 vi1.getReadId(), vi1.getReadAtStatementTimes(), vi1.valueIsSet() ? null : vi1.getValue(),
                 vi1.variable().statementTime());
-        write.copyModificationTime(vi1);
         write.setValue(vi1.getValue());
         vi1.propertyStream().filter(e -> !e.getKey().isGroupProperty())
                 .forEach(e -> {

@@ -16,10 +16,7 @@ package org.e2immu.analyser.model.statement;
 
 import org.e2immu.analyser.analyser.ForwardEvaluationInfo;
 import org.e2immu.analyser.model.*;
-import org.e2immu.analyser.output.Guide;
-import org.e2immu.analyser.output.OutputBuilder;
-import org.e2immu.analyser.output.Symbol;
-import org.e2immu.analyser.output.Text;
+import org.e2immu.analyser.output.*;
 import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.util.ListUtil;
 
@@ -74,7 +71,7 @@ public class SwitchStatementNewStyle extends StatementWithExpression implements 
 
     @Override
     public OutputBuilder output(Qualification qualification, LimitedStatementAnalysis statementAnalysis) {
-        OutputBuilder outputBuilder = new OutputBuilder().add(new Text("switch"))
+        OutputBuilder outputBuilder = new OutputBuilder().add(Keyword.SWITCH)
                 .add(Symbol.LEFT_PARENTHESIS).add(expression.output(qualification)).add(Symbol.RIGHT_PARENTHESIS)
                 .add(Symbol.LEFT_BRACE);
         Guide.GuideGenerator guideGenerator = Guide.generatorForBlock();

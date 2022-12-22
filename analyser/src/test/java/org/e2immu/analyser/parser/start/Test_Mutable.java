@@ -3,7 +3,7 @@ package org.e2immu.analyser.parser.start;
 import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.model.ParameterInfo;
-import org.e2immu.analyser.model.expression.MethodCall;
+import org.e2immu.analyser.model.expression.*;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.ReturnVariable;
 import org.e2immu.analyser.parser.CommonTestRunner;
@@ -110,8 +110,72 @@ public class Test_Mutable extends CommonTestRunner {
 
     @Test
     public void test_1() throws IOException {
+        EvaluationResultVisitor evaluationResultVisitor = d -> {
+            if ("method".equals(d.methodInfo().name)) {
+                if ("2".equals(d.statementId())) {
+                    if (d.iteration() > 0) {
+                        assertEquals("set.contains(s)?s.length():set.contains(s)?1:0",
+                                d.evaluationResult().getExpression().toString());
+                        if (d.evaluationResult().getExpression() instanceof InlineConditional inline) {
+                            if (inline.condition instanceof MethodCall methodCall) {
+                                assertEquals("0,0", methodCall.getModificationTimes());
+                            } else fail();
+                            if (inline.ifFalse instanceof InlineConditional inline2) {
+                                if (inline2.condition instanceof MethodCall methodCall) {
+                                    assertEquals("1,0", methodCall.getModificationTimes());
+                                } else fail();
+                            } else fail();
+                        } else fail();
+                    }
+                }
+            }
+            if ("static1".equals(d.methodInfo().name)) {
+                if ("2".equals(d.statementId())) {
+                    String expected = d.iteration() < 2 ? "<m:method>==<m:length>"
+                            : "s.length()==(`m1.set`.contains(s)?s.length():`m1.set`.contains(s)?1:0)";
+                    assertEquals(expected, d.evaluationResult().getExpression().toString());
+                }
+            }
+        };
 
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+            if ("method".equals(d.methodInfo().name)) {
+                if (d.variable() instanceof FieldReference fr && "set".equals(fr.fieldInfo.name)) {
+                    if ("0".equals(d.statementId())) {
+                        VariableInfo initial = d.variableInfoContainer().getPreviousOrInitial();
+                        assertEquals(0, initial.getModificationTimeOrNegative());
+
+                        VariableInfo eval = d.variableInfoContainer().best(Stage.EVALUATION);
+                        DV modified = eval.getProperty(Property.CONTEXT_MODIFIED);
+                        assertEquals(DV.FALSE_DV, modified);
+                        assertEquals(0, eval.getModificationTimeOrNegative());
+
+                        String expected = d.iteration() == 0 ? "<f:set>" : "instance type HashSet<String>";
+                        assertEquals(expected, d.currentValue().toString());
+
+                        assertDv(d, 1, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                        assertModificationTime(d, 1, 0);
+                    }
+                    if ("0.0.0".equals(d.statementId())) {
+                        assertDv(d, 0, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                        assertModificationTime(d, 0, 0);
+                    }
+                }
+                if (d.variable() instanceof ReturnVariable) {
+                    if ("1".equals(d.statementId())) {
+                        String expected = d.iteration() == 0 ? "<m:contains>?<m:length>:<return value>" :
+                                "set.contains(s)?s.length():<return value>";
+                        assertEquals(expected, d.currentValue().toString());
+                        if (d.iteration() > 0) {
+                            if (d.currentValue() instanceof InlineConditional inline) {
+                                if (inline.condition instanceof MethodCall methodCall) {
+                                    assertEquals("0,0", methodCall.getModificationTimes());
+                                } else fail();
+                            } else fail();
+                        }
+                    }
+                }
+            }
             if ("static1".equals(d.methodInfo().name)) {
                 if ("m1".equals(d.variableName())) {
                     if ("1".equals(d.statementId())) {
@@ -129,17 +193,29 @@ public class Test_Mutable extends CommonTestRunner {
                 }
             }
         };
+
+        StatementAnalyserVisitor statementAnalyserVisitor = d -> {
+            if ("method".equals(d.methodInfo().name)) {
+                if ("1".compareTo(d.statementId()) > 0) {
+                    assertEquals(0, d.statementAnalysis().statementTime(Stage.MERGE));
+                } else {
+                    assertEquals(1, d.statementAnalysis().statementTime(Stage.MERGE));
+                }
+            }
+        };
+
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("method".equals(d.methodInfo().name)) {
                 assertDv(d, 1, DV.FALSE_DV, Property.MODIFIED_METHOD);
-                //   String expected = d.iteration() < 2 ? "<m:method>"
-                //           : "/*inline method*/set.contains(s)?s.length():set$1.contains(s)?1:0";
-                //    assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
+                String expected = d.iteration() < 2 ? "<m:method>"
+                        : "/*inline method*/set.contains(s)?s.length():set.contains(s)?1:0";
+                assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
             }
         };
         testClass("Mutable_1", 0, 0, new DebugConfiguration.Builder()
+                .addEvaluationResultVisitor(evaluationResultVisitor)
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
-                //  .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                .addStatementAnalyserVisitor(statementAnalyserVisitor)
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .build());
     }
@@ -181,28 +257,51 @@ public class Test_Mutable extends CommonTestRunner {
                         String expected = d.iteration() == 0 ? "<f:set>"
                                 : "instance type HashSet<String>/*this.contains(s)&&this.size()>=1*/";
                         assertEquals(expected, d.currentValue().toString());
-
+                        if (d.iteration() > 0) {
+                            if (d.currentValue() instanceof PropertyWrapper pw) {
+                                assertEquals("this.contains(s)&&this.size()>=1", pw.state().toString());
+                                if (pw.state() instanceof And and) {
+                                    if (and.getExpressions().get(0) instanceof MethodCall methodCall) {
+                                        // this.contains(s) representation of set.contains(s)
+                                        assertEquals("1,0", methodCall.getModificationTimes());
+                                    } else fail();
+                                    if (and.getExpressions().get(1) instanceof GreaterThanZero gt0
+                                            && gt0.expression() instanceof Sum sum
+                                            && sum.rhs instanceof MethodCall methodCall) {
+                                        assertEquals("1", methodCall.getModificationTimes());
+                                    } else fail();
+                                } else fail();
+                            } else fail();
+                        }
                         assertDv(d, 1, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
                         assertModificationTime(d, 1, 1);
                     }
                 }
             }
         };
+
         StatementAnalyserVisitor statementAnalyserVisitor = d -> {
             if ("method".equals(d.methodInfo().name)) {
                 if ("1".equals(d.statementId()) || "2".equals(d.statementId())) {
                     String expected = d.iteration() == 0 ? "!<m:contains>" : "!set.contains(s)";
                     assertEquals(expected, d.absoluteState().toString());
+                    if (d.iteration() > 0) {
+                        if (d.absoluteState() instanceof Negation negation && negation.expression instanceof MethodCall methodCall) {
+                            assertEquals("0,0", methodCall.getModificationTimes());
+                        } else fail();
+                    }
                 }
             }
         };
+
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("method".equals(d.methodInfo().name)) {
                 assertDv(d, 1, DV.TRUE_DV, Property.MODIFIED_METHOD);
-                String expected = d.iteration() < 2 ? "<m:method>" : "??";
+                String expected = d.iteration() < 2 ? "<m:method>" : "set.contains(s)?s.length():-1";
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
             }
         };
+
         testClass("Mutable_2", 0, 0, new DebugConfiguration.Builder()
                 .addEvaluationResultVisitor(evaluationResultVisitor)
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)

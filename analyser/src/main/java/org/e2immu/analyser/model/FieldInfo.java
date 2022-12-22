@@ -133,7 +133,7 @@ public class FieldInfo implements WithInspectionAndAnalysis {
             FieldInspection inspection = this.fieldInspection.get();
             List<FieldModifier> fieldModifiers = minimalModifiers(inspection);
             outputBuilder.add(fieldModifiers.stream()
-                    .map(mod -> new OutputBuilder().add(new Text(mod.toJava())))
+                    .map(mod -> new OutputBuilder().add(mod.keyword))
                     .collect(OutputBuilder.joining(Space.ONE)));
             if (!fieldModifiers.isEmpty()) outputBuilder.add(Space.ONE);
         }

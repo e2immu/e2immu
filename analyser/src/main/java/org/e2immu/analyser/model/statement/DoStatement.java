@@ -16,6 +16,7 @@ package org.e2immu.analyser.model.statement;
 
 import org.e2immu.analyser.analyser.ForwardEvaluationInfo;
 import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.output.Keyword;
 import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.Symbol;
 import org.e2immu.analyser.output.Text;
@@ -85,9 +86,9 @@ public class DoStatement extends LoopStatement {
 
     @Override
     public OutputBuilder output(Qualification qualification, LimitedStatementAnalysis statementAnalysis) {
-        return new OutputBuilder().add(new Text("do"))
+        return new OutputBuilder().add(Keyword.DO)
                 .add(structure.block().output(qualification, LimitedStatementAnalysis.startOfBlock(statementAnalysis, 0)))
-                .add(new Text("while"))
+                .add(Keyword.WHILE)
                 .add(Symbol.LEFT_PARENTHESIS)
                 .add(structure.expression().output(qualification))
                 .add(Symbol.RIGHT_PARENTHESIS);

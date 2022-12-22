@@ -17,6 +17,7 @@ package org.e2immu.analyser.model.statement;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.LocalVariableCreation;
 import org.e2immu.analyser.model.variable.Variable;
+import org.e2immu.analyser.output.Keyword;
 import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.Symbol;
 import org.e2immu.analyser.output.Text;
@@ -118,7 +119,7 @@ public class ForStatement extends LoopStatement {
         if (label != null) {
             outputBuilder.add(new Text(label)).add(Symbol.COLON_LABEL);
         }
-        return outputBuilder.add(new Text("for"))
+        return outputBuilder.add(Keyword.FOR)
                 .add(Symbol.LEFT_PARENTHESIS)
                 .add(structure.initialisers().stream().map(expression1 -> expression1.output(qualification)).collect(OutputBuilder.joining(Symbol.COMMA)))
                 .add(Symbol.SEMICOLON)

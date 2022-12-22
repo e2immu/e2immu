@@ -15,10 +15,7 @@
 package org.e2immu.analyser.model.statement;
 
 import org.e2immu.analyser.model.*;
-import org.e2immu.analyser.output.OutputBuilder;
-import org.e2immu.analyser.output.Space;
-import org.e2immu.analyser.output.Symbol;
-import org.e2immu.analyser.output.Text;
+import org.e2immu.analyser.output.*;
 import org.e2immu.analyser.parser.InspectionProvider;
 
 import java.util.List;
@@ -73,7 +70,7 @@ public class AssertStatement extends StatementWithStructure {
     @Override
     public OutputBuilder output(Qualification qualification, LimitedStatementAnalysis statementAnalysis) {
         return new OutputBuilder()
-                .add(new Text("assert"))
+                .add(Keyword.ASSERT)
                 .add(Space.ONE)
                 .add(structure.expression().output(qualification))
                 .add(message != null ? new OutputBuilder().add(Symbol.COMMA).add(message.output(qualification)) : new OutputBuilder())

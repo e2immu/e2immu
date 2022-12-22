@@ -14,6 +14,7 @@
 
 package org.e2immu.analyser.model;
 
+import org.e2immu.analyser.model.expression.MethodCall;
 import org.e2immu.analyser.model.statement.Block;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.parser.InspectionProvider;
@@ -127,4 +128,8 @@ public interface TranslationMap {
     used by CM
      */
     default boolean translateAgain() { return false; }
+
+    default String modificationTimes(MethodCall beforeTranslation,
+                                     Expression translatedObject,
+                                     List<Expression> translatedParameters) { return null; }
 }

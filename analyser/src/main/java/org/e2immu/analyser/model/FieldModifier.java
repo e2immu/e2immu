@@ -15,28 +15,27 @@
 package org.e2immu.analyser.model;
 
 import com.github.javaparser.ast.Modifier;
+import org.e2immu.analyser.output.Keyword;
 
 public enum FieldModifier {
 
-    PRIVATE, PUBLIC, PROTECTED,
+    PUBLIC(Keyword.PUBLIC),
+    PRIVATE(Keyword.PRIVATE),
+    PROTECTED(Keyword.PROTECTED),
 
-    STATIC,
+    FINAL(Keyword.FINAL),
+    STATIC(Keyword.STATIC),
 
-    FINAL,
-    VOLATILE,
+    VOLATILE(Keyword.VOLATILE),
+    TRANSIENT(Keyword.TRANSIENT);
 
-    TRANSIENT,
-    ;
+    public final Keyword keyword;
 
+    FieldModifier(Keyword keyword) {
+        this.keyword = keyword;
+    }
 
     public static FieldModifier from(Modifier m) {
         return FieldModifier.valueOf(m.getKeyword().toString().toUpperCase());
     }
-
-    public String toJava() {
-        return name().toLowerCase();
-    }
-
-    public final static FieldModifier[] NON_ACCESS_SORTED = {STATIC, FINAL, VOLATILE, TRANSIENT};
-
 }
