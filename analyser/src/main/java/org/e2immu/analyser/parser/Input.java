@@ -143,7 +143,7 @@ public record Input(Configuration configuration,
         return sourceURLs;
     }
 
-    private static boolean acceptSource(String packageName, String typeName, List<String> restrictions) {
+    public static boolean acceptSource(String packageName, String typeName, List<String> restrictions) {
         if (restrictions.isEmpty()) return true;
         for (String packageString : restrictions) {
             if (packageString.endsWith(".")) {

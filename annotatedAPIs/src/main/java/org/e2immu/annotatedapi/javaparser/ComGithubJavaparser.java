@@ -33,9 +33,5 @@ public class ComGithubJavaparser {
         @NotNull(content = true)
         List<Problem> getProblems();
 
-        @Independent
-        interface PostProcessor {
-
-        }
     }
 }

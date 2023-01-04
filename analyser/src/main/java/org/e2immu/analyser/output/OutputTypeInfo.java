@@ -26,7 +26,7 @@ import java.util.stream.Stream;
 
 public class OutputTypeInfo {
     public static OutputBuilder output(TypeInfo typeInfo, Qualification qualification, boolean doTypeDeclaration) {
-        String typeNature;
+        TypeNature typeNature;
         Set<String> imports;
         Qualification insideType;
         if (typeInfo.isPrimaryType() && typeInfo.hasBeenInspected()) {
@@ -53,7 +53,7 @@ public class OutputTypeInfo {
 
         if (typeInfo.hasBeenInspected()) {
             TypeInspection typeInspection = typeInfo.typeInspection.get();
-            typeNature = typeInspection.typeNature().toJava();
+            typeNature = typeInspection.typeNature();
             isInterface = typeInspection.isInterface();
             isRecord = typeInspection.typeNature() == TypeNature.RECORD;
             typeModifiers = minimalModifiers(typeInspection);
@@ -72,7 +72,7 @@ public class OutputTypeInfo {
                 addThisToQualification(typeInfo, qi);
             }
         } else {
-            typeNature = "class"; // we really have no idea what it is
+            typeNature = TypeNature.CLASS; // we really have no idea what it is
             typeModifiers = List.of(TypeModifier.ABSTRACT);
             fields = List.of();
             constructors = List.of();
@@ -108,7 +108,7 @@ public class OutputTypeInfo {
             afterAnnotations
                     .add(typeModifiers.stream().map(mod -> new OutputBuilder().add(mod.keyword))
                             .collect(OutputBuilder.joining(Space.ONE)))
-                    .add(Space.ONE).add(new Text(typeNature))
+                    .add(Space.ONE).add(typeNature.keyword)
                     .add(Space.ONE).add(new Text(typeInfo.simpleName));
 
             if (!typeParameters.isEmpty()) {
