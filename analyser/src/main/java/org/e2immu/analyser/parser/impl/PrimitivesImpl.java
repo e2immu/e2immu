@@ -707,4 +707,10 @@ public class PrimitivesImpl implements Primitives {
         builder.ensureIsNotEventualUnlessOtherwiseAnnotated();
         return (MethodAnalysis) builder.build();
     }
+
+    @Override
+    public MethodInfo assignOperator(ParameterizedType returnType) {
+        // NOTE: we have only one at the moment, no distinction between the types
+        return assignOperatorInt;
+    }
 }

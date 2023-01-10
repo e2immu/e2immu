@@ -55,10 +55,6 @@ public class EnclosedExpression extends BaseExpression implements Expression {
         if (translated != this) return translated;
 
         Expression translatedInner = inner.translate(inspectionProvider, translationMap);
-        if (translationMap.translateAgain()) {
-            // actually remove the enclosure, it causes many issues and is never necessary
-            return translatedInner;
-        }
         if (translatedInner == inner) return this;
         return new EnclosedExpression(identifier, translatedInner);
     }

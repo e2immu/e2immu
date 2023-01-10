@@ -69,4 +69,6 @@ public interface Primitives extends PrimitivesWithoutParameterizedType {
     ParameterizedType voidParameterizedType();
 
     MethodAnalysis createEmptyMethodAnalysis(MethodInfo constructor);
+
+    MethodInfo assignOperator(ParameterizedType returnType);
 }

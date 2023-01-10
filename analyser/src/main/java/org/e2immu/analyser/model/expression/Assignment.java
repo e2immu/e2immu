@@ -132,7 +132,8 @@ public class Assignment extends BaseExpression implements Expression {
         this.complainAboutAssignmentOutsideType = complainAboutAssignmentOutsideType;
         this.target = Objects.requireNonNull(target);
         this.value = Objects.requireNonNull(value);
-        this.assignmentOperator = assignmentOperator; // as in i+=1;
+        this.assignmentOperator = Objects.requireNonNullElseGet(assignmentOperator,
+                () -> primitives.assignOperator(target.returnType())); // as in i+=1, j=a;
         this.prefixPrimitiveOperator = prefixPrimitiveOperator;
         binaryOperator = assignmentOperator == null ? null : BinaryOperator.fromAssignmentOperatorToNormalOperator(primitives, assignmentOperator);
         this.primitives = primitives;
@@ -186,10 +187,14 @@ public class Assignment extends BaseExpression implements Expression {
         if (translatedValue == this.value && translatedTarget == this.target && translatedDirect == directAssignmentVariables)
             return this;
 
-        return new Assignment(identifier, primitives, translatedTarget,
+        Assignment a = new Assignment(identifier, primitives, translatedTarget,
                 translatedValue, assignmentOperator, prefixPrimitiveOperator,
                 complainAboutAssignmentOutsideType, allowStaticallyAssigned,
                 evaluationOfValue, directAssignmentVariables);
+        if (translationMap.translateAgain()) {
+            return a.translate(inspectionProvider, translationMap);
+        }
+        return a;
     }
 
     @Override
@@ -273,9 +278,9 @@ public class Assignment extends BaseExpression implements Expression {
 
     @Override
     public int internalCompareTo(Expression v) {
-        if(v instanceof Assignment other) {
+        if (v instanceof Assignment other) {
             int c = target.compareTo(other.target);
-            if(c != 0) return c;
+            if (c != 0) return c;
             return value.compareTo(other.value);
         }
         throw new UnsupportedOperationException();
