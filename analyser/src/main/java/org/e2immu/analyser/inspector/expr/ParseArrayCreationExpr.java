@@ -50,7 +50,7 @@ public class ParseArrayCreationExpr {
     }
 
     // new Type[3]; this method creates the constructor that makes this array, without attaching said constructor to the type
-    static MethodInfo createArrayCreationConstructor(TypeContext typeContext, ParameterizedType parameterizedType) {
+    public static MethodInfo createArrayCreationConstructor(TypeContext typeContext, ParameterizedType parameterizedType) {
         MethodInspection.Builder builder = new MethodInspectionImpl.Builder(parameterizedType.typeInfo)
                 .setInspectedBlock(Block.emptyBlock(Identifier.generate("empty block in array creation")))
                 .setReturnType(parameterizedType)
