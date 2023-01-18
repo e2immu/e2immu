@@ -180,8 +180,8 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
     }
 
     @Override
-    public boolean hasParallelGroups() {
-        return parallelGroups != null && parallelGroups.containsParallels();
+    public ParSeq<ParameterInfo> getParallelGroups() {
+        return parallelGroups;
     }
 
     @Override
@@ -287,8 +287,8 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
         }
 
         @Override
-        public boolean hasParallelGroups() {
-            return parallelGroups.isSet() && parallelGroups.get().containsParallels();
+        public ParSeq<ParameterInfo> getParallelGroups() {
+            return parallelGroups.getOrDefaultNull();
         }
 
         @Override
@@ -357,6 +357,11 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
         @Override
         protected void addCommutable() {
             parallelGroups.set(new ParallelGroup<>());
+        }
+
+        // used by CM
+        public void setParallelGroups(ParSeq<ParameterInfo> parallelGroups) {
+            this.parallelGroups.set(parallelGroups);
         }
 
         @Override

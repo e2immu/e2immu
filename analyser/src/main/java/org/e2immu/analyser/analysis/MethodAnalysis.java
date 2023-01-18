@@ -15,10 +15,8 @@
 package org.e2immu.analyser.analysis;
 
 import org.e2immu.analyser.analyser.*;
-import org.e2immu.analyser.model.CompanionMethodName;
-import org.e2immu.analyser.model.Expression;
-import org.e2immu.analyser.model.FieldInfo;
-import org.e2immu.analyser.model.MethodInfo;
+import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.util.ParSeq;
 import org.e2immu.annotation.NotNull;
 
 import java.util.List;
@@ -136,7 +134,12 @@ public interface MethodAnalysis extends Analysis {
     }
 
     // associated with the @Commutable annotation
-    boolean hasParallelGroups();
+    ParSeq<ParameterInfo> getParallelGroups();
+
+    default boolean hasParallelGroups() {
+        ParSeq<ParameterInfo> parSeq = getParallelGroups();
+        return parSeq != null && parSeq.containsParallels();
+    }
 
     List<Expression> sortAccordingToParallelGroupsAndNaturalOrder(List<Expression> parameterExpressions);
 
