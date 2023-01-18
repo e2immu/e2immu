@@ -72,7 +72,7 @@ public class ArrayInitializer extends BaseExpression implements Expression {
     @Override
     public Expression translate(InspectionProvider inspectionProvider, TranslationMap translationMap) {
         Expression translated = translationMap.translateExpression(this);
-        if(translated != this) return translated;
+        if (translated != this) return translated;
 
         // IMPROVE can be made more efficient, make a TranslationCollector on arrays
         List<Expression> exs = multiExpression.stream().toList();
@@ -113,10 +113,9 @@ public class ArrayInitializer extends BaseExpression implements Expression {
     }
 
     @Override
-    public EvaluationResult evaluate(EvaluationResult context,
-                                     ForwardEvaluationInfo forwardEvaluationInfo) {
+    public EvaluationResult evaluate(EvaluationResult context, ForwardEvaluationInfo forwardEvaluationInfo) {
         List<EvaluationResult> results = multiExpression.stream()
-                .map(e -> e.evaluate(context, ForwardEvaluationInfo.DEFAULT))
+                .map(e -> e.evaluate(context, forwardEvaluationInfo))
                 .collect(Collectors.toList());
         List<Expression> values = results.stream().map(EvaluationResult::getExpression).collect(Collectors.toList());
 

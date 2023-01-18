@@ -65,6 +65,10 @@ public class ArrayLength extends BaseExpression implements Expression {
         return new ArrayLength(identifier, primitives, translatedScope);
     }
 
+    public Expression scope() {
+        return scope;
+    }
+
     @Override
     public CausesOfDelay causesOfDelay() {
         return scope.causesOfDelay();

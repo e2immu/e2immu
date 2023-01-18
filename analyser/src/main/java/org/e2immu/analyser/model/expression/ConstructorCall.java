@@ -154,7 +154,12 @@ public class ConstructorCall extends BaseExpression implements HasParameterExpre
         List<Expression> translatedParameterExpressions = parameterExpressions.isEmpty() ? parameterExpressions
                 : parameterExpressions.stream().map(e -> e.translate(inspectionProvider, translationMap))
                 .collect(TranslationCollectors.toList(parameterExpressions));
-        if (translatedType == this.parameterizedType && translatedParameterExpressions == this.parameterExpressions) {
+        ArrayInitializer translatedInitializer = arrayInitializer == null ? null :
+                TranslationMapImpl.ensureExpressionType(
+                        arrayInitializer.translate(inspectionProvider, translationMap), ArrayInitializer.class);
+        if (translatedType == this.parameterizedType
+                && translatedParameterExpressions == this.parameterExpressions
+                && translatedInitializer == arrayInitializer) {
             return this;
         }
         CausesOfDelay causesOfDelay = translatedParameterExpressions.stream()
@@ -168,7 +173,7 @@ public class ConstructorCall extends BaseExpression implements HasParameterExpre
                 diamond,
                 translatedParameterExpressions,
                 anonymousClass, // not translating this yet!
-                arrayInitializer == null ? null : TranslationMapImpl.ensureExpressionType(arrayInitializer, ArrayInitializer.class));
+                translatedInitializer);
     }
 
     @Override
@@ -310,32 +315,32 @@ public class ConstructorCall extends BaseExpression implements HasParameterExpre
         if (constructor != null || anonymousClass != null) {
             outputBuilder.add(Keyword.NEW).add(Space.ONE)
                     .add(parameterizedType.copyWithoutArrays().output(qualification, false, diamond));
-            if (arrayInitializer == null) {
-                if (parameterizedType.arrays > 0) {
-                    for (int i = 0; i < parameterizedType.arrays; i++) {
-                        if (i < parameterExpressions.size()) {
-                            outputBuilder.add(Symbol.LEFT_BRACKET);
-                            Expression size = parameterExpressions.get(i);
-                            if (!(size instanceof UnknownExpression)) {
-                                outputBuilder.add(size.output(qualification));
-                            }
-                            outputBuilder.add(Symbol.RIGHT_BRACKET);
-                        } else {
-                            outputBuilder.add(Symbol.OPEN_CLOSE_BRACKETS);
+            //      if (arrayInitializer == null) {
+            if (parameterizedType.arrays > 0) {
+                for (int i = 0; i < parameterizedType.arrays; i++) {
+                    if (i < parameterExpressions.size()) {
+                        outputBuilder.add(Symbol.LEFT_BRACKET);
+                        Expression size = parameterExpressions.get(i);
+                        if (!(size instanceof UnknownExpression)) {
+                            outputBuilder.add(size.output(qualification));
                         }
-                    }
-                } else {
-                    if (parameterExpressions.isEmpty()) {
-                        outputBuilder.add(Symbol.OPEN_CLOSE_PARENTHESIS);
+                        outputBuilder.add(Symbol.RIGHT_BRACKET);
                     } else {
-                        outputBuilder
-                                .add(Symbol.LEFT_PARENTHESIS)
-                                .add(parameterExpressions.stream().map(expression -> expression.output(qualification))
-                                        .collect(OutputBuilder.joining(Symbol.COMMA)))
-                                .add(Symbol.RIGHT_PARENTHESIS);
+                        outputBuilder.add(Symbol.OPEN_CLOSE_BRACKETS);
                     }
                 }
+            } else {
+                if (parameterExpressions.isEmpty()) {
+                    outputBuilder.add(Symbol.OPEN_CLOSE_PARENTHESIS);
+                } else {
+                    outputBuilder
+                            .add(Symbol.LEFT_PARENTHESIS)
+                            .add(parameterExpressions.stream().map(expression -> expression.output(qualification))
+                                    .collect(OutputBuilder.joining(Symbol.COMMA)))
+                            .add(Symbol.RIGHT_PARENTHESIS);
+                }
             }
+            //    }
         }
         if (anonymousClass != null) {
             outputBuilder.add(anonymousClass.output(qualification, false));
@@ -365,13 +370,16 @@ public class ConstructorCall extends BaseExpression implements HasParameterExpre
 
     @Override
     public EvaluationResult evaluate(EvaluationResult context, ForwardEvaluationInfo forwardEvaluationInfo) {
+        if (forwardEvaluationInfo.isOnlySort()) {
+            return evaluateComponents(context, forwardEvaluationInfo);
+        }
 
         // arrayInitializer variant
 
         if (arrayInitializer != null) {
             EvaluationResult.Builder builder = new EvaluationResult.Builder(context);
             List<EvaluationResult> results = arrayInitializer.multiExpression.stream()
-                    .map(e -> e.evaluate(context, ForwardEvaluationInfo.DEFAULT))
+                    .map(e -> e.evaluate(context, forwardEvaluationInfo))
                     .collect(Collectors.toList());
             builder.compose(results);
             List<Expression> values = results.stream().map(EvaluationResult::getExpression).collect(Collectors.toList());
@@ -424,6 +432,16 @@ public class ConstructorCall extends BaseExpression implements HasParameterExpre
             res.k.raiseError(getIdentifier(), Message.Label.EVENTUAL_AFTER_REQUIRED);
         }
         return res.k.build();
+    }
+
+    private EvaluationResult evaluateComponents(EvaluationResult context, ForwardEvaluationInfo forwardEvaluationInfo) {
+        ArrayInitializer evaluatedArrayInitializer = arrayInitializer == null ? null :
+                (ArrayInitializer) arrayInitializer.evaluate(context, forwardEvaluationInfo).getExpression();
+        List<Expression> evaluatedParams = parameterExpressions.stream()
+                .map(e -> e.evaluate(context, forwardEvaluationInfo).getExpression()).toList();
+        Expression mc = new ConstructorCall(identifier, constructor, parameterizedType, diamond, evaluatedParams,
+                anonymousClass, evaluatedArrayInitializer);
+        return new EvaluationResult.Builder(context).setExpression(mc).build();
     }
 
     private EvaluationResult delayedConstructorCall(EvaluationResult context,
