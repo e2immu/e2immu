@@ -112,4 +112,11 @@ public interface ParSeq<T> {
      */
     <X> ParSeq<X> map(Function<T, X> function);
 
+    /**
+     * Construct a ParSeq by applying the before and inParallelWith methods to the list according to this parSeq.
+     *
+     * @param list the size of the list should equal the result of the size() method on this object
+     * @return a newly constructed ParSeq
+     */
+    ParSeq<T> apply(List<ParSeq<T>> list, MethodInfo operator);
 }

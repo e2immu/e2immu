@@ -59,4 +59,9 @@ public class ParallelGroup<T> implements ParSeq<T> {
     public <X> ParSeq<X> map(Function<T, X> function) {
         throw new UnsupportedOperationException(NOT_IMPLEMENTED);
     }
+
+    @Override
+    public ParSeq<T> apply(List<ParSeq<T>> list, MethodInfo operator) {
+        throw new UnsupportedOperationException(NOT_IMPLEMENTED);
+    }
 }
