@@ -135,6 +135,11 @@ public interface MethodAnalysis extends Analysis {
         return new Eventual(causes, Set.of(), false, null, null);
     }
 
+    // associated with the @Commutable annotation
+    boolean hasParallelGroups();
+
+    List<Expression> sortAccordingToParallelGroupsAndNaturalOrder(List<Expression> parameterExpressions);
+
     record Eventual(CausesOfDelay causesOfDelay,
                     Set<FieldInfo> fields,
                     boolean mark,

@@ -320,6 +320,8 @@ abstract class AbstractAnalysisBuilder implements Analysis {
                     setProperty(Property.EXTENSION_CLASS, trueFalse);
 
                     // RARE ANNOTATIONS
+                } else if(e2ImmuAnnotationExpressions.commutable.typeInfo() == t) {
+                    addCommutable();
                 } else if (e2ImmuAnnotationExpressions.staticSideEffects.typeInfo() == t) {
                     // @StaticSideEffects
                     setProperty(Property.STATIC_SIDE_EFFECTS, trueFalse);
@@ -386,6 +388,10 @@ abstract class AbstractAnalysisBuilder implements Analysis {
             writeLinkParameters(linkLevel, linkParameters);
         }
         return messages;
+    }
+
+    protected void addCommutable() {
+        throw new UnsupportedOperationException();
     }
 
     protected void writeLinkParameters(DV linkLevel, int[] linkParameters) {

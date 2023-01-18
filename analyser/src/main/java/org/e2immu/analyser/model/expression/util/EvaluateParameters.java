@@ -17,6 +17,7 @@ package org.e2immu.analyser.model.expression.util;
 import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.analyser.delay.DelayFactory;
 import org.e2immu.analyser.analyser.delay.SimpleCause;
+import org.e2immu.analyser.analysis.MethodAnalysis;
 import org.e2immu.analyser.analysis.ParameterAnalysis;
 import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.MethodInfo;
@@ -79,7 +80,16 @@ public class EvaluateParameters {
             builder.setProperty(scopeVariable.variable(), Property.CONTEXT_NOT_NULL,
                     MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL_DV);
         }
-        return new Pair<>(builder, parameterValues);
+
+        List<Expression> sortedParameters;
+        MethodAnalysis methodAnalysis = context.getAnalyserContext().getMethodAnalysisNullWhenAbsent(methodInfo);
+        if(methodAnalysis != null && methodAnalysis.hasParallelGroups()) {
+            sortedParameters = methodAnalysis.sortAccordingToParallelGroupsAndNaturalOrder(parameterExpressions);
+        } else {
+            sortedParameters = parameterValues;
+        }
+
+        return new Pair<>(builder, sortedParameters);
     }
 
     private static DV scopeIsContainer(EvaluationResult context, boolean recursiveOrPartOfCallCycle, Expression scopeObject) {

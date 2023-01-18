@@ -16,6 +16,7 @@ package org.e2immu.analyser.model.expression;
 
 import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.analysis.FieldAnalysis;
+import org.e2immu.analyser.analysis.MethodAnalysis;
 import org.e2immu.analyser.analysis.TypeAnalysis;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.util.*;
@@ -439,7 +440,15 @@ public class ConstructorCall extends BaseExpression implements HasParameterExpre
                 (ArrayInitializer) arrayInitializer.evaluate(context, forwardEvaluationInfo).getExpression();
         List<Expression> evaluatedParams = parameterExpressions.stream()
                 .map(e -> e.evaluate(context, forwardEvaluationInfo).getExpression()).toList();
-        Expression mc = new ConstructorCall(identifier, constructor, parameterizedType, diamond, evaluatedParams,
+        MethodAnalysis methodAnalysis = constructor == null ? null
+                : context.getAnalyserContext().getMethodAnalysisNullWhenAbsent(constructor);
+        List<Expression> sortedParameters;
+        if (methodAnalysis != null && methodAnalysis.hasParallelGroups()) {
+            sortedParameters = methodAnalysis.sortAccordingToParallelGroupsAndNaturalOrder(parameterExpressions);
+        } else {
+            sortedParameters = evaluatedParams;
+        }
+        Expression mc = new ConstructorCall(identifier, constructor, parameterizedType, diamond, sortedParameters,
                 anonymousClass, evaluatedArrayInitializer);
         return new EvaluationResult.Builder(context).setExpression(mc).build();
     }

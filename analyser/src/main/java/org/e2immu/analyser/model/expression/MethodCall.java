@@ -473,8 +473,15 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         EvaluationResult objectEval = object.evaluate(context, forwardEvaluationInfo);
         List<Expression> evaluatedParams = parameterExpressions.stream()
                 .map(e -> e.evaluate(context, forwardEvaluationInfo).getExpression()).toList();
+        List<Expression> sortedParameters;
+        MethodAnalysis methodAnalysis = context.getAnalyserContext().getMethodAnalysisNullWhenAbsent(methodInfo);
+        if(methodAnalysis != null && methodAnalysis.hasParallelGroups()) {
+            sortedParameters = methodAnalysis.sortAccordingToParallelGroupsAndNaturalOrder(parameterExpressions);
+        } else {
+            sortedParameters = evaluatedParams;
+        }
         Expression mc = new MethodCall(identifier, objectIsImplicit, objectEval.getExpression(), methodInfo,
-                returnType(), evaluatedParams);
+                returnType(), sortedParameters);
         return new EvaluationResult.Builder(context).setExpression(mc).build();
     }
 

@@ -24,10 +24,7 @@ import org.e2immu.annotation.eventual.BeforeMark;
 import org.e2immu.annotation.eventual.Mark;
 import org.e2immu.annotation.eventual.Only;
 import org.e2immu.annotation.eventual.TestMark;
-import org.e2immu.annotation.rare.AllowsInterrupt;
-import org.e2immu.annotation.rare.Finalizer;
-import org.e2immu.annotation.rare.IgnoreModifications;
-import org.e2immu.annotation.rare.StaticSideEffects;
+import org.e2immu.annotation.rare.*;
 import org.e2immu.annotation.type.ExtensionClass;
 import org.e2immu.annotation.type.Singleton;
 import org.e2immu.annotation.type.UtilityClass;
@@ -60,6 +57,7 @@ public class E2ImmuAnnotationExpressions {
 
     public final AnnotationExpression allowsInterrupt = create(AllowsInterrupt.class);
     public final AnnotationExpression beforeMark = create(BeforeMark.class);
+    public final AnnotationExpression commutable = create(Commutable.class);
     public final AnnotationExpression container = create(Container.class);
     public final AnnotationExpression extensionClass = create(ExtensionClass.class);
     public final AnnotationExpression effectivelyFinal = create(Final.class);
@@ -87,7 +85,7 @@ public class E2ImmuAnnotationExpressions {
 
     public E2ImmuAnnotationExpressions() {
         Map<String, TypeInfo> builder = new HashMap<>();
-        add(builder, allowsInterrupt, beforeMark, container, independent,
+        add(builder, allowsInterrupt, beforeMark, commutable, container, independent,
                 immutableContainer, extensionClass, finalFields, immutable,
                 effectivelyFinal, fluent, finalizer, identity, ignoreModifications, mark, modified);
         add(builder, notModified, notNull, nullable, only, singleton, staticSideEffects, testMark,

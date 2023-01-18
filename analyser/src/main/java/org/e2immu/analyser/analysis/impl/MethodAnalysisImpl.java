@@ -22,6 +22,8 @@ import org.e2immu.analyser.model.expression.*;
 import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
 import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.parser.Primitives;
+import org.e2immu.analyser.util.ParSeq;
+import org.e2immu.analyser.util.ParallelGroup;
 import org.e2immu.annotation.Modified;
 import org.e2immu.annotation.NotModified;
 import org.e2immu.support.EventuallyFinal;
@@ -31,10 +33,7 @@ import org.e2immu.support.SetOnceMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import static org.e2immu.analyser.parser.E2ImmuAnnotationExpressions.CONSTRUCTION;
@@ -54,6 +53,7 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
     public final Map<CompanionMethodName, CompanionAnalysis> companionAnalyses;
     public final Map<CompanionMethodName, MethodInfo> computedCompanions;
     public final AnalysisMode analysisMode;
+    public final ParSeq<ParameterInfo> parallelGroups;
 
     private MethodAnalysisImpl(MethodInfo methodInfo,
                                StatementAnalysis firstStatement,
@@ -67,7 +67,8 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
                                Map<Property, DV> properties,
                                Map<AnnotationExpression, AnnotationCheck> annotations,
                                Map<CompanionMethodName, CompanionAnalysis> companionAnalyses,
-                               Map<CompanionMethodName, MethodInfo> computedCompanions) {
+                               Map<CompanionMethodName, MethodInfo> computedCompanions,
+                               ParSeq<ParameterInfo> parallelGroups) {
         super(properties, annotations);
         this.methodInfo = methodInfo;
         this.firstStatement = firstStatement;
@@ -80,6 +81,7 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
         this.companionAnalyses = companionAnalyses;
         this.computedCompanions = computedCompanions;
         this.analysisMode = analysisMode;
+        this.parallelGroups = parallelGroups;
     }
 
     @Override
@@ -177,6 +179,17 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
         return methodInfo.newLocation();
     }
 
+    @Override
+    public boolean hasParallelGroups() {
+        return parallelGroups != null && parallelGroups.containsParallels();
+    }
+
+    @Override
+    public List<Expression> sortAccordingToParallelGroupsAndNaturalOrder(List<Expression> parameterExpressions) {
+        if (parallelGroups == null) throw new NullPointerException("No parallel groups available");
+        return parallelGroups.sortParallels(parameterExpressions, Comparator.naturalOrder());
+    }
+
     public static class Builder extends AbstractAnalysisBuilder implements MethodAnalysis {
         private final FlipSwitch firstIteration = new FlipSwitch();
         public final ParameterizedType returnType;
@@ -190,6 +203,7 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
         private final EventuallyFinal<Precondition> preconditionForEventual = new EventuallyFinal<>();
         private final EventuallyFinal<Eventual> eventual = new EventuallyFinal<>();
         private final EventuallyFinal<Expression> singleReturnValue = new EventuallyFinal<>();
+        private final SetOnce<ParSeq<ParameterInfo>> parallelGroups = new SetOnce<>();
 
         // ************** PRECONDITION
 
@@ -272,6 +286,16 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
             return causes;
         }
 
+        @Override
+        public boolean hasParallelGroups() {
+            return parallelGroups.isSet() && parallelGroups.get().containsParallels();
+        }
+
+        @Override
+        public List<Expression> sortAccordingToParallelGroupsAndNaturalOrder(List<Expression> parameterExpressions) {
+            return parallelGroups.get().sortParallels(parameterExpressions, Comparator.naturalOrder());
+        }
+
         public Builder(AnalysisMode analysisMode,
                        Primitives primitives,
                        AnalysisProvider analysisProvider,
@@ -326,7 +350,13 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
                     properties.toImmutableMap(),
                     annotationChecks.toImmutableMap(),
                     getCompanionAnalyses(),
-                    getComputedCompanions());
+                    getComputedCompanions(),
+                    parallelGroups.getOrDefaultNull());
+        }
+
+        @Override
+        protected void addCommutable() {
+            parallelGroups.set(new ParallelGroup<>());
         }
 
         @Override
