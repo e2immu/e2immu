@@ -180,6 +180,15 @@ public class LocalVariableCreation extends BaseExpression implements Expression 
 
     @Override
     public EvaluationResult evaluate(EvaluationResult context, ForwardEvaluationInfo forwardEvaluationInfo) {
+        if (forwardEvaluationInfo.isOnlySort()) {
+            List<Declaration> evaluatedDeclarations = declarations.stream()
+                    .map(d -> d.expression == null ? d :
+                            new Declaration(d.identifier, d.localVariable,
+                                    d.expression.evaluate(context, forwardEvaluationInfo).getExpression()))
+                    .toList();
+            LocalVariableCreation lvc = new LocalVariableCreation(primitives, evaluatedDeclarations, isVar);
+            return new EvaluationResult.Builder(context).setExpression(lvc).build();
+        }
         EvaluationResult.Builder builder = null;
         EvaluationResult result = null;
         for (Declaration declaration : declarations) {
