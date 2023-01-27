@@ -98,7 +98,7 @@ public class TestComplexity extends CommonAbstractValue {
                 newOr(a, negate(newEquals(s1, s2))));
         assertEquals("(a||null==s)&&(a||s1!=s2)", condition1.toString());
         // 21 = (1+4+1+2+1)+3+(9)
-        assertEquals(21, condition1.getComplexity());
+        assertEquals(17, condition1.getComplexity());
 
         Expression cEqdGThenF = newInline(newEquals(s1, s2), s5, s4);
         assertEquals("s1==s2?s5:s4", cEqdGThenF.toString());
@@ -116,7 +116,7 @@ public class TestComplexity extends CommonAbstractValue {
         InlineConditional overall = newInline(condition1, NullConstant.NULL_CONSTANT, expression1);
         assertEquals("(a||null==s)&&(a||s1!=s2)?null:a?null==s3?s4:null==s?s1==s2?s5:s4:s6:null==s?s1==s2?s5:s4:s6",
                 overall.toString());
-        assertEquals(115, overall.getComplexity());
+        assertEquals(121, overall.getComplexity());
 
         Expression better = overall.optimise(context, null);
         assertEquals("(a||null==s)&&(a||s1!=s2)?null:null==s?s5:s6", better.toString());

@@ -20,6 +20,8 @@ import org.e2immu.analyser.model.expression.util.ExpressionComparator;
 import org.e2immu.analyser.model.expression.util.InequalitySolver;
 import org.e2immu.analyser.model.expression.util.LhsRhs;
 import org.e2immu.analyser.model.expression.util.TranslationCollectors;
+import org.e2immu.analyser.model.variable.LocalVariableReference;
+import org.e2immu.analyser.model.variable.This;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.Symbol;
@@ -32,6 +34,7 @@ import org.slf4j.LoggerFactory;
 import java.util.*;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public class And extends ExpressionCanBeTooComplex {
     private static final Logger LOGGER = LoggerFactory.getLogger(And.class);
@@ -128,7 +131,7 @@ public class And extends ExpressionCanBeTooComplex {
 
             // STEP 4a: sort
 
-            Collections.sort(concat);
+            concat = sort(context, concat);
 
             // STEP 4b: observations
 
@@ -188,6 +191,72 @@ public class And extends ExpressionCanBeTooComplex {
         And res = new And(id, primitives, List.copyOf(concat));
         LOGGER.debug("Constructed {}", res);
         return res;
+    }
+
+    /* unadulterated sorting is not allowed; we want, e.g., in != null before in.isEmpty()
+    // different method calls, and especially modifying ones,
+    // should remain in the current order, even if that is not semantically optimal
+
+     */
+    private ArrayList<Expression> sort(EvaluationResult context, ArrayList<Expression> expressions) {
+        TreeMap<Expression, List<Expression>> expressionsByObject = new TreeMap<>();
+        for (Expression expression : expressions) {
+            Expression object = objectOfExpression(expression);
+            ArrayList<Expression> list = new ArrayList<>();
+            list.add(expression);
+            expressionsByObject.merge(object, list, (l1, l2) -> {
+                l1.addAll(l2);
+                return l1;
+            });
+        }
+        List<List<Expression>> sorted =
+                expressionsByObject.values().stream().map(l -> {
+                    if (l.size() == 1) return l;
+                    return sortList(l);
+                }).toList();
+        return sorted.stream().flatMap(Collection::stream)
+                .collect(Collectors.toCollection(() -> new ArrayList<>(expressions.size())));
+    }
+
+    private static List<Expression> sortList(List<Expression> list) {
+        ArrayList<Expression> l1 = new ArrayList<>();
+        ArrayList<Expression> l2 = new ArrayList<>();
+        ArrayList<Expression> l3 = new ArrayList<>();
+        for (Expression e : list) {
+            if (isNullCheck(e)) l1.add(e);
+            else if (e instanceof MethodCall) {
+                l3.add(e);
+            } else l2.add(e);
+        }
+        ArrayList<Expression> res = new ArrayList<>(list.size());
+        Collections.sort(l1);
+        Collections.sort(l2);
+        // do NOT sort l3
+        res.addAll(l1);
+        res.addAll(l2);
+        res.addAll(l3);
+        return res;
+    }
+
+    public static Expression objectOfExpression(Expression expression) {
+        if (expression instanceof MethodCall methodCall) {
+            return methodCall.object;
+        }
+        List<Variable> vars = expression.variables(false);
+        if (vars.size() == 1) {
+            return new VariableExpression(vars.get(0));
+        }
+        return expression;
+    }
+
+    public static boolean isNullCheck(Expression e) {
+        Expression ee;
+        if (e instanceof Negation n) {
+            ee = n.expression;
+        } else {
+            ee = e;
+        }
+        return ee instanceof BinaryOperator eq && (eq.lhs.isNull() != eq.rhs.isNull());
     }
 
     private Action analyse(EvaluationResult evaluationContext,

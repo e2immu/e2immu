@@ -179,6 +179,8 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
      the interface and the implementation, or the interface and sub-interface
      */
     private boolean checkSpecialCasesWhereDifferentMethodsAreEqual(MethodInfo m1, MethodInfo m2) {
+        // the following line is there for tests:
+        if(!m1.methodResolution.isSet() || !m2.methodResolution.isSet()) return false;
         Set<MethodInfo> overrides1 = m1.methodResolution.get().overrides();
         if (m2.typeInfo.isInterface() && overrides1.contains(m2)) return true;
         Set<MethodInfo> overrides2 = m2.methodResolution.get().overrides();

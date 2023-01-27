@@ -190,7 +190,7 @@ public class Test_00_Basics_20 extends CommonTestRunner {
                     }
                     if ("3".equals(d.statementId())) {
                         String expectValue = d.iteration() <= 1 ? "<v:list>"
-                                : "instance type ArrayList<I>/*this.contains(i)&&1==this.size()*/";
+                                : "instance type ArrayList<I>/*1==this.size()&&this.contains(i)*/";
                         assertEquals(expectValue, d.currentValue().toString());
 
                         // while class "I" is independent, it is also mutable. It is the latter property that is relevant

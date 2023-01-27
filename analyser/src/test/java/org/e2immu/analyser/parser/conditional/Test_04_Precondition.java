@@ -381,7 +381,7 @@ public class Test_04_Precondition extends CommonTestRunner {
                         assertFalse(d.statementAnalysis().methodLevelData().combinedPreconditionIsFinal());
                     } else {
                         assertTrue(d.statementAnalysis().methodLevelData().combinedPreconditionIsFinal());
-                        assertEquals("null==integer&&ii>=0",
+                        assertEquals("ii>=0&&null==integer",
                                 d.statementAnalysis().methodLevelData().combinedPreconditionGet().expression().toString());
                     }
                 }
@@ -429,8 +429,8 @@ public class Test_04_Precondition extends CommonTestRunner {
 
     private static String notConditionIn0(int iteration) {
         return switch (iteration) {
-            case 0, 1 -> "<null-check>&&ii>=0";
-            default -> "null==integer&&ii>=0";
+            case 0, 1 -> "ii>=0&&<null-check>";
+            default -> "ii>=0&&null==integer";
         };
     }
 
@@ -537,6 +537,22 @@ public class Test_04_Precondition extends CommonTestRunner {
             }
         };
         testClass("Precondition_8", 0, 0,
+                new DebugConfiguration.Builder()
+                        .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                        .build());
+    }
+
+
+
+    @Test
+    public void test_9() throws IOException {
+        MethodAnalyserVisitor methodAnalyserVisitor = d -> {
+            if ("method".equals(d.methodInfo().name)) {
+                assertEquals("Precondition[expression=null!=in&&!in.isEmpty()&&Character.isUpperCase(in.charAt(0)), causes=[escape, escape]]",
+                        d.methodAnalysis().getPrecondition().toString());
+            }
+        };
+        testClass("Precondition_9", 0, 0,
                 new DebugConfiguration.Builder()
                         .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                         .build());

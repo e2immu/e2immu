@@ -39,7 +39,7 @@ public class TestTooComplex extends CommonAbstractValue {
                 newOr(a, negate(newEquals(s1, s2))));
         assertEquals("(a||null==s)&&(a||s1!=s2)", condition1.toString());
         // 21 = (1+4+1+2+1)+3+(9)
-        assertEquals(21, condition1.getComplexity());
+        assertEquals(17, condition1.getComplexity());
         Expression addOne = And.and(context, condition1, a);
         if (addOne instanceof MultiExpressions multiExpressions) {
             Expression[] expressions = multiExpressions.multiExpression.expressions();
