@@ -111,7 +111,7 @@ public interface ConstantExpression<T> extends Expression {
 
     @Override
     default Expression translate(InspectionProvider inspectionProvider, TranslationMap translationMap) {
-        return this;
+        return translationMap.translateExpression(this);
     }
 
     @Override
