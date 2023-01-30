@@ -543,13 +543,15 @@ public class Test_04_Precondition extends CommonTestRunner {
     }
 
 
-
     @Test
     public void test_9() throws IOException {
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
-            if ("method".equals(d.methodInfo().name)) {
-                assertEquals("Precondition[expression=null!=in&&!in.isEmpty()&&Character.isUpperCase(in.charAt(0)), causes=[escape, escape]]",
-                        d.methodAnalysis().getPrecondition().toString());
+            // same precondition for method, method2, method3
+            if (d.methodInfo().name.startsWith("method")) {
+                String finalValue = "Precondition[expression=null!=in&&!in.isEmpty()&&Character.isUpperCase(in.charAt(0)), causes=[escape, escape]]";
+                if (d.methodAnalysis().preconditionStatus().isDone()) {
+                    assertEquals(finalValue, d.methodAnalysis().getPrecondition().toString(), "Method "+d.methodInfo().name);
+                }
             }
         };
         testClass("Precondition_9", 0, 0,

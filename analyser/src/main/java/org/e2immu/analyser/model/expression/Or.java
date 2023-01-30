@@ -16,6 +16,7 @@ package org.e2immu.analyser.model.expression;
 
 import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.model.expression.util.AndOrSorter;
 import org.e2immu.analyser.model.expression.util.ExpressionComparator;
 import org.e2immu.analyser.model.expression.util.TranslationCollectors;
 import org.e2immu.analyser.model.variable.Variable;
@@ -106,7 +107,7 @@ public final class Or extends ExpressionCanBeTooComplex {
 
             // STEP 4a: sort
 
-            Collections.sort(concat);
+            concat = AndOrSorter.sort(context, concat);
 
             // STEP 4b: observations
 

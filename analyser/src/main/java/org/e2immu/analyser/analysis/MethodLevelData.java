@@ -130,7 +130,8 @@ public class MethodLevelData {
                 .map(EventuallyFinal::get);
 
         Precondition empty = Precondition.empty(sharedState.context.getPrimitives());
-        Precondition all = Stream.concat(fromMyStateData, Stream.concat(fromBlocks, fromPrevious))
+        // order is important here, method calls remain in order given the same object
+        Precondition all = Stream.concat(fromPrevious, Stream.concat(fromMyStateData, fromBlocks))
                 .map(pc -> pc == null ? empty : pc)
                 .reduce((pc1, pc2) -> pc1.combine(sharedState.context, pc2))
                 .orElse(empty);

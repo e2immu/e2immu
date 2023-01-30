@@ -66,7 +66,7 @@ public class TestInstanceOf extends CommonAbstractValue {
         assertEquals("!(a instanceof Boolean)&&a instanceof Object", newAndAppend(e1, negate(e2)).toString());
     }
 
-    private static final String AND_OF_ORS = "(!(an instanceof Boolean)||null==an)&&(!(an instanceof Character)||null==an)";
+    private static final String AND_OF_ORS = "(null==an||!(an instanceof Boolean))&&(null==an||!(an instanceof Character))";
 
     @Test
     public void test4() {
@@ -74,9 +74,9 @@ public class TestInstanceOf extends CommonAbstractValue {
         Expression e2 = instanceOf(an, new ParameterizedType(PRIMITIVES.boxed(PRIMITIVES.charTypeInfo()), 0));
 
         Expression or1 = newOrAppend(negate(e1), equals(NullConstant.NULL_CONSTANT, an));
-        assertEquals("!(an instanceof Boolean)||null==an", or1.toString());
+        assertEquals("null==an||!(an instanceof Boolean)", or1.toString());
         Expression or2 = newOrAppend(negate(e2), equals(NullConstant.NULL_CONSTANT, an));
-        assertEquals("!(an instanceof Character)||null==an", or2.toString());
+        assertEquals("null==an||!(an instanceof Character)", or2.toString());
 
         assertEquals(10, or1.getComplexity());
         Expression and = newAndAppend(or1, or2);
