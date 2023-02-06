@@ -26,10 +26,7 @@ import org.e2immu.analyser.util.ParSeq;
 import org.e2immu.analyser.util.ParallelGroup;
 import org.e2immu.annotation.Modified;
 import org.e2immu.annotation.NotModified;
-import org.e2immu.support.EventuallyFinal;
-import org.e2immu.support.FlipSwitch;
-import org.e2immu.support.SetOnce;
-import org.e2immu.support.SetOnceMap;
+import org.e2immu.support.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -49,6 +46,7 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
     public final Precondition preconditionForEventual;
     public final Eventual eventual;
     public final Precondition precondition;
+    public final Set<PostCondition> postConditions;
     public final Expression singleReturnValue;
     public final Map<CompanionMethodName, CompanionAnalysis> companionAnalyses;
     public final Map<CompanionMethodName, MethodInfo> computedCompanions;
@@ -63,6 +61,7 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
                                Precondition preconditionForEventual,
                                Eventual eventual,
                                Precondition precondition,
+                               Set<PostCondition> postConditions,
                                AnalysisMode analysisMode,
                                Map<Property, DV> properties,
                                Map<AnnotationExpression, AnnotationCheck> annotations,
@@ -77,6 +76,7 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
         this.preconditionForEventual = preconditionForEventual;
         this.eventual = eventual;
         this.precondition = Objects.requireNonNull(precondition);
+        this.postConditions = postConditions;
         this.singleReturnValue = Objects.requireNonNull(singleReturnValue);
         this.companionAnalyses = companionAnalyses;
         this.computedCompanions = computedCompanions;
@@ -170,6 +170,11 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
     }
 
     @Override
+    public Set<PostCondition> getPostConditions() {
+        return postConditions;
+    }
+
+    @Override
     public DV getProperty(Property property) {
         return getMethodProperty(property);
     }
@@ -205,12 +210,12 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
         private final EventuallyFinal<Expression> singleReturnValue = new EventuallyFinal<>();
         private final SetOnce<ParSeq<ParameterInfo>> parallelGroups = new SetOnce<>();
 
-        // ************** PRECONDITION
 
-        // conventions detailed in org.e2immu.analyser.analyser.StateData.setPrecondition
         public final EventuallyFinal<Precondition> precondition = new EventuallyFinal<>();
-        public final SetOnceMap<CompanionMethodName, CompanionAnalysis> companionAnalyses = new SetOnceMap<>();
+        private final SetOnce<Set<PostCondition>> postConditions = new SetOnce<>();
+        private CausesOfDelay postConditionDelays;
 
+        public final SetOnceMap<CompanionMethodName, CompanionAnalysis> companionAnalyses = new SetOnceMap<>();
         public final SetOnceMap<CompanionMethodName, MethodInfo> computedCompanions = new SetOnceMap<>();
 
         public final AnalysisMode analysisMode;
@@ -256,6 +261,23 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
         @Override
         public Precondition getPrecondition() {
             return precondition.get();
+        }
+
+        @Override
+        public Set<PostCondition> getPostConditions() {
+            return postConditions.getOrDefaultNull();
+        }
+
+        public void setFinalPostConditions(Set<PostCondition> postConditions) {
+            this.postConditions.set(postConditions);
+        }
+
+        public CausesOfDelay getPostConditionDelays() {
+            return postConditionDelays;
+        }
+
+        public void setPostConditionDelays(CausesOfDelay postConditionDelays) {
+            this.postConditionDelays = postConditionDelays;
         }
 
         @Override
@@ -346,6 +368,7 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
                     preconditionForEventual.get(),
                     eventual.get(),
                     precondition.isFinal() ? precondition.get() : Precondition.empty(primitives),
+                    postConditions.getOrDefault(Set.of()),
                     analysisMode(),
                     properties.toImmutableMap(),
                     annotationChecks.toImmutableMap(),
@@ -360,6 +383,7 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
         }
 
         // used by CM
+        @SuppressWarnings("unused")
         public void setParallelGroups(ParSeq<ParameterInfo> parallelGroups) {
             this.parallelGroups.set(parallelGroups);
         }

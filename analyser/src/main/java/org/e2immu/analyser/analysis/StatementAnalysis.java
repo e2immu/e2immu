@@ -34,6 +34,8 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import static org.e2immu.analyser.analyser.Property.CONTEXT_MODIFIED;
+
 public interface StatementAnalysis extends Analysis,
         Comparable<StatementAnalysis>,
         HasNavigationData<StatementAnalysis>,
@@ -190,6 +192,12 @@ public interface StatementAnalysis extends Analysis,
 
     boolean isBrokeDelay();
     void setBrokeDelay();
+
+    default DV variableHasBeenModified(Variable variable) {
+        VariableInfoContainer vic = getVariable(variable.fullyQualifiedName());
+        VariableInfo vi = vic.getPreviousOrInitial();
+        return vi.getProperty(CONTEXT_MODIFIED);
+    }
 
     record FindLoopResult(StatementAnalysis statementAnalysis, int steps) {
     }

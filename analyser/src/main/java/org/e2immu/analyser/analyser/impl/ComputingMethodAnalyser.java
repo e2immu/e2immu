@@ -26,7 +26,6 @@ import org.e2immu.analyser.analyser.util.DetectEventual;
 import org.e2immu.analyser.analysis.*;
 import org.e2immu.analyser.analysis.impl.MethodAnalysisImpl;
 import org.e2immu.analyser.analysis.impl.TypeAnalysisImpl;
-import org.e2immu.analyser.inspector.MethodResolution;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.*;
 import org.e2immu.analyser.model.statement.Block;
@@ -63,6 +62,7 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
     public static final String EVENTUAL_PREP_WORK = "eventualPrepWork";
     public static final String ANNOTATE_EVENTUAL = "annotateEventual";
     public static final String COMPUTE_INDEPENDENT = "methodIsIndependent";
+    public static final String SET_POST_CONDITION = "setPostCondition";
 
     private final TypeAnalysis typeAnalysis;
     public final StatementAnalyserImpl firstStatementAnalyser;
@@ -143,6 +143,7 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
                 .add(COMPUTE_MODIFIED, this::computeModified)
                 .add(COMPUTE_MODIFIED_CYCLES, (sharedState -> methodInfo.isConstructor ? DONE : computeModifiedInternalCycles()))
                 .add(OBTAIN_MOST_COMPLETE_PRECONDITION, (sharedState) -> obtainMostCompletePrecondition())
+                .add(SET_POST_CONDITION, (sharedState -> setPostCondition()))
                 .add(COMPUTE_RETURN_VALUE, (sharedState) -> methodInfo.noReturnValue() ? DONE : computeReturnValue(sharedState))
                 .add(COMPUTE_IMMUTABLE, sharedState -> methodInfo.noReturnValue() ? DONE : computeImmutable(sharedState))
                 .add(COMPUTE_CONTAINER, sharedState -> methodInfo.noReturnValue() ? DONE : computeContainer(sharedState))
@@ -243,6 +244,19 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
             return true;
         }
         return false;
+    }
+
+    private AnalysisStatus setPostCondition() {
+        MethodLevelData methodLevelData = methodAnalysis.methodLevelData();
+        Set<PostCondition> pcs = methodLevelData.getPostConditions();
+        if (methodLevelData.arePostConditionsDelayed()) {
+            CausesOfDelay delays = pcs.stream().map(pc -> pc.expression().causesOfDelay())
+                    .reduce(CausesOfDelay.EMPTY, CausesOfDelay::merge);
+            methodAnalysis.setPostConditionDelays(delays);
+            return delays;
+        }
+        methodAnalysis.setFinalPostConditions(pcs);
+        return DONE;
     }
 
     private static final String NOT_RAISING = "Not raising the 'method should be marked static' error ";

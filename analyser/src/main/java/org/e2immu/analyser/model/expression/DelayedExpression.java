@@ -16,6 +16,8 @@ package org.e2immu.analyser.model.expression;
 
 import org.e2immu.analyser.analyser.Properties;
 import org.e2immu.analyser.analyser.*;
+import org.e2immu.analyser.analyser.delay.DelayFactory;
+import org.e2immu.analyser.analyser.delay.SimpleCause;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.util.ExpressionComparator;
 import org.e2immu.analyser.model.impl.BaseExpression;
@@ -38,6 +40,11 @@ because the translation needs to work for ExplicitConstructorInvocations. See e.
  */
 public final class DelayedExpression extends BaseExpression implements Expression {
     public static final String ECI = "<eci>";
+    public static final DelayedExpression NO_POST_CONDITION_INFO = new DelayedExpression(Identifier.CONSTANT,
+            "post-condition",
+            ParameterizedType.RETURN_TYPE_OF_CONSTRUCTOR, EmptyExpression.EMPTY_EXPRESSION,
+            DelayFactory.createDelay(new SimpleCause(Location.NOT_YET_SET, CauseOfDelay.Cause.NO_POST_CONDITION_INFO)));
+
     private final String msg;
     private final ParameterizedType parameterizedType;
     private final Expression original;

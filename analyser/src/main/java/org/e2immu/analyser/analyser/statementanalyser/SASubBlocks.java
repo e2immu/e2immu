@@ -99,12 +99,22 @@ record SASubBlocks(StatementAnalysis statementAnalysis, StatementAnalyser statem
 
     private CausesOfDelay ensureEmptyPrecondition() {
         MethodInfo methodInfo = statementAnalysis.methodAnalysis().getMethodInfo();
+        CausesOfDelay preDelay;
         if (statementAnalysis.stateData().preconditionNoInformationYet(methodInfo)) {
             // it could have been set from the assert statement (subBlocks) or apply via a method call
             statementAnalysis.stateData().setPrecondition(Precondition.empty(statementAnalysis.primitives()));
-            return CausesOfDelay.EMPTY;
+            preDelay = CausesOfDelay.EMPTY;
+        } else {
+            preDelay = statementAnalysis.stateData().getPrecondition().causesOfDelay();
         }
-        return statementAnalysis.stateData().getPrecondition().causesOfDelay();
+        CausesOfDelay postDelay;
+        if (statementAnalysis.stateData().postConditionNoInformationYet()) {
+            statementAnalysis.stateData().setPostCondition(PostCondition.empty(statementAnalysis.primitives()));
+            postDelay = CausesOfDelay.EMPTY;
+        } else {
+            postDelay = statementAnalysis.stateData().getPostCondition().causesOfDelay();
+        }
+        return preDelay.merge(postDelay);
     }
 
     private AnalysisStatus doThrowStatement(StatementAnalyserSharedState sharedState, ConditionManager cm) {
@@ -135,42 +145,63 @@ record SASubBlocks(StatementAnalysis statementAnalysis, StatementAnalyser statem
         Expression assertion = statementAnalysis.stateData().valueOfExpression.get();
         Expression pcFromMethod = statementAnalysis.stateData().getPreconditionFromMethodCalls().expression();
         Expression combined = And.and(sharedState.context(), assertion, pcFromMethod);
+        LinkedVariables linkedVariables = combined.linkedVariables(sharedState.context());
+        DV isPostCondition = linkedVariables.stream()
+                .filter(e -> LinkedVariables.isAssignedOrLinked(e.getValue()))
+                .map(e -> statementAnalysis.variableHasBeenModified(e.getKey()))
+                .reduce(DV.FALSE_DV, (v1, v2) -> {
+                    if (v1.valueIsTrue() || v2.valueIsTrue()) return DV.TRUE_DV;
+                    return v1.causesOfDelay().merge(v2.causesOfDelay());
+                });
 
-        Set<Variable> combinedVariables = Stream.concat(statementAnalysis.statement().getStructure().expression().variables(true).stream(),
-                combined.variables(true).stream()).collect(Collectors.toUnmodifiableSet());
+        // is this a post-condition or a precondition? that will depend on earlier modifications
+        // when these modifications are delayed, we cannot decide between them, and write delays in both
+
+        CausesOfDelay delays = linkedVariables.causesOfDelay().merge(isPostCondition.causesOfDelay());
+        boolean progress = false;
+        boolean linkedVariablesDelayed = linkedVariables.isDelayed();
+        if (isPostCondition.valueIsTrue() || linkedVariablesDelayed) {
+            // FIXME this is not the correct index!
+            progress = statementAnalysis.stateData().setPostCondition(new PostCondition(combined, statementAnalysis.index()));
+            delays = linkedVariables.causesOfDelay().merge(combined.causesOfDelay());
+        }
+        if (!isPostCondition.valueIsTrue() || linkedVariablesDelayed) {
+            Precondition pc;
+            if (SAHelper.moveConditionToParameter(sharedState.context(), combined) == null) {
+                // in IfStatement_10, we have an "assert" condition that cannot simply be moved to the precondition, because
+                // it turns out the condition will always be false. We really need the local condition manager for next
+                // statement to be delayed until we know the precondition can be accepted.
+                // the identifier of the "assert" expression, in case we have a delayed precondition
+                Identifier identifier = statement().getStructure().expression().getIdentifier();
+                Expression translated = Objects.requireNonNullElse(
+                        sharedState.evaluationContext().acceptAndTranslatePrecondition(identifier, combined),
+                        new BooleanConstant(statementAnalysis.primitives(), true));
+
+                List<Precondition.PreconditionCause> preconditionCauses = Stream.concat(
+                        translated.isBoolValueTrue() ? Stream.of() : Stream.of(new Precondition.EscapeCause()),
+                        statementAnalysis.stateData().getPreconditionFromMethodCalls().causes().stream()).toList();
+
+                pc = new Precondition(translated, preconditionCauses);
+                delays = delays.merge(pc.causesOfDelay());
+            } else {
+                // the null/not null of parameters has been handled during the main evaluation
+                pc = Precondition.empty(statementAnalysis.primitives());
+            }
+            progress = statementAnalysis.stateData().setPrecondition(pc);
+        }
+
         boolean expressionIsDelayed = statementAnalysis.stateData().valueOfExpression.isVariable();
         // NOTE that it is possible that assertion is not delayed, but the valueOfExpression is delayed
         // because of other delays in the apply method (see setValueOfExpression call in evaluationOfMainExpression)
-
-        Precondition pc;
-        if (SAHelper.moveConditionToParameter(sharedState.context(), combined) == null) {
-            // in IfStatement_10, we have an "assert" condition that cannot simply be moved to the precondition, because
-            // it turns out the condition will always be false. We really need the local condition manager for next
-            // statement to be delayed until we know the precondition can be accepted.
-            // the identifier of the "assert" expression, in case we have a delayed precondition
-            Identifier identifier = statement().getStructure().expression().getIdentifier();
-            Expression translated = Objects.requireNonNullElse(
-                    sharedState.evaluationContext().acceptAndTranslatePrecondition(identifier, combined),
-                    new BooleanConstant(statementAnalysis.primitives(), true));
-
-            List<Precondition.PreconditionCause> preconditionCauses = Stream.concat(
-                    translated.isBoolValueTrue() ? Stream.of() : Stream.of(new Precondition.EscapeCause()),
-                    statementAnalysis.stateData().getPreconditionFromMethodCalls().causes().stream()).toList();
-
-            pc = new Precondition(translated, preconditionCauses);
-        } else {
-            // the null/not null of parameters has been handled during the main evaluation
-            pc = Precondition.empty(statementAnalysis.primitives());
-        }
-        boolean progress = statementAnalysis.stateData().setPrecondition(pc);
-
         AnalysisStatus analysisStatus;
-        if (expressionIsDelayed || pc.isDelayed()) {
-            CausesOfDelay merge = statementAnalysis.stateData().valueOfExpressionIsDelayed().merge(pc.causesOfDelay());
+        if (expressionIsDelayed || delays.isDelayed()) {
+            CausesOfDelay merge = statementAnalysis.stateData().valueOfExpressionIsDelayed().merge(delays);
             analysisStatus = ProgressWrapper.of(progress, merge);
         } else {
             analysisStatus = DONE;
         }
+        Set<Variable> combinedVariables = Stream.concat(statementAnalysis.statement().getStructure().expression().variables(true).stream(),
+                combined.variables(true).stream()).collect(Collectors.toUnmodifiableSet());
         return new ConditionManagerAndStatus(cm.addState(combined, combinedVariables), analysisStatus);
     }
 
@@ -734,7 +765,7 @@ record SASubBlocks(StatementAnalysis statementAnalysis, StatementAnalyser statem
             if (!condition.equals(structure.expression())) {
                 Expression literal = structure.expression().keepLiteralNotNull(context, true);
                 if (literal != null) {
-                //    condition = And.and(context, condition, literal);
+                    //    condition = And.and(context, condition, literal);
                 }
             }
             Set<Variable> conditionVariables = Stream.concat(structure.expression().variables(true).stream(),

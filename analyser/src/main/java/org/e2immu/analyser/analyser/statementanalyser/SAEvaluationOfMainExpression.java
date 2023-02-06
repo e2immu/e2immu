@@ -244,6 +244,7 @@ record SAEvaluationOfMainExpression(StatementAnalysis statementAnalysis,
             progress = setFinalAllowEquals(stateData.valueOfExpression, EmptyExpression.EMPTY_EXPRESSION);
         }
         progress |= stateData.setPrecondition(Precondition.empty(sharedState.context().getPrimitives()));
+        progress |= stateData.setPostCondition(PostCondition.NO_INFO_YET);
         progress |= stateData.setPreconditionFromMethodCalls(Precondition.empty(sharedState.context().getPrimitives()));
         progress |= stateData.setEvaluatedExpressionCache(EvaluatedExpressionCache.EMPTY);
 

@@ -17,10 +17,7 @@ package org.e2immu.analyser.analyser;
 import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.Location;
 import org.e2immu.analyser.model.MethodInfo;
-import org.e2immu.analyser.model.expression.And;
-import org.e2immu.analyser.model.expression.Or;
-import org.e2immu.analyser.model.expression.UnknownExpression;
-import org.e2immu.analyser.model.expression.VariableExpression;
+import org.e2immu.analyser.model.expression.*;
 import org.e2immu.analyser.model.statement.LoopStatement;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.support.EventuallyFinal;
@@ -44,6 +41,8 @@ public class StateData {
     private final EventuallyFinal<Precondition> precondition = new EventuallyFinal<>();
     // used for transfer from SAApply / StatementAnalysis.applyPrecondition to SASubBlocks
     private final EventuallyFinal<Precondition> preconditionFromMethodCalls = new EventuallyFinal<>();
+    // there can be only one postCondition per statement
+    private final EventuallyFinal<PostCondition> postCondition = new EventuallyFinal<>();
     private final SetOnceMap<String, EventuallyFinal<Expression>> statesOfInterrupts;
     private final SetOnceMap<String, EventuallyFinal<Expression>> statesOfReturnInLoop;
     public final EventuallyFinal<Expression> valueOfExpression = new EventuallyFinal<>();
@@ -55,12 +54,14 @@ public class StateData {
         statesOfReturnInLoop = isLoop ? new SetOnceMap<>() : null;
         conditionManagerForNextStatement.setVariable(ConditionManager.initialConditionManager(primitives));
         precondition.setVariable(Precondition.noInformationYet(location, primitives));
+        postCondition.setVariable(PostCondition.NO_INFO_YET);
     }
 
     public void internalAllDoneCheck() {
         assert conditionManagerForNextStatement.isFinal();
         assert precondition.isFinal();
         assert preconditionFromMethodCalls.isFinal();
+        assert postCondition.isFinal();
         assert valueOfExpression.isFinal();
         assert absoluteState.isFinal();
         assert evaluatedExpressionCache.isFinal();
@@ -77,6 +78,9 @@ public class StateData {
         }
         if (preconditionFromMethodCalls.isVariable()) {
             preconditionFromMethodCalls.setFinal(Precondition.empty(primitives));
+        }
+        if (postCondition.isVariable()) {
+            postCondition.setFinal(PostCondition.NO_INFO_YET);
         }
         Expression unreachable = UnknownExpression.forUnreachableStatement();
         if (valueOfExpression.isVariable()) {
@@ -95,7 +99,7 @@ public class StateData {
         if (absoluteState.isVariable()) {
             absoluteState.setFinal(unreachable);
         }
-        if(evaluatedExpressionCache.isVariable()) {
+        if (evaluatedExpressionCache.isVariable()) {
             evaluatedExpressionCache.setFinal(EvaluatedExpressionCache.EMPTY);
         }
     }
@@ -124,6 +128,7 @@ public class StateData {
         return false;
     }
 
+    @SuppressWarnings("unused") // used in CM
     public EvaluatedExpressionCache getEvaluatedExpressionCache() {
         return evaluatedExpressionCache.get();
     }
@@ -160,6 +165,9 @@ public class StateData {
         return precondition.isVariable() && precondition.get().isNoInformationYet(currentMethod);
     }
 
+    public boolean postConditionNoInformationYet() {
+        return postCondition.isVariable() && postCondition.get().isNoInformationYet();
+    }
     /*
     conventions: Precondition.DELAYED_NO_INFORMATION (exactly this object) means no information yet, variable.
     Expression true means: no information, but final
@@ -194,6 +202,31 @@ public class StateData {
 
     public boolean preconditionIsFinal() {
         return precondition.isFinal();
+    }
+
+    public PostCondition getPostCondition() {
+        return postCondition.get();
+    }
+
+    public boolean postConditionIsFinal() {
+        return postCondition.isFinal();
+    }
+
+    public boolean havePostCondition() {
+        return postCondition.get() != PostCondition.NO_INFO_YET;
+    }
+
+    public boolean setPostCondition(PostCondition pc) {
+        if (pc.expression().isDelayed()) {
+            try {
+                postCondition.setVariable(pc);
+                return false;
+            } catch (IllegalStateException ise) {
+                LOGGER.error("Try to set delayed {}, already have {}", pc, postCondition.get());
+                throw ise;
+            }
+        }
+        return setFinalAllowEquals(postCondition, pc);
     }
 
     /*

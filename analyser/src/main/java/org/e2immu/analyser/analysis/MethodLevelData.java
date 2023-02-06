@@ -27,6 +27,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.List;
+import java.util.Objects;
+import java.util.Set;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static org.e2immu.analyser.analyser.AnalysisStatus.DONE;
@@ -42,11 +45,13 @@ public class MethodLevelData {
 
     public static final String LINKS_HAVE_BEEN_ESTABLISHED = "linksHaveBeenEstablished";
     public static final String COMBINE_PRECONDITION = "combinePrecondition";
+    public static final String COMBINE_CONDITIONS = "combinePostConditions";
 
     public final SetOnceMap<MethodInfo, Boolean> copyModificationStatusFrom = new SetOnceMap<>();
 
     // aggregates the preconditions on individual statements
     private final EventuallyFinal<Precondition> combinedPrecondition = new EventuallyFinal<>();
+    private final EventuallyFinal<Set<PostCondition>> postConditions = new EventuallyFinal<>();
 
     // not for local processing, but so that we know in the method and field analyser that this process has been completed
     private final EventuallyFinal<CausesOfDelay> linksHaveBeenEstablished = new EventuallyFinal<>();
@@ -64,6 +69,14 @@ public class MethodLevelData {
         return linksHaveBeenEstablished.get();
     }
 
+    public Set<PostCondition> getPostConditions() {
+        return Objects.requireNonNullElse(postConditions.get(), Set.of());
+    }
+
+    public boolean arePostConditionsDelayed() {
+        return postConditions.isVariable();
+    }
+
     public boolean combinedPreconditionIsFinal() {
         return combinedPrecondition.isFinal();
     }
@@ -74,11 +87,13 @@ public class MethodLevelData {
 
     public void internalAllDoneCheck() {
         assert combinedPrecondition.isFinal();
+        assert postConditions.isFinal();
         assert linksHaveBeenEstablished.isFinal();
     }
 
     public void makeUnreachable(Primitives primitives) {
         if (combinedPrecondition.isVariable()) combinedPrecondition.setFinal(Precondition.empty(primitives));
+        if (postConditions.isVariable()) postConditions.setFinal(Set.of());
         if (linksHaveBeenEstablished.isVariable()) linksHaveBeenEstablished.setFinal(CausesOfDelay.EMPTY);
     }
 
@@ -95,6 +110,7 @@ public class MethodLevelData {
             new AnalyserComponents.Builder<String, SharedState>()
                     .add(LINKS_HAVE_BEEN_ESTABLISHED, this::linksHaveBeenEstablished)
                     .add(COMBINE_PRECONDITION, this::combinePrecondition)
+                    .add(COMBINE_CONDITIONS, this::combinePostConditions)
                     .build();
 
 
@@ -113,6 +129,29 @@ public class MethodLevelData {
             LOGGER.warn("Caught exception in linking computation, {}", logLocation);
             throw rte;
         }
+    }
+
+    private AnalysisStatus combinePostConditions(SharedState sharedState) {
+        Stream<PostCondition> fromMyStateData = Stream.of(sharedState.stateData.getPostCondition());
+
+        Stream<PostCondition> fromPrevious = sharedState.previous != null ?
+                sharedState.previous.getPostConditions().stream() : Stream.of();
+
+        List<StatementAnalysis> subBlocks = sharedState.statementAnalysis.lastStatementsOfNonEmptySubBlocks();
+        Stream<PostCondition> fromBlocks = subBlocks.stream()
+                .flatMap(sa -> sa.methodLevelData().getPostConditions().stream());
+
+        Set<PostCondition> all = Stream.concat(fromPrevious, Stream.concat(fromMyStateData, fromBlocks))
+                .filter(PostCondition::isNotEmpty)
+                .collect(Collectors.toUnmodifiableSet());
+        CausesOfDelay delays = all.stream().map(pc -> pc.expression().causesOfDelay())
+                .reduce(CausesOfDelay.EMPTY, CausesOfDelay::merge);
+        if (delays.isDelayed()) {
+            postConditions.setVariable(all);
+            return delays;
+        }
+        setFinalAllowEquals(postConditions, all);
+        return DONE;
     }
 
 
@@ -140,6 +179,7 @@ public class MethodLevelData {
             combinedPrecondition.setVariable(all);
             return all.causesOfDelay();
         }
+
         setFinalAllowEquals(combinedPrecondition, all);
         return DONE;
     }

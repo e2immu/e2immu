@@ -19,6 +19,7 @@ import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.util.ParSeq;
 import org.e2immu.annotation.NotNull;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -87,6 +88,13 @@ public interface MethodAnalysis extends Analysis {
      */
     @NotNull
     Precondition getPrecondition();
+
+    /**
+     *
+     * @return post-conditions, in no particular order.
+     */
+    @NotNull
+    Set<PostCondition> getPostConditions();
 
     default MethodLevelData methodLevelData() {
         StatementAnalysis last = getLastStatement();
