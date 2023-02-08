@@ -90,7 +90,6 @@ public interface MethodAnalysis extends Analysis {
     Precondition getPrecondition();
 
     /**
-     *
      * @return post-conditions, in no particular order.
      */
     @NotNull
@@ -106,7 +105,8 @@ public interface MethodAnalysis extends Analysis {
         return switch (property) {
             case MODIFIED_METHOD_ALT_TEMP -> modifiedMethodOrTempModifiedMethod();
             case CONTAINER, IMMUTABLE, IMMUTABLE_BREAK, NOT_NULL_EXPRESSION, TEMP_MODIFIED_METHOD, MODIFIED_METHOD,
-                    FLUENT, IDENTITY, IGNORE_MODIFICATIONS, INDEPENDENT, CONSTANT -> getPropertyFromMapDelayWhenAbsent(property);
+                    FLUENT, IDENTITY, IGNORE_MODIFICATIONS, INDEPENDENT, CONSTANT ->
+                    getPropertyFromMapDelayWhenAbsent(property);
             case FINALIZER -> getPropertyFromMapNeverDelay(property);
             default -> throw new PropertyException(Analyser.AnalyserIdentification.METHOD, property);
         };
@@ -150,6 +150,10 @@ public interface MethodAnalysis extends Analysis {
     }
 
     List<Expression> sortAccordingToParallelGroupsAndNaturalOrder(List<Expression> parameterExpressions);
+
+    default String postConditionsSortedToString() {
+        return getPostConditions().stream().map(Object::toString).sorted().collect(Collectors.joining(", "));
+    }
 
     record Eventual(CausesOfDelay causesOfDelay,
                     Set<FieldInfo> fields,

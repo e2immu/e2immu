@@ -13,18 +13,18 @@ import org.e2immu.analyser.parser.Primitives;
  * The highest such modification is recorded.
  *
  * @param expression
- * @param highestIdOfModifyingStatement
+ * @param index
  */
-public record PostCondition(Expression expression, String highestIdOfModifyingStatement) {
+public record PostCondition(Expression expression, String index) {
     public static final PostCondition NO_INFO_YET = new PostCondition(DelayedExpression.NO_POST_CONDITION_INFO,
-            null);
+            VariableInfoContainer.NOT_YET_READ);
 
     public static PostCondition empty(Primitives primitives) {
-        return new PostCondition(new BooleanConstant(primitives, true), null);
+        return new PostCondition(new BooleanConstant(primitives, true), VariableInfoContainer.NOT_YET_READ);
     }
 
     public boolean isNotEmpty() {
-        return expression.isBoolValueTrue();
+        return !expression.isBoolValueTrue();
     }
 
     public CausesOfDelay causesOfDelay() {

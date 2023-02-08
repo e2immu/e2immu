@@ -45,7 +45,7 @@ public class MethodLevelData {
 
     public static final String LINKS_HAVE_BEEN_ESTABLISHED = "linksHaveBeenEstablished";
     public static final String COMBINE_PRECONDITION = "combinePrecondition";
-    public static final String COMBINE_CONDITIONS = "combinePostConditions";
+    public static final String COMBINE_POST_CONDITIONS = "combinePostConditions";
 
     public final SetOnceMap<MethodInfo, Boolean> copyModificationStatusFrom = new SetOnceMap<>();
 
@@ -110,7 +110,7 @@ public class MethodLevelData {
             new AnalyserComponents.Builder<String, SharedState>()
                     .add(LINKS_HAVE_BEEN_ESTABLISHED, this::linksHaveBeenEstablished)
                     .add(COMBINE_PRECONDITION, this::combinePrecondition)
-                    .add(COMBINE_CONDITIONS, this::combinePostConditions)
+                    .add(COMBINE_POST_CONDITIONS, this::combinePostConditions)
                     .build();
 
 

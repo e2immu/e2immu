@@ -30,6 +30,7 @@ import org.e2immu.analyser.model.variable.LocalVariableReference;
 import org.e2immu.analyser.model.variable.ReturnVariable;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.parser.Message;
+import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.support.SetOnce;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -243,9 +244,10 @@ record SAEvaluationOfMainExpression(StatementAnalysis statementAnalysis,
         if (stateData.valueOfExpression.isVariable()) {
             progress = setFinalAllowEquals(stateData.valueOfExpression, EmptyExpression.EMPTY_EXPRESSION);
         }
-        progress |= stateData.setPrecondition(Precondition.empty(sharedState.context().getPrimitives()));
-        progress |= stateData.setPostCondition(PostCondition.NO_INFO_YET);
-        progress |= stateData.setPreconditionFromMethodCalls(Precondition.empty(sharedState.context().getPrimitives()));
+        Primitives primitives = sharedState.context().getPrimitives();
+        progress |= stateData.setPrecondition(Precondition.empty(primitives));
+        progress |= stateData.setPostCondition(PostCondition.empty(primitives));
+        progress |= stateData.setPreconditionFromMethodCalls(Precondition.empty(primitives));
         progress |= stateData.setEvaluatedExpressionCache(EvaluatedExpressionCache.EMPTY);
 
         if (statementAnalysis.flowData().timeAfterExecutionNotYetSet()) {

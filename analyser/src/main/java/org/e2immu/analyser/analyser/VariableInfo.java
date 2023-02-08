@@ -79,7 +79,7 @@ public interface VariableInfo {
     Stream<Map.Entry<Property, DV>> propertyStream();
 
     /**
-     * @return the empty set if has not been an assignment in this method yet; otherwise the statement ids
+     * @return the empty set, if there has not been an assignment in this method yet; otherwise the statement ids
      * of the latest assignment to this variable (field, local variable, dependent variable), followed
      * by "-E" for evaluation or ":M" for merge (see Level)
      * <p>
