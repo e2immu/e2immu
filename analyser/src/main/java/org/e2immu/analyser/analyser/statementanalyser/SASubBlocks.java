@@ -162,9 +162,11 @@ record SASubBlocks(StatementAnalysis statementAnalysis, StatementAnalyser statem
                 .map(statementAnalysis::variableHasBeenModified)
                 .reduce(DV.FALSE_DV, (v1, v2) -> {
                     if (v1.valueIsTrue() || v2.valueIsTrue()) return DV.TRUE_DV;
-                    return v1.causesOfDelay().merge(v2.causesOfDelay());
+                    if (v1.isDelayed() || v2.isDelayed()) {
+                        return v1.causesOfDelay().merge(v2.causesOfDelay());
+                    }
+                    return DV.FALSE_DV;
                 });
-
     }
 
     private ConditionManagerAndStatus doAssertStatement(StatementAnalyserSharedState sharedState, ConditionManager cm) {

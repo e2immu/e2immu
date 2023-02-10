@@ -105,6 +105,11 @@ public class ConstructorCall extends BaseExpression implements HasParameterExpre
         return new Instance(identifier, parameterizedType, valueProperties);
     }
 
+    public ConstructorCall copy(List<Expression> newParameterExpressions) {
+        return new ConstructorCall(identifier, constructor, parameterizedType, diamond, newParameterExpressions,
+                anonymousClass, arrayInitializer);
+    }
+
     public ConstructorCall(Identifier identifier,
                            MethodInfo constructor,
                            ParameterizedType parameterizedType,

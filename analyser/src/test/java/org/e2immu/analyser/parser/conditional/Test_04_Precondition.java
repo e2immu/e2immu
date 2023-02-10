@@ -550,10 +550,10 @@ public class Test_04_Precondition extends CommonTestRunner {
     public void test9() throws IOException {
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("method".equals(d.methodInfo().name)) {
-                String finalValue = "Precondition[expression=null!=in&&!in.isEmpty()&&Character.isUpperCase(in.charAt(0)), causes=[escape, escape]]";
-                if (d.methodAnalysis().preconditionStatus().isDone()) {
-                    assertEquals(finalValue, d.methodAnalysis().getPrecondition().toString());
-                }
+                String pre = "Precondition[expression=null!=in&&!in.isEmpty()&&Character.isUpperCase(in.charAt(0)), causes=[escape, escape]]";
+                assertEquals(pre, d.methodAnalysis().getPrecondition().toString());
+                assertTrue(d.methodAnalysis().getPostConditions().isEmpty(),
+                        "Got: " + d.methodAnalysis().getPostConditions().toString());
                 assertDv(d.p(0), 1, MultiLevel.NULLABLE_DV, NOT_NULL_PARAMETER);
             }
             if ("method2".equals(d.methodInfo().name)) {
@@ -561,6 +561,8 @@ public class Test_04_Precondition extends CommonTestRunner {
                 if (d.methodAnalysis().preconditionStatus().isDone()) {
                     assertEquals(finalValue, d.methodAnalysis().getPrecondition().toString());
                 }
+                assertTrue(d.methodAnalysis().getPostConditions().isEmpty(),
+                        "Got: " + d.methodAnalysis().getPostConditions().toString());
                 assertDv(d.p(0), 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, NOT_NULL_PARAMETER);
             }
             if ("method3".equals(d.methodInfo().name)) {
@@ -568,6 +570,8 @@ public class Test_04_Precondition extends CommonTestRunner {
                 if (d.methodAnalysis().preconditionStatus().isDone()) {
                     assertEquals(finalValue, d.methodAnalysis().getPrecondition().toString());
                 }
+                assertTrue(d.methodAnalysis().getPostConditions().isEmpty(),
+                        "Got: " + d.methodAnalysis().getPostConditions().toString());
                 assertDv(d.p(0), 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, NOT_NULL_PARAMETER);
             }
         };
