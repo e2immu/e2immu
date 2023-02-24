@@ -88,7 +88,7 @@ public final class EmptyExpression extends BaseExpression implements Expression 
 
     @Override
     public Expression translate(InspectionProvider inspectionProvider, TranslationMap translationMap) {
-        return this;
+        return translationMap.translateExpression(this);
     }
 
     public String msg() {

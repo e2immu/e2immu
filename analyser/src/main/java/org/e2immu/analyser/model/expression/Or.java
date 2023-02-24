@@ -24,6 +24,7 @@ import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.Symbol;
 import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.parser.Primitives;
+import org.e2immu.analyser.util.IntUtil;
 import org.e2immu.analyser.util.ListUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -132,6 +133,37 @@ public final class Or extends ExpressionCanBeTooComplex {
                     return new BooleanConstant(primitives, true);
                 }
 
+                if (value instanceof GreaterThanZero gt1 && prev instanceof GreaterThanZero gt0) {
+                    GreaterThanZero.XB xb0 = gt0.extract(context);
+                    GreaterThanZero.XB xb1 = gt1.extract(context);
+                    if (xb0.x().equals(xb1.x())) {
+
+                        // x>=a || x <= a-1
+                        if (xb0.lessThan() == !xb1.lessThan() && orComparisonTrue(xb0.lessThan(), xb0.b(), xb1.b())) {
+                            return new BooleanConstant(primitives, true);
+                        }
+                        // x<=a || x<=b --> x<=max(a,b)
+                        if (xb0.lessThan() && xb1.lessThan()) {
+                            changes = true;
+                            if (xb0.b() < xb1.b()) {
+                                // replace previous
+                                newConcat.set(newConcat.size() - 1, value);
+                            }  // else ignore this one
+                            continue;
+                        }
+
+                        // x>=a || x>=b --> x>=min(a,b)
+                        if (!xb0.lessThan() && !xb1.lessThan()) {
+                            changes = true;
+                            if (xb0.b() > xb1.b()) {
+                                // replace previous
+                                newConcat.set(newConcat.size() - 1, value);
+                            }  // else ignore this one
+                            continue;
+                        }
+                    }
+                }
+
                 // A || A
                 if (value.equals(prev)) {
                     changes = true;
@@ -177,6 +209,23 @@ public final class Or extends ExpressionCanBeTooComplex {
         }
         Identifier id = Identifier.joined("or", finalValues.stream().map(Expression::getIdentifier).toList());
         return new Or(id, primitives, finalValues);
+    }
+
+    /*
+
+     */
+    private boolean orComparisonTrue(boolean d0IsLt, double d0, double d1) {
+        boolean i0 = IntUtil.isMathematicalInteger(d0);
+        boolean i1 = IntUtil.isMathematicalInteger(d1);
+        if (i0 && i1) {
+            if (d0IsLt) {
+                //d0IsLt == true: x <= 4 || x >= 5
+                return d1 - 1 <= d0; // 5-1<=4, 3-1<=4 but not 10-1<=4
+            }
+            // d0IsLt == false: x >= 4 || x <= 3
+            return d0 - 1 <= d1; // 4-1 <= 3  1-1<=3 but not 10-1<= 3
+        }
+        return d0 == d1;
     }
 
     private void recursivelyAdd(ArrayList<Expression> concat, List<Expression> collect) {

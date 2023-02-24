@@ -128,6 +128,11 @@ public class VariableExpression extends BaseExpression implements IsVariableExpr
                 variable instanceof DependentVariable dv ? dv.indexExpression() : null);
     }
 
+    public VariableExpression(FieldReference fr, Suffix suffix) {
+        this(Identifier.constant(fr.fullyQualifiedName() + suffix), fr, suffix, !fr.isStatic ? fr.scope : null,
+                null);
+    }
+
     public VariableExpression(Variable variable, Suffix suffix, Expression scopeValue, Expression indexValue) {
         this(Identifier.constant(variable.fullyQualifiedName() + suffix), variable, suffix, scopeValue, indexValue);
     }
