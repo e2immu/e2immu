@@ -42,11 +42,11 @@ public class TestComplexity extends CommonAbstractValue {
         assertEquals(4, GreaterThanZero.greater(context, i, newInt(0), false).getComplexity());
 
         // i <= 0
-        assertEquals(3, GreaterThanZero.less(context, i, newInt(0), true).getComplexity());
+        assertEquals(5, GreaterThanZero.less(context, i, newInt(0), true).getComplexity());
 
         // i < 0  === -1 - i >= 0 (1 for -1, 1 for +, 1 for unary -, 2 for i)
         Expression iLt0 = GreaterThanZero.less(context, i, newInt(0), false);
-        assertEquals(5, iLt0.getComplexity());
+        assertEquals(3, iLt0.getComplexity());
 
         // s == null
         assertEquals(3, equals(s, NullConstant.NULL_CONSTANT).getComplexity());

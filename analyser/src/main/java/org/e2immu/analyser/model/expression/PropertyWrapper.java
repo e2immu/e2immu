@@ -412,4 +412,8 @@ public final class PropertyWrapper extends BaseExpression implements Expression,
     public boolean isNegatedOrNumericNegative() {
         return expression.isNegatedOrNumericNegative();
     }
+
+    public Expression withExpression(Expression negated) {
+        return new PropertyWrapper(negated, null, properties, linkedVariables, castType);
+    }
 }

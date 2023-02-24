@@ -246,12 +246,12 @@ public class Test_12_IfStatement extends CommonTestRunner {
             if ("method1".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof ReturnVariable) {
                     if ("0".equals(d.statementId())) {
-                        String expected = d.iteration() == 0 ? "<simplification>||null==set?null:<return value>" : "null";
+                        String expected = d.iteration() == 0 ? "null==set||<simplification>?null:<return value>" : "null";
                         assertEquals(expected, d.currentValue().toString());
                     }
                     if ("1".equals(d.statementId())) {
                         String expected = switch (d.iteration()) {
-                            case 0, 1, 2, 3 -> "<simplification>||<null-check>?null:<m:contains>?\"one\":\"two\"";
+                            case 0, 1, 2, 3 -> "<null-check>||<simplification>?null:<m:contains>?\"one\":\"two\"";
                             default -> "???";
                         };
                         assertEquals(expected, d.currentValue().toString());
@@ -292,7 +292,7 @@ public class Test_12_IfStatement extends CommonTestRunner {
         };
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("pad".equals(d.methodInfo().name)) {
-                assertEquals("/*inline pad*/i<=9?\"\"+i:<return value>", d.methodAnalysis().getSingleReturnValue().toString());
+                assertEquals("/*inline pad*/i<10?\"\"+i:<return value>", d.methodAnalysis().getSingleReturnValue().toString());
                 assertTrue(d.methodAnalysis().getSingleReturnValue() instanceof InlinedMethod);
             }
         };
@@ -307,7 +307,7 @@ public class Test_12_IfStatement extends CommonTestRunner {
     public void test_8() throws IOException {
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("pad".equals(d.methodInfo().name)) {
-                assertEquals("/*inline pad*/i<=9?\"\"+i:<return value>", d.methodAnalysis().getSingleReturnValue().toString());
+                assertEquals("/*inline pad*/i<10?\"\"+i:<return value>", d.methodAnalysis().getSingleReturnValue().toString());
                 assertTrue(d.methodAnalysis().getSingleReturnValue() instanceof InlinedMethod);
             }
         };
@@ -357,10 +357,10 @@ public class Test_12_IfStatement extends CommonTestRunner {
                     /* IMPORTANT: the order is wrong from a shortcut operator point of view, but the And class will sort
                       the clauses first thing.
                      */
-                    assertEquals("in.isEmpty()&&null!=in", d.absoluteState().toString());
+                    assertEquals("null!=in&&in.isEmpty()", d.absoluteState().toString());
                 }
                 if ("1".equals(d.statementId()) || "2".equals(d.statementId())) {
-                    assertEquals("!in.isEmpty()&&null!=in", d.state().toString());
+                    assertEquals("null!=in&&!in.isEmpty()", d.state().toString());
                 }
             }
             if ("method".equals(d.methodInfo().name)) {

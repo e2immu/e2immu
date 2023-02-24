@@ -121,7 +121,7 @@ public class TestConditionalValue extends CommonAbstractValue {
         Expression ge10 = GreaterThanZero.greater(context, i, newInt(10), true);
         assertEquals("i>=10", ge10.toString());
         Expression le9 = GreaterThanZero.less(context, i, newInt(9), true);
-        assertEquals("i<=9", le9.toString());
+        assertEquals("i<10", le9.toString());
         Expression notLe9 = negate(le9);
         assertEquals(ge10, notLe9);
         Expression notGe10 = negate(ge10);
@@ -399,9 +399,10 @@ public class TestConditionalValue extends CommonAbstractValue {
     public void testNormalizeConditional() {
         Expression iMinJ = sum(i, negate(j));
         assertEquals("i-j", iMinJ.toString());
-        Expression inline = inline(new GreaterThanZero(Identifier.CONSTANT, PRIMITIVES, iMinJ, true), a, b);
-        // expect i>=j?a:b without more normalization
-        // we normalize to i>=j?a:b === i-j>=0?a:b to j-i>0?b:a to -1-i+j>=0?b:a
+        GreaterThanZero gt0 = new GreaterThanZero(Identifier.CONSTANT, PRIMITIVES, iMinJ, true);
+        assertEquals("i>=j", gt0.toString());
+        Expression inline = inline(gt0, a, b);
+        // i-j>=0 should be normalized to i>=j
         assertEquals("-1-i+j>=0?b:a", inline.toString());
     }
 }

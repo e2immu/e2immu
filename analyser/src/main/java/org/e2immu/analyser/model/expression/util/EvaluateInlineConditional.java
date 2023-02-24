@@ -231,7 +231,7 @@ public class EvaluateInlineConditional {
                 && ge0.expression() instanceof Sum sum) {
             /*
             if lhs is negative, and rhs is positive, keep: a<=b?t:f === -a+b>0?t:f
-            if lhs is positive, and lhs is negative, swap: b>a?t:f  === a-b>0?t:f  === a<=b?f:t
+            if lhs is positive, and rhs is negative, swap: b>a?t:f  === a-b>0?t:f  === a<=b?f:t
              */
             boolean lhsNegative = sum.lhs.isNegatedOrNumericNegative();
             boolean rhsNegative = sum.rhs.isNegatedOrNumericNegative();

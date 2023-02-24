@@ -183,11 +183,11 @@ public class TestAbstractValue extends CommonAbstractValue {
 
     @Test
     public void testCompare() {
-        Expression aGt4 = GreaterThanZero.greater(context, a, newInt(4), true);
-        assertEquals("a>=4", aGt4.toString());
+        Expression aGt4 = GreaterThanZero.greater(context, i, newInt(4), true);
+        assertEquals("i>=4", aGt4.toString());
 
-        Expression n4ltB = GreaterThanZero.less(context, newInt(4), b, false);
-        assertEquals("b>=5", n4ltB.toString());
+        Expression n4ltB = GreaterThanZero.less(context, newInt(4), i, false);
+        assertEquals("i>=5", n4ltB.toString());
 
         Expression n4lt8 = GreaterThanZero.less(context, newInt(4), newInt(8), false);
         assertEquals(TRUE, n4lt8);

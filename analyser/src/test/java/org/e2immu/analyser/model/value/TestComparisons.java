@@ -32,7 +32,31 @@ public class TestComparisons extends CommonAbstractValue {
         GreaterThanZero gt3 = (GreaterThanZero) GreaterThanZero.greater(context, i, newInt(3), false);
         assertEquals("i>=4", gt3.toString());
         GreaterThanZero notGt3 = (GreaterThanZero) gt3.negate(context);
-        assertEquals("i<=3", notGt3.toString());
+        assertEquals("i<4", notGt3.toString());
+    }
+
+    @Test
+    public void testNegate2() {
+        GreaterThanZero gt3 = (GreaterThanZero) GreaterThanZero.greater(context, i, newInt(3), true);
+        assertEquals("i>=3", gt3.toString());
+        GreaterThanZero notGt3 = (GreaterThanZero) gt3.negate(context);
+        assertEquals("i<3", notGt3.toString());
+    }
+
+    @Test
+    public void testNegate3() {
+        GreaterThanZero gt3 = (GreaterThanZero) GreaterThanZero.greater(context, newInt(3), i, false);
+        assertEquals("i<3", gt3.toString());
+        GreaterThanZero notGt3 = (GreaterThanZero) gt3.negate(context);
+        assertEquals("i>=3", notGt3.toString());
+    }
+
+    @Test
+    public void testNegate4() {
+        GreaterThanZero gt3 = (GreaterThanZero) GreaterThanZero.greater(context, newInt(3), i, true);
+        assertEquals("i<4", gt3.toString());
+        GreaterThanZero notGt3 = (GreaterThanZero) gt3.negate(context);
+        assertEquals("i>=4", notGt3.toString());
     }
 
     @Test
@@ -50,10 +74,10 @@ public class TestComparisons extends CommonAbstractValue {
     @Test
     public void testXb2() {
         GreaterThanZero lt3 = (GreaterThanZero) GreaterThanZero.less(context, i, newInt(3), false);
-        assertEquals("i<=2", lt3.toString());
+        assertEquals("i<3", lt3.toString());
         GreaterThanZero.XB xb = lt3.extract(context);
         assertNotNull(xb);
-        assertTrue(lt3.allowEquals());
+        assertFalse(lt3.allowEquals());
         assertEquals(2, (int) xb.b());
         assertEquals(i, xb.x());
         assertTrue(xb.lessThan());
@@ -145,9 +169,9 @@ public class TestComparisons extends CommonAbstractValue {
     @Test
     public void test2() {
         Expression iLe0 = GreaterThanZero.less(context, i, newInt(0), true);
-        assertEquals("i<=0", iLe0.toString());
+        assertEquals("i<1", iLe0.toString());
         Expression iLe3 = GreaterThanZero.less(context, i, newInt(3), true);
-        assertEquals("i<=3", iLe3.toString()); // even though ugly, formatting is correct
+        assertEquals("i<4", iLe3.toString()); // even though ugly, formatting is correct
         Expression and = newAndAppend(iLe0, iLe3);
         assertEquals(iLe0, and);
     }
@@ -155,7 +179,7 @@ public class TestComparisons extends CommonAbstractValue {
     @Test
     public void test3() {
         Expression iLe0 = GreaterThanZero.less(context, i, newInt(0), true);
-        assertEquals("i<=0", iLe0.toString());
+        assertEquals("i<1", iLe0.toString());
         Expression iGe3 = GreaterThanZero.greater(context, i, newInt(3), true);
         assertEquals("i>=3", iGe3.toString());
         Expression and = newAndAppend(iLe0, iGe3);
@@ -169,7 +193,7 @@ public class TestComparisons extends CommonAbstractValue {
         Expression iGe0 = GreaterThanZero.greater(context, i, newInt(0), true);
         assertEquals("i>=0", iGe0.toString());
         Expression iLe3 = GreaterThanZero.less(context, i, newInt(3), true);
-        assertEquals("i<=3", iLe3.toString());
+        assertEquals("i<4", iLe3.toString());
         Expression and = newAndAppend(iGe0, iLe3);
         assertTrue(and instanceof And);
         Expression and2 = newAndAppend(iLe3, iGe0);
@@ -190,8 +214,11 @@ public class TestComparisons extends CommonAbstractValue {
     public void test6() {
         Expression iGe0 = GreaterThanZero.greater(context, i, newInt(0), true);
         assertEquals("i>=0", iGe0.toString());
-        Expression iLe0 = GreaterThanZero.less(context, i, newInt(0), true);
-        assertEquals("i<=0", iLe0.toString());
+        GreaterThanZero iLe0 = (GreaterThanZero) GreaterThanZero.less(context, i, newInt(0), true);
+        assertEquals("i<1", iLe0.toString());
+        GreaterThanZero.XB xbLe0 = iLe0.extract(context);
+        assertEquals(0.0d, xbLe0.b());
+        assertTrue(xbLe0.lessThan());
         Expression and = newAndAppend(iGe0, iLe0);
         assertEquals("0==i", and.toString());
     }
@@ -201,7 +228,7 @@ public class TestComparisons extends CommonAbstractValue {
         Expression iGe0 = GreaterThanZero.greater(context, i, newInt(0), false);
         assertEquals("i>=1", iGe0.toString());
         Expression iLe0 = GreaterThanZero.less(context, i, newInt(0), false);
-        assertEquals("i<=-1", iLe0.toString());
+        assertEquals("i<0", iLe0.toString());
         Expression and = newAndAppend(iGe0, iLe0);
         assertEquals(FALSE, and);
         Expression and2 = newAndAppend(iLe0, iGe0);
@@ -210,8 +237,10 @@ public class TestComparisons extends CommonAbstractValue {
 
     @Test
     public void testGEZeroLZero() {
-        Expression iLt0 = GreaterThanZero.less(context, i, newInt(0), false);
-        assertEquals("i<=-1", iLt0.toString());
+        GreaterThanZero iLt0 = (GreaterThanZero) GreaterThanZero.less(context, i, newInt(0), false);
+        assertEquals("i<0", iLt0.toString());
+        GreaterThanZero.XB xbLt0 = iLt0.extract(context);
+        assertEquals(-1.0, xbLt0.b());
         Expression iGe0 = GreaterThanZero.greater(context, i, newInt(0), true);
         assertEquals("i>=0", iGe0.toString());
 
@@ -230,14 +259,14 @@ public class TestComparisons extends CommonAbstractValue {
         Expression jGt5 = GreaterThanZero.greater(context, j, newInt(5), true);
 
         Expression or1 = newOrAppend(iLt0, jGt5);
-        assertEquals("i<=-1||j>=5", or1.toString());
+        assertEquals("i<0||j>=5", or1.toString());
         Expression or2 = newOrAppend(iLeM1, jGt5);
-        assertEquals("i<=-1||j>=5", or2.toString());
+        assertEquals("i<0||j>=5", or2.toString());
 
         assertEquals(or1, or2);
 
         Expression negOr1 = negate(or1);
-        assertEquals("i>=0&&j<=4", negOr1.toString());
+        assertEquals("i>=0&&j<5", negOr1.toString());
     }
 
     @Test
@@ -245,9 +274,9 @@ public class TestComparisons extends CommonAbstractValue {
         Expression iLt0 = GreaterThanZero.less(context, i, newInt(2), true);
         Expression jGe0 = GreaterThanZero.greater(context, j, newInt(0), true);
         Expression or1 = newOrAppend(iLt0, jGe0);
-        assertEquals("i<=2||j>=0", or1.toString());
+        assertEquals("i<3||j>=0", or1.toString());
         Expression notOr1 = negate(or1);
-        assertEquals("i>=3&&j<=-1", notOr1.toString());
+        assertEquals("i>=3&&j<0", notOr1.toString());
     }
 
     @Test
@@ -255,7 +284,7 @@ public class TestComparisons extends CommonAbstractValue {
         Expression iGt0 = GreaterThanZero.greater(context, i, newInt(0), false);
         Expression jLe0 = GreaterThanZero.less(context, j, newInt(0), true);
         Expression iGt0jLe0 = newAndAppend(iGt0, jLe0);
-        assertEquals("i>=1&&j<=0", iGt0jLe0.toString());
+        assertEquals("i>=1&&j<1", iGt0jLe0.toString());
 
         // j>=i === j-i>=0
         Expression jMinusI = Sum.sum(context, j, negate(i));
@@ -290,7 +319,7 @@ public class TestComparisons extends CommonAbstractValue {
         Expression iGe1 = GreaterThanZero.greater(context, i, newInt(1), true);
         Expression jLe0 = GreaterThanZero.less(context, j, newInt(0), true);
         Expression and2 = newAndAppend(iGe1, jLe0);
-        assertEquals("i>=1&&j<=0", and2.toString());
+        assertEquals("i>=1&&j<1", and2.toString());
         Expression and = newAndAppend(and1, and2);
         assertTrue(and.isBoolValueFalse(), "Have " + and);
     }
@@ -400,7 +429,9 @@ public class TestComparisons extends CommonAbstractValue {
         Expression iGej = GreaterThanZero.greater(context, i, j, true);
         Expression jMinusOne = Sum.sum(context, j, newInt(-1));
         Expression jGti = GreaterThanZero.greater(context, jMinusOne, i, true);
+        assertEquals("-1-i+j>=0", jGti.toString());
         Expression notJGti = negate(jGti);
+        assertEquals("i>=j", notJGti.toString());
         assertEquals(iGej, notJGti);
     }
 

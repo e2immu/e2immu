@@ -73,15 +73,20 @@ public class Sum extends BinaryOperator {
         Primitives primitives = evaluationContext.getPrimitives();
 
         if (l.equals(r)) return Product.product(identifier, evaluationContext, new IntConstant(primitives, 2), l);
-        if (l instanceof IntConstant li && li.constant() == 0) return r;
-        if (r instanceof IntConstant ri && ri.constant() == 0) return l;
+        IntConstant li;
+        if ((li = l.asInstanceOf(IntConstant.class)) != null && li.constant() == 0) return r;
+        IntConstant ri;
+        if ((ri = r.asInstanceOf(IntConstant.class)) != null && ri.constant() == 0) return l;
         if (l instanceof Negation ln && ln.expression.equals(r) ||
                 r instanceof Negation rn && rn.expression.equals(l)) {
             return new IntConstant(primitives, 0);
         }
-        if (l instanceof Numeric ln && r instanceof Numeric rn)
+        Numeric ln;
+        Numeric rn;
+        if ((ln = l.asInstanceOf(Numeric.class)) != null
+                && (rn = r.asInstanceOf(Numeric.class)) != null) {
             return IntConstant.intOrDouble(primitives, ln.doubleValue() + rn.doubleValue());
-
+        }
         // similar code in Equals (common terms)
 
         Expression[] terms = Stream.concat(expandTerms(evaluationContext, l, false),
@@ -119,8 +124,11 @@ public class Sum extends BinaryOperator {
             Expression e = terms[pos];
             int latestIndex = result.size() - 1;
             Expression latest = result.get(latestIndex);
-            if (e instanceof Numeric n1 && latest instanceof Numeric n2) {
-                Expression sum = IntConstant.intOrDouble(primitives, n1.doubleValue() + n2.doubleValue());
+            Numeric ln;
+            Numeric rn;
+            if ((ln = e.asInstanceOf(Numeric.class)) != null
+                    && (rn = latest.asInstanceOf(Numeric.class)) != null) {
+                Expression sum = IntConstant.intOrDouble(primitives, ln.doubleValue() + rn.doubleValue());
                 result.set(latestIndex, sum);
             } else {
                 Factor f1 = getFactor(latest);
@@ -140,7 +148,10 @@ public class Sum extends BinaryOperator {
             pos++;
         }
         Collections.sort(result);
-        result.removeIf(e -> e instanceof Numeric n && n.doubleValue() == 0);
+        result.removeIf(e -> {
+            Numeric n;
+            return (n = e.asInstanceOf(Numeric.class)) != null && n.doubleValue() == 0;
+        });
         return result.toArray(Expression[]::new);
     }
 
@@ -167,7 +178,8 @@ public class Sum extends BinaryOperator {
     }
 
     public static Stream<Expression> expandTerms(EvaluationResult evaluationContext, Expression expression, boolean negate) {
-        if (expression instanceof Sum sum) {
+        Sum sum;
+        if ((sum = expression.asInstanceOf(Sum.class)) != null) {
             return Stream.concat(expandTerms(evaluationContext, sum.lhs, negate),
                     expandTerms(evaluationContext, sum.rhs, negate));
         }
@@ -230,15 +242,18 @@ public class Sum extends BinaryOperator {
 
     // recursive method
     public Double numericPartOfLhs() {
-        if (lhs instanceof Numeric n) return n.doubleValue();
-        if (lhs instanceof Sum s) return s.numericPartOfLhs();
+        Numeric n;
+        if ((n = lhs.asInstanceOf(Numeric.class)) != null) return n.doubleValue();
+        Sum s;
+        if ((s = lhs.asInstanceOf(Sum.class)) != null) return s.numericPartOfLhs();
         return null;
     }
 
     // can only be called when there is a numeric part somewhere!
     public Expression nonNumericPartOfLhs(EvaluationResult evaluationContext) {
-        if (lhs instanceof Numeric) return rhs;
-        if (lhs instanceof Sum s) {
+        if (lhs.isInstanceOf(Numeric.class)) return rhs;
+        Sum s;
+        if ((s = lhs.asInstanceOf(Sum.class)) != null) {
             // the numeric part is somewhere inside lhs
             Expression nonNumeric = s.nonNumericPartOfLhs(evaluationContext);
             return Sum.sum(evaluationContext, nonNumeric, rhs);

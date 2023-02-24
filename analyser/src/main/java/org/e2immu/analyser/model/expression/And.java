@@ -24,6 +24,7 @@ import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.Symbol;
 import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.parser.Primitives;
+import org.e2immu.analyser.util.IntUtil;
 import org.e2immu.analyser.util.ListUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -554,7 +555,7 @@ public class And extends ExpressionCanBeTooComplex {
                 // !xb1.lessThan: x >= b1 && x <= b2; otherwise: x <= b1 && x >= b2
                 if (xb1b > xb2b) return !xb1lt ? Action.FALSE : Action.ADD;
                 if (xb1b < xb2b) return !xb1lt ? Action.ADD : Action.FALSE;
-                if (ge1.allowEquals() && ge2.allowEquals()) {
+                if (IntUtil.isMathematicalInteger(xb1b)) {
                     Expression newValue = Equals.equals(evaluationContext,
                             IntConstant.intOrDouble(primitives, xb1b), xb1x); // null-checks are irrelevant here
                     newConcat.set(newConcat.size() - 1, newValue);

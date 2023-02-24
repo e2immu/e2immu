@@ -123,7 +123,7 @@ public class Test_04_Precondition extends CommonTestRunner {
                     assertEquals(d.iteration() > 0, d.statementAnalysis().methodLevelData().combinedPreconditionIsFinal());
 
                     if (d.iteration() > 0) {
-                        assertEquals("i$0<=-1", d.condition().toString());
+                        assertEquals("i$0<0", d.condition().toString());
                         assertEquals("i>=0", d.statementAnalysis().stateData()
                                 .getPrecondition().expression().toString());
                         assertEquals("i>=0", d.statementAnalysis().methodLevelData()
@@ -176,8 +176,8 @@ public class Test_04_Precondition extends CommonTestRunner {
         EvaluationResultVisitor evaluationResultVisitor = d -> {
             if ("setPositive5".equals(d.methodInfo().name)) {
                 if ("1".equals(d.statementId())) {
-                    // TODO I'd expect only "j2<=-1" here in iteration 1; somehow i$0>=0 is not filtered out
-                    String expect = d.iteration() == 0 ? "<f:i>>=0&&j2<=-1" : "i$0>=0&&j2<=-1";
+                    // TODO I'd expect only "j2<0" here in iteration 1; somehow i$0>=0 is not filtered out
+                    String expect = d.iteration() == 0 ? "<f:i>>=0&&j2<0" : "i$0>=0&&j2<0";
                     assertEquals(expect, d.evaluationResult().value().toString());
                 }
             }
@@ -363,7 +363,7 @@ public class Test_04_Precondition extends CommonTestRunner {
                 }
                 if ("0.0.0.0.0".equals(d.statementId())) {
                     assertTrue(d.statementAnalysis().inSyncBlock());
-                    assertEquals("ii<=-1", d.condition().toString());
+                    assertEquals("ii<0", d.condition().toString());
                 }
                 if ("0.0.1.0.0".equals(d.statementId())) {
                     assertTrue(d.statementAnalysis().inSyncBlock());
@@ -470,7 +470,7 @@ public class Test_04_Precondition extends CommonTestRunner {
         StatementAnalyserVisitor statementAnalyserVisitor = d -> {
             if ("setI".equals(d.methodInfo().name)) {
                 if ("0.0.0.0.0".equals(d.statementId())) {
-                    assertEquals("i<=-1&&b", d.statementAnalysis().stateData()
+                    assertEquals("i<0&&b", d.statementAnalysis().stateData()
                             .getConditionManagerForNextStatement().absoluteState(d.context()).toString());
 
                     assertEquals("i>=0||!b", d.statementAnalysis()
