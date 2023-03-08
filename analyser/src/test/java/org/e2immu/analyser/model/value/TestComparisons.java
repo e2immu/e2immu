@@ -15,6 +15,7 @@
 package org.e2immu.analyser.model.value;
 
 import org.e2immu.analyser.analyser.EvaluationContext;
+import org.e2immu.analyser.analyser.ForwardEvaluationInfo;
 import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.Identifier;
 import org.e2immu.analyser.model.ParameterInfo;
@@ -352,7 +353,7 @@ public class TestComparisons extends CommonAbstractValue {
     public void testLoops7() {
         Instance i1 = Instance.forLoopVariable(Identifier.CONSTANT, vi, EvaluationContext.PRIMITIVE_VALUE_PROPERTIES);
         Expression iMinusOne = Sum.sum(context, i, newInt(-1));
-        Expression iGtI1 = GreaterThanZero.greater(context,iMinusOne, i1, true);
+        Expression iGtI1 = GreaterThanZero.greater(context, iMinusOne, i1, true);
         assertEquals("-1-(instance type int)+i>=0", iGtI1.toString());
         Expression iLeI2 = GreaterThanZero.less(context, i, i1, true);
         assertEquals("instance type int>=i", iLeI2.toString());
@@ -433,6 +434,17 @@ public class TestComparisons extends CommonAbstractValue {
         Expression notJGti = negate(jGti);
         assertEquals("i>=j", notJGti.toString());
         assertEquals(iGej, notJGti);
+    }
+
+    @Test
+    public void testEval() {
+        Expression oneMinusI = Sum.sum(context, newInt(1), Negation.negate(context, i));
+        Expression sum = new BinaryOperator(Identifier.CONSTANT, PRIMITIVES, oneMinusI, PRIMITIVES.plusOperatorInt(), newInt(0),
+                Precedence.ADDITIVE);
+        Expression e = GreaterThanZero.greater(context, sum, newInt(0), true);
+        assertEquals("1-i+0>=0", e.toString());
+        ForwardEvaluationInfo fwd = new ForwardEvaluationInfo.Builder().setOnlySort(true).build();
+        assertEquals("i<2", e.evaluate(context, fwd).getExpression().toString());
     }
 
 }

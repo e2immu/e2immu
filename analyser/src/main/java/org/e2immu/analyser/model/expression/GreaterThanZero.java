@@ -30,7 +30,6 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 import java.util.function.Predicate;
-import java.util.stream.Stream;
 
 /*
 convention, if the type is discrete:
@@ -72,38 +71,10 @@ public class GreaterThanZero extends BaseExpression implements Expression {
         return Objects.hash(expression, allowEquals);
     }
 
-    // NOT (x >= 0) == x < 0  == (not x) > 0
-    // NOT (x > 0)  == x <= 0 == (not x) >= 0
-
     public Expression negate(EvaluationResult context) {
         Expression negated = Negation.negate(context, expression);
         return GreaterThanZero.greater(identifier, context, negated, new IntConstant(primitives, 0), !allowEquals);
     }
-
-    public Expression wrapInSum(EvaluationResult context, Expression[] array, int start, int endExcl) {
-        if (start + 1 == endExcl) return array[start];
-        return Sum.sum(context, wrapInSum(context, array, start, endExcl - 1), array[endExcl - 1]);
-    }
-
-    /*
-       Expression[] terms = Sum.expandTerms(context, expression, false).toArray(Expression[]::new);
-        Arrays.sort(terms);
-        Numeric n0;
-        if (terms.length > 1 && (n0 = terms[0].asInstanceOf(Numeric.class)) != null) {
-            if (terms.length == 2 && terms[1] instanceof Negation n) {
-                //Negate(n-x >= 0) == Negate(x <= n) == x > n
-                return GreaterThanZero.greater(context, n.expression, n0, !allowEquals);
-            }
-            Expression sum = wrapInSum(context, terms, 1, terms.length);
-            if (n0.doubleValue() > 0) {
-                //Negate( 3 + x > 0) == Negate(x < 3) == x >= 3
-                return GreaterThanZero.greater(context, sum, n0, !allowEquals);
-            }
-            //Negate(-3 + x > 0) == Negate (x > 3) == x <= 3
-            Expression notN0 = Negation.negate(context, n0);
-            return GreaterThanZero.less(context, sum, notN0, !allowEquals);
-        }
-     */
 
     /**
      * IMPORTANT:
@@ -378,15 +349,8 @@ public class GreaterThanZero extends BaseExpression implements Expression {
     @Override
     public EvaluationResult evaluate(EvaluationResult context, ForwardEvaluationInfo forwardEvaluationInfo) {
         EvaluationResult er = expression.evaluate(context, forwardEvaluationInfo);
-        Expression expression;
-        Numeric n = er.value().asInstanceOf(Numeric.class);
-        if (n != null) {
-            expression = new BooleanConstant(context.getPrimitives(),
-                    allowEquals ? n.doubleValue() >= 0 : n.doubleValue() > 0);
-        } else {
-            expression = new GreaterThanZero(identifier, primitives, er.getExpression(), allowEquals);
-        }
-        return new EvaluationResult.Builder(context).compose(er).setExpression(expression).build();
+        Expression e = GreaterThanZero.compute(identifier, context, er.getExpression(), allowEquals);
+        return new EvaluationResult.Builder(context).compose(er).setExpression(e).build();
     }
 
     @Override

@@ -35,13 +35,11 @@ public class ArrayInitializer extends BaseExpression implements Expression {
 
     public final MultiExpression multiExpression;
     private final ParameterizedType commonType;
-    private final InspectionProvider inspectionProvider;
 
     public ArrayInitializer(Identifier identifier, InspectionProvider inspectionProvider, List<Expression> values) {
         super(identifier, values.stream().mapToInt(Expression::getComplexity).sum() + 1);
         this.multiExpression = MultiExpression.create(values);
         this.commonType = multiExpression.commonType(inspectionProvider);
-        this.inspectionProvider = inspectionProvider;
     }
 
     public ArrayInitializer(InspectionProvider inspectionProvider,
@@ -58,15 +56,13 @@ public class ArrayInitializer extends BaseExpression implements Expression {
         super(identifier, values.stream().mapToInt(Expression::getComplexity).sum() + 1);
         this.multiExpression = MultiExpression.create(values);
         this.commonType = formalCommonType.commonType(inspectionProvider, multiExpression.commonType(inspectionProvider));
-        this.inspectionProvider = inspectionProvider;
     }
 
-    private ArrayInitializer(Identifier identifier, MultiExpression multiExpression, ParameterizedType commonType, InspectionProvider inspectionProvider) {
+    private ArrayInitializer(Identifier identifier, MultiExpression multiExpression, ParameterizedType commonType) {
         super(identifier, Arrays.stream(multiExpression.expressions())
                 .mapToInt(Expression::getComplexity).sum() + 1);
         this.multiExpression = multiExpression;
         this.commonType = commonType;
-        this.inspectionProvider = inspectionProvider;
     }
 
     @Override
@@ -80,7 +76,7 @@ public class ArrayInitializer extends BaseExpression implements Expression {
                 .collect(TranslationCollectors.toList(exs));
         ParameterizedType translatedType = translationMap.translateType(commonType);
         if (translatedType == commonType && translatedExpressions == exs) return this;
-        return new ArrayInitializer(identifier, this.inspectionProvider, translatedExpressions, translatedType);
+        return new ArrayInitializer(identifier, inspectionProvider, translatedExpressions, translatedType);
     }
 
     @Override
@@ -146,7 +142,7 @@ public class ArrayInitializer extends BaseExpression implements Expression {
         MultiExpression multi = new MultiExpression(Arrays.stream(multiExpression.expressions())
                 .map(e -> e.isDelayed() ? e.mergeDelays(causesOfDelay) : e)
                 .toArray(Expression[]::new));
-        return new ArrayInitializer(identifier, multi, commonType, inspectionProvider);
+        return new ArrayInitializer(identifier, multi, commonType);
     }
 
     @Override

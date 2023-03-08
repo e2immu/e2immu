@@ -267,7 +267,7 @@ public class VariableExpression extends BaseExpression implements IsVariableExpr
 
     @Override
     public boolean isNumeric() {
-        TypeInfo typeInfo = variable.parameterizedType().bestTypeInfo();
+        TypeInfo typeInfo = variable.parameterizedType().typeInfo;
         return typeInfo != null && typeInfo.isNumeric();
     }
 
