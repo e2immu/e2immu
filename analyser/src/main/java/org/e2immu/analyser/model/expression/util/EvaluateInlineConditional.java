@@ -235,7 +235,7 @@ public class EvaluateInlineConditional {
              */
             boolean lhsNegative = sum.lhs.isNegatedOrNumericNegative();
             boolean rhsNegative = sum.rhs.isNegatedOrNumericNegative();
-            if(!lhsNegative && rhsNegative) {
+            if (!lhsNegative && rhsNegative) {
                 Expression newCondition = Negation.negate(evaluationResult, condition);
                 InlineConditional inline = new InlineConditional(evaluationResult.getAnalyserContext(),
                         newCondition, ifFalse, ifTrue);
@@ -299,6 +299,14 @@ public class EvaluateInlineConditional {
 
     private static Expression edgeCases(EvaluationResult evaluationContext,
                                         Expression condition, Expression ifTrue, Expression ifFalse) {
+        if (ifTrue.isEmpty() || ifFalse.isEmpty()) {
+            /*
+             The inline conditional system is used to construct inline conditionals such as x?<no return value>:false
+             in the context of constructing a correct return value (e2immu, but also jfocus).
+             The edge cases are not applicable in that specific situation.
+             */
+            return null;
+        }
         // x ? a : a == a
         if (ifTrue.equals(ifFalse)) return ifTrue;
         // a ? a : !a == a == !a ? !a : a

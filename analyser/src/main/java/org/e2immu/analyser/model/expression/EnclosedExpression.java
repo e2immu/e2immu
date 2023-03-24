@@ -117,7 +117,7 @@ public class EnclosedExpression extends BaseExpression implements Expression {
     }
 
     @Override
-    public <T extends Expression> T asInstanceOf(Class<T> clazz) {
+    public <T extends Element> T asInstanceOf(Class<T> clazz) {
         return inner.asInstanceOf(clazz);
     }
 
