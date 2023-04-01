@@ -552,9 +552,9 @@ public record ExpressionContextImpl(ExpressionContext.ResolverRecursion resolver
                 Expression rhs = parseExpressionStartVoid(binaryExpr.getRight());
                 TypeInfo typeInfo;
                 if (lhs instanceof NullConstant) {
-                    typeInfo = rhs.returnType().typeInfo;
+                    typeInfo = typeContext.getPrimitives().ensureBoxed(rhs.returnType().typeInfo);
                 } else if (rhs instanceof NullConstant) {
-                    typeInfo = lhs.returnType().typeInfo;
+                    typeInfo = typeContext.getPrimitives().ensureBoxed(lhs.returnType().typeInfo);
                 } else if (lhs.returnType().allowsForOperators() || rhs.returnType().allowsForOperators()) {
                     ParameterizedType widestType = typeContext.getPrimitives().widestType(lhs.returnType(), rhs.returnType());
                     if (!widestType.isType())

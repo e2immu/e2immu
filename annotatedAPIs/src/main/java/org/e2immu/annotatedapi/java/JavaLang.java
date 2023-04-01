@@ -461,6 +461,9 @@ class JavaLang {
             return null;
         }
 
+        @Fluent
+        StringBuilder reverse() { return null; }
+
         int toString$Transfer$Len(int len) {
             return len;
         }

@@ -15,10 +15,7 @@
 package org.e2immu.analyser.resolver;
 
 import org.e2immu.analyser.model.*;
-import org.e2immu.analyser.model.expression.LocalVariableCreation;
-import org.e2immu.analyser.model.expression.MemberValuePair;
-import org.e2immu.analyser.model.expression.MethodCall;
-import org.e2immu.analyser.model.expression.UnevaluatedAnnotationParameterValue;
+import org.e2immu.analyser.model.expression.*;
 import org.e2immu.analyser.model.statement.Block;
 import org.e2immu.analyser.model.statement.ExpressionAsStatement;
 import org.e2immu.analyser.model.statement.IfElseStatement;
@@ -204,5 +201,20 @@ public class TestBasics extends CommonTest {
             assertNotNull(comment2);
             assertEquals("orphan to field 2\ncomment on field 2", comment2.text());
         }
+    }
+
+    @Test
+    public void test_9() throws IOException {
+        TypeMap typeMap = inspectAndResolve(Basics_9.class);
+        TypeInfo typeInfo = typeMap.get(Basics_9.class.getCanonicalName());
+        MethodInfo methodInfo = typeInfo.findUniqueMethod("method1", 1);
+        MethodInspection methodInspection = methodInfo.methodInspection.get();
+        Block block = methodInspection.getMethodBody();
+        if (block.structure.statements().get(2) instanceof IfElseStatement ifElseStatement) {
+            assertEquals("v==null", ifElseStatement.expression.toString());
+            if (ifElseStatement.expression instanceof BinaryOperator op) {
+                assertSame(typeMap.getPrimitives().equalsOperatorObject(), op.operator);
+            } else fail();
+        } else fail();
     }
 }

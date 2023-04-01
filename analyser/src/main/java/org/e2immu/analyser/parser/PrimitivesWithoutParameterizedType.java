@@ -130,6 +130,8 @@ public interface PrimitivesWithoutParameterizedType {
 
     TypeInfo boxedBooleanTypeInfo();
 
+    TypeInfo characterTypeInfo();
+
     TypeInfo objectTypeInfo();
 
     AnnotationExpression functionalInterfaceAnnotationExpression();
@@ -144,5 +146,12 @@ public interface PrimitivesWithoutParameterizedType {
 
     default boolean isNotEqualsOperator(MethodInfo operator) {
         return operator == notEqualsOperatorInt() || operator == notEqualsOperatorObject();
+    }
+
+    default TypeInfo ensureBoxed(TypeInfo typeInfo) {
+        if (typeInfo != null && typeInfo.isPrimitiveExcludingVoid()) {
+            return boxed(typeInfo);
+        }
+        return typeInfo;
     }
 }

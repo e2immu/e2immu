@@ -42,6 +42,13 @@ public class LocalVariableCreation extends BaseExpression implements Expression 
         public LocalVariableReference localVariableReference() {
             return new LocalVariableReference(localVariable, expression);
         }
+
+        // used in JFocus
+        public Declaration changeName(String newName) {
+            LocalVariable lv = new LocalVariable(localVariable.modifiers(), newName, localVariable.parameterizedType(),
+                    localVariable.annotations(), localVariable.owningType(), localVariable.nature());
+            return new Declaration(identifier, lv, expression);
+        }
     }
 
     public LocalVariableCreation(Identifier identifier, Primitives primitives, LocalVariable localVariable) {

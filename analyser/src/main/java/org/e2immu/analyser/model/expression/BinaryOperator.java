@@ -386,8 +386,7 @@ public class BinaryOperator extends BaseExpression implements Expression {
     public static MethodInfo getOperator(@NotNull Primitives primitives,
                                          @NotNull @NotModified BinaryExpr.Operator operator,
                                          @NotModified TypeInfo widestType) {
-        if (widestType == null || !widestType.isPrimitiveExcludingVoid()
-                && !widestType.isBoxedExcludingVoid()) {
+        if (widestType == null || !widestType.isPrimitiveExcludingVoid()) {
             if (operator == BinaryExpr.Operator.EQUALS) {
                 return primitives.equalsOperatorObject();
             }
@@ -397,9 +396,11 @@ public class BinaryOperator extends BaseExpression implements Expression {
             if (widestType == primitives.stringTypeInfo() && operator == BinaryExpr.Operator.PLUS) {
                 return primitives.plusOperatorString();
             }
-            throw new UnsupportedOperationException("? what else can you have on " + widestType + ", operator " + operator);
+            if (widestType == null || !widestType.isBoxedExcludingVoid()) {
+                throw new UnsupportedOperationException("? what else can you have on " + widestType + ", operator " + operator);
+            }
         }
-        if (widestType == primitives.booleanTypeInfo() || widestType.fullyQualifiedName.equals("java.lang.Boolean")) {
+        if (widestType == primitives.booleanTypeInfo() || widestType == primitives.boxedBooleanTypeInfo()) {
             switch (operator) {
                 case XOR:
                     return primitives.xorOperatorBool();
@@ -416,7 +417,7 @@ public class BinaryOperator extends BaseExpression implements Expression {
             }
             throw new UnsupportedOperationException("Operator " + operator + " on boolean");
         }
-        if (widestType == primitives.charTypeInfo() || widestType.fullyQualifiedName.equals("java.lang.Character")) {
+        if (widestType == primitives.charTypeInfo() || widestType == primitives.characterTypeInfo()) {
             switch (operator) {
                 case PLUS:
                     return primitives.plusOperatorInt();

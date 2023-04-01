@@ -683,6 +683,11 @@ public class PrimitivesImpl implements Primitives {
     }
 
     @Override
+    public TypeInfo characterTypeInfo() {
+        return characterTypeInfo;
+    }
+
+    @Override
     public TypeInfo objectTypeInfo() {
         return objectTypeInfo;
     }
