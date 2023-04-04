@@ -26,7 +26,6 @@ import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.util.UpgradableBooleanMap;
 
-import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -48,6 +47,20 @@ public class LocalVariableCreation extends BaseExpression implements Expression 
             LocalVariable lv = new LocalVariable(localVariable.modifiers(), newName, localVariable.parameterizedType(),
                     localVariable.annotations(), localVariable.owningType(), localVariable.nature());
             return new Declaration(identifier, lv, expression);
+        }
+
+        public Declaration translate(InspectionProvider inspectionProvider, TranslationMap translationMap) {
+            LocalVariable tlv = translationMap.translateLocalVariable(localVariable);
+            Expression tex = expression.translate(inspectionProvider, translationMap);
+            if (tlv == localVariable && tex == expression) return this;
+            if (localVariable.parameterizedType().isBoxedExcludingVoid() && expression.isNull()
+                    && tlv.parameterizedType().isPrimitiveExcludingVoid() && tex.isNull()) {
+                // special case: Integer v = null, with type change to int v = null; ... change null to 0
+                Expression nullValue = ConstantExpression.nullValue(inspectionProvider.getPrimitives(),
+                        tlv.parameterizedType().typeInfo);
+                return new Declaration(identifier, tlv, nullValue);
+            }
+            return new Declaration(identifier, tlv, tex);
         }
     }
 
@@ -95,12 +108,9 @@ public class LocalVariableCreation extends BaseExpression implements Expression 
         Expression translated = translationMap.translateExpression(this);
         if (translated != this) return translated;
 
-        List<Declaration> translatedDeclarations = declarations.stream().map(d -> {
-            LocalVariable tlv = translationMap.translateLocalVariable(d.localVariable);
-            Expression tex = d.expression.translate(inspectionProvider, translationMap);
-            if (tlv == d.localVariable && tex == d.expression) return d;
-            return new Declaration(d.identifier, tlv, tex);
-        }).collect(TranslationCollectors.toList(declarations));
+        List<Declaration> translatedDeclarations = declarations.stream()
+                .map(d -> d.translate(inspectionProvider, translationMap))
+                .collect(TranslationCollectors.toList(declarations));
         if (translatedDeclarations == declarations) return this;
         return new LocalVariableCreation(primitives, translatedDeclarations, isVar);
     }
