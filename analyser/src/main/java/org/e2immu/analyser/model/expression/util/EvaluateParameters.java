@@ -82,13 +82,16 @@ public class EvaluateParameters {
         }
 
         List<Expression> sortedParameters;
-        MethodAnalysis methodAnalysis = context.getAnalyserContext().getMethodAnalysisNullWhenAbsent(methodInfo);
-        if(methodAnalysis != null && methodAnalysis.hasParallelGroups()) {
-            sortedParameters = methodAnalysis.sortAccordingToParallelGroupsAndNaturalOrder(parameterExpressions);
+        if(methodInfo != null) {
+            MethodAnalysis methodAnalysis = context.getAnalyserContext().getMethodAnalysisNullWhenAbsent(methodInfo);
+            if (methodAnalysis != null && methodAnalysis.hasParallelGroups()) {
+                sortedParameters = methodAnalysis.sortAccordingToParallelGroupsAndNaturalOrder(parameterExpressions);
+            } else {
+                sortedParameters = parameterValues;
+            }
         } else {
             sortedParameters = parameterValues;
         }
-
         return new Pair<>(builder, sortedParameters);
     }
 

@@ -304,7 +304,7 @@ public class Assignment extends BaseExpression implements Expression {
         }
     }
 
-    private record E2(Expression resultOfExpression, Expression assignedToTarget) {
+    public record E2(Expression resultOfExpression, Expression assignedToTarget) {
     }
 
     @Override
@@ -435,7 +435,8 @@ public class Assignment extends BaseExpression implements Expression {
         return new E2(valueResultValue, valueResultValue);
     }
 
-    private E2 handleBinaryOperator(EvaluationResult context,
+    // public because used in JFocus
+    public E2 handleBinaryOperator(EvaluationResult context,
                                     ForwardEvaluationInfo forwardEvaluationInfo,
                                     Variable newVariableTarget,
                                     EvaluationResult.Builder builder) {

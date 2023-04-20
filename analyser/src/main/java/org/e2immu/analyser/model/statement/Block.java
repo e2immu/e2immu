@@ -287,11 +287,17 @@ public class Block extends StatementWithStructure {
             assert direct.size() == 1 && direct.get(0) instanceof Block;
             return direct;
         }
-
-        return List.of(new Block(identifier, structure.statements().stream()
-                .flatMap(st -> Objects.requireNonNull(st.translate(inspectionProvider, translationMap),
-                        "Translation of statement of " + st.getClass() + " returns null: " + st).stream())
-                .collect(Collectors.toList()), label, structure.comment()));
+        boolean change = false;
+        List<Statement> tStatements = new ArrayList<>(2 * structure.statements().size());
+        for (Statement statement : structure.statements()) {
+            List<Statement> tStatement = statement.translate(inspectionProvider, translationMap);
+            tStatements.addAll(tStatement);
+            change |= tStatement.size() != 1 || tStatement.get(0) != statement;
+        }
+        if (change) {
+            return List.of(new Block(identifier, tStatements, label, structure.comment()));
+        }
+        return List.of(this);
     }
 
     public boolean isEmpty() {

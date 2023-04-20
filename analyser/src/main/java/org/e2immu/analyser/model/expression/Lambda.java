@@ -19,6 +19,7 @@ import org.e2immu.analyser.analyser.delay.DelayFactory;
 import org.e2immu.analyser.analysis.MethodAnalysis;
 import org.e2immu.analyser.analysis.StatementAnalysis;
 import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.model.expression.util.TranslationCollectors;
 import org.e2immu.analyser.model.impl.BaseExpression;
 import org.e2immu.analyser.model.statement.Block;
 import org.e2immu.analyser.model.statement.ReturnStatement;
@@ -99,6 +100,24 @@ public class Lambda extends BaseExpression implements Expression {
         assert outputVariants.size() == parameters.size();
     }
 
+    private Lambda(Identifier identifier,
+                   ParameterizedType abstractFunctionalType,
+                   ParameterizedType implementation,
+                   ParameterizedType concreteReturnType,
+                   List<OutputVariant> outputVariants,
+                   MethodInfo methodInfo,
+                   Block block,
+                   List<ParameterInfo> parameters) {
+        super(identifier, 10);
+        this.abstractFunctionalType = abstractFunctionalType;
+        this.implementation = implementation;
+        this.concreteReturnType = concreteReturnType;
+        this.parameterOutputVariants = outputVariants;
+        this.methodInfo = methodInfo;
+        this.block = block;
+        this.parameters = parameters;
+    }
+
     private static boolean implementsFunctionalInterface(InspectionProvider inspectionProvider,
                                                          ParameterizedType parameterizedType) {
         if (parameterizedType.typeInfo == null) return false;
@@ -127,7 +146,17 @@ public class Lambda extends BaseExpression implements Expression {
 
     @Override
     public Expression translate(InspectionProvider inspectionProvider, TranslationMap translationMap) {
-        return translationMap.translateExpression(this);
+        Expression tLambda = translationMap.translateExpression(this);
+        if (tLambda != this) return tLambda;
+        Block tBlock = (Block) block.translate(inspectionProvider, translationMap).get(0);
+        List<ParameterInfo> tParams = parameters.stream()
+                .map(pi -> (ParameterInfo) translationMap.translateVariable(inspectionProvider, pi))
+                .collect(TranslationCollectors.toList(parameters));
+        if (tBlock == block && tParams == parameters) {
+            return this;
+        }
+        return new Lambda(identifier, abstractFunctionalType, implementation, concreteReturnType,
+                parameterOutputVariants, methodInfo, tBlock, tParams);
     }
 
     @Override
@@ -178,16 +207,24 @@ public class Lambda extends BaseExpression implements Expression {
             outputBuilder.add(outputInParenthesis(qualification, precedence(), singleExpression));
         } else {
             Guide.GuideGenerator guideGenerator = Guide.generatorForBlock();
-            outputBuilder.add(Symbol.LEFT_BRACE);
             if (methodInfo.methodAnalysis.isSet()) {
-                outputBuilder.add(guideGenerator.start());
-                StatementAnalysis firstStatement = methodInfo.methodAnalysis.get().getFirstStatement().followReplacements();
-                Block.statementsString(qualification, outputBuilder, guideGenerator, firstStatement);
-                outputBuilder.add(guideGenerator.end());
+                StatementAnalysis firstStatement = methodInfo.methodAnalysis.get().getFirstStatement();
+                if (firstStatement != null) {
+                    outputBuilder.add(Symbol.LEFT_BRACE);
+                    outputBuilder.add(guideGenerator.start());
+                    StatementAnalysis st = firstStatement.followReplacements();
+                    Block.statementsString(qualification, outputBuilder, guideGenerator, st);
+                    outputBuilder.add(guideGenerator.end());
+                    outputBuilder.add(Symbol.RIGHT_BRACE);
+                } else {
+                    // jfocus: we  currently don't set the first statement analysis
+                    outputBuilder.add(block.output(qualification, null));
+                }
             } else {
+                outputBuilder.add(Symbol.LEFT_BRACE);
                 outputBuilder.add(new Text("... debugging ..."));
+                outputBuilder.add(Symbol.RIGHT_BRACE);
             }
-            outputBuilder.add(Symbol.RIGHT_BRACE);
         }
         return outputBuilder;
     }
@@ -219,6 +256,10 @@ public class Lambda extends BaseExpression implements Expression {
     @Override
     public EvaluationResult evaluate(EvaluationResult context, ForwardEvaluationInfo forwardEvaluationInfo) {
         EvaluationResult.Builder builder = new EvaluationResult.Builder(context);
+        if (forwardEvaluationInfo.isOnlySort()) {
+            return builder.setExpression(this).build();
+        }
+
         ParameterizedType parameterizedType = methodInfo.typeInfo.asParameterizedType(context.getAnalyserContext());
         Expression result;
 

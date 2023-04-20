@@ -312,12 +312,6 @@ public class ResolverImpl implements Resolver {
             }
             typeInspection.subTypes().forEach(expressionContextOfType.typeContext()::addToContext);
 
-            // recursion, do subtypes first (no recursion at resolver level!)
-            typeInspection.subTypes().forEach(subType -> {
-                LOGGER.debug("From {} into {}", typeInfo.fullyQualifiedName, subType.fullyQualifiedName);
-                doType(subType, topType, expressionContextOfType, methodFieldSubTypeGraph);
-            });
-
             LOGGER.debug("Resolving type #{}: {}", typeCounterForDebugging.incrementAndGet(), typeInfo.fullyQualifiedName);
             TypeInfo primaryType = typeInfo.primaryType();
             ExpressionContext expressionContextForBody = ExpressionContextImpl.forTypeBodyParsing(this, typeInfo,
@@ -331,9 +325,17 @@ public class ResolverImpl implements Resolver {
             accessibleBySimpleNameTypeInfoStream(typeContext, typeInfo, primaryType)
                     .forEach(ti -> typeContext.addToContext(ti, false));
 
-            // add visible fields to variable context
-            accessibleFieldsStream(typeContext, typeInfo, primaryType).forEach(fieldInfo ->
+            // add visible fields to variable context, without those of enclosing types, they'll be recursively accessible
+            // See e.g. AnonymousType_0
+            accessibleFieldsStream(typeContext, typeInfo, primaryType, primaryType.packageName(),
+                    false, false).forEach(fieldInfo ->
                     expressionContextForBody.variableContext().add(new FieldReference(typeContext, fieldInfo)));
+
+            // recursion, do subtypes first (no recursion at resolver level!)
+            typeInspection.subTypes().forEach(subType -> {
+                LOGGER.debug("From {} into {}", typeInfo.fullyQualifiedName, subType.fullyQualifiedName);
+                doType(subType, topType, expressionContextForBody, methodFieldSubTypeGraph);
+            });
 
             List<TypeInfo> typeAndAllSubTypes = typeAndAllSubTypes(typeInfo);
             Set<TypeInfo> restrictToType = new HashSet<>(typeAndAllSubTypes);
@@ -1079,7 +1081,7 @@ public class ResolverImpl implements Resolver {
 
 
     public static Stream<FieldInfo> accessibleFieldsStream(InspectionProvider inspectionProvider, TypeInfo typeInfo, TypeInfo primaryType) {
-        return accessibleFieldsStream(inspectionProvider, typeInfo, typeInfo, primaryType.packageName(), false);
+        return accessibleFieldsStream(inspectionProvider, typeInfo, typeInfo, primaryType.packageName(), false, true);
     }
 
     /*
@@ -1089,7 +1091,8 @@ public class ResolverImpl implements Resolver {
                                                             TypeInfo typeInfo,
                                                             TypeInfo startingPoint,
                                                             String startingPointPackageName,
-                                                            boolean staticFieldsOnly) {
+                                                            boolean staticFieldsOnly,
+                                                            boolean includeEnclosing) {
         TypeInspection typeInspection = inspectionProvider.getTypeInspection(typeInfo);
         TypeInfo primaryType = typeInfo.primaryType();
 
@@ -1107,7 +1110,7 @@ public class ResolverImpl implements Resolver {
         if (!isJLO) {
             assert typeInspection.parentClass() != null && typeInspection.parentClass().typeInfo != null;
             parentStream = accessibleFieldsStream(inspectionProvider, typeInspection.parentClass().typeInfo,
-                    startingPoint, startingPointPackageName, staticFieldsOnly);
+                    startingPoint, startingPointPackageName, staticFieldsOnly, includeEnclosing);
         } else parentStream = Stream.empty();
         Stream<FieldInfo> joint = Stream.concat(localStream, parentStream);
 
@@ -1115,16 +1118,16 @@ public class ResolverImpl implements Resolver {
         for (ParameterizedType interfaceType : typeInspection.interfacesImplemented()) {
             assert interfaceType.typeInfo != null;
             Stream<FieldInfo> fromInterface = accessibleFieldsStream(inspectionProvider, interfaceType.typeInfo,
-                    startingPoint, startingPointPackageName, staticFieldsOnly);
+                    startingPoint, startingPointPackageName, staticFieldsOnly, includeEnclosing);
             joint = Stream.concat(joint, fromInterface);
         }
 
         // my enclosing type's fields, but statics only when I'm a static nested type!
         Stream<FieldInfo> enclosingStream;
-        if (typeInfo.packageNameOrEnclosingType.isRight()) {
+        if (includeEnclosing && typeInfo.packageNameOrEnclosingType.isRight()) {
             enclosingStream = accessibleFieldsStream(inspectionProvider,
                     typeInfo.packageNameOrEnclosingType.getRight(), startingPoint, startingPointPackageName,
-                    typeInspection.isStatic());
+                    typeInspection.isStatic(), true);
         } else {
             enclosingStream = Stream.empty();
         }
