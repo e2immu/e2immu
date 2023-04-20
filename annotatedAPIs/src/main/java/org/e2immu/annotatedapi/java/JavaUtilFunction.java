@@ -180,4 +180,16 @@ public class JavaUtilFunction {
         @Modified
         void accept(T t, double i);
     }
+
+    @Independent
+    interface IntConsumer$ {
+        @Modified
+        void accept(int i);
+    }
+
+    @Independent
+    interface IntPredicate$ {
+        @Modified
+        boolean test(int i);
+    }
 }

@@ -50,4 +50,10 @@ public class Test_57_Lambda_AAPI extends CommonTestRunner {
                 .build());
     }
 
+
+    @Test
+    public void test_14() throws IOException {
+        testClass("Lambda_14", 0, 0, new DebugConfiguration.Builder()
+                .build());
+    }
 }

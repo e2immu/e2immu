@@ -1037,4 +1037,10 @@ public class JavaUtil extends AnnotatedAPI {
     interface LinkedHashMap$ {
 
     }
+
+    @Container
+    @Independent(hc = true)
+    interface IntSummaryStatistics$ {
+        void combine(@NotNull @Independent(hc = true) @NotModified IntSummaryStatistics other);
+    }
 }
