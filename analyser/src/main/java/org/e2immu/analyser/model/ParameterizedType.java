@@ -848,7 +848,7 @@ public class ParameterizedType {
     }
 
     public ParameterizedType ensureBoxed(PrimitivesWithoutParameterizedType primitives) {
-        if (isPrimitiveExcludingVoid()) {
+        if (isPrimitiveExcludingVoid() || isVoid()) {
             return toBoxed(primitives).asSimpleParameterizedType();
         }
         return this;

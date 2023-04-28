@@ -15,10 +15,16 @@
 package org.e2immu.analyser.parser.start;
 
 import org.e2immu.analyser.config.DebugConfiguration;
+import org.e2immu.analyser.model.MethodInspection;
+import org.e2immu.analyser.model.statement.Block;
 import org.e2immu.analyser.parser.CommonTestRunner;
+import org.e2immu.analyser.visitor.MethodAnalyserVisitor;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 
 public class Test_25_Record extends CommonTestRunner {
 
@@ -28,8 +34,19 @@ public class Test_25_Record extends CommonTestRunner {
 
     @Test
     public void test_0() throws IOException {
-            testClass("Record_0", 0, 0, new DebugConfiguration.Builder()
-                    .build());
+        MethodAnalyserVisitor methodAnalyserVisitor = d -> {
+            if ("string".equals(d.methodInfo().name)) {
+                assertEquals(4, d.methodInfo().getComplexity());
+                String sv = d.iteration() == 0 ? "<m:string>" : "/*inline string*/string";
+                assertEquals(sv, d.methodAnalysis().getSingleReturnValue().toString());
+                MethodInspection mi = d.methodInfo().methodInspection.get();
+                Block block = mi.getMethodBody();
+                assertFalse(block.isEmpty());
+            }
+        };
+        testClass("Record_0", 0, 0, new DebugConfiguration.Builder()
+                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                .build());
     }
 
     @Test

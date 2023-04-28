@@ -433,6 +433,9 @@ public class PrimitivesImpl implements Primitives {
             return boxedFloatTypeInfo;
         if (typeInfo == doubleTypeInfo)
             return boxedDoubleTypeInfo;
+        if (typeInfo == voidTypeInfo) {
+            return boxedVoidTypeInfo;
+        }
         throw new UnsupportedOperationException();
     }
 
