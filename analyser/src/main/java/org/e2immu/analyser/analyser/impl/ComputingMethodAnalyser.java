@@ -29,6 +29,7 @@ import org.e2immu.analyser.analysis.impl.TypeAnalysisImpl;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.*;
 import org.e2immu.analyser.model.statement.Block;
+import org.e2immu.analyser.model.statement.ExpressionAsStatement;
 import org.e2immu.analyser.model.statement.ReturnStatement;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.This;
@@ -144,7 +145,8 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
                 .add(COMPUTE_MODIFIED_CYCLES, (sharedState -> methodInfo.isConstructor ? DONE : computeModifiedInternalCycles()))
                 .add(OBTAIN_MOST_COMPLETE_PRECONDITION, (sharedState) -> obtainMostCompletePrecondition())
                 .add(SET_POST_CONDITION, (sharedState -> setPostCondition()))
-                .add(COMPUTE_RETURN_VALUE, (sharedState) -> methodInfo.noReturnValue() ? DONE : computeReturnValue(sharedState))
+                .add(COMPUTE_RETURN_VALUE, (sharedState) -> methodInfo.noReturnValue()
+                        ? computeSetter(false) : computeReturnValue(sharedState))
                 .add(COMPUTE_IMMUTABLE, sharedState -> methodInfo.noReturnValue() ? DONE : computeImmutable(sharedState))
                 .add(COMPUTE_CONTAINER, sharedState -> methodInfo.noReturnValue() ? DONE : computeContainer(sharedState))
                 .add(DETECT_MISSING_STATIC_MODIFIER, (iteration) -> methodInfo.isConstructor ? DONE : detectMissingStaticModifier())
@@ -556,6 +558,15 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
 
         VariableInfo variableInfo = getReturnAsVariable();
         Expression value = variableInfo.getValue().unwrapIfConstant();
+
+        if(methodAnalysis.getSetFieldIsNotYetSet()) {
+            FieldReference getter = isGetter();
+            if (getter != null) {
+                assert value.isDelayed() || value instanceof VariableExpression ve && ve.variable().equals(getter);
+                methodAnalysis.setGetSetField(getter.fieldInfo);
+            }
+        }
+
         ParameterizedType concreteReturnType = value.isInstanceOf(NullConstant.class) ? methodInfo.returnType() : value.returnType();
 
         DV notNullExpression = variableInfo.getProperty(NOT_NULL_EXPRESSION);
@@ -679,7 +690,9 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
         LOGGER.debug("Mark method {} as @Constant? {}", methodInfo, isConstant);
 
 
-        setFluent(valueBeforeInlining);
+        if (setFluent(valueBeforeInlining)) {
+            computeSetter(true);
+        }
 
         DV currentIdentity = methodAnalysis.getProperty(IDENTITY);
         if (currentIdentity.isDelayed()) {
@@ -696,13 +709,45 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
         return DONE;
     }
 
-    private void setFluent(Expression valueBeforeInlining) {
+    private FieldReference isGetter() {
+        Block block = methodInspection.getMethodBody();
+        if (block != null
+                && block.structure.statements().size() == 1
+                && block.structure.statements().get(0) instanceof ReturnStatement rs
+                && rs.expression instanceof VariableExpression ve
+                && ve.variable() instanceof FieldReference fr && fr.scopeIsThis()) {
+            return fr;
+        }
+        return null;
+    }
+
+    private AnalysisStatus computeSetter(boolean isFluent) {
+        if (methodInspection.getParameters().size() == 1) {
+            List<Statement> statements = methodInspection.getMethodBody().structure.statements();
+            int n = statements.size();
+            if (n == 1 || isFluent && n == 2) {
+                if (statements.get(0) instanceof ExpressionAsStatement eas
+                        && eas.expression instanceof Assignment assignment) {
+                    ParameterInfo pi = methodInspection.getParameters().get(0);
+                    if (assignment.variableTarget instanceof FieldReference fr && fr.scopeIsThis()
+                            && assignment.value instanceof VariableExpression ve
+                            && pi.equals(ve.variable())) {
+                        methodAnalysis.setGetSetField(fr.fieldInfo);
+                    }
+                }
+            }
+        }
+        return DONE;
+    }
+
+    private boolean setFluent(Expression valueBeforeInlining) {
         VariableExpression vv;
         boolean isFluent = (vv = valueBeforeInlining.asInstanceOf(VariableExpression.class)) != null &&
                 vv.variable() instanceof This thisVar &&
                 thisVar.typeInfo == methodInfo.typeInfo;
         methodAnalysis.setProperty(Property.FLUENT, DV.fromBoolDv(isFluent));
         LOGGER.debug("Mark method {} as @Fluent? {}", methodInfo, isFluent);
+        return isFluent;
     }
 
     private AnalysisStatus computeImmutable(SharedState sharedState) {

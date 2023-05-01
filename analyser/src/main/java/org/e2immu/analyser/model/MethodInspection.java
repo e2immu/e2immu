@@ -135,6 +135,19 @@ public interface MethodInspection extends Inspection {
         return typeInspection.isPublic();
     }
 
+    /* assuming this method is a getter or a setter, what is the field's type?
+
+     */
+    default ParameterizedType getSetType() {
+        List<ParameterInfo> parameters = getParameters();
+        if (parameters.isEmpty()) {
+            // getter
+            return getReturnType();
+        }
+        // setter
+        return parameters.get(0).parameterizedType;
+    }
+
     interface Builder extends InspectionBuilder<Builder>, MethodInspection {
 
         @Fluent

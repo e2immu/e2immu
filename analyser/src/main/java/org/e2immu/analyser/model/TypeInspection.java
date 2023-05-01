@@ -14,6 +14,7 @@
 
 package org.e2immu.analyser.model;
 
+import org.e2immu.analyser.analyser.AnalysisProvider;
 import org.e2immu.analyser.analyser.SetOfTypes;
 import org.e2immu.analyser.inspector.InspectionState;
 import org.e2immu.analyser.parser.InspectionProvider;
@@ -279,6 +280,14 @@ public interface TypeInspection extends Inspection {
         Stream<List<MethodInfo>> subTypes = subTypes().stream()
                 .flatMap(st -> inspectionProvider.getTypeInspection(st).staticBlocksPerType(inspectionProvider));
         return Stream.concat(Stream.of(mine), subTypes);
+    }
+
+    default Optional<FieldInfo> findFieldByName(String fieldName, AnalysisProvider analysisProvider) {
+        Optional<FieldInfo> opt = fields().stream().filter(f -> fieldName.equals(f.name)).findFirst();
+        return opt.or(() -> methodStream(Methods.THIS_TYPE_ONLY)
+                .map(m -> analysisProvider.getMethodAnalysis(m).getSetField())
+                .filter(Objects::nonNull)
+                .findFirst());
     }
 
     interface Builder extends InspectionBuilder<Builder>, TypeInspection {

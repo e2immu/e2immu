@@ -18,10 +18,7 @@ import org.e2immu.annotation.*;
 import org.e2immu.annotation.rare.Finalizer;
 import org.e2immu.annotation.type.UtilityClass;
 
-import java.util.Comparator;
-import java.util.List;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 import java.util.function.*;
 import java.util.stream.*;
 
@@ -232,5 +229,9 @@ public class JavaUtilStream {
 
     }
 
-
+    @UtilityClass
+    @Container
+    interface StreamSupport$ {
+        <T> Stream<T> stream(Spliterator<T> spliterator, boolean parallel);
+    }
 }

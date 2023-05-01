@@ -17,8 +17,10 @@ package org.e2immu.analyser.analysis.impl;
 import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.analyser.util.CreatePreconditionCompanion;
 import org.e2immu.analyser.analysis.*;
+import org.e2immu.analyser.inspector.impl.FieldInspectionImpl;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.*;
+import org.e2immu.analyser.model.impl.AnnotationExpressionImpl;
 import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
 import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.parser.Primitives;
@@ -33,8 +35,7 @@ import org.slf4j.LoggerFactory;
 import java.util.*;
 import java.util.stream.Collectors;
 
-import static org.e2immu.analyser.parser.E2ImmuAnnotationExpressions.CONSTRUCTION;
-import static org.e2immu.analyser.parser.E2ImmuAnnotationExpressions.IMPLIED;
+import static org.e2immu.analyser.parser.E2ImmuAnnotationExpressions.*;
 
 public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
     private static final Logger LOGGER = LoggerFactory.getLogger(MethodAnalysisImpl.class);
@@ -52,6 +53,7 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
     public final Map<CompanionMethodName, MethodInfo> computedCompanions;
     public final AnalysisMode analysisMode;
     public final ParSeq<ParameterInfo> parallelGroups;
+    public final FieldInfo getSet;
 
     private MethodAnalysisImpl(MethodInfo methodInfo,
                                StatementAnalysis firstStatement,
@@ -67,7 +69,8 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
                                Map<AnnotationExpression, AnnotationCheck> annotations,
                                Map<CompanionMethodName, CompanionAnalysis> companionAnalyses,
                                Map<CompanionMethodName, MethodInfo> computedCompanions,
-                               ParSeq<ParameterInfo> parallelGroups) {
+                               ParSeq<ParameterInfo> parallelGroups,
+                               FieldInfo getSet) {
         super(properties, annotations);
         this.methodInfo = methodInfo;
         this.firstStatement = firstStatement;
@@ -82,6 +85,12 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
         this.computedCompanions = computedCompanions;
         this.analysisMode = analysisMode;
         this.parallelGroups = parallelGroups;
+        this.getSet = getSet;
+    }
+
+    @Override
+    public FieldInfo getSetField() {
+        return getSet;
     }
 
     @Override
@@ -209,7 +218,7 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
         private final EventuallyFinal<Eventual> eventual = new EventuallyFinal<>();
         private final EventuallyFinal<Expression> singleReturnValue = new EventuallyFinal<>();
         private final SetOnce<ParSeq<ParameterInfo>> parallelGroups = new SetOnce<>();
-
+        private final SetOnce<FieldInfo> getSet = new SetOnce<>();
 
         public final EventuallyFinal<Precondition> precondition = new EventuallyFinal<>();
         private final SetOnce<Set<PostCondition>> postConditions = new SetOnce<>();
@@ -374,12 +383,70 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
                     annotationChecks.toImmutableMap(),
                     getCompanionAnalyses(),
                     getComputedCompanions(),
-                    parallelGroups.getOrDefaultNull());
+                    parallelGroups.getOrDefaultNull(),
+                    getSet.getOrDefaultNull());
         }
 
         @Override
         protected void addCommutable() {
             parallelGroups.set(new ParallelGroup<>());
+        }
+
+        @Override
+        protected void getSet(String fieldName) {
+            FieldInfo fieldInfo = fieldName == null ? extractFieldFromMethod() : findOrCreateField(fieldName);
+            getSet.set(fieldInfo);
+        }
+
+        // SEE ALSO CheckGetSet.class
+        private FieldInfo extractFieldFromMethod() {
+            String extractedName;
+            String methodName = methodInfo.name;
+            int length = methodName.length();
+            boolean set = methodName.startsWith("set");
+            boolean has = methodName.startsWith("has");
+            boolean get = methodName.startsWith("get");
+            boolean is = methodName.startsWith("is");
+            if (length >= 4 && (set || has || get) && Character.isUpperCase(methodName.charAt(3))) {
+                extractedName = methodName.substring(3);
+            } else if (length >= 3 && is && Character.isUpperCase(methodName.charAt(2))) {
+                extractedName = methodName.substring(2);
+            } else {
+                extractedName = methodName;
+            }
+            String decapitalized = Character.toLowerCase(extractedName.charAt(0)) + extractedName.substring(1);
+            FieldInfo fieldInfo = findOrCreateField(decapitalized);
+            MethodInspection mi = inspectionProvider.getMethodInspection(methodInfo);
+            assert !is || fieldInfo.type.isBoolean();
+            assert !has || fieldInfo.type.isBoolean();
+            assert set || mi.getParameters().isEmpty();
+            assert !set || mi.getParameters().size() == 1
+                    && (mi.getReturnType().isVoidOrJavaLangVoid() || mi.getReturnType().typeInfo == methodInfo.typeInfo);
+            return fieldInfo;
+        }
+
+        private FieldInfo findOrCreateField(String fieldName) {
+            TypeInspection typeInspection = inspectionProvider.getTypeInspection(methodInfo.typeInfo);
+            Optional<FieldInfo> fieldInfo = typeInspection.findFieldByName(fieldName, analysisProvider);
+            fieldInfo.ifPresent(f -> {
+                // depending on the order, the field can be created for a getter or a setter.
+                if (inspectionProvider.getFieldInspection(f).isSynthetic()) {
+                    getSet.set(f);
+                }
+            });
+            return fieldInfo.orElseGet(() -> createSyntheticGetSetField(fieldName));
+        }
+
+        private FieldInfo createSyntheticGetSetField(String fieldName) {
+            MethodInspection methodInspection = inspectionProvider.getMethodInspection(methodInfo);
+            ParameterizedType type = methodInspection.getSetType();
+            FieldInfo newField = new FieldInfo(methodInfo.identifier, type, fieldName, methodInfo.typeInfo);
+            FieldInspectionImpl.Builder b = new FieldInspectionImpl.Builder(newField);
+            b.addModifier(FieldModifier.PRIVATE); // even though we'll access it
+            b.setSynthetic(true);
+            newField.fieldInspection.set(b.build(inspectionProvider));
+            LOGGER.info("Added synthetic getter-setter field {}", newField.fullyQualifiedName);
+            return newField;
         }
 
         // used by CM
@@ -471,6 +538,17 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
             doImmutableContainer(e2, dynamicallyImmutable, dynamicallyContainer, immutableBetterThanFormal,
                     containerBetterThanFormal, constantValue, constantImplied);
 
+            // @GetSet
+            if (getSet.isSet() && !inspectionProvider.getMethodInspection(methodInfo).isSynthetic()) {
+                if (fieldNameAgreesWithGetSet(getSet.get().name, methodInfo.name, getSet.get().type.isBoolean())) {
+                    addAnnotation(e2.getSet);
+                } else {
+                    AnnotationExpression getSetWithParam = new AnnotationExpressionImpl(e2.getSet.typeInfo(),
+                            List.of(new MemberValuePair(VALUE, new StringConstant(primitives, getSet.get().name))));
+                    addAnnotation(getSetWithParam);
+                }
+            }
+
             if (returnType.isVoidOrJavaLangVoid()) return;
 
             // @Identity
@@ -493,6 +571,13 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
             DV independent = getProperty(Property.INDEPENDENT);
             DV formallyIndependent = analyserContext.typeIndependent(methodInfo.returnType());
             doIndependent(e2, independent, formallyIndependent, dynamicallyImmutable);
+        }
+
+        private boolean fieldNameAgreesWithGetSet(String fieldName, String getSet, boolean isBooleanType) {
+            if (fieldName.equals(getSet)) return true; // accessor
+            String capitalized = Character.toUpperCase(fieldName.charAt(0)) + fieldName.substring(1);
+            if (isBooleanType && (getSet.equals("is" + capitalized) || getSet.equals("has" + capitalized))) return true;
+            return !isBooleanType && (getSet.equals("get" + capitalized) || getSet.equals("set" + capitalized));
         }
 
         protected void writeEventual(Eventual eventual) {
@@ -582,6 +667,19 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
 
         public boolean singleReturnValueIsVariable() {
             return !singleReturnValue.isFinal();
+        }
+
+        @Override
+        public FieldInfo getSetField() {
+            return getSet.getOrDefaultNull();
+        }
+
+        public void setGetSetField(FieldInfo fieldInfo) {
+            getSet.set(fieldInfo);
+        }
+
+        public boolean getSetFieldIsNotYetSet() {
+            return !getSet.isSet();
         }
     }
 

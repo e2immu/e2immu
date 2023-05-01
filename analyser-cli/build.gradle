@@ -19,10 +19,10 @@ plugins {
 }
 
 group 'org.e2immu'
-version '0.6.0'
+version '0.6.1'
 
 dependencies {
-    implementation group: 'org.e2immu', name: 'e2immu-support', version: '0.6.0'      // LGPL 3.0
+    implementation group: 'org.e2immu', name: 'e2immu-support', version: '0.6.1'      // LGPL 3.0
 
     implementation project(':analyser')
     implementation project(':analyser-store-uploader')

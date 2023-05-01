@@ -24,6 +24,7 @@ import org.e2immu.annotation.eventual.BeforeMark;
 import org.e2immu.annotation.eventual.Mark;
 import org.e2immu.annotation.eventual.Only;
 import org.e2immu.annotation.eventual.TestMark;
+import org.e2immu.annotation.method.GetSet;
 import org.e2immu.annotation.rare.*;
 import org.e2immu.annotation.type.ExtensionClass;
 import org.e2immu.annotation.type.Singleton;
@@ -64,6 +65,7 @@ public class E2ImmuAnnotationExpressions {
     public final AnnotationExpression finalFields = create(FinalFields.class);
     public final AnnotationExpression finalizer = create(Finalizer.class);
     public final AnnotationExpression fluent = create(Fluent.class);
+    public final AnnotationExpression getSet = create(GetSet.class);
     public final AnnotationExpression identity = create(Identity.class);
     public final AnnotationExpression ignoreModifications = create(IgnoreModifications.class);
     public final AnnotationExpression immutable = create(Immutable.class);
@@ -86,7 +88,7 @@ public class E2ImmuAnnotationExpressions {
     public E2ImmuAnnotationExpressions() {
         Map<String, TypeInfo> builder = new HashMap<>();
         add(builder, allowsInterrupt, beforeMark, commutable, container, independent,
-                immutableContainer, extensionClass, finalFields, immutable,
+                immutableContainer, extensionClass, finalFields, getSet, immutable,
                 effectivelyFinal, fluent, finalizer, identity, ignoreModifications, mark, modified);
         add(builder, notModified, notNull, nullable, only, singleton, staticSideEffects, testMark,
                 utilityClass);

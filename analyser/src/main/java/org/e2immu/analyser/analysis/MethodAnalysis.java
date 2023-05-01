@@ -220,4 +220,6 @@ public interface MethodAnalysis extends Analysis {
     void markFirstIteration();
 
     boolean hasBeenAnalysedUpToIteration0();
+
+    FieldInfo getSetField();
 }

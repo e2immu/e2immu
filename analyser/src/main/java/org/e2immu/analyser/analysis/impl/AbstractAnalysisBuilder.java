@@ -288,6 +288,9 @@ abstract class AbstractAnalysisBuilder implements Analysis {
                 } else if (e2ImmuAnnotationExpressions.fluent.typeInfo() == t) {
                     // @Fluent
                     setProperty(Property.FLUENT, trueFalse);
+                } else if(e2ImmuAnnotationExpressions.getSet.typeInfo() ==t ) {
+                    // @GetSet
+                    getSet(annotationExpression.extract(VALUE, null));
                 } else if (e2ImmuAnnotationExpressions.identity.typeInfo() == t) {
                     // @Identity
                     setProperty(Property.IDENTITY, trueFalse);
@@ -389,6 +392,8 @@ abstract class AbstractAnalysisBuilder implements Analysis {
         }
         return messages;
     }
+
+    protected void getSet(String fieldName) { throw new UnsupportedOperationException(); }
 
     protected void addCommutable() {
         throw new UnsupportedOperationException();

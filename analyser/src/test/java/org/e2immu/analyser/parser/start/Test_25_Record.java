@@ -15,16 +15,17 @@
 package org.e2immu.analyser.parser.start;
 
 import org.e2immu.analyser.config.DebugConfiguration;
+import org.e2immu.analyser.model.FieldInfo;
 import org.e2immu.analyser.model.MethodInspection;
 import org.e2immu.analyser.model.statement.Block;
+import org.e2immu.analyser.model.statement.ReturnStatement;
 import org.e2immu.analyser.parser.CommonTestRunner;
 import org.e2immu.analyser.visitor.MethodAnalyserVisitor;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.*;
 
 public class Test_25_Record extends CommonTestRunner {
 
@@ -42,6 +43,9 @@ public class Test_25_Record extends CommonTestRunner {
                 MethodInspection mi = d.methodInfo().methodInspection.get();
                 Block block = mi.getMethodBody();
                 assertFalse(block.isEmpty());
+                assertTrue(block.structure.statements().get(0) instanceof ReturnStatement);
+                FieldInfo fieldInfo = d.methodAnalysis().getSetField();
+                assertEquals("string", fieldInfo.name);
             }
         };
         testClass("Record_0", 0, 0, new DebugConfiguration.Builder()
