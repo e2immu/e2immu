@@ -82,7 +82,7 @@ public class EvaluateParameters {
         }
 
         List<Expression> sortedParameters;
-        if(methodInfo != null) {
+        if (methodInfo != null) {
             MethodAnalysis methodAnalysis = context.getAnalyserContext().getMethodAnalysisNullWhenAbsent(methodInfo);
             if (methodAnalysis != null && methodAnalysis.hasParallelGroups()) {
                 sortedParameters = methodAnalysis.sortAccordingToParallelGroupsAndNaturalOrder(parameterExpressions);
@@ -334,8 +334,7 @@ public class EvaluateParameters {
             if (fr.fieldInfo.fieldInspection.get().isStatic()) {
                 return false;
             }
-            return fr.scope.variables(true).stream()
-                    .allMatch(v -> variableIsRecursivelyPresentOrField(evaluationContext, v));
+            return fr.scope.variableStream().allMatch(v -> variableIsRecursivelyPresentOrField(evaluationContext, v));
         }
         if (variable instanceof This || variable instanceof ReturnVariable) return true;
         return evaluationContext.isPresent(variable);

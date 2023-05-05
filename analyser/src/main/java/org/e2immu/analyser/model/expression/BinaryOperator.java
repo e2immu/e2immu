@@ -113,7 +113,7 @@ public class BinaryOperator extends BaseExpression implements Expression {
     }
 
     @Override
-    public List<Variable> variables(boolean descendIntoFieldReferences) {
+    public List<Variable> variables(DescendMode descendIntoFieldReferences) {
         return ListUtil.concatImmutable(lhs.variables(descendIntoFieldReferences),
                 rhs.variables(descendIntoFieldReferences));
     }
@@ -349,8 +349,8 @@ public class BinaryOperator extends BaseExpression implements Expression {
                 state = And.and(context, state, literalNotNull);
             }
         }
-        Set<Variable> stateVariables = Stream.concat(state.variables(true).stream(),
-                lhs.variables(true).stream()).collect(Collectors.toUnmodifiableSet());
+        Set<Variable> stateVariables = Stream.concat(state.variableStream(), lhs.variableStream())
+                .collect(Collectors.toUnmodifiableSet());
         EvaluationResult child = context.childState(state, stateVariables);
         EvaluationResult r = rhs.evaluate(child, forward);
         builder.compose(l, r);
@@ -592,8 +592,8 @@ public class BinaryOperator extends BaseExpression implements Expression {
     }
 
     public static int compareVariables(Expression e1, Expression e2) {
-        List<Variable> variables1 = e1.variables(true);
-        List<Variable> variables2 = e2.variables(true);
+        List<Variable> variables1 = e1.variables();
+        List<Variable> variables2 = e2.variables();
         int s1 = variables1.size();
         int s2 = variables2.size();
         if (s1 == 0 && s2 == 0) return 0;

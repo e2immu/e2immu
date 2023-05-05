@@ -90,8 +90,7 @@ public class ForStatement extends LoopStatement {
                 .flatMap(i -> ((LocalVariableCreation) i).declarations.stream())
                 .map(LocalVariableCreation.Declaration::localVariableReference)
                 .collect(Collectors.toUnmodifiableSet());
-        return structure.expression().variables(true).stream()
-                .noneMatch(locallyCreated::contains);
+        return structure.expression().variableStream().noneMatch(locallyCreated::contains);
     }
 
     @Override

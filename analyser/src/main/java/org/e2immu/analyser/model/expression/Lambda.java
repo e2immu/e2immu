@@ -345,12 +345,12 @@ public class Lambda extends BaseExpression implements Expression {
     }
 
     @Override
-    public List<Variable> variables(boolean descendIntoFieldReferences) {
+    public List<Variable> variables(DescendMode descendIntoFieldReferences) {
         /*
-        See Lambda_2, Lambda_4, SwitchExpression_4: we all the "this" variants that we encounter.
+        See Lambda_2, Lambda_4, SwitchExpression_4: we catch all the "this" variants that we encounter.
         Called by DelayedExpression, original.variables(...) for the delayed version of the lambda.
          */
-        return block.variables(true).stream()
+        return block.variableStream()
                 .filter(v -> v instanceof FieldReference fr && fr.scopeVariable instanceof This)
                 .map(v -> ((FieldReference) v).scopeVariable)
                 .toList();

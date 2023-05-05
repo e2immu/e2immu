@@ -344,7 +344,7 @@ public class VariableExpression extends BaseExpression implements IsVariableExpr
 
         // FIXME emergency code, simply trying something out; we may have been here before, though....
         if (currentValue instanceof InlineConditional inlineConditional) {
-            List<Variable> variablesInCondition = inlineConditional.condition.variables(true);
+            List<Variable> variablesInCondition = inlineConditional.condition.variables();
             if (Collections.disjoint(variablesInCondition, forwardEvaluationInfo.getEvaluating())) {
                 ConditionManager cm = context.evaluationContext().getConditionManager();
                 Expression newCondition = cm.evaluate(context, inlineConditional.condition, false);
@@ -386,7 +386,7 @@ public class VariableExpression extends BaseExpression implements IsVariableExpr
             CausesOfDelay causesOfDelay = de.causesOfDelay().merge(marker);
             boolean haveMarker = de.causesOfDelay().containsCauseOfDelay(CauseOfDelay.Cause.DELAYED_EXPRESSION);
             if (!haveMarker) {
-                for (Variable variable : de.variables(true)) {
+                for (Variable variable : de.variables()) {
                     if (!this.variable.equals(variable) && context.evaluationContext().isPresent(variable)) {
                         for (Property ctx : Property.CONTEXTS) {
                             // we must delay, even if there's a value already
@@ -398,7 +398,7 @@ public class VariableExpression extends BaseExpression implements IsVariableExpr
 
             // IMPORTANT: this is a hack, see Modification_20/tryShortCut -- do we want to keep this?
             de.shortCutVariables(context.getCurrentType(), scopeValue).forEach((v, expr) ->
-                    expr.variables(true).forEach(vv ->
+                    expr.variableStream().forEach(vv ->
                             builder.variableOccursInNotNullContext(vv, expr, de.causesOfDelay(), forwardEvaluationInfo)));
         }
         builder.variableOccursInNotNullContext(variable, currentValue, notNull, forwardEvaluationInfo);
@@ -522,15 +522,13 @@ public class VariableExpression extends BaseExpression implements IsVariableExpr
     }
 
     @Override
-    public List<Variable> variables(boolean descendIntoFieldReferences) {
-        /*
-        we're including "!fr.scopeIsThis" here to avoid unnecessary linking issues. Modification_4 is severely affected
-        if "this" remains a delayed linked variable.
-         */
-        if (descendIntoFieldReferences && variable instanceof FieldReference fr && !fr.isStatic && !fr.scopeIsThis()) {
-            Stream<Variable> scopeVarStream = fr.scopeVariable == null ? Stream.of() : Stream.of(fr.scopeVariable);
-            Stream<Variable> value = scopeValue.variables(true).stream();
-            return Stream.concat(Stream.concat(scopeVarStream, value), Stream.of(variable)).toList();
+    public List<Variable> variables(DescendMode descendIntoFieldReferences) {
+        if (descendIntoFieldReferences != DescendMode.NO && variable instanceof FieldReference fr && !fr.isStatic) {
+            if (descendIntoFieldReferences == DescendMode.YES_INCLUDE_THIS || !fr.scopeIsThis()) {
+                Stream<Variable> scopeVarStream = fr.scopeVariable == null ? Stream.of() : Stream.of(fr.scopeVariable);
+                Stream<Variable> value = scopeValue.variables(descendIntoFieldReferences).stream();
+                return Stream.concat(Stream.concat(scopeVarStream, value), Stream.of(variable)).toList();
+            }
         }
         return List.of(variable);
     }

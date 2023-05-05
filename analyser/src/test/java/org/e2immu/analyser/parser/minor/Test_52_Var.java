@@ -120,8 +120,8 @@ public class Test_52_Var extends CommonTestRunner {
                             assertEquals("apply", inlinedMethod2.methodInfo().name);
                             assertEquals("/*inline repeater*//*inline apply*/x.repeat(i)", d.methodAnalysis().getSingleReturnValue().toString());
                             assertFalse(inlinedMethod.containsVariableFields());
-                            assertEquals(2, inlinedMethod.variables(true).size());
-                            assertTrue(inlinedMethod.variables(true).stream().allMatch(v -> v instanceof ParameterInfo));
+                            assertEquals(2, inlinedMethod.variables().size());
+                            assertTrue(inlinedMethod.variableStream().allMatch(v -> v instanceof ParameterInfo));
                         } else fail();
                     } else fail("Srv instance of " + d.methodAnalysis().getSingleReturnValue().getClass());
                 }

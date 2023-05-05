@@ -134,7 +134,7 @@ public class CommaExpression extends BaseExpression implements Expression {
     }
 
     @Override
-    public List<Variable> variables(boolean descendIntoFieldReferences) {
+    public List<Variable> variables(DescendMode descendIntoFieldReferences) {
         return expressions.stream().flatMap(e -> e.variables(descendIntoFieldReferences).stream()).toList();
     }
 

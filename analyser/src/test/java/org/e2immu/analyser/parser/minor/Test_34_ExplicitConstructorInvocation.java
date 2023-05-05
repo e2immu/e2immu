@@ -188,7 +188,7 @@ public class Test_34_ExplicitConstructorInvocation extends CommonTestRunner {
                     assertEquals(expected, value.toString());
                     if (d.iteration() < 2) {
                         if (value instanceof DelayedExpression de) {
-                            List<String> parameters = de.variables(true).stream()
+                            List<String> parameters = de.variableStream()
                                     .filter(v -> v instanceof ParameterInfo).map(Variable::simpleName).toList();
                             assertEquals("[primitives1]", parameters.toString());
                         } else fail();

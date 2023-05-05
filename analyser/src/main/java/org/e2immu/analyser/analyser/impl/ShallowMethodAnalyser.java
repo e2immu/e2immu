@@ -191,7 +191,7 @@ public class ShallowMethodAnalyser extends MethodAnalyserImpl {
 
             // TODO this is very hardcoded, and corresponds to code in Precondition.expressionIsPossiblyNegatedMethodCall
             boolean negation = pce.expression() instanceof Negation || pce.expression() instanceof UnaryOperator uo && uo.isNegation();
-            Set<FieldInfo> fields = translated.variables(true).stream()
+            Set<FieldInfo> fields = translated.variableStream()
                     .filter(v -> v instanceof FieldReference)
                     .map(v -> ((FieldReference) v).fieldInfo)
                     .collect(Collectors.toUnmodifiableSet());

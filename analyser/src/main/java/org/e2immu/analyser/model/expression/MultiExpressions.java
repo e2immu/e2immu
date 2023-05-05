@@ -127,7 +127,7 @@ public class MultiExpressions extends BaseExpression implements Expression {
     }
 
     @Override
-    public List<Variable> variables(boolean descendIntoFieldReferences) {
+    public List<Variable> variables(DescendMode descendIntoFieldReferences) {
         return Arrays.stream(multiExpression.expressions())
                 .flatMap(e -> e.variables(descendIntoFieldReferences).stream()).toList();
     }

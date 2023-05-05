@@ -302,19 +302,21 @@ public class DelayedVariableExpression extends BaseExpression implements IsVaria
         return LinkedVariables.of(variable, causesOfDelay);
     }
 
+    /*
+    FIXME this definition is not compatible with that of VE, which also does not seem 100% correct
+     */
     @Override
-    public List<Variable> variables(boolean descendIntoFieldReferences) {
-        if (descendIntoFieldReferences) {
+    public List<Variable> variables(DescendMode descendIntoFieldReferences) {
+        if (descendIntoFieldReferences != DescendMode.NO) {
             if (variable instanceof FieldReference fr) {
-                return ListUtil.concatImmutable(List.of(variable), fr.scope.variables(true));
+                return ListUtil.concatImmutable(List.of(variable), fr.scope.variables(descendIntoFieldReferences));
             }
             if (variable instanceof DependentVariable dv) {
                 return Stream.concat(Stream.concat(Stream.of(variable),
-                                dv.arrayExpression().variables(true).stream()),
-                        dv.indexExpression().variables(true).stream()).toList();
+                                dv.arrayExpression().variables(descendIntoFieldReferences).stream()),
+                        dv.indexExpression().variables(descendIntoFieldReferences).stream()).toList();
             }
         }
-
         return List.of(variable);
     }
 

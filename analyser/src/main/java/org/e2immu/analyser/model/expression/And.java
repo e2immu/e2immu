@@ -292,7 +292,7 @@ public class And extends ExpressionCanBeTooComplex {
 
         // combinations with equality and inequality (GE)
 
-        if (value instanceof GreaterThanZero gt0 && gt0.expression().variables(true).size() > 1) {
+        if (value instanceof GreaterThanZero gt0 && gt0.expression().variables().size() > 1) {
             // it may be interesting to run the inequality solver
             InequalitySolver inequalitySolver = new InequalitySolver(evaluationContext, newConcat);
             Boolean resolve = inequalitySolver.evaluate(value);
@@ -697,8 +697,8 @@ public class And extends ExpressionCanBeTooComplex {
         Set<Variable> conditionVariables = new HashSet<>();
         for (Expression expression : sortedExpressions) {
             EvaluationResult result = expression.evaluate(context, forwardEvaluationInfo);
-            conditionVariables.addAll(expression.variables(true));
-            conditionVariables.addAll(result.value().variables(true));
+            conditionVariables.addAll(expression.variables());
+            conditionVariables.addAll(result.value().variables());
             clauseResults.add(result);
             context = context.child(result.value(), Set.copyOf(conditionVariables));
         }
@@ -724,7 +724,7 @@ public class And extends ExpressionCanBeTooComplex {
     }
 
     @Override
-    public List<Variable> variables(boolean descendIntoFieldReferences) {
+    public List<Variable> variables(DescendMode descendIntoFieldReferences) {
         return expressions.stream().flatMap(v -> v.variables(descendIntoFieldReferences).stream())
                 .collect(Collectors.toList());
     }
@@ -780,7 +780,7 @@ public class And extends ExpressionCanBeTooComplex {
 
     public Expression removePartsNotReferringTo(EvaluationResult evaluationContext, Variable variable) {
         Expression[] filtered = this.expressions.stream()
-                .filter(e -> e.variables(true).contains(variable))
+                .filter(e -> e.variables().contains(variable))
                 .toArray(Expression[]::new);
         return And.and(evaluationContext, filtered);
     }

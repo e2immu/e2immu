@@ -576,7 +576,7 @@ public record EvaluationResult(EvaluationContext evaluationContext,
             }
             if (value.isDelayed()) {
                 // cm is not delayed
-                List<Variable> vars = value.variables(true);
+                List<Variable> vars = value.variables();
                 List<Variable> varsInCm = cm.variables();
                 if (!Collections.disjoint(vars, varsInCm)) {
                     LOGGER.debug("Delaying CNN, delayed value shares variables with CM, {}", variable);

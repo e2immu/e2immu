@@ -312,7 +312,7 @@ record SAInitializersAndUpdaters(StatementAnalysis statementAnalysis) {
     }
 
     private Expression replaceUnknownFields(EvaluationContext evaluationContext, Expression expression) {
-        List<Variable> variables = expression.variables(true);
+        List<Variable> variables = expression.variables();
         TranslationMapImpl.Builder builder = new TranslationMapImpl.Builder();
         Identifier identifier = statement().getIdentifier();
         for (Variable variable : variables) {

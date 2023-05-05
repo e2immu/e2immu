@@ -146,7 +146,7 @@ public class ExpandedVariable extends BaseExpression {
     }
 
     @Override
-    public List<Variable> variables(boolean descendIntoFieldReferences) {
+    public List<Variable> variables(DescendMode descendIntoFieldReferences) {
         return List.of(); // explicitly present here to help remember it should not return its variable!
     }
 

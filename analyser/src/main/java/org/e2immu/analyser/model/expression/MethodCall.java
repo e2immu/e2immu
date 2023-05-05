@@ -110,7 +110,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
     // only used in the inequality system
     @Override
     public Variable variable() {
-        List<Variable> variables = object.variables(true);
+        List<Variable> variables = object.variables();
         return variables.size() == 1 ? variables.get(0) : null;
     }
 
@@ -662,7 +662,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
             ParameterizedType typeOfTarget = target.parameterizedType().erased();
             if (typeOfHiddenContent.equals(typeOfTarget)) {
                 Expression srv = context.getAnalyserContext().getMethodAnalysis(inlinedMethod.methodInfo()).getSingleReturnValue();
-                List<Variable> vars = srv.variables(true);
+                List<Variable> vars = srv.variables();
                 for (Variable v : vars) {
                     if (v instanceof ParameterInfo piLambda && piLambda.owner != inlinedMethod.methodInfo()) {
                         DV l = srv.isDelayed() ? srv.causesOfDelay() : level;
@@ -681,7 +681,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
             ParameterizedType typeOfTarget = target.parameterizedType().erased();
             if (typeOfHiddenContent.equals(typeOfTarget)) {
                 Expression srv = context.getAnalyserContext().getMethodAnalysis(lambda.methodInfo).getSingleReturnValue();
-                List<Variable> vars = srv.variables(true);
+                List<Variable> vars = srv.variables();
                 for (Variable v : vars) {
                     if (v instanceof ParameterInfo piLambda && piLambda.owner != lambda.methodInfo) {
                         DV l = srv.isDelayed() ? srv.causesOfDelay() : level;
@@ -1024,7 +1024,8 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         }
 
         // we're not adding originals here  TODO would that be possible, necessary?
-        Set<Variable> newStateVariables = newState.get().variables(true).stream().collect(Collectors.toUnmodifiableSet());
+        Set<Variable> newStateVariables = newState.get().variableStream()
+                .collect(Collectors.toUnmodifiableSet());
         Expression companionValueTranslated = translateCompanionValue(context, currentContext, companionAnalysis,
                 filterResult, newState.get(), newStateVariables, objectModificationTimes, parameterValues);
 
@@ -1515,7 +1516,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
     }
 
     @Override
-    public List<Variable> variables(boolean descendIntoFieldReferences) {
+    public List<Variable> variables(DescendMode descendIntoFieldReferences) {
         return Stream.concat(object.variables(descendIntoFieldReferences).stream(),
                         parameterExpressions.stream().flatMap(e -> e.variables(descendIntoFieldReferences).stream()))
                 .toList();

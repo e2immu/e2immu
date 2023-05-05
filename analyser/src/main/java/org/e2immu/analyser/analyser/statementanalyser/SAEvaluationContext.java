@@ -756,7 +756,7 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
         });
         TranslationMap translationMap = builder.build();
         Expression translated = precondition.translate(getAnalyserContext(), translationMap);
-        List<Variable> variables = translated.variables(false);
+        List<Variable> variables = translated.variables(Element.DescendMode.NO);
         if (variables.stream().allMatch(v -> v instanceof ParameterInfo || v instanceof FieldReference)) {
             DV modified = variables.stream()
                     .filter(this::isPresent)

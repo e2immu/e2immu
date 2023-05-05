@@ -348,7 +348,7 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
     private void makeVariableAccessReport(Expression value, EvaluationContext closure) {
         if (closure == null) return;
         VariableAccessReport.Builder builder = new VariableAccessReport.Builder();
-        for (Variable variable : value.variables(true)) {
+        for (Variable variable : value.variables()) {
             if (closure.isPresent(variable)) {
                 builder.addVariableRead(variable);
             }

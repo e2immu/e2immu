@@ -292,4 +292,8 @@ public class TestMethodCall extends CommonTest {
                 forEach.methodInfo.fullyQualifiedName);
     }
 
+    @Test
+    public void test_30() throws IOException {
+        inspectAndResolve(MethodCall_30.class);
+    }
 }

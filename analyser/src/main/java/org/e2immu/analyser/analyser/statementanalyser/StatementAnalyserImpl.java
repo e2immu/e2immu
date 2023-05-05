@@ -245,7 +245,7 @@ public class StatementAnalyserImpl implements StatementAnalyser {
                 EvaluationResult context = EvaluationResult.from(evaluationContext);
                 switchCondition = forwardAnalysisInfo.conditionInSwitchStatement(context, previousStatement, switchCondition,
                         statementAnalyser.statementAnalysis);
-                Set<Variable> switchConditionVariables = switchCondition.variables(true).stream().collect(Collectors.toUnmodifiableSet());
+                Set<Variable> switchConditionVariables = switchCondition.variableStream().collect(Collectors.toUnmodifiableSet());
                 ForwardAnalysisInfo statementInfo = forwardAnalysisInfo.otherConditionManager(forwardAnalysisInfo.conditionManager()
                         .withCondition(context, switchCondition, switchConditionVariables));
 
@@ -467,7 +467,7 @@ public class StatementAnalyserImpl implements StatementAnalyser {
                             .merge(forwardAnalysisInfo.switchSelectorIsDelayed().causesOfDelay());
                     condition = DelayedExpression.forSwitchSelector(Identifier.generate("switchSelector2"),
                             statementAnalysis.primitives(), forwardAnalysisInfo.switchSelector(), causes);
-                    conditionVariables = forwardAnalysisInfo.switchSelector().variables(true).stream().collect(Collectors.toUnmodifiableSet());
+                    conditionVariables = forwardAnalysisInfo.switchSelector().variableStream().collect(Collectors.toUnmodifiableSet());
                 } else {
                     condition = forwardAnalysisInfo.conditionManager().condition();
                     conditionVariables = forwardAnalysisInfo.conditionManager().conditionVariables();

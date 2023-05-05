@@ -291,7 +291,7 @@ public class EvaluateMethodCall {
         DGSimplified_0, ...)
         ---> too complicated, we're not doing this right now (20220601)
 
-        parameters.stream().flatMap(p -> p.variables(true).stream())
+        parameters.stream().flatMap(p -> p.variableStream())
                 .forEach(v -> builder.setProperty(v, CONTEXT_NOT_NULL, finalDelays));
 
         instead, we make sure that expansion of inlined method cannot switch to the concrete implementation
@@ -415,7 +415,7 @@ public class EvaluateMethodCall {
                 .forEach(pair -> builder.put(pair.k, pair.v));
         Expression translated = companionValue.translate(context.getAnalyserContext(), builder.build());
         // we might encounter isFact or isKnown, so we add the instance's state to the context
-        Set<Variable> stateVariables = state.variables(true).stream().collect(Collectors.toUnmodifiableSet());
+        Set<Variable> stateVariables = state.variableStream().collect(Collectors.toUnmodifiableSet());
         EvaluationResult child = context.child(state, stateVariables, true);
         ForwardEvaluationInfo fwd = new ForwardEvaluationInfo.Builder().doNotReevaluateVariableExpressionsDoNotComplain()
                 .setInCompanionExpression().build();

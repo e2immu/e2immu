@@ -157,8 +157,7 @@ record SASubBlocks(StatementAnalysis statementAnalysis, StatementAnalyser statem
     }
 
     private DV isPostCondition(Expression condition) {
-        List<Variable> variables = condition.variables(true);
-        return variables.stream()
+        return condition.variableStream()
                 .map(statementAnalysis::variableHasBeenModified)
                 .reduce(DV.FALSE_DV, (v1, v2) -> {
                     if (v1.valueIsTrue() || v2.valueIsTrue()) return DV.TRUE_DV;
@@ -227,8 +226,10 @@ record SASubBlocks(StatementAnalysis statementAnalysis, StatementAnalyser statem
         } else {
             analysisStatus = DONE;
         }
-        Set<Variable> combinedVariables = Stream.concat(statementAnalysis.statement().getStructure().expression().variables(true).stream(),
-                combined.variables(true).stream()).collect(Collectors.toUnmodifiableSet());
+        Set<Variable> combinedVariables = Stream.concat(
+                        statementAnalysis.statement().getStructure().expression().variableStream(),
+                        combined.variableStream())
+                .collect(Collectors.toUnmodifiableSet());
         return new ConditionManagerAndStatus(cm.addState(combined, combinedVariables), analysisStatus);
     }
 
@@ -393,7 +394,7 @@ record SASubBlocks(StatementAnalysis statementAnalysis, StatementAnalyser statem
             Expression translatedAddToState = result.translatedAddToStateAfterMerge();
             if (!translatedAddToState.isBoolValueTrue()) {
                 // FIXME: the statement below is very likely wrong
-                Set<Variable> stateVariables = translatedAddToState.variables(true).stream().collect(Collectors.toUnmodifiableSet());
+                Set<Variable> stateVariables = translatedAddToState.variableStream().collect(Collectors.toUnmodifiableSet());
                 ConditionManager newLocalConditionManager = sharedState.localConditionManager()
                         .newForNextStatementDoNotChangePrecondition(sharedState.context(), translatedAddToState,
                                 stateVariables);
@@ -524,7 +525,7 @@ record SASubBlocks(StatementAnalysis statementAnalysis, StatementAnalyser statem
     private Map<Variable, DV> findNotNullVariablesInRejectMode(EvaluationResult evaluationContext, Expression condition) {
         Set<Variable> set = ConditionManager.findIndividualNull(condition, evaluationContext, Filter.FilterMode.REJECT, true);
         if (condition.isDelayed()) {
-            List<Variable> variables = statement().getStructure().expression().variables(false);
+            List<Variable> variables = statement().getStructure().expression().variables(Element.DescendMode.NO);
             return variables.stream().distinct().collect(Collectors.toUnmodifiableMap(e -> e, e -> condition.causesOfDelay()));
         }
         return set.stream().collect(Collectors.toUnmodifiableMap(e -> e, e -> MultiLevel.EFFECTIVELY_NOT_NULL_DV));
@@ -667,7 +668,7 @@ record SASubBlocks(StatementAnalysis statementAnalysis, StatementAnalyser statem
                 if (statement() instanceof SwitchStatementNewStyle newStyle) {
                     SwitchEntry switchEntry = newStyle.switchEntries.get(count);
                     conditionForSubStatement = switchEntry.structure.expression();
-                    conditionVariables = conditionForSubStatement.variables(true).stream().collect(Collectors.toUnmodifiableSet());
+                    conditionVariables = conditionForSubStatement.variableStream().collect(Collectors.toUnmodifiableSet());
                 } else if (statementsExecution.equals(FlowData.ALWAYS)) {
                     conditionForSubStatement = new BooleanConstant(statementAnalysis.primitives(), true);
                     conditionVariables = Set.of();
@@ -752,7 +753,7 @@ record SASubBlocks(StatementAnalysis statementAnalysis, StatementAnalyser statem
                 if (s.statementExecution() == StatementExecution.CONDITIONALLY) {
                     String index = index() + "." + (cnt++) + ".0";
                     booleanVars.add(Instance.forUnspecifiedCatchCondition(index, context.getPrimitives()));
-                    conditionVariables.addAll(s.expression().variables(false));
+                    conditionVariables.addAll(s.expression().variables(Element.DescendMode.NO));
                 }
             }
             Expression condition = And.and(context, booleanVars.stream()
@@ -773,15 +774,15 @@ record SASubBlocks(StatementAnalysis statementAnalysis, StatementAnalyser statem
 
             if (range != Range.NO_RANGE) {
                 Expression condition = statementAnalysis.rangeData().extraState(identifier, context.evaluationContext());
-                Set<Variable> conditionVariables = Stream.concat(range.variables().stream(), condition.variables(true).stream()).collect(Collectors.toUnmodifiableSet());
+                Set<Variable> conditionVariables = Stream.concat(range.variables().stream(), condition.variableStream()).collect(Collectors.toUnmodifiableSet());
                 return localConditionManager.newAtStartOfNewBlockDoNotChangePrecondition(primitives,
                         condition, conditionVariables);
             }
             if (statement() instanceof ForEachStatement) {
                 // the expression is not a condition; however, we add one to ensure that the content is not empty
                 Expression condition = isNotEmpty(context, value, valueIsDelayed.isDelayed());
-                Set<Variable> conditionVariables = Stream.concat(structure.expression().variables(true).stream(),
-                        condition.variables(true).stream()).collect(Collectors.toUnmodifiableSet());
+                Set<Variable> conditionVariables = Stream.concat(structure.expression().variableStream(),
+                        condition.variableStream()).collect(Collectors.toUnmodifiableSet());
                 return localConditionManager.newAtStartOfNewBlockDoNotChangePrecondition(primitives, condition, conditionVariables);
             }
         }
@@ -795,8 +796,8 @@ record SASubBlocks(StatementAnalysis statementAnalysis, StatementAnalyser statem
                     //    condition = And.and(context, condition, literal);
                 }
             }
-            Set<Variable> conditionVariables = Stream.concat(structure.expression().variables(true).stream(),
-                    condition.variables(true).stream()).collect(Collectors.toUnmodifiableSet());
+            Set<Variable> conditionVariables = Stream.concat(structure.expression().variableStream(),
+                    condition.variableStream()).collect(Collectors.toUnmodifiableSet());
             return localConditionManager.newAtStartOfNewBlockDoNotChangePrecondition(primitives, condition, conditionVariables);
         }
         return localConditionManager;

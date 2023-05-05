@@ -641,7 +641,7 @@ public class Test_01_Loops_6plus extends CommonTestRunner {
                         assertEquals(expected, d.currentValue().toString());
                         if (d.iteration() >= 2) {
                             assertEquals("[kvStore]", d.currentValue()
-                                    .variables(true).stream().map(Variable::toString)
+                                    .variableStream().map(Variable::toString)
                                     .sorted().toList().toString());
                         }
                     }

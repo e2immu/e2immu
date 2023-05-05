@@ -329,7 +329,7 @@ public final class DelayedExpression extends BaseExpression implements Expressio
 
         // see InstanceOf_16 as an example on why we should add these...
         // essentially, the return expression may expand, and cause context changes
-        for (Variable variable : variables(true)) {
+        for (Variable variable : variables()) {
             if (context.evaluationContext().isPresent(variable)) {
                 builder.setProperty(variable, Property.CONTEXT_MODIFIED, causesOfDelay);
                 builder.setProperty(variable, Property.CONTEXT_NOT_NULL, causesOfDelay);
@@ -366,13 +366,13 @@ public final class DelayedExpression extends BaseExpression implements Expressio
     }
 
     @Override
-    public List<Variable> variables(boolean descendIntoFieldReferences) {
+    public List<Variable> variables(DescendMode descendIntoFieldReferences) {
         return original.variables(descendIntoFieldReferences);
     }
 
     @Override
     public LinkedVariables linkedVariables(EvaluationResult context) {
-        Set<Variable> set = new HashSet<>(variables(true));
+        Set<Variable> set = new HashSet<>(variables());
         return LinkedVariables.of(set.stream().collect(Collectors.toUnmodifiableMap(v -> v, v -> causesOfDelay)));
     }
 

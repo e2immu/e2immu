@@ -490,7 +490,7 @@ public class ConstructorCall extends BaseExpression implements HasParameterExpre
             shortCutMap = null;
         } else {
             boolean haveNoVariables = parameterExpressions.stream()
-                    .allMatch(e -> e.variables(true).isEmpty());
+                    .allMatch(e -> e.variables().isEmpty());
             if (haveNoVariables) {
                 shortCutMap = null;
             } else {

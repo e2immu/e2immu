@@ -100,7 +100,7 @@ public class OutputMethodInfo {
 
     private static Qualification makeBodyQualification(Qualification qualification, MethodInspection inspection) {
         if (qualification instanceof QualificationImpl qi) {
-            Set<String> localNamesFromBody = inspection.getMethodBody().variables(true).stream()
+            Set<String> localNamesFromBody = inspection.getMethodBody().variableStream()
                     .filter(v -> v instanceof LocalVariableReference || v instanceof ParameterInfo)
                     .map(Variable::simpleName).collect(Collectors.toSet());
             Set<String> parameterNames = inspection.getParameters().stream()

@@ -25,6 +25,7 @@ import java.util.List;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public interface Element {
 
@@ -73,11 +74,31 @@ public interface Element {
         return subElements().stream().flatMap(e -> e.typesReferenced().stream()).collect(UpgradableBooleanMap.collector());
     }
 
+    enum DescendMode {
+        NO,
+        YES,
+        YES_INCLUDE_THIS
+    }
+
+    @Deprecated
+    default List<Variable> variables(boolean b) {
+        return b ? variables(DescendMode.YES): variables(DescendMode.NO);
+    }
+
+    default List<Variable> variables() {
+        // the e2immu default is to descend, but to exclude This
+        return variables(DescendMode.YES);
+    }
+    // can be made more efficient in implementations
+    default Stream<Variable> variableStream() {
+        return variables(DescendMode.YES).stream();
+    }
+
     // variables, in order of appearance
     @NotNull(content = true)
-    default List<Variable> variables(boolean descendIntoFieldReferences) {
+    default List<Variable> variables(DescendMode descendMode) {
         return subElements().stream()
-                .flatMap(e -> e.variables(descendIntoFieldReferences).stream())
+                .flatMap(e -> e.variables(descendMode).stream())
                 .collect(Collectors.toList());
     }
 

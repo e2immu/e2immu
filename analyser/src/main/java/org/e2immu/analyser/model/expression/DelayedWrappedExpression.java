@@ -146,7 +146,7 @@ public final class DelayedWrappedExpression extends BaseExpression implements Ex
     }
 
     @Override
-    public List<Variable> variables(boolean descendIntoFieldReferences) {
+    public List<Variable> variables(DescendMode descendIntoFieldReferences) {
         return expression.variables(descendIntoFieldReferences);
     }
 

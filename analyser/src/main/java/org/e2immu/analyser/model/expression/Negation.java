@@ -152,7 +152,7 @@ public class Negation extends UnaryOperator implements ExpressionWrapper {
     }
 
     @Override
-    public List<Variable> variables(boolean descendIntoFieldReferences) {
+    public List<Variable> variables(DescendMode descendIntoFieldReferences) {
         return expression.variables(descendIntoFieldReferences);
     }
 

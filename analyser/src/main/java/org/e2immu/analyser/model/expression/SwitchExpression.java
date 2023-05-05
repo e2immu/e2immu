@@ -120,8 +120,8 @@ public class SwitchExpression extends BaseExpression implements Expression, HasS
             if (switchEntry.structure.statements().size() == 1) {
                 // single expression
                 Expression condition = convertDefaultToNegationOfAllOthers(context, switchEntry.structure.expression());
-                Set<Variable> conditionVariables = Stream.concat(condition.variables(true).stream(),
-                        selector.variables(true).stream()).collect(Collectors.toUnmodifiableSet());
+                Set<Variable> conditionVariables = Stream.concat(condition.variableStream(),
+                        selector.variableStream()).collect(Collectors.toUnmodifiableSet());
                 EvaluationResult localContext = context.child(condition, conditionVariables);
                 EvaluationResult entryResult;
                 Statement statement = switchEntry.structure.statements().get(0);

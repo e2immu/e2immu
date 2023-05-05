@@ -154,7 +154,7 @@ public class InlineConditional extends BaseExpression implements Expression {
 
         // this code is not in a return switch(property) { ... } expression because JavaParser 3.24.1-SNAPSHOT crashes  while parsing
         if (property == NOT_NULL_EXPRESSION) {
-            Set<Variable> conditionVariables = condition.variables(true).stream().collect(Collectors.toUnmodifiableSet());
+            Set<Variable> conditionVariables = condition.variableStream().collect(Collectors.toUnmodifiableSet());
             EvaluationResult child = context.child(condition, conditionVariables);
             DV nneIfTrue = child.evaluationContext().getProperty(ifTrue, NOT_NULL_EXPRESSION, duringEvaluation, false);
             if (nneIfTrue.le(MultiLevel.NULLABLE_DV)) {
@@ -205,7 +205,7 @@ public class InlineConditional extends BaseExpression implements Expression {
     }
 
     @Override
-    public List<Variable> variables(boolean descendIntoFieldReferences) {
+    public List<Variable> variables(DescendMode descendIntoFieldReferences) {
         return ListUtil.immutableConcat(condition.variables(descendIntoFieldReferences),
                 ifTrue.variables(descendIntoFieldReferences),
                 ifFalse.variables(descendIntoFieldReferences));
@@ -240,8 +240,8 @@ public class InlineConditional extends BaseExpression implements Expression {
         if (condition instanceof BooleanConstant && forwardEvaluationInfo.isComplainInlineConditional()) {
             builder.raiseError(this.condition.getIdentifier(), Message.Label.INLINE_CONDITION_EVALUATES_TO_CONSTANT);
         }
-        Set<Variable> conditionVariables = Stream.concat(this.condition.variables(true).stream(),
-                condition.variables(true).stream()).collect(Collectors.toUnmodifiableSet());
+        Set<Variable> conditionVariables = Stream.concat(this.condition.variableStream(),
+                condition.variableStream()).collect(Collectors.toUnmodifiableSet());
         if (condition.isInstanceOf(NullConstant.class) && forwardEvaluationInfo.isComplainInlineConditional()) {
             builder.raiseError(getIdentifier(), Message.Label.NULL_POINTER_EXCEPTION);
             condition = Instance.forUnspecifiedCondition(getIdentifier(), context.getPrimitives());
@@ -280,9 +280,12 @@ public class InlineConditional extends BaseExpression implements Expression {
         // we'll want to evaluate in a different context, but pass on forward evaluation info to both
         // UNLESS the result is of boolean type. There is sufficient logic in EvaluateInlineConditional to deal
         // with the boolean case.
-        EvaluationResult copyForThen = resultIsBoolean ? evaluationContext : evaluationContext.child(condition, condition.variables(true).stream().collect(Collectors.toUnmodifiableSet()));
+        EvaluationResult copyForThen = resultIsBoolean ? evaluationContext
+                : evaluationContext.child(condition, condition.variableStream().collect(Collectors.toUnmodifiableSet()));
         Expression t = ifTrue instanceof InlineConditional inlineTrue ? inlineTrue.optimise(copyForThen, true, myself) : ifTrue;
-        EvaluationResult copyForElse = resultIsBoolean ? evaluationContext : evaluationContext.child(Negation.negate(evaluationContext, condition), condition.variables(true).stream().collect(Collectors.toUnmodifiableSet()));
+        EvaluationResult copyForElse = resultIsBoolean ? evaluationContext
+                : evaluationContext.child(Negation.negate(evaluationContext, condition),
+                condition.variableStream().collect(Collectors.toUnmodifiableSet()));
         Expression f = ifFalse instanceof InlineConditional inlineFalse ? inlineFalse.optimise(copyForElse, true, myself) : ifFalse;
 
         if (useState) {

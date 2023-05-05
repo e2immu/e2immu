@@ -265,7 +265,7 @@ public class Test_Independent1 extends CommonTestRunner {
                 assertEquals("$1", d.methodInfo().typeInfo.simpleName);
                 String expected = d.iteration() <= 1 ? "<m:apply>" : "/*inline apply*/generator.get()";
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
-                List<Variable> vars = d.methodAnalysis().getSingleReturnValue().variables(true);
+                List<Variable> vars = d.methodAnalysis().getSingleReturnValue().variables();
                 assertEquals("[org.e2immu.analyser.parser.independence.testexample.Independent1_5.ImmutableArrayOfTransparentOnes.ImmutableArrayOfTransparentOnes(org.e2immu.analyser.parser.independence.testexample.Independent1_5.One<Integer>[],java.util.function.Supplier<org.e2immu.analyser.parser.independence.testexample.Independent1_5.One<Integer>>):1:generator]", vars.toString());
             }
         };
@@ -338,7 +338,7 @@ public class Test_Independent1 extends CommonTestRunner {
                 String expected = d.iteration() < 2 ? "<m:apply>" : "/*inline apply*/generator.get()";
                 assertEquals(expected,
                         d.methodAnalysis().getSingleReturnValue().toString());
-                List<Variable> vars = d.methodAnalysis().getSingleReturnValue().variables(true);
+                List<Variable> vars = d.methodAnalysis().getSingleReturnValue().variables();
                 assertEquals("[org.e2immu.analyser.parser.independence.testexample.Independent1_6.ImmutableArrayOfOnes.ImmutableArrayOfOnes(int,java.util.function.Supplier<org.e2immu.analyser.parser.independence.testexample.Independent1_6.One<T>>):1:generator]", vars.toString());
             }
         };

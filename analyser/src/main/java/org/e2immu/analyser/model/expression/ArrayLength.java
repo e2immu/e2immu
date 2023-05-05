@@ -144,7 +144,7 @@ public class ArrayLength extends BaseExpression implements Expression {
     }
 
     @Override
-    public List<Variable> variables(boolean descendIntoFieldReferences) {
-        return scope.variables(true);
+    public List<Variable> variables(DescendMode descendIntoFieldReferences) {
+        return scope.variables();
     }
 }

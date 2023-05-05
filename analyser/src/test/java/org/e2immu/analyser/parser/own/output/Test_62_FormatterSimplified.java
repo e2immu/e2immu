@@ -213,7 +213,7 @@ public class Test_62_FormatterSimplified extends CommonTestRunner {
                      values of the variables
                      */
                     Set<String> varsInValues = d.statementAnalysis().variableStream().flatMap(vi ->
-                                    vi.getValue().variables(true).stream())
+                                    vi.getValue().variableStream())
                             .map(Variable::fullyQualifiedName)
                             .collect(Collectors.toUnmodifiableSet());
                     assertFalse(varsInValues.contains("symbol"));

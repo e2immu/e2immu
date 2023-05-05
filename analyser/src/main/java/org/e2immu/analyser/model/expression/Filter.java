@@ -18,10 +18,7 @@ import org.e2immu.analyser.analyser.AnalyserContext;
 import org.e2immu.analyser.analyser.EvaluationResult;
 import org.e2immu.analyser.analyser.Property;
 import org.e2immu.analyser.analysis.MethodAnalysis;
-import org.e2immu.analyser.model.Expression;
-import org.e2immu.analyser.model.MethodInfo;
-import org.e2immu.analyser.model.ParameterInfo;
-import org.e2immu.analyser.model.TranslationMap;
+import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.impl.TranslationMapImpl;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.This;
@@ -204,7 +201,7 @@ public class Filter {
                 }
             } else if (value instanceof GreaterThanZero gt0) {
                 Expression expression = gt0.expression();
-                List<Variable> vars = expression.variables(true).stream().filter(v -> !(v instanceof This)).toList();
+                List<Variable> vars = expression.variables().stream().filter(v -> !(v instanceof This)).toList();
                 if (vars.size() == 1 && vars.get(0) instanceof FieldReference fr && acceptScope(fr.scope)) {
                     return new FilterResult<FieldReference>(Map.of(fr, gt0), defaultRest);
                 }
@@ -236,7 +233,7 @@ public class Filter {
             MethodAnalysis methodAnalysis = analyserContext.getMethodAnalysis(mc.methodInfo);
             if (!methodAnalysis.getProperty(Property.MODIFIED_METHOD_ALT_TEMP).valueIsFalse()) return null;
             // none of the arguments to the call can be a parameter
-            if (mc.parameterExpressions.stream().flatMap(e -> e.variables(true).stream())
+            if (mc.parameterExpressions.stream().flatMap(Element::variableStream)
                     .anyMatch(arg -> arg instanceof ParameterInfo)) {
                 return null;
             }

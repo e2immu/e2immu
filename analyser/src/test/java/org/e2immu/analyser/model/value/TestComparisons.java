@@ -344,7 +344,7 @@ public class TestComparisons extends CommonAbstractValue {
 
         Expression jGeI = GreaterThanZero.greater(context, j, i, true);
         assertEquals("j>=i", jGeI.toString());
-        assertEquals(2, jGeI.variables(true).size());
+        assertEquals(2, jGeI.variables().size());
         Expression combo2 = newAndAppend(combined, jGeI);
         assertTrue(combo2.isBoolValueFalse(), "Got: " + combo2);
     }
@@ -368,8 +368,8 @@ public class TestComparisons extends CommonAbstractValue {
     public void testDelayed() {
         Expression delayedPGe0 = GreaterThanZero.greater(context, delayedP, newInt(0), true);
         assertEquals("<p:p>>=0", delayedPGe0.toString());
-        assertEquals("[some.type.type(String):0:p]", delayedPGe0.variables(true).toString());
-        assertTrue(delayedPGe0.variables(true).stream()
+        assertEquals("[some.type.type(String):0:p]", delayedPGe0.variables().toString());
+        assertTrue(delayedPGe0.variableStream()
                 .allMatch(v -> v instanceof ParameterInfo || v instanceof FieldReference));
     }
 

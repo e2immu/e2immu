@@ -537,7 +537,7 @@ public class Assignment extends BaseExpression implements Expression {
             linkedVariables = lvExpression;
         }
         if (resultOfExpression.isDelayed()) {
-            Set<Variable> vars = new HashSet<>(value.variables(true));
+            Set<Variable> vars = new HashSet<>(value.variables());
             Map<Variable, DV> map = vars.stream()
                     .collect(Collectors.toUnmodifiableMap(v -> v, v -> resultOfExpression.causesOfDelay()));
             return linkedVariables.merge(LinkedVariables.of(map));

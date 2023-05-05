@@ -84,8 +84,8 @@ public class Test_Output_03_FormatterLookahead extends CommonTestRunner {
                         ? "NEWLINE,forwardInfo,lineLength,list,prioritySplit,startOfGuides"
                         : "NEWLINE,lineLength,list,prioritySplit,startOfGuides";
                 assertEquals(vars,
-                        d.methodAnalysis().getSingleReturnValue().variables(true)
-                                .stream().map(Variable::simpleName).sorted().distinct().collect(Collectors.joining(",")));
+                        d.methodAnalysis().getSingleReturnValue().variableStream().map(Variable::simpleName)
+                                .sorted().distinct().collect(Collectors.joining(",")));
             }
         };
         testSupportAndUtilClasses(List.of(Forward.class, Lookahead.class,
