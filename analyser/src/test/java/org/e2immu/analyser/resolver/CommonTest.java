@@ -23,13 +23,11 @@ import org.e2immu.analyser.parser.Parser;
 import org.e2immu.analyser.parser.TypeMap;
 
 import java.io.IOException;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 public abstract class CommonTest {
     protected static TypeMap inspectAndResolve(Class<?> clazz, String... extraSources) throws IOException {
         InputConfiguration.Builder inputConfigurationBuilder = new InputConfiguration.Builder()
-                .setAlternativeJREDirectory(CommonTestRunner.JDK_16)
+                .setAlternativeJREDirectory(CommonTestRunner.CURRENT_JDK)
                 .addSources("src/test/java")
                 .addClassPath("jmods/java.base.jmod")
                 .addClassPath("jmods/java.compiler.jmod")

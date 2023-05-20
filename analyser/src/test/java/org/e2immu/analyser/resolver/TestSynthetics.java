@@ -41,7 +41,7 @@ public class TestSynthetics {
     @Test
     public void test() throws IOException {
         InputConfiguration inputConfiguration = new InputConfiguration.Builder()
-                .setAlternativeJREDirectory(CommonTestRunner.JDK_16)
+                .setAlternativeJREDirectory(CommonTestRunner.CURRENT_JDK)
                 .addSources("src/test/java")
                 .addClassPath("jmods/java.base.jmod")
                 .addRestrictSourceToPackages("some.unknown.type")

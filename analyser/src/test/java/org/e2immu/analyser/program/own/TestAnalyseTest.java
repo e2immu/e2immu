@@ -77,7 +77,7 @@ public class TestAnalyseTest {
 
         String p = "org.e2immu.analyser.parser";
         InputConfiguration inputConfiguration = new InputConfiguration.Builder()
-                .setAlternativeJREDirectory(CommonTestRunner.JDK_16)
+                .setAlternativeJREDirectory(CommonTestRunner.CURRENT_JDK)
                 .addSources("src/test/java")
                 .addClassPath("jmods/java.base.jmod")
                 .addClassPath("jmods/java.compiler.jmod")

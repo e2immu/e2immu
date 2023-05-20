@@ -33,7 +33,7 @@ import static org.junit.jupiter.api.Assertions.*;
 public abstract class CommonTestRunner extends VisitorTestSupport {
     private static final Logger LOGGER = LoggerFactory.getLogger(CommonTestRunner.class);
     public static final String DEFAULT_ANNOTATED_API_DIRS = "../annotatedAPIs/src/main/java";
-    public static final String JDK_16 = "/Library/Java/JavaVirtualMachines/adoptopenjdk-16.jdk/Contents/Home";
+    public static final String CURRENT_JDK = "/Library/Java/JavaVirtualMachines/openjdk.jdk/Contents/Home";
     public static final int DONT_CARE = -1;
     public static final int BIG = 200; // Expressions_0 currently at 97
     public final boolean withAnnotatedAPIs;
@@ -83,7 +83,7 @@ public abstract class CommonTestRunner extends VisitorTestSupport {
         // parsing the annotatedAPI files needs them being backed up by .class files, so we'll add the Java
         // test runner's classpath to ours
         InputConfiguration.Builder inputConfigurationBuilder = new InputConfiguration.Builder()
-                .setAlternativeJREDirectory(JDK_16)
+                .setAlternativeJREDirectory(CURRENT_JDK)
                 .addSources("src/test/java")
                 .addClassPath(withAnnotatedAPIs ? InputConfiguration.DEFAULT_CLASSPATH
                         : InputConfiguration.CLASSPATH_WITHOUT_ANNOTATED_APIS)
@@ -122,7 +122,7 @@ public abstract class CommonTestRunner extends VisitorTestSupport {
                                                     DebugConfiguration debugConfiguration,
                                                     AnalyserConfiguration analyserConfiguration) throws IOException {
         InputConfiguration.Builder builder = new InputConfiguration.Builder()
-                .setAlternativeJREDirectory(JDK_16)
+                .setAlternativeJREDirectory(CURRENT_JDK)
                 .addSources("src/main/java")
                 .addSources("src/test/java")
                 .addSources("../../e2immu-support/src/main/java")

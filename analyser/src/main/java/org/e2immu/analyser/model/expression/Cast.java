@@ -71,7 +71,10 @@ public class Cast extends BaseExpression implements Expression {
     @Override
     public EvaluationResult evaluate(EvaluationResult context, ForwardEvaluationInfo forwardEvaluationInfo) {
         EvaluationResult er = expression.evaluate(context, forwardEvaluationInfo);
-
+        if (forwardEvaluationInfo.isOnlySort()) {
+            Cast newCast = new Cast(er.getExpression(), parameterizedType);
+            return new EvaluationResult.Builder(context).compose(er).setExpression(newCast).build();
+        }
         if (parameterizedType.equals(er.getExpression().returnType())) return er;
         Expression result = PropertyWrapper.propertyWrapper(er.getExpression(), null, parameterizedType);
 

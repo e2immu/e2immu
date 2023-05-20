@@ -49,7 +49,7 @@ public class TestAnalyseMain {
         };
 
         InputConfiguration inputConfiguration = new InputConfiguration.Builder()
-                .setAlternativeJREDirectory(CommonTestRunner.JDK_16)
+                .setAlternativeJREDirectory(CommonTestRunner.CURRENT_JDK)
                 .addSources("src/main/java")
                 .addClassPath("jmods/java.base.jmod")
                 .addClassPath("jmods/java.compiler.jmod")

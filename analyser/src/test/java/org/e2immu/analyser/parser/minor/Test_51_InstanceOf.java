@@ -351,7 +351,7 @@ public class Test_51_InstanceOf extends CommonTestRunner {
         EvaluationResultVisitor evaluationResultVisitor = d -> {
             if ("create".equals(d.methodInfo().name)) {
                 if ("1".equals(d.statementId())) {
-                    String expected = "object instanceof Boolean&&null!=object";
+                    String expected = "null!=object&&object instanceof Boolean";
                     assertEquals(expected, d.evaluationResult().value().toString());
                 }
             }
@@ -420,7 +420,7 @@ public class Test_51_InstanceOf extends CommonTestRunner {
                 if (d.variable() instanceof ReturnVariable) {
                     if ("0".equals(d.statementId())) {
                         String expected = switch (d.iteration()) {
-                            case 0, 1 -> "object instanceof String&&null!=object?<new:StringConstant>:<return value>";
+                            case 0, 1 -> "null!=object&&object instanceof String?<new:StringConstant>:<return value>";
                             default ->
                                     "object instanceof String&&null!=object?new StringConstant(object/*(String)*/):<return value>";
                         };
@@ -429,11 +429,11 @@ public class Test_51_InstanceOf extends CommonTestRunner {
                     if ("1".equals(d.statementId())) {
                         String expected = switch (d.iteration()) {
                             case 0 ->
-                                    "object instanceof String&&null!=object?<new:StringConstant>:object instanceof Boolean&&null!=object?<new:BooleanConstant>:<return value>";
+                                    "null!=object&&object instanceof String?<new:StringConstant>:null!=object&&object instanceof Boolean?<new:BooleanConstant>:<return value>";
                             case 1 ->
-                                    "object instanceof String&&null!=object?<new:StringConstant>:object instanceof Boolean&&null!=object?new BooleanConstant(object/*(Boolean)*/):<return value>";
+                                    "null!=object&&object instanceof String?<new:StringConstant>:null!=object&&object instanceof Boolean?new BooleanConstant(object/*(Boolean)*/):<return value>";
                             default ->
-                                    "object instanceof String&&null!=object?new StringConstant(object/*(String)*/):object instanceof Boolean&&null!=object?new BooleanConstant(object/*(Boolean)*/):<return value>";
+                                    "object instanceof String&&null!=object?new StringConstant(object/*(String)*/):null!=object&&object instanceof Boolean?new BooleanConstant(object/*(Boolean)*/):<return value>";
                         };
                         assertEquals(expected, d.currentValue().toString());
                     }
@@ -447,28 +447,28 @@ public class Test_51_InstanceOf extends CommonTestRunner {
         StatementAnalyserVisitor statementAnalyserVisitor = d -> {
             if ("create".equals(d.methodInfo().name)) {
                 if ("0.0.0".equals(d.statementId())) {
-                    assertEquals("object instanceof String&&null!=object", d.condition().toString());
+                    assertEquals("null!=object&&object instanceof String", d.condition().toString());
                 }
                 if ("0".equals(d.statementId())) {
                     assertEquals("true", d.condition().toString());
-                    assertEquals("!(object instanceof String)||null==object", d.state().toString());
+                    assertEquals("null==object||!(object instanceof String)", d.state().toString());
                 }
                 if ("1.0.0".equals(d.statementId())) {
-                    String expected = "object instanceof Boolean&&null!=object";
+                    String expected = "null!=object&&object instanceof Boolean";
                     assertEquals(expected, d.condition().toString());
                 }
                 if ("1".equals(d.statementId())) {
                     assertEquals("true", d.condition().toString());
-                    String expected = "(!(object instanceof Boolean)||null==object)&&(!(object instanceof String)||null==object)";
+                    String expected = "(null==object||!(object instanceof Boolean))&&(null==object||!(object instanceof String))";
                     assertEquals(expected, d.state().toString());
                 }
                 if ("2.0.0".equals(d.statementId())) {
-                    String expected = "object instanceof Integer&&null!=object";
+                    String expected = "null!=object&&object instanceof Integer";
                     assertEquals(expected, d.condition().toString());
                 }
                 if ("2".equals(d.statementId())) {
                     assertEquals("true", d.condition().toString());
-                    String expected = "(!(object instanceof Boolean)||null==object)&&(!(object instanceof Integer)||null==object)&&(!(object instanceof String)||null==object)";
+                    String expected = "(null==object||!(object instanceof Boolean))&&(null==object||!(object instanceof Integer))&&(null==object||!(object instanceof String))";
                     assertEquals(expected, d.state().toString());
                 }
             }
