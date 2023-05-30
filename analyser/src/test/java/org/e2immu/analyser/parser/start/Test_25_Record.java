@@ -21,6 +21,7 @@ import org.e2immu.analyser.model.statement.Block;
 import org.e2immu.analyser.model.statement.ReturnStatement;
 import org.e2immu.analyser.parser.CommonTestRunner;
 import org.e2immu.analyser.visitor.MethodAnalyserVisitor;
+import org.e2immu.analyser.visitor.StatementAnalyserVisitor;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
@@ -56,6 +57,28 @@ public class Test_25_Record extends CommonTestRunner {
     @Test
     public void test_1() throws IOException {
         testClass("Record_1", 0, 0, new DebugConfiguration.Builder()
+                .build());
+    }
+
+    @Test
+    public void test_2() throws IOException {
+        StatementAnalyserVisitor statementAnalyserVisitor = d -> {
+            if ("method".equals(d.methodInfo().name)) {
+                if ("1".equals(d.statementId())) {
+                    String expected = d.iteration() == 0 ? "!<null-check>" : "null!=test.x";
+                    assertEquals(expected, d.absoluteState().toString());
+                }
+            }
+        };
+        MethodAnalyserVisitor methodAnalyserVisitor = d -> {
+            if ("x".equals(d.methodInfo().name)) {
+                assertEquals("x", d.methodAnalysis().getSetField().name);
+            }
+        };
+        // should not raise a null-pointer exception, because the accessor / getter / field is final!
+        testClass("Record_2", 0, 0, new DebugConfiguration.Builder()
+                .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .build());
     }
 }

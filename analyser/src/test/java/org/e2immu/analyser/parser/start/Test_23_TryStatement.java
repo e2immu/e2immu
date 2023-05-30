@@ -239,4 +239,21 @@ public class Test_23_TryStatement extends CommonTestRunner {
         testClass("TryStatement_9", 0, 0, new DebugConfiguration.Builder()
                 .build());
     }
+
+    @Test
+    public void test_10() throws IOException {
+
+        // no preconditions
+        MethodAnalyserVisitor methodAnalyserVisitor = d -> {
+            if ("method".equals(d.methodInfo().name)) {
+                assertEquals("Precondition[expression=true, causes=[]]",
+                        d.methodAnalysis().getPrecondition().toString());
+            }
+        };
+
+        // 2 potential null pointer warnings
+        testClass("TryStatement_10", 0, 2, new DebugConfiguration.Builder()
+                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                .build());
+    }
 }

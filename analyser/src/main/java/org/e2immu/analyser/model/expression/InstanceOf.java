@@ -156,6 +156,11 @@ public class InstanceOf extends BaseExpression implements Expression {
         EvaluationResult evaluationResult = expression.evaluate(context, fwd);
         EvaluationResult.Builder builder = new EvaluationResult.Builder(context).compose(evaluationResult);
 
+        if (forwardEvaluationInfo.isOnlySort()) {
+            InstanceOf newInstanceOf = new InstanceOf(identifier, context.getPrimitives(), parameterizedType,
+                    evaluationResult.getExpression(), patternVariable);
+            return builder.setExpression(newInstanceOf).build();
+        }
 
         Primitives primitives = context.getPrimitives();
         Expression value = evaluationResult.value();

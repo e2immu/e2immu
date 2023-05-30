@@ -580,4 +580,22 @@ public class Test_04_Precondition extends CommonTestRunner {
                         .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                         .build());
     }
+
+
+    @Test
+    public void test_10() throws IOException {
+        MethodAnalyserVisitor methodAnalyserVisitor = d -> {
+            if ("method".equals(d.methodInfo().name)) {
+                String expected = d.iteration() <= 1? "Precondition[expression=<null-check>, causes=[escape, escape]]"
+                        : "Precondition[expression=null==(instance type boolean?new TryCatchHelper<>(null,instance type Exception):new TryCatchHelper<>(`supplier`.get(),null)).exception, causes=[escape, escape]]";
+                assertEquals(expected,
+                        d.methodAnalysis().getPrecondition().toString());
+            }
+        };
+        testClass("Precondition_10", 0, 0,
+                new DebugConfiguration.Builder()
+                        .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                        .build());
+    }
+
 }

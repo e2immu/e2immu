@@ -645,17 +645,19 @@ public class ParameterizedType {
                 return parameters.get(0).bestTypeInfo();
             }
             TypeParameter definition;
-            if (typeParameter.getOwner().isLeft()) {
-                TypeInspection typeInspection = inspectionProvider.getTypeInspection(typeParameter.getOwner().getLeft());
-                definition = typeInspection.typeParameters().get(typeParameter.getIndex());
-            } else {
-                MethodInspection methodInspection = inspectionProvider.getMethodInspection(typeParameter.getOwner().getRight());
-                definition = methodInspection.getTypeParameters().get(typeParameter.getIndex());
-            }
-            if (!definition.getTypeBounds().isEmpty()) {
-                // IMPROVE should be a joint type
-                return definition.getTypeBounds().get(0).typeInfo;
-            }
+            if (typeParameter.getOwner() != null) {
+                if (typeParameter.getOwner().isLeft()) {
+                    TypeInspection typeInspection = inspectionProvider.getTypeInspection(typeParameter.getOwner().getLeft());
+                    definition = typeInspection.typeParameters().get(typeParameter.getIndex());
+                } else {
+                    MethodInspection methodInspection = inspectionProvider.getMethodInspection(typeParameter.getOwner().getRight());
+                    definition = methodInspection.getTypeParameters().get(typeParameter.getIndex());
+                }
+                if (!definition.getTypeBounds().isEmpty()) {
+                    // IMPROVE should be a joint type
+                    return definition.getTypeBounds().get(0).typeInfo;
+                }
+            } // else: in JFocus, we can temporarily have no owner during type generalization
         }
         return null;
     }
@@ -673,7 +675,10 @@ public class ParameterizedType {
 
         TypeInfo bestType = bestTypeInfo(inspectionProvider);
         TypeInfo otherBestType = other.bestTypeInfo(inspectionProvider);
-
+        if (bestType == null || otherBestType == null) {
+            // unbound type parameter
+            return inspectionProvider.getPrimitives().objectParameterizedType(); // no common type
+        }
         boolean isPrimitive = isPrimitiveExcludingVoid();
         boolean otherIsPrimitive = other.isPrimitiveExcludingVoid();
         if (isPrimitive && otherIsPrimitive) {
