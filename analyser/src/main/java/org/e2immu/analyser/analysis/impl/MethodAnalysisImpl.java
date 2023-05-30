@@ -54,6 +54,7 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
     public final AnalysisMode analysisMode;
     public final ParSeq<ParameterInfo> parallelGroups;
     public final FieldInfo getSet;
+    public final Set<String> indicesOfEscapesNotInPreOrPostConditions;
 
     private MethodAnalysisImpl(MethodInfo methodInfo,
                                StatementAnalysis firstStatement,
@@ -64,6 +65,7 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
                                Eventual eventual,
                                Precondition precondition,
                                Set<PostCondition> postConditions,
+                               Set<String> indicesOfEscapesNotInPreOrPostConditions,
                                AnalysisMode analysisMode,
                                Map<Property, DV> properties,
                                Map<AnnotationExpression, AnnotationCheck> annotations,
@@ -86,6 +88,12 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
         this.analysisMode = analysisMode;
         this.parallelGroups = parallelGroups;
         this.getSet = getSet;
+        this.indicesOfEscapesNotInPreOrPostConditions = indicesOfEscapesNotInPreOrPostConditions;
+    }
+
+    @Override
+    public Set<String> indicesOfEscapesNotInPreOrPostConditions() {
+        return indicesOfEscapesNotInPreOrPostConditions;
     }
 
     @Override
@@ -223,6 +231,7 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
         public final EventuallyFinal<Precondition> precondition = new EventuallyFinal<>();
         private final SetOnce<Set<PostCondition>> postConditions = new SetOnce<>();
         private CausesOfDelay postConditionDelays;
+        private final SetOnce<Set<String>> indicesOfEscapesNotInPreOrPostConditions = new SetOnce<>();
 
         public final SetOnceMap<CompanionMethodName, CompanionAnalysis> companionAnalyses = new SetOnceMap<>();
         public final SetOnceMap<CompanionMethodName, MethodInfo> computedCompanions = new SetOnceMap<>();
@@ -378,6 +387,7 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
                     eventual.get(),
                     precondition.isFinal() ? precondition.get() : Precondition.empty(primitives),
                     postConditions.getOrDefault(Set.of()),
+                    indicesOfEscapesNotInPreOrPostConditions.getOrDefault(Set.of()),
                     analysisMode(),
                     properties.toImmutableMap(),
                     annotationChecks.toImmutableMap(),
@@ -680,6 +690,15 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
 
         public boolean getSetFieldIsNotYetSet() {
             return !getSet.isSet();
+        }
+
+        @Override
+        public Set<String> indicesOfEscapesNotInPreOrPostConditions() {
+            return indicesOfEscapesNotInPreOrPostConditions.get();
+        }
+
+        public void setIndicesOfEscapeNotInPreOrPostCondition(Set<String> indices) {
+            indicesOfEscapesNotInPreOrPostConditions.set(Set.copyOf(indices));
         }
     }
 

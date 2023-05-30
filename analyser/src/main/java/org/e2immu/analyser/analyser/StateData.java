@@ -21,6 +21,7 @@ import org.e2immu.analyser.model.expression.*;
 import org.e2immu.analyser.model.statement.LoopStatement;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.support.EventuallyFinal;
+import org.e2immu.support.FlipSwitch;
 import org.e2immu.support.SetOnceMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -43,6 +44,7 @@ public class StateData {
     private final EventuallyFinal<Precondition> preconditionFromMethodCalls = new EventuallyFinal<>();
     // there can be only one postCondition per statement
     private final EventuallyFinal<PostCondition> postCondition = new EventuallyFinal<>();
+    private final FlipSwitch escapeNotInPreOrPostConditions = new FlipSwitch();
     private final SetOnceMap<String, EventuallyFinal<Expression>> statesOfInterrupts;
     private final SetOnceMap<String, EventuallyFinal<Expression>> statesOfReturnInLoop;
     public final EventuallyFinal<Expression> valueOfExpression = new EventuallyFinal<>();
@@ -168,6 +170,7 @@ public class StateData {
     public boolean postConditionNoInformationYet() {
         return postCondition.isVariable() && postCondition.get().isNoInformationYet();
     }
+
     /*
     conventions: Precondition.DELAYED_NO_INFORMATION (exactly this object) means no information yet, variable.
     Expression true means: no information, but final
@@ -363,5 +366,15 @@ public class StateData {
 
     public boolean noExitViaReturnOrBreak() {
         return statesOfInterrupts.isEmpty() && statesOfReturnInLoop.isEmpty();
+    }
+
+    public boolean isEscapeNotInPreOrPostConditions() {
+        return escapeNotInPreOrPostConditions.isSet();
+    }
+
+    public void ensureEscapeNotInPreOrPostConditions() {
+        if (!escapeNotInPreOrPostConditions.isSet()) {
+            escapeNotInPreOrPostConditions.set();
+        }
     }
 }

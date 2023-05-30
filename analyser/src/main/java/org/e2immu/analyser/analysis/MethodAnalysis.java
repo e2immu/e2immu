@@ -95,6 +95,13 @@ public interface MethodAnalysis extends Analysis {
     @NotNull
     Set<PostCondition> getPostConditions();
 
+    /*
+    Many throw and assert statements find their way into a pre- or post-condition.
+    Some, however, do not. We register them here.
+     */
+    @NotNull
+    Set<String> indicesOfEscapesNotInPreOrPostConditions();
+
     default MethodLevelData methodLevelData() {
         StatementAnalysis last = getLastStatement();
         if (last == null) return null; // there is no last statement --> there are no statements

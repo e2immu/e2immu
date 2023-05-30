@@ -258,6 +258,9 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
             return delays;
         }
         methodAnalysis.setFinalPostConditions(pcs);
+        methodAnalysis.setIndicesOfEscapeNotInPreOrPostCondition(methodLevelData
+                .getIndicesOfEscapesNotInPreOrPostConditions());
+
         return DONE;
     }
 
@@ -559,7 +562,7 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
         VariableInfo variableInfo = getReturnAsVariable();
         Expression value = variableInfo.getValue().unwrapIfConstant();
 
-        if(methodAnalysis.getSetFieldIsNotYetSet()) {
+        if (methodAnalysis.getSetFieldIsNotYetSet()) {
             FieldReference getter = isGetter();
             if (getter != null) {
                 assert value.isDelayed() || value instanceof VariableExpression ve && ve.variable().equals(getter);

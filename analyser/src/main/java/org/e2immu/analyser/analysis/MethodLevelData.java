@@ -21,6 +21,7 @@ import org.e2immu.analyser.model.variable.LocalVariableReference;
 import org.e2immu.analyser.model.variable.ReturnVariable;
 import org.e2immu.analyser.model.variable.This;
 import org.e2immu.analyser.parser.Primitives;
+import org.e2immu.support.AddOnceSet;
 import org.e2immu.support.EventuallyFinal;
 import org.e2immu.support.SetOnceMap;
 import org.slf4j.Logger;
@@ -55,6 +56,8 @@ public class MethodLevelData {
 
     // not for local processing, but so that we know in the method and field analyser that this process has been completed
     private final EventuallyFinal<CausesOfDelay> linksHaveBeenEstablished = new EventuallyFinal<>();
+
+    private final AddOnceSet<String> indicesOfEscapesNotInPreOrPostConditions = new AddOnceSet<>();
 
     public CausesOfDelay combinedPreconditionIsDelayedSet() {
         if (combinedPrecondition.isFinal()) return CausesOfDelay.EMPTY;
@@ -151,6 +154,12 @@ public class MethodLevelData {
             return delays;
         }
         setFinalAllowEquals(postConditions, all);
+        if (sharedState.stateData.isEscapeNotInPreOrPostConditions()) {
+            String index = sharedState.statementAnalysis.index();
+            if (!indicesOfEscapesNotInPreOrPostConditions.contains(index)) {
+                indicesOfEscapesNotInPreOrPostConditions.add(index);
+            }
+        }
         return DONE;
     }
 
@@ -212,5 +221,9 @@ public class MethodLevelData {
         }
         linksHaveBeenEstablished.setFinal(CausesOfDelay.EMPTY);
         return DONE;
+    }
+
+    public Set<String> getIndicesOfEscapesNotInPreOrPostConditions() {
+        return indicesOfEscapesNotInPreOrPostConditions.toImmutableSet();
     }
 }

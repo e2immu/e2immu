@@ -122,20 +122,25 @@ record SASubBlocks(StatementAnalysis statementAnalysis, StatementAnalyser statem
         DV escapeAlwaysExecuted = statementAnalysis.isEscapeAlwaysExecutedInCurrentBlock();
 
         Expression expression = cm.precondition(EvaluationResult.from(sharedState.evaluationContext()));
+        StateData stateData = statementAnalysis.stateData();
+
         CausesOfDelay delays = escapeAlwaysExecuted.causesOfDelay()
                 .merge(expression.causesOfDelay())
-                .merge(statementAnalysis.stateData().conditionManagerForNextStatementStatus());
+                .merge(stateData.conditionManagerForNextStatementStatus());
 
         boolean progress;
+        boolean inPreOrPostCondition = false;
+
         DV isPostCondition = isPostCondition(expression);
         if (!isPostCondition.valueIsFalse()) {
             delays = delays.merge(isPostCondition.causesOfDelay());
             PostCondition pc = new PostCondition(expression, statementAnalysis.index());
-            progress = statementAnalysis.stateData().setPostCondition(pc);
+            progress = stateData.setPostCondition(pc);
             LOGGER.debug("Escape with post-condition {}", expression);
+            inPreOrPostCondition = true;
         } else {
             // postCondition is false and there are no delays...
-            progress = statementAnalysis.stateData().setPostCondition(PostCondition.empty(primitives));
+            progress = stateData.setPostCondition(PostCondition.empty(primitives));
         }
         if (!isPostCondition.valueIsTrue()) {
             // the identifier of the "throws" expression, in case we have a delayed precondition
@@ -145,13 +150,17 @@ record SASubBlocks(StatementAnalysis statementAnalysis, StatementAnalyser statem
             if (translated != null) {
                 LOGGER.debug("Escape with precondition {}", translated);
                 Precondition pc = new Precondition(translated, List.of(new Precondition.EscapeCause()));
-                progress |= statementAnalysis.stateData().setPrecondition(pc);
+                progress |= stateData.setPrecondition(pc);
+                inPreOrPostCondition = true;
             } else {
                 // else: not stored in pc, so ensure it is unconditionally empty
-                progress |= statementAnalysis.stateData().setPrecondition(Precondition.empty(primitives));
+                progress |= stateData.setPrecondition(Precondition.empty(primitives));
             }
         } else {
-            progress |= statementAnalysis.stateData().setPrecondition(Precondition.empty(primitives));
+            progress |= stateData.setPrecondition(Precondition.empty(primitives));
+        }
+        if (!inPreOrPostCondition) {
+            stateData.ensureEscapeNotInPreOrPostConditions();
         }
         return ProgressWrapper.of(progress, delays);
     }
@@ -169,24 +178,27 @@ record SASubBlocks(StatementAnalysis statementAnalysis, StatementAnalyser statem
     }
 
     private ConditionManagerAndStatus doAssertStatement(StatementAnalyserSharedState sharedState, ConditionManager cm) {
-        Expression assertion = statementAnalysis.stateData().valueOfExpression.get();
-        Expression pcFromMethod = statementAnalysis.stateData().getPreconditionFromMethodCalls().expression();
+        StateData stateData = statementAnalysis.stateData();
+        Expression assertion = stateData.valueOfExpression.get();
+        Expression pcFromMethod = stateData.getPreconditionFromMethodCalls().expression();
         Expression combined = And.and(sharedState.context(), assertion, pcFromMethod);
         DV isPostCondition = isPostCondition(combined);
 
         // is this a post-condition or a precondition? that will depend on earlier modifications
         // when these modifications are delayed, we cannot decide between them, and write delays in both
 
+        boolean inPreOrPostCondition = false;
         boolean progress;
         Primitives primitives = statementAnalysis.primitives();
         CausesOfDelay delays = CausesOfDelay.EMPTY;
         if (!isPostCondition.valueIsFalse()) {
             delays = isPostCondition.causesOfDelay().merge(combined.causesOfDelay());
             PostCondition pc = new PostCondition(combined, statementAnalysis.index());
-            progress = statementAnalysis.stateData().setPostCondition(pc);
+            progress = stateData.setPostCondition(pc);
+            inPreOrPostCondition = true;
         } else {
             // postCondition is false and there are no delays...
-            progress = statementAnalysis.stateData().setPostCondition(PostCondition.empty(primitives));
+            progress = stateData.setPostCondition(PostCondition.empty(primitives));
         }
         if (!isPostCondition.valueIsTrue()) {
             Precondition pc;
@@ -202,7 +214,7 @@ record SASubBlocks(StatementAnalysis statementAnalysis, StatementAnalyser statem
 
                 List<Precondition.PreconditionCause> preconditionCauses = Stream.concat(
                         translated.isBoolValueTrue() ? Stream.of() : Stream.of(new Precondition.EscapeCause()),
-                        statementAnalysis.stateData().getPreconditionFromMethodCalls().causes().stream()).toList();
+                        stateData.getPreconditionFromMethodCalls().causes().stream()).toList();
 
                 pc = new Precondition(translated, preconditionCauses);
                 delays = delays.merge(pc.causesOfDelay());
@@ -210,18 +222,22 @@ record SASubBlocks(StatementAnalysis statementAnalysis, StatementAnalyser statem
                 // the null/not null of parameters has been handled during the main evaluation
                 pc = Precondition.empty(primitives);
             }
-            progress |= statementAnalysis.stateData().setPrecondition(pc);
+            progress |= stateData.setPrecondition(pc);
+            inPreOrPostCondition = true;
         } else {
             // postCondition is true, there are no delays
-            progress |= statementAnalysis.stateData().setPrecondition(Precondition.empty(primitives));
+            progress |= stateData.setPrecondition(Precondition.empty(primitives));
         }
 
-        boolean expressionIsDelayed = statementAnalysis.stateData().valueOfExpression.isVariable();
+        if (!inPreOrPostCondition) {
+            stateData.ensureEscapeNotInPreOrPostConditions();
+        }
+        boolean expressionIsDelayed = stateData.valueOfExpression.isVariable();
         // NOTE that it is possible that assertion is not delayed, but the valueOfExpression is delayed
         // because of other delays in the apply method (see setValueOfExpression call in evaluationOfMainExpression)
         AnalysisStatus analysisStatus;
         if (expressionIsDelayed || delays.isDelayed()) {
-            CausesOfDelay merge = statementAnalysis.stateData().valueOfExpressionIsDelayed().merge(delays);
+            CausesOfDelay merge = stateData.valueOfExpressionIsDelayed().merge(delays);
             analysisStatus = ProgressWrapper.of(progress, merge);
         } else {
             analysisStatus = DONE;
