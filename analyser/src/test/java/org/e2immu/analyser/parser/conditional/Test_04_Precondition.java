@@ -422,14 +422,14 @@ public class Test_04_Precondition extends CommonTestRunner {
 
     private static String conditionIn0(int iteration) {
         return switch (iteration) {
-            case 0, 1 -> "!<null-check>";
+            case 0, 1 -> "<null-check>";
             default -> "null!=integer";
         };
     }
 
     private static String notConditionIn0(int iteration) {
         return switch (iteration) {
-            case 0, 1 -> "<null-check>&&ii>=0";
+            case 0, 1 -> "!<null-check>&&ii>=0";
             default -> "null==integer&&ii>=0";
         };
     }
@@ -584,15 +584,50 @@ public class Test_04_Precondition extends CommonTestRunner {
 
     @Test
     public void test_10() throws IOException {
+        StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+            if ("method".equals(d.methodInfo().name)) {
+                if ("npe".equals(d.variableName())) {
+                    if ("5.0.0".equals(d.statementId())) {
+                        String expected = d.iteration() < 2 ? "<s:NullPointerException>"
+                                : "`instance type boolean?new TryCatchHelper<>(null,instance type Exception):new TryCatchHelper<>(`supplier`.get(),null).exception`/*(NullPointerException)*/";
+                        assertEquals(expected, d.currentValue().toString());
+                        // FIXME a cast variable should always be not null!
+                        assertDv(d, 0, MultiLevel.EFFECTIVELY_NOT_NULL_DV, CONTEXT_NOT_NULL);
+                    }
+                }
+            }
+        };
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("method".equals(d.methodInfo().name)) {
-                String expected = d.iteration() <= 1? "Precondition[expression=<null-check>, causes=[escape, escape]]"
+                String expected = d.iteration() <= 1 ? "Precondition[expression=<null-check>, causes=[escape, escape]]"
                         : "Precondition[expression=null==(instance type boolean?new TryCatchHelper<>(null,instance type Exception):new TryCatchHelper<>(`supplier`.get(),null)).exception, causes=[escape, escape]]";
                 assertEquals(expected,
                         d.methodAnalysis().getPrecondition().toString());
             }
         };
         testClass("Precondition_10", 0, 0,
+                new DebugConfiguration.Builder()
+                        .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                        .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                        .build());
+    }
+
+
+    /*
+    we want the throws statement to be absorbed in an empty precondition.
+     */
+    @Test
+    public void test_11() throws IOException {
+
+        MethodAnalyserVisitor methodAnalyserVisitor = d -> {
+            if ("method".equals(d.methodInfo().name)) {
+                assertTrue(d.methodAnalysis().indicesOfEscapesNotInPreOrPostConditions().isEmpty());
+                String expected = "Precondition[expression=a, causes=[escape]]"; // FIXME should be empty
+                assertEquals(expected, d.methodAnalysis().getPrecondition().toString());
+            }
+        };
+        // expect one error: if(b) evaluates to constant
+        testClass("Precondition_11", 1, 0,
                 new DebugConfiguration.Builder()
                         .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                         .build());

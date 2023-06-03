@@ -24,18 +24,31 @@ import org.e2immu.analyser.util.ListUtil;
 
 import java.util.List;
 import java.util.Objects;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * A precondition is normally an Expression object.
  * However, to facilitate eventual (@Mark, @Only) computations, it is helpful
  * to record the cause of the precondition.
  * <p>
- * This can be a method call (e.g., setOnce.set(value)), with set being a @Mark method) or
+ * This can be a method call (e.g., setOnce.set(value), with set being a @Mark method) or
  * an assignment.
  * <p>
  * An empty precondition is represented by the boolean constant TRUE.
  */
 public record Precondition(Expression expression, List<PreconditionCause> causes) {
+
+    public static boolean canBeRepresented(Expression expression) {
+        AtomicBoolean result = new AtomicBoolean(true);
+        expression.visit(e -> {
+            if (e instanceof Instance) {
+                result.set(false);
+            }
+            // bail out as soon as we have a 'false'
+            return result.get();
+        });
+        return result.get();
+    }
 
     public boolean isDelayed() {
         return expression.isDelayed();

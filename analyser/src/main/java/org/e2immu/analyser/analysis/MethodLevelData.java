@@ -23,6 +23,7 @@ import org.e2immu.analyser.model.variable.This;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.support.AddOnceSet;
 import org.e2immu.support.EventuallyFinal;
+import org.e2immu.support.SetOnce;
 import org.e2immu.support.SetOnceMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -47,6 +48,7 @@ public class MethodLevelData {
     public static final String LINKS_HAVE_BEEN_ESTABLISHED = "linksHaveBeenEstablished";
     public static final String COMBINE_PRECONDITION = "combinePrecondition";
     public static final String COMBINE_POST_CONDITIONS = "combinePostConditions";
+    public static final String COMBINE_ESCAPE_INDICES = "combineEscapeIndices";
 
     public final SetOnceMap<MethodInfo, Boolean> copyModificationStatusFrom = new SetOnceMap<>();
 
@@ -57,7 +59,7 @@ public class MethodLevelData {
     // not for local processing, but so that we know in the method and field analyser that this process has been completed
     private final EventuallyFinal<CausesOfDelay> linksHaveBeenEstablished = new EventuallyFinal<>();
 
-    private final AddOnceSet<String> indicesOfEscapesNotInPreOrPostConditions = new AddOnceSet<>();
+    private final SetOnce<Set<String>> indicesOfEscapesNotInPreOrPostConditions = new SetOnce<>();
 
     public CausesOfDelay combinedPreconditionIsDelayedSet() {
         if (combinedPrecondition.isFinal()) return CausesOfDelay.EMPTY;
@@ -114,6 +116,7 @@ public class MethodLevelData {
                     .add(LINKS_HAVE_BEEN_ESTABLISHED, this::linksHaveBeenEstablished)
                     .add(COMBINE_PRECONDITION, this::combinePrecondition)
                     .add(COMBINE_POST_CONDITIONS, this::combinePostConditions)
+                    .add(COMBINE_ESCAPE_INDICES, this::combineEscapeIndices)
                     .build();
 
 
@@ -154,12 +157,26 @@ public class MethodLevelData {
             return delays;
         }
         setFinalAllowEquals(postConditions, all);
-        if (sharedState.stateData.isEscapeNotInPreOrPostConditions()) {
-            String index = sharedState.statementAnalysis.index();
-            if (!indicesOfEscapesNotInPreOrPostConditions.contains(index)) {
-                indicesOfEscapesNotInPreOrPostConditions.add(index);
-            }
-        }
+        return DONE;
+    }
+
+
+    private AnalysisStatus combineEscapeIndices(SharedState sharedState) {
+        String index = sharedState.stateData.isEscapeNotInPreOrPostConditions()
+                ? sharedState.statementAnalysis.index() : null;
+        Stream<String> fromMyStateData = Stream.ofNullable(index);
+
+        Stream<String> fromPrevious = sharedState.previous != null ?
+                sharedState.previous.getIndicesOfEscapesNotInPreOrPostConditions().stream() : Stream.of();
+
+        List<StatementAnalysis> subBlocks = sharedState.statementAnalysis.lastStatementsOfNonEmptySubBlocks();
+        Stream<String> fromBlocks = subBlocks.stream()
+                .flatMap(sa -> sa.methodLevelData().getIndicesOfEscapesNotInPreOrPostConditions().stream());
+
+        Set<String> all = Stream.concat(fromPrevious, Stream.concat(fromMyStateData, fromBlocks))
+                .collect(Collectors.toUnmodifiableSet());
+
+        indicesOfEscapesNotInPreOrPostConditions.set(all);
         return DONE;
     }
 
@@ -224,6 +241,6 @@ public class MethodLevelData {
     }
 
     public Set<String> getIndicesOfEscapesNotInPreOrPostConditions() {
-        return indicesOfEscapesNotInPreOrPostConditions.toImmutableSet();
+        return indicesOfEscapesNotInPreOrPostConditions.getOrDefault(Set.of());
     }
 }

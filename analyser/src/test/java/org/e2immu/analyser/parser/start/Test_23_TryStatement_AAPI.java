@@ -54,4 +54,31 @@ public class Test_23_TryStatement_AAPI extends CommonTestRunner {
         testClass("TryStatement_11", 0, 0, new DebugConfiguration.Builder()
                 .build());
     }
+
+
+    /*
+    ensure that the 'throw' operation in the first catch-block is not part of the precondition.
+     */
+    @Test
+    public void test_12() throws IOException {
+        StatementAnalyserVisitor statementAnalyserVisitor = d -> {
+            if ("same1".equals(d.methodInfo().name)) {
+                if ("0.1.1".equals(d.statementId())) {
+                    assertTrue(d.statementAnalysis().stateData().isEscapeNotInPreOrPostConditions());
+                    assertEquals("[0.1.1]", d.statementAnalysis().methodLevelData()
+                            .getIndicesOfEscapesNotInPreOrPostConditions().toString());
+                }
+            }
+        };
+        MethodAnalyserVisitor methodAnalyserVisitor = d -> {
+            if ("same1".equals(d.methodInfo().name)) {
+                assertEquals("Precondition[expression=true, causes=[]]", d.methodAnalysis().getPrecondition().toString());
+                assertEquals("[0.1.1]", d.methodAnalysis().indicesOfEscapesNotInPreOrPostConditions().toString());
+            }
+        };
+        testClass("TryStatement_12", 0, 0, new DebugConfiguration.Builder()
+                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                .build());
+    }
 }

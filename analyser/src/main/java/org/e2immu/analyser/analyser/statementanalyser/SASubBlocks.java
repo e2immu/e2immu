@@ -130,9 +130,10 @@ record SASubBlocks(StatementAnalysis statementAnalysis, StatementAnalyser statem
 
         boolean progress;
         boolean inPreOrPostCondition = false;
+        boolean canBeRepresented = Precondition.canBeRepresented(expression);
 
         DV isPostCondition = isPostCondition(expression);
-        if (!isPostCondition.valueIsFalse()) {
+        if (!isPostCondition.valueIsFalse() && canBeRepresented) {
             delays = delays.merge(isPostCondition.causesOfDelay());
             PostCondition pc = new PostCondition(expression, statementAnalysis.index());
             progress = stateData.setPostCondition(pc);
@@ -142,7 +143,7 @@ record SASubBlocks(StatementAnalysis statementAnalysis, StatementAnalyser statem
             // postCondition is false and there are no delays...
             progress = stateData.setPostCondition(PostCondition.empty(primitives));
         }
-        if (!isPostCondition.valueIsTrue()) {
+        if (!isPostCondition.valueIsTrue() && canBeRepresented) {
             // the identifier of the "throws" expression, in case we have a delayed precondition
             Identifier identifier = statement().getStructure().expression().getIdentifier();
             Expression translated = sharedState.evaluationContext().acceptAndTranslatePrecondition(identifier, expression);
@@ -151,11 +152,11 @@ record SASubBlocks(StatementAnalysis statementAnalysis, StatementAnalyser statem
                 LOGGER.debug("Escape with precondition {}", translated);
                 Precondition pc = new Precondition(translated, List.of(new Precondition.EscapeCause()));
                 progress |= stateData.setPrecondition(pc);
-                inPreOrPostCondition = true;
             } else {
                 // else: not stored in pc, so ensure it is unconditionally empty
                 progress |= stateData.setPrecondition(Precondition.empty(primitives));
             }
+            inPreOrPostCondition = true;
         } else {
             progress |= stateData.setPrecondition(Precondition.empty(primitives));
         }
@@ -191,7 +192,8 @@ record SASubBlocks(StatementAnalysis statementAnalysis, StatementAnalyser statem
         boolean progress;
         Primitives primitives = statementAnalysis.primitives();
         CausesOfDelay delays = CausesOfDelay.EMPTY;
-        if (!isPostCondition.valueIsFalse()) {
+        boolean canBeRepresented = Precondition.canBeRepresented(combined);
+        if (!isPostCondition.valueIsFalse() && canBeRepresented) {
             delays = isPostCondition.causesOfDelay().merge(combined.causesOfDelay());
             PostCondition pc = new PostCondition(combined, statementAnalysis.index());
             progress = stateData.setPostCondition(pc);
@@ -200,7 +202,7 @@ record SASubBlocks(StatementAnalysis statementAnalysis, StatementAnalyser statem
             // postCondition is false and there are no delays...
             progress = stateData.setPostCondition(PostCondition.empty(primitives));
         }
-        if (!isPostCondition.valueIsTrue()) {
+        if (!isPostCondition.valueIsTrue() && canBeRepresented) {
             Precondition pc;
             if (SAHelper.moveConditionToParameter(sharedState.context(), combined) == null) {
                 // in IfStatement_10, we have an "assert" condition that cannot simply be moved to the precondition, because

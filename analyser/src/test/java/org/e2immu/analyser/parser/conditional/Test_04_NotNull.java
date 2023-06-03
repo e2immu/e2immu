@@ -195,4 +195,20 @@ public class Test_04_NotNull extends CommonTestRunner {
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .build(), new AnalyserConfiguration.Builder().build());
     }
+
+    @Test
+    public void test_7() throws IOException {
+        MethodAnalyserVisitor methodAnalyserVisitor = d -> {
+            if ("method".equals(d.methodInfo().name)) {
+                assertDv(d, 1, DV.TRUE_DV, Property.IDENTITY);
+                assertEquals("[]", d.methodAnalysis().indicesOfEscapesNotInPreOrPostConditions().toString());
+                assertEquals("Precondition[expression=true, causes=[]]",
+                        d.methodAnalysis().getPrecondition().toString());
+                assertDv(d.p(0), 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_PARAMETER);
+            }
+        };
+        testClass("NotNull_7", 0, 0, new DebugConfiguration.Builder()
+                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                .build(), new AnalyserConfiguration.Builder().setComputeContextPropertiesOverAllMethods(false).build());
+    }
 }

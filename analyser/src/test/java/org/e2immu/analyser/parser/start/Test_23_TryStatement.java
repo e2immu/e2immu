@@ -127,10 +127,22 @@ public class Test_23_TryStatement extends CommonTestRunner {
             }
         };
 
+        /*
+         the 'throws' statement does not translate to a pre- or post-condition, because the condition (instance)
+         cannot be represented.
+         */
+        MethodAnalyserVisitor methodAnalyserVisitor = d -> {
+            if ("method".equals(d.methodInfo().name)) {
+                assertEquals("Precondition[expression=true, causes=[]]",
+                        d.methodAnalysis().getPrecondition().toString());
+            }
+        };
+
         // warn: unused parameter
         testClass("TryStatement_2", 2, 1, new DebugConfiguration.Builder()
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .build());
     }
 
