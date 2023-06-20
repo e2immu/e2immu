@@ -15,16 +15,6 @@
 plugins {
     id 'java'
     id 'maven-publish'
-    id 'jacoco'
-}
-
-jacocoTestReport {
-    reports {
-        xml.required = true
-        csv.required = false
-        html.required = false;
-        //html.outputLocation = layout.buildDirectory.dir('jacocoHtml')
-    }
 }
 
 java {
@@ -50,7 +40,7 @@ dependencies {
    // implementation 'org.slf4j:slf4j-api:1.7.32'           // MIT X-11 License
     implementation 'ch.qos.logback:logback-classic:1.2.11' // EPL v1.0 and the LGPL 2.1
 
-    implementation 'com.github.javaparser:javaparser-core:3.24.1-SNAPSHOT'
+    implementation 'com.github.javaparser:javaparser-core:3.25.3'
 
     // LGPL or Apache License 2.0
     implementation 'org.ow2.asm:asm:9.3'                  // 3-clause BSD permissive license
@@ -106,111 +96,4 @@ publishing {
             from components.java
         }
     }
-}
-
-// -------------------
-
-// a bit of code to generate a list of all the tests that ran successfully
-// will be picked up by the
-class MyTestListener implements TestListener {
-    Set<String> testFqns = new HashSet<>();
-    File file;
-
-    MyTestListener(File file) {
-        this.file = file
-        file.delete()
-        file.createNewFile()
-    }
-
-    void beforeSuite(TestDescriptor testDescriptor) { }
-    void afterSuite(TestDescriptor testDescriptor, TestResult testResult) { }
-    void beforeTest(TestDescriptor testDescriptor) { }
-
-    void afterTest(TestDescriptor testDescriptor, TestResult testResult) {
-        if(testResult.resultType == TestResult.ResultType.SUCCESS && testFqns.add(testDescriptor.className))
-            file << testDescriptor.className+"\n"
-    }
-}
-
-tasks.withType(Test) {
-    var l = new MyTestListener(new File("$buildDir/testFQNs.txt"))
-    addTestListener(l)
-}
-
-// ----------------
-
-class IterateOverTests extends DefaultTask {
-    @InputFile
-    File testFQNs
-
-    @InputFile
-    File testCoverageJar
-
-    @InputFile
-    File jacocoTestReportXml
-
-    @OutputDirectory
-    File jsonGzDir
-
-    @InputDirectory
-    File theProjectDir
-
-    @TaskAction
-    void runIterateOverTests() {
-        logger.info("Test coverage jar ${testCoverageJar.path}")
-        logger.info("Jacoco XML report ${jacocoTestReportXml.path}")
-
-        jsonGzDir.delete()
-        jsonGzDir.mkdirs()
-        logger.info("Destination is ${jsonGzDir.path}")
-
-        List<String> tests = testFQNs.readLines('UTF-8')
-
-        tests.forEach {
-            logger.info("Processing test $it")
-
-            String cmd = "/usr/local/bin/gradle test --tests $it jacocoTestReport"
-            execute(cmd, theProjectDir)
-
-            String cmd2 = "/usr/bin/java -jar ${testCoverageJar.path} ${jacocoTestReportXml.path} ${jsonGzDir.path}/${it}.json.gz"
-            logger.info("Executing translation to json: $cmd")
-
-            execute(cmd2, new File("."))
-        }
-    }
-
-    def execute(String cmd, File projectDir) {
-        def noParams = [] as String[]
-        def output = new StringBuilder(), error = new StringBuilder()
-        def proc = cmd.execute(noParams, projectDir)
-        proc.consumeProcessOutput(output, error)
-        proc.waitForOrKill(3600_000)
-        if (!output.isBlank()) {
-            logger.info( "----\n$output\n----\n")
-        }
-        if (!error.isBlank()) {
-            logger.error("---- ERROR ----\n$error\n----\n")
-        }
-        if (proc.exitValue() != 0) {
-            System.exit proc.exitValue()
-        }
-    }
-}
-
-configurations {
-    iterate1
-}
-
-dependencies {
-    iterate1 'com.codemodernizer:jacocoparser:0.0.1'
-}
-
-task iterateOverTests(type : IterateOverTests) {
-    dependsOn test, jacocoTestReport
-
-    testFQNs = new File(buildDir, "testFQNs.txt")
-    testCoverageJar = configurations.iterate1.resolve()[0]
-    jacocoTestReportXml = tasks.jacocoTestReport.reports.xml.outputLocation.getAsFile().get()
-    jsonGzDir = new File(buildDir, "json.gz")
-    theProjectDir = projectDir
 }
