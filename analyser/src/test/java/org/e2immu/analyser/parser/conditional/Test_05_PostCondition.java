@@ -1,5 +1,6 @@
 package org.e2immu.analyser.parser.conditional;
 
+import org.e2immu.analyser.analysis.MethodLevelData;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.parser.CommonTestRunner;
 import org.e2immu.analyser.visitor.MethodAnalyserVisitor;
@@ -9,6 +10,7 @@ import org.junit.jupiter.api.Test;
 import java.io.IOException;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class Test_05_PostCondition extends CommonTestRunner {
 
@@ -76,6 +78,33 @@ public class Test_05_PostCondition extends CommonTestRunner {
             }
         };
         testClass("PostCondition_1", 0, 0, new DebugConfiguration.Builder()
+                .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                .build());
+    }
+
+
+    @Test
+    public void test2() throws IOException {
+        StatementAnalyserVisitor statementAnalyserVisitor = d -> {
+            if ("method".equals(d.methodInfo().name)) {
+                assertEquals("0", d.statementId());
+                assertEquals("PostCondition[expression=true, index=-]",
+                        d.statementAnalysis().stateData().getPostCondition().toString());
+                MethodLevelData methodLevelData = d.statementAnalysis().methodLevelData();
+                assertTrue(methodLevelData.getPostConditions().isEmpty());
+                assertTrue(d.statementAnalysis().stateData().isEscapeNotInPreOrPostConditions());
+                assertEquals("[0]", methodLevelData.getIndicesOfEscapesNotInPreOrPostConditions().toString());
+            }
+        };
+        MethodAnalyserVisitor methodAnalyserVisitor = d -> {
+            if ("method".equals(d.methodInfo().name)) {
+                assertEquals("Precondition[expression=true, causes=[]]", d.methodAnalysis().getPrecondition().toString());
+                assertEquals("", d.methodAnalysis().postConditionsSortedToString());
+                assertEquals("[0]", d.methodAnalysis().indicesOfEscapesNotInPreOrPostConditions().toString());
+            }
+        };
+        testClass("PostCondition_2", 0, 0, new DebugConfiguration.Builder()
                 .addStatementAnalyserVisitor(statementAnalyserVisitor)
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .build());

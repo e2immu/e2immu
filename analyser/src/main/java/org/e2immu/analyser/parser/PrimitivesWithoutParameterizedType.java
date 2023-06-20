@@ -40,6 +40,8 @@ public interface PrimitivesWithoutParameterizedType {
 
     TypeInfo boxed(TypeInfo typeInfo);
 
+    TypeInfo unboxed(TypeInfo typeInfo);
+
     MethodInfo assignOperatorInt();
 
     MethodInfo assignPlusOperatorInt();

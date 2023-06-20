@@ -113,7 +113,8 @@ public class StringUtil {
         return index.compareTo(scope) >= 0;
     }
 
-    public static String level(String assignmentId) {
+    // 3.0.0-E, -I
+    public static String stage(String assignmentId) {
         int dash = assignmentId.lastIndexOf('-');
         if (dash >= 0) return assignmentId.substring(dash);
         int colon = assignmentId.lastIndexOf(':');
@@ -121,7 +122,7 @@ public class StringUtil {
         throw new UnsupportedOperationException();
     }
 
-    public static String stripLevel(String assignmentId) {
+    public static String stripStage(String assignmentId) {
         int dash = assignmentId.lastIndexOf('-');
         if (dash >= 0) return assignmentId.substring(0, dash);
         int colon = assignmentId.lastIndexOf(':');

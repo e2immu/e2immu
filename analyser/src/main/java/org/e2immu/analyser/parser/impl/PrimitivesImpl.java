@@ -440,6 +440,30 @@ public class PrimitivesImpl implements Primitives {
     }
 
     @Override
+    public TypeInfo unboxed(TypeInfo typeInfo) {
+        if (typeInfo == boxedLongTypeInfo)
+            return longTypeInfo;
+        if (typeInfo == integerTypeInfo)
+            return intTypeInfo;
+        if (typeInfo == boxedShortTypeInfo)
+            return shortTypeInfo;
+        if (typeInfo == boxedByteTypeInfo)
+            return byteTypeInfo;
+        if (typeInfo == characterTypeInfo)
+            return charTypeInfo;
+        if (typeInfo == boxedBooleanTypeInfo)
+            return booleanTypeInfo;
+        if (typeInfo == boxedFloatTypeInfo)
+            return floatTypeInfo;
+        if (typeInfo == boxedDoubleTypeInfo)
+            return doubleTypeInfo;
+        if (typeInfo == boxedVoidTypeInfo) {
+            return voidTypeInfo;
+        }
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
     public SetOfTypes explicitTypesOfJLO() {
         return new SetOfTypes(Set.of(stringParameterizedType, objectParameterizedType,
                 classTypeInfo.asSimpleParameterizedType()));

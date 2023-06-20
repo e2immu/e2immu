@@ -36,6 +36,15 @@ public enum Stage {
         return s;
     }
 
+    public static Stage from(String stage) {
+        return switch (stage) {
+            case "-C" -> INITIAL;
+            case "-E" -> EVALUATION;
+            case ":M" -> MERGE;
+            default -> throw new UnsupportedOperationException();
+        };
+    }
+
     @Override
     public String toString() {
         return label;

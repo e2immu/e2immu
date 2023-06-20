@@ -35,14 +35,27 @@ public class Negation extends UnaryOperator implements ExpressionWrapper {
         return expression;
     }
 
+    public final ParameterizedType returnType;
+
     @Override
     public int wrapperOrder() {
         return WRAPPER_ORDER_NEGATED;
     }
 
-    private Negation(Identifier identifier, MethodInfo operator, Expression value) {
+    private Negation(Primitives primitives, Identifier identifier, MethodInfo operator, Expression value) {
         super(identifier, operator, value, value.isNumeric() ? Precedence.PLUSPLUS : Precedence.UNARY);
         if (value.isInstanceOf(Negation.class)) throw new UnsupportedOperationException();
+        ParameterizedType type = value.returnType();
+        if (type.isBoxedExcludingVoid()) {
+            returnType = primitives.unboxed(type.typeInfo).asSimpleParameterizedType();
+        } else {
+            returnType = type;
+        }
+    }
+
+    private Negation(ParameterizedType returnType, Identifier identifier, MethodInfo operator, Expression value) {
+        super(identifier, operator, value, value.isNumeric() ? Precedence.PLUSPLUS : Precedence.UNARY);
+        this.returnType = returnType;
     }
 
     @Override
@@ -55,7 +68,7 @@ public class Negation extends UnaryOperator implements ExpressionWrapper {
         if (translatedExpression instanceof Negation negation) {
             return negation.expression; // double negation gets cancelled
         }
-        return new Negation(identifier, operator, translatedExpression);
+        return new Negation(inspectionProvider.getPrimitives(), identifier, operator, translatedExpression);
     }
 
     public static Expression negate(EvaluationResult context, @NotNull Expression v) {
@@ -64,7 +77,7 @@ public class Negation extends UnaryOperator implements ExpressionWrapper {
 
     public static Expression negate(EvaluationResult context, boolean doingNullChecks, @NotNull Expression v) {
         Objects.requireNonNull(v);
-        if(v instanceof PropertyWrapper pw) {
+        if (v instanceof PropertyWrapper pw) {
             Expression negated = negate(context, doingNullChecks, pw.expression());
             return pw.withExpression(negated);
         }
@@ -113,7 +126,8 @@ public class Negation extends UnaryOperator implements ExpressionWrapper {
         MethodInfo operator = v.isNumeric() ?
                 context.getPrimitives().unaryMinusOperatorInt() :
                 context.getPrimitives().logicalNotOperatorBool();
-        return new Negation(Identifier.joined("neg", List.of(v.getIdentifier())), operator, v);
+        return new Negation(context.getPrimitives(), Identifier.joined("neg", List.of(v.getIdentifier())),
+                operator, v);
     }
 
     @Override
@@ -127,11 +141,6 @@ public class Negation extends UnaryOperator implements ExpressionWrapper {
     @Override
     public int hashCode() {
         return Objects.hash(expression);
-    }
-
-    @Override
-    public String toString() {
-        return minimalOutput();
     }
 
     @Override
@@ -164,7 +173,7 @@ public class Negation extends UnaryOperator implements ExpressionWrapper {
 
     @Override
     public ParameterizedType returnType() {
-        return expression.returnType();
+        return returnType;
     }
 
     @Override
@@ -176,13 +185,13 @@ public class Negation extends UnaryOperator implements ExpressionWrapper {
             }
             return null; // numeric
         }
-        return new Negation(identifier, operator, value);
+        return new Negation(primitives, identifier, operator, value);
     }
 
     @Override
     public Expression mergeDelays(CausesOfDelay causesOfDelay) {
         if (expression.isDelayed()) {
-            return new Negation(identifier, operator, expression.mergeDelays(causesOfDelay));
+            return new Negation(returnType, identifier, operator, expression.mergeDelays(causesOfDelay));
         }
         return this;
     }

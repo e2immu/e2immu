@@ -155,7 +155,9 @@ public class ComputedParameterAnalyser extends ParameterAnalyserImpl {
 
         // implicit @IgnoreModifications rule for java.util.function
         if (parameterAnalysis.getPropertyFromMapDelayWhenAbsent(IGNORE_MODIFICATIONS).isDelayed()) {
+            MethodInspection methodInspection = analyserContext.getMethodInspection(parameterInfo.owner);
             boolean ignore = parameterInfo.parameterizedType.isAbstractInJavaUtilFunction(analyserContext)
+                    && !methodInspection.isStatic()
                     && !parameterInfo.getMethod().methodInspection.get().isPrivate();
             parameterAnalysis.setProperty(IGNORE_MODIFICATIONS, ignore ? IGNORE_MODS_DV : NOT_IGNORE_MODS_DV);
         }

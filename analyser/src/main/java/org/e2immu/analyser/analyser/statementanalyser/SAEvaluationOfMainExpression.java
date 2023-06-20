@@ -132,6 +132,12 @@ record SAEvaluationOfMainExpression(StatementAnalysis statementAnalysis,
         } else if (statement instanceof ThrowStatement) {
             if (methodInfo().hasReturnValue()) {
                 result = modifyReturnValueRemoveConditionBasedOnState(sharedState, result);
+            } else if(statementAnalysis.parent() == null) {
+                /*
+                 void method or constructor; top-level, so we don't reach SASubBlocks.assert/throws.
+                 This can never be a pre- or post-condition, as it ALWAYS stops the method
+                 */
+                statementAnalysis.stateData().ensureEscapeNotInPreOrPostConditions();
             }
         } else if (statement instanceof AssertStatement) {
             result = handleNotNullClausesInAssertStatement(sharedState.context(), result);

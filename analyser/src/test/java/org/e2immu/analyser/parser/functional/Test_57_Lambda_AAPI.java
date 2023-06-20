@@ -93,4 +93,11 @@ public class Test_57_Lambda_AAPI extends CommonTestRunner {
                 .addEvaluationResultVisitor(evaluationResultVisitor)
                 .build());
     }
+
+
+    @Test
+    public void test_17() throws IOException {
+        testClass("Lambda_17", 0, 0, new DebugConfiguration.Builder()
+                .build());
+    }
 }
