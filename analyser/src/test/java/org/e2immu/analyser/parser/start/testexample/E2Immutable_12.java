@@ -14,8 +14,7 @@
 
 package org.e2immu.analyser.parser.start.testexample;
 
-import org.e2immu.annotation.E2Container;
-import org.e2immu.annotation.ERContainer;
+import org.e2immu.annotation.ImmutableContainer;
 import org.e2immu.annotation.NotModified;
 import org.e2immu.annotation.NotNull;
 
@@ -26,7 +25,7 @@ import java.util.stream.Stream;
 // variant on MethodReference_3, to test E2Immutable properties of Stream result
 // Map.Entry is not meant to be transparent here
 
-@E2Container
+@ImmutableContainer(hc = true)
 public class E2Immutable_12<T> {
 
     @NotModified

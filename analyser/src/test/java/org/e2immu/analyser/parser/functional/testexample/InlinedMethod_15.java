@@ -16,7 +16,6 @@ package org.e2immu.analyser.parser.functional.testexample;
 
 import org.e2immu.annotation.NotModified;
 import org.e2immu.annotation.NotNull;
-import org.e2immu.annotation.NotNull1;
 
 import java.util.LinkedList;
 import java.util.List;
@@ -27,8 +26,8 @@ public interface InlinedMethod_15 {
     }
 
     @SafeVarargs
-    @NotNull1
-    static <T> List<T> immutableConcat(@NotNull1 @NotModified Iterable<? extends T>... lists) {
+    @NotNull(content = true)
+    static <T> List<T> immutableConcat(@NotNull(content = true) @NotModified Iterable<? extends T>... lists) {
         List<T> builder = new LinkedList<>();
         for (Iterable<? extends T> list : lists) {
             for (T t : list) { // list in not null context, so lists becomes @NotNull1
@@ -38,7 +37,7 @@ public interface InlinedMethod_15 {
         return List.copyOf(builder);
     }
 
-    static <T> List<T> concatImmutable(@NotNull1 List<T> list1, @NotNull1 List<T> list2) {
+    static <T> List<T> concatImmutable(@NotNull(content = true) List<T> list1, @NotNull(content = true) List<T> list2) {
         if (list1.isEmpty()) return list2;
         if (list2.isEmpty()) return list1;
         return immutableConcat(list1, list2);
@@ -49,6 +48,7 @@ public interface InlinedMethod_15 {
         return concatImmutable(methods(), constructors());
     }
 
+    @NotNull
     List<MethodInfo> methods();
 
     List<MethodInfo> constructors();

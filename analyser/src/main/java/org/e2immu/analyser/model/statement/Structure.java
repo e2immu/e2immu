@@ -15,10 +15,7 @@
 package org.e2immu.analyser.model.statement;
 
 import org.e2immu.analyser.analyser.ForwardEvaluationInfo;
-import org.e2immu.analyser.model.Expression;
-import org.e2immu.analyser.model.Statement;
-import org.e2immu.analyser.model.StatementExecution;
-import org.e2immu.analyser.model.TypeInfo;
+import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.EmptyExpression;
 import org.e2immu.annotation.NotNull;
 
@@ -46,31 +43,19 @@ public record Structure(List<Expression> initialisers,
                         List<Statement> statements,
                         @NotNull StatementExecution statementExecution,
                         List<Structure> subStatements,
-                        boolean createVariablesInsideBlock, boolean expressionIsCondition) {
+                        boolean createVariablesInsideBlock,
+                        boolean expressionIsCondition,
+                        Comment comment) {
 
-    public Structure(@NotNull List<Expression> initialisers,
-                     @NotNull Expression expression,
-                     @NotNull ForwardEvaluationInfo forwardEvaluationInfo,
-                     @NotNull List<Expression> updaters,
-                     Block block,
-                     List<Statement> statements,
-                     @NotNull StatementExecution statementExecution,
-                     List<Structure> subStatements,
-                     boolean createVariablesInsideBlock,
-                     boolean expressionIsCondition) {
-        this.initialisers = Objects.requireNonNull(initialisers);
-        this.expression = Objects.requireNonNull(expression);
-        this.forwardEvaluationInfo = Objects.requireNonNull(forwardEvaluationInfo);
-        this.updaters = Objects.requireNonNull(updaters);
-        this.statements = statements;
-        this.block = block;
+    public Structure {
+        Objects.requireNonNull(initialisers);
+        Objects.requireNonNull(expression);
+        Objects.requireNonNull(forwardEvaluationInfo);
+        Objects.requireNonNull(updaters);
         if (block != null && statements != null)
             throw new UnsupportedOperationException("Either block, or statements, but not both");
         if (block != null && block.structure.statements == null) throw new UnsupportedOperationException();
-        this.subStatements = Objects.requireNonNull(subStatements);
-        this.statementExecution = statementExecution;
-        this.createVariablesInsideBlock = createVariablesInsideBlock;
-        this.expressionIsCondition = expressionIsCondition;
+        Objects.requireNonNull(subStatements);
     }
 
     public List<TypeInfo> findTypeDefinedInStatement() {
@@ -79,7 +64,7 @@ public record Structure(List<Expression> initialisers,
         List<TypeInfo> types = new ArrayList<>();
         expressions.forEach(expression -> expression.visit(e -> {
             TypeInfo typeInfo = e.definesType();
-            if(typeInfo != null) {
+            if (typeInfo != null) {
                 types.add(typeInfo);
                 return false;
             }
@@ -113,6 +98,12 @@ public record Structure(List<Expression> initialisers,
         private final List<Structure> subStatements = new ArrayList<>(); // catches, finally, switch entries
         private boolean createVariablesInsideBlock;
         private boolean expressionIsCondition;
+        private Comment comment;
+
+        public Builder setComment(Comment comment) {
+            this.comment = comment;
+            return this;
+        }
 
         public Builder setExpressionIsCondition(boolean expressionIsCondition) {
             this.expressionIsCondition = expressionIsCondition;
@@ -175,7 +166,8 @@ public record Structure(List<Expression> initialisers,
                     Objects.requireNonNull(statementExecution),
                     List.copyOf(subStatements),
                     createVariablesInsideBlock,
-                    expressionIsCondition);
+                    expressionIsCondition,
+                    comment);
         }
     }
 }

@@ -33,9 +33,10 @@ import org.e2immu.support.Either;
 import org.e2immu.support.SetOnce;
 
 import java.util.*;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
-public class TypeInfo implements NamedType, WithInspectionAndAnalysis, Comparable<TypeInfo> {
+public final class TypeInfo implements NamedType, WithInspectionAndAnalysis, Comparable<TypeInfo> {
 
     public static final String JAVA_LANG_OBJECT = "java.lang.Object";
     public static final String IS_FACT_FQN = "org.e2immu.annotatedapi.AnnotatedAPI.isFact(boolean)";
@@ -79,14 +80,17 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis, Comparabl
         return isNotJavaLang() && !isPrimitiveExcludingVoid() && !isVoid();
     }
 
+    public boolean packageIsExactlyJavaLang() {
+        return "java.lang".equals(packageName());
+    }
+
     public boolean isNotJavaLang() {
         return !this.fullyQualifiedName.startsWith("java.lang.");
     }
 
     public boolean needsParent() {
         return this.fullyQualifiedName.indexOf('.') > 0 &&
-                !this.fullyQualifiedName.startsWith("java.lang") &&
-                !this.fullyQualifiedName.startsWith("jdk.internal");
+                !this.fullyQualifiedName.startsWith("java.lang") && isNotJDKInternal();
     }
 
     public boolean isJavaLangObject() {
@@ -95,6 +99,10 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis, Comparabl
 
     boolean isJavaLangString() {
         return "java.lang.String".equals(this.fullyQualifiedName);
+    }
+
+    boolean isJavaLangClass() {
+        return "java.lang.Class".equals(this.fullyQualifiedName);
     }
 
     boolean isJavaLangVoid() {
@@ -274,8 +282,7 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis, Comparabl
 
     public boolean isAbstract(InspectionProvider inspectionProvider) {
         TypeInspection inspection = inspectionProvider.getTypeInspection(this);
-        if (inspection.typeNature() == TypeNature.INTERFACE) return true;
-        return inspection.modifiers().contains(TypeModifier.ABSTRACT);
+        return inspection.isAbstract();
     }
 
     /*
@@ -312,22 +319,6 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis, Comparabl
         return Objects.hash(fullyQualifiedName);
     }
 
-    @Override
-    public Optional<AnnotationExpression> hasInspectedAnnotation(Class<?> annotation) {
-        if (!typeInspection.isSet()) return Optional.empty();
-        String annotationFQN = annotation.getName();
-        Optional<AnnotationExpression> fromType = (getInspection().getAnnotations().stream()
-                .filter(ae -> ae.typeInfo().fullyQualifiedName.equals(annotationFQN)))
-                .findFirst();
-        if (fromType.isPresent()) return fromType;
-        if (parentIsNotJavaLangObject()) {
-            Optional<AnnotationExpression> fromParent = Objects.requireNonNull(typeInspection.get().parentClass().typeInfo)
-                    .hasInspectedAnnotation(annotation);
-            if (fromParent.isPresent()) return fromParent;
-        }
-        return Optional.empty();
-    }
-
     public boolean parentIsNotJavaLangObject() {
         ParameterizedType parentClass = typeInspection.get().parentClass();
         return parentClass != null && !parentClass.isJavaLangObject();
@@ -335,7 +326,7 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis, Comparabl
 
     public ParameterizedType asParameterizedType(InspectionProvider inspectionProvider) {
         List<ParameterizedType> typeParameters = inspectionProvider.getTypeInspection(this).typeParameters()
-                .stream().map(tp -> new ParameterizedType(tp, 0, ParameterizedType.WildCard.NONE))
+                .stream().map(TypeParameter::toParameterizedType)
                 .collect(Collectors.toList());
         return new ParameterizedType(this, typeParameters);
     }
@@ -371,22 +362,6 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis, Comparabl
         return packageNameOrEnclosingType.isRight();
     }
 
-    public boolean isPrivate() {
-        return typeInspection.get().modifiers().contains(TypeModifier.PRIVATE);
-    }
-
-    public boolean isPublic() {
-        return isPublic(InspectionProvider.DEFAULT);
-    }
-
-    public boolean isPublic(InspectionProvider inspectionProvider) {
-        TypeInspection typeInspection = inspectionProvider.getTypeInspection(this);
-        if (!typeInspection.modifiers().contains(TypeModifier.PUBLIC)) return false;
-        if (packageNameOrEnclosingType.isRight()) {
-            return packageNameOrEnclosingType.getRight().isPublic(inspectionProvider);
-        }
-        return true;
-    }
 
     public boolean isEnclosedIn(TypeInfo typeInfo) {
         if (typeInfo == this) return true;
@@ -399,16 +374,16 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis, Comparabl
     public boolean isEnclosedInStopAtLambdaOrAnonymous(TypeInfo typeInfo) {
         if (typeInfo == this) return true;
         if (packageNameOrEnclosingType.isLeft()) return false;
-        if (simpleName.startsWith("$") || simpleName.contains("$KV$")) return false;
+        if (isAnonymous() || isClassInMethod()) return false;
         return packageNameOrEnclosingType.getRight().isEnclosedIn(typeInfo);
     }
 
     public boolean isPrivateNested() {
-        return isNestedType() && isPrivate();
+        return isNestedType() && typeInspection.get().isPrivate();
     }
 
     public boolean isPrivateOrEnclosingIsPrivate() {
-        if (isPrivate()) return true;
+        if (typeInspection.get().isPrivate()) return true;
         if (packageNameOrEnclosingType.isLeft()) return false;
         return packageNameOrEnclosingType.getRight().isPrivateOrEnclosingIsPrivate();
     }
@@ -460,8 +435,10 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis, Comparabl
         MethodInfo foundHere = typeInspection.get().methodStream(TypeInspection.Methods.THIS_TYPE_ONLY)
                 .filter(m -> m.methodResolution.get().overrides().contains(abstractMethodInfo))
                 .findFirst().orElse(null);
-        if (foundHere != null && !foundHere.isAbstract()
-                && (foundHere.computedAnalysis() || foundHere.methodInspection.get().isPublic())) return foundHere;
+        if (foundHere != null && !foundHere.methodInspection.get().isAbstract()
+                && (foundHere.computedAnalysis() || foundHere.methodInspection.get().isPubliclyAccessible())) {
+            return foundHere;
+        }
         TypeInspection inspection = typeInspection.get();
         ParameterizedType parentClass = inspection.parentClass();
         if (parentClass != null && !parentClass.isJavaLangObject()) {
@@ -522,8 +499,43 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis, Comparabl
 
     @Override
     public UpgradableBooleanMap<TypeInfo> typesReferenced() {
-        if (!typeInspection.isSet()) return UpgradableBooleanMap.of(); // dangerous?
-        return typeInspection.get("type inspection of " + fullyQualifiedName).typesReferenced();
+        if (!typeInspection.isSet()) return UpgradableBooleanMap.of();
+        TypeInspection inspection = typeInspection.get();
+
+        UpgradableBooleanMap<TypeInfo> fromParent = inspection.parentClass() == null ? UpgradableBooleanMap.of()
+                : inspection.parentClass().typesReferenced(true);
+
+        UpgradableBooleanMap<TypeInfo> enclosingType = packageNameOrEnclosingType.isRight() && !isStatic() && !isInterface() ?
+                UpgradableBooleanMap.of(packageNameOrEnclosingType.getRight(), false) : UpgradableBooleanMap.of();
+
+        UpgradableBooleanMap<TypeInfo> fromInterfaces = inspection.interfacesImplemented().stream()
+                .flatMap(i -> i.typesReferenced(true).stream()).collect(UpgradableBooleanMap.collector());
+
+        UpgradableBooleanMap<TypeInfo> inspectedAnnotations = inspection.getAnnotations().stream()
+                .flatMap(a -> a.typesReferenced().stream()).collect(UpgradableBooleanMap.collector());
+
+        UpgradableBooleanMap<TypeInfo> analysedAnnotations = hasBeenAnalysed() ? typeAnalysis.get().getAnnotationStream()
+                .flatMap(entry -> entry.getKey().typesReferenced().stream()).collect(UpgradableBooleanMap.collector())
+                : UpgradableBooleanMap.of();
+
+        return UpgradableBooleanMap.of(
+                fromParent,
+                enclosingType,
+                fromInterfaces,
+                inspectedAnnotations,
+                analysedAnnotations,
+
+                // types from methods and constructors and their parameters
+                inspection.methodsAndConstructors(TypeInspection.Methods.THIS_TYPE_ONLY)
+                        .flatMap(a -> a.typesReferenced().stream()).collect(UpgradableBooleanMap.collector()),
+
+                // types from fields
+                inspection.fields().stream().flatMap(a -> a.typesReferenced().stream()).collect(UpgradableBooleanMap.collector()),
+
+                // types from subTypes
+                inspection.subTypes().stream().flatMap(a -> a.typesReferenced().stream()).collect(UpgradableBooleanMap.collector())
+
+        );
     }
 
     public Map<NamedType, ParameterizedType> mapInTermsOfParametersOfSuperType(InspectionProvider inspectionProvider, ParameterizedType superType) {
@@ -713,7 +725,8 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis, Comparabl
 
 
     public TypeName typeName(TypeName.Required requiresQualifier) {
-        return new TypeName(simpleName, fullyQualifiedName, isPrimaryType() ? simpleName : fromPrimaryTypeDownwards(),
+        String fqn = packageIsExactlyJavaLang() ? simpleName : fullyQualifiedName;
+        return new TypeName(simpleName, fqn, isPrimaryType() ? simpleName : fromPrimaryTypeDownwards(),
                 requiresQualifier);
     }
 
@@ -728,5 +741,52 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis, Comparabl
         ParameterizedType iterablePt = analyserContext.importantClasses().iterable();
         ParameterizedType concreteIterable = concreteType.concreteSuperType(analyserContext, iterablePt);
         return concreteIterable == null ? null : concreteIterable.parameters.get(0);
+    }
+
+    public boolean isNotJDKInternal() {
+        return !fullyQualifiedName.startsWith("jdk.internal");
+    }
+
+    public Set<ParameterizedType> superTypes(InspectionProvider inspectionProvider) {
+        TypeInspection inspection = inspectionProvider.getTypeInspection(this);
+        Set<ParameterizedType> superTypes = new HashSet<>();
+        if (inspection.parentClass() != null) {
+            superTypes.add(inspection.parentClass());
+            if (!inspection.parentClass().isJavaLangObject()) {
+                superTypes.addAll(inspection.parentClass().typeInfo.superTypes(inspectionProvider));
+            }
+        }
+        for (ParameterizedType interfaceImplemented : inspection.interfacesImplemented()) {
+            superTypes.add(interfaceImplemented);
+            superTypes.addAll(interfaceImplemented.typeInfo.superTypes(inspectionProvider));
+        }
+        return superTypes;
+    }
+
+    private static final Pattern ANONYMOUS = Pattern.compile("\\$\\d+");
+
+    private static final Pattern CLASS_IN_METHOD = Pattern.compile("\\$KV\\$");
+
+    public boolean isAnonymous() {
+        return ANONYMOUS.matcher(simpleName).matches();
+    }
+
+    public boolean isClassInMethod() {
+        return CLASS_IN_METHOD.matcher(simpleName).find();
+    }
+
+    public boolean recursivelyInConstructionOrStaticWithRespectTo(InspectionProvider inspectionProvider,
+                                                                  TypeInfo enclosingType) {
+        MethodInfo enclosingMethod = inspectionProvider.getTypeInspection(this).enclosingMethod();
+        if (enclosingMethod != null) {
+            if (enclosingMethod.inConstruction()) return true;
+            MethodInspection enclosingInspection = inspectionProvider.getMethodInspection(enclosingMethod);
+            if (enclosingMethod.typeInfo == enclosingType && enclosingInspection.isStatic()) {
+                return true;
+            }
+            return enclosingMethod.typeInfo
+                    .recursivelyInConstructionOrStaticWithRespectTo(inspectionProvider, enclosingType);
+        }
+        return false;
     }
 }

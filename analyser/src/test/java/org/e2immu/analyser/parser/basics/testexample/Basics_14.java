@@ -14,16 +14,26 @@
 
 package org.e2immu.analyser.parser.basics.testexample;
 
+import org.e2immu.annotation.Final;
+import org.e2immu.annotation.ImmutableContainer;
+import org.e2immu.annotation.eventual.Mark;
+import org.e2immu.annotation.eventual.Only;
+
+@ImmutableContainer(after = "t", hc = true)
 public class Basics_14<T> {
 
+    @ImmutableContainer(hc = true)
+    @Final(after = "t")
     private T t;
 
+    @Mark("t")
     public void setT(T t) {
         if (t == null) throw new NullPointerException();
         if (this.t != null) throw new UnsupportedOperationException();
         this.t = t;
     }
 
+    @Only(after = "t")
     public T getT() {
         if (t == null) throw new UnsupportedOperationException();
         return t;

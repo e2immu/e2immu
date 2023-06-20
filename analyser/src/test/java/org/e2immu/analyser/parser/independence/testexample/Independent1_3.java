@@ -14,17 +14,16 @@
 
 package org.e2immu.analyser.parser.independence.testexample;
 
-import org.e2immu.annotation.E2Container;
-import org.e2immu.annotation.Independent1;
+
+import org.e2immu.annotation.ImmutableContainer;
+import org.e2immu.annotation.Independent;
 
 import java.util.*;
-import java.util.function.IntFunction;
-import java.util.function.Supplier;
 
 /*
 tests the Arrays.setAll(...) method, now with a method reference
  */
-@E2Container
+@ImmutableContainer(hc = true)
 public class Independent1_3<T> {
     private final T[] ts;
 
@@ -33,7 +32,7 @@ public class Independent1_3<T> {
     of 'ts' will be linked copied into the content of 'set'.
      */
     @SuppressWarnings("unchecked")
-    public Independent1_3( @Independent1 List<T> content) {
+    public Independent1_3( @Independent(hc = true) List<T> content) {
         this.ts = (T[]) new Object[content.size()];
         Arrays.setAll(this.ts, content::get);
     }

@@ -19,25 +19,37 @@ import org.e2immu.analyser.analyser.Property;
 import org.e2immu.analyser.analysis.MethodAnalysis;
 import org.e2immu.analyser.analysis.ParameterAnalysis;
 import org.e2immu.analyser.analysis.TypeAnalysis;
-import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.inspector.MethodResolution;
+import org.e2immu.analyser.model.MethodInfo;
+import org.e2immu.analyser.model.MethodInspection;
+import org.e2immu.analyser.model.MultiLevel;
+import org.e2immu.analyser.model.TypeInfo;
 import org.junit.jupiter.api.Test;
 
-import java.io.PrintStream;
-import java.io.Writer;
+import java.io.*;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 public class TestCommonJavaIO extends CommonAnnotatedAPI {
+
+    @Test
+    public void testCloseable() {
+        TypeInfo typeInfo = typeContext.getFullyQualified(Closeable.class);
+        TypeAnalysis typeAnalysis = typeInfo.typeAnalysis.get();
+
+        assertEquals(MultiLevel.INDEPENDENT_DV, typeAnalysis.getProperty(Property.INDEPENDENT));
+        assertEquals(MultiLevel.MUTABLE_DV, typeAnalysis.getProperty(Property.IMMUTABLE));
+        assertEquals(MultiLevel.CONTAINER_DV, typeAnalysis.getProperty(Property.CONTAINER));
+    }
 
     @Test
     public void testPrintStream() {
         TypeInfo typeInfo = typeContext.getFullyQualified(PrintStream.class);
         TypeAnalysis typeAnalysis = typeInfo.typeAnalysis.get();
 
-        assertEquals(MultiLevel.INDEPENDENT_DV, typeAnalysis.getProperty(Property.INDEPENDENT));
+        assertEquals(MultiLevel.DEPENDENT_DV, typeAnalysis.getProperty(Property.INDEPENDENT));
         assertEquals(MultiLevel.MUTABLE_DV, typeAnalysis.getProperty(Property.IMMUTABLE));
-        assertEquals(MultiLevel.CONTAINER_DV, typeAnalysis.getProperty(Property.CONTAINER));
+        assertEquals(MultiLevel.NOT_CONTAINER_DV, typeAnalysis.getProperty(Property.CONTAINER));
     }
 
     @Test
@@ -59,6 +71,15 @@ public class TestCommonJavaIO extends CommonAnnotatedAPI {
         TypeInfo typeInfo = typeContext.getFullyQualified(PrintStream.class);
         TypeInfo objectTypeInfo = typeContext.getPrimitives().objectTypeInfo();
         MethodInfo methodInfo = typeInfo.findUniqueMethod("println", objectTypeInfo);
+        MethodInspection methodInspection = methodInfo.methodInspection.get();
+        assertTrue(methodInspection.isPublic());
+        assertFalse(methodInspection.isAbstract());
+        assertFalse(methodInspection.isDefault());
+        assertTrue(methodInspection.isPubliclyAccessible());
+        assertFalse(methodInspection.isStatic());
+
+        MethodResolution methodResolution = methodInfo.methodResolution.get();
+        assertTrue(methodResolution.allowsInterrupts()); // statement time will increase
 
         MethodAnalysis methodAnalysis = methodInfo.methodAnalysis.get();
         assertEquals(DV.TRUE_DV, methodAnalysis.getProperty(Property.MODIFIED_METHOD));
@@ -81,5 +102,39 @@ public class TestCommonJavaIO extends CommonAnnotatedAPI {
 
         assertEquals(MultiLevel.INDEPENDENT_DV, methodAnalysis.getProperty(Property.INDEPENDENT));
 
+    }
+
+    @Test
+    public void testFilterOutputStream() {
+        TypeInfo typeInfo = typeContext.getFullyQualified(FilterOutputStream.class);
+        TypeAnalysis typeAnalysis = typeInfo.typeAnalysis.get();
+
+        assertEquals(MultiLevel.DEPENDENT_DV, typeAnalysis.getProperty(Property.INDEPENDENT));
+        assertEquals(MultiLevel.MUTABLE_DV, typeAnalysis.getProperty(Property.IMMUTABLE));
+        assertEquals(MultiLevel.NOT_CONTAINER_DV, typeAnalysis.getProperty(Property.CONTAINER));
+    }
+
+    @Test
+    public void testFilterOutputStreamConstructor() {
+        TypeInfo typeInfo = typeContext.getFullyQualified(FilterOutputStream.class);
+        MethodInfo methodInfo = typeInfo.findConstructor(1);
+
+        ParameterAnalysis p0 = methodInfo.parameterAnalysis(0);
+        assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, p0.getProperty(Property.NOT_NULL_PARAMETER));
+        assertEquals(DV.TRUE_DV, p0.getProperty(Property.MODIFIED_VARIABLE));
+        assertEquals(MultiLevel.DEPENDENT_DV, p0.getProperty(Property.INDEPENDENT));
+    }
+
+
+    @Test
+    public void testByteArrayOutputStreamToByteArray() {
+        TypeInfo typeInfo = typeContext.getFullyQualified(ByteArrayOutputStream.class);
+        MethodInfo methodInfo = typeInfo.findUniqueMethod("toByteArray", 0);
+
+        MethodAnalysis methodAnalysis = methodInfo.methodAnalysis.get();
+        assertEquals(DV.FALSE_DV, methodAnalysis.getProperty(Property.MODIFIED_METHOD));
+        assertEquals(MultiLevel.DEPENDENT_DV, methodAnalysis.getProperty(Property.INDEPENDENT));
+
+        assertFalse(methodInfo.methodResolution.get().allowsInterrupts());
     }
 }

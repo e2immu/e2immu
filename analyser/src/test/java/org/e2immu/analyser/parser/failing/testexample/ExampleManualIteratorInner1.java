@@ -20,7 +20,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-@E2Container
+@ImmutableContainer(hc = true)
 public class ExampleManualIteratorInner1<E> {
 
     @NotModified
@@ -74,7 +74,7 @@ public class ExampleManualIteratorInner1<E> {
     @NotModified // otherwise we cannot have @E2Immutable; can be computed:
     // "e"'s type is not support-data, so accept does not make a modification
     // there are no other modifying methods to allow for self-modification
-    public void visit(@NotNull1 MyConsumer<E> consumer) { // follows because there are no means of self-modifying
+    public void visit(@NotNull(content = true) MyConsumer<E> consumer) { // follows because there are no means of self-modifying
         for (E e : list) consumer.accept(e);
     }
 }

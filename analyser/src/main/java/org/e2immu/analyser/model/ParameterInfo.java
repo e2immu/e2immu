@@ -25,12 +25,10 @@ import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.output.*;
 import org.e2immu.analyser.util.UpgradableBooleanMap;
 import org.e2immu.annotation.Container;
-import org.e2immu.annotation.NotNull;
 import org.e2immu.support.SetOnce;
 
 import java.util.HashSet;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.Set;
 
 /**
@@ -119,18 +117,23 @@ public class ParameterInfo implements Variable, WithInspectionAndAnalysis {
         return parameterInspection.isSet();
     }
 
+    /*
+    the reason we want all three fields (index, name, owner) in the equality, where name or index seems redundant,
+    is that translations which change name and swap parameters should not pick up the wrong variable.
+     */
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         ParameterInfo that = (ParameterInfo) o;
-        return index == that.index &&
-                owner.equals(that.owner);
+        return index == that.index
+                && name.equals(that.name)
+                && owner.equals(that.owner);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(index, owner);
+        return Objects.hash(index, name, owner);
     }
 
     @Override
@@ -205,23 +208,9 @@ public class ParameterInfo implements Variable, WithInspectionAndAnalysis {
         return outputBuilder;
     }
 
-
     @Override
     public boolean isStatic() {
         return false;
-    }
-
-    @Override
-    public Optional<AnnotationExpression> hasInspectedAnnotation(Class<?> annotation) {
-        String annotationFQN = annotation.getName();
-        Optional<AnnotationExpression> fromParameter = getInspection().getAnnotations().stream()
-                .filter(ae -> ae.typeInfo().fullyQualifiedName.equals(annotationFQN))
-                .findFirst();
-        if (fromParameter.isPresent()) return fromParameter;
-        if (NotNull.class.equals(annotation)) {
-            return owner.typeInfo.hasInspectedAnnotation(annotation);
-        }
-        return Optional.empty();
     }
 
     @Override
@@ -231,10 +220,17 @@ public class ParameterInfo implements Variable, WithInspectionAndAnalysis {
 
     @Override
     public UpgradableBooleanMap<TypeInfo> typesReferenced(boolean explicit) {
-        return UpgradableBooleanMap.of(parameterizedType.typesReferenced(explicit),
-                hasBeenInspected() ?
-                        parameterInspection.get().getAnnotations().stream().flatMap(ae -> ae.typesReferenced().stream()).collect(UpgradableBooleanMap.collector())
-                        : UpgradableBooleanMap.of());
+        UpgradableBooleanMap<TypeInfo> inspectedAnnotations =
+                parameterInspection.get().getAnnotations().stream()
+                        .flatMap(ae -> ae.typesReferenced().stream())
+                        .collect(UpgradableBooleanMap.collector());
+        UpgradableBooleanMap<TypeInfo> analysedAnnotations = hasBeenAnalysed()
+                ? parameterAnalysis.get().getAnnotationStream()
+                .flatMap(ae -> ae.getKey().typesReferenced().stream())
+                .collect(UpgradableBooleanMap.collector())
+                : UpgradableBooleanMap.of();
+
+        return UpgradableBooleanMap.of(parameterizedType.typesReferenced(explicit), analysedAnnotations, inspectedAnnotations);
     }
 
     // as variable
@@ -272,5 +268,10 @@ public class ParameterInfo implements Variable, WithInspectionAndAnalysis {
     @Override
     public CausesOfDelay delay(CauseOfDelay.Cause cause) {
         return DelayFactory.createDelay(newLocation(), cause);
+    }
+
+    @Override
+    public int getComplexity() {
+        return 2;
     }
 }

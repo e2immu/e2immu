@@ -22,7 +22,7 @@ import org.e2immu.annotation.*;
  ERROR in F:s5: Private field not read outside constructors
  */
 
-@E1Immutable(absent = true)
+@FinalFields(absent = true)
 @Container
 public class Final_0 {
 

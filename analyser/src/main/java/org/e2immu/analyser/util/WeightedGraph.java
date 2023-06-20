@@ -15,6 +15,7 @@
 package org.e2immu.analyser.util;
 
 import org.e2immu.annotation.*;
+import org.e2immu.annotation.eventual.Only;
 import org.e2immu.support.Freezable;
 
 import java.util.Map;
@@ -27,7 +28,7 @@ import java.util.function.BiConsumer;
  *
  * @param <T>
  */
-@E2Container(after = "frozen")
+@ImmutableContainer(after = "frozen", hc = true)
 public class WeightedGraph<T extends Comparable<? super T>, W extends WeightedGraph.Weight> extends Freezable {
     public interface WeightType<W extends Weight> {
         W neutral();
@@ -65,7 +66,7 @@ public class WeightedGraph<T extends Comparable<? super T>, W extends WeightedGr
         return nodeMap.isEmpty();
     }
 
-    @Independent
+    @Independent(hc = true)
     public Map<T, W> links(@NotNull T t, boolean followDelayed) {
         Map<T, W> result = new TreeMap<>();
         result.put(t, neutral);
@@ -95,7 +96,7 @@ public class WeightedGraph<T extends Comparable<? super T>, W extends WeightedGr
                         distanceToStartingPoint.put(n, distanceToN);
                         recursivelyComputeLinks(n, distanceToStartingPoint, followDelayed);
                     } else {
-                        W newDistanceToN = currentDistanceToN .compareTo(neutral) == 0 ? neutral : min(distanceToN, currentDistanceToN);
+                        W newDistanceToN = currentDistanceToN.compareTo(neutral) == 0 ? neutral : min(distanceToN, currentDistanceToN);
                         distanceToStartingPoint.put(n, newDistanceToN);
                     }
                 } // else: ignore delayed links!
@@ -103,16 +104,16 @@ public class WeightedGraph<T extends Comparable<? super T>, W extends WeightedGr
         }
     }
 
-    private  W min(W w1, W w2) {
+    private W min(W w1, W w2) {
         return w1.compareTo(w2) <= 0 ? w1 : w2;
     }
 
-    private  W max(W w1, W w2) {
+    private W max(W w1, W w2) {
         return w1.compareTo(w2) <= 0 ? w2 : w1;
     }
 
     @NotModified(contract = true)
-    public void visit(@NotNull BiConsumer<T, Map<T, W>> consumer) {
+    public void visit(@NotNull @Independent(hc = true) BiConsumer<T, Map<T, W>> consumer) {
         nodeMap.values().forEach(n -> consumer.accept(n.t, n.dependsOn));
     }
 
@@ -132,13 +133,15 @@ public class WeightedGraph<T extends Comparable<? super T>, W extends WeightedGr
 
     @Only(before = "frozen")
     @Modified
-    public void addNode(@NotNull T t, @NotNull Map<T, W> dependsOn) {
+    public void addNode(@NotNull @Independent(hc = true) T t, @Independent(hc = true) @NotNull Map<T, W> dependsOn) {
         addNode(t, dependsOn, false);
     }
 
     @Only(before = "frozen")
     @Modified
-    public void addNode(@NotNull T t, @NotNull Map<T, W> dependsOn, boolean bidirectional) {
+    public void addNode(@NotNull @Independent(hc = true) T t,
+                        @Independent(hc = true) @NotNull Map<T, W> dependsOn,
+                        boolean bidirectional) {
         ensureNotFrozen();
         Node<T, W> node = getOrCreate(t);
         for (Map.Entry<T, W> e : dependsOn.entrySet()) {

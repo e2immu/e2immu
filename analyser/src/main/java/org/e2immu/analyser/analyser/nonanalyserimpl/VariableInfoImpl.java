@@ -27,6 +27,7 @@ import org.e2immu.analyser.model.expression.VariableExpression;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.support.EventuallyFinal;
+import org.e2immu.support.SetOnce;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -38,7 +39,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static org.e2immu.analyser.analyser.Property.*;
-import static org.e2immu.analyser.analyser.VariableInfoContainer.NOT_RELEVANT;
+import static org.e2immu.analyser.analyser.VariableInfoContainer.IGNORE_STATEMENT_TIME;
 import static org.e2immu.analyser.analyser.VariableInfoContainer.NOT_YET_READ;
 import static org.e2immu.analyser.util.EventuallyFinalExtension.setFinalAllowEquals;
 
@@ -60,11 +61,7 @@ public class VariableInfoImpl implements VariableInfo {
     // 20211023 needs to be frozen explicitly
     private final EventuallyFinal<LinkedVariables> linkedVariables = new EventuallyFinal<>();
 
-    // ONLY for testing!
-    public VariableInfoImpl(Variable variable) {
-        this(Location.NOT_YET_SET, variable, AssignmentIds.NOT_YET_ASSIGNED, NOT_YET_READ, Set.of(), null,
-                VariableInfoContainer.NOT_RELEVANT);
-    }
+    private final SetOnce<Integer> modificationTime = new SetOnce<>();
 
     // used for returning delayed values
     public VariableInfoImpl(Location location, Variable variable, int statementTime) {
@@ -74,16 +71,14 @@ public class VariableInfoImpl implements VariableInfo {
 
     // used to break initialisation delay
     public VariableInfoImpl(Location location, Variable variable, Expression value) {
-        this(location, variable, AssignmentIds.NOT_YET_ASSIGNED, NOT_YET_READ, Set.of(), value,
-                VariableInfoContainer.NOT_RELEVANT);
+        this(location, variable, AssignmentIds.NOT_YET_ASSIGNED, NOT_YET_READ, Set.of(), value, IGNORE_STATEMENT_TIME);
         assert location != Location.NOT_YET_SET;
     }
 
     // used as a temp in MergeHelper; make sure that this one is not used to generate VI objects for inclusion
     // in DelayedWrappedExpression: they need to be the original ones that will be updated in subsequent iterations
     public VariableInfoImpl(Location location, Variable variable, Expression value, Properties properties) {
-        this(location, variable, AssignmentIds.NOT_YET_ASSIGNED, NOT_YET_READ, Set.of(), value,
-                NOT_RELEVANT);
+        this(location, variable, AssignmentIds.NOT_YET_ASSIGNED, NOT_YET_READ, Set.of(), value, IGNORE_STATEMENT_TIME);
         properties.stream().forEach(e -> setProperty(e.getKey(), e.getValue()));
     }
 
@@ -99,7 +94,7 @@ public class VariableInfoImpl implements VariableInfo {
         if (variable instanceof FieldReference fr && fr.scope instanceof DelayedVariableExpression dve) {
             statementTime = dve.statementTime;
         } else {
-            statementTime = VariableInfoContainer.NOT_A_FIELD;
+            statementTime = IGNORE_STATEMENT_TIME;
         }
         value.setVariable(DelayedVariableExpression.forVariable(variable, statementTime, causesOfDelay));
         linkedVariables.setVariable(LinkedVariables.NOT_YET_SET);
@@ -227,6 +222,17 @@ public class VariableInfoImpl implements VariableInfo {
         return readAtStatementTimes;
     }
 
+    @Override
+    public int getModificationTimeOrNegative() {
+        return modificationTime.getOrDefault(-2);
+    }
+
+    public void setModificationTimeIfNotYetSet(int modificationTime) {
+        if (!this.modificationTime.isSet()) {
+            this.modificationTime.set(modificationTime);
+        }
+    }
+
     // ***************************** NON-INTERFACE CODE: SETTERS ************************
 
     // return progress
@@ -308,23 +314,8 @@ public class VariableInfoImpl implements VariableInfo {
         setProperty(CONTEXT_IMMUTABLE, MultiLevel.MUTABLE_DV); // even if the variable is a primitive...
         setProperty(CONTEXT_CONTAINER, MultiLevel.NOT_CONTAINER_DV);
         setProperty(EXTERNAL_IMMUTABLE, EXTERNAL_IMMUTABLE.valueWhenAbsent());
-        setProperty(EXTERNAL_CONTAINER, EXTERNAL_CONTAINER.valueWhenAbsent());
+        setProperty(CONTAINER_RESTRICTION, CONTAINER_RESTRICTION.valueWhenAbsent());
         setProperty(EXTERNAL_IGNORE_MODIFICATIONS, EXTERNAL_IGNORE_MODIFICATIONS.valueWhenAbsent());
-    }
-
-    public void ensureProperty(Property property, DV dv) {
-        DV inMap = properties.getOrDefaultNull(property);
-        if (inMap == null || inMap.isDelayed()) {
-            properties.put(property, dv);
-        }
-    }
-
-    /*
-    in the safest possible way, keep what you have
-     */
-    public void ensureLinkedVariables() {
-        if (linkedVariables.isVariable()) {
-            linkedVariables.setFinal(linkedVariables.get().nonDelayedPart());
-        }
+        modificationTime.set(0);
     }
 }

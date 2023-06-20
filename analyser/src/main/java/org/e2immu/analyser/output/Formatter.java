@@ -120,7 +120,7 @@ public record Formatter(FormattingOptions options) {
             }
             if (newLineDouble.pop) {
                 pop(tabs, !tabs.isEmpty() && tabs.peek().previousWriteNewLineBefore ? "\n" : "", writer);
-            } else if (newLineDouble.swapWriter) {
+            } else if (newLineDouble.swapWriter && !tabs.isEmpty()) {
                 Tab tab = tabs.peek();
                 assert tab != null;
                 swap(tabs, newLineDouble.writeNewLineBefore || tab.previousWriteNewLineBefore ? "\n" : "", writer);

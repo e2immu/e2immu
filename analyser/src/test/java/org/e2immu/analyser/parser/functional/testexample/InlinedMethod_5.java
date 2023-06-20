@@ -14,9 +14,10 @@
 
 package org.e2immu.analyser.parser.functional.testexample;
 
-import org.e2immu.annotation.Constant;
 
 // expansion of constant
+
+import org.e2immu.annotation.ImmutableContainer;
 
 public class InlinedMethod_5 {
 
@@ -34,13 +35,13 @@ public class InlinedMethod_5 {
         return sum(5);
     }
 
-    @Constant("11")
+    @ImmutableContainer("11")
     public static int expand1() {
         InlinedMethod_5 i5 = new InlinedMethod_5(6);
         return i5.sum5();
     }
 
-    @Constant("7")
+    @ImmutableContainer("7")
     public static int expand2() {
         InlinedMethod_5 i5 = new InlinedMethod_5(5);
         return i5.sum(2);

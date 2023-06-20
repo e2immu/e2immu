@@ -22,8 +22,9 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class SubTypes_5 {
 
-    public static Iterable<Integer> makeIterator(int n) {
-        int lower = 0;
+    final int lower = 0;
+
+    public Iterable<Integer> makeIterator(int n) {
 
         // for this test, do not turn into Lambda!
         return new Iterable<>() {
@@ -47,7 +48,7 @@ public class SubTypes_5 {
         };
     }
 
-    public static int sum() {
+    public int sum() {
         int sum = 0;
         for (int i : makeIterator(5)) {
             sum += i;

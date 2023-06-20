@@ -17,6 +17,7 @@ package org.e2immu.analyser.analyser.statementanalyser;
 import org.e2immu.analyser.analyser.Properties;
 import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.analyser.util.AnalyserResult;
+import org.e2immu.analyser.analyser.util.VariableAccessReport;
 import org.e2immu.analyser.analysis.StatementAnalysis;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.model.*;
@@ -76,8 +77,8 @@ record SAHelper(StatementAnalysis statementAnalysis) {
 
     private static DV groupPropertyValue(Property k, DV prev, DV change, EvaluationContext evaluationContext, Variable variable) {
         return switch (k) {
-            case EXTERNAL_CONTAINER, EXTERNAL_IGNORE_MODIFICATIONS -> prev.minIgnoreNotInvolved(change);
-            case EXTERNAL_IMMUTABLE, EXTERNAL_NOT_NULL, CONTEXT_IMMUTABLE -> prev.max(change);
+            case EXTERNAL_IGNORE_MODIFICATIONS -> prev.minIgnoreNotInvolved(change);
+            case CONTAINER_RESTRICTION, EXTERNAL_IMMUTABLE, EXTERNAL_NOT_NULL, CONTEXT_IMMUTABLE -> prev.max(change);
             case CONTEXT_MODIFIED -> VariableInfo.MAX_CM.apply(prev, change);
             case CONTEXT_CONTAINER -> evaluationContext.isMyselfExcludeThis(variable)
                     ? MultiLevel.NOT_CONTAINER_DV
@@ -175,7 +176,9 @@ record SAHelper(StatementAnalysis statementAnalysis) {
     public void visitStatementVisitors(String statementId,
                                        AnalyserResult result,
                                        StatementAnalyserSharedState sharedState,
-                                       DebugConfiguration debugConfiguration, AnalyserComponents<String, StatementAnalyserSharedState> analyserComponents) {
+                                       DebugConfiguration debugConfiguration,
+                                       AnalyserComponents<String, StatementAnalyserSharedState> analyserComponents,
+                                       VariableAccessReport variableAccessReport) {
         MethodInfo methodInfo = statementAnalysis.methodAnalysis().getMethodInfo();
         for (StatementAnalyserVariableVisitor statementAnalyserVariableVisitor :
                 debugConfiguration.statementAnalyserVariableVisitors()) {
@@ -210,7 +213,8 @@ record SAHelper(StatementAnalysis statementAnalysis) {
                             cm == null ? null : cm.absoluteState(sharedState.context()),
                             cm,
                             sharedState.localConditionManager(),
-                            analyserComponents.getStatusesAsMap()));
+                            analyserComponents.getStatusesAsMap(),
+                            variableAccessReport));
         }
     }
 
@@ -219,7 +223,6 @@ record SAHelper(StatementAnalysis statementAnalysis) {
 
     public static EvaluationResult scopeVariablesForPatternVariables(EvaluationResult evaluationResult2, String index) {
         TranslationMapImpl.Builder builder = new TranslationMapImpl.Builder();
-        EvaluationResult.Builder erBuilder = new EvaluationResult.Builder(evaluationResult2);
         for (Map.Entry<Variable, EvaluationResult.ChangeData> e : evaluationResult2.changeData().entrySet()) {
             if (evaluationResult2.evaluationContext().isPatternVariableCreatedAt(e.getKey(), index)) {
                 Variable pv = e.getKey();

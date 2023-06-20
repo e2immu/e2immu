@@ -18,6 +18,7 @@ import org.e2immu.analyser.analyser.CausesOfDelay;
 import org.e2immu.analyser.analyser.DV;
 import org.e2immu.analyser.analyser.EvaluationResult;
 import org.e2immu.analyser.analyser.Property;
+import org.e2immu.analyser.model.Element;
 import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.ParameterizedType;
 import org.e2immu.analyser.model.TranslationMap;
@@ -54,8 +55,8 @@ public record MultiExpression(Expression... expressions) {
         return Arrays.stream(expressions);
     }
 
-    public List<Variable> variables() {
-        return stream().flatMap(e -> e.variables(true).stream()).collect(Collectors.toList());
+    public List<Variable> variables(Element.DescendMode descendMode) {
+        return stream().flatMap(e -> e.variables(descendMode).stream()).collect(Collectors.toList());
     }
 
     @Override
@@ -85,5 +86,9 @@ public record MultiExpression(Expression... expressions) {
         System.arraycopy(expressions, 0, e, 0, expressions.length);
         e[expressions.length - 1] = expressions[expressions.length - 1].mergeDelays(causesOfDelay);
         return new MultiExpression(e);
+    }
+
+    public int getComplexity() {
+        return Arrays.stream(expressions).mapToInt(Expression::getComplexity).sum();
     }
 }

@@ -14,7 +14,6 @@
 
 package org.e2immu.analyser.analyser.check;
 
-import org.e2immu.analyser.analyser.DV;
 import org.e2immu.analyser.analyser.Property;
 import org.e2immu.analyser.analysis.Analysis;
 import org.e2immu.analyser.model.AnnotationExpression;
@@ -24,38 +23,21 @@ import org.e2immu.analyser.parser.Message;
 
 import java.util.function.Function;
 
+import static org.e2immu.analyser.parser.E2ImmuAnnotationExpressions.HIDDEN_CONTENT;
+
 public class CheckIndependent {
 
-    public static Message checkLevel(WithInspectionAndAnalysis info,
-                                     Class<?> annotation,
-                                     AnnotationExpression annotationExpression,
-                                     Analysis analysis) {
-        return checkLevel(Property.INDEPENDENT, info, annotation,
-                annotationExpression, analysis);
-    }
-
-    static Message checkLevel(Property property,
-                              WithInspectionAndAnalysis info,
-                              Class<?> annotation,
-                              AnnotationExpression annotationExpression,
+    public static Message check(WithInspectionAndAnalysis info,
+                              AnnotationExpression annotationKey,
                               Analysis analysis) {
-        Function<AnnotationExpression, String> extractInspected = ae -> ae.extract("level", null);
-        String levelString = levelString(analysis, property);
-
-        return CheckLinks.checkAnnotationWithValue(analysis,
-                annotation.getName(),
-                "@" + annotation.getSimpleName(),
-                annotationExpression.typeInfo(),
-                extractInspected,
-                levelString,
+        Function<AnnotationExpression, String> extract = ae -> ae.extract(HIDDEN_CONTENT, false).toString();
+        boolean hiddenContent = MultiLevel.INDEPENDENT_HC_DV.equals(analysis.getProperty(Property.INDEPENDENT));
+        return CheckHelper.checkAnnotationWithValue(analysis,
+                annotationKey,
+                HIDDEN_CONTENT,
+                extract,
+                hiddenContent ? "true" : "false",
                 info.getInspection().getAnnotations(),
                 info.newLocation());
-    }
-
-    static String levelString(Analysis analysis, Property property) {
-        DV value = analysis.getProperty(property);
-        int level = MultiLevel.level(value);
-        return level <= MultiLevel.Level.IMMUTABLE_2.level || level == MultiLevel.MAX_LEVEL
-                ? null : Integer.toString(level + 1);
     }
 }

@@ -23,7 +23,6 @@ import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.Symbol;
 import org.e2immu.analyser.output.Text;
 import org.e2immu.analyser.parser.InspectionProvider;
-import org.e2immu.annotation.E2Container;
 import org.e2immu.annotation.NotNull;
 import org.e2immu.support.EventuallyFinal;
 
@@ -31,7 +30,6 @@ import java.util.List;
 import java.util.Objects;
 import java.util.function.Predicate;
 
-@E2Container
 public final class MemberValuePair extends BaseExpression implements Expression {
 
     public static final String VALUE = "value";
@@ -39,7 +37,7 @@ public final class MemberValuePair extends BaseExpression implements Expression 
     private final EventuallyFinal<Expression> value;
 
     public MemberValuePair(String name, EventuallyFinal<Expression> value) {
-        super(Identifier.constant(MemberValuePair.class));
+        super(Identifier.constant(MemberValuePair.class), 10);
         this.name = name;
         this.value = value;
     }

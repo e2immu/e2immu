@@ -16,7 +16,7 @@ package org.e2immu.analyser.parser.conditional.testexample;
 
 // is Precondition_4, but then in a method
 
-import org.e2immu.annotation.Constant;
+import org.e2immu.annotation.ImmutableContainer;
 import org.e2immu.annotation.Modified;
 import org.e2immu.annotation.NotModified;
 
@@ -27,7 +27,7 @@ public class Assert_1 {
 
     // because there are no Annotated APIs, (1) the HashSet<> constructor modifies the parameter
     // and (2) there are no companion methods to determine the constant outcome
-    @Constant(absent = true)
+    @ImmutableContainer
     static boolean test(@Modified Set<String> strings) {
         containsA(strings);
 
@@ -35,7 +35,7 @@ public class Assert_1 {
         return set.size() == strings.size();
     }
 
-    @Constant("true")
+    @ImmutableContainer("true")
     static boolean containsA(@NotModified Set<String> set) {
         assert !set.contains("a");
         return true;

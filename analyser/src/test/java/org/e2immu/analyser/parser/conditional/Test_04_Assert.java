@@ -20,14 +20,16 @@ import org.e2immu.analyser.config.AnalyserConfiguration;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.ParameterInfo;
+import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.ReturnVariable;
+import org.e2immu.analyser.model.variable.This;
 import org.e2immu.analyser.parser.CommonTestRunner;
 import org.e2immu.analyser.visitor.*;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.*;
 
 public class Test_04_Assert extends CommonTestRunner {
     public Test_04_Assert() {
@@ -68,13 +70,27 @@ public class Test_04_Assert extends CommonTestRunner {
             }
         };
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+            assertFalse(d.allowBreakDelay());
+
             if ("causesOfDelay".equals(d.methodInfo().name) && "NotDelayed".equals(d.methodInfo().typeInfo.simpleName)) {
                 if (d.variable() instanceof ReturnVariable) {
                     assertEquals("SimpleSet.EMPTY:0", d.variableInfo().getLinkedVariables().toString());
                     assertDv(d, 5, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.EXTERNAL_NOT_NULL);
                 }
+                if (d.variable() instanceof FieldReference fr && "EMPTY".equals(fr.fieldInfo.name)) {
+                    assertCurrentValue(d, 5, "instance type SimpleSet/*new SimpleSet(Set.of())*/");
+                    assertDv(d, 5, MultiLevel.CONTAINER_DV, Property.CONTAINER);
+                }
             }
             if ("combine".equals(d.methodInfo().name)) {
+                if (d.variable() instanceof This) {
+                    if ("1".equals(d.statementId()) || "2".equals(d.statementId()) || "3".equals(d.statementId())) {
+                        assertEquals("", d.variableInfo().getLinkedVariables().toString());
+                    }
+                    if ("4.0.0".equals(d.statementId())) {
+                        assertEquals("merge:0", d.variableInfo().getLinkedVariables().toString());
+                    }
+                }
                 if (d.variable() instanceof ReturnVariable) {
                     if ("3".equals(d.statementId())) {
                         assertEquals("other instanceof NotDelayed&&null!=other?this:<return value>",
@@ -93,53 +109,131 @@ public class Test_04_Assert extends CommonTestRunner {
                         assertEquals("this:0", d.variableInfo().getLinkedVariables().toString());
                     }
                     if ("5".equals(d.statementId())) {
-                        String value = d.iteration() <= 1
-                                ? "<simplification>?this:<m:addProgress>"
-                                : "other instanceof NotDelayed?this:null";
+                        String value = switch (d.iteration()) {
+                            case 0, 1 -> "<simplification>?this:<m:addProgress>";
+                            default -> "other instanceof NotDelayed?this:null";
+                        };
                         assertEquals(value, d.currentValue().toString());
                         // there should not be a STATICALLY_ASSIGNED here: it is the result of a method call
                         // however, the previous linking is taken into account, and only the linking to "other"
                         // remains to be solved.
-                        String linked = d.iteration() <= 1 ? "merge:0,other:-1,this:0" : "merge:0,this:0";
+                        String linked = switch (d.iteration()) {
+                            case 0 -> "CausesOfDelay.LIMIT:-1,limit:-1,merge:0,other:-1,this:0";
+                            case 1 -> "merge:0,other:-1,this:0";
+                            default -> "merge:0,this:0";
+                        };
                         assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
                     }
                 }
                 if ("merge".equals(d.variableName())) {
                     if ("4".equals(d.statementId())) {
-                        String linked = d.iteration() <= 1 ? "other:-1,this:0" : "this:0";
+                        String linked = switch (d.iteration()) {
+                            case 0 -> "CausesOfDelay.LIMIT:-1,limit:-1,other:-1,this:0";
+                            case 1 -> "other:-1,this:0";
+                            default -> "this:0";
+                        };
+                        assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
+                    }
+                    if ("4.1.0".equals(d.statementId())) {
+                        String linked = d.iteration() < 2 ? "other:-1,this:-1" : "this:1";
+                        /*
+                        The result should definitely not conclude other:3, because other is not linked to the return value!
+                        This value cannot be known until we know of the independence of "merge"
+                         */
                         assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
                     }
                     if ("5".equals(d.statementId())) {
-                        String value = switch (d.iteration()) {
-                            case 0, 1 -> "limit&&(-1+other.numberOfDelays()>=<f:LIMIT>||-1-<f:LIMIT>+<m:numberOfDelays>>=0)?<s:SimpleSet>:<s:CausesOfDelay>";
-                            default -> "this";
-                        };
+                        String value = d.iteration() < 2
+                                ? "limit&&(-1+other.numberOfDelays()>=<f:LIMIT>||-1-<f:LIMIT>+<m:numberOfDelays>>=0)?<s:SimpleSet>:<s:CausesOfDelay>"
+                                : "this";
                         assertEquals(value, d.currentValue().toString());
-                        String linked = d.iteration() <= 1 ? "other:-1,this:0" : "this:0";
+                        String linked = switch (d.iteration()) {
+                            case 0 -> "CausesOfDelay.LIMIT:-1,limit:-1,other:-1,this:0";
+                            case 1 -> "other:-1,this:0";
+                            default -> "this:0";
+                        };
                         assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
+                    }
+                }
+                if (d.variable() instanceof ParameterInfo pi && "other".equals(pi.name)) {
+                    if ("0".equals(d.statementId())) {
+                        assertDv(d, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                    }
+                    if ("4".equals(d.statementId())) {
+                        assertDv(d, 2, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     }
                 }
             }
         };
+
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("addProgress".equals(d.methodInfo().name) && "CausesOfDelay".equals(d.methodInfo().typeInfo.simpleName)) {
                 assertDv(d, DV.FALSE_DV, Property.MODIFIED_METHOD);
             }
-        };
-        TypeAnalyserVisitor typeAnalyserVisitor = d -> {
-            if ("CausesOfDelay".equals(d.typeInfo().simpleName)) {
-                assertDv(d, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
+            if ("causesOfDelay".equals(d.methodInfo().name)) {
+                if ("SimpleSet".equals(d.methodInfo().typeInfo.simpleName)) {
+                    assertDv(d, MultiLevel.CONTAINER_DV, Property.CONTAINER);
+                }
+                if ("AnalysisStatus".equals(d.methodInfo().typeInfo.simpleName)) {
+                    assertDv(d, MultiLevel.CONTAINER_DV, Property.CONTAINER);
+                }
+                if ("NotDelayed".equals(d.methodInfo().typeInfo.simpleName)) {
+                    assertDv(d, MultiLevel.CONTAINER_DV, Property.CONTAINER);
+                }
+            }
+            if ("merge".equals(d.methodInfo().name)) {
+                assertEquals("SimpleSet", d.methodInfo().typeInfo.simpleName);
+                assertDv(d, 1, DV.TRUE_DV, Property.FLUENT);
+                assertDv(d, DV.FALSE_DV, Property.MODIFIED_METHOD);
+                // returns self, so independent
+                assertDv(d, 3, MultiLevel.INDEPENDENT_DV, Property.INDEPENDENT);
             }
         };
+
+        TypeAnalyserVisitor typeAnalyserVisitor = d -> {
+            if ("AnalysisStatus".equals(d.typeInfo().simpleName)) {
+                assertHc(d, 0, ""); // no type parameters
+            }
+            if ("CauseOfDelay".equals(d.typeInfo().simpleName)) {
+                assertHc(d, 0, ""); // no type parameters
+            }
+            if ("CausesOfDelay".equals(d.typeInfo().simpleName)) {
+                assertDv(d, MultiLevel.EFFECTIVELY_IMMUTABLE_HC_DV, Property.IMMUTABLE);
+                assertDv(d, MultiLevel.CONTAINER_DV, Property.CONTAINER);
+                assertTrue(d.typeInspection().isExtensible());
+                assertHc(d, 0, "");
+            }
+            if ("NotDelayed".equals(d.typeInfo().simpleName)) {
+                assertFalse(d.typeInspection().isExtensible());
+                assertHc(d, 0, ""); // no fields
+            }
+            if ("SimpleSet".equals(d.typeInfo().simpleName)) {
+                assertTrue(d.typeInspection().isExtensible());
+                assertHc(d, 0, "CauseOfDelay");
+                assertDv(d, 3, MultiLevel.CONTAINER_DV, Property.CONTAINER);
+            }
+        };
+
+        FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
+            if ("EMPTY".equals(d.fieldInfo().name)) {
+                assertDv(d, 3, MultiLevel.EFFECTIVELY_FINAL_FIELDS_DV, Property.EXTERNAL_IMMUTABLE);
+                // as a final field, it is not linked to the parameters of the constructor
+                assertDv(d, MultiLevel.INDEPENDENT_DV, Property.INDEPENDENT);
+                assertDv(d, 4, MultiLevel.CONTAINER_DV, Property.CONTAINER);
+                assertDv(d, 4, MultiLevel.NOT_CONTAINER_DV, Property.CONTAINER_RESTRICTION);
+                assertEquals("new SimpleSet(Set.of())", d.fieldAnalysis().getValue().toString());
+            }
+        };
+
         testClass("Assert_0", 0, 3, new DebugConfiguration.Builder()
                 .addEvaluationResultVisitor(evaluationResultVisitor)
                 .addStatementAnalyserVisitor(statementAnalyserVisitor)
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                 .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
                 .build(), new AnalyserConfiguration.Builder().setForceAlphabeticAnalysisInPrimaryType(true).build());
     }
-
 
     @Test
     public void test_1() throws IOException {

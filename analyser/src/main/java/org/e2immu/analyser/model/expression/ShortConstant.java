@@ -24,18 +24,16 @@ import org.e2immu.analyser.model.impl.BaseExpression;
 import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.Text;
 import org.e2immu.analyser.parser.Primitives;
-import org.e2immu.annotation.E2Container;
 import org.e2immu.annotation.NotNull;
 
 import java.util.Objects;
 
-@E2Container
 public final class ShortConstant extends BaseExpression implements ConstantExpression<Short>, Numeric {
     private final Primitives primitives;
     private final short constant;
 
     public ShortConstant(Primitives primitives, short constant) {
-        super(Identifier.constant(constant));
+        super(Identifier.constant(constant), constant == 0 ? 1 : 2);
         this.primitives = primitives;
         this.constant = constant;
     }

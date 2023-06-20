@@ -14,10 +14,18 @@
 
 package org.e2immu.analyser.analyser;
 
-public record AnnotationParameters(boolean absent, boolean contract) {
+import org.e2immu.annotation.ImmutableContainer;
 
-    public static final AnnotationParameters DEFAULT = new AnnotationParameters(false, false);
-    public static final AnnotationParameters CONTRACT = new AnnotationParameters(false, true);
+@ImmutableContainer
+public record AnnotationParameters(boolean absent, boolean contract, boolean implied) {
+
+    public static final AnnotationParameters DEFAULT = new AnnotationParameters(false, false, false);
+    public static final AnnotationParameters CONTRACT = new AnnotationParameters(false, true, false);
+    public static final AnnotationParameters IMPLIED = new AnnotationParameters(false, false, true);
+
+    public AnnotationParameters {
+        assert !(contract && implied);
+    }
 
     public boolean isVerifyAbsent() {
         return absent && !contract;

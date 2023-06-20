@@ -17,12 +17,13 @@ package org.e2immu.analyser.analyser;
 import org.e2immu.analyser.analyser.delay.DelayFactory;
 import org.e2immu.analyser.analyser.delay.ProgressAndDelay;
 import org.e2immu.analyser.analyser.delay.SimpleCause;
-import org.e2immu.analyser.analyser.delay.VariableCause;
+import org.e2immu.analyser.analyser.impl.util.BreakDelayLevel;
 import org.e2immu.analyser.analyser.util.WeightedGraph;
 import org.e2immu.analyser.analysis.StatementAnalysis;
 import org.e2immu.analyser.analysis.TypeAnalysis;
 import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.ParameterInfo;
+import org.e2immu.analyser.model.ParameterizedType;
 import org.e2immu.analyser.model.TypeInfo;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.ReturnVariable;
@@ -34,11 +35,12 @@ import org.slf4j.LoggerFactory;
 
 import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiPredicate;
 import java.util.function.Function;
-import java.util.function.Predicate;
 import java.util.stream.Collectors;
+
+import static org.e2immu.analyser.analyser.LinkedVariables.LINK_STATICALLY_ASSIGNED;
+import static org.e2immu.analyser.analyser.Stage.EVALUATION;
 
 /*
 Goal:
@@ -63,20 +65,18 @@ public class ComputeLinkedVariables {
     private final Stage stage;
     private final StatementAnalysis statementAnalysis;
     private final List<Cluster> clusters;
+    private final Set<Variable> variablesInClusters;
     private final Cluster returnValueCluster;
     private final Variable returnVariable;
     private final WeightedGraph weightedGraph;
-    private final boolean allowBreakDelay;
+    private final BreakDelayLevel breakDelayLevel;
     private final Set<Variable> linkingNotYetSet;
     private final boolean oneBranchHasBecomeUnreachable;
 
-    private record Cluster(Set<Variable> variables, CausesOfDelay delays) {
+    private record Cluster(Set<Variable> variables) {
         @Override
         public String toString() {
-            return "[" +
-                    "variables=" + variables.stream().map(Variable::simpleName).sorted().collect(Collectors.joining(", ")) +
-                    "; delays=" + delays +
-                    ']';
+            return "[" + variables.stream().map(Variable::simpleName).sorted().collect(Collectors.joining(", ")) + ']';
         }
     }
 
@@ -84,10 +84,11 @@ public class ComputeLinkedVariables {
                                    Stage stage,
                                    BiPredicate<VariableInfoContainer, Variable> ignore,
                                    WeightedGraph weightedGraph,
+                                   Set<Variable> variablesInClusters,
                                    List<Cluster> clusters,
                                    Cluster returnValueCluster,
                                    Variable returnVariable,
-                                   boolean allowBreakDelay,
+                                   BreakDelayLevel breakDelayLevel,
                                    boolean oneBranchHasBecomeUnreachable,
                                    Set<Variable> linkingNotYetSet) {
         this.clusters = clusters;
@@ -96,130 +97,80 @@ public class ComputeLinkedVariables {
         this.stage = stage;
         this.statementAnalysis = statementAnalysis;
         this.weightedGraph = weightedGraph;
-        this.allowBreakDelay = allowBreakDelay;
+        this.breakDelayLevel = breakDelayLevel;
         this.linkingNotYetSet = linkingNotYetSet;
         this.oneBranchHasBecomeUnreachable = oneBranchHasBecomeUnreachable;
+        this.variablesInClusters = variablesInClusters;
     }
 
     public static ComputeLinkedVariables create(StatementAnalysis statementAnalysis,
                                                 Stage stage,
-                                                boolean staticallyAssigned,
                                                 boolean oneBranchHasBecomeUnreachable,
                                                 BiPredicate<VariableInfoContainer, Variable> ignore,
                                                 Set<Variable> reassigned,
                                                 Function<Variable, LinkedVariables> externalLinkedVariables,
                                                 EvaluationContext evaluationContext) {
         WeightedGraph weightedGraph = new WeightedGraph();
-        Set<CauseOfDelay> delaysInClustering = new HashSet<>();
         // we keep track of all variables at the level, PLUS variables linked to, which are not at the level
-        Set<Variable> variables = new HashSet<>();
-        Set<Variable> atStage = new HashSet<>();
+        Set<Variable> done = new HashSet<>();
         Set<Variable> linkingNotYetSet = new HashSet<>();
-        AtomicReference<CausesOfDelay> encounteredNotYetSet = new AtomicReference<>(CausesOfDelay.EMPTY);
-        statementAnalysis.variableEntryStream(stage).forEach(e -> {
-            VariableInfoContainer vic = e.getValue();
-            VariableInfo vi1 = vic.getPreviousOrInitial();
-            Variable variable = vi1.variable();
-            if (!ignore.test(vic, variable)) {
-                variables.add(variable);
-                atStage.add(variable);
-                LinkedVariables curated = add(statementAnalysis, stage, staticallyAssigned, ignore, reassigned,
-                        externalLinkedVariables, evaluationContext, weightedGraph, delaysInClustering, vi1, variable);
-                variables.addAll(curated.variables().keySet());
-                if (curated == LinkedVariables.NOT_YET_SET) {
-                    linkingNotYetSet.add(variable);
-                    encounteredNotYetSet.set(curated.causesOfDelay());
-                }
-            }
-        });
-        /*
-        The code above should be sufficient, except that when a variable is linked to another one that is not in the stage,
-        a delay in computeImmutableHiddenContent can go missing if the linking is computed one-sided (e.g., inMap:0,translationMap:3
-        from one side, inMap:3,translationMap:0 from the other. The level 3 forces a check on computeImmutableHiddenContent,
-        but if inMap is at E and translationMap only at C, not at E, than this side is not seen).
-         */
-        for (Variable variable : variables) {
-            if (!atStage.contains(variable)) {
-                // extra added, should we also process?
-                VariableInfoContainer vic = statementAnalysis.getVariableOrDefaultNull(variable.fullyQualifiedName());
-                if (vic != null && !ignore.test(vic, variable)) {
+
+        Set<VariableInfoContainer> start = statementAnalysis.variableEntryStream(stage)
+                .map(Map.Entry::getValue).collect(Collectors.toUnmodifiableSet());
+        boolean iteration1Plus = false;
+        while (!start.isEmpty()) {
+            Set<VariableInfoContainer> linked = new HashSet<>();
+            for (VariableInfoContainer vic : start) {
+                Variable variable = vic.current().variable();
+                if (iteration1Plus || !ignore.test(vic, variable)) {
+                    done.add(variable);
                     VariableInfo vi1 = vic.getPreviousOrInitial();
-                    LinkedVariables curated = add(statementAnalysis, stage, staticallyAssigned, ignore, reassigned, externalLinkedVariables,
-                            evaluationContext, weightedGraph, delaysInClustering, vi1, variable);
-                    if (curated == LinkedVariables.NOT_YET_SET) {
+                    LinkedVariables linkedVariables = add(statementAnalysis, ignore, reassigned, externalLinkedVariables,
+                            weightedGraph, vi1, variable);
+                    for (Map.Entry<Variable, DV> e : linkedVariables) {
+                        Variable v = e.getKey();
+                        if (!done.contains(v)) {
+                            VariableInfoContainer linkedVic = statementAnalysis.getVariableOrDefaultNull(v.fullyQualifiedName());
+                            if (linkedVic != null) {
+                                linked.add(linkedVic);
+                            }
+                        }
+                    }
+                    if (linkedVariables == LinkedVariables.NOT_YET_SET) {
                         linkingNotYetSet.add(variable);
-                        encounteredNotYetSet.set(curated.causesOfDelay());
                     }
                 }
             }
+            linked.removeIf(vic -> done.contains(vic.current().variable()));
+            start = new HashSet<>(linked);
+            iteration1Plus = true;
         }
-        ClusterResult cr = computeClusters(weightedGraph, variables,
-                staticallyAssigned ? LinkedVariables.STATICALLY_ASSIGNED_DV : DV.MIN_INT_DV,
-                staticallyAssigned ? LinkedVariables.STATICALLY_ASSIGNED_DV : LinkedVariables.DEPENDENT_DV,
-                !staticallyAssigned,
-                encounteredNotYetSet.get());
+        ClusterResult cr = computeClusters(weightedGraph, done);
 
-        // this will cause delays across the board for CONTEXT_ and EXTERNAL_ if the flag is set.
-        if (evaluationContext.delayStatementBecauseOfECI()) {
-            delaysInClustering.add(new SimpleCause(evaluationContext.getLocation(stage), CauseOfDelay.Cause.ECI_HELPER));
-        }
-        return new ComputeLinkedVariables(statementAnalysis, stage, ignore, weightedGraph, cr.clusters,
-                cr.returnValueCluster, cr.rv, evaluationContext.allowBreakDelay(), oneBranchHasBecomeUnreachable,
+        return new ComputeLinkedVariables(statementAnalysis, stage, ignore, weightedGraph, cr.variablesInClusters(), cr.clusters,
+                cr.returnValueCluster, cr.rv, evaluationContext.breakDelayLevel(), oneBranchHasBecomeUnreachable,
                 linkingNotYetSet);
     }
 
     private static LinkedVariables add(StatementAnalysis statementAnalysis,
-                                       Stage stage,
-                                       boolean staticallyAssigned,
                                        BiPredicate<VariableInfoContainer, Variable> ignore,
                                        Set<Variable> reassigned,
                                        Function<Variable, LinkedVariables> externalLinkedVariables,
-                                       EvaluationContext evaluationContext,
                                        WeightedGraph weightedGraph,
-                                       Set<CauseOfDelay> delaysInClustering,
                                        VariableInfo vi1,
                                        Variable variable) {
-        AnalysisProvider analysisProvider = evaluationContext.getAnalyserContext();
-
         boolean isBeingReassigned = reassigned.contains(variable);
 
-        LinkedVariables external = externalLinkedVariables.apply(variable);
+        LinkedVariables external = Objects.requireNonNullElse(externalLinkedVariables.apply(variable), LinkedVariables.EMPTY);
         LinkedVariables inVi = isBeingReassigned ? LinkedVariables.EMPTY
                 : vi1.getLinkedVariables().remove(reassigned);
         LinkedVariables combined = external.merge(inVi);
         LinkedVariables refToScope = variable instanceof FieldReference fr ? combined.merge(linkToScope(fr)) : combined;
-        LinkedVariables curatedBeforeIgnore;
 
-        Predicate<Variable> computeMyself = evaluationContext::isMyself;
-        Function<Variable, DV> computeImmutable = v -> v instanceof This || evaluationContext.isMyself(v) ? MultiLevel.NOT_INVOLVED_DV :
-                analysisProvider.defaultImmutable(v.parameterizedType(), false, evaluationContext.getCurrentType());
-        Function<Variable, DV> computeImmutableHiddenContent = v -> v instanceof This ? MultiLevel.NOT_INVOLVED_DV :
-                analysisProvider.immutableOfHiddenContent(v.parameterizedType(), true, evaluationContext.getCurrentType());
-        Function<Variable, DV> immutableCanBeIncreasedByTypeParameters = v -> {
-            TypeInfo bestType = v.parameterizedType().bestTypeInfo();
-            if (bestType == null) return DV.TRUE_DV;
-            TypeAnalysis typeAnalysis = analysisProvider.getTypeAnalysis(bestType);
-            return typeAnalysis.immutableCanBeIncreasedByTypeParameters();
-        };
-
-        DV sourceImmutable = computeImmutable.apply(variable);
-        curatedBeforeIgnore = refToScope.removeIncompatibleWithImmutable(sourceImmutable, computeMyself, computeImmutable,
-                immutableCanBeIncreasedByTypeParameters, computeImmutableHiddenContent);
-
-        LinkedVariables curated = curatedBeforeIgnore
+        LinkedVariables curated = refToScope
                 .remove(v -> ignore.test(statementAnalysis.getVariableOrDefaultNull(v.fullyQualifiedName()), v));
-        boolean bidirectional = !(variable instanceof ReturnVariable);
-        weightedGraph.addNode(variable, curated.variables(), bidirectional, DV::min);
-        boolean accountForDelay = staticallyAssigned || !(variable instanceof ReturnVariable);
-        // context modified for the return variable is never linked, but the variables themselves must be present
-        if (accountForDelay && curated.isDelayed()) {
-            curated.variables().forEach((v, value) -> {
-                if (value.isDelayed()) {
-                    delaysInClustering.add(new VariableCause(v, statementAnalysis.location(stage), CauseOfDelay.Cause.LINKING));
-                    value.causesOfDelay().causesStream().forEach(delaysInClustering::add);
-                }
-            });
-        }
+
+        weightedGraph.addNode(variable, curated.variables(), false, DV::min);
         return curated;
     }
 
@@ -227,20 +178,18 @@ public class ComputeLinkedVariables {
         Set<Variable> variables = fr.scope.variablesWithoutCondition().stream()
                 .filter(v -> !(v instanceof This))
                 .collect(Collectors.toUnmodifiableSet());
-        DV link = fr.scope.isDelayed() ? fr.scope.causesOfDelay() : LinkedVariables.DEPENDENT_DV;
+        DV link = fr.scope.isDelayed() ? fr.scope.causesOfDelay() : LinkedVariables.LINK_DEPENDENT;
         Map<Variable, DV> map = variables.stream().collect(Collectors.toUnmodifiableMap(v -> v, v -> link));
         return LinkedVariables.of(map);
     }
 
     private record ClusterResult(Cluster returnValueCluster, Variable rv, List<Cluster> clusters) {
+        public Set<Variable> variablesInClusters() {
+            return clusters.stream().flatMap(c -> c.variables.stream()).collect(Collectors.toUnmodifiableSet());
+        }
     }
 
-    private static ClusterResult computeClusters(WeightedGraph weightedGraph,
-                                                 Set<Variable> variables,
-                                                 DV minInclusive,
-                                                 DV maxInclusive,
-                                                 boolean followDelayed,
-                                                 CausesOfDelay encounteredNotYetSet) {
+    private static ClusterResult computeClusters(WeightedGraph weightedGraph, Set<Variable> variables) {
         Set<Variable> done = new HashSet<>();
         List<Cluster> result = new ArrayList<>(variables.size());
         Cluster rvCluster = null;
@@ -248,18 +197,10 @@ public class ComputeLinkedVariables {
 
         for (Variable variable : variables) {
             if (!done.contains(variable)) {
-                Map<Variable, DV> map = weightedGraph.links(variable, maxInclusive, followDelayed);
-                Set<Variable> reachable = map.entrySet().stream()
-                        .filter(e -> e.getValue().ge(minInclusive) && e.getValue().le(maxInclusive))
-                        .map(Map.Entry::getKey).collect(Collectors.toUnmodifiableSet());
-                DV delays = map.values().stream().reduce(DV.MIN_INT_DV, DV::max);
-                CausesOfDelay clusterDelay;
-                if (encounteredNotYetSet.isDelayed() && followDelayed) {
-                    clusterDelay = encounteredNotYetSet;
-                } else {
-                    clusterDelay = delays == DV.MIN_INT_DV ? CausesOfDelay.EMPTY : delays.causesOfDelay();
-                }
-                Cluster cluster = new Cluster(reachable, clusterDelay);
+                Map<Variable, DV> map = weightedGraph.links(variable, LINK_STATICALLY_ASSIGNED, false);
+                assert map.values().stream().allMatch(LINK_STATICALLY_ASSIGNED::equals);
+
+                Cluster cluster = new Cluster(map.keySet());
                 if (variable instanceof ReturnVariable) {
                     rvCluster = cluster;
                     assert rv == null;
@@ -267,34 +208,14 @@ public class ComputeLinkedVariables {
                     done.add(rv);
                 } else {
                     result.add(cluster);
-                    assert Collections.disjoint(reachable, done) : "This is not good";
-                    done.addAll(reachable);
+                    assert Collections.disjoint(map.keySet(), done) : "This is not good";
+                    done.addAll(map.keySet());
                 }
             }
         }
         return new ClusterResult(rvCluster, rv, result);
     }
 
-    /**
-     * break generated by ComputingParameterAnalyser, see FieldReference_3 as a primary example.
-     * Cycle of 3 between a constructor parameter assigned to a field, with an accessor, and an instance method that calls the constructor.
-     * <p>
-     * allowBreakDelay is controlled by the primary type analyser; it gets activated when there was no progress anymore.
-     */
-    private DV propertyValuePotentiallyBreakDelay(Property property, Variable v, DV propertyValue) {
-        if (allowBreakDelay && property == Property.CONTEXT_MODIFIED && propertyValue.isDelayed() &&
-                (propertyValue.containsCauseOfDelay(CauseOfDelay.Cause.BREAK_MOM_DELAY,
-                        c -> c instanceof SimpleCause sc && sc.location().getInfo() instanceof ParameterInfo) ||
-                        // this second situation arises in InstanceOf_16: direct self reference
-                        propertyValue.containsCauseOfDelay(CauseOfDelay.Cause.CONTEXT_MODIFIED,
-                                c -> c instanceof SimpleCause sc && sc.location().getInfo() == v))) {
-            LOGGER.debug("Breaking a MOM / CM delay for parameter  in {}", propertyValue);
-            statementAnalysis.setBrokeDelay();
-            return DV.FALSE_DV;
-        }
-        // normal action
-        return propertyValue;
-    }
 
     public ProgressAndDelay write(Property property, Map<Variable, DV> propertyValues) {
         return write(property, propertyValues, CausesOfDelay.EMPTY);
@@ -311,75 +232,37 @@ public class ComputeLinkedVariables {
 
     private ProgressAndDelay writeProperty(Property property, Map<Variable, DV> propertyValues, CausesOfDelay extraDelay) {
         CausesOfDelay causes = CausesOfDelay.EMPTY;
-        boolean progress = false;
-        boolean broken = false;
+        boolean progress;
 
         // IMPORTANT: reduced code for the return variable, still a lot has been copied from the code further in this method
         if (returnVariable != null) {
             assert returnValueCluster.variables.stream().allMatch(propertyValues::containsKey);
             DV rvSummary = property.propertyType == Property.PropertyType.CONTEXT
                     ? property.falseDv
-                    : returnValueCluster.variables.stream()
-                    .map(v -> propertyValuePotentiallyBreakDelay(property, v, propertyValues.get(v)))
+                    : returnValueCluster.variables.stream().map(propertyValues::get)
                     // IMPORTANT NOTE: falseValue gives 1 for IMMUTABLE and others, and sometimes we want the basis to be NOT_INVOLVED (0)
                     .reduce(DV.FALSE_DV, DV::max);
             if (rvSummary.isDelayed()) {
                 causes = causes.merge(rvSummary.causesOfDelay());
             }
-            VariableInfoContainer vic = statementAnalysis.getVariableOrDefaultNull(returnVariable.fullyQualifiedName());
-            if (vic != null) {
-                VariableInfo vi = vic.ensureLevelForPropertiesLinkedVariables(statementAnalysis.location(stage), stage);
-                DV current = vi.getProperty(property);
-                if (current.isDelayed()) {
-                    try {
-                        DV inMap = propertyValues.get(returnVariable);
-                        if (property.bestDv.equals(inMap)) {
-                            // whatever happens, this value cannot get better (e.g., TRUE in CM)
-                            vic.setProperty(property, inMap, stage);
-                            progress = true;
-                        } else {
-                            vic.setProperty(property, rvSummary, stage);
-                            progress = rvSummary.isDone();
-                        }
-                    } catch (IllegalStateException ise) {
-                        LOGGER.error("Return value cluster: {}", returnValueCluster);
-                        throw ise;
-                    }
-                } else if (rvSummary.isDone() && !rvSummary.equals(current)) {
-                    LOGGER.error("Variable {} in cluster {}", returnVariable, returnValueCluster.variables);
-                    LOGGER.error("Property {}, current {}, new {}", property, current, rvSummary);
-                    throw new UnsupportedOperationException("Overwriting value");
-                }
-            }
+            progress = writeReturnValueProperty(property, propertyValues, rvSummary);
+        } else {
+            progress = false;
         }
 
+        boolean broken = false;
         for (Cluster cluster : clusters) {
             assert cluster.variables.stream().allMatch(propertyValues::containsKey);
             DV summary = cluster.variables.stream()
-                    .map(v -> propertyValuePotentiallyBreakDelay(property, v, propertyValues.get(v)))
+                    .map(propertyValues::get)
                     // IMPORTANT NOTE: falseValue gives 1 for IMMUTABLE and others, and sometimes we want the basis to be NOT_INVOLVED (0)
                     .reduce(DV.FALSE_DV, DV::max);
 
             // extraDelay: when merging, but the conditions of the different merge constituents are not yet done
             // currently only for CM; example: TrieSimplified_0, _1_2, _1_2bis
             if (extraDelay.isDelayed()) {
-                boolean self = property == Property.CONTEXT_MODIFIED
-                        && extraDelay.containsCauseOfDelay(CauseOfDelay.Cause.WAIT_FOR_MODIFICATION);
-                if (!self) {
-                    CausesOfDelay conditionDelayMarker = DelayFactory.createDelay(new SimpleCause(statementAnalysis.location(stage), CauseOfDelay.Cause.CONDITION));
-                    summary = extraDelay.merge(conditionDelayMarker);
-                }
-            }
-            // See Modification_19 and _20, one which must have the delays (19) and the other which must have the break (20)
-            // does not interfere with the next situation, as than one requires a done cluster
-            if (Property.CONTEXT_MODIFIED == property && cluster.delays.isDelayed()) {
-                if (allowBreakDelay && summary.valueIsFalse()) {
-                    LOGGER.debug("Breaking linking delay on CM==FALSE, cluster {}", cluster);
-                    statementAnalysis.setBrokeDelay();
-                    broken = true;
-                } else {
-                    summary = summary.causesOfDelay().merge(cluster.delays);
-                }
+                CausesOfDelay conditionDelayMarker = DelayFactory.createDelay(new SimpleCause(statementAnalysis.location(stage), CauseOfDelay.Cause.CONDITION));
+                summary = extraDelay.merge(conditionDelayMarker);
             }
 
             /*
@@ -390,7 +273,6 @@ public class ComputeLinkedVariables {
             boolean clusterComplain;
             if (property.propertyType == Property.PropertyType.CONTEXT
                     && !summary.equals(property.bestDv)
-                    && cluster.delays.isDone()
                     && cluster.variables.size() > 1) {
                 // if any of the previous values has a max value, we'll need to have it, too
                 DV best = cluster.variables.stream().map(v -> {
@@ -416,71 +298,112 @@ public class ComputeLinkedVariables {
             }
             DV newValue1 = summary;
             for (Variable variable : cluster.variables) {
-                VariableInfoContainer vic = statementAnalysis.getVariableOrDefaultNull(variable.fullyQualifiedName());
-                if (vic != null) {
-                    DV newValue;
-                    DV override = vic.propertyOverrides().getOrDefaultNull(property);
-                    boolean complain;
-                    if (override != null) {
-                        newValue = override;
-                        complain = false;
-                    } else if ((property == Property.CONTEXT_NOT_NULL || property == Property.CONTEXT_IMMUTABLE
-                            || property == Property.CONTEXT_CONTAINER) && oneBranchHasBecomeUnreachable) {
-                        newValue = newValue1;
-                        complain = false;
-                    } else {
-                        newValue = newValue1;
-                        complain = clusterComplain;
-                    }
-                    VariableInfo vi = vic.ensureLevelForPropertiesLinkedVariables(statementAnalysis.location(stage), stage);
-                    DV current = vi.getProperty(property);
-                    VariableInfo vi1 = vic.getPreviousOrInitial();
-                    DV previous = vi1.getProperty(property);
-                    if (property.propertyType == Property.PropertyType.CONTEXT && property.bestDv.equals(previous)) {
-                        /*
-                        Second of code that ensures that once a context property has reached its highest value,
-                        it should keep it in subsequent statements. Note that this
-                        does not work for external properties, as they are reset to NOT_INVOLVED after an assignment
-                         */
-                        if (current.isDelayed()) {
-                            vic.setProperty(property, property.bestDv, stage);
-                            progress = true;
-                        } // else don't complain!!!
-                    } else if (current.isDelayed()) {
-                        try {
-                            DV inMap = propertyValues.get(variable);
-                            if (property.bestDv.equals(inMap) && extraDelay.isDone()) {
-                                // whatever happens, this value cannot get better (e.g., TRUE in CM)
-                                vic.setProperty(property, property.bestDv, stage);
-                                progress = true;
-                            } else {
-                                vic.setProperty(property, newValue, stage);
-                                progress |= newValue.isDone();
-                                if (broken) {
-                                    LOGGER.debug("**** Setting CM of {} to false in stmt {}", variable,
-                                            statementAnalysis.index());
-                                }
-                            }
-                        } catch (IllegalStateException ise) {
-                            LOGGER.error("Current cluster: {}", cluster);
-                            throw ise;
-                        }
-
-                    } else if (newValue.isDone() && !newValue.equals(current)) {
-                        if (complain) {
-                            LOGGER.error("Variable {} in cluster {}", variable, cluster.variables);
-                            LOGGER.error("Property {}, current {}, new {}", property, current, newValue);
-                            throw new UnsupportedOperationException("Overwriting value");
-                        }
-                        if (oneBranchHasBecomeUnreachable) {
-                            LOGGER.debug("Not overwriting property {} of variable {}, (at least) one branch has become unreachable",
-                                    property, variable);
-                        }
-                    }
-                }
+                progress |= setPropertyOneVariable(variable, property, newValue1, propertyValues, extraDelay.isDone(),
+                        clusterComplain, broken, cluster);
             }
         }
         return new ProgressAndDelay(progress, causes);
+    }
+
+    private boolean writeReturnValueProperty(Property property,
+                                             Map<Variable, DV> propertyValues,
+                                             DV rvSummary) {
+        VariableInfoContainer vic = statementAnalysis.getVariableOrDefaultNull(returnVariable.fullyQualifiedName());
+        boolean progress;
+        if (vic != null) {
+            VariableInfo vi = vic.ensureLevelForPropertiesLinkedVariables(statementAnalysis.location(stage), stage);
+            DV current = vi.getProperty(property);
+            if (current.isDelayed()) {
+                try {
+                    DV inMap = propertyValues.get(returnVariable);
+                    if (property.bestDv.equals(inMap)) {
+                        // whatever happens, this value cannot get better (e.g., TRUE in CM)
+                        vic.setProperty(property, inMap, stage);
+                        progress = true;
+                    } else {
+                        vic.setProperty(property, rvSummary, stage);
+                        progress = rvSummary.isDone();
+                    }
+                } catch (IllegalStateException ise) {
+                    LOGGER.error("Return value cluster: {}", returnValueCluster);
+                    throw ise;
+                }
+            } else if (rvSummary.isDone() && !rvSummary.equals(current)) {
+                LOGGER.error("Variable {} in cluster {}", returnVariable, returnValueCluster.variables);
+                LOGGER.error("Property {}, current {}, new {}", property, current, rvSummary);
+                throw new UnsupportedOperationException("Overwriting value");
+            } else progress = false;
+        } else progress = false;
+        return progress;
+    }
+
+    private boolean setPropertyOneVariable(Variable variable,
+                                           Property property,
+                                           DV valueInput,
+                                           Map<Variable, DV> propertyValues,
+                                           boolean extraDelayIsDone,
+                                           boolean clusterComplain,
+                                           boolean brokenForDebugging,
+                                           Cluster clusterForDebugging) {
+        VariableInfoContainer vic = statementAnalysis.getVariableOrDefaultNull(variable.fullyQualifiedName());
+        boolean progress = false;
+        if (vic != null) {
+            DV value;
+            boolean complain;
+            if ((property == Property.CONTEXT_NOT_NULL || property == Property.CONTEXT_IMMUTABLE
+                    || property == Property.CONTEXT_CONTAINER) && oneBranchHasBecomeUnreachable) {
+                value = valueInput;
+                complain = false;
+            } else {
+                value = valueInput;
+                complain = clusterComplain;
+            }
+            VariableInfo vi = vic.ensureLevelForPropertiesLinkedVariables(statementAnalysis.location(stage), stage);
+            DV current = vi.getProperty(property);
+            VariableInfo vi1 = vic.getPreviousOrInitial();
+            DV previous = vi1.getProperty(property);
+            if (property.propertyType == Property.PropertyType.CONTEXT && property.bestDv.equals(previous)) {
+                /*
+                Second of code that ensures that once a context property has reached its highest value,
+                it should keep it in subsequent statements. Note that this
+                does not work for external properties, as they are reset to NOT_INVOLVED after an assignment
+                 */
+                if (current.isDelayed()) {
+                    vic.setProperty(property, property.bestDv, stage);
+                    progress = true;
+                } // else don't complain!!!
+            } else if (current.isDelayed()) {
+                try {
+                    DV inMap = propertyValues.get(variable);
+                    if (property.bestDv.equals(inMap) && extraDelayIsDone) {
+                        // whatever happens, this value cannot get better (e.g., TRUE in CM)
+                        vic.setProperty(property, property.bestDv, stage);
+                        progress = true;
+                    } else {
+                        vic.setProperty(property, value, stage);
+                        progress = value.isDone();
+                        if (brokenForDebugging) {
+                            LOGGER.debug("**** Setting CM of {} to false in stmt {}", variable, statementAnalysis.index());
+                        }
+                    }
+                } catch (IllegalStateException ise) {
+                    LOGGER.error("Current cluster: {}", clusterForDebugging);
+                    throw ise;
+                }
+
+            } else if (value.isDone() && !value.equals(current)) {
+                if (complain) {
+                    LOGGER.error("Variable {} in cluster {}", variable.simpleName(), clusterForDebugging);
+                    LOGGER.error("Property {}, current {}, new {}", property, current, value);
+                    throw new UnsupportedOperationException("Overwriting value");
+                }
+                if (oneBranchHasBecomeUnreachable) {
+                    LOGGER.debug("Not overwriting property {} of variable {}, (at least) one branch has become unreachable",
+                            property, variable);
+                }
+            }
+        }
+        return progress;
     }
 
     private Map<Variable, Set<Variable>> staticallyAssignedVariables() {
@@ -508,36 +431,38 @@ public class ComputeLinkedVariables {
      * only used on the CM version (not statically assigned) with the statically assigned variables forming
      * the core.
      */
-    public ProgressAndDelay writeClusteredLinkedVariables(ComputeLinkedVariables staticallyAssignedCLV) {
-        Map<Variable, Set<Variable>> staticallyAssigned = staticallyAssignedCLV.staticallyAssignedVariables();
+    public ProgressAndDelay writeClusteredLinkedVariables() {
+        Map<Variable, Set<Variable>> staticallyAssigned = staticallyAssignedVariables();
         CausesOfDelay causes = CausesOfDelay.EMPTY;
         boolean progress = false;
-        for (Cluster cluster : clusters) {
-            for (Variable variable : cluster.variables) {
-                VariableInfoContainer vic = statementAnalysis.getVariable(variable.fullyQualifiedName());
 
-                Map<Variable, DV> map = weightedGraph.links(variable, null, true);
-                LinkedVariables linkedVariables = applyStaticallyAssignedAndRemoveSelfReference(staticallyAssigned,
-                        variable, map, cluster.delays);
+        for (Variable variable : variablesInClusters) {
+            VariableInfoContainer vic = statementAnalysis.getVariable(variable.fullyQualifiedName());
 
-                causes = causes.merge(linkedVariables.causesOfDelay());
-                vic.ensureLevelForPropertiesLinkedVariables(statementAnalysis.location(stage), stage);
-                progress |= writeLinkedVariables(cluster, variable, vic, linkedVariables);
-                staticallyAssigned.remove(variable);
-            }
+            Map<Variable, DV> map = weightedGraph.links(variable, null, true);
+            CausesOfDelay delays = Collections.disjoint(linkingNotYetSet, map.keySet()) ? CausesOfDelay.EMPTY
+                    : LinkedVariables.NOT_YET_SET_DELAY;
+            LinkedVariables linkedVariables = applyStaticallyAssignedAndRemoveSelfReference(staticallyAssigned,
+                    variable, map, delays);
+
+            causes = causes.merge(linkedVariables.causesOfDelay());
+            vic.ensureLevelForPropertiesLinkedVariables(statementAnalysis.location(stage), stage);
+            progress |= writeLinkedVariables(variable, vic, linkedVariables);
+            staticallyAssigned.remove(variable);
         }
 
         if (returnVariable != null) {
-            // TODO completely copied the code
             VariableInfoContainer vicRv = statementAnalysis.getVariable(returnVariable.fullyQualifiedName());
+
+            CausesOfDelay delays = linkingNotYetSet.contains(returnVariable) ? LinkedVariables.NOT_YET_SET_DELAY : CausesOfDelay.EMPTY;
 
             Map<Variable, DV> map = weightedGraph.links(returnVariable, null, true);
             LinkedVariables linkedVariables = applyStaticallyAssignedAndRemoveSelfReference(staticallyAssigned,
-                    returnVariable, map, returnValueCluster.delays);
+                    returnVariable, map, delays);
 
             causes = causes.merge(linkedVariables.causesOfDelay());
             vicRv.ensureLevelForPropertiesLinkedVariables(statementAnalysis.location(stage), stage);
-            progress |= writeLinkedVariables(returnValueCluster, returnVariable, vicRv, linkedVariables);
+            progress |= writeLinkedVariables(returnVariable, vicRv, linkedVariables);
             staticallyAssigned.remove(returnVariable);
         }
 
@@ -547,18 +472,17 @@ public class ComputeLinkedVariables {
             VariableInfoContainer vic = statementAnalysis.getVariableOrDefaultNull(variable.fullyQualifiedName());
             assert vic != null : "No variable named " + variable.fullyQualifiedName();
             vic.ensureLevelForPropertiesLinkedVariables(statementAnalysis.location(stage), stage);
-            progress |= writeLinkedVariables(null, variable, vic, LinkedVariables.EMPTY);
+            progress |= writeLinkedVariables(variable, vic, LinkedVariables.EMPTY);
         }
         return new ProgressAndDelay(progress, causes);
     }
 
-    private boolean writeLinkedVariables(Cluster cluster, Variable variable, VariableInfoContainer vic, LinkedVariables linkedVariables) {
+    private boolean writeLinkedVariables(Variable variable, VariableInfoContainer vic, LinkedVariables linkedVariables) {
         try {
             return vic.setLinkedVariables(linkedVariables, stage);
         } catch (IllegalStateException isa) {
-            LOGGER.error("Linked variables change in illegal way in stmt {}: {}", statementAnalysis.index(), isa);
+            LOGGER.error("Linked variables change in illegal way in stmt {}", statementAnalysis.index());
             LOGGER.error("Variable: {}", variable);
-            LOGGER.error("Cluster : {}", cluster);
             throw isa;
         }
     }
@@ -566,19 +490,24 @@ public class ComputeLinkedVariables {
     private LinkedVariables applyStaticallyAssignedAndRemoveSelfReference(Map<Variable, Set<Variable>> staticallyAssignedVariables,
                                                                           Variable variable,
                                                                           Map<Variable, DV> map,
-                                                                          CausesOfDelay clusterDelays) {
-        if (clusterDelays.isDelayed()) {
+                                                                          CausesOfDelay notYetSetDelays) {
+        CausesOfDelay clusterDelays = map.values().stream()
+                .map(DV::causesOfDelay)
+                .reduce(CausesOfDelay.EMPTY, CausesOfDelay::merge);
+        CausesOfDelay allDelays = notYetSetDelays.merge(clusterDelays);
+
+        if (allDelays.isDelayed()) {
             for (Map.Entry<Variable, DV> entry : map.entrySet()) {
-                entry.setValue(clusterDelays);
+                entry.setValue(allDelays);
             }
         }
         Set<Variable> staticallyAssigned = staticallyAssignedVariables.get(variable);
         if (staticallyAssigned != null) {
-            staticallyAssigned.forEach(v -> map.put(v, LinkedVariables.STATICALLY_ASSIGNED_DV));
+            staticallyAssigned.forEach(v -> map.put(v, LINK_STATICALLY_ASSIGNED));
         }
         map.remove(variable); // no self references
         if (map.isEmpty()) {
-            if (clusterDelays.isDelayed()) return LinkedVariables.NOT_YET_SET;
+            if (allDelays.isDelayed()) return LinkedVariables.NOT_YET_SET;
             return LinkedVariables.EMPTY;
         }
         return LinkedVariables.of(map);
@@ -590,7 +519,8 @@ public class ComputeLinkedVariables {
      */
     public boolean writeLinkedVariables(ComputeLinkedVariables staticallyAssignedCLV,
                                         Set<Variable> touched,
-                                        Set<Variable> toRemove) {
+                                        Set<Variable> toRemove,
+                                        Set<Variable> haveLinkedVariables) {
         assert stage == Stage.MERGE;
         Map<Variable, Set<Variable>> staticallyAssignedVariables = staticallyAssignedCLV.staticallyAssignedVariables();
         AtomicBoolean progress = new AtomicBoolean();
@@ -600,16 +530,20 @@ public class ComputeLinkedVariables {
 
                     Variable variable = vic.current().variable();
                     if (touched.contains(variable)) {
-                        Map<Variable, DV> map = weightedGraph.links(variable, null, true);
-                        map.keySet().removeIf(toRemove::contains);
+                        LinkedVariables linkedVariables;
+                        if (haveLinkedVariables.contains(variable)) {
+                            Map<Variable, DV> map = weightedGraph.links(variable, null, true);
+                            map.keySet().removeIf(toRemove::contains);
 
-                        Cluster cluster = clusters.stream().filter(c -> c.variables.contains(variable)).findFirst().orElse(null);
-                        CausesOfDelay clusterDelay = linkingNotYetSet.contains(variable) ? LinkedVariables.NOT_YET_SET_DELAY
-                                : cluster != null && cluster.delays.isDelayed() ? cluster.delays
-                                : CausesOfDelay.EMPTY;
+                            CausesOfDelay notYetSetDelays = linkingNotYetSet.contains(variable) ? LinkedVariables.NOT_YET_SET_DELAY
+                                    : CausesOfDelay.EMPTY;
+                            linkedVariables = applyStaticallyAssignedAndRemoveSelfReference(staticallyAssignedVariables,
+                                    variable, map, notYetSetDelays);
+                        } else {
+                            VariableInfo eval = vic.best(EVALUATION);
+                            linkedVariables = eval.getLinkedVariables();
+                        }
 
-                        LinkedVariables linkedVariables = applyStaticallyAssignedAndRemoveSelfReference(staticallyAssignedVariables,
-                                variable, map, clusterDelay);
                         vic.ensureLevelForPropertiesLinkedVariables(statementAnalysis.location(Stage.MERGE), Stage.MERGE);
                         if (vic.setLinkedVariables(linkedVariables, stage)) {
                             progress.set(true);
@@ -638,7 +572,8 @@ public class ComputeLinkedVariables {
                 if (activate) {
                     for (Variable variable : cluster.variables) {
                         VariableInfoContainer vic = statementAnalysis.getVariable(variable.fullyQualifiedName());
-                        DV current = vic.best(Stage.EVALUATION).getProperty(Property.CNN_TRAVELS_TO_PRECONDITION, null);
+                        DV current = vic.best(Stage.EVALUATION).getProperty(Property.CNN_TRAVELS_TO_PRECONDITION,
+                                null);
                         if (current == null) {
                             vic.setProperty(Property.CNN_TRAVELS_TO_PRECONDITION, DV.TRUE_DV, Stage.EVALUATION);
                             change = true;
@@ -650,4 +585,198 @@ public class ComputeLinkedVariables {
         }
         return change;
     }
+
+
+    /**
+     * break generated by ComputingParameterAnalyser, see FieldReference_3 as a primary example.
+     * Cycle of 3 between a constructor parameter assigned to a field, with an accessor, and an instance method that c
+     * alls the constructor.
+     * <p>
+     * allowBreakDelay is controlled by the primary type analyser; it gets activated when there was no progress anymore.
+     */
+    private DV potentiallyBreakContextModifiedDelay(Variable v, DV propertyValue) {
+        if (breakDelayLevel.acceptStatement()
+                && propertyValue.isDelayed()
+                && (propertyValue.containsCauseOfDelay(CauseOfDelay.Cause.BREAK_MOM_DELAY,
+                c -> c instanceof SimpleCause sc && sc.location().getInfo() instanceof ParameterInfo) ||
+                // this second situation arises in InstanceOf_16: direct self reference
+                propertyValue.containsCauseOfDelay(CauseOfDelay.Cause.CONTEXT_MODIFIED,
+                        c -> c instanceof SimpleCause sc && sc.location().getInfo() == v))) {
+            LOGGER.debug("Breaking a MOM / CM delay for parameter {} in {}", v, propertyValue);
+            statementAnalysis.setBrokeDelay();
+            return DV.FALSE_DV;
+        }
+        // normal action
+        return propertyValue;
+    }
+
+    /*
+    difference wrt the normal property writing: not using the clusters!!
+
+    keep a map with final values, maxed values
+    for each variable, compute the linked variables via the weighted graph
+       each of these gets the value from the starting variable
+    only when we looped over all, we can start writing out values
+
+     */
+    public ProgressAndDelay writeContextModified(AnalyserContext analyserContext,
+                                                 Map<Variable, DV> propertyMap,
+                                                 Map<Variable, Integer> modificationTimeIncrements,
+                                                 int statementTimeDelta,
+                                                 Map<Variable, Integer> currentModificationTimes,
+                                                 CausesOfDelay extraDelayIn,
+                                                 boolean noAssignments) {
+        Map<Variable, DV> finalModified = computeFinalModified(propertyMap, extraDelayIn, noAssignments);
+        /*
+        As soon as there is one override, later linking may cause other variables to change value,
+        see DGSimplified_3 as an example. So we can't ignore complaints on an individual basis.
+         */
+        boolean haveOverride = variablesInClusters.stream().anyMatch(v -> {
+            VariableInfoContainer vic = statementAnalysis.getVariableOrDefaultNull(v.fullyQualifiedName());
+            return vic != null && vic.propertyOverrides().getOrDefaultNull(Property.CONTEXT_MODIFIED) != null;
+        });
+        boolean progress = false;
+        CausesOfDelay causesOfDelay = CausesOfDelay.EMPTY;
+        for (Variable variable : variablesInClusters) {
+            DV newValue = finalModified.get(variable);
+            assert newValue != null;
+            VariableInfoContainer vic = statementAnalysis.getVariableOrDefaultNull(variable.fullyQualifiedName());
+            if (vic != null) {
+                DV override = vic.propertyOverrides().getOrDefaultNull(Property.CONTEXT_MODIFIED);
+                DV newValueAfterOverride = Objects.requireNonNullElse(override, newValue);
+
+                VariableInfo vi = vic.ensureLevelForPropertiesLinkedVariables(statementAnalysis.location(stage), stage);
+                DV current = vi.getProperty(Property.CONTEXT_MODIFIED);
+                if (current.isDelayed()) {
+                    try {
+                        vic.setProperty(Property.CONTEXT_MODIFIED, newValueAfterOverride, stage);
+                        progress |= newValueAfterOverride.isDone();
+                        causesOfDelay = causesOfDelay.merge(newValue.causesOfDelay());
+                    } catch (IllegalStateException ise) {
+                        LOGGER.error("Return value cluster: {}", returnValueCluster);
+                        throw ise;
+                    }
+                } else if (newValueAfterOverride.isDone() && !newValueAfterOverride.equals(current)) {
+                    if (haveOverride) {
+                        LOGGER.debug("Ignoring difference, keep context modified {} on {}", current, variable);
+                    } else {
+                        LOGGER.error("Variable {}, property CONTEXT_MODIFIED, current {}, new {}", variable, current,
+                                newValueAfterOverride);
+                        throw new UnsupportedOperationException("Overwriting value");
+                    }
+                }
+            }
+        }
+        setModificationTimes(analyserContext, modificationTimeIncrements, statementTimeDelta, currentModificationTimes);
+        return new ProgressAndDelay(progress, causesOfDelay);
+    }
+
+    private Map<Variable, DV> computeFinalModified(Map<Variable, DV> propertyMap,
+                                                   CausesOfDelay extraDelayIn,
+                                                   boolean noAssignments) {
+        Map<Variable, DV> finalModified;
+        if (noAssignments && propertyMap.values().stream().allMatch(DV::valueIsFalse)) {
+            finalModified = propertyMap;
+            assert propertyMap.keySet().containsAll(variablesInClusters);
+        } else {
+            finalModified = new HashMap<>();
+            for (Variable variable : variablesInClusters) {
+                DV inPropertyMap = potentiallyBreakContextModifiedDelay(variable, propertyMap.get(variable));
+                Map<Variable, DV> map = weightedGraph.links(variable, LinkedVariables.LINK_IS_HC_OF, true);
+
+                DV max = map.values().stream().reduce(DV.MIN_INT_DV, DV::max);
+                CausesOfDelay clusterDelay = max == DV.MIN_INT_DV ? CausesOfDelay.EMPTY : max.causesOfDelay();
+                CausesOfDelay notYetSet = this.linkingNotYetSet.contains(variable) ? LinkedVariables.NOT_YET_SET_DELAY
+                        : CausesOfDelay.EMPTY;
+                CausesOfDelay delays = clusterDelay.merge(extraDelayIn).merge(notYetSet);
+
+                for (Variable reached : map.keySet()) {
+                    if (reached == variable && inPropertyMap.valueIsTrue()) {
+                        finalModified.put(reached, DV.TRUE_DV);
+                    } else {
+                        DV inFinal = finalModified.getOrDefault(reached, DV.FALSE_DV);
+                        if (!inFinal.valueIsTrue()) {
+                            if (delays.isDelayed()) {
+                                // once true, always true; but one delay is a delay for everyone in the path
+                                finalModified.put(reached, delays.merge(inFinal.causesOfDelay()));
+                            } else if (inPropertyMap.valueIsTrue()) {
+                                // non-delay linked to a TRUE, so this travels
+                                finalModified.put(reached, DV.TRUE_DV);
+                            } else {
+                                // keep delays
+                                DV combined = inPropertyMap.max(inFinal);
+                                finalModified.put(reached, combined);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        return finalModified;
+    }
+
+    /*
+    All modification times are set to the max of the modification time of all dependent variables clustered,
+    which are then (after taking the max) incremented by the max of their change data's increments.
+    This will become the new value.
+
+    TODO currently not too efficient
+    */
+    private void setModificationTimes(AnalyserContext analyserContext,
+                                      Map<Variable, Integer> modificationTimeIncrements,
+                                      int statementTimeDelta,
+                                      Map<Variable, Integer> currentModificationTimes) {
+        Map<Variable, Integer> modificationTimesToSet = new HashMap<>();
+        for (Variable variable : variablesInClusters) {
+            if (!modificationTimesToSet.containsKey(variable)) {
+                Map<Variable, DV> map = weightedGraph.links(variable, LinkedVariables.LINK_DEPENDENT, true);
+                VariableInfoContainer vic = statementAnalysis.getVariableOrDefaultNull(variable.fullyQualifiedName());
+                if (vic != null) {
+                    VariableInfo vi = vic.best(stage);
+                    DV modified = vi.getProperty(Property.CONTEXT_MODIFIED);
+                    int finalValue;
+                    if (modified.isDelayed()) {
+                        finalValue = -1;
+                    } else {
+                        int maxIncrement = 0;
+                        for (Variable dependent : map.keySet()) {
+                            maxIncrement = Math.max(maxIncrement, modificationTimeIncrements.getOrDefault(dependent, 0));
+                        }
+                        int maxInitial = currentModificationTimes.getOrDefault(variable, -1);
+                        for (Variable dependent : map.keySet()) {
+                            int current = currentModificationTimes.getOrDefault(dependent, -1);
+                            if (current >= 0) {
+                                maxInitial = Math.max(current, maxInitial);
+                            }
+                        }
+                        finalValue = Math.max(0, maxInitial) + maxIncrement + statementTimeDelta;
+                    }
+                    for (Variable dependent : map.keySet()) {
+                        modificationTimesToSet.put(dependent, finalValue);
+                    }
+                    modificationTimesToSet.put(variable, finalValue);
+                }
+            }
+        }
+        modificationTimesToSet.forEach((variable, timeIn) -> {
+            int time = isComputedOrMutable(variable.parameterizedType(), analyserContext) ? timeIn : 0;
+            if (time >= 0) {
+                VariableInfoContainer vic = statementAnalysis.getVariableOrDefaultNull(variable.fullyQualifiedName());
+                if (vic != null) {
+                    vic.setModificationTimeIfNotYetSet(time, stage);
+                }
+            }
+        });
+    }
+
+    private boolean isComputedOrMutable(ParameterizedType parameterizedType, AnalyserContext analyserContext) {
+        if (parameterizedType.isPrimitiveStringClass()) return false;
+        TypeInfo bestType = parameterizedType.bestTypeInfo(analyserContext);
+        if (bestType == null) return false; // locally immutable
+        TypeAnalysis typeAnalysis = analyserContext.getTypeAnalysis(bestType);
+        if (typeAnalysis.isComputed()) return true;
+        DV immutable = typeAnalysis.getProperty(Property.IMMUTABLE);
+        return MultiLevel.isMutable(immutable);
+    }
+
 }

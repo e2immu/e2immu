@@ -14,29 +14,28 @@
 
 package org.e2immu.analyser.parser.start.testexample;
 
-import org.e2immu.annotation.E2Container;
-import org.e2immu.annotation.Linked;
-import org.e2immu.annotation.Linked1;
+
+import org.e2immu.annotation.ImmutableContainer;
+import org.e2immu.annotation.Independent;
 
 import java.util.HashMap;
 import java.util.Map;
 
-@E2Container
+@ImmutableContainer(hc = true)
 public class E2Immutable_5<T> {
 
-    @Linked1(to = {"E2Immutable_5:map5Param"})
-    @Linked(absent = true)
+    @Independent(hc = true)
     private final Map<String, T> map5;
 
     public E2Immutable_5(Map<String, T> map5Param) {
-        map5 = new HashMap<>(map5Param); // not linked, but content linked
+        map5 = new HashMap<>(map5Param); // common hidden content
     }
 
     public T get5(String input) {
         return map5.get(input);
     }
 
-    @E2Container
+    @ImmutableContainer(hc = true)
     public Map<String, T> getMap5() {
         return Map.copyOf(map5);
     }

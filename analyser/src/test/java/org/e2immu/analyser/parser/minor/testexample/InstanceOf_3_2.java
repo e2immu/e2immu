@@ -14,10 +14,7 @@
 
 package org.e2immu.analyser.parser.minor.testexample;
 
-import org.e2immu.annotation.E1Immutable;
-import org.e2immu.annotation.Modified;
-import org.e2immu.annotation.NotModified;
-import org.e2immu.annotation.Nullable;
+import org.e2immu.annotation.*;
 
 import java.util.Collection;
 import java.util.HashSet;
@@ -26,7 +23,8 @@ import java.util.Set;
 import java.util.stream.Stream;
 
 // variant on _3, mod is now on list
-@E1Immutable
+@FinalFields
+@Container(absent = true)
 public class InstanceOf_3_2 {
 
     @NotModified

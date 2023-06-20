@@ -14,10 +14,10 @@
 
 package org.e2immu.analyser.util;
 
+import org.e2immu.annotation.Independent;
 import org.e2immu.annotation.NotModified;
 import org.e2immu.annotation.NotNull;
-import org.e2immu.annotation.NotNull1;
-import org.e2immu.annotation.UtilityClass;
+import org.e2immu.annotation.type.UtilityClass;
 
 import java.util.Iterator;
 import java.util.LinkedList;
@@ -31,8 +31,9 @@ public class ListUtil {
     }
 
     @SafeVarargs
-    @NotNull1
-    public static <T> List<T> immutableConcat(@NotNull1 @NotModified Iterable<? extends T>... lists) {
+    @NotNull(content = true)
+    @Independent(hc = true)
+    public static <T> List<T> immutableConcat(@NotNull(content = true) @NotModified Iterable<? extends T>... lists) {
         List<T> builder = new LinkedList<>();
         for (Iterable<? extends T> list : lists) {
             for (T t : list) {
@@ -42,7 +43,8 @@ public class ListUtil {
         return List.copyOf(builder);
     }
 
-    public static <T extends Comparable<? super T>> int compare(List<T> values1, List<T> values2) {
+    @NotModified
+    public static <T extends Comparable<? super T>> int compare(@NotModified List<T> values1, @NotModified List<T> values2) {
         Iterator<T> it2 = values2.iterator();
         for (T t1 : values1) {
             if (!it2.hasNext()) return 1;
@@ -54,7 +56,8 @@ public class ListUtil {
         return 0;
     }
 
-    public static <K, L> Stream<Pair<K, L>> joinLists(List<K> list1, List<L> list2) {
+    @Independent(hc = true)
+    public static <K, L> Stream<Pair<K, L>> joinLists(@NotNull(content = true) List<K> list1, @NotNull(content = true) List<L> list2) {
         Stream.Builder<Pair<K, L>> builder = Stream.builder();
         Iterator<L> it2 = list2.iterator();
         for (K t1 : list1) {
@@ -68,7 +71,8 @@ public class ListUtil {
     /*
     concat already immutable lists, which allows to take some shortcuts
      */
-    public static <T> List<T> concatImmutable(List<T> list1, List<T> list2) {
+    @Independent(hc = true)
+    public static <T> List<T> concatImmutable(@NotNull(content = true) List<T> list1, @NotNull(content = true) List<T> list2) {
         if (list1.isEmpty()) return list2;
         if (list2.isEmpty()) return list1;
         return immutableConcat(list1, list2);

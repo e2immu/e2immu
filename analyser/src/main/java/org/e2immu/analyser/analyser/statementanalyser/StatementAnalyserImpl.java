@@ -18,13 +18,13 @@ import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.analyser.delay.DelayFactory;
 import org.e2immu.analyser.analyser.delay.ProgressWrapper;
 import org.e2immu.analyser.analyser.impl.PrimaryTypeAnalyserImpl;
+import org.e2immu.analyser.analyser.impl.util.BreakDelayLevel;
 import org.e2immu.analyser.analyser.nonanalyserimpl.ExpandableAnalyserContextImpl;
 import org.e2immu.analyser.analyser.util.AnalyserResult;
 import org.e2immu.analyser.analyser.util.VariableAccessReport;
 import org.e2immu.analyser.analysis.FlowData;
 import org.e2immu.analyser.analysis.StatementAnalysis;
 import org.e2immu.analyser.analysis.impl.StatementAnalysisImpl;
-import org.e2immu.analyser.config.AnalyserProgram;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.BooleanConstant;
 import org.e2immu.analyser.model.expression.DelayedExpression;
@@ -208,6 +208,7 @@ public class StatementAnalyserImpl implements StatementAnalyser {
      * Once the AnalysisStatus reaches DONE, this particular block is not analysed again.
      */
     public AnalyserResult analyseAllStatementsInBlock(int iteration,
+                                                      int statementTime,
                                                       ForwardAnalysisInfo forwardAnalysisInfoIn,
                                                       EvaluationContext closure) {
         try {
@@ -225,12 +226,14 @@ public class StatementAnalyserImpl implements StatementAnalyser {
             StatementAnalyserImpl statementAnalyser = (StatementAnalyserImpl) previousAndFirst.first;
             Expression switchCondition = new BooleanConstant(statementAnalysis.primitives(), true);
             ForwardAnalysisInfo forwardAnalysisInfo = forwardAnalysisInfoIn;
+            int currentStatementTime = statementTime;
             do {
                 boolean wasReplacement;
                 EvaluationContext evaluationContext = new SAEvaluationContext(statementAnalysis,
                         myMethodAnalyser, this, analyserContext,
-                        localAnalysers, iteration, forwardAnalysisInfo.conditionManager(), closure,
-                        delaySubsequentStatementBecauseOfECI, forwardAnalysisInfo.allowBreakDelay());
+                        localAnalysers, iteration, currentStatementTime,
+                        forwardAnalysisInfo.conditionManager(), closure,
+                        delaySubsequentStatementBecauseOfECI, forwardAnalysisInfo.breakDelayLevel());
                 if (analyserContext.getConfiguration().analyserConfiguration().skipTransformations()) {
                     wasReplacement = false;
                 } else {
@@ -242,20 +245,20 @@ public class StatementAnalyserImpl implements StatementAnalyser {
                 EvaluationResult context = EvaluationResult.from(evaluationContext);
                 switchCondition = forwardAnalysisInfo.conditionInSwitchStatement(context, previousStatement, switchCondition,
                         statementAnalyser.statementAnalysis);
-                Set<Variable> switchConditionVariables = switchCondition.variables(true).stream().collect(Collectors.toUnmodifiableSet());
+                Set<Variable> switchConditionVariables = switchCondition.variableStream().collect(Collectors.toUnmodifiableSet());
                 ForwardAnalysisInfo statementInfo = forwardAnalysisInfo.otherConditionManager(forwardAnalysisInfo.conditionManager()
                         .withCondition(context, switchCondition, switchConditionVariables));
 
-                AnalyserResult result = statementAnalyser.analyseSingleStatement(iteration, closure,
+                AnalyserResult result = statementAnalyser.analyseSingleStatement(iteration, currentStatementTime, closure,
                         wasReplacement, previousStatementAnalysis, statementInfo, delaySubsequentStatementBecauseOfECI);
                 delaySubsequentStatementBecauseOfECI |= result.analysisStatus().causesOfDelay().containsCauseOfDelay(CauseOfDelay.Cause.ECI);
-
+                currentStatementTime = statementAnalyser.statementAnalysis.statementTime(Stage.MERGE);
                 builder.add(result);
                 previousStatement = statementAnalyser;
 
                 statementAnalyser = (StatementAnalyserImpl) statementAnalyser.navigationDataNextGet().orElse(null);
 
-                if (result.analysisStatus().isProgress() && forwardAnalysisInfo.allowBreakDelay()) {
+                if (result.analysisStatus().isProgress() && forwardAnalysisInfo.breakDelayLevel().acceptStatement()) {
                     // LOGGER.debug("**** Removing allow break delay for subsequent statements ****");
                     // uncomment the following statement if you want to break only delays at one statement,
                     // instead of in the whole method
@@ -408,6 +411,7 @@ public class StatementAnalyserImpl implements StatementAnalyser {
      * Once the AnalysisStatus reaches DONE, this particular block is not analysed again.
      */
     private AnalyserResult analyseSingleStatement(int iteration,
+                                                  int statementTime,
                                                   EvaluationContext closure,
                                                   boolean wasReplacement,
                                                   StatementAnalysis previous,
@@ -425,8 +429,7 @@ public class StatementAnalyserImpl implements StatementAnalyser {
 
                 // no program restrictions at the moment
                 // be careful with limiting causes of delay, at least Cause.ECI has to pass!
-                AnalyserProgram analyserProgram = AnalyserProgram.PROGRAM_ALL;
-                analyserComponents = new AnalyserComponents.Builder<String, StatementAnalyserSharedState>(analyserProgram)
+                analyserComponents = new AnalyserComponents.Builder<String, StatementAnalyserSharedState>()
                         .add(CHECK_UNREACHABLE_STATEMENT, this::checkUnreachableStatement)
                         .add(INITIALISE_OR_UPDATE_VARIABLES, this::initialiseOrUpdateVariables)
                         .add(ANALYSE_TYPES_IN_STATEMENT, typesInStatement)
@@ -464,7 +467,7 @@ public class StatementAnalyserImpl implements StatementAnalyser {
                             .merge(forwardAnalysisInfo.switchSelectorIsDelayed().causesOfDelay());
                     condition = DelayedExpression.forSwitchSelector(Identifier.generate("switchSelector2"),
                             statementAnalysis.primitives(), forwardAnalysisInfo.switchSelector(), causes);
-                    conditionVariables = forwardAnalysisInfo.switchSelector().variables(true).stream().collect(Collectors.toUnmodifiableSet());
+                    conditionVariables = forwardAnalysisInfo.switchSelector().variableStream().collect(Collectors.toUnmodifiableSet());
                 } else {
                     condition = forwardAnalysisInfo.conditionManager().condition();
                     conditionVariables = forwardAnalysisInfo.conditionManager().conditionVariables();
@@ -474,8 +477,8 @@ public class StatementAnalyserImpl implements StatementAnalyser {
 
             EvaluationContext evaluationContext = new SAEvaluationContext(
                     statementAnalysis, myMethodAnalyser, this, analyserContext, localAnalysers,
-                    iteration, localConditionManager, closure, delaySubsequentStatementBecauseOfECI,
-                    forwardAnalysisInfo.allowBreakDelay());
+                    iteration, statementTime, localConditionManager, closure, delaySubsequentStatementBecauseOfECI,
+                    forwardAnalysisInfo.breakDelayLevel());
             StatementAnalyserSharedState sharedState = new StatementAnalyserSharedState(evaluationContext,
                     EvaluationResult.from(evaluationContext),
                     analyserResultBuilder, previous, forwardAnalysisInfo, localConditionManager);
@@ -492,7 +495,8 @@ public class StatementAnalyserImpl implements StatementAnalyser {
                     .build();
 
             helper.visitStatementVisitors(statementAnalysis.index(), result, sharedState,
-                    analyserContext.getConfiguration().debugConfiguration(), analyserComponents);
+                    analyserContext.getConfiguration().debugConfiguration(), analyserComponents,
+                    analyserResultBuilder.getVariableAccessReport());
 
             if (overallStatus.isDone()) {
                 statementAnalysis.internalAllDoneCheck();
@@ -579,7 +583,7 @@ public class StatementAnalyserImpl implements StatementAnalyser {
         for (PrimaryTypeAnalyser analyser : localAnalysers.get()) {
             LOGGER.debug("------- Starting local analyser {} ------", analyser.getName());
             Analyser.SharedState shared = new Analyser.SharedState(sharedState.evaluationContext().getIteration(),
-                    sharedState.evaluationContext().allowBreakDelay(), sharedState.evaluationContext());
+                    sharedState.evaluationContext().breakDelayLevel(), sharedState.evaluationContext());
             AnalyserResult analyserResult = analyser.analyse(shared);
             builder.add(analyserResult);
             LOGGER.debug("------- Ending local analyser   {} ------", analyser.getName());
@@ -636,56 +640,49 @@ public class StatementAnalyserImpl implements StatementAnalyser {
     */
     private AnalysisStatus transferFromClosureToResult(StatementAnalyserSharedState statementAnalyserSharedState) {
         StatementAnalysis last = myMethodAnalyser.getMethodAnalysis().getLastStatement();
-        if (last != statementAnalysis) {
-            // no point in running this unless we are the last statement in the method
+        EvaluationContext closure = statementAnalyserSharedState.evaluationContext().getClosure();
+        MethodInfo methodInfo = myMethodAnalyser.getMethodInfo();
+        boolean firstCallInCycle = methodInfo.methodResolution.get().ignoreMeBecauseOfPartOfCallCycle();
+        if (last != statementAnalysis || closure == null || firstCallInCycle) {
+            analyserResultBuilder.setVariableAccessReport(VariableAccessReport.EMPTY);
             return DONE;
         }
-        EvaluationContext closure = statementAnalyserSharedState.evaluationContext().getClosure();
-        if (closure != null) {
-            MethodInfo methodInfo = myMethodAnalyser.getMethodInfo();
-            boolean firstCallInCycle = methodInfo.methodResolution.get().ignoreMeBecauseOfPartOfCallCycle();
-            if (!firstCallInCycle) {
-                VariableAccessReport.Builder builder = new VariableAccessReport.Builder();
-                AtomicReference<CausesOfDelay> causes = new AtomicReference<>(CausesOfDelay.EMPTY);
-                TypeInfo currentType = statementAnalyserSharedState.evaluationContext().getCurrentType();
-                CausesOfDelay linksEstablished = statementAnalysis.methodLevelData().getLinksHaveBeenEstablished();
-                statementAnalysis.variableStream().forEach(vi -> {
-                    // naive approach
+
+        VariableAccessReport.Builder builder = new VariableAccessReport.Builder();
+        TypeInfo currentType = statementAnalyserSharedState.evaluationContext().getCurrentType();
+        CausesOfDelay linksEstablished = statementAnalysis.methodLevelData().getLinksHaveBeenEstablished();
+        boolean linksHaveBeenEstablished = linksEstablished.isDone();
+        AtomicReference<CausesOfDelay> causes = new AtomicReference<>(linksEstablished.causesOfDelay());
+
+        statementAnalysis.variableStream()
+                .filter(vi -> closure.acceptForVariableAccessReport(vi.variable(), currentType))
+                .forEach(vi -> {
                     Variable variable = vi.variable();
-                    if (closure.acceptForVariableAccessReport(variable, currentType)) {
-                        // mark, irrespective of whether it is present there or not (given that we are not the owner)
-                        // readId will be 0-E, index 0
-                        if (vi.isRead()) {
-                            builder.addVariableRead(variable);
-                        }
-
-                        DV modified = vi.getProperty(Property.CONTEXT_MODIFIED);
-
-                        /*
-                         the variable can be P-- in iteration 0, with modified == FALSE, and PEM in iteration 1, with a delay.
-                         Only when the links have been established, can we be sure that modified will progress in a stable fashion.
-                         */
-
-                        DV combined = modified.isDelayed() || linksEstablished.isDone() || modified.valueIsTrue()
-                                ? modified
-                                : modified.causesOfDelay().merge(linksEstablished);
-                        builder.addContextProperty(variable, Property.CONTEXT_MODIFIED, combined); // also when delayed!!!
-                        if (combined.isDelayed()) causes.set(causes.get().merge(combined.causesOfDelay()));
-                        if (!(variable instanceof This)) {
-                            DV notNull = vi.getProperty(Property.CONTEXT_NOT_NULL);
-                            builder.addContextProperty(variable, Property.CONTEXT_NOT_NULL, notNull);
-                            if (notNull.isDelayed()) causes.set(causes.get().merge(notNull.causesOfDelay()));
+                    if (vi.isRead()) {
+                        builder.addVariableRead(variable);
+                    }
+                    DV modified = vi.getProperty(Property.CONTEXT_MODIFIED);
+                    if (modified.isDone() && linksHaveBeenEstablished) {
+                        builder.addContextProperty(variable, Property.CONTEXT_MODIFIED, modified);
+                    } else {
+                        CausesOfDelay delays = modified.causesOfDelay().merge(linksEstablished.causesOfDelay());
+                        builder.addContextProperty(variable, Property.CONTEXT_MODIFIED, delays);
+                        causes.set(causes.get().merge(modified.causesOfDelay()));
+                    }
+                    if (!(variable instanceof This)) {
+                        DV notNull = vi.getProperty(Property.CONTEXT_NOT_NULL);
+                        builder.addContextProperty(variable, Property.CONTEXT_NOT_NULL, notNull);
+                        if (notNull.isDelayed()) {
+                            causes.set(causes.get().merge(notNull.causesOfDelay()));
                         }
                     }
                 });
-                VariableAccessReport variableAccessReport = builder.build();
-                analyserResultBuilder.setVariableAccessReport(variableAccessReport);
+        VariableAccessReport variableAccessReport = builder.build();
+        analyserResultBuilder.setVariableAccessReport(variableAccessReport);
 
-                if (causes.get().isDelayed()) {
-                    LOGGER.debug("Delay transfer from closure to result: {}", causes.get());
-                    return causes.get();
-                }
-            }
+        if (causes.get().isDelayed()) {
+            LOGGER.debug("Delay transfer from closure to result: {}", causes.get());
+            return causes.get();
         }
         return DONE;
     }
@@ -703,9 +700,9 @@ public class StatementAnalyserImpl implements StatementAnalyser {
     @Override
     public EvaluationContext newEvaluationContextForOutside() {
         return new SAEvaluationContext(statementAnalysis, myMethodAnalyser, this,
-                analyserContext, localAnalysers, 0,
+                analyserContext, localAnalysers, 0, statementAnalysis.flowData().getInitialTime(),
                 ConditionManager.initialConditionManager(statementAnalysis.primitives()), null,
-                false, false);
+                false, BreakDelayLevel.NONE);
     }
 
     @Override

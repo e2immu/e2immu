@@ -14,6 +14,7 @@
 
 package org.e2immu.analyser.analyser;
 
+import org.e2immu.analyser.model.Element;
 import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.Identifier;
 import org.e2immu.analyser.model.ParameterInfo;
@@ -69,7 +70,7 @@ public record ConditionManager(Expression condition,
 
     // there can be more, but all the expression's variables should be included
     private static void checkVariables(Expression e, Set<Variable> ev) {
-        assert ev.containsAll(e.variables(true));
+        assert ev.containsAll(e.variables());
     }
 
     public boolean isDelayed() {
@@ -353,7 +354,7 @@ public record ConditionManager(Expression condition,
     }
 
     private static Filter.FilterResult<Variable> obtainVariableFilter(Expression defaultRest, Variable variable, Expression value) {
-        List<Variable> variables = value.variables(true);
+        List<Variable> variables = value.variables();
         if (variables.size() == 1 && variable.equals(variables.stream().findAny().orElseThrow())) {
             return new Filter.FilterResult<>(Map.of(variable, value), defaultRest);
         }
@@ -408,21 +409,21 @@ public record ConditionManager(Expression condition,
     public ConditionManager removeFromState(EvaluationResult evaluationContext, Set<Variable> variablesAssigned) {
         Primitives primitives = evaluationContext.getPrimitives();
         Expression withoutNegation = state instanceof Negation negation ? negation.expression : state;
-        if (withoutNegation instanceof Equals equals && !Collections.disjoint(equals.variables(true), variablesAssigned)) {
+        if (withoutNegation instanceof Equals equals && !Collections.disjoint(equals.variables(), variablesAssigned)) {
             Expression newState = state.isDelayed()
                     ? DelayedExpression.forSimplification(getIdentifier(), primitives.booleanParameterizedType(),
                     state, state.causesOfDelay())
                     : new BooleanConstant(primitives, true);
-            Set<Variable> nsv = new HashSet<>(newState.variables(true));
+            Set<Variable> nsv = new HashSet<>(newState.variables());
             return new ConditionManager(condition, conditionVariables, newState, nsv, precondition, parent);
         }
         if (withoutNegation instanceof And and) {
             Expression[] expressions = and.getExpressions().stream()
-                    .filter(e -> Collections.disjoint(e.variables(true), variablesAssigned))
+                    .filter(e -> Collections.disjoint(e.variables(), variablesAssigned))
                     .toArray(Expression[]::new);
             Expression s = expressions.length == 0 ? new BooleanConstant(primitives, true) :
                     And.and(evaluationContext, expressions);
-            Set<Variable> nsv = new HashSet<>(s.variables(true));
+            Set<Variable> nsv = new HashSet<>(s.variables());
             return new ConditionManager(condition, conditionVariables, s, nsv, precondition, parent);
         }
         return this;
@@ -435,7 +436,7 @@ public record ConditionManager(Expression condition,
     public List<Variable> variables() {
         return Stream.concat(parent == null ? Stream.of() : parent.variables().stream(),
                 Stream.concat(conditionVariables.stream(),
-                        Stream.concat(precondition.expression().variables(true).stream(),
+                        Stream.concat(precondition.expression().variableStream(),
                                 stateVariables.stream()))).toList();
     }
 

@@ -14,52 +14,122 @@
 
 package org.e2immu.analyser.model;
 
+import org.e2immu.analyser.model.expression.MethodCall;
 import org.e2immu.analyser.model.statement.Block;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.annotation.NotNull;
-import org.e2immu.annotation.NotNull1;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * Translation takes place from statement, over expression, down to variable and type.
  * <p>
  * Blocks can only translate into blocks;
  * statements can translate into lists of statements.
+ * <p>
+ * If no translation takes place, the default behavior is to return the non-translated object.
  */
 public interface TranslationMap {
 
     @NotNull
-    Expression translateExpression(Expression expression);
+    default Expression translateExpression(Expression expression) {
+        return expression;
+    }
 
     @NotNull
-    MethodInfo translateMethod(MethodInfo methodInfo);
+    default MethodInfo translateMethod(MethodInfo methodInfo) {
+        return methodInfo;
+    }
 
     @NotNull
-    Variable translateVariable(Variable variable);
+    default Variable translateVariable(InspectionProvider inspectionProvider, Variable variable) {
+        return variable;
+    }
 
-    @NotNull1
-    List<Statement> translateStatement(InspectionProvider inspectionProvider, Statement statement);
-
-    @NotNull
-    Block translateBlock(InspectionProvider inspectionProvider, Block block);
-
-    @NotNull
-    ParameterizedType translateType(ParameterizedType parameterizedType);
-
-    boolean expandDelayedWrappedExpressions();
+    @NotNull(content = true)
+    default List<Statement> translateStatement(InspectionProvider inspectionProvider, Statement statement) {
+        return List.of(statement);
+    }
 
     @NotNull
-    LocalVariable translateLocalVariable(LocalVariable localVariable);
+    default Block translateBlock(InspectionProvider inspectionProvider, Block block) {
+        List<Statement> list = translateStatement(inspectionProvider, block);
+        if (list.size() != 1) throw new UnsupportedOperationException();
+        return (Block) list.get(0);
+    }
 
-    boolean isEmpty();
+    @NotNull
+    default ParameterizedType translateType(ParameterizedType parameterizedType) {
+        return parameterizedType;
+    }
 
-    boolean hasVariableTranslations();
+    @NotNull
+    default LocalVariable translateLocalVariable(LocalVariable localVariable) {
+        return localVariable;
+    }
 
-    // unlike in merge, in the case of ExplicitConstructorInvocation, we cannot predict which fields need their scope translating
-    boolean recurseIntoScopeVariables();
+    default boolean isEmpty() {
+        return true;
+    }
 
-    // because equality of delayed variables is based on ==
-    Expression translateVariableExpressionNullIfNotTranslated(Variable variable);
+    /*
+     because equality of delayed variables is based on ==
+     */
+    default Expression translateVariableExpressionNullIfNotTranslated(Variable variable) {
+        return null;
+    }
+
+    default boolean hasVariableTranslations() {
+        return false;
+    }
+
+    /*
+     unlike in merge, in the case of ExplicitConstructorInvocation, we cannot predict which fields need their scope translating
+     */
+    default boolean recurseIntoScopeVariables() {
+        return false;
+    }
+
+    default boolean expandDelayedWrappedExpressions() {
+        return false;
+    }
+
+    default boolean translateYieldIntoReturn() {
+        return false;
+    }
+
+    default Map<? extends Variable, ? extends Variable> variables() {
+        return Map.of();
+    }
+
+    default Map<? extends Expression, ? extends Expression> expressions() {
+        return Map.of();
+    }
+
+    default Map<? extends Variable, ? extends Expression> variableExpressions() {
+        return Map.of();
+    }
+
+    default Map<MethodInfo, MethodInfo> methods() {
+        return Map.of();
+    }
+
+    default Map<? extends Statement, List<Statement>> statements() {
+        return Map.of();
+    }
+
+    default Map<ParameterizedType, ParameterizedType> types() {
+        return Map.of();
+    }
+
+    /*
+    used by CM
+     */
+    default boolean translateAgain() { return false; }
+
+    default String modificationTimes(MethodCall beforeTranslation,
+                                     Expression translatedObject,
+                                     List<Expression> translatedParameters) { return null; }
 }

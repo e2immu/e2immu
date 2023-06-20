@@ -20,19 +20,18 @@ import com.github.javaparser.ast.expr.Expression;
 import com.github.javaparser.ast.stmt.Statement;
 import com.github.javaparser.ast.stmt.SwitchEntry;
 import org.e2immu.annotation.NotNull;
-import org.e2immu.annotation.NotNull1;
 
 public class ComGithubJavaparserAstStmt {
 
     public static final String PACKAGE_NAME = "com.github.javaparser.ast.stmt";
 
     interface TryStmt$ {
-        @NotNull1
+        @NotNull(content = true)
         NodeList<Expression> getResources();
     }
 
     interface SwitchStmt$ {
-        @NotNull1
+        @NotNull(content = true)
         NodeList<SwitchEntry> getEntries();
 
         @NotNull
@@ -41,7 +40,7 @@ public class ComGithubJavaparserAstStmt {
 
     interface BlockStmt$ {
 
-        @NotNull1
+        @NotNull(content = true)
         NodeList<Statement> getStatements();
     }
 

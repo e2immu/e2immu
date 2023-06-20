@@ -23,10 +23,13 @@ there is competition between the @NotNull implied on string in the add method,
 and the empty initialiser on the variable field.
 The result must be that string is @Nullable.
  */
-@MutableModifiesArguments
+@Container(absent = true)
+@ImmutableContainer(absent = true)
+@Immutable(absent = true)
+@FinalFields(absent = true)
 public class Basics_2 {
 
-    @Variable
+    @Final(absent = true)
     @Nullable
     @Modified(absent = true)
     @NotModified
@@ -43,6 +46,7 @@ public class Basics_2 {
         this.string = string;
     }
 
+    // this is a nonsensical annotation, it does not receive an AnnotationCheck
     @Nullable(absent = true)
     @NotModified
     public void add(@Modified @NotNull Collection<String> collection) {

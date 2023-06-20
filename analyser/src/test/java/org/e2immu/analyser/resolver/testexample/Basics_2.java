@@ -14,7 +14,10 @@
 
 package org.e2immu.analyser.resolver.testexample;
 
-import org.e2immu.annotation.*;
+import org.e2immu.annotation.ImmutableContainer;
+import org.e2immu.annotation.Independent;
+import org.e2immu.annotation.NotModified;
+import org.e2immu.annotation.rare.IgnoreModifications;
 
 import java.util.Arrays;
 import java.util.function.Consumer;
@@ -22,7 +25,7 @@ import java.util.function.Supplier;
 
 public class Basics_2 {
 
-    @ERContainer
+    @ImmutableContainer // auto: (hc = true)
     interface HasSize {
 
         @NotModified
@@ -34,7 +37,7 @@ public class Basics_2 {
         }
     }
 
-    @E2Container
+    @ImmutableContainer
     interface NonEmptyImmutableList<T> extends HasSize {
 
         @NotModified
@@ -48,20 +51,20 @@ public class Basics_2 {
         @NotModified
         void visit(Consumer<T> consumer);
 
-        @Constant
+        @ImmutableContainer("false")
         @Override
         default boolean isEmpty() {
             return false;
         }
     }
 
-    @E2Container
+    @ImmutableContainer(hc = true)
     static class ImmutableArrayOfT<T> implements NonEmptyImmutableList<T> {
 
         private final T[] ts;
 
         @SuppressWarnings("unchecked")
-        public ImmutableArrayOfT(int size, @Independent1 Supplier<T> generator) {
+        public ImmutableArrayOfT(int size, @Independent(hc = true) Supplier<T> generator) {
             ts = (T[]) new Object[size];
             Arrays.setAll(ts, i -> generator.get());
         }
@@ -82,7 +85,7 @@ public class Basics_2 {
         }
 
         @Override
-        public void visit(@Independent1 Consumer<T> consumer) {
+        public void visit(@Independent(hc = true) Consumer<T> consumer) {
             for (T t : ts) consumer.accept(t);
         }
     }

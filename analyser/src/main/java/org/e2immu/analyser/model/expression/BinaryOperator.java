@@ -26,7 +26,6 @@ import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.util.ListUtil;
-import org.e2immu.annotation.E2Container;
 import org.e2immu.annotation.NotModified;
 import org.e2immu.annotation.NotNull;
 
@@ -55,7 +54,6 @@ import static org.e2immu.analyser.model.expression.Precedence.*;
  * precedence 4: && logical AND
  * precedence 3: || logical OR
  */
-@E2Container
 public class BinaryOperator extends BaseExpression implements Expression {
     protected final Primitives primitives;
     public final Expression lhs;
@@ -64,8 +62,12 @@ public class BinaryOperator extends BaseExpression implements Expression {
     public final MethodInfo operator;
 
     public BinaryOperator(Identifier identifier,
-                          Primitives primitives, Expression lhs, MethodInfo operator, Expression rhs, Precedence precedence) {
-        super(identifier, operator.getComplexity() + lhs.getComplexity() + rhs.getComplexity());
+                          Primitives primitives,
+                          Expression lhs,
+                          MethodInfo operator,
+                          Expression rhs,
+                          Precedence precedence) {
+        super(identifier, precedence.getComplexity() + lhs.getComplexity() + rhs.getComplexity());
         this.lhs = Objects.requireNonNull(lhs);
         this.rhs = Objects.requireNonNull(rhs);
         this.precedence = precedence;
@@ -95,6 +97,9 @@ public class BinaryOperator extends BaseExpression implements Expression {
 
     @Override
     public Expression translate(InspectionProvider inspectionProvider, TranslationMap translationMap) {
+        Expression translated = translationMap.translateExpression(this);
+        if (translated != this) return translated;
+
         Expression translatedLhs = lhs.translate(inspectionProvider, translationMap);
         Expression translatedRhs = rhs.translate(inspectionProvider, translationMap);
         if (translatedRhs == this.rhs && translatedLhs == this.lhs) return this;
@@ -108,7 +113,7 @@ public class BinaryOperator extends BaseExpression implements Expression {
     }
 
     @Override
-    public List<Variable> variables(boolean descendIntoFieldReferences) {
+    public List<Variable> variables(DescendMode descendIntoFieldReferences) {
         return ListUtil.concatImmutable(lhs.variables(descendIntoFieldReferences),
                 rhs.variables(descendIntoFieldReferences));
     }
@@ -143,7 +148,14 @@ public class BinaryOperator extends BaseExpression implements Expression {
         ForwardEvaluationInfo forward = forwardBuilder.removeContextContainer().build();
 
         EvaluationResult leftResult = lhs.evaluate(context, forward);
-        EvaluationResult rightResult = rhs.evaluate(context, forward);
+        /*
+        IMPORTANT: we want the changeData of "context" to be available to the rhs evaluation (See InstanceOf_13)
+        Therefore we actively compose "context" into the context for rhs
+         */
+        EvaluationResult leftResultContext = new EvaluationResult.Builder(context)
+                .compose(context)
+                .compose(leftResult).build();
+        EvaluationResult rightResult = rhs.evaluate(leftResultContext, forward);
         EvaluationResult.Builder builder = new EvaluationResult.Builder(context).compose(leftResult, rightResult);
         builder.setExpression(determineValueProtect(primitives, builder, leftResult, rightResult, context, forward));
         return builder.build();
@@ -180,14 +192,14 @@ public class BinaryOperator extends BaseExpression implements Expression {
 
             // HERE are the ==null checks
             if (l == NullConstant.NULL_CONSTANT) {
-                DV dv = right.isNotNull0(false);
+                DV dv = right.isNotNull0(false, forwardEvaluationInfo);
                 if (dv.valueIsTrue()) return new BooleanConstant(primitives, false);
                 if (dv.isDelayed())
                     return DelayedExpression.forNullCheck(identifier, primitives,
                             right.getExpression(), dv.causesOfDelay().merge(r.causesOfDelay()));
             }
             if (r == NullConstant.NULL_CONSTANT) {
-                DV dv = left.isNotNull0(false);
+                DV dv = left.isNotNull0(false, forwardEvaluationInfo);
                 if (dv.valueIsTrue()) return new BooleanConstant(primitives, false);
                 if (dv.isDelayed())
                     return DelayedExpression.forNullCheck(identifier, primitives,
@@ -196,9 +208,11 @@ public class BinaryOperator extends BaseExpression implements Expression {
             // the following line ensures that a warning is sent when the ENN of a field/parameter is not NULLABLE
             // but the CNN is. The ENN trumps the annotation, but is not used in the computation of the constructor
             // see example in ExternalNotNull_0
-            if (l == NullConstant.NULL_CONSTANT && right.isNotNull0(true).valueIsTrue() && r instanceof IsVariableExpression ve) {
+            if (l == NullConstant.NULL_CONSTANT && right.isNotNull0(true,
+                    forwardEvaluationInfo).valueIsTrue() && r instanceof IsVariableExpression ve) {
                 builder.setProperty(ve.variable(), Property.CANDIDATE_FOR_NULL_PTR_WARNING, DV.TRUE_DV);
-            } else if (r == NullConstant.NULL_CONSTANT && left.isNotNull0(true).valueIsTrue() && l instanceof IsVariableExpression ve) {
+            } else if (r == NullConstant.NULL_CONSTANT && left.isNotNull0(true,
+                    forwardEvaluationInfo).valueIsTrue() && l instanceof IsVariableExpression ve) {
                 builder.setProperty(ve.variable(), Property.CANDIDATE_FOR_NULL_PTR_WARNING, DV.TRUE_DV);
             }
             return Equals.equals(identifier, context, l, r, forwardEvaluationInfo);
@@ -215,14 +229,14 @@ public class BinaryOperator extends BaseExpression implements Expression {
 
             // HERE are the !=null checks
             if (l == NullConstant.NULL_CONSTANT) {
-                DV dv = right.isNotNull0(false);
+                DV dv = right.isNotNull0(false, forwardEvaluationInfo);
                 if (dv.valueIsTrue()) return new BooleanConstant(primitives, true);
                 if (dv.isDelayed())
                     return DelayedExpression.forNullCheck(identifier, primitives,
                             right.getExpression(), dv.causesOfDelay().merge(r.causesOfDelay()));
             }
             if (r == NullConstant.NULL_CONSTANT) {
-                DV dv = left.isNotNull0(false);
+                DV dv = left.isNotNull0(false, forwardEvaluationInfo);
                 if (dv.valueIsTrue()) return new BooleanConstant(primitives, true);
                 if (dv.isDelayed())
                     return DelayedExpression.forNullCheck(identifier, primitives,
@@ -322,8 +336,21 @@ public class BinaryOperator extends BaseExpression implements Expression {
         }
 
         Expression state = and ? l.value() : Negation.negate(context, l.value());
-        Set<Variable> stateVariables = Stream.concat(state.variables(true).stream(),
-                lhs.variables(true).stream()).collect(Collectors.toUnmodifiableSet());
+        if (!lhs.equals(l.value()) && !forwardEvaluationInfo.isInCompanionExpression()) {
+            Expression literalNotNull = lhs.keepLiteralNotNull(context, and);
+            if (literalNotNull != null) {
+                /*
+                sometimes, the expanded state cannot be related to a variable anymore, which causes
+                null-pointer problems in the RHS. See e.g. DGSimplified_0, _1, SubTypes_12, NotNull_AAPI_3_1...
+                We take care NOT to evaluate the LHS, but to put it in a form so that the null-check
+                is recognized. (Evaluation would have to be without expansion of variables, but that
+                causes problems when working with companion methods.)
+                 */
+                state = And.and(context, state, literalNotNull);
+            }
+        }
+        Set<Variable> stateVariables = Stream.concat(state.variableStream(), lhs.variableStream())
+                .collect(Collectors.toUnmodifiableSet());
         EvaluationResult child = context.childState(state, stateVariables);
         EvaluationResult r = rhs.evaluate(child, forward);
         builder.compose(l, r);
@@ -359,8 +386,7 @@ public class BinaryOperator extends BaseExpression implements Expression {
     public static MethodInfo getOperator(@NotNull Primitives primitives,
                                          @NotNull @NotModified BinaryExpr.Operator operator,
                                          @NotModified TypeInfo widestType) {
-        if (widestType == null || !widestType.isPrimitiveExcludingVoid()
-                && !widestType.isBoxedExcludingVoid()) {
+        if (widestType == null || !widestType.isPrimitiveExcludingVoid()) {
             if (operator == BinaryExpr.Operator.EQUALS) {
                 return primitives.equalsOperatorObject();
             }
@@ -370,9 +396,11 @@ public class BinaryOperator extends BaseExpression implements Expression {
             if (widestType == primitives.stringTypeInfo() && operator == BinaryExpr.Operator.PLUS) {
                 return primitives.plusOperatorString();
             }
-            throw new UnsupportedOperationException("? what else can you have on " + widestType + ", operator " + operator);
+            if (widestType == null || !widestType.isBoxedExcludingVoid()) {
+                throw new UnsupportedOperationException("? what else can you have on " + widestType + ", operator " + operator);
+            }
         }
-        if (widestType == primitives.booleanTypeInfo() || widestType.fullyQualifiedName.equals("java.lang.Boolean")) {
+        if (widestType == primitives.booleanTypeInfo() || widestType == primitives.boxedBooleanTypeInfo()) {
             switch (operator) {
                 case XOR:
                     return primitives.xorOperatorBool();
@@ -389,7 +417,7 @@ public class BinaryOperator extends BaseExpression implements Expression {
             }
             throw new UnsupportedOperationException("Operator " + operator + " on boolean");
         }
-        if (widestType == primitives.charTypeInfo() || widestType.fullyQualifiedName.equals("java.lang.Character")) {
+        if (widestType == primitives.charTypeInfo() || widestType == primitives.characterTypeInfo()) {
             switch (operator) {
                 case PLUS:
                     return primitives.plusOperatorInt();
@@ -564,8 +592,8 @@ public class BinaryOperator extends BaseExpression implements Expression {
     }
 
     public static int compareVariables(Expression e1, Expression e2) {
-        List<Variable> variables1 = e1.variables(true);
-        List<Variable> variables2 = e2.variables(true);
+        List<Variable> variables1 = e1.variables();
+        List<Variable> variables2 = e2.variables();
         int s1 = variables1.size();
         int s2 = variables2.size();
         if (s1 == 0 && s2 == 0) return 0;

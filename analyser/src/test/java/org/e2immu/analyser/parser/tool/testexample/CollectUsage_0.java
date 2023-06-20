@@ -14,7 +14,8 @@
 
 package org.e2immu.analyser.parser.tool.testexample;
 
-import org.e2immu.annotation.E1Container;
+import org.e2immu.annotation.Container;
+import org.e2immu.annotation.FinalFields;
 import org.e2immu.annotation.Modified;
 
 import java.util.Random;
@@ -23,7 +24,7 @@ import java.util.Random;
 Goal of the test is to detect which "external" methods, fields and types are being used.
 The can then be put in Annotated API files.
  */
-@E1Container
+@FinalFields @Container
 public class CollectUsage_0 {
 
     private final Random random;

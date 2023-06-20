@@ -34,8 +34,7 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static org.e2immu.analyser.analyser.AssignmentIds.NOT_YET_ASSIGNED;
-import static org.e2immu.analyser.analyser.Property.IMMUTABLE;
-import static org.e2immu.analyser.analyser.Property.IMMUTABLE_BREAK;
+import static org.e2immu.analyser.analyser.Property.*;
 
 public class VariableInfoContainerImpl extends Freezable implements VariableInfoContainer {
     private static final Logger LOGGER = LoggerFactory.getLogger(VariableInfoContainerImpl.class);
@@ -125,6 +124,7 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
                                                         boolean statementHasSubBlocks) {
         VariableInfoImpl initial = new VariableInfoImpl(location, variable, NOT_YET_ASSIGNED, NOT_YET_READ,
                 Set.of(), null, variable.statementTime());
+        initial.setModificationTimeIfNotYetSet(0);
         // no newVariable, because either setValue is called immediately after this method, or the explicit newVariableWithoutValue()
         return new VariableInfoContainerImpl(variableNature, Either.right(initial),
                 statementHasSubBlocks ? new SetOnce<>() : null, null, new SetOnceMap<>());
@@ -140,7 +140,7 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
                                                              Instance value,
                                                              boolean statementHasSubBlocks) {
         VariableInfoImpl initial = new VariableInfoImpl(location, lvr, new AssignmentIds(index + Stage.INITIAL),
-                index + Stage.EVALUATION, Set.of(), null, NOT_A_FIELD);
+                index + Stage.EVALUATION, Set.of(), null, IGNORE_STATEMENT_TIME);
         initial.newVariable();
         initial.setValue(value);
         value.valueProperties().stream().forEach(e -> initial.setProperty(e.getKey(), e.getValue()));
@@ -213,8 +213,8 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
         return currentExcludingMerge();
     }
 
-    private VariableInfoImpl getToWrite(Stage level) {
-        return switch (level) {
+    private VariableInfoImpl getToWrite(Stage stage) {
+        return switch (stage) {
             case INITIAL -> (VariableInfoImpl) getRecursiveInitialOrNull();
             case EVALUATION -> evaluation.get();
             case MERGE -> merge.get();
@@ -297,7 +297,12 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
                 if (v.isDelayed() && valueIsDone && vp.propertyType == Property.PropertyType.VALUE) {
                     throw new IllegalStateException("Not allowed to even try to set delay on a value property");
                 }
-                variableInfo.setProperty(vp, v);
+                DV current = variableInfo.getProperty(vp, null);
+                if (current == null || current.isDelayed()) {
+                    variableInfo.setProperty(vp, v);
+                } else if (v.isDone() && !current.equals(v)) {
+                    throw new IllegalStateException("Changing value from " + current + " to " + v + " for " + vp + ", var " + variableInfo.variable());
+                }
             });
         }
         if (linkedVariables != null) {
@@ -496,14 +501,16 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
             VariableInfo best = best(Stage.EVALUATION);
             VariableInfoImpl mergeImpl = merge.get();
             if (mergeImpl.getValue().isDelayed()) mergeImpl.setValue(best.getValue());
-            mergeImpl.ensureLinkedVariables();
+            if (!mergeImpl.linkedVariablesIsSet()) {
+                mergeImpl.setLinkedVariables(best.getLinkedVariables());
+            }
             best.getProperties().forEach((k, v) -> {
                 DV dv = mergeImpl.getProperty(k, null);
                 if (dv == null || dv.isDelayed()) mergeImpl.setProperty(k, v);
             });
             return mergeImpl.getProperty(Property.EXTERNAL_IMMUTABLE).causesOfDelay()
                     .merge(mergeImpl.getProperty(Property.EXTERNAL_NOT_NULL).causesOfDelay())
-                    .merge(mergeImpl.getProperty(Property.EXTERNAL_CONTAINER).causesOfDelay())
+                    .merge(mergeImpl.getProperty(Property.CONTAINER_RESTRICTION).causesOfDelay())
                     .merge(mergeImpl.getProperty(Property.EXTERNAL_IGNORE_MODIFICATIONS).causesOfDelay());
         }
         return CausesOfDelay.EMPTY;
@@ -522,6 +529,7 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
         Variable v = eval.variable();
         VariableInfoImpl mergeImpl = ((VariableInfoContainerImpl) vicRenamed).merge.get();
         AtomicBoolean progress = new AtomicBoolean(mergeImpl.setValue(eval.getValue()));
+        // Linked variables have already been written/copied using ComputeLinkedVariables.writeLinkedVariables()
 
         eval.propertyStream()
                 .forEach(e -> {
@@ -625,11 +633,11 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
     }
 
     @Override
-    public void markOverride(Property property, DV value) {
+    public void markContextModifiedOverride(DV value) {
         assert value.isDone();
-        DV inMap = propertyOverrides.getOrDefaultNull(property);
+        DV inMap = propertyOverrides.getOrDefaultNull(CONTEXT_MODIFIED);
         if (inMap == null) {
-            propertyOverrides.put(property, value);
+            propertyOverrides.put(CONTEXT_MODIFIED, value);
         } else if (!inMap.equals(value)) {
             throw new UnsupportedOperationException("Overwriting the override, from " + inMap + " to " + value);
         }
@@ -638,5 +646,11 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
     @Override
     public SetOnceMap<Property, DV> propertyOverrides() {
         return propertyOverrides;
+    }
+
+    @Override
+    public void setModificationTimeIfNotYetSet(int modificationTime, Stage stage) {
+        VariableInfoImpl vii = getToWrite(stage);
+        vii.setModificationTimeIfNotYetSet(modificationTime);
     }
 }

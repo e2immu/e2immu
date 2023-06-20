@@ -14,10 +14,14 @@
 
 package org.e2immu.analyser.parser;
 
-import org.e2immu.annotation.*;
+import org.e2immu.annotation.Container;
+import org.e2immu.annotation.Modified;
+import org.e2immu.annotation.NotModified;
+import org.e2immu.annotation.NotNull;
 
 import java.util.HashSet;
 import java.util.Set;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 @Container
@@ -25,7 +29,7 @@ public class Messages {
 
     public static final Messages EMPTY = new Messages(Set.of());
 
-    @NotNull1
+    @NotNull(content = true)
     private final Set<Message> messages;
 
     public Messages() {
@@ -36,13 +40,18 @@ public class Messages {
         this.messages = set;
     }
 
+    @Override
+    public String toString() {
+        return "messages=" + messages.stream().map(Object::toString).sorted().collect(Collectors.joining(";"));
+    }
+
     @Modified
-    public void addAll(@NotNull1 @NotModified Messages messages) {
+    public void addAll(@NotNull(content = true) @NotModified Messages messages) {
         this.messages.addAll(messages.messages);
     }
 
     @Modified
-    public void addAll(@NotNull1 @NotModified Stream<Message> messageStream) {
+    public void addAll(@NotNull(content = true) @NotModified Stream<Message> messageStream) {
         messageStream.forEach(messages::add);
     }
 
@@ -51,7 +60,7 @@ public class Messages {
         this.messages.add(message);
     }
 
-    @NotNull1
+    @NotNull(content = true)
     public Stream<Message> getMessageStream() {
         return messages.stream();
     }

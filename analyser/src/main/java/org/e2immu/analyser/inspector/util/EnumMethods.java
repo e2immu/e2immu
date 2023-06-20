@@ -65,17 +65,17 @@ public class EnumMethods {
 
         var notNullContract = E2ImmuAnnotationExpressions.createContract(primitives, e2.notNull);
         var notModifiedContract = E2ImmuAnnotationExpressions.createContract(primitives, e2.notModified);
-        var eRContainer = E2ImmuAnnotationExpressions.createContract(primitives, e2.eRContainer);
+        var immContainer = E2ImmuAnnotationExpressions.createContract(primitives, e2.immutableContainer);
 
         // name()
 
         var nameBuilder = new MethodInspectionImpl.Builder(enumType, "name")
                 .setSynthetic(true)
                 .setReturnType(primitives.stringParameterizedType())
-                .addModifier(MethodModifier.PUBLIC)
-                .addModifier(MethodModifier.ABSTRACT) // no code -> shallow method analyser
+                .setAccess(Inspection.Access.PUBLIC)
+                .setAbstractMethod()
                 .addAnnotation(notNullContract)
-                .addAnnotation(eRContainer)
+                .addAnnotation(immContainer)
                 .addAnnotation(notModifiedContract);
         nameBuilder.readyToComputeFQN(typeContext);
         typeContext.typeMap.registerMethodInspection(nameBuilder);
@@ -97,7 +97,7 @@ public class EnumMethods {
                 .setSynthetic(true)
                 .setReturnType(valuesReturnType)
                 .setStatic(true)
-                .addModifier(MethodModifier.PUBLIC)
+                .setAccess(Inspection.Access.PUBLIC)
                 .setInspectedBlock(valuesBlock);
         valuesBuilder.readyToComputeFQN(typeContext);
         typeContext.typeMap.registerMethodInspection(valuesBuilder);
@@ -109,13 +109,13 @@ public class EnumMethods {
                 .setSynthetic(true)
                 .setReturnType(enumType.asParameterizedType(typeContext))
                 .setStatic(true)
-                .addModifier(MethodModifier.PUBLIC)
+                .setAccess(Inspection.Access.PUBLIC)
                 .addAnnotation(notNullContract)
                 .addAnnotation(notModifiedContract);
         var valueOfP0B = valueOfBuilder.newParameterInspectionBuilder(
                         Identifier.generate("enum valueOf parameter"),
                         primitives.stringParameterizedType(), "name", 0)
-                .addAnnotation(eRContainer)
+                .addAnnotation(immContainer)
                 .addAnnotation(notNullContract);
         valueOfBuilder.addParameter(valueOfP0B);
         valueOfBuilder.readyToComputeFQN(typeContext);
@@ -125,9 +125,6 @@ public class EnumMethods {
             var codeBlock = returnValueOf(expressionContext, identifier, enumType, valuesBuilder,
                     nameBuilder, valueOfBuilder.getParameters().get(0), notModifiedContract);
             valueOfBuilder.setInspectedBlock(codeBlock);
-        } else {
-            // we have no idea what the immutability will be!
-            valueOfBuilder.addModifier(MethodModifier.ABSTRACT); // no code
         }
 
         typeContext.typeMap.registerMethodInspection(valueOfBuilder);
@@ -221,13 +218,14 @@ public class EnumMethods {
         var builder = typeContext.typeMap.add(lambdaType, BY_HAND);
         builder.setTypeNature(TypeNature.CLASS)
                 .setSynthetic(true)
+                .setAccess(Inspection.Access.PRIVATE)
                 .addInterfaceImplemented(functionalInterfaceType)
                 .noParent(primitives);
 
         var predicate = new MethodInspectionImpl.Builder(lambdaType, "test")
                 .setSynthetic(true)
                 .setReturnType(primitives.booleanParameterizedType())
-                .addModifier(MethodModifier.PUBLIC)
+                .setAccess(Inspection.Access.PUBLIC)
                 .addAnnotation(notModifiedContract);
 
         var predicate0Builder = predicate.newParameterInspectionBuilder

@@ -15,33 +15,56 @@
 package org.e2immu.annotatedapi.java;
 
 import org.e2immu.annotation.*;
+import org.e2immu.annotation.rare.Commutable;
+import org.e2immu.annotation.rare.IgnoreModifications;
+import org.e2immu.annotation.type.UtilityClass;
 
 import java.io.PrintStream;
+import java.nio.CharBuffer;
 import java.util.Iterator;
 import java.util.Spliterator;
 import java.util.function.Consumer;
 import java.util.stream.IntStream;
 
+/*
+Important: for efficiency reasons, the analysis of AnnotatedAPI types proceeds in the order type - fields - methods.
+Annotations on the type need to be given -- the analyser does not compute them from the methods.
+ */
 class JavaLang {
 
     final static String PACKAGE_NAME = "java.lang";
 
-    // implicitly @Dependent
+    /*
+     Implicitly @Dependent, because the iterator can change the iterable via the remove() method.
+     */
     @Container
     interface Iterable$<T> {
+        /*
+         Because action is of functional interface type in java.util.function, it is @IgnoreModifications by default.
+         The forEach method communicates hidden content to the outside world.
+         Finally, we do not allow action to be null, but obviously action's single abstract method (accept()) is allowed
+         to return null values.
+         */
         @NotModified
-        void forEach(@NotNull @Independent1 Consumer<? super T> action);
+        void forEach(@NotNull @Independent(hc = true) Consumer<? super T> action);
 
         // implicitly @Dependent, has `remove()`
         @NotNull
         Iterator<T> iterator();
 
+        /*
+        The spliterator cannot change the iterable, but it does communicate hidden content.
+         */
         @NotNull
-        @Independent1
+        @Independent(hc = true)
         Spliterator<T> spliterator();
     }
 
-    @ERContainer
+    /*
+    The archetype for a non-abstract type with hidden content.
+     */
+    @ImmutableContainer(hc = true)
+    @Independent
     interface Object$ {
         @NotNull
         Object clone();
@@ -65,15 +88,22 @@ class JavaLang {
         String toString();
     }
 
-    @ERContainer
+    /*
+    The analyser adds hc=true for an interface.
+     */
+    @ImmutableContainer
+    @Independent
     interface Enum$ {
 
     }
 
-    @E2Container
+    @ImmutableContainer
     interface StackTraceElement$ {
     }
 
+    /*
+     Not a container, modifying, dependent.
+     */
     interface Throwable$ {
 
         String getMessage();
@@ -98,9 +128,14 @@ class JavaLang {
 
         @Modified
         void setStackTrace(@NotNull StackTraceElement[] stackTrace);
+
+        void printStackTrace(@Modified PrintStream s);
     }
 
-    @ERContainer
+    /*
+    Deeply immutable, no hidden content.
+     */
+    @ImmutableContainer
     interface Class$ {
         @NotNull
         String getCanonicalName();
@@ -111,13 +146,20 @@ class JavaLang {
         @NotNull
         String getSimpleName();
 
-        // Technically, a class loader cannot be immutable: the load method changes its content.
-        // Semantically, to the application, this does not matter
+        /*
+         Technically, a class loader cannot be immutable: the load method changes its content.
+         Semantically, to the application, this does not matter.
+         */
         @NotNull
         ClassLoader getClassLoader();
     }
 
-    @ERContainer
+    /*
+     implicitly, hc=true for immutable; however, the independent does not get this hc=true automatically;
+     the type is independent, even if there is a subsequence() method
+     */
+    @ImmutableContainer
+    @Independent
     interface CharSequence$ {
         char charAt(int index);
 
@@ -131,20 +173,24 @@ class JavaLang {
         int length();
     }
 
+    /*
+     @Container and @Independent implicit, all parameters are immutable.
+     As explained in PrintStream, we disallow implementations of this interface to store the CharSequences,
+     and force them to copy the chars in their own sequence.
+     Override this choice by uncommenting the @Independent(hc=true).
+     */
     @Independent
-    @Container
     interface Appendable$ {
         @Fluent
         Appendable append(char c);
 
         @Fluent
-        Appendable append(CharSequence charSequence);
+        Appendable append(/*@Independent(hc=true)*/CharSequence charSequence);
 
         @Fluent
-        Appendable append(CharSequence charSequence, int start, int end);
+        Appendable append(/*@Independent(hc=true)*/CharSequence charSequence, int start, int end);
     }
 
-    @Independent
     @Container
     interface AutoCloseable$ {
 
@@ -152,9 +198,12 @@ class JavaLang {
         void close();
     }
 
-    // a class, because we need to annotate the constructor
+    /*
+    Deeply immutable, no hidden content.
 
-    @ERContainer
+    Note that we use a class instead of an interface to annotate, because we need to annotate a constructor.
+     */
+    @ImmutableContainer
     static abstract class String$ implements CharSequence {
 
         boolean String$Modification$Len(int post) {
@@ -211,8 +260,11 @@ class JavaLang {
             return false;
         }
 
-        @NotNull // could have been @NN1
-        byte[] getBytes() { return null; }
+        @NotNull
+            // could have been @NN1
+        byte[] getBytes() {
+            return null;
+        }
 
         boolean isEmpty$Value$Len(int l) {
             return l == 0;
@@ -237,7 +289,9 @@ class JavaLang {
         }
 
         @NotNull
-        static String join(CharSequence delimiter, CharSequence... elements) { return null; }
+        static String join(CharSequence delimiter, CharSequence... elements) {
+            return null;
+        }
 
         int lastIndexOf(int ch) {
             return 0;
@@ -253,10 +307,14 @@ class JavaLang {
         }
 
         @NotNull
-        String replaceAll(String regex, String replacement) { return null; }
+        String replaceAll(String regex, String replacement) {
+            return null;
+        }
 
         @NotNull
-        String[] split(String regex) { return null; }
+        String[] split(String regex) {
+            return null;
+        }
 
         boolean startsWith$Value$Len(int len, String s, boolean retVal) {
             return s.length() <= len && retVal;
@@ -334,8 +392,9 @@ class JavaLang {
         }
     }
 
-    // a class, because we want to annotate the constructor
-
+    /*
+    @Independent forces the string representation to be stored, rather than the object itself in append(Object).
+     */
     @Independent
     @Container
     static abstract class StringBuilder$ implements CharSequence {
@@ -355,25 +414,21 @@ class JavaLang {
         }
 
         @Fluent
-        @Modified
         StringBuilder append(boolean b) {
             return null;
         }
 
         @Fluent
-        @Modified
         StringBuilder append(char c) {
             return null;
         }
 
         @Fluent
-        @Modified
         StringBuilder append(float f) {
             return null;
         }
 
         @Fluent
-        @Modified
         StringBuilder append(long l) {
             return null;
         }
@@ -383,13 +438,11 @@ class JavaLang {
         }
 
         @Fluent
-        @Modified
         StringBuilder append(int i) {
             return null;
         }
 
         @Fluent
-        @Modified
         StringBuilder append(char[] chars) {
             return null;
         }
@@ -399,16 +452,17 @@ class JavaLang {
         }
 
         @Fluent
-        @Modified
         StringBuilder append(String str) {
             return null;
         }
 
         @Fluent
-        @Modified
         StringBuilder append(Object o) {
             return null;
         }
+
+        @Fluent
+        StringBuilder reverse() { return null; }
 
         int toString$Transfer$Len(int len) {
             return len;
@@ -420,13 +474,20 @@ class JavaLang {
         }
     }
 
+    /*
+     See StringBuilder for an explanation of the annotations.
+     TODO expand!
+     */
     @Independent
     @Container
     static abstract class StringBuffer$ implements CharSequence {
 
     }
 
-    @ERContainer
+    /*
+    no hidden content, deeply immutable.
+     */
+    @ImmutableContainer
     interface Integer$ {
 
         @NotNull
@@ -434,46 +495,92 @@ class JavaLang {
     }
 
 
-    @ERContainer
+    @ImmutableContainer
     interface Float$ {
 
         @NotNull
         String toString(float f);
     }
 
-    @ERContainer
+    @ImmutableContainer
     interface Byte$ {
 
         @NotNull
         String toString(byte b);
     }
 
-    @ERContainer
+    @ImmutableContainer
     interface Character$ {
 
         @NotNull
         String toString(char c);
+
+        @ImmutableContainer
+        interface Subset {
+
+        }
     }
 
-    @ERContainer
+    @ImmutableContainer
     interface Short$ {
 
         @NotNull
         String toString(short s);
     }
 
-    @ERContainer
+    @ImmutableContainer
     interface Boolean$ {
         boolean parseBoolean(@NotNull String string);
     }
 
     @UtilityClass
     interface Math$ {
+        @Commutable
         static int max(int a, int b) {
+            return 0;
+        }
+
+        @Commutable
+        static int max(float a, float b) {
+            return 0;
+        }
+
+        @Commutable
+        static int max(double a, double b) {
+            return 0;
+        }
+
+        @Commutable
+        static int max(long a, long b) {
+            return 0;
+        }
+
+        @Commutable
+        static int min(int a, int b) {
+            return 0;
+        }
+
+        @Commutable
+        static int min(float a, float b) {
+            return 0;
+        }
+
+        @Commutable
+        static int min(double a, double b) {
+            return 0;
+        }
+
+        @Commutable
+        static int min(long a, long b) {
             return 0;
         }
     }
 
+    /*
+     Cannot be @Container, see arraycopy.
+     Modifications to System are outside the scope of the semantics of the application: the output and error streams
+     have @IgnoreModifications.
+     */
     @UtilityClass
     interface System$ {
         @IgnoreModifications
@@ -486,12 +593,22 @@ class JavaLang {
 
         void arraycopy(@NotNull @NotModified Object src,
                        int srcPos,
-                       @NotNull @Modified @Independent1(parameters = {0}) Object dest,
+                       @NotNull @Modified @Independent(hc = true, parameters = {0}) Object dest,
                        int destPos,
                        int length);
+
+        @Independent
+        @Container
+        interface Logger {
+
+        }
     }
 
-    @ERContainer
+    /*
+    hc=true automatically added.
+     */
+    @ImmutableContainer
+    @Independent // implementations will NOT store the object being compared to
     interface Comparable$<T> {
         default int compareTo$Value(T t, int retVal) {
             return equals(t) || t.equals(this) ? 0 : retVal;
@@ -500,13 +617,79 @@ class JavaLang {
         int compareTo(@NotNull T t);
     }
 
-    @ERContainer
+    /*
+     Note: even though it is not formally "final", we'll treat it as such, and make this class deeply immutable.
+     */
+    @ImmutableContainer
     interface Package$ {
 
     }
 
-    @ERContainer
+    /*
+     Deeply immutable class.
+     */
+    @ImmutableContainer
     interface Module$ {
 
     }
+
+    @Container
+    interface ProcessHandle$ {
+
+        @Modified
+        boolean destroy();
+
+        boolean isAlive();
+
+        @ImmutableContainer // no hidden content
+        interface Info {
+
+        }
+    }
+
+    @Container
+    @Independent(hc = true)
+    interface ClassValue$<T> {
+        @Modified
+        T computeValue(Class<?> type);
+
+        T get(Class<?> type);
+
+        @Modified
+        void remove(Class<?> type);
+    }
+
+    /*
+    the implementation of Readable will not store the CharBuffer in its fields, nor link to it
+     */
+    @Independent
+    interface Readable$ {
+        @Modified
+        int read(@NotNull CharBuffer cb);
+    }
+
+    @ImmutableContainer
+    @Independent
+    interface Record$ {
+
+    }
+
+    @UtilityClass
+    interface Compiler$ {
+
+    }
+
+    interface Thread$ {
+
+        interface UncaughtExceptionHandler {
+            @Modified
+            void uncaughtException(Thread t, Throwable e);
+        }
+
+        @Modified
+        void setName(String name);
+
+        int enumerate(@Modified Thread[] tArray);
+    }
+
 }

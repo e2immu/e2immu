@@ -24,7 +24,7 @@ class Final_1 {
     @Final
     private int i;
 
-    @Variable
+    @Final(absent = true)
     private int j;
 
     public final int k; // <1>
@@ -39,7 +39,7 @@ class Final_1 {
         return i;
     }
 
-    @Modified // <2>
+    @Modified(construction = true) // <2>
     private void setI(int i) {
         this.i = i;
     }

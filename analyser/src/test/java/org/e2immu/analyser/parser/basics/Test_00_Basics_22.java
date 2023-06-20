@@ -55,7 +55,8 @@ public class Test_00_Basics_22 extends CommonTestRunner {
                     // return statement
                     if ("1.0.0.0.1".equals(d.statementId())) {
                         assertEquals("byteArrayOutputStream.toByteArray()", d.currentValue().toString());
-                        assertTrue(d.variableInfo().getLinkedVariables().isEmpty());
+                        // dependent! see annotated APIs && test in TestCommonJavaIO.testByteArrayOutputStreamToByteArray()
+                        assertEquals("byteArrayOutputStream:2", d.variableInfo().getLinkedVariables().toString());
                     }
 
                     // try statement

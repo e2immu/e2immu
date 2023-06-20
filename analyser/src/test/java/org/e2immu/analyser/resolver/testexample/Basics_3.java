@@ -14,18 +14,19 @@
 
 package org.e2immu.analyser.resolver.testexample;
 
-import org.e2immu.annotation.E1Container;
-import org.e2immu.annotation.E2Container;
-import org.e2immu.annotation.Final;
-import org.e2immu.annotation.Mark;
 
-@E2Container(after = Basics_3.STRING)
+import org.e2immu.annotation.Final;
+import org.e2immu.annotation.FinalFields;
+import org.e2immu.annotation.ImmutableContainer;
+import org.e2immu.annotation.eventual.Mark;
+
+@ImmutableContainer(after = Basics_3.STRING)
 public class Basics_3 {
 
     public static final String STRING = "hello";
 
     @Final(after = STRING)
-    @E1Container(after = Basics_3.STRING)
+    @FinalFields(after = Basics_3.STRING)
     private String field;
 
     @Mark(STRING)

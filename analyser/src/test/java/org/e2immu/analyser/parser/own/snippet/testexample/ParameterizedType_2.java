@@ -14,6 +14,7 @@
 
 package org.e2immu.analyser.parser.own.snippet.testexample;
 
+import org.e2immu.annotation.ImmutableContainer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -35,6 +36,7 @@ public class ParameterizedType_2 {
     public static final char GT_END_TYPE_PARAMS = '>';
     public static final char LT_START_TYPE_PARAMS = '<';
 
+    @ImmutableContainer
     interface Primitives {
         ParameterizedType byteParameterizedType();
 
@@ -43,6 +45,7 @@ public class ParameterizedType_2 {
         ParameterizedType objectParameterizedType();
     }
 
+    @ImmutableContainer
     interface NamedType {
     }
 
@@ -50,7 +53,7 @@ public class ParameterizedType_2 {
     }
 
     static class ParameterizedType {
-        static ParameterizedType WILDCARD_PARAMETERIZED_TYPE = new ParameterizedType();
+        private static ParameterizedType WILDCARD_PARAMETERIZED_TYPE = new ParameterizedType();
 
         public ParameterizedType() {
             this.typeInfo = null;
@@ -76,6 +79,7 @@ public class ParameterizedType_2 {
         enum WildCard {NONE, EXTENDS, SUPER}
     }
 
+    @ImmutableContainer
     interface TypeContext {
         NamedType get(String name, boolean complain);
 
@@ -97,6 +101,7 @@ public class ParameterizedType_2 {
         }
     }
 
+    @ImmutableContainer
     public interface FindType {
         TypeInfo find(String fqn, String path);
     }

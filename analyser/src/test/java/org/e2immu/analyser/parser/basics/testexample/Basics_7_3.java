@@ -14,7 +14,7 @@
 
 package org.e2immu.analyser.parser.basics.testexample;
 
-import org.e2immu.annotation.Constant;
+import org.e2immu.annotation.ImmutableContainer;
 
 /*
 Variant on 7, cause(s/d) problem with breaking init delay
@@ -23,7 +23,7 @@ public class Basics_7_3 {
 
     private int i;
 
-    @Constant("true")
+    @ImmutableContainer("true")
     boolean increment3() {
         System.out.println("i is " + i);
         synchronized (this) {

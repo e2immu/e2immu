@@ -15,6 +15,7 @@
 package org.e2immu.analyser.parser.minor.testexample;
 
 import org.e2immu.annotation.*;
+import org.e2immu.annotation.rare.IgnoreModifications;
 
 import java.util.function.Consumer;
 
@@ -37,7 +38,7 @@ public class ExternalContainer_2 {
         }
     }
 
-    @E2Immutable(recursive = true)
+    @Immutable
     record MyNonContainer(int value) implements Consumer<I> {
 
         @Override
@@ -88,7 +89,7 @@ public class ExternalContainer_2 {
         System.out.println(iField.getI());
     }
 
-    @Container(absent = true)
+    @Container(implied = true)
     @Modified
     private final I iField = new I();
 

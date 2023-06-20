@@ -89,9 +89,9 @@ public class Test_18_E2Immutable extends CommonTestRunner {
                 properties on a non-delayed value (null).
                  */
                 if (d.variable() instanceof FieldReference fr && "parent2".equals(fr.fieldInfo.name) && fr.scopeIsThis()) {
-                    String expected = d.iteration() <= 3 ? "<wrapped:parent2>" : "null";
+                    String expected = d.iteration() < 3 ? "<wrapped:parent2>" : "null";
                     assertEquals(expected, d.currentValue().toString());
-                    mustSeeIteration(d, 4);
+                    mustSeeIteration(d, 3);
                 }
             }
             // the constructor with 2 parameters
@@ -104,7 +104,7 @@ public class Test_18_E2Immutable extends CommonTestRunner {
                         fr.scope instanceof VariableExpression ve && "parent2Param".equals(ve.variable().simpleName())) {
                     assertNotEquals("0", d.statementId());
                     if ("1".equals(d.statementId())) {
-                        String expectValue = d.iteration() <= 1 ? "<f:level2>" : "instance type int";
+                        String expectValue = d.iteration() <= 1 ? "<f:parent2Param.level2>" : "instance type int";
                         assertEquals(expectValue, d.currentValue().toString());
                     }
                 }
@@ -138,14 +138,14 @@ public class Test_18_E2Immutable extends CommonTestRunner {
                         assertEquals("nullable instance type E2Immutable_1/*@Identity*/",
                                 d.currentValue().toString());
                         assertDv(d, MultiLevel.MUTABLE_DV, IMMUTABLE);
-                        assertDv(d, 3, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, EXTERNAL_IMMUTABLE);
+                        assertDv(d, 3, MultiLevel.EFFECTIVELY_IMMUTABLE_DV, EXTERNAL_IMMUTABLE);
                     }
                     if ("1".equals(d.statementId())) {
                         String expected = d.iteration() == 0 ? "<p:parent2Param>" :
                                 "nullable instance type E2Immutable_1/*@Identity*/";
                         assertEquals(expected, d.currentValue().toString());
                         assertDv(d, 1, MultiLevel.MUTABLE_DV, IMMUTABLE);
-                        assertDv(d, 3, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, EXTERNAL_IMMUTABLE);
+                        assertDv(d, 3, MultiLevel.EFFECTIVELY_IMMUTABLE_DV, EXTERNAL_IMMUTABLE);
                     }
                 }
             }
@@ -156,7 +156,7 @@ public class Test_18_E2Immutable extends CommonTestRunner {
                 assertDv(d, DV.TRUE_DV, FINAL);
                 String expected = "[null,parent2Param]";
                 assertEquals(expected, d.fieldAnalysis().getValue().toString());
-                assertDv(d, 1, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, EXTERNAL_IMMUTABLE);
+                assertDv(d, 1, MultiLevel.EFFECTIVELY_IMMUTABLE_DV, EXTERNAL_IMMUTABLE);
                 assertDv(d, MultiLevel.NULLABLE_DV, EXTERNAL_NOT_NULL);
             }
             if ("level2".equals(d.fieldInfo().name)) {
@@ -166,15 +166,15 @@ public class Test_18_E2Immutable extends CommonTestRunner {
                 if (d.iteration() > 0) {
                     assertTrue(d.fieldAnalysis().getValue() instanceof MultiValue);
                 }
-                assertDv(d, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, EXTERNAL_IMMUTABLE);
+                assertDv(d, MultiLevel.EFFECTIVELY_IMMUTABLE_DV, EXTERNAL_IMMUTABLE);
                 assertDv(d, MultiLevel.EFFECTIVELY_NOT_NULL_DV, EXTERNAL_NOT_NULL);
             }
         };
 
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("E2Immutable_1".equals(d.typeInfo().simpleName)) {
-                assertEquals("", d.typeAnalysis().getTransparentTypes().toString());
-                assertDv(d, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, IMMUTABLE);
+                assertTrue(d.typeAnalysis().getHiddenContentTypes().isEmpty());
+                assertDv(d, MultiLevel.EFFECTIVELY_IMMUTABLE_DV, IMMUTABLE);
             }
         };
 
@@ -195,7 +195,7 @@ public class Test_18_E2Immutable extends CommonTestRunner {
     public void test_2() throws IOException {
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
             if ("set3".equals(d.fieldInfo().name)) {
-                assertEquals("", d.fieldAnalysis().getLinkedVariables().toString());
+                assertEquals("set3Param:4", d.fieldAnalysis().getLinkedVariables().toString());
             }
         };
 
@@ -204,14 +204,14 @@ public class Test_18_E2Immutable extends CommonTestRunner {
                 assertTrue(d.methodInfo().isConstructor);
                 if (d.variable() instanceof FieldReference fr && "set3".equals(fr.fieldInfo.name)) {
                     assertEquals("new HashSet<>(set3Param)/*this.size()==set3Param.size()*/", d.currentValue().toString());
-                    assertTrue(d.variableInfo().getLinkedVariables().isEmpty());
+                    assertEquals("set3Param:4", d.variableInfo().getLinkedVariables().toString());
                 }
             }
         };
 
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("E2Immutable_2".equals(d.typeInfo().simpleName)) {
-                assertTrue(d.typeAnalysis().getTransparentTypes().isEmpty());
+                assertTrue(d.typeAnalysis().getHiddenContentTypes().isEmpty());
             }
         };
 
@@ -231,30 +231,27 @@ public class Test_18_E2Immutable extends CommonTestRunner {
                 assertEquals("Set.copyOf(input4)", d.currentValue().toString());
                 assertDv(d, MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL_DV, NOT_NULL_EXPRESSION);
                 // Set<String>, E2 -> ER
-                assertDv(d, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, IMMUTABLE);
+                assertDv(d, MultiLevel.EFFECTIVELY_IMMUTABLE_DV, IMMUTABLE);
                 assertDv(d, MultiLevel.INDEPENDENT_DV, INDEPENDENT);
                 assertTrue(d.variableInfo().getLinkedVariables().isEmpty());
             }
 
             if ("getStrings4".equals(d.methodInfo().name) && d.variable() instanceof FieldReference fr &&
                     "strings4".equals(fr.fieldInfo.name)) {
-                assertDv(d, 1, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, EXTERNAL_IMMUTABLE);
+                assertDv(d, 1, MultiLevel.EFFECTIVELY_IMMUTABLE_DV, EXTERNAL_IMMUTABLE);
                 assertEquals("", d.variableInfo().getLinkedVariables().toString());
             }
 
             if ("mingle".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof ReturnVariable && "1".equals(d.statementId())) {
-                    String linked = d.iteration() == 0 ? "input4:0,this.strings4:-1" : "input4:0";
-                    assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
+                    assertEquals("input4:0,this.strings4:4", d.variableInfo().getLinkedVariables().toString());
                 }
                 if (d.variable() instanceof ParameterInfo pi && "input4".equals(pi.name) && "0".equals(d.statementId())) {
-                    String linked = d.iteration() == 0 ? "this.strings4:-1" : "";
-                    assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
+                    assertEquals("this.strings4:4", d.variableInfo().getLinkedVariables().toString());
                 }
                 if (d.variable() instanceof FieldReference fr && "strings4".equals(fr.fieldInfo.name) && "0".equals(d.statementId())) {
                     assertTrue(fr.scopeIsThis());
-                    String linked = d.iteration() == 0 ? "input4:-1" : "";
-                    assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
+                    assertEquals("input4:4", d.variableInfo().getLinkedVariables().toString());
                 }
             }
         };
@@ -279,7 +276,7 @@ public class Test_18_E2Immutable extends CommonTestRunner {
                 assertDv(d, 1, MultiLevel.INDEPENDENT_DV, INDEPENDENT);
 
                 // parameter input4
-                assertDv(d.p(0), 2, MultiLevel.INDEPENDENT_DV, INDEPENDENT);
+                assertDv(d.p(0), 1, MultiLevel.INDEPENDENT_DV, INDEPENDENT);
             }
 
             if ("getStrings4".equals(d.methodInfo().name)) {
@@ -296,7 +293,8 @@ public class Test_18_E2Immutable extends CommonTestRunner {
                 if (d.iteration() >= 1) {
                     assertTrue(d.methodAnalysis().getSingleReturnValue() instanceof InlinedMethod);
                 }
-                assertDv(d, 1, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, IMMUTABLE);
+                assertDv(d, 1, MultiLevel.EFFECTIVELY_IMMUTABLE_DV, IMMUTABLE);
+                assertDv(d, 1, MultiLevel.INDEPENDENT_DV, INDEPENDENT);
             }
         };
 
@@ -307,8 +305,9 @@ public class Test_18_E2Immutable extends CommonTestRunner {
                 assertEquals("Set.copyOf(input4)", d.fieldAnalysis().getValue().toString());
                 assertEquals("", d.fieldAnalysis().getLinkedVariables().toString());
                 assertDv(d, MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL_DV, EXTERNAL_NOT_NULL);
-                assertDv(d, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, EXTERNAL_IMMUTABLE);
-                assertDv(d, MultiLevel.CONTAINER_DV, EXTERNAL_CONTAINER);
+                assertDv(d, MultiLevel.EFFECTIVELY_IMMUTABLE_DV, EXTERNAL_IMMUTABLE);
+                assertDv(d, MultiLevel.CONTAINER_DV, CONTAINER);
+                assertDv(d, MultiLevel.NOT_CONTAINER_DV, CONTAINER_RESTRICTION);
             }
         };
 
@@ -336,7 +335,7 @@ public class Test_18_E2Immutable extends CommonTestRunner {
     public void test_5() throws IOException {
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
             if ("map5".equals(d.fieldInfo().name)) {
-                assertEquals("map5Param:3", d.fieldAnalysis().getLinkedVariables().toString());
+                assertEquals("map5Param:4", d.fieldAnalysis().getLinkedVariables().toString());
             }
         };
 
@@ -345,14 +344,14 @@ public class Test_18_E2Immutable extends CommonTestRunner {
                 assertTrue(d.methodInfo().isConstructor);
                 if (d.variable() instanceof FieldReference fr && "map5".equals(fr.fieldInfo.name)) {
                     assertEquals("new HashMap<>(map5Param)/*this.size()==map5Param.size()*/", d.currentValue().toString());
-                    assertEquals("map5Param:3", d.variableInfo().getLinkedVariables().toString());
+                    assertEquals("map5Param:4", d.variableInfo().getLinkedVariables().toString());
                 }
             }
         };
 
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("E2Immutable_5".equals(d.typeInfo().simpleName)) {
-                assertEquals("Type param T", d.typeAnalysis().getTransparentTypes().toString());
+                assertHc(d, 0, "T");
             }
         };
 
@@ -380,21 +379,26 @@ public class Test_18_E2Immutable extends CommonTestRunner {
         };
 
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
-            if ("getMap7".equals(d.methodInfo().name) && "incremented".equals(d.variableName())) {
-                if ("0".equals(d.statementId())) {
-                    String expectValue = d.iteration() == 0 ? "<new:HashMap<String,SimpleContainer>>"
-                            : "new HashMap<>(map7)/*this.size()==map7.size()*/";
-                    assertEquals(expectValue, d.currentValue().toString());
-                    String expectLinked = switch (d.iteration()) {
-                        case 0, 1 -> "this.map7:-1";
-                        default -> "this.map7:3";
-                    };
-                    assertEquals(expectLinked, d.variableInfo().getLinkedVariables().toString());
+            if ("getMap7".equals(d.methodInfo().name)) {
+                if ("incremented".equals(d.variableName())) {
+                    if ("0".equals(d.statementId())) {
+                        String expectValue = d.iteration() == 0 ? "<new:HashMap<String,SimpleContainer>>"
+                                : "new HashMap<>(map7)/*this.size()==map7.size()*/";
+                        assertEquals(expectValue, d.currentValue().toString());
+                        String expectLinked = d.iteration() == 0 ? "this.map7:-1" : "this.map7:4";
+                        assertEquals(expectLinked, d.variableInfo().getLinkedVariables().toString());
+                    }
+                    if ("1".equals(d.statementId())) {
+                        String expectValue = d.iteration() == 0 ? "<new:HashMap<String,SimpleContainer>>"
+                                : "new HashMap<>(map7)/*this.size()==map7.size()*/";
+                        assertEquals(expectValue, d.currentValue().toString());
+                    }
                 }
-                if ("1".equals(d.statementId())) {
-                    String expectValue = d.iteration() == 0 ? "<new:HashMap<String,SimpleContainer>>"
-                            : "new HashMap<>(map7)/*this.size()==map7.size()*/";
-                    assertEquals(expectValue, d.currentValue().toString());
+                if (d.variable() instanceof ReturnVariable) {
+                    if ("2".equals(d.statementId())) {
+                        String expectLinked = d.iteration() == 0 ? "incremented:0,this.map7:-1" : "incremented:0,this.map7:4";
+                        assertEquals(expectLinked, d.variableInfo().getLinkedVariables().toString());
+                    }
                 }
             }
         };
@@ -408,12 +412,38 @@ public class Test_18_E2Immutable extends CommonTestRunner {
                 String expect = d.iteration() == 0 ? "<m:getI>" : "/*inline getI*/i$0";
                 assertEquals(expect, d.methodAnalysis().getSingleReturnValue().toString());
             }
+            if ("get7".equals(d.methodInfo().name)) {
+                assertDv(d, 2, MultiLevel.DEPENDENT_DV, INDEPENDENT);
+            }
+            if ("getMap7".equals(d.methodInfo().name)) {
+                assertDv(d, 2, MultiLevel.DEPENDENT_DV, INDEPENDENT);
+            }
         };
 
+        FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
+            if ("map7".equals(d.fieldInfo().name)) {
+                assertDv(d, MultiLevel.MUTABLE_DV, EXTERNAL_IMMUTABLE);
+            }
+        };
+
+        TypeAnalyserVisitor typeAnalyserVisitor = d -> {
+            if ("E2Immutable_7".equals(d.typeInfo().simpleName)) {
+                // because SimpleContainer is mutable
+                assertDv(d, 2, MultiLevel.DEPENDENT_DV, INDEPENDENT);
+                assertHc(d, 1, "");
+            }
+            if ("SimpleContainer".equals(d.typeInfo().simpleName)) {
+                assertDv(d, 1, MultiLevel.MUTABLE_DV, IMMUTABLE);
+                assertDv(d, MultiLevel.INDEPENDENT_DV, INDEPENDENT);
+                assertHc(d, 0, "");
+            }
+        };
         testClass("E2Immutable_7", 0, 0, new DebugConfiguration.Builder()
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .addEvaluationResultVisitor(evaluationResultVisitor)
+                .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+                .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
                 .build());
     }
 
@@ -442,7 +472,7 @@ public class Test_18_E2Immutable extends CommonTestRunner {
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("method".equals(d.methodInfo().name)) {
                 if ("0".equals(d.statementId())) {
-                    assertEquals(d.iteration() >= 4, d.context().evaluationContext().allowBreakDelay());
+                    assertEquals(d.iteration() >= 4, d.allowBreakDelay());
                 }
                 if (d.variable() instanceof FieldReference fieldReference && "sub".equals(fieldReference.fieldInfo.name)) {
                     String expectValue = d.iteration() <= 1 ? "<f:sub>" : "instance type Sub/*new Sub()*/";
@@ -450,11 +480,11 @@ public class Test_18_E2Immutable extends CommonTestRunner {
                     assertEquals("", d.variableInfo().getLinkedVariables().toString());
 
                     assertDv(d, DV.FALSE_DV, CONTEXT_MODIFIED);
-                    assertDv(d, 2, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, IMMUTABLE);
+                    assertDv(d, 2, MultiLevel.EFFECTIVELY_IMMUTABLE_DV, IMMUTABLE);
                 }
                 if (d.variable() instanceof ReturnVariable) {
                     // no linked variables
-                    String linked = d.iteration() <= 1 ? "sub.string:0,this.sub:-1" : "sub.string:0";
+                    String linked = d.iteration() <= 1 ? "sub.string:0,this.sub:-1" : "sub.string:0,this.sub:2";
                     assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
                 }
             }
@@ -462,7 +492,10 @@ public class Test_18_E2Immutable extends CommonTestRunner {
 
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("Sub".equals(d.typeInfo().simpleName)) {
-                assertDv(d, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, IMMUTABLE);
+                assertDv(d, MultiLevel.EFFECTIVELY_IMMUTABLE_DV, IMMUTABLE);
+            }
+            if ("E2Immutable_10".equals(d.typeInfo().simpleName)) {
+                assertDv(d, 1, MultiLevel.EFFECTIVELY_IMMUTABLE_DV, IMMUTABLE);
             }
         };
 
@@ -470,6 +503,7 @@ public class Test_18_E2Immutable extends CommonTestRunner {
             if ("sub".equals(d.fieldInfo().name)) {
                 String expected = d.iteration() == 0 ? "<f:sub>" : "new Sub()";
                 assertEquals(expected, d.fieldAnalysis().getValue().toString());
+                assertDv(d, 1, MultiLevel.EFFECTIVELY_IMMUTABLE_DV, EXTERNAL_IMMUTABLE);
             }
         };
 
@@ -485,13 +519,18 @@ public class Test_18_E2Immutable extends CommonTestRunner {
 
     @Test
     public void test_10_2() throws IOException {
-        testClass("E2Immutable_10", 1, 0, new DebugConfiguration.Builder()
+        testClass("E2Immutable_10", 0, 0, new DebugConfiguration.Builder()
                         .build(),
                 new AnalyserConfiguration.Builder().setComputeFieldAnalyserAcrossAllMethods(false).build());
     }
 
 
-    // variant on MethodReference_3, independent
+    /*
+     variant on MethodReference_3, independent
+
+     map.firstEntry() is immutable, no hidden content; as a consequence Stream.of(map.firstEntry()) is also deeply immutable.
+
+     */
     @Test
     public void test_11() throws IOException {
         EvaluationResultVisitor evaluationResultVisitor = d -> {
@@ -499,7 +538,7 @@ public class Test_18_E2Immutable extends CommonTestRunner {
                 Expression v = d.evaluationResult().value();
                 String expectValue = d.iteration() == 0 ? "<m:firstEntry>" : "map.firstEntry()";
                 assertEquals(expectValue, v.toString());
-                String expectLinked = d.iteration() == 0 ? "this.map:-1" : "this.map:3";
+                String expectLinked = d.iteration() == 0 ? "this.map:-1" : "this.map:4";
                 assertEquals(expectLinked, v.linkedVariables(d.evaluationResult()).toString());
             }
 
@@ -513,14 +552,17 @@ public class Test_18_E2Immutable extends CommonTestRunner {
         };
 
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
+            if ("firstEntry".equals(d.methodInfo().name)) {
+                assertDv(d, 1, MultiLevel.EFFECTIVELY_IMMUTABLE_DV, IMMUTABLE);
+            }
             if ("stream".equals(d.methodInfo().name)) {
-                assertDv(d, 1, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, IMMUTABLE);
+                assertDv(d, 1, MultiLevel.MUTABLE_DV, IMMUTABLE);
             }
         };
 
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("E2Immutable_11".equals(d.typeInfo().simpleName)) {
-                assertEquals("", d.typeAnalysis().getTransparentTypes().toString());
+                assertTrue(d.typeAnalysis().getHiddenContentTypes().isEmpty());
             }
         };
 
@@ -541,20 +583,20 @@ public class Test_18_E2Immutable extends CommonTestRunner {
                 Expression v = d.evaluationResult().value();
                 String expectValue = d.iteration() == 0 ? "<m:of>" : "Stream.of(map.firstEntry())";
                 assertEquals(expectValue, v.toString());
-                assertEquals("Type java.util.stream.Stream<java.util.Map.Entry<java.lang.String,T>>",
+                assertEquals("Type java.util.stream.Stream<java.util.Map.Entry<String,T>>",
                         v.returnType().toString());
             }
         };
 
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("stream".equals(d.methodInfo().name)) {
-                assertDv(d, 1, MultiLevel.EFFECTIVELY_E2IMMUTABLE_DV, IMMUTABLE);
+                assertDv(d, 1, MultiLevel.MUTABLE_DV, IMMUTABLE);
             }
         };
 
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("E2Immutable_12".equals(d.typeInfo().simpleName)) {
-                assertEquals("Type param T", d.typeAnalysis().getTransparentTypes().toString());
+                assertHc(d, 0, "T");
             }
         };
 
@@ -573,7 +615,7 @@ public class Test_18_E2Immutable extends CommonTestRunner {
 
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("E2Immutable_13".equals(d.typeInfo().simpleName)) {
-                assertEquals("", d.typeAnalysis().getTransparentTypes().toString());
+                assertTrue(d.typeAnalysis().getHiddenContentTypes().isEmpty());
             }
         };
 
@@ -589,7 +631,7 @@ public class Test_18_E2Immutable extends CommonTestRunner {
 
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("E2Immutable_14".equals(d.typeInfo().simpleName)) {
-                assertEquals("Type param T", d.typeAnalysis().getTransparentTypes().toString());
+                assertHc(d, 0, "T");
             }
         };
 
@@ -611,43 +653,111 @@ public class Test_18_E2Immutable extends CommonTestRunner {
                 if ("VariableDefinedOutsideLoop".equals(d.methodInfo().typeInfo.simpleName)) {
                     if (d.variable() instanceof ReturnVariable) {
                         if ("0".equals(d.statementId())) {
-                            String expected = d.iteration() <= 1 ? "<new:Suffix>" : "new Suffix(){}";
+                            String expected = d.iteration() < 4 ? "<new:Suffix>"
+                                    : "new Suffix(){public String toString(){return previousVariableNature.toString();}}";
                             assertEquals(expected, d.currentValue().toString());
-                            assertDv(d, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, IMMUTABLE);
+                            assertDv(d, MultiLevel.EFFECTIVELY_IMMUTABLE_DV, IMMUTABLE);
                             assertDv(d, MultiLevel.INDEPENDENT_DV, INDEPENDENT);
                         }
                     }
                 } else if ("E2Immutable_15".equals(d.methodInfo().typeInfo.simpleName)) {
                     if (d.variable() instanceof ReturnVariable) {
                         if ("0".equals(d.statementId())) {
-                            assertCurrentValue(d, 2, "E2Immutable_15.NO_SUFFIX");
-                            assertDv(d, 2, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, IMMUTABLE);
+                            assertCurrentValue(d, 1, "E2Immutable_15.NO_SUFFIX");
+                            assertDv(d, 1, MultiLevel.EFFECTIVELY_IMMUTABLE_DV, IMMUTABLE);
                         }
                     }
                 } else fail();
             }
         };
+
+        FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
+            if ("NO_SUFFIX".equals(d.fieldInfo().name)) {
+                assertDv(d, MultiLevel.EFFECTIVELY_IMMUTABLE_DV, EXTERNAL_IMMUTABLE);
+            }
+        };
+
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("E2Immutable_15".equals(d.typeInfo().simpleName)) {
-                assertDv(d, 1, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, IMMUTABLE);
+                // important! because there is no annotation
+                assertDv(d, MultiLevel.MUTABLE_DV, IMMUTABLE);
             } else if ("Suffix".equals(d.typeInfo().simpleName)) {
-                assertDv(d, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, IMMUTABLE);
+                assertDv(d, MultiLevel.EFFECTIVELY_IMMUTABLE_HC_DV, IMMUTABLE);
             } else if ("VariableDefinedOutsideLoop".equals(d.typeInfo().simpleName)) {
-                assertDv(d, 2, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, IMMUTABLE);
+                // because E2Immutable_15 is mutable
+                assertDv(d, 2, MultiLevel.EFFECTIVELY_FINAL_FIELDS_DV, IMMUTABLE);
             } else if ("$1".equals(d.typeInfo().simpleName)) {
                 // new Suffix() {}
                 assertEquals("VariableDefinedOutsideLoop", d.typeInfo().packageNameOrEnclosingType.getRight().simpleName);
-                assertDv(d, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, PARTIAL_IMMUTABLE);
-                assertDv(d, 3, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, IMMUTABLE);
+                assertDv(d, MultiLevel.EFFECTIVELY_IMMUTABLE_DV, PARTIAL_IMMUTABLE);
+                assertFalse(d.typeInspection().isStatic()); // even inside a non-extensible record!
+                assertDv(d, 3, MultiLevel.EFFECTIVELY_FINAL_FIELDS_DV, IMMUTABLE);
             } else if ("$2".equals(d.typeInfo().simpleName)) {
                 // new Suffix() {}
                 assertEquals("E2Immutable_15", d.typeInfo().packageNameOrEnclosingType.getRight().simpleName);
-                assertDv(d, 2, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, IMMUTABLE);
+                assertFalse(d.typeInspection().isStatic());
+                // the type is mutable because its enclosed type is mutable, and it is not static
+                assertDv(d, 1, MultiLevel.MUTABLE_DV, IMMUTABLE);
             } else fail("type " + d.typeInfo());
         };
-        testClass("E2Immutable_15", 0, 0, new DebugConfiguration.Builder()
+        testClass("E2Immutable_15", 0, 1, new DebugConfiguration.Builder()
                         .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
                         .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                        .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+                        .build(),
+                new AnalyserConfiguration.Builder()
+                        .setComputeFieldAnalyserAcrossAllMethods(true)
+                        .setForceAlphabeticAnalysisInPrimaryType(true)
+                        .build());
+    }
+
+    /*
+    different annotation on the main interface
+     */
+
+    @Test
+    public void test_15_1() throws IOException {
+
+        FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
+            if ("NO_SUFFIX".equals(d.fieldInfo().name)) {
+                assertDv(d, MultiLevel.EFFECTIVELY_IMMUTABLE_DV, EXTERNAL_IMMUTABLE);
+            }
+        };
+
+        TypeAnalyserVisitor typeAnalyserVisitor = d -> {
+            if ("E2Immutable_15_1".equals(d.typeInfo().simpleName)) {
+                assertDv(d, MultiLevel.EFFECTIVELY_IMMUTABLE_HC_DV, IMMUTABLE);
+                assertHc(d, 0, "Suffix");
+            } else if ("Suffix".equals(d.typeInfo().simpleName)) {
+                assertDv(d, MultiLevel.EFFECTIVELY_IMMUTABLE_HC_DV, IMMUTABLE);
+                assertHc(d, 0, "");
+            } else if ("VariableDefinedOutsideLoop".equals(d.typeInfo().simpleName)) {
+                // because E2Immutable_15 is mutable
+                assertDv(d, 2, MultiLevel.EFFECTIVELY_IMMUTABLE_HC_DV, IMMUTABLE);
+                assertHc(d, 0, "Suffix");
+            } else if ("$1".equals(d.typeInfo().simpleName)) {
+                // new Suffix() {} as return value in suffix() method in VDOL
+                assertFalse(d.typeInspection().isExtensible());
+                // important: this one is not static, because VariableDefinedOutsideLoop is now extensible (class)
+                assertFalse(d.typeInspection().isStatic());
+                assertHc(d, 0, "");
+                assertEquals("VariableDefinedOutsideLoop", d.typeInfo().packageNameOrEnclosingType.getRight().simpleName);
+                assertDv(d, MultiLevel.EFFECTIVELY_IMMUTABLE_DV, PARTIAL_IMMUTABLE);
+                assertDv(d, 3, MultiLevel.EFFECTIVELY_IMMUTABLE_DV, IMMUTABLE);
+
+                assertDv(d, 3, MultiLevel.INDEPENDENT_DV, INDEPENDENT);
+            } else if ("$2".equals(d.typeInfo().simpleName)) {
+                // new Suffix() {} on field NO_SUFFIX
+                assertEquals("E2Immutable_15_1", d.typeInfo().packageNameOrEnclosingType.getRight().simpleName);
+                assertFalse(d.typeInspection().isStatic());
+                assertHc(d, 0, "");
+                assertDv(d, 1, MultiLevel.EFFECTIVELY_IMMUTABLE_DV, IMMUTABLE);
+                assertDv(d, MultiLevel.EFFECTIVELY_IMMUTABLE_DV, PARTIAL_IMMUTABLE);
+            } else fail("type " + d.typeInfo());
+        };
+        testClass("E2Immutable_15_1", 0, 0, new DebugConfiguration.Builder()
+                        .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
+                        .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                         .build(),
                 new AnalyserConfiguration.Builder()
                         .setComputeFieldAnalyserAcrossAllMethods(true)
@@ -660,16 +770,21 @@ public class Test_18_E2Immutable extends CommonTestRunner {
 
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("E2Immutable_16".equals(d.typeInfo().simpleName)) {
-                assertDv(d, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, IMMUTABLE);
+                assertDv(d, MultiLevel.EFFECTIVELY_IMMUTABLE_DV, IMMUTABLE);
             }
             if ("OneVariable".equals(d.typeInfo().simpleName)) {
-                assertDv(d, 1, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, IMMUTABLE);
+                assertDv(d, MultiLevel.EFFECTIVELY_IMMUTABLE_HC_DV, IMMUTABLE);
+                assertTrue(d.typeInspection().isExtensible());
             }
             if ("Variable".equals(d.typeInfo().simpleName)) {
-                assertDv(d, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, IMMUTABLE);
+                assertDv(d, MultiLevel.EFFECTIVELY_IMMUTABLE_HC_DV, IMMUTABLE);
+                assertTrue(d.typeInspection().isExtensible());
             }
             if ("Record".equals(d.typeInfo().simpleName)) {
-                assertDv(d, 2, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, IMMUTABLE);
+                assertDv(d, 1, MultiLevel.EFFECTIVELY_IMMUTABLE_HC_DV, IMMUTABLE);
+            }
+            if ("LocalVariable".equals(d.typeInfo().simpleName)) {
+                assertDv(d, 1, MultiLevel.EFFECTIVELY_FINAL_FIELDS_DV, IMMUTABLE);
             }
         };
 

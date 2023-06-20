@@ -123,8 +123,9 @@ public class NoDelay implements DV {
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        org.e2immu.analyser.analyser.delay.NoDelay noDelay = (org.e2immu.analyser.analyser.delay.NoDelay) o;
+        // explicitly allow for the subclass "Inconclusive"
+        if (o == null || !NoDelay.class.isAssignableFrom(o.getClass())) return false;
+        NoDelay noDelay = (NoDelay) o;
         return value == noDelay.value;
     }
 

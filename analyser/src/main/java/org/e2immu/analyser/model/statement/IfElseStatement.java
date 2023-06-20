@@ -20,12 +20,14 @@ import org.e2immu.analyser.analyser.ForwardEvaluationInfo;
 import org.e2immu.analyser.analysis.FlowData;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.EmptyExpression;
+import org.e2immu.analyser.output.Keyword;
 import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.Symbol;
 import org.e2immu.analyser.output.Text;
 import org.e2immu.analyser.parser.InspectionProvider;
 
 import java.util.List;
+import java.util.Objects;
 import java.util.function.Predicate;
 
 public class IfElseStatement extends StatementWithExpression {
@@ -35,13 +37,41 @@ public class IfElseStatement extends StatementWithExpression {
     public IfElseStatement(Identifier identifier,
                            Expression expression,
                            Block ifBlock,
-                           Block elseBlock) {
-        super(identifier, createCodeOrganization(expression, ifBlock, elseBlock), expression);
+                           Block elseBlock,
+                           Comment comment) {
+        super(identifier, createCodeOrganization(expression, ifBlock, elseBlock, comment), expression);
         this.elseBlock = elseBlock;
     }
 
+    @Override
+    public Statement replaceComment(Comment newCommentOrNullToRemove) {
+        return new IfElseStatement(identifier, expression, structure.block(), elseBlock, newCommentOrNullToRemove);
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (obj == this) return true;
+        if (obj instanceof IfElseStatement other) {
+            return identifier.equals(other.identifier)
+                    && expression.equals(other.expression)
+                    && structure.block().equals(other.structure.block())
+                    && elseBlock.equals(other.elseBlock);
+        }
+        return false;
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(identifier, expression, structure.block(), elseBlock);
+    }
+
+    @Override
+    public int getComplexity() {
+        return 1 + expression.getComplexity() + structure.block().getComplexity() + elseBlock.getComplexity();
+    }
+
     // note that we add the expression only once
-    private static Structure createCodeOrganization(Expression expression, Block ifBlock, Block elseBlock) {
+    private static Structure createCodeOrganization(Expression expression, Block ifBlock, Block elseBlock, Comment comment) {
         Structure.Builder builder = new Structure.Builder()
                 .setExpression(expression)
                 .setExpressionIsCondition(true)
@@ -54,7 +84,7 @@ public class IfElseStatement extends StatementWithExpression {
                     .setBlock(elseBlock)
                     .build());
         }
-        return builder.build();
+        return builder.setComment(comment).build();
     }
 
     private static DV standardExecution(Expression v, EvaluationResult evaluationContext) {
@@ -65,23 +95,31 @@ public class IfElseStatement extends StatementWithExpression {
     }
 
     @Override
-    public Statement translate(InspectionProvider inspectionProvider, TranslationMap translationMap) {
-        return new IfElseStatement(identifier,
-                translationMap.translateExpression(expression),
-                translationMap.translateBlock(inspectionProvider, structure.block()),
-                translationMap.translateBlock(inspectionProvider, elseBlock));
+    public List<Statement> translate(InspectionProvider inspectionProvider, TranslationMap translationMap) {
+        List<Statement> direct = translationMap.translateStatement(inspectionProvider, this);
+        if (haveDirectTranslation(direct, this)) return direct;
+
+        // translations in order of appearance
+        Expression translatedExpression = expression.translate(inspectionProvider, translationMap);
+        List<Statement> translatedIf = structure.block().translate(inspectionProvider, translationMap);
+        List<Statement> translatedElse = elseBlock.translate(inspectionProvider, translationMap);
+
+        return List.of(new IfElseStatement(identifier,
+                translatedExpression,
+                ensureBlock(structure.block().getIdentifier(), translatedIf),
+                ensureBlock(elseBlock.identifier, translatedElse), structure.comment()));
     }
 
     @Override
     public OutputBuilder output(Qualification qualification, LimitedStatementAnalysis statementAnalysis) {
-        OutputBuilder outputBuilder = new OutputBuilder().add(new Text("if"))
+        OutputBuilder outputBuilder = new OutputBuilder().add(Keyword.IF)
                 .add(Symbol.LEFT_PARENTHESIS)
                 .add(structure.expression().output(qualification))
                 .add(Symbol.RIGHT_PARENTHESIS)
                 .addIfNotNull(messageComment(statementAnalysis))
                 .add(structure.block().output(qualification, LimitedStatementAnalysis.startOfBlock(statementAnalysis, 0)));
         if (!elseBlock.isEmpty()) {
-            outputBuilder.add(new Text("else"))
+            outputBuilder.add(Keyword.ELSE)
                     .add(elseBlock.output(qualification, LimitedStatementAnalysis.startOfBlock(statementAnalysis, 1)));
         }
         return outputBuilder;

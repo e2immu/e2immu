@@ -16,7 +16,6 @@ package org.e2immu.analyser.parser.own.output.testexample;
 
 
 import org.e2immu.annotation.NotNull;
-import org.e2immu.annotation.NotNull1;
 
 import java.util.List;
 import java.util.function.Function;
@@ -63,7 +62,7 @@ public class FormatterSimplified_2 {
     interface Guide extends OutputElement {
     }
 
-    static boolean forward(List<OutputElement> list, @NotNull1 Function<ForwardInfo, Boolean> writer, int start, int maxChars) {
+    static boolean forward(List<OutputElement> list, @NotNull(content = true) Function<ForwardInfo, Boolean> writer, int start, int maxChars) {
         OutputElement outputElement;
         int pos = start;
         int chars = 0;

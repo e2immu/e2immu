@@ -129,7 +129,7 @@ record SAInitializersAndUpdaters(StatementAnalysis statementAnalysis) {
                             variableNature = new VariableNature.NormalLocalVariable(index());
                         }
                         statementAnalysis.createVariable(evaluationContext, lvr,
-                                VariableInfoContainer.NOT_A_VARIABLE_FIELD, variableNature);
+                                VariableInfoContainer.IGNORE_STATEMENT_TIME, variableNature);
                         if (statement() instanceof LoopStatement) {
                             ((StatementAnalysisImpl) statementAnalysis).ensureLocalVariableAssignedInThisLoop(lvr.fullyQualifiedName());
                         }
@@ -213,6 +213,10 @@ record SAInitializersAndUpdaters(StatementAnalysis statementAnalysis) {
             ParameterInfo parameterInfo = eci.methodInfo.methodInspection.get().getParameters().get(i);
             translationMapBuilder.put(new VariableExpression(parameterInfo), updater);
             translationMapBuilder.addVariableExpression(parameterInfo, updater);
+            IsVariableExpression ive = updater.asInstanceOf(IsVariableExpression.class);
+            if (ive != null) {
+                translationMapBuilder.put(parameterInfo, ive.variable());
+            }
 
             /*
             next to the assignments, we also do normal evaluations of the arguments of the ECI
@@ -241,7 +245,7 @@ record SAInitializersAndUpdaters(StatementAnalysis statementAnalysis) {
                         .build();
                 VariableExpression newVe = new VariableExpressionFixedForward(pi, forwardEvaluationInfo);
                 assignments.add(newVe);
-            } else {
+            } else if (!updater.isConstant()) {
                 assignments.add(updater);
             }
             i++;
@@ -252,11 +256,21 @@ record SAInitializersAndUpdaters(StatementAnalysis statementAnalysis) {
         TranslationMap translationMap = translationMapBuilder.setRecurseIntoScopeVariables(true).build();
         List<FieldInfo> visibleFields = eciType.visibleFields(analyserContext);
         for (FieldInfo fieldInfo : visibleFields) {
-            if (!fieldInfo.isStatic(analyserContext)) {
+            FieldInspection fieldInspection = analyserContext.getFieldInspection(fieldInfo);
+            if (!fieldInspection.isStatic()) {
                 boolean assigned = false;
                 for (VariableInfo variableInfo : methodAnalysis.getFieldAsVariable(fieldInfo)) {
                     if (variableInfo.isAssigned()) {
                         Expression start = variableInfo.getValue();
+                        if (start instanceof DelayedExpression de) {
+                            if (DelayedExpression.ECI.equals(de.msg())) {
+                                // when the value itself is also waiting... recursion; we wait with our own variables
+                                start = DelayedExpression.forECI(fieldInfo.getIdentifier(), eciVariables(),
+                                        DelayFactory.createDelay(causeOfDelay));
+                            } else {
+                                start = de.getDoneOriginal();
+                            }
+                        }
                         FieldReference fr = new FieldReference(analyserContext, fieldInfo);
                         Expression translated1 = start.translate(analyserContext, translationMap);
                         Expression translated = evaluationContext.getIteration() > 0
@@ -292,19 +306,21 @@ record SAInitializersAndUpdaters(StatementAnalysis statementAnalysis) {
 
     private Expression eciVariables() {
         MethodInfo methodInfo = statementAnalysis.methodAnalysis().getMethodInfo();
-        List<Variable> variables = methodInfo.methodInspection.get().getParameters().stream().map(v -> (Variable) v).toList();
-        return MultiExpressions.from(statement().getIdentifier(), variables);
+        List<Expression> variables = methodInfo.methodInspection.get().getParameters().stream()
+                .map(v -> (Expression) new VariableExpression(v)).toList();
+        return new CommaExpression(variables);
     }
 
     private Expression replaceUnknownFields(EvaluationContext evaluationContext, Expression expression) {
-        List<Variable> variables = expression.variables(true);
+        List<Variable> variables = expression.variables();
         TranslationMapImpl.Builder builder = new TranslationMapImpl.Builder();
         Identifier identifier = statement().getIdentifier();
         for (Variable variable : variables) {
             if (!statementAnalysis.variableIsSet(variable.fullyQualifiedName())) {
                 Properties properties = evaluationContext.getAnalyserContext()
-                        .defaultValueProperties(variable.parameterizedType(), evaluationContext.getCurrentType());
-                ExpandedVariable ev = new ExpandedVariable(identifier, variable, properties);
+                        .defaultValueProperties(variable.parameterizedType());
+                // FIXME LV.EMPTY is a temporary stop-gap
+                ExpandedVariable ev = new ExpandedVariable(identifier, variable, properties, LinkedVariables.EMPTY);
                 builder.addVariableExpression(variable, ev);
                 builder.put(new VariableExpression(variable), ev);
             }

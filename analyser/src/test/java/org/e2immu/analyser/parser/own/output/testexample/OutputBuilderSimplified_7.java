@@ -23,15 +23,16 @@ import java.util.function.*;
 import java.util.stream.Collector;
 import java.util.stream.Collectors;
 
-@E1Container
+@FinalFields
 public class OutputBuilderSimplified_7 {
+    @ImmutableContainer // contracted
     interface OutputElement {
         default String debug() {
             return "";
         }
     }
 
-    @ERContainer
+    @ImmutableContainer // computed, verify!
     static class Space implements OutputElement {
         static final Space NONE = new Space();
     }

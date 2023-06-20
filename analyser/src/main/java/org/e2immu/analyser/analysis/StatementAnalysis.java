@@ -15,6 +15,7 @@
 package org.e2immu.analyser.analysis;
 
 import org.e2immu.analyser.analyser.*;
+import org.e2immu.analyser.analyser.impl.util.BreakDelayLevel;
 import org.e2immu.analyser.analyser.util.VariableAccessReport;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.statement.BreakOrContinueStatement;
@@ -25,7 +26,6 @@ import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.annotation.Modified;
 import org.e2immu.annotation.NotNull;
-import org.e2immu.annotation.NotNull1;
 import org.e2immu.support.Either;
 
 import java.util.List;
@@ -33,6 +33,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+
+import static org.e2immu.analyser.analyser.Property.CONTEXT_MODIFIED;
 
 public interface StatementAnalysis extends Analysis,
         Comparable<StatementAnalysis>,
@@ -104,13 +106,13 @@ public interface StatementAnalysis extends Analysis,
          */
     VariableInfoContainer findForWriting(@NotNull Variable variable);
 
-    @NotNull1
+    @NotNull(content = true)
     Stream<VariableInfo> variableStream();
 
-    @NotNull1
+    @NotNull(content = true)
     Stream<Map.Entry<String, VariableInfoContainer>> rawVariableStream();
 
-    @NotNull1
+    @NotNull(content = true)
     Stream<Map.Entry<String, VariableInfoContainer>> variableEntryStream(Stage level);
 
     Expression notNullValuesAsExpression(EvaluationContext evaluationContext);
@@ -190,6 +192,12 @@ public interface StatementAnalysis extends Analysis,
 
     boolean isBrokeDelay();
     void setBrokeDelay();
+
+    default DV variableHasBeenModified(Variable variable) {
+        VariableInfoContainer vic = getVariable(variable.fullyQualifiedName());
+        VariableInfo vi = vic.getPreviousOrInitial();
+        return vi.getProperty(CONTEXT_MODIFIED);
+    }
 
     record FindLoopResult(StatementAnalysis statementAnalysis, int steps) {
     }

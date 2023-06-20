@@ -14,14 +14,14 @@
 
 package org.e2immu.analyser.parser.loops.testexample;
 
-import org.e2immu.annotation.Constant;
+import org.e2immu.annotation.ImmutableContainer;
 import org.e2immu.annotation.NotNull;
 
 public class Loops_12 {
 
     // variant of Loops_0 and Loops_4 where there is an assignment (and not a synthetic one) in an empty loop
 
-    @Constant("x")
+    @ImmutableContainer("x")
     @NotNull
     public static String method(int n) {
         String res1= "x";

@@ -14,12 +14,13 @@
 
 package org.e2immu.annotatedapi.java;
 
-import org.e2immu.annotation.ERContainer;
+
+import org.e2immu.annotation.ImmutableContainer;
 
 class JavaLangModule {
     final static String PACKAGE_NAME = "java.lang.module";
 
-    @ERContainer
+    @ImmutableContainer
     interface Configuration$ {
 
     }

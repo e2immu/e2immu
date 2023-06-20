@@ -41,7 +41,7 @@ public class TestSynthetics {
     @Test
     public void test() throws IOException {
         InputConfiguration inputConfiguration = new InputConfiguration.Builder()
-                .setAlternativeJREDirectory(CommonTestRunner.JDK_16)
+                .setAlternativeJREDirectory(CommonTestRunner.CURRENT_JDK)
                 .addSources("src/test/java")
                 .addClassPath("jmods/java.base.jmod")
                 .addRestrictSourceToPackages("some.unknown.type")
@@ -75,7 +75,7 @@ public class TestSynthetics {
                             typeMap.getPrimitives().stringParameterizedType()));
             assertTrue(map.isSingleAbstractMethod());
             ParameterizedType c = map.getConcreteTypeOfParameter(typeMap.getPrimitives(), 0);
-            assertEquals("Type java.lang.String", c.toString());
+            assertEquals("Type String", c.toString());
         }
         {
             TypeInfo f2 = typeMap.syntheticFunction(2, false);

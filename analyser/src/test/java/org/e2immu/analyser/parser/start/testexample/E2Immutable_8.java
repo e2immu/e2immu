@@ -19,8 +19,7 @@ import org.e2immu.annotation.*;
 import java.util.HashMap;
 import java.util.Map;
 
-// Constructor is dependent
-@E1Container
+@FinalFields @Container
 public class E2Immutable_8 {
 
     @Independent
@@ -38,19 +37,18 @@ public class E2Immutable_8 {
     }
 
     @NotModified
-    @Linked(to = { "E2Immutable_8:map8Param" })
     private final Map<String, SimpleContainer> map8;
 
     public E2Immutable_8(Map<String, SimpleContainer> map8Param) {
-        map8 = map8Param; // linked
+        map8 = map8Param; // dependent
     }
 
-    @Independent1
+    // dependent! (simple container is modifiable)
     public SimpleContainer get8(String input) {
         return map8.get(input);
     }
 
-    @Independent1
+    // dependent!
     public Map<String, SimpleContainer> getMap8() {
         Map<String, SimpleContainer> incremented = new HashMap<>(map8);
         incremented.values().forEach(sc -> sc.setI(sc.getI() + 1));

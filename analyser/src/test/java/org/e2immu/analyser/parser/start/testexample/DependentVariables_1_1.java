@@ -14,19 +14,19 @@
 
 package org.e2immu.analyser.parser.start.testexample;
 
-import org.e2immu.annotation.E2Container;
-import org.e2immu.annotation.Independent1;
+import org.e2immu.annotation.ImmutableContainer;
+import org.e2immu.annotation.Independent;
 import org.e2immu.annotation.Nullable;
 
 // small variant on 1
 
 public class DependentVariables_1_1 {
 
-    @E2Container
+    @ImmutableContainer(hc = true)
     static class XS<X> {
         private final X[] xs;
 
-        public XS(@Independent1 X[] p, X[] source) {
+        public XS(@Independent(hc = true) X[] p, X[] source) {
             this.xs = source.clone();
             System.arraycopy(p, 0, this.xs, 0, p.length);
         }

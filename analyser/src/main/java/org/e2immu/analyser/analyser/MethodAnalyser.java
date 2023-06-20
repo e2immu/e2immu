@@ -20,17 +20,16 @@ import org.e2immu.analyser.model.FieldInfo;
 import org.e2immu.analyser.model.MethodInfo;
 import org.e2immu.analyser.model.MethodInspection;
 import org.e2immu.annotation.NotNull;
-import org.e2immu.annotation.NotNull1;
 
 import java.util.Collection;
 import java.util.List;
 import java.util.stream.Stream;
 
 public interface MethodAnalyser extends Analyser {
-    @NotNull1
+    @NotNull(content = true)
     Stream<PrimaryTypeAnalyser> getLocallyCreatedPrimaryTypeAnalysers();
 
-    @NotNull1
+    @NotNull(content = true)
     Stream<VariableInfo> getFieldAsVariableStream(FieldInfo fieldInfo);
 
     @NotNull
@@ -38,7 +37,7 @@ public interface MethodAnalyser extends Analyser {
 
     void logAnalysisStatuses();
 
-    @NotNull1
+    @NotNull(content = true)
     Collection<? extends ParameterAnalyser> getParameterAnalysers();
 
     boolean hasCode();
@@ -56,6 +55,6 @@ public interface MethodAnalyser extends Analyser {
     @NotNull
     MethodInspection getMethodInspection();
 
-    @NotNull1
+    @NotNull(content = true)
     List<ParameterAnalysis> getParameterAnalyses();
 }

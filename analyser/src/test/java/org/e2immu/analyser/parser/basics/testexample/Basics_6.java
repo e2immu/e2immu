@@ -14,14 +14,14 @@
 
 package org.e2immu.analyser.parser.basics.testexample;
 
-import org.e2immu.annotation.Variable;
+import org.e2immu.annotation.Final;
 
 import java.util.ArrayList;
 import java.util.List;
 
 public class Basics_6 {
 
-    @Variable
+    @Final(absent = true)
     private String field;
 
     public void test1() {
@@ -79,6 +79,6 @@ public class Basics_6 {
     }
 
     void nonPrivateMethod() {
-        // can always be overridden, but as of 20200305, we study what we see (code in EvaluateMethodCall)
+        // can always be overridden, but as of 20200305, we study what we see (code in MethodCall.incrementStatementTime)
     }
 }

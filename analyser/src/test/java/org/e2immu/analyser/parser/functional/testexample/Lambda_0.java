@@ -14,7 +14,7 @@
 
 package org.e2immu.analyser.parser.functional.testexample;
 
-import org.e2immu.annotation.ERContainer;
+import org.e2immu.annotation.ImmutableContainer;
 
 import java.util.Set;
 import java.util.function.BiConsumer;
@@ -25,7 +25,7 @@ import java.util.stream.Collector;
 
 public class Lambda_0 {
 
-    @ERContainer
+    @ImmutableContainer
     public static Collector<Integer, Integer, Integer> collector() {
         return new Collector<>() {
             @Override

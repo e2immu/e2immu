@@ -19,7 +19,6 @@ import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.util.StringUtil;
 import org.e2immu.annotation.NotNull;
-import org.e2immu.annotation.NotNull1;
 
 import java.util.HashMap;
 import java.util.List;
@@ -54,7 +53,7 @@ public interface VariableInfo {
         return !valueIsSet();
     }
 
-    @NotNull1
+    @NotNull(content = true)
     Set<Integer> getReadAtStatementTimes();
 
     boolean valueIsSet();
@@ -76,11 +75,11 @@ public interface VariableInfo {
     @NotNull
     VariableInfo freeze();
 
-    @NotNull1
+    @NotNull(content = true)
     Stream<Map.Entry<Property, DV>> propertyStream();
 
     /**
-     * @return the empty set if has not been an assignment in this method yet; otherwise the statement ids
+     * @return the empty set, if there has not been an assignment in this method yet; otherwise the statement ids
      * of the latest assignment to this variable (field, local variable, dependent variable), followed
      * by "-E" for evaluation or ":M" for merge (see Level)
      * <p>
@@ -123,6 +122,7 @@ public interface VariableInfo {
     @NotNull
     Properties contextProperties();
 
+    int getModificationTimeOrNegative();
 
     record MergeOp(Property property, BinaryOperator<DV> operator, DV initial) {
     }
@@ -149,7 +149,7 @@ public interface VariableInfo {
             new MergeOp(EXTERNAL_IMMUTABLE, DV::min, EXTERNAL_IMMUTABLE.bestDv),
             new MergeOp(CONTEXT_IMMUTABLE, DV::max, CONTEXT_IMMUTABLE.falseDv),
 
-            new MergeOp(EXTERNAL_CONTAINER, DV::min, EXTERNAL_CONTAINER.bestDv),
+            new MergeOp(CONTAINER_RESTRICTION, DV::max, CONTAINER_RESTRICTION.falseDv),
             new MergeOp(CONTAINER, DV::min, CONTAINER.bestDv),
             new MergeOp(CONTEXT_CONTAINER, MAX_CC, CONTEXT_CONTAINER.falseDv),
 
@@ -169,7 +169,7 @@ public interface VariableInfo {
             new MergeOp(EXTERNAL_NOT_NULL, DV::min, EXTERNAL_NOT_NULL.bestDv),
             new MergeOp(EXTERNAL_IMMUTABLE, DV::min, EXTERNAL_IMMUTABLE.bestDv),
             new MergeOp(CONTEXT_IMMUTABLE, DV::max, CONTEXT_IMMUTABLE.falseDv),
-            new MergeOp(EXTERNAL_CONTAINER, DV::min, EXTERNAL_CONTAINER.bestDv),
+            new MergeOp(CONTAINER_RESTRICTION, DV::max, CONTAINER_RESTRICTION.falseDv),
             new MergeOp(CONTEXT_CONTAINER, DV::max, CONTEXT_CONTAINER.falseDv),
 
             new MergeOp(EXTERNAL_IGNORE_MODIFICATIONS, DV::min, EXTERNAL_IGNORE_MODIFICATIONS.bestDv),
@@ -178,12 +178,26 @@ public interface VariableInfo {
             new MergeOp(MODIFIED_OUTSIDE_METHOD, MAX_CM, MODIFIED_OUTSIDE_METHOD.falseDv)
     );
 
+    List<MergeOp> MERGE_VARIABLE_ACCESS_REPORT = List.of(
+            new MergeOp(CONTEXT_NOT_NULL, DV::max, CONTEXT_NOT_NULL.falseDv),
+            new MergeOp(CONTEXT_MODIFIED, MAX_CM, CONTEXT_MODIFIED.falseDv),
+            new MergeOp(READ, MAX_CM, READ.falseDv)
+    );
+
     // used by change data
     static Map<Property, DV> mergeIgnoreAbsent(Map<Property, DV> m1, Map<Property, DV> m2) {
+        return internalMerge(m1, m2, MERGE);
+    }
+
+    static Map<Property, DV> mergeVariableAccessReport(Map<Property, DV> m1, Map<Property, DV> m2) {
+        return internalMerge(m1, m2, MERGE_VARIABLE_ACCESS_REPORT);
+    }
+
+    static Map<Property, DV> internalMerge(Map<Property, DV> m1, Map<Property, DV> m2, List<MergeOp> merges) {
         if (m2.isEmpty()) return m1;
         if (m1.isEmpty()) return m2;
         Map<Property, DV> map = new HashMap<>();
-        for (MergeOp mergeOp : MERGE) {
+        for (MergeOp mergeOp : merges) {
             DV v1 = m1.getOrDefault(mergeOp.property, null);
             DV v2 = m2.getOrDefault(mergeOp.property, null);
 

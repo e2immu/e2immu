@@ -100,6 +100,17 @@ public record Input(Configuration configuration,
                 annotatedAPITypes, classPath);
     }
 
+    /*
+    Almost the same as create + createNext, but we keep the current global type context, the current primitives.
+     */
+    public Input copy(Configuration configuration) throws IOException {
+        Resources classPath = assemblePath(configuration, true, "Classpath",
+                configuration.inputConfiguration().classPathParts());
+        AnnotationStore annotationStore = new AnnotationXmlReader(classPath, configuration.annotationXmlConfiguration());
+        OnDemandInspection byteCodeInspector = new ByteCodeInspector(classPath, annotationStore, globalTypeContext);
+        return createNext(configuration, classPath, globalTypeContext, byteCodeInspector);
+    }
+
     private static Map<TypeInfo, URL> computeSourceURLs(Resources sourcePath,
                                                         TypeContext globalTypeContext,
                                                         List<String> restrictions,
@@ -132,7 +143,7 @@ public record Input(Configuration configuration,
         return sourceURLs;
     }
 
-    private static boolean acceptSource(String packageName, String typeName, List<String> restrictions) {
+    public static boolean acceptSource(String packageName, String typeName, List<String> restrictions) {
         if (restrictions.isEmpty()) return true;
         for (String packageString : restrictions) {
             if (packageString.endsWith(".")) {

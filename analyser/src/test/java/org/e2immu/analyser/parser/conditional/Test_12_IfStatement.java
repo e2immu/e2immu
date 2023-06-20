@@ -132,7 +132,8 @@ public class Test_12_IfStatement extends CommonTestRunner {
                 assertDv(d, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
             }
             if ("get1".equals(d.methodInfo().name) && d.variable() instanceof ReturnVariable) {
-                String expected = d.iteration() == 0 ? "<null-check>?defaultValue1:<m:get>"
+                String expected = d.iteration() == 0
+                        ? "<null-check>?defaultValue1:<m:get>"
                         : "null==map.get(label1)?defaultValue1:map.get(label1)";
                 assertEquals(expected, d.currentValue().toString());
                 assertDv(d, 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_EXPRESSION);
@@ -140,7 +141,7 @@ public class Test_12_IfStatement extends CommonTestRunner {
         };
 
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
-            if ("get1".equals(d.methodInfo().name) && d.iteration() > 0) {
+            if ("get1".equals(d.methodInfo().name) && d.iteration() >= 2) {
                 assertEquals("/*inline get1*/null==map.get(label1)?defaultValue1:map.get(label1)",
                         d.methodAnalysis().getSingleReturnValue().toString());
             }
@@ -211,7 +212,7 @@ public class Test_12_IfStatement extends CommonTestRunner {
         };
 
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
-            if ("get1".equals(d.methodInfo().name) && d.iteration() > 0) {
+            if ("get1".equals(d.methodInfo().name) && d.iteration() >= 2) {
                 assertEquals("/*inline get1*/null==map.get(label1)?defaultValue1:map.get(label1)",
                         d.methodAnalysis().getSingleReturnValue().toString());
             }
@@ -245,12 +246,12 @@ public class Test_12_IfStatement extends CommonTestRunner {
             if ("method1".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof ReturnVariable) {
                     if ("0".equals(d.statementId())) {
-                        String expected = d.iteration() == 0 ? "<simplification>||null==set?null:<return value>" : "null";
+                        String expected = d.iteration() == 0 ? "null==set||<simplification>?null:<return value>" : "null";
                         assertEquals(expected, d.currentValue().toString());
                     }
                     if ("1".equals(d.statementId())) {
                         String expected = switch (d.iteration()) {
-                            case 0, 1, 2, 3 -> "<simplification>||<null-check>?null:<m:contains>?\"one\":\"two\"";
+                            case 0, 1, 2, 3 -> "<null-check>||<simplification>?null:<m:contains>?\"one\":\"two\"";
                             default -> "???";
                         };
                         assertEquals(expected, d.currentValue().toString());
@@ -291,7 +292,7 @@ public class Test_12_IfStatement extends CommonTestRunner {
         };
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("pad".equals(d.methodInfo().name)) {
-                assertEquals("/*inline pad*/i<=9?\"\"+i:<return value>", d.methodAnalysis().getSingleReturnValue().toString());
+                assertEquals("/*inline pad*/i<10?\"\"+i:<return value>", d.methodAnalysis().getSingleReturnValue().toString());
                 assertTrue(d.methodAnalysis().getSingleReturnValue() instanceof InlinedMethod);
             }
         };
@@ -306,12 +307,85 @@ public class Test_12_IfStatement extends CommonTestRunner {
     public void test_8() throws IOException {
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("pad".equals(d.methodInfo().name)) {
-                assertEquals("/*inline pad*/i<=9?\"\"+i:<return value>", d.methodAnalysis().getSingleReturnValue().toString());
+                assertEquals("/*inline pad*/i<10?\"\"+i:<return value>", d.methodAnalysis().getSingleReturnValue().toString());
                 assertTrue(d.methodAnalysis().getSingleReturnValue() instanceof InlinedMethod);
             }
         };
         testClass("IfStatement_8", 0, 0, new DebugConfiguration.Builder()
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                .build());
+    }
+
+    @Test
+    public void test_9() throws IOException {
+        StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+            if ("expensiveCall".equals(d.methodInfo().name)) {
+                if (d.variable() instanceof ReturnVariable) {
+                    if ("0".equals(d.statementId())) {
+                        assertEquals("null==in?null:<return value>", d.currentValue().toString());
+                    }
+                    if ("1.0.0".equals(d.statementId())) {
+                        assertEquals("\"empty\"", d.currentValue().toString());
+                    }
+                    if ("1".equals(d.statementId())) {
+                        assertEquals("null==in?null:in.isEmpty()?\"empty\":<return value>",
+                                d.currentValue().toString());
+                    }
+                    if ("2".equals(d.statementId())) {
+                        assertEquals("null==in?null:in.isEmpty()?\"empty\":Character.isAlphabetic(in.charAt(0))?in:\"non-alpha\"",
+                                d.currentValue().toString());
+                    }
+                }
+            }
+            if ("method".equals(d.methodInfo().name)) {
+                if (d.variable() instanceof ReturnVariable) {
+                    if ("0".equals(d.statementId())) {
+                        String expected = d.iteration() == 0
+                                ? "<null-check>?null:<return value>" : "null==in?null:<return value>";
+                        assertEquals(expected, d.currentValue().toString());
+                    }
+                }
+            }
+        };
+        StatementAnalyserVisitor statementAnalyserVisitor = d -> {
+            if ("expensiveCall".equals(d.methodInfo().name)) {
+                if ("0".equals(d.statementId())) {
+                    assertEquals("null!=in", d.state().toString());
+                }
+                if ("1.0.0".equals(d.statementId())) {
+                    assertEquals("in.isEmpty()", d.condition().toString());
+                    /* IMPORTANT: the order is wrong from a shortcut operator point of view, but the And class will sort
+                      the clauses first thing.
+                     */
+                    assertEquals("null!=in&&in.isEmpty()", d.absoluteState().toString());
+                }
+                if ("1".equals(d.statementId()) || "2".equals(d.statementId())) {
+                    assertEquals("null!=in&&!in.isEmpty()", d.state().toString());
+                }
+            }
+            if ("method".equals(d.methodInfo().name)) {
+                if ("0".equals(d.statementId())) {
+                    String state = d.iteration() == 0 ? "!<null-check>" : "null!=in";
+                    assertEquals(state, d.state().toString());
+                }
+            }
+        };
+        MethodAnalyserVisitor methodAnalyserVisitor = d -> {
+            if ("expensiveCall".equals(d.methodInfo().name)) {
+                String expected = d.iteration() == 0 ? "<m:expensiveCall>"
+                        : "/*inline expensiveCall*/null==in?null:in.isEmpty()?\"empty\":Character.isAlphabetic(in.charAt(0))?in:\"non-alpha\"";
+                assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
+            }
+            if ("method".equals(d.methodInfo().name)) {
+                String expected = d.iteration() < 2 ? "<m:method>"
+                        : "/*inline method*/null==in?null:\"Not null: \"+(in.isEmpty()?\"empty\":Character.isAlphabetic(in.charAt(0))?in:\"non-alpha\")";
+                assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
+            }
+        };
+        testClass("IfStatement_9", 0, 0, new DebugConfiguration.Builder()
+                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addStatementAnalyserVisitor(statementAnalyserVisitor)
                 .build());
     }
 }

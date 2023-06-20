@@ -18,7 +18,9 @@ import org.e2immu.analyser.model.MethodInfo;
 import org.e2immu.analyser.model.ParameterizedType;
 import org.e2immu.analyser.model.Qualification;
 import org.e2immu.analyser.model.TypeInfo;
+import org.e2immu.analyser.output.Keyword;
 import org.e2immu.analyser.output.OutputBuilder;
+import org.e2immu.analyser.output.Space;
 import org.e2immu.analyser.output.Text;
 
 import java.util.Objects;
@@ -27,13 +29,13 @@ public class ReturnVariable implements Variable {
     public final ParameterizedType returnType;
     public final String simpleName;
     public final String fqn;
-    private final TypeInfo owningType;
+    private final MethodInfo methodInfo;
 
     public ReturnVariable(MethodInfo methodInfo) {
         this.returnType = methodInfo.returnType();
         simpleName = methodInfo.name;
         fqn = methodInfo.fullyQualifiedName();
-        owningType = methodInfo.typeInfo;
+        this.methodInfo = methodInfo;
     }
 
     @Override
@@ -47,7 +49,7 @@ public class ReturnVariable implements Variable {
 
     @Override
     public TypeInfo getOwningType() {
-        return owningType;
+        return methodInfo.typeInfo;
     }
 
     @Override
@@ -72,7 +74,7 @@ public class ReturnVariable implements Variable {
 
     @Override
     public OutputBuilder output(Qualification qualification) {
-        return new OutputBuilder().add(new Text("return "+simpleName));
+        return new OutputBuilder().add(Keyword.RETURN).add(Space.ONE).add(new Text(simpleName));
     }
 
     @Override
@@ -83,5 +85,14 @@ public class ReturnVariable implements Variable {
     @Override
     public boolean isStatic() {
         return false;
+    }
+
+    public MethodInfo getMethodInfo() {
+        return methodInfo;
+    }
+
+    @Override
+    public int getComplexity() {
+        return 1;
     }
 }

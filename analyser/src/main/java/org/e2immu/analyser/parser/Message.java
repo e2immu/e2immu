@@ -15,11 +15,9 @@
 package org.e2immu.analyser.parser;
 
 import org.e2immu.analyser.model.Location;
-import org.e2immu.annotation.E2Container;
 
 import java.util.Objects;
 
-@E2Container
 public record Message(Location location, Label message, String extra) {
 
     public static int SORT(Message m1, Message m2) {
@@ -53,6 +51,7 @@ public record Message(Location location, Label message, String extra) {
         EMPTY_LOOP,
         EVENTUAL_AFTER_REQUIRED,
         EVENTUAL_BEFORE_REQUIRED,
+        FACTORY_METHOD_INDEPENDENT_HC,
         FIELD_INITIALIZATION_NOT_NULL_CONFLICT(Severity.WARN), // only when not all field's values linked to parameter
         FINALIZER_METHOD_CALLED_ON_FIELD_NOT_IN_FINALIZER,
         FINALIZER_METHOD_CALLED_ON_PARAMETER,
@@ -79,11 +78,12 @@ public record Message(Location location, Label message, String extra) {
         POTENTIAL_NULL_POINTER_EXCEPTION(Severity.WARN),
         POTENTIAL_CONTENT_NOT_NULL(Severity.WARN),
         PRECONDITION_ABSENT,
-        PRIVATE_FIELD_NOT_READ,
+        PRIVATE_FIELD_NOT_READ_IN_PRIMARY_TYPE,
+        PRIVATE_FIELD_NOT_READ_IN_OWNER_TYPE,
         TRIVIAL_CASES_IN_SWITCH,
         TYPE_ANALYSIS_NOT_AVAILABLE(Severity.INFO),
         TYPES_WITH_FINALIZER_ONLY_EFFECTIVELY_FINAL,
-        TYPE_HAS_HIGHER_VALUE_FOR_INDEPENDENT,
+        TYPE_HAS_DIFFERENT_VALUE_FOR_INDEPENDENT,
         UNNECESSARY_FIELD_INITIALIZER(Severity.WARN),
         UNNECESSARY_METHOD_CALL(Severity.WARN),
         UNREACHABLE_STATEMENT,
@@ -95,8 +95,7 @@ public record Message(Location location, Label message, String extra) {
         WORSE_THAN_OVERRIDDEN_METHOD_PARAMETER,
         WORSE_THAN_OVERRIDDEN_METHOD,
         WRONG_ANNOTATION_PARAMETER,
-        WRONG_PRECONDITION,
-        ;
+        WRONG_PRECONDITION;
 
         public final Severity severity;
 

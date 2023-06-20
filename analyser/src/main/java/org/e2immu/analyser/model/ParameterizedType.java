@@ -106,6 +106,10 @@ public class ParameterizedType {
         return arrays == 0 && typeInfo != null && typeInfo.isPrimitiveExcludingVoid();
     }
 
+    public boolean isPrimitiveStringClass() {
+        return arrays == 0 && typeInfo != null && (typeInfo.isPrimitiveExcludingVoid() || typeInfo.isJavaLangString() || typeInfo.isJavaLangClass());
+    }
+
     private boolean checkParametersForPrimitives() {
         assert parameters.stream().noneMatch(ParameterizedType::isPrimitiveExcludingVoid) : "Type parameters contain primitives: " + parameters;
         return true;
@@ -262,7 +266,8 @@ public class ParameterizedType {
 
     @Override
     public int hashCode() {
-        return Objects.hash(typeInfo, parameters, typeParameter, arrays, wildCard);
+        // there's a significant risk at infinite loops because the parameters may contain cycles.
+        return Objects.hash(typeInfo, parameters.size(), typeParameter, arrays, wildCard);
     }
 
     public static boolean notEqualsTypeParametersOnlyIndex(ParameterizedType pt1, ParameterizedType pt2) {
@@ -640,17 +645,19 @@ public class ParameterizedType {
                 return parameters.get(0).bestTypeInfo();
             }
             TypeParameter definition;
-            if (typeParameter.getOwner().isLeft()) {
-                TypeInspection typeInspection = inspectionProvider.getTypeInspection(typeParameter.getOwner().getLeft());
-                definition = typeInspection.typeParameters().get(typeParameter.getIndex());
-            } else {
-                MethodInspection methodInspection = inspectionProvider.getMethodInspection(typeParameter.getOwner().getRight());
-                definition = methodInspection.getTypeParameters().get(typeParameter.getIndex());
-            }
-            if (!definition.getTypeBounds().isEmpty()) {
-                // IMPROVE should be a joint type
-                return definition.getTypeBounds().get(0).typeInfo;
-            }
+            if (typeParameter.getOwner() != null) {
+                if (typeParameter.getOwner().isLeft()) {
+                    TypeInspection typeInspection = inspectionProvider.getTypeInspection(typeParameter.getOwner().getLeft());
+                    definition = typeInspection.typeParameters().get(typeParameter.getIndex());
+                } else {
+                    MethodInspection methodInspection = inspectionProvider.getMethodInspection(typeParameter.getOwner().getRight());
+                    definition = methodInspection.getTypeParameters().get(typeParameter.getIndex());
+                }
+                if (!definition.getTypeBounds().isEmpty()) {
+                    // IMPROVE should be a joint type
+                    return definition.getTypeBounds().get(0).typeInfo;
+                }
+            } // else: in JFocus, we can temporarily have no owner during type generalization
         }
         return null;
     }
@@ -668,7 +675,10 @@ public class ParameterizedType {
 
         TypeInfo bestType = bestTypeInfo(inspectionProvider);
         TypeInfo otherBestType = other.bestTypeInfo(inspectionProvider);
-
+        if (bestType == null || otherBestType == null) {
+            // unbound type parameter
+            return inspectionProvider.getPrimitives().objectParameterizedType(); // no common type
+        }
         boolean isPrimitive = isPrimitiveExcludingVoid();
         boolean otherIsPrimitive = other.isPrimitiveExcludingVoid();
         if (isPrimitive && otherIsPrimitive) {
@@ -716,12 +726,14 @@ public class ParameterizedType {
     public ParameterizedType mostSpecific(InspectionProvider inspectionProvider,
                                           TypeInfo primaryType,
                                           ParameterizedType other) {
+        if (equals(other)) return this;
         if (isType() && typeInfo.isVoid() || other.isType() && other.typeInfo.isVoid()) {
             return inspectionProvider.getPrimitives().voidParameterizedType();
         }
         if (isTypeParameter()) {
             if (other.isTypeParameter()) {
                 // a type parameter in the primary type has priority over another one
+                // IMPROVE change this to a hierarchy rather than primary vs other
                 if (primaryType.equals(other.typeParameter.primaryType())) return other;
                 return this;
             }
@@ -841,7 +853,7 @@ public class ParameterizedType {
     }
 
     public ParameterizedType ensureBoxed(PrimitivesWithoutParameterizedType primitives) {
-        if (isPrimitiveExcludingVoid()) {
+        if (isPrimitiveExcludingVoid() || isVoid()) {
             return toBoxed(primitives).asSimpleParameterizedType();
         }
         return this;
@@ -905,10 +917,5 @@ public class ParameterizedType {
 
     public boolean isInt() {
         return arrays == 0 && typeInfo != null && typeInfo.isInt();
-    }
-
-    public ParameterizedType withoutTypeParameters() {
-        if (parameters.isEmpty()) return this;
-        return new ParameterizedType(typeInfo, arrays, wildCard, List.of(), typeParameter);
     }
 }

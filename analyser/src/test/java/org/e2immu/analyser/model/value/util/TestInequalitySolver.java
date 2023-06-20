@@ -35,7 +35,7 @@ public class TestInequalitySolver extends CommonAbstractValue {
         Expression jLt0 = GreaterThanZero.less(context, j, newInt(0), false);
         Expression iGt0AndJLt0 = newAndAppend(iGt0, jLt0);
         InequalitySolver inequalitySolver = new InequalitySolver(context, iGt0AndJLt0);
-        assertEquals("i=[i>=1],j=[j<=-1]", inequalitySolver.getPerComponent()
+        assertEquals("i=[i>=1],j=[j<0]", inequalitySolver.getPerComponent()
                 .entrySet().stream().map(Object::toString).sorted().collect(Collectors.joining(",")));
 
         Expression i2 = Product.product(context, newInt(2), i);

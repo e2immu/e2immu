@@ -18,7 +18,7 @@ package org.e2immu.analyser.util;
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
 import org.e2immu.analyser.config.Configuration;
-import org.e2immu.annotation.ExtensionClass;
+import org.e2immu.annotation.type.ExtensionClass;
 import org.e2immu.support.EventuallyFinal;
 import org.slf4j.LoggerFactory;
 

@@ -15,7 +15,6 @@
 package org.e2immu.analyser.parser.failing.testexample;
 
 import org.e2immu.annotation.NotNull;
-import org.e2immu.annotation.NotNull1;
 
 import java.util.Map;
 
@@ -33,7 +32,7 @@ public class NotNull1_0 {
         return false;
     }
 
-    public static boolean method(@NotNull1(contract = true) Map<String, Integer> map) {
+    public static boolean method(@NotNull(content = true, contract = true) Map<String, Integer> map) {
         for (Map.Entry<String, Integer> entry : map.entrySet()) {
             if (entry.getKey().startsWith("a")) {
                 return true;

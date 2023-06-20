@@ -27,11 +27,13 @@ import org.e2immu.analyser.parser.CommonTestRunner;
 import org.e2immu.analyser.visitor.FieldAnalyserVisitor;
 import org.e2immu.analyser.visitor.MethodAnalyserVisitor;
 import org.e2immu.analyser.visitor.StatementAnalyserVariableVisitor;
+import org.e2immu.analyser.visitor.TypeAnalyserVisitor;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 
 import static org.e2immu.analyser.analyser.Property.*;
+import static org.e2immu.analyser.model.MultiLevel.NOT_IGNORE_MODS_DV;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -65,6 +67,8 @@ public class Test_00_Basics_14 extends CommonTestRunner {
                         assertEquals(expected, d.currentValue().toString());
                         assertDv(d, MultiLevel.EFFECTIVELY_NOT_NULL_DV, CONTEXT_NOT_NULL);
                         assertDv(d, MultiLevel.MUTABLE_DV, CONTEXT_IMMUTABLE);
+                        assertDv(d, 2, NOT_IGNORE_MODS_DV, IGNORE_MODIFICATIONS);
+                        assertDv(d, 1, NOT_IGNORE_MODS_DV, EXTERNAL_IGNORE_MODIFICATIONS);
                     }
                 }
                 if (d.variable() instanceof ParameterInfo p && "t".equals(p.name)) {
@@ -120,8 +124,15 @@ public class Test_00_Basics_14 extends CommonTestRunner {
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
             if ("t".equals(d.fieldInfo().name)) {
                 assertDv(d, 1, MultiLevel.NULLABLE_DV, EXTERNAL_NOT_NULL);
-                assertEquals(DV.FALSE_DV, d.fieldAnalysis().getProperty(FINAL));
+                assertDv(d, DV.FALSE_DV, FINAL);
+
+                // the field itself is of unbound type
+                assertDv(d, 0, MultiLevel.NOT_CONTAINER_DV, CONTAINER_RESTRICTION);
+                assertDv(d, 1, MultiLevel.EFFECTIVELY_IMMUTABLE_HC_DV, EXTERNAL_IMMUTABLE);
+                assertDv(d, 1, MultiLevel.INDEPENDENT_HC_DV, INDEPENDENT);
                 assertEquals("<variable value>", d.fieldAnalysis().getValue().toString());
+
+                assertEquals("t:0", d.fieldAnalysis().getLinkedVariables().toString());
             }
         };
 
@@ -129,7 +140,13 @@ public class Test_00_Basics_14 extends CommonTestRunner {
             if ("setT".equals(d.methodInfo().name)) {
                 ParameterAnalysis p0 = d.parameterAnalyses().get(0);
                 // not contracted
-                assertEquals(MultiLevel.NOT_CONTAINER_DV, p0.getProperty(CONTAINER));
+                assertEquals(MultiLevel.CONTAINER_DV, p0.getProperty(CONTAINER));
+            }
+        };
+
+        TypeAnalyserVisitor typeAnalyserVisitor = d -> {
+            if ("Basics_14".equals(d.typeInfo().simpleName)) {
+                assertDv(d, 2, MultiLevel.EVENTUALLY_IMMUTABLE_HC_DV, IMMUTABLE);
             }
         };
 
@@ -137,6 +154,7 @@ public class Test_00_Basics_14 extends CommonTestRunner {
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
                 .build());
     }
 }

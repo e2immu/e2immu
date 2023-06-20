@@ -14,8 +14,11 @@
 
 package org.e2immu.analyser.parser.basics.testexample;
 
+//We should be fine with empty too :-)
+//to compensate, we add a comment which is pretty long, on 20221017 this causes an assertion error
 /*
-We should be fine with empty too :-)
+we even add 2 lines
+with a block comment
  */
 public class Basics_19 {
 

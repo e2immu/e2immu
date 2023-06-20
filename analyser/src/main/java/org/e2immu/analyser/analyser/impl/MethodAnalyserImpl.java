@@ -20,20 +20,17 @@ import org.e2immu.analyser.analysis.Analysis;
 import org.e2immu.analyser.analysis.ParameterAnalysis;
 import org.e2immu.analyser.analysis.StatementAnalysis;
 import org.e2immu.analyser.analysis.impl.MethodAnalysisImpl;
-import org.e2immu.analyser.config.AnalyserProgram;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.DelayedExpression;
-import org.e2immu.analyser.model.expression.EmptyExpression;
 import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
 import org.e2immu.analyser.parser.Message;
-import org.e2immu.annotation.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
 import java.util.stream.Collectors;
 
-import static org.e2immu.analyser.config.AnalyserProgram.Step.ALL;
+import static org.e2immu.analyser.analyser.Property.*;
 
 public abstract class MethodAnalyserImpl extends AbstractAnalyser implements MethodAnalyser {
     private static final Logger LOGGER = LoggerFactory.getLogger(MethodAnalyserImpl.class);
@@ -46,7 +43,6 @@ public abstract class MethodAnalyserImpl extends AbstractAnalyser implements Met
     public final List<ParameterAnalysis> parameterAnalyses;
     public final Map<CompanionMethodName, CompanionAnalyser> companionAnalysers;
     public final Map<CompanionMethodName, CompanionAnalysis> companionAnalyses;
-    public final CheckConstant checkConstant;
 
     MethodAnalyserImpl(MethodInfo methodInfo,
                        MethodAnalysisImpl.Builder methodAnalysis,
@@ -56,7 +52,6 @@ public abstract class MethodAnalyserImpl extends AbstractAnalyser implements Met
                        boolean isSAM,
                        AnalyserContext analyserContextInput) {
         super("Method " + methodInfo.name, analyserContextInput);
-        this.checkConstant = new CheckConstant(analyserContext.getPrimitives(), analyserContext.getE2ImmuAnnotationExpressions());
         this.methodInfo = methodInfo;
         methodInspection = methodInfo.methodInspection.get();
         this.parameterAnalysers = parameterAnalysers;
@@ -66,6 +61,11 @@ public abstract class MethodAnalyserImpl extends AbstractAnalyser implements Met
         companionAnalyses = companionAnalysers.entrySet().stream().collect(Collectors.toUnmodifiableMap(Map.Entry::getKey,
                 e -> e.getValue().companionAnalysis));
         this.isSAM = isSAM;
+    }
+
+    @Override
+    public String toString() {
+        return methodInfo.fullyQualifiedName;
     }
 
     @Override
@@ -150,46 +150,51 @@ public abstract class MethodAnalyserImpl extends AbstractAnalyser implements Met
 
         LOGGER.debug("Checking method {}", methodInfo.fullyQualifiedName());
 
-        AnalyserProgram analyserProgram = analyserContext.getAnalyserProgram();
-        if (analyserProgram.accepts(ALL)) {
-            if (!methodInfo.isConstructor) {
-                if (!methodInfo.isVoid()) {
-                    check(NotNull.class, e2.notNull);
-                    check(NotNull1.class, e2.notNull1);
-                    check(Fluent.class, e2.fluent);
-                    check(Identity.class, e2.identity);
-                    check(Container.class, e2.container);
+        if (!methodInfo.isConstructor) {
+            if (!methodInfo.isVoid()) {
+                internalCheckImmutableIndependent();
 
-                    analyserResultBuilder.add(CheckImmutable.check(methodInfo, E1Immutable.class, e2.e1Immutable, methodAnalysis, false, false));
-                    analyserResultBuilder.add(CheckImmutable.check(methodInfo, E1Container.class, e2.e1Container, methodAnalysis, false, false));
-                    analyserResultBuilder.add(CheckImmutable.check(methodInfo, E2Immutable.class, e2.e2Immutable, methodAnalysis, true, true));
-                    analyserResultBuilder.add(CheckImmutable.check(methodInfo, E2Container.class, e2.e2Container, methodAnalysis, true, false));
-                    analyserResultBuilder.add(CheckImmutable.check(methodInfo, ERContainer.class, e2.eRContainer, methodAnalysis, false, false));
-                    check(BeforeMark.class, e2.beforeMark);
+                analyserResultBuilder.add(CheckNotNull.check(methodInfo, e2.notNull, methodAnalysis, NOT_NULL_EXPRESSION));
 
-                    analyserResultBuilder.add(checkConstant.checkConstantForMethods(methodInfo, methodAnalysis));
+                check(e2.fluent);
+                check(e2.identity);
+                check(e2.container);
 
-                    check(Nullable.class, e2.nullable);
+                DV constant = getMethodAnalysis().getProperty(CONSTANT);
+                String constantValue = constant.valueIsTrue() ? methodAnalysis.getSingleReturnValue().unQuotedString() : "";
+                analyserResultBuilder.add(CheckImmutable.check(methodInfo, e2.finalFields, methodAnalysis, null));
+                analyserResultBuilder.add(CheckImmutable.check(methodInfo, e2.immutable, methodAnalysis, null));
+                analyserResultBuilder.add(CheckImmutable.check(methodInfo, e2.immutableContainer, methodAnalysis, constantValue));
 
-                    check(Dependent.class, e2.dependent);
-                    check(Independent.class, e2.independent);
-                    analyserResultBuilder.add(CheckIndependent.checkLevel(methodInfo, Independent1.class, e2.independent1, methodAnalysis));
-                }
-
-                check(NotModified.class, e2.notModified);
-                check(Modified.class, e2.modified);
+                check(e2.beforeMark);
+                check(e2.nullable);
+                analyserResultBuilder.add(CheckIndependent.check(methodInfo, e2.independent, methodAnalysis));
             }
 
-            analyserResultBuilder.add(CheckPrecondition.checkPrecondition(methodInfo, methodAnalysis, companionAnalyses));
-            analyserResultBuilder.add(CheckEventual.checkOnly(methodInfo, methodAnalysis));
-            analyserResultBuilder.add(CheckEventual.checkMark(methodInfo, methodAnalysis));
-            analyserResultBuilder.add(CheckEventual.checkTestMark(methodInfo, methodAnalysis));
-
-            checkWorseThanOverriddenMethod();
+            check(e2.notModified);
+            analyserResultBuilder.add(CheckModified.check(methodInfo, e2.modified, methodAnalysis));
         }
+        analyserResultBuilder.add(CheckGetSet.check(methodInfo, e2.getSet, methodAnalysis));
+
+        analyserResultBuilder.add(CheckPrecondition.checkPrecondition(methodInfo, methodAnalysis, companionAnalyses));
+        analyserResultBuilder.add(CheckEventual.checkOnly(methodInfo, e2.only, methodAnalysis));
+        analyserResultBuilder.add(CheckEventual.checkMark(methodInfo, e2.mark, methodAnalysis));
+        analyserResultBuilder.add(CheckEventual.checkTestMark(methodInfo, e2.testMark, methodAnalysis));
+
+        checkWorseThanOverriddenMethod();
+
         getParameterAnalysers().forEach(ParameterAnalyser::check);
         getLocallyCreatedPrimaryTypeAnalysers().forEach(PrimaryTypeAnalyser::check);
+    }
 
+    private void internalCheckImmutableIndependent() {
+        DV independent = methodAnalysis.getProperty(Property.INDEPENDENT);
+        // @Independent is always possible, regardless of the immutable value
+        if (independent.lt(MultiLevel.INDEPENDENT_DV)) {
+            DV immutable = methodAnalysis.getProperty(Property.IMMUTABLE);
+            assert MultiLevel.independentConsistentWithImmutable(independent, immutable)
+                    : "Have method %s, independent %s, immutable %s".formatted(methodInfo.fullyQualifiedName, independent, immutable);
+        }
     }
 
     private static final Set<Property> CHECK_WORSE_THAN_PARENT = Set.of(Property.NOT_NULL_EXPRESSION,
@@ -210,11 +215,11 @@ public abstract class MethodAnalyserImpl extends AbstractAnalyser implements Met
         }
     }
 
-    private void check(Class<?> annotation, AnnotationExpression annotationExpression) {
-        methodInfo.error(methodAnalysis, annotation, annotationExpression).ifPresent(mustBeAbsent ->
+    private void check(AnnotationExpression annotationKey) {
+        methodInfo.error(methodAnalysis, annotationKey).ifPresent(mustBeAbsent ->
                 analyserResultBuilder.add(Message.newMessage(methodInfo.newLocation(),
                         mustBeAbsent ? Message.Label.ANNOTATION_UNEXPECTEDLY_PRESENT
-                                : Message.Label.ANNOTATION_ABSENT, annotation.getSimpleName())));
+                                : Message.Label.ANNOTATION_ABSENT, annotationKey.typeInfo().simpleName)));
     }
 
     @Override

@@ -51,7 +51,7 @@ public class Test_05_Final extends CommonTestRunner {
         final String FINAL_CHECKS = "Final_0";
         final String TYPE = "org.e2immu.analyser.parser.start.testexample." + FINAL_CHECKS;
         // there are 2 constructors, with different parameter lists
-        final String FINAL_CHECKS_FQN = TYPE + "." + FINAL_CHECKS + "(java.lang.String,java.lang.String)";
+        final String FINAL_CHECKS_FQN = TYPE + "." + FINAL_CHECKS + "(String,String)";
 
         final String S1 = TYPE + ".s1";
         final String S4 = TYPE + ".s4";
@@ -123,19 +123,19 @@ public class Test_05_Final extends CommonTestRunner {
                     if ("0".equals(d.statementId())) {
                         String expectValue = d.iteration() == 0 ? "<null-check>?\"abc\":null" : "\"abc\"";
                         assertEquals(expectValue, d.currentValue().toString());
-                        assertDv(d, 1, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, IMMUTABLE);
+                        assertDv(d, 1, MultiLevel.EFFECTIVELY_IMMUTABLE_DV, IMMUTABLE);
                         assertDv(d, 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, NOT_NULL_EXPRESSION);
                     }
                     if ("0.0.0".equals(d.statementId())) {
                         assertEquals("\"abc\"", d.currentValue().toString());
                         VariableInfo viE = d.variableInfoContainer().best(Stage.EVALUATION);
-                        assertEquals(MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, viE.getProperty(IMMUTABLE));
+                        assertEquals(MultiLevel.EFFECTIVELY_IMMUTABLE_DV, viE.getProperty(IMMUTABLE));
                         assertDv(d, MultiLevel.EFFECTIVELY_NOT_NULL_DV, NOT_NULL_EXPRESSION);
                     }
                     if ("0.1.0".equals(d.statementId())) {
                         assertEquals("null", d.currentValue().toString());
                         VariableInfo viE = d.variableInfoContainer().best(Stage.EVALUATION);
-                        assertEquals(MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, viE.getProperty(IMMUTABLE));
+                        assertEquals(MultiLevel.EFFECTIVELY_IMMUTABLE_DV, viE.getProperty(IMMUTABLE));
                         assertDv(d, MultiLevel.NULLABLE_DV, NOT_NULL_EXPRESSION);
                     }
                 }
@@ -175,7 +175,7 @@ public class Test_05_Final extends CommonTestRunner {
 
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             TypeInfo stringType = d.evaluationContext().getPrimitives().stringTypeInfo();
-            assertEquals(MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV,
+            assertEquals(MultiLevel.EFFECTIVELY_IMMUTABLE_DV,
                     stringType.typeAnalysis.get().getProperty(IMMUTABLE));
             MethodInfo methodInfo = d.methodInfo();
 

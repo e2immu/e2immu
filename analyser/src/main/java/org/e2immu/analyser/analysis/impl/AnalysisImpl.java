@@ -37,6 +37,11 @@ abstract class AnalysisImpl implements Analysis {
     }
 
     @Override
+    public AnnotationExpression annotationGetOrDefaultNull(AnnotationExpression expression) {
+        throw new UnsupportedOperationException("Only in builder!");
+    }
+
+    @Override
     public AnnotationCheck getAnnotation(AnnotationExpression annotationExpression) {
         AnnotationCheck annotationCheck = annotations.get(annotationExpression);
         if (annotationCheck == null) {

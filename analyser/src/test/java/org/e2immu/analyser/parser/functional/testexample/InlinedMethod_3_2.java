@@ -14,7 +14,7 @@
 
 package org.e2immu.analyser.parser.functional.testexample;
 
-import org.e2immu.annotation.Constant;
+import org.e2immu.annotation.ImmutableContainer;
 import org.e2immu.annotation.NotModified;
 
 import java.util.Random;
@@ -28,12 +28,12 @@ public class InlinedMethod_3_2 {
         return i + r;
     }
 
-    @Constant("2")
+    @ImmutableContainer("2")
     public static int difference31() {
         return plusRandom(3) - plusRandom(1);
     }
 
-    @Constant("0")
+    @ImmutableContainer("0")
     public static int difference11() {
         return plusRandom(1) - plusRandom(1);
     }

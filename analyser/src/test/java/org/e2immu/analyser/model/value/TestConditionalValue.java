@@ -14,13 +14,11 @@
 
 package org.e2immu.analyser.model.value;
 
-import org.e2immu.analyser.analyser.CauseOfDelay;
-import org.e2immu.analyser.analyser.CausesOfDelay;
-import org.e2immu.analyser.analyser.EvaluationResult;
-import org.e2immu.analyser.analyser.ForwardEvaluationInfo;
+import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.analyser.delay.DelayFactory;
 import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.Identifier;
+import org.e2immu.analyser.model.LocalVariable;
 import org.e2immu.analyser.model.ParameterizedType;
 import org.e2immu.analyser.model.expression.*;
 import org.e2immu.analyser.model.expression.util.EvaluateInlineConditional;
@@ -47,7 +45,7 @@ public class TestConditionalValue extends CommonAbstractValue {
 
     private static Expression inline(Expression c, Expression t, Expression f) {
         return EvaluateInlineConditional.conditionalValueConditionResolved(context,
-                c, t, f, true, null).value();
+                c, t, f, true, null, DV.FALSE_DV).value();
     }
 
     @Test
@@ -123,7 +121,7 @@ public class TestConditionalValue extends CommonAbstractValue {
         Expression ge10 = GreaterThanZero.greater(context, i, newInt(10), true);
         assertEquals("i>=10", ge10.toString());
         Expression le9 = GreaterThanZero.less(context, i, newInt(9), true);
-        assertEquals("i<=9", le9.toString());
+        assertEquals("i<10", le9.toString());
         Expression notLe9 = negate(le9);
         assertEquals(ge10, notLe9);
         Expression notGe10 = negate(ge10);
@@ -320,7 +318,11 @@ public class TestConditionalValue extends CommonAbstractValue {
         Expression a = GreaterThanZero.greater(context, i, Sum.sum(context, j, newInt(1)), true);
         Expression v = inline(newAndAppend(a, newOrAppend(equals(NULL_CONSTANT, s),
                 equals(NULL_CONSTANT, s1))), NULL_CONSTANT, inline(a, s1, new StringConstant(PRIMITIVES, "x")));
+        /*
         assertEquals("-1+i>=j&&(null==s||null==s1)?null:-1+i>=j?s1:\"x\"", v.toString());
+        before extra normalization
+         */
+        assertEquals("-1+i>=j&&(null==s||null==s1)?null:j>=i?\"x\":s1", v.toString());
 
         Expression vIsNull = equals(NULL_CONSTANT, v);
         assertEquals("-1+i>=j&&(null==s||null==s1)", vIsNull.toString());
@@ -332,5 +334,75 @@ public class TestConditionalValue extends CommonAbstractValue {
         assertEquals("false", newAndAppend(vIsNull, vIsNotNull).toString());
         LOGGER.debug("*****  end  *****");
         assertEquals("false", newAndAppend(vIsNotNull, vIsNull).toString());
+    }
+
+
+    @Test
+    public void testComparison() {
+        Expression abc = new StringConstant(PRIMITIVES, "abc");
+        Expression empty = new StringConstant(PRIMITIVES, "");
+        Expression test = inline(a, empty, abc);
+        assertEquals(27, test.compareTo(abc));
+        assertEquals(-27, abc.compareTo(test));
+
+        Expression string = new ExpandedVariable(Identifier.CONSTANT, vs, Properties.EMPTY, LinkedVariables.EMPTY);
+        Expression inline1 = inline(b, string, test);
+        Expression inline2 = inline(b, string, abc);
+        assertEquals(27, inline1.compareTo(inline2));
+        assertEquals(-27, inline2.compareTo(inline1));
+    }
+
+    // a second test in TestEqualsMethod
+    @Test
+    public void testNormalizeRepeated1() {
+        Expression c1 = new StringConstant(PRIMITIVES, "1");
+        Expression c2 = new StringConstant(PRIMITIVES, "2");
+        Expression c3 = new StringConstant(PRIMITIVES, "3");
+
+        Expression e1 = inline(equals(i, newInt(1)), c1, inline(equals(i, newInt(2)), c2, c3));
+        assertEquals("1==i?\"1\":2==i?\"2\":\"3\"", e1.toString());
+
+        Expression e2 = inline(equals(i, newInt(2)), c2, inline(equals(i, newInt(1)), c1, c3));
+        assertEquals("1==i?\"1\":2==i?\"2\":\"3\"", e2.toString());
+    }
+
+    @Test
+    public void testNormalizeRepeated3() {
+        Expression c1 = new StringConstant(PRIMITIVES, "1");
+        Expression c2 = new StringConstant(PRIMITIVES, "2");
+        Expression c3 = new StringConstant(PRIMITIVES, "3");
+        Expression c4 = new StringConstant(PRIMITIVES, "4");
+
+        Expression e1 = inline(equals(i, newInt(1)), c1, inline(equals(i, newInt(2)), c2, inline(equals(i, newInt(3)), c3, c4)));
+        String expected = """
+                1==i?"1":2==i?"2":3==i?"3":"4"\
+                """;
+        assertEquals(expected, e1.toString());
+
+        Expression e2 = inline(equals(i, newInt(3)), c3, inline(equals(i, newInt(1)), c1, inline(equals(i, newInt(2)), c2, c4)));
+        assertEquals(expected, e2.toString());
+
+        Expression e3 = inline(equals(i, newInt(3)), c3, inline(equals(i, newInt(2)), c2, inline(equals(i, newInt(1)), c1, c4)));
+        assertEquals(expected, e3.toString());
+
+        Expression e4 = inline(equals(i, newInt(2)), c2, inline(equals(i, newInt(3)), c3, inline(equals(i, newInt(1)), c1, c4)));
+        assertEquals(expected, e4.toString());
+
+        Expression e5 = inline(equals(i, newInt(2)), c2, inline(equals(i, newInt(1)), c1, inline(equals(i, newInt(3)), c3, c4)));
+        assertEquals(expected, e5.toString());
+
+        Expression e6 = inline(equals(i, newInt(1)), c1, inline(equals(i, newInt(3)), c3, inline(equals(i, newInt(2)), c2, c4)));
+        assertEquals(expected, e6.toString());
+    }
+
+    @Test
+    public void testNormalizeConditional() {
+        Expression iMinJ = sum(i, negate(j));
+        assertEquals("i-j", iMinJ.toString());
+        GreaterThanZero gt0 = new GreaterThanZero(Identifier.CONSTANT, PRIMITIVES, iMinJ, true);
+        assertEquals("i>=j", gt0.toString());
+        Expression inline = inline(gt0, a, b);
+        // i-j>=0 should be normalized to i>=j
+        assertEquals("-1-i+j>=0?b:a", inline.toString());
     }
 }

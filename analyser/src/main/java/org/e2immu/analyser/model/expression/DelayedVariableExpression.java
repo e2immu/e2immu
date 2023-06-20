@@ -26,7 +26,6 @@ import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.Text;
 import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.util.ListUtil;
-import org.e2immu.annotation.E2Container;
 import org.e2immu.support.Either;
 
 import java.util.List;
@@ -38,19 +37,28 @@ import java.util.stream.Stream;
 import static org.e2immu.analyser.model.expression.ArrayAccess.ARRAY_VARIABLE;
 import static org.e2immu.analyser.model.expression.ArrayAccess.INDEX_VARIABLE;
 
-@E2Container
 public class DelayedVariableExpression extends BaseExpression implements IsVariableExpression {
     public final String msg;
     public final String fqn;
     public final Variable variable;
     public final CausesOfDelay causesOfDelay;
     public final int statementTime;
+    private final Properties properties;
 
     private DelayedVariableExpression(String msg,
                                       Variable variable,
                                       int statementTime,
                                       CausesOfDelay causesOfDelay) {
-        super(Identifier.constant(variable.fullyQualifiedName() + ":" + statementTime));
+        this(msg, variable, statementTime, causesOfDelay, null);
+    }
+
+    private DelayedVariableExpression(String msg,
+                                      Variable variable,
+                                      int statementTime,
+                                      CausesOfDelay causesOfDelay,
+                                      Properties properties) {
+        super(Identifier.constant(variable.fullyQualifiedName() + ":" + statementTime),
+                variable.getComplexity());
         this.msg = msg;
         this.fqn = "<" + variable.fullyQualifiedName() + ":" + statementTime + ">";
         this.statementTime = statementTime;
@@ -59,12 +67,13 @@ public class DelayedVariableExpression extends BaseExpression implements IsVaria
                 : "Causes of delay: " + causesOfDelay;
         assert causesOfDelay.isDelayed();
         this.variable = variable;
+        this.properties = properties;
     }
 
     public static DelayedVariableExpression forParameter(ParameterInfo parameterInfo,
                                                          CausesOfDelay causesOfDelay) {
         return new DelayedVariableExpression("<p:" + parameterInfo.name + ">", parameterInfo,
-                VariableInfoContainer.NOT_A_FIELD, causesOfDelay);
+                VariableInfoContainer.IGNORE_STATEMENT_TIME, causesOfDelay);
     }
 
     public static DelayedVariableExpression forField(FieldReference fieldReference,
@@ -97,23 +106,21 @@ public class DelayedVariableExpression extends BaseExpression implements IsVaria
             return forField(fieldReference, statementTime, causesOfDelay);
         if (variable instanceof ParameterInfo parameterInfo) return forParameter(parameterInfo, causesOfDelay);
         return new DelayedVariableExpression("<v:" + variable.simpleName() + ">", variable,
-                VariableInfoContainer.NOT_A_FIELD, causesOfDelay);
+                VariableInfoContainer.IGNORE_STATEMENT_TIME, causesOfDelay);
     }
 
 
     public static Expression forLocalVariableInLoop(Variable variable, CausesOfDelay causesOfDelay) {
         String msg = "<vl:" + variable.simpleName() + ">";
-        return new DelayedVariableExpression(msg, variable, VariableInfoContainer.NOT_A_FIELD, causesOfDelay);
+        return new DelayedVariableExpression(msg, variable, VariableInfoContainer.IGNORE_STATEMENT_TIME, causesOfDelay);
     }
 
-    public static Expression forDelayedValueProperties(Variable variable, int statementTime, CausesOfDelay causesOfDelay) {
+    public static Expression forDelayedValueProperties(Variable variable,
+                                                       int statementTime,
+                                                       Properties properties,
+                                                       CausesOfDelay causesOfDelay) {
         String msg = "<vp:" + variable.simpleName() + ":" + causesOfDelay + ">";
-        return new DelayedVariableExpression(msg, variable, statementTime, causesOfDelay);
-    }
-
-    public static Expression forDelayedModificationInMethodCall(Variable variable, CausesOfDelay causesOfDelay) {
-        String msg = "<mmc:" + variable.simpleName() + ">";
-        return new DelayedVariableExpression(msg, variable, variable.statementTime(), causesOfDelay);
+        return new DelayedVariableExpression(msg, variable, statementTime, causesOfDelay, properties);
     }
 
     public static Expression forMerge(Variable variable, CausesOfDelay causes) {
@@ -243,7 +250,15 @@ public class DelayedVariableExpression extends BaseExpression implements IsVaria
 
     @Override
     public DV getProperty(EvaluationResult context, Property property, boolean duringEvaluation) {
+        if (properties != null) {
+            return properties.getOrDefault(property, causesOfDelay);
+        }
         return causesOfDelay;
+    }
+
+    @Override
+    public DV hardCodedPropertyOrNull(Property property) {
+        return properties == null ? null : properties.getOrDefaultNull(property);
     }
 
     // special treatment because of == equality.
@@ -287,19 +302,21 @@ public class DelayedVariableExpression extends BaseExpression implements IsVaria
         return LinkedVariables.of(variable, causesOfDelay);
     }
 
+    /*
+    FIXME this definition is not compatible with that of VE, which also does not seem 100% correct
+     */
     @Override
-    public List<Variable> variables(boolean descendIntoFieldReferences) {
-        if (descendIntoFieldReferences) {
+    public List<Variable> variables(DescendMode descendIntoFieldReferences) {
+        if (descendIntoFieldReferences != DescendMode.NO) {
             if (variable instanceof FieldReference fr) {
-                return ListUtil.concatImmutable(List.of(variable), fr.scope.variables(true));
+                return ListUtil.concatImmutable(List.of(variable), fr.scope.variables(descendIntoFieldReferences));
             }
             if (variable instanceof DependentVariable dv) {
                 return Stream.concat(Stream.concat(Stream.of(variable),
-                                dv.arrayExpression().variables(true).stream()),
-                        dv.indexExpression().variables(true).stream()).toList();
+                                dv.arrayExpression().variables(descendIntoFieldReferences).stream()),
+                        dv.indexExpression().variables(descendIntoFieldReferences).stream()).toList();
             }
         }
-
         return List.of(variable);
     }
 

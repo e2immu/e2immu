@@ -16,7 +16,7 @@ package org.e2immu.analyser.model.expression.util;
 
 import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.expression.ExpressionWrapper;
-import org.e2immu.annotation.IgnoreModifications;
+import org.e2immu.annotation.rare.IgnoreModifications;
 
 import java.util.Comparator;
 import java.util.IdentityHashMap;

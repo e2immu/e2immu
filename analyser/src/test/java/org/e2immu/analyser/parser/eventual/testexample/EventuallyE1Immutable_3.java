@@ -15,12 +15,16 @@
 package org.e2immu.analyser.parser.eventual.testexample;
 
 import org.e2immu.annotation.*;
+import org.e2immu.annotation.eventual.Mark;
 
 /*
 copy of EventuallyE1Immutable_0, with an additional setter which modifies input but obviously does
 not assign it (it is final).
+
+Note that there is no such thing as an eventual container.
  */
-@E1Immutable(after = "string")
+@FinalFields(after = "string")
+@Container(absent = true)
 public class EventuallyE1Immutable_3 {
 
     @Container

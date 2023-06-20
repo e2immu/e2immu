@@ -23,20 +23,18 @@ import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.Text;
 import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.util.UpgradableBooleanMap;
-import org.e2immu.annotation.E2Immutable;
 import org.e2immu.annotation.NotNull;
 
 import java.util.Objects;
 import java.util.Set;
 import java.util.function.Predicate;
 
-@E2Immutable
 public final class MethodCallErasure extends BaseExpression implements ErasureExpression {
     private final Set<ParameterizedType> returnTypes;
     private final String methodName;
 
     public MethodCallErasure(Set<ParameterizedType> returnTypes, String methodName) {
-        super(Identifier.CONSTANT);
+        super(Identifier.CONSTANT, 10);
         this.returnTypes = returnTypes;
         this.methodName = methodName;
     }
@@ -84,10 +82,6 @@ public final class MethodCallErasure extends BaseExpression implements ErasureEx
 
     @Override
     public Set<ParameterizedType> erasureTypes(TypeContext typeContext) {
-        return returnTypes;
-    }
-
-    public Set<ParameterizedType> returnTypes() {
         return returnTypes;
     }
 

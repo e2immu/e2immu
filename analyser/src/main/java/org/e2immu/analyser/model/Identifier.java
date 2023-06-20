@@ -17,6 +17,12 @@ package org.e2immu.analyser.model;
 import com.github.javaparser.Position;
 import com.github.javaparser.ast.Node;
 import org.e2immu.analyser.model.variable.Variable;
+import org.e2immu.annotation.FinalFields;
+import org.e2immu.annotation.ImmutableContainer;
+import org.e2immu.annotation.Independent;
+import org.e2immu.annotation.NotNull;
+import org.e2immu.annotation.rare.IgnoreModifications;
+import org.e2immu.annotation.rare.StaticSideEffects;
 
 import java.util.List;
 import java.util.Objects;
@@ -37,10 +43,12 @@ public interface Identifier extends Comparable<Identifier> {
 
     Identifier CONSTANT = new IncrementalIdentifier("constant");
 
-    static Identifier constant(Object object) {
+    @Independent
+    static Identifier constant(@NotNull Object object) {
         return new ConstantIdentifier(object.getClass().getSimpleName() + ":" + object.hashCode());
     }
 
+    @Independent
     static Identifier from(Node node) {
         if (node == null) return Identifier.generate("null node");
         Optional<Position> begin = node.getBegin();
@@ -49,13 +57,15 @@ public interface Identifier extends Comparable<Identifier> {
         return from(begin.get(), end.orElseThrow());
     }
 
-    static PositionalIdentifier positionFrom(Node node) {
+    @Independent
+    static PositionalIdentifier positionFrom(@NotNull Node node) {
         assert node != null;
         Optional<Position> begin = node.getBegin();
         Optional<Position> end = node.getEnd();
         return from(begin.orElseThrow(), end.orElseThrow());
     }
 
+    @Independent
     static PositionalIdentifier from(Position begin, Position end) {
         if (begin == null) return null;
         return new PositionalIdentifier((short) begin.line, (short) begin.column,
@@ -92,6 +102,7 @@ public interface Identifier extends Comparable<Identifier> {
 
     String compact();
 
+    @ImmutableContainer
     record PositionalIdentifier(short line, short pos, short endLine, short endPos) implements Identifier {
         @Override
         public int compareTo(Identifier o) {
@@ -114,6 +125,7 @@ public interface Identifier extends Comparable<Identifier> {
         }
     }
 
+    @ImmutableContainer
     record TestIdentifier(int i) implements Identifier {
         @Override
         public int compareTo(Identifier o) {
@@ -134,7 +146,10 @@ public interface Identifier extends Comparable<Identifier> {
         }
     }
 
+    @StaticSideEffects
+    @ImmutableContainer
     class IncrementalIdentifier implements Identifier {
+        @IgnoreModifications
         private static final AtomicInteger generator = new AtomicInteger();
         public final String identifier;
 
@@ -177,6 +192,8 @@ public interface Identifier extends Comparable<Identifier> {
         }
     }
 
+    // FIXME is this still in use?
+    @FinalFields
     record ListOfIdentifiers(String expression, List<Identifier> identifiers) implements Identifier {
         @Override
         public int compareTo(Identifier o) {
@@ -199,6 +216,7 @@ public interface Identifier extends Comparable<Identifier> {
         }
     }
 
+    @ImmutableContainer
     record LoopConditionIdentifier(String index) implements Identifier {
         @Override
         public int compareTo(Identifier o) {
@@ -216,6 +234,7 @@ public interface Identifier extends Comparable<Identifier> {
         }
     }
 
+    @ImmutableContainer
     record StateIdentifier(String index) implements Identifier {
         @Override
         public int compareTo(Identifier o) {
@@ -233,6 +252,7 @@ public interface Identifier extends Comparable<Identifier> {
         }
     }
 
+    @ImmutableContainer
     record CatchConditionIdentifier(String index) implements Identifier {
         @Override
         public int compareTo(Identifier o) {
@@ -250,6 +270,7 @@ public interface Identifier extends Comparable<Identifier> {
         }
     }
 
+    @ImmutableContainer
     record ConstantIdentifier(String constant) implements Identifier {
         @Override
         public int compareTo(Identifier o) {
@@ -268,6 +289,7 @@ public interface Identifier extends Comparable<Identifier> {
         }
     }
 
+    @ImmutableContainer
     record VariableOutOfScopeIdentifier(String fqn, String simpleName, String index) implements Identifier {
         @Override
         public int compareTo(Identifier o) {
@@ -285,6 +307,7 @@ public interface Identifier extends Comparable<Identifier> {
         }
     }
 
+    @ImmutableContainer
     record StatementTimeIdentifier(int statementTime) implements Identifier {
         @Override
         public int compareTo(Identifier o) {
@@ -302,6 +325,7 @@ public interface Identifier extends Comparable<Identifier> {
         }
     }
 
+    // implicitly: @NotModified, so you cannot turn this into a modifying one.
     default boolean unstableIdentifier() {
         return false;
     }

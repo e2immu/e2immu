@@ -14,6 +14,7 @@
 
 package org.e2immu.analyser.model.statement;
 
+import org.e2immu.analyser.model.Comment;
 import org.e2immu.analyser.model.Element;
 import org.e2immu.analyser.model.Identifier;
 
@@ -22,8 +23,8 @@ import java.util.function.Predicate;
 public abstract class BreakOrContinueStatement extends StatementWithStructure {
     public final String label;
 
-    public BreakOrContinueStatement(Identifier identifier, String label) {
-        super(identifier);
+    public BreakOrContinueStatement(Identifier identifier, String label, Comment comment) {
+        super(identifier, comment);
         this.label = label;
     }
 

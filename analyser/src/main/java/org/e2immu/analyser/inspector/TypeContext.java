@@ -17,7 +17,6 @@ package org.e2immu.analyser.inspector;
 import org.e2immu.analyser.inspector.expr.Scope;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.variable.FieldReference;
-import org.e2immu.analyser.parser.ImportantClasses;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.parser.TypeAndInspectionProvider;
 import org.e2immu.analyser.parser.TypeMap;
@@ -221,7 +220,7 @@ public class TypeContext implements TypeAndInspectionProvider {
         for (TypeInfo typeInfo : importStaticAsterisk) {
             TypeInspection typeInspection = getTypeInspection(typeInfo);
             typeInspection.fields().stream()
-                    .filter(fieldInfo -> getFieldInspection(fieldInfo).getModifiers().contains(FieldModifier.STATIC))
+                    .filter(fieldInfo -> getFieldInspection(fieldInfo).isStatic())
                     .forEach(fieldInfo -> map.put(fieldInfo.name, new FieldReference(this, fieldInfo)));
         }
         return map;
@@ -286,7 +285,7 @@ public class TypeContext implements TypeAndInspectionProvider {
                                                     List<MethodCandidate> result,
                                                     Scope.ScopeNature scopeNature) {
         recursivelyResolveOverloadedMethods(typeOfObject, methodName, parametersPresented, decrementWhenNotStatic,
-                typeMap, result, new HashSet<>(), false, scopeNature, 0);
+                typeMap, result, new HashSet<>(), new HashSet<>(), false, scopeNature, 0);
     }
 
     private void recursivelyResolveOverloadedMethods(ParameterizedType typeOfObject,
@@ -296,33 +295,38 @@ public class TypeContext implements TypeAndInspectionProvider {
                                                      Map<NamedType, ParameterizedType> typeMap,
                                                      List<MethodCandidate> result,
                                                      Set<TypeInfo> visited,
+                                                     Set<TypeInfo> visitedStatic,
                                                      boolean staticOnly,
                                                      Scope.ScopeNature scopeNature,
                                                      int distance) {
         List<TypeInfo> multipleTypeInfoObjects = extractTypeInfo(typeOfObject, typeMap);
         // more than one: only in the rare situation of multiple type bounds
         for (TypeInfo typeInfo : multipleTypeInfoObjects) {
-            if (!visited.contains(typeInfo)) {
-                visited.add(typeInfo);
+            Set<TypeInfo> types = staticOnly ? visitedStatic : visited;
+            if (!types.contains(typeInfo)) {
+                if (!staticOnly) visited.add(typeInfo);
+                visitedStatic.add(typeInfo);
                 resolveOverloadedMethodsSingleType(typeInfo, staticOnly, scopeNature, methodName, parametersPresented,
-                        decrementWhenNotStatic, typeMap, result, visited, distance + 2);
+                        decrementWhenNotStatic, typeMap, result, visited, visitedStatic, distance + 2);
             }
         }
         // it is possible that we find the method in one of the statically imported types... with * import
         // if the method is static, we must be talking about the same type (See Import_10).
         for (TypeInfo typeInfo : importStaticAsterisk) {
-            if (!visited.contains(typeInfo) && (scopeNature != Scope.ScopeNature.STATIC || typeInfo == typeOfObject.bestTypeInfo())) {
-                visited.add(typeInfo);
+            if (!visited.contains(typeInfo) && !visitedStatic.contains(typeInfo)
+                    && (scopeNature != Scope.ScopeNature.STATIC || typeInfo == typeOfObject.bestTypeInfo())) {
+                visitedStatic.add(typeInfo);
                 resolveOverloadedMethodsSingleType(typeInfo, true, scopeNature, methodName,
-                        parametersPresented, decrementWhenNotStatic, typeMap, result, visited, distance + 1);
+                        parametersPresented, decrementWhenNotStatic, typeMap, result, visited, visitedStatic,
+                        distance + 1);
             }
         }
         // or import by name
         TypeInfo byName = importStaticMemberToTypeInfo.get(methodName);
-        if (byName != null && !visited.contains(byName)) {
-            visited.add(byName);
+        if (byName != null && !visited.contains(byName) && !visitedStatic.contains(byName)) {
+            visitedStatic.add(byName);
             resolveOverloadedMethodsSingleType(byName, true, scopeNature, methodName,
-                    parametersPresented, decrementWhenNotStatic, typeMap, result, visited, distance);
+                    parametersPresented, decrementWhenNotStatic, typeMap, result, visited, visitedStatic, distance);
         }
     }
 
@@ -335,6 +339,7 @@ public class TypeContext implements TypeAndInspectionProvider {
                                                     Map<NamedType, ParameterizedType> typeMap,
                                                     List<MethodCandidate> result,
                                                     Set<TypeInfo> visited,
+                                                    Set<TypeInfo> visitedStatic,
                                                     int distance) {
         TypeInspection typeInspection = Objects.requireNonNull(getTypeInspection(typeInfo));
         boolean shallowAnalysis = !typeInspection.inspector().statements();
@@ -348,7 +353,7 @@ public class TypeContext implements TypeAndInspectionProvider {
                 .map(m -> new MethodCandidate(new MethodTypeParameterMap(m, typeMap), distance
                         // add a penalty for shallowly analysed, non-public methods
                         // See the java.lang.StringBuilder AbstractStringBuilder CharSequence length() problem
-                        + (shallowAnalysis && !m.isPublic(this) ? 100 : 0)))
+                        + (shallowAnalysis && !m.isPubliclyAccessible(this) ? 100 : 0)))
                 .forEach(result::add);
 
         ParameterizedType parentClass = typeInspection.parentClass();
@@ -358,13 +363,14 @@ public class TypeContext implements TypeAndInspectionProvider {
         int numInterfaces = typeInspection.interfacesImplemented().size();
         if (!isJLO) {
             recursivelyResolveOverloadedMethods(parentClass, methodName, parametersPresented, decrementWhenNotStatic,
-                    joinMaps(typeMap, parentClass), result, visited, staticOnly, scopeNature, distance + numInterfaces + 1);
+                    joinMaps(typeMap, parentClass), result, visited, visitedStatic, staticOnly, scopeNature,
+                    distance + numInterfaces + 1);
         }
         int count = 0;
         for (ParameterizedType interfaceImplemented : typeInspection.interfacesImplemented()) {
             recursivelyResolveOverloadedMethods(interfaceImplemented, methodName, parametersPresented,
-                    decrementWhenNotStatic, joinMaps(typeMap, interfaceImplemented), result, visited, staticOnly,
-                    scopeNature, distance + count);
+                    decrementWhenNotStatic, joinMaps(typeMap, interfaceImplemented), result, visited, visitedStatic,
+                    staticOnly, scopeNature, distance + count);
             ++count;
         }
         // See UtilityClass_2 for an example where we should go to the static methods of the enclosing type
@@ -375,7 +381,8 @@ public class TypeContext implements TypeAndInspectionProvider {
                     !onlyStatic && scopeNature != Scope.ScopeNature.STATIC) {
                 ParameterizedType enclosingType = typeInfo.packageNameOrEnclosingType.getRight().asParameterizedType(this);
                 recursivelyResolveOverloadedMethods(enclosingType, methodName, parametersPresented, decrementWhenNotStatic,
-                        joinMaps(typeMap, enclosingType), result, visited, onlyStatic, scopeNature, distance + numInterfaces);
+                        joinMaps(typeMap, enclosingType), result, visited, visitedStatic,
+                        onlyStatic, scopeNature, distance + numInterfaces);
             }
         }
     }

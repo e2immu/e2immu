@@ -287,10 +287,15 @@ public class Test_00_Basics_6 extends CommonTestRunner {
 
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("someMinorMethod".equals(d.methodInfo().name)) {
-                assertEquals("/*inline someMinorMethod*/s.toUpperCase()", // no transfer of length, we have no info on s
+                String expected = d.iteration() == 0
+                        ? "<m:someMinorMethod>"
+                        : "/*inline someMinorMethod*/s.toUpperCase()";
+                assertEquals(expected, // no transfer of length, we have no info on s
                         d.methodAnalysis().getSingleReturnValue().toString());
-                assertTrue(d.methodAnalysis().getSingleReturnValue() instanceof InlinedMethod);
-                assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, d.methodAnalysis().getProperty(NOT_NULL_EXPRESSION));
+                if (d.iteration() > 0) {
+                    assertTrue(d.methodAnalysis().getSingleReturnValue() instanceof InlinedMethod);
+                }
+                assertDv(d, 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, NOT_NULL_EXPRESSION);
                 assertEquals("", d.methodInfo().methodResolution.get().methodsOfOwnClassReachedSorted());
                 assertFalse(d.methodInfo().methodResolution.get().allowsInterrupts());
 
@@ -328,7 +333,7 @@ public class Test_00_Basics_6 extends CommonTestRunner {
                 EvaluationResult.ChangeData changeDataV1 = d.findValueChange("v1");
                 assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, changeDataV1.getProperty(CONTEXT_NOT_NULL));
 
-                assertEquals(d.iteration() >= 1, d.haveValueChange(FIELD));
+                assertEquals(d.iteration() > 0, d.haveValueChange(FIELD));
             }
             if ("test3".equals(d.methodInfo().name) && "1".equals(d.statementId())) {
                 if (d.iteration() == 0) {

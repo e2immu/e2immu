@@ -59,7 +59,7 @@ public class Test_48_Store extends CommonTestRunner {
             TypeInfo mapEntry = typeMap.get(Map.Entry.class);
             MethodInfo getValue = mapEntry.findUniqueMethod("getValue", 0);
             assertFalse(getValue.methodAnalysis.get().getProperty(Property.MODIFIED_METHOD).isDelayed());
-            assertTrue(getValue.isAbstract());
+            assertTrue(getValue.methodInspection.get().isAbstract());
         };
 
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
@@ -68,7 +68,7 @@ public class Test_48_Store extends CommonTestRunner {
                     if ("0.0.0".equals(d.statementId())) {
                         // EVAL level
                         VariableInfo eval = d.variableInfoContainer().best(Stage.EVALUATION);
-                        assertEquals("", eval.getLinkedVariables().toString());
+                        assertEquals("body:2", eval.getLinkedVariables().toString());
                         assertEquals("nullable instance type Entry<String,Object>", eval.getValue().toString());
                         assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, eval.getProperty(Property.CONTEXT_NOT_NULL));
                     }
@@ -117,7 +117,7 @@ public class Test_48_Store extends CommonTestRunner {
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("handleMultiSet".equals(d.methodInfo().name)) {
                 if ("project".equals(d.variableName())) {
-                    String expectValue = d.iteration() == 0 ? "<m:getOrCreate>" : "new Project_0(\"x\")";
+                    String expectValue = d.iteration() == 0? "<m:getOrCreate>" : "new Project_0(\"x\")";
                     assertEquals(expectValue, d.currentValue().toString());
 
                     // it 1: Store_3 is still immutable delayed
@@ -136,7 +136,7 @@ public class Test_48_Store extends CommonTestRunner {
                 assertDv(d, 1, DV.FALSE_DV, Property.MODIFIED_METHOD);
 
                 // independent because non-modifying (no Annotated API)
-                assertDv(d, MultiLevel.INDEPENDENT_DV, Property.INDEPENDENT);
+                assertDv(d, 1, MultiLevel.INDEPENDENT_DV, Property.INDEPENDENT);
 
                 String expected = d.iteration() == 0 ? "<m:getOrCreate>" : "/*inline getOrCreate*/new Project_0(\"x\")";
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
@@ -149,12 +149,20 @@ public class Test_48_Store extends CommonTestRunner {
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
             if ("projects".equals(d.fieldInfo().name) && "Store_3".equals(d.fieldInfo().owner.simpleName)) {
                 assertDv(d, 1, DV.FALSE_DV, Property.MODIFIED_OUTSIDE_METHOD);
+                assertDv(d, MultiLevel.MUTABLE_DV, Property.EXTERNAL_IMMUTABLE);
+                assertEquals("instance type HashMap<String,Project_0>", d.fieldAnalysis().getValue().toString());
             }
         };
 
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
+            if ("Project_0".equals(d.typeInfo().simpleName)) {
+                assertHc(d, 1, "");
+                assertDv(d, 3, MultiLevel.EFFECTIVELY_FINAL_FIELDS_DV, Property.IMMUTABLE);
+            }
             if ("Store_3".equals(d.typeInfo().simpleName)) {
-                assertDv(d, 1, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
+                assertHc(d, 0, "");
+                // hc = true because projects is mutable because ...?
+                assertDv(d, 1, MultiLevel.EFFECTIVELY_IMMUTABLE_HC_DV, Property.IMMUTABLE);
             }
         };
 

@@ -79,13 +79,6 @@ public class Forward {
             } else if (string.length() > 0) {
                 boolean writeSpace = lastOneWasSpace != ElementarySpace.NONE &&
                         lastOneWasSpace != ElementarySpace.RELAXED_NONE && wroteOnce;
-                int stringLen = string.length();
-                int goingToWrite = stringLen + (writeSpace ? 1 : 0);
-
-                if (chars + goingToWrite > maxChars && allowBreak && wroteOnce) {// don't write anymore...
-                    return false;
-                }
-
                 String stringToWrite = writeSpace ? (" " + string) : string;
                 if (writer.apply(new ForwardInfo(pos, chars, stringToWrite, split, null,
                         outputElement instanceof Symbol))) return true;
@@ -93,7 +86,7 @@ public class Forward {
                 split = splitAfterWriting;
                 wroteOnce = true;
                 allowBreak = split != Split.NEVER;
-                chars += stringLen + (writeSpace ? 1 : 0);
+                chars += string.length() + (writeSpace ? 1 : 0);
             }
             ++pos;
         }

@@ -20,10 +20,8 @@ import org.e2immu.analyser.model.Location;
 import org.e2immu.analyser.model.variable.VariableNature;
 import org.e2immu.annotation.Modified;
 import org.e2immu.annotation.NotNull;
-import org.e2immu.support.SetOnce;
 import org.e2immu.support.SetOnceMap;
 
-import java.util.Map;
 import java.util.Set;
 
 /**
@@ -42,10 +40,8 @@ public interface VariableInfoContainer {
     @NotNull
     VariableNature variableNature();
 
-    int NOT_A_FIELD = -1;
-    int NOT_A_VARIABLE_FIELD = -2;
-    int IN_FIELD_ANALYSER = -3;
-    int NOT_RELEVANT = -4;
+    // default statement/modification time
+    int IGNORE_STATEMENT_TIME = -1;
 
     // prefixes in assignment id
     // see TestLevelSuffixes to visually understand the order
@@ -205,7 +201,7 @@ public interface VariableInfoContainer {
                                                        Properties properties,
                                                        CausesOfDelay causesOfDelay);
 
-    void markOverride(Property property, DV value);
+    void markContextModifiedOverride(DV value);
 
     SetOnceMap<Property, DV> propertyOverrides();
 
@@ -213,4 +209,6 @@ public interface VariableInfoContainer {
         return variableNature() == VariableNature.FROM_ENCLOSING_METHOD
                 ? LinkedVariables.NOT_YET_SET : LinkedVariables.EMPTY;
     }
+
+    void setModificationTimeIfNotYetSet(int modificationTime, Stage stage);
 }

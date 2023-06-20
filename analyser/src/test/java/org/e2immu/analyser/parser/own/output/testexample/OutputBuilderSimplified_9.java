@@ -28,7 +28,8 @@ import java.util.function.Supplier;
 
 public class OutputBuilderSimplified_9 {
 
-    @E1Container
+    @FinalFields
+    @Container
     @NotNull
     @NotModified
     public static Supplier<BiConsumer<OutputBuilderSimplified_9, OutputBuilderSimplified_9>> joining() {

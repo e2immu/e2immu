@@ -14,18 +14,17 @@
 
 package org.e2immu.analyser.parser.own.util.testexample;
 
-import org.e2immu.annotation.ERContainer;
+import org.e2immu.annotation.ImmutableContainer;
 import org.e2immu.annotation.NotModified;
-import org.e2immu.annotation.NotNull;
 import org.e2immu.annotation.Nullable;
 
 import java.util.Map;
 
-@ERContainer
+@ImmutableContainer(hc = true)
 public class TrieSimplified_3<T> {
     private final TrieNode<T> root = new TrieNode<>();
 
-    @ERContainer
+    @ImmutableContainer(hc = true)
     private static class TrieNode<T> {
         Map<String, TrieNode<T>> map;
     }

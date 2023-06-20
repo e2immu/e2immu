@@ -19,11 +19,14 @@ import org.e2immu.analyser.analyser.Property;
 import org.e2immu.analyser.analysis.MethodAnalysis;
 import org.e2immu.analyser.analysis.ParameterAnalysis;
 import org.e2immu.analyser.analysis.TypeAnalysis;
-import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.model.MethodInfo;
+import org.e2immu.analyser.model.MultiLevel;
+import org.e2immu.analyser.model.TypeInfo;
 import org.junit.jupiter.api.Test;
 
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.function.Predicate;
 import java.util.function.Supplier;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -36,8 +39,10 @@ public class TestCommonJavaUtilFunction extends CommonAnnotatedAPI {
         TypeInfo typeInfo = typeContext.getFullyQualified(Consumer.class);
         TypeAnalysis typeAnalysis = typeInfo.typeAnalysis.get();
         assertEquals(MultiLevel.MUTABLE_DV, typeAnalysis.getProperty(Property.IMMUTABLE));
-        assertEquals(MultiLevel.DEPENDENT_DV, typeAnalysis.getProperty(Property.INDEPENDENT));
+        assertEquals(MultiLevel.INDEPENDENT_HC_DV, typeAnalysis.getProperty(Property.INDEPENDENT));
         assertEquals(MultiLevel.NOT_CONTAINER_DV, typeAnalysis.getProperty(Property.CONTAINER));
+
+        assertEquals("T", typeAnalysis.getHiddenContentTypes().toString());
     }
 
     @Test
@@ -48,21 +53,31 @@ public class TestCommonJavaUtilFunction extends CommonAnnotatedAPI {
         assertEquals(DV.TRUE_DV, methodAnalysis.getProperty(Property.MODIFIED_METHOD));
         // void method -> independent
         assertEquals(MultiLevel.INDEPENDENT_DV, methodAnalysis.getProperty(Property.INDEPENDENT));
-        assertEquals(MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, methodAnalysis.getProperty(Property.IMMUTABLE));
+        assertEquals(MultiLevel.EFFECTIVELY_IMMUTABLE_DV, methodAnalysis.getProperty(Property.IMMUTABLE));
 
         // key
         ParameterAnalysis p0 = methodInfo.parameterAnalysis(0);
-        assertEquals(DV.TRUE_DV, p0.getProperty(Property.MODIFIED_VARIABLE), "in "+methodInfo.fullyQualifiedName);
-        assertEquals(MultiLevel.NOT_INVOLVED_DV, p0.getProperty(Property.IMMUTABLE)); // could be MUTABLE
-        // default would be @Independent1 here, but we do not want to add any restriction on implementations
-        assertEquals(MultiLevel.DEPENDENT_DV, p0.getProperty(Property.INDEPENDENT));
+        assertEquals(DV.TRUE_DV, p0.getProperty(Property.MODIFIED_VARIABLE), "in " + methodInfo.fullyQualifiedName);
+        /*
+        from the point of view of the interface, hidden content is passed on; this hidden content can be modified by implementations.
+         */
+        assertEquals(MultiLevel.EFFECTIVELY_IMMUTABLE_HC_DV, p0.getProperty(Property.IMMUTABLE));
+        assertEquals(MultiLevel.INDEPENDENT_HC_DV, p0.getProperty(Property.INDEPENDENT));
+    }
+
+    @Test
+    public void testFunction() {
+        TypeInfo typeInfo = typeContext.getFullyQualified(Function.class);
+        assertTrue(typeInfo.isInterface());
+        assertTrue(typeInfo.typeInspection.get().isFunctionalInterface());
+
+        TypeAnalysis typeAnalysis = typeInfo.typeAnalysis.get();
+        assertEquals("R, T", typeAnalysis.getHiddenContentTypes().toString());
     }
 
     @Test
     public void testFunctionApply() {
         TypeInfo typeInfo = typeContext.getFullyQualified(Function.class);
-        assertTrue(typeInfo.isInterface());
-        assertTrue(typeInfo.typeInspection.get().isFunctionalInterface());
 
         MethodInfo methodInfo = typeInfo.findUniqueMethod("apply", 1);
         MethodAnalysis methodAnalysis = methodInfo.methodAnalysis.get();
@@ -70,7 +85,7 @@ public class TestCommonJavaUtilFunction extends CommonAnnotatedAPI {
 
         // key
         ParameterAnalysis p0 = methodInfo.parameterAnalysis(0);
-        assertEquals(DV.TRUE_DV, p0.getProperty(Property.MODIFIED_VARIABLE), "in "+methodInfo.fullyQualifiedName);
+        assertEquals(DV.TRUE_DV, p0.getProperty(Property.MODIFIED_VARIABLE), "in " + methodInfo.fullyQualifiedName);
     }
 
     @Test
@@ -79,7 +94,25 @@ public class TestCommonJavaUtilFunction extends CommonAnnotatedAPI {
         assertTrue(typeInfo.isInterface());
         assertTrue(typeInfo.typeInspection.get().isFunctionalInterface());
         TypeAnalysis typeAnalysis = typeInfo.typeAnalysis.get();
-        assertEquals(MultiLevel.MUTABLE_DV,typeAnalysis.getProperty(Property.IMMUTABLE));
-        assertEquals(MultiLevel.DEPENDENT_DV,typeAnalysis.getProperty(Property.INDEPENDENT));
+        assertEquals(MultiLevel.MUTABLE_DV, typeAnalysis.getProperty(Property.IMMUTABLE));
+        assertEquals(MultiLevel.INDEPENDENT_HC_DV, typeAnalysis.getProperty(Property.INDEPENDENT));
+
+        assertEquals("T", typeAnalysis.getHiddenContentTypes().toString());
+    }
+
+
+    @Test
+    public void testPredicateTest() {
+        TypeInfo typeInfo = typeContext.getFullyQualified(Predicate.class);
+
+        MethodInfo methodInfo = typeInfo.findUniqueMethod("test", 1);
+        MethodAnalysis methodAnalysis = methodInfo.methodAnalysis.get();
+        assertEquals(DV.TRUE_DV, methodAnalysis.getProperty(Property.MODIFIED_METHOD));
+
+        // e
+        ParameterAnalysis p0 = methodInfo.parameterAnalysis(0);
+        assertEquals(DV.TRUE_DV, p0.getProperty(Property.MODIFIED_VARIABLE), "in " + methodInfo.fullyQualifiedName);
+        assertEquals(MultiLevel.CONTAINER_DV, p0.getProperty(Property.CONTAINER));
+        assertEquals(MultiLevel.NOT_CONTAINER_DV, p0.getProperty(Property.CONTAINER_RESTRICTION));
     }
 }

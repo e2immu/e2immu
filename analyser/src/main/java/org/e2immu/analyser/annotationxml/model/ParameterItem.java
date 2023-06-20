@@ -15,13 +15,11 @@
 package org.e2immu.analyser.annotationxml.model;
 
 import org.e2immu.analyser.model.ParameterInfo;
-import org.e2immu.annotation.E2Immutable;
 
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-@E2Immutable(after = "freeze")
 public class ParameterItem extends HasAnnotations implements Comparable<ParameterItem> {
     public final int index;
 

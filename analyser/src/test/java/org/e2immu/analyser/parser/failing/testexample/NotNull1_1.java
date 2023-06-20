@@ -15,13 +15,12 @@
 package org.e2immu.analyser.parser.failing.testexample;
 
 import org.e2immu.annotation.NotNull;
-import org.e2immu.annotation.NotNull1;
 
 import java.util.function.Function;
 
 public class NotNull1_1 {
 
-    @NotNull1
+    @NotNull(content = true)
     Function<String, String> toQuotedLowerCase = s -> "'" + s.toLowerCase() + "'";
 
     @NotNull

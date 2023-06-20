@@ -16,6 +16,7 @@ package org.e2immu.analyser.model.expression.util;
 
 import org.e2immu.analyser.analyser.Properties;
 import org.e2immu.analyser.analyser.*;
+import org.e2immu.analyser.analyser.impl.util.BreakDelayLevel;
 import org.e2immu.analyser.analysis.MethodAnalysis;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.*;
@@ -82,14 +83,19 @@ public class EvaluateMethodCall {
 
         if (earlierDelays.isDelayed()) {
             return delay(builder, methodInfo, concreteReturnType, objectValue, earlierDelays,
-                    context.evaluationContext().allowBreakDelay());
+                    context.evaluationContext().breakDelayLevel());
         }
         if (methodInfo.noReturnValue()) {
             return builder.setExpression(EmptyExpression.NO_RETURN_VALUE).build();
         }
 
+        String currentModificationTimes = context.modificationTimesOf(objectValue, parameters);
+        String modificationTimes = methodCall.hasEmptyModificationTimes() ? currentModificationTimes
+                : methodCall.getModificationTimes();
+
         if (firstInCallCycle) {
-            MethodCall methodValue = new MethodCall(identifier, objectValue, methodInfo, parameters);
+            MethodCall methodValue = new MethodCall(identifier, objectIsImplicit, objectValue, methodInfo,
+                    methodInfo.returnType(), parameters, modificationTimes);
             return builder.setExpression(methodValue).build();
         }
 
@@ -101,8 +107,9 @@ public class EvaluateMethodCall {
                 (inlineValue = objectValue.asInstanceOf(InlinedMethod.class)) != null &&
                 inlineValue.canBeApplied(context)) {
             Expression scopeOfObjectValue = new VariableExpression(context.evaluationContext().currentThis());
+            LinkedVariables linkedVariables = methodCall.linkedVariables(context);
             TranslationMap translationMap = inlineValue.translationMap(context,
-                    parameters, scopeOfObjectValue, context.getCurrentType(), identifier);
+                    parameters, scopeOfObjectValue, context.getCurrentType(), identifier, linkedVariables);
             Expression translated = inlineValue.translate(analyserContext, translationMap);
             ForwardEvaluationInfo fwd = new ForwardEvaluationInfo.Builder(forwardEvaluationInfo)
                     .addMethod(methodInfo).doNotComplainInlineConditional().build();
@@ -129,14 +136,15 @@ public class EvaluateMethodCall {
         }
 
        /*
-         if the condition contains a boolean method call expression, such as "this.contains("a")", an we are not
+         if the condition contains a boolean method call expression, such as "this.contains("a")", and we are not
          in companion expression mode, then evaluating this.contains("a") will result in TRUE.
          In companion expression mode, we work symbolically, and must leave this.contains("a") as an informational clause.
          Examples: BasicCompanionMethods_5 for the negative scenario; CyclicReferences_3 for the positive one
         */
         if (modified.valueIsFalse() && !forwardEvaluationInfo.isInCompanionExpression() && methodInfo.returnType().isBoolean()) {
             Expression condition = context.evaluationContext().getConditionManager().condition();
-            if (methodCall.equals(condition) || condition instanceof And and && and.getExpressions().stream().anyMatch(methodCall::equals)) {
+            if (methodCall.equals(condition) || condition instanceof And and
+                    && and.getExpressions().stream().anyMatch(methodCall::equals)) {
                 BooleanConstant TRUE = new BooleanConstant(context.getPrimitives(), true);
                 return builder.setExpression(TRUE).build();
             }
@@ -176,7 +184,7 @@ public class EvaluateMethodCall {
             if (!analyserContext.inAnnotatedAPIAnalysis()) {
                 // new object returned, with a transfer of the aspect; 5 == stringBuilder.length() in aspect -> 5 == stringBuilder.toString().length()
                 Expression newInstance = newInstanceWithTransferCompanion(context, objectValue, methodInfo,
-                        methodAnalysis, parameters);
+                        methodAnalysis, parameters, modificationTimes);
                 if (newInstance != null) {
                     return builder.setExpression(newInstance).build();
                 }
@@ -216,13 +224,14 @@ public class EvaluateMethodCall {
             if (srv.isDelayed()) {
                 LOGGER.debug("Delaying method value on {}", methodInfo.fullyQualifiedName);
                 return delay(builder, methodInfo, concreteReturnType, objectValue, srv.causesOfDelay(),
-                        context.evaluationContext().allowBreakDelay());
+                        context.evaluationContext().breakDelayLevel());
             }
             InlinedMethod iv;
             if ((iv = srv.asInstanceOf(InlinedMethod.class)) != null && iv.canBeApplied(context) &&
                     forwardEvaluationInfo.allowInline(methodInfo)) {
+                LinkedVariables linkedVariables = methodCall.linkedVariables(context);
                 TranslationMap translationMap = iv.translationMap(context, parameters, objectValue,
-                        context.getCurrentType(), identifier);
+                        context.getCurrentType(), identifier, linkedVariables);
                 Expression translated = iv.translate(analyserContext, translationMap);
                 ForwardEvaluationInfo forward = new ForwardEvaluationInfo.Builder(forwardEvaluationInfo)
                         .setNotSwitchingToConcreteMethod()
@@ -236,18 +245,20 @@ public class EvaluateMethodCall {
         }
 
         Expression methodValue;
-        if (modified.valueIsFalse()) {
+        // TODO: delay on finalizer!
+        if (modified.valueIsFalse() || methodAnalysis.getProperty(Property.FINALIZER).valueIsTrue()) {
+            // only compute modification times if we don't have them yet!!! see e.g. Mutable_1
             methodValue = new MethodCall(identifier, objectIsImplicit, objectValue, methodInfo, concreteReturnType,
-                    parameters);
+                    parameters, modificationTimes);
         } else {
             assert modified.valueIsTrue();
             DV notNull = methodAnalysis.getProperty(NOT_NULL_EXPRESSION)
                     .max(AnalysisProvider.defaultNotNull(concreteReturnType));
-            Properties valueProperties = analyserContext.defaultValueProperties(concreteReturnType, notNull, context.getCurrentType());
+            Properties valueProperties = analyserContext.defaultValueProperties(concreteReturnType, notNull);
             CausesOfDelay delays = valueProperties.delays();
             if (delays.isDelayed()) {
                 return delay(builder, methodInfo, concreteReturnType, objectValue, delays,
-                        context.evaluationContext().allowBreakDelay());
+                        context.evaluationContext().breakDelayLevel());
             }
             methodValue = Instance.forMethodResult(methodCall.getIdentifier(), concreteReturnType, valueProperties);
         }
@@ -270,7 +281,7 @@ public class EvaluateMethodCall {
                                    ParameterizedType concreteReturnType,
                                    Expression objectValue,
                                    CausesOfDelay causesOfDelay,
-                                   boolean allowBreakDelay) {
+                                   BreakDelayLevel breakDelayLevel) {
         Map<Variable, DV> cnnMap = builder.cnnMap();
         CausesOfDelay finalDelays = earlierDelays.merge(causesOfDelay);
         /*
@@ -280,7 +291,7 @@ public class EvaluateMethodCall {
         DGSimplified_0, ...)
         ---> too complicated, we're not doing this right now (20220601)
 
-        parameters.stream().flatMap(p -> p.variables(true).stream())
+        parameters.stream().flatMap(p -> p.variableStream())
                 .forEach(v -> builder.setProperty(v, CONTEXT_NOT_NULL, finalDelays));
 
         instead, we make sure that expansion of inlined method cannot switch to the concrete implementation
@@ -291,7 +302,7 @@ public class EvaluateMethodCall {
         // see InstanceOf_16 as an example on why we should add these...
         // essentially, the return expression may expand, and cause context changes
         if (methodInfo.computedAnalysis()) {
-            if (allowBreakDelay) {
+            if (breakDelayLevel.acceptStatement()) {
                 LOGGER.debug("Breaking delay on method call {}", methodInfo);
             } else {
                 EvaluationResult deResult = delay.evaluate(context, ForwardEvaluationInfo.DEFAULT);
@@ -342,7 +353,7 @@ public class EvaluateMethodCall {
         // no implementation, we'll provide something (we could actually implement the method, but why?)
         ParameterizedType parameterizedType = objectValue.returnType();
         Properties valueProperties = analyserContext.defaultValueProperties(parameterizedType,
-                MultiLevel.EFFECTIVELY_NOT_NULL_DV, context.getCurrentType());
+                MultiLevel.EFFECTIVELY_NOT_NULL_DV);
         CausesOfDelay delayed = valueProperties.delays();
         if (delayed.isDelayed()) {
             return DelayedExpression.forValueOf(parameterizedType, methodCall, delayed);
@@ -362,7 +373,7 @@ public class EvaluateMethodCall {
                 LOGGER.debug("Delaying method value because @Modified delayed on {}",
                         methodInfo.fullyQualifiedName);
                 return delay(builder, methodInfo, concreteReturnType, objectValue, modifying.causesOfDelay(),
-                        context.evaluationContext().allowBreakDelay());
+                        context.evaluationContext().breakDelayLevel());
             }
             if (paramValue.equals(objectValue) && modifying.valueIsFalse()) {
                 return builder.setExpression(new BooleanConstant(primitives, true)).build();
@@ -404,7 +415,7 @@ public class EvaluateMethodCall {
                 .forEach(pair -> builder.put(pair.k, pair.v));
         Expression translated = companionValue.translate(context.getAnalyserContext(), builder.build());
         // we might encounter isFact or isKnown, so we add the instance's state to the context
-        Set<Variable> stateVariables = state.variables(true).stream().collect(Collectors.toUnmodifiableSet());
+        Set<Variable> stateVariables = state.variableStream().collect(Collectors.toUnmodifiableSet());
         EvaluationResult child = context.child(state, stateVariables, true);
         ForwardEvaluationInfo fwd = new ForwardEvaluationInfo.Builder().doNotReevaluateVariableExpressionsDoNotComplain()
                 .setInCompanionExpression().build();
@@ -438,7 +449,8 @@ public class EvaluateMethodCall {
                                                         Expression objectValue,
                                                         MethodInfo methodInfo,
                                                         MethodAnalysis methodAnalysis,
-                                                        List<Expression> parameterValues) {
+                                                        List<Expression> parameterValues,
+                                                        String modificationTimes) {
         if (!context.evaluationContext().hasState(objectValue)) return null;
         Expression state = context.evaluationContext().state(objectValue);
 
@@ -451,14 +463,14 @@ public class EvaluateMethodCall {
                     CompanionMethodName cmn = e.getKey();
                     MethodInfo oldAspectMethod = analyserContext
                             .getTypeAnalysis(objectValue.returnType().typeInfo).getAspects().get(cmn.aspect());
-                    Expression oldValue = new MethodCall(identifier,
+                    Expression oldValue = new MethodCall(identifier, false,
                             new VariableExpression(new This(analyserContext, oldAspectMethod.typeInfo)),
-                            oldAspectMethod, List.of());
+                            oldAspectMethod, oldAspectMethod.returnType(), List.of(), modificationTimes);
                     MethodInfo newAspectMethod = analyserContext
                             .getTypeAnalysis(methodInfo.typeInfo).getAspects().get(cmn.aspect());
-                    Expression newValue = new MethodCall(identifier,
+                    Expression newValue = new MethodCall(identifier, false,
                             new VariableExpression(new This(analyserContext, newAspectMethod.typeInfo)),
-                            newAspectMethod, List.of());
+                            newAspectMethod, newAspectMethod.returnType(), List.of(), modificationTimes);
                     translationMap.put(oldValue, newValue);
                     CompanionAnalysis companionAnalysis = e.getValue();
                     ListUtil.joinLists(companionAnalysis.getParameterValues(), parameterValues)
@@ -534,7 +546,7 @@ public class EvaluateMethodCall {
         DV fluent = methodAnalysis.getProperty(Property.FLUENT);
         if (fluent.isDelayed() && methodAnalysis.isNotContracted()) {
             return delay(builder, methodInfo, concreteReturnType, scope, fluent.causesOfDelay(),
-                    context.evaluationContext().allowBreakDelay());
+                    context.evaluationContext().breakDelayLevel());
         }
         if (!fluent.valueIsTrue()) return null;
         Expression toReturn = modifiedInstance != null ? modifiedInstance : scope;
@@ -559,7 +571,7 @@ public class EvaluateMethodCall {
         DV identity = methodAnalysis.getProperty(Property.IDENTITY);
         if (identity.isDelayed() && methodAnalysis.isNotContracted()) {
             return delay(builder, methodInfo, concreteReturnType, objectValue, identity.causesOfDelay(),
-                    context.evaluationContext().allowBreakDelay());
+                    context.evaluationContext().breakDelayLevel());
         }
         if (!identity.valueIsTrue()) return null;
 

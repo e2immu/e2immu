@@ -21,7 +21,9 @@ import org.e2immu.analyser.analysis.TypeAnalysis;
 import org.e2immu.analyser.config.Configuration;
 import org.e2immu.analyser.config.InputConfiguration;
 import org.e2immu.analyser.inspector.TypeContext;
-import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.model.MethodInfo;
+import org.e2immu.analyser.model.MultiLevel;
+import org.e2immu.analyser.model.TypeInfo;
 import org.e2immu.analyser.model.impl.LocationImpl;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.Parser;
@@ -31,9 +33,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.util.*;
+import java.util.List;
+import java.util.Optional;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /*
 Tests the default annotations of byte-code inspected+analysed types, without annotated APIs on top.
@@ -79,7 +82,7 @@ public class TestAnnotatedXML {
 
         long javaLangErrors = messages.stream()
                 .filter(m -> m.message().severity == Message.Severity.ERROR)
-                .filter(m -> !((LocationImpl)m.location()).info.getTypeInfo().packageName().startsWith("java.lang"))
+                .filter(m -> !((LocationImpl) m.location()).info.getTypeInfo().packageName().startsWith("java.lang"))
                 .count();
         LOGGER.info("Have {} error messages outside java.lang.*", javaLangErrors);
         assertEquals(0L, javaLangErrors);
@@ -87,29 +90,48 @@ public class TestAnnotatedXML {
 
     // hardcoded
     @Test
-    public void testObjectEquals() {
+    public void testString() {
+        TypeInfo object = typeContext.getFullyQualified(String.class);
+        TypeAnalysis typeAnalysis = object.typeAnalysis.get();
+        assertEquals(MultiLevel.CONTAINER_DV, typeAnalysis.getProperty(Property.CONTAINER));
+        assertEquals(MultiLevel.EFFECTIVELY_IMMUTABLE_DV, typeAnalysis.getProperty(Property.IMMUTABLE));
+        assertEquals(MultiLevel.INDEPENDENT_DV, typeAnalysis.getProperty(Property.INDEPENDENT));
+    }
+
+    // hardcoded
+    @Test
+    public void testObject() {
         TypeInfo object = typeContext.getFullyQualified(Object.class);
         TypeAnalysis typeAnalysis = object.typeAnalysis.get();
         assertEquals(MultiLevel.CONTAINER_DV, typeAnalysis.getProperty(Property.CONTAINER));
-        assertEquals(MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, typeAnalysis.getProperty(Property.IMMUTABLE));
+        assertEquals(MultiLevel.EFFECTIVELY_IMMUTABLE_HC_DV, typeAnalysis.getProperty(Property.IMMUTABLE));
         assertEquals(MultiLevel.INDEPENDENT_DV, typeAnalysis.getProperty(Property.INDEPENDENT));
+    }
 
+    @Test
+    public void testObjectEquals() {
+        TypeInfo object = typeContext.getFullyQualified(Object.class);
         MethodInfo equals = object.findUniqueMethod("equals", 1);
         MethodAnalysis methodAnalysis = equals.methodAnalysis.get();
         assertEquals(DV.FALSE_DV, methodAnalysis.getProperty(Property.MODIFIED_METHOD));
         assertEquals(MultiLevel.INDEPENDENT_DV, methodAnalysis.getProperty(Property.INDEPENDENT));
     }
 
-
     // not hardcoded
     @Test
-    public void testOptionalEquals() {
+    public void testOptional() {
         TypeInfo optional = typeContext.getFullyQualified(Optional.class);
         TypeAnalysis typeAnalysis = optional.typeAnalysis.get();
         assertEquals(MultiLevel.NOT_CONTAINER_DV, typeAnalysis.getProperty(Property.CONTAINER));
         assertEquals(MultiLevel.MUTABLE_DV, typeAnalysis.getProperty(Property.IMMUTABLE));
         assertEquals(MultiLevel.DEPENDENT_DV, typeAnalysis.getProperty(Property.INDEPENDENT));
+        assertEquals("T", typeAnalysis.getHiddenContentTypes().toString());
+    }
 
+    // not hardcoded
+    @Test
+    public void testOptionalEquals() {
+        TypeInfo optional = typeContext.getFullyQualified(Optional.class);
         MethodInfo equals = optional.findUniqueMethod("equals", 1);
         MethodAnalysis methodAnalysis = equals.methodAnalysis.get();
         assertEquals(DV.FALSE_DV, methodAnalysis.getProperty(Property.MODIFIED_METHOD));
@@ -122,7 +144,7 @@ public class TestAnnotatedXML {
         TypeInfo optional = typeContext.getFullyQualified(Float.class);
         TypeAnalysis typeAnalysis = optional.typeAnalysis.get();
         assertEquals(MultiLevel.INDEPENDENT_DV, typeAnalysis.getProperty(Property.INDEPENDENT));
-        assertEquals(MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, typeAnalysis.getProperty(Property.IMMUTABLE));
+        assertEquals(MultiLevel.EFFECTIVELY_IMMUTABLE_DV, typeAnalysis.getProperty(Property.IMMUTABLE));
     }
 
 }

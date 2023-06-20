@@ -80,22 +80,25 @@ public class ShallowFieldAnalyser {
                     typeIsContainer = typeAnalysis.getProperty(Property.CONTAINER);
                 } else {
                     typeIsContainer = Property.CONTAINER.falseDv;
-                    if (fieldInfo.isPublic()) {
+                    if (fieldInfo.fieldInspection.get().isPublic()) {
                         messages.add(Message.newMessage(fieldInfo.newLocation(), Message.Label.TYPE_ANALYSIS_NOT_AVAILABLE,
                                 fieldAnalysisBuilder.bestType.fullyQualifiedName));
                     }
                 }
             }
-            fieldAnalysisBuilder.setProperty(Property.EXTERNAL_CONTAINER, typeIsContainer);
+            fieldAnalysisBuilder.setProperty(Property.CONTAINER, typeIsContainer);
         } else {
             typeIsContainer = fieldAnalysisBuilder.properties.getOrDefaultNull(Property.CONTAINER);
         }
+        if (!fieldAnalysisBuilder.properties.isDone(Property.CONTAINER_RESTRICTION)) {
+            fieldAnalysisBuilder.setProperty(Property.CONTAINER_RESTRICTION, Property.CONTAINER_RESTRICTION.falseDv);
+        }
 
         DV annotatedImmutable = fieldAnalysisBuilder.getPropertyFromMapDelayWhenAbsent(Property.IMMUTABLE);
-        DV formallyImmutable = analysisProvider.defaultImmutable(fieldInfo.type, false, fieldInfo.owner);
+        DV formallyImmutable = analysisProvider.typeImmutable(fieldInfo.type);
         DV immutable = MultiLevel.MUTABLE_DV.maxIgnoreDelay(annotatedImmutable.maxIgnoreDelay(formallyImmutable));
         DV annotatedIndependent = fieldAnalysisBuilder.getPropertyFromMapDelayWhenAbsent(Property.INDEPENDENT);
-        DV formallyIndependent = analysisProvider.defaultIndependent(fieldInfo.type);
+        DV formallyIndependent = analysisProvider.typeIndependent(fieldInfo.type);
         DV independent = MultiLevel.DEPENDENT_DV.maxIgnoreDelay(annotatedIndependent.maxIgnoreDelay(formallyIndependent));
         DV ignoreMods = fieldAnalysisBuilder.getPropertyFromMapNeverDelay(Property.IGNORE_MODIFICATIONS);
 

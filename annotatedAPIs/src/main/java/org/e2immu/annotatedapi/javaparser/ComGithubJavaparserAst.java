@@ -21,9 +21,9 @@ import com.github.javaparser.ast.PackageDeclaration;
 import com.github.javaparser.ast.body.TypeDeclaration;
 import com.github.javaparser.ast.expr.Name;
 import org.e2immu.annotation.Fluent;
+import org.e2immu.annotation.Independent;
 import org.e2immu.annotation.Modified;
 import org.e2immu.annotation.NotNull;
-import org.e2immu.annotation.NotNull1;
 import org.w3c.dom.Node;
 
 import java.util.Optional;
@@ -49,13 +49,13 @@ public class ComGithubJavaparserAst {
 
     interface CompilationUnit$ {
 
-        @NotNull1
+        @NotNull(content = true)
         Optional<PackageDeclaration> getPackageDeclaration();
 
-        @NotNull1
+        @NotNull(content = true)
         NodeList<ImportDeclaration> getImports();
 
-        @NotNull1
+        @NotNull(content = true)
         NodeList<TypeDeclaration<?>> getTypes();
     }
 
@@ -63,5 +63,10 @@ public class ComGithubJavaparserAst {
 
         @NotNull
         Name getName();
+    }
+
+    @Independent
+    interface DataKey$ {
+
     }
 }

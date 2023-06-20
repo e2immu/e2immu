@@ -20,6 +20,7 @@ import org.e2immu.analyser.analysis.Analysis;
 import org.e2immu.analyser.analysis.MethodAnalysis;
 import org.e2immu.analyser.analysis.ParameterAnalysis;
 import org.e2immu.analyser.inspector.MethodResolution;
+import org.e2immu.analyser.model.expression.ConstantExpression;
 import org.e2immu.analyser.model.impl.LocationImpl;
 import org.e2immu.analyser.model.statement.Block;
 import org.e2immu.analyser.model.statement.ReturnStatement;
@@ -27,8 +28,6 @@ import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.OutputMethodInfo;
 import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.util.UpgradableBooleanMap;
-import org.e2immu.annotation.Container;
-import org.e2immu.annotation.E2Immutable;
 import org.e2immu.annotation.NotNull;
 import org.e2immu.support.SetOnce;
 import org.e2immu.support.SetOnceMap;
@@ -36,10 +35,10 @@ import org.e2immu.support.SetOnceMap;
 import java.util.*;
 import java.util.stream.Collectors;
 
-@Container
-@E2Immutable(after = "TypeAnalyser.analyse()") // and not MethodAnalyser.analyse(), given the back reference
 public class MethodInfo implements WithInspectionAndAnalysis {
     public static final String UNARY_MINUS_OPERATOR_INT = "int.-(int)";
+    public static final int COMPLEXITY_METHOD_WITHOUT_CODE = 10;
+
     public final Identifier identifier;
     public final TypeInfo typeInfo; // back reference, only @ContextClass after...
     public final String name;
@@ -152,24 +151,32 @@ public class MethodInfo implements WithInspectionAndAnalysis {
     public UpgradableBooleanMap<TypeInfo> typesReferenced() {
         if (!hasBeenInspected()) return UpgradableBooleanMap.of();
         MethodInspection inspection = methodInspection.get();
+
         UpgradableBooleanMap<TypeInfo> constructorTypes = isConstructor ? UpgradableBooleanMap.of() :
                 inspection.getReturnType().typesReferenced(true);
+
         UpgradableBooleanMap<TypeInfo> parameterTypes =
                 inspection.getParameters().stream()
                         .flatMap(p -> p.typesReferenced(true).stream()).collect(UpgradableBooleanMap.collector());
+
         UpgradableBooleanMap<TypeInfo> annotationTypes =
                 inspection.getAnnotations().stream().flatMap(ae -> ae.typesReferenced().stream()).collect(UpgradableBooleanMap.collector());
+
         UpgradableBooleanMap<TypeInfo> analysedAnnotationTypes =
                 hasBeenAnalysed() ? methodAnalysis.get().getAnnotationStream()
                         .filter(e -> e.getValue().isVisible())
                         .flatMap(e -> e.getKey().typesReferenced().stream())
                         .collect(UpgradableBooleanMap.collector()) : UpgradableBooleanMap.of();
+
         UpgradableBooleanMap<TypeInfo> exceptionTypes =
                 inspection.getExceptionTypes().stream().flatMap(et -> et.typesReferenced(true).stream()).collect(UpgradableBooleanMap.collector());
+
         UpgradableBooleanMap<TypeInfo> bodyTypes = hasBeenInspected() ?
                 inspection.getMethodBody().typesReferenced() : UpgradableBooleanMap.of();
+
         UpgradableBooleanMap<TypeInfo> companionMethodTypes = inspection.getCompanionMethods().values().stream()
                 .flatMap(cm -> cm.typesReferenced().stream()).collect(UpgradableBooleanMap.collector());
+
         return UpgradableBooleanMap.of(constructorTypes, parameterTypes, analysedAnnotationTypes,
                 annotationTypes, exceptionTypes, companionMethodTypes, bodyTypes);
     }
@@ -206,12 +213,6 @@ public class MethodInfo implements WithInspectionAndAnalysis {
     }
 
     @Override
-    public Optional<AnnotationExpression> hasInspectedAnnotation(Class<?> annotation) {
-        String annotationFQN = annotation.getName();
-        return hasInspectedAnnotation(annotationFQN);
-    }
-
-    @Override
     public String name() {
         return name;
     }
@@ -225,27 +226,8 @@ public class MethodInfo implements WithInspectionAndAnalysis {
         return methodResolution.get().overrides().isEmpty();
     }
 
-    public boolean isPrivate() {
-        return methodInspection.get().getModifiers().contains(MethodModifier.PRIVATE);
-    }
-
-    public boolean isPrivate(InspectionProvider inspectionProvider) {
-        return inspectionProvider.getMethodInspection(this).getModifiers().contains(MethodModifier.PRIVATE);
-    }
-
     public boolean isVoid() {
         return returnType().isVoidOrJavaLangVoid();
-    }
-
-    public boolean isSynchronized() {
-        return methodInspection.get().getModifiers().contains(MethodModifier.SYNCHRONIZED);
-    }
-
-    public boolean isAbstract() {
-        if (typeInfo.typeInspection.get().isInterface()) {
-            return !methodInspection.get().getModifiers().contains(MethodModifier.DEFAULT);
-        }
-        return methodInspection.get().getModifiers().contains(MethodModifier.ABSTRACT);
     }
 
     public boolean isNotATestMethod() {
@@ -266,9 +248,13 @@ public class MethodInfo implements WithInspectionAndAnalysis {
         return hasStatements();
     }
 
+    /*
+    Enum.valueOf() is a static, synthetic method, which can have code or not, depending on the availability of
+    certain types (see EnumMethods). It is, however, never semantically "explicitlyEmpty".
+     */
     public boolean explicitlyEmptyMethod() {
-        if (hasStatements()) return false;
-        boolean empty = !typeInfo.shallowAnalysis() && !isAbstract();
+        if (hasStatements() || methodInspection.get().isStatic() && methodInspection.get().isSynthetic()) return false;
+        boolean empty = !typeInfo.shallowAnalysis() && !methodInspection.get().isAbstract();
         assert !empty || noReturnValue();
         return empty;
     }
@@ -300,7 +286,7 @@ public class MethodInfo implements WithInspectionAndAnalysis {
         TypeInspection typeInspection = inspectionProvider.getTypeInspection(typeInfo);
         if (typeInspection.inspector() == Inspector.BYTE_CODE_INSPECTION) {
             MethodInspection methodInspection = inspectionProvider.getMethodInspection(this);
-            return methodInspection.isPublic(inspectionProvider);
+            return methodInspection.isPubliclyAccessible(inspectionProvider);
         }
         return true; // by hand, java parsing
     }
@@ -343,7 +329,8 @@ public class MethodInfo implements WithInspectionAndAnalysis {
     }
 
     public int getComplexity() {
-        return 1;
+        return methodInspection.isSet() && !methodInspection.get().getMethodBody().isEmpty()
+                ? methodInspection.get().getMethodBody().getComplexity() : COMPLEXITY_METHOD_WITHOUT_CODE;
     }
 
     /*
@@ -362,7 +349,7 @@ public class MethodInfo implements WithInspectionAndAnalysis {
     }
 
     public MethodInfo implementationIn(TypeInfo typeInfo) {
-        if (isAbstract()) {
+        if (methodInspection.get().isAbstract()) {
             return implementations.getOrDefaultNull(typeInfo);
         }
         return this;
@@ -378,7 +365,7 @@ public class MethodInfo implements WithInspectionAndAnalysis {
     }
 
     public Set<MethodInfo> getImplementations() {
-        return implementations.stream().map(Map.Entry::getValue).collect(Collectors.toUnmodifiableSet());
+        return implementations.valueStream().collect(Collectors.toUnmodifiableSet());
     }
 
     public Expression extractSingleReturnExpression() {
@@ -435,5 +422,21 @@ public class MethodInfo implements WithInspectionAndAnalysis {
             }
         }
         return Map.copyOf(result);
+    }
+
+    // as in "boolean x() { return true };
+    public boolean singleStatementReturnConstant() {
+        if (methodInspection.get().isAbstract() || noReturnValue()) return false;
+        Block block = methodInspection.get().getMethodBody();
+        assert block != null;
+        return block.structure.statements().size() == 1
+                && block.structure.statements().get(0) instanceof ReturnStatement rs
+                && rs.expression instanceof ConstantExpression<?>;
+    }
+
+    public Set<MethodInfo> topOfOverloadingHierarchy() {
+        MethodResolution mr = this.methodResolution.get();
+        if (mr.overrides().isEmpty()) return Set.of(this);
+        return mr.overrides().stream().flatMap(mi -> mi.topOfOverloadingHierarchy().stream()).collect(Collectors.toUnmodifiableSet());
     }
 }

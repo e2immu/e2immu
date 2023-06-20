@@ -15,7 +15,6 @@
 package org.e2immu.analyser.parser.own.util.testexample;
 
 import org.e2immu.annotation.NotNull;
-import org.e2immu.annotation.NotNull1;
 
 import java.util.*;
 
@@ -29,7 +28,7 @@ public class TrieSimplified_5<T> {
     }
 
     @NotNull
-    public TrieNode<T> add(@NotNull1 String[] strings, T data) {
+    public TrieNode<T> add(@NotNull(content = true) String[] strings, T data) {
         TrieNode<T> node = root;
         for (String s : strings) {
             TrieNode<T> newTrieNode;

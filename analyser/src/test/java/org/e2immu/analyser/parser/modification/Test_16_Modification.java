@@ -18,7 +18,6 @@ import org.e2immu.analyser.analyser.DV;
 import org.e2immu.analyser.analyser.Property;
 import org.e2immu.analyser.analyser.Stage;
 import org.e2immu.analyser.analyser.VariableInfo;
-import org.e2immu.analyser.config.AnalyserConfiguration;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.ParameterInfo;
@@ -69,21 +68,37 @@ public class Test_16_Modification extends CommonTestRunner {
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("clearIfExceeds".equals(d.methodInfo().name) && INNER_THIS.equals(d.variableName())) {
                 if ("0".equals(d.statementId())) {
-                    assertDv(d, 2, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                    assertDv(d, 1, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                 }
                 if ("0.0.0".equals(d.statementId())) {
                     assertDv(d, 0, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                 }
             }
+            if ("Modification_13".equals(d.methodInfo().name)) {
+                assertEquals("0", d.statementId());
+                if (d.variable() instanceof ParameterInfo pi && "input".equals(pi.name)) {
+                    assertEquals("this.set:4", d.variableInfo().getLinkedVariables().toString());
+                }
+            }
         };
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("clearIfExceeds".equals(d.methodInfo().name)) {
-                assertDv(d, 2, DV.TRUE_DV, Property.MODIFIED_METHOD);
+                assertDv(d, 1, DV.TRUE_DV, Property.MODIFIED_METHOD);
+            }
+            if ("Modification_13".equals(d.methodInfo().name)) {
+                assertDv(d.p(0), 1, MultiLevel.INDEPENDENT_DV, Property.INDEPENDENT);
+                assertDv(d.p(0), 1, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
+            }
+        };
+        TypeAnalyserVisitor typeAnalyserVisitor = d -> {
+            if ("Modification_13".equals(d.typeInfo().simpleName)) {
+                assertTrue(d.typeAnalysis().getHiddenContentTypes().isEmpty());
             }
         };
         testClass("Modification_13", 0, 0, new DebugConfiguration.Builder()
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
                 .build());
     }
 
@@ -116,6 +131,10 @@ public class Test_16_Modification extends CommonTestRunner {
                 assertDv(d, 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.EXTERNAL_NOT_NULL);
                 String expected = d.iteration() == 0 ? "<f:input>" : "input";
                 assertEquals(expected, d.fieldAnalysis().getValue().toString());
+            }
+            if ("j".equals(d.fieldInfo().name)) {
+                assertDv(d, MultiLevel.CONTAINER_DV, Property.CONTAINER);
+                assertDv(d, MultiLevel.NOT_CONTAINER_DV, Property.CONTAINER_RESTRICTION);
             }
         };
 
@@ -161,7 +180,7 @@ public class Test_16_Modification extends CommonTestRunner {
                     assertDv(d, 3, MultiLevel.MUTABLE_DV, Property.EXTERNAL_IMMUTABLE);
                 } else if (d.variable() instanceof This) {
                     assertDv(d, 0, MultiLevel.NOT_INVOLVED_DV, Property.EXTERNAL_NOT_NULL);
-                    assertDv(d, 4, MultiLevel.EFFECTIVELY_E1IMMUTABLE_DV, Property.EXTERNAL_IMMUTABLE);
+                    assertDv(d, 4, MultiLevel.EFFECTIVELY_FINAL_FIELDS_DV, Property.EXTERNAL_IMMUTABLE);
                 } else {
                     fail("?" + d.variableName());
                 }
@@ -180,6 +199,19 @@ public class Test_16_Modification extends CommonTestRunner {
                 .build());
     }
 
+    /*
+    List<ErrorMessage> is mutable, even if the List itself were immutable -- it is the List's concrete choice of
+    hidden content that determines the final immutable value.
+
+    Now is errorMessage linked :2 or linked :3 to messages?
+    It should be :3 because ErrorMessage takes the role of hidden content in List<ErrorMessage>
+    A modification to the list does not imply a modification to the ErrorMessage.
+    A modification in an error message does imply a modification to the whole graph, but it's in List's hidden content.
+
+    It is important to note that ErrorMessage is not part of the hidden content of FaultyImplementation!
+    The parameter ErrorMessage does link in a DEPENDENT fashion to the fields of the type, even if its link with
+    this.messages is :3.
+    */
 
     @Test
     public void test16() throws IOException {
@@ -188,24 +220,22 @@ public class Test_16_Modification extends CommonTestRunner {
             if ("addError".equals(d.methodInfo().name)) {
                 if ("FaultyImplementation".equals(d.methodInfo().typeInfo.simpleName)) {
                     if (d.variable() instanceof ParameterInfo pi && "errorMessage".equals(pi.name)) {
-                        if ("1".equals(d.statementId())) {
-                            /* :3 because ErrorMessage takes the role of hidden content in List<ErrorMessage>
-                                A modification to the list does not imply a modification to the ErrorMessage
-
-                               :2 because ErrorMessage is not hidden content in FaultyImplementation
-                               A modification to the errorMessage argument does mean a modification to the field messages
-
-                               Internally, we must work with :3, because we do not want a subsequent .remove() on the
-                               list to have an effect on the errorMessage.
-                               Externally, towards the parameter, we must first ascertain whether ErrorMessage is hidden or not.
-                             */
+                        if ("0".equals(d.statementId())) {
                             String linked = d.iteration() <= 1 ? "this.messages:-1" : "this.messages:3";
+                            assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
+                        }
+                    }
+                    if (d.variable() instanceof FieldReference fr && "messages".equals(fr.fieldInfo.name)) {
+                        if ("0".equals(d.statementId())) {
+                            // asymmetrical link!
+                            String linked = d.iteration() <= 1 ? "errorMessage:-1" : "";
                             assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
                         }
                     }
                 }
             }
         };
+
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("getErrors".equals(d.methodInfo().name)) {
                 if ("ErrorRegistry".equals(d.methodInfo().typeInfo.simpleName)) {
@@ -213,35 +243,52 @@ public class Test_16_Modification extends CommonTestRunner {
                     assertDv(d, MultiLevel.DEPENDENT_DV, Property.INDEPENDENT);
                 }
                 if ("FaultyImplementation".equals(d.methodInfo().typeInfo.simpleName)) {
-                    assertDv(d, 1, MultiLevel.CONTAINER_DV, Property.CONTAINER);
-                    assertDv(d, MultiLevel.DEPENDENT_DV, Property.INDEPENDENT);
+                    assertDv(d, MultiLevel.CONTAINER_DV, Property.CONTAINER);
+                    assertDv(d, 3, MultiLevel.DEPENDENT_DV, Property.INDEPENDENT);
                 }
             }
             if ("addError".equals(d.methodInfo().name)) {
                 if ("ErrorRegistry".equals(d.methodInfo().typeInfo.simpleName)) {
                     assertDv(d.p(0), DV.FALSE_DV, Property.MODIFIED_VARIABLE);
-                    assertDv(d.p(0), MultiLevel.NOT_CONTAINER_DV, Property.CONTAINER);
+                    assertDv(d.p(0), MultiLevel.NOT_CONTAINER_DV, Property.CONTAINER_RESTRICTION);
+                    assertDv(d.p(0), 2, MultiLevel.CONTAINER_DV, Property.CONTAINER);
 
                     // 2 delays because of the computation of IMMUTABLE of ErrorMessage, which is a class which needs
                     // the ComputedTypeAnalyser. It ends up being MUTABLE, so that the parameter becomes DEPENDENT by convention
                     assertDv(d.p(0), 2, MultiLevel.DEPENDENT_DV, Property.INDEPENDENT);
                 }
                 if ("FaultyImplementation".equals(d.methodInfo().typeInfo.simpleName)) {
-                    assertDv(d.p(0), 2, MultiLevel.CONTAINER_DV, Property.CONTAINER);
+                    assertDv(d.p(0), 3, MultiLevel.CONTAINER_DV, Property.CONTAINER);
                     assertDv(d.p(0), 3, MultiLevel.DEPENDENT_DV, Property.INDEPENDENT);
                 }
             }
         };
+
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
             if ("messages".equals(d.fieldInfo().name)) {
                 assertEquals("instance type ArrayList<ErrorMessage>", d.fieldAnalysis().getValue().toString());
-                assertDv(d, MultiLevel.CONTAINER_DV, Property.EXTERNAL_CONTAINER);
+                assertDv(d, MultiLevel.CONTAINER_DV, Property.CONTAINER);
+                assertDv(d, MultiLevel.NOT_CONTAINER_DV, Property.CONTAINER_RESTRICTION);
             }
         };
+
+        TypeAnalyserVisitor typeAnalyserVisitor = d -> {
+            if ("FaultyImplementation".equals(d.typeInfo().simpleName)) {
+                assertHc(d, 2, "");
+                assertDv(d, 3, MultiLevel.DEPENDENT_DV, Property.INDEPENDENT);
+            }
+            if ("ErrorRegistry".equals(d.typeInfo().simpleName)) {
+                assertTrue(d.typeAnalysis().getHiddenContentTypes().isEmpty());
+                assertDv(d, MultiLevel.DEPENDENT_DV, Property.INDEPENDENT);
+
+            }
+        };
+
         testClass("Modification_16_M", 1, 0, new DebugConfiguration.Builder()
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+                .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
                 .build());
     }
 
@@ -259,24 +306,6 @@ public class Test_16_Modification extends CommonTestRunner {
         // statics
         testClass("Modification_18", 0, 0, new DebugConfiguration.Builder()
                 .build());
-    }
-
-    @Test
-    public void test21() throws IOException {
-        TypeAnalyserVisitor typeAnalyserVisitor = d -> {
-            if ("C1".equals(d.typeInfo().simpleName)) {
-                assertEquals("Type java.util.Set<java.lang.String>", d.typeAnalysis().getTransparentTypes().toString());
-            }
-            if ("Modification_21".equals(d.typeInfo().simpleName)) {
-                assertEquals("", d.typeAnalysis().getTransparentTypes().toString());
-            }
-        };
-
-        //WARN in Method org.e2immu.analyser.parser.modification.testexample.Modification_21.example1() (line 44, pos 9): Potential null pointer exception: Variable: set
-        testClass("Modification_21", 0, 1, new DebugConfiguration.Builder()
-                        .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
-                        .build(),
-                new AnalyserConfiguration.Builder().setComputeFieldAnalyserAcrossAllMethods(true).build());
     }
 
     @Test

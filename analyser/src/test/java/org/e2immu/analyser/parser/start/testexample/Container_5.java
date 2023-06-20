@@ -21,12 +21,12 @@ import java.util.Collection;
 import java.util.List;
 import java.util.function.Consumer;
 
-@E1Container
+@FinalFields
+@Container
 public class Container_5 {
 
     @NotModified(absent = true)
     @Modified
-    @Linked(absent = true)
     @NotNull
     private final List<String> list;
 
@@ -36,7 +36,7 @@ public class Container_5 {
     }
 
     @Independent
-    public Container_5(@NotNull1 Collection<String> coll5) {
+    public Container_5(@NotNull(content = true) Collection<String> coll5) {
         this();
         addAll5(coll5);
     }
@@ -47,12 +47,12 @@ public class Container_5 {
     }
 
     @Modified
-    public void addAll5(@NotNull1 Collection<String> collection) {
+    public void addAll5(@NotNull(content = true) Collection<String> collection) {
         list.addAll(collection);
     }
 
     @NotModified
-    public void visit(@NotNull1 Consumer<String> consumer) {
+    public void visit(@NotNull(content = true) Consumer<String> consumer) {
         list.forEach(consumer);
     }
 }

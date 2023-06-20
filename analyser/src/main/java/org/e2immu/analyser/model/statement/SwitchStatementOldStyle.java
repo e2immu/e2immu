@@ -48,9 +48,9 @@ public class SwitchStatementOldStyle extends StatementWithExpression implements 
         public OutputBuilder output(Qualification qualification) {
             OutputBuilder outputBuilder = new OutputBuilder();
             if (expression == EmptyExpression.DEFAULT_EXPRESSION) {
-                outputBuilder.add(new Text("default"));
+                outputBuilder.add(Keyword.DEFAULT);
             } else {
-                outputBuilder.add(new Text("case"))
+                outputBuilder.add(Keyword.CASE)
                         .add(Space.ONE)
                         .add(expression.output(qualification));
             }
@@ -61,12 +61,15 @@ public class SwitchStatementOldStyle extends StatementWithExpression implements 
     public final List<SwitchLabel> switchLabels;
     public final List<Expression> labelExpressions;
 
-    public SwitchStatementOldStyle(Identifier identifier, Expression selector, Block block, List<SwitchLabel> switchLabels) {
+    public SwitchStatementOldStyle(Identifier identifier, Expression selector, Block block, List<SwitchLabel> switchLabels,
+                                   Comment comment) {
         super(identifier, new Structure.Builder()
                 .setExpression(selector)
                 .setForwardEvaluationInfo(ForwardEvaluationInfo.NOT_NULL)
                 .setStatementExecution(StatementExecution.ALWAYS)
-                .setBlock(block).build(), selector);
+                .setBlock(block)
+                .setComment(comment)
+                .build(), selector);
         this.switchLabels = switchLabels.stream().sorted().toList();
         labelExpressions = this.switchLabels.stream().map(SwitchLabel::expression).toList();
     }
@@ -77,16 +80,22 @@ public class SwitchStatementOldStyle extends StatementWithExpression implements 
     }
 
     @Override
-    public Statement translate(InspectionProvider inspectionProvider, TranslationMap translationMap) {
-        return new SwitchStatementOldStyle(identifier, translationMap.translateExpression(expression),
-                (Block) structure.block().translate(inspectionProvider, translationMap),
-                switchLabels.stream().map(sl -> sl.translate(inspectionProvider, translationMap))
-                        .collect(Collectors.toList()));
+    public List<Statement> translate(InspectionProvider inspectionProvider, TranslationMap translationMap) {
+        List<Statement> direct = translationMap.translateStatement(inspectionProvider, this);
+        if (haveDirectTranslation(direct, this)) return direct;
+
+        Expression translatedExpression = expression.translate(inspectionProvider, translationMap);
+        List<SwitchLabel> translatedLabels = switchLabels.stream()
+                .map(l -> l.translate(inspectionProvider, translationMap))
+                .collect(Collectors.toList());
+        return List.of(new SwitchStatementOldStyle(identifier, translatedExpression,
+                ensureBlock(structure.block().identifier, structure.block().translate(inspectionProvider, translationMap)),
+                translatedLabels, structure.comment()));
     }
 
     @Override
     public OutputBuilder output(Qualification qualification, LimitedStatementAnalysis statementAnalysis) {
-        OutputBuilder outputBuilder = new OutputBuilder().add(new Text("switch"))
+        OutputBuilder outputBuilder = new OutputBuilder().add(Keyword.SWITCH)
                 .add(Symbol.LEFT_PARENTHESIS).add(expression.output(qualification)).add(Symbol.RIGHT_PARENTHESIS);
         outputBuilder.add(Symbol.LEFT_BRACE);
         if (statementAnalysis.navigationHasSubBlocks() &&
@@ -149,5 +158,10 @@ public class SwitchStatementOldStyle extends StatementWithExpression implements 
             structure.block().visit(predicate);
             labelExpressions.forEach(e -> e.visit(predicate));
         }
+    }
+
+    @Override
+    public int getComplexity() {
+        return 100; // TODO
     }
 }

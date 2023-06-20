@@ -14,7 +14,10 @@
 
 package org.e2immu.analyser.parser.failing.testexample;
 
-import org.e2immu.annotation.*;
+import org.e2immu.annotation.Container;
+import org.e2immu.annotation.Final;
+import org.e2immu.annotation.Modified;
+import org.e2immu.annotation.NotModified;
 
 import java.util.function.Consumer;
 
@@ -22,7 +25,7 @@ public class FunctionalInterface_2 {
 
     @Container
     static class Counter {
-        @Variable
+        @Final(absent = true)
         private int counter;
 
         @Modified

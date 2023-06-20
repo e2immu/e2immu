@@ -14,28 +14,27 @@
 
 package org.e2immu.analyser.parser.independence.testexample;
 
-import org.e2immu.annotation.E2Container;
+import org.e2immu.annotation.ImmutableContainer;
 import org.e2immu.annotation.Independent;
-import org.e2immu.annotation.Independent1;
 
-import java.util.*;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 
 /*
 just to double-check: without the setAll
  */
-@E2Container
+@ImmutableContainer(hc = true)
 public class Independent1_3_1<T> {
     private final T[] ts;
 
-    /*
-    we expect @Independent1 rather than @Independent, as the content
-    of 'ts' will be linked copied into the content of 'set'.
-     */
     @SuppressWarnings("unchecked")
     public Independent1_3_1(@Independent List<T> content) {
         this.ts = (T[]) new Object[content.size()];
     }
 
+    @Independent(hc = true)
     public Set<T> getSet() {
         Set<T> set = new HashSet<>();
         Collections.addAll(set, this.ts);

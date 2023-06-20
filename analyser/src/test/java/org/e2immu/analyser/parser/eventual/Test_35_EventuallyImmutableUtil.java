@@ -113,21 +113,21 @@ public class Test_35_EventuallyImmutableUtil extends CommonTestRunner {
                 assertEquals("0", d.statementId());
                 if (d.variable() instanceof FieldReference fr && "value".equals(fr.fieldInfo.name)) {
                     assertTrue(fr.scopeIsThis());
-                    assertDv(d, 1, MultiLevel.EVENTUALLY_ERIMMUTABLE_AFTER_MARK_DV, Property.CONTEXT_IMMUTABLE);
+                    assertDv(d, 1, MultiLevel.EVENTUALLY_IMMUTABLE_AFTER_MARK_DV, Property.CONTEXT_IMMUTABLE);
                 }
             }
         };
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
             if ("value".equals(d.fieldInfo().name)) {
-                assertDv(d, MultiLevel.EVENTUALLY_RECURSIVELY_IMMUTABLE_DV, Property.EXTERNAL_IMMUTABLE);
+                assertDv(d, MultiLevel.EVENTUALLY_IMMUTABLE_DV, Property.EXTERNAL_IMMUTABLE);
             }
         };
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("EventuallyImmutableUtil_2".equals(d.typeInfo().simpleName)) {
-                assertTrue(d.typeAnalysis().getApprovedPreconditionsE1().isEmpty());
+                assertTrue(d.typeAnalysis().getApprovedPreconditionsFinalFields().isEmpty());
                 String expectEvImm = d.iteration() == 0 ? "[]" : "[value]";
                 assertEquals(expectEvImm, d.typeAnalysis().getEventuallyImmutableFields().toString());
-                assertEquals("{}", d.typeAnalysis().getApprovedPreconditionsE2().toString());
+                assertEquals("{}", d.typeAnalysis().getApprovedPreconditionsImmutable().toString());
             }
         };
 
@@ -268,13 +268,13 @@ public class Test_35_EventuallyImmutableUtil extends CommonTestRunner {
             if ("set".equals(d.methodInfo().name)) {
                 assertEquals("0", d.statementId());
                 if (d.variable() instanceof FieldReference fr && "eventuallyFinal".equals(fr.fieldInfo.name)) {
-                    assertDv(d, 1, MultiLevel.EVENTUALLY_ERIMMUTABLE_BEFORE_MARK_DV, Property.CONTEXT_IMMUTABLE);
+                    assertDv(d, 1, MultiLevel.EVENTUALLY_IMMUTABLE_BEFORE_MARK_DV, Property.CONTEXT_IMMUTABLE);
                 }
             }
             if ("done".equals(d.methodInfo().name)) {
                 assertEquals("0", d.statementId());
                 if (d.variable() instanceof FieldReference fr && "eventuallyFinal".equals(fr.fieldInfo.name)) {
-                    assertDv(d, 1, MultiLevel.EVENTUALLY_ERIMMUTABLE_AFTER_MARK_DV, Property.CONTEXT_IMMUTABLE);
+                    assertDv(d, 1, MultiLevel.EVENTUALLY_IMMUTABLE_AFTER_MARK_DV, Property.CONTEXT_IMMUTABLE);
                 }
             }
         };
@@ -310,11 +310,10 @@ public class Test_35_EventuallyImmutableUtil extends CommonTestRunner {
 
             // before mark because the value is a ConstructorCall
             DV concrete = initializerValue.getProperty(EvaluationResult.from(d.evaluationContext()), Property.IMMUTABLE, true);
-            assertEquals(MultiLevel.EVENTUALLY_ERIMMUTABLE_BEFORE_MARK_DV, concrete);
+            assertEquals(MultiLevel.EVENTUALLY_IMMUTABLE_BEFORE_MARK_DV, concrete);
 
-            DV formally = d.evaluationContext().getAnalyserContext().defaultImmutable(initializerValue.returnType(),
-                    false, null);
-            assertEquals(MultiLevel.EVENTUALLY_RECURSIVELY_IMMUTABLE_DV, formally);
+            DV formally = d.evaluationContext().getAnalyserContext().typeImmutable(initializerValue.returnType());
+            assertEquals(MultiLevel.EVENTUALLY_IMMUTABLE_DV, formally);
 
             assertEquals("instance type EventuallyFinal<String>", d.fieldAnalysis().getValue().toString());
         };
@@ -344,7 +343,7 @@ public class Test_35_EventuallyImmutableUtil extends CommonTestRunner {
     public void test_13() throws IOException {
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("done".equals(d.methodInfo().name)) {
-                assertDv(d, 1, MultiLevel.EVENTUALLY_ERIMMUTABLE_AFTER_MARK_DV, Property.IMMUTABLE);
+                assertDv(d, 1, MultiLevel.EVENTUALLY_IMMUTABLE_AFTER_MARK_DV, Property.IMMUTABLE);
             }
         };
         testClass("EventuallyImmutableUtil_13", 0, 0, new DebugConfiguration.Builder()
@@ -378,21 +377,21 @@ public class Test_35_EventuallyImmutableUtil extends CommonTestRunner {
                     } else fail();
                     // properly linked to the field!
                     assertEquals("ev:1", d.variableInfo().getLinkedVariables().toString());
-                    assertEquals(MultiLevel.EVENTUALLY_ERIMMUTABLE_BEFORE_MARK_DV, d.getProperty(Property.IMMUTABLE));
+                    assertEquals(MultiLevel.EVENTUALLY_IMMUTABLE_BEFORE_MARK_DV, d.getProperty(Property.IMMUTABLE));
                 }
             }
         };
 
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
             if ("eventuallyFinal".equals(d.fieldInfo().name)) {
-                assertDv(d, MultiLevel.EVENTUALLY_RECURSIVELY_IMMUTABLE_DV, Property.EXTERNAL_IMMUTABLE);
+                assertDv(d, MultiLevel.EVENTUALLY_IMMUTABLE_DV, Property.EXTERNAL_IMMUTABLE);
                 assertDv(d, DV.TRUE_DV, Property.FINAL);
             }
         };
 
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("EventuallyImmutableUtil_15".equals(d.methodInfo().name)) {
-                assertDv(d.p(0), MultiLevel.EVENTUALLY_ERIMMUTABLE_BEFORE_MARK_DV, Property.IMMUTABLE);
+                assertDv(d.p(0), MultiLevel.EVENTUALLY_IMMUTABLE_BEFORE_MARK_DV, Property.IMMUTABLE);
             }
         };
 

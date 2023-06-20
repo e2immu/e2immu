@@ -71,9 +71,14 @@ public class Test_25_FieldReference extends CommonTestRunner {
             if ("changeData".equals(d.fieldInfo().name)) {
                 assertEquals("Map.of(\"X\",new ChangeData(Map.of(\"3\",3)))", d.fieldAnalysis().getValue().toString());
 
-                // MUTABLE because without A API
+                // the field is not linked to any other field or parameter
+                assertEquals("", d.fieldAnalysis().getLinkedVariables().toString());
+
+                // it is not linked, it is not exposed; and its dynamic type is immutable IF we know that Map.of()
+                // returns an immutable map. but we don't. HOWEVER, because there are no Annotated APIs, there is no info
+                // about hidden content, and therefore the algorithm says the factory method is immutable
                 assertDv(d, MultiLevel.MUTABLE_DV, Property.EXTERNAL_IMMUTABLE);
-                assertDv(d, 1, MultiLevel.NOT_CONTAINER_DV, Property.EXTERNAL_CONTAINER);
+                assertDv(d, 1, MultiLevel.NOT_CONTAINER_DV, Property.CONTAINER_RESTRICTION);
                 assertDv(d, 2, DV.FALSE_DV, Property.MODIFIED_OUTSIDE_METHOD);
             }
         };
@@ -96,10 +101,12 @@ public class Test_25_FieldReference extends CommonTestRunner {
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("ChangeData".equals(d.typeInfo().simpleName)) {
                 assertDv(d, 1, MultiLevel.CONTAINER_DV, Property.CONTAINER);
-                assertDv(d, 1, MultiLevel.EFFECTIVELY_E1IMMUTABLE_DV, Property.IMMUTABLE);
+                assertDv(d, 1, MultiLevel.EFFECTIVELY_FINAL_FIELDS_DV, Property.IMMUTABLE);
+                assertHc(d, 0, "");
             }
             if ("FieldReference_1".equals(d.typeInfo().simpleName)) {
                 assertDv(d, MultiLevel.CONTAINER_DV, Property.CONTAINER);
+                assertHc(d, 1, "");
             }
         };
         // potential null pointer exceptions

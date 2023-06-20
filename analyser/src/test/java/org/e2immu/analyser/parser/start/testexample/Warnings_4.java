@@ -14,17 +14,19 @@
 
 package org.e2immu.analyser.parser.start.testexample;
 
-import org.e2immu.annotation.*;
+import org.e2immu.annotation.ImmutableContainer;
+import org.e2immu.annotation.Independent;
+import org.e2immu.annotation.Modified;
+import org.e2immu.annotation.NotNull;
 
 import java.util.Set;
 
 public class Warnings_4 {
 
-    // not Linked1 because String is recursively immutable
-    @Linked1(absent = true)
+    // not linked to 'input' because String is recursively immutable
     @Modified
-    @NotNull1
-    @ERContainer
+    @NotNull(content = true)
+    @ImmutableContainer
     private final Set<String> set;
 
     public Warnings_4(@Independent Set<String> input) {

@@ -16,20 +16,58 @@ package org.e2immu.analyser.model;
 
 
 import org.e2immu.annotation.Container;
+import org.e2immu.annotation.Fluent;
 import org.e2immu.annotation.Modified;
-import org.e2immu.annotation.NotNull1;
+import org.e2immu.annotation.NotNull;
 
 import java.util.List;
 
 @Container
 public interface Inspection {
 
+    enum Access {
+        PRIVATE(0), PACKAGE(1),  PROTECTED(2), PUBLIC(3);
+
+        private final int level;
+
+        Access(int level) {
+            this.level = level;
+        }
+
+        public Access combine(Access other) {
+            if (level < other.level) return this;
+            return other;
+        }
+
+        public boolean le(Access other) {
+            return level <= other.level;
+        }
+    }
+
+    Access getAccess();
+
+    Comment getComment();
+
     boolean isSynthetic();
 
-    @NotNull1
-    List<AnnotationExpression> getAnnotations();
+    default boolean isPublic() {
+        return getAccess() == Access.PUBLIC;
+    }
 
-    boolean hasAnnotation(AnnotationExpression annotationExpression);
+    default boolean isPrivate() {
+        return getAccess() == Access.PRIVATE;
+    }
+
+    default boolean isProtected() {
+        return getAccess() == Access.PROTECTED;
+    }
+
+    default boolean isPackagePrivate() {
+        return getAccess() == Access.PACKAGE;
+    }
+
+    @NotNull(content = true)
+    List<AnnotationExpression> getAnnotations();
 
     interface InspectionBuilder<B> {
         @Modified
@@ -37,5 +75,10 @@ public interface Inspection {
 
         @Modified
         B addAnnotation(AnnotationExpression annotationExpression);
+
+        @Fluent
+        B setAccess(Access access);
+
+        void setComment(Comment comment);
     }
 }

@@ -15,6 +15,7 @@
 package org.e2immu.analyser.parser.own.util.testexample;
 
 import org.e2immu.annotation.*;
+import org.e2immu.annotation.eventual.Only;
 import org.e2immu.support.Freezable;
 
 import java.util.*;
@@ -23,7 +24,7 @@ import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
 // include recursivelyComputeDependencies and things fail, exclude it, and it works
-@E2Container(after = "frozen")
+@ImmutableContainer(after = "frozen", hc = true)
 public class DGSimplified_1<T> extends Freezable {
 
     private static class Node<T> {
@@ -181,7 +182,7 @@ public class DGSimplified_1<T> extends Freezable {
         }
     }
 
-    @Independent
+    @Independent(hc = true)
     public List<T> sorted() {
         return sorted(null, null, null);
     }
@@ -196,7 +197,7 @@ public class DGSimplified_1<T> extends Freezable {
         };
     }
 
-    @Independent
+    @Independent(hc = true)
     public List<T> sorted(Consumer<T> reportPartOfCycle,
                           Consumer<T> reportIndependent,
                           Comparator<T> backupComparator) {

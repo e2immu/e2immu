@@ -16,23 +16,22 @@ package org.e2immu.analyser.model.statement;
 
 import org.e2immu.analyser.analyser.ForwardEvaluationInfo;
 import org.e2immu.analyser.model.*;
-import org.e2immu.analyser.output.Guide;
-import org.e2immu.analyser.output.OutputBuilder;
-import org.e2immu.analyser.output.Symbol;
-import org.e2immu.analyser.output.Text;
+import org.e2immu.analyser.output.*;
 import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.util.ListUtil;
 
 import java.util.List;
 import java.util.function.Predicate;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public class SwitchStatementNewStyle extends StatementWithExpression implements HasSwitchLabels {
     public final List<SwitchEntry> switchEntries;
 
-    public SwitchStatementNewStyle(Identifier identifier, Expression selector, List<SwitchEntry> switchEntries) {
-        super(identifier, codeOrganization(selector, switchEntries), selector);
+    public SwitchStatementNewStyle(Identifier identifier,
+                                   Expression selector,
+                                   List<SwitchEntry> switchEntries,
+                                   Comment comment) {
+        super(identifier, codeOrganization(selector, switchEntries, comment), selector);
         this.switchEntries = List.copyOf(switchEntries);
     }
 
@@ -41,32 +40,46 @@ public class SwitchStatementNewStyle extends StatementWithExpression implements 
         return switchEntries.stream().flatMap(e -> e.labels.stream());
     }
 
-    private static Structure codeOrganization(Expression expression, List<SwitchEntry> switchEntries) {
+    @Override
+    public int getComplexity() {
+        return 1 + switchEntries.stream().mapToInt(SwitchEntry::getComplexity).sum() + expression.getComplexity();
+    }
+
+    private static Structure codeOrganization(Expression expression,
+                                              List<SwitchEntry> switchEntries,
+                                              Comment comment) {
         Structure.Builder builder = new Structure.Builder()
                 .setExpression(expression)
                 .setStatementExecution(StatementExecution.NEVER) // will be ignored
                 .setForwardEvaluationInfo(ForwardEvaluationInfo.NOT_NULL);
         switchEntries.forEach(se -> builder.addSubStatement(se.getStructure()));
-        return builder.build();
+        return builder.setComment(comment).build();
     }
 
     @Override
-    public Statement translate(InspectionProvider inspectionProvider, TranslationMap translationMap) {
-        return new SwitchStatementNewStyle(identifier, translationMap.translateExpression(expression),
-                switchEntries.stream().map(se -> (SwitchEntry) se.translate(inspectionProvider, translationMap))
-                        .collect(Collectors.toList()));
+    public List<Statement> translate(InspectionProvider inspectionProvider, TranslationMap translationMap) {
+        List<Statement> direct = translationMap.translateStatement(inspectionProvider, this);
+        if (haveDirectTranslation(direct, this)) return direct;
+
+        Expression translatedVariable = expression.translate(inspectionProvider, translationMap);
+        List<SwitchEntry> translatedEntries = switchEntries.stream()
+                .map(l -> (SwitchEntry) l.translate(inspectionProvider, translationMap).get(0)).toList();
+
+        return List.of(new SwitchStatementNewStyle(identifier, translatedVariable, translatedEntries,
+                structure.comment()));
     }
 
     @Override
     public OutputBuilder output(Qualification qualification, LimitedStatementAnalysis statementAnalysis) {
-        OutputBuilder outputBuilder = new OutputBuilder().add(new Text("switch"))
+        OutputBuilder outputBuilder = new OutputBuilder().add(Keyword.SWITCH)
                 .add(Symbol.LEFT_PARENTHESIS).add(expression.output(qualification)).add(Symbol.RIGHT_PARENTHESIS)
                 .add(Symbol.LEFT_BRACE);
         Guide.GuideGenerator guideGenerator = Guide.generatorForBlock();
         outputBuilder.add(guideGenerator.start());
         int i = 0;
         for (SwitchEntry switchEntry : switchEntries) {
-            outputBuilder.add(switchEntry.output(qualification, guideGenerator, LimitedStatementAnalysis.startOfBlock(statementAnalysis, i)));
+            if (i > 0) outputBuilder.add(guideGenerator.mid());
+            outputBuilder.add(switchEntry.output(qualification, LimitedStatementAnalysis.startOfBlock(statementAnalysis, i)));
             i++;
         }
         return outputBuilder.add(guideGenerator.end()).add(Symbol.RIGHT_BRACE);

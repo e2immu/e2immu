@@ -17,27 +17,53 @@ package org.e2immu.analyser.model.statement;
 import org.e2immu.analyser.analyser.ForwardEvaluationInfo;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.EmptyExpression;
-import org.e2immu.analyser.output.OutputBuilder;
-import org.e2immu.analyser.output.Space;
-import org.e2immu.analyser.output.Symbol;
-import org.e2immu.analyser.output.Text;
+import org.e2immu.analyser.output.*;
 import org.e2immu.analyser.parser.InspectionProvider;
 
 import java.util.List;
+import java.util.Objects;
 import java.util.function.Predicate;
 
 public class ReturnStatement extends StatementWithExpression {
-
     public ReturnStatement(Identifier identifier, Expression expression) {
+        this(identifier, expression, null);
+    }
+
+    public ReturnStatement(Identifier identifier, Expression expression, Comment comment) {
         super(identifier,
                 new Structure.Builder().setExpression(expression)
+                        .setComment(comment)
                         .setForwardEvaluationInfo(ForwardEvaluationInfo.DEFAULT).build(),
                 expression);
     }
 
     @Override
+    public Statement replaceComment(Comment newCommentOrNullToRemove) {
+        return new ReturnStatement(identifier, expression, newCommentOrNullToRemove);
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (obj == this) return true;
+        if (obj instanceof ReturnStatement other) {
+            return identifier.equals(other.identifier) && expression.equals(other.expression);
+        }
+        return false;
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(identifier, expression);
+    }
+
+    @Override
+    public int getComplexity() {
+        return 1 + expression.getComplexity();
+    }
+
+    @Override
     public OutputBuilder output(Qualification qualification, LimitedStatementAnalysis statementAnalysis) {
-        OutputBuilder outputBuilder = new OutputBuilder().add(new Text("return"));
+        OutputBuilder outputBuilder = new OutputBuilder().add(Keyword.RETURN);
         if (expression != EmptyExpression.EMPTY_EXPRESSION) {
             outputBuilder.add(Space.ONE).add(expression.output(qualification));
         }
@@ -46,8 +72,12 @@ public class ReturnStatement extends StatementWithExpression {
     }
 
     @Override
-    public Statement translate(InspectionProvider inspectionProvider, TranslationMap translationMap) {
-        return new ReturnStatement(identifier, translationMap.translateExpression(expression));
+    public List<Statement> translate(InspectionProvider inspectionProvider, TranslationMap translationMap) {
+        List<Statement> direct = translationMap.translateStatement(inspectionProvider, this);
+        if (haveDirectTranslation(direct, this)) return direct;
+        Expression translated = expression.translate(inspectionProvider, translationMap);
+        if (translated == expression) return List.of(this);
+        return List.of(new ReturnStatement(identifier, translated));
     }
 
     @Override

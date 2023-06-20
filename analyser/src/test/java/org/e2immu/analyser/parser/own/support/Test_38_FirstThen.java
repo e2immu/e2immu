@@ -64,7 +64,7 @@ public class Test_38_FirstThen extends CommonTestRunner {
 
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("FirstThen_0".equals(d.typeInfo().simpleName)) {
-                assertEquals("Type param S", d.typeAnalysis().getTransparentTypes().toString());
+                assertEquals("S", d.typeAnalysis().getHiddenContentTypes().toString());
             }
         };
 
@@ -119,7 +119,7 @@ public class Test_38_FirstThen extends CommonTestRunner {
                 assertEquals("<variable value>", d.fieldAnalysis().getValue().toString());
                 assertEquals("", d.fieldAnalysis().valuesDelayed().toString());
                 assertEquals("first/*@NotNull*/,s", ((FieldAnalysisImpl.Builder) d.fieldAnalysis()).sortedValuesString());
-                assertDv(d,  MultiLevel.EFFECTIVELY_E2IMMUTABLE_DV, Property.EXTERNAL_IMMUTABLE);
+                assertDv(d,  MultiLevel.EFFECTIVELY_IMMUTABLE_HC_DV, Property.EXTERNAL_IMMUTABLE);
                 assertDv(d, MultiLevel.NULLABLE_DV, Property.EXTERNAL_NOT_NULL);
             }
         };

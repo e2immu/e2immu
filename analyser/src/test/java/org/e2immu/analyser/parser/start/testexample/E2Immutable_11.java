@@ -14,10 +14,7 @@
 
 package org.e2immu.analyser.parser.start.testexample;
 
-import org.e2immu.annotation.ERContainer;
-import org.e2immu.annotation.NotModified;
-import org.e2immu.annotation.NotNull;
-import org.e2immu.annotation.Nullable;
+import org.e2immu.annotation.*;
 
 import java.util.Map;
 import java.util.TreeMap;
@@ -30,7 +27,7 @@ import java.util.stream.Stream;
  See also test 12, 13
  */
 
-@ERContainer
+@ImmutableContainer
 public class E2Immutable_11 {
 
     @NotModified
@@ -41,7 +38,7 @@ public class E2Immutable_11 {
     }
 
 
-    @ERContainer
+    @ImmutableContainer // because the setter doesn't work here
     @Nullable
     public Map.Entry<String, Integer> firstEntry() {
         return map.firstEntry();
@@ -53,9 +50,8 @@ public class E2Immutable_11 {
 
     @NotNull
     @NotModified
-    @ERContainer
-    // The firstEntry result is @E2Container; given the dynamic type String, Integer, it is @ERContainer
-    // E2Container<ERContainer> = ERContainer
+    @Independent
+    // The firstEntry result is @ImmutableContainer, no hidden content
     public Stream<Map.Entry<String, Integer>> stream() {
         return Stream.of(map.firstEntry());
     }

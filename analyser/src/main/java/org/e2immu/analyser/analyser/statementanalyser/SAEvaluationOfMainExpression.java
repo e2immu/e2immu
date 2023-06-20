@@ -26,9 +26,11 @@ import org.e2immu.analyser.model.expression.*;
 import org.e2immu.analyser.model.impl.LocationImpl;
 import org.e2immu.analyser.model.impl.TranslationMapImpl;
 import org.e2immu.analyser.model.statement.*;
+import org.e2immu.analyser.model.variable.LocalVariableReference;
 import org.e2immu.analyser.model.variable.ReturnVariable;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.parser.Message;
+import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.support.SetOnce;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -75,6 +77,8 @@ record SAEvaluationOfMainExpression(StatementAnalysis statementAnalysis,
     }
 
     private AnalysisStatus evaluationOfMainExpression0(StatementAnalyserSharedState sharedState) {
+        statementAnalysis.stateData().setAbsoluteState(sharedState.evaluationContext());
+
         List<Expression> expressionsFromInitAndUpdate = new SAInitializersAndUpdaters(statementAnalysis)
                 .initializersAndUpdaters(sharedState.forwardAnalysisInfo(), sharedState.evaluationContext());
         /*
@@ -83,9 +87,11 @@ record SAEvaluationOfMainExpression(StatementAnalysis statementAnalysis,
          */
         CausesOfDelay causes = ((StatementAnalysisImpl) statementAnalysis).localVariablesInLoop();
 
-        Structure structure = statementAnalysis.statement().getStructure();
+        Statement statement = statementAnalysis.statement();
+        Structure structure = statement.getStructure();
         if (structure.expression() == EmptyExpression.EMPTY_EXPRESSION && expressionsFromInitAndUpdate.isEmpty()) {
-            return emptyExpression(sharedState, causes);
+            CausesOfDelay absoluteStateDelays = statementAnalysis.stateData().getAbsoluteState().causesOfDelay();
+            return emptyExpression(sharedState, causes.merge(absoluteStateDelays));
         }
 
         if (structure.expression() != EmptyExpression.EMPTY_EXPRESSION) {
@@ -101,7 +107,7 @@ record SAEvaluationOfMainExpression(StatementAnalysis statementAnalysis,
 
         LOGGER.info("Eval it {} main {} in {}", sharedState.evaluationContext().getIteration(), index(), methodInfo().fullyQualifiedName);
         ForwardEvaluationInfo forwardEvaluationInfo;
-        if (statementAnalysis.statement() instanceof ReturnStatement) {
+        if (statement instanceof ReturnStatement) {
             // code identical to snippet in Assignment.evaluate, to prepare for value evaluation
             ForwardEvaluationInfo.Builder fwdBuilder = new ForwardEvaluationInfo.Builder(structure.forwardEvaluationInfo())
                     .setAssignmentTarget(new ReturnVariable(methodInfo()));
@@ -115,24 +121,24 @@ record SAEvaluationOfMainExpression(StatementAnalysis statementAnalysis,
         // here is a good breakpoint location, e.g. "4.0.1".equals(index())
         EvaluationResult result = toEvaluate.evaluate(context, forwardEvaluationInfo);
 
-        if (statementAnalysis.statement() instanceof ReturnStatement) {
+        if (statement instanceof ReturnStatement) {
             result = createAndEvaluateReturnStatement(sharedState.evaluationContext(), toEvaluate, result);
-        }
-        if (statementAnalysis.statement() instanceof LoopStatement) {
+        } else if (statement instanceof LoopStatement) {
             Range range = statementAnalysis.rangeData().getRange();
             if (range.isDelayed()) {
                 statementAnalysis.rangeData().computeRange(statementAnalysis, result);
                 statementAnalysis.ensureMessages(statementAnalysis.rangeData().messages());
             }
-        }
-        if (statementAnalysis.statement() instanceof ThrowStatement) {
+        } else if (statement instanceof ThrowStatement) {
             if (methodInfo().hasReturnValue()) {
                 result = modifyReturnValueRemoveConditionBasedOnState(sharedState, result);
             }
-        }
-        if (statementAnalysis.statement() instanceof AssertStatement) {
+        } else if (statement instanceof AssertStatement) {
             result = handleNotNullClausesInAssertStatement(sharedState.context(), result);
+        } else if (statement instanceof ExplicitConstructorInvocation) {
+            result = result.filterChangeData(v -> !(v instanceof LocalVariableReference));
         }
+
         if (statementAnalysis.flowData().timeAfterExecutionNotYetSet()) {
             statementAnalysis.flowData().setTimeAfterEvaluation(result.statementTime(), index());
         }
@@ -152,16 +158,16 @@ record SAEvaluationOfMainExpression(StatementAnalysis statementAnalysis,
         assert value != null; // EmptyExpression in case there really is no value
 
         CausesOfDelay stateForLoop = CausesOfDelay.EMPTY;
-        if (value.isDone() && (statementAnalysis.statement() instanceof IfElseStatement ||
-                statementAnalysis.statement() instanceof AssertStatement)) {
+        if (value.isDone() && (statement instanceof IfElseStatement ||
+                statement instanceof AssertStatement)) {
             value = eval_IfElse_Assert(sharedState, value);
             if (value.isDelayed()) {
                 // for example, an if(...) inside a loop, when the loop's range is being computed
                 stateForLoop = value.causesOfDelay();
             }
-        } else if (value.isDone() && statementAnalysis.statement() instanceof HasSwitchLabels switchStatement) {
+        } else if (value.isDone() && statement instanceof HasSwitchLabels switchStatement) {
             eval_Switch(sharedState, value, switchStatement);
-        } else if (statementAnalysis.statement() instanceof ReturnStatement) {
+        } else if (statement instanceof ReturnStatement) {
             stateForLoop = addLoopReturnStatesToState(sharedState);
             Expression condition = sharedState.localConditionManager().condition();
             StatementAnalysisImpl.FindLoopResult correspondingLoop = statementAnalysis.findLoopByLabel(null);
@@ -189,6 +195,7 @@ record SAEvaluationOfMainExpression(StatementAnalysis statementAnalysis,
                     sharedState.localConditionManager().causesOfDelay());
         }
         statementAnalysis.stateData().setValueOfExpression(value);
+        statementAnalysis.stateData().setEvaluatedExpressionCache(result.evaluatedExpressionCache());
 
         ProgressAndDelay endResult = ennStatus.combine(statusPost).merge(stateForLoop);
         return endResult.toAnalysisStatus();
@@ -209,7 +216,7 @@ record SAEvaluationOfMainExpression(StatementAnalysis statementAnalysis,
                     || vf.statementTime() == statementAnalysis.statementTime(EVALUATION)) {
 
                 EvaluationResult context = EvaluationResult.from(evaluationContext);
-                LinkedVariables newLv = e.getValue().linkedVariables(context).minimum(LinkedVariables.ASSIGNED_DV);
+                LinkedVariables newLv = e.getValue().linkedVariables(context).minimum(LinkedVariables.LINK_ASSIGNED);
                 LinkedVariables originalLv = e.getKey().linkedVariables(context);
                 LinkedVariables lv = originalLv.merge(newLv);
                 Expression currentValue = evaluationContext.currentValue(ve.variable());
@@ -233,11 +240,15 @@ record SAEvaluationOfMainExpression(StatementAnalysis statementAnalysis,
     private AnalysisStatus emptyExpression(StatementAnalyserSharedState sharedState, CausesOfDelay causes) {
         // try-statement has no main expression, and it may not have initializers; break; continue; ...
         boolean progress = false;
-        if (statementAnalysis.stateData().valueOfExpression.isVariable()) {
-            progress = setFinalAllowEquals(statementAnalysis.stateData().valueOfExpression, EmptyExpression.EMPTY_EXPRESSION);
+        StateData stateData = statementAnalysis.stateData();
+        if (stateData.valueOfExpression.isVariable()) {
+            progress = setFinalAllowEquals(stateData.valueOfExpression, EmptyExpression.EMPTY_EXPRESSION);
         }
-        progress |= statementAnalysis.stateData().setPrecondition(Precondition.empty(sharedState.context().getPrimitives()));
-        progress |= statementAnalysis.stateData().setPreconditionFromMethodCalls(Precondition.empty(sharedState.context().getPrimitives()));
+        Primitives primitives = sharedState.context().getPrimitives();
+        progress |= stateData.setPrecondition(Precondition.empty(primitives));
+        progress |= stateData.setPostCondition(PostCondition.empty(primitives));
+        progress |= stateData.setPreconditionFromMethodCalls(Precondition.empty(primitives));
+        progress |= stateData.setEvaluatedExpressionCache(EvaluatedExpressionCache.EMPTY);
 
         if (statementAnalysis.flowData().timeAfterExecutionNotYetSet()) {
             statementAnalysis.flowData().copyTimeAfterExecutionFromInitialTime();

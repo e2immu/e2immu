@@ -14,7 +14,8 @@
 
 package org.e2immu.analyser.parser.start.testexample;
 
-import org.e2immu.annotation.Constant;
+
+import org.e2immu.annotation.ImmutableContainer;
 
 import java.util.Collection;
 import java.util.HashSet;
@@ -25,7 +26,7 @@ Tests the $Clear on other methods... we need to know when to stop
  */
 public class BasicCompanionMethods_10 {
 
-    @Constant(absent = true)
+    @ImmutableContainer // but not constant
     static int test(Collection<String> in) {
         Set<String> set = new HashSet<>();
         boolean added = set.add("a");

@@ -83,8 +83,7 @@ public class Test_30_SwitchStatement extends CommonTestRunner {
 
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("method".equals(d.methodInfo().name)) {
-                assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV,
-                        d.methodAnalysis().getProperty(Property.NOT_NULL_EXPRESSION));
+                assertDv(d, 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_EXPRESSION);
             }
         };
 
@@ -99,7 +98,8 @@ public class Test_30_SwitchStatement extends CommonTestRunner {
     public void test_3() throws IOException {
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("method".equals(d.methodInfo().name)) {
-                assertEquals("/*inline method*/b", d.methodAnalysis().getSingleReturnValue().toString());
+                String expected = d.iteration() == 0 ? "<m:method>" : "/*inline method*/b";
+                assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
             }
         };
 
@@ -139,10 +139,9 @@ public class Test_30_SwitchStatement extends CommonTestRunner {
         };
 
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
-            if ("method".equals(d.methodInfo().name) && d.iteration() > 0) {
-                assertEquals(DV.FALSE_DV, d.methodAnalysis().getProperty(Property.CONSTANT));
-                assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV,
-                        d.methodAnalysis().getProperty(Property.NOT_NULL_EXPRESSION));
+            if ("method".equals(d.methodInfo().name)) {
+                assertDv(d, DV.FALSE_DV, Property.CONSTANT);
+                assertDv(d, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_EXPRESSION);
             }
         };
 
@@ -160,7 +159,8 @@ public class Test_30_SwitchStatement extends CommonTestRunner {
                 if (d.variable() instanceof ReturnVariable) {
                     String expectValue = switch (d.iteration()) {
                         case 0 -> "{<f:ONE>,<f:TWO>,<f:THREE>,<f:FOUR>}";
-                        case 1 -> "{<vp:ONE:container@Enum_Choices>,<vp:TWO:container@Enum_Choices>,<vp:THREE:container@Enum_Choices>,<vp:FOUR:container@Enum_Choices>}";
+                        case 1 ->
+                                "{<vp:ONE:container@Enum_Choices>,<vp:TWO:container@Enum_Choices>,<vp:THREE:container@Enum_Choices>,<vp:FOUR:container@Enum_Choices>}";
                         default -> "{Choices.ONE,Choices.TWO,Choices.THREE,Choices.FOUR}";
                     };
                     assertEquals(expectValue, d.currentValue().toString());

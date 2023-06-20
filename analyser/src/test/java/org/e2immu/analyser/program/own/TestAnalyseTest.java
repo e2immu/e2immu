@@ -37,7 +37,7 @@ public class TestAnalyseTest {
 
         TypeMapVisitor typeMapVisitor = typeMap -> {
             TypeInfo trie = typeMap.get(Trie.class);
-            assertEquals(MultiLevel.EVENTUALLY_E2IMMUTABLE_DV, trie.typeAnalysis.get().getProperty(Property.IMMUTABLE));
+            assertEquals(MultiLevel.EVENTUALLY_FINAL_FIELDS_DV, trie.typeAnalysis.get().getProperty(Property.IMMUTABLE));
 
             TypeInfo trieNode = trie.typeInspection.get().subTypes().stream()
                     .filter(st -> "TrieNode".equals(st.simpleName)).findFirst().orElseThrow();
@@ -77,7 +77,7 @@ public class TestAnalyseTest {
 
         String p = "org.e2immu.analyser.parser";
         InputConfiguration inputConfiguration = new InputConfiguration.Builder()
-                .setAlternativeJREDirectory(CommonTestRunner.JDK_16)
+                .setAlternativeJREDirectory(CommonTestRunner.CURRENT_JDK)
                 .addSources("src/test/java")
                 .addClassPath("jmods/java.base.jmod")
                 .addClassPath("jmods/java.compiler.jmod")
@@ -96,7 +96,6 @@ public class TestAnalyseTest {
 
         AnalyserConfiguration analyserConfiguration = new AnalyserConfiguration.Builder()
                 .setComputeFieldAnalyserAcrossAllMethods(true)
-                .setAnalyserProgram(AnalyserProgram.from(AnalyserProgram.Step.ALL))
                 .build();
 
         DebugConfiguration debugConfiguration = new DebugConfiguration.Builder()

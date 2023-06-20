@@ -24,11 +24,18 @@ import org.e2immu.analyser.output.Symbol;
 import org.e2immu.analyser.output.Text;
 import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.parser.Primitives;
+import org.e2immu.analyser.util.IntUtil;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 import java.util.function.Predicate;
 
+/*
+convention, if the type is discrete:
+(1) x >= 3 rather than x > 2  (so we prefer -3+x>=0 over -2+x>0)
+(2) x < 3 rather than x <= 2  (so we prefer 3-x>0 over 2-x>=0)
+ */
 public class GreaterThanZero extends BaseExpression implements Expression {
 
     private final Primitives primitives;
@@ -39,11 +46,9 @@ public class GreaterThanZero extends BaseExpression implements Expression {
                            Primitives primitives,
                            Expression expression,
                            boolean allowEquals) {
-        super(identifier);
+        super(identifier, expression.getComplexity());
         this.primitives = Objects.requireNonNull(primitives);
         this.expression = Objects.requireNonNull(expression);
-        assert !expression.returnType().equals(primitives.intParameterizedType()) || allowEquals :
-                "integers must have allowEquals==true";
         this.allowEquals = allowEquals;
     }
 
@@ -66,45 +71,40 @@ public class GreaterThanZero extends BaseExpression implements Expression {
         return Objects.hash(expression, allowEquals);
     }
 
-    // NOT (x >= 0) == x < 0  == (not x) > 0
-    // NOT (x > 0)  == x <= 0 == (not x) >= 0
-    public Expression negate(EvaluationResult evaluationContext) {
-        IntConstant zero = new IntConstant(evaluationContext.getPrimitives(), 0);
-        if (expression instanceof Sum sum) {
-            if (sum.lhs instanceof Numeric ln && sum.lhs.isDiscreteType()) {
-                // NOT (-3 + x >= 0) == NOT (x >= 3) == x < 3 == x <= 2 == 2 + -x >= 0
-                // NOT (3 + x >= 0) == NOT (x >= -3) == x < -3 == x <= -4 == -4 + -x >= 0
-                Expression minusSumPlusOne = IntConstant.intOrDouble(evaluationContext.getPrimitives(),
-                        -(ln.doubleValue() + 1.0));
-                return GreaterThanZero.greater(evaluationContext,
-                        Sum.sum(evaluationContext, minusSumPlusOne,
-                                Negation.negate(evaluationContext, sum.rhs)), zero, true);
-            }
-        }
-        return GreaterThanZero.greater(evaluationContext, Negation.negate(evaluationContext, expression), zero,
-                !allowEquals);
+    public Expression negate(EvaluationResult context) {
+        Expression negated = Negation.negate(context, expression);
+        return GreaterThanZero.greater(identifier, context, negated, new IntConstant(primitives, 0), !allowEquals);
     }
 
     /**
-     * if xNegated is false: -b + x >= 0 or x >= b
-     * if xNegated is true: b - x >= 0 or x <= b
+     * IMPORTANT:
+     * XB in the integer case ALWAYS works with x <= b, rather than x < b.
+     * This simplifies combining multiple GT0 clauses in And, Or.
+     * <p>
+     * This is not what we do by convention for GreaterThanZero!!!
+     * We keep x < b, x >= b because the negation can keep the same constant (see io.codelaser.jfocus)
      */
     public record XB(Expression x, double b, boolean lessThan) {
     }
 
-    public XB extract(EvaluationResult evaluationContext) {
+    public XB extract(EvaluationResult context) {
         Sum sumValue = expression.asInstanceOf(Sum.class);
         if (sumValue != null) {
             Double d = sumValue.numericPartOfLhs();
             if (d != null) {
-                Expression v = sumValue.nonNumericPartOfLhs(evaluationContext);
+                Expression v = sumValue.nonNumericPartOfLhs(context);
                 Expression x;
                 boolean lessThan;
                 double b;
                 if (v instanceof Negation ne) {
                     x = ne.expression;
                     lessThan = true;
-                    b = d;
+                    if (IntUtil.isMathematicalInteger(d)) {
+                        assert !allowEquals : "By convention, we store x < 4 rather than x <= 3";
+                        b = d - 1;
+                    } else {
+                        b = d;
+                    }
                 } else {
                     x = v;
                     lessThan = false;
@@ -115,102 +115,173 @@ public class GreaterThanZero extends BaseExpression implements Expression {
         }
         Expression x;
         boolean lessThan;
+        double d;
         if (expression instanceof Negation ne) {
             x = ne.expression;
             lessThan = true;
+            if (!allowEquals && x.returnType().isInt()) {
+                d = -1;
+            } else {
+                d = 0;
+            }
         } else {
             x = expression;
             lessThan = false;
+            d = 0;
         }
-        return new XB(x, 0.0d, lessThan);
-    }
-
-    public static Expression greater(EvaluationResult evaluationContext, Expression l, Expression r, boolean allowEquals) {
-        return greater(Identifier.joined("gt0", List.of(l.getIdentifier(), r.getIdentifier())), evaluationContext, l, r, allowEquals);
-    }
-
-    public static Expression greater(Identifier identifier,
-                                     EvaluationResult evaluationContext, Expression l, Expression r, boolean allowEquals) {
-        Primitives primitives = evaluationContext.getPrimitives();
-        if (l.equals(r) && !allowEquals) return new BooleanConstant(primitives, false);
-        if (l.isEmpty() || r.isEmpty()) throw new UnsupportedOperationException();
-
-        Numeric ln = l.asInstanceOf(Numeric.class);
-        Numeric rn = r.asInstanceOf(Numeric.class);
-        if (ln != null && rn != null) {
-            if (allowEquals)
-                return new BooleanConstant(primitives, ln.doubleValue() >= rn.doubleValue());
-            return new BooleanConstant(primitives, ln.doubleValue() > rn.doubleValue());
-        }
-
-        if (ln != null && !allowEquals && l.isDiscreteType()) {
-            // 3 > x == 3 + (-x) > 0 transform to 2 >= x
-            Expression lMinusOne = IntConstant.intOrDouble(primitives, ln.doubleValue() - 1.0);
-            return new GreaterThanZero(identifier, primitives,
-                    Sum.sum(evaluationContext, lMinusOne,
-                            Negation.negate(evaluationContext, r)), true);
-        }
-        if (rn != null && !allowEquals && r.isDiscreteType()) {
-            // x > 3 == -3 + x > 0 transform to x >= 4
-            Expression minusRPlusOne = IntConstant.intOrDouble(primitives, -(rn.doubleValue() + 1.0));
-            return new GreaterThanZero(identifier, primitives,
-                    Sum.sum(evaluationContext, l, minusRPlusOne), true);
-        }
-
-        Expression sum = Sum.sum(evaluationContext, l, Negation.negate(evaluationContext, r));
-        if (!allowEquals && sum.returnType().equals(primitives.intParameterizedType())) {
-            // GTZ cannot take allowEquals==false for integers
-            Expression minusOne = Sum.sum(evaluationContext, sum, new IntConstant(primitives, -1));
-            return new GreaterThanZero(identifier, primitives, minusOne, true);
-        }
-        return new GreaterThanZero(identifier, primitives, sum, allowEquals);
+        return new XB(x, d, lessThan);
     }
 
     // mainly for testing
-    public static Expression less(EvaluationResult evaluationContext, Expression l, Expression r, boolean allowEquals) {
-        return less(Identifier.joined("gt0", List.of(l.getIdentifier(), r.getIdentifier())), evaluationContext, l, r, allowEquals);
+    public static Expression less(EvaluationResult context, Expression l, Expression r, boolean allowEquals) {
+        Identifier id = Identifier.joined("gt0", List.of(l.getIdentifier(), r.getIdentifier()));
+        return greater(id, context, r, l, allowEquals);
     }
 
-    public static Expression less(Identifier identifier,
-                                  EvaluationResult evaluationContext, Expression l, Expression r, boolean allowEquals) {
-        Primitives primitives = evaluationContext.getPrimitives();
-        if (l.equals(r) && !allowEquals) return new BooleanConstant(primitives, false);
-        if (l.isEmpty() || r.isEmpty()) throw new UnsupportedOperationException();
+    public static Expression less(Identifier identifier, EvaluationResult context, Expression l, Expression r,
+                                  boolean allowEquals) {
+        return greater(identifier, context, r, l, allowEquals);
+    }
 
-        Numeric ln = l.asInstanceOf(Numeric.class);
-        Numeric rn = r.asInstanceOf(Numeric.class);
-        if (ln != null && rn != null) {
-            if (allowEquals)
-                return new BooleanConstant(primitives, ln.doubleValue() <= rn.doubleValue());
-            return new BooleanConstant(primitives, ln.doubleValue() < rn.doubleValue());
-        }
+    public static Expression greater(EvaluationResult context, Expression l, Expression r, boolean allowEquals) {
+        return greater(Identifier.joined("gt0", List.of(l.getIdentifier(), r.getIdentifier())),
+                context, l, r, allowEquals);
+    }
 
-        if (ln != null && !allowEquals && l.isDiscreteType()) {
-            // 3 < x == x > 3 == -3 + x > 0 transform to x >= 4
-            Expression minusLPlusOne = IntConstant.intOrDouble(primitives, -(ln.doubleValue() + 1.0));
-            return new GreaterThanZero(identifier, primitives,
-                    Sum.sum(evaluationContext, minusLPlusOne, r), true);
-        }
-        if (rn != null && !allowEquals && r.isDiscreteType()) {
-            // x < 3 == 3 + -x > 0 transform to x <= 2 == 2 + -x >= 0
-            Expression rMinusOne = IntConstant.intOrDouble(primitives, rn.doubleValue() - 1.0);
-            return new GreaterThanZero(identifier, primitives,
-                    Sum.sum(evaluationContext, Negation.negate(evaluationContext, l), rMinusOne), true);
-        }
-        // l < r <=> l-r < 0 <=> -l+r > 0
-        if (ln != null) {
-            return new GreaterThanZero(identifier, primitives, Sum.sum(evaluationContext, ln.negate(), r), allowEquals);
-        }
+    public static Expression greater(Identifier identifier, EvaluationResult context, Expression l, Expression r,
+                                     boolean allowEquals) {
+        Expression sum = Sum.sum(context, l, Negation.negate(context, r));
+        return compute(identifier, context, sum, allowEquals);
+    }
 
-        // TODO add tautology call
+    private static Expression compute(Identifier identifier, EvaluationResult context, Expression expression,
+                                      boolean allowEquals) {
+        Primitives primitives = context.getPrimitives();
+        Expression[] terms = Sum.expandTerms(context, expression, false).toArray(Expression[]::new);
+        Arrays.sort(terms);
 
-        Expression sum = Sum.sum(evaluationContext, Negation.negate(evaluationContext, l), r);
-        if (!allowEquals && sum.returnType().equals(primitives.intParameterizedType())) {
-            // GTZ cannot take allowEquals==false for integers
-            Expression minusOne = Sum.sum(evaluationContext, sum, new IntConstant(primitives, -1));
-            return new GreaterThanZero(identifier, primitives, minusOne, true);
+        Numeric n0 = terms[0].asInstanceOf(Numeric.class);
+        if (terms.length == 1) {
+            return oneTerm(identifier, context, allowEquals, primitives, terms, n0);
         }
-        return new GreaterThanZero(identifier, primitives, sum, allowEquals);
+        if (terms.length == 2 && n0 != null
+                && IntUtil.isMathematicalInteger(n0.doubleValue())
+                && terms[1].returnType().isInt()) {
+            return twoTerms(identifier, context, allowEquals, primitives, terms, n0);
+        }
+        if (terms.length == 2 && terms[0].returnType().isInt() && terms[1].returnType().isInt()) {
+            if (!allowEquals) {
+                // +-i +-j > 0
+                expression = Sum.sum(context, new IntConstant(primitives, -1),
+                        Sum.sum(context, terms[0], terms[1]));
+                allowEquals = true;
+            }
+        }
+        if (terms.length == 3 && n0 != null
+                && IntUtil.isMathematicalInteger(n0.doubleValue())
+                && terms[1].returnType().isInt()
+                && terms[2].returnType().isInt()) {
+
+            if (n0.doubleValue() >= 0 && !allowEquals) {
+                // special cases, i>=j == i-j >=0, 1+i-j>0
+                IntConstant minusOne = new IntConstant(primitives, -1 + (int) n0.doubleValue());
+                expression = Sum.sum(context, minusOne, Sum.sum(context, terms[1], terms[2]));
+                allowEquals = true;
+            }
+        }
+        // fallback
+        return new GreaterThanZero(identifier, primitives, expression, allowEquals);
+    }
+
+    private static GreaterThanZero twoTerms(Identifier identifier, EvaluationResult context, boolean allowEquals, Primitives primitives, Expression[] terms, Numeric n0) {
+        // basic int comparisons, take care that we use >= and <
+        boolean n0Negated = n0.doubleValue() < 0;
+        boolean n1Negated = terms[1] instanceof Negation;
+
+        Expression sum;
+        boolean newAllowEquals;
+        if (n0Negated) {
+            if (!n1Negated) {
+                newAllowEquals = true;
+                if (!allowEquals) {
+                    // -3 + x > 0 == x>3 == x>=4 == -4 + x >= 0
+                    IntConstant minusOne = new IntConstant(primitives, -1 + (int) n0.doubleValue());
+                    sum = Sum.sum(context, minusOne, terms[1]);
+                } else {
+                    // -3 + x >= 0 == x >= 3 OK
+                    sum = Sum.sum(context, terms[0], terms[1]);
+                }
+            } else {
+                newAllowEquals = false;
+                if (!allowEquals) {
+                    // -3 - x > 0 == x<-3 OK
+                    sum = Sum.sum(context, terms[0], terms[1]);
+                } else {
+                    // -3 - x >= 0 == x<=-3 == x<-2 == -2 - x > 0
+                    IntConstant plusOne = new IntConstant(primitives, 1 + (int) n0.doubleValue());
+                    sum = Sum.sum(context, plusOne, terms[1]);
+                }
+            }
+        } else {
+            if (!n1Negated) {
+                newAllowEquals = true;
+                if (!allowEquals) {
+                    // 3 + x > 0 == x>-3 == x>=-2 == 2 + x >= 0
+                    IntConstant minusOne = new IntConstant(primitives, -1 + (int) n0.doubleValue());
+                    sum = Sum.sum(context, minusOne, terms[1]);
+                } else {
+                    // 3 + x >= 0 == x>=-3 OK
+                    sum = Sum.sum(context, terms[0], terms[1]);
+                }
+            } else {
+                newAllowEquals = false;
+                if (!allowEquals) {
+                    // 3 - x > 0 == x<3 OK
+                    sum = Sum.sum(context, terms[0], terms[1]);
+                } else {
+                    // 3 - x >= 0 == x<=3 == x<4 == 4 - x > 0
+                    IntConstant plusOne = new IntConstant(primitives, 1 + (int) n0.doubleValue());
+                    sum = Sum.sum(context, plusOne, terms[1]);
+                }
+            }
+        }
+        return new GreaterThanZero(identifier, primitives, sum, newAllowEquals);
+    }
+
+    private static BaseExpression oneTerm(Identifier identifier, EvaluationResult context, boolean allowEquals, Primitives primitives, Expression[] terms, Numeric n0) {
+        if (n0 != null) {
+            boolean accept = n0.doubleValue() > 0.0 || allowEquals && n0.doubleValue() == 0.0;
+            return new BooleanConstant(primitives, accept);
+        }
+        Expression term;
+        boolean newAllowEquals;
+        if (terms[0].returnType().isInt()) {
+            // some int expression >= 0
+            if (terms[0] instanceof Negation) {
+                newAllowEquals = false;
+                if (allowEquals) {
+                    // -x >= 0 == x <= 0 == x < 1 == 1 - x > 0
+                    term = Sum.sum(identifier, context, new IntConstant(primitives, 1), terms[0]);
+                } else {
+                    // -x > 0 == x < 0 OK
+                    term = terms[0];
+                }
+            } else {
+                newAllowEquals = true;
+                if (allowEquals) {
+                    // x >= 0 OK
+                    term = terms[0];
+                } else {
+                    // x > 0 == x >= 1 == -1+x >= 0
+                    term = Sum.sum(identifier, context, new IntConstant(primitives, -1), terms[0]);
+                }
+            }
+        } else {
+            term = terms[0];
+            newAllowEquals = allowEquals;
+        }
+        // expr >= 0, expr > 0
+        return new GreaterThanZero(identifier, primitives, term, newAllowEquals);
     }
 
     @Override
@@ -278,15 +349,8 @@ public class GreaterThanZero extends BaseExpression implements Expression {
     @Override
     public EvaluationResult evaluate(EvaluationResult context, ForwardEvaluationInfo forwardEvaluationInfo) {
         EvaluationResult er = expression.evaluate(context, forwardEvaluationInfo);
-        Expression expression;
-        Numeric n = er.value().asInstanceOf(Numeric.class);
-        if (n != null) {
-            expression = new BooleanConstant(context.getPrimitives(),
-                    allowEquals ? n.doubleValue() >= 0 : n.doubleValue() > 0);
-        } else {
-            expression = new GreaterThanZero(identifier, primitives, er.getExpression(), allowEquals);
-        }
-        return new EvaluationResult.Builder(context).compose(er).setExpression(expression).build();
+        Expression e = GreaterThanZero.compute(identifier, context, er.getExpression(), allowEquals);
+        return new EvaluationResult.Builder(context).compose(er).setExpression(e).build();
     }
 
     @Override
@@ -310,7 +374,7 @@ public class GreaterThanZero extends BaseExpression implements Expression {
     }
 
     @Override
-    public List<Variable> variables(boolean descendIntoFieldReferences) {
+    public List<Variable> variables(DescendMode descendIntoFieldReferences) {
         return expression.variables(descendIntoFieldReferences);
     }
 
@@ -323,9 +387,12 @@ public class GreaterThanZero extends BaseExpression implements Expression {
 
     @Override
     public Expression translate(InspectionProvider inspectionProvider, TranslationMap translationMap) {
-        Expression translate = expression.translate(inspectionProvider, translationMap);
-        if (translate == expression) return this;
-        return new GreaterThanZero(identifier, primitives, translate, allowEquals);
+        Expression translated = translationMap.translateExpression(this);
+        if (translated != this) return translated;
+
+        Expression translatedExpression = expression.translate(inspectionProvider, translationMap);
+        if (translatedExpression == expression) return this;
+        return new GreaterThanZero(identifier, primitives, translatedExpression, allowEquals);
     }
 
     @Override

@@ -15,6 +15,7 @@
 package org.e2immu.analyser.util;
 
 import org.e2immu.annotation.*;
+import org.e2immu.annotation.type.ExtensionClass;
 
 import java.util.HashMap;
 import java.util.LinkedList;
@@ -24,7 +25,6 @@ import java.util.Map.Entry;
 
 // extension class: implies @NotNull on first argument
 @ExtensionClass(of = Map.class)
-@E2Immutable // not container, addAll modifies argument
 public class SMapList {
 
     private static final String NULL_KEY = "Adding null key to map-list";
@@ -34,9 +34,13 @@ public class SMapList {
         return new HashMap<>();
     }
 
+    private SMapList() {}
+    /*
+    IMPROVE: we have to contract the @NotModified, because the computation is currently not able
+    to determine that it is not modifying (semantically, the "new LinkedList()" is ignored).
+     */
     @NotModified
-    @Constant(absent = true)
-    public static <A, B> boolean addAll(@NotModified Map<A, List<B>> src, @Modified @NotNull Map<A, List<B>> destination) {
+    public static <A, B> boolean addAll(@NotModified(contract = true) Map<A, List<B>> src, @Modified @NotNull Map<A, List<B>> destination) {
         boolean change = false;
         for (Entry<A, List<B>> e : src.entrySet()) {
             List<B> inDestination = destination.get(e.getKey());
@@ -52,7 +56,7 @@ public class SMapList {
         return change;
     }
 
-    public static <A, B> boolean add(Map<A, List<B>> map, @NotNull @NotModified A a, @NotModified @NotNull B b) {
+    public static <A, B> boolean add(@Modified Map<A, List<B>> map, @NotNull @NotModified A a, @NotModified @NotNull B b) {
         if (a == null) {
             throw new IllegalArgumentException(NULL_KEY);
         }
@@ -63,7 +67,7 @@ public class SMapList {
         return set.add(b);
     }
 
-    public static <A, B> boolean add(Map<A, List<B>> map, @NotNull A a, @NotNull1 @NotModified List<B> bs) {
+    public static <A, B> boolean add(@Modified Map<A, List<B>> map, @NotNull A a, @NotNull(content = true) @NotModified List<B> bs) {
         if (a == null) {
             throw new IllegalArgumentException(NULL_KEY);
         }
@@ -76,7 +80,7 @@ public class SMapList {
 
     @NotNull
     @NotModified
-    @Constant(absent = true)
+    @Independent // IMPROVE (hc = true)
     public static <A, B> List<B> list(@NotNull @NotModified Map<A, List<B>> map, @NotNull A a) {
         if (a == null) {
             throw new IllegalArgumentException(NULL_KEY);
@@ -89,8 +93,8 @@ public class SMapList {
     }
 
     @NotNull
-    @E2Container
-    public static <A, B> Map<A, List<B>> immutable(@NotModified @NotNull1 Map<A, List<B>> map) {
+    // FIXME ?? @ImmutableContainer(hc = true)
+    public static <A, B> Map<A, List<B>> immutable(@NotModified @NotNull(content = true) Map<A, List<B>> map) {
         Map<A, List<B>> tmp = new HashMap<>();
         for (Entry<A, List<B>> e : map.entrySet()) {
             List<B> is = List.copyOf(e.getValue());
@@ -101,7 +105,8 @@ public class SMapList {
 
     @NotNull
     @NotModified
-    public static <A, B> Map<A, List<B>> copy(@NotNull1 @NotModified Map<A, List<B>> map) {
+    @Independent // IMPROVE hc=true
+    public static <A, B> Map<A, List<B>> copy(@NotNull(content = true) @NotModified Map<A, List<B>> map) {
         Map<A, List<B>> tmp = new HashMap<>();
         for (Entry<A, List<B>> e : map.entrySet()) {
             List<B> set = new LinkedList<>(e.getValue());

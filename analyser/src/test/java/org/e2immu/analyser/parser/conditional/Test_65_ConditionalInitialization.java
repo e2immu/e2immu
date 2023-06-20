@@ -100,7 +100,7 @@ public class Test_65_ConditionalInitialization extends CommonTestRunner {
                 if (d.variable() instanceof FieldReference fr && "set".equals(fr.fieldInfo.name)) {
                     if ("0.0.0".equals(d.statementId())) {
                         assertEquals("Set.of(\"a\",\"b\")", d.currentValue().toString());
-                        assertDv(d, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
+                        assertDv(d, MultiLevel.EFFECTIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
                     }
                     if ("0".equals(d.statementId())) {
                         String expected = d.iteration() == 0 ? "b?Set.of(\"a\",\"b\"):<f:set>"

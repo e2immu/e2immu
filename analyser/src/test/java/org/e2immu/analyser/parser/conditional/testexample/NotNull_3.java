@@ -25,9 +25,9 @@ public class NotNull_3<T> {
 
     private final TrieNode<T> root = new TrieNode<>();
 
-    private static class TrieNode<T> {
-        List<T> data;
-        Map<String, TrieNode<T>> map;
+    private static class TrieNode<S> {
+        List<S> data;
+        Map<String, TrieNode<S>> map;
     }
 
     private TrieNode<T> goTo(String[] strings, int upToPosition) {

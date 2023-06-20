@@ -15,8 +15,9 @@
 package org.e2immu.analyser.parser.conditional.testexample;
 
 import org.e2immu.annotation.*;
+import org.e2immu.annotation.type.ExtensionClass;
 
-@ERContainer
+@ImmutableContainer
 @ExtensionClass(of = String.class, absent = true) // because 1st parameter is @Nullable
 public class IfStatement_0 {
 

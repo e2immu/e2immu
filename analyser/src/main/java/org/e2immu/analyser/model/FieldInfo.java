@@ -22,14 +22,13 @@ import org.e2immu.analyser.analysis.FieldAnalysis;
 import org.e2immu.analyser.model.expression.EmptyExpression;
 import org.e2immu.analyser.model.impl.LocationImpl;
 import org.e2immu.analyser.output.*;
-import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.util.UpgradableBooleanMap;
-import org.e2immu.annotation.NotNull;
 import org.e2immu.support.SetOnce;
 
-import java.util.Arrays;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Objects;
-import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Stream;
 
 public class FieldInfo implements WithInspectionAndAnalysis {
@@ -132,10 +131,11 @@ public class FieldInfo implements WithInspectionAndAnalysis {
         OutputBuilder outputBuilder = new OutputBuilder();
         if (fieldInspection.isSet() && !asParameter) {
             FieldInspection inspection = this.fieldInspection.get();
-            outputBuilder.add(Arrays.stream(FieldModifier.sort(inspection.getModifiers()))
-                    .map(mod -> new OutputBuilder().add(new Text(mod)))
+            List<FieldModifier> fieldModifiers = minimalModifiers(inspection);
+            outputBuilder.add(fieldModifiers.stream()
+                    .map(mod -> new OutputBuilder().add(mod.keyword))
                     .collect(OutputBuilder.joining(Space.ONE)));
-            if (!inspection.getModifiers().isEmpty()) outputBuilder.add(Space.ONE);
+            if (!fieldModifiers.isEmpty()) outputBuilder.add(Space.ONE);
         }
         outputBuilder
                 .add(type.output(qualification))
@@ -155,26 +155,48 @@ public class FieldInfo implements WithInspectionAndAnalysis {
                 Guide.generatorForAnnotationList()));
     }
 
-    public boolean isStatic() {
-        return fieldInspection.get().getModifiers().contains(FieldModifier.STATIC);
+    private List<FieldModifier> minimalModifiers(FieldInspection fieldInspection) {
+        Set<FieldModifier> modifiers = fieldInspection.getModifiers();
+        List<FieldModifier> list = new ArrayList<>();
+        Inspection.Access access = fieldInspection.getAccess();
+        TypeInspection typeInspection = owner.typeInspection.get();
+        Inspection.Access ownerAccess = typeInspection.getAccess();
+
+        /*
+        if the owner access is private, we don't write any modifier
+         */
+        if (access.le(ownerAccess) && access != Inspection.Access.PACKAGE && ownerAccess != Inspection.Access.PRIVATE) {
+            list.add(toFieldModifier(access));
+        }
+        // sorting... STATIC, FINAL, VOLATILE, TRANSIENT
+        boolean inInterface = typeInspection.isInterface();
+        if (!inInterface) {
+            if (modifiers.contains(FieldModifier.STATIC)) {
+                list.add(FieldModifier.STATIC);
+            }
+            if (modifiers.contains(FieldModifier.FINAL)) {
+                list.add(FieldModifier.FINAL);
+            }
+        }
+        if (modifiers.contains(FieldModifier.VOLATILE)) {
+            assert !inInterface;
+            list.add(FieldModifier.VOLATILE);
+        }
+        if (modifiers.contains(FieldModifier.TRANSIENT)) {
+            assert !inInterface;
+            list.add(FieldModifier.TRANSIENT);
+        }
+
+        return list;
     }
 
-    public boolean isStatic(InspectionProvider inspectionProvider) {
-        FieldInspection inspection = inspectionProvider.getFieldInspection(this);
-        assert inspection != null : "No field inspection known for " + fullyQualifiedName();
-        return inspection.getModifiers().contains(FieldModifier.STATIC);
-    }
-
-    @Override
-    public Optional<AnnotationExpression> hasInspectedAnnotation(Class<?> annotation) {
-        if (!fieldInspection.isSet()) return Optional.empty();
-        String annotationFQN = annotation.getName();
-        Optional<AnnotationExpression> fromField = getInspection().getAnnotations().stream()
-                .filter(ae -> ae.typeInfo().fullyQualifiedName.equals(annotationFQN)).findFirst();
-        if (fromField.isPresent()) return fromField;
-        if (annotation.equals(NotNull.class)) return owner.hasInspectedAnnotation(annotation);
-        // TODO check "where" on @NotNull
-        return Optional.empty();
+    private static FieldModifier toFieldModifier(Inspection.Access access) {
+        return switch (access) {
+            case PUBLIC -> FieldModifier.PUBLIC;
+            case PRIVATE -> FieldModifier.PRIVATE;
+            case PROTECTED -> FieldModifier.PROTECTED;
+            default -> throw new UnsupportedOperationException();
+        };
     }
 
     public String fullyQualifiedName() {
@@ -188,20 +210,6 @@ public class FieldInfo implements WithInspectionAndAnalysis {
 
     public boolean isExplicitlyFinal() {
         return fieldInspection.get().getModifiers().contains(FieldModifier.FINAL);
-    }
-
-    public boolean isAccessibleOutsideOfPrimaryType() {
-        return !fieldInspection.get().getModifiers().contains(FieldModifier.PRIVATE) &&
-                !owner.isPrivateOrEnclosingIsPrivate();
-    }
-
-    public boolean isPublic() {
-        return fieldInspection.get().getModifiers().contains(FieldModifier.PUBLIC) &&
-                owner.isPublic();
-    }
-
-    public boolean isPrivate() {
-        return fieldInspection.get().getModifiers().contains(FieldModifier.PRIVATE);
     }
 
     @Override

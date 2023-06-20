@@ -47,6 +47,7 @@ import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 import static org.e2immu.analyser.analyser.Property.*;
@@ -141,7 +142,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
         rangeData = statement instanceof LoopStatement ? new RangeDataImpl(location) : null;
     }
 
-    static StatementAnalysis recursivelyCreateAnalysisObjects(
+    public static StatementAnalysis recursivelyCreateAnalysisObjects(
             Primitives primitives,
             MethodAnalysis methodAnalysis,
             StatementAnalysis parent,
@@ -162,7 +163,8 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
         StatementAnalysis previous = null;
 
         for (Statement statement : statements) {
-            String iPlusSt = indices + "." + pad(statementIndex, statements.size());
+            String padded = pad(statementIndex, statements.size());
+            String iPlusSt = indices.isEmpty() ? padded : indices + "." + padded;
             StatementAnalysis statementAnalysis = new StatementAnalysisImpl(primitives, methodAnalysis, statement, parent, iPlusSt, inSyncBlock);
             if (previous != null) {
                 previous.navigationData().next.set(Optional.of(statementAnalysis));
@@ -177,8 +179,12 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
             Structure structure = statement.getStructure();
             if (structure.haveStatements()) {
                 String indexWithBlock = iPlusSt + "." + pad(blockIndex, structure.subStatements().size() + 1);
+                List<Statement> listOfSubStatements = structure.getStatements();
+                assert listOfSubStatements != null :
+                        "Statement " + statementAnalysis.index() + " of class " + statement.getClass().getSimpleName()
+                                + " has statements, but the statements() call returns null";
                 StatementAnalysis subStatementAnalysis = recursivelyCreateAnalysisObjects(primitives, methodAnalysis, parent,
-                        structure.statements(), indexWithBlock, true, newInSyncBlock);
+                        listOfSubStatements, indexWithBlock, true, newInSyncBlock);
                 analysisBlocks.add(Optional.of(subStatementAnalysis));
             } else {
                 analysisBlocks.add(Optional.empty());
@@ -187,8 +193,13 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
             for (Structure subStatements : structure.subStatements()) {
                 if (subStatements.haveStatements()) {
                     String indexWithBlock = iPlusSt + "." + pad(blockIndex, structure.subStatements().size() + 1);
+                    List<Statement> listOfSubStatements = subStatements.getStatements();
+                    assert listOfSubStatements != null :
+                            "Sub-block " + blockIndex + " of statement " + statementAnalysis.index()
+                                    + " of class " + statement.getClass().getSimpleName()
+                                    + " has statements, but the subStatements.statements() call returns null";
                     StatementAnalysis subStatementAnalysis = recursivelyCreateAnalysisObjects(primitives, methodAnalysis, parent,
-                            subStatements.statements(), indexWithBlock, true, newInSyncBlock);
+                            listOfSubStatements, indexWithBlock, true, newInSyncBlock);
                     analysisBlocks.add(Optional.of(subStatementAnalysis));
                 } else {
                     analysisBlocks.add(Optional.empty());
@@ -626,8 +637,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
             VariableInfo variableInfo = vic.current();
             Variable variable = variableInfo.variable();
             if (variable instanceof This) {
-                DV immutable = evaluationContext.getAnalyserContext()
-                        .defaultImmutable(variable.parameterizedType(), false, getCurrentType());
+                DV immutable = evaluationContext.getAnalyserContext().typeImmutable(variable.parameterizedType());
                 vic.setProperty(EXTERNAL_IMMUTABLE, immutable, true, INITIAL);
             }
             if (vic.isInitial() && variable instanceof FieldReference fieldReference) {
@@ -712,7 +722,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
     Do not add IMMUTABLE to this set! (computed from external, formal, context)
      */
     public static final Set<Property> FROM_PARAMETER_ANALYSER_TO_PROPERTIES
-            = Set.of(EXTERNAL_NOT_NULL, EXTERNAL_IMMUTABLE, EXTERNAL_CONTAINER, IGNORE_MODIFICATIONS);
+            = Set.of(EXTERNAL_NOT_NULL, EXTERNAL_IMMUTABLE, CONTAINER_RESTRICTION, IGNORE_MODIFICATIONS);
 
     /*
     assume that all parameters, also those from closures, are already present
@@ -750,8 +760,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
         assert variable instanceof ParameterInfo;
         DV currentImmutable = vi.getProperty(IMMUTABLE);
         if (currentImmutable.isDelayed()) {
-            DV formalImmutable = analyserContext.defaultImmutable(variable.parameterizedType(), false,
-                    getCurrentType());
+            DV formalImmutable = analyserContext.typeImmutable(variable.parameterizedType());
             vic.setProperty(IMMUTABLE, formalImmutable, INITIAL);
         }
         // update @Independent
@@ -791,7 +800,8 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
             if (methodAnalysis.getMethodInfo().isConstructor && fieldReference.scopeIsThis(evaluationContext.getCurrentType())) {
                 initialValue = fieldAnalysis.getInitializerValue();
             } else {
-                initialValue = fieldAnalysis.getValueForStatementAnalyser(fieldReference, flowData().getInitialTime());
+                initialValue = fieldAnalysis.getValueForStatementAnalyser(getCurrentType().primaryType(),
+                        fieldReference, flowData().getInitialTime());
             }
         } else {
             // only set properties copied from the field
@@ -851,10 +861,14 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
 
     /*
     output the statement, but take into account the list of variables, there may be name clashes to be resolved
-
      */
     public OutputBuilder output(Qualification qualification) {
-        return statement.output(qualification, this);
+        OutputBuilder ob = statement.output(qualification, this);
+        Comment comment = statement.getStructure().comment();
+        if (comment != null) {
+            return comment.output(qualification).add(ob);
+        }
+        return ob;
     }
 
     @Override
@@ -1027,8 +1041,13 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
         // normal variables not accessed in the block, defined before the block, can be ignored
         //
         // if recognized: remove (into remove+ignore), otherwise ignore
+
+        Set<Variable> alsoMergeStaticallyAssigned = new HashSet<>(mergeEvenIfNotInSubBlocks);
+        Set<Variable> staticallyLinked = pm.toMerge.stream().flatMap(vic -> vic.best(EVALUATION).getLinkedVariables().staticallyAssignedStream()).collect(Collectors.toUnmodifiableSet());
+        alsoMergeStaticallyAssigned.addAll(staticallyLinked);
+
         Stream<VariableInfoContainer> atTopLevel = rawVariableStream().map(Map.Entry::getValue);
-        mergeAction(pm, seen, atTopLevel, vn -> vn.removeInMerge(index), mergeEvenIfNotInSubBlocks::contains, null);
+        mergeAction(pm, seen, atTopLevel, vn -> vn.removeInMerge(index), alsoMergeStaticallyAssigned::contains, null);
         return pm;
     }
 
@@ -1191,6 +1210,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
 
         CausesOfDelay delay = CausesOfDelay.EMPTY;
         boolean progress = false;
+        Map<Variable, Integer> modificationTimes = new HashMap<>();
 
         for (VariableInfoContainer vic : prepareMerge.toMerge) {
             VariableInfo current = vic.current();
@@ -1258,7 +1278,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
                         lvStream = Stream.concat(Stream.of(previousLv), toMergeLvStream);
                     }
                     LinkedVariables linkedVariables = lvStream
-                            .map(lv -> lv.translate(translationMap))
+                            .map(lv -> lv.translate(evaluationContext.getAnalyserContext(), translationMap))
                             .reduce(LinkedVariables.EMPTY, LinkedVariables::merge);
                     if (executionDelay.isDelayed()) {
                         linkedVariablesMap.put(renamed, linkedVariables.changeNonStaticallyAssignedToDelay(executionDelay));
@@ -1273,6 +1293,9 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
                         ensure(Message.newMessage(location(MERGE), Message.Label.OVERWRITING_PREVIOUS_ASSIGNMENT,
                                 variable.simpleName()));
                     }
+                    IntStream modificationTimeOfSubs = toMerge.stream().mapToInt(cav -> cav.variableInfo().getModificationTimeOrNegative());
+                    int maxMod = modificationTimeOfSubs.reduce(0, (t1, t2) -> t1 < 0 || t2 < 0 ? -1 : Math.max(t1, t2));
+                    modificationTimes.put(variable, maxMod);
                 } catch (Throwable throwable) {
                     LOGGER.warn("Caught exception while merging variable {} (rename to {}} in {}, {}", variable, renamed,
                             methodAnalysis.getMethodInfo().fullyQualifiedName, index);
@@ -1299,6 +1322,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
                 .reduce(CausesOfDelay.EMPTY, CausesOfDelay::merge);
         ProgressAndDelay soFar = new ProgressAndDelay(progress, delay);
         ProgressAndDelay mergeStatus = linkingAndGroupProperties(evaluationContext, groupPropertyValues, linkedVariablesMap,
+                modificationTimes, statementTime,
                 variablesWhereMergeOverwrites, newScopeVariables, prepareMerge, setCnnVariables, translationMap,
                 conditionCauses, soFar).addProgress(progress);
 
@@ -1367,9 +1391,14 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
         return cav.variableInfo().isRead() || cav.variableInfo().isAssigned();
     }
 
+    private record BackLinkForEachResult(Set<Variable> newlyCreated, CausesOfDelay delays) {
+    }
+
     private ProgressAndDelay linkingAndGroupProperties(EvaluationContext evaluationContext,
                                                        GroupPropertyValues groupPropertyValues,
                                                        Map<Variable, LinkedVariables> linkedVariablesMap,
+                                                       Map<Variable, Integer> modificationTimes,
+                                                       int statementTime,
                                                        Set<Variable> variablesWhereMergeOverwrites,
                                                        Set<LocalVariableReference> newlyCreatedScopeVariables,
                                                        PrepareMerge prepareMerge,
@@ -1378,6 +1407,12 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
                                                        CausesOfDelay conditionCauses,
                                                        ProgressAndDelay delay) {
 
+        BackLinkForEachResult backLink;
+        if (statement instanceof ForEachStatement) {
+            backLink = backLinkIterable(evaluationContext, linkedVariablesMap);
+        } else {
+            backLink = new BackLinkForEachResult(Set.of(), CausesOfDelay.EMPTY);
+        }
         for (VariableInfoContainer vic : prepareMerge.toIgnore) {
             Variable variable = vic.current().variable();
             Variable renamed = prepareMerge.renames.get(variable);
@@ -1395,20 +1430,16 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
         Set<Variable> touched = touchedStream(linkedVariablesMap, newlyCreatedScopeVariables, prepareMerge);
         boolean oneBranchHasBecomeUnreachable = oneBranchHasBecomeUnreachable();
         ComputeLinkedVariables computeLinkedVariables = ComputeLinkedVariables.create(this, MERGE,
-                true, oneBranchHasBecomeUnreachable,
+                oneBranchHasBecomeUnreachable,
                 (vic, v) -> !touched.contains(v),
                 variablesWhereMergeOverwrites,
                 linkedVariablesFromBlocks, evaluationContext);
-        ComputeLinkedVariables computeLinkedVariablesCm = ComputeLinkedVariables.create(this, MERGE,
-                false, oneBranchHasBecomeUnreachable,
-                (vic, v) -> !touched.contains(v),
-                variablesWhereMergeOverwrites,
-                linkedVariablesFromBlocks, evaluationContext);
-        boolean progress = computeLinkedVariablesCm.writeLinkedVariables(computeLinkedVariables, touched,
-                prepareMerge.toRemove);
+
+        boolean progress = computeLinkedVariables.writeLinkedVariables(computeLinkedVariables, touched,
+                prepareMerge.toRemove, linkedVariablesMap.keySet());
 
         for (Variable variable : touched) {
-            if (!linkedVariablesMap.containsKey(variable) &&
+            if ((!linkedVariablesMap.containsKey(variable) || backLink.newlyCreated.contains(variable)) &&
                     !(variable instanceof LocalVariableReference lvr && newlyCreatedScopeVariables.contains(lvr))) {
                 VariableInfoContainer vic = variables.getOrDefaultNull(variable.fullyQualifiedName());
                 assert vic != null;
@@ -1434,7 +1465,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
         }
 
         if (translationMap.hasVariableTranslations()) {
-            groupPropertyValues.translate(translationMap);
+            groupPropertyValues.translate(evaluationContext.getAnalyserContext(), translationMap);
         }
 
         ProgressAndDelay ennStatus = computeLinkedVariables.write(EXTERNAL_NOT_NULL,
@@ -1449,8 +1480,8 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
         ProgressAndDelay extImmStatus = computeLinkedVariables.write(EXTERNAL_IMMUTABLE,
                 groupPropertyValues.getMap(EXTERNAL_IMMUTABLE));
 
-        ProgressAndDelay extContStatus = computeLinkedVariables.write(EXTERNAL_CONTAINER,
-                groupPropertyValues.getMap(EXTERNAL_CONTAINER));
+        ProgressAndDelay extContStatus = computeLinkedVariables.write(CONTAINER_RESTRICTION,
+                groupPropertyValues.getMap(CONTAINER_RESTRICTION));
 
         ProgressAndDelay extIgnModStatus = computeLinkedVariables.write(EXTERNAL_IGNORE_MODIFICATIONS,
                 groupPropertyValues.getMap(EXTERNAL_IGNORE_MODIFICATIONS));
@@ -1462,13 +1493,87 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
         ProgressAndDelay cContStatus = computeLinkedVariables.write(CONTEXT_CONTAINER,
                 groupPropertyValues.getMap(CONTEXT_CONTAINER));
 
-        ProgressAndDelay cmStatus = computeLinkedVariablesCm.write(CONTEXT_MODIFIED,
-                groupPropertyValues.getMap(CONTEXT_MODIFIED), conditionCauses);
+        int statementTimeDelta = statementTime - statementTime(EVALUATION);
+        ProgressAndDelay cmStatus = computeLinkedVariables.writeContextModified(evaluationContext.getAnalyserContext(),
+                groupPropertyValues.getMap(CONTEXT_MODIFIED), Map.of(), statementTimeDelta, modificationTimes,
+                conditionCauses, true);
 
-        return delay.combine(ennStatus).combine(cnnStatus).combine(cmStatus).combine(extImmStatus)
+        return delay
+                .combine(backLink.delays)
+                .combine(ennStatus).combine(cnnStatus).combine(cmStatus).combine(extImmStatus)
                 .combine(extContStatus).combine(cImmStatus).combine(cContStatus).combine(extIgnModStatus)
                 .merge(externalDelaysOnIgnoredVariables)
                 .addProgress(progress);
+    }
+
+    /*
+    Example code: 'for(T t: ts) { consumer.accept(t); }'
+    t links to consumer:3, ts:3, we want to connect consumer and ts with :4
+
+    See Independent1_4.
+    The reason we need this code is that links are unidirectional, and the links from t will disappear as the loop var
+    goes out of scope.
+    The reason we need this code HERE is that we must have the delay to consumer:-1 from the very first iteration.
+    We cannot add it during evaluationOfForEachVariable() in the first iteration, as we don't know which variable to link to.
+     */
+    private BackLinkForEachResult backLinkIterable(EvaluationContext evaluationContext,
+                                                   Map<Variable, LinkedVariables> linkedVariablesMap) {
+
+        Set<Variable> newToLinkedVariablesMap = new HashSet<>();
+        CausesOfDelay causes = CausesOfDelay.EMPTY;
+
+        StatementAnalysis first = navigationData.blocks.get().get(0).orElse(null);
+        StatementAnalysis last = first == null ? null : first.lastStatement();
+        if (last != null) {
+            Expression initialiser = statement.getStructure().initialisers().get(0);
+            if (initialiser instanceof LocalVariableCreation lvc) {
+                Variable loopVar = lvc.newLocalVariables().get(0);
+                VariableInfo latestVariableInfo = last.getLatestVariableInfo(loopVar.fullyQualifiedName());
+                if (latestVariableInfo != null) {
+                    LinkedVariables linkedOfLoopVar = latestVariableInfo.getLinkedVariables();
+                    // any --3--> link to a variable not local to the loop, we also point to the iterable as <--4-->
+
+                    EvaluationResult context = EvaluationResult.from(evaluationContext);
+                    LinkedVariables linkedVariables = stateData.valueOfExpression.get().linkedVariables(context);
+
+                    for (Map.Entry<Variable, DV> lve : linkedVariables) {
+                        Variable iterableVar = lve.getKey();
+
+                        for (Map.Entry<Variable, DV> e : linkedOfLoopVar) {
+                            Variable targetOfLoopVar = e.getKey();
+                            if (!targetOfLoopVar.equals(iterableVar)) {
+                                if (!linkedVariablesMap.containsKey(targetOfLoopVar)) {
+                                    newToLinkedVariablesMap.add(targetOfLoopVar);
+                                }
+                                if (!linkedVariablesMap.containsKey(iterableVar)) {
+                                    newToLinkedVariablesMap.add(iterableVar);
+                                }
+                                if (e.getValue().isDelayed()) {
+                                    link(linkedVariablesMap, iterableVar, targetOfLoopVar, e.getValue());
+                                    link(linkedVariablesMap, targetOfLoopVar, iterableVar, e.getValue());
+                                    causes = causes.merge(e.getValue().causesOfDelay());
+                                } else if (LinkedVariables.LINK_IS_HC_OF.equals(e.getValue())) {
+                                    link(linkedVariablesMap, iterableVar, targetOfLoopVar, LinkedVariables.LINK_COMMON_HC);
+                                    link(linkedVariablesMap, targetOfLoopVar, iterableVar, LinkedVariables.LINK_COMMON_HC);
+                                }
+                            }
+                        }
+                    }
+                } else {
+                    LOGGER.debug("possible in iteration 0 of a loop, see e.g. Loops_3");
+                }
+            } else throw new UnsupportedOperationException("?? expect lvc, got " + initialiser);
+        }
+        return new BackLinkForEachResult(Set.copyOf(newToLinkedVariablesMap), causes);
+    }
+
+    private void link(Map<Variable, LinkedVariables> linkedVariablesMap, Variable from, Variable to, DV linkLevel) {
+        LinkedVariables lv = linkedVariablesMap.get(from);
+        if (lv == null) {
+            linkedVariablesMap.put(from, LinkedVariables.of(to, linkLevel));
+        } else {
+            linkedVariablesMap.put(from, lv.merge(LinkedVariables.of(to, linkLevel)));
+        }
     }
 
     /*
@@ -1486,7 +1591,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
     private Set<Variable> touchedStream(Map<Variable, LinkedVariables> linkedVariablesMap, Set<? extends Variable> newlyCreatedScopeVariables, PrepareMerge prepareMerge) {
         return Stream.concat(newlyCreatedScopeVariables.stream(), Stream.concat(Stream.concat(linkedVariablesMap.keySet().stream(),
                                 linkedVariablesMap.values().stream().flatMap(lv -> lv.variables().keySet().stream())),
-                        variables.stream().map(Map.Entry::getValue).filter(vic -> vic.hasEvaluation() ||
+                        variables.valueStream().filter(vic -> vic.hasEvaluation() ||
                                         // the following condition is necessary to include fields with a scope in newlyCreatedScopeVariables, see e.g. InstanceOf_16
                                         vic.current().variable().containsAtLeastOneOf(newlyCreatedScopeVariables))
                                 .map(e -> e.current().variable())))
@@ -1626,7 +1731,8 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
         } else if (variable instanceof LocalVariableReference || variable instanceof DependentVariable) {
             // forEach() goes through a different system than for(), see code in SAApply.potentiallyModifyEvaluationResult and
             // ParameterizedType_0 test
-            if (variableNature instanceof VariableNature.LoopVariable && !(statement instanceof ForEachStatement)) {
+            if (variableNature instanceof VariableNature.LoopVariable && !(statement instanceof ForEachStatement)
+                    || variableNature instanceof VariableNature.ScopeVariable) {
                 initializeLoopVariable(vic, variable, evaluationContext.getAnalyserContext());
             } else {
                 initializeLocalOrDependentVariable(vic, variable, EvaluationResult.from(evaluationContext));
@@ -1644,20 +1750,19 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
         // an assignment may be difficult.
         // we should not worry about them
         ParameterizedType parameterizedType = variable.parameterizedType();
-        Properties valueProperties = analyserContext.defaultValueProperties(parameterizedType, true,
-                getCurrentType());
+        Properties valueProperties = analyserContext.defaultValueProperties(parameterizedType, true);
         valueProperties.replaceDelaysByMinimalValue();
         Identifier identifier = Identifier.forVariableOutOfScope(variable, index);
         Instance instance = Instance.forLoopVariable(identifier, variable, valueProperties);
         Properties properties = Properties.of(Map.of(
                 EXTERNAL_NOT_NULL, EXTERNAL_NOT_NULL.valueWhenAbsent(),
                 EXTERNAL_IMMUTABLE, EXTERNAL_IMMUTABLE.valueWhenAbsent(),
-                EXTERNAL_CONTAINER, EXTERNAL_CONTAINER.valueWhenAbsent(),
+                CONTAINER_RESTRICTION, CONTAINER_RESTRICTION.valueWhenAbsent(),
                 EXTERNAL_IGNORE_MODIFICATIONS, EXTERNAL_IGNORE_MODIFICATIONS.valueWhenAbsent(),
                 CONTEXT_MODIFIED, DV.FALSE_DV,
                 CONTEXT_NOT_NULL, valueProperties.get(NOT_NULL_EXPRESSION),
                 CONTEXT_IMMUTABLE, valueProperties.get(IMMUTABLE),
-                CONTEXT_CONTAINER, valueProperties.get(CONTAINER)
+                CONTEXT_CONTAINER, CONTAINER_RESTRICTION.falseDv
         ));
         Properties allProperties = valueProperties.combine(properties);
         vic.setValue(instance, LinkedVariables.EMPTY, allProperties, INITIAL);
@@ -1686,8 +1791,10 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
                 arrayValue = Instance.genericArrayAccess(Identifier.generate("dep var"), context, arrayBase, dv);
             }
             Properties valueProperties = context.evaluationContext().getValueProperties(arrayValue);
-            DV lvIndependent = LinkedVariables.fromIndependentToLinkedVariableLevel(independent);
-            if (lvIndependent.equals(LinkedVariables.NO_LINKING_DV)) {
+            DV lvIndependent = LinkedVariables.fromIndependentToLinkedVariableLevel(independent,
+                    // FIXME EMPTY is not going to cut it
+                    dv.parameterizedType, SetOfTypes.EMPTY);
+            if (lvIndependent.equals(LinkedVariables.LINK_INDEPENDENT)) {
                 linkedVariables = vic.initialLinkedVariables();
                 initialValue = arrayValue;
             } else {
@@ -1703,27 +1810,15 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
     }
 
     /*
-  if the array base type is transparent, the independence of the elements in INDEPENDENT_1
-  If the array base type is not E2, we should return DEPENDENT.
-  See DependentVariables_1,_2
-   */
+     If the array base type is not immutable, we should return DEPENDENT.
+     See DependentVariables_1,_2
+     */
     private static DV determineIndependentOfArrayBase(EvaluationResult context, Expression value) {
         ParameterizedType arrayBaseType = value.returnType().copyWithoutArrays();
-
-        TypeInfo currentType = context.getCurrentType();
-        TypeAnalysis typeAnalysis = context.getAnalyserContext().getTypeAnalysis(currentType);
-        DV partOfHiddenContent = typeAnalysis.isPartOfHiddenContent(arrayBaseType);
-        if (partOfHiddenContent.isDelayed()) {
-            return partOfHiddenContent;
-        }
-        if (partOfHiddenContent.valueIsTrue()) {
-            return MultiLevel.INDEPENDENT_1_DV;
-        }
-
         if (context.evaluationContext().isMyself(arrayBaseType))
             return MultiLevel.NOT_INVOLVED_DV; // BREAK INFINITE LOOP
         // IMPORTANT: currentType == null, we've done the hidden content check already
-        DV immutable = context.getAnalyserContext().defaultImmutable(arrayBaseType, false, null);
+        DV immutable = context.getAnalyserContext().typeImmutable(arrayBaseType);
         if (immutable.isDelayed()) {
             return immutable;
         }
@@ -1767,8 +1862,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
             if (ext != EXTERNAL_IMMUTABLE) properties.put(ext, ext.valueWhenAbsent());
         }
         // no hidden content check for this
-        DV currentImmutable = evaluationContext.getAnalyserContext().defaultImmutable(thisVar.typeAsParameterizedType,
-                false, null);
+        DV currentImmutable = evaluationContext.getAnalyserContext().typeImmutable(thisVar.typeAsParameterizedType);
         properties.put(EXTERNAL_IMMUTABLE, currentImmutable);
 
         Instance value = Instance.forCatchOrThis(index, thisVar, properties);
@@ -1780,12 +1874,13 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
 
         // start with context properties
         Properties properties = sharedContext(AnalysisProvider.defaultNotNull(fieldReference.fieldInfo.type));
-        Expression value = fieldAnalysis.getValueForStatementAnalyser(fieldReference, flowData.getInitialTime());
+        Expression value = fieldAnalysis.getValueForStatementAnalyser(getCurrentType().primaryType(),
+                fieldReference, flowData.getInitialTime());
 
         Properties combined;
         boolean myself = evaluationContext.isMyself(fieldReference);
         boolean wroteExtIgnMod;
-        if (myself && !fieldReference.fieldInfo.isStatic()) {
+        if (myself && !fieldReference.fieldInfo.fieldInspection.get().isStatic()) {
             // captures self-referencing instance fields (but not static fields, as in Enum_)
             // a similar check exists in SAApply
             combined = evaluationContext.ensureMyselfValueProperties(properties);
@@ -1818,7 +1913,8 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
         if (value.isDone()) {
             CausesOfDelay causes = combined.delays();
             if (causes.isDelayed()) {
-                toWrite = DelayedVariableExpression.forDelayedValueProperties(fieldReference, statementTime(INITIAL), causes);
+                toWrite = DelayedVariableExpression.forDelayedValueProperties(fieldReference, statementTime(INITIAL),
+                        properties, causes);
             } else {
                 toWrite = value;
             }
@@ -1839,8 +1935,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
                 immutable = DelayFactory.createDelay(location(INITIAL), CauseOfDelay.Cause.INITIAL_VALUE);
             } else {
                 ParameterizedType pt = initializerValue.returnType();
-                immutable = evaluationContext.getAnalyserContext().defaultImmutable(pt, false,
-                        getCurrentType());
+                immutable = evaluationContext.getAnalyserContext().typeImmutable(pt);
             }
         } else {
             immutable = MUTABLE_DV; // not relevant to this computation, like System.out
@@ -1867,12 +1962,11 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
         }
         properties.put(EXTERNAL_IGNORE_MODIFICATIONS, EXTERNAL_IGNORE_MODIFICATIONS.valueWhenAbsent());
 
-        DV formallyImmutable = evaluationContext.getAnalyserContext().defaultImmutable(type, false,
-                getCurrentType());
+        DV formallyImmutable = evaluationContext.getAnalyserContext().typeImmutable(type);
         DV immutable = IMMUTABLE.max(parameterAnalysis.getProperty(IMMUTABLE), formallyImmutable)
                 .replaceDelayBy(MUTABLE_DV.maxIgnoreDelay(formallyImmutable));
 
-        DV formallyIndependent = evaluationContext.getAnalyserContext().defaultIndependent(type);
+        DV formallyIndependent = evaluationContext.getAnalyserContext().typeIndependent(type);
         DV independent = INDEPENDENT.max(parameterAnalysis.getProperty(INDEPENDENT), formallyIndependent)
                 .replaceDelayBy(MultiLevel.DEPENDENT_DV.maxIgnoreDelay(formallyIndependent));
 
@@ -1885,9 +1979,9 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
                 .maxIgnoreDelay(IGNORE_MODIFICATIONS.falseDv);
         if (ignoreModifications.equals(IGNORE_MODS_DV)
                 && type.isFunctionalInterface()
-                && !parameterAnalysis.getParameterInfo().getMethod().isPrivate()) {
-            properties.put(IMMUTABLE, immutable.max(MultiLevel.EFFECTIVELY_E2IMMUTABLE_DV));
-            properties.put(INDEPENDENT, independent.max(MultiLevel.INDEPENDENT_1_DV));
+                && !parameterAnalysis.getParameterInfo().getMethod().methodInspection.get().isPrivate()) {
+            properties.put(IMMUTABLE, immutable.max(MultiLevel.EFFECTIVELY_IMMUTABLE_HC_DV));
+            properties.put(INDEPENDENT, independent.max(MultiLevel.INDEPENDENT_HC_DV));
         } else {
             properties.put(IMMUTABLE, immutable);
             properties.put(INDEPENDENT, independent);
@@ -2050,7 +2144,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
 
     @Override
     public Stream<VariableInfo> variableStream() {
-        return variables.stream().map(Map.Entry::getValue)
+        return variables.valueStream()
                 .filter(VariableInfoContainer::isNotRemoved)
                 .map(VariableInfoContainer::current);
     }
@@ -2179,24 +2273,55 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
             Identifier identifier = Identifier.forVariableOutOfScope(loopVar, index);
             value = Instance.forLoopVariable(identifier, loopVar, valueProperties);
         }
-        LinkedVariables linked = evaluatedIterable.linkedVariables(EvaluationResult.from(evaluationContext));
-        /*
-        We know that the spliterator() method is INDEPENDENT_1 wrt the iterating type, so we must ensure the
-        linked values are at least INDEPENDENT_1 (when the loopVar type is MUTABLE), and at most INDEPENDENT
-        (when the loopVar is recursively IMMUTABLE)
-         */
-        DV minLinking = minimumLinking(evaluationContext, loopVar.parameterizedType());
-        LinkedVariables linked1 = minLinking == LinkedVariables.NO_LINKING_DV ? LinkedVariables.EMPTY :
-                linked.minimum(minLinking);
+        LinkedVariables linkedOfIterable = evaluatedIterable.linkedVariables(EvaluationResult.from(evaluationContext))
+                .minimum(LinkedVariables.LINK_ASSIGNED);
+        DV linkOfLoopVarInIterable = linkOfLoopVarInIterable(evaluationContext, parameterizedType,
+                evaluatedIterable.returnType());
+        LinkedVariables linked;
+        if (linkOfLoopVarInIterable.isDelayed()) {
+            linked = linkedOfIterable.changeToDelay(linkOfLoopVarInIterable.causesOfDelay());
+        } else {
+            DV immutableOfLoopVar = valueProperties.get(IMMUTABLE);
+            linked = combineLinkOfLoopVarAndLinkedOfIterable(linkedOfIterable, linkOfLoopVarInIterable, immutableOfLoopVar);
+        }
         EvaluationResult.Builder builder = new EvaluationResult.Builder(evaluationResult);
-        builder.assignment(loopVar, value, linked1);
+        builder.assignment(loopVar, value, linked);
         return builder.compose(evaluationResult).build();
     }
 
-    private DV minimumLinking(EvaluationContext evaluationContext, ParameterizedType concreteType) {
-        DV immutable = evaluationContext.getAnalyserContext().defaultImmutable(concreteType, true,
-                getCurrentType());
-        return LinkedVariables.fromImmutableToLinkedVariableLevel(immutable);
+    private LinkedVariables combineLinkOfLoopVarAndLinkedOfIterable(LinkedVariables linkedOfIterable,
+                                                                    DV linkOfLoopVarInIterable,
+                                                                    DV immutableOfLoopVar) {
+        assert linkOfLoopVarInIterable.isDone();
+
+        if (LinkedVariables.LINK_INDEPENDENT.equals(linkOfLoopVarInIterable)) {
+            return LinkedVariables.EMPTY;
+        }
+        if (LinkedVariables.LINK_DEPENDENT.equals(linkOfLoopVarInIterable)) {
+            return linkedOfIterable.minimum(LinkedVariables.LINK_DEPENDENT);
+        }
+
+        // T to List<T> type-wise; t:list --> list:1 -> list:3;
+        // t : someMethodExpression(list), with list:4 -> list:3
+        if (LinkedVariables.LINK_IS_HC_OF.equals(linkOfLoopVarInIterable)) {
+            return linkedOfIterable.changeAllToUnlessDelayed(LinkedVariables.LINK_IS_HC_OF);
+        }
+        // hidden content: how do the types relate? entry: map, the linkedOfIterable=map:2; Map.Entry is mutable -> keep :2
+        // the type were immutable without hc
+        assert LinkedVariables.LINK_COMMON_HC.equals(linkOfLoopVarInIterable);
+        if (MultiLevel.isMutable(immutableOfLoopVar)) {
+            return linkedOfIterable.minimum(LinkedVariables.LINK_DEPENDENT);
+        }
+
+        // so immutable with hidden content (because fully immutable would not result in common hc)
+        return linkedOfIterable.minimum(LinkedVariables.LINK_COMMON_HC);
+    }
+
+    private DV linkOfLoopVarInIterable(EvaluationContext evaluationContext, ParameterizedType concreteType,
+                                       ParameterizedType iterableType) {
+        DV immutable = evaluationContext.getAnalyserContext().typeImmutable(concreteType);
+        return LinkedVariables.fromImmutableToLinkedVariableLevel(immutable, evaluationContext.getAnalyserContext(),
+                evaluationContext.getCurrentType(), concreteType, iterableType);
     }
 
     private static DV notNullOfLoopVariable(EvaluationContext evaluationContext, Expression value, CausesOfDelay delays) {
@@ -2207,7 +2332,6 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
         DV nne = evaluationContext.getProperty(value, NOT_NULL_EXPRESSION, true, false);
         return nne.isDelayed() ? nne : MultiLevel.composeOneLevelLessNotNull(nne);
     }
-
 
     /*
     Initially triggered by the presence of the IN_NOT_NULL_CONTEXT flag, which marks the transition of CNN from NULLABLE
@@ -2226,6 +2350,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
         Set<Variable> alreadyRaised = new HashSet<>();
         changeDataMap.entrySet().stream()
                 .filter(e -> e.getValue().getProperty(IN_NOT_NULL_CONTEXT).ge(EFFECTIVELY_NOT_NULL_DV))
+                .filter(e -> !(e.getKey() instanceof LocalVariableReference lvr && lvr.variableNature() instanceof VariableNature.ScopeVariable))
                 .sorted(Comparator.comparing(e -> -e.getValue().getProperty(IN_NOT_NULL_CONTEXT).value()))
                 .forEach(e -> {
                     Variable variable = e.getKey();
@@ -2261,7 +2386,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
                                         "Variable: " + variable.simpleName()));
                                 alreadyRaised.add(variable);
                             }
-                        } // else: TODO content 2 etc.
+                        }
                     }
                 });
         changeDataMap.forEach((v, cd) -> {
@@ -2454,14 +2579,19 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
             boolean haveMapForVariable = read != null || modified != null || notNull != null;
             if (haveMapForVariable) {
                 Properties p = propertiesFromSubAnalysers.computeIfAbsent(variable, v -> Properties.writable());
-                if (read != null) {
-                    p.put(READ, read);
-                }
-                if (modified != null) {
-                    p.put(CONTEXT_MODIFIED, modified);
-                }
-                if (notNull != null) {
-                    p.put(CONTEXT_NOT_NULL, notNull);
+                try {
+                    if (read != null) {
+                        p.put(READ, read);
+                    }
+                    if (modified != null) {
+                        p.put(CONTEXT_MODIFIED, modified);
+                    }
+                    if (notNull != null) {
+                        p.put(CONTEXT_NOT_NULL, notNull);
+                    }
+                } catch (IllegalArgumentException ise) {
+                    LOGGER.error("Caught property change violation for variable {}", variable);
+                    throw ise;
                 }
             }
         }

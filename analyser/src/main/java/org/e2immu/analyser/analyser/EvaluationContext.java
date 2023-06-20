@@ -16,6 +16,7 @@ package org.e2immu.analyser.analyser;
 
 import org.e2immu.analyser.analyser.delay.DelayFactory;
 import org.e2immu.analyser.analyser.delay.SimpleCause;
+import org.e2immu.analyser.analyser.impl.util.BreakDelayLevel;
 import org.e2immu.analyser.analysis.FieldAnalysis;
 import org.e2immu.analyser.analysis.MethodAnalysis;
 import org.e2immu.analyser.analysis.ParameterAnalysis;
@@ -44,7 +45,7 @@ public interface EvaluationContext {
     Logger LOGGER = LoggerFactory.getLogger(EvaluationContext.class);
 
     default int limitOnComplexity() {
-        return 100; // can be overridden for testing
+        return Expression.SOFT_LIMIT_ON_COMPLEXITY; // can be overridden for testing
     }
 
     default int getIteration() {
@@ -104,6 +105,13 @@ public interface EvaluationContext {
         throw new UnsupportedOperationException();
     }
 
+    default EvaluationContext updateStatementTime(int statementTime) {
+        return this;
+    }
+
+    default int getCurrentStatementTime() {
+        return getInitialStatementTime();
+    }
     /*
      This default implementation is the correct one for basic tests and the companion analyser (we cannot use companions in the
      companion analyser, that would be chicken-and-egg).
@@ -166,6 +174,12 @@ public interface EvaluationContext {
                 return getAnalyserContext().getTypeAnalysis(thisVariable.typeInfo).getProperty(property);
             }
             if (variable instanceof PreAspectVariable pre) {
+                /*
+                pre-aspect variables must be nullable, because there can be no information, in which case "null" is injected.
+                the companion methods must take the null-value into account, see e.g. that of List.addAll, size aspect,
+                Modification_26. See also CompanionAnalyser.EvaluationContextImpl.getProperty().
+                 */
+                if (property == NOT_NULL_EXPRESSION) return MultiLevel.NULLABLE_DV;
                 return pre.valueForProperties().getProperty(EvaluationResult.from(this), property, true);
             }
             throw new UnsupportedOperationException("Variable value of type " + variable.getClass());
@@ -181,7 +195,7 @@ public interface EvaluationContext {
     }
 
     default DV getPropertyFromPreviousOrInitial(Variable variable, Property property) {
-        throw new UnsupportedOperationException("Not implemented in "+getClass());
+        throw new UnsupportedOperationException("Not implemented in " + getClass());
     }
 
     default ConditionManager getConditionManager() {
@@ -208,7 +222,7 @@ public interface EvaluationContext {
     List<Property> VALUE_PROPERTIES = List.of(CONTAINER, IDENTITY, IGNORE_MODIFICATIONS, IMMUTABLE, INDEPENDENT, NOT_NULL_EXPRESSION);
 
     Properties PRIMITIVE_VALUE_PROPERTIES = Properties.of(Map.of(NOT_NULL_EXPRESSION, MultiLevel.EFFECTIVELY_NOT_NULL_DV,
-            IMMUTABLE, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV,
+            IMMUTABLE, MultiLevel.EFFECTIVELY_IMMUTABLE_DV,
             INDEPENDENT, MultiLevel.INDEPENDENT_DV,
             CONTAINER, MultiLevel.CONTAINER_DV,
             IDENTITY, IDENTITY.falseDv,
@@ -249,10 +263,10 @@ public interface EvaluationContext {
         assert notNullExpression.isDone();
         AnalyserContext analyserContext = getAnalyserContext();
         Properties properties = Properties.ofWritable(Map.of(
-                IMMUTABLE, analyserContext.defaultImmutable(formalType, false, getCurrentType()).maxIgnoreDelay(IMMUTABLE.falseDv),
-                INDEPENDENT, analyserContext.defaultIndependent(formalType).maxIgnoreDelay(INDEPENDENT.falseDv),
+                IMMUTABLE, analyserContext.typeImmutable(formalType).maxIgnoreDelay(IMMUTABLE.falseDv),
+                INDEPENDENT, analyserContext.typeIndependent(formalType).maxIgnoreDelay(INDEPENDENT.falseDv),
                 NOT_NULL_EXPRESSION, notNullExpression,
-                CONTAINER, analyserContext.defaultContainer(formalType).maxIgnoreDelay(CONTAINER.falseDv),
+                CONTAINER, analyserContext.typeContainer(formalType).maxIgnoreDelay(CONTAINER.falseDv),
                 IDENTITY, IDENTITY.falseDv,
                 IGNORE_MODIFICATIONS, IGNORE_MODIFICATIONS.falseDv));
         assert properties.stream().noneMatch(e -> e.getValue().isDelayed());
@@ -262,10 +276,10 @@ public interface EvaluationContext {
     default Properties valuePropertiesOfNullConstant(ParameterizedType formalType) {
         AnalyserContext analyserContext = getAnalyserContext();
         return Properties.ofWritable(Map.of(
-                IMMUTABLE, analyserContext.defaultImmutable(formalType, false, getCurrentType()),
-                INDEPENDENT, analyserContext.defaultIndependent(formalType),
+                IMMUTABLE, analyserContext.typeImmutable(formalType),
+                INDEPENDENT, analyserContext.typeIndependent(formalType),
                 NOT_NULL_EXPRESSION, AnalysisProvider.defaultNotNull(formalType).maxIgnoreDelay(NOT_NULL_EXPRESSION.falseDv),
-                CONTAINER, analyserContext.defaultContainer(formalType),
+                CONTAINER, analyserContext.typeContainer(formalType),
                 IDENTITY, IDENTITY.falseDv,
                 IGNORE_MODIFICATIONS, IGNORE_MODIFICATIONS.falseDv));
     }
@@ -273,12 +287,12 @@ public interface EvaluationContext {
     default Properties defaultValuePropertiesAllowMyself(ParameterizedType formalType, DV nne) {
         AnalyserContext analyserContext = getAnalyserContext();
         DV immutable = isMyself(formalType) ? MultiLevel.MUTABLE_DV
-                : analyserContext.defaultImmutable(formalType, false, getCurrentType());
+                : analyserContext.typeImmutable(formalType);
         return Properties.ofWritable(Map.of(
                 IMMUTABLE, immutable,
-                INDEPENDENT, analyserContext.defaultIndependent(formalType),
+                INDEPENDENT, analyserContext.typeIndependent(formalType),
                 NOT_NULL_EXPRESSION, nne,
-                CONTAINER, analyserContext.defaultContainer(formalType),
+                CONTAINER, analyserContext.typeContainer(formalType),
                 IDENTITY, IDENTITY.falseDv,
                 IGNORE_MODIFICATIONS, IGNORE_MODIFICATIONS.falseDv));
     }
@@ -330,10 +344,6 @@ public interface EvaluationContext {
                 .findFirst().orElse(null);
         if (inLocalPTAs != null) return inLocalPTAs;
         return getAnalyserContext().getMethodAnalysis(methodInfo);
-    }
-
-    default CausesOfDelay variableIsDelayed(Variable variable) {
-        return CausesOfDelay.EMPTY;
     }
 
     default This currentThis() {
@@ -415,17 +425,17 @@ public interface EvaluationContext {
 
     /**
      * @param variable   the variable in the nested type
-     * @param nestedType the nested type
+     * @param nestedType the nested type, can be null in case of method references
      * @return true when we want to transfer properties from the nested type to the current type
      */
     default boolean acceptForVariableAccessReport(Variable variable, TypeInfo nestedType) {
-        if (isPresent(variable)) return true;
-        return variable instanceof FieldReference fr
-                && fr.fieldInfo.owner != nestedType
-                && fr.fieldInfo.owner.primaryType().equals(nestedType.primaryType())
-                //  && !(fr.scope instanceof VariableExpression ve && ve.variable() instanceof ParameterInfo pi && pi.owner.typeInfo == nestedType)
-                //  && !(fr.isStatic);
-                && fr.scopeVariable != null && acceptForVariableAccessReport(fr.scopeVariable, nestedType);
+        if (variable instanceof FieldReference fr) {
+            return fr.fieldInfo.owner != nestedType
+                    && (nestedType == null || fr.fieldInfo.owner.primaryType().equals(nestedType.primaryType()))
+                    && fr.scopeVariable != null
+                    && acceptForVariableAccessReport(fr.scopeVariable, nestedType);
+        }
+        return isPresent(variable);
     }
 
     default DependentVariable searchInEquivalenceGroupForLatestAssignment(DependentVariable variable,
@@ -455,8 +465,28 @@ public interface EvaluationContext {
         return Properties.EMPTY;
     }
 
-    default boolean allowBreakDelay() {
-        return false;
+    default BreakDelayLevel breakDelayLevel() {
+        return BreakDelayLevel.NONE;
+    }
+
+    /*
+    modifications on immutable object...
+     */
+    default boolean inConstructionOrInStaticWithRespectTo(TypeInfo typeInfo) {
+        if (inConstruction() || typeInfo == null) return true;
+        MethodAnalyser methodAnalyser = getCurrentMethod();
+        if (methodAnalyser == null) return false; //?
+        /*
+         UpgradableBooleanMap: static factory methods: want to return true
+         ExternalImmutable_0: static, but not part of construction
+         */
+        if (methodAnalyser.getMethodInfo().methodInspection.get().isFactoryMethod()) return true;
+        return typeInfo.primaryType() == getCurrentType().primaryType()
+                && getCurrentType().recursivelyInConstructionOrStaticWithRespectTo(getAnalyserContext(), typeInfo);
+    }
+
+    default int initialModificationTimeOrZero(Variable variable) {
+        return 0;
     }
 
     /*
@@ -491,7 +521,7 @@ public interface EvaluationContext {
         }
         TypeInfo bestType = concreteType.bestTypeInfo(getAnalyserContext());
         if (bestType == null) return NO_HIDDEN_CONTENT; // method type parameter, but not involved in fields of type
-        DV immutable = getAnalyserContext().defaultImmutable(concreteType, false, getCurrentType());
+        DV immutable = getAnalyserContext().typeImmutable(concreteType);
         if (immutable.equals(MultiLevel.INDEPENDENT_DV)) return NO_HIDDEN_CONTENT;
         if (immutable.isDelayed()) {
             new HiddenContent(List.of(),

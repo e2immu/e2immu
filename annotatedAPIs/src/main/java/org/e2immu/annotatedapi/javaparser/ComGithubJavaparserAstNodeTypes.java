@@ -23,7 +23,6 @@ import com.github.javaparser.ast.type.TypeParameter;
 import org.e2immu.annotation.Fluent;
 import org.e2immu.annotation.Modified;
 import org.e2immu.annotation.NotNull;
-import org.e2immu.annotation.NotNull1;
 
 import java.util.Optional;
 
@@ -56,7 +55,7 @@ public class ComGithubJavaparserAstNodeTypes {
 
     interface NodeWithTypeParameters$ {
 
-        @NotNull1
+        @NotNull(content = true)
         NodeList<TypeParameter> getTypeParameters();
     }
 

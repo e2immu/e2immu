@@ -19,21 +19,21 @@ plugins {
 }
 
 group 'org.e2immu'
-version '0.2.0'
+version '0.6.1'
 
 dependencies {
-    implementation group: 'org.e2immu', name: 'e2immu-support', version: '0.2.0'      // LGPL 3.0
+    implementation group: 'org.e2immu', name: 'e2immu-support', version: '0.6.1'      // LGPL 3.0
 
     implementation project(':analyser')
     implementation project(':analyser-store-uploader')
 
-    implementation group: 'com.github.javaparser', name: 'javaparser-core', version: '3.18.0'
+    implementation group: 'com.github.javaparser', name: 'javaparser-core', version: '3.24.10'
 
     implementation group: 'commons-cli', name: 'commons-cli', version: '1.4' // Apache License 2.0
     implementation group: 'org.slf4j', name: 'slf4j-api', version: '1.7.25'  // MIT X-11 License
 
-    testImplementation 'org.junit.jupiter:junit-jupiter-api:5.8.2'           // EPL v2 License
-    testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.8.2'
+    testImplementation 'org.junit.jupiter:junit-jupiter-api:5.9.0'           // EPL v2 License
+    testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.9.0'
 }
 
 test {

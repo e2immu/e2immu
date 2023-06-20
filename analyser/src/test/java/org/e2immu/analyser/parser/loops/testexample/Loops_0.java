@@ -14,12 +14,12 @@
 
 package org.e2immu.analyser.parser.loops.testexample;
 
-import org.e2immu.annotation.Constant;
+import org.e2immu.annotation.ImmutableContainer;
 import org.e2immu.annotation.NotNull;
 
 public class Loops_0 {
 
-    @Constant("abc")
+    @ImmutableContainer("abc")
     @NotNull
     public static String method(int n) {
         String res1;

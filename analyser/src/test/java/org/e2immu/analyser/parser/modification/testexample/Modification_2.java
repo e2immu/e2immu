@@ -25,7 +25,7 @@ public class Modification_2 {
 
     @Container
     static class Example2bis {
-        @Variable
+        @Final(absent = true)
         public Set<String> set2bis = new HashSet<>(); // ERROR: non-private field not effectively final
 
         @NotModified
@@ -34,7 +34,8 @@ public class Modification_2 {
         }
     }
 
-    @E1Container
+    @FinalFields
+    @Container
     static class Example2ter {
         @Modified
         private final Set<String> set2ter = new HashSet<>();

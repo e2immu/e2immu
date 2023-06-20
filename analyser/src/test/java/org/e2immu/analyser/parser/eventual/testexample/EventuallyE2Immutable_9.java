@@ -14,17 +14,18 @@
 
 package org.e2immu.analyser.parser.eventual.testexample;
 
-import org.e2immu.annotation.E2Container;
-import org.e2immu.annotation.Mark;
-import org.e2immu.annotation.Only;
-import org.e2immu.annotation.TestMark;
+
+import org.e2immu.annotation.ImmutableContainer;
+import org.e2immu.annotation.eventual.Mark;
+import org.e2immu.annotation.eventual.Only;
+import org.e2immu.annotation.eventual.TestMark;
 
 import java.util.Objects;
 
 /*
 Variant on EventuallyFinal in the support classes
  */
-@E2Container(after = "isFinal")
+@ImmutableContainer(after = "isFinal", hc = true)
 public class EventuallyE2Immutable_9<T> {
 
     private T value;

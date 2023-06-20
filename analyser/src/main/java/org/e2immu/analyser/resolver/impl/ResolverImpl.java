@@ -69,6 +69,7 @@ public class ResolverImpl implements Resolver {
     private final AnonymousTypeCounters anonymousTypeCounters;
     private final AtomicInteger typeCounterForDebugging = new AtomicInteger();
     private final DependencyGraph<MethodInfo> methodCallGraph;
+    private final boolean storeComments;
 
     @Override
     public Stream<Message> getMessageStream() {
@@ -76,34 +77,44 @@ public class ResolverImpl implements Resolver {
     }
 
     @Override
+    public boolean storeComments() {
+        return storeComments;
+    }
+
+    @Override
     public Resolver child(InspectionProvider inspectionProvider,
                           E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions,
-                          boolean shallowResolver) {
-        return new ResolverImpl(this, inspectionProvider, e2ImmuAnnotationExpressions, shallowResolver);
+                          boolean shallowResolver,
+                          boolean parseComments) {
+        return new ResolverImpl(this, inspectionProvider, e2ImmuAnnotationExpressions, shallowResolver, parseComments);
     }
 
     private ResolverImpl(ResolverImpl parent,
                          InspectionProvider inspectionProvider,
                          E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions,
-                         boolean shallowResolver) {
+                         boolean shallowResolver,
+                         boolean storeComments) {
         this.shallowResolver = shallowResolver;
         this.e2ImmuAnnotationExpressions = e2ImmuAnnotationExpressions;
         this.inspectionProvider = inspectionProvider;
         this.parent = parent;
         this.anonymousTypeCounters = parent.anonymousTypeCounters;
         methodCallGraph = parent.methodCallGraph;
+        this.storeComments = storeComments;
     }
 
     public ResolverImpl(AnonymousTypeCounters anonymousTypeCounters,
                         InspectionProvider inspectionProvider,
                         E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions,
-                        boolean shallowResolver) {
+                        boolean shallowResolver,
+                        boolean storeComments) {
         this.shallowResolver = shallowResolver;
         this.e2ImmuAnnotationExpressions = e2ImmuAnnotationExpressions;
         this.inspectionProvider = inspectionProvider;
         this.parent = null;
         this.anonymousTypeCounters = anonymousTypeCounters;
         methodCallGraph = new DependencyGraph<>();
+        this.storeComments = storeComments;
     }
 
     /**
@@ -301,12 +312,6 @@ public class ResolverImpl implements Resolver {
             }
             typeInspection.subTypes().forEach(expressionContextOfType.typeContext()::addToContext);
 
-            // recursion, do subtypes first (no recursion at resolver level!)
-            typeInspection.subTypes().forEach(subType -> {
-                LOGGER.debug("From {} into {}", typeInfo.fullyQualifiedName, subType.fullyQualifiedName);
-                doType(subType, topType, expressionContextOfType, methodFieldSubTypeGraph);
-            });
-
             LOGGER.debug("Resolving type #{}: {}", typeCounterForDebugging.incrementAndGet(), typeInfo.fullyQualifiedName);
             TypeInfo primaryType = typeInfo.primaryType();
             ExpressionContext expressionContextForBody = ExpressionContextImpl.forTypeBodyParsing(this, typeInfo,
@@ -320,9 +325,17 @@ public class ResolverImpl implements Resolver {
             accessibleBySimpleNameTypeInfoStream(typeContext, typeInfo, primaryType)
                     .forEach(ti -> typeContext.addToContext(ti, false));
 
-            // add visible fields to variable context
-            accessibleFieldsStream(typeContext, typeInfo, primaryType).forEach(fieldInfo ->
+            // add visible fields to variable context, without those of enclosing types, they'll be recursively accessible
+            // See e.g. AnonymousType_0
+            accessibleFieldsStream(typeContext, typeInfo, primaryType, primaryType.packageName(),
+                    false, false).forEach(fieldInfo ->
                     expressionContextForBody.variableContext().add(new FieldReference(typeContext, fieldInfo)));
+
+            // recursion, do subtypes first (no recursion at resolver level!)
+            typeInspection.subTypes().forEach(subType -> {
+                LOGGER.debug("From {} into {}", typeInfo.fullyQualifiedName, subType.fullyQualifiedName);
+                doType(subType, topType, expressionContextForBody, methodFieldSubTypeGraph);
+            });
 
             List<TypeInfo> typeAndAllSubTypes = typeAndAllSubTypes(typeInfo);
             Set<TypeInfo> restrictToType = new HashSet<>(typeAndAllSubTypes);
@@ -333,7 +346,7 @@ public class ResolverImpl implements Resolver {
 
             // dependencies of the type
 
-            Set<TypeInfo> typeDependencies = typeInspection.typesReferenced().stream()
+            Set<TypeInfo> typeDependencies = typeInfo.typesReferenced().stream()
                     .map(Map.Entry::getKey).collect(Collectors.toCollection(HashSet::new));
             typeDependencies.retainAll(restrictToType);
             methodFieldSubTypeGraph.addNode(typeInfo, List.copyOf(typeDependencies));
@@ -375,7 +388,7 @@ public class ResolverImpl implements Resolver {
                 methodFieldSubTypeGraph.addNode(fieldInfo, List.of());
             }
             assert !fieldInfo.fieldInspection.isSet() : "Field inspection for " + fieldInfo.fullyQualifiedName() + " has already been set";
-            fieldInfo.fieldInspection.set(fieldInspection.build());
+            fieldInfo.fieldInspection.set(fieldInspection.build(expressionContext.typeContext()));
             LOGGER.debug("Set field inspection of " + fieldInfo.fullyQualifiedName());
 
             doAnnotations(fieldInspection.getAnnotations(), expressionContext);
@@ -422,7 +435,7 @@ public class ResolverImpl implements Resolver {
                         (MethodReference) parsedExpression, expressionContext);
                 anonymousType = sam.typeInfo;
                 Resolver child = child(expressionContext.typeContext(), expressionContext.typeContext().typeMap()
-                        .getE2ImmuAnnotationExpressions(), false);
+                        .getE2ImmuAnnotationExpressions(), false, storeComments);
                 child.resolve(Map.of(sam.typeInfo, subContext));
                 callGetOnSam = false;
             } else if (hasTypesDefined(parsedExpression)) {
@@ -439,7 +452,9 @@ public class ResolverImpl implements Resolver {
                     sam = convertExpressionIntoSupplier(fieldInfo.type, fieldInspectionBuilder.isStatic(), fieldInfo.owner,
                             parsedExpression, expressionContext, Identifier.from(expression));
                     anonymousType = sam.typeInfo;
-                    Resolver child = child(expressionContext.typeContext(), expressionContext.typeContext().typeMap().getE2ImmuAnnotationExpressions(), false);
+                    Resolver child = child(expressionContext.typeContext(),
+                            expressionContext.typeContext().typeMap().getE2ImmuAnnotationExpressions(),
+                            false, storeComments);
                     child.resolve(Map.of(sam.typeInfo, subContext));
                     callGetOnSam = true;
                 }
@@ -591,12 +606,13 @@ public class ResolverImpl implements Resolver {
         return blockBuilder -> {
             int i = 0;
             for (FieldInfo fieldInfo : typeInspection.fields()) {
-                if (!fieldInfo.isStatic(inspectionProvider)) {
+                FieldInspection fieldInspection = inspectionProvider.getFieldInspection(fieldInfo);
+                if (!fieldInspection.isStatic()) {
                     VariableExpression target = new VariableExpression(new FieldReference(inspectionProvider, fieldInfo));
                     VariableExpression parameter = new VariableExpression(methodInspection.getParameters().get(i++));
                     Assignment assignment = new Assignment(inspectionProvider.getPrimitives(), target, parameter);
                     Identifier id = Identifier.generate("synthetic assignment compact constructor");
-                    blockBuilder.addStatement(new ExpressionAsStatement(id, assignment, true));
+                    blockBuilder.addStatement(new ExpressionAsStatement(id, assignment, null, true));
                 }
             }
         };
@@ -760,8 +776,6 @@ public class ResolverImpl implements Resolver {
                             .filter(m -> m.typeInfo.firstStaticEnclosingType(inspectionProvider) == staticEnclosingType)
                             .collect(Collectors.toUnmodifiableSet());
                     methodResolutionBuilder.setMethodsOfOwnClassReached(methodsOfOwnClassReached);
-
-                    computeStaticMethodCallsOnly(methodInfo, methodResolutionBuilder);
                     methodResolutionBuilder.setOverrides(methodInfo, ShallowMethodResolver.overrides(inspectionProvider, methodInfo));
 
                     computeAllowsInterrupt(methodResolutionBuilder, builders, methodInfo, methodsOfOwnClassReached, false);
@@ -824,7 +838,7 @@ public class ResolverImpl implements Resolver {
      */
     private int methodRank(MethodInfo methodInfo) {
         if (methodInfo.typeInfo.typeInspection.get().isFunctionalInterface()) return 0;
-        if (methodInfo.isPrivate()) return 1;
+        if (methodInfo.methodInspection.get().isPrivate()) return 1;
         return 2;
     }
 
@@ -847,13 +861,15 @@ public class ResolverImpl implements Resolver {
         // first part of allowsInterrupt computation: look locally
         boolean allowsInterrupt;
         boolean delays;
-        if (methodInspection.getModifiers().contains(MethodModifier.PRIVATE)) {
-            allowsInterrupt = methodsReached.stream().anyMatch(reached -> !reached.isPrivate(inspectionProvider) ||
-                    methodInfo.methodResolution.isSet() && methodInfo.methodResolution.get().allowsInterrupts() ||
-                    builders.containsKey(reached) && builders.get(reached).allowsInterrupts.getOrDefault(false));
-            delays = !doNotDelay && methodsReached.stream().anyMatch(reached -> reached.isPrivate(inspectionProvider) &&
-                    builders.containsKey(reached) &&
-                    !builders.get(reached).allowsInterrupts.isSet());
+        if (methodInspection.getParsedModifiers().contains(MethodModifier.PRIVATE)) {
+            allowsInterrupt = methodsReached.stream().anyMatch(reached ->
+                    !inspectionProvider.getMethodInspection(reached).isPrivate() ||
+                            methodInfo.methodResolution.isSet() && methodInfo.methodResolution.get().allowsInterrupts() ||
+                            builders.containsKey(reached) && builders.get(reached).allowsInterrupts.getOrDefault(false));
+            delays = !doNotDelay && methodsReached.stream().anyMatch(reached ->
+                    !inspectionProvider.getMethodInspection(reached).isPrivate() &&
+                            builders.containsKey(reached) &&
+                            !builders.get(reached).allowsInterrupts.isSet());
             if (!allowsInterrupt) {
                 Block body = inspectionProvider.getMethodInspection(methodInfo).getMethodBody();
                 allowsInterrupt = AllowInterruptVisitor.allowInterrupts(body, builders.keySet());
@@ -867,34 +883,11 @@ public class ResolverImpl implements Resolver {
         }
     }
 
-    private void computeStaticMethodCallsOnly(MethodInfo methodInfo,
-                                              MethodResolution.Builder methodResolution) {
-        MethodInspection methodInspection = inspectionProvider.getMethodInspection(methodInfo);
-        if (!methodResolution.staticMethodCallsOnly.isSet()) {
-            if (methodInspection.isStatic()) {
-                methodResolution.staticMethodCallsOnly.set(true);
-            } else {
-                AtomicBoolean atLeastOneCallOnThis = new AtomicBoolean(false);
-                Block block = methodInspection.getMethodBody();
-                if (block != null) {
-                    block.visit(element -> {
-                        if (element instanceof MethodCall methodCall) {
-                            MethodInspection callInspection = inspectionProvider.getMethodInspection(methodCall.methodInfo);
-                            boolean callOnThis = !callInspection.isStatic() &&
-                                    (methodCall.object == null ||
-                                            methodCall.object instanceof VariableExpression ve
-                                                    && ve.variable() instanceof This thisVar
-                                                    && thisVar.typeInfo == methodInfo.typeInfo);
-                            if (callOnThis) atLeastOneCallOnThis.set(true);
-                        }
-                    });
-                }
-                boolean staticMethodCallsOnly = !atLeastOneCallOnThis.get();
-                LOGGER.debug("Method {} is not static, does it have no calls on <this> scope? {}",
-                        methodInfo.fullyQualifiedName(), staticMethodCallsOnly);
-                methodResolution.staticMethodCallsOnly.set(staticMethodCallsOnly);
-            }
-        }
+    private boolean notPartOfConstruction(MethodInfo methodInfo, MethodInspection methodInspection) {
+        return !methodInspection.isPrivate() &&
+                !methodInspection.isStatic() &&
+                !methodInspection.getMethodInfo().typeInfo
+                        .recursivelyInConstructionOrStaticWithRespectTo(inspectionProvider, methodInfo.typeInfo);
     }
 
     /**
@@ -906,28 +899,50 @@ public class ResolverImpl implements Resolver {
                                                  MethodInfo methodInfo) {
         TypeInspection typeInspection = inspectionProvider.getTypeInspection(methodInfo.typeInfo);
         for (MethodInfo other : typeInspection.methods()) {
-            if (!other.isPrivate() && builders.get(other).getMethodsOfOwnClassReached().contains(methodInfo)) {
-                return true;
+            MethodInspection otherInspection = other.methodInspection.get();
+            if (other != methodInfo && notPartOfConstruction(other, otherInspection)) {
+                MethodResolution.Builder builder = builders.get(other);
+                //assert builder != null : "No method resolution builder found for " + other.fullyQualifiedName;
+                if (builder != null && builder.getMethodsOfOwnClassReached().contains(methodInfo)) {
+                    return true;
+                }
             }
         }
         for (FieldInfo fieldInfo : typeInspection.fields()) {
-            if (!fieldInfo.isPrivate() && fieldInfo.fieldInspection.get().fieldInitialiserIsSet()) {
-                FieldInspection.FieldInitialiser fieldInitialiser = fieldInfo.fieldInspection.get().getFieldInitialiser();
-                if (fieldInitialiser.implementationOfSingleAbstractMethod() != null &&
-                        builders.get(fieldInitialiser.implementationOfSingleAbstractMethod()).getMethodsOfOwnClassReached().contains(methodInfo)) {
-                    return true;
+            FieldInspection fieldInspection = fieldInfo.fieldInspection.get();
+            if (!fieldInspection.isPrivate() && fieldInspection.fieldInitialiserIsSet()) {
+                FieldInspection.FieldInitialiser fieldInitialiser = fieldInspection.getFieldInitialiser();
+                MethodInfo implementation = fieldInitialiser.implementationOfSingleAbstractMethod();
+                if (implementation != null) {
+                    MethodResolution.Builder builder = builders.get(implementation);
+                    //assert builder != null : "No method resolution builder found for " + implementation.fullyQualifiedName;
+                    if (builder != null && builder.getMethodsOfOwnClassReached().contains(methodInfo)) {
+                        return true;
+                    }
                 }
             }
         }
         return false;
     }
 
-    private boolean isCalledFromConstructors(Map<MethodInfo, MethodResolution.Builder> builders,
-                                             MethodInfo methodInfo) {
+    private boolean isCalledFromConstructorsOrStaticMethods(Map<MethodInfo, MethodResolution.Builder> builders,
+                                                            MethodInfo methodInfo) {
         TypeInspection typeInspection = inspectionProvider.getTypeInspection(methodInfo.typeInfo);
         for (MethodInfo other : typeInspection.constructors()) {
-            if (builders.get(other).getMethodsOfOwnClassReached().contains(methodInfo)) {
+            MethodResolution.Builder builder = builders.get(other);
+            //assert builder != null : "No method resolution builder found for " + other.fullyQualifiedName;
+            if (builder != null && builder.getMethodsOfOwnClassReached().contains(methodInfo)) {
                 return true;
+            }
+        }
+        for (MethodInfo other : typeInspection.methods()) {
+            MethodInspection otherInspection = other.methodInspection.get();
+            if (other != methodInfo && !notPartOfConstruction(other, otherInspection)) {
+                MethodResolution.Builder builder = builders.get(other);
+                //assert builder != null : "No method resolution builder found for " + other.fullyQualifiedName;
+                if (builder != null && builder.getMethodsOfOwnClassReached().contains(methodInfo)) {
+                    return true;
+                }
             }
         }
         for (FieldInfo fieldInfo : typeInspection.fields()) {
@@ -961,13 +976,13 @@ public class ResolverImpl implements Resolver {
         if (methodInfo.isConstructor) {
             return MethodResolution.CallStatus.PART_OF_CONSTRUCTION;
         }
-        if (!methodInfo.isPrivate(inspectionProvider)) {
+        if (!inspectionProvider.getMethodInspection(methodInfo).isPrivate()) {
             return MethodResolution.CallStatus.NON_PRIVATE;
         }
         if (isCalledFromNonPrivateMethod(builders, methodInfo)) {
             return MethodResolution.CallStatus.CALLED_FROM_NON_PRIVATE_METHOD;
         }
-        if (isCalledFromConstructors(builders, methodInfo)) {
+        if (isCalledFromConstructorsOrStaticMethods(builders, methodInfo)) {
             return MethodResolution.CallStatus.PART_OF_CONSTRUCTION;
         }
         return MethodResolution.CallStatus.NOT_CALLED_AT_ALL;
@@ -1059,14 +1074,14 @@ public class ResolverImpl implements Resolver {
                                          boolean inSameCompilationUnit, boolean inSamePackage) {
         if (inSameCompilationUnit) return true;
         TypeInspection inspection = inspectionProvider.getTypeInspection(typeInfo);
-        return inspection.access() == TypeModifier.PUBLIC ||
-                inSamePackage && inspection.access() == TypeModifier.PACKAGE ||
-                !inSamePackage && inspection.access() == TypeModifier.PROTECTED;
+        return inspection.isPublic() ||
+                inSamePackage && inspection.isPackagePrivate() ||
+                !inSamePackage && inspection.isProtected();
     }
 
 
     public static Stream<FieldInfo> accessibleFieldsStream(InspectionProvider inspectionProvider, TypeInfo typeInfo, TypeInfo primaryType) {
-        return accessibleFieldsStream(inspectionProvider, typeInfo, typeInfo, primaryType.packageName(), false);
+        return accessibleFieldsStream(inspectionProvider, typeInfo, typeInfo, primaryType.packageName(), false, true);
     }
 
     /*
@@ -1076,7 +1091,8 @@ public class ResolverImpl implements Resolver {
                                                             TypeInfo typeInfo,
                                                             TypeInfo startingPoint,
                                                             String startingPointPackageName,
-                                                            boolean staticFieldsOnly) {
+                                                            boolean staticFieldsOnly,
+                                                            boolean includeEnclosing) {
         TypeInspection typeInspection = inspectionProvider.getTypeInspection(typeInfo);
         TypeInfo primaryType = typeInfo.primaryType();
 
@@ -1094,7 +1110,7 @@ public class ResolverImpl implements Resolver {
         if (!isJLO) {
             assert typeInspection.parentClass() != null && typeInspection.parentClass().typeInfo != null;
             parentStream = accessibleFieldsStream(inspectionProvider, typeInspection.parentClass().typeInfo,
-                    startingPoint, startingPointPackageName, staticFieldsOnly);
+                    startingPoint, startingPointPackageName, staticFieldsOnly, includeEnclosing);
         } else parentStream = Stream.empty();
         Stream<FieldInfo> joint = Stream.concat(localStream, parentStream);
 
@@ -1102,16 +1118,16 @@ public class ResolverImpl implements Resolver {
         for (ParameterizedType interfaceType : typeInspection.interfacesImplemented()) {
             assert interfaceType.typeInfo != null;
             Stream<FieldInfo> fromInterface = accessibleFieldsStream(inspectionProvider, interfaceType.typeInfo,
-                    startingPoint, startingPointPackageName, staticFieldsOnly);
+                    startingPoint, startingPointPackageName, staticFieldsOnly, includeEnclosing);
             joint = Stream.concat(joint, fromInterface);
         }
 
         // my enclosing type's fields, but statics only when I'm a static nested type!
         Stream<FieldInfo> enclosingStream;
-        if (typeInfo.packageNameOrEnclosingType.isRight()) {
+        if (includeEnclosing && typeInfo.packageNameOrEnclosingType.isRight()) {
             enclosingStream = accessibleFieldsStream(inspectionProvider,
                     typeInfo.packageNameOrEnclosingType.getRight(), startingPoint, startingPointPackageName,
-                    typeInspection.isStatic());
+                    typeInspection.isStatic(), true);
         } else {
             enclosingStream = Stream.empty();
         }
@@ -1126,9 +1142,8 @@ public class ResolverImpl implements Resolver {
         if (inSameCompilationUnit) return true;
         FieldInspection inspection = inspectionProvider.getFieldInspection(fieldInfo);
         if (staticFieldsOnly && !inspection.isStatic()) return false;
-        FieldModifier access = inspection.getAccess();
-        return access == FieldModifier.PUBLIC ||
-                inSamePackage && access != FieldModifier.PRIVATE ||
-                !inSamePackage && access == FieldModifier.PROTECTED;
+        return inspection.isPublic() ||
+                inSamePackage && !inspection.isPrivate() ||
+                !inSamePackage && inspection.isProtected();
     }
 }

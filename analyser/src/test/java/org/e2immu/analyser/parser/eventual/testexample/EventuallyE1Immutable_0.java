@@ -15,8 +15,9 @@
 package org.e2immu.analyser.parser.eventual.testexample;
 
 import org.e2immu.annotation.*;
+import org.e2immu.annotation.eventual.Mark;
 
-@E1Container(after = "string")
+@FinalFields(after = "string")
 public class EventuallyE1Immutable_0 {
     private static final String STRING = "string";
 
@@ -24,6 +25,7 @@ public class EventuallyE1Immutable_0 {
     level 2 immutable. The type is not transparent because of the access in getI
      */
     @Container
+    @FinalFields(absent = true)
     public static class TwoIntegers {
         private int i;
         private int j;

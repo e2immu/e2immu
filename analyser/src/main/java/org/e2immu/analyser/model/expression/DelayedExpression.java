@@ -16,6 +16,8 @@ package org.e2immu.analyser.model.expression;
 
 import org.e2immu.analyser.analyser.Properties;
 import org.e2immu.analyser.analyser.*;
+import org.e2immu.analyser.analyser.delay.DelayFactory;
+import org.e2immu.analyser.analyser.delay.SimpleCause;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.util.ExpressionComparator;
 import org.e2immu.analyser.model.impl.BaseExpression;
@@ -25,7 +27,6 @@ import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.Text;
 import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.parser.Primitives;
-import org.e2immu.annotation.E2Container;
 
 import java.util.*;
 import java.util.function.Predicate;
@@ -37,8 +38,13 @@ import static org.e2immu.analyser.model.MultiLevel.EFFECTIVELY_NOT_NULL_DV;
 A delayed expression stores the original expression, rather than the variables needed to generate (delayed) linked variables,
 because the translation needs to work for ExplicitConstructorInvocations. See e.g. ECI_7 where there are explicit tests.
  */
-@E2Container
 public final class DelayedExpression extends BaseExpression implements Expression {
+    public static final String ECI = "<eci>";
+    public static final DelayedExpression NO_POST_CONDITION_INFO = new DelayedExpression(Identifier.CONSTANT,
+            "post-condition",
+            ParameterizedType.RETURN_TYPE_OF_CONSTRUCTOR, EmptyExpression.EMPTY_EXPRESSION,
+            DelayFactory.createDelay(new SimpleCause(Location.NOT_YET_SET, CauseOfDelay.Cause.NO_POST_CONDITION_INFO)));
+
     private final String msg;
     private final ParameterizedType parameterizedType;
     private final Expression original;
@@ -63,7 +69,7 @@ public final class DelayedExpression extends BaseExpression implements Expressio
                               Properties properties,
                               Map<Variable, DV> cnnMap,
                               Map<FieldInfo, Expression> shortCutMap) {
-        super(identifier);
+        super(identifier, original.getComplexity());
         this.msg = msg;
         this.parameterizedType = parameterizedType;
         this.causesOfDelay = causesOfDelay;
@@ -221,7 +227,7 @@ public final class DelayedExpression extends BaseExpression implements Expressio
     public static Expression forECI(Identifier identifier,
                                     Expression original,
                                     CausesOfDelay eciDelay) {
-        return new DelayedExpression(identifier, "<eci>", ParameterizedType.RETURN_TYPE_OF_CONSTRUCTOR, original,
+        return new DelayedExpression(identifier, ECI, ParameterizedType.RETURN_TYPE_OF_CONSTRUCTOR, original,
                 eciDelay);
     }
 
@@ -323,7 +329,7 @@ public final class DelayedExpression extends BaseExpression implements Expressio
 
         // see InstanceOf_16 as an example on why we should add these...
         // essentially, the return expression may expand, and cause context changes
-        for (Variable variable : variables(true)) {
+        for (Variable variable : variables()) {
             if (context.evaluationContext().isPresent(variable)) {
                 builder.setProperty(variable, Property.CONTEXT_MODIFIED, causesOfDelay);
                 builder.setProperty(variable, Property.CONTEXT_NOT_NULL, causesOfDelay);
@@ -346,24 +352,27 @@ public final class DelayedExpression extends BaseExpression implements Expressio
         return causesOfDelay;
     }
 
-    // See Loops_19: during merging, local loop variables are replaced. The variables in the DelayedExpression.variables
-    // list need to be replaced as well.
+    /*
+     See Loops_19: during merging, local loop variables are replaced. The variables in the DelayedExpression.variables
+     list need to be replaced as well. We also need these replacements in merging (See e.g. FormatterSimplified_2, where
+     a pattern variable has to be replaced by an out of scope delayed variable).
+     */
     @Override
     public Expression translate(InspectionProvider inspectionProvider, TranslationMap translationMap) {
         Expression translated = original.translate(inspectionProvider, translationMap);
-        if (translated == original) return this;
-        return new DelayedExpression(identifier, msg, translationMap.translateType(parameterizedType),
-                translated, causesOfDelay);
+        ParameterizedType translatedType = translationMap.translateType(parameterizedType);
+        if (translated == original && translatedType == parameterizedType) return this;
+        return new DelayedExpression(identifier, msg, translatedType, translated, causesOfDelay);
     }
 
     @Override
-    public List<Variable> variables(boolean descendIntoFieldReferences) {
+    public List<Variable> variables(DescendMode descendIntoFieldReferences) {
         return original.variables(descendIntoFieldReferences);
     }
 
     @Override
     public LinkedVariables linkedVariables(EvaluationResult context) {
-        Set<Variable> set = new HashSet<>(variables(true));
+        Set<Variable> set = new HashSet<>(variables());
         return LinkedVariables.of(set.stream().collect(Collectors.toUnmodifiableMap(v -> v, v -> causesOfDelay)));
     }
 
@@ -377,6 +386,14 @@ public final class DelayedExpression extends BaseExpression implements Expressio
 
     public ParameterizedType parameterizedType() {
         return parameterizedType;
+    }
+
+    // for testing, recursive
+    public Expression getDoneOriginal() {
+        if (original instanceof DelayedExpression de) {
+            return de.getDoneOriginal();
+        }
+        return original;
     }
 
     @Override

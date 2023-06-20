@@ -47,7 +47,7 @@ public class Test_36_Cast extends CommonTestRunner {
     public void test_0() throws IOException {
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("Cast_0".equals(d.typeInfo().simpleName)) {
-                assertEquals("", d.typeAnalysis().getTransparentTypes().toString());
+               assertHc(d, 0, "T");
             }
         };
         testClass("Cast_0", 0, 0, new DebugConfiguration.Builder()
@@ -59,9 +59,8 @@ public class Test_36_Cast extends CommonTestRunner {
     public void test_1() throws IOException {
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("Cast_1".equals(d.typeInfo().simpleName)) {
-                assertTrue(d.typeAnalysis().getTransparentTypes().isEmpty(),
-                        () -> "Have " + d.typeAnalysis().getTransparentTypes().toString());
-                assertDv(d, 1, MultiLevel.EFFECTIVELY_E1IMMUTABLE_DV, Property.IMMUTABLE);
+                assertHc(d, 0, "T");
+                assertDv(d, 1, MultiLevel.EFFECTIVELY_FINAL_FIELDS_DV, Property.IMMUTABLE);
             }
 
             if ("Counter".equals(d.typeInfo().simpleName)) {
@@ -75,7 +74,7 @@ public class Test_36_Cast extends CommonTestRunner {
                 if (d.variable() instanceof ReturnVariable) {
                     String expectValue = d.iteration() <= 1 ? "<m:increment>" : "instance type int";
                     assertEquals(expectValue, d.currentValue().toString());
-                    assertDv(d, 2, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
+                    assertDv(d, 2, MultiLevel.EFFECTIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
                     String linked = d.iteration() <= 1 ? "this.t:-1,this:-1" : "";
                     assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
                 }
@@ -86,9 +85,12 @@ public class Test_36_Cast extends CommonTestRunner {
                 }
             }
             if ("getTAsString".equals(d.methodInfo().name) && d.variable() instanceof ReturnVariable) {
-                String expected = d.iteration() == 0 ? "<f:t>/*(String)*/" : "t/*(String)*/";
+                String expected = switch(d.iteration()) {
+                    case 0 -> "<f:t>/*(String)*/";
+                    default -> "t/*(String)*/";
+                };
                 assertEquals(expected, d.currentValue().toString());
-                if (d.iteration() > 0) {
+                if (d.iteration() >= 1) {
                     assertTrue(d.currentValue() instanceof PropertyWrapper pw &&
                             pw.castType().equals(d.context().getPrimitives().stringParameterizedType()));
                 }
@@ -138,7 +140,7 @@ public class Test_36_Cast extends CommonTestRunner {
     public void test_2() throws IOException {
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("Cast_2".equals(d.typeInfo().simpleName)) {
-                assertEquals("Type param T", d.typeAnalysis().getTransparentTypes().toString());
+                assertHc(d, 0, "T");
             }
         };
         testClass("Cast_2", 0, 0, new DebugConfiguration.Builder()

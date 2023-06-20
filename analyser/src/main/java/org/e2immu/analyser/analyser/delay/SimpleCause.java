@@ -29,6 +29,7 @@ public class SimpleCause implements CauseOfDelay {
 
     public SimpleCause(Location location, CauseOfDelay.Cause cause) {
         this.cause = cause;
+        assert location != null;
         this.location = location;
         this.withoutStatementIdentifier = cause.label + "@" + location.delayStringWithoutStatementIdentifier();
     }

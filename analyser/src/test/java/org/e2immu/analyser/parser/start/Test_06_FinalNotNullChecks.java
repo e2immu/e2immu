@@ -56,12 +56,14 @@ public class Test_06_FinalNotNullChecks extends CommonTestRunner {
                 assertEquals(expectValue, d.currentValue().toString());
             }
             if ("FinalNotNullChecks".equals(d.methodInfo().name)) {
-                if (PARAM.equals(d.variableName())) {
-                    assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, d.getProperty(NOT_NULL_EXPRESSION));
-                    if (d.iteration() == 0) {
-                        // only during the 1st iteration there is no @NotNull on the parameter, so there is a restriction
-                        assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, d.getProperty(NOT_NULL_EXPRESSION));
-                    }
+                assertEquals("0", d.statementId());
+
+                if (d.variable() instanceof ParameterInfo pi && "param".equals(pi.name)) {
+                    assertEquals(PARAM, d.variableName());
+                    assertDv(d, MultiLevel.EFFECTIVELY_NOT_NULL_DV, CONTEXT_NOT_NULL);
+
+                    assertEquals("nullable instance type String/*@Identity*/", d.currentValue().toString());
+                    assertDv(d, MultiLevel.NULLABLE_DV, NOT_NULL_EXPRESSION);
                 }
                 // the variable has the value of param, which has received a @NotNull
                 if (INPUT.equals(d.variableName())) {

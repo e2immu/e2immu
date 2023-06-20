@@ -19,13 +19,13 @@ import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.util.UpgradableBooleanMap;
 import org.e2immu.annotation.NotNull;
-import org.e2immu.annotation.NotNull1;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public interface Element {
 
@@ -34,7 +34,7 @@ public interface Element {
 
     // definition
 
-    @NotNull1
+    @NotNull(content = true)
     default List<? extends Element> subElements() {
         return List.of();
     }
@@ -60,18 +60,11 @@ public interface Element {
         });
     }
 
-    @NotNull1
+    @NotNull(content = true)
     default <E extends Element> List<E> collect(Class<E> clazz) {
         List<E> result = new ArrayList<>();
         visit(result::add, clazz);
         return List.copyOf(result);
-    }
-
-    // translate
-
-    @NotNull
-    default Element translate(InspectionProvider inspectionProvider, TranslationMap translationMap) {
-        return this;
     }
 
     // types referenced (used for imports, uploading annotations, dependency tree between types)
@@ -81,11 +74,31 @@ public interface Element {
         return subElements().stream().flatMap(e -> e.typesReferenced().stream()).collect(UpgradableBooleanMap.collector());
     }
 
+    enum DescendMode {
+        NO,
+        YES,
+        YES_INCLUDE_THIS
+    }
+
+    @Deprecated
+    default List<Variable> variables(boolean b) {
+        return b ? variables(DescendMode.YES): variables(DescendMode.NO);
+    }
+
+    default List<Variable> variables() {
+        // the e2immu default is to descend, but to exclude This
+        return variables(DescendMode.YES);
+    }
+    // can be made more efficient in implementations
+    default Stream<Variable> variableStream() {
+        return variables(DescendMode.YES).stream();
+    }
+
     // variables, in order of appearance
-    @NotNull1
-    default List<Variable> variables(boolean descendIntoFieldReferences) {
+    @NotNull(content = true)
+    default List<Variable> variables(DescendMode descendMode) {
         return subElements().stream()
-                .flatMap(e -> e.variables(descendIntoFieldReferences).stream())
+                .flatMap(e -> e.variables(descendMode).stream())
                 .collect(Collectors.toList());
     }
 
@@ -106,7 +119,7 @@ public interface Element {
     }
 
     @SuppressWarnings("unchecked")
-    default <T extends Expression> T asInstanceOf(Class<T> clazz) {
+    default <T extends Element> T asInstanceOf(Class<T> clazz) {
         if (clazz.isAssignableFrom(getClass())) {
             return (T) this;
         }

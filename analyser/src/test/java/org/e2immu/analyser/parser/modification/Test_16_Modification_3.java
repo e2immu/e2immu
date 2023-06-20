@@ -20,6 +20,8 @@ import org.e2immu.analyser.analyser.VariableInfo;
 import org.e2immu.analyser.analysis.impl.FieldAnalysisImpl;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.model.MethodInfo;
+import org.e2immu.analyser.model.MultiLevel;
+import org.e2immu.analyser.model.ParameterInfo;
 import org.e2immu.analyser.model.TypeInfo;
 import org.e2immu.analyser.model.expression.VariableExpression;
 import org.e2immu.analyser.model.variable.FieldReference;
@@ -65,56 +67,69 @@ public class Test_16_Modification_3 extends CommonTestRunner {
         final String SET3_DELAYED = "<f:set3>";
 
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
-            if ("add3".equals(d.methodInfo().name) && "local3".equals(d.variableName())) {
-                if ("0".equals(d.statementId())) {
-                    assertTrue(d.variableInfo().isAssigned());
-                    assertFalse(d.variableInfo().isRead());
+            if ("add3".equals(d.methodInfo().name)) {
+                if ("local3".equals(d.variableName())) {
+                    if ("0".equals(d.statementId())) {
+                        assertTrue(d.variableInfo().isAssigned());
+                        assertFalse(d.variableInfo().isRead());
 
-                    if (d.iteration() == 0) {
-                        assertTrue(d.currentValue().isDelayed());
-                    } else {
-                        assertTrue(d.variableInfo().getValue() instanceof VariableExpression);
-                        VariableExpression variableValue = (VariableExpression) d.currentValue();
-                        assertTrue(variableValue.variable() instanceof FieldReference);
-                        assertEquals("set3", d.currentValue().toString());
+                        if (d.iteration() == 0) {
+                            assertTrue(d.currentValue().isDelayed());
+                        } else {
+                            assertTrue(d.variableInfo().getValue() instanceof VariableExpression);
+                            VariableExpression variableValue = (VariableExpression) d.currentValue();
+                            assertTrue(variableValue.variable() instanceof FieldReference);
+                            assertEquals("set3", d.currentValue().toString());
+                        }
+                        assertEquals("this.set3:0", d.variableInfo().getLinkedVariables().toString());
                     }
-                    assertEquals("this.set3:0", d.variableInfo().getLinkedVariables().toString());
-                }
-                if ("1".equals(d.statementId())) {
-                    //  the READ is written at level 1
-                    assertTrue(d.variableInfo().isAssigned());
-                    assertTrue(d.variableInfo().isRead());
+                    if ("1".equals(d.statementId())) {
+                        //  the READ is written at level 1
+                        assertTrue(d.variableInfo().isAssigned());
+                        assertTrue(d.variableInfo().isRead());
 
-                    assertTrue(d.variableInfo().getReadId()
-                            .compareTo(d.variableInfo().getAssignmentIds().getLatestAssignment()) > 0);
-                    if (d.iteration() == 0) {
-                        // there is a variable info at levels 0 and 3
-                        assertTrue(d.currentValue().isDelayed());
-                        assertFalse(d.variableInfoContainer().isInitial());
-                    } else {
-                        // there is a variable info in level 1, copied from level 1 in statement 0
-                        // problem is that there is one in level 3 already, with a NO_VALUE
-                        VariableInfo vi1 = d.variableInfoContainer().current();
-                        assertEquals("set3", vi1.getValue().toString());
-                        assertEquals(DV.TRUE_DV, d.getProperty(Property.CONTEXT_MODIFIED));
+                        assertTrue(d.variableInfo().getReadId()
+                                .compareTo(d.variableInfo().getAssignmentIds().getLatestAssignment()) > 0);
+                        if (d.iteration() == 0) {
+                            // there is a variable info at levels 0 and 3
+                            assertTrue(d.currentValue().isDelayed());
+                            assertFalse(d.variableInfoContainer().isInitial());
+                        } else {
+                            // there is a variable info in level 1, copied from level 1 in statement 0
+                            // problem is that there is one in level 3 already, with a NO_VALUE
+                            VariableInfo vi1 = d.variableInfoContainer().current();
+                            assertEquals("set3", vi1.getValue().toString());
+                            assertEquals(DV.TRUE_DV, d.getProperty(Property.CONTEXT_MODIFIED));
+                        }
+                        assertEquals("this.set3:0", d.variableInfo().getLinkedVariables().toString());
                     }
-                    assertEquals("this.set3:0", d.variableInfo().getLinkedVariables().toString());
                 }
-            }
-            if ("add3".equals(d.methodInfo().name) && d.variable() instanceof FieldReference fr && "set3".equals(fr.fieldInfo.name)) {
-                assertEquals("org.e2immu.analyser.parser.modification.testexample.Modification_3.set3", d.variableName());
-                if ("0".equals(d.statementId())) {
-                    assertEquals("local3:0", d.variableInfo().getLinkedVariables().toString());
-                    String expectValue = d.iteration() == 0 ? SET3_DELAYED : INSTANCE_TYPE_HASH_SET;
-                    assertEquals(expectValue, d.variableInfo().getValue().toString());
+                if (d.variable() instanceof FieldReference fr && "set3".equals(fr.fieldInfo.name)) {
+                    assertEquals("org.e2immu.analyser.parser.modification.testexample.Modification_3.set3", d.variableName());
+                    if ("0".equals(d.statementId())) {
+                        assertEquals("local3:0", d.variableInfo().getLinkedVariables().toString());
+                        String expectValue = d.iteration() == 0 ? SET3_DELAYED : INSTANCE_TYPE_HASH_SET;
+                        assertEquals(expectValue, d.variableInfo().getValue().toString());
+                    }
+                    if ("1".equals(d.statementId())) {
+                        assertTrue(d.variableInfo().isRead());
+                        assertEquals("local3:0", d.variableInfo().getLinkedVariables().toString());
+                        String expectValue = d.iteration() == 0 ? SET3_DELAYED
+                                : "instance type HashSet<String>/*this.contains(v)&&this.size()>=1*/";
+                        assertEquals(expectValue, d.variableInfo().getValue().toString());
+                        assertDv(d, 1, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
+                    }
                 }
-                if ("1".equals(d.statementId())) {
-                    assertTrue(d.variableInfo().isRead());
-                    assertEquals("local3:0", d.variableInfo().getLinkedVariables().toString());
-                    String expectValue = d.iteration() == 0 ? SET3_DELAYED
-                            : "instance type HashSet<String>/*this.contains(v)&&this.size()>=1*/";
-                    assertEquals(expectValue, d.variableInfo().getValue().toString());
-                    assertDv(d, 1, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
+                if (d.variable() instanceof ParameterInfo pi && "v".equals(pi.name)) {
+                    String delay = "ext_imm@Parameter_v";
+                    if ("0".equals(d.statementId())) {
+                        assertFalse(d.variableInfoContainer().hasEvaluation());
+                        assertDv(d, delay, 1, MultiLevel.EFFECTIVELY_IMMUTABLE_DV, Property.EXTERNAL_IMMUTABLE);
+                    }
+                    if ("1".equals(d.statementId())) {
+                        assertDv(d, delay, 1, MultiLevel.EFFECTIVELY_IMMUTABLE_DV, Property.EXTERNAL_IMMUTABLE);
+                        assertTrue(d.variableInfo().getLinkedVariables().isEmpty());
+                    }
                 }
             }
         };
@@ -131,6 +146,7 @@ public class Test_16_Modification_3 extends CommonTestRunner {
                 assertEquals(1, ((FieldAnalysisImpl.Builder) d.fieldAnalysis()).getValues().size());
                 assertEquals(INSTANCE_TYPE_HASH_SET, d.fieldAnalysis().getValue().toString());
                 assertDv(d, 1, DV.TRUE_DV, Property.MODIFIED_OUTSIDE_METHOD);
+                assertTrue(d.fieldAnalysis().getLinkedVariables().isEmpty());
             }
         };
 

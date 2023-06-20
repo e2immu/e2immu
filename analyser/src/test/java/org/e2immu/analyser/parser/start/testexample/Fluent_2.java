@@ -22,7 +22,7 @@ import javax.annotation.processing.Generated;
 /*
 Identical to Fluent_1 apart from reference to IFluent_2
  */
-@ERContainer
+@ImmutableContainer
 @Generated("org.e2immu.analyser.parser.start.testexample.a.IFluent_2")
 public class Fluent_2 implements IFluent_2 {
 

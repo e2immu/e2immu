@@ -16,9 +16,10 @@ package org.e2immu.analyser.model.value;
 
 import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.expression.GreaterThanZero;
+import org.e2immu.analyser.model.expression.Or;
 import org.junit.jupiter.api.Test;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.*;
 
 public class TestBooleanAndComparison extends CommonAbstractValue {
 
@@ -40,4 +41,36 @@ public class TestBooleanAndComparison extends CommonAbstractValue {
         assertEquals(iGe0_and__iLt0_or_jGe0, addIGe0Again2);
     }
 
+    @Test
+    public void test2() {
+        Expression iLe3 = GreaterThanZero.less(context, i, newInt(3), true);
+        Expression iGe4 = GreaterThanZero.greater(context, i, newInt(4), true);
+        Expression iGe5 = GreaterThanZero.greater(context, i, newInt(5), true);
+        Expression or = Or.or(context, iGe4, iLe3);
+        assertTrue(or.isBoolValueTrue(), "Have " + or);
+        Expression or2 = Or.or(context, iLe3, iGe4);
+        assertTrue(or2.isBoolValueTrue(), "Have " + or);
+        Expression or3 = Or.or(context, iLe3, iGe5);
+        assertFalse(or3.isBoolValueTrue());
+        Expression or4 = Or.or(context, iLe3, iLe3);
+        assertFalse(or4.isBoolValueTrue());
+    }
+
+    @Test
+    public void test3() {
+        // "l0>=11||l0<=2||l0<=10"
+        Expression iLe2 = GreaterThanZero.less(context, i, newInt(2), true);
+        Expression iLe10 = GreaterThanZero.less(context, i, newInt(10), true);
+        Expression iGe11 = GreaterThanZero.greater(context, i, newInt(11), true);
+        Expression or1 = Or.or(context, iGe11, iLe10);
+        assertTrue(or1.isBoolValueTrue());
+        Expression or2 = Or.or(context, iLe2, iLe10);
+        assertEquals(iLe10, or2);
+        Expression or3 = Or.or(context, iGe11, iLe2, iLe10);
+        assertTrue(or3.isBoolValueTrue(), "Got " + or3);
+        Expression or4 = Or.or(context, iLe10, iGe11, iLe2);
+        assertTrue(or4.isBoolValueTrue(), "Got " + or3);
+        Expression or5 = Or.or(context, iLe2, iGe11, iLe10);
+        assertTrue(or5.isBoolValueTrue(), "Got " + or3);
+    }
 }

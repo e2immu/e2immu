@@ -16,15 +16,19 @@ package org.e2immu.analyser.inspector;
 
 
 import org.e2immu.analyser.model.AnnotationExpression;
+import org.e2immu.analyser.model.Comment;
 import org.e2immu.analyser.model.Inspection;
 import org.e2immu.support.AddOnceSet;
 
 import java.util.List;
+import java.util.Objects;
 
 public abstract class AbstractInspectionBuilder<B> implements Inspection, Inspection.InspectionBuilder<B> {
 
     protected final AddOnceSet<AnnotationExpression> annotations = new AddOnceSet<>();
     private boolean synthetic;
+    private Access access;
+    private Comment comment;
 
     @SuppressWarnings("unchecked")
     public B addAnnotation(AnnotationExpression annotationExpression) {
@@ -40,11 +44,6 @@ public abstract class AbstractInspectionBuilder<B> implements Inspection, Inspec
     }
 
     @Override
-    public boolean hasAnnotation(AnnotationExpression annotationExpression) {
-        return annotations.contains(annotationExpression);
-    }
-
-    @Override
     public boolean isSynthetic() {
         return synthetic;
     }
@@ -53,5 +52,31 @@ public abstract class AbstractInspectionBuilder<B> implements Inspection, Inspec
     public B setSynthetic(boolean synthetic) {
         this.synthetic = synthetic;
         return (B) this; // saves us copies
+    }
+
+    @SuppressWarnings("unchecked")
+    public B setAccess(Access access) {
+        assert accessNotYetComputed() : "Access already set!";
+        this.access = Objects.requireNonNull(access);
+        return (B) this;
+    }
+
+    @Override
+    public Access getAccess() {
+        assert access != null : "Access has not yet been computed!";
+        return access;
+    }
+
+    protected boolean accessNotYetComputed() {
+        return access == null;
+    }
+
+    public void setComment(Comment comment) {
+        this.comment = comment;
+    }
+
+    @Override
+    public Comment getComment() {
+        return comment;
     }
 }

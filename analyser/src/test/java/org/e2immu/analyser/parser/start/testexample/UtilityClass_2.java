@@ -15,14 +15,17 @@
 package org.e2immu.analyser.parser.start.testexample;
 
 import org.e2immu.annotation.*;
+import org.e2immu.annotation.type.ExtensionClass;
+import org.e2immu.annotation.type.UtilityClass;
 
-@UtilityClass(absent = true)
 @ExtensionClass(of = String.class)
-@ERContainer
+@ImmutableContainer
 public class UtilityClass_2 {
 
+    private UtilityClass_2() {}
+
     @NotModified
-    static void print(@NotModified(absent = true) String toPrint) {
+    static void print(@NotModified String toPrint) {
         System.out.println(toPrint);
     }
 

@@ -18,10 +18,9 @@ import com.github.javaparser.ast.expr.SwitchExpr;
 import com.github.javaparser.ast.stmt.ThrowStmt;
 import org.e2immu.analyser.inspector.*;
 import org.e2immu.analyser.model.*;
-import org.e2immu.analyser.model.expression.ConstructorCall;
-import org.e2immu.analyser.model.expression.Lambda;
-import org.e2immu.analyser.model.expression.SwitchExpression;
+import org.e2immu.analyser.model.expression.*;
 import org.e2immu.analyser.model.expression.util.MultiExpression;
+import org.e2immu.analyser.model.impl.TranslationMapImpl;
 import org.e2immu.analyser.model.statement.*;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.parser.InspectionProvider;
@@ -116,9 +115,11 @@ public class ParseSwitchExpr {
                         expressionContext.enclosingType(),
                         expressionContext.anonymousTypeCounters().newIndex(expressionContext.primaryType()));
 
+        // i.e. selector$1 (so that we can have lambda's inside lambda's)
+        String parameterName = "selector" + applyMethodInspectionBuilder.owner().simpleName;
         ParameterInspection.Builder parameterBuilder = applyMethodInspectionBuilder
                 .newParameterInspectionBuilder(Identifier.from(switchExpr),
-                        selectorType, "selector", 0);
+                        selectorType, parameterName, 0);
         // parameter analysis will be set later
         applyMethodInspectionBuilder.addParameter(parameterBuilder);
 
@@ -138,34 +139,42 @@ public class ParseSwitchExpr {
                 newVariableContext, newForward);
         addEnumVariables(newExpressionContext, selector);
 
-        Block methodBody = constructMethodBody(newExpressionContext, newForward, switchExpr, selector);
+        ParameterInfo parameterInfo = applyMethodInspectionBuilder.getParameters().get(0);
+        Block methodBody = constructMethodBody(newExpressionContext, newForward, switchExpr, selector, parameterInfo);
 
         TypeInfo function = expressionContext.typeContext().typeMap.syntheticFunction(1, false);
         ParameterizedType functionalType = new ParameterizedType(function, List.of(selectorType, returnType));
 
         ParseLambdaExpr.continueCreationOfAnonymousType(expressionContext.typeContext().typeMap,
-                applyMethodInspectionBuilder, functionalType, methodBody, returnType);
+                applyMethodInspectionBuilder, functionalType, methodBody, returnType, expressionContext.enclosingMethod());
         TypeContext typeContext = expressionContext.typeContext();
 
         expressionContext.resolver().resolve(typeContext,
                 typeContext.typeMap.getE2ImmuAnnotationExpressions(), false,
+                expressionContext.resolver().storeComments(),
                 Map.of(anonymousType, expressionContext.newVariableContext("Lambda")));
 
         LOGGER.debug("End parsing lambda as block, inferred functional type {}, new type {}",
                 functionalType.detailedString(expressionContext.typeContext()), anonymousType.fullyQualifiedName);
 
         List<Lambda.OutputVariant> outputVariants = List.of(Lambda.OutputVariant.EMPTY);
-        return new Lambda(Identifier.from(switchExpr), inspectionProvider,
+        Lambda lambda = new Lambda(Identifier.from(switchExpr), inspectionProvider,
                 functionalType, anonymousType.asParameterizedType(inspectionProvider), returnTypeIn, outputVariants);
+        return new MethodCall(Identifier.from(switchExpr), lambda, lambda.methodInfo, List.of(selector));
     }
 
     private static Block constructMethodBody(ExpressionContext newExpressionContext,
                                              ForwardReturnTypeInfo forwardReturnTypeInfo,
                                              SwitchExpr switchExpr,
-                                             Expression selector) {
+                                             Expression selector,
+                                             ParameterInfo applyParameter) {
         Block.BlockBuilder builder = new Block.BlockBuilder(Identifier.from(switchExpr));
         InspectionProvider ip = newExpressionContext.typeContext();
-
+        VariableExpression applyParameterExpression = new VariableExpression(applyParameter);
+        TranslationMap translationMap = new TranslationMapImpl.Builder()
+                .put(selector, applyParameterExpression)
+                .setYieldToReturn(true)
+                .build();
         boolean addedADefault = false;
         for (com.github.javaparser.ast.stmt.SwitchEntry switchEntry : switchExpr.getEntries()) {
             List<Expression> labels = switchEntry.getLabels().stream()
@@ -173,48 +182,56 @@ public class ParseSwitchExpr {
                     .collect(Collectors.toList());
             boolean isDefault = labels.isEmpty();
             addedADefault |= isDefault;
-            Expression or = SwitchEntry.generateConditionExpression(ip.getPrimitives(), labels, selector);
-            Statement statement;
-            com.github.javaparser.ast.stmt.SwitchEntry.Type type = switchEntry.getType();
-            if (type == com.github.javaparser.ast.stmt.SwitchEntry.Type.EXPRESSION ||
-                    type == com.github.javaparser.ast.stmt.SwitchEntry.Type.THROWS_STATEMENT) {
-                com.github.javaparser.ast.stmt.Statement st = switchEntry.getStatements().get(0);
-                Statement returnStatement;
-                if (st.isExpressionStmt()) {
-                    com.github.javaparser.ast.expr.Expression e = st.asExpressionStmt().getExpression();
-                    Expression expression = newExpressionContext.parseExpression(e, forwardReturnTypeInfo);
-                    returnStatement = new ReturnStatement(Identifier.from(e), expression);
-                } else if (st.isThrowStmt()) {
-                    ThrowStmt throwStmt = st.asThrowStmt();
-                    com.github.javaparser.ast.expr.Expression e = throwStmt.getExpression();
-                    Expression expression = newExpressionContext.parseExpression(e, forwardReturnTypeInfo);
-                    returnStatement = new ThrowStatement(Identifier.from(e), expression);
-                } else {
-                    throw new UnsupportedOperationException();
-                }
-                if (isDefault) {
-                    statement = returnStatement;
-                } else {
-                    Block ifBlock = new Block.BlockBuilder(Identifier.from(switchEntry)).addStatement(returnStatement).build();
-                    statement = new IfElseStatement(Identifier.from(switchEntry), or, ifBlock, Block.emptyBlock(Identifier.generate("empty switch block")));
-                }
-            } else if (type == com.github.javaparser.ast.stmt.SwitchEntry.Type.BLOCK) {
-                Block exec = newExpressionContext.parseBlockOrStatement(switchEntry.getStatements().get(0));
-                if (isDefault) statement = exec;
-                else {
-                    statement = new IfElseStatement(Identifier.from(switchEntry), or, exec, Block.emptyBlock(Identifier.generate("empty switch entry")));
-                }
-            } else {
-                throw new UnsupportedOperationException("Unknown type " + switchEntry.getType());
-            }
-
-            builder.addStatement(statement);
+            Statement statement = switchCaseToStatement(newExpressionContext, forwardReturnTypeInfo, selector, ip,
+                    switchEntry, labels, isDefault);
+            List<Statement> translated = statement.translate(newExpressionContext.typeContext(), translationMap);
+            builder.addStatements(translated);
         }
         if (!addedADefault) {
             // no default, so no return statement. To have correct java, we'll add a throws statement
             builder.addStatement(createThrowStatement(newExpressionContext, ip));
         }
         return builder.build();
+    }
+
+    private static Statement switchCaseToStatement(ExpressionContext newExpressionContext, ForwardReturnTypeInfo forwardReturnTypeInfo, Expression selector, InspectionProvider ip, com.github.javaparser.ast.stmt.SwitchEntry switchEntry, List<Expression> labels, boolean isDefault) {
+        Expression or = SwitchEntry.generateConditionExpression(ip.getPrimitives(), labels, selector);
+        Statement statement;
+        com.github.javaparser.ast.stmt.SwitchEntry.Type type = switchEntry.getType();
+        if (type == com.github.javaparser.ast.stmt.SwitchEntry.Type.EXPRESSION ||
+                type == com.github.javaparser.ast.stmt.SwitchEntry.Type.THROWS_STATEMENT) {
+            com.github.javaparser.ast.stmt.Statement st = switchEntry.getStatements().get(0);
+            Statement returnStatement;
+            if (st.isExpressionStmt()) {
+                com.github.javaparser.ast.expr.Expression e = st.asExpressionStmt().getExpression();
+                Expression expression = newExpressionContext.parseExpression(e, forwardReturnTypeInfo);
+                returnStatement = new ReturnStatement(Identifier.from(e), expression);
+            } else if (st.isThrowStmt()) {
+                ThrowStmt throwStmt = st.asThrowStmt();
+                com.github.javaparser.ast.expr.Expression e = throwStmt.getExpression();
+                Expression expression = newExpressionContext.parseExpression(e, forwardReturnTypeInfo);
+                returnStatement = new ThrowStatement(Identifier.from(e), expression, null);
+            } else {
+                throw new UnsupportedOperationException();
+            }
+            if (isDefault) {
+                statement = returnStatement;
+            } else {
+                Block ifBlock = new Block.BlockBuilder(Identifier.from(switchEntry)).addStatement(returnStatement).build();
+                statement = new IfElseStatement(Identifier.from(switchEntry), or, ifBlock,
+                        Block.emptyBlock(Identifier.generate("empty switch block")), null);
+            }
+        } else if (type == com.github.javaparser.ast.stmt.SwitchEntry.Type.BLOCK) {
+            Block exec = newExpressionContext.parseBlockOrStatement(switchEntry.getStatements().get(0));
+            if (isDefault) statement = exec;
+            else {
+                statement = new IfElseStatement(Identifier.from(switchEntry), or, exec,
+                        Block.emptyBlock(Identifier.generate("empty switch entry")), null);
+            }
+        } else {
+            throw new UnsupportedOperationException("Unknown type " + switchEntry.getType());
+        }
+        return statement;
     }
 
     private static ThrowStatement createThrowStatement(ExpressionContext newExpressionContext, InspectionProvider ip) {
@@ -224,6 +241,6 @@ public class ParseSwitchExpr {
                 .filter(m -> ip.getMethodInspection(m).getParameters().isEmpty()).findFirst().orElseThrow();
         return new ThrowStatement(Identifier.generate("throw at end of switch"),
                 ConstructorCall.objectCreation(Identifier.generate("throw at end of switch object"), constructor,
-                        runtimeException.asParameterizedType(ip), Diamond.NO, List.of()));
+                        runtimeException.asParameterizedType(ip), Diamond.NO, List.of()), null);
     }
 }

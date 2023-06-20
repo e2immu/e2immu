@@ -36,7 +36,7 @@ public class OutputMethodInfo {
     public static OutputBuilder output(MethodInfo methodInfo, Qualification qualification, AnalysisProvider analysisProvider) {
         MethodInspection inspection = methodInfo.methodInspection.get();
         if (inspection.isStaticBlock()) {
-            OutputBuilder result = new OutputBuilder().add(new Text("static"));
+            OutputBuilder result = new OutputBuilder().add(Keyword.STATIC);
             Qualification bodyQualification = makeBodyQualification(qualification, inspection);
             MethodAnalysis methodAnalysisOrNull = analysisProvider.getMethodAnalysis(methodInfo);
             StatementAnalysis firstStatement = methodAnalysisOrNull != null ? methodAnalysisOrNull.getFirstStatement() : null;
@@ -45,10 +45,11 @@ public class OutputMethodInfo {
         }
 
         OutputBuilder afterAnnotations = new OutputBuilder();
-        afterAnnotations.add(Arrays.stream(MethodModifier.sort(inspection.getModifiers()))
-                .map(mod -> new OutputBuilder().add(new Text(mod)))
+        List<MethodModifier> modifiers = inspection.minimalModifiers();
+        afterAnnotations.add(modifiers.stream()
+                .map(mod -> new OutputBuilder().add(mod.keyword))
                 .collect(OutputBuilder.joining(Space.ONE)));
-        if (!inspection.getModifiers().isEmpty()) afterAnnotations.add(Space.ONE);
+        if (!modifiers.isEmpty()) afterAnnotations.add(Space.ONE);
 
         if (!inspection.getTypeParameters().isEmpty()) {
             afterAnnotations.add(Symbol.LEFT_ANGLE_BRACKET);
@@ -73,7 +74,7 @@ public class OutputMethodInfo {
             }
         }
         if (!inspection.getExceptionTypes().isEmpty()) {
-            afterAnnotations.add(Space.ONE_REQUIRED_EASY_SPLIT).add(new Text("throws")).add(Space.ONE)
+            afterAnnotations.add(Space.ONE_REQUIRED_EASY_SPLIT).add(Keyword.THROWS).add(Space.ONE)
                     .add(inspection.getExceptionTypes().stream()
                             .map(pi -> pi.output(qualification)).collect(OutputBuilder.joining(Symbol.COMMA)));
         }
@@ -86,8 +87,10 @@ public class OutputMethodInfo {
             afterAnnotations.add(inspection.getMethodBody().output(bodyQualification, firstStatement));
         }
 
+        Stream<OutputBuilder> commentStream = inspection.getComment() == null ? Stream.of()
+                : Stream.of(inspection.getComment().output(qualification));
         Stream<OutputBuilder> annotationStream = methodInfo.buildAnnotationOutput(qualification);
-        OutputBuilder mainMethod = Stream.concat(annotationStream, Stream.of(afterAnnotations))
+        OutputBuilder mainMethod = Stream.concat(commentStream, Stream.concat(annotationStream, Stream.of(afterAnnotations)))
                 .collect(OutputBuilder.joining(Space.ONE_REQUIRED_EASY_SPLIT, Guide.generatorForAnnotationList()));
 
         Stream<OutputBuilder> companions = outputCompanions(inspection, methodAnalysisOrNull, qualification);
@@ -97,7 +100,7 @@ public class OutputMethodInfo {
 
     private static Qualification makeBodyQualification(Qualification qualification, MethodInspection inspection) {
         if (qualification instanceof QualificationImpl qi) {
-            Set<String> localNamesFromBody = inspection.getMethodBody().variables(true).stream()
+            Set<String> localNamesFromBody = inspection.getMethodBody().variableStream()
                     .filter(v -> v instanceof LocalVariableReference || v instanceof ParameterInfo)
                     .map(Variable::simpleName).collect(Collectors.toSet());
             Set<String> parameterNames = inspection.getParameters().stream()

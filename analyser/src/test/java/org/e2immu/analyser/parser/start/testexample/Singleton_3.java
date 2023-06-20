@@ -14,7 +14,8 @@
 
 package org.e2immu.analyser.parser.start.testexample;
 
-import org.e2immu.annotation.Singleton;
+
+import org.e2immu.annotation.type.Singleton;
 
 @Singleton(absent = true)
 public class Singleton_3 {

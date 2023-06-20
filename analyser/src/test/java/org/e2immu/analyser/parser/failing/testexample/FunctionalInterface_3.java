@@ -15,9 +15,9 @@
 package org.e2immu.analyser.parser.failing.testexample;
 
 import org.e2immu.annotation.Container;
+import org.e2immu.annotation.Final;
 import org.e2immu.annotation.Modified;
 import org.e2immu.annotation.NotModified;
-import org.e2immu.annotation.Variable;
 
 import java.util.function.Consumer;
 
@@ -27,10 +27,10 @@ public class FunctionalInterface_3<T> {
 
     private final T t2;
 
-    @Variable
+    @Final(absent = true)
     private Consumer<T> nonExposingConsumer;
 
-    @Variable
+    @Final(absent = true)
     private Runnable runnable;
 
     // we do not write @NotModified unless there is a declaration

@@ -20,16 +20,21 @@ import org.e2immu.analyser.model.expression.*;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.Symbol;
+import org.e2immu.analyser.output.Text;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.util.UpgradableBooleanMap;
-import org.e2immu.annotation.Finalizer;
-import org.e2immu.annotation.IgnoreModifications;
+import org.e2immu.annotation.ImmutableContainer;
+import org.e2immu.annotation.rare.Finalizer;
+import org.e2immu.annotation.rare.IgnoreModifications;
 
 import java.lang.reflect.Array;
 import java.util.*;
 
+import static org.e2immu.analyser.parser.E2ImmuAnnotationExpressions.*;
+
 
 public record AnnotationExpressionImpl(TypeInfo typeInfo,
+                                       @ImmutableContainer
                                        List<MemberValuePair> expressions) implements AnnotationExpression {
 
     public static final String ORG_E_2_IMMU_ANNOTATION = "org.e2immu.annotation";
@@ -78,7 +83,8 @@ public record AnnotationExpressionImpl(TypeInfo typeInfo,
                 .add(typeInfo.typeName(qualification.qualifierRequired(typeInfo)));
         if (!expressions.isEmpty()) {
             outputBuilder.add(Symbol.LEFT_PARENTHESIS)
-                    .add(expressions.stream().map(expression -> expression.output(qualification))
+                    .add(expressions.stream()
+                            .map(expression ->  expression.output(qualification))
                             .collect(OutputBuilder.joining(Symbol.COMMA)))
                     .add(Symbol.RIGHT_PARENTHESIS);
         }
@@ -94,21 +100,6 @@ public record AnnotationExpressionImpl(TypeInfo typeInfo,
     public Set<String> imports() {
         if (typeInfo.isNotJavaLang()) return Set.of(typeInfo.fullyQualifiedName);
         return Set.of();
-    }
-
-    @Override
-    public int[] extractIntArray(String fieldName) {
-        for (Expression expression : expressions) {
-            if (expression instanceof MemberValuePair mvp) {
-                if (mvp.name().equals(fieldName)) {
-                    if (mvp.value().get() instanceof ArrayInitializer ai) {
-                        return Arrays.stream(ai.multiExpression.expressions())
-                                .mapToInt(e -> ((IntConstant) e).constant()).toArray();
-                    } else throw new UnsupportedOperationException();
-                }
-            }
-        }
-        return new int[0];
     }
 
     @Override
@@ -239,9 +230,10 @@ public record AnnotationExpressionImpl(TypeInfo typeInfo,
     @Override
     public AnnotationParameters e2ImmuAnnotationParameters() {
         if (!typeInfo.fullyQualifiedName.startsWith(ORG_E_2_IMMU_ANNOTATION)) return null;
-        boolean absent = extract("absent", false);
-        boolean contract = extract("contract", false) || FQN_ALWAYS_CONTRACT.contains(typeInfo.fullyQualifiedName);
-        return new AnnotationParameters(absent, contract);
+        boolean absent = extract(ABSENT, false);
+        boolean contract = extract(CONTRACT, false) || FQN_ALWAYS_CONTRACT.contains(typeInfo.fullyQualifiedName);
+        boolean implied = extract(IMPLIED, false);
+        return new AnnotationParameters(absent, contract, implied);
     }
 
 }

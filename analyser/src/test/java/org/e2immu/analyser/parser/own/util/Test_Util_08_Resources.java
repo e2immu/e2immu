@@ -16,12 +16,14 @@
 package org.e2immu.analyser.parser.own.util;
 
 import org.e2immu.analyser.analyser.DV;
+import org.e2immu.analyser.analyser.Properties;
 import org.e2immu.analyser.analyser.Property;
 import org.e2immu.analyser.config.AnalyserConfiguration;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.ParameterInfo;
 import org.e2immu.analyser.model.variable.FieldReference;
+import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.parser.CommonTestRunner;
 import org.e2immu.analyser.util.Resources;
 import org.e2immu.analyser.util.Trie;
@@ -34,8 +36,10 @@ import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.*;
 
 public class Test_Util_08_Resources extends CommonTestRunner {
 
@@ -59,13 +63,13 @@ public class Test_Util_08_Resources extends CommonTestRunner {
 
                     assertEquals(expected, d.evaluationResult().value().toString());
                     String delays = d.iteration() == 0
-                            ? "initial:dirRelativeToBase@Method_recursivelyAddFiles_1.0.2-E"
+                            ? "cm@Parameter_f;initial:dirRelativeToBase@Method_recursivelyAddFiles_1.0.2-E"
                             : "";
                     assertEquals(delays, d.evaluationResult().causesOfDelay().toString());
                 }
                 if ("1.0.3.0.1".equals(d.statementId())) {
-                    String expected = d.iteration() == 0 ? "<m:isEmpty>?new String[](0):<m:split>"
-                            : "dirRelativeToBase.getPath().isEmpty()?new String[](0):(dirRelativeToBase.getPath().startsWith(\"/\")?dirRelativeToBase.getPath().substring(1):dirRelativeToBase.getPath()).split(\"/\")";
+                    String expected = d.iteration() == 0 ? "<m:isEmpty>?new String[0]:<m:split>"
+                            : "dirRelativeToBase.getPath().isEmpty()?new String[0]:(dirRelativeToBase.getPath().startsWith(\"/\")?dirRelativeToBase.getPath().substring(1):dirRelativeToBase.getPath()).split(\"/\")";
                     assertEquals(expected, d.evaluationResult().value().toString());
                 }
                 if ("1.0.3.0.2.0.1".equals(d.statementId())) {
@@ -84,6 +88,14 @@ public class Test_Util_08_Resources extends CommonTestRunner {
                 if ("1.0.1.0.0".equals(d.statementId())) {
                     assertEquals("null!=(new File(baseDirectory,dirRelativeToBase.getPath())).listFiles(File::isDirectory)", d.condition().toString());
                     assertEquals("baseDirectory, dirRelativeToBase, subDirs", d.conditionVariablesSorted());
+                }
+            }
+            if ("addJmod".equals(d.methodInfo().name)) {
+                if ("4".equals(d.statementId())) {
+                    Optional<Map.Entry<Variable, Properties>> entry = d.statementAnalysis().propertiesFromSubAnalysers()
+                            .filter(v -> v instanceof FieldReference fr && "LOGGER".equals(fr.fieldInfo.name))
+                            .findFirst();
+                    assertFalse(entry.isPresent());
                 }
             }
         };
@@ -153,6 +165,11 @@ public class Test_Util_08_Resources extends CommonTestRunner {
                     }
                 }
             }
+            if ("addJmod".equals(d.methodInfo().name)) {
+                if (d.variable() instanceof FieldReference fr && "LOGGER".equals(fr.fieldInfo.name)) {
+                    fail("Variable should not move from anonymous type to enclosing type");
+                }
+            }
         };
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("addDirectoryFromFileSystem".equals(d.methodInfo().name)) {
@@ -163,7 +180,7 @@ public class Test_Util_08_Resources extends CommonTestRunner {
             }
         };
         testSupportAndUtilClasses(List.of(Resources.class, Trie.class, Freezable.class),
-                0, 12, new DebugConfiguration.Builder()
+                2, 12, new DebugConfiguration.Builder()
                         .addStatementAnalyserVisitor(statementAnalyserVisitor)
                         .addEvaluationResultVisitor(evaluationResultVisitor)
                         .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)

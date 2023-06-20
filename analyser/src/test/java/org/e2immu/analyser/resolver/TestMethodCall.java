@@ -163,7 +163,7 @@ public class TestMethodCall extends CommonTest {
 
     @Test
     public void test_15() throws IOException {
-        inspectAndResolve(MethodCall_15.class, "Type java.lang.String");
+        inspectAndResolve(MethodCall_15.class, "Type String");
     }
 
     @Test
@@ -183,9 +183,9 @@ public class TestMethodCall extends CommonTest {
         MethodInfo method1 = typeInfo.findUniqueMethod("method1", 0);
         testConcreteReturnType(method1, "Type int");
         MethodInfo method2 = typeInfo.findUniqueMethod("method2", 0);
-        testConcreteReturnType(method2, "Type java.lang.String[]");
+        testConcreteReturnType(method2, "Type String[]");
         MethodInfo method3 = typeInfo.findUniqueMethod("method3", 0);
-        testConcreteReturnType(method3, "Type java.lang.Integer");
+        testConcreteReturnType(method3, "Type Integer");
     }
 
     private void testConcreteReturnType(MethodInfo method1, String expected) {
@@ -211,7 +211,7 @@ public class TestMethodCall extends CommonTest {
         Block block = method.methodInspection.get().getMethodBody();
         ForEachStatement forEach = (ForEachStatement) block.structure.getStatements().get(1);
         ParameterizedType pt = forEach.expression.returnType();
-        assertEquals("Type java.util.List<java.lang.String>", pt.toString());
+        assertEquals("Type java.util.List<String>", pt.toString());
         if (forEach.expression instanceof MethodCall mc) {
             assertEquals(pt, mc.returnType());
         } else fail();
@@ -279,5 +279,21 @@ public class TestMethodCall extends CommonTest {
         Lambda lambda = (Lambda) setAll.parameterExpressions.get(1);
         assertEquals("Type org.e2immu.analyser.resolver.testexample.MethodCall_28.HasSize",
                 lambda.concreteReturnType.toString());
+    }
+
+    @Test
+    public void test_29() throws IOException {
+        TypeMap typeMap = inspectAndResolve(MethodCall_29.class);
+        TypeInfo mc29 = typeMap.get(MethodCall_29.class);
+        MethodInfo visit = mc29.findUniqueMethod("visit", 1);
+        Block block = visit.methodInspection.get().getMethodBody();
+        MethodCall forEach = (MethodCall) ((ExpressionAsStatement) block.structure.getStatements().get(0)).expression;
+        assertEquals("java.lang.Iterable.forEach(java.util.function.Consumer<? super T>)",
+                forEach.methodInfo.fullyQualifiedName);
+    }
+
+    @Test
+    public void test_30() throws IOException {
+        inspectAndResolve(MethodCall_30.class);
     }
 }

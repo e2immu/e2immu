@@ -15,13 +15,11 @@
 package org.e2immu.analyser.model.statement;
 
 import org.e2immu.analyser.model.*;
-import org.e2immu.analyser.output.OutputBuilder;
-import org.e2immu.analyser.output.Space;
-import org.e2immu.analyser.output.Symbol;
-import org.e2immu.analyser.output.Text;
+import org.e2immu.analyser.output.*;
 import org.e2immu.analyser.parser.InspectionProvider;
 
 import java.util.List;
+import java.util.Objects;
 import java.util.function.Predicate;
 
 public class AssertStatement extends StatementWithStructure {
@@ -38,17 +36,41 @@ public class AssertStatement extends StatementWithStructure {
         this.message = message;
     }
 
+
     @Override
-    public Statement translate(InspectionProvider inspectionProvider, TranslationMap translationMap) {
+    public boolean equals(Object obj) {
+        if (obj == this) return true;
+        if (obj instanceof AssertStatement other) {
+            return identifier.equals(other.identifier) && structure.expression().equals(other.structure.expression())
+                    && message.equals(other.message);
+        }
+        return false;
+    }
+
+    @Override
+    public int getComplexity() {
+        return 1 + structure.expression().getComplexity() + (message == null ? 0 : message.getComplexity());
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(identifier, structure.expression(), message);
+    }
+
+    @Override
+    public List<Statement> translate(InspectionProvider inspectionProvider, TranslationMap translationMap) {
+        List<Statement> direct = translationMap.translateStatement(inspectionProvider, this);
+        if (haveDirectTranslation(direct, this)) return direct;
         Expression tex = structure.expression().translate(inspectionProvider, translationMap);
-        if (tex == structure.expression()) return this;
-        return new AssertStatement(identifier, tex, message);
+        Expression msg = message == null ? null : message.translate(inspectionProvider, translationMap);
+        if (tex == structure.expression() && msg == message) return List.of(this);
+        return List.of(new AssertStatement(identifier, tex, msg));
     }
 
     @Override
     public OutputBuilder output(Qualification qualification, LimitedStatementAnalysis statementAnalysis) {
         return new OutputBuilder()
-                .add(new Text("assert"))
+                .add(Keyword.ASSERT)
                 .add(Space.ONE)
                 .add(structure.expression().output(qualification))
                 .add(message != null ? new OutputBuilder().add(Symbol.COMMA).add(message.output(qualification)) : new OutputBuilder())

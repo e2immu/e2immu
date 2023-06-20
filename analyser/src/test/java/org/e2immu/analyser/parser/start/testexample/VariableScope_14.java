@@ -34,7 +34,7 @@ public class VariableScope_14 {
         int k = y instanceof X x && x.i == s.length() ? x.i : 3;
         System.out.println(k); // x should not exist here!
         int l = y instanceof X z && z.i == s.length() ? z.i : 3;
-        System.out.println(l); // x should not exist here!
+        System.out.println(l); // z should not exist here!
         assert k == l; // because of increasing statement time, we should have different values for x.i
     }
 }

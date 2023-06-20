@@ -25,28 +25,43 @@ import org.e2immu.annotation.Fluent;
 import org.e2immu.annotation.NotModified;
 import org.e2immu.annotation.NotNull;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 public class Block extends StatementWithStructure {
     public final String label;
-    public final Structure structure;
 
     public static Block emptyBlock(Identifier identifier) {
-        return new Block(identifier, List.of(), null);
+        return new Block(identifier, List.of(), null, null);
     }
 
-    private Block(Identifier identifier, @NotNull List<Statement> statements, String label) {
-        super(identifier);
-        structure = new Structure.Builder()
+    private Block(Identifier identifier, @NotNull List<Statement> statements, String label, Comment comment) {
+        super(identifier, new Structure.Builder()
                 .setStatementExecution(StatementExecution.ALWAYS)
-                .setStatements(statements).build();
+                .setComment(comment)
+                .setStatements(statements).build());
         this.label = label;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o instanceof Block other) {
+            return Objects.equals(label, other.label) && structure.equals(other.structure);
+        }
+        return false;
+    }
+
+    @Override
+    public int getComplexity() {
+        return 1 + structure.statements().stream().mapToInt(Statement::getComplexity).sum();
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(label, structure);
     }
 
     @Container(builds = Block.class)
@@ -54,6 +69,7 @@ public class Block extends StatementWithStructure {
         private final List<Statement> statements = new ArrayList<>();
         private String label;
         private final Identifier identifier;
+        private Comment comment;
 
         public BlockBuilder(Identifier identifier) {
             this.identifier = identifier;
@@ -71,16 +87,26 @@ public class Block extends StatementWithStructure {
             return this;
         }
 
+        public void setComment(Comment comment) {
+            this.comment = comment;
+        }
+
         @NotModified
         @NotNull
         public Block build() {
             if (statements.isEmpty()) return emptyBlock(identifier);
             // NOTE: we don't do labels on empty blocks. that's pretty useless anyway
-            return new Block(identifier, List.copyOf(statements), label);
+            return new Block(identifier, List.copyOf(statements), label, comment);
         }
 
         public int size() {
             return statements.size();
+        }
+
+        @Fluent
+        public BlockBuilder addStatements(Collection<Statement> statements) {
+            this.statements.addAll(statements);
+            return this;
         }
     }
 
@@ -95,7 +121,7 @@ public class Block extends StatementWithStructure {
             if (!structure.statements().isEmpty()) {
                 outputBuilder.add(structure.statements().stream()
                         .filter(s -> !s.isSynthetic())
-                        .map(s -> s.output(qualification, null))
+                        .map(s -> outputStatement(s, qualification))
                         .collect(OutputBuilder.joining(Space.NONE, Guide.generatorForBlock())));
             }
         } else {
@@ -114,6 +140,15 @@ public class Block extends StatementWithStructure {
         }
         outputBuilder.add(Symbol.RIGHT_BRACE);
         return outputBuilder;
+    }
+
+    private OutputBuilder outputStatement(Statement statement, Qualification qualification) {
+        OutputBuilder ob = statement.output(qualification, null);
+        Comment comment = statement.getStructure().comment();
+        if (comment != null) {
+            return comment.output(qualification).add(ob);
+        }
+        return ob;
     }
 
     public static void statementsString(Qualification qualification,
@@ -242,13 +277,27 @@ public class Block extends StatementWithStructure {
         }
     }
 
+    /*
+    IMPORTANT: blocks must translate into blocks
+     */
     @Override
-    public Statement translate(InspectionProvider inspectionProvider, TranslationMap translationMap) {
-        if (isEmpty()) return this;
-        return new Block(identifier, structure.statements().stream()
-                .flatMap(st -> Objects.requireNonNull(translationMap.translateStatement(inspectionProvider, st),
-                        "Translation of statement of " + st.getClass() + " returns null: " + st).stream())
-                .collect(Collectors.toList()), label);
+    public List<Statement> translate(InspectionProvider inspectionProvider, TranslationMap translationMap) {
+        List<Statement> direct = translationMap.translateStatement(inspectionProvider, this);
+        if (haveDirectTranslation(direct, this)) {
+            assert direct.size() == 1 && direct.get(0) instanceof Block;
+            return direct;
+        }
+        boolean change = false;
+        List<Statement> tStatements = new ArrayList<>(2 * structure.statements().size());
+        for (Statement statement : structure.statements()) {
+            List<Statement> tStatement = statement.translate(inspectionProvider, translationMap);
+            tStatements.addAll(tStatement);
+            change |= tStatement.size() != 1 || tStatement.get(0) != statement;
+        }
+        if (change) {
+            return List.of(new Block(identifier, tStatements, label, structure.comment()));
+        }
+        return List.of(this);
     }
 
     public boolean isEmpty() {

@@ -16,10 +16,10 @@ package org.e2immu.analyser.parser.conditional.testexample;
 
 import org.e2immu.annotation.*;
 
-@ERContainer
+@ImmutableContainer
 public class IfStatement_3 {
 
-    @Constant(absent = true)
+    @ImmutableContainer
     @NotNull
     public static String method4(String c) {
         String res;

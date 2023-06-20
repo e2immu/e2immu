@@ -18,7 +18,7 @@ import org.e2immu.analyser.annotationxml.model.*;
 import org.e2immu.analyser.config.AnnotationXmlConfiguration;
 import org.e2immu.analyser.model.TypeInfo;
 import org.e2immu.analyser.util.SMapList;
-import org.e2immu.annotation.UtilityClass;
+import org.e2immu.annotation.type.UtilityClass;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.w3c.dom.Document;

@@ -18,7 +18,6 @@ import org.e2immu.analyser.analysis.FieldAnalysis;
 import org.e2immu.analyser.analysis.MethodAnalysis;
 import org.e2immu.analyser.analysis.ParameterAnalysis;
 import org.e2immu.analyser.analysis.TypeAnalysis;
-import org.e2immu.analyser.config.AnalyserProgram;
 import org.e2immu.analyser.config.Configuration;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
@@ -27,6 +26,8 @@ import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.pattern.PatternMatcher;
 
+import java.util.Set;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
@@ -41,7 +42,10 @@ public interface AnalyserContext extends AnalysisProvider, InspectionProvider {
     // gives access to primitives
     Primitives getPrimitives();
 
-    default ImportantClasses importantClasses() { throw new UnsupportedOperationException(); }
+    default ImportantClasses importantClasses() {
+        throw new UnsupportedOperationException();
+    }
+
     /**
      * Used by ConditionalValue, isFact().
      *
@@ -164,43 +168,4 @@ public interface AnalyserContext extends AnalysisProvider, InspectionProvider {
     default MethodInspection getMethodInspection(MethodInfo methodInfo) {
         return methodInfo.methodInspection.get(methodInfo.fullyQualifiedName);
     }
-
-    /**
-     * Important that we can override this (even if we run in a non-ALL mode for the source,
-     * we want to run the AnnotatedAPI analyser in ALL mode).
-     *
-     * @return the program that determines which analyser components will be executed
-     */
-    default AnalyserProgram getAnalyserProgram() {
-        return getConfiguration().analyserConfiguration().analyserProgram();
-    }
-
-    default DV safeContainer(ParameterizedType parameterizedType) {
-        TypeInfo bestType = parameterizedType.bestTypeInfo();
-        if (parameterizedType.arrays > 0) {
-            return MultiLevel.CONTAINER_DV;
-        }
-        if (bestType == null) {
-            // unbound type parameter, null constant
-            return MultiLevel.NOT_CONTAINER_DV;
-        }
-        TypeAnalysis typeAnalysis = getTypeAnalysisNullWhenAbsent(bestType);
-        if (typeAnalysis == null) {
-            return null;
-        }
-        DV dv = typeAnalysis.getProperty(Property.CONTAINER);
-        if (dv.isDelayed()) {
-            return dv;
-        }
-        if (bestType.isFinal(this) || bestType.isInterface() && dv.equals(MultiLevel.CONTAINER_DV)) {
-            return dv;
-        }
-        return null;
-    }
-/*
-    default Stream<MethodAnalyser> parallelMethodAnalyserStream() {
-        return methodAnalyserStream();
-    }
-
- */
 }

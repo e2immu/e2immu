@@ -24,6 +24,7 @@ import org.e2immu.analyser.parser.CommonTestRunner;
 import org.e2immu.analyser.visitor.EvaluationResultVisitor;
 import org.e2immu.analyser.visitor.StatementAnalyserVariableVisitor;
 import org.e2immu.analyser.visitor.StatementAnalyserVisitor;
+import org.e2immu.analyser.visitor.TypeAnalyserVisitor;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
@@ -84,18 +85,18 @@ public class Test_21_VariableInLoop extends CommonTestRunner {
                 if (d.variable() instanceof ReturnVariable) {
                     if ("1".equals(d.statementId())) {
                         String expected = switch (d.iteration()) {
-                            case 0 -> "<null-check>&&(<null-check>||!<m:isPresent>)?<v:sa>:<return value>";
-                            case 1, 2 -> "(<m:isPresent>||null==sa$1)&&(!<null-check>||null==sa$1)?<return value>:<vl:sa>";
-                            default -> "((sa$1.navigationData()).next.isPresent()||null==sa$1)&&(null==sa$1||null!=(sa$1.navigationData()).next.get().orElse(null))?<return value>:sa$1";
+                            case 0 -> "<null-check>?<m:isPresent>?<null-check>?<v:sa>:<return value>:<v:sa>:<return value>";
+                            case 1 -> "null==sa$1?<return value>:<m:isPresent>?<null-check>?<vl:sa>:<return value>:<vl:sa>";
+                            default -> "null==sa$1?<return value>:(sa$1.navigationData()).next.isPresent()?null==(sa$1.navigationData()).next.get().orElse(null)?sa$1:<return value>:sa$1";
                         };
                         assertEquals(expected, d.currentValue().toString());
-                        assertDv(d, 3, MultiLevel.NOT_INVOLVED_DV, Property.EXTERNAL_IMMUTABLE);
+                        assertDv(d, 2, MultiLevel.NOT_INVOLVED_DV, Property.EXTERNAL_IMMUTABLE);
                     }
                     if ("2".equals(d.statementId())) {
                         String expected = switch (d.iteration()) {
                             case 0 -> "<null-check>&&(<null-check>||!<m:isPresent>)?<v:sa>:null";
-                            case 1, 2 -> "(<m:isPresent>||<null-check>)&&(<null-check>||!<null-check>)?null:<vl:sa>";
-                            default -> "([(sa$1.navigationData()).next.get().get(),((null==sa$1?firstStatementAnalyser:(sa$1.navigationData()).next.isPresent()&&null!=(sa$1.navigationData()).next.get().orElse(null)?(sa$1.navigationData()).next.get().get():sa$1).navigationData()).next.isPresent(),(sa$1.navigationData()).next.isPresent(),((null==sa$1?firstStatementAnalyser:(sa$1.navigationData()).next.isPresent()&&null!=(sa$1.navigationData()).next.get().orElse(null)?(sa$1.navigationData()).next.get().get():sa$1).navigationData()).next.get().orElse(null),(sa$1.navigationData()).next.get().orElse(null),firstStatementAnalyser,sa$1,instance type boolean])?null:null==sa$1?firstStatementAnalyser:(sa$1.navigationData()).next.isPresent()&&null!=(sa$1.navigationData()).next.get().orElse(null)?(sa$1.navigationData()).next.get().get():sa$1";
+                            case 1 -> "(<m:isPresent>||<null-check>)&&(<null-check>||!<null-check>)&&(<m:isPresent>||null==sa$1)&&(!<null-check>||null==sa$1)?null:<vl:sa>";
+                            default -> "null==sa$1&&null==(null==sa$1?firstStatementAnalyser:(sa$1.navigationData()).next.isPresent()&&null!=(sa$1.navigationData()).next.get().orElse(null)?(sa$1.navigationData()).next.get().get():sa$1)?null:(((sa$1.navigationData()).next.isPresent()&&null!=(sa$1.navigationData()).next.get().orElse(null)?(sa$1.navigationData()).next.get().get():sa$1).navigationData()).next.isPresent()?null!=sa$1&&null==(sa$1.navigationData()).next.get().orElse(null)&&null==(((sa$1.navigationData()).next.isPresent()&&null!=(sa$1.navigationData()).next.get().orElse(null)?(sa$1.navigationData()).next.get().get():sa$1).navigationData()).next.get().orElse(null)&&null!=(null==sa$1?firstStatementAnalyser:(sa$1.navigationData()).next.isPresent()&&null!=(sa$1.navigationData()).next.get().orElse(null)?(sa$1.navigationData()).next.get().get():sa$1)?null==sa$1?firstStatementAnalyser:(sa$1.navigationData()).next.isPresent()&&null!=(sa$1.navigationData()).next.get().orElse(null)?(sa$1.navigationData()).next.get().get():sa$1:null:(sa$1.navigationData()).next.isPresent()&&null!=(sa$1.navigationData()).next.get().orElse(null)?(sa$1.navigationData()).next.get().get():sa$1";
                         };
                         assertEquals(expected, d.currentValue().toString());
                     }
@@ -104,52 +105,53 @@ public class Test_21_VariableInLoop extends CommonTestRunner {
                     if ("1.0.0".equals(d.statementId())) {
                         assertTrue(d.variableInfoContainer().hasEvaluation());
                         VariableInfo eval = d.variableInfoContainer().best(Stage.EVALUATION);
-                        if (d.iteration() <= 2) {
+                        if (d.iteration() == 0) {
                             assertTrue(eval.getProperty(Property.CONTEXT_NOT_NULL).isDelayed());
                         } else {
                             // should be CONTENT_NOT_NULL, but in competition with the null check
                             assertEquals(MultiLevel.NULLABLE_DV, eval.getProperty(Property.CONTEXT_NOT_NULL));
                         }
-                        assertDv(d, 3, MultiLevel.NULLABLE_DV, Property.CONTEXT_NOT_NULL);
+                        assertDv(d, 1, MultiLevel.NULLABLE_DV, Property.CONTEXT_NOT_NULL);
                     }
                     if ("1.0.1".equals(d.statementId())) {
-                        assertDv(d, 3, MultiLevel.NULLABLE_DV, Property.CONTEXT_NOT_NULL);
+                        assertDv(d, 2, MultiLevel.NULLABLE_DV, Property.CONTEXT_NOT_NULL);
                     }
                     if ("1.0.2".equals(d.statementId())) {
-                        assertDv(d, 3, MultiLevel.NULLABLE_DV, Property.CONTEXT_NOT_NULL);
+                        assertDv(d, 2, MultiLevel.NULLABLE_DV, Property.CONTEXT_NOT_NULL);
                     }
                     // then comes an assignment...
                     if ("1.0.3".equals(d.statementId())) {
-                        assertDv(d, 3, MultiLevel.NULLABLE_DV, Property.CONTEXT_NOT_NULL);
+                        assertDv(d, 2, MultiLevel.NULLABLE_DV, Property.CONTEXT_NOT_NULL);
                     }
                     // and therefore "1" remains nullable, 1st round
                     if ("1".equals(d.statementId())) {
-                        assertDv(d, 3, MultiLevel.NULLABLE_DV, Property.CONTEXT_NOT_NULL);
+                        assertDv(d, 2, MultiLevel.NULLABLE_DV, Property.CONTEXT_NOT_NULL);
                         String linked = switch (d.iteration()) {
-                            case 0, 1, 2 -> "firstStatementAnalyser:0,sa.navigationData().next:-1,scope-59:18:-1,scope-60:47:-1";
-                            default -> "firstStatementAnalyser:0,sa.navigationData().next:3,scope-59:18:3,scope-60:47:3";
+                            case 0, 1 -> "firstStatementAnalyser:0,sa.navigationData().next:-1,scope-59:18:-1,scope-60:47:-1";
+                            default -> "firstStatementAnalyser:0,sa.navigationData().next:3,scope-59:18:2,scope-60:47:2";
                         };
                         assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
                     }
                     if ("2".equals(d.statementId())) {
                         String expected = switch (d.iteration()) {
                             case 0 -> "<null-check>?<m:get>:firstStatementAnalyser";
-                            case 1, 2 -> "null==sa$1?firstStatementAnalyser:<s:StatementAnalyser>";
+                            case 1 -> "null==sa$1?firstStatementAnalyser:<s:StatementAnalyser>";
                             default -> "null==sa$1?firstStatementAnalyser:(sa$1.navigationData()).next.isPresent()&&null!=(sa$1.navigationData()).next.get().orElse(null)?(sa$1.navigationData()).next.get().get():sa$1";
                         };
                         assertEquals(expected, d.currentValue().toString());
                         // nullable or content not null? delayed or not in iteration 0?
                         // either @NotNull1 or @Nullable; it is the expression of the return value
-                        assertDv(d, 3, MultiLevel.NULLABLE_DV, Property.CONTEXT_NOT_NULL);
+                        assertDv(d, 2, MultiLevel.NULLABLE_DV, Property.CONTEXT_NOT_NULL);
                     }
                 }
                 if ("scope-59:18".equals(d.variableName())) {
                     // scope variable
                     assertNotEquals("0", d.statementId());
-                    if (d.statementId().startsWith("1.0")) {
+                    if (d.statementId().equals("1.0.0")) {
                         // this value is assigned during the evaluation of 1.0.0, in VariableExpression.evaluateScope
                         String expected = switch (d.iteration()) {
-                            case 0, 1, 2 -> "<m:navigationData>";
+                            case 0 -> "<m:navigationData>";
+                            case 1 -> "<vp:NavigationData:cm@Parameter_next;mom@Parameter_next>";
                             default -> "sa$1.navigationData()";
                         };
                         assertEquals(expected, d.currentValue().toString());
@@ -160,9 +162,9 @@ public class Test_21_VariableInLoop extends CommonTestRunner {
                     }
                     if ("1".equals(d.statementId())) {
                         String expected = switch (d.iteration()) {
-                            case 0 -> "<null-check>?<m:navigationData>:<not yet assigned>";
-                            case 1, 2 -> "null==sa$1?<not yet assigned>:<m:navigationData>";
-                            default -> "null==sa$1?<not yet assigned>:sa$1.navigationData()";
+                            case 0 -> "<null-check>?<m:navigationData>:nullable instance type NavigationData";
+                            case 1 -> "null==sa$1?nullable instance type NavigationData:<m:navigationData>";
+                            default -> "null==sa$1?nullable instance type NavigationData:sa$1.navigationData()";
                         };
                         assertEquals(expected, d.currentValue().toString());
                     }
@@ -176,13 +178,18 @@ public class Test_21_VariableInLoop extends CommonTestRunner {
                 }
             }
         };
+        TypeAnalyserVisitor typeAnalyserVisitor = d-> {
+            if("StatementAnalyser".equals(d.typeInfo().simpleName)) {
+               assertDv(d, MultiLevel.MUTABLE_DV, Property.IMMUTABLE);
+            }
+        };
         // sa.navigationData(), x2
         testClass("VariableInLoop_1", 0, 2, new DebugConfiguration.Builder()
                 .addStatementAnalyserVisitor(statementAnalyserVisitor)
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
                 .build());
     }
-
 
     @Test
     public void test_2() throws IOException {
@@ -255,6 +262,12 @@ public class Test_21_VariableInLoop extends CommonTestRunner {
                     if ("2.0.0".equals(d.statementId())) {
                         String expected = d.iteration() <= 1 ? "<vl:toDo>" : "instance type HashSet<String>";
                         assertEquals(expected, d.currentValue().toString());
+                        assertDv(d, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                    }
+                    if ("2.0.2".equals(d.statementId())) {
+                        String expected = d.iteration() <= 1 ? "<vl:toDo>" : "instance type Set<String>";
+                        assertEquals(expected, d.currentValue().toString());
+                        assertDv(d, 1, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
                     }
                     if ("2".equals(d.statementId())) {
                         assertDv(d, 1, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
@@ -272,8 +285,8 @@ public class Test_21_VariableInLoop extends CommonTestRunner {
                 if ("2.0.2".equals(d.statementId())) {
                     String expected = d.iteration() == 0 ? "!<c:boolean>" : "null!=supplier.get()";
                     assertEquals(expected, d.state().toString());
-                    String stateVars = "[org.e2immu.analyser.parser.loops.testexample.VariableInLoop_3.method(java.util.Set<java.lang.String>,java.util.function.Supplier<java.lang.String>):1:supplier]";
-                    assertEquals(stateVars, d.state().variables(true).toString());
+                    String stateVars = "[org.e2immu.analyser.parser.loops.testexample.VariableInLoop_3.method(java.util.Set<String>,java.util.function.Supplier<String>):1:supplier]";
+                    assertEquals(stateVars, d.state().variables().toString());
                     String flow = d.iteration() == 0 ? "initial_flow_value@Method_method_2.0.2-C" : "CONDITIONALLY:1";
                     assertEquals(flow, d.statementAnalysis().flowData().getGuaranteedToBeReachedInMethod().toString());
                 }

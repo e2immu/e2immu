@@ -15,6 +15,7 @@
 package org.e2immu.analyser.analyser.nonanalyserimpl;
 
 import org.e2immu.analyser.analyser.*;
+import org.e2immu.analyser.analyser.impl.util.BreakDelayLevel;
 import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.expression.Equals;
@@ -33,24 +34,24 @@ public abstract class AbstractEvaluationContextImpl implements EvaluationContext
     public final int iteration;
     public final EvaluationContext closure;
     public final ConditionManager conditionManager;
-    public final boolean allowBreakDelay;
+    public final BreakDelayLevel breakDelayLevel;
 
     protected AbstractEvaluationContextImpl(int depth,
                                             int iteration,
-                                            boolean allowBreakDelay,
+                                            BreakDelayLevel breakDelayLevel,
                                             ConditionManager conditionManager,
                                             EvaluationContext closure) {
         this.iteration = iteration;
         this.conditionManager = conditionManager;
-        this.allowBreakDelay = allowBreakDelay;
+        this.breakDelayLevel = breakDelayLevel;
         this.closure = closure;
         this.depth = depth;
         assert depth < 20 : "Depth of " + depth + " reached";
     }
 
     @Override
-    public boolean allowBreakDelay() {
-        return allowBreakDelay;
+    public BreakDelayLevel breakDelayLevel() {
+        return breakDelayLevel;
     }
 
     @Override
@@ -78,6 +79,7 @@ public abstract class AbstractEvaluationContextImpl implements EvaluationContext
      */
     @Override
     public DV isNotNull0(Expression value, boolean useEnnInsteadOfCnn, ForwardEvaluationInfo forwardEvaluationInfo) {
+        if (forwardEvaluationInfo.isOnlySort()) return DV.FALSE_DV;
         Expression valueIsNull = new Equals(value.getIdentifier(), getPrimitives(), NullConstant.NULL_CONSTANT, value);
         Expression inCm = conditionManager.evaluate(EvaluationResult.from(this), valueIsNull, true);
         DV negated = inCm.isDelayed() ? inCm.causesOfDelay() : inCm.isBoolValueFalse() ? DV.TRUE_DV : DV.FALSE_DV;

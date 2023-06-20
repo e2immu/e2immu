@@ -14,13 +14,13 @@
 
 package org.e2immu.analyser.parser.minor.testexample;
 
-import org.e2immu.annotation.Constant;
 import org.e2immu.annotation.Final;
+import org.e2immu.annotation.ImmutableContainer;
 import org.e2immu.annotation.Nullable;
 
 public class ExplicitConstructorInvocation_3 {
 
-    @Constant(absent = true)
+    @ImmutableContainer // not a constant
     @Final
     private String s;
 

@@ -21,6 +21,7 @@ import org.e2immu.analyser.inspector.AbstractInspectionBuilder;
 import org.e2immu.analyser.inspector.DollarResolverResult;
 import org.e2immu.analyser.inspector.InspectionState;
 import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.parser.TypeMap;
 import org.e2immu.annotation.Container;
@@ -34,9 +35,10 @@ import static org.e2immu.analyser.inspector.TypeInspector.PACKAGE_NAME_FIELD;
 
 public class TypeInspectionImpl extends InspectionImpl implements TypeInspection {
     private static final Logger LOGGER = LoggerFactory.getLogger(TypeInspectionImpl.class);
-    
+
     // the type that this inspection object belongs to
     public final TypeInfo typeInfo;
+    public final MethodInfo enclosingMethod;
     public final TypeNature typeNature;
     public final ParameterizedType parentClass;
     public final List<MethodInfo> constructors;
@@ -47,14 +49,15 @@ public class TypeInspectionImpl extends InspectionImpl implements TypeInspection
     public final List<TypeInfo> permittedWhenSealed;
     public final List<TypeParameter> typeParameters;
     public final List<ParameterizedType> interfacesImplemented;
-    public final TypeModifier access;
     public final Inspector inspector;
     public final boolean functionalInterface;
     public final Identifier.PositionalIdentifier positionalIdentifier;
 
     private TypeInspectionImpl(TypeInfo typeInfo,
+                               MethodInfo enclosingMethod,
                                TypeNature typeNature,
-                               TypeModifier access,
+                               Access access,
+                               Comment comment,
                                List<TypeParameter> typeParameters,
                                ParameterizedType parentClass,
                                List<ParameterizedType> interfacesImplemented,
@@ -69,7 +72,8 @@ public class TypeInspectionImpl extends InspectionImpl implements TypeInspection
                                boolean synthetic,
                                boolean functionalInterface,
                                Identifier.PositionalIdentifier positionalIdentifier) {
-        super(annotations, synthetic);
+        super(annotations, access, comment, synthetic);
+        this.enclosingMethod = enclosingMethod;
         this.parentClass = parentClass;
         this.interfacesImplemented = interfacesImplemented;
         this.typeParameters = typeParameters;
@@ -80,7 +84,6 @@ public class TypeInspectionImpl extends InspectionImpl implements TypeInspection
         this.fields = fields;
         this.modifiers = modifiers;
         this.subTypes = subTypes;
-        this.access = access;
         this.permittedWhenSealed = permittedWhenSealed;
         this.functionalInterface = functionalInterface;
         this.inspector = inspector;
@@ -105,6 +108,11 @@ public class TypeInspectionImpl extends InspectionImpl implements TypeInspection
     @Override
     public TypeInfo typeInfo() {
         return typeInfo;
+    }
+
+    @Override
+    public MethodInfo enclosingMethod() {
+        return enclosingMethod;
     }
 
     @Override
@@ -153,11 +161,6 @@ public class TypeInspectionImpl extends InspectionImpl implements TypeInspection
     }
 
     @Override
-    public TypeModifier access() {
-        return access;
-    }
-
-    @Override
     public InspectionState getInspectionState() {
         return BUILT;
     }
@@ -167,9 +170,23 @@ public class TypeInspectionImpl extends InspectionImpl implements TypeInspection
         return permittedWhenSealed;
     }
 
+    @Override
+    public boolean isExtensible() {
+        return isExtensible(modifiers, typeNature);
+    }
+
+    private static boolean isExtensible(Set<TypeModifier> modifiers, TypeNature typeNature) {
+        return switch (typeNature) {
+            case ENUM, ANNOTATION, PRIMITIVE, RECORD -> false;
+            case INTERFACE -> true;
+            case CLASS -> !modifiers.contains(TypeModifier.FINAL) && !modifiers.contains(TypeModifier.SEALED);
+        };
+    }
+
     @Container(builds = TypeInspectionImpl.class)
     public static class Builder extends AbstractInspectionBuilder<TypeInspection.Builder> implements TypeInspection.Builder {
         private TypeNature typeNature = TypeNature.CLASS;
+        private MethodInfo enclosingMethod;
         private final Set<String> methodAndConstructorNames = new HashSet<>();
         private final List<TypeInfo> permittedWhenSealed = new ArrayList<>();
         private final List<MethodInfo> methods = new ArrayList<>();
@@ -198,13 +215,28 @@ public class TypeInspectionImpl extends InspectionImpl implements TypeInspection
             return this;
         }
 
+        public Builder setEnclosingMethod(MethodInfo enclosingMethod) {
+            this.enclosingMethod = enclosingMethod;
+            return this;
+        }
+
         public void setPositionalIdentifier(Identifier.PositionalIdentifier positionalIdentifier) {
             this.positionalIdentifier = positionalIdentifier;
         }
 
         @Override
+        public MethodInfo enclosingMethod() {
+            return enclosingMethod;
+        }
+
+        @Override
         public boolean isFunctionalInterface() {
             return functionalInterface;
+        }
+
+        @Override
+        public boolean isExtensible() {
+            return TypeInspectionImpl.isExtensible(modifiers, typeNature);
         }
 
         @Override
@@ -324,18 +356,26 @@ public class TypeInspectionImpl extends InspectionImpl implements TypeInspection
             return interfacesImplemented;
         }
 
-        public TypeInspectionImpl build() {
+        public TypeInspectionImpl build(InspectionProvider inspectionProvider) {
             Objects.requireNonNull(typeNature);
             if (typeInfo.needsParent() && parentClass == null) {
-                throw new UnsupportedOperationException("Need a parent class for " + typeInfo.fullyQualifiedName);
+                throw new UnsupportedOperationException("Need a parent class for " + typeInfo.fullyQualifiedName
+                        + ". If this error occurs during annotated API inspection, check that the class name is spelled correctly!");
             }
             assert permittedWhenSealed.isEmpty() || modifiers.contains(TypeModifier.SEALED);
             assert !modifiers.contains(TypeModifier.SEALED) || !permittedWhenSealed.isEmpty();
 
+            if (accessNotYetComputed()) {
+                assert inspectionProvider != null : "Need an inspection provider when access not yet computed";
+                computeAccess(inspectionProvider);
+            }
+
             return new TypeInspectionImpl(
                     typeInfo,
+                    enclosingMethod,
                     typeNature,
-                    access(),
+                    getAccess(),
+                    getComment(),
                     typeParameters(),
                     parentClass,
                     interfacesImplemented(),
@@ -402,12 +442,28 @@ public class TypeInspectionImpl extends InspectionImpl implements TypeInspection
             return List.copyOf(interfacesImplemented);
         }
 
-        @Override
-        public TypeModifier access() {
-            if (modifiers.contains(TypeModifier.PUBLIC)) return TypeModifier.PUBLIC;
-            if (modifiers.contains(TypeModifier.PROTECTED)) return TypeModifier.PROTECTED;
-            if (modifiers.contains(TypeModifier.PRIVATE)) return TypeModifier.PRIVATE;
-            return TypeModifier.PACKAGE;
+        /*
+        If the enclosing type is private, then this type must be private too... can't go up in the visibility
+        hierarchy.
+         */
+        public void computeAccess(InspectionProvider inspectionProvider) {
+            Access fromModifiers = accessFromModifiers();
+            if (typeInfo.packageNameOrEnclosingType.isLeft()) {
+                setAccess(fromModifiers);
+            } else {
+                TypeInspection typeInspection = inspectionProvider
+                        .getTypeInspection(typeInfo.packageNameOrEnclosingType.getRight());
+                Access fromEnclosing = typeInspection.getAccess();
+                Access combined = fromEnclosing.combine(fromModifiers);
+                setAccess(combined);
+            }
+        }
+
+        private Access accessFromModifiers() {
+            if (modifiers.contains(TypeModifier.PUBLIC)) return Access.PUBLIC;
+            if (modifiers.contains(TypeModifier.PROTECTED)) return Access.PROTECTED;
+            if (modifiers.contains(TypeModifier.PRIVATE)) return Access.PRIVATE;
+            return Access.PACKAGE;
         }
 
         public void recursivelyAddToTypeStore(boolean parentIsPrimaryType,

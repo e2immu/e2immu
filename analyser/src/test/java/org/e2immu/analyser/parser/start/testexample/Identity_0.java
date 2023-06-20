@@ -15,11 +15,14 @@
 package org.e2immu.analyser.parser.start.testexample;
 
 import org.e2immu.annotation.Identity;
+import org.e2immu.annotation.ImmutableContainer;
 import org.e2immu.annotation.NotModified;
 import org.e2immu.annotation.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+// hc=true because LOGGER has hidden content
+@ImmutableContainer(hc = true)
 public class Identity_0 {
     /*
     The @NotNull on the idemX methods relies on LOGGER.debug(@NotNull String s) { .. }

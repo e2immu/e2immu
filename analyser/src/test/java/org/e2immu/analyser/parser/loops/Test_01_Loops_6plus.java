@@ -273,11 +273,12 @@ public class Test_01_Loops_6plus extends CommonTestRunner {
                         assertEquals(expect, d.currentValue().toString());
                     }
                     if ("4".equals(d.statementId())) {
-                        assertDv(d, 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, CONTEXT_NOT_NULL);
-                        assertEquals("", d.variableInfo().getLinkedVariables().toString());
+                        assertDv(d, 5, MultiLevel.EFFECTIVELY_NOT_NULL_DV, CONTEXT_NOT_NULL);
+                        String linked = d.iteration() == 0 ? "ZoneOffset.UTC:-1,map:-1,now:-1,queried:-1" : "";
+                        assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
                     }
                     if ("5".equals(d.statementId())) {
-                        assertDv(d, 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, CONTEXT_NOT_NULL);
+                        assertDv(d, 5, MultiLevel.EFFECTIVELY_NOT_NULL_DV, CONTEXT_NOT_NULL);
                     }
                 }
                 if (d.variable() instanceof ReturnVariable) {
@@ -290,7 +291,8 @@ public class Test_01_Loops_6plus extends CommonTestRunner {
                                 ? "map.entrySet().isEmpty()?new HashMap<>()/*AnnotatedAPI.isKnown(true)&&0==this.size()*/:<vl:result>"
                                 : "map.entrySet().isEmpty()?new HashMap<>()/*AnnotatedAPI.isKnown(true)&&0==this.size()*/:instance type Map<String,String>";
                         assertEquals(expectValue, d.currentValue().toString());
-                        assertEquals("result:0", d.variableInfo().getLinkedVariables().toString());
+                        String linked = d.iteration() == 0 ? "ZoneOffset.UTC:-1,map:-1,now:-1,queried:-1,result:0" : "result:0";
+                        assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
                         assertDv(d, MultiLevel.NULLABLE_DV, CONTEXT_NOT_NULL);
                         assertDv(d, 2, MultiLevel.EFFECTIVELY_NOT_NULL_DV, NOT_NULL_EXPRESSION);
                     }
@@ -401,8 +403,8 @@ public class Test_01_Loops_6plus extends CommonTestRunner {
                     }
                     if ("2.0.1".equals(d.statementId()) || "2.0.2".equals(d.statementId())) {
                         String expect = d.iteration() == 0
-                                ? "6==<v:i>?11:3==<v:i>?10:<vl:j>"
-                                : "6==i$2?11:3==i$2?10:instance type int";
+                                ? "3==<v:i>?10:6==<v:i>?11:<vl:j>"
+                                : "3==i$2?10:6==i$2?11:instance type int";
                         assertEquals(expect, d.currentValue().toString());
                     }
                 }
@@ -567,6 +569,8 @@ public class Test_01_Loops_6plus extends CommonTestRunner {
 
     @Test
     public void test_17_2() throws IOException {
+        // delay breaking in iteration 3
+
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("method".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof FieldReference fr && "map".equals(fr.fieldInfo.name)) {
@@ -580,6 +584,7 @@ public class Test_01_Loops_6plus extends CommonTestRunner {
                     }
                     if ("1.0.0".equals(d.statementId())) {
                         // as the sourceOfLoop of entry
+                        assertEquals(d.iteration() == 3, d.allowBreakDelay());
                         assertTrue(d.variableInfoContainer().hasEvaluation());
                         VariableInfo eval = d.variableInfoContainer().best(Stage.EVALUATION);
                         assertEquals(d.iteration() <= 2, eval.getProperty(CONTEXT_NOT_NULL).isDelayed());
@@ -591,7 +596,6 @@ public class Test_01_Loops_6plus extends CommonTestRunner {
             }
         };
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
-            //assertFalse(d.evaluationContext().allowBreakDelay());
             if ("map".equals(d.fieldInfo().name)) {
                 // whatever happens, this remains nullable! map can have been null, setMap does not have to be called, and
                 // neither does method
@@ -637,19 +641,19 @@ public class Test_01_Loops_6plus extends CommonTestRunner {
                         assertEquals(expected, d.currentValue().toString());
                         if (d.iteration() >= 2) {
                             assertEquals("[kvStore]", d.currentValue()
-                                    .variables(true).stream().map(Variable::toString)
+                                    .variableStream().map(Variable::toString)
                                     .sorted().toList().toString());
                         }
                     }
                 }
                 if ("entry".equals(d.variableName())) {
                     if ("1.0.0".equals(d.statementId())) {
-                        String expectLv = d.iteration() == 0 ? "key:-1,this.kvStore:-1" : "";
+                        String expectLv = d.iteration() == 0 ? "key:-1,this.kvStore:-1" : "this.kvStore:2";
                         assertEquals(expectLv, d.variableInfo().getLinkedVariables().toString());
                         assertDv(d, 1, MultiLevel.MUTABLE_DV, IMMUTABLE);
                     }
                     if ("1.0.1.0.0".equals(d.statementId())) {
-                        String expectL1 = d.iteration() == 0 ? "container:-1,key:-1,this.kvStore:-1" : "";
+                        String expectL1 = d.iteration() == 0 ? "container:-1,key:-1,this.kvStore:-1" : "this.kvStore:2";
                         assertEquals(expectL1, d.variableInfo().getLinkedVariables().toString());
                     }
                 }
@@ -658,19 +662,19 @@ public class Test_01_Loops_6plus extends CommonTestRunner {
                         assertTrue(d.variableInfoContainer().hasEvaluation());
                         assertFalse(d.variableInfoContainer().hasMerge());
 
-                        String linkedE = d.iteration() == 0 ? "entry:-1,key:-1" : "";
+                        String linkedE = d.iteration() == 0 ? "entry:-1,key:-1" : "entry:2";
                         assertEquals(linkedE, d.variableInfo().getLinkedVariables().toString());
                     }
                     if ("1".equals(d.statementId())) {
                         assertTrue(d.variableInfoContainer().hasEvaluation());
                         VariableInfo eval = d.variableInfoContainer().best(Stage.EVALUATION);
 
-                        String linkedE = d.iteration() == 0 ? "entry:-1" : "";
+                        String linkedE = d.iteration() == 0 ? "entry:-1" : "entry:2";
                         assertEquals(linkedE, eval.getLinkedVariables().toString());
 
                         assertTrue(d.variableInfoContainer().hasMerge());
-                        String linkedM = d.iteration() == 0 ? "result:-1" : "";
-                        assertEquals(linkedM, d.variableInfo().getLinkedVariables().toString());
+                        String linked = d.iteration() == 0 ? "queried:-1" : "";
+                        assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
                     }
                 }
             }
@@ -692,8 +696,12 @@ public class Test_01_Loops_6plus extends CommonTestRunner {
 
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("Container".equals(d.typeInfo().simpleName)) {
-                assertDv(d, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, IMMUTABLE);
+                assertDv(d, MultiLevel.EFFECTIVELY_IMMUTABLE_DV, IMMUTABLE);
                 assertDv(d, MultiLevel.INDEPENDENT_DV, INDEPENDENT);
+                assertHc(d, 0, "");
+            }
+            if ("Loops_18".equals(d.typeInfo().simpleName)) {
+                assertHc(d, 0, "");
             }
         };
 
@@ -717,8 +725,8 @@ public class Test_01_Loops_6plus extends CommonTestRunner {
             if ("method".equals(d.methodInfo().name)) {
                 if ("1.0.1.0.1".equals(d.statementId())) {
                     String expected = switch (d.iteration()) {
-                        case 0, 1, 2 -> "<null-check>&&<m:isAfter>&&<m:isBefore>";
-                        case 3 -> "<m:isAfter>&&<m:isBefore>&&null!=<f:container.read>";
+                        case 0 -> "<null-check>&&<m:isAfter>&&<m:isBefore>";
+                        case 1 -> "<m:isAfter>&&<m:isBefore>&&null!=<f:container.read>";
                         default -> "`(entry.getValue()).updated.time`>`(entry.getValue()).read.time`&&`new Date(`(entry.getValue()).read.time`+readWithinMillis).time`>`now.time`&&null!=(entry.getValue()).read";
                     };
                     assertEquals(expected, d.evaluationResult().value().toString());
@@ -740,18 +748,18 @@ public class Test_01_Loops_6plus extends CommonTestRunner {
                     if ("1.0.1".equals(d.statementId())) {
                         String expected = switch (d.iteration()) {
                             case 0 -> "<m:contains>?instance type long:<p:readWithinMillis>";
-                            case 1, 2, 3 -> "queried.contains(entry.getKey())?instance type long:<p:readWithinMillis>";
+                            case 1 -> "queried.contains(entry.getKey())?instance type long:<p:readWithinMillis>";
                             default -> "instance type long";
                         };
                         assertEquals(expected, d.currentValue().toString());
-                        assertDv(d, 4, MultiLevel.EFFECTIVELY_NOT_NULL_DV, NOT_NULL_EXPRESSION);
+                        assertDv(d, 2, MultiLevel.EFFECTIVELY_NOT_NULL_DV, NOT_NULL_EXPRESSION);
                     }
                 }
                 if (d.variable() instanceof FieldReference fr && "read".equals(fr.fieldInfo.name)) {
                     if ("1.0.1.0.1".equals(d.statementId())) {
                         assertNotNull(fr.scopeVariable);
                         assertEquals("container", fr.scopeVariable.simpleName());
-                        String expected = d.iteration() <= 3 ? "<f:read>" : "nullable instance type Date";
+                        String expected = d.iteration() < 2 ? "<f:container.read>" : "nullable instance type Date";
                         assertEquals(expected, d.currentValue().toString());
 
                         assertEquals("container", fr.scope.toString());

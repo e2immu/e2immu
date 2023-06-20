@@ -47,11 +47,11 @@ public class Test_16_Modification_24 extends CommonTestRunner {
                 if ("keySet".equals(d.variableName())) {
                     if ("1".equals(d.statementId())) {
                         assertEquals("middle.keySet()/*@NotNull this.size()==in.size()*/", d.currentValue().toString());
-                        assertEquals("middle:2", d.variableInfo().getLinkedVariables().toString());
+                        assertEquals("in:4,middle:2", d.variableInfo().getLinkedVariables().toString());
                     }
                     if ("2".equals(d.statementId())) {
                         assertEquals("instance type Set<String>", d.currentValue().toString());
-                        assertEquals("middle:2", d.variableInfo().getLinkedVariables().toString());
+                        assertEquals("in:4,middle:2", d.variableInfo().getLinkedVariables().toString());
                     }
                 }
             }

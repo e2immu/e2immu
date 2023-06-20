@@ -15,11 +15,14 @@
 package org.e2immu.analyser.parser.eventual.testexample;
 
 import org.e2immu.annotation.*;
+import org.e2immu.annotation.eventual.Mark;
+import org.e2immu.annotation.eventual.Only;
+import org.e2immu.annotation.eventual.TestMark;
 
 /*
 similar to setOnce, to detect errors
  */
-@E2Immutable(after = "t")
+@Immutable(after = "t", hc = true)
 public class EventuallyE2Immutable_2<T> {
 
     private T t;

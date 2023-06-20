@@ -14,22 +14,24 @@
 
 package org.e2immu.analyser.parser.independence.testexample;
 
-import org.e2immu.annotation.*;
+import org.e2immu.annotation.ImmutableContainer;
+import org.e2immu.annotation.Independent;
+import org.e2immu.annotation.NotModified;
 
 import java.util.Arrays;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 
 public class Independent1_5 {
-    @E2Container
+    @ImmutableContainer(hc = true)
     record One<T>(T t) {}
 
-    @E2Container
+    @ImmutableContainer
     static class ImmutableArrayOfTransparentOnes {
 
         private final One<Integer>[] ones;
 
-        public ImmutableArrayOfTransparentOnes(One<Integer>[] ones, @Independent1 Supplier<One<Integer>> generator) {
+        public ImmutableArrayOfTransparentOnes(One<Integer>[] ones, @Independent Supplier<One<Integer>> generator) {
             this.ones = ones.clone();
             Arrays.setAll(this.ones, i -> generator.get());
         }
@@ -47,7 +49,7 @@ public class Independent1_5 {
             return ones[index];
         }
 
-        public void visit(@Independent1 Consumer<One<Integer>> consumer) {
+        public void visit(@Independent Consumer<One<Integer>> consumer) {
             for (One<Integer> one : ones) consumer.accept(one);
         }
     }

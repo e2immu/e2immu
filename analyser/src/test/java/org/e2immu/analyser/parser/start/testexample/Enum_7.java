@@ -14,14 +14,15 @@
 
 package org.e2immu.analyser.parser.start.testexample;
 
-import org.e2immu.annotation.ERContainer;
-import org.e2immu.annotation.NotNull1;
 
-@ERContainer
+import org.e2immu.annotation.ImmutableContainer;
+import org.e2immu.annotation.NotNull;
+
+@ImmutableContainer
 public enum Enum_7 {
     ONE, TWO, THREE;
 
-    @NotNull1
+    @NotNull(content = true)
     public static Enum_7[] rearranged() {
         Enum_7[] v = values();
         Enum_7 tmp = v[0];

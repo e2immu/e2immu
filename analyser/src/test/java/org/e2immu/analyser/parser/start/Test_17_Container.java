@@ -142,7 +142,7 @@ public class Test_17_Container extends CommonTestRunner {
 
                 assertDv(d, DELAYED, 1, MultiLevel.NULLABLE_DV, Property.EXTERNAL_NOT_NULL);
                 assertDv(d, DELAYED, 1, MultiLevel.MUTABLE_DV, Property.EXTERNAL_IMMUTABLE);
-                assertDv(d, DELAYED, 1, MultiLevel.DEPENDENT_DV, Property.INDEPENDENT);
+                assertDv(d, 1, MultiLevel.DEPENDENT_DV, Property.INDEPENDENT);
             }
         };
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
@@ -306,7 +306,7 @@ public class Test_17_Container extends CommonTestRunner {
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
             if (S.equals(d.fieldInfo().fullyQualifiedName())) {
                 assertDv(d, 1, DV.TRUE_DV, Property.MODIFIED_OUTSIDE_METHOD);
-                assertEquals("", d.fieldAnalysis().getLinkedVariables().toString());
+                assertEquals("p:4", d.fieldAnalysis().getLinkedVariables().toString());
             }
         };
 
@@ -330,7 +330,7 @@ public class Test_17_Container extends CommonTestRunner {
 
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("Container_4".equals(d.typeInfo().simpleName)) {
-                assertTrue(d.typeAnalysis().getTransparentTypes().isEmpty());
+                assertTrue(d.typeAnalysis().getHiddenContentTypes().isEmpty());
             }
         };
 
@@ -356,8 +356,7 @@ public class Test_17_Container extends CommonTestRunner {
                 }
                 if ("1".equals(d.statementId())) {
                     assertEquals(DV.TRUE_DV, d.getProperty(Property.CONTEXT_MODIFIED));
-                    String linked = d.iteration() == 0 ? "modified2:0,this.s:-1" : "modified2:0";
-                    assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
+                    assertEquals("modified2:0,this.s:4", d.variableInfo().getLinkedVariables().toString());
                 }
             }
             if ("m2".equals(d.methodInfo().name) && S.equals(d.variableName())) {
@@ -370,10 +369,10 @@ public class Test_17_Container extends CommonTestRunner {
 
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("m1".equals(d.methodInfo().name)) {
-                assertEquals(d.iteration() > 0, d.methodAnalysis().methodLevelData().linksHaveBeenEstablished());
+                assertTrue(d.methodAnalysis().methodLevelData().linksHaveBeenEstablished());
             }
             if ("m2".equals(d.methodInfo().name)) {
-                assertEquals(d.iteration() > 0, d.methodAnalysis().methodLevelData().linksHaveBeenEstablished());
+                assertTrue(d.methodAnalysis().methodLevelData().linksHaveBeenEstablished());
             }
             if ("crossModify".equals(d.methodInfo().name)) {
                 assertDv(d.p(0), 1, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
@@ -401,10 +400,13 @@ public class Test_17_Container extends CommonTestRunner {
         final String CONTAINER_5 = "Container_5";
 
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+            assertFalse(d.allowBreakDelay());
+
             if (CONTAINER_5.equals(d.methodInfo().name) &&
                     d.variable() instanceof ParameterInfo p && "coll5".equals(p.name)) {
                 if ("1".equals(d.statementId())) {
-                    String expected = d.iteration() <= 1 ? "<mod:Collection<String>>" : "nullable instance type Collection<String>/*@Identity*/";
+                    String expected = d.iteration() < 2 ? "<mod:Collection<String>>"
+                            : "nullable instance type Collection<String>/*@Identity*/";
                     assertEquals(expected, d.currentValue().toString());
                     String expectLinked = d.iteration() == 0 ? "this:-1" : "";
                     assertEquals(expectLinked, d.variableInfo().getLinkedVariables().toString());
@@ -498,7 +500,6 @@ public class Test_17_Container extends CommonTestRunner {
 
     @Test
     public void test_7() throws IOException {
-
         testClass("Container_7", 0, 0, new DebugConfiguration.Builder()
                 .build());
     }

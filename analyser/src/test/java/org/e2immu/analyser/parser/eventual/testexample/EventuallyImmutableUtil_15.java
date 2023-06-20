@@ -15,6 +15,9 @@
 package org.e2immu.analyser.parser.eventual.testexample;
 
 import org.e2immu.annotation.*;
+import org.e2immu.annotation.eventual.BeforeMark;
+import org.e2immu.annotation.eventual.Mark;
+import org.e2immu.annotation.eventual.Only;
 import org.e2immu.support.EventuallyFinal;
 
 import java.util.Objects;
@@ -23,14 +26,14 @@ import java.util.concurrent.atomic.AtomicInteger;
 // variant on _14, now with field initialized in constructor, with @BeforeMark
 // the requireNonNull adds a small complication
 
-@E2Immutable(recursive = true, after = "eventuallyFinal")
+@Immutable(after = "eventuallyFinal")
 public class EventuallyImmutableUtil_15 {
 
     @NotModified(after = "eventuallyFinal")
     private final AtomicInteger count = new AtomicInteger();
     private final EventuallyFinal<String> eventuallyFinal;
 
-    public EventuallyImmutableUtil_15(@BeforeMark(contract = true) @NotNull EventuallyFinal<String> ev) {
+    public EventuallyImmutableUtil_15(@BeforeMark(contract = true) @NotNull @Modified EventuallyFinal<String> ev) {
         this.eventuallyFinal = Objects.requireNonNull(ev);
     }
 
@@ -41,7 +44,7 @@ public class EventuallyImmutableUtil_15 {
         count.incrementAndGet();
     }
 
-    @ERContainer
+    @ImmutableContainer
     @Mark("eventuallyFinal")
     public EventuallyFinal<String> done(String last) {
         eventuallyFinal.setFinal(last + "; tried " + count);

@@ -16,14 +16,21 @@ package org.e2immu.analyser.parser.functional;
 
 import org.e2immu.analyser.analyser.Property;
 import org.e2immu.analyser.config.DebugConfiguration;
+import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.MultiLevel;
+import org.e2immu.analyser.model.expression.ConstructorCall;
+import org.e2immu.analyser.model.expression.InlinedMethod;
+import org.e2immu.analyser.model.expression.MethodCall;
 import org.e2immu.analyser.parser.CommonTestRunner;
+import org.e2immu.analyser.visitor.EvaluationResultVisitor;
+import org.e2immu.analyser.visitor.MethodAnalyserVisitor;
 import org.e2immu.analyser.visitor.StatementAnalyserVariableVisitor;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.fail;
 
 public class Test_57_Lambda_AAPI extends CommonTestRunner {
 
@@ -50,4 +57,40 @@ public class Test_57_Lambda_AAPI extends CommonTestRunner {
                 .build());
     }
 
+
+    @Test
+    public void test_14() throws IOException {
+        testClass("Lambda_14", 0, 0, new DebugConfiguration.Builder()
+                .build());
+    }
+
+
+    @Test
+    public void test_15() throws IOException {
+        testClass("Lambda_15", 0, 0, new DebugConfiguration.Builder()
+                .build());
+    }
+
+    @Test
+    public void test_16() throws IOException {
+        EvaluationResultVisitor evaluationResultVisitor = d -> {
+            if ("same1".equals(d.methodInfo().name)) {
+                String expected = d.iteration() == 0
+                        ? "<m:toArray>"
+                        : "list.stream().filter(/*inline test*/mask.startsWith(s)).toArray(/*inline apply*/new String[n])";
+                Expression expression = d.evaluationResult().getExpression();
+                assertEquals(expected, expression.toString());
+                if (d.iteration() > 0) {
+                    if (expression instanceof MethodCall methodCall
+                            && methodCall.parameterExpressions.get(0) instanceof InlinedMethod inlinedMethod
+                            && inlinedMethod.expression() instanceof ConstructorCall constructorCall) {
+                        assertEquals(1, constructorCall.parameterizedType().arrays);
+                    } else fail();
+                }
+            }
+        };
+        testClass("Lambda_16", 0, 0, new DebugConfiguration.Builder()
+                .addEvaluationResultVisitor(evaluationResultVisitor)
+                .build());
+    }
 }

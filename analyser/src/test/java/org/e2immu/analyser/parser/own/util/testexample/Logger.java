@@ -31,7 +31,7 @@ public class Logger {
 
     public static final String ACTIVATE_THE_LOG_SYSTEM = "You must activate the log system";
 
-    @Variable // not eventually immutable, the logger can be overwritten
+    @Final(absent = true) // not eventually immutable, the logger can be overwritten
     private static LogMethod logger;
     private static Set<LogTarget> logTargets;
 
@@ -223,7 +223,7 @@ public class Logger {
 
     @Modified
     public static void activate(@NotModified @NotNull LogMethod logMethod,
-                                @NotNull1 Collection<LogTarget> logTargetSet) {
+                                @NotNull(content = true) Collection<LogTarget> logTargetSet) {
         logger = Objects.requireNonNull(logMethod);
         logTargets = Set.copyOf(logTargetSet);
     }

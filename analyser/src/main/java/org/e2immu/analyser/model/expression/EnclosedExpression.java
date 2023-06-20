@@ -21,15 +21,12 @@ import org.e2immu.analyser.model.impl.BaseExpression;
 import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.Symbol;
 import org.e2immu.analyser.parser.InspectionProvider;
-import org.e2immu.annotation.E2Container;
 
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
-import java.util.function.Consumer;
 import java.util.function.Predicate;
 
-@E2Container
 public class EnclosedExpression extends BaseExpression implements Expression {
 
     private final Expression inner;
@@ -54,9 +51,12 @@ public class EnclosedExpression extends BaseExpression implements Expression {
 
     @Override
     public Expression translate(InspectionProvider inspectionProvider, TranslationMap translationMap) {
-        Expression translated = inner.translate(inspectionProvider, translationMap);
-        if (translated == inner) return this;
-        return new EnclosedExpression(identifier, translated);
+        Expression translated = translationMap.translateExpression(this);
+        if (translated != this) return translated;
+
+        Expression translatedInner = inner.translate(inspectionProvider, translationMap);
+        if (translatedInner == inner) return this;
+        return new EnclosedExpression(identifier, translatedInner);
     }
 
     @Override
@@ -101,7 +101,7 @@ public class EnclosedExpression extends BaseExpression implements Expression {
 
     @Override
     public Expression mergeDelays(CausesOfDelay causesOfDelay) {
-        if(inner.isDelayed()) {
+        if (inner.isDelayed()) {
             return new EnclosedExpression(identifier, inner.mergeDelays(causesOfDelay));
         }
         return this;
@@ -117,7 +117,7 @@ public class EnclosedExpression extends BaseExpression implements Expression {
     }
 
     @Override
-    public <T extends Expression> T asInstanceOf(Class<T> clazz) {
+    public <T extends Element> T asInstanceOf(Class<T> clazz) {
         return inner.asInstanceOf(clazz);
     }
 
@@ -134,11 +134,6 @@ public class EnclosedExpression extends BaseExpression implements Expression {
     @Override
     public DV getProperty(EvaluationResult context, Property property, boolean duringEvaluation) {
         return context.evaluationContext().getProperty(inner, property, duringEvaluation, false);
-    }
-
-    @Override
-    public LinkedVariables linked1VariablesScope(EvaluationResult context) {
-        return inner.linked1VariablesScope(context);
     }
 
     @Override

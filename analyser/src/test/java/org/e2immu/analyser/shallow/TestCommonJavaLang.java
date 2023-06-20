@@ -39,7 +39,7 @@ public class TestCommonJavaLang extends CommonAnnotatedAPI {
     public void testClass() {
         TypeInfo typeInfo = typeContext.getFullyQualified(Class.class);
         TypeAnalysis objectAnalysis = typeInfo.typeAnalysis.get();
-        testERContainerType(objectAnalysis);
+        testImmutableContainerType(objectAnalysis, false, false);
 
         MethodInfo methodInfo = typeInfo.findUniqueMethod("getAnnotatedInterfaces", 0);
         MethodAnalysis methodAnalysis = methodInfo.methodAnalysis.get();
@@ -47,7 +47,7 @@ public class TestCommonJavaLang extends CommonAnnotatedAPI {
         assertEquals(DV.FALSE_DV, methodAnalysis.getProperty(Property.FLUENT));
         assertEquals(MultiLevel.INDEPENDENT_DV, methodAnalysis.getProperty(Property.INDEPENDENT));
         assertEquals(DV.FALSE_DV, methodAnalysis.getProperty(Property.MODIFIED_METHOD));
-        assertEquals(MultiLevel.EFFECTIVELY_E1IMMUTABLE_DV,
+        assertEquals(MultiLevel.EFFECTIVELY_FINAL_FIELDS_DV,
                 methodAnalysis.getProperty(Property.IMMUTABLE));
     }
 
@@ -55,14 +55,16 @@ public class TestCommonJavaLang extends CommonAnnotatedAPI {
     public void testObject() {
         TypeInfo object = typeContext.getFullyQualified(Object.class);
         TypeAnalysis objectAnalysis = object.typeAnalysis.get();
-        testERContainerType(objectAnalysis);
+        testImmutableContainerType(objectAnalysis, true, false);
+        assertTrue(object.typeInspection.get().isExtensible());
     }
 
     @Test
     public void testString() {
         TypeInfo string = typeContext.getFullyQualified(String.class);
         TypeAnalysis typeAnalysis = string.typeAnalysis.get();
-        testERContainerType(typeAnalysis);
+        testImmutableContainerType(typeAnalysis, false, false);
+        assertFalse(string.typeInspection.get().isExtensible());
     }
 
     @Test
@@ -71,6 +73,14 @@ public class TestCommonJavaLang extends CommonAnnotatedAPI {
         MethodInfo toLowerCase = string.findUniqueMethod("toLowerCase", 0);
         MethodResolution methodResolution = toLowerCase.methodResolution.get();
         assertFalse(methodResolution.allowsInterrupts());
+
+        MethodInspection methodInspection = toLowerCase.methodInspection.get();
+        assertTrue(methodInspection.isPublic());
+        assertFalse(methodInspection.isAbstract());
+        assertFalse(methodInspection.isDefault());
+        assertFalse(methodInspection.isStatic());
+
+        assertEquals(MethodInfo.COMPLEXITY_METHOD_WITHOUT_CODE, toLowerCase.getComplexity());
     }
 
     @Test
@@ -83,7 +93,7 @@ public class TestCommonJavaLang extends CommonAnnotatedAPI {
         assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, methodAnalysis.getProperty(Property.NOT_NULL_EXPRESSION));
         assertEquals(DV.FALSE_DV, methodAnalysis.getProperty(Property.MODIFIED_METHOD));
 
-        assertEquals(MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, methodAnalysis.getProperty(Property.IMMUTABLE));
+        assertEquals(MultiLevel.EFFECTIVELY_IMMUTABLE_DV, methodAnalysis.getProperty(Property.IMMUTABLE));
         assertEquals(MultiLevel.INDEPENDENT_DV, methodAnalysis.getProperty(Property.INDEPENDENT));
     }
 
@@ -92,6 +102,7 @@ public class TestCommonJavaLang extends CommonAnnotatedAPI {
         TypeInfo sb = typeContext.getFullyQualified(StringBuilder.class);
         TypeAnalysis typeAnalysis = sb.typeAnalysis.get();
 
+        // append(boolean)
         {
             MethodInfo appendBoolean = sb.typeInspection.get().methodStream(TypeInspection.Methods.THIS_TYPE_ONLY)
                     .filter(m -> "append".equals(m.name))
@@ -107,11 +118,13 @@ public class TestCommonJavaLang extends CommonAnnotatedAPI {
 
             ParameterAnalysis p0 = appendBoolean.parameterAnalysis(0);
             assertEquals(MultiLevel.INDEPENDENT_DV, p0.getProperty(Property.INDEPENDENT));
-            assertEquals(MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, p0.getProperty(Property.IMMUTABLE));
+            assertEquals(MultiLevel.EFFECTIVELY_IMMUTABLE_DV, p0.getProperty(Property.IMMUTABLE));
             assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, p0.getProperty(Property.NOT_NULL_PARAMETER));
             assertEquals(DV.FALSE_DV, p0.getProperty(Property.MODIFIED_VARIABLE));
             assertThrows(PropertyException.class, () -> p0.getProperty(Property.MODIFIED_METHOD));
         }
+
+        // append(String)
         {
             MethodInfo appendString = sb.findUniqueMethod("append",
                     typeContext.getPrimitives().stringTypeInfo());
@@ -123,7 +136,7 @@ public class TestCommonJavaLang extends CommonAnnotatedAPI {
             assertEquals(MultiLevel.MUTABLE_DV, methodAnalysis.getProperty(Property.IMMUTABLE));
 
             ParameterAnalysis p0 = appendString.parameterAnalysis(0);
-            assertEquals(MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, p0.getProperty(Property.IMMUTABLE));
+            assertEquals(MultiLevel.EFFECTIVELY_IMMUTABLE_DV, p0.getProperty(Property.IMMUTABLE));
             assertEquals(MultiLevel.INDEPENDENT_DV, p0.getProperty(Property.INDEPENDENT));
             assertEquals(MultiLevel.NULLABLE_DV, p0.getProperty(Property.NOT_NULL_PARAMETER));
             assertEquals(DV.FALSE_DV, p0.getProperty(Property.MODIFIED_VARIABLE));
@@ -150,16 +163,16 @@ public class TestCommonJavaLang extends CommonAnnotatedAPI {
 
     @Test
     public void testCharSequence() {
-        TypeInfo string = typeContext.getFullyQualified(String.class);
-        TypeAnalysis typeAnalysis = string.typeAnalysis.get();
-        testERContainerType(typeAnalysis);
+        TypeInfo charSequence = typeContext.getFullyQualified(CharSequence.class);
+        TypeAnalysis typeAnalysis = charSequence.typeAnalysis.get();
+        testImmutableContainerType(typeAnalysis, true, false);
     }
 
     @Test
-    public void testComparable() {
+    public void testComparableCompareTo() {
         TypeInfo typeInfo = typeContext.getFullyQualified(Comparable.class);
         TypeAnalysis typeAnalysis = typeInfo.typeAnalysis.get();
-        testERContainerType(typeAnalysis);
+        testImmutableContainerType(typeAnalysis, true, false);
 
         MethodInfo compareTo = typeInfo.findUniqueMethod("compareTo", 1);
         MethodAnalysis methodAnalysis = compareTo.methodAnalysis.get();
@@ -167,11 +180,11 @@ public class TestCommonJavaLang extends CommonAnnotatedAPI {
         assertEquals(DV.FALSE_DV, methodAnalysis.getProperty(Property.FLUENT));
         assertEquals(MultiLevel.INDEPENDENT_DV, methodAnalysis.getProperty(Property.INDEPENDENT));
         assertEquals(DV.FALSE_DV, methodAnalysis.getProperty(Property.MODIFIED_METHOD));
-        assertEquals(MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, methodAnalysis.getProperty(Property.IMMUTABLE));
+        assertEquals(MultiLevel.EFFECTIVELY_IMMUTABLE_DV, methodAnalysis.getProperty(Property.IMMUTABLE));
 
         ParameterAnalysis p0 = compareTo.parameterAnalysis(0);
         assertEquals(MultiLevel.INDEPENDENT_DV, p0.getProperty(Property.INDEPENDENT));
-        assertEquals(MultiLevel.NOT_INVOLVED_DV, p0.getProperty(Property.IMMUTABLE));
+        assertEquals(MultiLevel.EFFECTIVELY_IMMUTABLE_HC_DV, p0.getProperty(Property.IMMUTABLE));
         assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, p0.getProperty(Property.NOT_NULL_PARAMETER));
         assertEquals(DV.FALSE_DV, p0.getProperty(Property.MODIFIED_VARIABLE));
 
@@ -185,7 +198,15 @@ public class TestCommonJavaLang extends CommonAnnotatedAPI {
     public void testSerializable() {
         TypeInfo typeInfo = typeContext.getFullyQualified(Serializable.class);
         TypeAnalysis typeAnalysis = typeInfo.typeAnalysis.get();
-        testERContainerType(typeAnalysis);
+        testImmutableContainerType(typeAnalysis, true, false);
+    }
+
+    @Test
+    public void testAutoCloseable() {
+        TypeInfo typeInfo = typeContext.getFullyQualified(AutoCloseable.class);
+        TypeAnalysis typeAnalysis = typeInfo.typeAnalysis.get();
+        assertEquals(MultiLevel.INDEPENDENT_DV, typeAnalysis.getProperty(Property.INDEPENDENT));
+        assertEquals(MultiLevel.CONTAINER_DV, typeAnalysis.getProperty(Property.CONTAINER));
     }
 
     @Test
@@ -196,32 +217,75 @@ public class TestCommonJavaLang extends CommonAnnotatedAPI {
     }
 
     @Test
-    public void testCollectionForEach() {
+    public void testAppendableAppend() {
+        TypeInfo typeInfo = typeContext.getFullyQualified(Appendable.class);
+        MethodInfo methodInfo = typeInfo.findUniqueMethod("append", 3);
+        ParameterAnalysis p0 = methodInfo.methodAnalysis.get().getParameterAnalyses().get(0);
+        assertEquals(MultiLevel.INDEPENDENT_DV, p0.getProperty(Property.INDEPENDENT));
+    }
+
+    @Test
+    public void testIterableForEach() {
         TypeInfo typeInfo = typeContext.getFullyQualified(Iterable.class);
         MethodInfo methodInfo = typeInfo.findUniqueMethod("forEach", 1);
+        assertEquals("java.lang.Iterable.forEach(java.util.function.Consumer<? super T>)",
+                methodInfo.fullyQualifiedName);
+
+        MethodInspection methodInspection = methodInfo.methodInspection.get();
+        assertTrue(methodInspection.isPublic());
+        assertFalse(methodInspection.isAbstract());
+        assertTrue(methodInspection.isDefault());
+
         MethodAnalysis methodAnalysis = methodInfo.methodAnalysis.get();
         assertEquals(DV.FALSE_DV, methodAnalysis.getProperty(Property.MODIFIED_METHOD));
         assertEquals(MultiLevel.INDEPENDENT_DV, methodAnalysis.getProperty(Property.INDEPENDENT));
 
         ParameterAnalysis p0 = methodInfo.parameterAnalysis(0);
         assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, p0.getProperty(Property.NOT_NULL_PARAMETER));
-        assertEquals(MultiLevel.INDEPENDENT_1_DV, p0.getProperty(Property.INDEPENDENT));
+        assertEquals(MultiLevel.INDEPENDENT_HC_DV, p0.getProperty(Property.INDEPENDENT));
         ParameterInfo pi0 = methodInfo.methodInspection.get().getParameters().get(0);
         assertEquals("action", pi0.name);
         assertEquals(0, pi0.index);
     }
 
     @Test
+    public void testSystemArraycopy() {
+        TypeInfo typeInfo = typeContext.getFullyQualified(System.class);
+        MethodInfo methodInfo = typeInfo.findUniqueMethod("arraycopy",5);
+        MethodAnalysis methodAnalysis = methodInfo.methodAnalysis.get();
+
+        ParameterAnalysis p0 = methodAnalysis.getParameterAnalyses().get(0);
+        assertEquals(0, p0.getParameterInfo().index);
+        // IMPROVE "object" is an autogenerated name, byte code inspector could not read it
+        assertEquals("object", p0.getParameterInfo().name);
+        assertEquals(DV.FALSE_DV, p0.getProperty(Property.MODIFIED_VARIABLE));
+
+        ParameterAnalysis p2 = methodAnalysis.getParameterAnalyses().get(2);
+        assertEquals("object:4", p2.getLinksToOtherParameters().toString());
+        assertEquals(DV.TRUE_DV, p2.getProperty(Property.MODIFIED_VARIABLE));
+    }
+
+    @Test
     public void testSystemOut() {
         TypeInfo typeInfo = typeContext.getFullyQualified(System.class);
         FieldInfo out = typeInfo.getFieldByName("out", true);
+        FieldInspection fieldInspection = out.fieldInspection.get();
+        assertTrue(fieldInspection.isPublic());
+        assertTrue(fieldInspection.isStatic());
+
+        // just to be sure
+        assertFalse(fieldInspection.isPrivate());
+        assertFalse(fieldInspection.isPackagePrivate());
+        assertFalse(fieldInspection.isProtected());
+        assertFalse(fieldInspection.isSynthetic());
+
         FieldAnalysis fieldAnalysis = out.fieldAnalysis.get();
-        assertEquals(MultiLevel.IGNORE_MODS_DV, fieldAnalysis.getProperty(Property.IGNORE_MODIFICATIONS));
+        assertEquals(MultiLevel.IGNORE_MODS_DV, fieldAnalysis.getProperty(Property.EXTERNAL_IGNORE_MODIFICATIONS));
         assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, fieldAnalysis.getProperty(Property.EXTERNAL_NOT_NULL));
-        assertEquals(MultiLevel.CONTAINER_DV, fieldAnalysis.getProperty(Property.EXTERNAL_CONTAINER));
+        assertEquals(MultiLevel.NOT_CONTAINER_DV, fieldAnalysis.getProperty(Property.CONTAINER_RESTRICTION));
         Expression value = fieldAnalysis.getValue();
         assertTrue(value.isDone());
-        assertEquals("instance type PrintStream/*@IgnoreMods*/", value.toString());
+        assertEquals("instance type PrintStream", value.toString());
     }
 
     @Test
@@ -238,7 +302,7 @@ public class TestCommonJavaLang extends CommonAnnotatedAPI {
         TypeInfo typeInfo = typeContext.getFullyQualified(Boolean.class);
         TypeAnalysis typeAnalysis = typeInfo.typeAnalysis.get();
         assertEquals(MultiLevel.INDEPENDENT_DV, typeAnalysis.getProperty(Property.INDEPENDENT));
-        assertEquals(MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, typeAnalysis.getProperty(Property.IMMUTABLE));
+        assertEquals(MultiLevel.EFFECTIVELY_IMMUTABLE_DV, typeAnalysis.getProperty(Property.IMMUTABLE));
         assertEquals(MultiLevel.CONTAINER_DV, typeAnalysis.getProperty(Property.CONTAINER));
     }
 
@@ -248,7 +312,7 @@ public class TestCommonJavaLang extends CommonAnnotatedAPI {
         TypeInfo typeInfo = typeContext.getFullyQualified(Integer.class);
         TypeAnalysis typeAnalysis = typeInfo.typeAnalysis.get();
         assertEquals(MultiLevel.INDEPENDENT_DV, typeAnalysis.getProperty(Property.INDEPENDENT));
-        assertEquals(MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, typeAnalysis.getProperty(Property.IMMUTABLE));
+        assertEquals(MultiLevel.EFFECTIVELY_IMMUTABLE_DV, typeAnalysis.getProperty(Property.IMMUTABLE));
         assertEquals(MultiLevel.CONTAINER_DV, typeAnalysis.getProperty(Property.CONTAINER));
     }
 
@@ -259,7 +323,7 @@ public class TestCommonJavaLang extends CommonAnnotatedAPI {
         MethodAnalysis methodAnalysis = method.methodAnalysis.get();
         assertEquals(DV.FALSE_DV, methodAnalysis.getProperty(Property.MODIFIED_METHOD));
         assertEquals(MultiLevel.INDEPENDENT_DV, methodAnalysis.getProperty(Property.INDEPENDENT));
-        assertEquals(MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, methodAnalysis.getProperty(Property.IMMUTABLE));
+        assertEquals(MultiLevel.EFFECTIVELY_IMMUTABLE_DV, methodAnalysis.getProperty(Property.IMMUTABLE));
 
         ParameterAnalysis p0 = method.parameterAnalysis(0);
         assertEquals(DV.FALSE_DV, p0.getProperty(Property.MODIFIED_VARIABLE));
@@ -276,5 +340,38 @@ public class TestCommonJavaLang extends CommonAnnotatedAPI {
         MethodInfo method = number.findUniqueMethod("doubleValue", 0);
         MethodAnalysis methodAnalysis = method.methodAnalysis.get();
         assertEquals(DV.FALSE_DV, methodAnalysis.getProperty(Property.MODIFIED_METHOD));
+    }
+
+    @Test
+    public void testProcessHandle() {
+        TypeInfo typeInfo = typeContext.getFullyQualified(ProcessHandle.class);
+        TypeAnalysis typeAnalysis = typeInfo.typeAnalysis.get();
+        assertEquals(MultiLevel.DEPENDENT_DV, typeAnalysis.getProperty(Property.INDEPENDENT));
+        assertEquals(MultiLevel.MUTABLE_DV, typeAnalysis.getProperty(Property.IMMUTABLE));
+        assertEquals(MultiLevel.CONTAINER_DV, typeAnalysis.getProperty(Property.CONTAINER));
+    }
+
+
+    @Test
+    public void testReadable() {
+        TypeInfo typeInfo = typeContext.getFullyQualified(Readable.class);
+        TypeAnalysis typeAnalysis = typeInfo.typeAnalysis.get();
+        assertEquals(MultiLevel.INDEPENDENT_DV, typeAnalysis.getProperty(Property.INDEPENDENT));
+        assertEquals(MultiLevel.MUTABLE_DV, typeAnalysis.getProperty(Property.IMMUTABLE));
+        assertEquals(MultiLevel.NOT_CONTAINER_DV, typeAnalysis.getProperty(Property.CONTAINER));
+    }
+
+    @Test
+    public void testReadableRead() {
+        TypeInfo typeInfo = typeContext.getFullyQualified(Readable.class);
+        MethodInfo method = typeInfo.findUniqueMethod("read", 1);
+        MethodAnalysis methodAnalysis = method.methodAnalysis.get();
+        assertEquals(DV.TRUE_DV, methodAnalysis.getProperty(Property.MODIFIED_METHOD));
+        assertEquals(MultiLevel.INDEPENDENT_DV, methodAnalysis.getProperty(Property.INDEPENDENT));
+
+        ParameterAnalysis p0 = method.parameterAnalysis(0);
+        assertEquals(DV.TRUE_DV, p0.getProperty(Property.MODIFIED_VARIABLE));
+        assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, p0.getProperty(Property.NOT_NULL_PARAMETER));
+        assertEquals(MultiLevel.INDEPENDENT_DV, p0.getProperty(Property.INDEPENDENT));
     }
 }

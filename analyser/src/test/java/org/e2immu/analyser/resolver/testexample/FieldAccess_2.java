@@ -36,4 +36,9 @@ public record FieldAccess_2(Container c) {
     public void test() {
         c.v.stream().map(Map.Entry::getValue).forEach(vic -> System.out.println(vic.current()));
     }
+
+    public void test2() {
+        c.v.stream().map(java.util.Map.Entry::getValue).forEach(vic -> System.out.println(vic.current()));
+    }
+
 }

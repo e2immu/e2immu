@@ -15,7 +15,7 @@
 package org.e2immu.analyser.parser.start.testexample;
 
 import org.e2immu.annotation.NotModified;
-import org.e2immu.annotation.NotNull1;
+import org.e2immu.annotation.NotNull;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -29,7 +29,7 @@ public class MethodReferences_4 {
         map.put("" + i, i);
     }
 
-    @NotNull1 // meaning that get requires a @NotNull (priority to parameters)
+    @NotNull(content = true) // meaning that get requires a @NotNull (priority to parameters)
     @NotModified
     public Function<String, Integer> getFunction() {
         return map::get;

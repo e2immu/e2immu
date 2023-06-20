@@ -78,7 +78,7 @@ public class VariableCause implements CauseOfDelay {
 
     @Override
     public CauseOfDelay translate(InspectionProvider inspectionProvider, TranslationMap translationMap) {
-        Variable translated = translationMap.translateVariable(variable);
+        Variable translated = translationMap.translateVariable(inspectionProvider, variable);
         if(translated != variable) return new VariableCause(translated, location, cause);
         return this;
     }

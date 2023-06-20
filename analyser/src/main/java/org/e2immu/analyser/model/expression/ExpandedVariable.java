@@ -18,7 +18,6 @@ import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.util.ExpressionComparator;
 import org.e2immu.analyser.model.impl.BaseExpression;
-import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.Symbol;
@@ -28,16 +27,33 @@ import java.util.List;
 import java.util.Objects;
 import java.util.function.Predicate;
 
+/*
+ * An ExpandedVariable occurs when inlining a method produces a variable that doesn't exist in the current context.
+ * Because we can only create variables in the first iteration, this expanded variable is NOT a real variable; as such,
+ * there is no regular linking.
+ *
+ * Example: given static class One<T> { T t; T get() { return t; } }
+ * the call 'one.get()' gets substituted by the expanded variable `one.t`.
+ * The field 'one.t' does not exist in the current context; however, 'one' does exist.
+ * We can therefore link to 'one'.
+ *
+ */
 public class ExpandedVariable extends BaseExpression {
 
     private final Variable variable;
     private final Properties properties;
+    private final LinkedVariables linkedVariables;
 
-    public ExpandedVariable(Identifier identifier, Variable variable, Properties properties) {
-        super(identifier);
+    public ExpandedVariable(Identifier identifier, Variable variable, Properties properties, LinkedVariables linkedVariables) {
+        super(identifier, 2);
         assert variable.causesOfDelay().isDone();
         this.variable = Objects.requireNonNull(variable);
         this.properties = Objects.requireNonNull(properties);
+        /*
+         IMPROVE: at this point, the linked variables can be delayed! This is against the rules,
+         and this only works because the linked variables are not part of equality.
+         */
+        this.linkedVariables = Objects.requireNonNull(linkedVariables);
     }
 
     public Variable getVariable() {
@@ -130,19 +146,12 @@ public class ExpandedVariable extends BaseExpression {
     }
 
     @Override
-    public List<Variable> variables(boolean descendIntoFieldReferences) {
+    public List<Variable> variables(DescendMode descendIntoFieldReferences) {
         return List.of(); // explicitly present here to help remember it should not return its variable!
     }
 
     @Override
     public LinkedVariables linkedVariables(EvaluationResult context) {
-        /*
-        this linking has to be countered by a delay on the method call that can generate this ExpandedVariable as
-        a substitution. See EvaluateMethodCall.delay
-         */
-        if (variable instanceof FieldReference fr && fr.scopeIsRecursivelyThis()) {
-            return LinkedVariables.of(fr.thisInScope(), LinkedVariables.DEPENDENT_DV);
-        }
-        return LinkedVariables.EMPTY;
+        return linkedVariables;
     }
 }

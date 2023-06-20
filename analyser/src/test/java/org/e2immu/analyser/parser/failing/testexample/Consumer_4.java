@@ -14,10 +14,10 @@
 
 package org.e2immu.analyser.parser.failing.testexample;
 
-import org.e2immu.annotation.Independent1;
+import org.e2immu.annotation.Independent;
 import org.e2immu.annotation.Modified;
 import org.e2immu.annotation.NotModified;
-import org.e2immu.annotation.NotNull1;
+import org.e2immu.annotation.NotNull;
 
 import java.util.Collection;
 
@@ -25,7 +25,7 @@ import java.util.Collection;
 interesting issue
 
 acceptAll is not an abstract method, but it only makes use of abstract methods.
-As a consequence, it also qualifies for the @Dependent2 rule.
+As a consequence, it also allows for hidden content transfer.
 
 We assume that Collection.forEach has an @IgnoreModifications on its parameter.
  */
@@ -38,20 +38,23 @@ public class Consumer_4<S> {
 
         // not contracted
         @NotModified
-        default void acceptAll(@NotModified @NotNull1 @Independent1 Collection<? extends T> collection) {
+        default void acceptAll(@NotModified @NotNull(content = true) @Independent(hc = true) Collection<? extends T> collection) {
             collection.forEach(this::accept);
         }
     }
 
-    @NotNull1
+    @NotNull(content = true)
     private final Collection<S> strings;
 
-    public Consumer_4(@NotNull1 @Independent1 Collection<S> in) {
+    /*
+    the parameter is dependent!
+     */
+    public Consumer_4(@NotNull(content = true) @Independent(absent = true) Collection<S> in) {
         this.strings = in;
     }
 
     @NotModified
-    public void forEach(@NotModified @Independent1 MyConsumer<S> myConsumer) {
+    public void forEach(@NotModified @Independent(hc = true) MyConsumer<S> myConsumer) {
         myConsumer.acceptAll(strings);
     }
 }

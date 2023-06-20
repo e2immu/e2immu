@@ -15,13 +15,15 @@
 package org.e2immu.analyser.parser.eventual.testexample;
 
 import org.e2immu.annotation.*;
+import org.e2immu.annotation.eventual.Mark;
+import org.e2immu.annotation.eventual.Only;
 import org.e2immu.support.EventuallyFinal;
 
 import java.util.concurrent.atomic.AtomicInteger;
 
 // variant on _13, now with modification rather than assignment
 
-@ERContainer(after = "eventuallyFinal")
+@ImmutableContainer(after = "eventuallyFinal")
 public class EventuallyImmutableUtil_14 {
 
     @NotModified(after = "eventuallyFinal")
@@ -35,7 +37,7 @@ public class EventuallyImmutableUtil_14 {
         count.incrementAndGet();
     }
 
-    @ERContainer
+    @ImmutableContainer
     @Mark("eventuallyFinal")
     public EventuallyFinal<String> done(String last) {
         eventuallyFinal.setFinal(last + "; tried " + count);

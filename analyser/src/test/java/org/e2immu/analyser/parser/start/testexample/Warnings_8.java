@@ -14,12 +14,12 @@
 
 package org.e2immu.analyser.parser.start.testexample;
 
-import org.e2immu.annotation.Variable;
 
+import org.e2immu.annotation.Final;
 
 public class Warnings_8 {
 
-    @Variable
+    @Final(absent = true)
     private String a ="abc"; // should cause warning!
 
     public Warnings_8(String a) {

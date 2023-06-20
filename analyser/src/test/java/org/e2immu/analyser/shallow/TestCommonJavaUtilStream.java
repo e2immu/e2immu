@@ -25,8 +25,7 @@ import org.junit.jupiter.api.Test;
 import java.util.stream.Collector;
 import java.util.stream.Stream;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 public class TestCommonJavaUtilStream extends CommonAnnotatedAPI {
 
@@ -43,9 +42,9 @@ public class TestCommonJavaUtilStream extends CommonAnnotatedAPI {
     public void testStream() {
         TypeInfo typeInfo = typeContext.getFullyQualified(Stream.class);
         TypeAnalysis typeAnalysis = typeInfo.typeAnalysis.get();
-        assertEquals(MultiLevel.INDEPENDENT_1_DV, typeAnalysis.getProperty(Property.INDEPENDENT));
-        assertEquals(MultiLevel.EFFECTIVELY_E2IMMUTABLE_DV, typeAnalysis.getProperty(Property.IMMUTABLE));
-        assertEquals(DV.TRUE_DV, typeAnalysis.immutableCanBeIncreasedByTypeParameters());
+        assertEquals(MultiLevel.DEPENDENT_DV, typeAnalysis.getProperty(Property.INDEPENDENT));
+        assertEquals(MultiLevel.MUTABLE_DV, typeAnalysis.getProperty(Property.IMMUTABLE));
+        assertEquals(DV.TRUE_DV, typeAnalysis.immutableDeterminedByTypeParameters());
     }
 
     @Test
@@ -54,13 +53,14 @@ public class TestCommonJavaUtilStream extends CommonAnnotatedAPI {
         MethodInfo methodInfo = typeInfo.findUniqueMethod("map", 1);
         MethodAnalysis methodAnalysis = methodInfo.methodAnalysis.get();
         assertEquals(DV.FALSE_DV, methodAnalysis.getProperty(Property.MODIFIED_METHOD));
-        assertEquals(MultiLevel.INDEPENDENT_1_DV, methodAnalysis.getProperty(Property.INDEPENDENT));
+        assertEquals(MultiLevel.DEPENDENT_DV, methodAnalysis.getProperty(Property.INDEPENDENT));
 
         // key
         ParameterAnalysis p0 = methodInfo.parameterAnalysis(0);
         assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, p0.getProperty(Property.NOT_NULL_PARAMETER));
         assertEquals(DV.FALSE_DV, p0.getProperty(Property.MODIFIED_VARIABLE));
-        assertEquals(MultiLevel.INDEPENDENT_1_DV, p0.getProperty(Property.INDEPENDENT));
+        assertEquals(MultiLevel.INDEPENDENT_DV, p0.getProperty(Property.INDEPENDENT));
+        assertEquals(MultiLevel.IGNORE_MODS_DV, p0.getProperty(Property.IGNORE_MODIFICATIONS));
         assertEquals(MultiLevel.MUTABLE_DV, p0.getProperty(Property.IMMUTABLE));
     }
 
@@ -77,17 +77,55 @@ public class TestCommonJavaUtilStream extends CommonAnnotatedAPI {
         TypeInfo typeInfo = typeContext.getFullyQualified(Stream.class);
         MethodInfo methodInfo = typeInfo.findUniqueMethod("of", 1);
         assertTrue(methodInfo.methodInspection.get().isStatic());
+        assertTrue(methodInfo.methodInspection.get().isFactoryMethod());
 
         MethodAnalysis methodAnalysis = methodInfo.methodAnalysis.get();
         assertEquals(DV.FALSE_DV, methodAnalysis.getProperty(Property.MODIFIED_METHOD));
-        assertEquals(MultiLevel.INDEPENDENT_1_DV, methodAnalysis.getProperty(Property.INDEPENDENT),
+        assertEquals(MultiLevel.INDEPENDENT_HC_DV, methodAnalysis.getProperty(Property.INDEPENDENT),
                 methodInfo.fullyQualifiedName);
 
         // T
         ParameterAnalysis p0 = methodInfo.parameterAnalysis(0);
         assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, p0.getProperty(Property.NOT_NULL_PARAMETER));
         assertEquals(DV.FALSE_DV, p0.getProperty(Property.MODIFIED_VARIABLE));
-        assertEquals(MultiLevel.INDEPENDENT_1_DV, p0.getProperty(Property.INDEPENDENT));
-        assertEquals(MultiLevel.NOT_INVOLVED_DV, p0.getProperty(Property.IMMUTABLE));
+        assertEquals(MultiLevel.INDEPENDENT_HC_DV, p0.getProperty(Property.INDEPENDENT));
+        assertEquals(MultiLevel.EFFECTIVELY_IMMUTABLE_HC_DV, p0.getProperty(Property.IMMUTABLE));
+    }
+
+    @Test
+    public void testStreamEmpty() {
+        TypeInfo typeInfo = typeContext.getFullyQualified(Stream.class);
+        MethodInfo methodInfo = typeInfo.findUniqueMethod("empty", 0);
+        assertTrue(methodInfo.methodInspection.get().isStatic());
+        assertTrue(methodInfo.methodInspection.get().isFactoryMethod());
+
+        MethodAnalysis methodAnalysis = methodInfo.methodAnalysis.get();
+        assertEquals(DV.FALSE_DV, methodAnalysis.getProperty(Property.MODIFIED_METHOD));
+        assertEquals(MultiLevel.INDEPENDENT_DV, methodAnalysis.getProperty(Property.INDEPENDENT));
+        assertEquals(MultiLevel.MUTABLE_DV, methodAnalysis.getProperty(Property.IMMUTABLE));
+    }
+
+    @Test
+    public void testStreamFilter() {
+        TypeInfo typeInfo = typeContext.getFullyQualified(Stream.class);
+        MethodInfo methodInfo = typeInfo.findUniqueMethod("filter", 1);
+        assertFalse(methodInfo.methodInspection.get().isStatic());
+
+        MethodAnalysis methodAnalysis = methodInfo.methodAnalysis.get();
+        assertEquals(DV.FALSE_DV, methodAnalysis.getProperty(Property.MODIFIED_METHOD));
+        assertEquals(MultiLevel.DEPENDENT_DV, methodAnalysis.getProperty(Property.INDEPENDENT));
+        assertEquals(MultiLevel.MUTABLE_DV, methodAnalysis.getProperty(Property.IMMUTABLE));
+    }
+
+    @Test
+    public void testStreamFindFirst() {
+        TypeInfo typeInfo = typeContext.getFullyQualified(Stream.class);
+        MethodInfo methodInfo = typeInfo.findUniqueMethod("findFirst", 0);
+        assertFalse(methodInfo.methodInspection.get().isStatic());
+
+        MethodAnalysis methodAnalysis = methodInfo.methodAnalysis.get();
+        assertEquals(DV.TRUE_DV, methodAnalysis.getProperty(Property.MODIFIED_METHOD));
+        assertEquals(MultiLevel.INDEPENDENT_HC_DV, methodAnalysis.getProperty(Property.INDEPENDENT));
+        assertEquals(MultiLevel.EFFECTIVELY_IMMUTABLE_HC_DV, methodAnalysis.getProperty(Property.IMMUTABLE));
     }
 }

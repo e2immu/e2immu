@@ -17,13 +17,13 @@ package org.e2immu.analyser.model.expression;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.util.ExpressionComparator;
 import org.e2immu.analyser.model.impl.BaseExpression;
+import org.e2immu.analyser.output.Keyword;
 import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.Symbol;
 import org.e2immu.analyser.output.Text;
 import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.util.UpgradableBooleanMap;
-import org.e2immu.annotation.E2Container;
 
 import java.util.List;
 import java.util.Objects;
@@ -31,7 +31,6 @@ import java.util.Objects;
 /**
  * Represents an expression like String.class
  */
-@E2Container
 public class ClassExpression extends BaseExpression implements ConstantExpression<ParameterizedType> {
 
     private final Primitives primitives;
@@ -39,7 +38,7 @@ public class ClassExpression extends BaseExpression implements ConstantExpressio
     private final ParameterizedType parameterizedClassType; // Class<String>
 
     public ClassExpression(Primitives primitives, ParameterizedType parameterizedType, ParameterizedType parameterizedClassType) {
-        super(Identifier.constant(parameterizedType));
+        super(Identifier.constant(parameterizedType), 2);
         this.primitives = primitives;
         this.parameterizedType = parameterizedType;
         this.parameterizedClassType = parameterizedClassType;
@@ -65,6 +64,9 @@ public class ClassExpression extends BaseExpression implements ConstantExpressio
 
     @Override
     public Expression translate(InspectionProvider inspectionProvider, TranslationMap translationMap) {
+        Expression translated = translationMap.translateExpression(this);
+        if (translated != this) return translated;
+
         ParameterizedType translatedType = translationMap.translateType(this.parameterizedType);
         if (this.parameterizedType == translatedType) return this;
         return new ClassExpression(primitives, translatedType);
@@ -92,7 +94,7 @@ public class ClassExpression extends BaseExpression implements ConstantExpressio
 
     @Override
     public OutputBuilder output(Qualification qualification) {
-        return new OutputBuilder().add(parameterizedType.output(qualification)).add(Symbol.DOT).add(new Text("class"));
+        return new OutputBuilder().add(parameterizedType.output(qualification)).add(Symbol.DOT).add(Keyword.CLASS);
     }
 
     @Override

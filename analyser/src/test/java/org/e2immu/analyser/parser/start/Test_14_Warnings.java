@@ -65,7 +65,7 @@ public class Test_14_Warnings extends CommonTestRunner {
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
             // ERROR: b is never read
             if ("b".equals(d.fieldInfo().name) && d.iteration() >= 1) {
-                assertNotNull(d.haveError(Message.Label.PRIVATE_FIELD_NOT_READ));
+                assertNotNull(d.haveError(Message.Label.PRIVATE_FIELD_NOT_READ_IN_OWNER_TYPE));
             }
         };
 
@@ -98,7 +98,7 @@ public class Test_14_Warnings extends CommonTestRunner {
                 if ("2".equals(d.statementId())) {
                     // ERROR: unused variable "s"
                     LocationImpl location = (LocationImpl) d.haveError(Message.Label.UNUSED_LOCAL_VARIABLE).location();
-                    assertEquals("org.e2immu.analyser.parser.start.testexample.Warnings_1.method1(java.lang.String)",
+                    assertEquals("org.e2immu.analyser.parser.start.testexample.Warnings_1.method1(String)",
                             location.info.fullyQualifiedName());
                     assertNull(d.haveError(Message.Label.USELESS_ASSIGNMENT));
                     if (d.iteration() >= 2) {
@@ -146,7 +146,8 @@ public class Test_14_Warnings extends CommonTestRunner {
                     if ("1.0.0".equals(d.statementId())) {
                         // so that we know that integers.iterator() has been called
                         assertEquals("1" + E, d.variableInfo().getReadId());
-                        assertTrue(d.variableInfo().getLinkedVariables().isEmpty());
+                        String linked = d.iteration() == 0 ? "loopVar:-1" : "";
+                        assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
                     }
                 }
                 if ("loopVar".equals(d.variableName())) {
@@ -236,7 +237,7 @@ public class Test_14_Warnings extends CommonTestRunner {
             TypeInfo system = typeMap.get(System.class);
             FieldInfo out = system.getFieldByName("out", true);
             assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, out.fieldAnalysis.get().getProperty(EXTERNAL_NOT_NULL));
-            assertEquals(MultiLevel.IGNORE_MODS_DV, out.fieldAnalysis.get().getProperty(IGNORE_MODIFICATIONS));
+            assertEquals(MultiLevel.IGNORE_MODS_DV, out.fieldAnalysis.get().getProperty(EXTERNAL_IGNORE_MODIFICATIONS));
 
             TypeInfo myself = typeMap.get(Warnings_1.class);
             MethodInfo constructor = myself.findConstructor(0);
@@ -293,7 +294,7 @@ public class Test_14_Warnings extends CommonTestRunner {
         };
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("Warnings_3".equals(d.methodInfo().name)) {
-                assertDv(d.p(1), 1, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, EXTERNAL_IMMUTABLE);
+                assertDv(d.p(1), 1, MultiLevel.EFFECTIVELY_IMMUTABLE_DV, EXTERNAL_IMMUTABLE);
             }
         };
 
@@ -308,13 +309,14 @@ public class Test_14_Warnings extends CommonTestRunner {
     public void test4() throws IOException {
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("Warnings_4".equals(d.methodInfo().name)) {
+                assertEquals("0", d.statementId());
                 if (d.variable() instanceof FieldReference fr && "set".equals(fr.fieldInfo.name)) {
                     assertEquals("Set.copyOf(input)", d.currentValue().toString());
-                    assertEquals("Type java.util.Set<java.lang.String>", d.currentValue().returnType().toString());
-                    // because immutableOfHiddenContent = @ERContainer
-                    assertTrue(d.variableInfo().getLinkedVariables().isEmpty());
-                    // we wait because of hidden content
-                    assertDv(d, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, IMMUTABLE);
+                    assertEquals("Type java.util.Set<String>", d.currentValue().returnType().toString());
+                    assertDv(d, MultiLevel.EFFECTIVELY_IMMUTABLE_DV, IMMUTABLE);
+                    // if recursively immutable, then cannot link
+                    assertTrue(d.variableInfo().getLinkedVariables().isEmpty(),
+                            "Got: " + d.variableInfo().getLinkedVariables().toString());
                 }
             }
         };
@@ -326,12 +328,12 @@ public class Test_14_Warnings extends CommonTestRunner {
 
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
             if ("set".equals(d.fieldInfo().name)) {
-                assertDv(d, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, EXTERNAL_IMMUTABLE);
+                assertDv(d, MultiLevel.EFFECTIVELY_IMMUTABLE_DV, EXTERNAL_IMMUTABLE);
             }
         };
 
         TypeAnalyserVisitor typeAnalyserVisitor = d ->
-                assertEquals("", d.typeAnalysis().getTransparentTypes().toString());
+                assertTrue(d.typeAnalysis().getHiddenContentTypes().isEmpty());
 
         testClass("Warnings_4", 1, 0, new DebugConfiguration.Builder()
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
@@ -358,6 +360,8 @@ public class Test_14_Warnings extends CommonTestRunner {
         final String T = "org.e2immu.analyser.parser.start.testexample.Warnings_5.ChildClass.t";
 
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+            assertFalse(d.allowBreakDelay());
+
             if ("methodMustNotBeStatic2".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof FieldReference fr && "s".equals(fr.fieldInfo.name)) {
                     String expectValue = d.iteration() == 0 ? "<f:s>" : NULLABLE_INSTANCE_TYPE_STRING;
@@ -420,22 +424,23 @@ public class Test_14_Warnings extends CommonTestRunner {
                 assertDv(d.p(0), 1, MultiLevel.NULLABLE_DV, NOT_NULL_PARAMETER);
 
                 // method
-                assertEquals("/*inline methodMustNotBeStatic3*/this", d.methodAnalysis().getSingleReturnValue().toString());
-                assertEquals(DV.TRUE_DV, d.methodAnalysis().getProperty(FLUENT));
-                assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, d.methodAnalysis().getProperty(NOT_NULL_EXPRESSION));
-                assertEquals(DV.FALSE_DV, d.methodAnalysis().getProperty(MODIFIED_METHOD));
+                String expected = d.iteration() == 0 ? "<m:methodMustNotBeStatic3>" : "/*inline methodMustNotBeStatic3*/this";
+                assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
+                assertDv(d, 1, DV.TRUE_DV, FLUENT);
+                assertDv(d, 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, NOT_NULL_EXPRESSION);
+                assertDv(d, DV.FALSE_DV, MODIFIED_METHOD);
             }
             if ("methodMustNotBeStatic4".equals(d.methodInfo().name)) {
-                String expected = d.iteration() == 0 ? "<m:methodMustNotBeStatic4>"
+                String expected = d.iteration() < 2 ? "<m:methodMustNotBeStatic4>"
                         : "/*inline methodMustNotBeStatic4*/Stream.of(input).map(/*inline apply*/null==s?\"null\":s+\"something\"+t).findAny().get()";
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
             }
             if ("methodMustNotBeStatic5".equals(d.methodInfo().name)) {
-                String expected = "/*inline methodMustNotBeStatic5*/this";
+                String expected = d.iteration() < 2 ? "<m:methodMustNotBeStatic5>" : "/*inline methodMustNotBeStatic5*/this";
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
 
-                assertDv(d, DV.FALSE_DV, MODIFIED_METHOD);
-                assertDv(d, DV.TRUE_DV, FLUENT);
+                assertDv(d, 1, DV.FALSE_DV, MODIFIED_METHOD);
+                assertDv(d, 2, DV.TRUE_DV, FLUENT);
             }
         };
 
@@ -445,7 +450,7 @@ public class Test_14_Warnings extends CommonTestRunner {
                 assertEquals(MultiLevel.NULLABLE_DV, d.fieldAnalysis().getProperty(EXTERNAL_NOT_NULL));
             }
             if ("s".equals(d.fieldInfo().name)) {
-                assertTrue(d.fieldInfo().owner.isPrivate());
+                assertTrue(d.fieldInfo().owner.typeInspection.get().isPrivate());
                 assertEquals(DV.TRUE_DV, d.fieldAnalysis().getProperty(FINAL));
                 assertEquals("s", d.fieldAnalysis().getValue().toString());
                 assertEquals(MultiLevel.NULLABLE_DV, d.fieldAnalysis().getProperty(EXTERNAL_NOT_NULL));
@@ -454,7 +459,7 @@ public class Test_14_Warnings extends CommonTestRunner {
 
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("Warnings_5".equals(d.typeInfo().simpleName)) {
-                assertTrue(d.typeAnalysis().getTransparentTypes().isEmpty());
+                assertTrue(d.typeAnalysis().getHiddenContentTypes().isEmpty());
             }
         };
 
@@ -493,7 +498,7 @@ public class Test_14_Warnings extends CommonTestRunner {
                     assertDv(d, MultiLevel.CONTAINER_DV, CONTAINER);
                     assertDv(d, DV.TRUE_DV, MODIFIED_METHOD); // default value for @Container, void method
                     assertDv(d.p(0), DV.FALSE_DV, MODIFIED_VARIABLE);
-                    assertDv(d.p(0), MultiLevel.DEPENDENT_DV, INDEPENDENT); // default for modifying methods
+                    assertDv(d.p(0), 1, MultiLevel.DEPENDENT_DV, INDEPENDENT); // default for modifying methods
                 }
 
                 if ("IsNotAContainer".equals(d.methodInfo().typeInfo.simpleName)) {
@@ -501,7 +506,7 @@ public class Test_14_Warnings extends CommonTestRunner {
                             .getOverrides(d.evaluationContext().getAnalyserContext());
                     assertFalse(overrides.isEmpty());
 
-                    assertDv(d, 1, DV.FALSE_DV, MODIFIED_METHOD); // method modifies parameter, not a field!
+                    assertDv(d, DV.FALSE_DV, MODIFIED_METHOD); // method modifies parameter, not a field!
                     // whatever happens, the set remains independent (the int added is independent)
                     assertDv(d, MultiLevel.INDEPENDENT_DV, INDEPENDENT);
                 }

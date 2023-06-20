@@ -14,7 +14,7 @@
 
 package org.e2immu.analyser.parser.start.testexample;
 
-import org.e2immu.annotation.Constant;
+import org.e2immu.annotation.ImmutableContainer;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -24,7 +24,7 @@ Tests the isKnown() synthetic method so that the count in size() goes from 1 to 
  */
 public class BasicCompanionMethods_5 {
 
-    @Constant("true")
+    @ImmutableContainer("true")
     static boolean test() {
         Set<String> set = new HashSet<>();
         set.add("a");

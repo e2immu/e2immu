@@ -14,7 +14,7 @@
 
 package org.e2immu.analyser.parser.conditional.testexample;
 
-import org.e2immu.annotation.Constant;
+import org.e2immu.annotation.ImmutableContainer;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -24,7 +24,7 @@ Near-copy of CompanionMethods-6
 */
 public class Precondition_4 {
 
-    @Constant("true")
+    @ImmutableContainer("true")
     static boolean test(Set<String> strings) {
         assert !strings.contains("a");
 

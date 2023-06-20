@@ -17,16 +17,20 @@ package org.e2immu.analyser.model.value;
 import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.analyser.delay.DelayFactory;
 import org.e2immu.analyser.analyser.delay.SimpleCause;
+import org.e2immu.analyser.analyser.impl.util.BreakDelayLevel;
 import org.e2immu.analyser.analyser.nonanalyserimpl.AbstractEvaluationContextImpl;
 import org.e2immu.analyser.analysis.Analysis;
 import org.e2immu.analyser.analysis.impl.ParameterAnalysisImpl;
 import org.e2immu.analyser.analysis.impl.TypeAnalysisImpl;
+import org.e2immu.analyser.config.AnalyserConfiguration;
+import org.e2immu.analyser.config.Configuration;
 import org.e2immu.analyser.inspector.InspectionState;
 import org.e2immu.analyser.inspector.impl.MethodInspectionImpl;
 import org.e2immu.analyser.inspector.impl.ParameterInspectionImpl;
 import org.e2immu.analyser.inspector.impl.TypeInspectionImpl;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.*;
+import org.e2immu.analyser.model.variable.LocalVariableReference;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.QualifiedName;
@@ -151,6 +155,11 @@ public abstract class CommonAbstractValue {
             public String toString() {
                 return name;
             }
+
+            @Override
+            public int getComplexity() {
+                return LocalVariableReference.COMPLEXITY;
+            }
         };
     }
 
@@ -187,12 +196,21 @@ public abstract class CommonAbstractValue {
         return new Equals(Identifier.constant("newEquals"), PRIMITIVES, l, r);
     }
 
+    protected static Expression sum(Expression l, Expression r) {
+        return Sum.sum(Identifier.CONSTANT, context, l, r);
+    }
+
+    protected static Expression product(Expression l, Expression r) {
+        return Product.product(Identifier.CONSTANT, context, l, r);
+    }
+
     static ParameterInfo createParameter() {
         assert PRIMITIVES != null;
         if (!PRIMITIVES.objectTypeInfo().typeInspection.isSet()) {
             PRIMITIVES.objectTypeInfo().typeInspection.set(new TypeInspectionImpl.Builder(PRIMITIVES.objectTypeInfo(), InspectionState.BY_HAND)
                     .noParent(PRIMITIVES)
-                    .build());
+                    .setAccess(Inspection.Access.PUBLIC)
+                    .build(null));
         }
         TypeInfo someType = new TypeInfo("some", "type");
         someType.typeAnalysis.set(new TypeAnalysisImpl.Builder(Analysis.AnalysisMode.CONTRACTED,
@@ -200,7 +218,9 @@ public abstract class CommonAbstractValue {
         MethodInspectionImpl.Builder methodBuilder = new MethodInspectionImpl.Builder(someType, "type");
         ParameterInspectionImpl.Builder pi = new ParameterInspectionImpl.Builder(Identifier.generate("test"),
                 PRIMITIVES.stringParameterizedType(), "p", 0);
-        methodBuilder.setReturnType(PRIMITIVES.stringParameterizedType()).addParameter(pi);
+        methodBuilder.setReturnType(PRIMITIVES.stringParameterizedType())
+                .setAccess(Inspection.Access.PUBLIC)
+                .addParameter(pi);
         MethodInfo methodInfo = methodBuilder.build(InspectionProvider.DEFAULT).getMethodInfo();
         ParameterInfo p0 = methodInfo.methodInspection.get().getParameters().get(0);
         p0.setAnalysis(new ParameterAnalysisImpl.Builder(PRIMITIVES, null, p0));
@@ -208,22 +228,35 @@ public abstract class CommonAbstractValue {
         someType.typeInspection.set(new TypeInspectionImpl.Builder(someType, InspectionState.BY_HAND)
                 .noParent(PRIMITIVES)
                 .addMethod(methodInfo)
-                .build());
+                .setAccess(Inspection.Access.PUBLIC)
+                .build(null));
         return p0;
     }
 
-    protected final static AnalyserContext analyserContext = () -> PRIMITIVES;
+    protected final static AnalyserContext analyserContext = new AnalyserContext() {
+        @Override
+        public Primitives getPrimitives() {
+            return PRIMITIVES;
+        }
+
+        @Override
+        public Configuration getConfiguration() {
+            return new Configuration.Builder()
+                    .setAnalyserConfiguration(new AnalyserConfiguration.Builder().setNormalizeMore(true).build())
+                    .build();
+        }
+    };
 
     protected static EvaluationResult context;
 
     static class EvaluationContextImpl extends AbstractEvaluationContextImpl {
 
         private EvaluationContextImpl(ConditionManager conditionManager) {
-            super(1, 0, false, conditionManager, null);
+            super(1, 0, BreakDelayLevel.NONE, conditionManager, null);
         }
 
         EvaluationContextImpl() {
-            super(1, 0, false,
+            super(1, 0, BreakDelayLevel.NONE,
                     ConditionManager.initialConditionManager(PRIMITIVES), null);
         }
 

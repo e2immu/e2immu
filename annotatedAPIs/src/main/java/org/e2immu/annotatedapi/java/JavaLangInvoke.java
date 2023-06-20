@@ -15,19 +15,27 @@
 package org.e2immu.annotatedapi.java;
 
 
-import org.e2immu.annotation.ERContainer;
+import org.e2immu.annotation.ImmutableContainer;
+import org.e2immu.annotation.Independent;
+import org.e2immu.annotation.type.UtilityClass;
 
 public class JavaLangInvoke {
 
     final static String PACKAGE_NAME = "java.lang.invoke";
 
-    @ERContainer
+    @ImmutableContainer(hc = true)
+    @Independent
     static class TypeDescriptor$ {
 
-        @ERContainer
+        @ImmutableContainer
         static class OfField {
 
         }
+
+    }
+
+    @UtilityClass
+    interface MethodHandles$ {
 
     }
 }

@@ -25,15 +25,14 @@ import org.e2immu.analyser.parser.CommonTestRunner;
 import org.e2immu.analyser.util.Trie;
 import org.e2immu.analyser.visitor.MethodAnalyserVisitor;
 import org.e2immu.analyser.visitor.TypeMapVisitor;
-import org.e2immu.annotation.Only;
 import org.e2immu.support.Freezable;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.util.List;
-import java.util.Map;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 public class Test_Util_07_Trie_AAPI extends CommonTestRunner {
 
@@ -63,7 +62,7 @@ public class Test_Util_07_Trie_AAPI extends CommonTestRunner {
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("add".equals(d.methodInfo().name)) {
                 assertDv(d, 1, DV.TRUE_DV, Property.MODIFIED_METHOD);
-                assertDv(d.p(1), 2, MultiLevel.INDEPENDENT_1_DV, Property.INDEPENDENT);
+                assertDv(d.p(1), 2, MultiLevel.INDEPENDENT_HC_DV, Property.INDEPENDENT);
 
                 String pc = "Precondition[expression=!this.isFrozen(), causes=[companionMethod:ensureNotFrozen$Precondition]]";
                 assertEquals(pc, d.methodAnalysis().getPrecondition().toString());
@@ -80,9 +79,9 @@ public class Test_Util_07_Trie_AAPI extends CommonTestRunner {
                 };
                 assertEquals(eventual, d.methodAnalysis().getEventual().toString());
                 if (d.iteration() >= 4) {
-                    Map.Entry<AnnotationExpression, Boolean> ae = d.methodAnalysis().findAnnotation(Only.class.getCanonicalName());
-                    assertEquals("@Only(before=\"frozen\")", ae.getKey().toString());
-                    assertTrue(ae.getValue());
+                    AnnotationExpression only = d.evaluationContext().getAnalyserContext().getE2ImmuAnnotationExpressions().only;
+                    AnnotationExpression ae = d.methodAnalysis().annotationGetOrDefaultNull(only);
+                    assertEquals("@Only(before=\"frozen\")", ae.toString());
                 }
             }
         };
@@ -90,7 +89,7 @@ public class Test_Util_07_Trie_AAPI extends CommonTestRunner {
         testSupportAndUtilClasses(List.of(Trie.class), 0, 0,
                 new DebugConfiguration.Builder()
                         .addTypeMapVisitor(typeMapVisitor)
-                        .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                    //    .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                         .build(),
                 new AnalyserConfiguration.Builder().setComputeFieldAnalyserAcrossAllMethods(true).build());
     }

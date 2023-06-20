@@ -24,18 +24,17 @@ import org.e2immu.analyser.model.ParameterizedType;
 import org.e2immu.analyser.model.Qualification;
 import org.e2immu.analyser.model.expression.util.ExpressionComparator;
 import org.e2immu.analyser.model.impl.BaseExpression;
+import org.e2immu.analyser.output.Keyword;
 import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.Text;
 import org.e2immu.analyser.parser.Message;
-import org.e2immu.annotation.E2Container;
 import org.e2immu.annotation.NotNull;
 
-@E2Container
 public class NullConstant extends BaseExpression implements ConstantExpression<Object> {
     public static final NullConstant NULL_CONSTANT = new NullConstant();
 
     protected NullConstant() {
-        super(Identifier.constant(NullConstant.class));
+        super(Identifier.constant(NullConstant.class), 1);
     }
 
     @Override
@@ -51,7 +50,7 @@ public class NullConstant extends BaseExpression implements ConstantExpression<O
 
     @Override
     public OutputBuilder output(Qualification qualification) {
-        return new OutputBuilder().add(new Text("null"));
+        return new OutputBuilder().add(Keyword.NULL);
     }
 
     @Override

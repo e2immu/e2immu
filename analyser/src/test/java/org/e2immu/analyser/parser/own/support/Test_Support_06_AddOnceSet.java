@@ -52,11 +52,11 @@ public class Test_Support_06_AddOnceSet extends CommonTestRunner {
 
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("AddOnceSet".equals(d.typeInfo().simpleName)) {
-                assertEquals("Type param V", d.typeAnalysis().getTransparentTypes().toString());
+                assertEquals("V", d.typeAnalysis().getHiddenContentTypes().toString());
 
-                assertEquals("{frozen=!frozen}", d.typeAnalysis().getApprovedPreconditionsE1().toString());
+                assertEquals("{frozen=!frozen}", d.typeAnalysis().getApprovedPreconditionsFinalFields().toString());
                 if (d.iteration() >= 2) {
-                    assertEquals("{frozen=!frozen}", d.typeAnalysis().getApprovedPreconditionsE2().toString());
+                    assertEquals("{frozen=!frozen}", d.typeAnalysis().getApprovedPreconditionsImmutable().toString());
                     assertEquals("[set]", d.typeAnalysis().getGuardedByEventuallyImmutableFields().toString());
                 }
             }
@@ -75,6 +75,18 @@ public class Test_Support_06_AddOnceSet extends CommonTestRunner {
                 String expected = d.iteration() == 0 ? "<precondition>" : "!frozen";
                 assertEquals(expected, d.methodAnalysis().getPreconditionForEventual().expression().toString());
             }
+            if ("toImmutableSet".equals(d.methodInfo().name)) {
+                String expected = d.iteration() == 0 ? "<m:toImmutableSet>"
+                        : "/*inline toImmutableSet*/Set.copyOf(set.keySet())";
+                assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
+                assertDv(d, 1, MultiLevel.EFFECTIVELY_IMMUTABLE_HC_DV, Property.IMMUTABLE);
+            }
+            if ("stream".equals(d.methodInfo().name)) {
+                String expected = d.iteration() == 0 ? "<m:stream>" : "/*inline stream*/set.keySet().stream()";
+                assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
+                assertDv(d, 1, MultiLevel.INDEPENDENT_HC_DV, Property.INDEPENDENT);
+                assertDv(d, 1, MultiLevel.MUTABLE_DV, Property.IMMUTABLE);
+            }
         };
 
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
@@ -86,6 +98,13 @@ public class Test_Support_06_AddOnceSet extends CommonTestRunner {
             if ("add".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof FieldReference fr && "frozen".equals(fr.fieldInfo.name)) {
                     fail("In statement: " + d.statementId());
+                }
+            }
+            if ("forEach".equals(d.methodInfo().name)) {
+                assertEquals("0", d.statementId());
+                if (d.variable() instanceof ParameterInfo pi && "consumer".equals(pi.name)) {
+                    String linked = d.iteration() == 0 ? "this.set:-1" : "this.set:4";
+                    assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
                 }
             }
         };

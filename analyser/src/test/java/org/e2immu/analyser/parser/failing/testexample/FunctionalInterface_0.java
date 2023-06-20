@@ -15,12 +15,13 @@
 package org.e2immu.analyser.parser.failing.testexample;
 
 import org.e2immu.annotation.Container;
-import org.e2immu.annotation.E1Container;
+import org.e2immu.annotation.FinalFields;
 import org.e2immu.annotation.Modified;
 
 import java.util.function.Supplier;
 
-@E1Container
+@FinalFields
+@Container
 public class FunctionalInterface_0 {
 
     @Container

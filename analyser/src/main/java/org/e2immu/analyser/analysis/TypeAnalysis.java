@@ -17,17 +17,13 @@ package org.e2immu.analyser.analysis;
 import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.variable.FieldReference;
-import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.annotation.NotNull;
-import org.e2immu.annotation.NotNull1;
-import org.e2immu.annotation.Nullable;
 
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 public interface TypeAnalysis extends Analysis {
 
@@ -35,20 +31,20 @@ public interface TypeAnalysis extends Analysis {
     TypeInfo getTypeInfo();
 
     @NotNull
-    Map<FieldReference, Expression> getApprovedPreconditionsE1();
+    Map<FieldReference, Expression> getApprovedPreconditionsFinalFields();
 
     @NotNull
-    Map<FieldReference, Expression> getApprovedPreconditionsE2();
+    Map<FieldReference, Expression> getApprovedPreconditionsImmutable();
 
-    boolean containsApprovedPreconditionsE2(FieldReference fieldReference);
+    boolean containsApprovedPreconditionsImmutable(FieldReference fieldReference);
 
-    boolean approvedPreconditionsE2IsEmpty();
+    boolean approvedPreconditionsImmutableIsEmpty();
 
     @NotNull
     Expression getApprovedPreconditions(boolean e2, FieldReference fieldInfo);
 
     default Map<FieldReference, Expression> getApprovedPreconditions(boolean e2) {
-        return e2 ? getApprovedPreconditionsE2() : getApprovedPreconditionsE1();
+        return e2 ? getApprovedPreconditionsImmutable() : getApprovedPreconditionsFinalFields();
     }
 
     @NotNull
@@ -57,10 +53,12 @@ public interface TypeAnalysis extends Analysis {
     @NotNull
     CausesOfDelay approvedPreconditionsStatus(boolean e2);
 
-    @NotNull1
+    boolean approvedPreconditionsIsNotEmpty(boolean e2);
+
+    @NotNull(content = true)
     Set<FieldInfo> getEventuallyImmutableFields();
 
-    @NotNull1
+    @NotNull(content = true)
     Set<FieldInfo> getGuardedByEventuallyImmutableFields();
 
     FieldInfo translateToVisibleField(FieldReference fieldReference);
@@ -70,7 +68,7 @@ public interface TypeAnalysis extends Analysis {
     }
 
     default boolean isEventual() {
-        return !getApprovedPreconditionsE1().isEmpty() || !getApprovedPreconditionsE2().isEmpty() ||
+        return !getApprovedPreconditionsFinalFields().isEmpty() || !getApprovedPreconditionsImmutable().isEmpty() ||
                 !getEventuallyImmutableFields().isEmpty();
     }
 
@@ -80,43 +78,11 @@ public interface TypeAnalysis extends Analysis {
      */
     default Set<FieldInfo> marksRequiredForImmutable() {
         Set<FieldInfo> res = new HashSet<>(getEventuallyImmutableFields());
-        getApprovedPreconditionsE1().keySet().stream()
+        getApprovedPreconditionsFinalFields().keySet().stream()
                 .map(this::translateToVisibleField).filter(Objects::nonNull).forEach(res::add);
-        getApprovedPreconditionsE2().keySet().stream()
+        getApprovedPreconditionsImmutable().keySet().stream()
                 .map(this::translateToVisibleField).filter(Objects::nonNull).forEach(res::add);
         return res;
-    }
-
-    /**
-     * Returns the hidden content types
-     *
-     * @return null when not yet set
-     */
-    @Nullable
-    SetOfTypes getTransparentTypes();
-
-    /**
-     * Hidden content types, concretely (type parameters are substituted)
-     * <p>
-     * IMPROVE probably too simplistic
-     *
-     * @param concreteType the concrete type used to substitute
-     * @return a set of concrete hidden content types
-     */
-    @Nullable
-    default SetOfTypes getTransparentTypes(ParameterizedType concreteType) {
-        SetOfTypes transparentTypes = getTransparentTypes();
-        if (transparentTypes == null) return null;
-        return new SetOfTypes(transparentTypes.types().stream()
-                .map(pt -> {
-                    if (pt.typeParameter != null) {
-                        int index = pt.typeParameter.getIndex();
-                        if (index < concreteType.parameters.size()) {
-                            return concreteType.parameters.get(index);
-                        }
-                    }
-                    return pt;
-                }).collect(Collectors.toUnmodifiableSet()));
     }
 
     default DV getTypeProperty(Property property) {
@@ -131,7 +97,7 @@ public interface TypeAnalysis extends Analysis {
                 return doNotDelay ? getPropertyFromMapNeverDelay(property)
                         : getPropertyFromMapDelayWhenAbsent(property);
             }
-            case EXTENSION_CLASS, UTILITY_CLASS, SINGLETON, FINALIZER -> {
+            case EXTENSION_CLASS, UTILITY_CLASS, SINGLETON, FINALIZER, MODIFIED_METHOD -> {
                 // ensure that we do not throw an exception
                 boolean doNotDelay = getTypeInfo().typePropertiesAreContracted() || getTypeInfo().shallowAnalysis();
                 return doNotDelay ? getPropertyFromMapNeverDelay(property)
@@ -151,43 +117,35 @@ public interface TypeAnalysis extends Analysis {
         return getAspects().containsKey(aspect);
     }
 
-    default DV maxValueFromInterfacesImplemented(AnalysisProvider analysisProvider, Property property) {
-        Stream<TypeInfo> implementedInterfaces = getTypeInfo().typeResolution.get().superTypesExcludingJavaLangObject()
-                .stream().filter(TypeInfo::isInterface);
-        return implementedInterfaces.map(analysisProvider::getTypeAnalysis)
-                .map(typeAnalysis -> typeAnalysis.getTypeProperty(property))
-                .reduce(DV.MIN_INT_DV, DV::max);
-    }
-
-    /*
-    Optional<T> is @E2Immutable. In general T can be mutable; it is part of the immutable content of Optional.
-    Optional<Integer> is @ERImmutable, because Integer is so.
-     */
-    DV immutableCanBeIncreasedByTypeParameters();
-
-    /*
-    too simple an implementation, we should do real bookkeeping: which fields hold which types?
-     */
-    default Set<ParameterizedType> hiddenContentLinkedTo(FieldInfo fieldInfo) {
-        return getTransparentTypes().types();
-    }
-
-    Set<ParameterizedType> getExplicitTypes(InspectionProvider inspectionProvider);
-
-    default DV isPartOfHiddenContent(ParameterizedType type) {
-        CausesOfDelay status = hiddenContentTypeStatus();
-        if (status.isDone()) {
-            return DV.fromBoolDv(getTransparentTypes().contains(type.withoutTypeParameters()));
-        }
-        return status;
-    }
-
-    @NotNull
-    CausesOfDelay hiddenContentTypeStatus();
-
-    boolean approvedPreconditionsIsNotEmpty(boolean e2);
-
     default void setAspect(String aspect, MethodInfo mainMethod) {
         throw new UnsupportedOperationException();
     }
+
+    /* ******* methods dealing with explicit and hidden content types in the object graph of the fields *************** */
+
+    /*
+    Optional<T> is @Immutable with hidden content of type T.
+    Optional<Integer> is @Immutable without hidden content, because Integer has these immutability properties.
+    Optional<StringBuilder> is not immutable, because StringBuilder is not.
+
+    This method returns DV.TRUE when the immutable property varies with its type parameters,
+    DV.FALSE when not, and a delay when we don't know yet.
+
+    IMPROVE at some point, extend to "immutableDeterminedByCasts"? See Basics_20.C3, where we use Object
+    rather than a type parameter.
+     */
+    DV immutableDeterminedByTypeParameters();
+
+    /**
+     * The hidden content of a type as computed. Contains all the types of the fields
+     * that are immutable, but not recursively immutable.
+     * As a result, this set does not contain any primitives, or java.lang.String, for example.
+     * By convention, neither does it contain the type itself, nor any of the types in its hierarchy.
+     *
+     * @return null when not yet set, use hiddenContentAndExplicitTypeComputationDelays to check
+     */
+    SetOfTypes getHiddenContentTypes();
+
+    @NotNull
+    CausesOfDelay hiddenContentDelays();
 }

@@ -197,9 +197,9 @@ public class Test_31_EventuallyE1Immutable extends CommonTestRunner {
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("EventuallyE1Immutable_0".equals(d.typeInfo().simpleName)) {
                 int expectSize = d.iteration() <= 1 ? 0 : 1;
-                assertEquals(expectSize, d.typeAnalysis().getApprovedPreconditionsE1().size());
+                assertEquals(expectSize, d.typeAnalysis().getApprovedPreconditionsFinalFields().size());
 
-                assertDv(d, 2, MultiLevel.EVENTUALLY_E1IMMUTABLE_DV, Property.IMMUTABLE);
+                assertDv(d, 2, MultiLevel.EVENTUALLY_FINAL_FIELDS_DV, Property.IMMUTABLE);
 
                 String expectFields = d.iteration() <= 1 ? "" : "string";
                 assertEquals(expectFields, d.typeAnalysis().marksRequiredForImmutable().stream()
@@ -294,8 +294,8 @@ public class Test_31_EventuallyE1Immutable extends CommonTestRunner {
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("EventuallyE1Immutable_2_M".equals(d.typeInfo().simpleName)) {
                 String expectApprovedPreconditions = d.iteration() <= 1 ? "{}" : "{j=j<=0}";
-                assertEquals(expectApprovedPreconditions, d.typeAnalysis().getApprovedPreconditionsE1().toString());
-                assertEquals(expectApprovedPreconditions, d.typeAnalysis().getApprovedPreconditionsE2().toString());
+                assertEquals(expectApprovedPreconditions, d.typeAnalysis().getApprovedPreconditionsFinalFields().toString());
+                assertEquals(expectApprovedPreconditions, d.typeAnalysis().getApprovedPreconditionsImmutable().toString());
             }
         };
 
@@ -313,10 +313,10 @@ public class Test_31_EventuallyE1Immutable extends CommonTestRunner {
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("EventuallyE1Immutable_3".equals(d.typeInfo().simpleName)) {
                 String expectE1 = d.iteration() <= 1 ? "{}" : "{string=null==string}";
-                assertEquals(expectE1, d.typeAnalysis().getApprovedPreconditionsE1().toString());
-                String expectE2 = d.iteration() <= 2 ? "{}" : "{string=null==string}";
-                assertEquals(expectE2, d.typeAnalysis().getApprovedPreconditionsE2().toString());
-                assertDv(d, 3, MultiLevel.EVENTUALLY_E1IMMUTABLE_DV, Property.IMMUTABLE);
+                assertEquals(expectE1, d.typeAnalysis().getApprovedPreconditionsFinalFields().toString());
+                String expectE2 = d.iteration() <= 1 ? "{}" : "{string=null==string}";
+                assertEquals(expectE2, d.typeAnalysis().getApprovedPreconditionsImmutable().toString());
+                assertDv(d, 2, MultiLevel.EVENTUALLY_FINAL_FIELDS_DV, Property.IMMUTABLE);
             }
         };
 

@@ -14,14 +14,14 @@
 
 package org.e2immu.analyser.parser.eventual.testexample;
 
-import org.e2immu.annotation.ERContainer;
-import org.e2immu.annotation.Mark;
+import org.e2immu.annotation.ImmutableContainer;
+import org.e2immu.annotation.eventual.Mark;
 
 /*
 non-constructor version of Singleton_1
 
  */
-@ERContainer(after = "created")
+@ImmutableContainer(after = "created")
 public class EventuallyE2Immutable_10 {
     private final int k;
     private boolean created;

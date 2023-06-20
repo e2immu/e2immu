@@ -24,7 +24,6 @@ import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.Symbol;
 import org.e2immu.analyser.parser.InspectionProvider;
-import org.e2immu.annotation.E2Container;
 
 import java.util.Arrays;
 import java.util.List;
@@ -32,18 +31,15 @@ import java.util.Objects;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
-@E2Container
 public class ArrayInitializer extends BaseExpression implements Expression {
 
     public final MultiExpression multiExpression;
     private final ParameterizedType commonType;
-    private final InspectionProvider inspectionProvider;
 
     public ArrayInitializer(Identifier identifier, InspectionProvider inspectionProvider, List<Expression> values) {
-        super(identifier);
+        super(identifier, values.stream().mapToInt(Expression::getComplexity).sum() + 1);
         this.multiExpression = MultiExpression.create(values);
         this.commonType = multiExpression.commonType(inspectionProvider);
-        this.inspectionProvider = inspectionProvider;
     }
 
     public ArrayInitializer(InspectionProvider inspectionProvider,
@@ -57,28 +53,30 @@ public class ArrayInitializer extends BaseExpression implements Expression {
                             InspectionProvider inspectionProvider,
                             List<Expression> values,
                             ParameterizedType formalCommonType) {
-        super(identifier);
+        super(identifier, values.stream().mapToInt(Expression::getComplexity).sum() + 1);
         this.multiExpression = MultiExpression.create(values);
         this.commonType = formalCommonType.commonType(inspectionProvider, multiExpression.commonType(inspectionProvider));
-        this.inspectionProvider = inspectionProvider;
     }
 
-    private ArrayInitializer(Identifier identifier, MultiExpression multiExpression, ParameterizedType commonType, InspectionProvider inspectionProvider) {
-        super(identifier);
+    private ArrayInitializer(Identifier identifier, MultiExpression multiExpression, ParameterizedType commonType) {
+        super(identifier, Arrays.stream(multiExpression.expressions())
+                .mapToInt(Expression::getComplexity).sum() + 1);
         this.multiExpression = multiExpression;
         this.commonType = commonType;
-        this.inspectionProvider = inspectionProvider;
     }
 
     @Override
     public Expression translate(InspectionProvider inspectionProvider, TranslationMap translationMap) {
+        Expression translated = translationMap.translateExpression(this);
+        if (translated != this) return translated;
+
         // IMPROVE can be made more efficient, make a TranslationCollector on arrays
         List<Expression> exs = multiExpression.stream().toList();
-        List<Expression> translated = exs.stream().map(e -> e.translate(inspectionProvider, translationMap))
+        List<Expression> translatedExpressions = exs.stream().map(e -> e.translate(inspectionProvider, translationMap))
                 .collect(TranslationCollectors.toList(exs));
         ParameterizedType translatedType = translationMap.translateType(commonType);
-        if (translatedType == commonType && translated == exs) return this;
-        return new ArrayInitializer(identifier, this.inspectionProvider, translated, translatedType);
+        if (translatedType == commonType && translatedExpressions == exs) return this;
+        return new ArrayInitializer(identifier, inspectionProvider, translatedExpressions, translatedType);
     }
 
     @Override
@@ -111,10 +109,9 @@ public class ArrayInitializer extends BaseExpression implements Expression {
     }
 
     @Override
-    public EvaluationResult evaluate(EvaluationResult context,
-                                     ForwardEvaluationInfo forwardEvaluationInfo) {
+    public EvaluationResult evaluate(EvaluationResult context, ForwardEvaluationInfo forwardEvaluationInfo) {
         List<EvaluationResult> results = multiExpression.stream()
-                .map(e -> e.evaluate(context, ForwardEvaluationInfo.DEFAULT))
+                .map(e -> e.evaluate(context, forwardEvaluationInfo))
                 .collect(Collectors.toList());
         List<Expression> values = results.stream().map(EvaluationResult::getExpression).collect(Collectors.toList());
 
@@ -145,17 +142,17 @@ public class ArrayInitializer extends BaseExpression implements Expression {
         MultiExpression multi = new MultiExpression(Arrays.stream(multiExpression.expressions())
                 .map(e -> e.isDelayed() ? e.mergeDelays(causesOfDelay) : e)
                 .toArray(Expression[]::new));
-        return new ArrayInitializer(identifier, multi, commonType, inspectionProvider);
+        return new ArrayInitializer(identifier, multi, commonType);
     }
 
     @Override
     public DV getProperty(EvaluationResult context, Property property, boolean duringEvaluation) {
         if (multiExpression.isEmpty()) {
             return switch (property) {
-                case EXTERNAL_IMMUTABLE, IMMUTABLE -> MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV;
+                case EXTERNAL_IMMUTABLE, IMMUTABLE -> MultiLevel.EFFECTIVELY_IMMUTABLE_DV;
                 case INDEPENDENT -> MultiLevel.INDEPENDENT_DV;
                 case CONSTANT -> DV.TRUE_DV;
-                case EXTERNAL_CONTAINER, CONTAINER -> MultiLevel.CONTAINER_DV;
+                case CONTAINER_RESTRICTION, CONTAINER -> MultiLevel.CONTAINER_DV;
                 case EXTERNAL_IGNORE_MODIFICATIONS, IGNORE_MODIFICATIONS -> MultiLevel.NOT_IGNORE_MODS_DV;
                 case NOT_NULL_EXPRESSION -> MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL_DV;
                 default -> throw new UnsupportedOperationException("Property " + property);
@@ -168,9 +165,9 @@ public class ArrayInitializer extends BaseExpression implements Expression {
         }
         if (Property.EXTERNAL_IMMUTABLE == property || Property.IMMUTABLE == property) {
             // it is an array
-            return MultiLevel.EFFECTIVELY_E1IMMUTABLE_DV;
+            return MultiLevel.EFFECTIVELY_FINAL_FIELDS_DV;
         }
-        if (Property.EXTERNAL_CONTAINER == property || Property.CONTAINER == property) {
+        if (Property.CONTAINER_RESTRICTION == property || Property.CONTAINER == property) {
             return MultiLevel.CONTAINER_DV;
         }
         if (Property.EXTERNAL_IGNORE_MODIFICATIONS == property || Property.IGNORE_MODIFICATIONS == property) {
@@ -181,8 +178,8 @@ public class ArrayInitializer extends BaseExpression implements Expression {
     }
 
     @Override
-    public List<Variable> variables(boolean descendIntoFieldReferences) {
-        return multiExpression.variables();
+    public List<Variable> variables(DescendMode descendIntoFieldReferences) {
+        return multiExpression.variables(descendIntoFieldReferences);
     }
 
     @Override

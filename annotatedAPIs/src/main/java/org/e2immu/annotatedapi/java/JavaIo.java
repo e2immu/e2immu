@@ -15,23 +15,32 @@
 package org.e2immu.annotatedapi.java;
 
 import org.e2immu.annotation.*;
+import org.e2immu.annotation.rare.AllowsInterrupt;
 
+import java.io.File;
 import java.io.OutputStream;
 import java.io.Writer;
 import java.net.URI;
 import java.net.URL;
+import java.nio.CharBuffer;
 
 public class JavaIo {
     final static String PACKAGE_NAME = "java.io";
 
 
-    @ERContainer
+    /*
+    No methods, so @ImmutableContainer is the only option. The current implementation of the
+    analyser requires you to add immutability information.
+     */
+    @ImmutableContainer(hc = true)
+    @Independent
     interface Serializable$ {
 
     }
 
-    // throws IOException rather than Exception (in AutoCloseable)
-    @Independent
+    /*
+     Note: the type throws IOException rather than Exception (in AutoCloseable).
+     */
     @Container
     interface Closeable$ {
 
@@ -39,9 +48,12 @@ public class JavaIo {
         void close();
     }
 
+    /*
+     Extending FilterOutputStream, PrintStream cannot be container, cannot be independent.
 
-    @Independent
-    @Container
+     The @AllowsInterrupt annotation marks that these methods present the JVM with an opportunity to interrupt
+     the current thread, allowing non-final fields to be modified in the background.
+     */
     interface PrintStream$ {
         @Modified
         @AllowsInterrupt
@@ -69,7 +81,7 @@ public class JavaIo {
 
         @Modified
         @AllowsInterrupt
-        void print(Object obj);
+        void print(/*@Independent(hc=true)*/ Object obj);
 
         @Modified
         @AllowsInterrupt
@@ -101,18 +113,22 @@ public class JavaIo {
 
         @Modified
         @AllowsInterrupt
-        void println(Object obj);
+        void println(/*@Independent(hc=true)*/ Object obj);
     }
 
+    /*
+     The @Independent annotation prevents the implementation from storing the byte arrays it receives in the
+     write methods. The @Container annotation prevents the implementation from modifying them.
+     */
     @Independent
     @Container
     interface OutputStream$ {
 
         @Modified
-        void write(@Independent @NotNull byte[] b);
+        void write(@NotNull byte[] b);
 
         @Modified
-        void write(@Independent @NotNull byte[] b, int off, int len);
+        void write(@NotNull byte[] b, int off, int len);
 
         @Modified
         void flush();
@@ -121,9 +137,25 @@ public class JavaIo {
         void write(int b);
     }
 
-    @Independent
-    @Container
-    interface FilterOutputStream$ {
+    /*
+    Example of a non-annotated type, present here for testing (otherwise inspection hasn't taken place).
+    See TestCommonJavaIO.testByteArrayOutputStreamToByteArray() and Basics_22
+     */
+    interface ByteArrayOutputStream$ {
+
+    }
+
+    // obviously not a container, it wraps an object it will modify
+    @Independent(absent = true)
+    static class FilterOutputStream$ {
+
+        FilterOutputStream$(@Modified @Independent(absent = true) @NotNull OutputStream out) {
+
+        }
+
+    }
+
+    interface BufferedOutputStream$ {
 
     }
 
@@ -131,12 +163,27 @@ public class JavaIo {
     @Container
     interface Writer$ {
         @Modified
-        void write(@Independent char[] cbuf);
+        void write(char[] cbuf);
 
         @Modified
-        void write(@Independent char[] cbuf, int off, int len);
+        void write(char[] cbuf, int off, int len);
     }
 
+    @Independent
+    @Container
+    interface OutputStreamWriter$ {
+
+    }
+
+    @Independent // because of Closeable, we can't do less
+    interface BufferedWriter$ {
+
+    }
+
+    /*
+     The @Independent here implies that the StringWriter will not keep a copy of the CharSequence it has to append.
+     The @Container enforces that the char arrays in the parameters are not modified.
+     */
     @Independent
     @Container
     interface StringWriter$ {
@@ -147,23 +194,62 @@ public class JavaIo {
         void append(CharSequence csq);
 
         @Modified
-        void write(@Independent char[] cbuf);
+        void write(char[] cbuf);
 
         @Modified
-        void write(@Independent char[] cbuf, int off, int len);
+        void write(char[] cbuf, int off, int len);
     }
 
+    /*
+     The @Independent here implies that the Reader will not keep a dependent copy of the CharBuffer or Writer.
+     */
+    @Independent
     interface Reader$ {
+        @Modified
+        int read(@Modified CharBuffer target);
+
         @Modified
         long transferTo(@Modified Writer out);
     }
 
+    @Independent
+    interface StringReader$ {
+
+    }
+
+    /*
+    The @Independent here implies that the InputStream will not keep a dependent copy of the CharBuffer or Writer.
+    This type is obviously not a @Container, the 'transferTo' method modifies its arguments.
+    */
+    @Independent
     interface InputStream$ {
         @Modified
         long transferTo(@Modified OutputStream out);
     }
 
+    @Independent
+    interface FilterInputStream$ {
+
+    }
+
+    @Independent
+    interface BufferedInputStream${
+
+    }
+
+    /*
+    .exists() .delete() .exists(), when true first, must return false after the removal.
+    Cannot be independent because getCanonicalFile() can return a File which "points to the same underlying file",
+    which has implications for .exists(), .delete()
+     */
+    @Container
     interface File$ {
+        boolean canRead();
+
+        boolean exists();
+
+        File getCanonicalFile();
+
         @NotNull
         String getName();
 
@@ -175,5 +261,34 @@ public class JavaIo {
 
         @NotNull
         URL toURL();
+
+        @Modified
+        boolean createNewFile();
+
+        @Modified
+        boolean delete();
+
+        @Modified
+        void deleteOnExit();
+    }
+
+    @Container
+    @Independent
+    interface ObjectStreamField$ {
+
+        @Modified
+        void setOffset(int offset);
+    }
+
+    @Container
+    @Independent
+    interface FileFilter$ {
+
+    }
+
+    @Container
+    @Independent
+    interface FilenameFilter$ {
+
     }
 }

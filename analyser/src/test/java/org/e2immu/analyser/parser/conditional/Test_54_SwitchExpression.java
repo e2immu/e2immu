@@ -20,18 +20,22 @@ import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.ParameterInfo;
 import org.e2immu.analyser.model.Statement;
 import org.e2immu.analyser.model.expression.Lambda;
+import org.e2immu.analyser.model.expression.MethodCall;
 import org.e2immu.analyser.model.statement.IfElseStatement;
 import org.e2immu.analyser.model.statement.ReturnStatement;
 import org.e2immu.analyser.model.statement.ThrowStatement;
+import org.e2immu.analyser.model.variable.FieldReference;
+import org.e2immu.analyser.model.variable.ReturnVariable;
 import org.e2immu.analyser.parser.CommonTestRunner;
+import org.e2immu.analyser.visitor.MethodAnalyserVisitor;
 import org.e2immu.analyser.visitor.StatementAnalyserVariableVisitor;
 import org.e2immu.analyser.visitor.StatementAnalyserVisitor;
+import org.e2immu.analyser.visitor.TypeAnalyserVisitor;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 public class Test_54_SwitchExpression extends CommonTestRunner {
     public Test_54_SwitchExpression() {
@@ -46,7 +50,17 @@ public class Test_54_SwitchExpression extends CommonTestRunner {
 
     @Test
     public void test_1() throws IOException {
+        MethodAnalyserVisitor methodAnalyserVisitor = d -> {
+            if ("method".equals(d.methodInfo().name)) {
+                assertEquals("should raise a warning that the condition is always false, plus that b is never used\n" +
+                                "as a consequence, default always returns \"c\" so we have @NotNull",
+                        d.methodInfo().methodInspection.get().getComment().text());
+                boolean store = d.evaluationContext().getAnalyserContext().getConfiguration().inspectorConfiguration().storeComments();
+                assertTrue(store, "Storing comments, had an assertion error in Formatter line 193");
+            }
+        };
         testClass("SwitchExpression_1", 1, 0, new DebugConfiguration.Builder()
+                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .build());
     }
 
@@ -89,19 +103,50 @@ public class Test_54_SwitchExpression extends CommonTestRunner {
                         assertDv(d, 2, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.CONTEXT_NOT_NULL);
                     }
                 }
+                if (d.variable() instanceof FieldReference fr && "out".equals(fr.fieldInfo.name)) {
+                    assertEquals("System", fr.scope.toString());
+                    assertEquals("", d.variableInfo().getLinkedVariables().toString());
+
+                    assertDv(d, 2, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.CONTEXT_NOT_NULL);
+                }
+            }
+            if ("method".equals(d.methodInfo().name)) {
+                if (d.variable() instanceof ReturnVariable) {
+                    String expected = d.iteration() < 3 ? "<m:apply>"
+                            : "c==`Choice.ONE`?\"a\":c==`Choice.TWO`?\"b\":c==`Choice.THREE`?b?\"It's \"+c:\"or \"+c:<return value>";
+                    assertEquals(expected, d.currentValue().toString());
+                }
+                if (d.variable() instanceof FieldReference fr && "out".equals(fr.fieldInfo.name)) {
+                    fail();
+                }
             }
         };
         StatementAnalyserVisitor statementAnalyserVisitor = d -> {
             if ("method".equals(d.methodInfo().name)) {
                 assertEquals("0", d.statementId());
                 assertTrue(d.statementAnalysis().statement() instanceof ReturnStatement rs
-                        && rs.expression instanceof Lambda lambda
+                        && rs.expression instanceof MethodCall mc
+                        && mc.object instanceof Lambda lambda
                         && "$1".equals(lambda.definesType().simpleName));
+            }
+        };
+        MethodAnalyserVisitor methodAnalyserVisitor = d -> {
+            if ("apply".equals(d.methodInfo().name) && "$1".equals(d.methodInfo().typeInfo.simpleName)) {
+
+                assertDv(d.p(0), 1, MultiLevel.EFFECTIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
+                assertDv(d.p(0), 1, MultiLevel.INDEPENDENT_DV, Property.INDEPENDENT);
+            }
+        };
+        TypeAnalyserVisitor typeAnalyserVisitor = d -> {
+            if ("Choice".equals(d.typeInfo().simpleName)) {
+                assertDv(d, MultiLevel.EFFECTIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
             }
         };
         testClass("SwitchExpression_4", 0, 1, new DebugConfiguration.Builder()
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
+                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .build());
     }
 }

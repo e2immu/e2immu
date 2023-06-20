@@ -14,7 +14,7 @@
 
 package org.e2immu.analyser.parser.start.testexample;
 
-import org.e2immu.annotation.ERContainer;
+import org.e2immu.annotation.ImmutableContainer;
 import org.e2immu.annotation.NotModified;
 import org.e2immu.annotation.NotNull;
 
@@ -41,7 +41,7 @@ public interface Container_6 {
     Complex oneTwoThree = new Complex(1, 23);
     Complex nineEightSeven = new Complex(9, 87);
 
-    @ERContainer
+    @ImmutableContainer
     @NotNull
     @NotModified
     Map<String, Integer> MAP = Map.copyOf(new HashMap<>());

@@ -19,9 +19,12 @@ import org.e2immu.analyser.analyser.delay.DelayFactory;
 import org.e2immu.analyser.analysis.MethodAnalysis;
 import org.e2immu.analyser.analysis.StatementAnalysis;
 import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.model.expression.util.TranslationCollectors;
 import org.e2immu.analyser.model.impl.BaseExpression;
 import org.e2immu.analyser.model.statement.Block;
 import org.e2immu.analyser.model.statement.ReturnStatement;
+import org.e2immu.analyser.model.variable.FieldReference;
+import org.e2immu.analyser.model.variable.This;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.output.*;
 import org.e2immu.analyser.parser.InspectionProvider;
@@ -51,7 +54,7 @@ public class Lambda extends BaseExpression implements Expression {
                     ob.add(parameterInfo.parameterizedType.output(qualification)).add(Space.ONE);
                 }
                 if (this == VAR) {
-                    ob.add(new Text("var")).add(Space.ONE);
+                    ob.add(Keyword.VAR).add(Space.ONE);
                 }
                 if (!annotationOutput.isEmpty()) {
                     return annotationOutput.add(Space.ONE_REQUIRED_EASY_SPLIT).add(ob);
@@ -82,7 +85,7 @@ public class Lambda extends BaseExpression implements Expression {
                   ParameterizedType implementation,
                   ParameterizedType concreteReturnType,
                   List<OutputVariant> outputVariants) {
-        super(identifier);
+        super(identifier, 10);
         methodInfo = inspectionProvider.getTypeInspection(implementation.typeInfo).methods().get(0);
         MethodInspection methodInspection = inspectionProvider.getMethodInspection(methodInfo);
         this.block = methodInspection.getMethodBody();
@@ -95,6 +98,24 @@ public class Lambda extends BaseExpression implements Expression {
         this.concreteReturnType = Objects.requireNonNull(concreteReturnType);
         this.parameterOutputVariants = outputVariants;
         assert outputVariants.size() == parameters.size();
+    }
+
+    private Lambda(Identifier identifier,
+                   ParameterizedType abstractFunctionalType,
+                   ParameterizedType implementation,
+                   ParameterizedType concreteReturnType,
+                   List<OutputVariant> outputVariants,
+                   MethodInfo methodInfo,
+                   Block block,
+                   List<ParameterInfo> parameters) {
+        super(identifier, 10);
+        this.abstractFunctionalType = abstractFunctionalType;
+        this.implementation = implementation;
+        this.concreteReturnType = concreteReturnType;
+        this.parameterOutputVariants = outputVariants;
+        this.methodInfo = methodInfo;
+        this.block = block;
+        this.parameters = parameters;
     }
 
     private static boolean implementsFunctionalInterface(InspectionProvider inspectionProvider,
@@ -125,9 +146,17 @@ public class Lambda extends BaseExpression implements Expression {
 
     @Override
     public Expression translate(InspectionProvider inspectionProvider, TranslationMap translationMap) {
-        return this; // translation will be used by DelayedExpression, we cannot simply throw an exception
-        //throw new UnsupportedOperationException();
-        //return new Lambda(translationMap.translateType(abstractFunctionalType), translationMap.translateType(implementation));
+        Expression tLambda = translationMap.translateExpression(this);
+        if (tLambda != this) return tLambda;
+        Block tBlock = (Block) block.translate(inspectionProvider, translationMap).get(0);
+        List<ParameterInfo> tParams = parameters.stream()
+                .map(pi -> (ParameterInfo) translationMap.translateVariable(inspectionProvider, pi))
+                .collect(TranslationCollectors.toList(parameters));
+        if (tBlock == block && tParams == parameters) {
+            return this;
+        }
+        return new Lambda(identifier, abstractFunctionalType, implementation, concreteReturnType,
+                parameterOutputVariants, methodInfo, tBlock, tParams);
     }
 
     @Override
@@ -178,16 +207,24 @@ public class Lambda extends BaseExpression implements Expression {
             outputBuilder.add(outputInParenthesis(qualification, precedence(), singleExpression));
         } else {
             Guide.GuideGenerator guideGenerator = Guide.generatorForBlock();
-            outputBuilder.add(Symbol.LEFT_BRACE);
             if (methodInfo.methodAnalysis.isSet()) {
-                outputBuilder.add(guideGenerator.start());
-                StatementAnalysis firstStatement = methodInfo.methodAnalysis.get().getFirstStatement().followReplacements();
-                Block.statementsString(qualification, outputBuilder, guideGenerator, firstStatement);
-                outputBuilder.add(guideGenerator.end());
+                StatementAnalysis firstStatement = methodInfo.methodAnalysis.get().getFirstStatement();
+                if (firstStatement != null) {
+                    outputBuilder.add(Symbol.LEFT_BRACE);
+                    outputBuilder.add(guideGenerator.start());
+                    StatementAnalysis st = firstStatement.followReplacements();
+                    Block.statementsString(qualification, outputBuilder, guideGenerator, st);
+                    outputBuilder.add(guideGenerator.end());
+                    outputBuilder.add(Symbol.RIGHT_BRACE);
+                } else {
+                    // jfocus: we  currently don't set the first statement analysis
+                    outputBuilder.add(block.output(qualification, null));
+                }
             } else {
+                outputBuilder.add(Symbol.LEFT_BRACE);
                 outputBuilder.add(new Text("... debugging ..."));
+                outputBuilder.add(Symbol.RIGHT_BRACE);
             }
-            outputBuilder.add(Symbol.RIGHT_BRACE);
         }
         return outputBuilder;
     }
@@ -219,6 +256,10 @@ public class Lambda extends BaseExpression implements Expression {
     @Override
     public EvaluationResult evaluate(EvaluationResult context, ForwardEvaluationInfo forwardEvaluationInfo) {
         EvaluationResult.Builder builder = new EvaluationResult.Builder(context);
+        if (forwardEvaluationInfo.isOnlySort()) {
+            return builder.setExpression(this).build();
+        }
+
         ParameterizedType parameterizedType = methodInfo.typeInfo.asParameterizedType(context.getAnalyserContext());
         Expression result;
 
@@ -256,11 +297,10 @@ public class Lambda extends BaseExpression implements Expression {
                 assert nneParam != DV.MAX_INT_DV;
             }
             if (srv.isDone() && modified.isDone() && nneParam.isDone()) {
-                if (modified.valueIsFalse()) {
+                if (modified.valueIsFalse() && (srv instanceof InlinedMethod || srv.isConstant())) {
                     result = srv;
-                    assert result instanceof InlinedMethod || result.isConstant();
                 } else {
-                    // modifying method, we cannot simply substitute
+                    // modifying method, we cannot simply substitute; or: non-modifying, too complex
                     DV nne = MultiLevel.composeOneLevelMoreNotNull(nneParam);
                     assert nne.isDone();
                     result = makeInstance(parameterizedType, nne);
@@ -279,7 +319,7 @@ public class Lambda extends BaseExpression implements Expression {
     private Expression makeInstance(ParameterizedType parameterizedType, DV nne) {
         Expression result;
         Properties valueProperties = Properties.of(Map.of(Property.NOT_NULL_EXPRESSION, nne,
-                Property.IMMUTABLE, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV,
+                Property.IMMUTABLE, MultiLevel.EFFECTIVELY_IMMUTABLE_DV,
                 Property.INDEPENDENT, MultiLevel.INDEPENDENT_DV,
                 Property.CONTAINER, MultiLevel.CONTAINER_DV,
                 Property.IGNORE_MODIFICATIONS, Property.IGNORE_MODIFICATIONS.falseDv,
@@ -305,13 +345,14 @@ public class Lambda extends BaseExpression implements Expression {
     }
 
     @Override
-    public List<Variable> variables(boolean descendIntoFieldReferences) {
+    public List<Variable> variables(DescendMode descendIntoFieldReferences) {
         /*
-        do not return the variables of this block (goes via general method, subElements...)
-        e.g. Expressions_0.extractEquals, pattern variable eq comes out of the Lambda into the enclosing method
-
-        wait until the Lambda has become an InlinedMethod if you want access to the variables (see e.g. E2ImmutableComposition_0)
+        See Lambda_2, Lambda_4, SwitchExpression_4: we catch all the "this" variants that we encounter.
+        Called by DelayedExpression, original.variables(...) for the delayed version of the lambda.
          */
-        return List.of();
+        return block.variableStream()
+                .filter(v -> v instanceof FieldReference fr && fr.scopeVariable instanceof This)
+                .map(v -> ((FieldReference) v).scopeVariable)
+                .toList();
     }
 }

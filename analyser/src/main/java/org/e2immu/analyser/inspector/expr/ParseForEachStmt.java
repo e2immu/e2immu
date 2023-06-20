@@ -31,7 +31,10 @@ import java.util.List;
 
 public class ParseForEachStmt {
 
-    public static Statement parse(ExpressionContext expressionContext, String label, ForEachStmt forEachStmt) {
+    public static Statement parse(ExpressionContext expressionContext,
+                                  String label,
+                                  ForEachStmt forEachStmt,
+                                  Comment comment) {
         VariableContext newVariableContext = VariableContext.dependentVariableContext(expressionContext.variableContext());
         VariableDeclarationExpr vde = forEachStmt.getVariable();
         VariableDeclarator variable = vde.getVariable(0);
@@ -59,7 +62,7 @@ public class ParseForEachStmt {
         List<LocalVariableCreation.Declaration> declarations = List.of(declaration);
         LocalVariableCreation lvc = new LocalVariableCreation(expressionContext.typeContext().getPrimitives(), declarations, isVar);
         return new ForEachStatement(Identifier.positionFrom(forEachStmt), label, lvc, expression,
-                Identifier.positionFrom(forEachStmt.getIterable()), block);
+                Identifier.positionFrom(forEachStmt.getIterable()), block, comment);
     }
 
     private static ParameterizedType extractTypeParameterOfIterableOf(ExpressionContext expressionContext, Expression expression) {

@@ -21,11 +21,11 @@ public class JavaUtil_1 {
     final static String PACKAGE_NAME = "java.util";
 
     @Container
-    @Dependent
+    @Independent(absent = true)
     interface Collection$<E> {
 
         @Modified
-        boolean add(@Independent1 @NotNull E e);
+        boolean add(@Independent(hc = true) @NotNull E e);
 
     }
 }

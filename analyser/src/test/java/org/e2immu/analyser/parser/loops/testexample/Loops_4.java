@@ -14,7 +14,8 @@
 
 package org.e2immu.analyser.parser.loops.testexample;
 
-import org.e2immu.annotation.Constant;
+
+import org.e2immu.annotation.ImmutableContainer;
 
 public class Loops_4 {
 
@@ -22,7 +23,7 @@ public class Loops_4 {
     Analyser picks up range, and reports interrupt in loop.
     This simple test serves to go through the basics of a loop.
      */
-    @Constant(absent = true)
+    @ImmutableContainer // not constant!
     public static int method() {
         for (int i = 0; i < 10; i++) {
             if (i == 1) return 4;

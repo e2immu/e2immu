@@ -20,7 +20,7 @@ import org.e2immu.annotation.*;
 public class Basics_3 {
 
     @Nullable
-    @Variable
+    @Final(absent = true)
     @NotModified
     private String s;
 

@@ -190,6 +190,11 @@ public class Properties implements Comparable<Properties> {
         return of(merged);
     }
 
+    public Properties mergeVariableAccessReport(Properties other) {
+        Map<Property, DV> merged = VariableInfo.mergeVariableAccessReport(map, other.map);
+        return of(merged);
+    }
+
     public Properties copy() {
         return Properties.of(map);
     }

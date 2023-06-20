@@ -15,12 +15,14 @@
 package org.e2immu.analyser.parser.minor.testexample;
 
 
+import org.e2immu.annotation.ImmutableContainer;
 import org.e2immu.annotation.Modified;
 
 import java.util.List;
 
 public class InstanceOf_16 {
 
+    @ImmutableContainer
     interface Operator {
         boolean isUnaryNot();
     }

@@ -25,18 +25,16 @@ import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.Text;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.util.IntUtil;
-import org.e2immu.annotation.E2Container;
 import org.e2immu.annotation.NotNull;
 
 import java.util.Objects;
 
-@E2Container
 public final class IntConstant extends BaseExpression implements ConstantExpression<Integer>, Negatable, Numeric {
     private final Primitives primitives;
     private final int constant;
 
     public IntConstant(Primitives primitives, int constant) {
-        super(Identifier.constant(constant));
+        super(Identifier.constant(constant), constant > 1 || constant < -1 ? 2 : 1);
         this.primitives = primitives;
         this.constant = constant;
     }

@@ -14,67 +14,48 @@
 
 package org.e2immu.analyser.analyser.check;
 
-import org.e2immu.analyser.analyser.DV;
 import org.e2immu.analyser.analyser.Property;
 import org.e2immu.analyser.analysis.Analysis;
 import org.e2immu.analyser.model.AnnotationExpression;
+import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.FieldInfo;
-import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.WithInspectionAndAnalysis;
+import org.e2immu.analyser.model.expression.StringConstant;
 import org.e2immu.analyser.parser.Message;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.function.Function;
+
+import static org.e2immu.analyser.parser.E2ImmuAnnotationExpressions.AFTER;
+import static org.e2immu.analyser.parser.E2ImmuAnnotationExpressions.VALUE;
 
 public class CheckImmutable {
 
     public static Message check(WithInspectionAndAnalysis info,
-                                Class<?> annotation,
-                                AnnotationExpression annotationExpression,
+                                AnnotationExpression annotationKey,
                                 Analysis analysis,
-                                boolean level,
-                                boolean recursive) {
-        List<CheckLinks.AnnotationKV> kvs = new ArrayList<>(3);
+                                String constantValue) {
+        List<CheckHelper.AnnotationKV> kvs = new ArrayList<>(3);
         Property property = info instanceof FieldInfo ? Property.EXTERNAL_IMMUTABLE : Property.IMMUTABLE;
 
-        Function<AnnotationExpression, String> extractInspected1 = ae -> ae.extract("after", "");
-        Map.Entry<AnnotationExpression, Boolean> inAnalysis = analysis.findAnnotation(annotation.getCanonicalName());
-        String value1 = inAnalysis == null ? "" : inAnalysis.getKey().extract("after", "");
+        Function<AnnotationExpression, String> extractInspected1 = ae -> ae.extract(AFTER, "");
+        AnnotationExpression inAnalysis = analysis.annotationGetOrDefaultNull(annotationKey);
+        String value1 = inAnalysis == null ? "" : inAnalysis.extract(AFTER, "");
         // do not use the after=""... as a marker to check the presence (see test E2InContext_3)
-        kvs.add(new CheckLinks.AnnotationKV(extractInspected1, value1, false));
+        kvs.add(new CheckHelper.AnnotationKV(AFTER, extractInspected1, value1, false));
 
-        if (recursive) {
-            Function<AnnotationExpression, String> extractInspected3 = ae -> {
-                Boolean b = ae.extract("recursive", null);
-                return b != null && b ? "true" : null;
-            };
-            String value3 = recursive(property, analysis);
-            kvs.add(new CheckLinks.AnnotationKV(extractInspected3, value3));
-        }
-        if (level) {
-            Function<AnnotationExpression, String> extractInspected2 = ae -> {
-                Integer i = ae.extract("level", null);
-                return i == null ? null : Integer.toString(i);
-            };
-            String value2 = CheckIndependent.levelString(analysis, property);
-            kvs.add(new CheckLinks.AnnotationKV(extractInspected2, value2));
+        Function<AnnotationExpression, String> extractInspected = ae -> ae.extract(VALUE, "");
+
+        if (constantValue != null) {
+            kvs.add(new CheckHelper.AnnotationKV(VALUE, extractInspected, constantValue));
         }
 
-        return CheckLinks.checkAnnotationWithValue(
+        return CheckHelper.checkAnnotationWithValue(
                 analysis,
-                annotation.getName(),
-                "@" + annotation.getSimpleName(),
-                annotationExpression.typeInfo(),
+                annotationKey,
                 kvs,
                 info.getInspection().getAnnotations(),
                 info.newLocation());
-    }
-
-    private static String recursive(Property property, Analysis analysis) {
-        DV immutable = analysis.getProperty(property);
-        if (MultiLevel.level(immutable) == MultiLevel.MAX_LEVEL) return "true";
-        return null;
     }
 }

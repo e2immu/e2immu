@@ -15,8 +15,8 @@
 package org.e2immu.analyser.analyser.statementanalyser;
 
 import org.e2immu.analyser.analyser.*;
-import org.e2immu.analyser.analyser.delay.DelayFactory;
 import org.e2immu.analyser.analyser.delay.VariableCause;
+import org.e2immu.analyser.analyser.impl.util.BreakDelayLevel;
 import org.e2immu.analyser.analyser.nonanalyserimpl.AbstractEvaluationContextImpl;
 import org.e2immu.analyser.analyser.nonanalyserimpl.VariableInfoImpl;
 import org.e2immu.analyser.analysis.FieldAnalysis;
@@ -57,6 +57,7 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
     private final SetOnce<List<PrimaryTypeAnalyser>> localAnalysers;
     private final boolean preventAbsoluteStateComputation;
     private final boolean delayStatementBecauseOfECI;
+    private final int currentStatementTime;
 
     SAEvaluationContext(StatementAnalysis statementAnalysis,
                         MethodAnalyser myMethodAnalyser,
@@ -64,14 +65,15 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
                         AnalyserContext analyserContext,
                         SetOnce<List<PrimaryTypeAnalyser>> localAnalysers,
                         int iteration,
+                        int currentStatementTime,
                         ConditionManager conditionManager,
                         EvaluationContext closure,
                         // NOTE: ECI = explicit constructor invocation
                         boolean delayStatementBecauseOfECI,
-                        boolean allowBreakDelay) {
+                        BreakDelayLevel breakDelayLevel) {
         this(statementAnalysis, myMethodAnalyser, statementAnalyser, analyserContext, localAnalysers,
-                iteration, conditionManager, closure, false, true,
-                false, delayStatementBecauseOfECI, allowBreakDelay);
+                iteration, currentStatementTime, conditionManager, closure, false, true,
+                false, delayStatementBecauseOfECI, breakDelayLevel);
     }
 
     // base is used to distinguish between the context created in SAEvaluationOfMain, as compared to temporary ones
@@ -83,15 +85,17 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
                         AnalyserContext analyserContext,
                         SetOnce<List<PrimaryTypeAnalyser>> localAnalysers,
                         int iteration,
+                        int currentStatementTime,
                         ConditionManager conditionManager,
                         EvaluationContext closure,
                         boolean disableEvaluationOfMethodCallsUsingCompanionMethods,
                         boolean base,
                         boolean preventAbsoluteStateComputation,
                         boolean delayStatementBecauseOfECI,
-                        boolean allowBreakDelay) {
-        super(closure == null ? 1 : closure.getDepth() + 1, iteration, allowBreakDelay ||
-                statementAnalysis.isBrokeDelay(), conditionManager, closure);
+                        BreakDelayLevel breakDelayLevel) {
+        super(closure == null ? 1 : closure.getDepth() + 1, iteration,
+                breakDelayLevel.max(statementAnalysis.isBrokeDelay() ? BreakDelayLevel.STATEMENT_METHOD : BreakDelayLevel.NONE),
+                conditionManager, closure);
         this.statementAnalyser = statementAnalyser;
         this.localAnalysers = localAnalysers;
         this.myMethodAnalyser = myMethodAnalyser;
@@ -100,7 +104,7 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
         this.disableEvaluationOfMethodCallsUsingCompanionMethods = disableEvaluationOfMethodCallsUsingCompanionMethods;
         this.preventAbsoluteStateComputation = preventAbsoluteStateComputation;
         this.delayStatementBecauseOfECI = delayStatementBecauseOfECI;
-
+        this.currentStatementTime = currentStatementTime;
         // part 1 of the work: all evaluations will get to read the new value
         // part 2 is at the start of SAApply, where the value will be assigned
         if (base) {
@@ -128,6 +132,11 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
     }
 
     @Override
+    public String toString() {
+        return "SAEvaluationContext{" + statementAnalysis.index() + "}";
+    }
+
+    @Override
     public boolean delayStatementBecauseOfECI() {
         return delayStatementBecauseOfECI;
     }
@@ -140,8 +149,8 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
     @Override
     public EvaluationContext copyToPreventAbsoluteStateComputation() {
         return new SAEvaluationContext(statementAnalysis, myMethodAnalyser, statementAnalyser, analyserContext,
-                localAnalysers, iteration, conditionManager, closure, disableEvaluationOfMethodCallsUsingCompanionMethods,
-                false, true, delayStatementBecauseOfECI, allowBreakDelay);
+                localAnalysers, iteration, currentStatementTime, conditionManager, closure, disableEvaluationOfMethodCallsUsingCompanionMethods,
+                false, true, delayStatementBecauseOfECI, breakDelayLevel);
     }
 
     private MethodInfo methodInfo() {
@@ -204,10 +213,11 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
         return new SAEvaluationContext(statementAnalysis,
                 myMethodAnalyser, statementAnalyser, analyserContext, localAnalysers,
                 iteration,
+                currentStatementTime,
                 conditionManager.newAtStartOfNewBlockDoNotChangePrecondition(getPrimitives(), condition, conditionVariables),
                 closure,
                 disableEvaluationOfMethodCallsUsingCompanionMethods, false, preventAbsoluteStateComputation,
-                delayStatementBecauseOfECI, allowBreakDelay);
+                delayStatementBecauseOfECI, breakDelayLevel);
     }
 
     @Override
@@ -215,27 +225,45 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
         ConditionManager cm = ConditionManager.initialConditionManager(getPrimitives());
         return new SAEvaluationContext(statementAnalysis,
                 myMethodAnalyser, statementAnalyser, analyserContext, localAnalysers,
-                iteration, cm, closure, disableEvaluationOfMethodCallsUsingCompanionMethods, false,
+                iteration,
+                currentStatementTime,
+                cm, closure, disableEvaluationOfMethodCallsUsingCompanionMethods, false,
                 preventAbsoluteStateComputation,
-                delayStatementBecauseOfECI, allowBreakDelay);
+                delayStatementBecauseOfECI, breakDelayLevel);
     }
 
     @Override
     public EvaluationContext childState(Expression state, Set<Variable> stateVariables) {
         return new SAEvaluationContext(statementAnalysis,
                 myMethodAnalyser, statementAnalyser, analyserContext, localAnalysers,
-                iteration, conditionManager.addState(state, stateVariables), closure,
+                iteration, currentStatementTime, conditionManager.addState(state, stateVariables), closure,
                 false, false, preventAbsoluteStateComputation,
-                delayStatementBecauseOfECI, allowBreakDelay);
+                delayStatementBecauseOfECI, breakDelayLevel);
     }
 
-        /*
+    @Override
+    public EvaluationContext updateStatementTime(int statementTime) {
+        if (statementTime == currentStatementTime) return this;
+        return new SAEvaluationContext(statementAnalysis,
+                myMethodAnalyser, statementAnalyser, analyserContext, localAnalysers,
+                iteration, statementTime, conditionManager, closure,
+                disableEvaluationOfMethodCallsUsingCompanionMethods, false, preventAbsoluteStateComputation,
+                delayStatementBecauseOfECI, breakDelayLevel);
+    }
+
+    @Override
+    public int getCurrentStatementTime() {
+        return currentStatementTime;
+    }
+
+    /*
         differs sufficiently from the regular getProperty, in that it fast tracks as soon as one of the not nulls
         reaches EFFECTIVELY_NOT_NULL, and that it always reads from the initial value of variables.
          */
 
     @Override
     public DV isNotNull0(Expression value, boolean useEnnInsteadOfCnn, ForwardEvaluationInfo forwardEvaluationInfo) {
+        if (forwardEvaluationInfo.isOnlySort()) return DV.FALSE_DV;
         if (value instanceof IsVariableExpression ve) {
             VariableInfo variableInfo = findForReading(ve.variable(), true);
             DV cnn = variableInfo.getProperty(useEnnInsteadOfCnn ? EXTERNAL_NOT_NULL : CONTEXT_NOT_NULL);
@@ -243,7 +271,7 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
             DV nne = variableInfo.getProperty(NOT_NULL_EXPRESSION);
             DV nneTF = nne.isDelayed() ? nne : DV.fromBoolDv(!nne.equals(NULLABLE_DV));
             DV cm = notNullAccordingToConditionManager(ve.variable());
-            if (nneTF.isDelayed() && allowBreakDelay) {
+            if (nneTF.isDelayed() && breakDelayLevel().acceptStatement()) {
                 LOGGER.debug("Breaking NNE delay in isNotNull0");
                 statementAnalysis.setBrokeDelay();
                 return cnnTF.max(cm);
@@ -272,17 +300,16 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
             if (ignore.equals(MultiLevel.IGNORE_MODS_DV)) return DV.FALSE_DV;
 
             DV cImm = variableInfo.getProperty(CONTEXT_IMMUTABLE);
-            if (MultiLevel.isAtLeastEffectivelyE2Immutable(cImm)) return DV.TRUE_DV;
+            if (MultiLevel.isAtLeastEffectivelyImmutableHC(cImm)) return DV.TRUE_DV;
             DV imm = variableInfo.getProperty(IMMUTABLE);
-            if (MultiLevel.isAtLeastEffectivelyE2Immutable(imm)) return DV.TRUE_DV;
+            if (MultiLevel.isAtLeastEffectivelyImmutableHC(imm)) return DV.TRUE_DV;
             DV extImm = variableInfo.getProperty(EXTERNAL_IMMUTABLE);
-            if (MultiLevel.isAtLeastEffectivelyE2Immutable(extImm)) return DV.TRUE_DV;
-            DV formal = analyserContext.defaultImmutable(variableInfo.variable().parameterizedType(), false,
-                    getCurrentType());
-            return DV.fromBoolDv(MultiLevel.isAtLeastEffectivelyE2Immutable(formal));
+            if (MultiLevel.isAtLeastEffectivelyImmutableHC(extImm)) return DV.TRUE_DV;
+            DV formal = analyserContext.typeImmutable(variableInfo.variable().parameterizedType());
+            return DV.fromBoolDv(MultiLevel.isAtLeastEffectivelyImmutableHC(formal));
         }
         DV valueProperty = getProperty(value, IMMUTABLE, true, false);
-        return DV.fromBoolDv(MultiLevel.isAtLeastEffectivelyE2Immutable(valueProperty));
+        return DV.fromBoolDv(MultiLevel.isAtLeastEffectivelyImmutableHC(valueProperty));
     }
 
     private DV getVariableProperty(Variable variable, Property property, boolean duringEvaluation) {
@@ -334,6 +361,17 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
         DV nne = properties.getOrDefaultNull(NOT_NULL_EXPRESSION);
         DV updated = nneForVariable(duringEvaluation, variable, nne, value.causesOfDelay());
         properties.overwrite(NOT_NULL_EXPRESSION, updated);
+        for (Property valueProperty : EvaluationContext.VALUE_PROPERTIES) {
+            DV dv = value.hardCodedPropertyOrNull(valueProperty);
+            // NOTE: fields are hardcoded to INDEPENDENT=INDEPENDENT_DV inside the statement analyser
+            // ExplicitConstructorInvociation_10 is an example of a test that would cause the assertion to fail
+            if (dv != null && !(variable instanceof FieldReference && valueProperty == INDEPENDENT)) {
+                DV current = properties.getOrDefaultNull(valueProperty);
+                assert current == null || !current.isDone() || !dv.isDone()
+                        || dv.equals(current) : "Have conflict: " + dv + " vs " + current + " for property " + valueProperty;
+                properties.overwrite(valueProperty, dv);
+            }
+        }
         return properties;
     }
 
@@ -366,9 +404,9 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
         if (ignoreStateInConditionManager) {
             EvaluationContext customEc = new SAEvaluationContext(statementAnalysis,
                     myMethodAnalyser, statementAnalyser, analyserContext, localAnalysers,
-                    iteration, conditionManager.withoutState(getPrimitives()), closure,
+                    iteration, currentStatementTime, conditionManager.withoutState(getPrimitives()), closure,
                     false, false,
-                    preventAbsoluteStateComputation, delayStatementBecauseOfECI, allowBreakDelay);
+                    preventAbsoluteStateComputation, delayStatementBecauseOfECI, breakDelayLevel);
             EvaluationResult context = EvaluationResult.from(customEc);
             return value.getProperty(context, NOT_NULL_EXPRESSION, true);
         }
@@ -409,7 +447,7 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
 
     private static final Properties EXTERNALS_WHEN_ABSENT = Properties.of(Map.of(
             EXTERNAL_IMMUTABLE, EXTERNAL_IMMUTABLE.valueWhenAbsent(),
-            EXTERNAL_CONTAINER, EXTERNAL_CONTAINER.valueWhenAbsent(),
+            CONTAINER_RESTRICTION, CONTAINER_RESTRICTION.valueWhenAbsent(),
             EXTERNAL_IGNORE_MODIFICATIONS, EXTERNAL_IGNORE_MODIFICATIONS.valueWhenAbsent(),
             EXTERNAL_NOT_NULL, EXTERNAL_NOT_NULL.valueWhenAbsent()));
 
@@ -419,7 +457,7 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
         if (valueToWrite.isDelayed()) {
             // e.g., delayed method call
             CausesOfDelay delay = valueToWrite.causesOfDelay();
-            return Properties.of(Map.of(EXTERNAL_IMMUTABLE, delay, EXTERNAL_CONTAINER, delay,
+            return Properties.of(Map.of(EXTERNAL_IMMUTABLE, delay, CONTAINER_RESTRICTION, delay,
                     EXTERNAL_IGNORE_MODIFICATIONS, delay, EXTERNAL_NOT_NULL, delay));
         }
         if ((ive = valueToWrite.asInstanceOf(VariableExpression.class)) != null) {
@@ -473,7 +511,7 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
             assert !(variable instanceof ParameterInfo) :
                     "Parameter " + variable.fullyQualifiedName() + " should be known in " + methodInfo().fullyQualifiedName
                             + ", statement " + statementAnalysis.index();
-            return new VariableInfoImpl(getLocation(INITIAL), variable, getInitialStatementTime()); // no value, no state; will be created by a MarkRead
+            return new VariableInfoImpl(getLocation(INITIAL), variable, currentStatementTime); // no value, no state; will be created by a MarkRead
         }
         VariableInfoContainer vic = statementAnalysis.getVariable(fqn);
         VariableInfo vi = vic.getPreviousOrInitial();
@@ -487,7 +525,7 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
                     if (effectivelyFinal.isDelayed() || effectivelyFinal.valueIsTrue() && noValuesYet(fieldAnalysis)) {
                         VariableInfo breakDelay = breakDelay(fr, fieldAnalysis);
                         if (breakDelay != null) return breakDelay;
-                        return new VariableInfoImpl(getLocation(INITIAL), variable, getInitialStatementTime());
+                        return new VariableInfoImpl(getLocation(INITIAL), variable, currentStatementTime);
                     }
                 }
                 // we still could have a delay to be broken (See e.g. E2Immutable_1)
@@ -504,7 +542,7 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
             if (vic.variableNature() instanceof VariableNature.VariableDefinedOutsideLoop) {
                 StatementAnalysisImpl relevantLoop = (StatementAnalysisImpl) statementAnalysis.mostEnclosingLoop();
                 if (!relevantLoop.localVariablesAssignedInThisLoop.isFrozen()) {
-                    return new VariableInfoImpl(getLocation(INITIAL), variable, getInitialStatementTime()); // no value, no state
+                    return new VariableInfoImpl(getLocation(INITIAL), variable, currentStatementTime); // no value, no state
                 }
             }
         } // else we need to go to the variable itself
@@ -522,7 +560,7 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
         if (cyclicDependency) {
             LOGGER.debug("Breaking the delay by inserting a special delayed value for {} at {}", fr, statementIndex());
             CauseOfDelay cause = new VariableCause(fr, here, CauseOfDelay.Cause.BREAK_INIT_DELAY);
-            Expression dve = DelayedVariableExpression.forBreakingInitialisationDelay(fr, getInitialStatementTime(), cause);
+            Expression dve = DelayedVariableExpression.forBreakingInitialisationDelay(fr, currentStatementTime, cause);
             return new VariableInfoImpl(getLocation(INITIAL), fr, dve);
         }
         return null;
@@ -578,6 +616,14 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
     }
 
     @Override
+    public int initialModificationTimeOrZero(Variable variable) {
+        VariableInfo vi = statementAnalysis.findOrNull(variable, INITIAL);
+        if (vi == null) return 0;
+        int time = vi.getModificationTimeOrNegative();
+        return Math.max(time, 0);
+    }
+
+    @Override
     public DV getProperty(Variable variable, Property property) {
         VariableInfo vi = statementAnalysis.findOrThrow(variable);
         return vi.getProperty(property); // ALWAYS from the map!!!!
@@ -606,6 +652,9 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
         return analyserContext;
     }
 
+    /*
+    do not use internally, use currentStatementTime instead
+     */
     @Override
     public int getInitialStatementTime() {
         return statementAnalysis.flowData().getInitialTime();
@@ -659,7 +708,7 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
             Properties valueProperties;
             if (bestValue.isInstanceOf(NullConstant.class) || bestValue.isInstanceOf(UnknownExpression.class)
                     || bestValue.isDelayed()) {
-                valueProperties = analyserContext.defaultValueProperties(variable.parameterizedType(), getCurrentType());
+                valueProperties = analyserContext.defaultValueProperties(variable.parameterizedType());
             } else {
                 valueProperties = getValueProperties(bestValue);
             }
@@ -707,7 +756,7 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
         });
         TranslationMap translationMap = builder.build();
         Expression translated = precondition.translate(getAnalyserContext(), translationMap);
-        List<Variable> variables = translated.variables(false);
+        List<Variable> variables = translated.variables(Element.DescendMode.NO);
         if (variables.stream().allMatch(v -> v instanceof ParameterInfo || v instanceof FieldReference)) {
             DV modified = variables.stream()
                     .filter(this::isPresent)
@@ -746,18 +795,8 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
     }
 
     @Override
-    public CausesOfDelay variableIsDelayed(Variable variable) {
-        VariableInfo vi = statementAnalysis.findOrNull(variable, INITIAL);
-        if (vi == null) {
-            return DelayFactory.createDelay(new VariableCause(variable,
-                    getLocation(INITIAL), CauseOfDelay.Cause.VARIABLE_DOES_NOT_EXIST));
-        }
-        return vi.getValue().causesOfDelay();
-    }
-
-    @Override
     public MethodInfo concreteMethod(Variable variable, MethodInfo abstractMethodInfo) {
-        assert abstractMethodInfo.isAbstract();
+        assert abstractMethodInfo.methodInspection.get().isAbstract();
         VariableInfo variableInfo = findForReading(variable, true);
         ParameterizedType type = variableInfo.getValue().returnType();
         if (type.typeInfo != null && !type.typeInfo.isAbstract()) {
@@ -878,9 +917,8 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
                     if (shortCutDelay != null) {
                         return shortCutDelay;
                     }
-                    int initialStatementTime = getInitialStatementTime();
                     CausesOfDelay causesOfDelay = evaluatedScopeValue.causesOfDelay();
-                    return DelayedVariableExpression.forField(fieldReference, initialStatementTime, causesOfDelay);
+                    return DelayedVariableExpression.forField(fieldReference, currentStatementTime, causesOfDelay);
                 }
                 // given record X(int k){}, we know that new X(3).k === 3
                 Expression shortCut = VariableExpression.tryShortCut(EvaluationResult.from(this), evaluatedScopeValue, fieldReference);
@@ -892,7 +930,7 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
             DV finalDV = fieldAnalysis.getProperty(Property.FINAL);
             if (finalDV.valueIsFalse() && situationForVariableFieldReference(fieldReference)) {
                 String assignmentId = variableInfo.getAssignmentIds().getLatestAssignmentNullWhenEmpty();
-                suffix = new VariableExpression.VariableField(getInitialStatementTime(), assignmentId);
+                suffix = new VariableExpression.VariableField(currentStatementTime, assignmentId);
             } else {
                 suffix = VariableExpression.NO_SUFFIX;
             }

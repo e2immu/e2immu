@@ -65,9 +65,13 @@ public final class PropertyWrapper extends BaseExpression implements Expression,
 
     @Override
     public Expression translate(InspectionProvider inspectionProvider, TranslationMap translationMap) {
+        Expression translated = translationMap.translateExpression(this);
+        if(translated != this) return translated;
+        
         Expression transState = state == null ? null : state.translate(inspectionProvider, translationMap);
         Expression tex = expression.translate(inspectionProvider, translationMap);
-        LinkedVariables transLv = linkedVariables == null ? null : linkedVariables.translate(translationMap);
+        LinkedVariables transLv = linkedVariables == null ? null
+                : linkedVariables.translate(inspectionProvider, translationMap);
         ParameterizedType transType = castType == null ? null : translationMap.translateType(castType);
         if (transState == state && tex == expression && transLv == linkedVariables && transType == castType) {
             return this;
@@ -226,7 +230,7 @@ public final class PropertyWrapper extends BaseExpression implements Expression,
                 String prefix = linkedVariables.isDelayed() ? "{DL " : "{L ";
                 String main = linkedVariables.variables().entrySet().stream()
                         .sorted(Comparator.comparing(e -> e.getKey().simpleName()))
-                        .map(e -> e.getKey().simpleName() + ":" + e.getValue().toString())
+                        .map(e -> e.getKey().simpleName() + ":" + e.getValue().value())
                         .collect(Collectors.joining(",", prefix, "}"));
                 outputBuilder.add(new Text(main));
             }
@@ -251,7 +255,7 @@ public final class PropertyWrapper extends BaseExpression implements Expression,
     }
 
     private static String stringValue(Map.Entry<Property, DV> e) {
-        if (e.getKey() == Property.INDEPENDENT && e.getValue().equals(MultiLevel.INDEPENDENT_1_DV))
+        if (e.getKey() == Property.INDEPENDENT && e.getValue().equals(MultiLevel.INDEPENDENT_HC_DV))
             return "@Dependent1";
         return e.getKey().toString();
     }
@@ -271,7 +275,7 @@ public final class PropertyWrapper extends BaseExpression implements Expression,
         if (castType != null && (
                 property == Property.IMMUTABLE || property == Property.CONTAINER ||
                         property == Property.INDEPENDENT)) {
-            return context.getAnalyserContext().getProperty(castType, property, false);
+            return context.getAnalyserContext().getProperty(castType, property);
         }
         DV inMap = properties == null ? null : properties.getOrDefault(property, null);
         if (inMap != null) return inMap;
@@ -285,7 +289,7 @@ public final class PropertyWrapper extends BaseExpression implements Expression,
     }
 
     @Override
-    public List<Variable> variables(boolean descendIntoFieldReferences) {
+    public List<Variable> variables(DescendMode descendIntoFieldReferences) {
         return expression.variables(descendIntoFieldReferences);
     }
 
@@ -297,7 +301,12 @@ public final class PropertyWrapper extends BaseExpression implements Expression,
     }
 
     @Override
-    public <T extends Expression> T asInstanceOf(Class<T> clazz) {
+    public List<? extends Element> subElements() {
+        return List.of(expression);
+    }
+    
+    @Override
+    public <T extends Element> T asInstanceOf(Class<T> clazz) {
         return expression.asInstanceOf(clazz);
     }
 
@@ -397,5 +406,14 @@ public final class PropertyWrapper extends BaseExpression implements Expression,
     public Expression unwrapState() {
         if (linkedVariables == null && properties == null && castType == null) return expression;
         return new PropertyWrapper(expression, null, properties, linkedVariables, castType);
+    }
+
+    @Override
+    public boolean isNegatedOrNumericNegative() {
+        return expression.isNegatedOrNumericNegative();
+    }
+
+    public Expression withExpression(Expression negated) {
+        return new PropertyWrapper(negated, null, properties, linkedVariables, castType);
     }
 }

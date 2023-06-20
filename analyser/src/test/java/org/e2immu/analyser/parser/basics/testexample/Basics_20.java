@@ -14,7 +14,10 @@
 
 package org.e2immu.analyser.parser.basics.testexample;
 
-import org.e2immu.annotation.*;
+import org.e2immu.annotation.Container;
+import org.e2immu.annotation.FinalFields;
+import org.e2immu.annotation.ImmutableContainer;
+import org.e2immu.annotation.Independent;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -26,7 +29,7 @@ public class Basics_20 {
 
     @Container
     @Independent
-    static class I {
+    static class I implements Comparable<I> {
         private int i;
 
         public int getI() {
@@ -36,10 +39,15 @@ public class Basics_20 {
         public void setI(int i) {
             this.i = i;
         }
+
+        @Override
+        public int compareTo(I o) {
+            return i - o.i;
+        }
     }
 
-    // T is transparent, but List<T> is not
-    @E1Container
+    @FinalFields
+    @Container
     static class C1<T> {
         private final List<T> list;
 
@@ -47,12 +55,12 @@ public class Basics_20 {
             this.list = list;
         }
 
-        // implicitly @Dependent
+        @Independent(absent = true)
         public List<T> getListC1() {
             return list;
         }
 
-        // implicitly @Independent1
+        @Independent(hc = true)
         public T getFirstC1() {
             return list.get(0);
         }
@@ -63,14 +71,21 @@ public class Basics_20 {
         i.setI(9);
         List<I> list = new ArrayList<>();
         list.add(i);
-        C1<I> ci = new C1<>(list); // ci linked0 to list
+        C1<I> ci = new C1<>(list); // ci linked dependently to list
         C1<I> ci2 = new C1<>(new ArrayList<>(list));
-        // ci2 linked0 to nAL, nAL linked1 to list -> ci2 linked1 to list
+        /*
+         Weighted graph at this point:
+         i -3-> ci, -3-> list
+         list -2-> ci, -4-> ci2
+         ci -2-> list
+         ci2 -4-> list
+
+         because 'i' is modified, the path from 'i' to 'list' modifies both ci and ci2
+         */
         System.out.println(ci + ", " + ci2);
     }
 
-    // T is transparent, but List<T> is not
-    @E2Container
+    @ImmutableContainer(hc = true)
     static class C2<T> {
         private final List<T> list;
 
@@ -78,12 +93,12 @@ public class Basics_20 {
             this.list = new ArrayList<>(list);
         }
 
-        @Independent1
+        @Independent(hc = true)
         public List<T> getListC2() {
             return new ArrayList<>(list);
         }
 
-        // implicitly @Independent1
+        @Independent(hc = true) // implicit
         public T getFirstC2() {
             return list.get(0);
         }
@@ -94,8 +109,76 @@ public class Basics_20 {
         i.setI(9);
         List<I> list = new ArrayList<>();
         list.add(i);
-        C2<I> ci = new C2<>(list); // ci linked1 to list
-        C2<I> ci2 = new C2<>(new C1<>(list).getListC1()); // linked1, linked0 -> linked1
+        C2<I> ci = new C2<>(list);
+        C2<I> ci2 = new C2<>(new C1<>(list).getListC1());
         System.out.println(ci + ", " + ci2);
     }
+
+    /*
+     Identical to C2, but now with Object rather than a type parameter.
+     Links and dependencies should stay the same.
+     */
+
+    @ImmutableContainer(hc = true)
+    static class C3 {
+        private final List<Object> list;
+
+        public C3(List<Object> list) {
+            this.list = new ArrayList<>(list);
+        }
+
+        @Independent(hc = true)
+        public List<Object> getListC3() {
+            return new ArrayList<>(list);
+        }
+
+        @Independent(hc = true)
+        public Object getFirstC3() {
+            return list.get(0);
+        }
+    }
+
+    public static void test3() {
+        I i = new I();
+        i.setI(9);
+        List<Object> list = new ArrayList<>();
+        list.add(i);
+        C3 ci = new C3(list);
+        C3 ci3 = new C3(new C1<>(list).getListC1());
+        System.out.println(ci + ", " + ci3);
+    }
+
+    /*
+     Identical to C2, but now with a bound type parameter.
+     Links and dependencies should stay the same.
+     */
+    @ImmutableContainer(hc = true)
+    static class C4<T extends Comparable<? super T>> {
+        private final List<T> list;
+
+        public C4(List<T> list) {
+            this.list = new ArrayList<>(list);
+        }
+
+        @Independent(hc = true)
+        public List<T> getListC4() {
+            return new ArrayList<>(list);
+        }
+
+        @Independent(hc = true)
+        public T getFirstC4() {
+            return list.get(0);
+        }
+    }
+
+    public static void test4() {
+        I i = new I();
+        i.setI(9);
+        List<I> list = new ArrayList<>();
+        list.add(i);
+        C4<I> ci = new C4<>(list);
+        C4<I> ci4 = new C4<>(new C1<>(list).getListC1());
+        System.out.println(ci + ", " + ci4);
+    }
+
 }

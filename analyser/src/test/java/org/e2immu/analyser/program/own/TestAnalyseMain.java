@@ -49,7 +49,7 @@ public class TestAnalyseMain {
         };
 
         InputConfiguration inputConfiguration = new InputConfiguration.Builder()
-                .setAlternativeJREDirectory(CommonTestRunner.JDK_16)
+                .setAlternativeJREDirectory(CommonTestRunner.CURRENT_JDK)
                 .addSources("src/main/java")
                 .addClassPath("jmods/java.base.jmod")
                 .addClassPath("jmods/java.compiler.jmod")
@@ -64,7 +64,6 @@ public class TestAnalyseMain {
 
         AnalyserConfiguration analyserConfiguration = new AnalyserConfiguration.Builder()
                 .setComputeFieldAnalyserAcrossAllMethods(true)
-                .setAnalyserProgram(AnalyserProgram.from(AnalyserProgram.Step.ALL))
                 .build();
 
         DebugConfiguration debugConfiguration = new DebugConfiguration.Builder()

@@ -17,6 +17,7 @@ package org.e2immu.analyser.analyser.impl;
 import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.analyser.delay.DelayFactory;
 import org.e2immu.analyser.analyser.delay.VariableCause;
+import org.e2immu.analyser.analyser.impl.util.BreakDelayLevel;
 import org.e2immu.analyser.analyser.nonanalyserimpl.AbstractEvaluationContextImpl;
 import org.e2immu.analyser.analysis.TypeAnalysis;
 import org.e2immu.analyser.analysis.impl.CompanionAnalysisImpl;
@@ -159,7 +160,7 @@ public class CompanionAnalyser {
     private class EvaluationContextImpl extends AbstractEvaluationContextImpl {
 
         protected EvaluationContextImpl(int iteration, ConditionManager conditionManager) {
-            super(1, iteration, false, conditionManager, null);
+            super(1, iteration, BreakDelayLevel.NONE, conditionManager, null);
         }
 
         @Override
@@ -236,11 +237,15 @@ public class CompanionAnalyser {
 
         @Override
         public DV getProperty(Variable variable, Property property) {
-            if (property == Property.NOT_NULL_EXPRESSION && variable instanceof PreAspectVariable pre) {
-                ParameterizedType type = pre.parameterizedType();
-                return type.isPrimitiveExcludingVoid() ? MultiLevel.EFFECTIVELY_NOT_NULL_DV : MultiLevel.NULLABLE_DV;
+            /*
+             pre-aspect variables must be nullable, because there can be no information, in which case "null" is injected.
+             the companion methods must take the null-value into account, see e.g. that of List.addAll, size aspect,
+             Modification_26. See also EvaluationContext.getProperty().
+             */
+            if (property == Property.NOT_NULL_EXPRESSION && variable instanceof PreAspectVariable) {
+                return MultiLevel.NULLABLE_DV;
             }
-            return analyserContext.getProperty(variable.parameterizedType(), property, true);
+            return analyserContext.getProperty(variable.parameterizedType(), property);
         }
     }
 }

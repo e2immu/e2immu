@@ -47,7 +47,8 @@ public class SwitchExpression extends BaseExpression implements Expression, HasS
                             List<SwitchEntry> switchEntries,
                             ParameterizedType returnType,
                             MultiExpression expressions) {
-        super(identifier);
+        super(identifier, 1 + selector.getComplexity() +
+                switchEntries.stream().mapToInt(SwitchEntry::getComplexity).sum());
         switchEntries.forEach(e -> {
             Objects.requireNonNull(e.switchVariableAsExpression);
             Objects.requireNonNull(e.labels);
@@ -74,14 +75,24 @@ public class SwitchExpression extends BaseExpression implements Expression, HasS
     @Override
     public OutputBuilder output(Qualification qualification) {
         Guide.GuideGenerator blockGenerator = Guide.generatorForBlock();
-        return new OutputBuilder().add(new Text("switch"))
+        OutputBuilder ob = new OutputBuilder().add(Keyword.SWITCH)
                 .add(Symbol.LEFT_PARENTHESIS)
                 .add(selector.output(qualification))
                 .add(Symbol.RIGHT_PARENTHESIS)
-                .add(switchEntries.stream().map(switchEntry ->
-                                switchEntry.output(qualification, blockGenerator, null))
-                        .collect(OutputBuilder.joining(Space.ONE_IS_NICE_EASY_SPLIT, Symbol.LEFT_BRACE,
-                                Symbol.RIGHT_BRACE, blockGenerator)));
+                .add(Symbol.LEFT_BRACE)
+                .add(blockGenerator.start());
+        boolean addMid = false;
+        for (SwitchEntry switchEntry : switchEntries) {
+            if (addMid) {
+                ob.add(blockGenerator.mid());
+            } else {
+                addMid = true;
+            }
+            ob.add(switchEntry.output(qualification, null));
+        }
+        ob.add(blockGenerator.end())
+                .add(Symbol.RIGHT_BRACE);
+        return ob;
     }
 
     @Override
@@ -109,8 +120,8 @@ public class SwitchExpression extends BaseExpression implements Expression, HasS
             if (switchEntry.structure.statements().size() == 1) {
                 // single expression
                 Expression condition = convertDefaultToNegationOfAllOthers(context, switchEntry.structure.expression());
-                Set<Variable> conditionVariables = Stream.concat(condition.variables(true).stream(),
-                        selector.variables(true).stream()).collect(Collectors.toUnmodifiableSet());
+                Set<Variable> conditionVariables = Stream.concat(condition.variableStream(),
+                        selector.variableStream()).collect(Collectors.toUnmodifiableSet());
                 EvaluationResult localContext = context.child(condition, conditionVariables);
                 EvaluationResult entryResult;
                 Statement statement = switchEntry.structure.statements().get(0);
@@ -142,8 +153,11 @@ public class SwitchExpression extends BaseExpression implements Expression, HasS
 
     @Override
     public Expression translate(InspectionProvider inspectionProvider, TranslationMap translationMap) {
+        Expression translated = translationMap.translateExpression(this);
+        if (translated != this) return translated;
+
         List<SwitchEntry> translatedSwitchEntries = switchEntries.stream()
-                .map(se -> (SwitchEntry) se.translate(inspectionProvider, translationMap)).toList();
+                .map(se -> (SwitchEntry) se.translate(inspectionProvider, translationMap).get(0)).toList();
         MultiExpression translatedYieldExpressions = expressions.translate(inspectionProvider, translationMap);
         return new SwitchExpression(identifier, selector.translate(inspectionProvider, translationMap),
                 translatedSwitchEntries, returnType, translatedYieldExpressions);

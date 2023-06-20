@@ -20,8 +20,8 @@ import java.util.Map;
 import java.util.TreeMap;
 import java.util.stream.Stream;
 
-// remains E2, even if there is no getter!
-@E2Container
+// remains immutable, even if there is no getter!
+@ImmutableContainer(hc = true)
 public class E2Immutable_14<T> {
     private T t;
 

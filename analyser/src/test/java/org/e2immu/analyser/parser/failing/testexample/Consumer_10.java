@@ -15,6 +15,7 @@
 package org.e2immu.analyser.parser.failing.testexample;
 
 import org.e2immu.annotation.*;
+import org.e2immu.annotation.rare.IgnoreModifications;
 import org.junit.jupiter.api.Test;
 
 import java.util.HashMap;
@@ -31,7 +32,8 @@ public class Consumer_10 {
         void accept(T t);
     }
 
-    @E1Container
+    @FinalFields
+    @Container
     static class Configuration {
         // not transparent; the entries are neither. They are @Container, mutable, dependent.
         private final Map<String, String> map = new HashMap<>();
@@ -43,14 +45,13 @@ public class Consumer_10 {
         }
 
         @NotModified
-        @ERContainer
+        @Container
         public Stream<Map.Entry<String, String>> stream() {
             return map.entrySet().stream();
         }
 
         @NotModified
-        public void forEach(@IgnoreModifications
-                            @Dependent MyConsumer<Map.Entry<String, String>> consumer) {
+        public void forEach(@IgnoreModifications MyConsumer<Map.Entry<String, String>> consumer) {
             map.entrySet().forEach(consumer::accept);
         }
     }

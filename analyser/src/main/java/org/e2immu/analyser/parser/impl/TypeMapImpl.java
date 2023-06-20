@@ -24,6 +24,9 @@ import org.e2immu.analyser.inspector.impl.ParameterInspectionImpl;
 import org.e2immu.analyser.inspector.impl.TypeInspectionImpl;
 import org.e2immu.analyser.inspector.impl.TypeInspectorImpl;
 import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.model.expression.BooleanConstant;
+import org.e2immu.analyser.model.expression.MemberValuePair;
+import org.e2immu.analyser.model.impl.AnnotationExpressionImpl;
 import org.e2immu.analyser.model.impl.TypeParameterImpl;
 import org.e2immu.analyser.parser.*;
 import org.e2immu.analyser.resolver.ShallowMethodResolver;
@@ -99,18 +102,6 @@ public class TypeMapImpl implements TypeMap {
         trie.visit(prefix, consumer);
     }
 
-    public static boolean containsPrefix(Trie<TypeInfo> trie, String fullyQualifiedName) {
-        String[] split = fullyQualifiedName.split("\\.");
-        // we believe it is going to be a lot faster if we go from 1 to max length rather than the other way round
-        // (there'll be more hits outside the source than inside the source dir)
-        for (int i = 1; i <= split.length; i++) {
-            List<TypeInfo> typeInfoList = trie.get(split, i);
-            if (typeInfoList == null) return false;
-            if (!typeInfoList.isEmpty()) return true;
-        }
-        return false;
-    }
-
     @Override
     public E2ImmuAnnotationExpressions getE2ImmuAnnotationExpressions() {
         return e2ImmuAnnotationExpressions;
@@ -138,20 +129,27 @@ public class TypeMapImpl implements TypeMap {
 
     public static class Builder implements TypeMap.Builder {
 
-        private final Trie<TypeInfo> trie = new Trie<>();
-        private final PrimitivesImpl primitives = new PrimitivesImpl();
-        private final E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions = new E2ImmuAnnotationExpressions();
+        private final Trie<TypeInfo> trie;
+        private final PrimitivesImpl primitives;
+        private final E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions;
         private final Resources classPath;
 
-        private final Map<TypeInfo, TypeInspection.Builder> typeInspections = new HashMap<>();
-        private final Map<FieldInfo, FieldInspection.Builder> fieldInspections = new HashMap<>();
-        private final Map<String, MethodInspection.Builder> methodInspections = new HashMap<>();
+        private final Map<TypeInfo, TypeInspection.Builder> typeInspections;
+        private final Map<FieldInfo, FieldInspection.Builder> fieldInspections;
+        private final Map<String, MethodInspection.Builder> methodInspections;
 
         private OnDemandInspection byteCodeInspector;
         private InspectWithJavaParser inspectWithJavaParser;
 
-        public Builder(Resources classPath) {
-            this.classPath = classPath;
+        public Builder(Resources resources) {
+            trie = new Trie<>();
+            primitives = new PrimitivesImpl();
+            classPath = resources;
+            e2ImmuAnnotationExpressions = new E2ImmuAnnotationExpressions();
+            typeInspections = new HashMap<>();
+            fieldInspections = new HashMap<>();
+            methodInspections = new HashMap<>();
+
             for (TypeInfo typeInfo : getPrimitives().getTypeByName().values()) {
                 if (!typeInfo.typeInspection.isSet())
                     add(typeInfo, TRIGGER_BYTECODE_INSPECTION);
@@ -161,6 +159,16 @@ public class TypeMapImpl implements TypeMap {
                     add(typeInfo, BY_HAND_WITHOUT_STATEMENTS);
             }
             e2ImmuAnnotationExpressions.streamTypes().forEach(typeInfo -> add(typeInfo, TRIGGER_BYTECODE_INSPECTION));
+        }
+
+        public Builder(TypeMapImpl.Builder source, Resources newClassPath) {
+            classPath = newClassPath;
+            trie = source.trie;
+            primitives = source.primitives;
+            e2ImmuAnnotationExpressions = source.e2ImmuAnnotationExpressions;
+            typeInspections = source.typeInspections;
+            fieldInspections = source.fieldInspections;
+            methodInspections = source.methodInspections;
         }
 
         public TypeInfo loadType(String fqn, boolean complain) {
@@ -185,7 +193,7 @@ public class TypeMapImpl implements TypeMap {
 
             typeInspections.forEach((typeInfo, typeInspectionBuilder) -> {
                 if (typeInspectionBuilder.finishedInspection() && !typeInfo.typeInspection.isSet()) {
-                    typeInfo.typeInspection.set(typeInspectionBuilder.build());
+                    typeInfo.typeInspection.set(typeInspectionBuilder.build(this));
                 }
             });
 
@@ -197,7 +205,7 @@ public class TypeMapImpl implements TypeMap {
             });
             fieldInspections.forEach((fieldInfo, fieldInspectionBuilder) -> {
                 if (!fieldInfo.fieldInspection.isSet() && fieldInfo.owner.typeInspection.isSet()) {
-                    fieldInfo.fieldInspection.set(fieldInspectionBuilder.build());
+                    fieldInfo.fieldInspection.set(fieldInspectionBuilder.build(this));
                 }
             });
 
@@ -437,7 +445,8 @@ public class TypeMapImpl implements TypeMap {
 
         @Override
         public TypeInspector newTypeInspector(TypeInfo typeInfo, boolean fullInspection, boolean dollarTypesAreNormalTypes) {
-            return new TypeInspectorImpl(this, typeInfo, fullInspection, dollarTypesAreNormalTypes);
+            return new TypeInspectorImpl(this, typeInfo, fullInspection, dollarTypesAreNormalTypes,
+                    inspectWithJavaParser.storeComments());
         }
 
         // inspect from class path
@@ -462,13 +471,27 @@ public class TypeMapImpl implements TypeMap {
         }
 
         public TypeInfo syntheticFunction(int numberOfParameters, boolean isVoid) {
-            String name = (isVoid ? "SyntheticConsumer" : "SyntheticFunction") + numberOfParameters;
+            String name = (isVoid ? Primitives.SYNTHETIC_CONSUMER : Primitives.SYNTHETIC_FUNCTION) + numberOfParameters;
             String fqn = "_internal_." + name;
             TypeInfo existing = get(fqn);
             if (existing != null) return existing;
 
-            TypeInfo typeInfo = new TypeInfo("_internal_", name);
+            TypeInfo typeInfo = new TypeInfo(Primitives.INTERNAL, name);
             TypeInspection.Builder builder = add(typeInfo, BY_HAND_WITHOUT_STATEMENTS);
+
+            boolean isIndependent = isVoid && numberOfParameters == 0;
+            if(isIndependent) {
+                // this is the equivalent of interface Runnable { void run(); }
+                builder.addAnnotation(e2ImmuAnnotationExpressions.independent);
+            } else {
+                AnnotationExpression independentHc = new AnnotationExpressionImpl(e2ImmuAnnotationExpressions.independent.typeInfo(),
+                        List.of(new MemberValuePair(E2ImmuAnnotationExpressions.HIDDEN_CONTENT, new BooleanConstant(primitives, true))));
+                builder.addAnnotation(independentHc);
+            }
+            boolean isContainer = typeInfo.simpleName.equals(Primitives.SYNTHETIC_FUNCTION_0);
+            if (isContainer) {
+                builder.addAnnotation(e2ImmuAnnotationExpressions.container);
+            }
 
             builder.setParentClass(primitives.objectParameterizedType);
             builder.setTypeNature(TypeNature.INTERFACE);
@@ -479,24 +502,25 @@ public class TypeMapImpl implements TypeMap {
                 builder.addTypeParameter(typeParameter);
                 tps.add(typeParameter);
             }
-            builder.addTypeModifier(TypeModifier.PUBLIC);
+            builder.setAccess(Inspection.Access.PUBLIC);
             builder.addAnnotation(primitives.functionalInterfaceAnnotationExpression);
             ParameterizedType returnType = isVoid ? primitives.voidParameterizedType :
                     new ParameterizedType(tps.get(numberOfParameters), 0, NONE);
             String methodName = methodNameOfFunctionalInterface(isVoid, numberOfParameters,
                     returnType.isBooleanOrBoxedBoolean());
             MethodInspection.Builder m = new MethodInspectionImpl.Builder(typeInfo, methodName);
+            m.addAnnotation(e2ImmuAnnotationExpressions.modified);
             m.setReturnType(returnType);
             for (int i = 0; i < numberOfParameters; i++) {
                 m.addParameter(new ParameterInspectionImpl.Builder(Identifier.generate("param synthetic function"),
                         new ParameterizedType(tps.get(i), 0, NONE), "p" + i, i));
             }
             m.readyToComputeFQN(this);
-            m.addModifier(MethodModifier.PUBLIC);
+            m.setAccess(Inspection.Access.PUBLIC);
             MethodInspection mi = m.build(this);
             registerMethodInspection(m);
             builder.addMethod(mi.getMethodInfo()).setFunctionalInterface(true);
-            typeInfo.typeInspection.set(builder.build());
+            typeInfo.typeInspection.set(builder.build(null));
             return typeInfo;
         }
 

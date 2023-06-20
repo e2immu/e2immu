@@ -26,6 +26,7 @@ import org.e2immu.analyser.inspector.*;
 import org.e2immu.analyser.inspector.util.EnumMethods;
 import org.e2immu.analyser.inspector.util.RecordSynthetics;
 import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.model.impl.CommentFactory;
 import org.e2immu.analyser.model.impl.TypeParameterImpl;
 import org.e2immu.analyser.model.statement.Block;
 import org.e2immu.analyser.model.variable.FieldReference;
@@ -75,15 +76,23 @@ public class TypeInspectorImpl implements TypeInspector {
     private final TypeInspectionImpl.Builder builder;
     private final boolean fullInspection; // !fullInspection == isDollarType
     private final boolean dollarTypesAreNormalTypes;
+    private final boolean storeComments;
 
-    public TypeInspectorImpl(TypeMap.Builder typeMapBuilder, TypeInfo typeInfo, boolean fullInspection,
-                             boolean dollarTypesAreNormalTypes) {
+    public TypeInspectorImpl(TypeMap.Builder typeMapBuilder,
+                             TypeInfo typeInfo,
+                             boolean fullInspection,
+                             boolean dollarTypesAreNormalTypes,
+                             boolean storeComments) {
         this.typeInfo = typeInfo;
         this.dollarTypesAreNormalTypes = dollarTypesAreNormalTypes;
+        this.storeComments = storeComments;
 
         TypeInspection typeInspection = typeMapBuilder.getTypeInspection(typeInfo);
-        if (typeInspection == null || typeInspection.getInspectionState().ge(FINISHED_JAVA_PARSER)) {
-            throw new UnsupportedOperationException();
+        if (typeInspection == null) {
+            throw new UnsupportedOperationException("No typeInspection for " + typeInfo);
+        }
+        if (typeInspection.getInspectionState().ge(FINISHED_JAVA_PARSER)) {
+            throw new UnsupportedOperationException("Already finished inspection for " + typeInfo);
         }
         this.fullInspection = fullInspection;
         builder = (TypeInspectionImpl.Builder) typeInspection;
@@ -106,6 +115,9 @@ public class TypeInspectorImpl implements TypeInspector {
         } else {
             builder.setParentClass(typeImplemented);
         }
+        builder.setEnclosingMethod(expressionContext.enclosingMethod());
+        builder.setAccess(Inspection.Access.PRIVATE);
+        builder.addTypeModifier(TypeModifier.FINAL);
         continueInspection(withSubTypes, members, false, null, null);
     }
 
@@ -139,6 +151,9 @@ public class TypeInspectorImpl implements TypeInspector {
         builder.setPositionalIdentifier(Identifier.from(typeDeclaration.getBegin().orElse(null),
                 typeDeclaration.getEnd().orElse(null)));
 
+        if (storeComments) {
+            builder.setComment(CommentFactory.from(typeDeclaration));
+        }
         TypeContext typeContext = expressionContext.typeContext();
 
         DollarResolver dollarResolver = getDollarResolver(typeDeclaration, dollarResolverInput, typeContext);
@@ -156,7 +171,7 @@ public class TypeInspectorImpl implements TypeInspector {
           See Record_0 vs Record_1
          */
         for (BodyDeclaration<?> bodyDeclaration : typeDeclaration.getMembers()) {
-            if (bodyDeclaration instanceof TypeDeclaration cid) {
+            if (bodyDeclaration instanceof TypeDeclaration<?> cid) {
                 prepareSubType(typeContext, dollarResolver, cid.getNameAsString());
             }
         }
@@ -181,6 +196,7 @@ public class TypeInspectorImpl implements TypeInspector {
                 for (Modifier modifier : typeDeclaration.getModifiers()) {
                     builder.addTypeModifier(TypeModifier.from(modifier));
                 }
+                builder.computeAccess(typeContext);
             } catch (RuntimeException rte) {
                 LOGGER.error("Caught runtime exception while parsing type declaration at line " + typeDeclaration.getBegin());
                 throw rte;
@@ -237,7 +253,8 @@ public class TypeInspectorImpl implements TypeInspector {
                 AnnotationMemberDeclaration amd = bd.asAnnotationMemberDeclaration();
                 LOGGER.debug("Have member {} in {}", amd.getNameAsString(), typeInfo.fullyQualifiedName);
                 TypeMap.Builder typeMapBuilder = expressionContext.typeContext().typeMap;
-                MethodInspector methodInspector = new MethodInspectorImpl(typeMapBuilder, typeInfo, fullInspection);
+                MethodInspector methodInspector = new MethodInspectorImpl(typeMapBuilder, typeInfo, fullInspection,
+                        storeComments);
                 methodInspector.inspect(amd, subContext);
                 builder.addMethod(methodInspector.getBuilder().getMethodInfo());
             }
@@ -261,7 +278,7 @@ public class TypeInspectorImpl implements TypeInspector {
             ParameterizedType type = ParameterizedTypeFactory.from(expressionContext.typeContext(), parameter.getType(), varargs, null);
             FieldInfo fieldInfo = new FieldInfo(Identifier.from(parameter), type, parameter.getNameAsString(), typeInfo);
 
-            FieldInspection.Builder fieldBuilder = new FieldInspectionImpl.Builder();
+            FieldInspection.Builder fieldBuilder = new FieldInspectionImpl.Builder(fieldInfo);
             fieldBuilder.setSynthetic(true);
             fieldBuilder.addModifier(FieldModifier.FINAL);
             fieldBuilder.addModifier(FieldModifier.PRIVATE);
@@ -291,7 +308,7 @@ public class TypeInspectorImpl implements TypeInspector {
             FieldInfo fieldInfo = new FieldInfo(Identifier.from(enumConstantDeclaration),
                     typeInfo.asSimpleParameterizedType(),
                     enumConstantDeclaration.getNameAsString(), typeInfo);
-            FieldInspection.Builder fieldBuilder = new FieldInspectionImpl.Builder();
+            FieldInspection.Builder fieldBuilder = new FieldInspectionImpl.Builder(fieldInfo);
             fieldBuilder.setSynthetic(true);
             fieldBuilder.addModifier(FieldModifier.FINAL);
             fieldBuilder.addModifier(FieldModifier.PUBLIC);
@@ -392,6 +409,7 @@ public class TypeInspectorImpl implements TypeInspector {
         builder.noParent(expressionContext.typeContext().getPrimitives());
         doClassOrInterfaceDeclaration(expressionContext, cid);
         builder.addTypeModifier(TypeModifier.PRIVATE);
+        builder.setAccess(Inspection.Access.PRIVATE);
         continueInspection(expressionContext, cid.getMembers(), false, null, null);
     }
 
@@ -425,7 +443,7 @@ public class TypeInspectorImpl implements TypeInspector {
         List<FieldDeclaration> fieldDeclarations = new LinkedList<>();
 
         for (BodyDeclaration<?> bodyDeclaration : members) {
-            if (bodyDeclaration instanceof TypeDeclaration cid) typeDeclarations.add(cid);
+            if (bodyDeclaration instanceof TypeDeclaration<?> cid) typeDeclarations.add(cid);
             else if (bodyDeclaration instanceof CompactConstructorDeclaration) ++countCompactConstructors;
             else if (bodyDeclaration instanceof ConstructorDeclaration) ++countNormalConstructors;
             else if (bodyDeclaration instanceof FieldDeclaration fd) fieldDeclarations.add(fd);
@@ -489,7 +507,7 @@ public class TypeInspectorImpl implements TypeInspector {
         }
 
         LOGGER.debug("Setting type inspection of {}", typeInfo.fullyQualifiedName);
-        typeInfo.typeInspection.set(builder.build());
+        typeInfo.typeInspection.set(builder.build(typeContext));
         return dollarTypes;
     }
 
@@ -498,7 +516,7 @@ public class TypeInspectorImpl implements TypeInspector {
                                         InitializerDeclaration id) {
         if (fullInspection) {
             MethodInspector methodInspector = new MethodInspectorImpl(expressionContext.typeContext().typeMap,
-                    typeInfo, true);
+                    typeInfo, true, storeComments);
             methodInspector.inspect(id, expressionContext, countStaticBlocks.getAndIncrement());
             builder.ensureMethod(methodInspector.getBuilder().getMethodInfo());
         }
@@ -510,7 +528,7 @@ public class TypeInspectorImpl implements TypeInspector {
                                                Map<CompanionMethodName, MethodInspection.Builder> companionMethodsWaiting,
                                                CompactConstructorDeclaration ccd) {
         MethodInspector methodInspector = new MethodInspectorImpl(expressionContext.typeContext().typeMap, typeInfo,
-                fullInspection);
+                fullInspection, storeComments);
         assert recordFields != null;
         methodInspector.inspect(ccd, subContext, companionMethodsWaiting, recordFields);
         builder.ensureConstructor(methodInspector.getBuilder().getMethodInfo());
@@ -523,7 +541,7 @@ public class TypeInspectorImpl implements TypeInspector {
                                         Map<CompanionMethodName, MethodInspection.Builder> companionMethodsWaiting,
                                         ConstructorDeclaration cd) {
         MethodInspector methodInspector = new MethodInspectorImpl(expressionContext.typeContext().typeMap, typeInfo,
-                fullInspection);
+                fullInspection, storeComments);
         boolean isEnumConstructorMustBePrivate = builder.typeNature() == TypeNature.ENUM;
         methodInspector.inspect(cd, subContext, companionMethodsWaiting, dollarResolver, isEnumConstructorMustBePrivate);
         builder.ensureConstructor(methodInspector.getBuilder().getMethodInfo());
@@ -539,8 +557,9 @@ public class TypeInspectorImpl implements TypeInspector {
         List<FieldModifier> modifiers = fd.getModifiers().stream()
                 .map(FieldModifier::from)
                 .collect(Collectors.toList());
+        Comment comment = storeComments ? CommentFactory.from(fd) : null;
         for (VariableDeclarator vd : fd.getVariables()) {
-            singleFieldDeclaration(expressionContext, isInterface, typeContext, fd, annotations, modifiers, vd);
+            singleFieldDeclaration(expressionContext, isInterface, typeContext, fd, annotations, modifiers, vd, comment);
         }
     }
 
@@ -550,7 +569,8 @@ public class TypeInspectorImpl implements TypeInspector {
                                         FieldDeclaration fd,
                                         List<AnnotationExpression> annotations,
                                         List<FieldModifier> modifiers,
-                                        VariableDeclarator vd) {
+                                        VariableDeclarator vd,
+                                        Comment comment) {
         ParameterizedType pt = ParameterizedTypeFactory.from(typeContext, vd.getType());
 
         String name = vd.getNameAsString();
@@ -559,13 +579,13 @@ public class TypeInspectorImpl implements TypeInspector {
         FieldInspection inMap = typeContext.getFieldInspection(fieldInfo);
         FieldInspection.Builder fieldInspectionBuilder;
         if (inMap == null) {
-            fieldInspectionBuilder = new FieldInspectionImpl.Builder();
+            fieldInspectionBuilder = new FieldInspectionImpl.Builder(fieldInfo);
             typeContext.typeMap.registerFieldInspection(fieldInfo, fieldInspectionBuilder);
-        } else if (inMap instanceof FieldInspectionImpl.Builder builder) fieldInspectionBuilder = builder;
+        } else if (inMap instanceof FieldInspectionImpl.Builder fib) fieldInspectionBuilder = fib;
         else throw new UnsupportedOperationException();
 
         expressionContext.variableContext().add(new FieldReference(typeContext, fieldInfo));
-
+        fieldInspectionBuilder.setComment(comment);
         fieldInspectionBuilder.addAnnotations(annotations);
         if (fullInspection) {
             fieldInspectionBuilder.addModifiers(modifiers);
@@ -578,6 +598,7 @@ public class TypeInspectorImpl implements TypeInspector {
             if (vd.getInitializer().isPresent()) {
                 fieldInspectionBuilder.setInitialiserExpression(vd.getInitializer().get());
             }
+            fieldInspectionBuilder.computeAccess(typeContext);
             builder.addField(fieldInfo);
         }
     }
@@ -595,7 +616,7 @@ public class TypeInspectorImpl implements TypeInspector {
         boolean methodFullInspection = fullInspection || companionMethodName != null;
 
         MethodInspector methodInspector = new MethodInspectorImpl(expressionContext.typeContext().typeMap, typeInfo,
-                methodFullInspection);
+                methodFullInspection, storeComments);
         methodInspector.inspect(isInterface, methodName, md, subContext,
                 companionMethodName != null ? Map.of() : companionMethodsWaiting, dollarResolver);
         MethodInspection methodInspection = methodInspector.getBuilder();
@@ -613,7 +634,7 @@ public class TypeInspectorImpl implements TypeInspector {
                                           ExpressionContext subContext) {
         assert recordFields != null;
         MethodInspector methodInspector = new MethodInspectorImpl(typeContext.typeMap, typeInfo,
-                fullInspection);
+                fullInspection, storeComments);
         boolean created = methodInspector.inspect(null, subContext, Map.of(), recordFields);
         if (created) {
             builder.ensureConstructor(methodInspector.getBuilder().getMethodInfo());
@@ -660,7 +681,8 @@ public class TypeInspectorImpl implements TypeInspector {
         TypeInfo subType = res.subType();
         ExpressionContext newExpressionContext = expressionContext.newSubType(subType);
         boolean typeFullInspection = fullInspection && !res.isDollarType();
-        TypeInspectorImpl subTypeInspector = new TypeInspectorImpl(typeMapBuilder, subType, typeFullInspection, dollarTypesAreNormalTypes);
+        TypeInspectorImpl subTypeInspector = new TypeInspectorImpl(typeMapBuilder, subType, typeFullInspection,
+                dollarTypesAreNormalTypes, storeComments);
         subTypeInspector.inspect(isInterface, asTypeDeclaration, newExpressionContext, dollarResolver);
         if (res.isDollarType()) {
             dollarTypes.add(subType);

@@ -22,15 +22,13 @@ import org.e2immu.annotation.Container;
 
 import java.util.Objects;
 
-import static org.e2immu.analyser.config.AnalyserProgram.Step.ALL;
-
 public record AnalyserConfiguration(boolean skipTransformations,
                                     boolean computeContextPropertiesOverAllMethods,
                                     boolean computeFieldAnalyserAcrossAllMethods,
                                     boolean forceExtraDelayForTesting,
                                     boolean forceAlphabeticAnalysisInPrimaryType,
-                                    PatternMatcherProvider<StatementAnalyser> patternMatcherProvider,
-                                    AnalyserProgram analyserProgram) {
+                                    boolean normalizeMore,
+                                    PatternMatcherProvider<StatementAnalyser> patternMatcherProvider) {
 
     public AnalyserConfiguration {
         Objects.requireNonNull(patternMatcherProvider);
@@ -50,10 +48,9 @@ public record AnalyserConfiguration(boolean skipTransformations,
         private boolean computeFieldAnalyserAcrossAllMethods;
         private boolean forceExtraDelayForTesting;
         private boolean forceAlphabeticAnalysisInPrimaryType;
+        private boolean normalizeMore;
 
         private PatternMatcherProvider<StatementAnalyser> patternMatcherProvider;
-
-        private AnalyserProgram analyserProgram = AnalyserProgram.from(ALL);
 
         public Builder setSkipTransformations(boolean skipTransformations) {
             this.skipTransformations = skipTransformations;
@@ -62,6 +59,11 @@ public record AnalyserConfiguration(boolean skipTransformations,
 
         public Builder setPatternMatcherProvider(PatternMatcherProvider<StatementAnalyser> patternMatcherProvider) {
             this.patternMatcherProvider = patternMatcherProvider;
+            return this;
+        }
+
+        public Builder setNormalizeMore(boolean normalizeMore) {
+            this.normalizeMore = normalizeMore;
             return this;
         }
 
@@ -85,20 +87,15 @@ public record AnalyserConfiguration(boolean skipTransformations,
             return this;
         }
 
-        public Builder setAnalyserProgram(AnalyserProgram analyserProgram) {
-            this.analyserProgram = analyserProgram;
-            return this;
-        }
-
         public AnalyserConfiguration build() {
             return new AnalyserConfiguration(skipTransformations,
                     computeContextPropertiesOverAllMethods,
                     computeFieldAnalyserAcrossAllMethods,
                     forceExtraDelayForTesting,
                     forceAlphabeticAnalysisInPrimaryType,
+                    normalizeMore,
                     patternMatcherProvider == null ?
-                            (ip, ap) -> PatternMatcher.NO_PATTERN_MATCHER : patternMatcherProvider,
-                    analyserProgram);
+                            (ip, ap) -> PatternMatcher.NO_PATTERN_MATCHER : patternMatcherProvider);
         }
     }
 
@@ -109,6 +106,6 @@ public record AnalyserConfiguration(boolean skipTransformations,
                 "\n    computeContextPropertiesOverAllMethods=" + computeContextPropertiesOverAllMethods +
                 "\n    computeFieldAnalyserAcrossAllMethods=" + computeFieldAnalyserAcrossAllMethods +
                 "\n    forceExtraDelayForTesting=" + forceExtraDelayForTesting +
-                "\n    analyserProgram=" + analyserProgram;
+                "\n    normalizeMore=" + normalizeMore;
     }
 }

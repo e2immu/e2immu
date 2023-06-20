@@ -14,18 +14,21 @@
 
 package org.e2immu.analyser.model;
 
+import org.e2immu.analyser.output.Keyword;
+
 public enum TypeNature {
 
-    ANNOTATION,
-    CLASS,
-    ENUM,
-    INTERFACE,
-    PRIMITIVE,
-    RECORD;
+    ANNOTATION(null),
+    CLASS(Keyword.CLASS),
+    ENUM(Keyword.ENUM),
+    INTERFACE(Keyword.INTERFACE),
+    PRIMITIVE(null),
+    RECORD(Keyword.RECORD);
 
-    public String toJava() {
-        if (this == ANNOTATION) return "@interface";
-        return name().toLowerCase();
+    public final Keyword keyword;
+
+    TypeNature(Keyword keyword) {
+        this.keyword = keyword;
     }
 
     public boolean isFinal() {

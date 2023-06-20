@@ -23,7 +23,6 @@ import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.Symbol;
 import org.e2immu.analyser.parser.InspectionProvider;
-import org.e2immu.annotation.E2Container;
 
 import java.util.Arrays;
 import java.util.List;
@@ -34,7 +33,6 @@ import java.util.function.Predicate;
 Multiple expressions to be evaluated, yet only the last one determines type, properties, etc.
 Used to reduce complexity.
  */
-@E2Container
 public class MultiExpressions extends BaseExpression implements Expression {
 
     public final MultiExpression multiExpression;
@@ -43,7 +41,7 @@ public class MultiExpressions extends BaseExpression implements Expression {
     public MultiExpressions(Identifier identifier,
                             InspectionProvider inspectionProvider,
                             MultiExpression multiExpression) {
-        super(identifier);
+        super(identifier, 1 + multiExpression.getComplexity());
         assert multiExpression.expressions().length > 0;
         this.multiExpression = multiExpression;
         this.inspectionProvider = inspectionProvider;
@@ -57,11 +55,15 @@ public class MultiExpressions extends BaseExpression implements Expression {
 
     @Override
     public Expression translate(InspectionProvider inspectionProvider, TranslationMap translationMap) {
+        Expression translated = translationMap.translateExpression(this);
+        if (translated != this) return translated;
+
         List<Expression> multi = multiExpression.stream().toList();
-        List<Expression> translated = multi.stream()
+        List<Expression> translatedExpressions = multi.stream()
                 .map(e -> e.translate(inspectionProvider, translationMap)).collect(TranslationCollectors.toList(multi));
-        if (multi == translated) return this;
-        return new MultiExpressions(identifier, this.inspectionProvider, new MultiExpression(translated.toArray(Expression[]::new)));
+        if (multi == translatedExpressions) return this;
+        MultiExpression me = new MultiExpression(translatedExpressions.toArray(Expression[]::new));
+        return new MultiExpressions(identifier, this.inspectionProvider, me);
     }
 
     @Override
@@ -125,7 +127,7 @@ public class MultiExpressions extends BaseExpression implements Expression {
     }
 
     @Override
-    public List<Variable> variables(boolean descendIntoFieldReferences) {
+    public List<Variable> variables(DescendMode descendIntoFieldReferences) {
         return Arrays.stream(multiExpression.expressions())
                 .flatMap(e -> e.variables(descendIntoFieldReferences).stream()).toList();
     }

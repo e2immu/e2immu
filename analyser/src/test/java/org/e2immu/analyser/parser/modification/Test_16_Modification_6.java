@@ -55,11 +55,13 @@ public class Test_16_Modification_6 extends CommonTestRunner {
                     assertEquals(expectValue, d.currentValue().toString());
                     assertDv(d, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.CONTEXT_NOT_NULL);
 
-                } else if ("org.e2immu.analyser.parser.modification.testexample.Modification_6.set6#org.e2immu.analyser.parser.modification.testexample.Modification_6.add6(org.e2immu.analyser.parser.modification.testexample.Modification_6,java.util.Set<java.lang.String>):0:example6".equals(d.variableName())) {
-                    assertDv(d, 1, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
-                    assertEquals("example6:2", d.variableInfo().getLinkedVariables().toString());
+                    assertEquals("example6.set6:4,values6:4", d.variableInfo().getLinkedVariables().toString());
 
-                } else if("org.e2immu.analyser.parser.modification.testexample.Modification_6.this".equals(d.variableName())) {
+                } else if ("org.e2immu.analyser.parser.modification.testexample.Modification_6.set6#org.e2immu.analyser.parser.modification.testexample.Modification_6.add6(org.e2immu.analyser.parser.modification.testexample.Modification_6,java.util.Set<String>):0:example6".equals(d.variableName())) {
+                    assertDv(d, 1, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
+                    assertEquals("example6:2,values6:4", d.variableInfo().getLinkedVariables().toString());
+
+                } else if ("org.e2immu.analyser.parser.modification.testexample.Modification_6.this".equals(d.variableName())) {
                     // since 20220404 we cannot create variables after iteration 0, so this has to exist, even in static methods
                     assertDv(d, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
 
@@ -76,15 +78,14 @@ public class Test_16_Modification_6 extends CommonTestRunner {
         };
 
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
-            String name = d.fieldInfo().name;
-            if (name.equals("set6")) {
-
+            if ("set6".equals(d.fieldInfo().name)) {
                 assertEquals(DV.TRUE_DV, d.fieldAnalysis().getProperty(Property.FINAL));
 
                 assertEquals("in6", d.fieldAnalysis().getValue().toString());
                 // in FieldAnalyserImpl.analyseLinked we block all links to field references
                 // that go to the same fieldInfo, disallowing example6.set6:0
-                assertEquals("example6:2,in6:0", d.fieldAnalysis().getLinkedVariables().toString());
+                assertEquals("in6:0", d.fieldAnalysis().getLinkedVariables().toString());
+                assertDv(d, MultiLevel.DEPENDENT_DV, Property.INDEPENDENT);
 
                 assertDv(d, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.EXTERNAL_NOT_NULL);
                 assertDv(d, 1, DV.TRUE_DV, Property.MODIFIED_OUTSIDE_METHOD);
@@ -112,6 +113,8 @@ public class Test_16_Modification_6 extends CommonTestRunner {
                     assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, vi.getProperty(Property.NOT_NULL_EXPRESSION));
                     assertEquals(DV.TRUE_DV, vi.getProperty(Property.CONTEXT_MODIFIED));
                 }
+
+                assertDv(d.p(1), 1, MultiLevel.INDEPENDENT_DV, Property.INDEPENDENT);
             }
         };
 

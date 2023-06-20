@@ -14,7 +14,7 @@
 
 package org.e2immu.analyser.parser.conditional.testexample;
 
-import org.e2immu.annotation.Constant;
+import org.e2immu.annotation.ImmutableContainer;
 import org.e2immu.annotation.NotNull;
 
 public class SwitchStatement_7 {
@@ -22,7 +22,7 @@ public class SwitchStatement_7 {
     enum Choices { ONE, TWO, THREE, FOUR }
 
     @NotNull
-    @Constant(absent = true)
+    @ImmutableContainer
     public static String method(@NotNull Choices c) {
         String res;
         switch (c) { // forces the @NotNull on c

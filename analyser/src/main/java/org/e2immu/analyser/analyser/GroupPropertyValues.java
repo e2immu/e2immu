@@ -19,6 +19,7 @@ import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.TranslationMap;
 import org.e2immu.analyser.model.variable.LocalVariableReference;
 import org.e2immu.analyser.model.variable.Variable;
+import org.e2immu.analyser.parser.InspectionProvider;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -35,7 +36,7 @@ public class GroupPropertyValues {
             CONTEXT_CONTAINER,
             EXTERNAL_NOT_NULL,
             EXTERNAL_IMMUTABLE,
-            EXTERNAL_CONTAINER,
+            CONTAINER_RESTRICTION,
             EXTERNAL_IGNORE_MODIFICATIONS);
 
     static {
@@ -70,12 +71,12 @@ public class GroupPropertyValues {
         }
     }
 
-    public void translate(TranslationMap translationMap) {
+    public void translate(InspectionProvider inspectionProvider, TranslationMap translationMap) {
         for (Map<Variable, DV> dvMap : map.values()) {
             Set<Variable> toRemove = null;
             Map<Variable, DV> toAdd = null;
             for (Map.Entry<Variable, DV> entry : dvMap.entrySet()) {
-                Variable translated = translationMap.translateVariable(entry.getKey());
+                Variable translated = translationMap.translateVariable(inspectionProvider, entry.getKey());
                 if (!translated.equals(entry.getKey())) {
                     if (!dvMap.containsKey(translated)) {
                         if (toAdd == null) toAdd = new HashMap<>();

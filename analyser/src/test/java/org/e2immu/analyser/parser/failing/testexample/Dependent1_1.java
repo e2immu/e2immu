@@ -14,9 +14,7 @@
 
 package org.e2immu.analyser.parser.failing.testexample;
 
-import org.e2immu.annotation.Dependent;
 import org.e2immu.annotation.Independent;
-import org.e2immu.annotation.Independent1;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -33,25 +31,24 @@ public class Dependent1_1<T> {
         list = new ArrayList<>(collection);
     }
 
-    public void add(@Independent1 T t) {
+    public void add(@Independent(hc = true) T t) {
         list.add(t); // trivial propagation
     }
 
-    public void add2(@Independent1 T t) {
+    public void add2(@Independent(hc = true) T t) {
         List<T> theList = list;
         T theT = t;
 
         theList.add(theT); // propagation with a few redundant variables
     }
 
-    @Dependent
+    @Independent(absent = true)
     public List<T> getList() {
         return list;
     }
 
     // implicitly @Independent1
-    @Independent(absent = true)
-    @Dependent(absent = true)
+    @Independent(hc = true)
     public T getFirst() {
         return list.get(0);
     }

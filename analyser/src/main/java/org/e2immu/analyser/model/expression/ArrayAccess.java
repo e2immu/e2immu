@@ -14,10 +14,7 @@
 
 package org.e2immu.analyser.model.expression;
 
-import org.e2immu.analyser.analyser.DV;
-import org.e2immu.analyser.analyser.EvaluationResult;
-import org.e2immu.analyser.analyser.ForwardEvaluationInfo;
-import org.e2immu.analyser.analyser.Property;
+import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.impl.BaseExpression;
 import org.e2immu.analyser.model.variable.DependentVariable;
@@ -27,7 +24,6 @@ import org.e2immu.analyser.model.variable.VariableNature;
 import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.Symbol;
 import org.e2immu.analyser.parser.InspectionProvider;
-import org.e2immu.annotation.E2Container;
 import org.e2immu.annotation.NotNull;
 
 import java.util.List;
@@ -35,7 +31,6 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.function.Predicate;
 
-@E2Container
 public class ArrayAccess extends BaseExpression implements Expression {
 
     public static final String ARRAY_VARIABLE = "av-";
@@ -54,7 +49,7 @@ public class ArrayAccess extends BaseExpression implements Expression {
                        @NotNull Expression index,
                        Identifier indexIdentifier,
                        TypeInfo owningType) {
-        super(identifier);
+        super(identifier, expression.getComplexity() + index.getComplexity() + 1);
         this.expression = Objects.requireNonNull(expression);
         this.index = Objects.requireNonNull(index);
         this.returnType = expression.returnType().copyWithOneFewerArrays();
@@ -102,6 +97,8 @@ public class ArrayAccess extends BaseExpression implements Expression {
 
     @Override
     public Expression translate(InspectionProvider inspectionProvider, TranslationMap translationMap) {
+        Expression translated = translationMap.translateExpression(this);
+        if (translated != this) return translated;
         Expression translatedExpression = expression.translate(inspectionProvider, translationMap);
         Expression translatedIndex = index.translate(inspectionProvider, translationMap);
         if (translatedIndex == this.index && translatedExpression == this.expression) return this;
@@ -155,5 +152,10 @@ public class ArrayAccess extends BaseExpression implements Expression {
         VariableExpression ve = new VariableExpression(dependentVariable.getIdentifier(),
                 dependentVariable, VariableExpression.NO_SUFFIX, expression, index);
         return ve.evaluate(context, forwardEvaluationInfo);
+    }
+
+    @Override
+    public LinkedVariables linkedVariables(EvaluationResult context) {
+        return VariableExpression.internalLinkedVariables(dependentVariable, LinkedVariables.LINK_STATICALLY_ASSIGNED);
     }
 }

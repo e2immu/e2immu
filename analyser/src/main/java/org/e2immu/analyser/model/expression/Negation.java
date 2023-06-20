@@ -47,9 +47,15 @@ public class Negation extends UnaryOperator implements ExpressionWrapper {
 
     @Override
     public Expression translate(InspectionProvider inspectionProvider, TranslationMap translationMap) {
-        Expression translated = expression.translate(inspectionProvider, translationMap);
-        if (translated == expression) return this;
-        return new Negation(identifier, operator, translated);
+        Expression translated = translationMap.translateExpression(this);
+        if (translated != this) return translated;
+
+        Expression translatedExpression = expression.translate(inspectionProvider, translationMap);
+        if (translatedExpression == expression) return this;
+        if (translatedExpression instanceof Negation negation) {
+            return negation.expression; // double negation gets cancelled
+        }
+        return new Negation(identifier, operator, translatedExpression);
     }
 
     public static Expression negate(EvaluationResult context, @NotNull Expression v) {
@@ -58,6 +64,10 @@ public class Negation extends UnaryOperator implements ExpressionWrapper {
 
     public static Expression negate(EvaluationResult context, boolean doingNullChecks, @NotNull Expression v) {
         Objects.requireNonNull(v);
+        if(v instanceof PropertyWrapper pw) {
+            Expression negated = negate(context, doingNullChecks, pw.expression());
+            return pw.withExpression(negated);
+        }
         if (v instanceof BooleanConstant boolValue) {
             return boolValue.negate();
         }
@@ -142,7 +152,7 @@ public class Negation extends UnaryOperator implements ExpressionWrapper {
     }
 
     @Override
-    public List<Variable> variables(boolean descendIntoFieldReferences) {
+    public List<Variable> variables(DescendMode descendIntoFieldReferences) {
         return expression.variables(descendIntoFieldReferences);
     }
 
@@ -181,5 +191,10 @@ public class Negation extends UnaryOperator implements ExpressionWrapper {
     public Expression extractConditions(Primitives primitives) {
         if (returnType().isBooleanOrBoxedBoolean()) return this;
         return new BooleanConstant(primitives, true);
+    }
+
+    @Override
+    public boolean isNegatedOrNumericNegative() {
+        return true;
     }
 }

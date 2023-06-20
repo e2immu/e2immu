@@ -27,7 +27,8 @@ public record DebugConfiguration(List<TypeMapVisitor> typeMapVisitors,
                                  List<MethodAnalyserVisitor> afterMethodAnalyserVisitors,
                                  List<StatementAnalyserVisitor> statementAnalyserVisitors,
                                  List<StatementAnalyserVariableVisitor> statementAnalyserVariableVisitors,
-                                 List<EvaluationResultVisitor> evaluationResultVisitors) {
+                                 List<EvaluationResultVisitor> evaluationResultVisitors,
+                                 List<BreakDelayVisitor> breakDelayVisitors) {
 
     @Container(builds = DebugConfiguration.class)
     public static class Builder {
@@ -38,6 +39,7 @@ public record DebugConfiguration(List<TypeMapVisitor> typeMapVisitors,
         private final List<StatementAnalyserVariableVisitor> statementAnalyserVariableVisitors = new ArrayList<>();
         private final List<TypeAnalyserVisitor> afterTypePropertyComputations = new ArrayList<>();
         private final List<EvaluationResultVisitor> evaluationResultVisitors = new ArrayList<>();
+        private final List<BreakDelayVisitor> breakDelayVisitors = new ArrayList<>();
 
         @Fluent
         public Builder addAfterFieldAnalyserVisitor(FieldAnalyserVisitor fieldAnalyserVisitor) {
@@ -81,6 +83,12 @@ public record DebugConfiguration(List<TypeMapVisitor> typeMapVisitors,
             return this;
         }
 
+        @Fluent
+        public Builder addBreakDelayVisitor(BreakDelayVisitor breakDelayVisitor) {
+            this.breakDelayVisitors.add(breakDelayVisitor);
+            return this;
+        }
+
         public DebugConfiguration build() {
             return new DebugConfiguration(
                     List.copyOf(typeMapVisitors),
@@ -89,7 +97,8 @@ public record DebugConfiguration(List<TypeMapVisitor> typeMapVisitors,
                     List.copyOf(afterMethodAnalyserVisitors),
                     List.copyOf(statementAnalyserVisitors),
                     List.copyOf(statementAnalyserVariableVisitors),
-                    List.copyOf(evaluationResultVisitors));
+                    List.copyOf(evaluationResultVisitors),
+                    List.copyOf(breakDelayVisitors));
         }
     }
 }

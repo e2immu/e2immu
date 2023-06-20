@@ -14,13 +14,9 @@
 
 package org.e2immu.analyser.parser.functional.testexample;
 
+import org.e2immu.annotation.FinalFields;
 
-import org.e2immu.annotation.E1Immutable;
-
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.function.BiConsumer;
 import java.util.function.BinaryOperator;
 import java.util.function.Function;
@@ -50,7 +46,7 @@ public class InlinedMethod_14 {
     }
 
     // this type is not a container, the implicit single argument constructor is linked to the map field which is modified
-    @E1Immutable
+    @FinalFields
     record UpgradableBooleanMap<T>(Map<T, Boolean> map) {
 
         public UpgradableBooleanMap() {
@@ -100,7 +96,7 @@ public class InlinedMethod_14 {
 
                 @Override
                 public Function<UpgradableBooleanMap<T>, UpgradableBooleanMap<T>> finisher() {
-                    return t -> t;
+                    return Objects::requireNonNull;
                 }
 
                 @Override

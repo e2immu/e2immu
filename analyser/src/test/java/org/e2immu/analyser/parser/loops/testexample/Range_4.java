@@ -14,13 +14,14 @@
 
 package org.e2immu.analyser.parser.loops.testexample;
 
-import org.e2immu.annotation.Constant;
+
+import org.e2immu.annotation.ImmutableContainer;
 
 public class Range_4 {
     // picked up by NumericalRange: standard condition and increment, no extra write to loop variable
     // specifically testing to detect clean interrupts, which mess up the computations
 
-    @Constant(absent = true)
+    @ImmutableContainer // not constant
     public static int method1() {
         int i = 0;
         for (; i < 10; i++) {
@@ -30,7 +31,7 @@ public class Range_4 {
         return 0;
     }
 
-    @Constant("1")
+    @ImmutableContainer("1")
     public static int method2() {
         int i = 0;
         for (; i < 10; i++) {
@@ -40,7 +41,7 @@ public class Range_4 {
         return i; // but now, always true!
     }
 
-    @Constant("10")
+    @ImmutableContainer("10")
     public static int method3() {
         int i = 0;
         for (; i < 10; i++) {

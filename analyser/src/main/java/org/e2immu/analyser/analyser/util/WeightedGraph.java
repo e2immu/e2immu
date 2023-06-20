@@ -15,8 +15,10 @@
 package org.e2immu.analyser.analyser.util;
 
 import org.e2immu.analyser.analyser.DV;
+import org.e2immu.analyser.analyser.LinkedVariables;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.annotation.*;
+import org.e2immu.annotation.eventual.Only;
 import org.e2immu.support.Freezable;
 
 import java.util.Map;
@@ -25,15 +27,16 @@ import java.util.TreeMap;
 import java.util.function.BiConsumer;
 import java.util.function.BinaryOperator;
 
-import static org.e2immu.analyser.analyser.LinkedVariables.STATICALLY_ASSIGNED_DV;
+import static org.e2immu.analyser.analyser.LinkedVariables.*;
 
 /**
  * In-house implementation of a directed graph that is used to model the links between objects.
  * A distance of 0 (STATICALLY_ASSIGNED) is always kept, even across delays.
+ * <p>
+ * Hidden content: Variable, DV are interfaces with different implementations.
  */
-@E2Container(after = "frozen")
+@ImmutableContainer(after = "frozen", hc = true)
 public class WeightedGraph extends Freezable {
-
 
     private static class Node {
         Map<Variable, DV> dependsOn;
@@ -57,10 +60,29 @@ public class WeightedGraph extends Freezable {
         return nodeMap.isEmpty();
     }
 
-    @Independent
+    /**
+     * Compute the minimal distance of a variable to all variables reached in the weighted graph, with directional and
+     * bidirectional edges.
+     * <p>
+     * When computing for modifications, we follow LINK_STATICALLY_ASSIGNED, LINK_ASSIGNED, LINK_DEPENDENT,
+     * and LINK_IN_HC_OF. There is important other rule: if we encounter a LINK_IN_HC_OF, then recursively,
+     * we start accepting LINK_COMMON_HC as well. Concretely, maxWeight becomes LINK_COMMON_HC instead of LINK_IN_HC_OF.
+     * <p>
+     * See {@link org.e2immu.analyser.analyser.ComputeLinkedVariables}, create()
+     * <p>
+     * Whatever happens, we should never follow LINK_INDEPENDENT; in fact, it should never even be present.
+     *
+     * @param v             starting point
+     * @param maxWeight     in practice, either LINK_STATICALLY_ASSIGNED (for most property computations), or
+     *                      LINK_DEPENDENT (for modification); see explanation for exception.
+     * @param followDelayed do we follow links that are delayed?
+     * @return a map with all variables reachable, and the minimum distance
+     */
+    @Independent(hc = true)
+    @NotModified
     public Map<Variable, DV> links(@NotNull Variable v, DV maxWeight, boolean followDelayed) {
         Map<Variable, DV> result = new TreeMap<>();
-        result.put(v, STATICALLY_ASSIGNED_DV);
+        result.put(v, LINK_STATICALLY_ASSIGNED);
         recursivelyComputeLinks(v, result, maxWeight, followDelayed);
         return result;
     }
@@ -81,14 +103,15 @@ public class WeightedGraph extends Freezable {
 
             // yes, opportunity (1) to improve distance computations, (2) to visit them
             node.dependsOn.forEach((n, d) -> {
-                if (d.isDelayed() && followDelayed || d.isDone() && (maxValueIncl == null ||  d.le(maxValueIncl))) {
+                if (d.isDelayed() && followDelayed || d.isDone() && (maxValueIncl == null || d.le(maxValueIncl))) {
                     DV distanceToN = max(currentDistanceToV, d);
                     DV currentDistanceToN = distanceToStartingPoint.get(n);
                     if (currentDistanceToN == null) {
                         // we've not been at N before
                         if (d.isDelayed() || maxValueIncl == null || d.le(maxValueIncl)) {
                             distanceToStartingPoint.put(n, distanceToN);
-                            recursivelyComputeLinks(n, distanceToStartingPoint, maxValueIncl, followDelayed);
+                            DV newMax = LINK_IS_HC_OF.equals(d) ? LINK_COMMON_HC : maxValueIncl;
+                            recursivelyComputeLinks(n, distanceToStartingPoint, newMax, followDelayed);
                         } else {
                             distanceToStartingPoint.put(n, DV.MAX_INT_DV); // beyond max value
                         }
@@ -96,7 +119,8 @@ public class WeightedGraph extends Freezable {
                         DV newDistanceToN = min(distanceToN, currentDistanceToN);
                         distanceToStartingPoint.put(n, newDistanceToN);
                         if (newDistanceToN.lt(currentDistanceToN)) {
-                            recursivelyComputeLinks(n, distanceToStartingPoint, maxValueIncl, followDelayed);
+                            DV newMax = LINK_IS_HC_OF.equals(d) ? LINK_COMMON_HC : maxValueIncl;
+                            recursivelyComputeLinks(n, distanceToStartingPoint, newMax, followDelayed);
                         }
                     }
                 } // else: ignore delayed links!
@@ -105,8 +129,8 @@ public class WeightedGraph extends Freezable {
     }
 
     private DV min(DV d1, DV d2) {
-        if (d1.equals(STATICALLY_ASSIGNED_DV) || d2.equals(STATICALLY_ASSIGNED_DV)) {
-            return STATICALLY_ASSIGNED_DV;
+        if (d1.equals(LINK_STATICALLY_ASSIGNED) || d2.equals(LINK_STATICALLY_ASSIGNED)) {
+            return LINK_STATICALLY_ASSIGNED;
         }
         return d1.min(d2);
     }
@@ -116,7 +140,7 @@ public class WeightedGraph extends Freezable {
     }
 
     @NotModified(contract = true)
-    public void visit(@NotNull BiConsumer<Variable, Map<Variable, DV>> consumer) {
+    public void visit(@NotNull @Independent(hc = true) BiConsumer<Variable, Map<Variable, DV>> consumer) {
         nodeMap.values().forEach(n -> consumer.accept(n.variable, n.dependsOn));
     }
 
@@ -136,22 +160,29 @@ public class WeightedGraph extends Freezable {
 
     @Only(before = "frozen")
     @Modified
-    public void addNode(@NotNull Variable v, @NotNull Map<Variable, DV> dependsOn) {
+    public void addNode(@NotNull @Independent(hc = true) Variable v,
+                        @NotNull @Independent(hc = true) Map<Variable, DV> dependsOn) {
         addNode(v, dependsOn, false, (o, n) -> o);
     }
 
     @Only(before = "frozen")
     @Modified
-    public void addNode(@NotNull Variable v, @NotNull Map<Variable, DV> dependsOn, boolean bidirectional, BinaryOperator<DV> merger) {
+    public void addNode(@NotNull @Independent(hc = true) Variable v,
+                        @NotNull @Independent(hc = true) Map<Variable, DV> dependsOn,
+                        boolean bidirectional,
+                        BinaryOperator<DV> merger) {
         ensureNotFrozen();
         Node node = getOrCreate(v);
         for (Map.Entry<Variable, DV> e : dependsOn.entrySet()) {
             if (node.dependsOn == null) node.dependsOn = new TreeMap<>();
-            node.dependsOn.merge(e.getKey(), e.getValue(), merger);
+            DV linkLevel = e.getValue();
+            assert !LinkedVariables.LINK_INDEPENDENT.equals(linkLevel);
+
+            node.dependsOn.merge(e.getKey(), linkLevel, merger);
             if (bidirectional) {
                 Node n = getOrCreate(e.getKey());
                 if (n.dependsOn == null) n.dependsOn = new TreeMap<>();
-                n.dependsOn.merge(v, e.getValue(), merger);
+                n.dependsOn.merge(v, linkLevel, merger);
             }
         }
     }

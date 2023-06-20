@@ -18,6 +18,7 @@ import org.e2immu.analyser.analyser.AnalysisProvider;
 import org.e2immu.analyser.analyser.AnalysisStatus;
 import org.e2immu.analyser.analyser.DV;
 import org.e2immu.analyser.analyser.Property;
+import org.e2immu.analyser.analyser.impl.util.BreakDelayLevel;
 import org.e2immu.analyser.analysis.TypeAnalysis;
 import org.e2immu.analyser.model.TypeInfo;
 import org.e2immu.analyser.model.TypeInspection;
@@ -28,7 +29,9 @@ import java.util.Map;
 public interface TypeAnalyserVisitor {
     void visit(Data data);
 
-    record Data(int iteration, Primitives primitives,
+    record Data(int iteration,
+                BreakDelayLevel breakDelayLevel,
+                Primitives primitives,
                 TypeInfo typeInfo,
                 TypeInspection typeInspection,
                 TypeAnalysis typeAnalysis,
@@ -42,6 +45,10 @@ public interface TypeAnalyserVisitor {
         @Override
         public String label() {
             return typeInfo.fullyQualifiedName;
+        }
+
+        public boolean allowBreakDelay() {
+            return breakDelayLevel.acceptType();
         }
     }
 }

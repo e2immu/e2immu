@@ -14,24 +14,26 @@
 
 package org.e2immu.analyser.parser.eventual.testexample;
 
-import org.e2immu.annotation.E2Container;
-import org.e2immu.annotation.Mark;
-import org.e2immu.annotation.Only;
-import org.e2immu.annotation.TestMark;
+import org.e2immu.annotation.ImmutableContainer;
+import org.e2immu.annotation.eventual.Mark;
+import org.e2immu.annotation.eventual.Only;
+import org.e2immu.annotation.eventual.TestMark;
 
 /*
 Similar to setOnce, to detect errors.
+
+202209: the set2() method causes a delay which needs breaking, investigating.
  */
-@E2Container(after = "t")
+@ImmutableContainer(after = "t", hc = true)
 public class EventuallyE2Immutable_0<T> {
 
     private T t;
 
     @Mark("t")
-    public void setT(T t) {
-        if (t == null) throw new NullPointerException();
+    public void setT(T t1) {
+        if (t1 == null) throw new NullPointerException();
         if (this.t != null) throw new UnsupportedOperationException();
-        this.t = t;
+        this.t = t1;
     }
 
     @Only(after = "t")
@@ -51,7 +53,7 @@ public class EventuallyE2Immutable_0<T> {
     }
 
     @Mark("t")
-    public void set2(T t) {
-        setT(t);
+    public void set2(T t2) {
+       setT(t2);
     }
 }

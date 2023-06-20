@@ -18,12 +18,12 @@ import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.impl.BaseExpression;
 import org.e2immu.analyser.model.variable.Variable;
+import org.e2immu.analyser.output.Keyword;
 import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.Symbol;
 import org.e2immu.analyser.output.Text;
 import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.parser.Primitives;
-import org.e2immu.annotation.E2Container;
 import org.e2immu.annotation.NotNull;
 
 import java.util.List;
@@ -32,13 +32,12 @@ import java.util.function.Predicate;
 
 import static org.e2immu.analyser.model.expression.util.ExpressionComparator.ORDER_ARRAY_LENGTH;
 
-@E2Container
 public class ArrayLength extends BaseExpression implements Expression {
     private final Primitives primitives;
     private final Expression scope;
 
     public ArrayLength(Identifier identifier, Primitives primitives, @NotNull Expression scope) {
-        super(identifier);
+        super(identifier, 2 + scope.getComplexity());
         this.scope = Objects.requireNonNull(scope);
         this.primitives = primitives;
     }
@@ -58,9 +57,16 @@ public class ArrayLength extends BaseExpression implements Expression {
 
     @Override
     public Expression translate(InspectionProvider inspectionProvider, TranslationMap translationMap) {
-        Expression translated = scope.translate(inspectionProvider, translationMap);
-        if (translated == scope) return this;
-        return new ArrayLength(identifier, primitives, translated);
+        Expression translated = translationMap.translateExpression(this);
+        if (translated != this) return translated;
+
+        Expression translatedScope = scope.translate(inspectionProvider, translationMap);
+        if (translatedScope == scope) return this;
+        return new ArrayLength(identifier, primitives, translatedScope);
+    }
+
+    public Expression scope() {
+        return scope;
     }
 
     @Override
@@ -105,7 +111,8 @@ public class ArrayLength extends BaseExpression implements Expression {
 
     @Override
     public OutputBuilder output(Qualification qualification) {
-        return new OutputBuilder().add(outputInParenthesis(qualification, precedence(), scope)).add(Symbol.DOT).add(new Text("length"));
+        return new OutputBuilder().add(outputInParenthesis(qualification, precedence(), scope))
+                .add(Symbol.DOT).add(Keyword.LENGTH);
     }
 
     @Override
@@ -137,7 +144,7 @@ public class ArrayLength extends BaseExpression implements Expression {
     }
 
     @Override
-    public List<Variable> variables(boolean descendIntoFieldReferences) {
-        return scope.variables(true);
+    public List<Variable> variables(DescendMode descendIntoFieldReferences) {
+        return scope.variables();
     }
 }

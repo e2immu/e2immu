@@ -14,13 +14,13 @@
 
 package org.e2immu.analyser.parser.minor.testexample;
 
-import org.e2immu.annotation.BeforeMark;
-import org.e2immu.annotation.Container;
-import org.e2immu.annotation.E2Immutable;
-import org.e2immu.annotation.Finalizer;
+
+import org.e2immu.annotation.Immutable;
+import org.e2immu.annotation.eventual.BeforeMark;
+import org.e2immu.annotation.rare.Finalizer;
 import org.e2immu.support.EventuallyFinal;
 
-@E2Immutable(recursive = true, after = "eventuallyFinal")
+@Immutable(after = "eventuallyFinal")
 public class Finalizer_2 {
 
     /*

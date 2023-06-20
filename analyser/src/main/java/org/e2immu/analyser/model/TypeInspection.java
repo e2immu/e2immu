@@ -14,15 +14,15 @@
 
 package org.e2immu.analyser.model;
 
+import org.e2immu.analyser.analyser.AnalysisProvider;
+import org.e2immu.analyser.analyser.SetOfTypes;
 import org.e2immu.analyser.inspector.InspectionState;
 import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.resolver.ShallowMethodResolver;
 import org.e2immu.analyser.util.ListUtil;
-import org.e2immu.analyser.util.UpgradableBooleanMap;
 import org.e2immu.annotation.Fluent;
 import org.e2immu.annotation.NotNull;
-import org.e2immu.annotation.NotNull1;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -36,35 +36,34 @@ public interface TypeInspection extends Inspection {
     @NotNull
     TypeInfo typeInfo();
 
+    MethodInfo enclosingMethod();
+
     @NotNull
     TypeNature typeNature();
 
     ParameterizedType parentClass();
 
     //@Immutable(level = 2, after="TypeAnalyser.analyse()")
-    @NotNull1
+    @NotNull(content = true)
     List<MethodInfo> constructors();
 
-    @NotNull1
+    @NotNull(content = true)
     List<MethodInfo> methods();
 
-    @NotNull1
+    @NotNull(content = true)
     List<FieldInfo> fields();
 
-    @NotNull1
+    @NotNull(content = true)
     Set<TypeModifier> modifiers();
 
-    @NotNull1
+    @NotNull(content = true)
     List<TypeInfo> subTypes();
 
-    @NotNull1
+    @NotNull(content = true)
     List<TypeParameter> typeParameters();
 
-    @NotNull1
+    @NotNull(content = true)
     List<ParameterizedType> interfacesImplemented();
-
-    @NotNull
-    TypeModifier access();
 
     @NotNull
     Inspector inspector();
@@ -75,10 +74,17 @@ public interface TypeInspection extends Inspection {
      * @return The types permitted to extend from this type. Note that this list is not empty
      * if and only if the type is sealed.
      */
-    @NotNull1
+    @NotNull(content = true)
     List<TypeInfo> permittedWhenSealed();
 
     boolean isFunctionalInterface();
+
+    boolean isExtensible();
+
+    default boolean isAbstract() {
+        if (typeNature() == TypeNature.INTERFACE) return true;
+        return modifiers().contains(TypeModifier.ABSTRACT);
+    }
 
     enum Methods {
 
@@ -207,27 +213,6 @@ public interface TypeInspection extends Inspection {
         return ShallowMethodResolver.sameParameters(inspectionProvider, inSubType.getParameters(), inSuperType.getParameters(), map);
     }
 
-    /**
-     * This is the starting place to compute all types that are referred to in any way.
-     *
-     * @return a map of all types referenced, with the boolean indicating explicit reference somewhere
-     */
-    default UpgradableBooleanMap<TypeInfo> typesReferenced() {
-        return UpgradableBooleanMap.of(
-                parentClass() == null ? UpgradableBooleanMap.of() : parentClass().typesReferenced(true),
-                typeInfo().packageNameOrEnclosingType.isRight() && !isStatic() && !isInterface() ?
-                        UpgradableBooleanMap.of(typeInfo().packageNameOrEnclosingType.getRight(), false) :
-                        UpgradableBooleanMap.of(),
-                interfacesImplemented().stream().flatMap(i -> i.typesReferenced(true).stream()).collect(UpgradableBooleanMap.collector()),
-                getAnnotations().stream().flatMap(a -> a.typesReferenced().stream()).collect(UpgradableBooleanMap.collector()),
-                //ti.subTypes.stream().flatMap(a -> a.typesReferenced().stream()).collect(UpgradableBooleanMap.collector()),
-                methodsAndConstructors(TypeInspection.Methods.THIS_TYPE_ONLY)
-                        .flatMap(a -> a.typesReferenced().stream()).collect(UpgradableBooleanMap.collector()),
-                fields().stream().flatMap(a -> a.typesReferenced().stream()).collect(UpgradableBooleanMap.collector()),
-                subTypes().stream().flatMap(a -> a.typesReferenced().stream()).collect(UpgradableBooleanMap.collector())
-        );
-    }
-
     default boolean isStatic() {
         if (typeInfo().packageNameOrEnclosingType.isLeft()) return true; // independent type
         return typeNature() != TypeNature.CLASS || modifiers().contains(TypeModifier.STATIC); // static sub type
@@ -257,11 +242,11 @@ public interface TypeInspection extends Inspection {
         // this type
         Set<ParameterizedType> typesOfFields = fields().stream()
                 .map(fieldInfo -> fieldInfo.type).collect(Collectors.toCollection(HashSet::new));
-        typesOfFields.addAll(typesOfMethodsAndConstructors(inspectionProvider));
+        typesOfFields.addAll(typesOfMethodsAndConstructors(inspectionProvider).types());
         return typesOfFields;
     }
 
-    default Set<ParameterizedType> typesOfMethodsAndConstructors(InspectionProvider inspectionProvider) {
+    default SetOfTypes typesOfMethodsAndConstructors(InspectionProvider inspectionProvider) {
         Set<ParameterizedType> result = new HashSet<>();
         for (MethodInfo methodInfo : methodsAndConstructors()) {
             if (!methodInfo.isConstructor && !methodInfo.isVoid()) {
@@ -271,7 +256,7 @@ public interface TypeInspection extends Inspection {
                 result.add(parameterInfo.parameterizedType);
             }
         }
-        return result;
+        return new SetOfTypes(result);
     }
 
     static String createStaticBlockMethodName(int identifier) {
@@ -297,11 +282,21 @@ public interface TypeInspection extends Inspection {
         return Stream.concat(Stream.of(mine), subTypes);
     }
 
+    default Optional<FieldInfo> findFieldByName(String fieldName, AnalysisProvider analysisProvider) {
+        Optional<FieldInfo> opt = fields().stream().filter(f -> fieldName.equals(f.name)).findFirst();
+        return opt.or(() -> methodStream(Methods.THIS_TYPE_ONLY)
+                .map(m -> analysisProvider.getMethodAnalysis(m).getSetField())
+                .filter(Objects::nonNull)
+                .findFirst());
+    }
+
     interface Builder extends InspectionBuilder<Builder>, TypeInspection {
 
         boolean finishedInspection();
 
-        TypeInspection build();
+        void computeAccess(InspectionProvider inspectionProvider);
+
+        TypeInspection build(InspectionProvider inspectionProvider);
 
         void setInspectionState(InspectionState startingBytecode);
 
@@ -337,5 +332,8 @@ public interface TypeInspection extends Inspection {
 
         @Fluent
         Builder addConstructor(MethodInfo methodInfo);
+
+        @Fluent
+        Builder setEnclosingMethod(MethodInfo enclosingMethod);
     }
 }

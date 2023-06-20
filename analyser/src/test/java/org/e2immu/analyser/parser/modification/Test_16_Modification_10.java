@@ -56,7 +56,7 @@ public class Test_16_Modification_10 extends CommonTestRunner {
                 ParameterAnalysis list = d.parameterAnalyses().get(0);
 
                 String assigned = d.iteration() == 0 ? ""
-                        : "c0=assigned:1, c1=dependent:2, l0=no:100, l1=no:100, l2=no:100, s0=no:100, s1=no:100";
+                        : "c0=assigned:1, c1=dependent:2, l0=independent:5, l1=independent:5, l2=independent:5, s0=independent:5, s1=common_hc:4";
 
                 assertEquals(assigned, list.getAssignedToField().entrySet().stream()
                         .map(e -> e.getKey() + "=" + e.getValue()).sorted().collect(Collectors.joining(", ")));
@@ -67,7 +67,7 @@ public class Test_16_Modification_10 extends CommonTestRunner {
 
                 ParameterAnalysis set3 = d.parameterAnalyses().get(1);
                 String assigned3 = d.iteration() == 0 ? ""
-                        : "c0=no:100, c1=no:100, l0=no:100, l1=no:100, l2=no:100, s0=assigned:1, s1=no:100";
+                        : "c0=independent:5, c1=independent:5, l0=independent:5, l1=independent:5, l2=independent:5, s0=assigned:1, s1=independent:5";
 
                 assertEquals(assigned3, set3.getAssignedToField().entrySet().stream()
                         .map(e -> e.getKey() + "=" + e.getValue()).sorted().collect(Collectors.joining(", ")));
@@ -103,7 +103,7 @@ public class Test_16_Modification_10 extends CommonTestRunner {
 
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("Modification_10".equals(d.typeInfo().simpleName)) {
-                assertTrue(d.typeAnalysis().getTransparentTypes().isEmpty());
+                assertTrue(d.typeAnalysis().getHiddenContentTypes().isEmpty());
             }
         };
 

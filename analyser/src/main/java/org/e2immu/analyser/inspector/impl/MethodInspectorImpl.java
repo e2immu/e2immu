@@ -22,6 +22,7 @@ import com.github.javaparser.ast.type.ReferenceType;
 import org.e2immu.analyser.inspector.*;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.EmptyExpression;
+import org.e2immu.analyser.model.impl.CommentFactory;
 import org.e2immu.analyser.model.impl.TypeParameterImpl;
 import org.e2immu.analyser.model.statement.Block;
 import org.e2immu.analyser.model.statement.ReturnStatement;
@@ -44,11 +45,13 @@ public class MethodInspectorImpl implements MethodInspector {
     private final boolean fullInspection;
     private final TypeMap.Builder typeMapBuilder;
     private final TypeInfo typeInfo;
+    private final boolean storeComments;
 
-    public MethodInspectorImpl(TypeMap.Builder typeMapBuilder, TypeInfo typeInfo, boolean fullInspection) {
+    public MethodInspectorImpl(TypeMap.Builder typeMapBuilder, TypeInfo typeInfo, boolean fullInspection, boolean storeComments) {
         this.typeMapBuilder = typeMapBuilder;
         this.fullInspection = fullInspection;
         this.typeInfo = typeInfo;
+        this.storeComments = storeComments;
     }
 
     @Override
@@ -72,6 +75,8 @@ public class MethodInspectorImpl implements MethodInspector {
         MethodInspection.Builder tempBuilder = new MethodInspectionImpl.Builder(Identifier.from(amd), typeInfo, name);
         MethodInspection.Builder builder = fqnIsKnown(expressionContext.typeContext(), tempBuilder, false);
         assert builder != null;
+
+        if (storeComments) builder.setComment(CommentFactory.from(amd));
 
         addAnnotations(builder, amd.getAnnotations(), expressionContext);
         if (fullInspection) {
@@ -208,10 +213,10 @@ public class MethodInspectorImpl implements MethodInspector {
             LOGGER.debug("Nothing to be done; there is no need for this compact constructor");
             return false;
         }
-        builder.addModifier(MethodModifier.PUBLIC);
         if (ccd != null) {
             builder.addCompanionMethods(companionMethods);
             checkCompanionMethods(companionMethods, typeInfo.simpleName);
+            if(storeComments) builder.setComment(CommentFactory.from(ccd));
             addAnnotations(builder, ccd.getAnnotations(), expressionContext);
             if (fullInspection) {
                 addModifiers(builder, ccd.getModifiers());
@@ -239,6 +244,7 @@ public class MethodInspectorImpl implements MethodInspector {
         assert fullInspection : "? otherwise we would not see them";
         assert builder != null;
         typeMapBuilder.registerMethodInspection(builder);
+        if(storeComments) builder.setComment(CommentFactory.from(id));
         builder.setBlock(id.getBody());
     }
 
@@ -264,6 +270,7 @@ public class MethodInspectorImpl implements MethodInspector {
         }
         builder.addCompanionMethods(companionMethods);
         checkCompanionMethods(companionMethods, typeInfo.simpleName);
+        if(storeComments) builder.setComment(CommentFactory.from(cd));
         addAnnotations(builder, cd.getAnnotations(), newContext);
         if (fullInspection) {
             addModifiers(builder, cd.getModifiers());
@@ -301,11 +308,17 @@ public class MethodInspectorImpl implements MethodInspector {
 
             builder.addCompanionMethods(companionMethods);
             checkCompanionMethods(companionMethods, methodName);
-
+            if(storeComments) builder.setComment(CommentFactory.from(md));
             addAnnotations(builder, md.getAnnotations(), newContext);
             if (fullInspection) {
                 addModifiers(builder, md.getModifiers());
-                if (isInterface) builder.addModifier(MethodModifier.PUBLIC);
+                boolean haveBody = md.getBody().isPresent();
+                if (!haveBody) {
+                    assert isInterface && !builder.isDefault() && !builder.isStatic()
+                            || !isInterface && builder.getParsedModifiers().contains(MethodModifier.ABSTRACT);
+                    builder.setAbstractMethod();
+                }
+
                 addExceptionTypes(builder, md.getThrownExceptions(), newContext.typeContext());
                 ParameterizedType pt = ParameterizedTypeFactory.from(newContext.typeContext(), md.getType());
                 builder.setReturnType(pt);
@@ -315,7 +328,9 @@ public class MethodInspectorImpl implements MethodInspector {
                 if (md.getBody().isPresent()) {
                     builder.setBlock(md.getBody().get());
                 }
+                builder.computeAccess(newContext.typeContext());
             }
+
         } catch (RuntimeException e) {
             LOGGER.error("Caught exception while inspecting method {} in {}", methodName, typeInfo.fullyQualifiedName());
             throw e;
@@ -360,7 +375,7 @@ public class MethodInspectorImpl implements MethodInspector {
         }
     }
 
-    private static void addParameters(MethodInspection.Builder builder,
+    private void addParameters(MethodInspection.Builder builder,
                                       NodeList<Parameter> parameters,
                                       ExpressionContext expressionContext,
                                       DollarResolver dollarResolver) {
@@ -372,6 +387,7 @@ public class MethodInspectorImpl implements MethodInspector {
                     pt, parameter.getNameAsString(), i++);
             pib.setVarArgs(parameter.isVarArgs());
             // we do not copy annotations yet, that happens after readFQN
+            if(storeComments) builder.setComment(CommentFactory.from(parameter));
             builder.addParameter(pib);
         }
     }

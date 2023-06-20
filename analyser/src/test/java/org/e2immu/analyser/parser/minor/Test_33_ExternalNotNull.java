@@ -16,6 +16,7 @@
 package org.e2immu.analyser.parser.minor;
 
 import org.e2immu.analyser.analyser.DV;
+import org.e2immu.analyser.analyser.LinkedVariables;
 import org.e2immu.analyser.analyser.Property;
 import org.e2immu.analyser.analysis.impl.FieldAnalysisImpl;
 import org.e2immu.analyser.config.AnalyserConfiguration;
@@ -117,7 +118,6 @@ public class Test_33_ExternalNotNull extends CommonTestRunner {
             }
         };
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
-            DV enn = d.fieldAnalysis().getProperty(EXTERNAL_NOT_NULL);
             DV effFinal = d.fieldAnalysis().getProperty(Property.FINAL);
             FieldAnalysisImpl.Builder fai = (FieldAnalysisImpl.Builder) d.fieldAnalysis();
 
@@ -126,9 +126,12 @@ public class Test_33_ExternalNotNull extends CommonTestRunner {
                 assertEquals(DV.TRUE_DV, effFinal);
                 String expected = d.iteration() == 0 ? "<f:o>" : "[null,\"hello\"]";
                 assertEquals(expected, d.fieldAnalysis().getValue().toString());
-                assertEquals("", d.fieldAnalysis().getLinkedVariables().toString());
-                if(d.iteration()>0) {
-                    assertFalse(fai.valuesAreLinkedToParameters(MultiLevel.EFFECTIVELY_NOT_NULL_DV));
+                String linked = d.iteration() == 0
+                        ? "System.out:-1,p2:-1,q2:-1,r2:-1,s2:-1,this.p:-1,this.q:-1,this.r:-1,this.s:-1"
+                        : "";
+                assertEquals(linked, d.fieldAnalysis().getLinkedVariables().toString());
+                if (d.iteration() > 0) {
+                    assertFalse(fai.valuesAreLinkedToParameters(LinkedVariables.LINK_ASSIGNED));
                 }
             }
             if ("p".equals(d.fieldInfo().name)) {
@@ -136,23 +139,33 @@ public class Test_33_ExternalNotNull extends CommonTestRunner {
                 assertEquals(DV.TRUE_DV, effFinal);
                 String expected = d.iteration() == 0 ? "<f:p>" : "[p1,p2]";
                 assertEquals(expected, d.fieldAnalysis().getValue().toString());
-                assertEquals("p1:0,p2:0", d.fieldAnalysis().getLinkedVariables().toString());
+                String linked = d.iteration() == 0
+                        ? "System.out:-1,p1:-1,p2:-1,q2:-1,r2:-1,s2:-1,this.o:-1,this.q:-1,this.r:-1,this.s:-1"
+                        : "p1:0,p2:0";
+                assertEquals(linked, d.fieldAnalysis().getLinkedVariables().toString());
                 if (d.iteration() > 0) {
-                    assertTrue(fai.valuesAreLinkedToParameters(MultiLevel.EFFECTIVELY_NOT_NULL_DV));
+                    assertTrue(fai.valuesAreLinkedToParameters(LinkedVariables.LINK_ASSIGNED));
                 }
             }
             if ("q".equals(d.fieldInfo().name)) {
                 assertDv(d, 1, MultiLevel.NULLABLE_DV, EXTERNAL_NOT_NULL);
                 assertEquals(DV.FALSE_DV, effFinal);
-                assertEquals("q2:0,qs:0", d.fieldAnalysis().getLinkedVariables().toString());
+                String linked = d.iteration() == 0
+                        ? "System.out:-1,p2:-1,q2:-1,qs:-1,r2:-1,s2:-1,this.o:-1,this.p:-1,this.r:-1,this.s:-1"
+                        : "q2:0,qs:0";
+                assertEquals(linked, d.fieldAnalysis().getLinkedVariables().toString());
                 if (d.iteration() > 0) {
-                    assertFalse(fai.valuesAreLinkedToParameters(MultiLevel.EFFECTIVELY_NOT_NULL_DV));
+                    // also value null
+                    assertFalse(fai.valuesAreLinkedToParameters(LinkedVariables.LINK_ASSIGNED));
                 }
             }
             if ("r".equals(d.fieldInfo().name)) {
                 assertDv(d, 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, EXTERNAL_NOT_NULL);
                 assertEquals(DV.FALSE_DV, effFinal);
-                assertEquals("r1:1,r2:1,rs:1", d.fieldAnalysis().getLinkedVariables().toString());
+                String linked = d.iteration() == 0
+                        ? "System.out:-1,p2:-1,q2:-1,r1:-1,r2:-1,rs:-1,s2:-1,this.o:-1,this.p:-1,this.q:-1,this.s:-1"
+                        : "r1:1,r2:1,rs:1";
+                assertEquals(linked, d.fieldAnalysis().getLinkedVariables().toString());
             }
         };
         testClass("ExternalNotNull_0", 0, 4, new DebugConfiguration.Builder()

@@ -22,7 +22,8 @@ Example shows that direct assignment into sub-type, even if it causes a warning,
 should also count for a modification ?
  */
 
-@E1Immutable // but not a container!
+@FinalFields
+@Container(absent = true)
 public class Modification_14 {
 
     @Container

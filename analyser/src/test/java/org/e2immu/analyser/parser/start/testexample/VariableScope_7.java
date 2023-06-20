@@ -14,12 +14,15 @@
 
 package org.e2immu.analyser.parser.start.testexample;
 
+import org.e2immu.annotation.ImmutableContainer;
+
 import java.util.HashSet;
 import java.util.Set;
 import java.util.stream.Stream;
 
 public class VariableScope_7 {
 
+    @ImmutableContainer
     interface Message {
     }
 

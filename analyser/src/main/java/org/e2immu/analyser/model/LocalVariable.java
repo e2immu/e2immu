@@ -46,7 +46,9 @@ public record LocalVariable(Set<LocalVariableModifier> modifiers,
     }
 
     public LocalVariable translate(TranslationMap translationMap) {
-        return new LocalVariable(modifiers, name, translationMap.translateType(parameterizedType), annotations, owningType, nature);
+        ParameterizedType translatedType = translationMap.translateType(parameterizedType);
+        if(translatedType == parameterizedType) return this;
+        return new LocalVariable(modifiers, name, translatedType, annotations, owningType, nature);
     }
 
     @Override

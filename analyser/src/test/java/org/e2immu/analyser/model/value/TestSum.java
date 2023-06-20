@@ -23,14 +23,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class TestSum extends CommonAbstractValue {
 
-    private static Expression sum(Expression e1, Expression e2) {
-        return Sum.sum(context, e1, e2);
-    }
-
-    private static Expression product(Expression e1, Expression e2) {
-        return Product.product(context, e1, e2);
-    }
-
     @Test
     public void test1() {
         Expression s = sum(newInt(1), i);

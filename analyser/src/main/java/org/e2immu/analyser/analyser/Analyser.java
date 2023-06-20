@@ -14,6 +14,7 @@
 
 package org.e2immu.analyser.analyser;
 
+import org.e2immu.analyser.analyser.impl.util.BreakDelayLevel;
 import org.e2immu.analyser.analyser.util.AnalyserResult;
 import org.e2immu.analyser.analysis.Analysis;
 import org.e2immu.analyser.model.WithInspectionAndAnalysis;
@@ -27,28 +28,44 @@ import org.slf4j.LoggerFactory;
 import java.util.Collection;
 import java.util.stream.Stream;
 
+import static org.e2immu.analyser.analyser.Property.*;
+
 public interface Analyser extends Comparable<Analyser> {
 
 
-    record SharedState(int iteration, boolean allowBreakDelay, EvaluationContext closure) {
+    record SharedState(int iteration, BreakDelayLevel breakDelayLevel, EvaluationContext closure) {
         private static final Logger LOGGER = LoggerFactory.getLogger(Analyser.class);
 
         public SharedState removeAllowBreakDelay() {
-            if (allowBreakDelay) LOGGER.debug("**** Removing allow break delay ****");
-            return new SharedState(iteration, false, closure);
+            if (breakDelayLevel.isActive()) LOGGER.debug("**** Removing allow break delay ****");
+            return new SharedState(iteration, BreakDelayLevel.NONE, closure);
+        }
+
+        public SharedState setBreakDelayLevel(BreakDelayLevel breakDelayLevel) {
+            if (breakDelayLevel == this.breakDelayLevel) return this;
+            return new SharedState(iteration, breakDelayLevel, closure);
         }
     }
 
     enum AnalyserIdentification {
-        TYPE(null), // type does not have notNull
-        FIELD(Property.EXTERNAL_NOT_NULL),
-        PARAMETER(Property.NOT_NULL_PARAMETER),
-        METHOD(Property.NOT_NULL_EXPRESSION);
+        TYPE(IMMUTABLE, CONTAINER, null, null, false), // type does not have notNull
+        ABSTRACT_TYPE(IMMUTABLE, CONTAINER, null, null, true), // type does not have notNull
+        FIELD(EXTERNAL_IMMUTABLE, CONTAINER_RESTRICTION, EXTERNAL_NOT_NULL, EXTERNAL_IGNORE_MODIFICATIONS, false),
+        PARAMETER(IMMUTABLE, CONTAINER_RESTRICTION, NOT_NULL_PARAMETER, IGNORE_MODIFICATIONS, false),
+        METHOD(IMMUTABLE, CONTAINER, NOT_NULL_EXPRESSION, null, false);
 
+        public final Property immutable;
+        public final Property container;
         public final Property notNull;
+        public final Property ignoreMods;
+        public final boolean isAbstract;
 
-        AnalyserIdentification(Property notNull) {
+        AnalyserIdentification(Property immutable, Property container, Property notNull, Property ignoreMods, boolean isAbstract) {
             this.notNull = notNull;
+            this.container = container;
+            this.immutable = immutable;
+            this.ignoreMods = ignoreMods;
+            this.isAbstract = isAbstract;
         }
     }
 

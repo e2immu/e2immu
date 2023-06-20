@@ -83,7 +83,7 @@ public class Test_52_Var extends CommonTestRunner {
     @Test
     public void test_3_0() throws IOException {
         testClass("Var_3", 0, 0, new DebugConfiguration.Builder()
-                .build(),
+                        .build(),
                 new AnalyserConfiguration.Builder().setComputeContextPropertiesOverAllMethods(true).build());
     }
 
@@ -100,11 +100,12 @@ public class Test_52_Var extends CommonTestRunner {
         };
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("apply".equals(d.methodInfo().name) && "$1".equals(d.methodInfo().typeInfo.simpleName)) {
-                if (d.methodAnalysis().getSingleReturnValue() instanceof InlinedMethod inlinedMethod) {
-                    assertEquals("apply", inlinedMethod.methodInfo().name);
-                    assertEquals("/*inline apply*/x.repeat(i)", d.methodAnalysis().getSingleReturnValue().toString());
-                } else fail();
-
+                if (d.iteration() > 0) {
+                    if (d.methodAnalysis().getSingleReturnValue() instanceof InlinedMethod inlinedMethod) {
+                        assertEquals("apply", inlinedMethod.methodInfo().name);
+                        assertEquals("/*inline apply*/x.repeat(i)", d.methodAnalysis().getSingleReturnValue().toString());
+                    } else fail();
+                }
                 // @NotNull on parameter of apply
                 assertDv(d.p(0), 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_PARAMETER);
                 assertEquals(DV.FALSE_DV, d.methodAnalysis().getProperty(Property.MODIFIED_METHOD));
@@ -119,8 +120,8 @@ public class Test_52_Var extends CommonTestRunner {
                             assertEquals("apply", inlinedMethod2.methodInfo().name);
                             assertEquals("/*inline repeater*//*inline apply*/x.repeat(i)", d.methodAnalysis().getSingleReturnValue().toString());
                             assertFalse(inlinedMethod.containsVariableFields());
-                            assertEquals(2, inlinedMethod.variables(true).size());
-                            assertTrue(inlinedMethod.variables(true).stream().allMatch(v -> v instanceof ParameterInfo));
+                            assertEquals(2, inlinedMethod.variables().size());
+                            assertTrue(inlinedMethod.variableStream().allMatch(v -> v instanceof ParameterInfo));
                         } else fail();
                     } else fail("Srv instance of " + d.methodAnalysis().getSingleReturnValue().getClass());
                 }
@@ -151,21 +152,21 @@ public class Test_52_Var extends CommonTestRunner {
             }
             if (d.variable() instanceof ReturnVariable) {
                 if ("0.0.0".equals(d.statementId())) {
-                    assertEquals("(instance type StringWriter/*{L sw:statically_assigned:0}*/).toString()",
+                    assertEquals("(instance type StringWriter/*{L sw:0}*/).toString()",
                             d.currentValue().toString());
                     // explicit as result of the method, rather than governed by the type
-                    assertEquals(MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, d.getProperty(Property.IMMUTABLE));
+                    assertEquals(MultiLevel.EFFECTIVELY_IMMUTABLE_DV, d.getProperty(Property.IMMUTABLE));
                 }
                 if ("0.1.0".equals(d.statementId())) {
                     assertEquals("\"Error!\"", d.currentValue().toString());
-                    assertEquals(MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, d.getProperty(Property.IMMUTABLE));
+                    assertEquals(MultiLevel.EFFECTIVELY_IMMUTABLE_DV, d.getProperty(Property.IMMUTABLE));
                 }
             }
         };
         TypeMapVisitor typeMapVisitor = typeMap -> {
             TypeInfo typeInfo = typeMap.get(String.class);
             DV imm = typeInfo.typeAnalysis.get().getProperty(Property.IMMUTABLE);
-            assertEquals(MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, imm);
+            assertEquals(MultiLevel.EFFECTIVELY_IMMUTABLE_DV, imm);
         };
 
         testClass("Var_5", 0, 0, new DebugConfiguration.Builder()

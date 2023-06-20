@@ -21,6 +21,7 @@ import org.e2immu.analyser.model.expression.DelayedVariableExpression;
 import org.e2immu.analyser.model.expression.util.OneVariable;
 import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.util.UpgradableBooleanMap;
+import org.e2immu.annotation.ImmutableContainer;
 import org.e2immu.annotation.NotNull;
 
 import java.util.Set;
@@ -31,7 +32,7 @@ import java.util.stream.Collectors;
  * groups: FieldInfo, ParameterInfo, LocalVariable
  */
 
-// at some point: @E2Container
+@ImmutableContainer
 public interface Variable extends OneVariable, Comparable<Variable> {
 
     @Override
@@ -98,7 +99,7 @@ public interface Variable extends OneVariable, Comparable<Variable> {
         if (variable() instanceof FieldReference fr && fr.scope instanceof DelayedVariableExpression dve) {
             return dve.statementTime;
         }
-        return VariableInfoContainer.NOT_A_FIELD;
+        return VariableInfoContainer.IGNORE_STATEMENT_TIME;
     }
 
     default void visit(Predicate<Element> predicate) {
@@ -118,4 +119,6 @@ public interface Variable extends OneVariable, Comparable<Variable> {
     scope variable or index variable is contained in set?
      */
     default boolean containsAtLeastOneOf(Set<? extends Variable> variables) { return false; }
+
+    default int getComplexity() { return 1; }
 }

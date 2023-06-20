@@ -14,12 +14,6 @@
 
 package org.e2immu.analyser.parser.start.testexample;
 
-import org.e2immu.annotation.Constant;
-import org.e2immu.annotation.E2Container;
-import org.e2immu.annotation.ERContainer;
-import org.e2immu.annotation.ExtensionClass;
-
-
 /*
 
  Check for unused local variables
@@ -35,11 +29,13 @@ import org.e2immu.annotation.ExtensionClass;
  ERROR in M:checkForEach:1.0.0: Unused local variable: loopVar
  */
 
-@ERContainer
+import org.e2immu.annotation.ImmutableContainer;
+import org.e2immu.annotation.type.ExtensionClass;
+
 @ExtensionClass(of=boolean.class)
 public class Warnings_1 {
 
-    public Warnings_1() {
+    private Warnings_1() {
         int a = 0;
         // ERROR: private variable a is not used, useless assignment
     }
@@ -55,7 +51,7 @@ public class Warnings_1 {
         t.trim();
     }
 
-    @Constant("1")
+    @ImmutableContainer("1")
     private static int checkArray() {
         int[] integers = {1, 2, 3};
         int i = 0;

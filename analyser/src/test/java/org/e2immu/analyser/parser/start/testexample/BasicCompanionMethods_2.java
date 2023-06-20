@@ -14,14 +14,15 @@
 
 package org.e2immu.analyser.parser.start.testexample;
 
-import org.e2immu.annotation.Constant;
+
+import org.e2immu.annotation.ImmutableContainer;
 
 import java.util.ArrayList;
 import java.util.List;
 
 public class BasicCompanionMethods_2 {
 
-    @Constant("true")
+    @ImmutableContainer("true")
     static boolean test() {
         List<String> list = new ArrayList<>();
         list.add("a");

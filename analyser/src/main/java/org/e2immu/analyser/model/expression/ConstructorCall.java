@@ -14,22 +14,15 @@
 
 package org.e2immu.analyser.model.expression;
 
-import org.e2immu.analyser.analyser.Properties;
 import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.analysis.FieldAnalysis;
-import org.e2immu.analyser.analysis.ParameterAnalysis;
+import org.e2immu.analyser.analysis.MethodAnalysis;
 import org.e2immu.analyser.analysis.TypeAnalysis;
 import org.e2immu.analyser.model.*;
-import org.e2immu.analyser.model.expression.util.EvaluateParameters;
-import org.e2immu.analyser.model.expression.util.ExpressionComparator;
-import org.e2immu.analyser.model.expression.util.MultiExpression;
-import org.e2immu.analyser.model.expression.util.TranslationCollectors;
+import org.e2immu.analyser.model.expression.util.*;
 import org.e2immu.analyser.model.impl.BaseExpression;
 import org.e2immu.analyser.model.impl.TranslationMapImpl;
-import org.e2immu.analyser.output.OutputBuilder;
-import org.e2immu.analyser.output.Space;
-import org.e2immu.analyser.output.Symbol;
-import org.e2immu.analyser.output.Text;
+import org.e2immu.analyser.output.*;
 import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.Primitives;
@@ -37,11 +30,12 @@ import org.e2immu.analyser.util.Pair;
 import org.e2immu.analyser.util.UpgradableBooleanMap;
 import org.e2immu.annotation.NotNull;
 
-import java.util.*;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
-
-import static org.e2immu.analyser.model.MultiLevel.*;
 
 /*
  Represents first a newly constructed object, then after applying modifying methods, a "used" object
@@ -111,6 +105,11 @@ public class ConstructorCall extends BaseExpression implements HasParameterExpre
         return new Instance(identifier, parameterizedType, valueProperties);
     }
 
+    public ConstructorCall copy(List<Expression> newParameterExpressions) {
+        return new ConstructorCall(identifier, constructor, parameterizedType, diamond, newParameterExpressions,
+                anonymousClass, arrayInitializer);
+    }
+
     public ConstructorCall(Identifier identifier,
                            MethodInfo constructor,
                            ParameterizedType parameterizedType,
@@ -154,11 +153,19 @@ public class ConstructorCall extends BaseExpression implements HasParameterExpre
 
     @Override
     public Expression translate(InspectionProvider inspectionProvider, TranslationMap translationMap) {
+        Expression translated = translationMap.translateExpression(this);
+        if (translated != this) return translated;
+
         ParameterizedType translatedType = translationMap.translateType(this.parameterizedType);
         List<Expression> translatedParameterExpressions = parameterExpressions.isEmpty() ? parameterExpressions
                 : parameterExpressions.stream().map(e -> e.translate(inspectionProvider, translationMap))
                 .collect(TranslationCollectors.toList(parameterExpressions));
-        if (translatedType == this.parameterizedType && translatedParameterExpressions == this.parameterExpressions) {
+        ArrayInitializer translatedInitializer = arrayInitializer == null ? null :
+                TranslationMapImpl.ensureExpressionType(
+                        arrayInitializer.translate(inspectionProvider, translationMap), ArrayInitializer.class);
+        if (translatedType == this.parameterizedType
+                && translatedParameterExpressions == this.parameterExpressions
+                && translatedInitializer == arrayInitializer) {
             return this;
         }
         CausesOfDelay causesOfDelay = translatedParameterExpressions.stream()
@@ -172,7 +179,7 @@ public class ConstructorCall extends BaseExpression implements HasParameterExpre
                 diamond,
                 translatedParameterExpressions,
                 anonymousClass, // not translating this yet!
-                arrayInitializer == null ? null : TranslationMapImpl.ensureExpressionType(arrayInitializer, ArrayInitializer.class));
+                translatedInitializer);
     }
 
     @Override
@@ -189,101 +196,14 @@ public class ConstructorCall extends BaseExpression implements HasParameterExpre
     @Override
     public LinkedVariables linkedVariables(EvaluationResult context) {
         // instance, no constructor parameter expressions
-        if (constructor == null) return LinkedVariables.EMPTY;
-        List<LinkedVariables> linkedVariables = computeLinkedVariablesOfParameters(context, parameterExpressions,
-                // FIXME!!!
-                parameterExpressions);
-        return linkedVariablesFromParameters(context, constructor.methodInspection.get(),
-                parameterExpressions, linkedVariables);
-    }
-
-    public static List<LinkedVariables> computeLinkedVariablesOfParameters(EvaluationResult context,
-                                                                           List<Expression> parameterExpressions,
-                                                                           List<Expression> parameterValues) {
-        assert parameterExpressions.size() == parameterValues.size();
-        int i = 0;
-        List<LinkedVariables> result = new ArrayList<>(parameterExpressions.size());
-        for (Expression expression : parameterExpressions) {
-            LinkedVariables lvExpression = expression.linkedVariables(context);
-            Expression value = parameterValues.get(i++);
-            LinkedVariables lvValue = value.linkedVariables(context);
-            LinkedVariables merged = lvExpression.merge(lvValue);
-            result.add(merged);
-        }
-        return result;
-    }
-
-    static LinkedVariables linkedVariablesFromParameters(EvaluationResult evaluationContext,
-                                                         MethodInspection methodInspection,
-                                                         List<Expression> parameterExpressions,
-                                                         List<LinkedVariables> linkedVariables) {
-        // quick shortcut
-        if (parameterExpressions.isEmpty()) {
-            return LinkedVariables.EMPTY;
-        }
-
-        LinkedVariables result = LinkedVariables.EMPTY;
-        int i = 0;
-        for (Expression value : parameterExpressions) {
-            ParameterInfo parameterInfo;
-            if (i < methodInspection.getParameters().size()) {
-                parameterInfo = methodInspection.getParameters().get(i);
-            } else {
-                parameterInfo = methodInspection.getParameters().get(methodInspection.getParameters().size() - 1);
-                assert parameterInfo.parameterInspection.get().isVarArgs();
-            }
-            DV independent = computeIndependentFromComponents(evaluationContext, value, parameterInfo);
-            LinkedVariables sub = linkedVariables.get(i);
-            if (independent.isDelayed()) {
-                result = result.mergeDelay(sub, independent);
-            } else if (independent.ge(MultiLevel.DEPENDENT_DV) && independent.lt(INDEPENDENT_DV)) {
-                result = result.merge(sub, LinkedVariables.fromIndependentToLinkedVariableLevel(independent));
-            }
-
-            i++;
-        }
-        return result.minimum(LinkedVariables.ASSIGNED_DV);
-    }
-
-    /*
-    important: the result has to be independence with respect to the fields!!
-
-    Example 1: parameterInfo = java.util.List.add(E):0:e, which is @Independent1.
-    This means that the argument will be part of the list's hidden content.
-    If the argument is MUTABLE, result should be Independent1, if it is E2_IMMUTABLE, the result should be Independent_2, etc.
-    See e.g. Modification_16
-
-    Example 2: parameterInfo = java.util.function.Consumer.accept(T):0:t, which is @Dependent
-    See e.g. E2ImmutableComposition_0.ExposedArrayOfHasSize
-    If we feed in an array of recursively immutable elements, like HasSize[], we want @Dependent as an outcome.
-    If we feed in the recursively immutable element HasSize, we remain independent
-
-     */
-    private static DV computeIndependentFromComponents(EvaluationResult evaluationContext,
-                                                       Expression value,
-                                                       ParameterInfo parameterInfo) {
-        ParameterAnalysis parameterAnalysis = evaluationContext.getAnalyserContext().getParameterAnalysis(parameterInfo);
-        DV independentOnParameter = parameterAnalysis.getProperty(Property.INDEPENDENT);
-        DV immutableOfValue = evaluationContext.getProperty(value, Property.IMMUTABLE);
-
-        // shortcut: either is at max value, then there is no discussion
-        if (independentOnParameter.equals(INDEPENDENT_DV) || immutableOfValue.equals(EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV)) {
-            return INDEPENDENT_DV;
-        }
-
-        // any delay: wait!
-        CausesOfDelay causes = immutableOfValue.causesOfDelay().merge(independentOnParameter.causesOfDelay());
-        if(causes.isDelayed()) return causes;
-
-        int immutableLevel = MultiLevel.level(immutableOfValue);
-        if (independentOnParameter.le(DEPENDENT_DV)) {
-            if (immutableLevel == 0) return DEPENDENT_DV;
-            return MultiLevel.independentCorrespondingToImmutableLevelDv(immutableLevel);
-        }
-        // TODO shouldn't we use the same method as in CPA.analyseIndependentNoAssignment??
-        int parameterLevel = MultiLevel.level(independentOnParameter); // 0 = @Independent1
-        int resultLevel = Math.min(MultiLevel.MAX_LEVEL, immutableLevel + parameterLevel + 1);
-        return MultiLevel.independentCorrespondingToImmutableLevelDv(resultLevel);
+        if (constructor == null || parameterExpressions.isEmpty()) return LinkedVariables.EMPTY;
+        List<Expression> parameterValues = parameterExpressions.stream()
+                .map(pe -> pe.evaluate(context, ForwardEvaluationInfo.DEFAULT).value())
+                .toList();
+        List<LinkedVariables> linkedVariables = LinkParameters.computeLinkedVariablesOfParameters(context,
+                parameterExpressions, parameterValues);
+        return LinkParameters.linkFromObjectToParameters(context, constructor.methodInspection.get(), linkedVariables,
+                returnType());
     }
 
     @Override
@@ -307,35 +227,47 @@ public class ConstructorCall extends BaseExpression implements HasParameterExpre
         }
         return switch (property) {
             case NOT_NULL_EXPRESSION -> notNullValue();
-            case IDENTITY, IGNORE_MODIFICATIONS -> analyserContext.defaultValueProperty(property, pt, null);
-            case IMMUTABLE, IMMUTABLE_BREAK -> immutableValue(pt, analyserContext, context.getCurrentType());
-            case CONTAINER -> analyserContext.defaultContainer(pt);
-            case INDEPENDENT -> independentValue(pt, analyserContext, context.getCurrentType());
+            case IDENTITY, IGNORE_MODIFICATIONS -> analyserContext.defaultValueProperty(property, pt);
+            case IMMUTABLE, IMMUTABLE_BREAK -> immutableValue(pt, analyserContext);
+            case CONTAINER -> analyserContext.typeContainer(pt);
+            case INDEPENDENT -> independentValue(pt, analyserContext);
             case CONTEXT_MODIFIED -> DV.FALSE_DV;
             default -> throw new UnsupportedOperationException("ConstructorCall has no value for " + property);
         };
     }
 
+    /*
+    new String[3][2] = content not null
+    new String[3][] = not null
+    new String[] = illegal
+     */
     private DV notNullValue() {
-        if (parameterizedType.arrays <= 1) return MultiLevel.EFFECTIVELY_NOT_NULL_DV;
-        if (parameterizedType.arrays == 2) return MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL_DV;
-        return MultiLevel.EFFECTIVELY_CONTENT2_NOT_NULL_DV;
+        if (parameterizedType.arrays > 0) {
+            int countSize = 0;
+            while (countSize < parameterExpressions.size() && !(parameterExpressions.get(countSize) instanceof UnknownExpression)) {
+                countSize++;
+            }
+            assert countSize > 0;
+            if (countSize == 1) return MultiLevel.EFFECTIVELY_NOT_NULL_DV;
+            return MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL_DV;
+        }
+        return MultiLevel.EFFECTIVELY_NOT_NULL_DV;
     }
 
-    private DV independentValue(ParameterizedType pt, AnalyserContext analyserContext, TypeInfo currentType) {
+    private DV independentValue(ParameterizedType pt, AnalyserContext analyserContext) {
         if (anonymousClass != null) {
-            DV immutable = immutableValue(pt, analyserContext, currentType);
-            if (MultiLevel.isAtLeastEventuallyE2Immutable(immutable)) {
+            DV immutable = immutableValue(pt, analyserContext);
+            if (MultiLevel.isAtLeastEventuallyImmutableHC(immutable)) {
                 return MultiLevel.independentCorrespondingToImmutableLevelDv(MultiLevel.level(immutable));
             }
             if (immutable.isDelayed()) return immutable;
             return MultiLevel.DEPENDENT_DV;
         }
-        return analyserContext.defaultValueProperty(Property.INDEPENDENT, pt, currentType);
+        return analyserContext.defaultValueProperty(Property.INDEPENDENT, pt);
     }
 
-    private DV immutableValue(ParameterizedType pt, AnalyserContext analyserContext, TypeInfo currentType) {
-        DV dv = analyserContext.defaultImmutable(pt, false, currentType);
+    private DV immutableValue(ParameterizedType pt, AnalyserContext analyserContext) {
+        DV dv = analyserContext.typeImmutable(pt);
         if (dv.isDone() && MultiLevel.effective(dv) == MultiLevel.Effective.EVENTUAL) {
             return MultiLevel.beforeImmutableDv(MultiLevel.level(dv));
         }
@@ -387,9 +319,23 @@ public class ConstructorCall extends BaseExpression implements HasParameterExpre
     public OutputBuilder output(Qualification qualification) {
         OutputBuilder outputBuilder = new OutputBuilder();
         if (constructor != null || anonymousClass != null) {
-            outputBuilder.add(new Text("new")).add(Space.ONE)
-                    .add(parameterizedType.output(qualification, false, diamond));
-            if (arrayInitializer == null) {
+            outputBuilder.add(Keyword.NEW).add(Space.ONE)
+                    .add(parameterizedType.copyWithoutArrays().output(qualification, false, diamond));
+            //      if (arrayInitializer == null) {
+            if (parameterizedType.arrays > 0) {
+                for (int i = 0; i < parameterizedType.arrays; i++) {
+                    if (i < parameterExpressions.size()) {
+                        outputBuilder.add(Symbol.LEFT_BRACKET);
+                        Expression size = parameterExpressions.get(i);
+                        if (!(size instanceof UnknownExpression)) {
+                            outputBuilder.add(size.output(qualification));
+                        }
+                        outputBuilder.add(Symbol.RIGHT_BRACKET);
+                    } else {
+                        outputBuilder.add(Symbol.OPEN_CLOSE_BRACKETS);
+                    }
+                }
+            } else {
                 if (parameterExpressions.isEmpty()) {
                     outputBuilder.add(Symbol.OPEN_CLOSE_PARENTHESIS);
                 } else {
@@ -400,6 +346,7 @@ public class ConstructorCall extends BaseExpression implements HasParameterExpre
                             .add(Symbol.RIGHT_PARENTHESIS);
                 }
             }
+            //    }
         }
         if (anonymousClass != null) {
             outputBuilder.add(anonymousClass.output(qualification, false));
@@ -429,13 +376,16 @@ public class ConstructorCall extends BaseExpression implements HasParameterExpre
 
     @Override
     public EvaluationResult evaluate(EvaluationResult context, ForwardEvaluationInfo forwardEvaluationInfo) {
+        if (forwardEvaluationInfo.isOnlySort()) {
+            return evaluateComponents(context, forwardEvaluationInfo);
+        }
 
         // arrayInitializer variant
 
         if (arrayInitializer != null) {
             EvaluationResult.Builder builder = new EvaluationResult.Builder(context);
             List<EvaluationResult> results = arrayInitializer.multiExpression.stream()
-                    .map(e -> e.evaluate(context, ForwardEvaluationInfo.DEFAULT))
+                    .map(e -> e.evaluate(context, forwardEvaluationInfo))
                     .collect(Collectors.toList());
             builder.compose(results);
             List<Expression> values = results.stream().map(EvaluationResult::getExpression).collect(Collectors.toList());
@@ -451,7 +401,7 @@ public class ConstructorCall extends BaseExpression implements HasParameterExpre
                 false);
         CausesOfDelay parameterDelays = res.v.stream().map(Expression::causesOfDelay).reduce(CausesOfDelay.EMPTY, CausesOfDelay::merge);
         if (parameterDelays.isDelayed()) {
-            return delayedConstructorCall(context, res.k, parameterDelays);
+            return delayedConstructorCall(context, res.k, null, parameterDelays); // FIXME
         }
 
         // check state changes of companion methods
@@ -462,11 +412,12 @@ public class ConstructorCall extends BaseExpression implements HasParameterExpre
             if (modReturn == null) {
                 instance = this;
             } else if (modReturn.expression() != null) {
+                Properties properties = context.evaluationContext().getValueProperties(modReturn.expression());
                 instance = modReturn.expression().isDelayed()
-                        ? createDelayedValue(identifier, context, modReturn.expression().causesOfDelay())
+                        ? createDelayedValue(identifier, context, properties, modReturn.expression().causesOfDelay())
                         : modReturn.expression();
             } else {
-                instance = createDelayedValue(identifier, context, modReturn.causes());
+                instance = createDelayedValue(identifier, context, (Properties) null, modReturn.causes());
             }
         } else {
             instance = this;
@@ -478,6 +429,10 @@ public class ConstructorCall extends BaseExpression implements HasParameterExpre
             res.k.incrementStatementTime();
         }
 
+        // links from object into the parameters  new List(x), which may render x --3--> new object
+        // but that's not a variable... how do we solve that? with a reverse link, that gets translated in assignment?
+        // FIXME implement!!
+
         DV cImm = forwardEvaluationInfo.getProperty(Property.CONTEXT_IMMUTABLE);
         if (MultiLevel.isAfterThrowWhenNotEventual(cImm)) {
             res.k.raiseError(getIdentifier(), Message.Label.EVENTUAL_AFTER_REQUIRED);
@@ -485,11 +440,30 @@ public class ConstructorCall extends BaseExpression implements HasParameterExpre
         return res.k.build();
     }
 
+    private EvaluationResult evaluateComponents(EvaluationResult context, ForwardEvaluationInfo forwardEvaluationInfo) {
+        ArrayInitializer evaluatedArrayInitializer = arrayInitializer == null ? null :
+                (ArrayInitializer) arrayInitializer.evaluate(context, forwardEvaluationInfo).getExpression();
+        List<Expression> evaluatedParams = parameterExpressions.stream()
+                .map(e -> e.evaluate(context, forwardEvaluationInfo).getExpression()).toList();
+        MethodAnalysis methodAnalysis = constructor == null ? null
+                : context.getAnalyserContext().getMethodAnalysisNullWhenAbsent(constructor);
+        List<Expression> sortedParameters;
+        if (methodAnalysis != null && methodAnalysis.hasParallelGroups()) {
+            sortedParameters = methodAnalysis.sortAccordingToParallelGroupsAndNaturalOrder(parameterExpressions);
+        } else {
+            sortedParameters = evaluatedParams;
+        }
+        Expression mc = new ConstructorCall(identifier, constructor, parameterizedType, diamond, sortedParameters,
+                anonymousClass, evaluatedArrayInitializer);
+        return new EvaluationResult.Builder(context).setExpression(mc).build();
+    }
+
     private EvaluationResult delayedConstructorCall(EvaluationResult context,
                                                     EvaluationResult.Builder builder,
+                                                    Properties valueProperties,
                                                     CausesOfDelay causesOfDelay) {
         assert causesOfDelay.isDelayed();
-        builder.setExpression(createDelayedValue(identifier, context, causesOfDelay));
+        builder.setExpression(createDelayedValue(identifier, context, valueProperties, causesOfDelay));
         // set scope delay
         return builder.build();
     }
@@ -500,7 +474,10 @@ public class ConstructorCall extends BaseExpression implements HasParameterExpre
     }
 
     @Override
-    public Expression createDelayedValue(Identifier identifier, EvaluationResult context, CausesOfDelay causes) {
+    public Expression createDelayedValue(Identifier identifier,
+                                         EvaluationResult context,
+                                         Properties valueProperties,
+                                         CausesOfDelay causes) {
         return createDelayedValue(identifier, context, parameterizedType, causes);
     }
 
@@ -513,7 +490,7 @@ public class ConstructorCall extends BaseExpression implements HasParameterExpre
             shortCutMap = null;
         } else {
             boolean haveNoVariables = parameterExpressions.stream()
-                    .allMatch(e -> e.variables(true).isEmpty());
+                    .allMatch(e -> e.variables().isEmpty());
             if (haveNoVariables) {
                 shortCutMap = null;
             } else {
@@ -553,7 +530,7 @@ public class ConstructorCall extends BaseExpression implements HasParameterExpre
                                 fieldAnalysis.getLinkedVariables().variables().forEach((v, lv) -> {
                                     if (v instanceof ParameterInfo pi
                                             && pi.owner == constructor
-                                            && lv.equals(LinkedVariables.STATICALLY_ASSIGNED_DV)) {
+                                            && lv.equals(LinkedVariables.LINK_STATICALLY_ASSIGNED)) {
                                         // the field has been statically assigned to pi
                                         Expression original = parameterExpressions.get(pi.index);
                                         Expression de = DelayedExpression.forConstructorCallExpansion(identifier, delayName,

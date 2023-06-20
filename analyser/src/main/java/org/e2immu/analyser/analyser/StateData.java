@@ -17,13 +17,11 @@ package org.e2immu.analyser.analyser;
 import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.Location;
 import org.e2immu.analyser.model.MethodInfo;
-import org.e2immu.analyser.model.expression.And;
-import org.e2immu.analyser.model.expression.Or;
-import org.e2immu.analyser.model.expression.UnknownExpression;
-import org.e2immu.analyser.model.expression.VariableExpression;
+import org.e2immu.analyser.model.expression.*;
 import org.e2immu.analyser.model.statement.LoopStatement;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.support.EventuallyFinal;
+import org.e2immu.support.FlipSwitch;
 import org.e2immu.support.SetOnceMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -44,24 +42,33 @@ public class StateData {
     private final EventuallyFinal<Precondition> precondition = new EventuallyFinal<>();
     // used for transfer from SAApply / StatementAnalysis.applyPrecondition to SASubBlocks
     private final EventuallyFinal<Precondition> preconditionFromMethodCalls = new EventuallyFinal<>();
+    // there can be only one postCondition per statement
+    private final EventuallyFinal<PostCondition> postCondition = new EventuallyFinal<>();
+    private final FlipSwitch escapeNotInPreOrPostConditions = new FlipSwitch();
     private final SetOnceMap<String, EventuallyFinal<Expression>> statesOfInterrupts;
     private final SetOnceMap<String, EventuallyFinal<Expression>> statesOfReturnInLoop;
     public final EventuallyFinal<Expression> valueOfExpression = new EventuallyFinal<>();
+    private final EventuallyFinal<Expression> absoluteState = new EventuallyFinal<>();
+    private final EventuallyFinal<EvaluatedExpressionCache> evaluatedExpressionCache = new EventuallyFinal<>();
 
     public StateData(Location location, boolean isLoop, Primitives primitives) {
         statesOfInterrupts = isLoop ? new SetOnceMap<>() : null;
         statesOfReturnInLoop = isLoop ? new SetOnceMap<>() : null;
         conditionManagerForNextStatement.setVariable(ConditionManager.initialConditionManager(primitives));
         precondition.setVariable(Precondition.noInformationYet(location, primitives));
+        postCondition.setVariable(PostCondition.NO_INFO_YET);
     }
 
     public void internalAllDoneCheck() {
         assert conditionManagerForNextStatement.isFinal();
         assert precondition.isFinal();
         assert preconditionFromMethodCalls.isFinal();
+        assert postCondition.isFinal();
         assert valueOfExpression.isFinal();
-        assert statesOfInterrupts == null || statesOfInterrupts.stream().allMatch(e -> e.getValue().isFinal());
-        assert statesOfReturnInLoop == null || statesOfReturnInLoop.stream().allMatch(e -> e.getValue().isFinal());
+        assert absoluteState.isFinal();
+        assert evaluatedExpressionCache.isFinal();
+        assert statesOfInterrupts == null || statesOfInterrupts.valueStream().allMatch(EventuallyFinal::isFinal);
+        assert statesOfReturnInLoop == null || statesOfReturnInLoop.valueStream().allMatch(EventuallyFinal::isFinal);
     }
 
     public void makeUnreachable(Primitives primitives) {
@@ -74,20 +81,62 @@ public class StateData {
         if (preconditionFromMethodCalls.isVariable()) {
             preconditionFromMethodCalls.setFinal(Precondition.empty(primitives));
         }
+        if (postCondition.isVariable()) {
+            postCondition.setFinal(PostCondition.NO_INFO_YET);
+        }
         Expression unreachable = UnknownExpression.forUnreachableStatement();
         if (valueOfExpression.isVariable()) {
             valueOfExpression.setFinal(unreachable);
         }
         if (statesOfInterrupts != null) {
-            statesOfInterrupts.stream().forEach(e -> {
-                if (e.getValue().isVariable()) e.getValue().setFinal(unreachable);
+            statesOfInterrupts.valueStream().forEach(v -> {
+                if (v.isVariable()) v.setFinal(unreachable);
             });
         }
         if (statesOfReturnInLoop != null) {
-            statesOfReturnInLoop.stream().forEach(e -> {
-                if (e.getValue().isVariable()) e.getValue().setFinal(unreachable);
+            statesOfReturnInLoop.valueStream().forEach(v -> {
+                if (v.isVariable()) v.setFinal(unreachable);
             });
         }
+        if (absoluteState.isVariable()) {
+            absoluteState.setFinal(unreachable);
+        }
+        if (evaluatedExpressionCache.isVariable()) {
+            evaluatedExpressionCache.setFinal(EvaluatedExpressionCache.EMPTY);
+        }
+    }
+
+    public boolean setAbsoluteState(EvaluationContext evaluationContext) {
+        ConditionManager conditionManager = evaluationContext.getConditionManager();
+        Expression absoluteState = conditionManager.absoluteState(EvaluationResult.from(evaluationContext));
+        if (absoluteState.isDelayed()) {
+            this.absoluteState.setVariable(absoluteState);
+        } else if (this.absoluteState.isVariable()) {
+            this.absoluteState.setFinal(absoluteState);
+            return true;
+        }
+        return false;
+    }
+
+    public boolean setEvaluatedExpressionCache(EvaluatedExpressionCache cache) {
+        if (cache.delays().isDone()) {
+            if (evaluatedExpressionCache.isVariable()) {
+                evaluatedExpressionCache.setFinal(cache);
+                return true;
+            }
+        } else {
+            evaluatedExpressionCache.setVariable(cache);
+        }
+        return false;
+    }
+
+    @SuppressWarnings("unused") // used in CM
+    public EvaluatedExpressionCache getEvaluatedExpressionCache() {
+        return evaluatedExpressionCache.get();
+    }
+
+    public Expression getAbsoluteState() {
+        return absoluteState.get();
     }
 
     public boolean equalityAccordingToStateIsSet(VariableExpression variable) {
@@ -116,6 +165,10 @@ public class StateData {
 
     public boolean preconditionNoInformationYet(MethodInfo currentMethod) {
         return precondition.isVariable() && precondition.get().isNoInformationYet(currentMethod);
+    }
+
+    public boolean postConditionNoInformationYet() {
+        return postCondition.isVariable() && postCondition.get().isNoInformationYet();
     }
 
     /*
@@ -152,6 +205,31 @@ public class StateData {
 
     public boolean preconditionIsFinal() {
         return precondition.isFinal();
+    }
+
+    public PostCondition getPostCondition() {
+        return postCondition.get();
+    }
+
+    public boolean postConditionIsFinal() {
+        return postCondition.isFinal();
+    }
+
+    public boolean havePostCondition() {
+        return postCondition.get() != PostCondition.NO_INFO_YET;
+    }
+
+    public boolean setPostCondition(PostCondition pc) {
+        if (pc.expression().isDelayed()) {
+            try {
+                postCondition.setVariable(pc);
+                return false;
+            } catch (IllegalStateException ise) {
+                LOGGER.error("Try to set delayed {}, already have {}", pc, postCondition.get());
+                throw ise;
+            }
+        }
+        return setFinalAllowEquals(postCondition, pc);
     }
 
     /*
@@ -268,8 +346,8 @@ public class StateData {
 
         List<Expression> ors = new ArrayList<>();
         if (loopStatement.hasExitCondition()) {
-            statesOfInterrupts.stream().map(Map.Entry::getValue).forEach(e ->
-                    ors.add(context.evaluationContext().replaceLocalVariables(e.get())));
+            statesOfInterrupts.valueStream().forEach(v ->
+                    ors.add(context.evaluationContext().replaceLocalVariables(v.get())));
             if (!negatedConditionOrExitState.isBoolValueFalse()) {
                 // the exit condition cannot contain local variables
                 ors.add(context.evaluationContext().replaceLocalVariables(negatedConditionOrExitState));
@@ -288,5 +366,15 @@ public class StateData {
 
     public boolean noExitViaReturnOrBreak() {
         return statesOfInterrupts.isEmpty() && statesOfReturnInLoop.isEmpty();
+    }
+
+    public boolean isEscapeNotInPreOrPostConditions() {
+        return escapeNotInPreOrPostConditions.isSet();
+    }
+
+    public void ensureEscapeNotInPreOrPostConditions() {
+        if (!escapeNotInPreOrPostConditions.isSet()) {
+            escapeNotInPreOrPostConditions.set();
+        }
     }
 }

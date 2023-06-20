@@ -14,27 +14,52 @@
 
 package org.e2immu.analyser.model.statement;
 
-import org.e2immu.analyser.model.Identifier;
-import org.e2immu.analyser.model.LimitedStatementAnalysis;
-import org.e2immu.analyser.model.Qualification;
-import org.e2immu.analyser.output.OutputBuilder;
-import org.e2immu.analyser.output.Space;
-import org.e2immu.analyser.output.Symbol;
-import org.e2immu.analyser.output.Text;
+import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.output.*;
+import org.e2immu.analyser.parser.InspectionProvider;
+
+import java.util.List;
+import java.util.Objects;
 
 public class ContinueStatement extends BreakOrContinueStatement {
 
-    public ContinueStatement(Identifier identifier, String label) {
-        super(identifier, label);
+    public ContinueStatement(Identifier identifier, String label, Comment comment) {
+        super(identifier, label, comment);
     }
 
     @Override
     public OutputBuilder output(Qualification qualification, LimitedStatementAnalysis statementAnalysis) {
-        OutputBuilder outputBuilder = new OutputBuilder().add(new Text("continue"));
+        OutputBuilder outputBuilder = new OutputBuilder().add(Keyword.CONTINUE);
         if (label != null) {
             outputBuilder.add(Space.ONE).add(new Text(label));
         }
         outputBuilder.add(Symbol.SEMICOLON).addIfNotNull(messageComment(statementAnalysis));
         return outputBuilder;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (obj == this) return true;
+        if (obj instanceof ContinueStatement other) {
+            return identifier.equals(other.identifier) && Objects.equals(label, other.label);
+        }
+        return false;
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(identifier, label);
+    }
+
+    @Override
+    public int getComplexity() {
+        return 1;
+    }
+
+    @Override
+    public List<Statement> translate(InspectionProvider inspectionProvider, TranslationMap translationMap) {
+        List<Statement> direct = translationMap.translateStatement(inspectionProvider, this);
+        if (haveDirectTranslation(direct, this)) return direct;
+        return List.of(this);
     }
 }

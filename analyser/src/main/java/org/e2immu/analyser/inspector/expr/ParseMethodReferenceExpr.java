@@ -24,6 +24,7 @@ import org.e2immu.analyser.model.expression.LambdaExpressionErasures;
 import org.e2immu.analyser.model.expression.MethodReference;
 import org.e2immu.analyser.model.expression.TypeExpression;
 import org.e2immu.analyser.parser.InspectionProvider;
+import org.e2immu.analyser.parser.Primitives;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -126,9 +127,10 @@ public class ParseMethodReferenceExpr {
             throw new UnsupportedOperationException("I've killed all the candidates myself??");
         }
         MethodTypeParameterMap method = methodCandidates.get(0).method();
-        List<ParameterizedType> types = inputTypes(parameterizedType, method, parametersPresented);
+        List<ParameterizedType> types = inputTypes(typeContext.getPrimitives(), parameterizedType, method, parametersPresented);
         ParameterizedType concreteReturnType = method.getConcreteReturnType(typeContext.getPrimitives());
-        ParameterizedType functionalType = singleAbstractMethod.inferFunctionalType(typeContext, types, concreteReturnType);
+        ParameterizedType functionalType = singleAbstractMethod.inferFunctionalType(typeContext, types,
+                concreteReturnType);
         LOGGER.debug("End parsing method reference {}, found {}", methodNameForErrorReporting,
                 method.methodInspection.getDistinguishingName());
         return new MethodReference(Identifier.from(methodReferenceExpr),
@@ -139,14 +141,19 @@ public class ParseMethodReferenceExpr {
      * In this method we provide the types that the "inferFunctionalType" method will use to determine
      * the functional type. We must provide a concrete type for each of the real method's parameters.
      */
-    private static List<ParameterizedType> inputTypes(ParameterizedType parameterizedType,
+    private static List<ParameterizedType> inputTypes(Primitives primitives,
+                                                      ParameterizedType parameterizedType,
                                                       MethodTypeParameterMap method,
                                                       int parametersPresented) {
         List<ParameterizedType> types = new ArrayList<>();
         if (method.methodInspection.getParameters().size() < parametersPresented) {
             types.add(parameterizedType);
         }
-        method.methodInspection.getParameters().stream().map(p -> p.parameterizedType).forEach(types::add);
+        method.methodInspection.getParameters().stream().map(p -> p.parameterizedType)
+                .forEach(pt -> {
+                    ParameterizedType translated = pt.applyTranslation(primitives, method.concreteTypes);
+                    types.add(translated);
+                });
         return types;
     }
 

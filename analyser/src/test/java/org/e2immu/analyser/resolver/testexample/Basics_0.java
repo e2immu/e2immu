@@ -20,6 +20,7 @@ public class Basics_0 {
     int i = 3;
 
     public void test() {
+        // a comment
         System.out.println("a");
     }
 }

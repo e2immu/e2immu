@@ -320,8 +320,6 @@ public record ParseMethodCallExpr(TypeContext typeContext) {
         return null;
     }
 
-    // FIXME check that this method doesn't do exactly the same as mapExpansion
-
     private record FilterResult(Map<Integer, Expression> evaluatedExpressions,
                                 Map<MethodInfo, Integer> compatibilityScore) {
 
@@ -408,7 +406,7 @@ public record ParseMethodCallExpr(TypeContext typeContext) {
 
                             int compatible;
                             if (isFreeTypeParameter(actualType) && actualType.arrays == arrayType.arrays) {
-                                compatible = 5; // FIXME
+                                compatible = 5;
                             } else {
                                 compatible = callIsAssignableFrom(actualType, arrayType);
                             }
@@ -444,8 +442,11 @@ public record ParseMethodCallExpr(TypeContext typeContext) {
 
                         Lambda_7 shows that we have to be very careful to get rid of type parameters to ensure that
                         this condition doesn't occur too often
+
+                        Overload_7 shows why a formal free type parameter should get priority over a normal formal type
                          */
-                        compatible = 5 + penaltyForReturnType;   // FIXME should we actually forward the actual <- formal mapping?
+                        int typeParameterPenalty = isFreeTypeParameter(formalType) ? 2 : 5;
+                        compatible = typeParameterPenalty + penaltyForReturnType;
                     } else {
                         compatible = callIsAssignableFrom(actualType, formalType) + penaltyForReturnType;
                     }
@@ -545,25 +546,6 @@ public record ParseMethodCallExpr(TypeContext typeContext) {
         // not two accessible
         return false;
     }
-
-    // FIXME work here!
-
-
-    /*
-    This method is about aligning the type parameters of the functional interface of the current method chain (the returnType)
-    with the functional interface of the current method parameter.
-    The example situation is the following (in DependencyGraph.java)
-
-        Map.Entry<T, Node<T>> toRemove = map.entrySet().stream().min(Comparator.comparingInt(e -> e.getValue().dependsOn.size())).orElseThrow();
-
-    The result of stream() is a Stream<Map.Entry<T, Node<T>>
-    min() operates on any stream, and takes as argument a Comparator<T> (that's a different T)
-    the comparingInt method has the signature: static <U> Comparator<U> comparingInt(ToIntFunction<? super U> keyExtractor);
-    Its single abstract method in ToIntFunction<R> is int applyInt(R r)
-
-    This method here ensures that the U in comparingInt is linked to the result of Stream, so that e -> e.getValue can be evaluated on the Map.Entry type
-     */
-
 
     /**
      * Build the correct ForwardReturnTypeInfo to properly evaluate the argument at position i

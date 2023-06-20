@@ -16,7 +16,8 @@ package org.e2immu.analyser.parser.functional.testexample;
 
 // variable field
 
-import org.e2immu.annotation.Constant;
+
+import org.e2immu.annotation.ImmutableContainer;
 
 public class InlinedMethod_6 {
 
@@ -41,7 +42,7 @@ public class InlinedMethod_6 {
     }
 
     // because it is a variable field, we do not link the field i to the parameter of setI (we *could*)
-    @Constant(absent = true)
+    @ImmutableContainer
     public static int expand() {
         VariableField variableField = new VariableField();
         variableField.setI(3);

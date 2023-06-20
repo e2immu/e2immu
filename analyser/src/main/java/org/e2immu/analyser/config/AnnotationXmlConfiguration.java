@@ -15,14 +15,12 @@
 package org.e2immu.analyser.config;
 
 import org.e2immu.annotation.Container;
-import org.e2immu.annotation.E2Immutable;
 import org.e2immu.annotation.Fluent;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-@E2Immutable
 public record AnnotationXmlConfiguration(boolean writeAnnotationXml,
                                          List<String> writeAnnotationXmlPackages,
                                          List<String> readAnnotationXmlPackages,

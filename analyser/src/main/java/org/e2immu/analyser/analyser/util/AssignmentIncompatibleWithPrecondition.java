@@ -52,7 +52,7 @@ public class AssignmentIncompatibleWithPrecondition {
     public static DV isMark(AnalyserContext analyserContext,
                             Precondition precondition,
                             MethodAnalyser methodAnalyser) {
-        Set<Variable> variables = new HashSet<>(precondition.expression().variables(true));
+        Set<Variable> variables = new HashSet<>(precondition.expression().variables());
         for (Variable variable : variables) {
             if (variable instanceof FieldReference fieldReference) {
                 FieldInfo fieldInfo = fieldReference.fieldInfo;

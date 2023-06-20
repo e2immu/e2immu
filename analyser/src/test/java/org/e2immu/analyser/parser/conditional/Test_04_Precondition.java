@@ -70,7 +70,8 @@ public class Test_04_Precondition extends CommonTestRunner {
             }
             if ("useEither3".equals(d.methodInfo().name)) {
                 assertEquals("0", d.statementId());
-                assertEquals("f1+f2", d.evaluationResult().value().toString());
+                String expected = d.iteration() == 0 ? "<m:either>" : "f1+f2";
+                assertEquals(expected, d.evaluationResult().value().toString());
             }
         };
 
@@ -88,7 +89,8 @@ public class Test_04_Precondition extends CommonTestRunner {
             if ("either".equals(name)) {
                 MethodAnalysis methodAnalysis = d.methodAnalysis();
                 assertEquals("null!=e1||null!=e2", methodAnalysis.getPrecondition().expression().toString());
-                assertEquals("/*inline either*/e1+e2", d.methodAnalysis().getSingleReturnValue().toString());
+                String expected = d.iteration() == 0 ? "<m:either>" : "/*inline either*/e1+e2";
+                assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
                 assertDv(d.p(0), 1, MultiLevel.NULLABLE_DV, CONTEXT_NOT_NULL);
                 assertDv(d.p(0), 1, MultiLevel.NULLABLE_DV, NOT_NULL_PARAMETER);
             }
@@ -121,7 +123,7 @@ public class Test_04_Precondition extends CommonTestRunner {
                     assertEquals(d.iteration() > 0, d.statementAnalysis().methodLevelData().combinedPreconditionIsFinal());
 
                     if (d.iteration() > 0) {
-                        assertEquals("i$0<=-1", d.condition().toString());
+                        assertEquals("i$0<0", d.condition().toString());
                         assertEquals("i>=0", d.statementAnalysis().stateData()
                                 .getPrecondition().expression().toString());
                         assertEquals("i>=0", d.statementAnalysis().methodLevelData()
@@ -174,8 +176,8 @@ public class Test_04_Precondition extends CommonTestRunner {
         EvaluationResultVisitor evaluationResultVisitor = d -> {
             if ("setPositive5".equals(d.methodInfo().name)) {
                 if ("1".equals(d.statementId())) {
-                    // TODO I'd expect only "j2<=-1" here in iteration 1; somehow i$0>=0 is not filtered out
-                    String expect = d.iteration() == 0 ? "j2<=-1&&<f:i>>=0" : "i$0>=0&&j2<=-1";
+                    // TODO I'd expect only "j2<0" here in iteration 1; somehow i$0>=0 is not filtered out
+                    String expect = d.iteration() == 0 ? "<f:i>>=0&&j2<0" : "i$0>=0&&j2<0";
                     assertEquals(expect, d.evaluationResult().value().toString());
                 }
             }
@@ -327,7 +329,7 @@ public class Test_04_Precondition extends CommonTestRunner {
                             assertEquals("ii", d.currentValue().toString());
                         }
                         assertDv(d, 2, MultiLevel.EFFECTIVELY_NOT_NULL_DV, NOT_NULL_EXPRESSION);
-                        assertDv(d, 2, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, IMMUTABLE);
+                        assertDv(d, 2, MultiLevel.EFFECTIVELY_IMMUTABLE_DV, IMMUTABLE);
                     }
                 }
             }
@@ -361,7 +363,7 @@ public class Test_04_Precondition extends CommonTestRunner {
                 }
                 if ("0.0.0.0.0".equals(d.statementId())) {
                     assertTrue(d.statementAnalysis().inSyncBlock());
-                    assertEquals("ii<=-1", d.condition().toString());
+                    assertEquals("ii<0", d.condition().toString());
                 }
                 if ("0.0.1.0.0".equals(d.statementId())) {
                     assertTrue(d.statementAnalysis().inSyncBlock());
@@ -420,14 +422,14 @@ public class Test_04_Precondition extends CommonTestRunner {
 
     private static String conditionIn0(int iteration) {
         return switch (iteration) {
-            case 0, 1 -> "!<null-check>";
+            case 0, 1 -> "<null-check>";
             default -> "null!=integer";
         };
     }
 
     private static String notConditionIn0(int iteration) {
         return switch (iteration) {
-            case 0, 1 -> "<null-check>&&ii>=0";
+            case 0, 1 -> "!<null-check>&&ii>=0";
             default -> "null==integer&&ii>=0";
         };
     }
@@ -468,10 +470,10 @@ public class Test_04_Precondition extends CommonTestRunner {
         StatementAnalyserVisitor statementAnalyserVisitor = d -> {
             if ("setI".equals(d.methodInfo().name)) {
                 if ("0.0.0.0.0".equals(d.statementId())) {
-                    assertEquals("b&&i<=-1", d.statementAnalysis().stateData()
+                    assertEquals("i<0&&b", d.statementAnalysis().stateData()
                             .getConditionManagerForNextStatement().absoluteState(d.context()).toString());
 
-                    assertEquals("!b||i>=0", d.statementAnalysis()
+                    assertEquals("i>=0||!b", d.statementAnalysis()
                             .stateData().getPrecondition().expression().toString());
                 }
                 if ("0".equals(d.statementId())) {
@@ -479,7 +481,7 @@ public class Test_04_Precondition extends CommonTestRunner {
 
                     assertTrue(d.statementAnalysis().stateData()
                             .getConditionManagerForNextStatement().precondition().isEmpty());
-                    assertEquals("!b||i>=0", d.statementAnalysis()
+                    assertEquals("i>=0||!b", d.statementAnalysis()
                             .methodLevelData().combinedPreconditionGet().expression().toString());
                 }
             }
@@ -493,7 +495,7 @@ public class Test_04_Precondition extends CommonTestRunner {
         MethodAnalysis methodAnalysis = methodInfo.methodAnalysis.get();
 
         assertEquals(1, methodAnalysis.getComputedCompanions().size());
-        assertEquals("return !b||i>=0;", methodAnalysis.getComputedCompanions().values()
+        assertEquals("return i>=0||!b;", methodAnalysis.getComputedCompanions().values()
                 .stream().findFirst().orElseThrow()
                 .methodInspection.get().getMethodBody().structure.statements().get(0).minimalOutput());
     }
@@ -510,17 +512,124 @@ public class Test_04_Precondition extends CommonTestRunner {
         };
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("pop".equals(d.methodInfo().name)) {
-                String expected = d.iteration() == 0
-                        ? "Precondition[expression=<precondition>, causes=[escape]]"
-                        : "Precondition[expression=true, causes=[]]";
+                String expected = switch (d.iteration()) {
+                    case 0 -> "Precondition[expression=<precondition>, causes=[escape]]";
+                    default -> "Precondition[expression=true, causes=[]]";
+                };
                 assertEquals(expected, d.methodAnalysis().getPrecondition().toString());
-                if (d.iteration() > 0) assertTrue(d.methodAnalysis().getPrecondition().isEmpty());
+                if (d.iteration() >= 1) assertTrue(d.methodAnalysis().getPrecondition().isEmpty());
             }
         };
         testClass("Precondition_7", 0, 0,
                 new DebugConfiguration.Builder()
                         .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                         .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                        .build());
+    }
+
+
+    @Test
+    public void test_8() throws IOException {
+        MethodAnalyserVisitor methodAnalyserVisitor = d -> {
+            if ("test".equals(d.methodInfo().name)) {
+                assertEquals("Precondition[expression=!\"escape\".equals(in), causes=[escape]]",
+                        d.methodAnalysis().getPrecondition().toString());
+            }
+        };
+        testClass("Precondition_8", 0, 0,
+                new DebugConfiguration.Builder()
+                        .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                        .build());
+    }
+
+
+    /*
+    the not-null restriction on 'in' is either in the precondition, or on the parameter, but it is definitely present!!
+     */
+    @Test
+    public void test9() throws IOException {
+        MethodAnalyserVisitor methodAnalyserVisitor = d -> {
+            if ("method".equals(d.methodInfo().name)) {
+                String pre = "Precondition[expression=null!=in&&!in.isEmpty()&&Character.isUpperCase(in.charAt(0)), causes=[escape, escape]]";
+                assertEquals(pre, d.methodAnalysis().getPrecondition().toString());
+                assertTrue(d.methodAnalysis().getPostConditions().isEmpty(),
+                        "Got: " + d.methodAnalysis().getPostConditions().toString());
+                assertDv(d.p(0), 1, MultiLevel.NULLABLE_DV, NOT_NULL_PARAMETER);
+            }
+            if ("method2".equals(d.methodInfo().name)) {
+                String finalValue = "Precondition[expression=!in.isEmpty()&&!Character.isUpperCase(in.charAt(0)), causes=[escape, escape]]";
+                if (d.methodAnalysis().preconditionStatus().isDone()) {
+                    assertEquals(finalValue, d.methodAnalysis().getPrecondition().toString());
+                }
+                assertTrue(d.methodAnalysis().getPostConditions().isEmpty(),
+                        "Got: " + d.methodAnalysis().getPostConditions().toString());
+                assertDv(d.p(0), 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, NOT_NULL_PARAMETER);
+            }
+            if ("method3".equals(d.methodInfo().name)) {
+                String finalValue = "Precondition[expression=!in.isEmpty()&&!Character.isUpperCase(in.charAt(0)), causes=[escape]]";
+                if (d.methodAnalysis().preconditionStatus().isDone()) {
+                    assertEquals(finalValue, d.methodAnalysis().getPrecondition().toString());
+                }
+                assertTrue(d.methodAnalysis().getPostConditions().isEmpty(),
+                        "Got: " + d.methodAnalysis().getPostConditions().toString());
+                assertDv(d.p(0), 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, NOT_NULL_PARAMETER);
+            }
+        };
+        testClass("Precondition_9", 0, 0,
+                new DebugConfiguration.Builder()
+                        .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                        .build());
+    }
+
+
+    @Test
+    public void test_10() throws IOException {
+        StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+            if ("method".equals(d.methodInfo().name)) {
+                if ("npe".equals(d.variableName())) {
+                    if ("5.0.0".equals(d.statementId())) {
+                        String expected = d.iteration() < 2 ? "<s:NullPointerException>"
+                                : "`instance type boolean?new TryCatchHelper<>(null,instance type Exception):new TryCatchHelper<>(`supplier`.get(),null).exception`/*(NullPointerException)*/";
+                        assertEquals(expected, d.currentValue().toString());
+                        // FIXME a cast variable should always be not null!
+                        assertDv(d, 0, MultiLevel.EFFECTIVELY_NOT_NULL_DV, CONTEXT_NOT_NULL);
+                    }
+                }
+            }
+        };
+        MethodAnalyserVisitor methodAnalyserVisitor = d -> {
+            if ("method".equals(d.methodInfo().name)) {
+                String expected = d.iteration() <= 1 ? "Precondition[expression=<null-check>, causes=[escape, escape]]"
+                        : "Precondition[expression=null==(instance type boolean?new TryCatchHelper<>(null,instance type Exception):new TryCatchHelper<>(`supplier`.get(),null)).exception, causes=[escape, escape]]";
+                assertEquals(expected,
+                        d.methodAnalysis().getPrecondition().toString());
+            }
+        };
+        testClass("Precondition_10", 0, 0,
+                new DebugConfiguration.Builder()
+                        .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                        .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                        .build());
+    }
+
+
+    /*
+    we want the throws statement to be absorbed in an empty precondition.
+     */
+    @Test
+    public void test_11() throws IOException {
+
+        MethodAnalyserVisitor methodAnalyserVisitor = d -> {
+            if ("method".equals(d.methodInfo().name)) {
+                assertTrue(d.methodAnalysis().indicesOfEscapesNotInPreOrPostConditions().isEmpty());
+                String expected = "Precondition[expression=a, causes=[escape]]"; // FIXME should be empty
+                assertEquals(expected, d.methodAnalysis().getPrecondition().toString());
+            }
+        };
+        // expect one error: if(b) evaluates to constant
+        testClass("Precondition_11", 1, 0,
+                new DebugConfiguration.Builder()
+                        .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                         .build());
     }
 

@@ -14,9 +14,12 @@
 
 package org.e2immu.analyser.analyser;
 
+import org.e2immu.analyser.model.NamedType;
 import org.e2immu.analyser.model.ParameterizedType;
+import org.e2immu.analyser.parser.InspectionProvider;
 
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -28,13 +31,24 @@ public record SetOfTypes(Set<ParameterizedType> types) {
         this.types = Set.copyOf(types);
     }
 
+    public static SetOfTypes of(ParameterizedType pt) {
+        return new SetOfTypes(Set.of(pt));
+    }
+
     // if T is hidden, then ? extends T is hidden as well
     public boolean contains(ParameterizedType parameterizedType) {
         if (types.contains(parameterizedType)) return true;
-        if (parameterizedType.typeParameter != null && parameterizedType.wildCard != ParameterizedType.WildCard.NONE) {
-            ParameterizedType withoutWildcard = new ParameterizedType(parameterizedType.typeParameter, parameterizedType.arrays,
-                    ParameterizedType.WildCard.NONE);
-            return types.contains(withoutWildcard);
+        if (parameterizedType.typeParameter != null) {
+            if (parameterizedType.wildCard != ParameterizedType.WildCard.NONE) {
+                ParameterizedType withoutWildcard = new ParameterizedType(parameterizedType.typeParameter, parameterizedType.arrays,
+                        ParameterizedType.WildCard.NONE);
+                return types.contains(withoutWildcard);
+            } else {
+                // try with wildcard
+                ParameterizedType withWildCard = new ParameterizedType(parameterizedType.typeParameter, parameterizedType.arrays,
+                        ParameterizedType.WildCard.EXTENDS);
+                return types.contains(withWildCard);
+            }
         }
         return false;
     }
@@ -45,7 +59,7 @@ public record SetOfTypes(Set<ParameterizedType> types) {
 
     @Override
     public String toString() {
-        return types.stream().map(ParameterizedType::toString).sorted().collect(Collectors.joining(", "));
+        return types.stream().map(ParameterizedType::printSimple).sorted().collect(Collectors.joining(", "));
     }
 
     public SetOfTypes union(SetOfTypes other) {
@@ -58,5 +72,41 @@ public record SetOfTypes(Set<ParameterizedType> types) {
         Set<ParameterizedType> set = new HashSet<>(types);
         set.retainAll(other.types);
         return new SetOfTypes(set);
+    }
+
+    public int size() {
+        return types.size();
+    }
+
+    /*
+    make a translation map based on pt2, and translate from formal to concrete.
+
+    If types contains E=formal type parameter of List<E>, and pt = List<T>, we want
+    to return a SetOfTypes containing T instead of E
+     */
+    public SetOfTypes translate(InspectionProvider inspectionProvider, ParameterizedType pt) {
+        Map<NamedType, ParameterizedType> map = pt.initialTypeParameterMap(inspectionProvider);
+        Set<ParameterizedType> newTypes = types.stream()
+                .map(t -> translate(inspectionProvider, pt, map, t))
+                .collect(Collectors.toUnmodifiableSet());
+        return new SetOfTypes(newTypes);
+    }
+
+    private ParameterizedType translate(InspectionProvider inspectionProvider,
+                                        ParameterizedType pt,
+                                        Map<NamedType, ParameterizedType> map,
+                                        ParameterizedType t) {
+        if (map.isEmpty() && t.isTypeParameter() && t.isAssignableFrom(inspectionProvider, pt)) {
+            return pt;
+        }
+        return t.applyTranslation(inspectionProvider.getPrimitives(), map);
+    }
+
+    public SetOfTypes dropArrays() {
+        if (types.isEmpty()) return this;
+        Set<ParameterizedType> newSet = types.stream()
+                .map(ParameterizedType::copyWithoutArrays)
+                .collect(Collectors.toUnmodifiableSet());
+        return new SetOfTypes(newSet);
     }
 }

@@ -43,4 +43,26 @@ public class JavaUtilConcurrentAtomic {
         @Modified
         void set(boolean newValue);
     }
+
+    @Container
+    @Independent
+    interface AtomicLong$ {
+
+        @NotModified
+        boolean get();
+
+        @Modified
+        void set(long newValue);
+    }
+
+    @Container
+    @Independent
+    interface AtomicReference$<V> {
+
+        @NotModified
+        V get();
+
+        @Modified
+        void set(V newValue);
+    }
 }

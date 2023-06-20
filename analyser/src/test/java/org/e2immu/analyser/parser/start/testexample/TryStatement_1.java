@@ -14,13 +14,13 @@
 
 package org.e2immu.analyser.parser.start.testexample;
 
-import org.e2immu.annotation.Constant;
+import org.e2immu.annotation.ImmutableContainer;
 import org.e2immu.annotation.NotNull;
 
 public class TryStatement_1 {
 
     @NotNull
-    @Constant(absent = true)
+    @ImmutableContainer // but not constant
     public static String method(String s) {
         String res;
         try {

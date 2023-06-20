@@ -22,16 +22,14 @@ import org.e2immu.analyser.model.expression.LocalVariableCreation;
 import org.e2immu.analyser.model.expression.Precedence;
 import org.e2immu.analyser.model.impl.BaseExpression;
 import org.e2immu.analyser.model.impl.TranslationMapImpl;
-import org.e2immu.analyser.output.OutputBuilder;
-import org.e2immu.analyser.output.Space;
-import org.e2immu.analyser.output.Symbol;
-import org.e2immu.analyser.output.Text;
+import org.e2immu.analyser.output.*;
 import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.util.ListUtil;
 import org.e2immu.analyser.util.Pair;
 import org.e2immu.analyser.util.UpgradableBooleanMap;
 
 import java.util.List;
+import java.util.Objects;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
@@ -61,8 +59,9 @@ public class TryStatement extends StatementWithStructure {
                         List<Expression> resources,
                         Block tryBlock,
                         List<Pair<CatchParameter, Block>> catchClauses,
-                        Block finallyBlock) {
-        super(identifier, codeOrganization(resources, tryBlock, catchClauses, finallyBlock));
+                        Block finallyBlock,
+                        Comment comment) {
+        super(identifier, codeOrganization(resources, tryBlock, catchClauses, finallyBlock, comment));
         this.resources = List.copyOf(resources);
         this.catchClauses = List.copyOf(catchClauses);
         this.finallyBlock = finallyBlock;
@@ -73,7 +72,8 @@ public class TryStatement extends StatementWithStructure {
     private static Structure codeOrganization(List<Expression> resources,
                                               Block tryBlock,
                                               List<Pair<CatchParameter, Block>> catchClauses,
-                                              Block finallyBlock) {
+                                              Block finallyBlock,
+                                              Comment comment) {
         Structure.Builder builder = new Structure.Builder()
                 .setCreateVariablesInsideBlock(true)
                 .addInitialisers(resources)
@@ -94,17 +94,58 @@ public class TryStatement extends StatementWithStructure {
                     .setStatementExecution(StatementExecution.ALWAYS)
                     .build());
         }
-        return builder.build();
+        return builder
+                .setComment(comment)
+                .build();
+    }
+
+
+    @Override
+    public boolean equals(Object obj) {
+        if (obj == this) return true;
+        if (obj instanceof TryStatement other) {
+            return identifier.equals(other.identifier)
+                    && resources.equals(other.resources)
+                    && subElements.equals(other.subElements);
+        }
+        return false;
     }
 
     @Override
-    public Statement translate(InspectionProvider inspectionProvider, TranslationMap translationMap) {
-        return new TryStatement(identifier, resources.stream().map(translationMap::translateExpression).collect(Collectors.toList()),
-                translationMap.translateBlock(inspectionProvider, structure.block()),
-                catchClauses.stream().map(p -> new Pair<>(
+    public int hashCode() {
+        return Objects.hash(identifier, resources, subElements);
+    }
+
+    @Override
+    public int getComplexity() {
+        return resources.stream().mapToInt(Expression::getComplexity).sum()
+                + structure.block().getComplexity()
+                + catchClauses.stream().mapToInt(cc -> cc.v.getComplexity() + 2).sum()
+                + finallyBlock.getComplexity();
+    }
+
+    @Override
+    public List<Statement> translate(InspectionProvider inspectionProvider, TranslationMap translationMap) {
+        List<Statement> direct = translationMap.translateStatement(inspectionProvider, this);
+        if (haveDirectTranslation(direct, this)) return direct;
+
+        // translations in order of appearance
+        List<Expression> resources = this.resources.stream()
+                .map(r -> r.translate(inspectionProvider, translationMap))
+                .collect(Collectors.toList());
+        List<Statement> translatedBlock = structure.block().translate(inspectionProvider, translationMap);
+        List<Pair<CatchParameter, Block>> translatedCatchClauses = catchClauses.stream()
+                .map(p -> new Pair<>(
                         TranslationMapImpl.ensureExpressionType(p.k.translate(inspectionProvider, translationMap), CatchParameter.class),
-                        translationMap.translateBlock(inspectionProvider, p.v))).collect(Collectors.toList()),
-                translationMap.translateBlock(inspectionProvider, finallyBlock));
+                        ensureBlock(p.v.identifier, p.v.translate(inspectionProvider, translationMap))))
+                .collect(Collectors.toList());
+        List<Statement> translatedFinally = finallyBlock.translate(inspectionProvider, translationMap);
+
+        return List.of(new TryStatement(identifier, resources,
+                ensureBlock(structure.block().identifier, translatedBlock),
+                translatedCatchClauses,
+                ensureBlock(finallyBlock.identifier, translatedFinally),
+                structure.comment()));
     }
 
     public static class CatchParameter extends BaseExpression implements Expression {
@@ -114,7 +155,7 @@ public class TryStatement extends StatementWithStructure {
         public CatchParameter(Identifier identifier,
                               LocalVariableCreation localVariableCreation,
                               List<ParameterizedType> unionOfTypes) {
-            super(identifier);
+            super(identifier, 2);
             this.localVariableCreation = localVariableCreation;
             this.unionOfTypes = List.copyOf(unionOfTypes);
         }
@@ -163,7 +204,7 @@ public class TryStatement extends StatementWithStructure {
     // TODO we may want to change output to have the GuideGenerator in the parameter to align catch and finally
     @Override
     public OutputBuilder output(Qualification qualification, LimitedStatementAnalysis statementAnalysis) {
-        OutputBuilder outputBuilder = new OutputBuilder().add(new Text("try"));
+        OutputBuilder outputBuilder = new OutputBuilder().add(Keyword.TRY);
         if (!resources.isEmpty()) {
             outputBuilder.add(Symbol.LEFT_PARENTHESIS)
                     .add(resources.stream().map(expression -> expression
@@ -175,7 +216,7 @@ public class TryStatement extends StatementWithStructure {
                 .add(structure.block().output(qualification, startOfBlock(statementAnalysis, 0)));
         int i = 1;
         for (Pair<CatchParameter, Block> pair : catchClauses) {
-            outputBuilder.add(new Text("catch"))
+            outputBuilder.add(Keyword.CATCH)
                     .add(Symbol.LEFT_PARENTHESIS)
                     .add(pair.k.output(qualification)).add(Symbol.RIGHT_PARENTHESIS)
                     .add(pair.v.output(qualification, startOfBlock(statementAnalysis, i)));
@@ -183,7 +224,7 @@ public class TryStatement extends StatementWithStructure {
         }
         if (!finallyBlock.isEmpty()) {
             outputBuilder
-                    .add(new Text("finally"))
+                    .add(Keyword.FINALLY)
                     .add(finallyBlock.output(qualification, startOfBlock(statementAnalysis, i)));
         }
         return outputBuilder;

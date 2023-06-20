@@ -26,11 +26,11 @@ import java.util.stream.Stream;
 
 public class OutputTypeInfo {
     public static OutputBuilder output(TypeInfo typeInfo, Qualification qualification, boolean doTypeDeclaration) {
-        String typeNature;
+        TypeNature typeNature;
         Set<String> imports;
         Qualification insideType;
         if (typeInfo.isPrimaryType() && typeInfo.hasBeenInspected()) {
-            ResultOfImportComputation res = imports(typeInfo.packageName(), typeInfo.typeInspection.get());
+            ResultOfImportComputation res = imports(typeInfo.packageName(), typeInfo);
             imports = res.imports;
             insideType = res.qualification;
         } else {
@@ -39,7 +39,7 @@ public class OutputTypeInfo {
         }
         assert insideType != null;
 
-        String[] typeModifiers;
+        List<TypeModifier> typeModifiers;
         List<FieldInfo> fields;
         List<MethodInfo> constructors;
         List<MethodInfo> methods;
@@ -49,13 +49,14 @@ public class OutputTypeInfo {
         ParameterizedType parentClass;
         boolean isInterface;
         boolean isRecord;
+        Comment comment;
 
         if (typeInfo.hasBeenInspected()) {
             TypeInspection typeInspection = typeInfo.typeInspection.get();
-            typeNature = typeInspection.typeNature().toJava();
+            typeNature = typeInspection.typeNature();
             isInterface = typeInspection.isInterface();
             isRecord = typeInspection.typeNature() == TypeNature.RECORD;
-            typeModifiers = TypeModifier.sort(typeInspection.modifiers());
+            typeModifiers = minimalModifiers(typeInspection);
             fields = typeInspection.fields();
             constructors = typeInspection.constructors();
             methods = typeInspection.methods();
@@ -63,6 +64,7 @@ public class OutputTypeInfo {
             typeParameters = typeInspection.typeParameters();
             parentClass = typeInfo.parentIsNotJavaLangObject() ? typeInspection.parentClass() : null;
             interfaces = typeInspection.interfacesImplemented();
+            comment = typeInspection.getComment();
 
             // add the methods that we can call without having to qualify (method() instead of super.method())
             if (insideType instanceof QualificationImpl qi) {
@@ -70,8 +72,8 @@ public class OutputTypeInfo {
                 addThisToQualification(typeInfo, qi);
             }
         } else {
-            typeNature = "class"; // we really have no idea what it is
-            typeModifiers = new String[]{"abstract"};
+            typeNature = TypeNature.CLASS; // we really have no idea what it is
+            typeModifiers = List.of(TypeModifier.ABSTRACT);
             fields = List.of();
             constructors = List.of();
             methods = List.of();
@@ -81,6 +83,7 @@ public class OutputTypeInfo {
             parentClass = null;
             isInterface = false;
             isRecord = false;
+            comment = null;
         }
 
         // PACKAGE AND IMPORTS
@@ -89,12 +92,12 @@ public class OutputTypeInfo {
         if (typeInfo.isPrimaryType()) {
             String packageName = typeInfo.packageNameOrEnclosingType.getLeftOrElse("");
             if (!packageName.isEmpty()) {
-                packageAndImports.add(new Text("package")).add(Space.ONE).add(new Text(packageName)).add(Symbol.SEMICOLON)
+                packageAndImports.add(Keyword.PACKAGE).add(Space.ONE).add(new Text(packageName)).add(Symbol.SEMICOLON)
                         .add(Space.NEWLINE);
             }
             if (!imports.isEmpty()) {
                 imports.stream().sorted().forEach(i ->
-                        packageAndImports.add(new Text("import")).add(Space.ONE).add(new Text(i)).add(Symbol.SEMICOLON)
+                        packageAndImports.add(Keyword.IMPORT).add(Space.ONE).add(new Text(i)).add(Symbol.SEMICOLON)
                                 .add(Space.NEWLINE));
             }
         }
@@ -103,9 +106,9 @@ public class OutputTypeInfo {
         if (doTypeDeclaration) {
             // the class name
             afterAnnotations
-                    .add(Arrays.stream(typeModifiers).map(mod -> new OutputBuilder().add(new Text(mod)))
+                    .add(typeModifiers.stream().map(mod -> new OutputBuilder().add(mod.keyword))
                             .collect(OutputBuilder.joining(Space.ONE)))
-                    .add(Space.ONE).add(new Text(typeNature))
+                    .add(Space.ONE).add(typeNature.keyword)
                     .add(Space.ONE).add(new Text(typeInfo.simpleName));
 
             if (!typeParameters.isEmpty()) {
@@ -116,13 +119,13 @@ public class OutputTypeInfo {
                 afterAnnotations.add(Symbol.RIGHT_ANGLE_BRACKET);
             }
             if (isRecord) {
-                afterAnnotations.add(outputFieldsAsParameters(insideType, fields));
+                afterAnnotations.add(outputNonStaticFieldsAsParameters(insideType, fields));
             }
             if (parentClass != null) {
-                afterAnnotations.add(Space.ONE).add(new Text("extends")).add(Space.ONE).add(parentClass.output(insideType));
+                afterAnnotations.add(Space.ONE).add(Keyword.EXTENDS).add(Space.ONE).add(parentClass.output(insideType));
             }
             if (!interfaces.isEmpty()) {
-                afterAnnotations.add(Space.ONE).add(new Text(isInterface ? "extends" : "implements")).add(Space.ONE);
+                afterAnnotations.add(Space.ONE).add(isInterface ? Keyword.EXTENDS : Keyword.IMPLEMENTS).add(Space.ONE);
                 afterAnnotations.add(interfaces.stream().map(pi -> pi.output(insideType)).collect(OutputBuilder.joining(Symbol.COMMA)));
             }
         }
@@ -147,13 +150,58 @@ public class OutputTypeInfo {
 
         // annotations and the rest of the type are at the same level
         Stream<OutputBuilder> annotationStream = doTypeDeclaration ? typeInfo.buildAnnotationOutput(insideType) : Stream.of();
+        if (comment != null) packageAndImports.add(comment.output(qualification));
         return packageAndImports.add(Stream.concat(annotationStream, Stream.of(afterAnnotations))
                 .collect(OutputBuilder.joining(Space.ONE_REQUIRED_EASY_SPLIT,
                         Guide.generatorForAnnotationList())));
     }
 
-    private static OutputBuilder outputFieldsAsParameters(Qualification qualification, List<FieldInfo> fields) {
+    private static List<TypeModifier> minimalModifiers(TypeInspection typeInspection) {
+        Set<TypeModifier> modifiers = typeInspection.modifiers();
+        List<TypeModifier> list = new ArrayList<>();
+
+        // access
+        Inspection.Access access = typeInspection.getAccess();
+        Inspection.Access enclosedAccess = typeInspection.typeInfo().packageNameOrEnclosingType.isLeft()
+                ? Inspection.Access.PUBLIC : typeInspection.typeInfo().packageNameOrEnclosingType.getRight().typeInspection.get().getAccess();
+        if (enclosedAccess != Inspection.Access.PRIVATE && access != Inspection.Access.PACKAGE) {
+            list.add(typeModifier(access));
+        } // else there really is no point anymore to show any access modifier, let's keep it brief
+
+        // 'abstract', 'static'
+        if (typeInspection.typeNature() == TypeNature.CLASS) {
+            if (modifiers.contains(TypeModifier.ABSTRACT)) {
+                list.add(TypeModifier.ABSTRACT);
+            }
+            if (modifiers.contains(TypeModifier.STATIC)) {
+                list.add(TypeModifier.STATIC);
+            }
+            if (modifiers.contains(TypeModifier.FINAL)) {
+                list.add(TypeModifier.FINAL);
+            }
+            if (modifiers.contains(TypeModifier.SEALED)) {
+                list.add(TypeModifier.SEALED);
+            }
+            if (modifiers.contains(TypeModifier.NON_SEALED)) {
+                list.add(TypeModifier.NON_SEALED);
+            }
+        } // else: records, interfaces, annotations, primitives are always static, never abstract
+
+        return list;
+    }
+
+    private static TypeModifier typeModifier(Inspection.Access access) {
+        return switch (access) {
+            case PUBLIC -> TypeModifier.PUBLIC;
+            case PROTECTED -> TypeModifier.PROTECTED;
+            case PRIVATE -> TypeModifier.PRIVATE;
+            default -> throw new UnsupportedOperationException();
+        };
+    }
+
+    private static OutputBuilder outputNonStaticFieldsAsParameters(Qualification qualification, List<FieldInfo> fields) {
         return fields.stream()
+                .filter(fieldInfo -> !fieldInfo.fieldInspection.get().isStatic())
                 .map(fieldInfo -> fieldInfo.output(qualification, true))
                 .collect(OutputBuilder.joining(Symbol.COMMA, Symbol.LEFT_PARENTHESIS, Symbol.RIGHT_PARENTHESIS,
                         Guide.generatorForParameterDeclaration()));
@@ -230,20 +278,20 @@ public class OutputTypeInfo {
         boolean allowStar = true;
     }
 
-    private static ResultOfImportComputation imports(String myPackage, TypeInspection typeInspection) {
-        Set<TypeInfo> typesReferenced = typeInspection.typesReferenced().stream().filter(Map.Entry::getValue)
+    private static ResultOfImportComputation imports(String myPackage, TypeInfo typeInfo) {
+        Set<TypeInfo> typesReferenced = typeInfo.typesReferenced().stream().filter(Map.Entry::getValue)
                 .map(Map.Entry::getKey)
                 .filter(TypeInfo::allowInImport)
                 .collect(Collectors.toSet());
         Map<String, PerPackage> typesPerPackage = new HashMap<>();
         QualificationImpl qualification = new QualificationImpl();
-        typesReferenced.forEach(typeInfo -> {
-            String packageName = typeInfo.packageName();
+        typesReferenced.forEach(ti -> {
+            String packageName = ti.packageName();
             if (packageName != null && !myPackage.equals(packageName)) {
-                boolean doImport = qualification.addTypeReturnImport(typeInfo);
+                boolean doImport = qualification.addTypeReturnImport(ti);
                 PerPackage perPackage = typesPerPackage.computeIfAbsent(packageName, p -> new PerPackage());
                 if (doImport) {
-                    perPackage.types.add(typeInfo);
+                    perPackage.types.add(ti);
                 } else {
                     perPackage.allowStar = false; // because we don't want to play with complicated ordering
                 }
@@ -256,8 +304,8 @@ public class OutputTypeInfo {
             if (perPackage.types.size() >= 4 && perPackage.allowStar) {
                 imports.add(e.getKey() + ".*");
             } else {
-                for (TypeInfo typeInfo : perPackage.types) {
-                    imports.add(typeInfo.fullyQualifiedName);
+                for (TypeInfo ti : perPackage.types) {
+                    imports.add(ti.fullyQualifiedName);
                 }
             }
         }

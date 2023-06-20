@@ -14,14 +14,14 @@
 
 package org.e2immu.analyser.parser.minor.testexample;
 
-import org.e2immu.annotation.E2Container;
+import org.e2immu.annotation.ImmutableContainer;
 import org.e2immu.annotation.NotModified;
 import org.e2immu.annotation.NotNull;
 
 /*
 Example of a cast which messes with the immutability rules:
  */
-@E2Container
+@ImmutableContainer(hc = true)
 public class Cast_2<T> {
 
     private final T t;

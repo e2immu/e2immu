@@ -14,14 +14,14 @@
 
 package org.e2immu.analyser.parser.failing.testexample;
 
+import org.e2immu.annotation.Final;
+import org.e2immu.annotation.FinalFields;
 import org.e2immu.annotation.Modified;
-import org.e2immu.annotation.MutableModifiesArguments;
-import org.e2immu.annotation.Variable;
 
-@MutableModifiesArguments
+@FinalFields(absent = true)
 class ModificationGraphC1 {
 
-    @Variable
+    @Final(absent = true)
     private int i;
 
     @Modified

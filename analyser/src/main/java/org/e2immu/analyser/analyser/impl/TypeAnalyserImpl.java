@@ -20,18 +20,16 @@ import org.e2immu.analyser.analyser.check.CheckIndependent;
 import org.e2immu.analyser.analyser.nonanalyserimpl.ExpandableAnalyserContextImpl;
 import org.e2immu.analyser.analysis.Analysis;
 import org.e2immu.analyser.analysis.impl.TypeAnalysisImpl;
-import org.e2immu.analyser.config.AnalyserProgram;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
 import org.e2immu.analyser.parser.Message;
-import org.e2immu.annotation.*;
+import org.e2immu.annotation.NotModified;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Objects;
 
 import static org.e2immu.analyser.analyser.AnalysisStatus.DONE;
-import static org.e2immu.analyser.config.AnalyserProgram.Step.ALL;
 
 /**
  * In the type analysis record we state whether this type has "free fields" or not.
@@ -120,40 +118,31 @@ public abstract class TypeAnalyserImpl extends AbstractAnalyser implements TypeA
         // before we check, we copy the properties into annotations
         LOGGER.debug("\n******\nAnnotation validation on type {}\n******", typeInfo.fullyQualifiedName);
 
-        AnalyserProgram analyserProgram = analyserContext.getAnalyserProgram();
-        if (analyserProgram.accepts(ALL)) {
-            internalCheckImmutableIndependent(); // do not run when program is partial, some data may not be available
+        internalCheckImmutableIndependent(); // do not run when program is partial, some data may not be available
 
-            check(typeInfo, UtilityClass.class, e2.utilityClass);
-            check(typeInfo, ExtensionClass.class, e2.extensionClass);
-            check(typeInfo, Container.class, e2.container);
-            check(typeInfo, Singleton.class, e2.singleton);
+        check(typeInfo, e2.utilityClass);
+        check(typeInfo, e2.extensionClass);
+        check(typeInfo, e2.container);
+        check(typeInfo, e2.singleton);
 
-            check(typeInfo, Independent.class, e2.independent);
-            check(typeInfo, Dependent.class, e2.dependent);
-            analyserResultBuilder.add(CheckIndependent.checkLevel(typeInfo, Independent1.class, e2.independent1, typeAnalysis));
+        analyserResultBuilder.add(CheckIndependent.check(typeInfo, e2.independent, typeAnalysis));
 
-            check(typeInfo, MutableModifiesArguments.class, e2.mutableModifiesArguments);
-            analyserResultBuilder.add(CheckImmutable.check(typeInfo, E1Immutable.class, e2.e1Immutable, typeAnalysis, false, false));
-            analyserResultBuilder.add(CheckImmutable.check(typeInfo, E1Container.class, e2.e1Container, typeAnalysis, false, false));
-            analyserResultBuilder.add(CheckImmutable.check(typeInfo, E2Immutable.class, e2.e2Immutable, typeAnalysis, true, true));
-            analyserResultBuilder.add(CheckImmutable.check(typeInfo, E2Container.class, e2.e2Container, typeAnalysis, true, false));
-            analyserResultBuilder.add(CheckImmutable.check(typeInfo, ERContainer.class, e2.eRContainer, typeAnalysis, false, false));
-        }
+        analyserResultBuilder.add(CheckImmutable.check(typeInfo, e2.finalFields, typeAnalysis, null));
+        analyserResultBuilder.add(CheckImmutable.check(typeInfo, e2.immutable, typeAnalysis, null));
+        analyserResultBuilder.add(CheckImmutable.check(typeInfo, e2.immutableContainer, typeAnalysis, null));
     }
 
     private void internalCheckImmutableIndependent() {
         DV independent = typeAnalysis.getProperty(Property.INDEPENDENT);
         DV immutable = typeAnalysis.getProperty(Property.IMMUTABLE);
-        assert MultiLevel.independentConsistentWithImmutable(independent, immutable)
-                : "Have type %s, independent %s, immutable %s".formatted(typeInfo.fullyQualifiedName, independent, immutable);
+        assert MultiLevel.independentConsistentWithImmutable(independent, immutable);
     }
 
-    private void check(TypeInfo typeInfo, Class<?> annotation, AnnotationExpression annotationExpression) {
-        typeInfo.error(typeAnalysis, annotation, annotationExpression).ifPresent(mustBeAbsent -> {
+    private void check(TypeInfo typeInfo, AnnotationExpression annotationKey) {
+        typeInfo.error(typeAnalysis, annotationKey).ifPresent(mustBeAbsent -> {
             Message error = Message.newMessage(typeInfo.newLocation(),
                     mustBeAbsent ? Message.Label.ANNOTATION_UNEXPECTEDLY_PRESENT
-                            : Message.Label.ANNOTATION_ABSENT, annotation.getSimpleName());
+                            : Message.Label.ANNOTATION_ABSENT, annotationKey.typeInfo().simpleName);
             analyserResultBuilder.add(error);
         });
     }
@@ -165,23 +154,22 @@ public abstract class TypeAnalyserImpl extends AbstractAnalyser implements TypeA
     }
 
 
-    protected AnalysisStatus analyseImmutableCanBeIncreasedByTypeParameters() {
-        CausesOfDelay hiddenContentStatus = typeAnalysis.hiddenContentTypeStatus();
-        DV dv = typeAnalysis.immutableCanBeIncreasedByTypeParameters();
+    protected AnalysisStatus analyseImmutableDeterminedByTypeParameters() {
+        DV dv = typeAnalysis.immutableDeterminedByTypeParameters();
         if (dv.isDone()) {
-            typeAnalysis.setImmutableCanBeIncreasedByTypeParameters(dv.valueIsTrue());
+            typeAnalysis.setImmutableDeterminedByTypeParameters(dv.valueIsTrue());
             return DONE;
         }
+        CausesOfDelay hiddenContentStatus = typeAnalysis.hiddenContentDelays();
         if (hiddenContentStatus.isDelayed()) {
-            typeAnalysis.setImmutableCanBeIncreasedByTypeParameters(hiddenContentStatus);
+            typeAnalysis.setImmutableDeterminedByTypeParameters(hiddenContentStatus);
             return hiddenContentStatus;
         }
 
-        boolean res = typeAnalysis.getTransparentTypes().types()
-                .stream().anyMatch(t -> t.bestTypeInfo(analyserContext) == null);
-
+        // those hidden content types that are type parameters
+        boolean res = typeAnalysis.getHiddenContentTypes().types().stream().anyMatch(ParameterizedType::isTypeParameter);
         LOGGER.debug("Immutable can be increased for {}? {}", typeInfo.fullyQualifiedName, res);
-        typeAnalysis.setImmutableCanBeIncreasedByTypeParameters(res);
+        typeAnalysis.setImmutableDeterminedByTypeParameters(res);
         return DONE;
     }
 

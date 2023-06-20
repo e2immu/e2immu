@@ -17,11 +17,9 @@ package org.e2immu.analyser.model.impl;
 import org.e2immu.analyser.inspector.ParameterizedTypeFactory;
 import org.e2immu.analyser.inspector.TypeContext;
 import org.e2immu.analyser.model.*;
-import org.e2immu.analyser.output.OutputBuilder;
-import org.e2immu.analyser.output.Space;
-import org.e2immu.analyser.output.Symbol;
-import org.e2immu.analyser.output.Text;
+import org.e2immu.analyser.output.*;
 import org.e2immu.analyser.parser.InspectionProvider;
+import org.e2immu.annotation.Fluent;
 import org.e2immu.support.Either;
 import org.e2immu.support.SetOnce;
 import org.slf4j.Logger;
@@ -56,6 +54,16 @@ public class TypeParameterImpl implements TypeParameter {
     public TypeParameterImpl(TypeInfo typeInfo, String name, int index) {
         this(name, index);
         owner.set(Either.left(typeInfo));
+    }
+
+    @Override
+    public ParameterizedType toParameterizedType() {
+        assert typeBounds.isSet();
+        List<ParameterizedType> tbs = typeBounds.get();
+        //if (tbs.isEmpty()) {
+            return new ParameterizedType(this, 0, ParameterizedType.WildCard.NONE);
+        //}
+        //FIXME throw new UnsupportedOperationException("IMPLEMENT!");
     }
 
     @Override
@@ -105,7 +113,7 @@ public class TypeParameterImpl implements TypeParameter {
         OutputBuilder outputBuilder = new OutputBuilder().add(new Text(name));
         if (!typeBounds.isEmpty() && visitedTypeParameters != null && !visitedTypeParameters.contains(this)) {
             visitedTypeParameters.add(this);
-            outputBuilder.add(Space.ONE).add(new Text("extends")).add(Space.ONE);
+            outputBuilder.add(Space.ONE).add(Keyword.EXTENDS).add(Space.ONE);
             outputBuilder.add(getTypeBounds()
                     .stream()
                     .map(pt -> ParameterizedTypePrinter.print(inspectionProvider, qualification, pt, false,
@@ -153,5 +161,12 @@ public class TypeParameterImpl implements TypeParameter {
 
     public void setAnnotatedWithIndependent(boolean b) {
         annotatedWithIndependent.set(b);
+    }
+
+    // mostly for testing
+    @Fluent
+    public TypeParameterImpl noTypeBounds() {
+        setTypeBounds(List.of());
+        return this;
     }
 }

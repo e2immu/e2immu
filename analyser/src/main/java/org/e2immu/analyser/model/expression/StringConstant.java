@@ -24,18 +24,16 @@ import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.Text;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.util.StringUtil;
-import org.e2immu.annotation.E2Container;
 import org.e2immu.annotation.NotNull;
 
 import java.util.Objects;
 
-@E2Container
 public final class StringConstant extends BaseExpression implements ConstantExpression<String> {
     private final Primitives primitives;
     private final String constant;
 
     public StringConstant(Identifier identifier, Primitives primitives, String constant) {
-        super(identifier);
+        super(identifier, constant.isEmpty() ? 1 : 2);
         this.primitives = primitives;
         this.constant = constant;
     }
@@ -96,4 +94,8 @@ public final class StringConstant extends BaseExpression implements ConstantExpr
         return constant;
     }
 
+    @Override
+    public String unQuotedString() {
+        return constant;
+    }
 }

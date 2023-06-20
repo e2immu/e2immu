@@ -21,23 +21,23 @@ public class EvaluateConstants_1 {
     final static boolean a = true;
     final static boolean b = false;
 
-    @Constant("false")
+    @ImmutableContainer("false")
     final static boolean c = !a;
     final static boolean d = a || b;
 
-    @Constant("false")
+    @ImmutableContainer("false")
     final static boolean e = c && !d;
 
     @NotNull
     @NotModified
-    @Constant("false")
+    @ImmutableContainer("false")
     public static Boolean ee() {
         return e;
     }
 
     @NotNull
     @NotModified
-    @Constant("b")
+    @ImmutableContainer("b")
     public static String print() {
         // ERROR: if statement evaluates to constant
         if (ee()) return "a";
@@ -46,41 +46,41 @@ public class EvaluateConstants_1 {
 
     @NotNull
     @NotModified
-    @Constant("b")
+    @ImmutableContainer("b")
     // ERROR: ee() evaluates to constant
     public static String print2() {
         return ee() ? "a" : "b";
     }
 
-    @Constant("3")
+    @ImmutableContainer("3")
     final int i = 3;
     final int j = 233;
 
-    @Constant("699")
+    @ImmutableContainer("699")
     final int k = i * j;
 
-    @Constant("true")
+    @ImmutableContainer("true")
     final boolean l = k > 400;
 
     @NotModified
-    @Constant("162870")
+    @ImmutableContainer("162870")
     public int allThree() {
         return i + j * k;
     }
 
     @NotNull
-    @Constant("hello")
+    @ImmutableContainer("hello")
     final static String s = "hello";
 
     @NotNull
-    @Constant("world")
+    @ImmutableContainer("world")
     final static String w = "world";
 
     @NotNull
-    @Constant("hello world")
+    @ImmutableContainer("hello world")
     final static String t = s + " " + w;
 
-    @Constant("0")
+    @ImmutableContainer("0")
     public int someCalculation(int p) {
         int q = 1 * p + p + 0 * i; // this should be evaluated as 2*p
         return q - p * 2;

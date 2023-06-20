@@ -15,22 +15,19 @@
 package org.e2immu.annotatedapi.java;
 
 import org.e2immu.annotation.*;
+import org.e2immu.annotation.rare.Finalizer;
+import org.e2immu.annotation.type.UtilityClass;
 
-import java.util.Comparator;
-import java.util.List;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 import java.util.function.*;
-import java.util.stream.Collector;
-import java.util.stream.IntStream;
-import java.util.stream.Stream;
+import java.util.stream.*;
 
 public class JavaUtilStream {
 
     static final String PACKAGE_NAME = "java.util.stream";
 
     interface Collector$<T, A, R> {
-        @NotNull1
+        @NotNull(content = true)
         @Modified
         Supplier<A> supplier();
 
@@ -38,11 +35,11 @@ public class JavaUtilStream {
         @Modified
         BiConsumer<A, T> accumulator();
 
-        @NotNull1
+        @NotNull(content = true)
         @Modified
         BinaryOperator<A> combiner();
 
-        @NotNull1
+        @NotNull(content = true)
         @Modified
         Function<A, R> finisher();
     }
@@ -50,68 +47,150 @@ public class JavaUtilStream {
     @UtilityClass
     @Container
     static class Collectors$ {
-        @NotNull1
-        Collector<CharSequence, ?, String> joining() { return null; }
+        @NotNull(content = true)
+        Collector<CharSequence, ?, String> joining() {
+            return null;
+        }
 
-        @NotNull1
-        Collector<CharSequence, ?, String> joining(@NotNull CharSequence delimiter) { return null; }
+        @NotNull(content = true)
+        Collector<CharSequence, ?, String> joining(@NotNull CharSequence delimiter) {
+            return null;
+        }
 
-        @NotNull1
-        <T> Collector<T, ?, Set<T>> toSet() { return null; };
+        @NotNull(content = true)
+        <T> Collector<T, ?, Set<T>> toSet() {
+            return null;
+        }
 
-        @NotNull1
-        <T> Collector<T, ?, List<T>> toList() { return null; }
+        @NotNull(content = true)
+        <T> Collector<T, ?, List<T>> toList() {
+            return null;
+        }
 
-        @NotNull1
-        static <T> Collector<T,?,List<T>> toUnmodifiableList() { return null; }
+        @NotNull(content = true)
+        static <T> Collector<T, ?, List<T>> toUnmodifiableList() {
+            return null;
+        }
 
-        @NotNull1
-        static <T> Collector<T,?,Set<T>> toUnmodifiableSet() { return null; }
+        @NotNull(content = true)
+        static <T> Collector<T, ?, Set<T>> toUnmodifiableSet() {
+            return null;
+        }
     }
 
-    @E2Container
+    @Container
     interface IntStream$ {
+        @Modified
+        @Finalizer
         long count();
 
+        @Modified
+        @Finalizer
         int sum();
 
+        // dependent, not modified
         @NotNull
         IntStream sorted();
+
+        interface IntMapMultiConsumer {
+            @Modified
+            void accept(int i, IntConsumer ic);
+        }
     }
 
-    @E2Container
+    @Container
+    interface DoubleStream$ {
+        @Modified
+        @Finalizer
+        long count();
+
+        @Modified
+        @Finalizer
+        double sum();
+
+        @NotNull
+        DoubleStream sorted();
+
+        interface DoubleMapMultiConsumer {
+            @Modified
+            void accept(double d, DoubleConsumer dc);
+        }
+    }
+
+    @Container
+    interface LongStream$ {
+        @Modified
+        @Finalizer
+        long count();
+
+        @Modified
+        @Finalizer
+        long sum();
+
+        @NotNull
+        LongStream sorted();
+
+        interface LongMapMultiConsumer {
+            @Modified
+            void accept(long l, LongConsumer lc);
+        }
+    }
+
+    @Container
     interface Stream$<T> {
 
+        /*
+         Factory method, result dependent on parameters
+         */
         @NotNull
         <TT> Stream<TT> concat(@NotNull Stream<? extends TT> s1, @NotNull Stream<? extends TT> s2);
 
+        /*
+         Independent, yet mutable
+         */
         @NotNull
-        @ERContainer
+        @Independent
         <TT> Stream<TT> empty();
 
+        /*
+         Factory method, the hidden content in the result comes from the parameter
+         */
         @NotNull
-        <TT> Stream<TT> of(@NotNull @Independent1 TT t);
+        @Independent(hc = true)
+        <TT> Stream<TT> of(@NotNull TT t);
+
+        /*
+         Factory method, the hidden content in the result comes from the parameter
+         */
+        @NotNull
+        @Independent(hc = true)
+        <TT> Stream<TT> of(@NotNull TT... t);
+
+        /*
+         The resulting stream is dependent on the object stream, but the method is not modifying.
+         Note that the functional interface implies @IgnoreModifications, which allows modifications external to the type,
+         */
+        @NotNull
+        <R> Stream<R> map(@NotNull Function<? super T, ? extends R> mapper);
 
         @NotNull
-        <TT> Stream<TT> of(@NotNull @Independent1 TT... t);
+        <R> Stream<R> flatMap(@NotNull Function<? super T, ? extends Stream<? extends R>> mapper);
 
         @NotNull
-        <R> Stream<R> map(@Independent1 @NotNull Function<? super T, ? extends R> mapper);
+        @Modified
+        @Finalizer
+        <R, A> R collect(@NotNull Collector<? super T, A, R> collector);
 
         @NotNull
-        <R> Stream<R> flatMap(@Independent1 @NotNull Function<? super T, ? extends Stream<? extends R>> mapper);
+        Stream<T> filter(@NotNull Predicate<? super T> predicate);
 
         @NotNull
-        <R, A> R collect(@Independent1 @NotNull Collector<? super T, A, R> collector);
+        IntStream mapToInt(@NotNull ToIntFunction<? super T> mapper);
 
         @NotNull
-        Stream<T> filter(@Independent1 @NotNull Predicate<? super T> predicate);
-
-        @NotNull
-        IntStream mapToInt(@Independent1 @NotNull ToIntFunction<? super T> mapper);
-
-        @NotNull
-        Optional<T> min(@Independent1 @NotNull Comparator<? super T> comparator);
+        @Modified
+        @Finalizer
+        Optional<T> min(@NotNull Comparator<? super T> comparator);
 
         @NotNull
         Stream<T> sorted();
@@ -120,21 +199,39 @@ public class JavaUtilStream {
         Stream<T> sorted(@NotNull Comparator<? super T> comparator);
 
         @NotNull
+        @Modified
+        @Finalizer
         Optional<T> findAny();
 
         @NotNull
+        @Modified
+        @Finalizer
         Optional<T> findFirst();
 
+        /*
+         The action is perfectly allowed to modify the hidden content presented to it, as opposed to the mappers.
+         */
         @NotNull
-        @NotModified
-        void forEach(@Independent1 @NotNull Consumer<? super T> action);
+        @Modified
+        @Finalizer
+        void forEach(@Independent(hc = true) @NotNull Consumer<? super T> action);
 
         @NotNull
+        @Modified
+        @Finalizer
+        @Independent(hc = true)
+        @ImmutableContainer(hc = true)
         List<T> toList();
     }
 
-    @E2Container
+    @ImmutableContainer
     interface BaseStream$ {
 
+    }
+
+    @UtilityClass
+    @Container
+    interface StreamSupport$ {
+        <T> Stream<T> stream(Spliterator<T> spliterator, boolean parallel);
     }
 }

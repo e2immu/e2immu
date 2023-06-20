@@ -15,13 +15,16 @@
 package org.e2immu.analyser.parser.eventual.testexample;
 
 import org.e2immu.annotation.*;
+import org.e2immu.annotation.eventual.Mark;
+import org.e2immu.annotation.eventual.Only;
 
 import java.util.HashSet;
 import java.util.Set;
 
 /* direct COPY-PASTE into the manual, @E1Container annotation */
 
-@E1Container(after = "j")
+@FinalFields(after = "j")
+@Container
 class EventuallyE1Immutable_2_M {
 
     @NotModified(after = "j")

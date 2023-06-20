@@ -16,8 +16,7 @@ package org.e2immu.analyser.model;
 
 import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.inspector.TypeContext;
-import org.e2immu.analyser.model.expression.BooleanConstant;
-import org.e2immu.analyser.model.expression.Precedence;
+import org.e2immu.analyser.model.expression.*;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.LocalVariableReference;
 import org.e2immu.analyser.model.variable.Variable;
@@ -27,15 +26,15 @@ import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.annotation.NotModified;
 import org.e2immu.annotation.NotNull;
-import org.e2immu.annotation.NotNull1;
 import org.e2immu.support.Either;
 
 import java.util.List;
 import java.util.Set;
 
 public interface Expression extends Element, Comparable<Expression> {
-    int HARD_LIMIT_ON_COMPLEXITY = 1000;
-    int COMPLEXITY_LIMIT_OF_INLINED_METHOD = 100;
+    int HARD_LIMIT_ON_COMPLEXITY = 5000;
+    int SOFT_LIMIT_ON_COMPLEXITY = 500;
+    int COMPLEXITY_LIMIT_OF_INLINED_METHOD = 1000;
 
     int getComplexity();
 
@@ -61,7 +60,7 @@ public interface Expression extends Element, Comparable<Expression> {
     EvaluationResult evaluate(EvaluationResult context, ForwardEvaluationInfo forwardEvaluationInfo);
 
     @NotModified
-    @NotNull1
+    @NotNull(content = true)
     default List<LocalVariableReference> newLocalVariables() {
         return List.of();
     }
@@ -74,7 +73,6 @@ public interface Expression extends Element, Comparable<Expression> {
     }
 
     @NotNull
-    @Override
     default Expression translate(InspectionProvider inspectionProvider, TranslationMap translationMap) {
         throw new UnsupportedOperationException("all expressions need to have this implemented! " + getClass());
     }
@@ -132,19 +130,6 @@ public interface Expression extends Element, Comparable<Expression> {
         return LinkedVariables.EMPTY;
     }
 
-    /*
-    Primarily used for method call a = b.method(c,d), to potentially content link b to c and or d.
-
-    Method reference can do this too: set::add ~ t -> set.add(t), in context list.forEach(set::add)
-    we need a content link from list to set (via the implicit t)
-    TODO how do we implement the implicit parameter?
-    TODO Lambda's
-     */
-    @NotNull
-    default LinkedVariables linked1VariablesScope(EvaluationResult context) {
-        return LinkedVariables.EMPTY;
-    }
-
     boolean isNotNull();
 
     boolean isNull();
@@ -198,7 +183,7 @@ public interface Expression extends Element, Comparable<Expression> {
     Expression stateTranslateThisTo(InspectionProvider inspectionProvider, FieldReference fieldReference);
 
     @NotNull
-    Expression createDelayedValue(Identifier identifier, EvaluationResult context, CausesOfDelay causes);
+    Expression createDelayedValue(Identifier identifier, EvaluationResult context, Properties properties, CausesOfDelay causes);
 
     @NotNull
     default CausesOfDelay causesOfDelay() {
@@ -219,7 +204,7 @@ public interface Expression extends Element, Comparable<Expression> {
         return causesOfDelay().isDone();
     }
 
-    @NotNull1
+    @NotNull(content = true)
     default Set<ParameterizedType> erasureTypes(TypeContext typeContext) {
         return Set.of(returnType());
     }
@@ -275,5 +260,59 @@ public interface Expression extends Element, Comparable<Expression> {
      */
     default TypeInfo typeInfoOfReturnType() {
         return returnType().typeInfo;
+    }
+
+    default String unQuotedString() {
+        return toString();
+    }
+
+    default boolean isNegatedOrNumericNegative() {
+        return false;
+    }
+
+    /*
+    See explanation in BinaryOperator, where this method is used. A small normalization step
+    without actually evaluating the expression.
+     */
+    default Expression keepLiteralNotNull(EvaluationResult context, boolean doNotNegate) {
+        Primitives primitives = context.getPrimitives();
+        if (this instanceof BinaryOperator bo && primitives.isEqualsOperator(bo.operator)) {
+            // check needed for translations in ExplicitConstructorInvocation, see test ECI_7, _7_1
+            if (bo.lhs instanceof NullConstant && bo.rhs instanceof NullConstant) return null;
+            if (bo.lhs instanceof NullConstant && !bo.rhs.returnType().isPrimitiveExcludingVoid()) {
+                // null == XXX
+                return doNotNegate ? this : Negation.negate(context, this);
+            }
+            if (bo.rhs instanceof NullConstant) {
+                // XXX == null
+                Expression eq = new Equals(bo.identifier, primitives, bo.rhs, bo.lhs);
+                return doNotNegate ? eq : Negation.negate(context, eq);
+            }
+        }
+        if (this instanceof BinaryOperator bo && primitives.isNotEqualsOperator(bo.operator)) {
+            if (bo.lhs instanceof NullConstant) {
+                // null != XXX
+                Expression eq = new Equals(bo.identifier, primitives, bo.rhs, bo.lhs);
+                return doNotNegate ? Negation.negate(context, eq) : eq;
+            }
+            if (bo.rhs instanceof NullConstant) {
+                // XXX != null
+                Expression eq = new Equals(bo.identifier, primitives, bo.rhs, bo.lhs);
+                return doNotNegate ? Negation.negate(context, eq) : eq;
+            }
+        }
+        if (this instanceof Negation negation && negation.expression instanceof BinaryOperator bo
+                && primitives.isEqualsOperator(bo.operator)) {
+            if (bo.lhs instanceof NullConstant) {
+                // !(null == XXX)
+                return doNotNegate ? this : negation.expression;
+            }
+            if (bo.rhs instanceof NullConstant) {
+                // !(XXX == null)
+                Expression eq = new Equals(bo.identifier, primitives, bo.rhs, bo.lhs);
+                return doNotNegate ? Negation.negate(context, eq) : eq;
+            }
+        }
+        return null;
     }
 }

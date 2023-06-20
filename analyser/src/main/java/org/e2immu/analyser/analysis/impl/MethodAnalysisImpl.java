@@ -17,23 +17,25 @@ package org.e2immu.analyser.analysis.impl;
 import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.analyser.util.CreatePreconditionCompanion;
 import org.e2immu.analyser.analysis.*;
+import org.e2immu.analyser.inspector.impl.FieldInspectionImpl;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.*;
+import org.e2immu.analyser.model.impl.AnnotationExpressionImpl;
 import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
 import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.parser.Primitives;
-import org.e2immu.support.EventuallyFinal;
-import org.e2immu.support.FlipSwitch;
-import org.e2immu.support.SetOnce;
-import org.e2immu.support.SetOnceMap;
+import org.e2immu.analyser.util.ParSeq;
+import org.e2immu.analyser.util.ParallelGroup;
+import org.e2immu.annotation.Modified;
+import org.e2immu.annotation.NotModified;
+import org.e2immu.support.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
+
+import static org.e2immu.analyser.parser.E2ImmuAnnotationExpressions.*;
 
 public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
     private static final Logger LOGGER = LoggerFactory.getLogger(MethodAnalysisImpl.class);
@@ -45,10 +47,14 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
     public final Precondition preconditionForEventual;
     public final Eventual eventual;
     public final Precondition precondition;
+    public final Set<PostCondition> postConditions;
     public final Expression singleReturnValue;
     public final Map<CompanionMethodName, CompanionAnalysis> companionAnalyses;
     public final Map<CompanionMethodName, MethodInfo> computedCompanions;
     public final AnalysisMode analysisMode;
+    public final ParSeq<ParameterInfo> parallelGroups;
+    public final FieldInfo getSet;
+    public final Set<String> indicesOfEscapesNotInPreOrPostConditions;
 
     private MethodAnalysisImpl(MethodInfo methodInfo,
                                StatementAnalysis firstStatement,
@@ -58,11 +64,15 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
                                Precondition preconditionForEventual,
                                Eventual eventual,
                                Precondition precondition,
+                               Set<PostCondition> postConditions,
+                               Set<String> indicesOfEscapesNotInPreOrPostConditions,
                                AnalysisMode analysisMode,
                                Map<Property, DV> properties,
                                Map<AnnotationExpression, AnnotationCheck> annotations,
                                Map<CompanionMethodName, CompanionAnalysis> companionAnalyses,
-                               Map<CompanionMethodName, MethodInfo> computedCompanions) {
+                               Map<CompanionMethodName, MethodInfo> computedCompanions,
+                               ParSeq<ParameterInfo> parallelGroups,
+                               FieldInfo getSet) {
         super(properties, annotations);
         this.methodInfo = methodInfo;
         this.firstStatement = firstStatement;
@@ -71,10 +81,24 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
         this.preconditionForEventual = preconditionForEventual;
         this.eventual = eventual;
         this.precondition = Objects.requireNonNull(precondition);
+        this.postConditions = postConditions;
         this.singleReturnValue = Objects.requireNonNull(singleReturnValue);
         this.companionAnalyses = companionAnalyses;
         this.computedCompanions = computedCompanions;
         this.analysisMode = analysisMode;
+        this.parallelGroups = parallelGroups;
+        this.getSet = getSet;
+        this.indicesOfEscapesNotInPreOrPostConditions = indicesOfEscapesNotInPreOrPostConditions;
+    }
+
+    @Override
+    public Set<String> indicesOfEscapesNotInPreOrPostConditions() {
+        return indicesOfEscapesNotInPreOrPostConditions;
+    }
+
+    @Override
+    public FieldInfo getSetField() {
+        return getSet;
     }
 
     @Override
@@ -163,6 +187,11 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
     }
 
     @Override
+    public Set<PostCondition> getPostConditions() {
+        return postConditions;
+    }
+
+    @Override
     public DV getProperty(Property property) {
         return getMethodProperty(property);
     }
@@ -172,25 +201,39 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
         return methodInfo.newLocation();
     }
 
+    @Override
+    public ParSeq<ParameterInfo> getParallelGroups() {
+        return parallelGroups;
+    }
+
+    @Override
+    public List<Expression> sortAccordingToParallelGroupsAndNaturalOrder(List<Expression> parameterExpressions) {
+        if (parallelGroups == null) throw new NullPointerException("No parallel groups available");
+        return parallelGroups.sortParallels(parameterExpressions, Comparator.naturalOrder());
+    }
+
     public static class Builder extends AbstractAnalysisBuilder implements MethodAnalysis {
         private final FlipSwitch firstIteration = new FlipSwitch();
         public final ParameterizedType returnType;
         public final MethodInfo methodInfo;
         private final SetOnce<StatementAnalysis> firstStatement = new SetOnce<>();
         public final List<ParameterAnalysis> parameterAnalyses;
+        public final TypeAnalysis typeAnalysisOfOwner;
         private final AnalysisProvider analysisProvider;
         private final InspectionProvider inspectionProvider;
 
         private final EventuallyFinal<Precondition> preconditionForEventual = new EventuallyFinal<>();
         private final EventuallyFinal<Eventual> eventual = new EventuallyFinal<>();
         private final EventuallyFinal<Expression> singleReturnValue = new EventuallyFinal<>();
+        private final SetOnce<ParSeq<ParameterInfo>> parallelGroups = new SetOnce<>();
+        private final SetOnce<FieldInfo> getSet = new SetOnce<>();
 
-        // ************** PRECONDITION
-
-        // conventions detailed in org.e2immu.analyser.analyser.StateData.setPrecondition
         public final EventuallyFinal<Precondition> precondition = new EventuallyFinal<>();
-        public final SetOnceMap<CompanionMethodName, CompanionAnalysis> companionAnalyses = new SetOnceMap<>();
+        private final SetOnce<Set<PostCondition>> postConditions = new SetOnce<>();
+        private CausesOfDelay postConditionDelays;
+        private final SetOnce<Set<String>> indicesOfEscapesNotInPreOrPostConditions = new SetOnce<>();
 
+        public final SetOnceMap<CompanionMethodName, CompanionAnalysis> companionAnalyses = new SetOnceMap<>();
         public final SetOnceMap<CompanionMethodName, MethodInfo> computedCompanions = new SetOnceMap<>();
 
         public final AnalysisMode analysisMode;
@@ -239,6 +282,23 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
         }
 
         @Override
+        public Set<PostCondition> getPostConditions() {
+            return postConditions.getOrDefaultNull();
+        }
+
+        public void setFinalPostConditions(Set<PostCondition> postConditions) {
+            this.postConditions.set(postConditions);
+        }
+
+        public CausesOfDelay getPostConditionDelays() {
+            return postConditionDelays;
+        }
+
+        public void setPostConditionDelays(CausesOfDelay postConditionDelays) {
+            this.postConditionDelays = postConditionDelays;
+        }
+
+        @Override
         public boolean eventualIsSet() {
             return eventual.isFinal();
         }
@@ -266,15 +326,27 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
             return causes;
         }
 
+        @Override
+        public ParSeq<ParameterInfo> getParallelGroups() {
+            return parallelGroups.getOrDefaultNull();
+        }
+
+        @Override
+        public List<Expression> sortAccordingToParallelGroupsAndNaturalOrder(List<Expression> parameterExpressions) {
+            return parallelGroups.get().sortParallels(parameterExpressions, Comparator.naturalOrder());
+        }
+
         public Builder(AnalysisMode analysisMode,
                        Primitives primitives,
                        AnalysisProvider analysisProvider,
                        InspectionProvider inspectionProvider,
                        MethodInfo methodInfo,
+                       TypeAnalysis typeAnalysisOfOwner,
                        List<ParameterAnalysis> parameterAnalyses) {
             super(primitives, methodInfo.name);
             this.inspectionProvider = inspectionProvider;
             this.analysisMode = analysisMode;
+            this.typeAnalysisOfOwner = typeAnalysisOfOwner; // can be null in special situations
             this.parameterAnalyses = parameterAnalyses;
             this.methodInfo = methodInfo;
             this.returnType = methodInfo.returnType();
@@ -314,11 +386,83 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
                     preconditionForEventual.get(),
                     eventual.get(),
                     precondition.isFinal() ? precondition.get() : Precondition.empty(primitives),
+                    postConditions.getOrDefault(Set.of()),
+                    indicesOfEscapesNotInPreOrPostConditions.getOrDefault(Set.of()),
                     analysisMode(),
                     properties.toImmutableMap(),
                     annotationChecks.toImmutableMap(),
                     getCompanionAnalyses(),
-                    getComputedCompanions());
+                    getComputedCompanions(),
+                    parallelGroups.getOrDefaultNull(),
+                    getSet.getOrDefaultNull());
+        }
+
+        @Override
+        protected void addCommutable() {
+            parallelGroups.set(new ParallelGroup<>());
+        }
+
+        @Override
+        protected void getSet(String fieldName) {
+            FieldInfo fieldInfo = fieldName == null ? extractFieldFromMethod() : findOrCreateField(fieldName);
+            getSet.set(fieldInfo);
+        }
+
+        // SEE ALSO CheckGetSet.class
+        private FieldInfo extractFieldFromMethod() {
+            String extractedName;
+            String methodName = methodInfo.name;
+            int length = methodName.length();
+            boolean set = methodName.startsWith("set");
+            boolean has = methodName.startsWith("has");
+            boolean get = methodName.startsWith("get");
+            boolean is = methodName.startsWith("is");
+            if (length >= 4 && (set || has || get) && Character.isUpperCase(methodName.charAt(3))) {
+                extractedName = methodName.substring(3);
+            } else if (length >= 3 && is && Character.isUpperCase(methodName.charAt(2))) {
+                extractedName = methodName.substring(2);
+            } else {
+                extractedName = methodName;
+            }
+            String decapitalized = Character.toLowerCase(extractedName.charAt(0)) + extractedName.substring(1);
+            FieldInfo fieldInfo = findOrCreateField(decapitalized);
+            MethodInspection mi = inspectionProvider.getMethodInspection(methodInfo);
+            assert !is || fieldInfo.type.isBoolean();
+            assert !has || fieldInfo.type.isBoolean();
+            assert set || mi.getParameters().isEmpty();
+            assert !set || mi.getParameters().size() == 1
+                    && (mi.getReturnType().isVoidOrJavaLangVoid() || mi.getReturnType().typeInfo == methodInfo.typeInfo);
+            return fieldInfo;
+        }
+
+        private FieldInfo findOrCreateField(String fieldName) {
+            TypeInspection typeInspection = inspectionProvider.getTypeInspection(methodInfo.typeInfo);
+            Optional<FieldInfo> fieldInfo = typeInspection.findFieldByName(fieldName, analysisProvider);
+            fieldInfo.ifPresent(f -> {
+                // depending on the order, the field can be created for a getter or a setter.
+                if (inspectionProvider.getFieldInspection(f).isSynthetic()) {
+                    getSet.set(f);
+                }
+            });
+            return fieldInfo.orElseGet(() -> createSyntheticGetSetField(fieldName));
+        }
+
+        private FieldInfo createSyntheticGetSetField(String fieldName) {
+            MethodInspection methodInspection = inspectionProvider.getMethodInspection(methodInfo);
+            ParameterizedType type = methodInspection.getSetType();
+            FieldInfo newField = new FieldInfo(methodInfo.identifier, type, fieldName, methodInfo.typeInfo);
+            FieldInspectionImpl.Builder b = new FieldInspectionImpl.Builder(newField);
+            b.addModifier(FieldModifier.PRIVATE); // even though we'll access it
+            b.setSynthetic(true);
+            newField.fieldInspection.set(b.build(inspectionProvider));
+            LOGGER.info("Added synthetic getter-setter field {}", newField.fullyQualifiedName);
+            return newField;
+        }
+
+        // used by CM
+        @SuppressWarnings("unused")
+        public void setParallelGroups(ParSeq<ParameterInfo> parallelGroups) {
+            this.parallelGroups.set(parallelGroups);
         }
 
         @Override
@@ -354,7 +498,7 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
             return getMethodProperty(property);
         }
 
-        public void transferPropertiesToAnnotations(AnalyserContext analyserContext, E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions) {
+        public void transferPropertiesToAnnotations(AnalyserContext analyserContext, E2ImmuAnnotationExpressions e2) {
             DV modified = getProperty(Property.MODIFIED_METHOD);
 
             // @Precondition
@@ -370,24 +514,56 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
             if (methodInfo.isConstructor) return;
 
             // @NotModified, @Modified
-            AnnotationExpression ae = modified.valueIsFalse() ? e2ImmuAnnotationExpressions.notModified :
-                    e2ImmuAnnotationExpressions.modified;
-            annotations.put(ae, true);
+            DV ownerImmutable = typeAnalysisOfOwner == null ? MultiLevel.MUTABLE_INCONCLUSIVE
+                    : typeAnalysisOfOwner.getProperty(Property.IMMUTABLE);
+            boolean implied = MultiLevel.isEffectivelyImmutable(ownerImmutable);
+            AnnotationExpression ae;
+            if (modified.valueIsTrue()) {
+                if (methodInfo.inConstruction()) {
+                    ae = E2ImmuAnnotationExpressions.create(primitives, Modified.class, CONSTRUCTION, true);
+                } else if (implied) {
+                    ae = E2ImmuAnnotationExpressions.create(primitives, Modified.class, IMPLIED, true);
+                } else {
+                    ae = e2.modified;
+                }
+            } else {
+                if (implied) {
+                    ae = E2ImmuAnnotationExpressions.create(primitives, NotModified.class, IMPLIED, true);
+                } else {
+                    ae = e2.notModified;
+                }
+            }
+            addAnnotation(ae);
 
-            // dynamic type annotations: @E1Immutable, @E1Container, @E2Immutable, @E2Container
-            DV formallyImmutable = analysisProvider.getProperty(returnType, Property.IMMUTABLE, false);
+            DV formallyImmutable = analysisProvider.typeImmutable(returnType);
             DV dynamicallyImmutable = getProperty(Property.IMMUTABLE);
-            DV formallyContainer = analysisProvider.getProperty(returnType, Property.CONTAINER, false);
+            DV formallyContainer = analysisProvider.typeContainer(returnType);
             DV dynamicallyContainer = getProperty(Property.CONTAINER);
-            if (dynamicallyImmutable.gt(formallyImmutable) || dynamicallyContainer.gt(formallyContainer)) {
-                doImmutableContainer(e2ImmuAnnotationExpressions, dynamicallyImmutable, dynamicallyContainer, true);
+            boolean immutableBetterThanFormal = dynamicallyImmutable.gt(formallyImmutable);
+            boolean containerBetterThanFormal = dynamicallyContainer.gt(formallyContainer);
+            DV constant = getProperty(Property.CONSTANT);
+            String constantValue = constant.valueIsTrue() ? getSingleReturnValue().unQuotedString() : null;
+            boolean constantImplied = methodInfo.singleStatementReturnConstant();
+
+            doImmutableContainer(e2, dynamicallyImmutable, dynamicallyContainer, immutableBetterThanFormal,
+                    containerBetterThanFormal, constantValue, constantImplied);
+
+            // @GetSet
+            if (getSet.isSet() && !inspectionProvider.getMethodInspection(methodInfo).isSynthetic()) {
+                if (fieldNameAgreesWithGetSet(getSet.get().name, methodInfo.name, getSet.get().type.isBoolean())) {
+                    addAnnotation(e2.getSet);
+                } else {
+                    AnnotationExpression getSetWithParam = new AnnotationExpressionImpl(e2.getSet.typeInfo(),
+                            List.of(new MemberValuePair(VALUE, new StringConstant(primitives, getSet.get().name))));
+                    addAnnotation(getSetWithParam);
+                }
             }
 
             if (returnType.isVoidOrJavaLangVoid()) return;
 
             // @Identity
             if (getProperty(Property.IDENTITY).valueIsTrue()) {
-                annotations.put(e2ImmuAnnotationExpressions.identity, true);
+                addAnnotation(e2.identity);
             }
 
             // all other annotations cannot be added to primitives
@@ -395,16 +571,23 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
 
             // @Fluent
             if (getProperty(Property.FLUENT).valueIsTrue()) {
-                annotations.put(e2ImmuAnnotationExpressions.fluent, true);
+                addAnnotation(e2.fluent);
             }
 
             // @NotNull
-            doNotNull(e2ImmuAnnotationExpressions, getProperty(Property.NOT_NULL_EXPRESSION));
+            doNotNull(e2, getProperty(Property.NOT_NULL_EXPRESSION), methodInfo.returnType().isPrimitiveExcludingVoid());
 
             // @Dependent @Independent
             DV independent = getProperty(Property.INDEPENDENT);
-            DV formallyIndependent = analyserContext.defaultIndependent(methodInfo.returnType());
-            doIndependent(e2ImmuAnnotationExpressions, independent, formallyIndependent, dynamicallyImmutable);
+            DV formallyIndependent = analyserContext.typeIndependent(methodInfo.returnType());
+            doIndependent(e2, independent, formallyIndependent, dynamicallyImmutable);
+        }
+
+        private boolean fieldNameAgreesWithGetSet(String fieldName, String getSet, boolean isBooleanType) {
+            if (fieldName.equals(getSet)) return true; // accessor
+            String capitalized = Character.toUpperCase(fieldName.charAt(0)) + fieldName.substring(1);
+            if (isBooleanType && (getSet.equals("is" + capitalized) || getSet.equals("has" + capitalized))) return true;
+            return !isBooleanType && (getSet.equals("get" + capitalized) || getSet.equals("set" + capitalized));
         }
 
         protected void writeEventual(Eventual eventual) {
@@ -494,6 +677,28 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
 
         public boolean singleReturnValueIsVariable() {
             return !singleReturnValue.isFinal();
+        }
+
+        @Override
+        public FieldInfo getSetField() {
+            return getSet.getOrDefaultNull();
+        }
+
+        public void setGetSetField(FieldInfo fieldInfo) {
+            getSet.set(fieldInfo);
+        }
+
+        public boolean getSetFieldIsNotYetSet() {
+            return !getSet.isSet();
+        }
+
+        @Override
+        public Set<String> indicesOfEscapesNotInPreOrPostConditions() {
+            return indicesOfEscapesNotInPreOrPostConditions.get();
+        }
+
+        public void setIndicesOfEscapeNotInPreOrPostCondition(Set<String> indices) {
+            indicesOfEscapesNotInPreOrPostConditions.set(Set.copyOf(indices));
         }
     }
 

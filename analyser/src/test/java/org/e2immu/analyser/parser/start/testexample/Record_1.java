@@ -14,9 +14,9 @@
 
 package org.e2immu.analyser.parser.start.testexample;
 
-import org.e2immu.annotation.ERContainer;
+import org.e2immu.annotation.ImmutableContainer;
 
-@ERContainer
+@ImmutableContainer
 public record Record_1(String string, int integer) {
 
     public Record_1 {

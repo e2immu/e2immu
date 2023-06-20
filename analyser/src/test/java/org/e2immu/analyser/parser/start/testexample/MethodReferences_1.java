@@ -20,7 +20,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-@E1Container
+@FinalFields
+@Container
 @Independent(absent = true)
 public class MethodReferences_1 {
 

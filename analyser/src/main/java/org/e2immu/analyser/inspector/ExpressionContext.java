@@ -38,7 +38,10 @@ public interface ExpressionContext {
         SortedTypes resolve(InspectionProvider inspectionProvider,
                             E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions,
                             boolean shallowResolver,
+                            boolean storeComments,
                             Map<TypeInfo, ExpressionContext> inspectedTypes);
+
+        boolean storeComments();
     }
 
     ExpressionContext newVariableContext(MethodInfo methodInfo, ForwardReturnTypeInfo forwardReturnTypeInfo);
@@ -82,6 +85,8 @@ public interface ExpressionContext {
     Location getLocation();
 
     TypeInfo enclosingType();
+
+    MethodInfo enclosingMethod();
 
     @NotNull
     TypeInfo primaryType();

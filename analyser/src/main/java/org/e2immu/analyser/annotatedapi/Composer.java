@@ -91,7 +91,7 @@ public record Composer(TypeMap typeMap, String destinationPackage, Predicate<Wit
         }
         return buildersPerPackage.values().stream()
                 .map(builder -> {
-                    TypeInspection inspection = builder.setFunctionalInterface(false).build();
+                    TypeInspection inspection = builder.setFunctionalInterface(false).build(typeMap);
                     TypeInfo typeInfo = inspection.typeInfo();
                     typeInfo.typeInspection.set(inspection);
                     return typeInfo;
@@ -108,7 +108,7 @@ public record Composer(TypeMap typeMap, String destinationPackage, Predicate<Wit
             appendType(subType, typeBuilder, false);
         }
         for (FieldInfo fieldInfo : typeInspection.fields()) {
-            if (fieldInfo.isPublic() && predicate.test(fieldInfo)) {
+            if (fieldInfo.fieldInspection.get().isPublic() && predicate.test(fieldInfo)) {
                 typeBuilder.addField(createField(fieldInfo, typeBuilder.typeInfo()));
             }
         }
@@ -123,7 +123,9 @@ public record Composer(TypeMap typeMap, String destinationPackage, Predicate<Wit
             }
         }
 
-        TypeInspection builtType = typeBuilder.setFunctionalInterface(false).build();
+        TypeInspection builtType = typeBuilder.setFunctionalInterface(false)
+                .setAccess(Inspection.Access.PACKAGE)
+                .build(typeMap);
         TypeInfo typeInfo = builtType.typeInfo();
         typeInfo.typeInspection.set(builtType);
         packageBuilder.addSubType(typeInfo);
@@ -138,7 +140,7 @@ public record Composer(TypeMap typeMap, String destinationPackage, Predicate<Wit
     private FieldInfo createField(FieldInfo fieldInfo, TypeInfo owner) {
         FieldInspection inspection = fieldInfo.fieldInspection.get();
         FieldInfo newField = new FieldInfo(fieldInfo.getIdentifier(), fieldInfo.type, fieldInfo.name, owner);
-        FieldInspectionImpl.Builder builder = new FieldInspectionImpl.Builder();
+        FieldInspectionImpl.Builder builder = new FieldInspectionImpl.Builder(fieldInfo);
         inspection.getModifiers()
                 .stream().filter(m -> m != FieldModifier.PUBLIC).forEach(builder::addModifier);
         if (inspection.getModifiers().contains(FieldModifier.FINAL)) {
@@ -146,7 +148,9 @@ public record Composer(TypeMap typeMap, String destinationPackage, Predicate<Wit
             builder.setInspectedInitialiserExpression(bestType == null ?
                     NullConstant.NULL_CONSTANT : ConstantExpression.nullValue(typeMap.getPrimitives(), bestType));
         }
-        newField.fieldInspection.set(builder.build());
+        newField.fieldInspection.set(builder
+                .setAccess(Inspection.Access.PACKAGE)
+                .build(typeMap));
         return newField;
     }
 
@@ -179,7 +183,9 @@ public record Composer(TypeMap typeMap, String destinationPackage, Predicate<Wit
             }
             builder.addParameter(newParameterBuilder);
         }
-        MethodInfo newMethod = builder.build(InspectionProvider.DEFAULT).getMethodInfo();
+        MethodInfo newMethod = builder
+                .setAccess(Inspection.Access.PACKAGE)
+                .build(InspectionProvider.DEFAULT).getMethodInfo();
         newMethod.methodResolution.set(new MethodResolution.Builder().build());
         return newMethod;
     }
@@ -203,11 +209,14 @@ public record Composer(TypeMap typeMap, String destinationPackage, Predicate<Wit
                 .addTypeModifier(TypeModifier.PUBLIC);
         FieldInfo packageField = new FieldInfo(Identifier.generate("PACKAGE NAME"), typeMap.getPrimitives().stringParameterizedType(),
                 "PACKAGE_NAME", typeInfo);
-        FieldInspectionImpl.Builder packageFieldInspectionBuilder = new FieldInspectionImpl.Builder();
+        FieldInspectionImpl.Builder packageFieldInspectionBuilder = new FieldInspectionImpl.Builder(packageField);
         packageFieldInspectionBuilder
-                .addModifier(FieldModifier.FINAL).addModifier(FieldModifier.STATIC).addModifier(FieldModifier.PUBLIC)
+                .addModifier(FieldModifier.FINAL)
+                .addModifier(FieldModifier.STATIC)
+                .addModifier(FieldModifier.PUBLIC)
+                .setAccess(Inspection.Access.PUBLIC)
                 .setInspectedInitialiserExpression(new StringConstant(typeMap.getPrimitives(), packageName));
-        packageField.fieldInspection.set(packageFieldInspectionBuilder.build());
+        packageField.fieldInspection.set(packageFieldInspectionBuilder.build(typeMap));
         builder.addField(packageField);
         return builder;
     }

@@ -46,7 +46,7 @@ public class Test_23_TryStatement extends CommonTestRunner {
     @Test
     public void test_0() throws IOException {
         final String TYPE = "org.e2immu.analyser.parser.start.testexample.TryStatement_0";
-        final String METHOD_FQN = TYPE + ".method(java.lang.String)";
+        final String METHOD_FQN = TYPE + ".method(String)";
 
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("method".equals(d.methodInfo().name) && d.variable() instanceof ReturnVariable) {
@@ -89,7 +89,8 @@ public class Test_23_TryStatement extends CommonTestRunner {
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("method".equals(d.methodInfo().name)) {
                 Expression srv = d.methodAnalysis().getSingleReturnValue();
-                assertEquals("/*inline method*/instance type String", srv.toString());
+                String expected = d.iteration() == 0 ? "<m:method>" : "/*inline method*/instance type String";
+                assertEquals(expected, srv.toString());
             }
         };
 
@@ -126,10 +127,22 @@ public class Test_23_TryStatement extends CommonTestRunner {
             }
         };
 
+        /*
+         the 'throws' statement does not translate to a pre- or post-condition, because the condition (instance)
+         cannot be represented.
+         */
+        MethodAnalyserVisitor methodAnalyserVisitor = d -> {
+            if ("method".equals(d.methodInfo().name)) {
+                assertEquals("Precondition[expression=true, causes=[]]",
+                        d.methodAnalysis().getPrecondition().toString());
+            }
+        };
+
         // warn: unused parameter
         testClass("TryStatement_2", 2, 1, new DebugConfiguration.Builder()
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .build());
     }
 
@@ -176,7 +189,7 @@ public class Test_23_TryStatement extends CommonTestRunner {
             if ("writeLine".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof ParameterInfo pi && "list".equals(pi.simpleName())) {
                     if ("0.0.0".equals(d.statementId())) {
-                        assertDv(d, MultiLevel.NULLABLE_DV,Property.CONTEXT_NOT_NULL);
+                        assertDv(d, MultiLevel.NULLABLE_DV, Property.CONTEXT_NOT_NULL);
                     }
                 }
             }
@@ -193,7 +206,7 @@ public class Test_23_TryStatement extends CommonTestRunner {
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("method".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof ReturnVariable) {
-                    if("1.0.0".equals(d.statementId())) {
+                    if ("1.0.0".equals(d.statementId())) {
                         assertEquals("\"Hi\"+Integer.parseInt(s)", d.currentValue().toString());
                     }
                     if ("1".equals(d.statementId())) {
@@ -236,6 +249,23 @@ public class Test_23_TryStatement extends CommonTestRunner {
     @Test
     public void test_9() throws IOException {
         testClass("TryStatement_9", 0, 0, new DebugConfiguration.Builder()
+                .build());
+    }
+
+    @Test
+    public void test_10() throws IOException {
+
+        // no preconditions
+        MethodAnalyserVisitor methodAnalyserVisitor = d -> {
+            if ("method".equals(d.methodInfo().name)) {
+                assertEquals("Precondition[expression=true, causes=[]]",
+                        d.methodAnalysis().getPrecondition().toString());
+            }
+        };
+
+        // 2 potential null pointer warnings
+        testClass("TryStatement_10", 0, 2, new DebugConfiguration.Builder()
+                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .build());
     }
 }

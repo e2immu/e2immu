@@ -146,6 +146,7 @@ public class PrimitivesImpl implements Primitives {
             builder.addParameter(pb); // inspection built when method is built
         }
         builder.setReturnType(returnType);
+        builder.setAccess(Inspection.Access.PUBLIC);
         return builder.build(InspectionProvider.DEFAULT).getMethodInfo();
     }
 
@@ -255,15 +256,16 @@ public class PrimitivesImpl implements Primitives {
                     .setTypeNature(TypeNature.CLASS)
                     .setFunctionalInterface(false)
                     .noParent(this)
-                    .build());
+                    .setAccess(Inspection.Access.PUBLIC)
+                    .build(null));
             TypeAnalysisImpl.Builder builder = new TypeAnalysisImpl.Builder(CONTRACTED, this, ti, null);
             builder.setProperty(Property.CONTAINER, MultiLevel.CONTAINER_DV);
-            builder.setProperty(Property.IMMUTABLE, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV);
-            builder.freezeApprovedPreconditionsE2(); // cannot change these anymore; will never be eventual
-            builder.freezeApprovedPreconditionsE1(); // cannot change these anymore; will never be eventual
+            builder.setProperty(Property.IMMUTABLE, MultiLevel.EFFECTIVELY_IMMUTABLE_DV);
+            builder.freezeApprovedPreconditionsImmutable(); // cannot change these anymore; will never be eventual
+            builder.freezeApprovedPreconditionsFinalFields(); // cannot change these anymore; will never be eventual
             builder.setProperty(Property.INDEPENDENT, MultiLevel.INDEPENDENT_DV);
-            builder.setTransparentTypes(SetOfTypes.EMPTY);
-            builder.setImmutableCanBeIncreasedByTypeParameters(false);
+            builder.setHiddenContentTypes(SetOfTypes.EMPTY);
+            builder.setImmutableDeterminedByTypeParameters(false);
             ti.typeAnalysis.set(builder.build());
         }
     }
@@ -272,19 +274,20 @@ public class PrimitivesImpl implements Primitives {
         for (TypeInfo ti : primitives) {
             ti.typeInspection.set(new TypeInspectionImpl.Builder(ti, BY_HAND_WITHOUT_STATEMENTS)
                     .setTypeNature(TypeNature.PRIMITIVE)
+                    .setAccess(Inspection.Access.PUBLIC)
                     .setFunctionalInterface(false)
                     .noParent(this)
-                    .build());
+                    .build(null));
             primitiveByName.put(ti.simpleName, ti);
             TypeAnalysisImpl.Builder builder = new TypeAnalysisImpl.Builder(CONTRACTED, this, ti, null);
             ti.typeAnalysis.set(builder);
             builder.setProperty(Property.CONTAINER, MultiLevel.CONTAINER_DV);
-            builder.setProperty(Property.IMMUTABLE, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV);
+            builder.setProperty(Property.IMMUTABLE, MultiLevel.EFFECTIVELY_IMMUTABLE_DV);
             builder.setProperty(Property.INDEPENDENT, MultiLevel.INDEPENDENT_DV);
-            builder.freezeApprovedPreconditionsE2(); // cannot change these anymore; will never be eventual
-            builder.freezeApprovedPreconditionsE1(); // cannot change these anymore; will never be eventual
-            builder.setTransparentTypes(SetOfTypes.EMPTY);
-            builder.setImmutableCanBeIncreasedByTypeParameters(false);
+            builder.freezeApprovedPreconditionsImmutable(); // cannot change these anymore; will never be eventual
+            builder.freezeApprovedPreconditionsFinalFields(); // cannot change these anymore; will never be eventual
+            builder.setHiddenContentTypes(SetOfTypes.EMPTY);
+            builder.setImmutableDeterminedByTypeParameters(false);
         }
 
         for (TypeInfo ti : List.of(stringTypeInfo, objectTypeInfo, classTypeInfo, annotationTypeTypeInfo,
@@ -301,9 +304,10 @@ public class PrimitivesImpl implements Primitives {
 
         functionalInterface.typeInspection.set(new TypeInspectionImpl.Builder(functionalInterface, BY_HAND_WITHOUT_STATEMENTS)
                 .setTypeNature(TypeNature.ANNOTATION)
+                .setAccess(Inspection.Access.PUBLIC)
                 .setFunctionalInterface(false)
                 .noParent(this)
-                .build());
+                .build(null));
 
         assert MethodInfo.UNARY_MINUS_OPERATOR_INT.equals(unaryMinusOperatorInt.fullyQualifiedName);
         assert "long".equals(longTypeInfo.fullyQualifiedName) : "Have " + longTypeInfo.fullyQualifiedName;
@@ -318,25 +322,29 @@ public class PrimitivesImpl implements Primitives {
         MethodInfo valueOf = valueOfBuilder.setReturnType(typeInfoAsPt)
                 .addParameter(valueOf0Builder)
                 .addModifier(MethodModifier.PUBLIC)
+                .setAccess(Inspection.Access.PUBLIC)
                 .build(InspectionProvider.DEFAULT).getMethodInfo();
 
         MethodInspectionImpl.Builder nameBuilder = new MethodInspectionImpl.Builder(typeInfo, "name");
         MethodInfo name = nameBuilder.setReturnType(stringParameterizedType)
                 .addModifier(MethodModifier.PUBLIC)
+                .setAccess(Inspection.Access.PUBLIC)
                 .build(InspectionProvider.DEFAULT).getMethodInfo();
         TypeInspection.Builder typeInspectionBuilder = new TypeInspectionImpl.Builder(typeInfo, BY_HAND_WITHOUT_STATEMENTS)
                 .setTypeNature(TypeNature.ENUM)
+                .setAccess(Inspection.Access.PUBLIC)
                 .addTypeModifier(TypeModifier.PUBLIC)
                 .setFunctionalInterface(false)
                 .noParent(this)
                 .addMethod(valueOf)
                 .addMethod(name);
         for (FieldInfo fieldInfo : fields) typeInspectionBuilder.addField(fieldInfo);
-        typeInfo.typeInspection.set(typeInspectionBuilder.build());
+        typeInfo.typeInspection.set(typeInspectionBuilder.build(null));
         for (FieldInfo fieldInfo : fields) {
-            fieldInfo.fieldInspection.set(new FieldInspectionImpl.Builder()
+            fieldInfo.fieldInspection.set(new FieldInspectionImpl.Builder(fieldInfo)
                     .addModifiers(List.of(FieldModifier.STATIC, FieldModifier.FINAL, FieldModifier.PUBLIC))
-                    .build());
+                    .setAccess(Inspection.Access.PUBLIC)
+                    .build(null));
         }
     }
 
@@ -425,12 +433,16 @@ public class PrimitivesImpl implements Primitives {
             return boxedFloatTypeInfo;
         if (typeInfo == doubleTypeInfo)
             return boxedDoubleTypeInfo;
+        if (typeInfo == voidTypeInfo) {
+            return boxedVoidTypeInfo;
+        }
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public Set<ParameterizedType> explicitTypesOfJLO() {
-        return Set.of(stringParameterizedType, objectParameterizedType, classTypeInfo.asSimpleParameterizedType());
+    public SetOfTypes explicitTypesOfJLO() {
+        return new SetOfTypes(Set.of(stringParameterizedType, objectParameterizedType,
+                classTypeInfo.asSimpleParameterizedType()));
     }
 
     @Override
@@ -674,6 +686,11 @@ public class PrimitivesImpl implements Primitives {
     }
 
     @Override
+    public TypeInfo characterTypeInfo() {
+        return characterTypeInfo;
+    }
+
+    @Override
     public TypeInfo objectTypeInfo() {
         return objectTypeInfo;
     }
@@ -686,12 +703,22 @@ public class PrimitivesImpl implements Primitives {
     @Override
     public MethodAnalysis createEmptyMethodAnalysis(MethodInfo methodInfo) {
         List<ParameterAnalysis> parameterAnalyses = methodInfo.methodInspection.get().getParameters().stream()
-                .map(p -> (ParameterAnalysis) new ParameterAnalysisImpl.Builder(this, AnalysisProvider.DEFAULT_PROVIDER, p).build())
+                .map(p -> {
+                    ParameterAnalysisImpl.Builder pb = new ParameterAnalysisImpl.Builder(this, AnalysisProvider.DEFAULT_PROVIDER, p);
+                    pb.setProperty(Property.CONTAINER_RESTRICTION, MultiLevel.NOT_CONTAINER_DV);
+                    return (ParameterAnalysis) pb.build();
+                })
                 .collect(Collectors.toList());
         MethodAnalysisImpl.Builder builder = new MethodAnalysisImpl.Builder(Analysis.AnalysisMode.CONTRACTED,
                 this, AnalysisProvider.DEFAULT_PROVIDER, InspectionProvider.DEFAULT,
-                methodInfo, parameterAnalyses);
+                methodInfo, null, parameterAnalyses);
         builder.ensureIsNotEventualUnlessOtherwiseAnnotated();
         return (MethodAnalysis) builder.build();
+    }
+
+    @Override
+    public MethodInfo assignOperator(ParameterizedType returnType) {
+        // NOTE: we have only one at the moment, no distinction between the types
+        return assignOperatorInt;
     }
 }

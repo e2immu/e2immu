@@ -14,9 +14,10 @@
 
 package org.e2immu.analyser.parser.start.testexample;
 
-import org.e2immu.annotation.ERContainer;
 
-@ERContainer
+import org.e2immu.annotation.ImmutableContainer;
+
+@ImmutableContainer
 public enum Enum_5 {
     ONE(1), TWO(2), THREE(3);
 
@@ -30,7 +31,7 @@ public enum Enum_5 {
         return cnt;
     }
 
-    @ERContainer(absent = true) // don't write when the same value
+    @ImmutableContainer // redundant, but we won't complain
     public static Enum_5 returnTwo() {
         return Enum_5.valueOf("TWO");
     }

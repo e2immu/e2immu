@@ -148,6 +148,15 @@ public record IsAssignableFrom(InspectionProvider inspectionProvider,
     private int targetIsATypeParameter(Mode mode) {
         assert target.typeParameter != null;
 
+        if (target.typeParameter.equals(from.typeParameter) && target.arrays != from.arrays) {
+            // T <- T[], T[] <- T, ...
+            return NOT_ASSIGNABLE;
+        }
+        if(target.arrays > 0 && from.arrays != target.arrays) {
+            // T[] <- X, X[][]
+            return NOT_ASSIGNABLE;
+        }
+
         List<ParameterizedType> targetTypeBounds = target.typeParameter.getTypeBounds();
         if (targetTypeBounds.isEmpty()) {
             return TYPE_BOUND;

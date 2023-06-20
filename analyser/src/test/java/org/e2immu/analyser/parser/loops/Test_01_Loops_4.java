@@ -106,7 +106,7 @@ public class Test_01_Loops_4 extends CommonTestRunner {
                                 : "1==instance type int?4:0";
                         assertEquals(expect, d.currentValue().toString());
                         String expectVars = d.iteration() == 0 ? "[i]" : "[]";
-                        assertEquals(expectVars, d.currentValue().variables(true).toString());
+                        assertEquals(expectVars, d.currentValue().variables().toString());
                     }
                 }
             }

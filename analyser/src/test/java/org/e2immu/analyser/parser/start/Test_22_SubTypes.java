@@ -50,36 +50,55 @@ public class Test_22_SubTypes extends CommonTestRunner {
 
     @Test
     public void test_1() throws IOException {
-        final String SUBTYPE = "MethodWithSubType$KV$1";
-        final String KV = "org.e2immu.analyser.parser.start.testexample.SubTypes_1." + SUBTYPE;
+        final String SUBTYPE_CONSTRUCTOR = "MethodWithSubType$KV$1";
+        final String KV = "org.e2immu.analyser.parser.start.testexample.SubTypes_1." + SUBTYPE_CONSTRUCTOR;
         final String KEY = KV + ".key";
 
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
-            if ("key".equals(d.fieldInfo().name) && SUBTYPE.equals(d.fieldInfo().owner.simpleName)) {
+            if ("key".equals(d.fieldInfo().name) && SUBTYPE_CONSTRUCTOR.equals(d.fieldInfo().owner.simpleName)) {
                 assertEquals(DV.TRUE_DV, d.fieldAnalysis().getProperty(Property.FINAL));
                 assertEquals("key:0", d.fieldAnalysis().getLinkedVariables().toString());
             }
         };
 
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
-            if (SUBTYPE.equals(d.methodInfo().name)) {
+            if (SUBTYPE_CONSTRUCTOR.equals(d.methodInfo().name)) {
                 assertTrue(d.methodInfo().isConstructor);
             }
         };
 
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
-            if (SUBTYPE.equals(d.methodInfo().name) && KEY.equals(d.variableName())) {
+            if (SUBTYPE_CONSTRUCTOR.equals(d.methodInfo().name) && KEY.equals(d.variableName())) {
                 assertEquals("key", d.currentValue().toString());
                 assertEquals("key:0", d.variableInfo().getLinkedVariables().toString());
             }
+        };
 
+        StatementAnalyserVisitor statementAnalyserVisitor = d -> {
+            if (SUBTYPE_CONSTRUCTOR.equals(d.methodInfo().name)) {
+                assertTrue(d.methodInfo().isConstructor);
+                if ("1".equals(d.statementId())) {
+                    String report = d.iteration() == 0
+                            ? "s={context-modified=link@NOT_YET_SET, context-not-null=nullable:1, read=true:1}, this={context-modified=false:0}"
+                            : "s={context-modified=false:0, context-not-null=nullable:1, read=true:1}, this={context-modified=false:0}";
+                    assertEquals(report, d.variableAccessReport().toString());
+                }
+            }
+            if ("methodWithSubType".equals(d.methodInfo().name)) {
+                if ("1".equals(d.statementId())) {
+                    String expected = d.iteration() == 0
+                            ? "s={context-modified=initial:this.key@Method_toString_0-C;initial:this.value@Method_toString_0-C;link@NOT_YET_SET, context-not-null=nullable:1, read=true:1}, this={context-modified=initial:this.key@Method_toString_0-C;initial:this.value@Method_toString_0-C}"
+                            : "s={context-modified=false:0, context-not-null=nullable:1, read=true:1}, this={context-modified=false:0}";
+                    assertEquals(expected, d.statementAnalysis().propertiesFromSubAnalysersSortedToString());
+                }
+            }
         };
 
         EvaluationResultVisitor evaluationResultVisitor = d -> {
-            if (SUBTYPE.equals(d.methodInfo().name) && "0".equals(d.statementId())) {
+            if (SUBTYPE_CONSTRUCTOR.equals(d.methodInfo().name) && "0".equals(d.statementId())) {
                 assertEquals("key", d.evaluationResult().value().toString());
             }
-            if (SUBTYPE.equals(d.methodInfo().name) && "1".equals(d.statementId())) {
+            if (SUBTYPE_CONSTRUCTOR.equals(d.methodInfo().name) && "1".equals(d.statementId())) {
                 assertEquals("value+\"abc\"", d.evaluationResult().value().toString());
             }
         };
@@ -87,6 +106,7 @@ public class Test_22_SubTypes extends CommonTestRunner {
         testClass("SubTypes_1", 0, 0, new DebugConfiguration.Builder()
                 .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addStatementAnalyserVisitor(statementAnalyserVisitor)
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .addEvaluationResultVisitor(evaluationResultVisitor)
                 .build());
@@ -214,13 +234,13 @@ public class Test_22_SubTypes extends CommonTestRunner {
                 ParameterAnalysis p0 = d.parameterAnalyses().get(0);
                 assertEquals("set1", ((ParameterAnalysisImpl.Builder) p0).simpleName);
                 assertDv(d.p(0), 1, DV.TRUE_DV, Property.MODIFIED_VARIABLE);
-                assertDv(d, MultiLevel.MUTABLE_DV, Property.IMMUTABLE);
+                assertDv(d, 1, MultiLevel.MUTABLE_DV, Property.IMMUTABLE);
             }
         };
 
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("SubTypes_6".equals(d.typeInfo().simpleName)) {
-                assertEquals("", d.typeAnalysis().getTransparentTypes().toString());
+                assertTrue(d.typeAnalysis().getHiddenContentTypes().isEmpty());
             }
         };
 
@@ -235,34 +255,33 @@ public class Test_22_SubTypes extends CommonTestRunner {
     public void test_7() throws IOException {
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
             if ("method".equals(d.fieldInfo().name)) {
-                assertDv(d, 1, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, Property.EXTERNAL_IMMUTABLE);
+                assertDv(d, 1, MultiLevel.EFFECTIVELY_IMMUTABLE_DV, Property.EXTERNAL_IMMUTABLE);
             }
         };
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("SubTypes_7".equals(d.typeInfo().simpleName)) {
-                assertDv(d, 0, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
+                assertDv(d, 0, MultiLevel.EFFECTIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
             }
 
             if ("Example7".equals(d.typeInfo().simpleName)) {
-                assertDv(d, 1, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
+                assertDv(d, 1, MultiLevel.EFFECTIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
             }
             // nested in Example7
             if ("$1".equals(d.typeInfo().simpleName)) {
                 assertEquals("Example7", d.typeInfo().packageNameOrEnclosingType.getRight().simpleName);
-                assertDv(d, 0, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, Property.PARTIAL_IMMUTABLE);
-                assertDv(d, 2, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
+                assertDv(d, 0, MultiLevel.EFFECTIVELY_IMMUTABLE_DV, Property.PARTIAL_IMMUTABLE);
+                assertDv(d, 2, MultiLevel.EFFECTIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
             }
 
             if ("Example8".equals(d.typeInfo().simpleName)) {
-                assertEquals("Type param T",
-                        d.typeAnalysis().getTransparentTypes().toString());
-                assertDv(d, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
+                assertEquals("T", d.typeAnalysis().getHiddenContentTypes().toString());
+                assertDv(d, MultiLevel.EFFECTIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
             }
             // nested in Example8
             if ("$2".equals(d.typeInfo().simpleName)) {
                 assertEquals("Example8", d.typeInfo().packageNameOrEnclosingType.getRight().simpleName);
-                assertDv(d, 0, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, Property.PARTIAL_IMMUTABLE);
-                assertDv(d, 1, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
+                assertDv(d, 0, MultiLevel.EFFECTIVELY_IMMUTABLE_DV, Property.PARTIAL_IMMUTABLE);
+                assertDv(d, 1, MultiLevel.EFFECTIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
             }
         };
 
@@ -298,8 +317,8 @@ public class Test_22_SubTypes extends CommonTestRunner {
         };
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
             if ("external".equals(d.fieldInfo().name)) {
-                assertDv(d, 1, MultiLevel.NOT_IGNORE_MODS_DV, Property.EXTERNAL_IGNORE_MODIFICATIONS);
-                assertDv(d, 1, DV.FALSE_DV, Property.MODIFIED_OUTSIDE_METHOD);
+                assertDv(d, MultiLevel.NOT_IGNORE_MODS_DV, Property.EXTERNAL_IGNORE_MODIFICATIONS);
+                assertDv(d, DV.FALSE_DV, Property.MODIFIED_OUTSIDE_METHOD);
 
                 String expected = d.iteration() == 0 ? "values:this.external@Field_external" : "";
                 assertEquals(expected, d.fieldAnalysis().valuesDelayed().toString());
@@ -307,16 +326,16 @@ public class Test_22_SubTypes extends CommonTestRunner {
         };
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("External".equals(d.typeInfo().simpleName)) {
-                assertDv(d, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
+                assertDv(d, MultiLevel.EFFECTIVELY_IMMUTABLE_HC_DV, Property.IMMUTABLE);
                 assertDv(d, MultiLevel.INDEPENDENT_DV, Property.INDEPENDENT);
                 assertDv(d, MultiLevel.CONTAINER_DV, Property.CONTAINER);
             }
             // will only see CM in "go" in iteration 2, as it is analysed before "go" and the constructor
             if ("$1".equals(d.typeInfo().simpleName)) {
                 // so we know early on that the anonymous type itself is immutable; however, we must wait for the enclosing type
-                assertDv(d, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, Property.PARTIAL_IMMUTABLE);
-                assertDv(d, 2, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
-                assertDv(d, 2, MultiLevel.INDEPENDENT_DV, Property.INDEPENDENT);
+                assertDv(d, MultiLevel.EFFECTIVELY_IMMUTABLE_DV, Property.PARTIAL_IMMUTABLE);
+                assertDv(d, 2, MultiLevel.EFFECTIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
+                assertDv(d, 1, MultiLevel.INDEPENDENT_DV, Property.INDEPENDENT);
             }
         };
         testClass("SubTypes_10", 0, 0, new DebugConfiguration.Builder()
@@ -347,7 +366,9 @@ public class Test_22_SubTypes extends CommonTestRunner {
                 assertNotNull(d.haveError(Message.Label.NON_PRIVATE_FIELD_NOT_FINAL));
             }
             if ("unusedInnerField".equals(d.fieldInfo().name)) {
-                assertNotNull(d.haveError(Message.Label.PRIVATE_FIELD_NOT_READ));
+                if (d.iteration() > 0) {
+                    assertNotNull(d.haveError(Message.Label.PRIVATE_FIELD_NOT_READ_IN_OWNER_TYPE));
+                }
             }
         };
 
@@ -367,7 +388,8 @@ public class Test_22_SubTypes extends CommonTestRunner {
 
     @Test
     public void test_12() throws IOException {
-        testClass("SubTypes_12", 1, 9,
+        // TODO: remove the null-pointer warning next to the null pointer error!
+        testClass("SubTypes_12", 1, 1,
                 new DebugConfiguration.Builder().build(),
                 new AnalyserConfiguration.Builder().setForceAlphabeticAnalysisInPrimaryType(true).build());
     }

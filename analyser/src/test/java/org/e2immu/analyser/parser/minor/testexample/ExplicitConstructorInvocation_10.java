@@ -21,10 +21,13 @@ package org.e2immu.analyser.parser.minor.testexample;
  */
 
 
+import org.e2immu.annotation.Immutable;
+
 import java.util.Objects;
 
 public class ExplicitConstructorInvocation_10 {
 
+    @Immutable
     interface Expression {
         boolean isBooleanValue();
 

@@ -24,12 +24,10 @@ import org.e2immu.analyser.model.impl.BaseExpression;
 import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.Text;
 import org.e2immu.analyser.parser.InspectionProvider;
-import org.e2immu.annotation.E2Container;
 
 import java.util.Objects;
 import java.util.function.Predicate;
 
-@E2Container
 public final class EmptyExpression extends BaseExpression implements Expression {
     public static final EmptyExpression EMPTY_EXPRESSION = new EmptyExpression("<empty>");
     public static final EmptyExpression DEFAULT_EXPRESSION = new EmptyExpression("<default>"); // negation of the disjunction of all earlier conditions
@@ -39,7 +37,7 @@ public final class EmptyExpression extends BaseExpression implements Expression 
     private final String msg;
 
     public EmptyExpression(String msg) {
-        super(Identifier.constant("__unknown_" + msg + "__"));
+        super(Identifier.constant("__unknown_" + msg + "__"), 1);
         this.msg = msg;
     }
 
@@ -90,7 +88,7 @@ public final class EmptyExpression extends BaseExpression implements Expression 
 
     @Override
     public Expression translate(InspectionProvider inspectionProvider, TranslationMap translationMap) {
-        return this;
+        return translationMap.translateExpression(this);
     }
 
     public String msg() {

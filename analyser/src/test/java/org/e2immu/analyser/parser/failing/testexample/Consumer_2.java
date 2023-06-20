@@ -17,7 +17,7 @@ package org.e2immu.analyser.parser.failing.testexample;
 import org.e2immu.annotation.*;
 
 /*
-change wrt ForEachMethod_1: the abstract class's fields are modifiable,
+change wrt Consumer_1: the abstract class's fields are modifiable,
 which allows for other types of modification.
 The method forEach is now @Modified because of the increment() call.
 Other change is the @Nullable on field s.
@@ -55,7 +55,7 @@ public class Consumer_2<S> {
     }
 
     @NotModified
-    public void forEach(@Modified @Independent1 ClassWithConsumer<S> myConsumer) {
+    public void forEach(@Modified @Independent(hc = true) ClassWithConsumer<S> myConsumer) {
         System.out.println("Consumer is " + myConsumer.getName());
         if (myConsumer.increment() % 2 == 0) {
             myConsumer.accept(s);

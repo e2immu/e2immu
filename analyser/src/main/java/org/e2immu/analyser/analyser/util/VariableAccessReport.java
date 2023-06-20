@@ -21,20 +21,32 @@ import org.e2immu.analyser.model.variable.Variable;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.function.BinaryOperator;
+import java.util.stream.Collectors;
 
 public record VariableAccessReport(Map<Variable, Properties> propertiesMap) {
 
     public static final VariableAccessReport EMPTY = new VariableAccessReport(Map.of());
 
-    public VariableAccessReport combine(VariableAccessReport other) {
+    /*
+    use overwrite true when merging between successive iterations of the same method/subtype.
+     */
+    public VariableAccessReport combine(VariableAccessReport other, boolean overwrite) {
         if (isEmpty()) return other;
         if (other.isEmpty()) return this;
         Map<Variable, Properties> map = new HashMap<>(propertiesMap);
+        BinaryOperator<Properties> operator = overwrite ? Properties::combine : Properties::mergeVariableAccessReport;
         for (Map.Entry<Variable, Properties> e : other.propertiesMap.entrySet()) {
-            // we use combine rather than merge, so that done values can overwrite delayed values
-            map.merge(e.getKey(), e.getValue(), Properties::combine);
+            map.merge(e.getKey(), e.getValue(), operator);
         }
         return new VariableAccessReport(map);
+    }
+
+    @Override
+    public String toString() {
+        return propertiesMap.entrySet().stream()
+                .map(e -> e.getKey().simpleName() + "={" + e.getValue().sortedToString() + "}")
+                .sorted().collect(Collectors.joining(", "));
     }
 
     private boolean isEmpty() {

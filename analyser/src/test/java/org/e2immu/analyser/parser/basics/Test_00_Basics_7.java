@@ -21,6 +21,7 @@ import org.e2immu.analyser.analyser.Stage;
 import org.e2immu.analyser.analysis.impl.FieldAnalysisImpl;
 import org.e2immu.analyser.config.AnalyserConfiguration;
 import org.e2immu.analyser.config.DebugConfiguration;
+import org.e2immu.analyser.model.MethodInspection;
 import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.ParameterInfo;
 import org.e2immu.analyser.model.variable.FieldReference;
@@ -38,7 +39,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 public class Test_00_Basics_7 extends CommonTestRunner {
 
-    public static final String INSTANCE_TYPE_PRINT_STREAM = "instance type PrintStream";
+    public static final String INSTANCE_TYPE_PRINT_STREAM = "instance type PrintStream/*@IgnoreMods*/";
 
     public Test_00_Basics_7() {
         super(true);
@@ -114,7 +115,7 @@ public class Test_00_Basics_7 extends CommonTestRunner {
                     if ("1".equals(d.statementId())) {
                         assertDv(d, MultiLevel.EFFECTIVELY_NOT_NULL_DV, CONTEXT_NOT_NULL);
                     }
-                    assertDv(d, 1, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, EXTERNAL_IMMUTABLE);
+                    assertDv(d, 2, MultiLevel.EFFECTIVELY_IMMUTABLE_DV, EXTERNAL_IMMUTABLE);
                 }
 
                 if (d.variable() instanceof FieldReference fr && "out".equals(fr.fieldInfo.name)) {
@@ -126,7 +127,7 @@ public class Test_00_Basics_7 extends CommonTestRunner {
                         assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, d.getProperty(EXTERNAL_NOT_NULL));
                     }
                     if ("1.0.0".equals(d.statementId())) {
-                        String expect = d.iteration() == 0 ? "b?<f:out>:instance type PrintStream" : INSTANCE_TYPE_PRINT_STREAM;
+                        String expect = d.iteration() == 0 ? "b?<f:out>:instance type PrintStream/*@IgnoreMods*/" : INSTANCE_TYPE_PRINT_STREAM;
                         assertEquals(expect, d.currentValue().toString());
                         assertDv(d, 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, NOT_NULL_EXPRESSION);
                         assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, d.getProperty(EXTERNAL_NOT_NULL));
@@ -279,7 +280,14 @@ public class Test_00_Basics_7 extends CommonTestRunner {
 
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("increment".equals(d.methodInfo().name)) {
-                assertTrue(d.methodInfo().isSynchronized());
+                MethodInspection methodInspection = d.methodInfo().methodInspection.get();
+                assertTrue(methodInspection.isSynchronized());
+                assertTrue(methodInspection.isPackagePrivate());
+                assertFalse(methodInspection.isFinal());
+                assertFalse(methodInspection.isDefault());
+                assertFalse(methodInspection.isAbstract());
+                assertFalse(methodInspection.isStatic());
+                assertFalse(methodInspection.isStaticBlock());
             }
             if ("increment3".equals(d.methodInfo().name)) {
                 String expect = switch (d.iteration()) {
@@ -301,7 +309,7 @@ public class Test_00_Basics_7 extends CommonTestRunner {
                 assertEquals(DV.FALSE_DV, d.fieldAnalysis().getProperty(FINAL));
                 assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, d.fieldAnalysis().getProperty(EXTERNAL_NOT_NULL));
                 String sortedValues = d.iteration() == 0 ? "[15 delays]"
-                        : "(b?p:0)<=9?1+(b?p:0):b?p:0,instance type int,instance type int,instance type int";
+                        : "(b?p:0)<10?1+(b?p:0):b?p:0,instance type int,instance type int,instance type int";
                 assertEquals(sortedValues, ((FieldAnalysisImpl.Builder) (d.fieldAnalysis())).sortedValuesString());
                 assertDv(d, 1, MultiLevel.NOT_IGNORE_MODS_DV, EXTERNAL_IGNORE_MODIFICATIONS);
             }

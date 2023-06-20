@@ -23,7 +23,7 @@ Variant on _1; without getter and setter
 
 map is never assigned, found to be null, which kills branch 0.1 in add
  */
-@ERContainer
+@ImmutableContainer(hc = true)
 public class TrieSimplified_1_2<T> {
 
     @NotModified

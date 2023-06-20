@@ -71,7 +71,7 @@ public class TestJavaUtil {
         List<Message> ms = messages.stream().filter(m -> m.location().equals(location)).toList();
         ms.forEach(m -> LOGGER.info("Error: {}", m));
         assertEquals(1, ms.size());
-        assertSame(Message.Label.TYPE_HAS_HIGHER_VALUE_FOR_INDEPENDENT, ms.get(0).message());
+        assertSame(Message.Label.TYPE_HAS_DIFFERENT_VALUE_FOR_INDEPENDENT, ms.get(0).message());
     }
 
     // error on the type has gone
@@ -122,8 +122,8 @@ public class TestJavaUtil {
         TypeParameter e = typeInspection.typeParameters().get(0);
         assertEquals("E", e.getName());
         assertTrue(e.isAnnotatedWithIndependent());
-        assertEquals(DV.FALSE_DV, collection.typeAnalysis.get().immutableCanBeIncreasedByTypeParameters());
+        assertEquals(DV.FALSE_DV, collection.typeAnalysis.get().immutableDeterminedByTypeParameters());
         TypeInfo list = typeContext.getFullyQualified(List.class);
-        assertEquals(DV.TRUE_DV, list.typeAnalysis.get().immutableCanBeIncreasedByTypeParameters());
+        assertEquals(DV.TRUE_DV, list.typeAnalysis.get().immutableDeterminedByTypeParameters());
     }
 }

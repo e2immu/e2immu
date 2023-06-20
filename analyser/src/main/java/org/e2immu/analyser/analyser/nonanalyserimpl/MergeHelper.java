@@ -340,8 +340,7 @@ public record MergeHelper(EvaluationContext evaluationContext,
                 worstNotNull.min(evaluationContext.getProperty(currentValue, NOT_NULL_EXPRESSION, false, true));
         ParameterizedType pt = variable.parameterizedType();
         DV nne = worstNotNullIncludingCurrent == DV.MIN_INT_DV ? MultiLevel.NULLABLE_DV : worstNotNullIncludingCurrent;
-        Properties valueProperties = evaluationContext.getAnalyserContext().defaultValueProperties(pt, nne,
-                evaluationContext.getCurrentType());
+        Properties valueProperties = evaluationContext.getAnalyserContext().defaultValueProperties(pt, nne);
         return addValueProperties(noConclusion(valueProperties));
     }
 
@@ -461,7 +460,7 @@ public record MergeHelper(EvaluationContext evaluationContext,
                 return inlineConditionalIfFalseIsExisting(stateOfParent, two);
             }
 
-            Merge.ExpressionAndProperties two = inlineConditional(firstCondition, e1, e2);
+            Merge.ExpressionAndProperties two = inlineConditional(firstCondition, e1, e2, false);
             if (stateOfParent.isBoolValueTrue()) return two;
             if (stateOfParent.isBoolValueFalse()) throw new UnsupportedOperationException(); // unreachable statement
             VariableInfoImpl vii = new VariableInfoImpl(evaluationContext.getLocation(MERGE),
@@ -471,7 +470,33 @@ public record MergeHelper(EvaluationContext evaluationContext,
 
         if (firstCondition.isBoolValueTrue()) return valueProperties(e1); // to bypass the error check on "safe"
         if (firstCondition.isBoolValueFalse()) return valueProperties(e2);
-        return inlineConditional(firstCondition, e1, e2);
+        Merge.ExpressionAndProperties nullCheck = isNullCheckAndNull(firstCondition, e1, e2);
+        if (nullCheck != null) return nullCheck;
+        return inlineConditional(firstCondition, e1, e2, false);
+    }
+
+    /*
+        special situation... if
+          firstCondition =  null==guideGenerator
+          e1.value =        null,  linked to guideGenerator
+          e2.value =        nullable instance type GuideGenerator
+        should simply return e2.value
+    */
+    private Merge.ExpressionAndProperties isNullCheckAndNull(Expression condition, VariableInfo e1, VariableInfo e2) {
+        IsVariableExpression ive;
+        if (condition instanceof Equals equals && equals.lhs.isNull()
+                && (ive = equals.rhs.asInstanceOf(IsVariableExpression.class)) != null
+                && ive.variable().equals(this.vi.variable())
+                && e1.getValue().isInstanceOf(NullConstant.class)) {
+            return valueProperties(e2);
+        }
+        if (condition instanceof Negation negation && negation.expression instanceof Equals equals && equals.lhs.isNull()
+                && (ive = equals.rhs.asInstanceOf(IsVariableExpression.class)) != null
+                && ive.variable().equals(this.vi.variable())
+                && e2.getValue().isInstanceOf(NullConstant.class)) {
+            return valueProperties(e1);
+        }
+        return null;
     }
 
     /* condition and ifFalse have been evaluated in the same expression
@@ -486,15 +511,17 @@ public record MergeHelper(EvaluationContext evaluationContext,
     private Merge.ExpressionAndProperties inlineConditionalIfFalseIsExisting(Expression condition, VariableInfo ifTrue) {
         Expression c;
         if (vi.getValue().isInstanceOf(Instance.class)) {
-            TranslationMap translationMap = new TranslationMapImpl.Builder().addVariableExpression(vi.variable(), vi.getValue()).build();
+            TranslationMap translationMap = new TranslationMapImpl.Builder()
+                    .addVariableExpression(vi.variable(), vi.getValue())
+                    .build();
             c = condition.translate(evaluationContext.getAnalyserContext(), translationMap);
         } else {
             c = condition;
         }
-        return inlineConditional(c, ifTrue, vi);
+        return inlineConditional(c, ifTrue, vi, true);
     }
 
-    private Merge.ExpressionAndProperties inlineConditional(Expression condition, VariableInfo ifTrue, VariableInfo ifFalse) {
+    private Merge.ExpressionAndProperties inlineConditional(Expression condition, VariableInfo ifTrue, VariableInfo ifFalse, boolean one) {
         if (ifTrue.isDelayed() && !ifFalse.isDelayed() && conditionsMetForBreakingInitialisationDelay(ifTrue)) {
             return valuePropertiesWrapToBreakFieldInitDelay(ifFalse);
         }
@@ -502,8 +529,24 @@ public record MergeHelper(EvaluationContext evaluationContext,
             return valuePropertiesWrapToBreakFieldInitDelay(ifTrue);
         }
         EvaluationResult context = EvaluationResult.from(evaluationContext);
-        Expression safe = safe(EvaluateInlineConditional.conditionalValueConditionResolved(context,
-                condition, ifTrue.getValue(), ifFalse.getValue(), false, vi.variable()));
+        Expression safe;
+        if (vi.variable() instanceof ReturnVariable rv) {
+            MethodInfo methodInfo = evaluationContext.getCurrentMethod().getMethodInfo();
+            ReturnVariable returnVariable = new ReturnVariable(methodInfo);
+            Expression returnExpression = UnknownExpression.forReturnVariable(methodInfo.identifier, returnVariable.returnType);
+            Expression secondValue = one ? returnExpression : ifFalse.getValue();
+            Expression ternary = safe(EvaluateInlineConditional.conditionalValueConditionResolved(context, condition,
+                    ifTrue.getValue(), secondValue, false, vi.variable(), DV.FALSE_DV));
+            /*
+             the <return value> is both in returnExpression and ternary, so we can't recurse.
+             see Basics_27, InlineConditional.translate
+             */
+            TranslationMap tm = new TranslationMapImpl.Builder().put(returnExpression, ternary).build();
+            safe = vi.getValue().translate(evaluationContext.getAnalyserContext(), tm);
+        } else {
+            safe = safe(EvaluateInlineConditional.conditionalValueConditionResolved(context,
+                    condition, ifTrue.getValue(), ifFalse.getValue(), false, vi.variable(), DV.FALSE_DV));
+        }
         // 2nd check (safe.isDelayed) because safe could be "true" even if the condition is delayed
         if (condition.isDelayed() && safe.isDelayed()) {
             CausesOfDelay delay = DelayFactory.createDelay(new VariableCause(vi.variable(),

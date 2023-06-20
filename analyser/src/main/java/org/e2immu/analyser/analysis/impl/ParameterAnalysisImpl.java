@@ -18,9 +18,13 @@ import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.analysis.Analysis;
 import org.e2immu.analyser.analysis.ParameterAnalysis;
 import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.model.expression.BooleanConstant;
+import org.e2immu.analyser.model.expression.MemberValuePair;
+import org.e2immu.analyser.model.impl.AnnotationExpressionImpl;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
 import org.e2immu.analyser.parser.Primitives;
+import org.e2immu.annotation.NotModified;
 import org.e2immu.support.EventuallyFinal;
 import org.e2immu.support.SetOnce;
 import org.e2immu.support.SetOnceMap;
@@ -47,6 +51,11 @@ public class ParameterAnalysisImpl extends AnalysisImpl implements ParameterAnal
         this.parameterInfo = parameterInfo;
         this.assignedToField = assignedToField;
         this.linksToOtherParameters = linksToOtherParameters;
+    }
+
+    @Override
+    public String toString() {
+        return parameterInfo.toString();
     }
 
     @Override
@@ -140,7 +149,15 @@ public class ParameterAnalysisImpl extends AnalysisImpl implements ParameterAnal
                     LOGGER.error("Ignoring link to myself: index {} for method {}", parameterIndex, parameterInfo.getMethod());
                 } else {
                     ParameterInfo pi = parameters.get(parameterIndex);
-                    map.put(pi, linkLevel);
+                    DV correctedLinkLevel;
+                    if (linkLevel == LinkedVariables.LINK_COMMON_HC) {
+                        // FIXME improve this, but there's only a very few cases a t m
+                        correctedLinkLevel = pi.parameterizedType.isUnboundTypeParameter() ? LinkedVariables.LINK_IS_HC_OF
+                                : LinkedVariables.LINK_COMMON_HC;
+                    } else {
+                        correctedLinkLevel = linkLevel;
+                    }
+                    map.put(pi, correctedLinkLevel);
                 }
             }
             LinkedVariables lv = LinkedVariables.of(map);
@@ -156,8 +173,7 @@ public class ParameterAnalysisImpl extends AnalysisImpl implements ParameterAnal
                     linksToParameters.getOrDefault(LinkedVariables.EMPTY));
         }
 
-        public void transferPropertiesToAnnotations(AnalyserContext analysisProvider,
-                                                    E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions) {
+        public void transferPropertiesToAnnotations(AnalyserContext analysisProvider, E2ImmuAnnotationExpressions e2) {
 
             // no annotations can be added to primitives
             if (parameterInfo.parameterizedType.isPrimitiveExcludingVoid()) return;
@@ -168,30 +184,38 @@ public class ParameterAnalysisImpl extends AnalysisImpl implements ParameterAnal
             DV ignoreModifications = getProperty(Property.IGNORE_MODIFICATIONS);
             if (!analysisProvider.cannotBeModifiedInThisClass(parameterInfo.parameterizedType).valueIsTrue() &&
                     !ignoreModifications.equals(MultiLevel.IGNORE_MODS_DV)) {
-                AnnotationExpression ae = modified.valueIsFalse() ? e2ImmuAnnotationExpressions.notModified :
-                        e2ImmuAnnotationExpressions.modified;
-                annotations.put(ae, true);
+                // the explicit annotation
+                AnnotationExpression ae = modified.valueIsFalse() ? e2.notModified :
+                        e2.modified;
+                addAnnotation(ae);
+                // the negation, absent and implied, see e.g. Container_4
+                AnnotationExpression negated = new AnnotationExpressionImpl(modified.valueIsFalse()
+                        ? e2.modified.typeInfo() : e2.notModified.typeInfo(),
+                        List.of(new MemberValuePair(E2ImmuAnnotationExpressions.IMPLIED, new BooleanConstant(primitives, true)),
+                                new MemberValuePair(E2ImmuAnnotationExpressions.ABSENT, new BooleanConstant(primitives, true))));
+                addAnnotation(negated);
+            } else {
+                AnnotationExpression implied = E2ImmuAnnotationExpressions.create(primitives, NotModified.class, E2ImmuAnnotationExpressions.IMPLIED, true);
+                addAnnotation(implied);
             }
 
             // @NotNull
-            doNotNull(e2ImmuAnnotationExpressions, getProperty(Property.NOT_NULL_PARAMETER));
+            doNotNull(e2, getProperty(Property.NOT_NULL_PARAMETER),
+                    parameterInfo.parameterizedType.isPrimitiveExcludingVoid());
 
-            // @Independent1; @Independent, @Dependent not shown
-            DV independentType = analysisProvider.defaultIndependent(parameterInfo.parameterizedType);
-            DV independent = getProperty(Property.INDEPENDENT);
-            if (independent.equals(MultiLevel.INDEPENDENT_DV) && independentType.lt(MultiLevel.INDEPENDENT_DV)) {
-                annotations.put(e2ImmuAnnotationExpressions.independent, true);
-            } else if (independent.equals(MultiLevel.INDEPENDENT_1_DV) && independentType.lt(MultiLevel.INDEPENDENT_1_DV)) {
-                annotations.put(e2ImmuAnnotationExpressions.independent1, true);
-            }
 
-            DV formallyImmutable = analysisProvider.getProperty(parameterInfo.parameterizedType, Property.IMMUTABLE, false);
+            DV formallyImmutable = analysisProvider.typeImmutable(parameterInfo.parameterizedType);
             DV dynamicallyImmutable = getProperty(Property.IMMUTABLE);
-            DV formallyContainer = analysisProvider.getProperty(parameterInfo.parameterizedType, Property.CONTAINER, false);
+            DV formallyContainer = analysisProvider.typeContainer(parameterInfo.parameterizedType);
             DV dynamicallyContainer = getProperty(Property.CONTAINER);
-            if (dynamicallyImmutable.gt(formallyImmutable) || dynamicallyContainer.gt(formallyContainer)) {
-                doImmutableContainer(e2ImmuAnnotationExpressions, dynamicallyImmutable, dynamicallyContainer, true);
-            }
+            boolean immutableBetterThanFormal = dynamicallyImmutable.gt(formallyImmutable);
+            boolean containerBetterThanFormal = dynamicallyContainer.gt(formallyContainer);
+            doImmutableContainer(e2, dynamicallyImmutable, dynamicallyContainer,
+                    immutableBetterThanFormal, containerBetterThanFormal, null, false);
+
+            DV independentType = analysisProvider.typeIndependent(parameterInfo.parameterizedType);
+            DV independent = getProperty(Property.INDEPENDENT);
+            doIndependent(e2, independent, independentType, dynamicallyImmutable);
         }
 
         public boolean addAssignedToField(FieldInfo fieldInfo, DV assignedOrLinked) {
@@ -213,6 +237,11 @@ public class ParameterAnalysisImpl extends AnalysisImpl implements ParameterAnal
         @Override
         public LinkedVariables getLinksToOtherParameters() {
             return linksToParameters.getOrDefault(LinkedVariables.EMPTY);
+        }
+
+        @Override
+        public String toString() {
+            return parameterInfo.toString();
         }
     }
 

@@ -14,7 +14,7 @@
 
 package org.e2immu.analyser.parser.own.output.testexample;
 
-import org.e2immu.annotation.NotNull1;
+import org.e2immu.annotation.NotNull;
 
 import java.util.function.Function;
 
@@ -25,7 +25,7 @@ public class FormatterSimplified_1 {
     record ForwardInfo(int pos, int chars, String string, boolean symbol) {
     }
 
-    static void forward(@NotNull1 Function<ForwardInfo, Boolean> writer, int start) {
+    static void forward(@NotNull(content = true) Function<ForwardInfo, Boolean> writer, int start) {
         if (writer.apply(new ForwardInfo(start, 9, null, false))) return;
     }
 }

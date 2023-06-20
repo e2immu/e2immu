@@ -14,7 +14,8 @@
 
 package org.e2immu.analyser.parser.start.testexample;
 
-import org.e2immu.annotation.E1Container;
+import org.e2immu.annotation.Container;
+import org.e2immu.annotation.FinalFields;
 import org.e2immu.annotation.Modified;
 import org.junit.jupiter.api.Test;
 
@@ -23,7 +24,8 @@ import java.nio.ByteBuffer;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class Container_8 {
-    @E1Container
+    @FinalFields
+    @Container
     interface Array<T> {
         int length();
 
@@ -33,7 +35,8 @@ public class Container_8 {
         void set(int index, T t);
     }
 
-    @E1Container
+    @FinalFields
+    @Container
     static class IntArray implements Array<Integer> {
         private final ByteBuffer byteBuffer;
         private final int size;

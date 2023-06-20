@@ -45,7 +45,7 @@ public class Test_00_Basics_9 extends CommonTestRunner {
     public void test_9() throws IOException {
         EvaluationResultVisitor evaluationResultVisitor = d -> {
             if ("setContainsValueHelper".equals(d.methodInfo().name)) {
-                assertEquals("Basics_9.isFact(containsE)?containsE:!Basics_9.isKnown(true)&&retVal&&size>=1",
+                assertEquals("Basics_9.isFact(containsE)?containsE:!Basics_9.isKnown(true)&&size>=1&&retVal",
                         d.evaluationResult().value().toString());
                 assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV,
                         d.evaluationResult().evaluationContext().getProperty(d.evaluationResult().value(),
@@ -67,7 +67,7 @@ public class Test_00_Basics_9 extends CommonTestRunner {
                 assertEquals(DV.FALSE_DV, d.methodAnalysis().getProperty(MODIFIED_METHOD));
                 assertEquals(1, d.methodAnalysis().getLastStatement().statementTime(Stage.MERGE));
 
-                assertEquals("/*inline setContainsValueHelper*/Basics_9.isFact(containsE)?containsE:!Basics_9.isKnown(true)&&retVal&&size>=1",
+                assertEquals("/*inline setContainsValueHelper*/Basics_9.isFact(containsE)?containsE:!Basics_9.isKnown(true)&&size>=1&&retVal",
                         d.methodAnalysis().getSingleReturnValue().toString());
                 assertTrue(d.methodAnalysis().getSingleReturnValue() instanceof InlinedMethod,
                         "class is " + d.methodAnalysis().getSingleReturnValue().getClass());

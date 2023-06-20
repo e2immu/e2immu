@@ -24,11 +24,15 @@ import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.parser.Primitives;
 
 import java.util.List;
+import java.util.stream.Stream;
 
 public class Product extends BinaryOperator {
 
     @Override
     public Expression translate(InspectionProvider inspectionProvider, TranslationMap translationMap) {
+        Expression translated = translationMap.translateExpression(this);
+        if (translated != this) return translated;
+
         Expression tl = lhs.translate(inspectionProvider, translationMap);
         Expression tr = rhs.translate(inspectionProvider, translationMap);
         if (tl == lhs && tr == rhs) return this;
@@ -108,4 +112,21 @@ public class Product extends BinaryOperator {
         if (l != lhs || r != rhs) return new Product(identifier, primitives, l, r);
         return this;
     }
+
+    // methods used externally
+    // we have more than 2 factors, that's a product of products...
+    public static Expression wrapInProduct(EvaluationResult evaluationContext, Expression[] expressions, int i) {
+        assert i >= 2;
+        if (i == 2) return Product.product(evaluationContext, expressions[0], expressions[1]);
+        return Product.product(evaluationContext, wrapInProduct(evaluationContext, expressions, i - 1), expressions[i - 1]);
+    }
+
+    public static Stream<Expression> expandFactors(EvaluationResult evaluationContext, Expression expression) {
+        if (expression instanceof Product product) {
+            return Stream.concat(expandFactors(evaluationContext, product.lhs),
+                    expandFactors(evaluationContext, product.rhs));
+        }
+        return Stream.of(expression);
+    }
+
 }

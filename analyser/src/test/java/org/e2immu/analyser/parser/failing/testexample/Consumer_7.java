@@ -15,6 +15,7 @@
 package org.e2immu.analyser.parser.failing.testexample;
 
 import org.e2immu.annotation.*;
+import org.e2immu.annotation.rare.IgnoreModifications;
 
 import java.util.HashSet;
 import java.util.Objects;
@@ -32,7 +33,8 @@ public class Consumer_7 {
         void accept(T t); // parameter t implicitly @Modified
     }
 
-    @E1Container
+    @FinalFields
+    @Container
     static class MySet<X> {
         private final Set<X> set = new HashSet<>();
 
@@ -42,7 +44,7 @@ public class Consumer_7 {
         }
 
         @NotModified
-        public void forEach(@IgnoreModifications @Independent1 MyConsumer<X> consumer) {
+        public void forEach(@IgnoreModifications @Independent(hc = true) MyConsumer<X> consumer) {
             for (X x : set) consumer.accept(x);
         }
 

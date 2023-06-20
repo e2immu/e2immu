@@ -92,7 +92,8 @@ public record ParseAndInspect(Resources classPath,
             String name = td.getName().asString();
             TypeInfo typeInfo = typeContextOfFile.typeMap.getOrCreate(packageName, name, TRIGGER_JAVA_PARSER);
             typeContextOfFile.addToContext(typeInfo);
-            TypeInspector typeInspector = new TypeInspectorImpl(typeMapBuilder, typeInfo, true, dollarTypesAreNormalTypes);
+            TypeInspector typeInspector = new TypeInspectorImpl(typeMapBuilder, typeInfo, true,
+                    dollarTypesAreNormalTypes, resolver.storeComments());
             typeInspector.recursivelyAddToTypeStore(typeMapBuilder, td, dollarTypesAreNormalTypes);
             typeInspectors.add(new TypeInspectorAndTypeDeclaration(typeInspector, td));
         });

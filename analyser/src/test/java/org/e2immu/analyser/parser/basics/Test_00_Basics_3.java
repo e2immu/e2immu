@@ -33,6 +33,7 @@ import org.junit.jupiter.api.Test;
 import java.io.IOException;
 
 import static org.e2immu.analyser.analyser.Property.*;
+import static org.e2immu.analyser.model.MultiLevel.NOT_IGNORE_MODS_DV;
 import static org.junit.jupiter.api.Assertions.*;
 
 /*
@@ -147,6 +148,8 @@ public class Test_00_Basics_3 extends CommonTestRunner {
 
                         assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, d.getProperty(CONTEXT_NOT_NULL));
                         assertDv(d, 2, MultiLevel.NULLABLE_DV, NOT_NULL_EXPRESSION);
+                        assertDv(d, 2, NOT_IGNORE_MODS_DV, IGNORE_MODIFICATIONS);
+                        assertDv(d, NOT_IGNORE_MODS_DV, EXTERNAL_IGNORE_MODIFICATIONS);
                     }
 
                     // completely independent of the iterations, we always should have @NotNull because of context

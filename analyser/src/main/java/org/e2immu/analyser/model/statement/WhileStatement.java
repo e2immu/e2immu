@@ -17,17 +17,22 @@ package org.e2immu.analyser.model.statement;
 import org.e2immu.analyser.analyser.ForwardEvaluationInfo;
 import org.e2immu.analyser.analysis.FlowData;
 import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.output.Keyword;
 import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.Symbol;
 import org.e2immu.analyser.output.Text;
 import org.e2immu.analyser.parser.InspectionProvider;
+
+import java.util.List;
+import java.util.Objects;
 
 public class WhileStatement extends LoopStatement {
 
     public WhileStatement(Identifier identifier,
                           String label,
                           Expression expression,
-                          Block block) {
+                          Block block,
+                          Comment comment) {
         super(identifier, new Structure.Builder()
                 .setStatementExecution((v, ec) -> {
                     if (v.isDelayed()) return v.causesOfDelay();
@@ -38,7 +43,31 @@ public class WhileStatement extends LoopStatement {
                 .setForwardEvaluationInfo(ForwardEvaluationInfo.NOT_NULL)
                 .setExpression(expression)
                 .setExpressionIsCondition(true)
-                .setBlock(block).build(), label);
+                .setBlock(block)
+                .setComment(comment)
+                .build(), label);
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (obj == this) return true;
+        if (obj instanceof WhileStatement other) {
+            return identifier.equals(other.identifier)
+                    && expression.equals(other.expression)
+                    && structure.block().equals(other.structure.block())
+                    && Objects.equals(label, other.label);
+        }
+        return false;
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(identifier, expression, structure.block(), label);
+    }
+
+    @Override
+    public int getComplexity() {
+        return 1 + expression.getComplexity() + structure.block().getComplexity();
     }
 
     @Override
@@ -47,15 +76,23 @@ public class WhileStatement extends LoopStatement {
     }
 
     @Override
-    public Statement translate(InspectionProvider inspectionProvider, TranslationMap translationMap) {
-        return new WhileStatement(identifier, label, translationMap.translateExpression(expression),
-                translationMap.translateBlock(inspectionProvider, structure.block()));
+    public List<Statement> translate(InspectionProvider inspectionProvider, TranslationMap translationMap) {
+        List<Statement> direct = translationMap.translateStatement(inspectionProvider, this);
+        if (haveDirectTranslation(direct, this)) return direct;
+
+        Expression tex = expression.translate(inspectionProvider, translationMap);
+        List<Statement> translatedBlock = structure.block().translate(inspectionProvider, translationMap);
+        if (tex == expression && !haveDirectTranslation(translatedBlock, structure.block())) return List.of(this);
+        return List.of(
+                new WhileStatement(identifier, label, tex,
+                        ensureBlock(structure.block().identifier, translatedBlock),
+                        structure.comment()));
     }
 
 
     @Override
     public OutputBuilder output(Qualification qualification, LimitedStatementAnalysis statementAnalysis) {
-        return new OutputBuilder().add(new Text("while"))
+        return new OutputBuilder().add(Keyword.WHILE)
                 .add(Symbol.LEFT_PARENTHESIS)
                 .add(structure.expression().output(qualification))
                 .add(Symbol.RIGHT_PARENTHESIS)

@@ -52,8 +52,9 @@ public class Test_42_Finalizer extends CommonTestRunner {
                 assertEquals(DV.TRUE_DV, d.methodAnalysis().getProperty(Property.FINALIZER));
             }
             if ("set".equals(d.methodInfo().name)) {
-                assertEquals("this", d.methodAnalysis().getSingleReturnValue().toString());
-                assertDv(d, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_EXPRESSION);
+                String expected = d.iteration() == 0 ? "<m:set>" : "this";
+                assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
+                assertDv(d, 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_EXPRESSION);
             }
         };
 
@@ -69,8 +70,11 @@ public class Test_42_Finalizer extends CommonTestRunner {
             if ("testLinking".equals(d.methodInfo().name)) {
                 if ("ff".equals(d.variableName())) {
                     if ("0".equals(d.statementId())) {
-                        assertEquals("nullable instance type Finalizer_0/*@Identity*//*{L f:statically_assigned:0}*//*@NotNull*/", d.currentValue().toString());
-                        assertEquals("f:1", d.variableInfo().getLinkedVariables().toString());
+                        String expected = d.iteration() == 0 ? "<m:set>"
+                                : "nullable instance type Finalizer_0/*@Identity*//*{L f:0}*//*@NotNull*/";
+                        assertEquals(expected, d.currentValue().toString());
+                        String linked = d.iteration() == 0 ? "f:-1" : "f:1";
+                        assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
                     }
                 }
             }
@@ -87,7 +91,7 @@ public class Test_42_Finalizer extends CommonTestRunner {
     public void test_1() throws IOException {
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
             if ("eventuallyFinal".equals(d.fieldInfo().name)) {
-                assertDv(d, MultiLevel.EVENTUALLY_RECURSIVELY_IMMUTABLE_DV, Property.EXTERNAL_IMMUTABLE);
+                assertDv(d, MultiLevel.EVENTUALLY_IMMUTABLE_DV, Property.EXTERNAL_IMMUTABLE);
                 assertDv(d, 2, DV.TRUE_DV, Property.BEFORE_MARK);
             }
         };
@@ -102,7 +106,7 @@ public class Test_42_Finalizer extends CommonTestRunner {
             if ("done".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof FieldReference fr && "eventuallyFinal".equals(fr.fieldInfo.name)) {
                     if ("0".equals(d.statementId()) || "1".equals(d.statementId())) {
-                        assertDv(d, 1, MultiLevel.EVENTUALLY_ERIMMUTABLE_BEFORE_MARK_DV, Property.CONTEXT_IMMUTABLE);
+                        assertDv(d, 1, MultiLevel.EVENTUALLY_IMMUTABLE_BEFORE_MARK_DV, Property.CONTEXT_IMMUTABLE);
                     }
                 }
             }

@@ -16,29 +16,29 @@ package org.e2immu.analyser.analyser.impl;
 
 import org.e2immu.analyser.analyser.Properties;
 import org.e2immu.analyser.analyser.*;
-import org.e2immu.analyser.analyser.check.CheckConstant;
 import org.e2immu.analyser.analyser.check.CheckFinalNotModified;
 import org.e2immu.analyser.analyser.check.CheckImmutable;
-import org.e2immu.analyser.analyser.check.CheckLinks;
+import org.e2immu.analyser.analyser.check.CheckIndependent;
+import org.e2immu.analyser.analyser.check.CheckNotNull;
 import org.e2immu.analyser.analyser.delay.DelayFactory;
 import org.e2immu.analyser.analyser.delay.Inconclusive;
 import org.e2immu.analyser.analyser.delay.SimpleCause;
 import org.e2immu.analyser.analyser.delay.VariableCause;
+import org.e2immu.analyser.analyser.impl.util.BreakDelayLevel;
 import org.e2immu.analyser.analyser.nonanalyserimpl.AbstractEvaluationContextImpl;
 import org.e2immu.analyser.analyser.nonanalyserimpl.ExpandableAnalyserContextImpl;
 import org.e2immu.analyser.analyser.util.AnalyserResult;
+import org.e2immu.analyser.analyser.util.ComputeIndependent;
 import org.e2immu.analyser.analyser.util.VariableAccessReport;
 import org.e2immu.analyser.analysis.Analysis;
 import org.e2immu.analyser.analysis.FieldAnalysis;
 import org.e2immu.analyser.analysis.TypeAnalysis;
 import org.e2immu.analyser.analysis.impl.FieldAnalysisImpl;
 import org.e2immu.analyser.analysis.impl.ValueAndPropertyProxy;
-import org.e2immu.analyser.config.AnalyserProgram;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.*;
 import org.e2immu.analyser.model.expression.util.MultiExpression;
 import org.e2immu.analyser.model.impl.LocationImpl;
-import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.model.variable.*;
 import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
 import org.e2immu.analyser.parser.InspectionProvider;
@@ -47,7 +47,6 @@ import org.e2immu.analyser.resolver.impl.ListOfSortedTypes;
 import org.e2immu.analyser.resolver.impl.SortedType;
 import org.e2immu.analyser.util.StreamUtil;
 import org.e2immu.analyser.visitor.FieldAnalyserVisitor;
-import org.e2immu.annotation.*;
 import org.e2immu.support.Either;
 import org.e2immu.support.EventuallyFinal;
 import org.slf4j.Logger;
@@ -60,13 +59,11 @@ import java.util.stream.Stream;
 import static org.e2immu.analyser.analyser.AnalysisStatus.DONE;
 import static org.e2immu.analyser.analyser.AnalysisStatus.NOT_YET_EXECUTED;
 import static org.e2immu.analyser.analyser.Property.*;
-import static org.e2immu.analyser.config.AnalyserProgram.Step.*;
 
 public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser {
     private static final Logger LOGGER = LoggerFactory.getLogger(FieldAnalyserImpl.class);
 
     // analyser components, constants are used in tests and delay debugging
-    public static final String COMPUTE_TRANSPARENT_TYPE = "computeTransparentType";
     public static final String ANONYMOUS_TYPE_ANALYSER = "anonymousTypeAnalyser";
     public static final String EVALUATE_INITIALISER = "evaluateInitialiser";
     public static final String ANALYSE_FINAL = "analyseFinal";
@@ -76,6 +73,7 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
     public static final String ANALYSE_NOT_NULL = "analyseNotNull";
     public static final String ANALYSE_MODIFIED = "analyseModified";
     public static final String ANALYSE_CONTAINER = "analyseContainer";
+    public static final String ANALYSE_CONTAINER_RESTRICTION = "analyseContainerRestriction";
     public static final String ANALYSE_LINKED = "analyseLinked";
     public static final String FIELD_ERRORS = "fieldErrors";
     public static final String ANALYSE_VALUES = "analyseValues";
@@ -91,8 +89,6 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
     public final EventuallyFinal<PrimaryTypeAnalyser> anonymousTypeAnalyser = new EventuallyFinal<>();
     private final boolean fieldCanBeWrittenFromOutsideThisPrimaryType;
     private final AnalyserComponents<String, SharedState> analyserComponents;
-    private final CheckConstant checkConstant;
-    private final CheckLinks checkLinks;
     private final boolean haveInitialiser;
     private final boolean acrossAllMethods;
 
@@ -106,9 +102,6 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
                              TypeAnalysis ownerTypeAnalysis,
                              AnalyserContext nonExpandableAnalyserContext) {
         super("Field " + fieldInfo.name, new ExpandableAnalyserContextImpl(nonExpandableAnalyserContext));
-        this.checkConstant = new CheckConstant(analyserContext.getPrimitives(), analyserContext.getE2ImmuAnnotationExpressions());
-        this.checkLinks = new CheckLinks(analyserContext, analyserContext.getE2ImmuAnnotationExpressions());
-
         this.acrossAllMethods = analyserContext.getConfiguration().analyserConfiguration().computeFieldAnalyserAcrossAllMethods();
 
         this.fieldInfo = fieldInfo;
@@ -116,10 +109,9 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
         fieldInspection = fieldInfo.fieldInspection.get();
         fieldAnalysis = new FieldAnalysisImpl.Builder(analyserContext.getPrimitives(), analyserContext, fieldInfo, ownerTypeAnalysis);
         this.primaryType = primaryType;
-        fieldCanBeWrittenFromOutsideThisPrimaryType = fieldInfo.isAccessibleOutsideOfPrimaryType() &&
-                !fieldInfo.isExplicitlyFinal() && !fieldInfo.owner.isPrivateOrEnclosingIsPrivate();
+        fieldCanBeWrittenFromOutsideThisPrimaryType = !fieldInfo.fieldInspection.get().isPrivate() &&
+                !fieldInfo.isExplicitlyFinal();
         haveInitialiser = fieldInspection.fieldInitialiserIsSet() && fieldInspection.getFieldInitialiser().initialiser() != EmptyExpression.EMPTY_EXPRESSION;
-        AnalyserProgram analyserProgram = nonExpandableAnalyserContext.getAnalyserProgram();
 
         AnalysisStatus.AnalysisResultSupplier<SharedState> anonymousTypeAnalyser = (sharedState) -> {
             AnalyserResult analyserResult = runAnonymousTypeAnalyser(sharedState);
@@ -127,25 +119,30 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
             return analyserResult.analysisStatus();
         };
 
-        analyserComponents = new AnalyserComponents.Builder<String, SharedState>(analyserProgram)
-                .add(ANONYMOUS_TYPE_ANALYSER, INITIALISE, anonymousTypeAnalyser)
-                .add(COMPUTE_TRANSPARENT_TYPE, TRANSPARENT, sharedState -> computeTransparentType())
-                .add(EVALUATE_INITIALISER, FIELD_FINAL, this::evaluateInitializer)
-                .add(ANALYSE_FINAL, FIELD_FINAL, this::analyseFinal)
+        analyserComponents = new AnalyserComponents.Builder<String, SharedState>()
+                .add(ANONYMOUS_TYPE_ANALYSER, anonymousTypeAnalyser)
+                .add(EVALUATE_INITIALISER, this::evaluateInitializer)
+                .add(ANALYSE_FINAL, this::analyseFinal)
                 .add(ANALYSE_VALUES, sharedState -> analyseValues())
                 .add(ANALYSE_IMMUTABLE, this::analyseImmutable)
                 .add(ANALYSE_NOT_NULL, this::analyseNotNull)
-                .add(ANALYSE_INDEPENDENT, this::analyseIndependent)
                 .add(ANALYSE_CONTAINER, this::analyseContainer)
+                .add(ANALYSE_CONTAINER_RESTRICTION, this::analyseContainerRestriction)
                 .add(ANALYSE_IGNORE_MODIFICATIONS, this::analyseIgnoreModifications)
                 .add(ANALYSE_FINAL_VALUE, sharedState -> analyseFinalValue())
                 .add(ANALYSE_CONSTANT, sharedState -> analyseConstant())
-                .add(ANALYSE_LINKED, sharedState -> analyseLinked())
+                .add(ANALYSE_LINKED, this::analyseLinked)
+                .add(ANALYSE_INDEPENDENT, this::analyseIndependent)
                 .add(ANALYSE_MODIFIED, this::analyseModified)
                 .add(ANALYSE_BEFORE_MARK, sharedState -> analyseBeforeMark())
-                .add(FIELD_ERRORS, sharedState -> fieldErrors())
+                .add(FIELD_ERRORS, this::fieldErrors)
                 .setLimitCausesOfDelay(true)
                 .build();
+    }
+
+    @Override
+    public String toString() {
+        return fieldInfo.fullyQualifiedName;
     }
 
     @Override
@@ -265,14 +262,13 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
         // analyser visitors
         try {
             AnalysisStatus analysisStatus = analyserComponents.run(sharedState);
-            if (analysisStatus.isDone() && analyserContext.getConfiguration().analyserConfiguration().analyserProgram().accepts(ALL))
-                fieldAnalysis.internalAllDoneCheck();
+            if (analysisStatus.isDone()) fieldAnalysis.internalAllDoneCheck();
             analyserResultBuilder.setAnalysisStatus(analysisStatus);
 
             List<FieldAnalyserVisitor> visitors = analyserContext.getConfiguration()
                     .debugConfiguration().afterFieldAnalyserVisitors();
             if (!visitors.isEmpty()) {
-                EvaluationContext evaluationContext = new EvaluationContextImpl(iteration, sharedState.allowBreakDelay(),
+                EvaluationContext evaluationContext = new EvaluationContextImpl(iteration, sharedState.breakDelayLevel(),
                         ConditionManager.initialConditionManager(analyserContext.getPrimitives()), sharedState.closure());
                 for (FieldAnalyserVisitor fieldAnalyserVisitor : visitors) {
                     fieldAnalyserVisitor.visit(new FieldAnalyserVisitor.Data(iteration, evaluationContext,
@@ -319,13 +315,13 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
                     Expression object = ConstructorCall.withAnonymousClass(fieldInitialiser.identifier(),
                             fieldInfo.type, sam.typeInfo, Diamond.NO);
                     toEvaluate = new MethodCall(expression.getIdentifier(), false, object, sam,
-                            sam.returnType(), List.of());
+                            sam.returnType(), List.of(), MethodCall.NO_MODIFICATION_TIMES);
                 } else {
                     toEvaluate = expression;
                 }
 
                 EvaluationContext evaluationContext = new EvaluationContextImpl(sharedState.iteration(),
-                        sharedState.allowBreakDelay(),
+                        sharedState.breakDelayLevel(),
                         ConditionManager.initialConditionManager(analyserContext.getPrimitives()), sharedState.closure());
                 EvaluationResult evaluationResult = toEvaluate.evaluate(EvaluationResult.from(evaluationContext),
                         new ForwardEvaluationInfo.Builder().setEvaluatingFieldExpression().build());
@@ -352,7 +348,7 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
     private void makeVariableAccessReport(Expression value, EvaluationContext closure) {
         if (closure == null) return;
         VariableAccessReport.Builder builder = new VariableAccessReport.Builder();
-        for (Variable variable : value.variables(true)) {
+        for (Variable variable : value.variables()) {
             if (closure.isPresent(variable)) {
                 builder.addVariableRead(variable);
             }
@@ -401,7 +397,7 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
             builder.setAnalysisStatus(NOT_YET_EXECUTED);
             LOGGER.debug("------- Starting local analyser {} ------", analyser.getName());
             SharedState shared = new SharedState(sharedState.iteration(),
-                    false, sharedState.closure());
+                    BreakDelayLevel.NONE, sharedState.closure());
             AnalyserResult lambdaResult = analyser.analyse(shared);
             LOGGER.debug("------- Ending local analyser   {} ------", analyser.getName());
             builder.add(lambdaResult);
@@ -421,17 +417,6 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
         }
     }
 
-    private AnalysisStatus computeTransparentType() {
-        assert fieldAnalysis.isTransparentType().isDelayed();
-        CausesOfDelay causes = myTypeAnalyser.getTypeAnalysis().hiddenContentTypeStatus();
-        if (causes.isDelayed()) {
-            return causes; //DELAY EXIT POINT
-        }
-        boolean transparent = myTypeAnalyser.getTypeAnalysis().getTransparentTypes().contains(fieldInfo.type);
-        fieldAnalysis.setTransparentType(DV.fromBoolDv(transparent));
-        return DONE;
-    }
-
     /*
     SAFE, no need to look at best of method, no way best of method can influence this:
     Unbound parameter type -> container (a bit by definition, there's no methods to call)
@@ -447,19 +432,19 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
     leaves: non-final class, @Contracted==FALSE. For now, simply return FALSE.
      */
     private AnalysisStatus analyseContainer(SharedState sharedState) {
-        if (fieldAnalysis.getPropertyFromMapDelayWhenAbsent(EXTERNAL_CONTAINER).isDone()) return DONE;
+        if (fieldAnalysis.getPropertyFromMapDelayWhenAbsent(CONTAINER).isDone()) return DONE;
 
         DV safe = analyserContext.safeContainer(fieldInfo.type);
         if (safe != null && safe.isDone()) {
             LOGGER.debug("Set @Container on {} to safe value {}", fqn, safe);
-            fieldAnalysis.setProperty(EXTERNAL_CONTAINER, safe);
+            fieldAnalysis.setProperty(CONTAINER, safe);
             return DONE;
         }
         TypeInfo formalType = fieldInfo.type.bestTypeInfo();
         assert formalType != null;
         TypeAnalysis typeAnalysis = analyserContext.getTypeAnalysis(formalType);
         DV formal = typeAnalysis.getProperty(Property.CONTAINER);
-        boolean allowBreak = sharedState.allowBreakDelay();
+        boolean allowBreak = sharedState.breakDelayLevel().acceptField();
         if (formal.isDelayed()) {
             return delayContainer(formal.causesOfDelay(), "waiting for @Container of formal type", MultiLevel.CONTAINER_DV, allowBreak);
         }
@@ -481,7 +466,7 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
         }
         if (safeMinimum.equals(MultiLevel.CONTAINER_DV) || safeMinimum.equals(MultiLevel.NOT_CONTAINER_DV) && !otherValues) {
             LOGGER.debug("Set @Container on {} to safe minimum over values: {}", fqn, safeMinimum);
-            fieldAnalysis.setProperty(EXTERNAL_CONTAINER, safeMinimum);
+            fieldAnalysis.setProperty(CONTAINER, safeMinimum);
             return DONE;
         }
 
@@ -496,7 +481,7 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
         }
 
         LOGGER.debug("@Container on field {}: value of best over context: {}", fqn, bestOverContext);
-        fieldAnalysis.setProperty(EXTERNAL_CONTAINER, bestOverContext);
+        fieldAnalysis.setProperty(CONTAINER, bestOverContext);
         return AnalysisStatus.of(bestOverContext); //DELAY EXIT POINT
     }
 
@@ -504,11 +489,11 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
         if (allowBreak) {
             DV inconclusive = new Inconclusive(backupValue);
             LOGGER.debug("Breaking @Container delay on field {} to {}, {}", fqn, inconclusive, msg);
-            fieldAnalysis.setProperty(EXTERNAL_CONTAINER, inconclusive);
+            fieldAnalysis.setProperty(CONTAINER, inconclusive);
             return DONE;
         }
         LOGGER.debug("Delaying @Container of field {}, {}", fqn, msg);
-        fieldAnalysis.setProperty(EXTERNAL_CONTAINER, causesOfDelay);
+        fieldAnalysis.setProperty(CONTAINER, causesOfDelay);
         return AnalysisStatus.of(causesOfDelay);
     }
 
@@ -523,7 +508,7 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
         if (value instanceof ConstructorCall cc && cc.anonymousClass() == null
                 && cc.returnType().typeInfo.typeInspection.get().typeNature() == TypeNature.CLASS) {
             // we're creating an object, so we don't need the
-            return analyserContext.defaultContainer(cc.returnType());
+            return analyserContext.typeContainer(cc.returnType());
         }
         DV container = proxy.getProperty(CONTAINER);
         if (MultiLevel.CONTAINER_DV.equals(container)) return MultiLevel.CONTAINER_DV;
@@ -531,9 +516,55 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
 
         ParameterizedType type = proxy.getValue().returnType();
         if (type.bestTypeInfo().typeInspection.get().typeNature() == TypeNature.CLASS) {
-            return analyserContext.defaultContainer(type);
+            return analyserContext.typeContainer(type);
         }
         return null;
+    }
+
+    private AnalysisStatus analyseContainerRestriction(SharedState sharedState) {
+        if (fieldAnalysis.getPropertyFromMapDelayWhenAbsent(CONTAINER_RESTRICTION).isDone()) return DONE;
+        DV container = fieldAnalysis.getProperty(CONTAINER);
+        if (container.isDelayed()) {
+            fieldAnalysis.setProperty(CONTAINER_RESTRICTION, container);
+            return AnalysisStatus.of(container);
+        }
+        if (MultiLevel.NOT_CONTAINER_DV.equals(container)) {
+            fieldAnalysis.setProperty(CONTAINER_RESTRICTION, MultiLevel.NOT_CONTAINER_DV);
+            LOGGER.debug("Set container restriction on {} to NOT_CONTAINER", fieldInfo);
+            return DONE;
+        }
+        DV restriction;
+        if (fieldInfo.type.isPrimitiveStringClass()) {
+            // some shortcuts
+            restriction = MultiLevel.NOT_CONTAINER_DV;
+        } else {
+            /*
+             look at the CONTEXT_CONTAINER property
+
+             ECI_13 gives an example where the field is read in a constructor of the current type, which leads to a
+             cycle, currently broken by checking if my CONTAINER_RESTRICTION delay comes straight back to me
+             */
+            Stream<DV> containerStream = myMethodsAndConstructors.stream()
+                    .flatMap(m -> m.getFieldAsVariableStream(fieldInfo))
+                    .filter(VariableInfo::isRead)
+                    .map(vi -> vi.getProperty(CONTEXT_CONTAINER));
+            DV fromStream = containerStream.reduce(MultiLevel.NOT_CONTAINER_DV, DV::max);
+            if (fromStream.isDelayed()) {
+                if (fromStream.containsCauseOfDelay(CauseOfDelay.Cause.CONTAINER_RESTRICTION, c -> c.variableIsField(fieldInfo))) {
+                    // step 2, break: injected delay has returned
+                    restriction = MultiLevel.NOT_CONTAINER_DV;
+                } else {
+                    // step 1, inject
+                    restriction = fromStream.causesOfDelay().merge(fieldInfo.delay(CauseOfDelay.Cause.CONTAINER_RESTRICTION));
+                }
+            } else {
+                // no delay
+                restriction = fromStream;
+            }
+        }
+        fieldAnalysis.setProperty(CONTAINER_RESTRICTION, restriction);
+        LOGGER.debug("Set container restriction on field {} to {}", fieldInfo, restriction);
+        return AnalysisStatus.of(restriction);
     }
 
     private AnalysisStatus analyseNotNull(SharedState sharedState) {
@@ -600,7 +631,7 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
                     CausesOfDelay causes = vi.getProperty(CONTEXT_NOT_NULL).causesOfDelay();
                     // are the delays on CNN directly linked to the variables that we are linked to?
                     // see Project_0bis
-                    boolean breakDelay = sharedState.allowBreakDelay() &&
+                    boolean breakDelay = sharedState.breakDelayLevel().acceptField() &&
                             causes.containsCauseOfDelay(CauseOfDelay.Cause.EXTERNAL_NOT_NULL, c -> {
                                 if (c instanceof VariableCause vc) return filter.contains(vc.variable());
                                 if (c.location().getInfo() instanceof ParameterInfo pi) return filter.contains(pi);
@@ -643,7 +674,9 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
 
         DV worstOverValues;
         if (computeContextPropertiesOverAllMethods) {
-            worstOverValues = worstOverValuesFiltered(bestOverContext, worstOverValuesUnfiltered);
+            DV maxLinkLevel = bestOverContext.le(MultiLevel.EFFECTIVELY_NOT_NULL_DV)
+                    ? LinkedVariables.LINK_ASSIGNED : LinkedVariables.LINK_COMMON_HC;
+            worstOverValues = worstOverValuesFiltered(bestOverContext, worstOverValuesUnfiltered, maxLinkLevel);
         } else {
             // no filtering, there must be at least one value
             worstOverValues = worstOverValuesUnfiltered;
@@ -661,11 +694,11 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
         return nne;
     }
 
-    private DV worstOverValuesFiltered(DV bestOverContext, DV worstOverValuesUnfiltered) {
+    private DV worstOverValuesFiltered(DV bestOverContext, DV worstOverValuesUnfiltered, DV maxLinkLevel) {
         DV worstOverValues;
         DV worst = fieldAnalysis.getValues().stream()
                 .filter(proxy -> proxy.getOrigin() != ValueAndPropertyProxy.Origin.CONSTRUCTION ||
-                        !proxy.isLinkedToParameter(bestOverContext))
+                        !proxy.isLinkedToParameter(maxLinkLevel))
                 .map(proxy -> proxy.getProperty(Property.NOT_NULL_EXPRESSION))
                 .reduce(DV.MAX_INT_DV, DV::min);
         if (worst != DV.MAX_INT_DV) {
@@ -682,14 +715,32 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
         return worstOverValues;
     }
 
-    private AnalysisStatus fieldErrors() {
-        if (fieldInspection.getModifiers().contains(FieldModifier.PRIVATE)) {
-            if (!fieldInfo.isStatic()) {
-                boolean readInMethods = allMethodsAndConstructors(false)
-                        .anyMatch(this::isReadInMethod);
-                if (!readInMethods) {
-                    analyserResultBuilder.add(Message.newMessage(fieldInfo.newLocation(),
-                            Message.Label.PRIVATE_FIELD_NOT_READ, fieldInfo.name));
+    private AnalysisStatus fieldErrors(SharedState sharedState) {
+        if (fieldInspection.isPrivate()) {
+            if (!fieldInspection.isStatic()) {
+                if (sharedState.iteration() == 0) {
+                    // we can't do this in the first iteration, locallyCreatedPrimaryTypeAnalysers not yet filled up
+                    return AnalysisStatus.of(fieldInfo.delay(CauseOfDelay.Cause.NOT_YET_EXECUTED));
+                }
+                if (fieldInfo.owner.typeInspection.get().isPrivate()) {
+                    TypeAnalyser typeAnalyser = analyserContext.getTypeAnalyser(fieldInfo.owner.primaryType());
+                    Stream<MethodAnalyser> allMethodsInPrimaryType = typeAnalyser.allMethodAnalysersIncludingSubTypes();
+                    boolean readAcrossPrimaryType = allMethodsInPrimaryType
+                            // filter out my own constructors
+                            .filter(ma -> !(ma.getMethodInfo().isConstructor && ma.getMethodInfo().typeInfo == fieldInfo.owner))
+                            .anyMatch(this::isReadInMethod);
+                    if (!readAcrossPrimaryType) {
+                        analyserResultBuilder.add(Message.newMessage(fieldInfo.newLocation(),
+                                Message.Label.PRIVATE_FIELD_NOT_READ_IN_PRIMARY_TYPE, fieldInfo.name));
+                    }
+                } else {
+                    // non-private subtype
+                    boolean readInMethods = allMethodsAndConstructors(false)
+                            .anyMatch(this::isReadInMethod);
+                    if (!readInMethods) {
+                        analyserResultBuilder.add(Message.newMessage(fieldInfo.newLocation(),
+                                Message.Label.PRIVATE_FIELD_NOT_READ_IN_OWNER_TYPE, fieldInfo.name));
+                    }
                 }
                 return DONE;
             }
@@ -713,11 +764,14 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
     }
 
     private boolean isReadInMethod(MethodAnalyser methodAnalyser) {
-        return methodAnalyser.getFieldAsVariableStream(fieldInfo).anyMatch(VariableInfo::isRead);
+        boolean read = methodAnalyser.getFieldAsVariableStream(fieldInfo).anyMatch(VariableInfo::isRead);
+        if (read) return true;
+        return methodAnalyser.getLocallyCreatedPrimaryTypeAnalysers().flatMap(AnalyserContext::methodAnalyserStream)
+                .anyMatch(this::isReadInMethod);
     }
 
     /*
-    Similarly to dynamically level 2+ immutable, a field can be dynamically higher level independent!
+    Similarly to dynamically immutable, a field can be dynamically higher level independent!
 
     If the type of the field is Set<String>, the static independence value is DEPENDENT (there is the iterator.remove())
     But when this field is final and only constructed with Set.copyOf or Set.of, for example, the type will become
@@ -726,37 +780,37 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
     private AnalysisStatus analyseIndependent(SharedState sharedState) {
         if (fieldAnalysis.getProperty(Property.INDEPENDENT).isDone()) return DONE;
 
-        DV staticallyIndependent = analyserContext.defaultIndependent(fieldInfo.type);
-        if (staticallyIndependent.equals(MultiLevel.INDEPENDENT_DV)) {
-            LOGGER.debug("Field {} set to @Independent: static type",
-                    fieldInfo.fullyQualifiedName());
+        DV immutable = fieldAnalysis.getPropertyFromMapDelayWhenAbsent(Property.EXTERNAL_IMMUTABLE);
+        if (MultiLevel.isAtLeastEventuallyRecursivelyImmutable(immutable)) {
+            LOGGER.debug("Field {} set to @Independent: dynamically recursively immutable", fieldInfo);
             fieldAnalysis.setProperty(Property.INDEPENDENT, MultiLevel.INDEPENDENT_DV);
             return DONE;
         }
 
-        DV immutable = fieldAnalysis.getPropertyFromMapDelayWhenAbsent(Property.EXTERNAL_IMMUTABLE);
-        if (immutable.isDelayed()) {
-            LOGGER.debug("Field {} independent delayed: wait for immutable", fieldInfo.fullyQualifiedName());
-            fieldAnalysis.setProperty(Property.INDEPENDENT, immutable);
-            return immutable.causesOfDelay(); //DELAY EXIT POINT
+        if (fieldAnalysis.linkedVariables.isVariable()) {
+            LOGGER.debug("Field {} independent delayed: wait for linked variables", fieldInfo);
+            CausesOfDelay delay = fieldAnalysis.linkedVariables.get().causesOfDelay();
+            fieldAnalysis.setProperty(Property.INDEPENDENT, delay);
+            return delay;
         }
-        int immutableLevel = MultiLevel.level(immutable);
-        if (immutableLevel >= MultiLevel.Level.IMMUTABLE_2.level) {
-            DV independent = MultiLevel.independentCorrespondingToImmutableLevelDv(immutableLevel);
-            LOGGER.debug("Field {} set to {}, direct correspondence to (dynamically) immutable",
-                    fieldInfo.fullyQualifiedName(), independent);
-            fieldAnalysis.setProperty(Property.INDEPENDENT, independent);
-            return DONE;
+        TypeAnalysis typeAnalysis = myTypeAnalyser.getTypeAnalysis();
+        if (typeAnalysis.hiddenContentDelays().isDelayed()) {
+            LOGGER.debug("Field {} independent delayed: wait for hidden content of type", fieldInfo);
+            return typeAnalysis.hiddenContentDelays().causesOfDelay();
         }
+        SetOfTypes hiddenContentCurrentType = typeAnalysis.getHiddenContentTypes();
 
-        if (staticallyIndependent.isDelayed()) {
-            LOGGER.debug("Field {} independent delayed: wait for type independence of {}",
-                    fieldInfo.fullyQualifiedName(), fieldInfo.type);
-            fieldAnalysis.setProperty(Property.INDEPENDENT, staticallyIndependent);
-            return staticallyIndependent.causesOfDelay(); //DELAY EXIT POINT
-        }
-        fieldAnalysis.setProperty(Property.INDEPENDENT, staticallyIndependent);
-        return DONE;
+        // IMPROVE should we use fieldInfo.type or the concrete type from the value, if there?
+        ComputeIndependent computeIndependent = new ComputeIndependent(analyserContext, hiddenContentCurrentType,
+                fieldInfo.owner, true);
+        DV independent = fieldAnalysis.linkedVariables.get().stream()
+                .filter(e -> e.getKey() instanceof ParameterInfo pi && pi.owner.isAccessibleOutsidePrimaryType()
+                        || e.getKey() instanceof ReturnVariable rv && rv.getMethodInfo().isAccessibleOutsidePrimaryType())
+                .map(e -> computeIndependent.typesAtLinkLevel(e.getValue(), fieldInfo.type, immutable,
+                        e.getKey().parameterizedType()))
+                .reduce(MultiLevel.INDEPENDENT_DV, DV::min);
+        fieldAnalysis.setProperty(Property.INDEPENDENT, independent);
+        return AnalysisStatus.of(independent);
     }
 
     /*
@@ -782,13 +836,13 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
             return DONE;
         }
 
-        DV staticallyImmutable = analyserContext.defaultImmutable(fieldInfo.type, false, fieldInfo.owner);
-        if(staticallyImmutable.isDelayed()) {
+        DV staticallyImmutable = analyserContext.typeImmutable(fieldInfo.type);
+        if (staticallyImmutable.isDelayed()) {
             LOGGER.debug("Delaying @Immutable on {} until we know about statically immutable", fqn);
             fieldAnalysis.setProperty(Property.EXTERNAL_IMMUTABLE, staticallyImmutable);
             return staticallyImmutable.causesOfDelay(); //DELAY EXIT POINT
         }
-        if (staticallyImmutable.equals(MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV)) {
+        if (staticallyImmutable.equals(MultiLevel.EFFECTIVELY_IMMUTABLE_DV)) {
             LOGGER.debug("Field {} is statically @ERImmutable", fqn);
             fieldAnalysis.setProperty(Property.EXTERNAL_IMMUTABLE, staticallyImmutable);
             return DONE; // cannot be improved
@@ -898,7 +952,7 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
         if (effective != MultiLevel.Effective.EVENTUAL_BEFORE) return immutable;
 
         DV corrected = MultiLevel.eventuallyImmutable(MultiLevel.level(immutable));
-        if (fieldInfo.isAccessibleOutsideOfPrimaryType()) {
+        if (!fieldInfo.fieldInspection.get().isPrivate()) {
             return corrected;
         }
         DV linkedToMe = exposureViaMethods();
@@ -921,7 +975,7 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
                     if (ma.getMethodInfo().hasReturnValue()) {
                         LinkedVariables linkedVariables = ((ComputingMethodAnalyser) ma).getReturnAsVariable().getLinkedVariables();
                         DV link = linkedVariables.value(me);
-                        if (link != null && link.le(LinkedVariables.DEPENDENT_DV)) return true;
+                        if (link != null && link.le(LinkedVariables.LINK_DEPENDENT)) return true;
                     }
                     return ma.getMethodAnalysis().getLastStatement().variableStream()
                             .filter(vi -> vi.variable() instanceof ParameterInfo)
@@ -932,7 +986,7 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
 
     private static Stream<MethodAnalyser> filterForExposure(Stream<MethodAnalyser> stream) {
         return stream
-                .filter(ma -> !ma.getMethodInfo().isPrivate() && ma.getMethodInfo().hasReturnValue())
+                .filter(ma -> !ma.getMethodInfo().methodInspection.get().isPrivate() && ma.getMethodInfo().hasReturnValue())
                 .filter(ma -> ma instanceof ComputingMethodAnalyser cma && cma.methodLevelData() != null)
                 .filter(ma -> !ma.getMethodAnalysis().getProperty(Property.FINALIZER).valueIsTrue());
     }
@@ -1060,7 +1114,7 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
         CausesOfDelay delays = CausesOfDelay.EMPTY;
         if (haveInitialiser) {
             delays = fieldAnalysis.getInitializerValue().causesOfDelay();
-            EvaluationContext ec = new EvaluationContextImpl(0, false,
+            EvaluationContext ec = new EvaluationContextImpl(0, BreakDelayLevel.NONE,
                     ConditionManager.initialConditionManager(analyserContext.getPrimitives()), null);
             values.add(new ValueAndPropertyProxy() {
                 @Override
@@ -1077,7 +1131,7 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
                 public DV getProperty(Property property) {
                     if (fieldInfo.type.isFunctionalInterface() && properlyDefinedAnonymousType(fieldAnalysis.getInitializerValue())) {
                         return switch (property) {
-                            case IMMUTABLE, EXTERNAL_IMMUTABLE -> MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV;
+                            case IMMUTABLE, EXTERNAL_IMMUTABLE -> MultiLevel.EFFECTIVELY_IMMUTABLE_DV;
                             case INDEPENDENT -> MultiLevel.INDEPENDENT_DV;
                             case NOT_NULL_EXPRESSION, EXTERNAL_NOT_NULL -> MultiLevel.EFFECTIVELY_NOT_NULL_DV;
                             case IDENTITY, IGNORE_MODIFICATIONS -> property.falseDv;
@@ -1198,15 +1252,15 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
         // NOTE: commenting out this situation introduces an extra delay round into many tests, e.g. Precondition_1
         // which is good for stress testing the BREAK_INIT delay system
         boolean forceExtraDelayForTesting = analyserContext.getConfiguration().analyserConfiguration().forceExtraDelayForTesting();
-        DV formalType = analyserContext.defaultImmutable(fieldInfo.type, false, fieldInfo.owner);
-        if (formalType.isDone() && MultiLevel.isAtLeastEffectivelyE2Immutable(formalType) && !forceExtraDelayForTesting) {
+        DV formalType = analyserContext.typeImmutable(fieldInfo.type);
+        if (formalType.isDone() && MultiLevel.isAtLeastEffectivelyImmutableHC(formalType) && !forceExtraDelayForTesting) {
             LOGGER.debug("Set @IgnoreModifications to NOT_IGNORE_MODS for field e2immutable field {}", fqn);
             fieldAnalysis.setProperty(EXTERNAL_IGNORE_MODIFICATIONS, MultiLevel.NOT_IGNORE_MODS_DV);
             return DONE;
         }
         CausesOfDelay valuesStatus = fieldAnalysis.valuesStatus();
         if (valuesStatus.isDelayed()) {
-            if (sharedState.allowBreakDelay()) {
+            if (sharedState.breakDelayLevel().acceptField()) {
                 LOGGER.debug("Breaking @IgnoreModifications for field {}", fqn);
                 fieldAnalysis.setProperty(EXTERNAL_IGNORE_MODIFICATIONS, MultiLevel.NOT_IGNORE_MODS_DV);
                 return DONE;
@@ -1330,12 +1384,12 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
         boolean fieldOfOwnType = fieldInfo.type.typeInfo == fieldInfo.owner;
         DV immutable = fieldAnalysis.getProperty(Property.EXTERNAL_IMMUTABLE);
         if (immutable.isDelayed() && !fieldOfOwnType) {
-            LOGGER.debug("Waiting with @Constant until decision on @E2Immutable for {}", fqn);
+            LOGGER.debug("Waiting with @Constant until decision on @Immutable for {}", fqn);
             return immutable.causesOfDelay(); //DELAY EXIT POINT
         }
 
         DV recursivelyConstant;
-        if (!fieldOfOwnType && !MultiLevel.isAtLeastEffectivelyE2Immutable(immutable))
+        if (!fieldOfOwnType && !MultiLevel.isAtLeastEffectivelyImmutableHC(immutable))
             recursivelyConstant = DV.FALSE_DV;
         else recursivelyConstant = recursivelyConstant(value);
         if (recursivelyConstant.isDelayed()) {
@@ -1344,11 +1398,7 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
         }
 
         if (recursivelyConstant.valueIsTrue()) {
-            // directly adding the annotation; it will not be used for inspection
-            E2ImmuAnnotationExpressions e2 = analyserContext.getE2ImmuAnnotationExpressions();
-            AnnotationExpression constantAnnotation = checkConstant.createConstantAnnotation(e2, value);
-            fieldAnalysis.annotations.put(constantAnnotation, true);
-            LOGGER.debug("Added @Constant annotation on field {}", fqn);
+            // FIXME
         }
         fieldAnalysis.setProperty(Property.CONSTANT, recursivelyConstant);
         return DONE;
@@ -1364,7 +1414,7 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
             if (constructorCall.constructor() == null) return DV.FALSE_DV;
             for (Expression parameter : constructorCall.getParameterExpressions()) {
                 if (!parameter.isConstant()) {
-                    EvaluationContext evaluationContext = new EvaluationContextImpl(0, false, // IMPROVE
+                    EvaluationContext evaluationContext = new EvaluationContextImpl(0, BreakDelayLevel.NONE, // IMPROVE
                             ConditionManager.initialConditionManager(fieldAnalysis.primitives), null);
                     DV immutable = evaluationContext.getProperty(parameter, Property.IMMUTABLE, false, false);
                     if (immutable.isDelayed()) return immutable;
@@ -1378,25 +1428,38 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
         return DV.FALSE_DV;
     }
 
-    private AnalysisStatus analyseLinked() {
+    private AnalysisStatus analyseLinked(SharedState sharedState) {
         assert fieldAnalysis.linkedVariables.isVariable();
 
-        // we ONLY look at the linked variables of fields that have been assigned to
+        boolean ignoreContextModified = sharedState.breakDelayLevel().acceptField();
+        // we ONLY look at the linked variables of fields that have been assigned to, or have been modified
+
+        // ignoreContextModified: Modification_11_2, iteration 28, field C1.set
         CausesOfDelay causesOfDelay = allMethodsAndConstructors(true)
                 .flatMap(m -> m.getFieldAsVariableStream(fieldInfo)
-                        .filter(VariableInfo::isAssigned)
+                        .filter(vi -> vi.isAssigned() || !ignoreContextModified && !vi.getProperty(CONTEXT_MODIFIED).valueIsFalse())
                         .map(vi -> vi.getLinkedVariables().causesOfDelay()))
                 .filter(DV::isDelayed)
-                .findFirst().orElse(null);
-        if (causesOfDelay != null) {
-            if (causesOfDelay.containsCauseOfDelay(CauseOfDelay.Cause.LINKING, c -> c instanceof SimpleCause sc && sc.location().getInfo() == fieldInfo)) {
+                .reduce(CausesOfDelay.EMPTY, CausesOfDelay::merge);
+        if (causesOfDelay.isDelayed()) {
+            if (causesOfDelay.containsCauseOfDelay(CauseOfDelay.Cause.LINKING,
+                    c -> c instanceof SimpleCause sc && sc.location().getInfo() == fieldInfo)
+                    || ignoreContextModified
+                    && causesOfDelay.containsCauseOfDelay(CauseOfDelay.Cause.INITIAL_VALUE,
+                    c -> c.variableIsField(fieldInfo))) {
+                /* NotNull_AAPI_3, iteration 1, field 'map'
+                   Modification_11_2, iteration 30, field 's2'
+                   Project_0bis, iteration 23, field 'read'
+                 */
                 LOGGER.debug("Breaking linking delay on field {}", fieldInfo);
             } else {
-                LOGGER.debug("LinkedVariables not yet set for {}", fieldInfo);
+                LOGGER.debug("LinkedVariables not yet set for {} -- ignore CM? {}", fieldInfo, ignoreContextModified);
                 CausesOfDelay linkDelay = fieldInfo.delay(CauseOfDelay.Cause.LINKING);
                 Set<Variable> vars = allMethodsAndConstructors(true)
+                        //.peek(m -> LOGGER.debug("   examining {}", m.getMethodInfo().name))
                         .flatMap(m -> m.getFieldAsVariableStream(fieldInfo))
-                        .filter(VariableInfo::isAssigned)
+                        .filter(vi -> vi.isAssigned() || !ignoreContextModified && !vi.getProperty(CONTEXT_MODIFIED).valueIsFalse())
+                        //.peek(vi -> LOGGER.debug("      -- {}", vi.getLinkedVariables()))
                         .flatMap(vi -> vi.getLinkedVariables().variables().keySet().stream()).
                         collect(Collectors.toUnmodifiableSet());
                 LinkedVariables lv = LinkedVariables.of(vars.stream().collect(Collectors.toUnmodifiableMap(v -> v, v -> linkDelay)));
@@ -1409,6 +1472,7 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
         Map<Variable, DV> map = allMethodsAndConstructors(true)
                 .flatMap(m -> m.getFieldAsVariableStream(fieldInfo))
                 .filter(VariableInfo::linkedVariablesIsSet)
+                .filter(vi -> vi.isAssigned() || vi.getProperty(CONTEXT_MODIFIED).valueIsTrue())
                 .flatMap(vi -> vi.getLinkedVariables().variables().entrySet().stream())
                 .filter(e -> !(e.getKey() instanceof LocalVariableReference)
                         && !(e.getKey() instanceof ReturnVariable)
@@ -1417,18 +1481,7 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
 
         LinkedVariables linkedVariables = LinkedVariables.of(map);
         fieldAnalysis.setLinkedVariables(linkedVariables);
-        LOGGER.debug("FA: Set links of {} to [{}]", fqn, linkedVariables);
-
-        // explicitly adding the annotation here; it will not be inspected.
-        E2ImmuAnnotationExpressions e2 = analyserContext.getE2ImmuAnnotationExpressions();
-        Set<Variable> dependent = linkedVariables.variablesAssignedOrDependent().collect(Collectors.toUnmodifiableSet());
-        AnnotationExpression linkAnnotation = checkLinks.createLinkAnnotation(e2.linked.typeInfo(), dependent);
-        fieldAnalysis.annotations.put(linkAnnotation, !dependent.isEmpty());
-
-        Set<Variable> independent1 = linkedVariables.independent1Variables().collect(Collectors.toUnmodifiableSet());
-        AnnotationExpression link1Annotation = checkLinks.createLinkAnnotation(e2.linked1.typeInfo(), independent1);
-        fieldAnalysis.annotations.put(link1Annotation, !independent1.isEmpty());
-
+        LOGGER.debug("FA: Set links of {} to [{}], ignored CM? {}", fqn, linkedVariables, ignoreContextModified);
         return DONE;
     }
 
@@ -1476,7 +1529,9 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
             return Stream.concat(allMethodsAndConstructors(true), otherStaticBlocks());
         }
         // look at all methods and constructors, but ignore my constructors
-        return allMethodsAndConstructors(false);
+        return allMethodsAndConstructors(false)
+                .filter(m -> !(m.getMethodInfo().inConstruction() || m.getMethodInfo().typeInfo
+                        .recursivelyInConstructionOrStaticWithRespectTo(analyserContext, fieldInfo.owner)));
     }
 
     private Stream<MethodAnalyser> methodsForFinal() {
@@ -1550,7 +1605,7 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
                         .anyMatch(vi -> vi.getProperty(Property.CONTEXT_MODIFIED).causesOfDelay().isDelayed());
             }).forEach(m -> LOGGER.debug("  cm problems in {}", m.getMethodInfo().fullyQualifiedName));
         }
-        if (sharedState.allowBreakDelay()) {
+        if (sharedState.breakDelayLevel().acceptField()) {
             LOGGER.debug("Breaking field @Modified delay broken to @NotModified, for {}", fqn);
             fieldAnalysis.setProperty(Property.MODIFIED_OUTSIDE_METHOD, DV.FALSE_DV);
             return DONE;
@@ -1584,7 +1639,7 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
             return eventualDelay.causesOfDelay(); //DELAY EXIT POINT
         }
         boolean exposed;
-        if (fieldInfo.isAccessibleOutsideOfPrimaryType()) {
+        if (!fieldInfo.fieldInspection.get().isPrivate()) {
             exposed = true;
         } else {
             DV exposedViaMethods = exposureViaMethods();
@@ -1607,7 +1662,7 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
         FieldAnalysis fieldAnalysis = analyserContext.getFieldAnalysis(fieldReference.fieldInfo);
         DV effectivelyFinal = fieldAnalysis.getProperty(Property.FINAL);
         if (effectivelyFinal.isDelayed()) {
-            return DelayedVariableExpression.forField(fieldReference, VariableInfoContainer.IN_FIELD_ANALYSER,
+            return DelayedVariableExpression.forField(fieldReference, VariableInfoContainer.IGNORE_STATEMENT_TIME,
                     new VariableCause(fieldReference, fieldInfo.newLocation(), CauseOfDelay.Cause.FIELD_FINAL));
         }
         if (effectivelyFinal.valueIsFalse()) {
@@ -1620,54 +1675,42 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
     @Override
     public void check() {
         E2ImmuAnnotationExpressions e2 = analyserContext.getE2ImmuAnnotationExpressions();
+        LOGGER.debug("Checking field {}", fqn);
 
-        AnalyserProgram analyserProgram = analyserContext.getAnalyserProgram();
-        if (analyserProgram.accepts(FIELD_FINAL)) {
-            analyserResultBuilder.add(CheckFinalNotModified.check(fieldInfo, Final.class, e2.effectivelyFinal, fieldAnalysis));
-            check(org.e2immu.annotation.Variable.class, e2.variableField);
-        }
-        if (analyserProgram.accepts(ALL)) {
-            LOGGER.debug("Checking field {}", fqn);
+        analyserResultBuilder.add(CheckFinalNotModified.check(fieldInfo, e2.effectivelyFinal, fieldAnalysis));
+        analyserResultBuilder.add(CheckNotNull.check(fieldInfo, e2.notNull, fieldAnalysis, EXTERNAL_NOT_NULL));
+        analyserResultBuilder.add(CheckFinalNotModified.check(fieldInfo, e2.notModified, fieldAnalysis));
 
-            check(NotNull.class, e2.notNull);
-            check(NotNull1.class, e2.notNull1);
+        // dynamic type annotations
+        check(e2.container);
 
-            analyserResultBuilder.add(CheckFinalNotModified.check(fieldInfo, NotModified.class, e2.notModified, fieldAnalysis));
+        DV constant = fieldAnalysis.getProperty(CONSTANT);
+        String constantValue = fieldAnalysis.getValue() != null && constant.valueIsTrue()
+                ? fieldAnalysis.getValue().unQuotedString() : "";
+        analyserResultBuilder.add(CheckImmutable.check(fieldInfo, e2.finalFields, fieldAnalysis, null));
+        analyserResultBuilder.add(CheckImmutable.check(fieldInfo, e2.immutable, fieldAnalysis, null));
+        analyserResultBuilder.add(CheckImmutable.check(fieldInfo, e2.immutableContainer, fieldAnalysis, constantValue));
 
-            // dynamic type annotations
-            check(Container.class, e2.container);
-
-            analyserResultBuilder.add(CheckImmutable.check(fieldInfo, E1Immutable.class, e2.e1Immutable, fieldAnalysis, false, false));
-            analyserResultBuilder.add(CheckImmutable.check(fieldInfo, E1Container.class, e2.e1Container, fieldAnalysis, false, false));
-            analyserResultBuilder.add(CheckImmutable.check(fieldInfo, E2Immutable.class, e2.e2Immutable, fieldAnalysis, true, true));
-            analyserResultBuilder.add(CheckImmutable.check(fieldInfo, E2Container.class, e2.e2Container, fieldAnalysis, true, false));
-            analyserResultBuilder.add(CheckImmutable.check(fieldInfo, ERContainer.class, e2.eRContainer, fieldAnalysis, false, false));
-
-            check(Modified.class, e2.modified);
-            check(Nullable.class, e2.nullable);
-            check(BeforeMark.class, e2.beforeMark);
-
-            analyserResultBuilder.add(checkLinks.checkLinksForFields(fieldInfo, fieldAnalysis));
-            analyserResultBuilder.add(checkLinks.checkLink1sForFields(fieldInfo, fieldAnalysis));
-
-            analyserResultBuilder.add(checkConstant.checkConstantForFields(fieldInfo, fieldAnalysis));
-        }
+        analyserResultBuilder.add(CheckIndependent.check(fieldInfo, e2.independent, fieldAnalysis));
+        check(e2.modified);
+        check(e2.nullable);
+        check(e2.beforeMark);
     }
 
-    private void check(Class<?> annotation, AnnotationExpression annotationExpression) {
-        fieldInfo.error(fieldAnalysis, annotation, annotationExpression).ifPresent(mustBeAbsent ->
+    private void check(AnnotationExpression annotationKey) {
+        fieldInfo.error(fieldAnalysis, annotationKey).ifPresent(mustBeAbsent ->
                 analyserResultBuilder.add(Message.newMessage(fieldInfo.newLocation(),
                         mustBeAbsent ? Message.Label.ANNOTATION_UNEXPECTEDLY_PRESENT
-                                : Message.Label.ANNOTATION_ABSENT, annotation.getSimpleName())));
+                                : Message.Label.ANNOTATION_ABSENT, annotationKey.typeInfo().simpleName)));
     }
 
     private class EvaluationContextImpl extends AbstractEvaluationContextImpl {
 
         private EvaluationContextImpl(int iteration,
-                                      boolean allowBreakDelay,
+                                      BreakDelayLevel breakDelayLevel,
                                       ConditionManager conditionManager,
                                       EvaluationContext closure) {
-            super(closure == null ? 1 : closure.getDepth() + 1, iteration, allowBreakDelay, conditionManager, closure);
+            super(closure == null ? 1 : closure.getDepth() + 1, iteration, breakDelayLevel, conditionManager, closure);
         }
 
         @Override
@@ -1698,7 +1741,7 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
         public EvaluationContext child(Expression condition, Set<Variable> conditionVariables) {
             ConditionManager cm = conditionManager.newAtStartOfNewBlock(getPrimitives(), condition, conditionVariables,
                     Precondition.empty(getPrimitives()));
-            return FieldAnalyserImpl.this.new EvaluationContextImpl(iteration, allowBreakDelay, cm, closure);
+            return FieldAnalyserImpl.this.new EvaluationContextImpl(iteration, breakDelayLevel, cm, closure);
         }
 
         @Override

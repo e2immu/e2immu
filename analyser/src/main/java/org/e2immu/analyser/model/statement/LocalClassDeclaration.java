@@ -30,8 +30,9 @@ public class LocalClassDeclaration extends StatementWithStructure {
 
     public LocalClassDeclaration(Identifier identifier,
                                  TypeInfo typeInfo,
-                                 List<MethodInspection> methodAndConstructorInspections) {
-        super(identifier);
+                                 List<MethodInspection> methodAndConstructorInspections,
+                                 Comment comment) {
+        super(identifier, comment);
         this.typeInfo = typeInfo;
         this.methodAndConstructorInspections = methodAndConstructorInspections;
         assert methodAndConstructorInspections.stream().noneMatch(Objects::isNull);
@@ -43,8 +44,8 @@ public class LocalClassDeclaration extends StatementWithStructure {
     }
 
     @Override
-    public Statement translate(InspectionProvider inspectionProvider, TranslationMap translationMap) {
-        return this; // TODO we will need something more complicated here.
+    public List<Statement> translate(InspectionProvider inspectionProvider, TranslationMap translationMap) {
+        return List.of(this); // TODO we will need something more complicated here.
     }
 
     @Override
@@ -63,6 +64,11 @@ public class LocalClassDeclaration extends StatementWithStructure {
                 .map(mi -> Objects.requireNonNull(mi.getMethodBody(),
                         "No method body for " + mi.getMethodInfo().fullyQualifiedName))
                 .collect(Collectors.toList());
+    }
+
+    @Override
+    public int getComplexity() {
+        return 100; // TODO
     }
 
     @Override

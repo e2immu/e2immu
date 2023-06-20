@@ -14,10 +14,7 @@
 
 package org.e2immu.analyser.parser.start.testexample;
 
-import org.e2immu.annotation.ERContainer;
-import org.e2immu.annotation.NotModified;
-import org.e2immu.annotation.NotNull;
-import org.e2immu.annotation.Nullable;
+import org.e2immu.annotation.*;
 
 import java.util.Map;
 import java.util.TreeMap;
@@ -27,7 +24,7 @@ import java.util.stream.Stream;
  Variant on 11, to check that Map.Entry<String, Integer> is not transparent
  */
 
-@ERContainer
+@ImmutableContainer
 public class E2Immutable_13 {
 
     @NotModified
@@ -38,7 +35,7 @@ public class E2Immutable_13 {
     }
 
 
-    @ERContainer
+    @ImmutableContainer
     @Nullable
     public Map.Entry<String, Integer> firstEntry() {
         return map.firstEntry();
@@ -46,7 +43,7 @@ public class E2Immutable_13 {
 
     @NotNull
     @NotModified
-    @ERContainer
+    @Independent
     // The firstEntry result is @E2Container; given the dynamic type String, Integer, it is @ERContainer
     // E2Container<ERContainer> = ERContainer
     public Stream<Map.Entry<String, Integer>> stream() {

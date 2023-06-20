@@ -14,9 +14,7 @@
 
 package org.e2immu.analyser.parser.start.testexample;
 
-import org.e2immu.annotation.Constant;
-import org.e2immu.annotation.E2Container;
-import org.e2immu.annotation.ERContainer;
+import org.e2immu.annotation.ImmutableContainer;
 import org.e2immu.annotation.NotNull;
 
 
@@ -27,7 +25,7 @@ import org.e2immu.annotation.NotNull;
  ERROR in M:method3:1.0.1.0.0: Unreachable statement
  ERROR in M:method3:1.0.1: Condition in 'if' or 'switch' statement evaluates to constant
  */
-@ERContainer
+@ImmutableContainer
 public class EvaluatesToConstant {
 
     @NotNull
@@ -35,7 +33,7 @@ public class EvaluatesToConstant {
         return a == null ? "x" : a;
     }
 
-    @Constant("c")
+    @ImmutableContainer("c")
     private static String method2(String param) {
         String b = someMethod(param);
         if (b == null) {
@@ -44,7 +42,7 @@ public class EvaluatesToConstant {
         return "c";
     }
 
-    @Constant("c")
+    @ImmutableContainer("c")
     private static String method3(String param) {
         String b = someMethod(param);
         if (param.contains("a")) {

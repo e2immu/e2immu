@@ -19,27 +19,25 @@ import org.e2immu.analyser.model.expression.MemberValuePair;
 import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.util.UpgradableBooleanMap;
+import org.e2immu.annotation.ImmutableContainer;
 import org.e2immu.annotation.NotNull;
-import org.e2immu.annotation.NotNull1;
 
 import java.util.List;
 import java.util.Set;
 
-
+@ImmutableContainer
 public interface AnnotationExpression {
 
     @NotNull
     TypeInfo typeInfo();
 
-    @NotNull1
+    @NotNull(content = true)
     List<MemberValuePair> expressions();
 
-    @NotNull1
+    @NotNull(content = true)
     Set<String> imports();
 
     <T> T extract(String fieldName, T defaultValue);
-
-    int[] extractIntArray(String parameters);
 
     @NotNull
     AnnotationExpression copyWith(Primitives primitives, String parameter, String value);

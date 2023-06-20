@@ -14,7 +14,8 @@
 
 package org.e2immu.analyser.parser.modification.testexample;
 
-import org.e2immu.annotation.E1Container;
+import org.e2immu.annotation.Container;
+import org.e2immu.annotation.FinalFields;
 import org.e2immu.annotation.Modified;
 import org.e2immu.annotation.NotModified;
 
@@ -24,10 +25,11 @@ import java.util.Set;
 
 /*
 while this one tests modification (in inner class, has effect on outer class)
-it also relies on Inner not being E2Immutable when Modification_13 is only E1Immutable
+it also relies on Inner not being immutable when Modification_13 is only @FinalFields
  */
 
-@E1Container
+@FinalFields
+@Container
 public class Modification_13 {
 
     @Modified
@@ -42,7 +44,8 @@ public class Modification_13 {
         return set;
     }
 
-    @E1Container
+    @FinalFields
+    @Container
     class Inner {
 
         private final int threshold;

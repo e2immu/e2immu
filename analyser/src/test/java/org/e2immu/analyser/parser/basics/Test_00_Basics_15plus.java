@@ -24,6 +24,7 @@ import org.e2immu.analyser.parser.CommonTestRunner;
 import org.e2immu.analyser.visitor.FieldAnalyserVisitor;
 import org.e2immu.analyser.visitor.MethodAnalyserVisitor;
 import org.e2immu.analyser.visitor.StatementAnalyserVariableVisitor;
+import org.e2immu.analyser.visitor.TypeAnalyserVisitor;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
@@ -89,7 +90,7 @@ public class Test_00_Basics_15plus extends CommonTestRunner {
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
             if ("string".equals(d.fieldInfo().name)) {
                 assertEquals("string", d.fieldAnalysis().getValue().toString());
-                assertDv(d, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, EXTERNAL_IMMUTABLE);
+                assertDv(d, MultiLevel.EFFECTIVELY_IMMUTABLE_DV, EXTERNAL_IMMUTABLE);
                 assertDv(d, MultiLevel.EFFECTIVELY_NOT_NULL_DV, EXTERNAL_NOT_NULL);
             }
         };
@@ -128,9 +129,8 @@ public class Test_00_Basics_15plus extends CommonTestRunner {
                     }
                 }
                 if (d.variable() instanceof FieldReference fr && "a".equals(fr.fieldInfo.name)) {
-                    String a = d.iteration() == 0 ? "<s:A>" : "a";
-                    assertEquals(a, d.currentValue().toString());
-                    assertDv(d, 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, NOT_NULL_EXPRESSION);
+                    assertEquals("a", d.currentValue().toString());
+                    assertDv(d, MultiLevel.EFFECTIVELY_NOT_NULL_DV, NOT_NULL_EXPRESSION);
                 }
             }
         };
@@ -141,7 +141,13 @@ public class Test_00_Basics_15plus extends CommonTestRunner {
 
     @Test
     public void test_19() throws IOException {
+        TypeAnalyserVisitor typeAnalyserVisitor = d -> {
+          if("Basics_19".equals(d.typeInfo().simpleName)) {
+           //   assertEquals("", d.typeInspection().getComment().text());
+          }
+        };
         testClass("Basics_19", 0, 0, new DebugConfiguration.Builder()
+                .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
                 .build());
     }
 

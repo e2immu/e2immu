@@ -19,16 +19,15 @@ import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.analysis.range.Range;
 import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.visitor.CommonVisitorData;
-import org.e2immu.analyser.visitor.FieldAnalyserVisitor;
 import org.e2immu.analyser.visitor.StatementAnalyserVariableVisitor;
 import org.e2immu.analyser.visitor.StatementAnalyserVisitor;
+import org.e2immu.analyser.visitor.TypeAnalyserVisitor;
 
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 public abstract class VisitorTestSupport {
 
@@ -72,6 +71,8 @@ public abstract class VisitorTestSupport {
     public void assertDv(CommonVisitorData d, String delayed, int delayedBeforeIteration, DV expect, Property property) {
         DV value = d.getProperty(property);
         if (d.iteration() < delayedBeforeIteration) {
+            assertNotNull(value, "Expect delay rather than null in iteration " + d.iteration()
+                    + "<" + delayedBeforeIteration + " for property " + property);
             assertEquals(delayed, value.toString(),
                     "Expected delay in iteration " + d.iteration() + "<" + delayedBeforeIteration + ", but got " + value + " for property " + property);
         } else {
@@ -110,6 +111,21 @@ public abstract class VisitorTestSupport {
             assertEquals(value, d.currentValue().toString());
         }
         mustSeeIteration(d, delayedBeforeIteration);
+    }
+
+    public void assertModificationTime(StatementAnalyserVariableVisitor.Data d, int delayedBeforeIteration, int value) {
+        if (d.iteration() < delayedBeforeIteration) {
+            assertTrue(d.variableInfo().getModificationTimeOrNegative() < 0, "Expected negative modification time");
+        } else {
+            assertEquals(value, d.variableInfo().getModificationTimeOrNegative());
+        }
+    }
+
+    public void assertValue(StatementAnalyserVariableVisitor.Data d, String s0, String s1, String s) {
+        String value = d.currentValue().toString();
+        if (d.iteration() == 0) assertEquals(s0, value);
+        else if (d.iteration() == 1) assertEquals(s1, value);
+        else assertEquals(s, value);
     }
 
     public void assertCurrentValue(StatementAnalyserVariableVisitor.Data d, int delayedBeforeIteration, String value) {
@@ -182,4 +198,15 @@ public abstract class VisitorTestSupport {
         return range;
     }
 
+    protected void assertHc(TypeAnalyserVisitor.Data d, int delayedBefore, String s) {
+        CausesOfDelay causes = d.typeAnalysis().hiddenContentDelays();
+        if (d.iteration() < delayedBefore) {
+            assertTrue(causes.isDelayed(),
+                    "Expected hidden content to be delayed in iteration " + d.iteration() + " < " + delayedBefore);
+        } else {
+            assertTrue(causes.isDone(),
+                    "Expected hidden content to be done in iteration " + d.iteration() + " >= " + delayedBefore);
+            assertEquals(s, d.typeAnalysis().getHiddenContentTypes().toString());
+        }
+    }
 }

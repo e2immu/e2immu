@@ -16,6 +16,7 @@ package org.e2immu.analyser.visitor;
 
 import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.analyser.util.AnalyserResult;
+import org.e2immu.analyser.analyser.util.VariableAccessReport;
 import org.e2immu.analyser.analysis.StatementAnalysis;
 import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.FieldInfo;
@@ -29,7 +30,8 @@ public interface StatementAnalyserVisitor {
     record Data(AnalyserResult result,
                 int iteration,
                 EvaluationResult context,
-                MethodInfo methodInfo, StatementAnalysis statementAnalysis,
+                MethodInfo methodInfo,
+                StatementAnalysis statementAnalysis,
                 String statementId,
                 Expression condition,
                 String conditionVariablesSorted,
@@ -37,7 +39,8 @@ public interface StatementAnalyserVisitor {
                 Expression absoluteState,
                 ConditionManager conditionManagerForNextStatement,
                 ConditionManager localConditionManager, // as at the start of the statement
-                Map<String, AnalysisStatus> statusesAsMap) implements CommonVisitorData {
+                Map<String, AnalysisStatus> statusesAsMap,
+                VariableAccessReport variableAccessReport) implements CommonVisitorData {
 
         // shortcut
 
@@ -68,6 +71,10 @@ public interface StatementAnalyserVisitor {
         @Override
         public String label() {
             return methodInfo.fullyQualifiedName + "_" + statementId;
+        }
+
+        public boolean allowBreakDelay() {
+            return context.evaluationContext().breakDelayLevel().acceptStatement();
         }
     }
 

@@ -19,12 +19,10 @@ import org.e2immu.analyser.model.TypeInfo;
 import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
 import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.parser.Message;
-import org.e2immu.analyser.resolver.impl.SortedType;
 import org.e2immu.annotation.Modified;
 import org.e2immu.annotation.NotNull;
-import org.e2immu.annotation.NotNull1;
 
-import java.util.List;
+
 import java.util.Map;
 import java.util.stream.Stream;
 
@@ -34,20 +32,22 @@ public interface Resolver extends ExpressionContext.ResolverRecursion {
     @NotNull
     Resolver child(InspectionProvider inspectionProvider,
                    E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions,
-                   boolean shallowResolver);
+                   boolean shallowResolver,
+                   boolean storeComments);
 
     @Modified
-    @NotNull1
+    @NotNull(content = true)
     SortedTypes resolve(Map<TypeInfo, ExpressionContext> inspectedTypes);
 
 
     @Modified
-    @NotNull1
+    @NotNull(content = true)
     default SortedTypes resolve(InspectionProvider inspectionProvider,
                                      E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions,
                                      boolean shallowResolver,
+                                     boolean storeComments,
                                      Map<TypeInfo, ExpressionContext> inspectedTypes) {
-        Resolver child = child(inspectionProvider, e2ImmuAnnotationExpressions, shallowResolver);
+        Resolver child = child(inspectionProvider, e2ImmuAnnotationExpressions, shallowResolver, storeComments);
         return child.resolve(inspectedTypes);
     }
 }

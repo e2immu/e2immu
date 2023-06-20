@@ -19,11 +19,9 @@ import org.e2immu.annotation.*;
 import java.util.Set;
 
 @Container(absent = true)
-@E1Container(absent = true)
-@E1Immutable
+@FinalFields
 public class Container_2 {
 
-    @Linked(to = {"Container_2:p"})
     @Modified
     @Nullable
     private final Set<String> s;

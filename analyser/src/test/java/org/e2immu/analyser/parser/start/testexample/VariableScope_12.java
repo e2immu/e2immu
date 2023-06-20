@@ -14,7 +14,8 @@
 
 package org.e2immu.analyser.parser.start.testexample;
 
-import org.e2immu.annotation.Constant;
+
+import org.e2immu.annotation.ImmutableContainer;
 
 /*
 tests the "out of scope" scope variable
@@ -32,7 +33,7 @@ public class VariableScope_12 {
         }
     }
 
-    @Constant(absent = true)
+    @ImmutableContainer // but not constant
     public static int method(Y y, String s) {
         if (y instanceof X x) {
             if (x.i == s.length()) {

@@ -14,11 +14,10 @@
 
 package org.e2immu.analyser.parser.start.testexample;
 
-import org.e2immu.annotation.Constant;
-import org.e2immu.annotation.ERContainer;
+import org.e2immu.annotation.ImmutableContainer;
 import org.e2immu.annotation.NotModified;
 
-@ERContainer
+@ImmutableContainer
 public enum Enum_3 {
     ONE(1), TWO(2), THREE(3);
 
@@ -33,7 +32,7 @@ public enum Enum_3 {
         return cnt > other.cnt ? cnt : other.cnt;
     }
 
-    @Constant("/*inline highest*/Enum_3.THREE")
+    @ImmutableContainer("/*inline highest*/Enum_3.THREE")
     public static Enum_3 highest() {
         return THREE;
     }

@@ -52,17 +52,17 @@ public class Test_16_Modification_9 extends CommonTestRunner {
                         String expectValue = d.iteration() == 0 ? "<f:s2>" : "s2";
                         assertEquals(expectValue, d.currentValue().toString());
 
-                        String expectLv = d.iteration() == 0 ? "s:-1,this.s2:0" : "this.s2:0";
+                        String expectLv = d.iteration() == 0 ? "Modification_9.LOGGER:-1,this.s2:0" : "this.s2:0";
                         assertEquals(expectLv, d.variableInfo().getLinkedVariables().toString());
                         assertDv(d, 1, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
                     }
                 }
                 if (d.variable() instanceof FieldReference fr && "s2".equals(fr.fieldInfo.name)) {
                     String expectLinked;
-                    if ("0".equals(d.statementId()) || "1".equals(d.statementId())) {
+                    if ("0".equals(d.statementId())) {
                         expectLinked = "theSet:0";
                     } else {
-                        expectLinked = d.iteration() == 0 ? "s:-1,theSet:0" : "theSet:0";
+                        expectLinked = d.iteration() == 0 ? "Modification_9.LOGGER:-1,theSet:0" : "theSet:0";
                     }
                     assertEquals(expectLinked, d.variableInfo().getLinkedVariables().toString());
 
@@ -90,21 +90,25 @@ public class Test_16_Modification_9 extends CommonTestRunner {
             if ("s2".equals(d.fieldInfo().name)) {
                 assertDv(d, 1, DV.TRUE_DV, Property.MODIFIED_OUTSIDE_METHOD);
             }
+            if ("LOGGER".equals(d.fieldInfo().name)) {
+                assertDv(d, MultiLevel.EFFECTIVELY_IMMUTABLE_DV, Property.EXTERNAL_IMMUTABLE);
+                // important: the logger will not store your objects, will never modify their hidden content
+                assertDv(d, MultiLevel.INDEPENDENT_DV, Property.INDEPENDENT);
+            }
         };
 
         TypeMapVisitor typeMapVisitor = typeMap -> {
             TypeInfo set = typeMap.get(Set.class);
             MethodInfo add = set.findUniqueMethod("add", 1);
             ParameterInfo p0Add = add.methodInspection.get().getParameters().get(0);
-            assertEquals(MultiLevel.INDEPENDENT_1_DV, p0Add.parameterAnalysis.get()
+            assertEquals(MultiLevel.INDEPENDENT_HC_DV, p0Add.parameterAnalysis.get()
                     .getProperty(Property.INDEPENDENT));
         };
 
-        // there is no transparent content in this type; as a consequence, the parameter s
-        // can never be @Dependent1 (even if it weren't of immutable type String)
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("Modification_9".equals(d.typeInfo().simpleName)) {
-                assertEquals("", d.typeAnalysis().getTransparentTypes().toString());
+                // Logger is an interface, so it must be possible to have hidden content
+                assertHc(d, 0, "Logger");
             }
         };
 

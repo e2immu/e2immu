@@ -37,8 +37,8 @@ public class TestWeightedGraph_2 {
 
     Variable first, next, sa, rv;
     CausesOfDelay delay;
-    final DV v0 = STATICALLY_ASSIGNED_DV;
-    final DV v3 = INDEPENDENT1_DV;
+    final DV v0 = LINK_STATICALLY_ASSIGNED;
+    final DV v3 = LINK_COMMON_HC;
     WeightedGraph wg;
 
     @BeforeEach
@@ -58,7 +58,7 @@ public class TestWeightedGraph_2 {
 
     @Test
     public void test1() {
-        Map<Variable, DV> startAtFirst = wg.links(first, DEPENDENT_DV, true);
+        Map<Variable, DV> startAtFirst = wg.links(first, LINK_DEPENDENT, true);
         assertEquals(4, startAtFirst.size());
         assertEquals(v0, startAtFirst.get(first));
         assertEquals(v0, startAtFirst.get(sa));

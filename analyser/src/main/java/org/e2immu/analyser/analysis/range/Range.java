@@ -157,7 +157,7 @@ public interface Range {
 
         @Override
         public List<Variable> variables() {
-            return original.variables(true);
+            return original.variables();
         }
 
         @Override

@@ -14,16 +14,16 @@
 
 package org.e2immu.analyser.parser.eventual.testexample;
 
-import org.e2immu.annotation.E2Container;
-import org.e2immu.annotation.Mark;
-import org.e2immu.annotation.Only;
-import org.e2immu.annotation.TestMark;
+import org.e2immu.annotation.ImmutableContainer;
+import org.e2immu.annotation.eventual.Mark;
+import org.e2immu.annotation.eventual.Only;
+import org.e2immu.annotation.eventual.TestMark;
 
 import java.util.HashSet;
 import java.util.Set;
 import java.util.stream.Stream;
 
-@E2Container(after = "set")
+@ImmutableContainer(after = "set", hc = true)
 public class EventuallyE2Immutable_7<T> {
 
     private final Set<T> set = new HashSet<>();

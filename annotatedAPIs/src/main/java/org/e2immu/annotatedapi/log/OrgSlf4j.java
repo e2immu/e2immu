@@ -16,11 +16,14 @@ package org.e2immu.annotatedapi.log;
 
 import org.e2immu.annotation.*;
 
-// explicit @NotModified markers, because in a @Container, for void methods, the default is @Modified
+/*
+ Logging is semantically a non-modifying, independent operation.
+ We use explicit @NotModified markers, because in a @Container, for void methods, the default is @Modified
+ */
 public class OrgSlf4j {
     public static final String PACKAGE_NAME = "org.slf4j";
 
-    @ERContainer
+    @ImmutableContainer
     interface Logger$ {
 
         @NotModified
@@ -59,6 +62,7 @@ public class OrgSlf4j {
     interface ILoggerFactory$ {
         @NotNull
         @NotModified
+        @ImmutableContainer
         org.slf4j.Logger getLogger(String name);
     }
 
@@ -67,9 +71,11 @@ public class OrgSlf4j {
     interface LoggerFactory$ {
         @NotNull
         @NotModified
+        @ImmutableContainer
         org.slf4j.Logger getLogger(@NotNull Class<?> clazz);
 
         @NotNull
+        @ImmutableContainer
         @NotModified
         org.slf4j.Logger getLogger(@NotNull String string);
 

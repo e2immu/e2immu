@@ -19,7 +19,7 @@ import org.e2immu.annotation.*;
 @Container
 public class Basics_4 {
     
-    @Variable
+    @Final(absent = true)
     private int i;
 
     @Modified

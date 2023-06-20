@@ -15,6 +15,7 @@
 package org.e2immu.analyser.parser.failing.testexample;
 
 import org.e2immu.annotation.*;
+import org.e2immu.annotation.rare.IgnoreModifications;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -29,7 +30,7 @@ the parameter 'consumer' is dependent, so we need to link the modification to th
 In this particular case, there is no modification, so 'in' remains @NotModified.
  */
 
-@E1Container
+@FinalFields @Container
 public class Consumer_9 {
 
     // not transparent
@@ -41,7 +42,7 @@ public class Consumer_9 {
     }
 
     @Modified
-    public void doSomething(@IgnoreModifications @Dependent Consumer<Set<Integer>> consumer) {
+    public void doSomething(@IgnoreModifications Consumer<Set<Integer>> consumer) {
         consumer.accept(integers);
     }
 

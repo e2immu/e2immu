@@ -15,19 +15,23 @@
 package org.e2immu.analyser.model.impl;
 
 import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.model.expression.DelayedVariableExpression;
+import org.e2immu.analyser.model.expression.MethodCall;
+import org.e2immu.analyser.model.expression.VariableExpression;
 import org.e2immu.analyser.model.expression.util.TranslationCollectors;
-import org.e2immu.analyser.model.statement.Block;
+import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.LocalVariableReference;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.annotation.Container;
-import org.e2immu.annotation.E2Container;
 
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.function.Function;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * Translation takes place from statement, over expression, down to variable and type.
@@ -53,10 +57,7 @@ import java.util.stream.Collectors;
  *         Primary use case: renaming variables in code transformations.
  *     </li>
  * </ul>
- *
- *
  */
-@E2Container
 public class TranslationMapImpl implements TranslationMap {
 
     public final Map<? extends Variable, ? extends Variable> variables;
@@ -68,27 +69,36 @@ public class TranslationMapImpl implements TranslationMap {
     public final Map<? extends Variable, ? extends Expression> variableExpressions;
     public final boolean expandDelayedWrappedExpressions;
     public final boolean recurseIntoScopeVariables;
+    public final boolean yieldIntoReturn;
+    public final boolean translateAgain;
+    public final ModificationTimesHandler modificationTimesHandler;
 
-    public TranslationMapImpl(Map<? extends Statement, List<Statement>> statements,
-                              Map<? extends Expression, ? extends Expression> expressions,
-                              Map<? extends Variable, ? extends Expression> variableExpressions,
-                              Map<? extends Variable, ? extends Variable> variables,
-                              Map<MethodInfo, MethodInfo> methods,
-                              Map<ParameterizedType, ParameterizedType> types,
-                              boolean expandDelayedWrappedExpressions,
-                              boolean recurseIntoScopeVariables) {
+    private TranslationMapImpl(Map<? extends Statement, List<Statement>> statements,
+                               Map<? extends Expression, ? extends Expression> expressions,
+                               Map<? extends Variable, ? extends Expression> variableExpressions,
+                               Map<? extends Variable, ? extends Variable> variables,
+                               Map<MethodInfo, MethodInfo> methods,
+                               Map<ParameterizedType, ParameterizedType> types,
+                               boolean expandDelayedWrappedExpressions,
+                               boolean recurseIntoScopeVariables,
+                               boolean yieldIntoReturn,
+                               boolean translateAgain,
+                               ModificationTimesHandler modificationTimesHandler) {
         this.variables = variables;
         this.expressions = expressions;
         this.variableExpressions = variableExpressions;
         this.statements = statements;
         this.methods = methods;
-        this.types = types;
+        this.types = types;//checkForCycles(types);
+        this.yieldIntoReturn = yieldIntoReturn;
         localVariables = variables.entrySet().stream()
                 .filter(e -> e.getKey() instanceof LocalVariableReference && e.getValue() instanceof LocalVariableReference)
                 .collect(Collectors.toMap(e -> ((LocalVariableReference) e.getKey()).variable,
                         e -> ((LocalVariableReference) e.getValue()).variable));
         this.expandDelayedWrappedExpressions = expandDelayedWrappedExpressions;
         this.recurseIntoScopeVariables = recurseIntoScopeVariables;
+        this.translateAgain = translateAgain;
+        this.modificationTimesHandler = modificationTimesHandler;
     }
 
     @Override
@@ -101,6 +111,11 @@ public class TranslationMapImpl implements TranslationMap {
         return "TM{" + variables.size() + "," + methods.size() + "," + expressions.size() + "," + statements.size()
                 + "," + types.size() + "," + localVariables.size() + "," + variableExpressions.size() +
                 (expandDelayedWrappedExpressions ? ",expand" : "") + "}";
+    }
+
+    @Override
+    public boolean translateYieldIntoReturn() {
+        return yieldIntoReturn;
     }
 
     @Override
@@ -124,8 +139,22 @@ public class TranslationMapImpl implements TranslationMap {
     }
 
     @Override
-    public Variable translateVariable(Variable variable) {
-        return Objects.requireNonNullElse(variables.get(variable), variable);
+    public Variable translateVariable(InspectionProvider inspectionProvider, Variable variable) {
+        Variable v = variables.get(variable);
+        if (v != null) return v;
+        if (variable instanceof FieldReference fr && fr.scopeVariable != null) {
+            Variable scopeTranslated = translateVariable(inspectionProvider, fr.scopeVariable);
+            if (scopeTranslated != fr.scopeVariable) {
+                Expression e;
+                if (fr.scope.isDelayed()) {
+                    e = DelayedVariableExpression.forVariable(scopeTranslated, fr.statementTime(), fr.scope.causesOfDelay());
+                } else {
+                    e = new VariableExpression(scopeTranslated);
+                }
+                return new FieldReference(inspectionProvider, fr.fieldInfo, e, fr.getOwningType());
+            }
+        }
+        return variable;
     }
 
     @Override
@@ -136,17 +165,7 @@ public class TranslationMapImpl implements TranslationMap {
     @Override
     public List<Statement> translateStatement(InspectionProvider inspectionProvider, Statement statement) {
         List<Statement> list = statements.get(statement);
-        if (list == null) {
-            return List.of(statement.translate(inspectionProvider, this));
-        }
-        return list.stream().map(st -> st.translate(inspectionProvider, this)).collect(Collectors.toList());
-    }
-
-    @Override
-    public Block translateBlock(InspectionProvider inspectionProvider, Block block) {
-        List<Statement> list = translateStatement(inspectionProvider, block);
-        if (list.size() != 1) throw new UnsupportedOperationException();
-        return (Block) list.get(0);
+        return list == null ? List.of(statement) : list;
     }
 
     @Override
@@ -178,6 +197,52 @@ public class TranslationMapImpl implements TranslationMap {
                 types.isEmpty() && variables.isEmpty() && localVariables.isEmpty() && variableExpressions.isEmpty();
     }
 
+    @Override
+    public Map<? extends Variable, ? extends Variable> variables() {
+        return variables;
+    }
+
+    @Override
+    public Map<? extends Expression, ? extends Expression> expressions() {
+        return expressions;
+    }
+
+    @Override
+    public Map<? extends Variable, ? extends Expression> variableExpressions() {
+        return variableExpressions;
+    }
+
+    @Override
+    public Map<MethodInfo, MethodInfo> methods() {
+        return methods;
+    }
+
+    @Override
+    public Map<ParameterizedType, ParameterizedType> types() {
+        return types;
+    }
+
+    @Override
+    public Map<? extends Statement, List<Statement>> statements() {
+        return statements;
+    }
+
+    public interface ModificationTimesHandler {
+        String modificationTimes(MethodCall beforeTranslation,
+                                 Expression translatedObject, List<Expression> translatedParameters);
+    }
+    @Override
+    public String modificationTimes(MethodCall beforeTranslation,
+                                    Expression translatedObject, List<Expression> translatedParameters) {
+        if (modificationTimesHandler == null) return null;
+        return modificationTimesHandler.modificationTimes(beforeTranslation, translatedObject, translatedParameters);
+    }
+
+    @Override
+    public boolean translateAgain() {
+        return translateAgain;
+    }
+
     @Container(builds = TranslationMapImpl.class)
     public static class Builder {
         private final Map<Variable, Variable> variables = new HashMap<>();
@@ -188,10 +253,36 @@ public class TranslationMapImpl implements TranslationMap {
         private final Map<ParameterizedType, ParameterizedType> types = new HashMap<>();
         private boolean expandDelayedWrappedExpressions;
         private boolean recurseIntoScopeVariables;
+        private boolean yieldIntoReturn;
+        private boolean translateAgain;
+        private ModificationTimesHandler modificationTimesHandler;
+
+        public Builder() {
+        }
+
+        public Builder(TranslationMap other) {
+            variables.putAll(other.variables());
+            expressions.putAll(other.expressions());
+            variableExpressions.putAll(other.variableExpressions());
+            methods.putAll(other.methods());
+            statements.putAll(other.statements());
+            types.putAll(other.types());
+            expandDelayedWrappedExpressions = other.expandDelayedWrappedExpressions();
+            recurseIntoScopeVariables = other.recurseIntoScopeVariables();
+            yieldIntoReturn = other.translateYieldIntoReturn();
+            translateAgain = other.translateAgain();
+        }
 
         public TranslationMapImpl build() {
             return new TranslationMapImpl(statements, expressions, variableExpressions, variables, methods, types,
-                    expandDelayedWrappedExpressions, recurseIntoScopeVariables);
+                    expandDelayedWrappedExpressions, recurseIntoScopeVariables, yieldIntoReturn, translateAgain,
+                    modificationTimesHandler);
+        }
+
+        // used externally be CM
+        public Builder setTranslateAgain(boolean translateAgain) {
+            this.translateAgain = translateAgain;
+            return this;
         }
 
         public Builder setRecurseIntoScopeVariables(boolean recurseIntoScopeVariables) {
@@ -221,8 +312,14 @@ public class TranslationMapImpl implements TranslationMap {
 
         public Builder addVariableExpression(Variable variable, Expression actual) {
             variableExpressions.put(variable, actual);
-            assert actual.isDelayed() || !actual.variables(true).contains(variable)
+            assert actual.isDelayed() || !actual.variables().contains(variable)
                     : "No self-references allowed! Variable: " + variable;
+            return this;
+        }
+
+        // used by CodeModernizer
+        public Builder renameVariable(Variable variable, Expression actual) {
+            variableExpressions.put(variable, actual);
             return this;
         }
 
@@ -236,17 +333,31 @@ public class TranslationMapImpl implements TranslationMap {
             return this;
         }
 
-        public boolean translateMethod(MethodInfo methodInfo) {
-            return methods.containsKey(methodInfo);
-        }
-
-        public boolean isEmpty() {
-            return statements.isEmpty() && expressions.isEmpty() && variables.isEmpty() && methods.isEmpty() && types.isEmpty();
+        public Builder setYieldToReturn(boolean b) {
+            this.yieldIntoReturn = b;
+            return this;
         }
 
         public Builder setExpandDelayedWrapperExpressions(boolean expandDelayedWrappedExpressions) {
             this.expandDelayedWrappedExpressions = expandDelayedWrappedExpressions;
             return this;
+        }
+
+        public boolean translateMethod(MethodInfo methodInfo) {
+            return methods.containsKey(methodInfo);
+        }
+
+        public boolean isEmpty() {
+            return statements.isEmpty()
+                    && expressions.isEmpty()
+                    && variables.isEmpty()
+                    && methods.isEmpty()
+                    && types.isEmpty()
+                    && variableExpressions.isEmpty();
+        }
+
+        public void setModificationTimesHandler(ModificationTimesHandler modificationTimesHandler) {
+            this.modificationTimesHandler = modificationTimesHandler;
         }
     }
 }

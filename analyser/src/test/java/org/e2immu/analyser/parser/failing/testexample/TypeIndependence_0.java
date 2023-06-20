@@ -19,11 +19,11 @@ import org.e2immu.annotation.*;
 import java.util.Iterator;
 import java.util.List;
 
-@E2Container
+@ImmutableContainer(hc = true)
 public class TypeIndependence_0<T> implements Iterable<T> {
 
-    @E2Container(absent = true)
-    @NotNull1
+    @ImmutableContainer(absent = true)
+    @NotNull(content = true)
     private final T[] elements;
 
     @SuppressWarnings("unchecked")
@@ -49,7 +49,7 @@ public class TypeIndependence_0<T> implements Iterable<T> {
 
         @Override
         @NotNull
-        @E2Container(absent = true)
+        @ImmutableContainer(absent = true)
         public T next() {
             return elements[i++];
         }

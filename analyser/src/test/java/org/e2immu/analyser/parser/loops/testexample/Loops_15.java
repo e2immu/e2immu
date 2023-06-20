@@ -14,14 +14,14 @@
 
 package org.e2immu.analyser.parser.loops.testexample;
 
-import org.e2immu.annotation.Constant;
+import org.e2immu.annotation.ImmutableContainer;
 
 public class Loops_15 {
 
     /*
     Simple complication of Loops_4, to study how variables move out of the loop
      */
-    @Constant(absent = true)
+    @ImmutableContainer // not constant
     public static int method(int p) {
         int res = 3;
         for (int i = 0; i < 10; i++) {

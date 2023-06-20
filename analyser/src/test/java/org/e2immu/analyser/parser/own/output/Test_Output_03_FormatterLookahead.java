@@ -17,11 +17,13 @@ package org.e2immu.analyser.parser.own.output;
 
 import org.e2immu.analyser.config.AnalyserConfiguration;
 import org.e2immu.analyser.config.DebugConfiguration;
+import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.output.*;
 import org.e2immu.analyser.output.formatter.*;
 import org.e2immu.analyser.parser.CommonTestRunner;
 import org.e2immu.analyser.visitor.MethodAnalyserVisitor;
+import org.e2immu.analyser.visitor.StatementAnalyserVariableVisitor;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
@@ -38,19 +40,52 @@ public class Test_Output_03_FormatterLookahead extends CommonTestRunner {
 
     @Test
     public void test_0() throws IOException {
+        StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+            if ("apply".equals(d.methodInfo().name)) {
+                assertEquals("$1", d.methodInfo().typeInfo.simpleName);
+                if (d.variable() instanceof FieldReference fr && "forwardInfo".equals(fr.fieldInfo.name)) {
+                    if ("0.0.1.0.0".equals(d.statementId())) {
+                        assertEquals("startOfGuides.get(0)", fr.scope.toString());
+
+                        String expected = d.iteration() == 0 ? "<f:startOfGuides.get(0).forwardInfo>" : "instance type ForwardInfo";
+                        assertEquals(expected, d.currentValue().toString());
+                        assertEquals("", d.variableInfo().getLinkedVariables().toString());
+                    }
+                }
+                if ("scope-52:44".equals(d.variableName())) {
+                    if ("2".equals(d.statementId())) { // if(...) statement
+                        assertEquals("-1-lineLength+`forwardInfo.chars`+(null==`forwardInfo.string`?0:`forwardInfo.string`.length())>=0?nullable instance type GuideOnStack:nullable instance type GuideOnStack", d.currentValue().toString());
+                        String linked = d.iteration() == 0 ? "startOfGuides:-1" : "startOfGuides:3";
+                        assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
+                    }
+                    if ("3".equals(d.statementId())) { // LVC outputElement = list.get(forwardInfo.pos())
+                        String expected = d.iteration() == 0 ? "<v:scope-52:44>"
+                                : "-1-lineLength+`forwardInfo.chars`+(null==`forwardInfo.string`?0:`forwardInfo.string`.length())>=0?nullable instance type GuideOnStack:nullable instance type GuideOnStack";
+                        assertEquals(expected, d.currentValue().toString());
+                        String linked = switch (d.iteration()) {
+                            case 0 ->
+                                    "currentForwardInfo:-1,exceeds:-1,forwardInfo:-1,lineLength:-1,list:-1,options:-1,outputElement:-1,prioritySplit:-1,scope-90:64:-1,scope-guideOnStack:2.0.2.forwardInfo:-1,scope-guideOnStack:2.0.2:-1,start:-1,startOfGuides.get(0).forwardInfo:-1,startOfGuides.peek().forwardInfo:-1,startOfGuides:-1";
+                            case 1 -> "forwardInfo:-1,list:-1,outputElement:-1,startOfGuides:-1";
+                            default -> "forwardInfo:4,startOfGuides:3";
+                        };
+                        assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
+                    }
+                }
+            }
+        };
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("apply".equals(d.methodInfo().name)) {
                 assertEquals("$1", d.methodInfo().typeInfo.simpleName);
-                String expected = d.iteration() <= 1
+                String expected = d.iteration() < 3
                         ? "<m:apply>"
-                        : "/*inline apply*/null==`forwardInfo.string`?instance type boolean:-1-lineLength+`forwardInfo.chars`+(null==`forwardInfo.string`?0:`forwardInfo.string`.length())>=0?(!startOfGuides.isEmpty()||!`forwardInfo.symbol`||null!=prioritySplit.get()||list.get(`forwardInfo.pos`)==Space.NEWLINE)&&(!startOfGuides.isEmpty()||null!=`forwardInfo.string`||null!=prioritySplit.get()||list.get(`forwardInfo.pos`)==Space.NEWLINE):list.get(`forwardInfo.pos`)==Space.NEWLINE";
+                        : "/*inline apply*/-1-lineLength+`forwardInfo.chars`+(null==`forwardInfo.string`?0:`forwardInfo.string`.length())>=0?(!startOfGuides.isEmpty()||!`forwardInfo.symbol`||(null==`forwardInfo.string`?instance type boolean:list.get(`forwardInfo.pos`)==Space.NEWLINE)||null!=prioritySplit.get())&&(!startOfGuides.isEmpty()||(null==`forwardInfo.string`?instance type boolean:list.get(`forwardInfo.pos`)==Space.NEWLINE)||null!=`forwardInfo.string`||null!=prioritySplit.get()):null==`forwardInfo.string`?instance type boolean:list.get(`forwardInfo.pos`)==Space.NEWLINE";
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
-                String vars = d.iteration() <= 1
+                String vars = d.iteration() < 2
                         ? "NEWLINE,forwardInfo,lineLength,list,prioritySplit,startOfGuides"
                         : "NEWLINE,lineLength,list,prioritySplit,startOfGuides";
                 assertEquals(vars,
-                        d.methodAnalysis().getSingleReturnValue().variables(true)
-                                .stream().map(Variable::simpleName).sorted().distinct().collect(Collectors.joining(",")));
+                        d.methodAnalysis().getSingleReturnValue().variableStream().map(Variable::simpleName)
+                                .sorted().distinct().collect(Collectors.joining(",")));
             }
         };
         testSupportAndUtilClasses(List.of(Forward.class, Lookahead.class,
@@ -58,6 +93,7 @@ public class Test_Output_03_FormatterLookahead extends CommonTestRunner {
                         ElementarySpace.class, OutputElement.class, FormattingOptions.class,
                         TypeName.class, Qualifier.class, Guide.class, Symbol.class, Space.class, Split.class),
                 0, 3, new DebugConfiguration.Builder()
+                        .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                         .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                         .build(),
                 new AnalyserConfiguration.Builder().setComputeFieldAnalyserAcrossAllMethods(true).build());

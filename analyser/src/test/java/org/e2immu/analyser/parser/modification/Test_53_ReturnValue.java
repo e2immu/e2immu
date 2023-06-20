@@ -49,7 +49,7 @@ public class Test_53_ReturnValue extends CommonTestRunner {
     public void test_1() throws IOException {
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("nextInt".equals(d.methodInfo().name)) {
-                if (d.iteration() > 2) {
+                if (d.iteration() >= 4) {
                     assertEquals("instance type int%max", d.methodAnalysis().getSingleReturnValue().toString());
                 }
             }

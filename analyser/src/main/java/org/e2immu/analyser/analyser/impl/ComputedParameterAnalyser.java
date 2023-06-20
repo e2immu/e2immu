@@ -19,6 +19,7 @@ import org.e2immu.analyser.analyser.delay.DelayFactory;
 import org.e2immu.analyser.analyser.delay.SimpleCause;
 import org.e2immu.analyser.analyser.delay.VariableCause;
 import org.e2immu.analyser.analyser.util.AnalyserResult;
+import org.e2immu.analyser.analyser.util.ComputeIndependent;
 import org.e2immu.analyser.analysis.FieldAnalysis;
 import org.e2immu.analyser.analysis.MethodAnalysis;
 import org.e2immu.analyser.analysis.StatementAnalysis;
@@ -28,6 +29,10 @@ import org.e2immu.analyser.model.expression.MultiValue;
 import org.e2immu.analyser.model.expression.VariableExpression;
 import org.e2immu.analyser.model.statement.ExplicitConstructorInvocation;
 import org.e2immu.analyser.model.variable.FieldReference;
+import org.e2immu.analyser.model.variable.ReturnVariable;
+import org.e2immu.analyser.model.variable.This;
+import org.e2immu.analyser.model.variable.Variable;
+import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.resolver.impl.ResolverImpl;
 import org.slf4j.Logger;
@@ -39,9 +44,8 @@ import java.util.stream.Stream;
 
 import static org.e2immu.analyser.analyser.AnalysisStatus.DONE;
 import static org.e2immu.analyser.analyser.AnalysisStatus.DONE_ALL;
-import static org.e2immu.analyser.analyser.LinkedVariables.ASSIGNED_DV;
+import static org.e2immu.analyser.analyser.LinkedVariables.LINK_ASSIGNED;
 import static org.e2immu.analyser.analyser.Property.*;
-import static org.e2immu.analyser.config.AnalyserProgram.Step.*;
 import static org.e2immu.analyser.model.MultiLevel.*;
 import static org.e2immu.analyser.model.MultiLevel.Effective.*;
 
@@ -53,11 +57,26 @@ public class ComputedParameterAnalyser extends ParameterAnalyserImpl {
     public static final String ANALYSE_CONTEXT = "PA:analyseContext";
     public static final String ANALYSE_INDEPENDENT_NO_ASSIGNMENT = "PA:analyseIndependentNoAssignment";
     public static final String ANALYSE_CONTAINER_NO_ASSIGNMENT = "PA:analyseContainerNoAssignment";
+    public static final String ANALYSE_INDEPENDENT_OF_RETURN_VALUE = "PA:independentOfReturnValue";
 
     private Map<FieldInfo, FieldAnalyser> fieldAnalysers;
 
     public ComputedParameterAnalyser(AnalyserContext analyserContext, ParameterInfo parameterInfo) {
         super(analyserContext, parameterInfo);
+        AnalyserComponents.Builder<String, SharedState> ac = new AnalyserComponents.Builder<String, SharedState>()
+                .add(CHECK_UNUSED_PARAMETER, this::checkUnusedParameter)
+                .add(ANALYSE_FIRST_ITERATION, this::analyseFirstIteration)
+                .add(ANALYSE_CONTEXT, this::analyseContext);
+        if (parameterInfo.owner.methodInspection.get().isFactoryMethod()) {
+            ac.add(ANALYSE_INDEPENDENT_OF_RETURN_VALUE, this::analyseIndependentOfReturnValue);
+        } else {
+            ac.add(ANALYSE_FIELD_ASSIGNMENTS, this::analyseFieldAssignments)
+                    .add(ANALYSE_INDEPENDENT_NO_ASSIGNMENT, this::analyseIndependentNoAssignment);
+        }
+        ac.add(ANALYSE_CONTAINER_NO_ASSIGNMENT, this::analyseContainerNoAssignment)
+                .add("followExtImm", this::followExternalImmutable);
+        analyserComponents = ac.build();
+
     }
 
     @Override
@@ -71,16 +90,8 @@ public class ComputedParameterAnalyser extends ParameterAnalyserImpl {
     }
 
 
-    private final AnalyserComponents<String, SharedState> analyserComponents =
-            new AnalyserComponents.Builder<String, SharedState>(analyserContext.getAnalyserProgram())
-                    .add(CHECK_UNUSED_PARAMETER, ITERATION_0, this::checkUnusedParameter)
-                    .add(ANALYSE_FIRST_ITERATION, ITERATION_0, this::analyseFirstIteration)
-                    .add(ANALYSE_FIELD_ASSIGNMENTS, ITERATION_1PLUS, this::analyseFieldAssignments)
-                    .add(ANALYSE_CONTEXT, ITERATION_1PLUS, this::analyseContext)
-                    .add(ANALYSE_INDEPENDENT_NO_ASSIGNMENT, ITERATION_1PLUS, this::analyseIndependentNoAssignment)
-                    .add(ANALYSE_CONTAINER_NO_ASSIGNMENT, ITERATION_1PLUS, this::analyseContainerNoAssignment)
-                    .add("followExtImm", this::followExternalImmutable)
-                    .build();
+    private final AnalyserComponents<String, SharedState> analyserComponents;
+
 
     private AnalysisStatus analyseFirstIteration(SharedState sharedState) {
         assert sharedState.iteration() == 0;
@@ -99,8 +110,7 @@ public class ComputedParameterAnalyser extends ParameterAnalyserImpl {
         // NOTE: a shortcut on immutable to set modification to false is not possible because of casts, see Cast_1
         // NOTE: contractImmutable only has this meaning in iteration 0; once the other two components have been
         // computed, the property IMMUTABLE is not "contract" anymore
-        DV formallyImmutable = analyserContext.defaultImmutable(parameterInfo.parameterizedType, false,
-                parameterInfo.getTypeInfo());
+        DV formallyImmutable = analyserContext.typeImmutable(parameterInfo.parameterizedType);
         DV contractBefore = parameterAnalysis.getProperty(IMMUTABLE_BEFORE_CONTRACTED);
         DV contractImmutable = parameterAnalysis.getProperty(IMMUTABLE);
         if ((contractImmutable.isDone() || contractBefore.isDone()) && formallyImmutable.isDone()
@@ -115,22 +125,17 @@ public class ComputedParameterAnalyser extends ParameterAnalyserImpl {
             parameterAnalysis.setProperty(INDEPENDENT, contractIndependent);
         }
 
-        DV contractContainer = parameterAnalysis.getProperty(CONTAINER);
-        if (!parameterAnalysis.properties.isDone(CONTAINER)) {
-            if (contractContainer.isDone()) {
-                parameterAnalysis.setProperty(CONTAINER, contractContainer);
-                parameterAnalysis.setProperty(EXTERNAL_CONTAINER, contractContainer);
-            } else {
-                // essentially here to satisfy the internal check that java.lang.String is always a @Container
-                // returns a non-null in some standard situations (array, unbound pt, final type)
-                DV dv = analyserContext.safeContainer(parameterInfo.parameterizedType);
-                if (dv != null) {
-                    parameterAnalysis.setProperty(CONTAINER, dv);
-                    parameterAnalysis.setProperty(EXTERNAL_CONTAINER, dv);
-                }
-            }
+        DV contractContainerRestriction = parameterAnalysis.getProperty(CONTAINER_RESTRICTION);
+        if (!parameterAnalysis.properties.isDone(CONTAINER_RESTRICTION) && contractContainerRestriction.isDone()) {
+            parameterAnalysis.setProperty(CONTAINER_RESTRICTION, contractContainerRestriction);
         }
 
+        if (!parameterAnalysis.properties.isDone(CONTAINER)) {
+            DV safeContainer = analyserContext.safeContainer(parameterInfo.parameterizedType);
+            if (safeContainer != null && safeContainer.isDone()) {
+                parameterAnalysis.setProperty(CONTAINER, safeContainer);
+            }
+        }
 
         DV contractModified = parameterAnalysis.getProperty(Property.MODIFIED_VARIABLE);
         if (contractModified.isDone() && !parameterAnalysis.properties.isDone(Property.MODIFIED_OUTSIDE_METHOD)) {
@@ -151,7 +156,7 @@ public class ComputedParameterAnalyser extends ParameterAnalyserImpl {
         // implicit @IgnoreModifications rule for java.util.function
         if (parameterAnalysis.getPropertyFromMapDelayWhenAbsent(IGNORE_MODIFICATIONS).isDelayed()) {
             boolean ignore = parameterInfo.parameterizedType.isAbstractInJavaUtilFunction(analyserContext)
-                    && !parameterInfo.getMethod().isPrivate();
+                    && !parameterInfo.getMethod().methodInspection.get().isPrivate();
             parameterAnalysis.setProperty(IGNORE_MODIFICATIONS, ignore ? IGNORE_MODS_DV : NOT_IGNORE_MODS_DV);
         }
 
@@ -190,7 +195,7 @@ public class ComputedParameterAnalyser extends ParameterAnalyserImpl {
             return safe.causesOfDelay();
         }
         // for our own type, we don't have to use "safe", because we can see everything
-        DV formal = analyserContext.defaultContainer(type);
+        DV formal = analyserContext.typeContainer(type);
         if (type.typeInfo == parameterInfo.getOwningType()) {
             if (formal.isDone()) {
                 parameterAnalysis.setProperty(CONTAINER, formal);
@@ -198,7 +203,7 @@ public class ComputedParameterAnalyser extends ParameterAnalyserImpl {
             }
         }
         DV context = parameterAnalysis.getProperty(CONTEXT_CONTAINER);
-        DV external = parameterAnalysis.getProperty(EXTERNAL_CONTAINER);
+        DV external = parameterAnalysis.getProperty(CONTAINER_RESTRICTION);
         DV best = context.max(external).max(formal);
         parameterAnalysis.setProperty(CONTAINER, best);
         return AnalysisStatus.of(best);
@@ -206,10 +211,10 @@ public class ComputedParameterAnalyser extends ParameterAnalyserImpl {
 
     private AnalysisStatus analyseIndependentNoAssignment(SharedState sharedState) {
         if (parameterAnalysis.properties.isDone(INDEPENDENT)) return DONE;
-        DV immutable = analyserContext.defaultImmutable(parameterInfo.parameterizedType, true,
-                NOT_INVOLVED_DV, parameterInfo.owner.typeInfo);
+        DV immutable = analyserContext.typeImmutable(parameterInfo.parameterizedType);
+
         // there is no restriction on immutable, because the link could have been STATICALLY_ASSIGNED
-        if (EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV.equals(immutable)) {
+        if (EFFECTIVELY_IMMUTABLE_DV.equals(immutable)) {
             LOGGER.debug("Assign INDEPENDENT to parameter {}: type is recursively immutable", parameterInfo);
             parameterAnalysis.setProperty(INDEPENDENT, INDEPENDENT_DV);
             return DONE;
@@ -238,110 +243,160 @@ public class ComputedParameterAnalyser extends ParameterAnalyserImpl {
          */
 
         StatementAnalysis lastStatement = analyserContext.getMethodAnalysis(parameterInfo.owner).getLastStatement();
+        DV independent = INDEPENDENT_DV;
+        CausesOfDelay delay = CausesOfDelay.EMPTY;
+
         if (lastStatement != null) {
-            VariableInfo vi = lastStatement.findOrNull(parameterInfo, Stage.MERGE);
-            if (vi != null) {
-                if (!vi.linkedVariablesIsSet()) {
-                    if (sharedState.allowBreakDelay() && vi.getLinkedVariables().causesOfDelay()
+
+            // from the parameter to one or more fields
+            VariableInfo viParam = lastStatement.findOrNull(parameterInfo, Stage.MERGE);
+            if (viParam != null) {
+                if (!viParam.linkedVariablesIsSet()) {
+                    if (sharedState.breakDelayLevel().acceptParameter() && viParam.getLinkedVariables().causesOfDelay()
                             .containsCauseOfDelay(CauseOfDelay.Cause.LINKING)) {
-                        LOGGER.debug("Breaking delay in independent, parameter {}", parameterInfo.fullyQualifiedName);
+                        LOGGER.debug("Breaking parameter delay in independent, parameter {}", parameterInfo.fullyQualifiedName);
                         parameterAnalysis.setProperty(INDEPENDENT, INDEPENDENT_DV);
                         return DONE;
                     }
                     LOGGER.debug("Delay independent in parameter {}, waiting for linked1variables in statement {}",
                             parameterInfo.fullyQualifiedName(), lastStatement.index());
-                    CausesOfDelay delay = DelayFactory.createDelay(new VariableCause(parameterInfo, lastStatement.location(Stage.MERGE),
+                    delay = DelayFactory.createDelay(new VariableCause(parameterInfo, lastStatement.location(Stage.MERGE),
                             CauseOfDelay.Cause.LINKING));
-                    parameterAnalysis.setProperty(INDEPENDENT, delay);
-                    return delay;
-                }
-                Map<FieldReference, DV> fields = vi.getLinkedVariables().variables().entrySet().stream()
-                        .filter(e -> e.getKey() instanceof FieldReference)
-                        .collect(Collectors.toUnmodifiableMap(e -> (FieldReference) e.getKey(), Map.Entry::getValue));
-                if (!fields.isEmpty()) {
-                    /* so we know the parameter is (content) linked to some fields
-                       either it is dependent, or the value of independence (from 1 to infinity) is determined by the size of the
-                       hidden content component inside the field
-                     */
-                    TypeAnalysis typeAnalysis = analyserContext.getTypeAnalysis(parameterInfo.owner.typeInfo);
-                    CausesOfDelay hiddenContentDelayed = typeAnalysis.hiddenContentTypeStatus();
-                    if (hiddenContentDelayed.isDelayed()) {
-                        LOGGER.debug("Delay independent in parameter {}, waiting for hidden content/transparent types",
-                                parameterInfo.fullyQualifiedName());
-                        parameterAnalysis.setProperty(INDEPENDENT, hiddenContentDelayed);
-                        return hiddenContentDelayed;
-                    }
-                    DV minHiddenContentImmutable = fields.keySet().stream()
-                            // hidden content is available, because linking has been computed(?)
-                            .flatMap(fr -> typeAnalysis.hiddenContentLinkedTo(fr.fieldInfo).stream())
-                            .map(pt -> analyserContext.defaultImmutable(pt, false, parameterInfo.getTypeInfo()))
-                            .reduce(DV.MAX_INT_DV, DV::min);
-
-                    DV linkToFields = fields.values().stream()
-                            .map(LinkedVariables::fromLinkedVariableToIndependent)
-                            .reduce(INDEPENDENT_DV, DV::min);
-                    assert linkToFields.lt(INDEPENDENT_DV) : "There should not have been linking to the field: the link has NO_LINK level";
-
-                    if (minHiddenContentImmutable == DV.MAX_INT_DV) {
+                } else {
+                    Map<Variable, DV> fields = viParam.getLinkedVariables().variables().entrySet().stream()
+                            .filter(e -> e.getKey() instanceof FieldReference fr && fr.scopeIsThis() || e.getKey() instanceof This)
+                            .collect(Collectors.toUnmodifiableMap(Map.Entry::getKey, Map.Entry::getValue));
+                    if (!fields.isEmpty()) {
                         /*
-                         the parameter's type is not part of the hidden content of the fields: it is explicit.
-                         linking is either dependent: changes to the argument modify the explicit part of the field.
+                         The parameter is linked to some fields, or to "this", because of expanded variables,
+                         see e.g. E2ImmutableComposition_0.EncapsulatedExposedArrayOfHasSize)
                          */
-                        LOGGER.debug("Assign DEPENDENT to parameter {}: parameter's type does not belong to hidden content, link is {}",
-                                parameterInfo, linkToFields);
-                        parameterAnalysis.setProperty(INDEPENDENT, DEPENDENT_DV);
+                        DV dv = independentFromFields(immutable, fields);
+                        if (dv.isDelayed()) {
+                            delay = dv.causesOfDelay();
+                        } else {
+                            independent = dv;
+                        }
+                    }
+                }
+            }
+
+            // from fields to parameters, exposing via a functional interface (e.g. Independent1_0)
+            List<VariableInfo> vis = lastStatement.variableStream()
+                    .filter(v -> v.variable() instanceof FieldReference fr && fr.scopeIsThis())
+                    .toList();
+            for (VariableInfo vi : vis) {
+                if (!vi.linkedVariablesIsSet()) {
+                    if (sharedState.breakDelayLevel().acceptParameter() && vi.getLinkedVariables().causesOfDelay()
+                            .containsCauseOfDelay(CauseOfDelay.Cause.LINKING)) {
+                        LOGGER.debug("Breaking parameter delay in independent, parameter {}, field {}",
+                                parameterInfo, vi.variable());
+                        parameterAnalysis.setProperty(INDEPENDENT, INDEPENDENT_DV);
                         return DONE;
                     }
-                    if (minHiddenContentImmutable.isDelayed()) {
-                        LOGGER.debug("Delay independent in parameter {}, waiting for immutable of hidden content/transparent types",
-                                parameterInfo.fullyQualifiedName());
-                        parameterAnalysis.setProperty(INDEPENDENT, minHiddenContentImmutable);
-                        return minHiddenContentImmutable.causesOfDelay();
+                    LOGGER.debug("Delay independent in parameter {}, waiting for linked1variables in statement {}",
+                            parameterInfo.fullyQualifiedName(), lastStatement.index());
+                    delay = delay.merge(DelayFactory.createDelay(new VariableCause(vi.variable(), lastStatement.location(Stage.MERGE),
+                            CauseOfDelay.Cause.LINKING)));
+                } else {
+                    DV linkToParameter = vi.getLinkedVariables().value(parameterInfo);
+                    if (linkToParameter != null) {
+                        TypeAnalysis typeAnalysis = analyserContext.getTypeAnalysis(parameterInfo.getTypeInfo());
+                        if (typeAnalysis.hiddenContentDelays().isDelayed()) {
+                            return typeAnalysis.hiddenContentDelays().causesOfDelay();
+                        }
+                        SetOfTypes hiddenContentCurrentType = typeAnalysis.getHiddenContentTypes();
+                        ComputeIndependent computeIndependent = new ComputeIndependent(analyserContext, hiddenContentCurrentType,
+                                parameterInfo.getTypeInfo(), true);
+
+                        DV independentOfParameter = computeIndependent.typesAtLinkLevel(linkToParameter,
+                                parameterInfo.parameterizedType, immutable, vi.variable().parameterizedType());
+                        independent = independent.min(independentOfParameter);
                     }
-                    /*
-                    TODO see also ConstructorCall.computeIndependentFromComponents
-
-                    the immutable level of parameter's type in the hidden content
-                    0 -> mutable, E1 --> @Independent1
-                    1 -> E2Immutable --> @Independent2
-                    This now needs combining with the link level to the field, which is at least @Independent1 (value 0)
-                    but less than @Independent (or there would not have been a link)
-
-                    there should be an agreement between the immutability level of the parameter's type and the link level
-                    to the field.
-                     */
-                    int immutableLevel = MultiLevel.level(minHiddenContentImmutable);
-                    DV result = immutableLevel <= MultiLevel.Level.IMMUTABLE_2.level ? INDEPENDENT_1_DV :
-                            MultiLevel.independentCorrespondingToImmutableLevelDv(immutableLevel);
-                    LOGGER.debug("Assign {} to parameter {}", result, parameterInfo.fullyQualifiedName());
-                    parameterAnalysis.setProperty(INDEPENDENT, result);
-                    return DONE;
                 }
-                /*
-
-                DV immutable = parameterAnalysis.getProperty(IMMUTABLE);
-                if (immutable.isDelayed()) return AnalysisStatus.of(immutable); // we'll have to wait
-                int immutableLevel = MultiLevel.level(immutable);
-                DV independent = fields.values().stream().reduce(LinkedVariables.NO_LINKING_DV, DV::min);
-                if (independent.le(DEPENDENT_DV)) {
-                    // ExposedArrayOfHasSize in E2ImmutableComposition_0
-                    DV result = immutableLevel == 0 ? DEPENDENT_DV : MultiLevel.independentCorrespondingToImmutableLevelDv(immutableLevel);
-                    LOGGER.debug("Assign {} to parameter {}: dependent link on field", result, parameterInfo.fullyQualifiedName());
-                    parameterAnalysis.setProperty(INDEPENDENT, result);
-                    return DONE;
-                }
-                int parameterLevel = MultiLevel.level(independent); // 0 = @Independent1
-                int resultLevel = Math.min(MultiLevel.MAX_LEVEL, immutableLevel + parameterLevel + 1);
-                DV result = MultiLevel.independentCorrespondingToImmutableLevelDv(resultLevel);
-                LOGGER.debug("Assign {} to parameter {}", result, parameterInfo.fullyQualifiedName());
-                parameterAnalysis.setProperty(INDEPENDENT, result);
-                return DONE;
-                 */
             }
         }
-        // finally, no other alternative
-        parameterAnalysis.setProperty(INDEPENDENT, INDEPENDENT_DV);
-        return DONE;
+        if (delay.isDelayed()) {
+            LOGGER.debug("Delaying independent of parameter {}", parameterInfo);
+            parameterAnalysis.setProperty(INDEPENDENT, delay);
+            return AnalysisStatus.of(delay);
+        }
+        LOGGER.debug("Setting independent of parameter {} to {}", parameterInfo, independent);
+        parameterAnalysis.setProperty(INDEPENDENT, independent);
+        return AnalysisStatus.of(independent);
+    }
+
+    private DV independentFromFields(DV immutable, Map<Variable, DV> fields) {
+        TypeAnalysis typeAnalysis = analyserContext.getTypeAnalysis(parameterInfo.getTypeInfo());
+        if (typeAnalysis.hiddenContentDelays().isDelayed()) {
+            return typeAnalysis.hiddenContentDelays().causesOfDelay();
+        }
+        SetOfTypes hiddenContentCurrentType = typeAnalysis.getHiddenContentTypes();
+
+        ComputeIndependent computeIndependent = new ComputeIndependent(analyserContext, hiddenContentCurrentType,
+                parameterInfo.getTypeInfo(), true);
+        DV independent = fields.entrySet().stream()
+                .map(e -> computeIndependent.typesAtLinkLevel(e.getValue(), parameterInfo.parameterizedType, immutable,
+                        e.getKey().parameterizedType()))
+                .reduce(INDEPENDENT_DV, DV::min);
+        LOGGER.debug("Assign {} to parameter {}", independent, parameterInfo);
+        return independent;
+    }
+
+    private AnalysisStatus analyseIndependentOfReturnValue(SharedState sharedState) {
+        assert parameterInfo.owner.hasReturnValue(); // factory method!
+        if (!parameterAnalysis.isAssignedToFieldDelaysResolved()) parameterAnalysis.resolveFieldDelays();
+        if (parameterAnalysis.properties.isDone(INDEPENDENT)) return DONE;
+        DV immutable = analyserContext.typeImmutable(parameterInfo.parameterizedType);
+
+        // there is no restriction on immutable, because the link could have been STATICALLY_ASSIGNED
+        if (EFFECTIVELY_IMMUTABLE_DV.equals(immutable)) {
+            LOGGER.debug("Assign INDEPENDENT to parameter {}: type is recursively immutable", parameterInfo);
+            parameterAnalysis.setProperty(INDEPENDENT, INDEPENDENT_DV);
+            return DONE;
+        }
+        // in the first iteration, no statements have been analysed yet
+        if (sharedState.iteration() == 0) {
+            CausesOfDelay delay = parameterInfo.delay(CauseOfDelay.Cause.ASSIGNED_TO_FIELD);
+            parameterAnalysis.setProperty(INDEPENDENT, delay);
+            return delay;
+        }
+        StatementAnalysis lastStatement = analyserContext.getMethodAnalysis(parameterInfo.owner).getLastStatement();
+        DV independent = INDEPENDENT_DV;
+        CausesOfDelay delay = CausesOfDelay.EMPTY;
+
+        if (lastStatement != null) {
+            VariableInfo rv = lastStatement.getLatestVariableInfo(parameterInfo.owner.fullyQualifiedName);
+            assert rv != null && rv.variable() instanceof ReturnVariable;
+            delay = rv.getLinkedVariables().causesOfDelay();
+            Set<Variable> assigned = rv.getLinkedVariables().variablesAssigned().collect(Collectors.toUnmodifiableSet());
+            VariableInfo pi = lastStatement.getLatestVariableInfo(parameterInfo.fullyQualifiedName);
+            delay = delay.merge(pi.getLinkedVariables().causesOfDelay());
+            if (delay.isDone()) {
+                DV min = DV.MAX_INT_DV;
+                for (Map.Entry<Variable, DV> e : pi.getLinkedVariables()) {
+                    if (assigned.contains(e.getKey())) {
+                        min = min.min(e.getValue());
+                    }
+                }
+                if (min != DV.MAX_INT_DV) {
+                    DV dv = independentFromFields(immutable, Map.of(rv.variable(), min));
+                    if (dv.isDelayed()) {
+                        delay = dv.causesOfDelay();
+                    } else {
+                        independent = dv;
+                    }
+                } // else: TODO NOT YET IMPLEMENTED
+            }
+        }
+        if (delay.isDelayed()) {
+            LOGGER.debug("Delaying independent wrt return value of parameter {}", parameterInfo);
+            parameterAnalysis.setProperty(INDEPENDENT, delay);
+            return AnalysisStatus.of(delay);
+        }
+        LOGGER.debug("Setting independent wrt return value of parameter {} to {}", parameterInfo, independent);
+        parameterAnalysis.setProperty(INDEPENDENT, independent);
+        return AnalysisStatus.of(independent);
     }
 
     /**
@@ -353,8 +408,7 @@ public class ComputedParameterAnalyser extends ParameterAnalyserImpl {
         assert !isUnreachable();
         try {
             AnalysisStatus analysisStatus = analyserComponents.run(sharedState);
-            if (analysisStatus.isDone() && analyserContext.getConfiguration().analyserConfiguration().analyserProgram().accepts(ALL))
-                parameterAnalysis.internalAllDoneCheck();
+            if (analysisStatus.isDone()) parameterAnalysis.internalAllDoneCheck();
             analyserResultBuilder.setAnalysisStatus(analysisStatus);
             return analyserResultBuilder.build();
         } catch (RuntimeException rte) {
@@ -364,11 +418,11 @@ public class ComputedParameterAnalyser extends ParameterAnalyserImpl {
     }
 
     private static final List<Property> PROPERTY_LIST = List.of(EXTERNAL_NOT_NULL, MODIFIED_OUTSIDE_METHOD,
-            EXTERNAL_IMMUTABLE, EXTERNAL_CONTAINER); // For now, NOT going with EXTERNAL_IGNORE_MODS
+            EXTERNAL_IMMUTABLE, CONTAINER_RESTRICTION); // For now, NOT going with EXTERNAL_IGNORE_MODS
 
     private static List<Property> propertiesToCopy(DV assignedOrLinked) {
         if (LinkedVariables.isAssigned(assignedOrLinked)) return PROPERTY_LIST;
-        if (assignedOrLinked.equals(LinkedVariables.DEPENDENT_DV)) return List.of(MODIFIED_OUTSIDE_METHOD);
+        if (assignedOrLinked.equals(LinkedVariables.LINK_DEPENDENT)) return List.of(MODIFIED_OUTSIDE_METHOD);
         return List.of();
     }
 
@@ -422,77 +476,65 @@ public class ComputedParameterAnalyser extends ParameterAnalyserImpl {
                 FieldAnalysis fieldAnalysis = fieldAnalyser.getFieldAnalysis();
 
                 for (Property property : propertiesToCopy) {
-                    DV inField = fieldAnalysis.getProperty(property);
-                    if (inField.isDone()) {
-                        if (!parameterAnalysis.properties.isDone(property)) {
+                    if (!parameterAnalysis.properties.isDone(property)) {
+                        DV inField = fieldAnalysis.getProperty(property);
+                        if (inField.isDone()) {
+
                             LOGGER.debug("Copying value {} from field {} to parameter {} for property {}", inField,
                                     fieldInfo.fullyQualifiedName(), parameterInfo.fullyQualifiedName(), property);
                             parameterAnalysis.setProperty(property, inField);
                             changed = true;
-                        }
-                    } else {
-                        propertiesDelayed.add(property);
-                        LOGGER.debug("Still delaying copiedFromFieldToParameters because of {}, field {} ~ param {}",
-                                property, fieldInfo.name, parameterInfo.name);
-                        delays = delays.merge(inField.causesOfDelay());
-                        if (property == MODIFIED_OUTSIDE_METHOD) {
-                            // what if I'm the cause of the MOM delay? I need that data to progress!
-                            // tell whoever generates a CM delay based on me that they can skip. See ComputeLinkedVariables
-                            boolean modifiedOutsideMethod = findModifiedOutsideMethod(inField.causesOfDelay());
-                            if (modifiedOutsideMethod) {
-                                CausesOfDelay breakDelay = parameterInfo.delay(CauseOfDelay.Cause.BREAK_MOM_DELAY);
-                                delays = delays.merge(breakDelay);
-                                // let's not forget to set the delay, so that the statement analyser picks it up
-                                parameterAnalysis.setProperty(property, delays);
+
+                        } else {
+                            propertiesDelayed.add(property);
+                            LOGGER.debug("Still delaying copiedFromFieldToParameters because of {}, field {} ~ param {}",
+                                    property, fieldInfo.name, parameterInfo.name);
+                            delays = delays.merge(inField.causesOfDelay());
+                            if (property == MODIFIED_OUTSIDE_METHOD) {
+                                // what if I'm the cause of the MOM delay? I need that data to progress!
+                                // tell whoever generates a CM delay based on me that they can skip. See ComputeLinkedVariables
+                                boolean modifiedOutsideMethod = findModifiedOutsideMethod(inField.causesOfDelay());
+                                if (modifiedOutsideMethod) {
+                                    CausesOfDelay breakDelay = parameterInfo.delay(CauseOfDelay.Cause.BREAK_MOM_DELAY);
+                                    delays = delays.merge(breakDelay);
+                                    // let's not forget to set the delay, so that the statement analyser picks it up
+                                    parameterAnalysis.setProperty(property, inField.causesOfDelay().merge(breakDelay));
+                                } else {
+                                    parameterAnalysis.setProperty(property, inField.causesOfDelay());
+                                }
+                            } else {
+                                parameterAnalysis.setProperty(property, inField.causesOfDelay());
                             }
                         }
                     }
                 }
-
-                if (!parameterAnalysis.properties.isDone(INDEPENDENT) && (LinkedVariables.isNotIndependent(assignedOrLinked))) {
-                    TypeAnalysis typeAnalysis = analyserContext.getTypeAnalysis(parameterInfo.owner.typeInfo);
-                    if (typeAnalysis.hiddenContentTypeStatus().isDone()) {
-                        SetOfTypes transparent = typeAnalysis.getTransparentTypes();
-                        if (transparent.contains(parameterInfo.parameterizedType)) {
-                            parameterAnalysis.setProperty(INDEPENDENT, INDEPENDENT_1_DV);
-                            LOGGER.debug("Set parameter to @Independent1: {} because transparent and linked/assigned to field {}",
-                                    parameterInfo.fullyQualifiedName(), fieldInfo.name);
-                            changed = true;
-                        } else {
-                            DV immutable = analyserContext.defaultImmutable(parameterInfo.parameterizedType, false, parameterInfo.getTypeInfo());
-                            if (immutable.isDelayed()) {
-                                delays = delays.merge(immutable.causesOfDelay());
-                            } else {
-                                int levelImmutable = MultiLevel.level(immutable);
-                                DV typeIndependent;
-                                if (levelImmutable <= MultiLevel.Level.IMMUTABLE_1.level) {
-                                    if (assignedOrLinked.le(LinkedVariables.DEPENDENT_DV)) {
-                                        typeIndependent = DEPENDENT_DV;
-                                    } else {
-                                        typeIndependent = INDEPENDENT_1_DV;
-                                    }
-                                } else {
-                                    typeIndependent = MultiLevel.independentCorrespondingToImmutableLevelDv(levelImmutable);
-                                }
-                                parameterAnalysis.setProperty(INDEPENDENT, typeIndependent);
-                                LOGGER.debug("Set @Dependent on parameter {}: linked/assigned to field {}",
-                                        parameterInfo.fullyQualifiedName(), fieldInfo.name);
-                                changed = true;
-                            }
-                        }
-                    } else delays = delays.merge(typeAnalysis.hiddenContentTypeStatus());
-                }
             }
         }
 
+        if (!parameterAnalysis.properties.isDone(INDEPENDENT)
+                && !map.isEmpty()
+                && map.values().stream().allMatch(LinkedVariables::isAssigned)) {
+            DV immutable = analyserContext.typeImmutable(parameterInfo.parameterizedType);
+            Map<Variable, DV> map2 = map.entrySet().stream().collect(Collectors
+                    .toUnmodifiableMap(e -> new FieldReference(InspectionProvider.DEFAULT, e.getKey()), Map.Entry::getValue));
+            DV independent = independentFromFields(immutable, map2);
+            parameterAnalysis.setProperty(INDEPENDENT, independent);
+            if (independent.isDelayed()) {
+                LOGGER.debug("Delaying @Independent on parameter {}", parameterInfo);
+                delays = delays.merge(independent.causesOfDelay());
+            } else {
+                LOGGER.debug("Set @Independent on parameter {}: linked/assigned to fields {}", parameterInfo, map.keySet());
+                changed = true;
+            }
+        }
 
         for (Property property : PROPERTY_LIST) {
             if (!parameterAnalysis.properties.isDone(property) && !propertiesDelayed.contains(property)) {
                 DV v;
-                if (property == EXTERNAL_CONTAINER || property == EXTERNAL_NOT_NULL || property == EXTERNAL_IGNORE_MODIFICATIONS) {
+                if (property == CONTAINER_RESTRICTION || property == EXTERNAL_NOT_NULL || property == EXTERNAL_IGNORE_MODIFICATIONS) {
                     v = property.valueWhenAbsent();
                 } else if (property == EXTERNAL_IMMUTABLE) {
-                    v = analyserContext.defaultImmutable(parameterInfo.parameterizedType, false, parameterInfo.getTypeInfo());
+                    v = analyserContext.typeImmutable(parameterInfo.parameterizedType);
                     // do not let this stop "resolve field delays"; we're not linked to a field so no worries
                     // followExternalImmutable will ensure that a value is given at some point
                 } else {
@@ -508,7 +550,7 @@ public class ComputedParameterAnalyser extends ParameterAnalyserImpl {
         assert delays.isDelayed() || parameterAnalysis.properties.isDone(Property.MODIFIED_OUTSIDE_METHOD) &&
                 parameterAnalysis.properties.isDone(Property.EXTERNAL_NOT_NULL) &&
                 //   parameterAnalysis.properties.isDone(EXTERNAL_IMMUTABLE) &&
-                parameterAnalysis.properties.isDone(EXTERNAL_CONTAINER);
+                parameterAnalysis.properties.isDone(CONTAINER_RESTRICTION);
 
         if (delays.isDelayed()) {
             parameterAnalysis.setCausesOfAssignedToFieldDelays(delays);
@@ -528,7 +570,7 @@ public class ComputedParameterAnalyser extends ParameterAnalyserImpl {
             return DONE;
         }
         if (parameterAnalysis.isAssignedToFieldDelaysResolved()) {
-            DV dv = analyserContext.defaultImmutable(parameterInfo.parameterizedType, false, parameterInfo.getTypeInfo());
+            DV dv = analyserContext.typeImmutable(parameterInfo.parameterizedType);
             parameterAnalysis.setProperty(EXTERNAL_IMMUTABLE, dv);
             return AnalysisStatus.of(dv);
         }
@@ -588,7 +630,7 @@ public class ComputedParameterAnalyser extends ParameterAnalyserImpl {
     private boolean isNoFieldsInvolved() {
         boolean methodIsStatic = parameterInfo.owner.methodInspection.get().isStatic();
         return parameterInfo.owner.typeInfo.typeInspection.get().fields().stream()
-                .filter(fieldInfo -> !methodIsStatic || fieldInfo.isStatic())
+                .filter(fieldInfo -> !methodIsStatic || fieldInfo.fieldInspection.get().isStatic())
                 .allMatch(fieldInfo -> fieldInfo.isExplicitlyFinal() && !parameterInfo.owner.isConstructor);
     }
 
@@ -622,7 +664,7 @@ public class ComputedParameterAnalyser extends ParameterAnalyserImpl {
 
             // == parameterInfo works fine unless a super(...) has been used
             if ((ve = effectivelyFinal.asInstanceOf(VariableExpression.class)) != null && ve.variable() == parameterInfo) {
-                return ASSIGNED_DV;
+                return LINK_ASSIGNED;
             }
             // the case of multiple constructors
             if (effectivelyFinal instanceof MultiValue multiValue &&
@@ -632,7 +674,7 @@ public class ComputedParameterAnalyser extends ParameterAnalyserImpl {
                                 return (ve2 = e.asInstanceOf(VariableExpression.class)) != null
                                         && ve2.variable() == parameterInfo;
                             })) {
-                return ASSIGNED_DV;
+                return LINK_ASSIGNED;
             }
             // the case of this(...) or super(...)
             StatementAnalysis firstStatement = analyserContext.getMethodAnalysis(parameterInfo.owner).getFirstStatement();
@@ -642,14 +684,14 @@ public class ComputedParameterAnalyser extends ParameterAnalyserImpl {
                 Expression param = eci.structure.updaters().get(pi.index);
                 VariableExpression ve2;
                 if ((ve2 = param.asInstanceOf(VariableExpression.class)) != null && ve2.variable() == parameterInfo) {
-                    return ASSIGNED_DV;
+                    return LINK_ASSIGNED;
                 }
             }
         }
 
         // variable field, no direct assignment to parameter
         LinkedVariables linked = fieldAnalysis.getLinkedVariables();
-        return linked.variables().getOrDefault(parameterInfo, LinkedVariables.NO_LINKING_DV);
+        return linked.variables().getOrDefault(parameterInfo, LinkedVariables.LINK_INDEPENDENT);
     }
 
     public static final Property[] CONTEXT_PROPERTIES = {Property.CONTEXT_NOT_NULL,
@@ -672,13 +714,10 @@ public class ComputedParameterAnalyser extends ParameterAnalyserImpl {
                 DV value = vi.getProperty(property);
                 if (value.isDone()) {
                     parameterAnalysis.setProperty(property, value);
-                    LOGGER.debug("Set {} on parameter {} to {}", property,
-                            parameterInfo.fullyQualifiedName(), value);
+                    LOGGER.debug("Set {} on parameter {} to {}", property, parameterInfo, value);
                     changed = true;
                 } else {
-                    LOGGER.debug(
-                            "Delays on {} not yet resolved for parameter {}, delaying", property,
-                            parameterInfo.fullyQualifiedName());
+                    LOGGER.debug("Delays on {} not yet resolved for parameter {}, delaying", property, parameterInfo);
                     delayFromContext = delayFromContext.merge(value.causesOfDelay());
                 }
             }
@@ -736,7 +775,7 @@ public class ComputedParameterAnalyser extends ParameterAnalyserImpl {
                 if (takeValueFromOverride) {
                     independent = computeValueFromOverrides(INDEPENDENT, false);
                 } else {
-                    independent = NOT_INVOLVED_DV;
+                    independent = INDEPENDENT_DV;
                 }
                 parameterAnalysis.setProperty(INDEPENDENT, independent);
             }
@@ -744,8 +783,8 @@ public class ComputedParameterAnalyser extends ParameterAnalyserImpl {
             if (!parameterAnalysis.properties.isDone(EXTERNAL_IMMUTABLE)) {
                 parameterAnalysis.setProperty(EXTERNAL_IMMUTABLE, EXTERNAL_IMMUTABLE.valueWhenAbsent());
             }
-            if (!parameterAnalysis.properties.isDone(EXTERNAL_CONTAINER)) {
-                parameterAnalysis.setProperty(EXTERNAL_CONTAINER, EXTERNAL_CONTAINER.valueWhenAbsent());
+            if (!parameterAnalysis.properties.isDone(CONTAINER_RESTRICTION)) {
+                parameterAnalysis.setProperty(CONTAINER_RESTRICTION, CONTAINER_RESTRICTION.valueWhenAbsent());
             }
             parameterAnalysis.setProperty(CONTEXT_IMMUTABLE, MUTABLE_DV);
 

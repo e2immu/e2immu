@@ -37,10 +37,9 @@ public class TestWeightedGraph_3 {
 
     Variable d, n, node, nodeDependsOn, t, dependsOn, thisVar;
     CausesOfDelay delay;
-    final DV v0 = STATICALLY_ASSIGNED_DV;
-    final DV v2 = DEPENDENT_DV;
-    final DV v3 = INDEPENDENT1_DV;
-    final DV v4 = INDEPENDENT2_DV;
+    final DV v0 = LINK_STATICALLY_ASSIGNED;
+    final DV v2 = LINK_DEPENDENT;
+    final DV v3 = LINK_COMMON_HC;
     WeightedGraph wg;
 
     @BeforeEach
@@ -58,9 +57,9 @@ public class TestWeightedGraph_3 {
         wg.addNode(d, Map.of(node, v3, nodeDependsOn, v3, dependsOn, v3, thisVar, delay));
         wg.addNode(n, Map.of());
         wg.addNode(node, Map.of(d, v3, nodeDependsOn, v2, dependsOn, v3));
-        wg.addNode(nodeDependsOn, Map.of(d, v3, node, v2, dependsOn, v4));
+        wg.addNode(nodeDependsOn, Map.of(d, v3, node, v2, dependsOn, v3));
         wg.addNode(t, Map.of(thisVar, delay));
-        wg.addNode(dependsOn, Map.of(d, v4, node, v4, nodeDependsOn, v4));
+        wg.addNode(dependsOn, Map.of(d, v3, node, v3, nodeDependsOn, v3));
         wg.addNode(thisVar, Map.of(d, delay, t, delay));
     }
 

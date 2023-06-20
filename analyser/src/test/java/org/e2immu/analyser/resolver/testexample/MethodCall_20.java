@@ -14,16 +14,16 @@
 
 package org.e2immu.analyser.resolver.testexample;
 
-import org.e2immu.annotation.NotNull1;
+import org.e2immu.annotation.NotNull;
 
 import java.util.List;
 
 public class MethodCall_20 {
 
-    @NotNull1
+    @NotNull(content = true)
     private final List<String> list;
 
-    public MethodCall_20(@NotNull1 List<String> list) {
+    public MethodCall_20(@NotNull(content = true) List<String> list) {
         this.list = list;
     }
 

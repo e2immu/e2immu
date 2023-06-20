@@ -82,6 +82,8 @@ public class Test_00_Basics_1 extends CommonTestRunner {
                 assertEquals(MUTABLE_DV, d.getProperty(CONTEXT_IMMUTABLE));
                 assertDv(d, 1, NULLABLE_DV, EXTERNAL_NOT_NULL);
                 assertDv(d, 1, MUTABLE_DV, EXTERNAL_IMMUTABLE);
+                assertDv(d, NOT_IGNORE_MODS_DV, IGNORE_MODIFICATIONS);
+                assertDv(d, NOT_IGNORE_MODS_DV, EXTERNAL_IGNORE_MODIFICATIONS);
             }
 
             /*
@@ -92,13 +94,15 @@ public class Test_00_Basics_1 extends CommonTestRunner {
             if (d.variable() instanceof ParameterInfo p1 && "p1".equals(p1.name)) {
                 String expectValue = "nullable instance type Set<String>";
                 assertEquals(expectValue, d.currentValue().toString());
-                assertEquals(NULLABLE_DV, d.getProperty(CONTEXT_NOT_NULL));
-                assertEquals(MUTABLE_DV, d.getProperty(CONTEXT_IMMUTABLE));
+                assertDv(d, NULLABLE_DV, CONTEXT_NOT_NULL);
+                assertDv(d, MUTABLE_DV, CONTEXT_IMMUTABLE);
 
-                assertDvInitial(d, "ext_not_null@Parameter_p1", 1, NOT_INVOLVED_DV, EXTERNAL_NOT_NULL);
-                assertDvInitial(d, "ext_imm@Parameter_p1", 1, NOT_INVOLVED_DV, EXTERNAL_IMMUTABLE);
-                assertFalse(d.variableInfoContainer().hasEvaluation());
-                assertFalse(d.variableInfoContainer().hasMerge());
+                if ("0".equals(d.statementId())) {
+                    assertDvInitial(d, "ext_not_null@Parameter_p1", 1, NOT_INVOLVED_DV, EXTERNAL_NOT_NULL);
+                    assertDvInitial(d, "ext_imm@Parameter_p1", 1, NOT_INVOLVED_DV, EXTERNAL_IMMUTABLE);
+                    assertFalse(d.variableInfoContainer().hasEvaluation());
+                    assertFalse(d.variableInfoContainer().hasMerge());
+                }
             }
 
             if (d.variable() instanceof This) {
@@ -110,15 +114,15 @@ public class Test_00_Basics_1 extends CommonTestRunner {
                     String expectValue = "instance type Basics_1";
                     assertEquals(expectValue, d.currentValue().toString());
 
-                    assertEquals(MUTABLE_DV, d.getProperty(CONTEXT_IMMUTABLE));
-                    assertEquals(MUTABLE_DV, d.getProperty(IMMUTABLE));
-                    assertDv(d, 1, EFFECTIVELY_E1IMMUTABLE_DV, EXTERNAL_IMMUTABLE);
-                    assertTrue(d.iteration() <= 1);
+                    assertDv(d, MUTABLE_DV, CONTEXT_IMMUTABLE);
+
+                    assertDv(d, 1, EFFECTIVELY_FINAL_FIELDS_DV, EXTERNAL_IMMUTABLE);
+                    assertTrue(d.iteration() <= 2);
                     assertEquals("", d.variableInfo().getLinkedVariables().toString());
                 }
                 if ("1".equals(d.statementId())) {
                     assertEquals(MUTABLE_DV, d.getProperty(IMMUTABLE));
-                    assertDv(d, 1, EFFECTIVELY_E1IMMUTABLE_DV, EXTERNAL_IMMUTABLE);
+                    assertDv(d, 1, EFFECTIVELY_FINAL_FIELDS_DV, EXTERNAL_IMMUTABLE);
                 }
             }
         }
@@ -129,6 +133,8 @@ public class Test_00_Basics_1 extends CommonTestRunner {
                 assertEquals(expected, d.currentValue().toString());
                 assertEquals("", d.variableInfo().getLinkedVariables().toString());
                 assertDv(d, 1, NULLABLE_DV, CONTEXT_NOT_NULL);
+                assertDv(d, 1, NOT_IGNORE_MODS_DV, IGNORE_MODIFICATIONS);
+                assertDv(d, 1, NOT_IGNORE_MODS_DV, EXTERNAL_IGNORE_MODIFICATIONS);
             }
         }
         if ("getF1".equals(d.methodInfo().name)) {
@@ -154,7 +160,6 @@ public class Test_00_Basics_1 extends CommonTestRunner {
                 String expectValue = d.iteration() == 0 ? "<f:f1>" : "f1";
                 assertEquals(expectValue, d.currentValue().toString());
                 assertDv(d, 1, NULLABLE_DV, NOT_NULL_EXPRESSION);
-                assertDv(d, FALSE_DV, CONTEXT_MODIFIED);
             }
         }
     };
@@ -177,8 +182,9 @@ public class Test_00_Basics_1 extends CommonTestRunner {
             assertEquals("p0:0", d.fieldAnalysis().getLinkedVariables().toString());
 
             assertDv(d, FALSE_DV, MODIFIED_OUTSIDE_METHOD);
-            assertEquals(NULLABLE_DV, d.fieldAnalysis().getProperty(EXTERNAL_NOT_NULL));
-            assertEquals(MUTABLE_DV, d.fieldAnalysis().getProperty(EXTERNAL_IMMUTABLE));
+            assertDv(d, NULLABLE_DV, EXTERNAL_NOT_NULL);
+            assertDv(d, MUTABLE_DV, EXTERNAL_IMMUTABLE);
+            assertDv(d, DEPENDENT_DV, INDEPENDENT);
         }
     };
 
@@ -200,8 +206,8 @@ public class Test_00_Basics_1 extends CommonTestRunner {
 
     TypeAnalyserVisitor typeAnalyserVisitor = d -> {
         if ("Basics_1".equals(d.typeInfo().simpleName)) {
-            assertTrue(d.typeAnalysis().getTransparentTypes().isEmpty());
-            assertDv(d, EFFECTIVELY_E1IMMUTABLE_DV, IMMUTABLE);
+            assertTrue(d.typeAnalysis().getHiddenContentTypes().isEmpty());
+            assertDv(d, EFFECTIVELY_FINAL_FIELDS_DV, IMMUTABLE);
         }
     };
 

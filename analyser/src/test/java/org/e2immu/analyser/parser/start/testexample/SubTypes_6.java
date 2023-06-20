@@ -24,12 +24,12 @@ import java.util.function.Function;
 There is no hidden content, since Function<> and RemoveOne, the types of the fields, are created as lambdas.
 
  */
-@ERContainer
+@ImmutableContainer
 public class SubTypes_6 {
 
     @NotModified
     @Final
-    @NotNull
+    @NotNull(content = true)
     private static Function<Set<String>, Set<String>> removeElement =
             (@NotNull @Modified Set<String> set1) -> {
                 Iterator<String> it1 = set1.iterator();

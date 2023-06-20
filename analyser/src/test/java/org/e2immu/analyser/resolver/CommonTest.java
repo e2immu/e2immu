@@ -16,19 +16,18 @@ package org.e2immu.analyser.resolver;
 
 import org.e2immu.analyser.config.Configuration;
 import org.e2immu.analyser.config.InputConfiguration;
+import org.e2immu.analyser.config.InspectorConfiguration;
 import org.e2immu.analyser.parser.CommonTestRunner;
 import org.e2immu.analyser.parser.Input;
 import org.e2immu.analyser.parser.Parser;
 import org.e2immu.analyser.parser.TypeMap;
 
 import java.io.IOException;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 public abstract class CommonTest {
     protected static TypeMap inspectAndResolve(Class<?> clazz, String... extraSources) throws IOException {
         InputConfiguration.Builder inputConfigurationBuilder = new InputConfiguration.Builder()
-                .setAlternativeJREDirectory(CommonTestRunner.JDK_16)
+                .setAlternativeJREDirectory(CommonTestRunner.CURRENT_JDK)
                 .addSources("src/test/java")
                 .addClassPath("jmods/java.base.jmod")
                 .addClassPath("jmods/java.compiler.jmod")
@@ -43,6 +42,7 @@ public abstract class CommonTest {
         Configuration configuration = new Configuration.Builder()
                 .setSkipAnalysis(true)
                 .setInputConfiguration(inputConfigurationBuilder.build())
+                .setInspectorConfiguration(new InspectorConfiguration.Builder().setStoreComments(true).build())
                 .addDebugLogTargets("resolver,analyser")
                 .build();
         configuration.initializeLoggers();

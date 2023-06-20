@@ -24,7 +24,7 @@ public class StaticSideEffects_1<K> {
     public final K k;
     public final int count;
     @Modified
-    @Variable
+    @Final(absent = true)
     @Nullable
     private static AtomicInteger counter;
 

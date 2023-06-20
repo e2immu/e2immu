@@ -23,7 +23,7 @@ import org.e2immu.analyser.inspector.impl.MethodInspectionImpl;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.ArrayInitializer;
 import org.e2immu.analyser.model.expression.ConstructorCall;
-import org.e2immu.analyser.model.expression.IntConstant;
+import org.e2immu.analyser.model.expression.UnknownExpression;
 import org.e2immu.analyser.model.statement.Block;
 
 import java.util.List;
@@ -39,15 +39,18 @@ public class ParseArrayCreationExpr {
                                 .map(expressionContext::parseExpressionStartVoid).collect(Collectors.toList()),
                         parameterizedType.copyWithOneFewerArrays())).orElse(null);
         List<Expression> indexExpressions = arrayCreationExpr.getLevels()
-                .stream().map(level -> level.getDimension().map(expressionContext::parseExpressionStartVoid)
-                        .orElse(new IntConstant(typeContext.getPrimitives(), 0))).collect(Collectors.toList());
+                .stream()
+                .map(level -> level.getDimension().map(expressionContext::parseExpressionStartVoid)
+                        .orElse(UnknownExpression.forNoIndexSize(Identifier.from(arrayCreationExpr),
+                                expressionContext.typeContext().getPrimitives().intParameterizedType())))
+                .collect(Collectors.toList());
         return ConstructorCall.withArrayInitialiser(
                 createArrayCreationConstructor(typeContext, parameterizedType),
                 parameterizedType, indexExpressions, arrayInitializer, Identifier.from(arrayCreationExpr));
     }
 
     // new Type[3]; this method creates the constructor that makes this array, without attaching said constructor to the type
-    static MethodInfo createArrayCreationConstructor(TypeContext typeContext, ParameterizedType parameterizedType) {
+    public static MethodInfo createArrayCreationConstructor(TypeContext typeContext, ParameterizedType parameterizedType) {
         MethodInspection.Builder builder = new MethodInspectionImpl.Builder(parameterizedType.typeInfo)
                 .setInspectedBlock(Block.emptyBlock(Identifier.generate("empty block in array creation")))
                 .setReturnType(parameterizedType)

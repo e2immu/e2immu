@@ -16,6 +16,7 @@ package org.e2immu.analyser.inspector.impl;
 
 
 import org.e2immu.analyser.model.AnnotationExpression;
+import org.e2immu.analyser.model.Comment;
 import org.e2immu.analyser.model.Inspection;
 
 import java.util.List;
@@ -23,13 +24,18 @@ import java.util.Objects;
 
 public abstract class InspectionImpl implements Inspection {
 
+
     private final List<AnnotationExpression> annotations;
     private final boolean synthetic;
 
-    protected InspectionImpl(List<AnnotationExpression> annotations, boolean synthetic) {
-        Objects.requireNonNull(annotations);
-        this.annotations = annotations;
+    private final Access access;
+    private final Comment comment;
+
+    protected InspectionImpl(List<AnnotationExpression> annotations, Access access, Comment comment, boolean synthetic) {
+        this.annotations = Objects.requireNonNull(annotations);
         this.synthetic = synthetic;
+        this.access = Objects.requireNonNull(access);
+        this.comment = comment;
     }
 
     @Override
@@ -43,9 +49,12 @@ public abstract class InspectionImpl implements Inspection {
     }
 
     @Override
-    public boolean hasAnnotation(AnnotationExpression annotationExpression) {
-        return annotations.contains(annotationExpression);
+    public Access getAccess() {
+        return access;
     }
 
-
+    @Override
+    public Comment getComment() {
+        return comment;
+    }
 }

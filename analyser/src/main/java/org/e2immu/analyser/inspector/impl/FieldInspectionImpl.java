@@ -18,6 +18,7 @@ import com.github.javaparser.ast.visitor.GenericVisitor;
 import com.github.javaparser.ast.visitor.VoidVisitor;
 import org.e2immu.analyser.inspector.AbstractInspectionBuilder;
 import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.annotation.NotNull;
 
 import java.util.HashSet;
@@ -41,18 +42,17 @@ public class FieldInspectionImpl extends InspectionImpl implements FieldInspecti
 
     private final Set<FieldModifier> modifiers;
     private final FieldInspection.FieldInitialiser fieldInitialiser;
-    private final FieldModifier access;
 
     private FieldInspectionImpl(@NotNull Set<FieldModifier> modifiers,
                                 @NotNull FieldInspection.FieldInitialiser fieldInitialiser,
                                 @NotNull List<AnnotationExpression> annotations,
-                                @NotNull FieldModifier access,
+                                @NotNull Access access,
+                                Comment comment,
                                 boolean synthetic) {
-        super(annotations, synthetic);
+        super(annotations, access, comment, synthetic);
         Objects.requireNonNull(modifiers);
         this.fieldInitialiser = fieldInitialiser;
         this.modifiers = modifiers;
-        this.access = Objects.requireNonNull(access);
     }
 
     @Override
@@ -65,17 +65,18 @@ public class FieldInspectionImpl extends InspectionImpl implements FieldInspecti
         return fieldInitialiser;
     }
 
-    @Override
-    public FieldModifier getAccess() {
-        return access;
-    }
-
     public static class Builder extends AbstractInspectionBuilder<FieldInspection.Builder>
             implements FieldInspection, FieldInspection.Builder {
         private final Set<FieldModifier> modifiers = new HashSet<>();
+        private final FieldInfo fieldInfo;
+
         private com.github.javaparser.ast.expr.Expression initialiserExpression;
         private Expression inspectedInitialiserExpression;
         private FieldInspection.FieldInitialiser fieldInitialiser;
+
+        public Builder(FieldInfo fieldInfo) {
+            this.fieldInfo = fieldInfo;
+        }
 
         public com.github.javaparser.ast.expr.Expression getInitialiserExpression() {
             return initialiserExpression;
@@ -110,13 +111,14 @@ public class FieldInspectionImpl extends InspectionImpl implements FieldInspecti
         }
 
         @NotNull
-        public FieldInspectionImpl build() {
+        public FieldInspectionImpl build(InspectionProvider inspectionProvider) {
             Identifier id = initialiserExpression == null ? Identifier.generate("field initializer")
                     : Identifier.from(initialiserExpression);
             FieldInitialiser fi = fieldInitialiser != null ? fieldInitialiser :
                     inspectedInitialiserExpression == null
                             ? null : new FieldInitialiser(inspectedInitialiserExpression, id);
-            return new FieldInspectionImpl(getModifiers(), fi, getAnnotations(), getAccess(), isSynthetic());
+            if (accessNotYetComputed()) computeAccess(inspectionProvider);
+            return new FieldInspectionImpl(getModifiers(), fi, getAnnotations(), getAccess(), getComment(), isSynthetic());
         }
 
         @Override
@@ -130,11 +132,19 @@ public class FieldInspectionImpl extends InspectionImpl implements FieldInspecti
         }
 
         @Override
-        public FieldModifier getAccess() {
-            if (modifiers.contains(FieldModifier.PRIVATE)) return FieldModifier.PRIVATE;
-            if (modifiers.contains(FieldModifier.PROTECTED)) return FieldModifier.PROTECTED;
-            if (modifiers.contains(FieldModifier.PUBLIC)) return FieldModifier.PUBLIC;
-            return FieldModifier.PACKAGE;
+        public void computeAccess(InspectionProvider inspectionProvider) {
+            TypeInspection typeInspection = inspectionProvider.getTypeInspection(fieldInfo.owner);
+            Access fromType = typeInspection.getAccess();
+            Access fromModifier = accessFromFieldModifier();
+            Access combined = fromModifier.combine(fromType);
+            setAccess(combined);
+        }
+
+        private Access accessFromFieldModifier() {
+            if (modifiers.contains(FieldModifier.PUBLIC)) return Access.PUBLIC;
+            if (modifiers.contains(FieldModifier.PRIVATE)) return Access.PRIVATE;
+            if (modifiers.contains(FieldModifier.PROTECTED)) return Access.PROTECTED;
+            return Access.PACKAGE;
         }
     }
 }

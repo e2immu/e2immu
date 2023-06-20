@@ -15,13 +15,11 @@
 package org.e2immu.analyser.analysis;
 
 import org.e2immu.analyser.analyser.*;
-import org.e2immu.analyser.model.CompanionMethodName;
-import org.e2immu.analyser.model.Expression;
-import org.e2immu.analyser.model.FieldInfo;
-import org.e2immu.analyser.model.MethodInfo;
+import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.util.ParSeq;
 import org.e2immu.annotation.NotNull;
-import org.e2immu.annotation.NotNull1;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -48,7 +46,7 @@ public interface MethodAnalysis extends Analysis {
         return null;
     }
 
-    @NotNull1
+    @NotNull(content = true)
     List<ParameterAnalysis> getParameterAnalyses();
 
     /**
@@ -91,6 +89,19 @@ public interface MethodAnalysis extends Analysis {
     @NotNull
     Precondition getPrecondition();
 
+    /**
+     * @return post-conditions, in no particular order.
+     */
+    @NotNull
+    Set<PostCondition> getPostConditions();
+
+    /*
+    Many throw and assert statements find their way into a pre- or post-condition.
+    Some, however, do not. We register them here.
+     */
+    @NotNull
+    Set<String> indicesOfEscapesNotInPreOrPostConditions();
+
     default MethodLevelData methodLevelData() {
         StatementAnalysis last = getLastStatement();
         if (last == null) return null; // there is no last statement --> there are no statements
@@ -101,8 +112,10 @@ public interface MethodAnalysis extends Analysis {
         return switch (property) {
             case MODIFIED_METHOD_ALT_TEMP -> modifiedMethodOrTempModifiedMethod();
             case CONTAINER, IMMUTABLE, IMMUTABLE_BREAK, NOT_NULL_EXPRESSION, TEMP_MODIFIED_METHOD, MODIFIED_METHOD,
-                    FLUENT, IDENTITY, IGNORE_MODIFICATIONS, INDEPENDENT, CONSTANT -> getPropertyFromMapDelayWhenAbsent(property);
-            case FINALIZER -> getPropertyFromMapNeverDelay(property);
+                    FLUENT, IDENTITY, IGNORE_MODIFICATIONS, INDEPENDENT, CONSTANT ->
+                    getPropertyFromMapDelayWhenAbsent(property);
+            // TODO, for now, we don't compute STATIC_SIDE_EFFECTS; simply passed on from AnnotatedAPIs
+            case FINALIZER, STATIC_SIDE_EFFECTS -> getPropertyFromMapNeverDelay(property);
             default -> throw new PropertyException(Analyser.AnalyserIdentification.METHOD, property);
         };
     }
@@ -134,6 +147,20 @@ public interface MethodAnalysis extends Analysis {
 
     static Eventual delayedEventual(CausesOfDelay causes) {
         return new Eventual(causes, Set.of(), false, null, null);
+    }
+
+    // associated with the @Commutable annotation
+    ParSeq<ParameterInfo> getParallelGroups();
+
+    default boolean hasParallelGroups() {
+        ParSeq<ParameterInfo> parSeq = getParallelGroups();
+        return parSeq != null && parSeq.containsParallels();
+    }
+
+    List<Expression> sortAccordingToParallelGroupsAndNaturalOrder(List<Expression> parameterExpressions);
+
+    default String postConditionsSortedToString() {
+        return getPostConditions().stream().map(Object::toString).sorted().collect(Collectors.joining(", "));
     }
 
     record Eventual(CausesOfDelay causesOfDelay,
@@ -173,14 +200,17 @@ public interface MethodAnalysis extends Analysis {
         }
 
         public boolean isOnly() {
+            assert causesOfDelay.isDone();
             return !mark && test == null;
         }
 
         public boolean isMark() {
+            assert causesOfDelay.isDone();
             return mark;
         }
 
         public boolean isTestMark() {
+            assert causesOfDelay.isDone();
             return test != null;
         }
     }
@@ -198,4 +228,6 @@ public interface MethodAnalysis extends Analysis {
     void markFirstIteration();
 
     boolean hasBeenAnalysedUpToIteration0();
+
+    FieldInfo getSetField();
 }

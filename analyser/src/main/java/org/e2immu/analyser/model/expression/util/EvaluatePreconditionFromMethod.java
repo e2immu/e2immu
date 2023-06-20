@@ -64,7 +64,8 @@ public class EvaluatePreconditionFromMethod {
         }
         InlinedMethod iv = (InlinedMethod) inlinedMethod;
         TranslationMap translationMap = iv.translationMap(context, parameterValues, scopeObject,
-                context.getCurrentType(), identifierOfMethodCall);
+                context.getCurrentType(), identifierOfMethodCall, LinkedVariables.EMPTY);
+        // FIXME LV.EMPTY temporary stop-gap
         Expression translated = iv.translate(context.getAnalyserContext(), translationMap);
         ForwardEvaluationInfo forward = new ForwardEvaluationInfo.Builder().
                 addMethod(methodInfo).doNotComplainInlineConditional().build();

@@ -24,7 +24,7 @@ import java.util.Map;
 // Each subtype has its own static blocks, named as methods $staticBlock$n, n 0 onwards.
 // In this example, only the main type StaticBlock_0 has 2 static blocks.
 
-@E1Container // not @E2, because it has a modified (static) field
+@FinalFields @Container // not immutable, because it has a modified (static) field
 public class StaticBlock_0 {
 
     @Final

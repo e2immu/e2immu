@@ -14,13 +14,38 @@
 
 package org.e2immu.annotatedapi.java;
 
-import org.e2immu.annotation.ERContainer;
+import org.e2immu.annotation.Container;
+import org.e2immu.annotation.ImmutableContainer;
+import org.e2immu.annotation.Independent;
+import org.e2immu.annotation.Modified;
 
 public class JavaUtilConcurrent {
     final static String PACKAGE_NAME = "java.util.concurrent";
 
-    @ERContainer
+    /*
+    deeply immutable enum.
+     */
+    @ImmutableContainer
     interface TimeUnit$ {
+
+    }
+
+    @Container
+    @Independent(hc = true)
+    interface Future$<V> {
+
+        @Modified
+        @Independent(hc = true)
+        V get();
+    }
+
+    interface Executor${
+        @Modified
+        void execute(Runnable runnable);
+    }
+
+    @Independent(hc = true)
+    interface RunnableFuture$<V> {
 
     }
 }

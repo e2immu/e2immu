@@ -15,14 +15,15 @@
 package org.e2immu.analyser.parser.failing.testexample;
 
 import org.e2immu.annotation.*;
+import org.e2immu.annotation.rare.IgnoreModifications;
 
 /*
-change wrt ForEachMethod_0: interface is now abstract class, with field
+change wrt Consumer_0: interface is now abstract class, with field
  */
-@E2Container
+@ImmutableContainer
 public class Consumer_1<S> {
 
-    @E1Container
+    @FinalFields
     abstract static class ClassWithConsumer<T> {
         private final String name;
 
@@ -41,12 +42,12 @@ public class Consumer_1<S> {
     @NotNull
     private final S s;
 
-    public Consumer_1(@NotNull S in) {
+    public Consumer_1(@NotNull @Independent(hc = true) S in) {
         this.s = in;
     }
 
     @NotModified
-    public void forEach(@IgnoreModifications @Independent1 ClassWithConsumer<S> myConsumer) {
+    public void forEach(@IgnoreModifications @Independent(hc = true) ClassWithConsumer<S> myConsumer) {
         System.out.println("Consumer is " + myConsumer.getName());
         myConsumer.accept(s);
     }

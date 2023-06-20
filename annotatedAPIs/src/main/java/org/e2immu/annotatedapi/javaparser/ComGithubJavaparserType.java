@@ -16,7 +16,7 @@ package org.e2immu.annotatedapi.javaparser;
 
 import com.github.javaparser.ast.NodeList;
 import com.github.javaparser.ast.type.ClassOrInterfaceType;
-import org.e2immu.annotation.NotNull1;
+import org.e2immu.annotation.NotNull;
 
 public class ComGithubJavaparserType {
 
@@ -24,7 +24,7 @@ public class ComGithubJavaparserType {
 
     interface TypeParameter$ {
 
-        @NotNull1
+        @NotNull(content = true)
         NodeList<ClassOrInterfaceType> getTypeBound();
     }
 }

@@ -57,17 +57,17 @@ public class Test_Support_07_EventuallyFinal extends CommonTestRunner {
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("EventuallyFinal".equals(d.typeInfo().simpleName)) {
                 if (d.iteration() >= 1) {
-                    Map<FieldReference, Expression> map = d.typeAnalysis().getApprovedPreconditionsE1();
+                    Map<FieldReference, Expression> map = d.typeAnalysis().getApprovedPreconditionsFinalFields();
                     assertEquals("isFinal=!isFinal",
                             map.entrySet().stream().sorted(Comparator.comparing(e -> e.getKey().toString()))
                                     .map(Object::toString).collect(Collectors.joining(",")));
-                    Map<FieldReference, Expression> map2 = d.typeAnalysis().getApprovedPreconditionsE2();
+                    Map<FieldReference, Expression> map2 = d.typeAnalysis().getApprovedPreconditionsImmutable();
                     assertEquals("isFinal=!isFinal",
                             map2.entrySet().stream().sorted(Comparator.comparing(e -> e.getKey().toString()))
                                     .map(Object::toString).collect(Collectors.joining(",")));
                 }
-                assertEquals("Type param T", d.typeAnalysis().getTransparentTypes().toString());
-                assertDv(d, 2, MultiLevel.EVENTUALLY_E2IMMUTABLE_DV, Property.IMMUTABLE);
+                assertEquals("T", d.typeAnalysis().getHiddenContentTypes().toString());
+                assertDv(d, 2, MultiLevel.EVENTUALLY_IMMUTABLE_HC_DV, Property.IMMUTABLE);
             }
         };
 

@@ -29,11 +29,6 @@ public abstract class BaseExpression extends ElementImpl implements Expression {
 
     public final int complexity;
 
-    protected BaseExpression(Identifier identifier) {
-        super(identifier);
-        this.complexity = 1;
-    }
-
     protected BaseExpression(Identifier identifier, int complexity) {
         super(identifier);
         this.complexity = complexity;
@@ -126,11 +121,14 @@ public abstract class BaseExpression extends ElementImpl implements Expression {
     }
 
     @Override
-    public Expression createDelayedValue(Identifier identifier, EvaluationResult context, CausesOfDelay causes) {
+    public Expression createDelayedValue(Identifier identifier,
+                                         EvaluationResult context,
+                                         Properties valueProperties,
+                                         CausesOfDelay causes) {
         IsVariableExpression ive;
         if ((ive = asInstanceOf(IsVariableExpression.class)) != null) {
             Expression delayed = DelayedVariableExpression.forDelayedValueProperties(ive.variable(),
-                    context.evaluationContext().getInitialStatementTime(), causes);
+                    context.evaluationContext().getInitialStatementTime(), valueProperties, causes);
             if (this instanceof PropertyWrapper propertyWrapper) {
                 return propertyWrapper.copy(delayed);
             }

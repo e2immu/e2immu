@@ -15,9 +15,12 @@
 
 package org.e2immu.analyser.parser.own.util;
 
+import org.e2immu.analyser.analyser.Property;
 import org.e2immu.analyser.config.*;
+import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.parser.CommonTestRunner;
 import org.e2immu.analyser.util.EventuallyFinalExtension;
+import org.e2immu.analyser.visitor.FieldAnalyserVisitor;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
@@ -32,9 +35,15 @@ public class Test_Util_11_EventuallyFinalExtension extends CommonTestRunner {
     // FIXME this is a bit of a silly test now, because Configuration is not included
     @Test
     public void test() throws IOException {
+        FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
+            if ("LOGGER".equals(d.fieldInfo().name)) {
+                assertDv(d, MultiLevel.EFFECTIVELY_IMMUTABLE_DV, Property.EXTERNAL_IMMUTABLE);
+            }
+        };
         testSupportAndUtilClasses(List.of(EventuallyFinalExtension.class),
-                1, 1, new DebugConfiguration.Builder()
-                .build());
+                0, 1, new DebugConfiguration.Builder()
+                        .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+                        .build());
     }
 
 }

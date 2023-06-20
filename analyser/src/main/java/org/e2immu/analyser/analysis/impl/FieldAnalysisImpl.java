@@ -24,6 +24,8 @@ import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
 import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.parser.Primitives;
+import org.e2immu.annotation.Final;
+import org.e2immu.annotation.Modified;
 import org.e2immu.annotation.NotModified;
 import org.e2immu.support.EventuallyFinal;
 import org.e2immu.support.VariableFirstThen;
@@ -32,16 +34,16 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+import static org.e2immu.analyser.parser.E2ImmuAnnotationExpressions.IMPLIED;
+
 public class FieldAnalysisImpl extends AnalysisImpl implements FieldAnalysis {
 
     private final FieldInfo fieldInfo;
-    public final boolean isOfTransparentType;
     public final LinkedVariables variablesLinkedToMe;
     public final Expression value;
     public final Expression initialValue;  // value from the initialiser
 
     private FieldAnalysisImpl(FieldInfo fieldInfo,
-                              boolean isOfTransparentType,
                               LinkedVariables variablesLinkedToMe,
                               Expression value,
                               Expression initialValue,
@@ -49,7 +51,6 @@ public class FieldAnalysisImpl extends AnalysisImpl implements FieldAnalysis {
                               Map<AnnotationExpression, AnnotationCheck> annotations) {
         super(properties, annotations);
         this.fieldInfo = fieldInfo;
-        this.isOfTransparentType = isOfTransparentType;
         this.variablesLinkedToMe = variablesLinkedToMe;
         this.value = value;
         this.initialValue = initialValue;
@@ -77,11 +78,6 @@ public class FieldAnalysisImpl extends AnalysisImpl implements FieldAnalysis {
     @Override
     public LinkedVariables getLinkedVariables() {
         return variablesLinkedToMe;
-    }
-
-    @Override
-    public DV isTransparentType() {
-        return isOfTransparentType ? DV.TRUE_DV : DV.FALSE_DV;
     }
 
     @Override
@@ -125,8 +121,6 @@ public class FieldAnalysisImpl extends AnalysisImpl implements FieldAnalysis {
         // or parameters
         public final EventuallyFinal<LinkedVariables> linkedVariables = new EventuallyFinal<>();
 
-        private final EventuallyFinal<DV> isOfTransparentType = new EventuallyFinal<>();
-
         @Override
         public void internalAllDoneCheck() {
             super.internalAllDoneCheck();
@@ -134,7 +128,6 @@ public class FieldAnalysisImpl extends AnalysisImpl implements FieldAnalysis {
             assert values.isSet();
             assert value.isFinal();
             assert linkedVariables.isFinal();
-            assert isOfTransparentType.isFinal();
         }
 
         public Builder(Primitives primitives, AnalysisProvider analysisProvider, @NotModified FieldInfo fieldInfo, TypeAnalysis typeAnalysisOfOwner) {
@@ -153,7 +146,6 @@ public class FieldAnalysisImpl extends AnalysisImpl implements FieldAnalysis {
             setValue(dve);
             linkedVariables.setVariable(dve.linkedVariables(null));
             this.values = new VariableFirstThen<>(initialDelay);
-            isOfTransparentType.setVariable(initialDelay);
         }
 
         @Override
@@ -199,15 +191,6 @@ public class FieldAnalysisImpl extends AnalysisImpl implements FieldAnalysis {
             return fieldInfo.newLocation();
         }
 
-
-        public void setTransparentType(DV value) {
-            if (value.isDelayed()) {
-                isOfTransparentType.setVariable(value);
-            } else {
-                isOfTransparentType.setFinal(value);
-            }
-        }
-
         @Override
         public DV getProperty(Property property) {
             return getFieldProperty(analysisProvider, fieldInfo, bestType, property);
@@ -224,14 +207,8 @@ public class FieldAnalysisImpl extends AnalysisImpl implements FieldAnalysis {
         }
 
         @Override
-        public DV isTransparentType() {
-            return isOfTransparentType.get();
-        }
-
-        @Override
         public Analysis build() {
             return new FieldAnalysisImpl(fieldInfo,
-                    !isOfTransparentType.isVariable() && isOfTransparentType.get().valueIsTrue(),
                     linkedVariables.isVariable() ? LinkedVariables.EMPTY : linkedVariables.get(),
                     getValue(),
                     getInitializerValue(),
@@ -239,7 +216,7 @@ public class FieldAnalysisImpl extends AnalysisImpl implements FieldAnalysis {
                     annotationChecks.toImmutableMap());
         }
 
-        public void transferPropertiesToAnnotations(E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions) {
+        public void transferPropertiesToAnnotations(E2ImmuAnnotationExpressions e2) {
             DV effectivelyFinal = getProperty(Property.FINAL);
             DV ownerImmutable = typeAnalysisOfOwner.getProperty(Property.IMMUTABLE);
             DV modified = getProperty(Property.MODIFIED_OUTSIDE_METHOD);
@@ -249,59 +226,61 @@ public class FieldAnalysisImpl extends AnalysisImpl implements FieldAnalysis {
                     && !ownerImmutable.isDelayed()
                     && MultiLevel.effective(ownerImmutable) == MultiLevel.Effective.EVENTUAL) {
                 String labels = typeAnalysisOfOwner.markLabel();
-                annotations.put(e2ImmuAnnotationExpressions.effectivelyFinal.copyWith(primitives, "after", labels), true);
-            } else {
-                if (effectivelyFinal.valueIsTrue() && !isExplicitlyFinal) {
-                    annotations.put(e2ImmuAnnotationExpressions.effectivelyFinal, true);
-                }
-                if (effectivelyFinal.valueIsFalse()) {
-                    annotations.put(e2ImmuAnnotationExpressions.variableField, true);
+                addAnnotation(e2.effectivelyFinal.copyWith(primitives, "after", labels));
+            } else if (effectivelyFinal.valueIsTrue()) {
+                if (isExplicitlyFinal) {
+                    addAnnotation(E2ImmuAnnotationExpressions.create(primitives, Final.class, IMPLIED, true));
+                } else {
+                    addAnnotation(e2.effectivelyFinal);
                 }
             }
-
-            // all other annotations cannot be added to primitives
-            if (type.isPrimitiveExcludingVoid()) return;
-
-            DV formallyImmutable = typeImmutable();
+            DV formallyImmutable = analysisProvider.typeImmutable(fieldInfo.type);
             DV dynamicallyImmutable = getProperty(Property.EXTERNAL_IMMUTABLE);
-            DV formallyContainer = typeContainer();
-            DV dynamicallyContainer = getProperty(Property.EXTERNAL_CONTAINER);
+            DV formallyContainer = analysisProvider.typeContainer(fieldInfo.type);
+            DV dynamicallyContainer = getProperty(Property.CONTAINER);
 
             // @NotModified(after=), @NotModified, @Modified
             if (modified.valueIsTrue() && !ownerImmutable.isDelayed()
                     && MultiLevel.effective(ownerImmutable) == MultiLevel.Effective.EVENTUAL) {
-                if (MultiLevel.level(dynamicallyImmutable) <= MultiLevel.Level.IMMUTABLE_1.level) {
+                if (MultiLevel.level(dynamicallyImmutable) <= MultiLevel.Level.MUTABLE.level) {
                     String labels = typeAnalysisOfOwner.markLabel();
-                    annotations.put(e2ImmuAnnotationExpressions.notModified.copyWith(primitives, "after", labels), true);
+                    addAnnotation(e2.notModified.copyWith(primitives, "after", labels));
                 }// else don't bother, we'll have an immutable annotation (see e.g. eventuallyFinal in EventuallyImmutableUtil_14)
             } else {
-                AnnotationExpression ae = modified.valueIsFalse() ? e2ImmuAnnotationExpressions.notModified :
-                        e2ImmuAnnotationExpressions.modified;
-                annotations.put(ae, true);
+                boolean implied = MultiLevel.isEffectivelyImmutable(ownerImmutable);
+                AnnotationExpression ae;
+                if (implied) {
+                    Class<?> clazz = modified.valueIsFalse() ? NotModified.class : Modified.class;
+                    ae = E2ImmuAnnotationExpressions.create(primitives, clazz, IMPLIED, true);
+                } else {
+                    ae = modified.valueIsFalse() ? e2.notModified : e2.modified;
+                }
+                addAnnotation(ae);
             }
-
             // @NotNull
-            doNotNull(e2ImmuAnnotationExpressions, getProperty(Property.EXTERNAL_NOT_NULL));
+            doNotNull(e2, getProperty(Property.EXTERNAL_NOT_NULL), fieldInfo.type.isPrimitiveExcludingVoid());
 
-            // dynamic type annotations: @E1Immutable, @E1Container, @E2Immutable, @E2Container
-            if (dynamicallyImmutable.gt(formallyImmutable) || dynamicallyContainer.gt(formallyContainer)) {
-                doImmutableContainer(e2ImmuAnnotationExpressions, dynamicallyImmutable, dynamicallyContainer, true);
-            }
+            // dynamic type annotations: @Immutable, @Container
+            boolean immutableBetterThanFormal = dynamicallyImmutable.gt(formallyImmutable);
+            boolean containerBetterThanFormal = dynamicallyContainer.gt(formallyContainer);
+            DV constant = getProperty(Property.CONSTANT);
+            String constantValue = MultiLevel.isAtLeastEventuallyRecursivelyImmutable(ownerImmutable) && constant.valueIsTrue()
+                    ? getValue().unQuotedString() : null;
+
+            // final boolean x = true; does NOT need an annotation
+            boolean constantImplied = isExplicitlyFinal && fieldInfo.fieldInspection.get().hasFieldInitializer();
+            doImmutableContainer(e2, dynamicallyImmutable, dynamicallyContainer,
+                    immutableBetterThanFormal, containerBetterThanFormal, constantValue, constantImplied);
+
+            // @Independent
+            DV formallyIndependent = analysisProvider.typeIndependent(fieldInfo.type);
+            DV dynamicallyIndependent = getProperty(Property.INDEPENDENT);
+            doIndependent(e2, dynamicallyIndependent, formallyIndependent, dynamicallyImmutable);
 
             DV beforeMark = getProperty(Property.BEFORE_MARK);
             if (beforeMark.valueIsTrue()) {
-                annotations.put(e2ImmuAnnotationExpressions.beforeMark, true);
+                addAnnotation(e2.beforeMark);
             }
-        }
-
-        private DV typeImmutable() {
-            return fieldInfo.owner == bestType || bestType == null ? MultiLevel.MUTABLE_DV :
-                    analysisProvider.getTypeAnalysis(bestType).getProperty(Property.IMMUTABLE);
-        }
-
-        private DV typeContainer() {
-            return fieldInfo.owner == bestType || bestType == null ? MultiLevel.NOT_CONTAINER_DV :
-                    analysisProvider.getTypeAnalysis(bestType).getProperty(Property.CONTAINER);
         }
 
         public void setValues(List<ValueAndPropertyProxy> values, CausesOfDelay delayed) {
@@ -357,8 +336,9 @@ public class FieldAnalysisImpl extends AnalysisImpl implements FieldAnalysis {
             }
         }
 
-        public boolean valuesAreLinkedToParameters(DV requiredLevel) {
-            return getValues().stream().allMatch(proxy -> proxy.isLinkedToParameter(requiredLevel));
+        public boolean valuesAreLinkedToParameters(DV maxLinkLevel) {
+            List<ValueAndPropertyProxy> values = getValues();
+            return values.stream().allMatch(proxy -> proxy.isLinkedToParameter(maxLinkLevel));
         }
     }
 }

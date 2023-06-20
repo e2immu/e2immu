@@ -15,8 +15,8 @@
 package org.e2immu.annotatedapi.javaparser;
 
 import com.github.javaparser.Problem;
+import org.e2immu.annotation.Independent;
 import org.e2immu.annotation.NotNull;
-import org.e2immu.annotation.NotNull1;
 
 import java.util.List;
 import java.util.Optional;
@@ -30,7 +30,8 @@ public class ComGithubJavaparser {
         @NotNull
         Optional<T> getResult();
 
-        @NotNull1
+        @NotNull(content = true)
         List<Problem> getProblems();
+
     }
 }

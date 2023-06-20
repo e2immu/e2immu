@@ -14,19 +14,18 @@
 
 package org.e2immu.analyser.parser.eventual.testexample;
 
-import org.e2immu.annotation.E2Container;
-import org.e2immu.annotation.ERContainer;
-import org.e2immu.annotation.TestMark;
+import org.e2immu.annotation.ImmutableContainer;
+import org.e2immu.annotation.eventual.TestMark;
 import org.e2immu.support.SetOnce;
 
 /*
 Use types in util to become an eventually immutable type
-
+No hidden content.
  */
-@ERContainer(after = "t")
+@ImmutableContainer(after = "t")
 public class EventuallyImmutableUtil_5 {
 
-    @ERContainer(after = "bool,string")
+    @ImmutableContainer(after = "bool,string")
     static class S {
         public final SetOnce<String> string = new SetOnce<>();
         public final SetOnce<Boolean> bool = new SetOnce<>();
@@ -38,7 +37,7 @@ public class EventuallyImmutableUtil_5 {
         }
     }
 
-    @ERContainer(after = "s1,s2")
+    @ImmutableContainer(after = "s1,s2")
     static class T {
         private final S s1 = new S();
         private final S s2 = new S();

@@ -23,7 +23,6 @@ import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.Text;
 import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.util.UpgradableBooleanMap;
-import org.e2immu.annotation.E2Immutable;
 import org.e2immu.annotation.NotNull;
 
 import java.util.Objects;
@@ -35,13 +34,12 @@ import java.util.stream.Collectors;
  For a lambda, counts will be {(n, true), (n, false)}, with n the number of parameters
  For a method reference, we'll have one entry per candidate method, where isVoid=false counts as one parameter.
  */
-@E2Immutable
 public final class LambdaExpressionErasures extends BaseExpression implements ErasureExpression {
     private final Set<Count> counts;
     private final Location location;
 
     public LambdaExpressionErasures(Set<Count> counts, Location location) {
-        super(Identifier.CONSTANT);
+        super(Identifier.CONSTANT, 10);
         Objects.requireNonNull(counts);
         Objects.requireNonNull(location);
         this.counts = counts;

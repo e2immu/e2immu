@@ -16,6 +16,7 @@ package org.e2immu.analyser.parser.loops.testexample;
 
 // variant on Loops_21, no assignment, hence no modification
 // important to still access the array
+// tests the markOverride system for loops
 public class Loops_21_1 {
 
     public static String[][] method(int n, int m) {

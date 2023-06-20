@@ -34,7 +34,7 @@ public class MethodInspectionImpl extends InspectionImpl implements MethodInspec
     private static final Logger LOGGER = LoggerFactory.getLogger(MethodInspectionImpl.class);
 
     enum MethodType {
-        CONSTRUCTOR, COMPACT_CONSTRUCTOR, STATIC_BLOCK, DEFAULT_METHOD, STATIC_METHOD, METHOD,
+        CONSTRUCTOR, COMPACT_CONSTRUCTOR, STATIC_BLOCK, DEFAULT_METHOD, STATIC_METHOD, ABSTRACT_METHOD, METHOD,
     }
 
     private final String fullyQualifiedName;
@@ -42,18 +42,17 @@ public class MethodInspectionImpl extends InspectionImpl implements MethodInspec
 
     private final MethodInfo methodInfo; // backlink, container... will become contextclass+immutable eventually
     private final ParameterizedType returnType; // ContextClass
-    //@Immutable(after="??")
+
     private final Block methodBody; // if empty, Block.EMPTY_BLOCK
-
-    //@Immutable(level = 2, after="MethodAnalyzer.analyse()")
-    //@Immutable
     private final List<ParameterInfo> parameters;
-    //@Immutable
-    private final Set<MethodModifier> modifiers;
 
-    //@Immutable
+    // modifiers provided during parsing!
+    private final Set<MethodModifier> parsedModifiers;
+    private final boolean isSynchronized;
+    private final boolean isFinal;
+
     private final List<TypeParameter> typeParameters;
-    //@Immutable
+
     private final List<ParameterizedType> exceptionTypes;
 
     private final Map<CompanionMethodName, MethodInfo> companionMethods;
@@ -63,8 +62,12 @@ public class MethodInspectionImpl extends InspectionImpl implements MethodInspec
                                  String fullyQualifiedName,
                                  String distinguishingName,
                                  boolean synthetic,
+                                 boolean synchronizedMethod,
+                                 boolean finalMethod,
+                                 Access access,
+                                 Comment comment,
                                  MethodType methodType,
-                                 Set<MethodModifier> modifiers,
+                                 Set<MethodModifier> parsedModifiers,
                                  List<ParameterInfo> parameters,
                                  ParameterizedType returnType,
                                  List<AnnotationExpression> annotations,
@@ -72,11 +75,11 @@ public class MethodInspectionImpl extends InspectionImpl implements MethodInspec
                                  List<ParameterizedType> exceptionTypes,
                                  Map<CompanionMethodName, MethodInfo> companionMethods,
                                  Block methodBody) {
-        super(annotations, synthetic);
+        super(annotations, access, comment, synthetic);
         this.fullyQualifiedName = fullyQualifiedName;
         this.distinguishingName = distinguishingName;
         this.companionMethods = companionMethods;
-        this.modifiers = modifiers;
+        this.parsedModifiers = parsedModifiers;
         this.methodInfo = methodInfo;
         this.parameters = parameters;
         this.returnType = returnType;
@@ -84,6 +87,8 @@ public class MethodInspectionImpl extends InspectionImpl implements MethodInspec
         this.methodBody = methodBody;
         this.exceptionTypes = exceptionTypes;
         this.methodType = methodType;
+        this.isFinal = finalMethod;
+        this.isSynchronized = synchronizedMethod;
     }
 
     @Override
@@ -94,6 +99,11 @@ public class MethodInspectionImpl extends InspectionImpl implements MethodInspec
     @Override
     public boolean isDefault() {
         return methodType == MethodType.DEFAULT_METHOD;
+    }
+
+    @Override
+    public boolean isAbstract() {
+        return methodType == MethodType.ABSTRACT_METHOD;
     }
 
     @Override
@@ -137,8 +147,8 @@ public class MethodInspectionImpl extends InspectionImpl implements MethodInspec
     }
 
     @Override
-    public Set<MethodModifier> getModifiers() {
-        return modifiers;
+    public Set<MethodModifier> getParsedModifiers() {
+        return parsedModifiers;
     }
 
     @Override
@@ -167,11 +177,49 @@ public class MethodInspectionImpl extends InspectionImpl implements MethodInspec
         return getParameters().get(getParameters().size() - 1).parameterInspection.get().isVarArgs();
     }
 
+    @Override
+    public List<MethodModifier> minimalModifiers() {
+        List<MethodModifier> result = new ArrayList<>();
+        Access access = getAccess();
+        boolean inInterface = getMethodInfo().typeInfo.isInterface();
+        boolean isAbstract = isAbstract();
+        boolean isDefault = isDefault();
+        if (access != Access.PACKAGE && !(inInterface && (isAbstract || isDefault))) {
+            MethodModifier accessModifier = switch (access) {
+                case PRIVATE -> MethodModifier.PRIVATE;
+                case PUBLIC -> MethodModifier.PUBLIC;
+                case PROTECTED -> MethodModifier.PROTECTED;
+                default -> throw new UnsupportedOperationException();
+            };
+            result.add(accessModifier);
+        }
+        if (inInterface) {
+            if (isDefault) result.add(MethodModifier.DEFAULT);
+        } else {
+            if (isAbstract) result.add(MethodModifier.ABSTRACT);
+        }
+        if (isStatic()) result.add(MethodModifier.STATIC);
+        if (isFinal) result.add(MethodModifier.FINAL);
+        if (isSynchronized) result.add(MethodModifier.SYNCHRONIZED);
+        return result;
+    }
+
+
+    @Override
+    public boolean isFinal() {
+        return isFinal;
+    }
+
+    @Override
+    public boolean isSynchronized() {
+        return isSynchronized;
+    }
+
     private static final int NOT_A_STATIC_BLOCK = -1;
 
     @Container(builds = MethodInspectionImpl.class)
     public static class Builder extends AbstractInspectionBuilder<MethodInspection.Builder> implements MethodInspection,
-    MethodInspection.Builder {
+            MethodInspection.Builder {
         private final List<ParameterInspection.Builder> parameters = new ArrayList<>();
         private final Set<MethodModifier> modifiers = new HashSet<>();
         private final List<TypeParameter> typeParameters = new ArrayList<>();
@@ -192,6 +240,7 @@ public class MethodInspectionImpl extends InspectionImpl implements MethodInspec
         private MethodInfo methodInfo;
         private List<ParameterInfo> immutableParameters;
         private List<ParameterInfo> mutableParameters;
+        private boolean isAbstract;
 
         /* constructor */
 
@@ -237,7 +286,7 @@ public class MethodInspectionImpl extends InspectionImpl implements MethodInspec
             this.isConstructor = isConstructor;
             this.compactConstructor = isCompact;
             this.staticBlockIdentifier = staticBlockIdentifier;
-            if(isConstructor || isStaticBlock()) returnType = ParameterizedType.RETURN_TYPE_OF_CONSTRUCTOR;
+            if (isConstructor || isStaticBlock()) returnType = ParameterizedType.RETURN_TYPE_OF_CONSTRUCTOR;
         }
 
         @Override
@@ -253,6 +302,17 @@ public class MethodInspectionImpl extends InspectionImpl implements MethodInspec
         @Override
         public boolean isStaticBlock() {
             return staticBlockIdentifier > NOT_A_STATIC_BLOCK;
+        }
+
+        @Override
+        public boolean isAbstract() {
+            return isAbstract;
+        }
+
+        @Override
+        public Builder setAbstractMethod() {
+            this.isAbstract = true;
+            return this;
         }
 
         @Fluent
@@ -360,26 +420,19 @@ public class MethodInspectionImpl extends InspectionImpl implements MethodInspec
             makeParametersImmutable();
 
             // we have a method object now...
-             Objects.requireNonNull(returnType);
+            Objects.requireNonNull(returnType);
 
-            MethodType methodType;
-            if (isDefault()) {
-                methodType = MethodType.DEFAULT_METHOD;
-            } else if (isStaticBlock()) {
-                methodType = MethodType.STATIC_BLOCK;
-            } else if (compactConstructor) {
-                methodType = MethodType.COMPACT_CONSTRUCTOR;
-            } else if (isStatic()) {
-                methodType = MethodType.STATIC_METHOD;
-            } else {
-                methodType = methodInfo.isConstructor ? MethodType.CONSTRUCTOR : MethodType.METHOD;
-            }
+            if (accessNotYetComputed()) computeAccess(inspectionProvider);
 
             MethodInspectionImpl methodInspection = new MethodInspectionImpl(methodInfo,
                     getFullyQualifiedName(), // the builders have not been invalidated yet
                     getDistinguishingName(),
                     isSynthetic(),
-                    methodType,
+                    isSynchronized(),
+                    isFinal(),
+                    getAccess(),
+                    getComment(),
+                    methodType(),
                     Set.copyOf(modifiers),
                     List.copyOf(immutableParameters),
                     returnType,
@@ -392,6 +445,28 @@ public class MethodInspectionImpl extends InspectionImpl implements MethodInspec
             methodInfo.methodInspection.set(methodInspection);
             LOGGER.debug("Setting inspection of {}", methodInfo.fullyQualifiedName);
             return methodInspection;
+        }
+
+        private MethodType methodType() {
+            if (isDefault()) {
+                return MethodType.DEFAULT_METHOD;
+            }
+            if (isStaticBlock()) {
+                return MethodType.STATIC_BLOCK;
+            }
+            if (compactConstructor) {
+                return MethodType.COMPACT_CONSTRUCTOR;
+            }
+            if (isStatic()) {
+                return MethodType.STATIC_METHOD;
+            }
+            if (isAbstract()) {
+                return MethodType.ABSTRACT_METHOD;
+            }
+            if (isConstructor) {
+                return MethodType.CONSTRUCTOR;
+            }
+            return MethodType.METHOD;
         }
 
         @Override
@@ -476,7 +551,7 @@ public class MethodInspectionImpl extends InspectionImpl implements MethodInspec
         }
 
         @Override
-        public Set<MethodModifier> getModifiers() {
+        public Set<MethodModifier> getParsedModifiers() {
             return modifiers;
         }
 
@@ -530,8 +605,52 @@ public class MethodInspectionImpl extends InspectionImpl implements MethodInspec
          */
         public void copyFrom(MethodInspection parent) {
             returnType = parent.getReturnType();
-            modifiers.addAll(parent.getModifiers());
+            modifiers.addAll(parent.getParsedModifiers());
             exceptionTypes.addAll(parent.getExceptionTypes());
+        }
+
+        @Override
+        public boolean isSynchronized() {
+            return modifiers.contains(MethodModifier.SYNCHRONIZED);
+        }
+
+        @Override
+        public boolean isFinal() {
+            return modifiers.contains(MethodModifier.FINAL);
+        }
+
+        /*
+        can only be done successfully when the access of the enclosing type(s) has been determined!
+         */
+        @Override
+        public Builder computeAccess(InspectionProvider inspectionProvider) {
+            if (isCompactConstructor()) {
+                setAccess(Access.PUBLIC);
+            } else if (modifiers.contains(MethodModifier.PRIVATE)) {
+                setAccess(Access.PRIVATE);
+            } else {
+                TypeInspection typeInspection = inspectionProvider.getTypeInspection(methodInfo.typeInfo);
+                boolean isInterface = typeInspection.isInterface();
+                if (isInterface && (isAbstract || isDefault() || isStatic())) {
+                    setAccess(Access.PUBLIC);
+                } else {
+                    Access fromModifier = accessFromMethodModifier();
+                    setAccess(fromModifier);
+                }
+            }
+            return this;
+        }
+
+        private Access accessFromMethodModifier() {
+            if (modifiers.contains(MethodModifier.PUBLIC)) return Access.PUBLIC;
+            if (modifiers.contains(MethodModifier.PRIVATE)) return Access.PRIVATE;
+            if (modifiers.contains(MethodModifier.PROTECTED)) return Access.PROTECTED;
+            return Access.PACKAGE;
+        }
+
+        @Override
+        public List<MethodModifier> minimalModifiers() {
+            throw new UnsupportedOperationException();
         }
     }
 }

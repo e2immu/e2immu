@@ -14,6 +14,7 @@
 
 package org.e2immu.analyser.model.value;
 
+import org.e2immu.analyser.analyser.DV;
 import org.e2immu.analyser.inspector.impl.MethodInspectionImpl;
 import org.e2immu.analyser.inspector.impl.ParameterInspectionImpl;
 import org.e2immu.analyser.model.*;
@@ -77,7 +78,7 @@ public class TestEqualsMethod extends CommonAbstractValue {
 
     private static Expression inline(Expression c, Expression t, Expression f) {
         return EvaluateInlineConditional.conditionalValueConditionResolved(context,
-                c, t, f, true, null).value();
+                c, t, f, true, null, DV.FALSE_DV).value();
     }
 
     @Test
@@ -93,5 +94,35 @@ public class TestEqualsMethod extends CommonAbstractValue {
         assertEquals("\"a\".equals(s)", eq2.toString());
         Expression inline2 = inline(eq2, stringA, s);
         assertEquals(s, inline2);
+    }
+
+
+    // other test in TestConditionalValue
+    @Test
+    public void testNormalizeRepeated2() {
+        Expression c1 = new StringConstant(PRIMITIVES, "1");
+        Expression c2 = new StringConstant(PRIMITIVES, "2");
+        Expression d1 = new StringConstant(PRIMITIVES, "d1");
+        Expression d2 = new StringConstant(PRIMITIVES, "d2");
+        Expression c3 = new StringConstant(PRIMITIVES, "3");
+
+        // IMPORTANT: it is not our job to exchange s and the constant
+        Expression e1 = inline(eqMethod(s, d1), c1, inline(eqMethod(s, d2), c2, c3));
+        String expected = """
+                s.equals("d1")?"1":s.equals("d2")?"2":"3"\
+                """;
+        assertEquals(expected, e1.toString());
+
+        Expression e1b = inline(eqMethod(s, d2), c2, inline(eqMethod(s, d1), c1, c3));
+        assertEquals(expected, e1b.toString());
+
+        Expression e2 = inline(eqMethod(d1, s), c1, inline(eqMethod(d2, s), c2, c3));
+        String expected2 = """
+                "d1".equals(s)?"1":"d2".equals(s)?"2":"3"\
+                """;
+        assertEquals(expected2, e2.toString());
+
+        Expression e2b = inline(eqMethod(d2, s), c2, inline(eqMethod(d1, s), c1, c3));
+        assertEquals(expected2, e2b.toString());
     }
 }

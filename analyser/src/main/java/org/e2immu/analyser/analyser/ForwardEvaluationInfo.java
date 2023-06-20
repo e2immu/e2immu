@@ -14,14 +14,12 @@
 
 package org.e2immu.analyser.analyser;
 
-import org.e2immu.analyser.inspector.MethodResolution;
 import org.e2immu.analyser.model.MethodInfo;
 import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.Variable;
 
 import java.util.*;
-import java.util.stream.Collectors;
 
 public class ForwardEvaluationInfo {
 
@@ -36,6 +34,7 @@ public class ForwardEvaluationInfo {
     private final Set<Variable> evaluating;
     private final boolean evaluatingFieldExpression;
     private final boolean noSwitchingToConcreteMethod;
+    private final boolean onlySort;
 
     private ForwardEvaluationInfo(Map<Property, DV> properties,
                                   boolean doNotReevaluateVariableExpressions,
@@ -47,7 +46,8 @@ public class ForwardEvaluationInfo {
                                   boolean evaluatingFieldExpression,
                                   boolean noSwitchingToConcreteMethod,
                                   Set<MethodInfo> inlining,
-                                  Set<Variable> evaluating) {
+                                  Set<Variable> evaluating,
+                                  boolean onlySort) {
         this.properties = Map.copyOf(properties);
         this.isAssignmentTarget = isAssignmentTarget;
         this.assignmentTarget = assignmentTarget;
@@ -59,6 +59,7 @@ public class ForwardEvaluationInfo {
         this.evaluating = evaluating;
         this.evaluatingFieldExpression = evaluatingFieldExpression;
         this.noSwitchingToConcreteMethod = noSwitchingToConcreteMethod;
+        this.onlySort = onlySort;
     }
 
     public boolean assignToField() {
@@ -81,7 +82,7 @@ public class ForwardEvaluationInfo {
     }
 
     public boolean allowInline(MethodInfo methodInfo) {
-        Set<MethodInfo> top = topOfOverloadingHierarchy(methodInfo);
+        Set<MethodInfo> top = methodInfo.topOfOverloadingHierarchy();
         return Collections.disjoint(inlining, top);
     }
 
@@ -126,6 +127,10 @@ public class ForwardEvaluationInfo {
         return !noSwitchingToConcreteMethod;
     }
 
+    public boolean isOnlySort() {
+        return onlySort;
+    }
+
     public static class Builder {
         private final Map<Property, DV> properties = new HashMap<>();
         private boolean doNotReevaluateVariableExpressions;
@@ -138,6 +143,7 @@ public class ForwardEvaluationInfo {
         private final Set<MethodInfo> inlining = new HashSet<>();
         private final Set<Variable> evaluating = new HashSet<>();
         private boolean noSwitchingToConcreteMethod;
+        private boolean onlySort;
 
         public Builder() {
             addProperty(Property.CONTEXT_NOT_NULL, MultiLevel.NULLABLE_DV);
@@ -155,13 +161,20 @@ public class ForwardEvaluationInfo {
             this.noSwitchingToConcreteMethod = fwd.noSwitchingToConcreteMethod;
             this.inlining.addAll(fwd.inlining);
             this.evaluating.addAll(fwd.evaluating);
+            this.onlySort = fwd.onlySort;
         }
 
         public ForwardEvaluationInfo build() {
             return new ForwardEvaluationInfo(Map.copyOf(properties), doNotReevaluateVariableExpressions,
                     isAssignmentTarget, assignmentTarget, doNotComplainInlineConditional, inCompanionExpression,
                     ignoreValueFromState, evaluatingFieldExpression, noSwitchingToConcreteMethod,
-                    Set.copyOf(inlining), Set.copyOf(evaluating));
+                    Set.copyOf(inlining), Set.copyOf(evaluating), onlySort);
+        }
+
+        // used externally by CM
+        public Builder setOnlySort(boolean onlySort) {
+            this.onlySort = onlySort;
+            return this;
         }
 
         public Builder addProperty(Property property, DV value) {
@@ -204,6 +217,10 @@ public class ForwardEvaluationInfo {
 
         public Builder ensureModificationSetNotNull() {
             addProperty(Property.CONTEXT_NOT_NULL, MultiLevel.EFFECTIVELY_NOT_NULL_DV);
+            return ensureModificationSet();
+        }
+
+        public Builder ensureModificationSet() {
             if (properties.containsKey(Property.CONTEXT_MODIFIED)) {
                 addProperty(Property.CONTEXT_MODIFIED, DV.FALSE_DV);
             }
@@ -263,7 +280,7 @@ public class ForwardEvaluationInfo {
         }
 
         public Builder addMethod(MethodInfo methodInfo) {
-            Set<MethodInfo> top = topOfOverloadingHierarchy(methodInfo);
+            Set<MethodInfo> top = methodInfo.topOfOverloadingHierarchy();
             assert Collections.disjoint(inlining, top);
             inlining.addAll(top);
             return this;
@@ -303,11 +320,5 @@ public class ForwardEvaluationInfo {
             doNotComplainInlineConditional = forwardEvaluationInfo.doNotComplainInlineConditional;
             return this;
         }
-    }
-
-    private static Set<MethodInfo> topOfOverloadingHierarchy(MethodInfo methodInfo) {
-        MethodResolution methodResolution = methodInfo.methodResolution.get();
-        if (methodResolution.overrides().isEmpty()) return Set.of(methodInfo);
-        return methodResolution.overrides().stream().flatMap(mi -> topOfOverloadingHierarchy(mi).stream()).collect(Collectors.toUnmodifiableSet());
     }
 }

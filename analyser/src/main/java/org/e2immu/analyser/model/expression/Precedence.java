@@ -24,9 +24,9 @@ public enum Precedence {
     ADDITIVE(15), // + -
     STRING_CONCAT(14), // +
     SHIFT(13), // << >> >>>
-    RELATIONAL(12), // < <= > >=
+    RELATIONAL(12, 0), // < <= > >=
     INSTANCE_OF(11), // instanceof
-    EQUALITY(10), // == !=
+    EQUALITY(10, 0), // == !=
     AND(9), // &
     XOR(8), // ^
     OR(7), // |
@@ -40,13 +40,22 @@ public enum Precedence {
     ;
 
     private final int value;
+    private final int complexity;
 
     Precedence(int value) {
+        this(value, 1);
+    }
+
+    Precedence(int value, int complexity) {
         this.value = value;
+        this.complexity = complexity;
     }
 
     public boolean greaterThan(Precedence p) {
         return value > p.value;
     }
 
+    public int getComplexity() {
+        return complexity;
+    }
 }

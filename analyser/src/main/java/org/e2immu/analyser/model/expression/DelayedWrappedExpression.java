@@ -23,7 +23,6 @@ import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.Text;
 import org.e2immu.analyser.parser.InspectionProvider;
-import org.e2immu.annotation.E2Container;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -36,7 +35,6 @@ Purpose: when facing an infinite loop in determining the values of a field, in s
 is replaced by this delayed expression, effectively eliminating, for one iteration, a delayed field value.
 See ConditionalInitialization_1.
  */
-@E2Container
 public final class DelayedWrappedExpression extends BaseExpression implements Expression {
     private static final Logger LOGGER = LoggerFactory.getLogger(DelayedWrappedExpression.class);
 
@@ -52,7 +50,7 @@ public final class DelayedWrappedExpression extends BaseExpression implements Ex
                                     Properties properties,
                                     LinkedVariables linkedVariables,
                                     CausesOfDelay causesOfDelay) {
-        super(identifier);
+        super(identifier, expression.getComplexity());
         this.properties = properties;
         this.linkedVariables = linkedVariables;
         this.causesOfDelay = causesOfDelay;
@@ -138,11 +136,17 @@ public final class DelayedWrappedExpression extends BaseExpression implements Ex
         if (translationMap.expandDelayedWrappedExpressions()) {
             return expression;
         }
+        Expression translated = expression.translate(inspectionProvider, translationMap);
+        LinkedVariables lvTranslated = linkedVariables.translate(inspectionProvider, translationMap);
+        Variable varTranslated = translationMap.translateVariable(inspectionProvider, variable);
+        if (translated != expression || lvTranslated != linkedVariables || varTranslated != variable) {
+            return new DelayedWrappedExpression(identifier, varTranslated, translated, properties, lvTranslated, causesOfDelay);
+        }
         return this;
     }
 
     @Override
-    public List<Variable> variables(boolean descendIntoFieldReferences) {
+    public List<Variable> variables(DescendMode descendIntoFieldReferences) {
         return expression.variables(descendIntoFieldReferences);
     }
 

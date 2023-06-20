@@ -14,9 +14,9 @@
 
 package org.e2immu.analyser.parser.minor.testexample;
 
+import org.e2immu.annotation.Final;
 import org.e2immu.annotation.NotNull;
 import org.e2immu.annotation.Nullable;
-import org.e2immu.annotation.Variable;
 
 import java.util.Objects;
 
@@ -33,11 +33,11 @@ public class ExternalNotNull_1 {
     private final String p;
 
     // error on field initialization: null, and q2, not null
-    @Variable
+    @Final(absent = true)
     @Nullable
     private String q;
 
-    @Variable
+    @Final(absent = true)
     @NotNull
     private String r;
 

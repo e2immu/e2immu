@@ -15,31 +15,31 @@
 package org.e2immu.analyser.parser.failing.testexample;
 
 import org.e2immu.annotation.*;
+import org.e2immu.annotation.rare.IgnoreModifications;
 
-@E2Container // computed
+@ImmutableContainer(hc = true)
 public class Consumer_0<S> {
 
-    // implicitly: @E1Immutable (not @Container, @Modified on parameter t)
     interface MyConsumer<T> {
-        @Modified
+        @Modified // contracted
         void accept(T t);
     }
 
     // of unbound parameter type
     private final S s;
 
-    public Consumer_0(S in) {
+    public Consumer_0(@Independent(hc = true) S in) {
         this.s = in;
     }
 
     // Note that @IgnoreModifications is ALWAYS contracted!
     @NotModified
-    public void forEach(@IgnoreModifications @Independent1 MyConsumer<S> myConsumer) {
+    public void forEach(@IgnoreModifications @Independent(hc = true) MyConsumer<S> myConsumer) {
         myConsumer.accept(s);
     }
 
     @NotModified
-    public void visit(@NotModified @Independent1 MyConsumer<S> myConsumer) {
+    public void visit(@NotModified @Independent(hc = true) MyConsumer<S> myConsumer) {
         forEach(myConsumer);
     }
 }

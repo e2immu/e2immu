@@ -21,6 +21,7 @@ import org.e2immu.analyser.model.expression.DelayedVariableExpression;
 import org.e2immu.analyser.model.expression.Instance;
 import org.e2immu.analyser.model.expression.PropertyWrapper;
 import org.e2immu.analyser.model.variable.FieldReference;
+import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.annotation.NotNull;
 
 import java.util.Map;
@@ -48,8 +49,6 @@ public interface FieldAnalysis extends Analysis {
     @NotNull
     LinkedVariables getLinkedVariables();
 
-    DV isTransparentType();
-
     @NotNull
     FieldInfo getFieldInfo();
 
@@ -75,14 +74,13 @@ public interface FieldAnalysis extends Analysis {
 
             case BEFORE_MARK:
             case CONSTANT:
-            case EXTERNAL_CONTAINER:
+            case CONTAINER_RESTRICTION:
             case CONTAINER:
             case EXTERNAL_IMMUTABLE:
             case PARTIAL_EXTERNAL_IMMUTABLE:
             case EXTERNAL_NOT_NULL:
             case FINAL:
             case IDENTITY:
-            case IGNORE_MODIFICATIONS:
             case EXTERNAL_IGNORE_MODIFICATIONS:
             case INDEPENDENT:
             case MODIFIED_OUTSIDE_METHOD:
@@ -100,19 +98,32 @@ public interface FieldAnalysis extends Analysis {
 
     Expression getInitializerValue();
 
-    default Expression getValueForStatementAnalyser(FieldReference fieldReference, int statementTime) {
+    default Expression getValueForStatementAnalyser(TypeInfo primaryType, FieldReference fieldReference, int statementTime) {
         Expression value = getValue();
         // IMPORTANT: do not return Instance object here (i.e. do not add "|| value.isInstanceOf(Instance.class)")
         // because the instance does not have the eventual information that the field analyser holds.
-        if (value.isDelayed() || value.isConstant()) return value;
+        if (value.isConstant()) return value;
+        if (value.isDelayed()) {
+            if (fieldReference.scopeIsThis()) return value;
+            return DelayedVariableExpression.forField(fieldReference, statementTime, value.causesOfDelay());
+        }
 
         Properties properties = getValueProperties();
         CausesOfDelay delay = properties.delays();
 
         if (delay.isDelayed()) {
-            return DelayedVariableExpression.forDelayedValueProperties(fieldReference, statementTime, delay);
+            return DelayedVariableExpression.forDelayedValueProperties(fieldReference, statementTime, properties, delay);
         }
-        Instance instance = Instance.forField(getFieldInfo(), value.returnType(), properties);
+        ParameterizedType mostSpecific;
+        if (value.returnType().typeInfo != null && value.returnType().typeInfo.equals(fieldReference.fieldInfo.type.typeInfo)) {
+            // same typeInfo, but maybe different type parameters; see e.g. NotNull_AAPI_3
+            mostSpecific = fieldReference.parameterizedType;
+        } else {
+            // instance type List<...> in fieldReference vs instance type ArrayList<...> in value; see e.g. Basics_20
+            mostSpecific = fieldReference.parameterizedType.mostSpecific(InspectionProvider.DEFAULT,
+                    primaryType, value.returnType());
+        }
+        Instance instance = Instance.forField(getFieldInfo(), mostSpecific, properties);
         if (value instanceof ConstructorCall) {
             return PropertyWrapper.addState(instance, value);
         }
@@ -123,8 +134,13 @@ public interface FieldAnalysis extends Analysis {
         return Properties.of(Map.of(
                 Property.NOT_NULL_EXPRESSION, getProperty(Property.EXTERNAL_NOT_NULL),
                 Property.IMMUTABLE, getProperty(Property.EXTERNAL_IMMUTABLE),
-                Property.CONTAINER, getProperty(Property.EXTERNAL_CONTAINER),
-                Property.INDEPENDENT, getProperty(Property.INDEPENDENT),
+                Property.CONTAINER, getProperty(Property.CONTAINER),
+                /*
+                 DGSimplified_0 is the one example where the constant, instead of getProperty(INDEPENDENT),
+                 causes a significant delay (5 -> 22). It solves an infinite loop for AnalyserContext_0, and
+                 in general speeds up the first few iterations, but occasionally causes some more iterations in the end.
+                 */
+                Property.INDEPENDENT, MultiLevel.INDEPENDENT_DV,
                 Property.IGNORE_MODIFICATIONS, getProperty(Property.EXTERNAL_IGNORE_MODIFICATIONS),
                 Property.IDENTITY, Property.IDENTITY.falseDv));
     }

@@ -14,14 +14,19 @@
 
 package org.e2immu.analyser.parser.start.testexample;
 
+import org.e2immu.annotation.ImmutableContainer;
+
+@ImmutableContainer(hc = true)
 public class E2Immutable_10 {
 
     private final Sub sub = new Sub();
 
+    @ImmutableContainer
     private static class Sub {
         private String string;
     }
 
+    @ImmutableContainer("null")
     public String method() {
         return sub.string;
     }

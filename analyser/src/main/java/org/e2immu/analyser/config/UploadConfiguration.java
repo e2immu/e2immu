@@ -15,7 +15,6 @@
 package org.e2immu.analyser.config;
 
 import org.e2immu.annotation.Container;
-import org.e2immu.annotation.E2Immutable;
 import org.e2immu.annotation.Fluent;
 
 import java.io.UnsupportedEncodingException;
@@ -25,7 +24,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-@E2Immutable
 public record UploadConfiguration(boolean upload, String annotationServerUrl, String projectName,
                                   List<String> uploadPackages) {
     public static final String DEFAULT_ANNOTATION_SERVER_URL = "http://localhost:8281/v1";

@@ -17,6 +17,8 @@ package org.e2immu.analyser.analyser;
 import org.e2immu.analyser.analysis.TypeAnalysis;
 import org.e2immu.analyser.model.TypeInfo;
 
+import java.util.stream.Stream;
+
 public interface TypeAnalyser extends Analyser {
     boolean ignorePrivateConstructorsForFieldValue();
 
@@ -25,4 +27,8 @@ public interface TypeAnalyser extends Analyser {
     TypeAnalysis getTypeAnalysis();
 
     TypeInfo getPrimaryType();
+
+    Stream<MethodAnalyser> allMethodAnalysersIncludingSubTypes();
+
+    Stream<FieldAnalyser> allFieldAnalysers();
 }

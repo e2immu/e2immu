@@ -28,7 +28,7 @@ public class TestInspectAndResolveAnalyserCode {
     @Test
     public void inspect() throws IOException {
         InputConfiguration inputConfiguration = new InputConfiguration.Builder()
-                .setAlternativeJREDirectory(CommonTestRunner.JDK_16)
+                .setAlternativeJREDirectory(CommonTestRunner.CURRENT_JDK)
                 .addSources("src/main/java")
                 .addSources("src/test/java")
                 .addClassPath("jmods/java.base.jmod")

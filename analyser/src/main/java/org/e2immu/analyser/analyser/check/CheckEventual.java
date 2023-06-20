@@ -20,19 +20,17 @@ import org.e2immu.analyser.analysis.MethodAnalysis;
 import org.e2immu.analyser.model.AnnotationExpression;
 import org.e2immu.analyser.model.MethodInfo;
 import org.e2immu.analyser.parser.Message;
-import org.e2immu.annotation.Mark;
-import org.e2immu.annotation.Only;
-import org.e2immu.annotation.TestMark;
 
 public class CheckEventual {
 
-    public static Message checkOnly(MethodInfo methodInfo, MethodAnalysis methodAnalysis) {
+    public static Message checkOnly(MethodInfo methodInfo, AnnotationExpression annotationKey, MethodAnalysis methodAnalysis) {
         MethodAnalysis.Eventual eventual = methodAnalysis.getEventual();
-        AnnotationExpression annotationExpression = methodInfo.hasInspectedAnnotation(Only.class).orElse(null);
+        AnnotationExpression annotationExpression = methodInfo.hasInspectedAnnotation(annotationKey).orElse(null);
         if (annotationExpression == null) {
             if (eventual != MethodAnalysis.NOT_EVENTUAL && eventual.isOnly()) {
                 // make sure the @Only(...) annotation gets printed
-                AnnotationExpression ae = methodAnalysis.findAnnotation(Only.class.getCanonicalName()).getKey();
+                AnnotationExpression ae = methodAnalysis.annotationGetOrDefaultNull(annotationKey);
+                assert ae != null;
                 methodAnalysis.putAnnotationCheck(ae, Analysis.AnnotationCheck.COMPUTED);
             }
             return null; // nothing to verify
@@ -90,13 +88,13 @@ public class CheckEventual {
                 Message.Label.ONLY_WRONG_MARK_LABEL, "Got after=\"" + after + "\" but computed after=\"" + eventual.markLabel() + "\"");
     }
 
-    public static Message checkMark(MethodInfo methodInfo, MethodAnalysis methodAnalysis) {
+    public static Message checkMark(MethodInfo methodInfo, AnnotationExpression annotationKey, MethodAnalysis methodAnalysis) {
         MethodAnalysis.Eventual eventual = methodAnalysis.getEventual();
-        AnnotationExpression annotationExpression = methodInfo.hasInspectedAnnotation(Mark.class).orElse(null);
+        AnnotationExpression annotationExpression = methodInfo.hasInspectedAnnotation(annotationKey).orElse(null);
         if (annotationExpression == null) {
             if (eventual != MethodAnalysis.NOT_EVENTUAL && eventual.isMark()) {
                 // make sure the @Mark(...) annotation gets printed
-                AnnotationExpression ae = methodAnalysis.findAnnotation(Mark.class.getCanonicalName()).getKey();
+                AnnotationExpression ae = methodAnalysis.annotationGetOrDefaultNull(annotationKey);
                 methodAnalysis.putAnnotationCheck(ae, Analysis.AnnotationCheck.COMPUTED);
             }
             return null; // nothing to verify
@@ -130,13 +128,13 @@ public class CheckEventual {
     }
 
 
-    public static Message checkTestMark(MethodInfo methodInfo, MethodAnalysis methodAnalysis) {
+    public static Message checkTestMark(MethodInfo methodInfo, AnnotationExpression annotationKey, MethodAnalysis methodAnalysis) {
         MethodAnalysis.Eventual eventual = methodAnalysis.getEventual();
-        AnnotationExpression annotationExpression = methodInfo.hasInspectedAnnotation(TestMark.class).orElse(null);
+        AnnotationExpression annotationExpression = methodInfo.hasInspectedAnnotation(annotationKey).orElse(null);
         if (annotationExpression == null) {
             if (eventual != MethodAnalysis.NOT_EVENTUAL && eventual.isTestMark()) {
                 // make sure the @TestMark(...) annotation gets printed
-                AnnotationExpression ae = methodAnalysis.findAnnotation(TestMark.class.getCanonicalName()).getKey();
+                AnnotationExpression ae = methodAnalysis.annotationGetOrDefaultNull(annotationKey);
                 methodAnalysis.putAnnotationCheck(ae, Analysis.AnnotationCheck.COMPUTED);
             }
             return null; // nothing to verify

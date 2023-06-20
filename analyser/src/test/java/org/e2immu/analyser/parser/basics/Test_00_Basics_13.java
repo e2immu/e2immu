@@ -27,8 +27,7 @@ import org.junit.jupiter.api.Test;
 import java.io.IOException;
 
 import static org.e2immu.analyser.analyser.Property.*;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 public class Test_00_Basics_13 extends CommonTestRunner {
 
@@ -96,7 +95,7 @@ public class Test_00_Basics_13 extends CommonTestRunner {
                         assertEquals(MultiLevel.NULLABLE_DV, cnn);
                         assertEquals(MultiLevel.NULLABLE_DV, nne);
                         assertEquals(MultiLevel.NOT_INVOLVED_DV, enn);
-                        assertEquals(DV.FALSE_DV, cm);
+                        assertNull(cm); // not writing value any more 20220902 for RV
                     }
                 }
                 if ("a".equals(d.variableName())) {

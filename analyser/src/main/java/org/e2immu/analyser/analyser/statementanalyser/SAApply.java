@@ -153,8 +153,11 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
             }
         }
 
+        Map<Variable, LinkedVariables> extraLv;
         if (delayNotEvaluated) {
-            delayVariablesNotMentioned2(existingVariablesNotVisited, setEvalValueToDelayed);
+            extraLv = delayVariablesNotMentioned2(existingVariablesNotVisited, setEvalValueToDelayed);
+        } else {
+            extraLv = Map.of();
         }
 
         for (Map.Entry<Variable, VariableInfoContainer> e : variablesDefinedOutsideLoop.entrySet()) {
@@ -176,9 +179,10 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
             }
         }
 
+        boolean noAssignments = evaluationResult.changeData().values().stream().noneMatch(EvaluationResult.ChangeData::markAssignment);
         ProgressAndDelay delayStatus = new ProgressAndDelay(progress, cumulativeDelay);
         ApplyStatusAndEnnStatus applyStatusAndEnnStatus = contextProperties(sharedState, evaluationResult,
-                delayStatus, analyserContext, groupPropertyValues);
+                delayStatus, analyserContext, groupPropertyValues, noAssignments, extraLv);
 
         // debugging...
 
@@ -230,28 +234,31 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
     }
 
     /*
-    delay for variables not mentioned at all continued
+    delay for variables not mentioned at all, continued
+
+    linked variables + group properties cannot yet be set into EVALUATION, must go via normal method
      */
-    private void delayVariablesNotMentioned2(Map<Variable, VariableInfoContainer> existingVariablesNotVisited, Map<Variable, DelayAndLinked> setEvalValueToDelayed) {
+    private Map<Variable, LinkedVariables> delayVariablesNotMentioned2(Map<Variable, VariableInfoContainer> existingVariablesNotVisited,
+                                                                       Map<Variable, DelayAndLinked> setEvalValueToDelayed) {
+        Map<Variable, LinkedVariables> result = new HashMap<>();
         for (Map.Entry<Variable, DelayAndLinked> entry : setEvalValueToDelayed.entrySet()) {
             Variable variable = entry.getKey();
             DelayAndLinked dal = entry.getValue();
             VariableInfoContainer vic = statementAnalysis.getVariable(variable.fullyQualifiedName());
             VariableInfo vi1 = vic.getPreviousOrInitial();
-            if (vi1.valueIsSet()) {
-                if (!vic.hasEvaluation()) {
-                    vic.ensureEvaluation(getLocation(), vi1.getAssignmentIds(), vi1.getReadId(), vi1.getReadAtStatementTimes());
-                }
-                VariableInfo eval = vic.best(EVALUATION);
-                if (!eval.valueIsSet()) {
-                    LinkedVariables lv = eval.getLinkedVariables().isDone()
-                            ? eval.getLinkedVariables()
-                            : eval.getLinkedVariables().merge(dal.linkedVariables);
-                    vic.setLinkedVariables(lv, EVALUATION);
-                }
+            if (!vic.hasEvaluation()) {
+                vic.ensureEvaluation(getLocation(), vi1.getAssignmentIds(), vi1.getReadId(), vi1.getReadAtStatementTimes());
+            }
+            VariableInfo eval = vic.best(EVALUATION);
+            if (!eval.linkedVariablesIsSet()) {
+                assert dal.linkedVariables.isDelayed();
+                LinkedVariables merge = (LinkedVariables.NOT_YET_SET == dal.linkedVariables ? LinkedVariables.EMPTY : dal.linkedVariables)
+                        .merge(vi1.getLinkedVariables());
+                result.put(variable, merge);
             }
         }
         existingVariablesNotVisited.keySet().removeAll(setEvalValueToDelayed.keySet());
+        return result;
     }
 
 
@@ -387,7 +394,8 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
                 .getValueProperties(variable.parameterizedType(), valueToWrite, true);
         Properties externalProperties = sharedState.evaluationContext().getExternalProperties(valueToWrite);
 
-        Expression valueToWritePossiblyDelayed = delayAssignmentValue(sharedState, valueToWrite, valueProperties.delays());
+        Expression valueToWritePossiblyDelayed = delayAssignmentValue(sharedState, valueToWrite,
+                valueProperties, valueProperties.delays());
 
         Properties changeDataProperties = Properties.of(changeData.properties());
         boolean myself = sharedState.evaluationContext().isMyself(variable);
@@ -395,7 +403,7 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
                 externalProperties, groupPropertyValues);
         // LVs start empty, the changeData.linkedVariables will be added later
         Properties combined;
-        if (myself && variable instanceof FieldReference fr && !fr.fieldInfo.isStatic()) {
+        if (myself && variable instanceof FieldReference fr && !fr.fieldInfo.fieldInspection.get().isStatic()) {
             // captures self-referencing instance fields (but not static fields, as in Enum_)
             // a similar check exists in StatementAnalysisImpl.initializeFieldReference
             combined = sharedState.evaluationContext().ensureMyselfValueProperties(merged);
@@ -473,16 +481,6 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
                                       EvaluationResult.ChangeData changeData,
                                       GroupPropertyValues groupPropertyValues,
                                       VariableInfo merge) {
-        VariableInfo vi1 = vic.getPreviousOrInitial();
-        // not assigned, but maybe modified? "new" will need to change...
-        // TODO check vi, if there was an assignment in this statement
-
-        // we'll apply this only when needed
-        // See ListUtilSimplified_0: not needed
-        // ListUtilSimplified_1: needed!
-        if (vi1.valueIsSet() && !mustChangeToInstance(vi1.getValue(), sharedState.evaluationContext())) {
-            return null;
-        }
     /*
 
      If the variable is modified somewhere in the loop, we cannot keep "new ..." and must switch to
@@ -491,11 +489,10 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
 
      Compounding the problem is that we must know the modification to obtain a value inside the loop,
      and we cannot know the modification inside the loop before we have a value. This represents a cycle.
-     FIXME introduce CM_NO_VALUE?
 
      IMPORTANT this part should not clash with the code that deals with the value AFTER the loop, which sits
      in SASubBlocks.conditionManagerForFirstBlock.
-     FIXME Problem is that that one uses -E as the basis for the "previous value", messing up the value afterwards
+     ?? Problem is that that one uses -E as the basis for the "previous value", messing up the value afterwards
 
      (also interfering is the erasure of companion info during the evaluation of a modifying method (MethodCall))
      See Loops_8
@@ -511,13 +508,13 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
         // we know there is no assignment, so the value properties can remain the same, if we have them
         Properties valueProperties = vic.getPreviousOrInitial().valueProperties();
         if (modified.isDelayed()) {
-            if (sharedState.evaluationContext().allowBreakDelay()) {
+            if (sharedState.evaluationContext().breakDelayLevel().acceptStatement()) {
                 // the restriction is not needed for now 
                 //     && modified.causesOfDelay().containsCauseOfDelay(CauseOfDelay.Cause.WAIT_FOR_MODIFICATION,
                 //     c -> c instanceof VariableCause vc && vc.variable().equals(variable))) {
                 // we'll decide to change to instance, but we'll mark this decision
                 // See: Loops_21, _21_1, ListUtilSimplified_0, _1, DependencyGraphSimplified_0, _1, Project_0bis
-                vic.markOverride(CONTEXT_MODIFIED, DV.TRUE_DV);
+                vic.markContextModifiedOverride(DV.TRUE_DV);
                 LOGGER.debug("Breaking delay loop, deciding on MODIFIED for {}", variable);
             } else {
                 CausesOfDelay causes = DelayFactory.createDelay(new VariableCause(variable, getLocation(),
@@ -529,14 +526,6 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
         // modified!
         return changeValueToInstanceInLoop(sharedState, variable, vic, changeData, valueProperties,
                 groupPropertyValues);
-    }
-
-    // new XX() -> instance type X
-    // instance type X/*size==...*/ -> instance type X
-    private static boolean mustChangeToInstance(Expression value, EvaluationContext evaluationContext) {
-        ConstructorCall cc;
-        return ((cc = value.asInstanceOf(ConstructorCall.class)) != null) && cc.hasConstructor() ||
-                evaluationContext.hasState(value);
     }
 
     private LoopResult delayValueForInstanceInLoop(StatementAnalyserSharedState sharedState,
@@ -573,7 +562,7 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
             valueProperties = valuePropertiesIn;
         } else {
             valueProperties = sharedState.evaluationContext().getAnalyserContext()
-                    .defaultValueProperties(variable.parameterizedType(), methodInfo().typeInfo);
+                    .defaultValueProperties(variable.parameterizedType());
         }
         CausesOfDelay causes = valueProperties.delays();
         Expression value;
@@ -583,15 +572,29 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
             Identifier identifier = statement().getIdentifier();
             value = Instance.forVariableInLoopDefinedOutside(identifier, variable.parameterizedType(), valueProperties);
         }
-        boolean progress = vic.setValue(value, null, valueProperties, EVALUATION);
+        boolean progress;
+        if (vic.hasEvaluation() && vic.best(EVALUATION).getValue().isDelayed()) {
+            progress = vic.setValue(value, null, valueProperties, EVALUATION);
+        } else {
+            /*
+             don't try to overwrite, this happens when the modification is inside a loop within a loop
+             See e.g. ParameterizedType_2, _2_1. Both will be instances, but with different identifiers.
+             */
+            progress = false;
+        }
         Map<Property, DV> previous = vic.getPreviousOrInitial().getProperties();
         SAHelper.mergePreviousAndChangeOnlyGroupPropertyValues(sharedState.evaluationContext(), variable,
                 previous, changeData == null ? null : changeData.properties(), groupPropertyValues);
         return new LoopResult(true, causes, progress);
     }
 
+    /*
+    ECI: linked variables are being delayed in the evaluation of VariableExpressionFixedForward.
+     */
+
     private Expression delayAssignmentValue(StatementAnalyserSharedState sharedState,
                                             Expression valueToWrite,
+                                            Properties valueProperties,
                                             CausesOfDelay valuePropertiesIsDelayed) {
         boolean valueToWriteIsDelayed = valueToWrite.isDelayed();
         CausesOfDelay causes;
@@ -602,7 +605,7 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
         }
         if (!valueToWriteIsDelayed && causes.isDelayed()) {
             return valueToWrite.createDelayedValue(valueToWrite.getIdentifier(),
-                    EvaluationResult.from(sharedState.evaluationContext()), causes);
+                    EvaluationResult.from(sharedState.evaluationContext()), valueProperties, causes);
         }
         return valueToWrite;
     }
@@ -734,11 +737,15 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
                                                       EvaluationResult evaluationResult,
                                                       ProgressAndDelay delayIn,
                                                       AnalyserContext analyserContext,
-                                                      GroupPropertyValues groupPropertyValues) {
+                                                      GroupPropertyValues groupPropertyValues,
+                                                      boolean noAssignments,
+                                                      Map<Variable, LinkedVariables> extraLv) {
         // the second one is across clusters of variables
         groupPropertyValues.addToMap(statementAnalysis);
 
         Function<Variable, LinkedVariables> linkedVariablesFromChangeData = v -> {
+            LinkedVariables extra = extraLv.get(v);
+            if (extra != null) return extra;
             EvaluationResult.ChangeData changeData = evaluationResult.changeData().get(v);
             return changeData == null ? LinkedVariables.EMPTY : changeData.linkedVariables();
         };
@@ -749,20 +756,14 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
         Set<Variable> reassigned = evaluationResult.changeData().entrySet().stream()
                 .filter(e -> e.getValue().markAssignment()).map(Map.Entry::getKey).collect(Collectors.toUnmodifiableSet());
         ComputeLinkedVariables computeLinkedVariables = ComputeLinkedVariables.create(statementAnalysis, EVALUATION,
-                true, false,
-                (vic, v) -> variableUnknown(v),
-                reassigned,
-                linkedVariablesFromChangeData,
-                sharedState.evaluationContext());
-        ComputeLinkedVariables computeLinkedVariablesCm = ComputeLinkedVariables.create(statementAnalysis, EVALUATION,
-                false, false,
+                false,
                 (vic, v) -> variableUnknown(v),
                 reassigned,
                 linkedVariablesFromChangeData,
                 sharedState.evaluationContext());
 
         // we should be able to cache the statically assigned variables, they cannot change anymore after iteration 0
-        ProgressAndDelay linkDelays = computeLinkedVariablesCm.writeClusteredLinkedVariables(computeLinkedVariables);
+        ProgressAndDelay linkDelays = computeLinkedVariables.writeClusteredLinkedVariables();
 
         // 1
         ProgressAndDelay cnnStatus = computeLinkedVariables.write(CONTEXT_NOT_NULL,
@@ -819,14 +820,14 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
                 groupPropertyValues.getMap(CONTEXT_IMMUTABLE));
 
         // 5
-        ProgressAndDelay extContStatus = computeLinkedVariables.write(EXTERNAL_CONTAINER,
-                groupPropertyValues.getMap(EXTERNAL_CONTAINER));
+        ProgressAndDelay extContStatus = computeLinkedVariables.write(CONTAINER_RESTRICTION,
+                groupPropertyValues.getMap(CONTAINER_RESTRICTION));
         CausesOfDelay anyExtCont = statementAnalysis.variableStream()
                 .map(vi -> {
-                    CausesOfDelay causes = vi.getProperty(EXTERNAL_CONTAINER).causesOfDelay();
+                    CausesOfDelay causes = vi.getProperty(CONTAINER_RESTRICTION).causesOfDelay();
                     if (causes.isDelayed()) {
                         return causes.merge(DelayFactory.createDelay(new VariableCause(vi.variable(), getLocation(),
-                                CauseOfDelay.Cause.EXT_CONTAINER)));
+                                CauseOfDelay.Cause.CONTAINER_RESTRICTION)));
                     }
                     return CausesOfDelay.EMPTY;
                 })
@@ -836,7 +837,14 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
         ProgressAndDelay cContStatus = computeLinkedVariables.write(CONTEXT_CONTAINER, groupPropertyValues.getMap(CONTEXT_CONTAINER));
 
         // 7
-        ProgressAndDelay cmStatus = computeLinkedVariablesCm.write(CONTEXT_MODIFIED, groupPropertyValues.getMap(CONTEXT_MODIFIED));
+        Map<Variable, Integer> modificationTimeIncrements = evaluationResult.modificationTimeIncrements();
+        Map<Variable, Integer> modificationValues = statementAnalysis.rawVariableStream()
+                .map(e -> e.getValue().getPreviousOrInitial())
+                .collect(Collectors.toUnmodifiableMap(VariableInfo::variable, VariableInfo::getModificationTimeOrNegative));
+        int statementTimeDelta = evaluationResult.statementTime() - statementAnalysis.statementTime(INITIAL);
+        ProgressAndDelay cmStatus = computeLinkedVariables.writeContextModified(
+                analyserContext, groupPropertyValues.getMap(CONTEXT_MODIFIED),
+                modificationTimeIncrements, statementTimeDelta, modificationValues, CausesOfDelay.EMPTY, noAssignments);
 
         // 8
         ProgressAndDelay extIgnMod = computeLinkedVariables.write(EXTERNAL_IGNORE_MODIFICATIONS,

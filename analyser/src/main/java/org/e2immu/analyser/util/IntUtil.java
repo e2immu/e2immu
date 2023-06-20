@@ -14,8 +14,10 @@
 
 package org.e2immu.analyser.util;
 
-import org.e2immu.annotation.UtilityClass;
+import org.e2immu.annotation.type.ExtensionClass;
+import org.e2immu.annotation.type.UtilityClass;
 
+@ExtensionClass(of = double.class)
 @UtilityClass
 public class IntUtil {
 

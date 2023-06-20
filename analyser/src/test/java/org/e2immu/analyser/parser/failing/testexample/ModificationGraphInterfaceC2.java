@@ -14,10 +14,10 @@
 
 package org.e2immu.analyser.parser.failing.testexample;
 
-import org.e2immu.annotation.E1Immutable;
+import org.e2immu.annotation.FinalFields;
 import org.e2immu.annotation.Modified;
 
-@E1Immutable
+@FinalFields
 class ModificationGraphInterfaceC2 {
 
     private final int j;

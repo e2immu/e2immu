@@ -49,4 +49,10 @@ public class MethodReference_2 {
     public static Function<String, Integer> getFunction3() {
         return String::length;
     }
+
+    @NotNull
+    @NotModified
+    public static Function<String, Integer> getFunction4() {
+        return java.lang.String::length;
+    }
 }

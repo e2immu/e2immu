@@ -15,6 +15,7 @@
 package org.e2immu.analyser.analyser.impl;
 
 import org.e2immu.analyser.analyser.*;
+import org.e2immu.analyser.analyser.impl.util.BreakDelayLevel;
 import org.e2immu.analyser.analyser.util.AnalyserResult;
 import org.e2immu.analyser.analysis.Analysis;
 import org.e2immu.analyser.config.Configuration;
@@ -29,6 +30,7 @@ import org.e2immu.analyser.pattern.PatternMatcher;
 import org.e2immu.analyser.resolver.AnalyserGenerator;
 import org.e2immu.analyser.resolver.TypeCycle;
 import org.e2immu.analyser.util.Pair;
+import org.e2immu.analyser.visitor.BreakDelayVisitor;
 import org.e2immu.support.Either;
 import org.e2immu.support.FlipSwitch;
 import org.slf4j.Logger;
@@ -38,9 +40,6 @@ import java.util.*;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-
-import static org.e2immu.analyser.config.AnalyserProgram.PROGRAM_ALL;
-import static org.e2immu.analyser.config.AnalyserProgram.Step.*;
 
 /*
 Recursive, but only for types inside statements, not for subtypes.
@@ -61,14 +60,14 @@ public class PrimaryTypeAnalyserImpl implements PrimaryTypeAnalyser {
     private final Map<MethodInfo, MethodAnalyser> methodAnalysers;
     private final Map<FieldInfo, FieldAnalyser> fieldAnalysers;
     private final Map<ParameterInfo, ParameterAnalyser> parameterAnalysers;
-    private final AnalyserResult.Builder analyserResultBuilder = new AnalyserResult.Builder();
+    private AnalyserResult.Builder analyserResultBuilder;
     private final Primitives primitives;
     private final ImportantClasses importantClasses;
     private final AnalyserContext parent;
     private final Set<PrimaryTypeAnalyser> localPrimaryTypeAnalysers = new HashSet<>();
     private final AnalyserComponents<Analyser, SharedState> analyserComponents;
     private final FlipSwitch unreachable = new FlipSwitch();
-    private final Set<Integer> iterationsWithAllowBreakDelay = new HashSet<>();
+    private final List<BreakDelayLevel> delaySequence = new LinkedList<>();
 
     public PrimaryTypeAnalyserImpl(AnalyserContext parent,
                                    TypeCycle typeCycle,
@@ -99,14 +98,14 @@ public class PrimaryTypeAnalyserImpl implements PrimaryTypeAnalyser {
         // all important fields of the interface have been set.
         analysers.forEach(Analyser::initialize);
 
-        AnalyserComponents.Builder<Analyser, SharedState> builder = new AnalyserComponents.Builder<>(PROGRAM_ALL);
+        AnalyserComponents.Builder<Analyser, SharedState> builder = new AnalyserComponents.Builder<>();
         builder.setLimitCausesOfDelay(true);
 
         for (Analyser analyser : analysers) {
             AnalysisStatus.AnalysisResultSupplier<SharedState> supplier = sharedState -> {
                 analyser.receiveAdditionalTypeAnalysers(localPrimaryTypeAnalysers);
                 AnalyserResult analyserResult = analyser.analyse(sharedState);
-                analyserResultBuilder.add(analyserResult, true, true);
+                analyserResultBuilder.add(analyserResult, true, true, false);
                 if (analyser instanceof MethodAnalyser methodAnalyser) {
                     methodAnalyser.getLocallyCreatedPrimaryTypeAnalysers().forEach(localPrimaryTypeAnalysers::add);
                 }
@@ -119,8 +118,17 @@ public class PrimaryTypeAnalyserImpl implements PrimaryTypeAnalyser {
         // maybe we should do that per PrimaryType, keeping a map?
         analyserComponents = builder
                 .setUpdateUponProgress(SharedState::removeAllowBreakDelay)
+                .setExecuteConditionally(this::executeConditionally)
                 .build();
         LOGGER.debug("List of analysers: {}", analysers);
+    }
+
+    private boolean executeConditionally(Analyser analyser, SharedState sharedState) {
+        return switch (sharedState.breakDelayLevel()) {
+            case FIELD -> analyser instanceof FieldAnalyser || analyser instanceof TypeAnalyser;
+            case TYPE -> analyser instanceof TypeAnalyser;
+            default -> true;
+        };
     }
 
     @Override
@@ -175,45 +183,51 @@ public class PrimaryTypeAnalyserImpl implements PrimaryTypeAnalyser {
             LOGGER.info("Starting to process {} types, {} methods, {} fields", typeAnalysers.size(), methodAnalysers.size(), fieldAnalysers.size());
         }
 
-        if (!configuration.analyserConfiguration().analyserProgram().accepts(ITERATION_0)) return;
         int iteration = 0;
-        boolean allowBreakDelay = false;
+        BreakDelayLevel breakDelayLevel = BreakDelayLevel.NONE;
         AnalysisStatus analysisStatus;
 
-        int MAX_ITERATION = 100;
+        int MAX_ITERATION = 1000;
         do {
-            LOGGER.debug("\n******\nStarting iteration {} (break? {}) of the primary type analyser on {}\n******",
-                    iteration, allowBreakDelay, name);
-            if (allowBreakDelay) iterationsWithAllowBreakDelay.add(iteration);
+            delaySequence.add(breakDelayLevel);
 
+            LOGGER.debug("\n******\nStarting iteration {} (break? {}) of the primary type analyser on {}; sequence {}\n******",
+                    iteration, breakDelayLevel, name, delaySequence);
             analyserComponents.resetDelayHistogram();
 
-            SharedState sharedState = new SharedState(iteration, allowBreakDelay, null);
+            SharedState sharedState = new SharedState(iteration, breakDelayLevel, null);
             AnalyserResult analyserResult = analyse(sharedState);
             iteration++;
 
             dumpDelayHistogram(analyserComponents.getDelayHistogram());
 
-            if (!configuration.analyserConfiguration().analyserProgram().accepts(ITERATION_1PLUS)) {
-                LOGGER.debug("\n******\nStopping after iteration 0 according to program\n******");
-                return;
-            }
-            if (iteration > 1 && !configuration.analyserConfiguration().analyserProgram().accepts(ITERATION_2)) {
-                LOGGER.debug("\n******\nStopping after iteration 1 according to program\n******");
-                return;
-            }
-            if (iteration > 2 && !configuration.analyserConfiguration().analyserProgram().accepts(ALL)) {
-                LOGGER.debug("\n******\nStopping after iteration 2 according to program\n******");
-                return;
-            }
             analysisStatus = analyserResult.analysisStatus();
             if (analysisStatus == AnalysisStatus.DONE) break;
-            if (allowBreakDelay && !analysisStatus.isProgress()) {
-                // no point in continuing
-                break;
+            if (!analysisStatus.isProgress()) {
+                if (breakDelayLevel.stop()) {
+                    // no point in continuing
+                    break;
+                }
+                breakDelayLevel = breakDelayLevel.next();
+            } else {
+                /* should we have the type analyser do only one type?
+                  assert delaySequence.stream().filter(b -> BreakDelayLevel.TYPE == b).count() < 2L
+                        : "Only once can we have progress from Type!";
+                 */
+                breakDelayLevel = BreakDelayLevel.NONE;
             }
-            allowBreakDelay = !analysisStatus.isProgress();
         } while (iteration < MAX_ITERATION);
+
+        List<BreakDelayVisitor> visitors = configuration.debugConfiguration().breakDelayVisitors();
+        for (BreakDelayVisitor breakDelayVisitor : visitors) {
+            for (TypeInfo typeInfo : primaryTypes) {
+                String delaySequenceString = delaySequence
+                        .stream().map(b -> Character.toString(b.symbol))
+                        .collect(Collectors.joining());
+                breakDelayVisitor.visit(new BreakDelayVisitor.Data(iteration, delaySequenceString, typeInfo));
+            }
+        }
+
         if (analysisStatus.isDelayed()) {
             logAnalysisStatuses(analyserComponents);
             if (LOGGER.isDebugEnabled()) {
@@ -231,7 +245,7 @@ public class PrimaryTypeAnalyserImpl implements PrimaryTypeAnalyser {
                 delayHistogram.entrySet().stream().sorted((e1, e2) -> e2.getValue().getCnt() - e1.getValue().getCnt())
                         .limit(20)
                         .map(e -> e.getValue().getCnt() + ": " + (e.getKey() == null ? "?" : (e.getKey().niceClassName() + " " + e.getKey().fullyQualifiedName()) + ": " + e.getValue()))
-                                .collect(Collectors.joining("\n")));
+                        .collect(Collectors.joining("\n")));
     }
 
     private void logAnalysisStatuses(AnalyserComponents<Analyser, SharedState> analyserComponents) {
@@ -261,6 +275,7 @@ public class PrimaryTypeAnalyserImpl implements PrimaryTypeAnalyser {
     @Override
     public AnalyserResult analyse(SharedState sharedState) {
         patternMatcher.startNewIteration();
+        analyserResultBuilder = new AnalyserResult.Builder();
         AnalysisStatus analysisStatus = analyserComponents.run(sharedState);
         LOGGER.info("At end of PTA analysis, done {} of {} components, progress? {}",
                 analyserComponents.getStatuses().stream().filter(p -> p.getV().isDone()).count(),
@@ -331,12 +346,6 @@ public class PrimaryTypeAnalyserImpl implements PrimaryTypeAnalyser {
         return methodAnalysers.values().stream();
     }
 
-    /*
-        @Override
-        public Stream<MethodAnalyser> parallelMethodAnalyserStream() {
-            return methodAnalysers.values().stream();
-        }
-    */
     @Override
     public TypeAnalyser getTypeAnalyser(TypeInfo typeInfo) {
         TypeAnalyser typeAnalyser = typeAnalysers.get(typeInfo);
@@ -383,9 +392,5 @@ public class PrimaryTypeAnalyserImpl implements PrimaryTypeAnalyser {
     @Override
     public boolean isUnreachable() {
         return unreachable.isSet();
-    }
-
-    public Set<Integer> getIterationsWithAllowBreakDelay() {
-        return Set.copyOf(iterationsWithAllowBreakDelay);
     }
 }

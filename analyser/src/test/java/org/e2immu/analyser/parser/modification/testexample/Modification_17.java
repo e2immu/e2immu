@@ -14,14 +14,16 @@
 
 package org.e2immu.analyser.parser.modification.testexample;
 
-import org.e2immu.annotation.E1Container;
+import org.e2immu.annotation.Container;
+import org.e2immu.annotation.FinalFields;
 import org.e2immu.annotation.Modified;
 import org.e2immu.annotation.NotNull;
 
 import java.util.HashSet;
 import java.util.Set;
 
-@E1Container
+@FinalFields
+@Container
 public class Modification_17 {
 
     @Modified

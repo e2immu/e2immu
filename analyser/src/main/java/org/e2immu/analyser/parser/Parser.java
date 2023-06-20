@@ -63,10 +63,10 @@ public class Parser {
         input = Input.create(configuration);
     }
 
+    // used in CodeModernizer
     public Parser(Configuration newConfiguration, Parser previousParser) throws IOException {
         this.configuration = newConfiguration;
-        this.input = Input.createNext(newConfiguration, previousParser.input.classPath(),
-                previousParser.input.globalTypeContext(), previousParser.input.byteCodeInspector());
+        this.input = previousParser.input.copy(newConfiguration);
     }
 
     // meant for tests only!
@@ -99,11 +99,13 @@ public class Parser {
             sortedAnnotatedAPITypes = SortedTypes.EMPTY;
         } else {
             sortedAnnotatedAPITypes = inspectAndResolve(input.annotatedAPIs(), input.annotatedAPITypes(),
-                    configuration.annotatedAPIConfiguration().reportWarnings(), true);
+                    configuration.annotatedAPIConfiguration().reportWarnings(), true,
+                    configuration.inspectorConfiguration().storeComments());
         }
 
         // and the inspection and resolution of Java sources (Java parser)
-        SortedTypes resolvedSourceTypes = inspectAndResolve(input.sourceURLs(), input.sourceTypes(), true, false);
+        SortedTypes resolvedSourceTypes = inspectAndResolve(input.sourceURLs(), input.sourceTypes(), true,
+                false, configuration.inspectorConfiguration().storeComments());
 
         TypeMap typeMap;
 
@@ -126,15 +128,18 @@ public class Parser {
 
     public TypeMap.Builder inspectOnlyForTesting() {
         inspectAndResolve(input.annotatedAPIs(), input.annotatedAPITypes(),
-                configuration.annotatedAPIConfiguration().reportWarnings(), true);
+                configuration.annotatedAPIConfiguration().reportWarnings(), true,
+                configuration.inspectorConfiguration().storeComments());
         return input.globalTypeContext().typeMap;
     }
 
     public SortedTypes inspectAndResolve(Map<TypeInfo, URL> urls, Trie<TypeInfo> typesForWildcardImport,
                                          boolean reportWarnings,
-                                         boolean shallowResolver) {
+                                         boolean shallowResolver,
+                                         boolean storeComments) {
         ResolverImpl resolver = new ResolverImpl(anonymousTypeCounters, input.globalTypeContext(),
-                input.globalTypeContext().typeMap.getE2ImmuAnnotationExpressions(), shallowResolver);
+                input.globalTypeContext().typeMap.getE2ImmuAnnotationExpressions(), shallowResolver,
+                storeComments);
 
         TypeMap.Builder typeMapBuilder = input.globalTypeContext().typeMap;
         InspectWithJavaParserImpl onDemandSourceInspection = new InspectWithJavaParserImpl(urls, typesForWildcardImport, resolver);
@@ -172,6 +177,11 @@ public class Parser {
             this.urls = urls;
             this.resolver = resolver;
             this.typesForWildcardImport = typesForWildcardImport;
+        }
+
+        @Override
+        public boolean storeComments() {
+            return configuration.inspectorConfiguration().storeComments();
         }
 
         @Override
@@ -290,10 +300,15 @@ public class Parser {
         AnnotatedAPIAnalyser annotatedAPIAnalyser = new AnnotatedAPIAnalyser(types, configuration,
                 getTypeContext().getPrimitives(), new ImportantClassesImpl(getTypeContext()),
                 typeMap.getE2ImmuAnnotationExpressions(), typeMap);
-        messages.addAll(annotatedAPIAnalyser.analyse());
+        Stream<Message> analyse = annotatedAPIAnalyser.analyse();
+
+        // only complain if we have annotated APIs to correct
+        if (!annotatedAPITypes.isEmpty()) {
+            messages.addAll(analyse);
+        }
 
         assert types.stream()
-                .filter(TypeInfo::isPublic)
+                .filter(t -> t.typeInspection.get().isPublic())
                 .allMatch(typeInfo -> typeInfo.typeAnalysis.isSet() &&
                         typeInfo.typeInspection.get().methodsAndConstructors(TypeInspection.Methods.THIS_TYPE_ONLY_EXCLUDE_FIELD_SAM)
                                 .filter(m -> m.methodInspection.get().isPublic())
@@ -324,7 +339,7 @@ public class Parser {
             typeMap.visit(packagePrefixArray, (prefix, types) -> types.stream().filter(t ->
                     (allowSubPackages || t.primaryType().packageName().equals(packagePrefix)) &&
                             t.typeInspection.isSet() &&
-                            t.isPrimaryType() && t.isPublic()).forEach(typesToWrite::add));
+                            t.isPrimaryType() && t.typeInspection.get().isPublic()).forEach(typesToWrite::add));
         }
         LOGGER.info("Returning composer data with {} types", typesToWrite.size());
         return new ComposerData(typesToWrite, typeMap);

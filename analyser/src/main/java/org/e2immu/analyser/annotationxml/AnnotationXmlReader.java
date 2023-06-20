@@ -17,7 +17,6 @@ package org.e2immu.analyser.annotationxml;
 import org.e2immu.analyser.annotationxml.model.*;
 import org.e2immu.analyser.config.AnnotationXmlConfiguration;
 import org.e2immu.analyser.util.Resources;
-import org.e2immu.annotation.E2Immutable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.w3c.dom.Document;
@@ -34,7 +33,6 @@ import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-@E2Immutable
 public class AnnotationXmlReader implements AnnotationStore {
     private static final Logger LOGGER = LoggerFactory.getLogger(AnnotationXmlReader.class);
     public static final String ANNOTATIONS_XML = "annotations.xml";

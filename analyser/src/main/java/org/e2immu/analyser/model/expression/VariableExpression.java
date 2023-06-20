@@ -15,6 +15,7 @@
 package org.e2immu.analyser.model.expression;
 
 import org.e2immu.analyser.analyser.*;
+import org.e2immu.analyser.analyser.Properties;
 import org.e2immu.analyser.analyser.delay.DelayFactory;
 import org.e2immu.analyser.analyser.delay.VariableCause;
 import org.e2immu.analyser.analysis.FieldAnalysis;
@@ -29,19 +30,15 @@ import org.e2immu.analyser.output.Text;
 import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.util.ListUtil;
 import org.e2immu.analyser.util.UpgradableBooleanMap;
-import org.e2immu.annotation.E2Container;
 import org.e2immu.support.Either;
 
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
+import java.util.*;
 import java.util.function.Predicate;
+import java.util.stream.Stream;
 
 import static org.e2immu.analyser.model.expression.ArrayAccess.ARRAY_VARIABLE;
 import static org.e2immu.analyser.model.expression.ArrayAccess.INDEX_VARIABLE;
 
-@E2Container
 public class VariableExpression extends BaseExpression implements IsVariableExpression {
 
     public interface Suffix extends Comparable<Suffix> {
@@ -131,12 +128,17 @@ public class VariableExpression extends BaseExpression implements IsVariableExpr
                 variable instanceof DependentVariable dv ? dv.indexExpression() : null);
     }
 
+    public VariableExpression(FieldReference fr, Suffix suffix) {
+        this(Identifier.constant(fr.fullyQualifiedName() + suffix), fr, suffix, !fr.isStatic ? fr.scope : null,
+                null);
+    }
+
     public VariableExpression(Variable variable, Suffix suffix, Expression scopeValue, Expression indexValue) {
         this(Identifier.constant(variable.fullyQualifiedName() + suffix), variable, suffix, scopeValue, indexValue);
     }
 
     public VariableExpression(Identifier identifier, Variable variable, Suffix suffix, Expression scopeValue, Expression indexValue) {
-        super(identifier);
+        super(identifier, variable.getComplexity());
         this.variable = variable;
         this.suffix = Objects.requireNonNull(suffix);
         if (variable instanceof FieldReference fieldReference && !fieldReference.isStatic ||
@@ -222,7 +224,7 @@ public class VariableExpression extends BaseExpression implements IsVariableExpr
         if (translated2 != null) {
             return translated2;
         }
-        Variable translated3 = translationMap.translateVariable(variable);
+        Variable translated3 = translationMap.translateVariable(inspectionProvider, variable);
         if (translated3 != variable) {
             return new VariableExpression(translated3);
         }
@@ -265,7 +267,7 @@ public class VariableExpression extends BaseExpression implements IsVariableExpr
 
     @Override
     public boolean isNumeric() {
-        TypeInfo typeInfo = variable.parameterizedType().bestTypeInfo();
+        TypeInfo typeInfo = variable.parameterizedType().typeInfo;
         return typeInfo != null && typeInfo.isNumeric();
     }
 
@@ -275,8 +277,11 @@ public class VariableExpression extends BaseExpression implements IsVariableExpr
 
     @Override
     public EvaluationResult evaluate(EvaluationResult context, ForwardEvaluationInfo forwardEvaluationInfoIn) {
-        ForwardEvaluationInfo forwardEvaluationInfo = overrideForward(forwardEvaluationInfoIn);
         EvaluationResult.Builder builder = new EvaluationResult.Builder(context);
+        if (forwardEvaluationInfoIn.isOnlySort()) {
+            return builder.setExpression(this).build();
+        }
+        ForwardEvaluationInfo forwardEvaluationInfo = overrideForward(forwardEvaluationInfoIn);
         if (forwardEvaluationInfo.isDoNotReevaluateVariableExpressions()) {
             return builder.setExpression(this).build();
         }
@@ -291,6 +296,8 @@ public class VariableExpression extends BaseExpression implements IsVariableExpr
             assert scopeResult != null;
             assert indexResult != null;
             Expression computedScope = scopeResult.value();
+            builder.link(dv, dv.arrayVariable(), LinkedVariables.LINK_IS_HC_OF);
+
             if (computedScope instanceof ArrayInitializer initializer && indexResult.value() instanceof Numeric in) {
                 // known array, known index (a[] = {1,2,3}, a[2] == 3)
                 int intIndex = in.getNumber().intValue();
@@ -299,20 +306,29 @@ public class VariableExpression extends BaseExpression implements IsVariableExpr
                 }
                 return builder.setExpression(initializer.multiExpression.expressions()[intIndex]).build();
             }
+
+
             if (dv.arrayVariable() instanceof LocalVariableReference lvr
                     && lvr.variableNature() instanceof VariableNature.ScopeVariable
                     && !(computedScope.isInstanceOf(IsVariableExpression.class))
                     && !forwardEvaluationInfo.isAssignmentTarget()) {
                 // methodCall()[index] as a value rather than the target of an assignment
                 Properties properties = context.evaluationContext().getAnalyserContext()
-                        .defaultValueProperties(dv.parameterizedType, context.getCurrentType());
+                        .defaultValueProperties(dv.parameterizedType);
                 CausesOfDelay delays = properties.delays();
+                LinkedVariables lv = scopeResult.linkedVariables(lvr);
+                assert lv != null : "We have recently evaluated the arrayVariable";
                 Expression replacement;
-                if (delays.isDelayed()) {
+                if (delays.isDelayed() || lv.isDelayed()) {
                     replacement = DelayedExpression.forArrayAccessValue(dv.getIdentifier(), dv.parameterizedType,
-                            new VariableExpression(dv), delays);
+                            new VariableExpression(dv), delays.merge(lv.causesOfDelay()));
                 } else {
-                    replacement = Instance.forArrayAccess(dv.getIdentifier(), dv.parameterizedType, properties);
+                    Expression instance = Instance.forArrayAccess(dv.getIdentifier(), dv.parameterizedType, properties);
+                    if (lv.isEmpty()) {
+                        replacement = instance;
+                    } else {
+                        replacement = PropertyWrapper.propertyWrapper(instance, lv.minimum(LinkedVariables.LINK_IS_HC_OF));
+                    }
                 }
                 return builder.setExpression(replacement).build();
             }
@@ -326,6 +342,19 @@ public class VariableExpression extends BaseExpression implements IsVariableExpr
         Expression currentValue = builder.currentExpression(source, scopeResult == null ? null : scopeResult.value(),
                 indexResult == null ? null : indexResult.value(), forwardEvaluationInfo);
 
+        // FIXME emergency code, simply trying something out; we may have been here before, though....
+        if (currentValue instanceof InlineConditional inlineConditional) {
+            List<Variable> variablesInCondition = inlineConditional.condition.variables();
+            if (Collections.disjoint(variablesInCondition, forwardEvaluationInfo.getEvaluating())) {
+                ConditionManager cm = context.evaluationContext().getConditionManager();
+                Expression newCondition = cm.evaluate(context, inlineConditional.condition, false);
+                if (newCondition.isBoolValueTrue()) {
+                    currentValue = inlineConditional.ifTrue;
+                } else if (newCondition.isBoolValueFalse()) {
+                    currentValue = inlineConditional.ifFalse;
+                }
+            }
+        }
         builder.setExpression(currentValue);
 
         // no statement analyser... no need to compute all these properties
@@ -357,7 +386,7 @@ public class VariableExpression extends BaseExpression implements IsVariableExpr
             CausesOfDelay causesOfDelay = de.causesOfDelay().merge(marker);
             boolean haveMarker = de.causesOfDelay().containsCauseOfDelay(CauseOfDelay.Cause.DELAYED_EXPRESSION);
             if (!haveMarker) {
-                for (Variable variable : de.variables(true)) {
+                for (Variable variable : de.variables()) {
                     if (!this.variable.equals(variable) && context.evaluationContext().isPresent(variable)) {
                         for (Property ctx : Property.CONTEXTS) {
                             // we must delay, even if there's a value already
@@ -369,7 +398,7 @@ public class VariableExpression extends BaseExpression implements IsVariableExpr
 
             // IMPORTANT: this is a hack, see Modification_20/tryShortCut -- do we want to keep this?
             de.shortCutVariables(context.getCurrentType(), scopeValue).forEach((v, expr) ->
-                    expr.variables(true).forEach(vv ->
+                    expr.variableStream().forEach(vv ->
                             builder.variableOccursInNotNullContext(vv, expr, de.causesOfDelay(), forwardEvaluationInfo)));
         }
         builder.variableOccursInNotNullContext(variable, currentValue, notNull, forwardEvaluationInfo);
@@ -455,23 +484,31 @@ public class VariableExpression extends BaseExpression implements IsVariableExpr
             return ve.evaluate(context, forwardEvaluationInfo.copy().notNullNotAssignment(higher).build());
         }
         assert variable instanceof LocalVariableReference lvr && lvr.variableNature() instanceof VariableNature.ScopeVariable;
-        ForwardEvaluationInfo forward = forwardEvaluationInfo.copy().ensureModificationSetNotNull().build();
+        ForwardEvaluationInfo forward = forwardEvaluationInfo.copy().ensureModificationSet().build();
         VariableExpression scopeVE = new VariableExpression(variable);
         Assignment assignment = new Assignment(context.getPrimitives(), scopeVE, expression);
-        return assignment.evaluate(context, forward);
+        EvaluationResult er = assignment.evaluate(context, forward);
+        EvaluationResult.Builder builder = new EvaluationResult.Builder(context).compose(er);
+        // we have to set the not-null context for the array variable, because there is array access
+        builder.variableOccursInNotNullContext(variable, expression, MultiLevel.EFFECTIVELY_NOT_NULL_DV, forwardEvaluationInfo);
+        return builder.build();
     }
 
     @Override
     public LinkedVariables linkedVariables(EvaluationResult context) {
+        return internalLinkedVariables(variable, LinkedVariables.LINK_STATICALLY_ASSIGNED);
+    }
+
+    static LinkedVariables internalLinkedVariables(Variable variable, DV linkLevel) {
         if (variable instanceof DependentVariable dv) {
-            return LinkedVariables.of(variable, LinkedVariables.STATICALLY_ASSIGNED_DV,
-                    dv.arrayVariable(), LinkedVariables.DEPENDENT_DV);
+            LinkedVariables recursive = internalLinkedVariables(dv.arrayVariable(), LinkedVariables.LINK_IS_HC_OF);
+            return LinkedVariables.of(variable, linkLevel).merge(recursive);
         }
         if (variable instanceof FieldReference fr && !fr.scopeIsThis() && fr.scopeVariable != null) {
-            return LinkedVariables.of(variable, LinkedVariables.STATICALLY_ASSIGNED_DV,
-                    fr.scopeVariable, LinkedVariables.DEPENDENT_DV);
+            LinkedVariables recursive = internalLinkedVariables(fr.scopeVariable, LinkedVariables.LINK_IS_HC_OF);
+            return LinkedVariables.of(variable, linkLevel).merge(recursive);
         }
-        return LinkedVariables.of(variable, LinkedVariables.STATICALLY_ASSIGNED_DV);
+        return LinkedVariables.of(variable, linkLevel);
     }
 
     @Override
@@ -485,13 +522,13 @@ public class VariableExpression extends BaseExpression implements IsVariableExpr
     }
 
     @Override
-    public List<Variable> variables(boolean descendIntoFieldReferences) {
-        /*
-        we're including "!fr.scopeIsThis" here to avoid unnecessary linking issues. Modification_4 is severely affected
-        if "this" remains a delayed linked variable.
-         */
-        if (descendIntoFieldReferences && variable instanceof FieldReference fr && !fr.isStatic && !fr.scopeIsThis()) {
-            return ListUtil.concatImmutable(scopeValue.variables(true), List.of(variable));
+    public List<Variable> variables(DescendMode descendIntoFieldReferences) {
+        if (descendIntoFieldReferences != DescendMode.NO && variable instanceof FieldReference fr && !fr.isStatic) {
+            if (descendIntoFieldReferences == DescendMode.YES_INCLUDE_THIS || !fr.scopeIsThis()) {
+                Stream<Variable> scopeVarStream = fr.scopeVariable == null ? Stream.of() : Stream.of(fr.scopeVariable);
+                Stream<Variable> value = scopeValue.variables(descendIntoFieldReferences).stream();
+                return Stream.concat(Stream.concat(scopeVarStream, value), Stream.of(variable)).toList();
+            }
         }
         return List.of(variable);
     }

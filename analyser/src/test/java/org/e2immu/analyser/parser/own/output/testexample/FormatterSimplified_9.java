@@ -14,8 +14,7 @@
 
 package org.e2immu.analyser.parser.own.output.testexample;
 
-import org.e2immu.annotation.E2Container;
-import org.e2immu.annotation.NotModified;
+import org.e2immu.annotation.ImmutableContainer;
 
 import java.util.List;
 import java.util.Stack;
@@ -27,24 +26,24 @@ import java.util.function.Function;
 
 public class FormatterSimplified_9 {
 
-    // no annotation -> Mutable
+    @ImmutableContainer(hc = true)
     interface OutputElement {
 
     }
 
-    // no annotation -> Mutable
+    @ImmutableContainer(hc = true)
     interface Guide extends OutputElement {
         int index();
     }
 
-    @E2Container // Guide is mutable, but also transparent in ForwardInfo
+    @ImmutableContainer(hc = true) // Guide is mutable, but also transparent in ForwardInfo
     record ForwardInfo(int pos, int chars, String string, Guide guide, boolean symbol) {
         public boolean isGuide() {
             return string == null;
         }
     }
 
-    @E2Container // because ForwardInfo is @E2Container
+    @ImmutableContainer // because ForwardInfo is @E2Container
     record GuideOnStack(ForwardInfo forwardInfo) {
 
     }

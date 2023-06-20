@@ -14,6 +14,7 @@
 
 package org.e2immu.analyser.analyser;
 
+import org.e2immu.analyser.analyser.impl.util.BreakDelayLevel;
 import org.e2immu.analyser.analysis.FlowData;
 import org.e2immu.analyser.analysis.StatementAnalysis;
 import org.e2immu.analyser.model.Expression;
@@ -33,20 +34,20 @@ public record ForwardAnalysisInfo(DV execution,
                                   Map<String, Expression> switchIdToLabels,
                                   Expression switchSelector,
                                   CausesOfDelay switchSelectorIsDelayed,
-                                  boolean allowBreakDelay) {
+                                  BreakDelayLevel breakDelayLevel) {
 
     public ForwardAnalysisInfo {
         Objects.requireNonNull(switchSelectorIsDelayed);
     }
 
-    public static ForwardAnalysisInfo startOfMethod(Primitives primitives, boolean allowBreakDelay) {
+    public static ForwardAnalysisInfo startOfMethod(Primitives primitives, BreakDelayLevel breakDelayLevel) {
         return new ForwardAnalysisInfo(FlowData.ALWAYS, ConditionManager.initialConditionManager(primitives),
-                null, null, null, CausesOfDelay.EMPTY, allowBreakDelay);
+                null, null, null, CausesOfDelay.EMPTY, breakDelayLevel);
     }
 
     public ForwardAnalysisInfo otherConditionManager(ConditionManager conditionManager) {
         return new ForwardAnalysisInfo(execution, conditionManager, catchVariable, switchIdToLabels, switchSelector,
-                switchSelectorIsDelayed, allowBreakDelay);
+                switchSelectorIsDelayed, breakDelayLevel);
     }
 
     /*
@@ -99,6 +100,6 @@ public record ForwardAnalysisInfo(DV execution,
 
     public ForwardAnalysisInfo removeAllowBreakDelay() {
         return new ForwardAnalysisInfo(execution, conditionManager, catchVariable, switchIdToLabels, switchSelector,
-                switchSelectorIsDelayed, false);
+                switchSelectorIsDelayed, BreakDelayLevel.NONE);
     }
 }

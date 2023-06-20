@@ -26,15 +26,12 @@ import org.e2immu.analyser.output.Symbol;
 import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.util.UpgradableBooleanMap;
-import org.e2immu.annotation.E2Container;
 import org.e2immu.annotation.NotNull;
 
 import java.util.List;
 import java.util.Objects;
 import java.util.function.Predicate;
 
-
-@E2Container
 public class InstanceOf extends BaseExpression implements Expression {
 
     private final Primitives primitives;
@@ -47,7 +44,7 @@ public class InstanceOf extends BaseExpression implements Expression {
                       ParameterizedType parameterizedType,
                       Expression expression,
                       LocalVariableReference patternVariable) {
-        super(identifier);
+        super(identifier, 2 + expression.getComplexity());
         this.parameterizedType = Objects.requireNonNull(parameterizedType);
         this.expression = Objects.requireNonNull(expression);
         this.primitives = Objects.requireNonNull(primitives);
@@ -83,10 +80,13 @@ public class InstanceOf extends BaseExpression implements Expression {
 
     @Override
     public Expression translate(InspectionProvider inspectionProvider, TranslationMap translationMap) {
+        Expression translated = translationMap.translateExpression(this);
+        if (translated != this) return translated;
+
         ParameterizedType translatedType = translationMap.translateType(this.parameterizedType);
-        Expression translatedExpression = expression == null ? null : expression.translate(inspectionProvider, translationMap);
+        Expression translatedExpression = expression.translate(inspectionProvider, translationMap);
         LocalVariableReference translatedLvr = patternVariable == null ? null
-                : (LocalVariableReference) translationMap.translateVariable(patternVariable);
+                : (LocalVariableReference) translationMap.translateVariable(inspectionProvider, patternVariable);
         if (translatedType == parameterizedType && translatedExpression == expression && translatedLvr == patternVariable) {
             return this;
         }
@@ -145,7 +145,7 @@ public class InstanceOf extends BaseExpression implements Expression {
     }
 
     @Override
-    public List<Variable> variables(boolean descendIntoFieldReferences) {
+    public List<Variable> variables(DescendMode descendIntoFieldReferences) {
         return expression.variables(descendIntoFieldReferences);
     }
 
@@ -156,6 +156,11 @@ public class InstanceOf extends BaseExpression implements Expression {
         EvaluationResult evaluationResult = expression.evaluate(context, fwd);
         EvaluationResult.Builder builder = new EvaluationResult.Builder(context).compose(evaluationResult);
 
+        if (forwardEvaluationInfo.isOnlySort()) {
+            InstanceOf newInstanceOf = new InstanceOf(identifier, context.getPrimitives(), parameterizedType,
+                    evaluationResult.getExpression(), patternVariable);
+            return builder.setExpression(newInstanceOf).build();
+        }
 
         Primitives primitives = context.getPrimitives();
         Expression value = evaluationResult.value();

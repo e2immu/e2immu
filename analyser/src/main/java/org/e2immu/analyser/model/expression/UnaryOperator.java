@@ -35,7 +35,7 @@ public class UnaryOperator extends BaseExpression implements Expression {
     public final Expression expression;
     public final Precedence precedence;
     public final MethodInfo operator;
-    public static final int COMPLEXITY = 2;
+    public static final int COMPLEXITY = 1;
 
     public UnaryOperator(Identifier identifier,
                          @NotNull MethodInfo operator, @NotNull Expression expression, Precedence precedence) {
@@ -61,9 +61,12 @@ public class UnaryOperator extends BaseExpression implements Expression {
 
     @Override
     public Expression translate(InspectionProvider inspectionProvider, TranslationMap translationMap) {
-        Expression translated = expression.translate(inspectionProvider, translationMap);
-        if (translated == expression) return this;
-        return new UnaryOperator(identifier, operator, translated, precedence);
+        Expression translated = translationMap.translateExpression(this);
+        if(translated != this) return translated;
+
+        Expression translatedExpression = expression.translate(inspectionProvider, translationMap);
+        if (translatedExpression == expression) return this;
+        return new UnaryOperator(identifier, operator, translatedExpression, precedence);
     }
 
     @Override

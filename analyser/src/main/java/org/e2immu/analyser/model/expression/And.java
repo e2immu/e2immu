@@ -16,15 +16,15 @@ package org.e2immu.analyser.model.expression;
 
 import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.model.*;
-import org.e2immu.analyser.model.expression.util.ExpressionComparator;
-import org.e2immu.analyser.model.expression.util.InequalitySolver;
-import org.e2immu.analyser.model.expression.util.LhsRhs;
-import org.e2immu.analyser.model.expression.util.TranslationCollectors;
+import org.e2immu.analyser.model.expression.util.*;
+import org.e2immu.analyser.model.variable.LocalVariableReference;
+import org.e2immu.analyser.model.variable.This;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.Symbol;
 import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.parser.Primitives;
+import org.e2immu.analyser.util.IntUtil;
 import org.e2immu.analyser.util.ListUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -32,20 +32,21 @@ import org.slf4j.LoggerFactory;
 import java.util.*;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public class And extends ExpressionCanBeTooComplex {
     private static final Logger LOGGER = LoggerFactory.getLogger(And.class);
 
     private final Primitives primitives;
     private final List<Expression> expressions;
-    public static final int COMPLEXITY = 3;
 
     public And(Primitives primitives, List<Expression> expressions) {
-        this(Identifier.joined("and", expressions.stream().map(Expression::getIdentifier).toList()), primitives, expressions);
+        this(Identifier.joined("and", expressions.stream().map(Expression::getIdentifier).toList()),
+                primitives, expressions);
     }
 
     private And(Identifier identifier, Primitives primitives, List<Expression> expressions) {
-        super(identifier, COMPLEXITY + expressions.stream().mapToInt(Expression::getComplexity).sum());
+        super(identifier, 1 + expressions.stream().mapToInt(Expression::getComplexity).sum());
         this.primitives = Objects.requireNonNull(primitives);
         this.expressions = Objects.requireNonNull(expressions);
     }
@@ -128,7 +129,7 @@ public class And extends ExpressionCanBeTooComplex {
 
             // STEP 4a: sort
 
-            Collections.sort(concat);
+            concat = AndOrSorter.sort(context, concat);
 
             // STEP 4b: observations
 
@@ -209,11 +210,12 @@ public class And extends ExpressionCanBeTooComplex {
             newConcat.add(conditionalValue.ifTrue);
             return Action.SKIP;
         }
-        // A ? B : C && !A --> !A && C
-        if (prev instanceof InlineConditional conditionalValue &&
-                conditionalValue.condition.equals(Negation.negate(evaluationContext, value))) {
-            newConcat.set(newConcat.size() - 1, conditionalValue.ifFalse); // full replace
-            return Action.ADD_CHANGE;
+        // !A && A ? B : C --> !A && C
+        if (value instanceof InlineConditional conditionalValue &&
+                prev != null &&
+                conditionalValue.condition.equals(Negation.negate(evaluationContext, prev))) {
+            newConcat.add(conditionalValue.ifFalse);
+            return Action.SKIP;
         }
 
         // A && (!A || ...) ==> we can remove the !A
@@ -290,7 +292,7 @@ public class And extends ExpressionCanBeTooComplex {
 
         // combinations with equality and inequality (GE)
 
-        if (value instanceof GreaterThanZero gt0 && gt0.expression().variables(true).size() > 1) {
+        if (value instanceof GreaterThanZero gt0 && gt0.expression().variables().size() > 1) {
             // it may be interesting to run the inequality solver
             InequalitySolver inequalitySolver = new InequalitySolver(evaluationContext, newConcat);
             Boolean resolve = inequalitySolver.evaluate(value);
@@ -553,7 +555,7 @@ public class And extends ExpressionCanBeTooComplex {
                 // !xb1.lessThan: x >= b1 && x <= b2; otherwise: x <= b1 && x >= b2
                 if (xb1b > xb2b) return !xb1lt ? Action.FALSE : Action.ADD;
                 if (xb1b < xb2b) return !xb1lt ? Action.ADD : Action.FALSE;
-                if (ge1.allowEquals() && ge2.allowEquals()) {
+                if (IntUtil.isMathematicalInteger(xb1b)) {
                     Expression newValue = Equals.equals(evaluationContext,
                             IntConstant.intOrDouble(primitives, xb1b), xb1x); // null-checks are irrelevant here
                     newConcat.set(newConcat.size() - 1, newValue);
@@ -691,13 +693,12 @@ public class And extends ExpressionCanBeTooComplex {
             forwardEvaluationInfo) {
         List<EvaluationResult> clauseResults = new ArrayList<>(expressions.size());
         EvaluationResult context = evaluationResult;
-        List<Expression> sortedExpressions = new ArrayList<>(expressions);
-        Collections.sort(sortedExpressions);
+        List<Expression> sortedExpressions = AndOrSorter.sort(evaluationResult, expressions);
         Set<Variable> conditionVariables = new HashSet<>();
         for (Expression expression : sortedExpressions) {
             EvaluationResult result = expression.evaluate(context, forwardEvaluationInfo);
-            conditionVariables.addAll(expression.variables(true));
-            conditionVariables.addAll(result.value().variables(true));
+            conditionVariables.addAll(expression.variables());
+            conditionVariables.addAll(result.value().variables());
             clauseResults.add(result);
             context = context.child(result.value(), Set.copyOf(conditionVariables));
         }
@@ -723,7 +724,7 @@ public class And extends ExpressionCanBeTooComplex {
     }
 
     @Override
-    public List<Variable> variables(boolean descendIntoFieldReferences) {
+    public List<Variable> variables(DescendMode descendIntoFieldReferences) {
         return expressions.stream().flatMap(v -> v.variables(descendIntoFieldReferences).stream())
                 .collect(Collectors.toList());
     }
@@ -742,11 +743,13 @@ public class And extends ExpressionCanBeTooComplex {
 
     @Override
     public Expression translate(InspectionProvider inspectionProvider, TranslationMap translationMap) {
-        List<Expression> translated = expressions.isEmpty() ? expressions : expressions.stream()
+        Expression translated = translationMap.translateExpression(this);
+        if (translated != this) return translated;
+        List<Expression> translatedExpressions = expressions.isEmpty() ? expressions : expressions.stream()
                 .map(e -> e.translate(inspectionProvider, translationMap))
                 .collect(TranslationCollectors.toList(expressions));
-        if (expressions == translated) return this;
-        return new And(identifier, primitives, translated);
+        if (expressions == translatedExpressions) return this;
+        return new And(identifier, primitives, translatedExpressions);
     }
 
     @Override
@@ -777,7 +780,7 @@ public class And extends ExpressionCanBeTooComplex {
 
     public Expression removePartsNotReferringTo(EvaluationResult evaluationContext, Variable variable) {
         Expression[] filtered = this.expressions.stream()
-                .filter(e -> e.variables(true).contains(variable))
+                .filter(e -> e.variables().contains(variable))
                 .toArray(Expression[]::new);
         return And.and(evaluationContext, filtered);
     }

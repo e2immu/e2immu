@@ -21,7 +21,7 @@ public class ImplicitProperties {
 
     public static DV arrayProperties(Property property) {
         return switch (property) {
-            case IMMUTABLE -> MultiLevel.EFFECTIVELY_E1IMMUTABLE_DV;
+            case IMMUTABLE -> MultiLevel.EFFECTIVELY_FINAL_FIELDS_DV;
             case CONTAINER -> MultiLevel.CONTAINER_DV;
             default -> DV.MIN_INT_DV;
         };
@@ -30,7 +30,7 @@ public class ImplicitProperties {
     public static DV primitiveProperties(Property property) {
         return switch (property) {
             case CONTEXT_MODIFIED, MODIFIED_VARIABLE, MODIFIED_OUTSIDE_METHOD -> DV.FALSE_DV;
-            case IMMUTABLE -> MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV;
+            case IMMUTABLE -> MultiLevel.EFFECTIVELY_IMMUTABLE_DV;
             case CONTAINER -> MultiLevel.CONTAINER_DV;
             case INDEPENDENT -> MultiLevel.INDEPENDENT_DV;
             case NOT_NULL_EXPRESSION, NOT_NULL_PARAMETER -> MultiLevel.EFFECTIVELY_NOT_NULL_DV; // NOT: EXTERNAL_NOT_NULL!

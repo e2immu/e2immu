@@ -39,12 +39,13 @@ public class UnknownExpression extends BaseExpression implements Expression {
     public static final String NOT_YET_ASSIGNED = "not yet assigned";
     public static final String NO_RETURN_VALUE = "no return value";
     public static final String UNDETERMINED_RETURN_VALUE = "undetermined return value";
+    public static final String NO_INDEX_SIZE = "no index size";
 
     private final ParameterizedType parameterizedType;
     private final String msg;
 
     private UnknownExpression(Identifier identifier, ParameterizedType parameterizedType, String msg) {
-        super(identifier);
+        super(identifier, 10);
         this.parameterizedType = Objects.requireNonNull(parameterizedType);
         this.msg = Objects.requireNonNull(msg);
     }
@@ -91,6 +92,10 @@ public class UnknownExpression extends BaseExpression implements Expression {
         return new UnknownExpression(identifier, parameterizedType, UNDETERMINED_RETURN_VALUE);
     }
 
+    public static Expression forNoIndexSize(Identifier identifier, ParameterizedType parameterizedType) {
+        return new UnknownExpression(identifier, parameterizedType, NO_INDEX_SIZE);
+    }
+
     @Override
     public void visit(Predicate<Element> predicate) {
         predicate.test(this);
@@ -135,7 +140,7 @@ public class UnknownExpression extends BaseExpression implements Expression {
     public static DV primitiveGetProperty(Property property) {
         switch (property) {
             case IMMUTABLE:
-                return MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV;
+                return MultiLevel.EFFECTIVELY_IMMUTABLE_DV;
             case CONTAINER:
                 return MultiLevel.CONTAINER_DV;
             case NOT_NULL_EXPRESSION:

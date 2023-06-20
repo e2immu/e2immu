@@ -93,16 +93,43 @@ public class InlineConditional extends BaseExpression implements Expression {
 
     @Override
     public Expression translate(InspectionProvider inspectionProvider, TranslationMap translationMap) {
+        Expression translated = translationMap.translateExpression(this);
+        if (translated != this) return translated;
+
         Expression tc = condition.translate(inspectionProvider, translationMap);
         Expression tt = ifTrue.translate(inspectionProvider, translationMap);
         Expression tf = ifFalse.translate(inspectionProvider, translationMap);
         if (tc == condition && tt == ifTrue && tf == ifFalse) return this;
-        return new InlineConditional(identifier, this.inspectionProvider, tc, tt, tf);
+        InlineConditional result = tc instanceof Negation negation
+                ? new InlineConditional(identifier, this.inspectionProvider, negation.expression, tf, tt)
+                : new InlineConditional(identifier, this.inspectionProvider, tc, tt, tf);
+        if (translationMap.translateAgain()) {
+            return result.translate(inspectionProvider, translationMap);
+        }
+        return result;
     }
 
     @Override
     public int internalCompareTo(Expression v) {
-        return condition.internalCompareTo(v);
+        if (v instanceof InlineConditional other) {
+            int c = condition.compareTo(other.condition);
+            if (c == 0) {
+                int d = ifTrue.compareTo(other.ifTrue);
+                if (d == 0) {
+                    return ifFalse.compareTo(other.ifFalse);
+                }
+                return d;
+            }
+            return c;
+        }
+        // because the internal order of an inline is equal to that of the condition, we can encounter every other expression
+        // type here
+        int c = condition.compareTo(v);
+        if (c == 0) {
+            // let's put the inline conditional at the back
+            return 1;
+        }
+        return c;
     }
 
     @Override
@@ -127,7 +154,7 @@ public class InlineConditional extends BaseExpression implements Expression {
 
         // this code is not in a return switch(property) { ... } expression because JavaParser 3.24.1-SNAPSHOT crashes  while parsing
         if (property == NOT_NULL_EXPRESSION) {
-            Set<Variable> conditionVariables = condition.variables(true).stream().collect(Collectors.toUnmodifiableSet());
+            Set<Variable> conditionVariables = condition.variableStream().collect(Collectors.toUnmodifiableSet());
             EvaluationResult child = context.child(condition, conditionVariables);
             DV nneIfTrue = child.evaluationContext().getProperty(ifTrue, NOT_NULL_EXPRESSION, duringEvaluation, false);
             if (nneIfTrue.le(MultiLevel.NULLABLE_DV)) {
@@ -178,7 +205,7 @@ public class InlineConditional extends BaseExpression implements Expression {
     }
 
     @Override
-    public List<Variable> variables(boolean descendIntoFieldReferences) {
+    public List<Variable> variables(DescendMode descendIntoFieldReferences) {
         return ListUtil.immutableConcat(condition.variables(descendIntoFieldReferences),
                 ifTrue.variables(descendIntoFieldReferences),
                 ifFalse.variables(descendIntoFieldReferences));
@@ -201,8 +228,20 @@ public class InlineConditional extends BaseExpression implements Expression {
         // UNLESS the result is of boolean type. There is sufficient logic in EvaluateInlineConditional to deal
         // with the boolean case.
         Expression condition = conditionResult.value();
-        Set<Variable> conditionVariables = Stream.concat(this.condition.variables(true).stream(),
-                condition.variables(true).stream()).collect(Collectors.toUnmodifiableSet());
+        Expression notCondition = Negation.negate(context, condition);
+       /* if (!condition.equals(this.condition) && !forwardEvaluationInfo.isInCompanionExpression()) {
+            Expression literal = this.condition.keepLiteralNotNull(context, true);
+            if (literal != null) {
+                condition = And.and(context, condition, literal);
+                Expression notLiteral = this.condition.keepLiteralNotNull(context, false);
+                notCondition = And.and(context, notCondition, notLiteral);
+            }
+        }*/
+        if (condition instanceof BooleanConstant && forwardEvaluationInfo.isComplainInlineConditional()) {
+            builder.raiseError(this.condition.getIdentifier(), Message.Label.INLINE_CONDITION_EVALUATES_TO_CONSTANT);
+        }
+        Set<Variable> conditionVariables = Stream.concat(this.condition.variableStream(),
+                condition.variableStream()).collect(Collectors.toUnmodifiableSet());
         if (condition.isInstanceOf(NullConstant.class) && forwardEvaluationInfo.isComplainInlineConditional()) {
             builder.raiseError(getIdentifier(), Message.Label.NULL_POINTER_EXCEPTION);
             condition = Instance.forUnspecifiedCondition(getIdentifier(), context.getPrimitives());
@@ -214,19 +253,20 @@ public class InlineConditional extends BaseExpression implements Expression {
         EvaluationResult ifTrueResult = ifTrue.evaluate(copyForThen, forwardEvaluationInfo);
         builder.compose(ifTrueResult);
 
-        EvaluationResult copyForElse = resultIsBoolean ? context :
-                context.child(Negation.negate(context, condition), conditionVariables);
+        EvaluationResult copyForElse = resultIsBoolean ? context : context.child(notCondition, conditionVariables);
         EvaluationResult ifFalseResult = ifFalse.evaluate(copyForElse, forwardEvaluationInfo);
         builder.compose(ifFalseResult);
 
         Expression t = ifTrueResult.value();
         Expression f = ifFalseResult.value();
-
         if (condition.isEmpty() || t.isEmpty() || f.isEmpty()) {
             throw new UnsupportedOperationException();
         }
+        DV modifying = ifTrueResult.containsModification()
+                .max(ifFalseResult.containsModification())
+                .max(conditionResult.containsModification());
         EvaluationResult cv = EvaluateInlineConditional.conditionalValueConditionResolved(context,
-                conditionAfterState, t, f, forwardEvaluationInfo.isComplainInlineConditional(), null);
+                conditionAfterState, t, f, forwardEvaluationInfo.isComplainInlineConditional(), null, modifying);
         return builder.compose(cv).build();
     }
 
@@ -240,16 +280,19 @@ public class InlineConditional extends BaseExpression implements Expression {
         // we'll want to evaluate in a different context, but pass on forward evaluation info to both
         // UNLESS the result is of boolean type. There is sufficient logic in EvaluateInlineConditional to deal
         // with the boolean case.
-        EvaluationResult copyForThen = resultIsBoolean ? evaluationContext : evaluationContext.child(condition, condition.variables(true).stream().collect(Collectors.toUnmodifiableSet()));
+        EvaluationResult copyForThen = resultIsBoolean ? evaluationContext
+                : evaluationContext.child(condition, condition.variableStream().collect(Collectors.toUnmodifiableSet()));
         Expression t = ifTrue instanceof InlineConditional inlineTrue ? inlineTrue.optimise(copyForThen, true, myself) : ifTrue;
-        EvaluationResult copyForElse = resultIsBoolean ? evaluationContext : evaluationContext.child(Negation.negate(evaluationContext, condition), condition.variables(true).stream().collect(Collectors.toUnmodifiableSet()));
+        EvaluationResult copyForElse = resultIsBoolean ? evaluationContext
+                : evaluationContext.child(Negation.negate(evaluationContext, condition),
+                condition.variableStream().collect(Collectors.toUnmodifiableSet()));
         Expression f = ifFalse instanceof InlineConditional inlineFalse ? inlineFalse.optimise(copyForElse, true, myself) : ifFalse;
 
         if (useState) {
             return EvaluateInlineConditional.conditionalValueCurrentState(evaluationContext, condition, t, f).getExpression();
         }
         return EvaluateInlineConditional.conditionalValueConditionResolved(evaluationContext, condition, t, f,
-                false, myself).getExpression();
+                false, myself, DV.FALSE_DV).getExpression();
 
     }
 

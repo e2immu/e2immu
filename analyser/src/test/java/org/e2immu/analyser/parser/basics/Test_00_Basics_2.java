@@ -41,12 +41,12 @@ import static org.junit.jupiter.api.Assertions.*;
 public class Test_00_Basics_2 extends CommonTestRunner {
 
     private static final String TYPE = "org.e2immu.analyser.parser.basics.testexample.Basics_2";
-    private static final String STRING_PARAMETER = TYPE + ".setString(java.lang.String):0:string";
+    private static final String STRING_PARAMETER = TYPE + ".setString(String):0:string";
     private static final String STRING_FIELD = TYPE + ".string";
 
     private static final String THIS = TYPE + ".this";
-    private static final String COLLECTION = TYPE + ".add(java.util.Collection<java.lang.String>):0:collection";
-    private static final String ADD = TYPE + ".add(java.util.Collection<java.lang.String>)";
+    private static final String COLLECTION = TYPE + ".add(java.util.Collection<String>):0:collection";
+    private static final String ADD = TYPE + ".add(java.util.Collection<String>)";
 
     public Test_00_Basics_2() {
         super(true);
@@ -98,8 +98,7 @@ public class Test_00_Basics_2 extends CommonTestRunner {
                     assertEquals(DV.TRUE_DV, d.getProperty(CONTEXT_MODIFIED));
                     assertTrue(d.properties().containsKey(CNN_TRAVELS_TO_PRECONDITION));
                     // cannot be content linked to string, because string is recursively immutable
-                    String linked = d.iteration() == 0 ? "this.string:-1" : "";
-                    assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
+                    assertTrue(d.variableInfo().getLinkedVariables().isEmpty());
                 }
                 if (d.variable() instanceof FieldReference fr && "string".equals(fr.fieldInfo.name)) {
                     assertEquals(STRING_FIELD, d.variableName());
@@ -111,7 +110,7 @@ public class Test_00_Basics_2 extends CommonTestRunner {
                     assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, d.getProperty(CONTEXT_NOT_NULL));
                     assertFalse(d.properties().containsKey(CNN_TRAVELS_TO_PRECONDITION));
                     assertDv(d, 1, MultiLevel.NULLABLE_DV, EXTERNAL_NOT_NULL);
-                    assertDv(d, 1, DV.FALSE_DV, CONTEXT_MODIFIED);
+                    assertDv(d, DV.FALSE_DV, CONTEXT_MODIFIED);
                 }
             }
             if ("setString".equals(d.methodInfo().name)) {
@@ -167,7 +166,7 @@ public class Test_00_Basics_2 extends CommonTestRunner {
                 }
                 if ("add".equals(d.methodInfo().name)) {
                     assertDv(d.p(0), 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, CONTEXT_NOT_NULL);
-                    assertDv(d, 1, DV.FALSE_DV, MODIFIED_METHOD);
+                    assertDv(d, DV.FALSE_DV, MODIFIED_METHOD);
                 }
             }
         };
@@ -197,7 +196,7 @@ public class Test_00_Basics_2 extends CommonTestRunner {
         TypeMapVisitor typeMapVisitor = typeMap -> {
             // check that the XML annotations have been read properly, and copied into the correct place
             TypeInfo stringType = typeMap.getPrimitives().stringTypeInfo();
-            assertEquals(MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, stringType.typeAnalysis.get().getProperty(IMMUTABLE));
+            assertEquals(MultiLevel.EFFECTIVELY_IMMUTABLE_DV, stringType.typeAnalysis.get().getProperty(IMMUTABLE));
 
             TypeInfo collection = typeMap.get(Collection.class);
             MethodInfo add = collection.findUniqueMethod("add", 1);

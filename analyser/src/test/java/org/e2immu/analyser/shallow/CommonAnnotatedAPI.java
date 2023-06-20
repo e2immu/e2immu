@@ -23,7 +23,6 @@ import org.e2immu.analyser.config.Configuration;
 import org.e2immu.analyser.config.InputConfiguration;
 import org.e2immu.analyser.inspector.TypeContext;
 import org.e2immu.analyser.model.MultiLevel;
-import org.e2immu.analyser.model.impl.LocationImpl;
 import org.e2immu.analyser.parser.Input;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.Parser;
@@ -70,27 +69,25 @@ public abstract class CommonAnnotatedAPI {
                 .toList();
         LOGGER.info("Have {} error messages", errors.size());
         errors.forEach(e -> LOGGER.info("Error: " + e));
-        // we do expect some
-        long ownErrors = errors.stream()
-                .filter(m -> ((LocationImpl) m.location()).info.getTypeInfo().fullyQualifiedName.startsWith("org.e2immu"))
-                .peek(m -> LOGGER.info("OWN ERROR: {}", m))
-                .count();
-        assertEquals(0L, ownErrors);
+        // not stopping here if there's errors, TestAnnotatedAPIErrors will fail
     }
 
-    protected void testERContainerType(TypeAnalysis typeAnalysis) {
-        assertEquals(MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, typeAnalysis.getProperty(Property.IMMUTABLE));
+    protected void testImmutableContainerType(TypeAnalysis typeAnalysis, boolean hcImmutable, boolean hcIndependent) {
+        DV immutableDv = hcImmutable ? MultiLevel.EFFECTIVELY_IMMUTABLE_HC_DV : MultiLevel.EFFECTIVELY_IMMUTABLE_DV;
+        assertEquals(immutableDv, typeAnalysis.getProperty(Property.IMMUTABLE));
         assertEquals(MultiLevel.CONTAINER_DV, typeAnalysis.getProperty(Property.CONTAINER));
-        assertEquals(MultiLevel.INDEPENDENT_DV, typeAnalysis.getProperty(Property.INDEPENDENT));
+        DV independentDv = hcIndependent ? MultiLevel.INDEPENDENT_HC_DV : MultiLevel.INDEPENDENT_DV;
+        assertEquals(independentDv, typeAnalysis.getProperty(Property.INDEPENDENT));
 
         assertEquals(DV.FALSE_DV, typeAnalysis.getProperty(Property.EXTENSION_CLASS));
         assertEquals(DV.FALSE_DV, typeAnalysis.getProperty(Property.UTILITY_CLASS));
         assertEquals(DV.FALSE_DV, typeAnalysis.getProperty(Property.SINGLETON));
         assertEquals(DV.FALSE_DV, typeAnalysis.getProperty(Property.FINALIZER));
+        assertEquals(DV.FALSE_DV, typeAnalysis.getProperty(Property.MODIFIED_METHOD));
 
         assertThrows(PropertyException.class, () -> typeAnalysis.getProperty(Property.FLUENT));
         assertThrows(PropertyException.class, () -> typeAnalysis.getProperty(Property.IDENTITY));
         assertThrows(PropertyException.class, () -> typeAnalysis.getProperty(Property.NOT_NULL_EXPRESSION));
-        assertThrows(PropertyException.class, () -> typeAnalysis.getProperty(Property.MODIFIED_METHOD));
+        assertThrows(PropertyException.class, () -> typeAnalysis.getProperty(Property.MODIFIED_VARIABLE));
     }
 }

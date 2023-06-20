@@ -15,6 +15,7 @@
 package org.e2immu.analyser.util;
 
 import org.e2immu.annotation.*;
+import org.e2immu.annotation.eventual.Only;
 import org.e2immu.support.Freezable;
 
 import java.util.*;
@@ -26,7 +27,7 @@ import java.util.function.Consumer;
  *
  * @param <T>
  */
-@E2Container(after = "frozen")
+@ImmutableContainer(after = "frozen")
 public class DependencyGraph<T> extends Freezable {
 
     private static class Node<T> {
@@ -35,11 +36,6 @@ public class DependencyGraph<T> extends Freezable {
 
         private Node(T t) {
             this.t = t;
-        }
-
-        private Node(T t, List<T> dependsOn) {
-            this.t = t;
-            this.dependsOn = dependsOn;
         }
     }
 
@@ -62,7 +58,7 @@ public class DependencyGraph<T> extends Freezable {
     }
 
     // return all transitive dependencies
-    @Independent
+    @Independent(hc = true)
     public Set<T> dependencies(@NotNull T t) {
         Set<T> result = new HashSet<>();
         recursivelyComputeDependencies(t, result);
@@ -85,13 +81,12 @@ public class DependencyGraph<T> extends Freezable {
         }
     }
 
-    @Independent
+    @Independent(hc = true)
     public Set<T> dependenciesWithoutStartingPoint(@NotNull T t) {
         Set<T> result = new HashSet<>();
         recursivelyComputeDependenciesWithoutStartingPoint(t, result);
         return result;
     }
-
 
     @NotModified
     private void recursivelyComputeDependenciesWithoutStartingPoint(@NotNull T t, @NotNull Set<T> result) {
@@ -159,7 +154,7 @@ public class DependencyGraph<T> extends Freezable {
     @NotNull
     @Modified
     @Only(before = "frozen")
-    private Node<T> getOrCreate(@NotNull T t) {
+    private Node<T> getOrCreate(@NotNull @Independent(hc = true) T t) {
         ensureNotFrozen();
         Objects.requireNonNull(t);
         Node<T> node = nodeMap.get(t);
@@ -171,19 +166,22 @@ public class DependencyGraph<T> extends Freezable {
     }
 
     @NotModified(contract = true)
-    public void visit(@NotNull BiConsumer<T, List<T>> consumer) {
+    public void visit(@NotNull @Independent(hc = true) BiConsumer<T, List<T>> consumer) {
         nodeMap.values().forEach(n -> consumer.accept(n.t, n.dependsOn));
     }
 
     @Only(before = "frozen")
     @Modified
-    public void addNode(@NotNull T t, @NotNull1 Collection<T> dependsOn) {
+    public void addNode(@NotNull @Independent(hc = true) T t,
+                        @NotNull(content = true) @Independent(hc = true) Collection<T> dependsOn) {
         addNode(t, dependsOn, false);
     }
 
     @Only(before = "frozen")
     @Modified
-    public void addNode(@NotNull T t, @NotNull1 Collection<T> dependsOn, boolean bidirectional) {
+    public void addNode(@NotNull @Independent(hc = true) T t,
+                        @NotNull(content = true) @Independent(hc = true) Collection<T> dependsOn,
+                        boolean bidirectional) {
         ensureNotFrozen();
         Node<T> node = getOrCreate(t);
         for (T d : dependsOn) {
@@ -197,7 +195,8 @@ public class DependencyGraph<T> extends Freezable {
         }
     }
 
-    @Independent1
+    @Independent(hc = true)
+    @NotModified
     public List<T> sorted() {
         return sorted(null, null, null);
     }
@@ -217,7 +216,8 @@ public class DependencyGraph<T> extends Freezable {
         };
     }
 
-    @Independent1
+    @Independent(hc = true)
+    @NotModified
     public List<T> sorted(Consumer<List<T>> reportPartOfCycle,
                           Consumer<T> reportIndependent,
                           Comparator<T> backupComparator) {
@@ -292,5 +292,53 @@ public class DependencyGraph<T> extends Freezable {
                 }
             }
         }
+    }
+
+    public record SortResult<T>(T t, int group) {
+        @Override
+        public String toString() {
+            return t + ":" + group;
+        }
+    }
+
+    /*
+     This method throws an exception when the graph is cyclic.
+     Return an element sort, the fewest dependencies first, with additional information about the dependencies
+     between the elements.
+     */
+    public List<SortResult<T>> sortedSequenceOfParallel(Comparator<T> parallelSorter) {
+        Map<T, Node<T>> toDo = new HashMap<>(nodeMap);
+        Set<T> done = new HashSet<>();
+        List<SortResult<T>> result = new ArrayList<>(nodeMap.size());
+        int iteration = 0;
+
+        while (!toDo.isEmpty()) {
+            List<T> parallel = new ArrayList<>();
+            for (Map.Entry<T, Node<T>> entry : toDo.entrySet()) {
+                List<T> dependencies = entry.getValue().dependsOn;
+                boolean safe;
+                if (dependencies == null || dependencies.isEmpty()) {
+                    safe = true;
+                } else {
+                    Set<T> copy = new HashSet<>(dependencies);
+                    copy.removeAll(done);
+                    copy.remove(entry.getKey());
+                    safe = copy.isEmpty();
+                }
+                if (safe) {
+                    parallel.add(entry.getKey());
+                }
+            }
+            if (parallel.isEmpty()) {
+                throw new UnsupportedOperationException("Found a cycle; don't use this method");
+            } else {
+                parallel.sort(parallelSorter);
+                for (T t : parallel) result.add(new SortResult<>(t, iteration));
+                parallel.forEach(toDo.keySet()::remove);
+                done.addAll(parallel);
+            }
+            iteration++;
+        }
+        return result;
     }
 }

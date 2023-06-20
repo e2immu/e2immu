@@ -20,6 +20,7 @@ import com.github.javaparser.ast.type.Type;
 import com.github.javaparser.ast.type.WildcardType;
 import org.e2immu.analyser.model.*;
 import org.e2immu.annotation.NotNull;
+import org.e2immu.annotation.Nullable;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -28,17 +29,27 @@ import java.util.Optional;
 import static org.e2immu.analyser.inspector.InspectionState.TRIGGER_BYTECODE_INSPECTION;
 
 public class ParameterizedTypeFactory {
+    @Nullable
+    public static ParameterizedType fromDoNotComplain(TypeContext context, Type type) {
+        return from(context, type, ParameterizedType.WildCard.NONE, false, null, false);
+    }
+
     @NotNull
     public static ParameterizedType from(TypeContext context, Type type) {
-        return from(context, type, ParameterizedType.WildCard.NONE, false, null);
+        return from(context, type, ParameterizedType.WildCard.NONE, false, null, true);
     }
 
     @NotNull
     public static ParameterizedType from(TypeContext context, Type type, boolean varargs, DollarResolver dollarResolver) {
-        return from(context, type, ParameterizedType.WildCard.NONE, varargs, dollarResolver);
+        return from(context, type, ParameterizedType.WildCard.NONE, varargs, dollarResolver, true);
     }
 
-    private static ParameterizedType from(TypeContext context, Type type, ParameterizedType.WildCard wildCard, boolean varargs, DollarResolver dollarResolver) {
+    private static ParameterizedType from(TypeContext context,
+                                          Type type,
+                                          ParameterizedType.WildCard wildCard,
+                                          boolean varargs,
+                                          DollarResolver dollarResolver,
+                                          boolean complain) {
         Type baseType = type;
         int arrays = 0;
         if (type.isArrayType()) {
@@ -56,11 +67,11 @@ public class ParameterizedTypeFactory {
         if (type instanceof WildcardType wildcardType) {
             if (wildcardType.getExtendedType().isPresent()) {
                 // ? extends T
-                return from(context, wildcardType.getExtendedType().get(), ParameterizedType.WildCard.EXTENDS, false, dollarResolver);
+                return from(context, wildcardType.getExtendedType().get(), ParameterizedType.WildCard.EXTENDS, false, dollarResolver, complain);
             }
             if (wildcardType.getSuperType().isPresent()) {
                 // ? super T
-                return from(context, wildcardType.getSuperType().get(), ParameterizedType.WildCard.SUPER, false, dollarResolver);
+                return from(context, wildcardType.getSuperType().get(), ParameterizedType.WildCard.SUPER, false, dollarResolver, complain);
             }
             return ParameterizedType.WILDCARD_PARAMETERIZED_TYPE; // <?>
         }
@@ -72,7 +83,8 @@ public class ParameterizedTypeFactory {
             name = cit.getName().getIdentifier();
             if (cit.getTypeArguments().isPresent()) {
                 for (Type typeArgument : cit.getTypeArguments().get()) {
-                    ParameterizedType subPt = from(context, typeArgument);
+                    ParameterizedType subPt = from(context, typeArgument, ParameterizedType.WildCard.NONE, false,
+                            null, true);
                     parameters.add(subPt);
                 }
             }
@@ -82,18 +94,17 @@ public class ParameterizedTypeFactory {
                 String fqn = scopeType.asString() + "." + name;
                 TypeInfo typeInfo = context.getFullyQualified(fqn, false);
                 if (typeInfo != null) {
-                    return parameters.isEmpty() ? new ParameterizedType(typeInfo, arrays) : new ParameterizedType(typeInfo, parameters);
+                    return parameters.isEmpty()
+                            ? new ParameterizedType(typeInfo, arrays)
+                            : new ParameterizedType(typeInfo, parameters);
                 }
-                ParameterizedType scopePt = from(context, scopeType);
-                // name probably is a sub-type in scopePt...
-                if (scopePt.typeInfo != null) {
-                    return findFieldOrSubType(context, arrays, name, parameters, scopePt, true);
+                ParameterizedType scopePt = from(context, scopeType, ParameterizedType.WildCard.NONE, false,
+                        null, complain);
+                // name probably is a subtype in scopePt... (Map.Entry)
+                if (scopePt != null && scopePt.typeInfo != null) {
+                    return findSubType(context, arrays, name, parameters, scopePt, complain);
                 }
-            }// else {
-            // class or interface type, but completely without scope? we should look in our own hierarchy (this scope)
-            // could be a subtype of one of the interfaces (here, we're in an implementation of Expression, and InScopeType is a subtype of Expression)
-            // TODO
-            //}
+            }
         } else {
             name = baseType.asString();
         }
@@ -112,33 +123,34 @@ public class ParameterizedTypeFactory {
             }
             return new ParameterizedType(typeParameter, arrays, wildCard);
         }
-
-        throw new UnsupportedOperationException("Unknown type: " + name + " at line "
-                + baseType.getBegin() + " of " + baseType.getClass());
+        if(complain) {
+            throw new UnsupportedOperationException("Unknown type: " + name + " at line "
+                    + baseType.getBegin() + " of " + baseType.getClass());
+        }
+        return null;
     }
 
-    private static ParameterizedType findFieldOrSubType(TypeContext typeContext,
-                                                        int arrays,
-                                                        String name,
-                                                        List<ParameterizedType> parameters,
-                                                        ParameterizedType scopePt,
-                                                        boolean complain) {
+
+    private static ParameterizedType findSubType(TypeContext typeContext,
+                                                 int arrays,
+                                                 String name,
+                                                 List<ParameterizedType> parameters,
+                                                 ParameterizedType scopePt,
+                                                 boolean complain) {
         TypeInspection scopeInspection = typeContext.getTypeInspection(scopePt.typeInfo);
         if (scopeInspection != null) {
             Optional<TypeInfo> subType = scopeInspection.subTypes().stream().filter(st -> st.simpleName.equals(name)).findFirst();
             if (subType.isPresent()) {
                 return parameters.isEmpty() ? new ParameterizedType(subType.get(), arrays) : new ParameterizedType(subType.get(), parameters);
             }
-            Optional<FieldInfo> field = scopeInspection.fields().stream().filter(f -> f.name.equals(name)).findFirst();
-            if (field.isPresent()) return field.get().type;
 
             ParameterizedType parent = scopeInspection.parentClass();
             if (parent != null && !parent.isJavaLangObject()) {
-                ParameterizedType res = findFieldOrSubType(typeContext, arrays, name, parameters, parent, false);
+                ParameterizedType res = findSubType(typeContext, arrays, name, parameters, parent, false);
                 if (res != null) return res;
             }
             for (ParameterizedType implementedInterface : scopeInspection.interfacesImplemented()) {
-                ParameterizedType res = findFieldOrSubType(typeContext, arrays, name, parameters, implementedInterface, false);
+                ParameterizedType res = findSubType(typeContext, arrays, name, parameters, implementedInterface, false);
                 if (res != null) return res;
             }
             if (complain) {

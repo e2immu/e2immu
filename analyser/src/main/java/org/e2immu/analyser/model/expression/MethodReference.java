@@ -14,20 +14,22 @@
 
 package org.e2immu.analyser.model.expression;
 
-import org.e2immu.analyser.analyser.DV;
-import org.e2immu.analyser.analyser.EvaluationResult;
-import org.e2immu.analyser.analyser.ForwardEvaluationInfo;
-import org.e2immu.analyser.analyser.Property;
+import org.e2immu.analyser.analyser.*;
+import org.e2immu.analyser.analyser.util.ComputeIndependent;
 import org.e2immu.analyser.analysis.MethodAnalysis;
+import org.e2immu.analyser.analysis.ParameterAnalysis;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.variable.This;
+import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.Symbol;
 import org.e2immu.analyser.output.Text;
 import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.util.UpgradableBooleanMap;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.function.Predicate;
 
@@ -64,6 +66,9 @@ public class MethodReference extends ExpressionWithMethodReferenceResolution {
 
     @Override
     public Expression translate(InspectionProvider inspectionProvider, TranslationMap translationMap) {
+        Expression translated = translationMap.translateExpression(this);
+        if (translated != this) return translated;
+
         Expression translatedScope = scope.translate(inspectionProvider, translationMap);
         ParameterizedType transType = translationMap.translateType(concreteReturnType);
         if (translatedScope == scope && transType == concreteReturnType) return this;
@@ -131,6 +136,46 @@ public class MethodReference extends ExpressionWithMethodReferenceResolution {
         return builder.build();
     }
 
+    /*
+     Example: other.map.forEach(this::put), in SetOnceMap.putAll
+     equivalent of other.map.forEach((k,v) -> this.put(k,v))
+     k and v as parameters of put are linked to this at independent_hc level, and should cause a link
+     from forEach:k --3--> this, forEach:v --3--> this, so that we end up with
+       other.map <--4--> this, and other <--4--> this.
+     We definitely don't want other <--2--> this.
+
+     Example:
+
+     */
+    @Override
+    public LinkedVariables linkedVariables(EvaluationResult context) {
+        if (scope instanceof TypeExpression) {
+            return LinkedVariables.EMPTY;
+        }
+        MethodAnalysis methodAnalysis = context.getAnalyserContext().getMethodAnalysis(methodInfo);
+        Map<Variable, DV> newLvMap = new HashMap<>();
+        EvaluationResult scopeResult = scope.evaluate(context, ForwardEvaluationInfo.DEFAULT);
+        LinkedVariables scopeLv = scopeResult.value().linkedVariables(context);
+        ComputeIndependent computeIndependent = new ComputeIndependent(context.getAnalyserContext(), context.getCurrentType());
+
+        for (ParameterAnalysis parameterAnalysis : methodAnalysis.getParameterAnalyses()) {
+            DV paramIndependent = parameterAnalysis.getProperty(Property.INDEPENDENT);
+            if (!MultiLevel.INDEPENDENT_DV.equals(paramIndependent)) {
+                for (Map.Entry<Variable, DV> e : scopeLv) {
+                    int index = parameterAnalysis.getParameterInfo().index;
+                    // the concreteReturnType is the concrete functional type; grab the type parameter!
+                    ParameterizedType concreteParameterType = this.concreteReturnType.parameters.get(index);
+                    DV dv = computeIndependent.linkLevelOfParameterVsScope(e.getKey().parameterizedType(),
+                            e.getValue(), concreteParameterType, paramIndependent);
+                    if (!LinkedVariables.LINK_INDEPENDENT.equals(dv)) {
+                        newLvMap.merge(e.getKey(), dv, DV::min);
+                    }
+                }
+            }
+        }
+        return LinkedVariables.of(newLvMap);
+    }
+
     @Override
     public List<? extends Element> subElements() {
         return List.of(scope);
@@ -151,7 +196,7 @@ public class MethodReference extends ExpressionWithMethodReferenceResolution {
         return switch (property) {
             case NOT_NULL_EXPRESSION -> notNull(context, methodInfo);
             case CONTAINER -> MultiLevel.CONTAINER_DV;
-            case IMMUTABLE -> MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV;
+            case IMMUTABLE -> MultiLevel.EFFECTIVELY_IMMUTABLE_DV;
 
             case IDENTITY, IGNORE_MODIFICATIONS, FLUENT, CONTEXT_MODIFIED -> property.falseDv;
             case INDEPENDENT -> MultiLevel.INDEPENDENT_DV;

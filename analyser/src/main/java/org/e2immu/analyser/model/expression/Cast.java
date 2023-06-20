@@ -32,7 +32,8 @@ public class Cast extends BaseExpression implements Expression {
     private final ParameterizedType parameterizedType;
 
     public Cast(Expression expression, ParameterizedType parameterizedType) {
-        super(Identifier.joined("cast", List.of(expression.getIdentifier())));
+        super(Identifier.joined("cast", List.of(expression.getIdentifier())),
+                2 + expression.getComplexity());
         this.expression = Objects.requireNonNull(expression);
         this.parameterizedType = Objects.requireNonNull(parameterizedType);
     }
@@ -53,6 +54,9 @@ public class Cast extends BaseExpression implements Expression {
 
     @Override
     public Expression translate(InspectionProvider inspectionProvider, TranslationMap translationMap) {
+        Expression translated = translationMap.translateExpression(this);
+        if (translated != this) return translated;
+
         Expression translatedExpression = expression.translate(inspectionProvider, translationMap);
         ParameterizedType translatedType = translationMap.translateType(this.parameterizedType);
         if (translatedExpression == this.expression && translatedType == this.parameterizedType) return this;
@@ -67,7 +71,10 @@ public class Cast extends BaseExpression implements Expression {
     @Override
     public EvaluationResult evaluate(EvaluationResult context, ForwardEvaluationInfo forwardEvaluationInfo) {
         EvaluationResult er = expression.evaluate(context, forwardEvaluationInfo);
-
+        if (forwardEvaluationInfo.isOnlySort()) {
+            Cast newCast = new Cast(er.getExpression(), parameterizedType);
+            return new EvaluationResult.Builder(context).compose(er).setExpression(newCast).build();
+        }
         if (parameterizedType.equals(er.getExpression().returnType())) return er;
         Expression result = PropertyWrapper.propertyWrapper(er.getExpression(), null, parameterizedType);
 
@@ -115,7 +122,7 @@ public class Cast extends BaseExpression implements Expression {
     @Override
     public DV getProperty(EvaluationResult context, Property property, boolean duringEvaluation) {
         if (property == Property.IMMUTABLE || property == Property.CONTAINER || property == Property.INDEPENDENT) {
-            return context.getAnalyserContext().getProperty(parameterizedType, property, false);
+            return context.getAnalyserContext().getProperty(parameterizedType, property);
         }
         return context.evaluationContext().getProperty(expression, property, duringEvaluation, false);
     }

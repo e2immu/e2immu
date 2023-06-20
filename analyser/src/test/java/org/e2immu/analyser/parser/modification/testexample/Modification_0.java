@@ -14,15 +14,13 @@
 
 package org.e2immu.analyser.parser.modification.testexample;
 
-import org.e2immu.annotation.E1Container;
-import org.e2immu.annotation.Modified;
-import org.e2immu.annotation.NotModified;
-import org.e2immu.annotation.NotNull;
+import org.e2immu.annotation.*;
 
 import java.util.HashSet;
 import java.util.Set;
 
-@E1Container
+@FinalFields
+@Container
 public class Modification_0 {
 
     @NotModified(absent = true)

@@ -74,11 +74,12 @@ public class TestIsAssignableFromGenerics {
         String PACKAGE = "org.e2immu";
         primitives.objectTypeInfo().typeInspection.set(new TypeInspectionImpl.Builder(primitives.objectTypeInfo(), BY_HAND)
                 .setTypeNature(TypeNature.CLASS)
-                .build());
+                .setAccess(Inspection.Access.PUBLIC)
+                .build(null));
 
         myComparable = new TypeInfo(PACKAGE, "MyComparable");
         {
-            TypeParameter myComparableT = new TypeParameterImpl(myComparable, "T", 0);
+            TypeParameter myComparableT = new TypeParameterImpl(myComparable, "T", 0).noTypeBounds();
 
             TypeInspection.Builder myComparableInspection = new TypeInspectionImpl.Builder(myComparable, BY_HAND)
                     .noParent(primitives)
@@ -86,34 +87,44 @@ public class TestIsAssignableFromGenerics {
             MethodInspectionImpl.Builder compareToBuilder = new MethodInspectionImpl.Builder(myComparable, "compareTo");
             MethodInfo compareTo = compareToBuilder
                     .setReturnType(primitives.intParameterizedType())
+                    .setAccess(Inspection.Access.PUBLIC)
+                    .setAbstractMethod()
                     .addParameter(new ParameterInspectionImpl.Builder(Identifier.generate("compareTo"),
                             new ParameterizedType(myComparableT, 0, NONE), "t", 0))
                     .build(IP).getMethodInfo();
             myComparable.typeInspection.set(myComparableInspection
                     .setTypeNature(TypeNature.INTERFACE)
+                    .setAccess(Inspection.Access.PUBLIC)
                     .addMethod(compareTo)
-                    .build());
+                    .build(null));
         }
         node = new TypeInfo(PACKAGE, "Node");
         {
             TypeInspection.Builder builder = new TypeInspectionImpl.Builder(node, BY_HAND)
                     .addInterfaceImplemented(new ParameterizedType(myComparable, List.of(new ParameterizedType(node, List.of()))))
                     .noParent(primitives);
-            node.typeInspection.set(builder.setTypeNature(TypeNature.INTERFACE).build());
+            node.typeInspection.set(builder
+                    .setAccess(Inspection.Access.PUBLIC)
+                    .setTypeNature(TypeNature.INTERFACE)
+                    .build(null));
         }
         sub1 = new TypeInfo(PACKAGE, "Sub1");
         {
             TypeInspection.Builder builder = new TypeInspectionImpl.Builder(sub1, BY_HAND)
                     .addInterfaceImplemented(new ParameterizedType(node, List.of()))
                     .noParent(primitives);
-            sub1.typeInspection.set(builder.setTypeNature(TypeNature.INTERFACE).build());
+            sub1.typeInspection.set(builder
+                    .setAccess(Inspection.Access.PUBLIC)
+                    .setTypeNature(TypeNature.INTERFACE)
+                    .build(null));
         }
         sub2 = new TypeInfo(PACKAGE, "Sub2");
         {
             TypeInspection.Builder builder = new TypeInspectionImpl.Builder(sub2, BY_HAND)
                     .addInterfaceImplemented(new ParameterizedType(node, List.of()))
                     .noParent(primitives);
-            sub2.typeInspection.set(builder.setTypeNature(TypeNature.INTERFACE).build());
+            sub2.typeInspection.set(builder.setTypeNature(TypeNature.INTERFACE)
+                    .setAccess(Inspection.Access.PUBLIC).build(null));
         }
 
         // interface MyList1<T extends Node> extends MyComparable<MyList1<T>>
@@ -128,17 +139,20 @@ public class TestIsAssignableFromGenerics {
             MethodInspectionImpl.Builder addBuilder = new MethodInspectionImpl.Builder(myList1, "add");
             add = addBuilder
                     .setReturnType(primitives.voidParameterizedType())
+                    .setAccess(Inspection.Access.PUBLIC)
+                    .setAbstractMethod()
                     .addParameter(new ParameterInspectionImpl.Builder(Identifier.generate("add"),
                             new ParameterizedType(t, 0, NONE), "t", 0))
                     .build(IP).getMethodInfo();
             add.methodResolution.set(new MethodResolution.Builder().build());
             myList1.typeInspection.set(builder
                     .setTypeNature(TypeNature.INTERFACE)
+                    .setAccess(Inspection.Access.PUBLIC)
                     .addInterfaceImplemented(new ParameterizedType(myComparable, List.of(
                             new ParameterizedType(myList1, List.of(new ParameterizedType(t, 0, NONE)))
                     )))
                     .addMethod(add)
-                    .build());
+                    .build(null));
         }
         // interface MyList2<T extends Node> extends MyComparable<MyList2<? super T>>
         myList2 = new TypeInfo(PACKAGE, "MyList2");
@@ -154,7 +168,8 @@ public class TestIsAssignableFromGenerics {
                     .addInterfaceImplemented(new ParameterizedType(myComparable, List.of(
                             new ParameterizedType(myList2, List.of(new ParameterizedType(t, 0, SUPER)))
                     )))
-                    .build());
+                    .setAccess(Inspection.Access.PUBLIC)
+                    .build(null));
         }
         // interface MyList3<T extends Node> extends MyComparable<MyList3<? extends T>>
         myList3 = new TypeInfo(PACKAGE, "MyList3");
@@ -170,7 +185,8 @@ public class TestIsAssignableFromGenerics {
                     .addInterfaceImplemented(new ParameterizedType(myComparable, List.of(
                             new ParameterizedType(myList3, List.of(new ParameterizedType(t, 0, EXTENDS)))
                     )))
-                    .build());
+                    .setAccess(Inspection.Access.PUBLIC)
+                    .build(null));
         }
     }
 
@@ -182,15 +198,48 @@ public class TestIsAssignableFromGenerics {
     }
 
     @Test
+    public void testArrayTypeParam() {
+        // T[] <- T is not possible
+        // T <- T[] is not possible
+        TypeParameter tp = myList1.typeInspection.get().typeParameters().get(0);
+        ParameterizedType tArray = new ParameterizedType(tp, 1, NONE);
+        assertEquals("Type param T[]", tArray.toString());
+        ParameterizedType t = new ParameterizedType(tp, 0, NONE);
+        assertEquals("Type param T", t.toString());
+
+        assertFalse(tArray.isAssignableFrom(InspectionProvider.DEFAULT, t));
+        assertFalse(t.isAssignableFrom(InspectionProvider.DEFAULT, tArray));
+    }
+
+    @Test
+    public void testArrayTypeParam2() {
+        // T[] <- S is not possible
+        // T <- S[] is possible
+        TypeParameter tp1 = myList1.typeInspection.get().typeParameters().get(0);
+        ParameterizedType tArray = new ParameterizedType(tp1, 1, NONE);
+        assertEquals("Type param T[]", tArray.toString());
+        assertNotNull(tArray.typeParameter);
+        assertEquals("[org.e2immu.MyList1|null]", tArray.typeParameter.getOwner().toString());
+        TypeParameter tp2 = myList2.typeInspection.get().typeParameters().get(0);
+        ParameterizedType t = new ParameterizedType(tp2, 0, NONE);
+        assertEquals("Type param T", t.toString());
+        assertNotNull(t.typeParameter);
+        assertEquals("[org.e2immu.MyList2|null]", t.typeParameter.getOwner().toString());
+
+        assertFalse(tArray.isAssignableFrom(InspectionProvider.DEFAULT, t));
+        assertTrue(t.isAssignableFrom(InspectionProvider.DEFAULT, tArray));
+    }
+
+    @Test
     public void testOutput() {
-        assertTrue(myComparable.output().toString().contains("interface MyComparable<T>{int compareTo(T t){}}"),
+        assertTrue(myComparable.output().toString().contains("interface MyComparable<T>{int compareTo(T t);}"),
                 () -> myComparable.output().toString());
         assertTrue(node.output().toString().contains("interface Node extends MyComparable<Node>{"),
                 () -> node.output().toString());
         assertTrue(sub1.output().toString().contains("interface Sub1 extends Node{"), () -> sub1.output().toString());
         assertTrue(sub2.output().toString().contains("interface Sub2 extends Node{"), () -> sub2.output().toString());
         assertTrue(myList1.output().toString()
-                        .contains("interface MyList1<T extends Node> extends MyComparable<MyList1<T>>{void add(T t){}}"),
+                        .contains("interface MyList1<T extends Node> extends MyComparable<MyList1<T>>{void add(T t);}"),
                 () -> myList1.output().toString());
         assertTrue(myList2.output().toString()
                         .contains("interface MyList2<T extends Node> extends MyComparable<MyList2<? super T>>{"),

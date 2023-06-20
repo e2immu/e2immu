@@ -28,13 +28,12 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.util.List;
 
-import static org.e2immu.analyser.config.AnalyserProgram.Step.*;
 import static org.junit.jupiter.api.Assertions.*;
 
 public abstract class CommonTestRunner extends VisitorTestSupport {
     private static final Logger LOGGER = LoggerFactory.getLogger(CommonTestRunner.class);
     public static final String DEFAULT_ANNOTATED_API_DIRS = "../annotatedAPIs/src/main/java";
-    public static final String JDK_16 = "/Library/Java/JavaVirtualMachines/adoptopenjdk-16.jdk/Contents/Home";
+    public static final String CURRENT_JDK = "/Library/Java/JavaVirtualMachines/openjdk.jdk/Contents/Home";
     public static final int DONT_CARE = -1;
     public static final int BIG = 200; // Expressions_0 currently at 97
     public final boolean withAnnotatedAPIs;
@@ -81,11 +80,10 @@ public abstract class CommonTestRunner extends VisitorTestSupport {
                                     DebugConfiguration debugConfiguration,
                                     AnalyserConfiguration analyserConfiguration,
                                     AnnotatedAPIConfiguration annotatedAPIConfiguration) throws IOException {
-        assertTrue(analyserConfiguration.analyserProgram().accepts(ALL));
         // parsing the annotatedAPI files needs them being backed up by .class files, so we'll add the Java
         // test runner's classpath to ours
         InputConfiguration.Builder inputConfigurationBuilder = new InputConfiguration.Builder()
-                .setAlternativeJREDirectory(JDK_16)
+                .setAlternativeJREDirectory(CURRENT_JDK)
                 .addSources("src/test/java")
                 .addClassPath(withAnnotatedAPIs ? InputConfiguration.DEFAULT_CLASSPATH
                         : InputConfiguration.CLASSPATH_WITHOUT_ANNOTATED_APIS)
@@ -105,6 +103,7 @@ public abstract class CommonTestRunner extends VisitorTestSupport {
                 .setAnnotatedAPIConfiguration(annotatedAPIConfiguration)
                 .addDebugLogTargets("analyser")
                 .setInputConfiguration(inputConfigurationBuilder.build())
+                .setInspectorConfiguration(new InspectorConfiguration.Builder().setStoreComments(true).build())
                 .build();
         return execute(configuration, errorsToExpect, warningsToExpect);
     }
@@ -123,12 +122,13 @@ public abstract class CommonTestRunner extends VisitorTestSupport {
                                                     DebugConfiguration debugConfiguration,
                                                     AnalyserConfiguration analyserConfiguration) throws IOException {
         InputConfiguration.Builder builder = new InputConfiguration.Builder()
-                .setAlternativeJREDirectory(JDK_16)
+                .setAlternativeJREDirectory(CURRENT_JDK)
                 .addSources("src/main/java")
                 .addSources("src/test/java")
                 .addSources("../../e2immu-support/src/main/java")
                 .addClassPath(InputConfiguration.DEFAULT_CLASSPATH)
                 .addClassPath(Input.JAR_WITH_PATH_PREFIX + "org/slf4j")
+                .addClassPath(Input.JAR_WITH_PATH_PREFIX + "org/junit/jupiter/api")
                 .addClassPath(Input.JAR_WITH_PATH_PREFIX + "ch/qos/logback/core")
                 .addClassPath(Input.JAR_WITH_PATH_PREFIX + "com/github/javaparser/ast");
 
@@ -147,6 +147,7 @@ public abstract class CommonTestRunner extends VisitorTestSupport {
                 .setDebugConfiguration(debugConfiguration)
                 .setInputConfiguration(builder.build())
                 .setAnalyserConfiguration(analyserConfiguration)
+                .setInspectorConfiguration(new InspectorConfiguration.Builder().setStoreComments(true).build())
                 .build();
         return execute(configuration, errorsToExpect, warningsToExpect);
     }
@@ -177,7 +178,7 @@ public abstract class CommonTestRunner extends VisitorTestSupport {
             filteredMessages = messages;
         } else {
             filteredMessages = messages.stream()
-                    .filter(m -> m.message() != Message.Label.TYPE_HAS_HIGHER_VALUE_FOR_INDEPENDENT ||
+                    .filter(m -> m.message() != Message.Label.TYPE_HAS_DIFFERENT_VALUE_FOR_INDEPENDENT ||
                             ((LocationImpl) m.location()).info == null ||
                             !((LocationImpl) m.location()).info.getTypeInfo().packageName().startsWith("java."))
                     .toList();

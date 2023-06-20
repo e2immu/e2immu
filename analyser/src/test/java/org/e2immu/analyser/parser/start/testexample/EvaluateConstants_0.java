@@ -20,12 +20,11 @@ public class EvaluateConstants_0 {
 
     @NotNull
     @Final
-    @Linked(to = { "EvaluateConstants_0:in" }) // assigned
     private String effectivelyFinal;
 
     @NotNull
     @Final
-    @Constant("abc")
+    @ImmutableContainer("abc")
     private String constant;
 
     public EvaluateConstants_0(@NotNull String in) {
@@ -40,7 +39,7 @@ public class EvaluateConstants_0 {
     }
 
     @NotNull
-    @Constant("abc")
+    @ImmutableContainer("abc")
     public String getConstant() {
         return constant;
     }

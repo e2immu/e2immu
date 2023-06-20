@@ -25,18 +25,16 @@ import org.e2immu.analyser.model.impl.BaseExpression;
 import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.util.UpgradableBooleanMap;
-import org.e2immu.annotation.E2Container;
 
 import java.util.Objects;
 import java.util.function.Predicate;
 
-@E2Container
 public class TypeExpression extends BaseExpression implements Expression {
     public final ParameterizedType parameterizedType;
     public final Diamond diamond;
 
     public TypeExpression(Identifier identifier, ParameterizedType parameterizedType, Diamond diamond) {
-        super(identifier);
+        super(identifier, 1);
         this.parameterizedType = Objects.requireNonNull(parameterizedType);
         this.diamond = diamond;
     }
@@ -92,9 +90,12 @@ public class TypeExpression extends BaseExpression implements Expression {
 
     @Override
     public Expression translate(InspectionProvider inspectionProvider, TranslationMap translationMap) {
-        ParameterizedType translated = translationMap.translateType(parameterizedType);
-        if (translated == parameterizedType) return this;
-        return new TypeExpression(identifier, translated, diamond);
+        Expression translated = translationMap.translateExpression(this);
+        if(translated != this) return translated;
+
+        ParameterizedType translatedType = translationMap.translateType(parameterizedType);
+        if (translatedType == parameterizedType) return this;
+        return new TypeExpression(identifier, translatedType, diamond);
     }
 
     @Override
@@ -112,8 +113,7 @@ public class TypeExpression extends BaseExpression implements Expression {
         if (property == Property.NOT_NULL_EXPRESSION) return MultiLevel.EFFECTIVELY_NOT_NULL_DV;
         if (property == Property.IMMUTABLE) {
             // used by EvaluationContext.extractHiddenContent
-            return context.getAnalyserContext().defaultImmutable(parameterizedType, false,
-                    context.getCurrentType());
+            return context.getAnalyserContext().typeImmutable(parameterizedType);
         }
         return property.falseDv;
     }

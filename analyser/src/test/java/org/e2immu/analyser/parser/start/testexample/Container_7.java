@@ -14,7 +14,10 @@
 
 package org.e2immu.analyser.parser.start.testexample;
 
-import org.e2immu.annotation.*;
+import org.e2immu.annotation.Container;
+import org.e2immu.annotation.Modified;
+import org.e2immu.annotation.NotModified;
+import org.e2immu.annotation.NotNull;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -22,8 +25,11 @@ import java.util.Map;
 /*
 Test to catch a @Container going from 0 to 1 error in intelliJ highlighter
 The "put" method modifies its first parameter!
+
+IMPORTANT: because Complex is non-static, and it is used in fields of Container_7,
+the default "isMyself = mutable" kicks in; see ComputeIndependent.typeImmutable()
  */
-@E2Immutable(recursive = true)
+@Container(absent = true)
 public class Container_7 {
 
     private static final String XYZ = "xyz";
@@ -32,7 +38,7 @@ public class Container_7 {
     private static final int nineEightSeven = 987;
 
     // NOTE! this one is not a container, because it is not static
-    @E2Immutable(recursive = true)
+    @Container(absent = true)
     public class Complex {
         final int i, j;
 
@@ -49,7 +55,6 @@ public class Container_7 {
         return map;
     }
 
-    @ERContainer
     @NotNull
     @NotModified
     public final Map<String, Complex> MAP2 = Map.copyOf(put(put(new HashMap<>(), ABC, new Complex(oneTwoThree, nineEightSeven)),

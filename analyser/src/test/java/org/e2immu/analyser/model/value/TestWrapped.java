@@ -37,8 +37,8 @@ public class TestWrapped extends CommonAbstractValue {
         assertTrue(eq(stringA, stringB).isBoolValueFalse());
         assertTrue(eq(stringA, stringA).isBoolValueTrue());
 
-        Expression bWrapped = PropertyWrapper.propertyWrapper(stringB, LinkedVariables.of(Map.of(va, LinkedVariables.ASSIGNED_DV)));
-        assertEquals("\"b\"/*{L a:assigned:1}*/", bWrapped.toString());
+        Expression bWrapped = PropertyWrapper.propertyWrapper(stringB, LinkedVariables.of(Map.of(va, LinkedVariables.LINK_ASSIGNED)));
+        assertEquals("\"b\"/*{L a:1}*/", bWrapped.toString());
 
         assertTrue(eq(bWrapped, stringB).isBoolValueTrue());
         assertTrue(eq(stringA, bWrapped).isBoolValueFalse());
@@ -47,7 +47,7 @@ public class TestWrapped extends CommonAbstractValue {
     @Test
     public void testGe() {
         Expression ten = new IntConstant(PRIMITIVES, 10);
-        Expression tenWrapped = PropertyWrapper.propertyWrapper(ten, LinkedVariables.of(Map.of(va, LinkedVariables.ASSIGNED_DV)));
+        Expression tenWrapped = PropertyWrapper.propertyWrapper(ten, LinkedVariables.of(Map.of(va, LinkedVariables.LINK_ASSIGNED)));
         Expression gt = GreaterThanZero.greater(context, ten, tenWrapped, true);
         assertTrue(gt.isBoolValueTrue());
     }
