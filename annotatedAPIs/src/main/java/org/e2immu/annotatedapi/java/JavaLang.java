@@ -692,4 +692,9 @@ class JavaLang {
         int enumerate(@Modified Thread[] tArray);
     }
 
+    @Independent
+    interface Runnable$ {
+        @Modified
+        void run();
+    }
 }

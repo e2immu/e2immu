@@ -65,6 +65,14 @@ public class DependencyGraph<T> extends Freezable {
         return result;
     }
 
+    @Nullable
+    @NotModified
+    public List<T> directDependencies(@NotNull @Independent(hc = true) T t) {
+        Node<T> node = nodeMap.get(t);
+        if (node == null) return List.of();
+        return node.dependsOn;
+    }
+    
     @NotModified
     private void recursivelyComputeDependencies(@NotNull T t, @NotNull Set<T> result) {
         Objects.requireNonNull(t);

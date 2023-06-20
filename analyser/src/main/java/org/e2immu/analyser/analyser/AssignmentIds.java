@@ -16,10 +16,11 @@ package org.e2immu.analyser.analyser;
 
 import org.e2immu.analyser.util.StringUtil;
 
+import java.util.Iterator;
 import java.util.TreeSet;
 import java.util.stream.Stream;
 
-public class AssignmentIds implements Comparable<AssignmentIds> {
+public class AssignmentIds implements Comparable<AssignmentIds>, Iterable<String> {
     public static AssignmentIds NOT_YET_ASSIGNED = new AssignmentIds();
 
     private final TreeSet<String> ids;
@@ -56,7 +57,7 @@ public class AssignmentIds implements Comparable<AssignmentIds> {
     }
 
     public String getLatestAssignmentIndex() {
-        return ids.isEmpty() ? "-" : StringUtil.stripLevel(getLatestAssignment());
+        return ids.isEmpty() ? "-" : StringUtil.stripStage(getLatestAssignment());
     }
 
     @Override
@@ -66,5 +67,11 @@ public class AssignmentIds implements Comparable<AssignmentIds> {
 
     public String getEarliestAssignmentIndex() {
         return ids.isEmpty() ? "-" : ids.ceiling("-");
+    }
+
+    @Override
+    public Iterator<String> iterator() {
+        // in this way, it is read-only
+        return ids.stream().iterator();
     }
 }

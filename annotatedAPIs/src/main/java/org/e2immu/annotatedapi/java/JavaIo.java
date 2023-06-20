@@ -217,6 +217,12 @@ public class JavaIo {
 
     }
 
+    @Independent
+    interface BufferedReader$ {
+        @Modified
+        String readLine();
+    }
+
     /*
     The @Independent here implies that the InputStream will not keep a dependent copy of the CharBuffer or Writer.
     This type is obviously not a @Container, the 'transferTo' method modifies its arguments.
