@@ -19,9 +19,7 @@ import org.e2immu.analyser.analyser.delay.DelayFactory;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.util.ExpressionComparator;
 import org.e2immu.analyser.model.impl.BaseExpression;
-import org.e2immu.analyser.model.variable.DependentVariable;
-import org.e2immu.analyser.model.variable.FieldReference;
-import org.e2immu.analyser.model.variable.Variable;
+import org.e2immu.analyser.model.variable.*;
 import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.Text;
 import org.e2immu.analyser.parser.InspectionProvider;
@@ -35,9 +33,6 @@ import java.util.Set;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-
-import static org.e2immu.analyser.model.expression.ArrayAccess.ARRAY_VARIABLE;
-import static org.e2immu.analyser.model.expression.ArrayAccess.INDEX_VARIABLE;
 
 public class DelayedVariableExpression extends BaseExpression implements IsVariableExpression {
     public final String msg;
@@ -288,16 +283,15 @@ public class DelayedVariableExpression extends BaseExpression implements IsVaria
                 Expression translatedArray = dv.arrayExpression().translate(inspectionProvider, translationMap);
                 Expression translatedIndex = dv.indexExpression().translate(inspectionProvider, translationMap);
                 if (translatedArray != dv.arrayExpression() || translatedIndex != dv.indexExpression()) {
-                    Variable av = ArrayAccess.makeVariable(translatedArray, translatedArray.getIdentifier(), ARRAY_VARIABLE, dv.getOwningType());
-                    Variable iv = ArrayAccess.makeVariable(translatedIndex, translatedIndex.getIdentifier(), INDEX_VARIABLE, dv.getOwningType());
-                    DependentVariable newDv = new DependentVariable(dv.getIdentifier(), translatedArray,
-                            Objects.requireNonNull(av), translatedIndex, iv, dv.parameterizedType, dv.statementIndex);
+                    DependentVariable newDv = DependentVariable.create(dv.getIdentifier(), translatedArray,
+                            translatedIndex, dv.statementIndex, dv.getOwningType());
                     return DelayedVariableExpression.forDependentVariable(newDv, causesOfDelay);
                 }
             }
         }
         return this;
     }
+
 
     @Override
     public LinkedVariables linkedVariables(EvaluationResult context) {

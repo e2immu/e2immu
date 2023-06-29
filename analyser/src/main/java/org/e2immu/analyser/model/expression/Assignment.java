@@ -140,8 +140,6 @@ public class Assignment extends BaseExpression implements Expression {
         VariableExpression ve;
         if ((ve = target.asInstanceOf(VariableExpression.class)) != null) {
             variableTarget = ve.variable();
-        } else if (target instanceof ArrayAccess arrayAccess) {
-            variableTarget = arrayAccess.dependentVariable;
         } else {
             throw new UnsupportedOperationException();
         }

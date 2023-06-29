@@ -36,9 +36,6 @@ import java.util.*;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
 
-import static org.e2immu.analyser.model.expression.ArrayAccess.ARRAY_VARIABLE;
-import static org.e2immu.analyser.model.expression.ArrayAccess.INDEX_VARIABLE;
-
 public class VariableExpression extends BaseExpression implements IsVariableExpression {
 
     public interface Suffix extends Comparable<Suffix> {
@@ -243,11 +240,11 @@ public class VariableExpression extends BaseExpression implements IsVariableExpr
                 Expression translatedScope = dv.arrayExpression().translate(inspectionProvider, translationMap);
                 Expression translatedIndex = dv.indexExpression().translate(inspectionProvider, translationMap);
                 if (translatedScope != dv.arrayExpression() || translatedIndex != dv.indexExpression()) {
-                    Variable arrayVariable = ArrayAccess.makeVariable(translatedScope, translatedScope.getIdentifier(),
-                            ARRAY_VARIABLE, dv.getOwningType());
+                    Variable arrayVariable = DependentVariable.makeVariable(translatedScope, translatedScope.getIdentifier(),
+                            DependentVariable.ARRAY_VARIABLE, dv.getOwningType());
                     assert arrayVariable != null;
-                    Variable indexVariable = ArrayAccess.makeVariable(translatedIndex, translatedIndex.getIdentifier(),
-                            INDEX_VARIABLE, dv.getOwningType());
+                    Variable indexVariable = DependentVariable.makeVariable(translatedIndex, translatedIndex.getIdentifier(),
+                            DependentVariable.INDEX_VARIABLE, dv.getOwningType());
                     DependentVariable newDv = new DependentVariable(dv.getIdentifier(), translatedScope,
                             arrayVariable, translatedIndex, indexVariable, dv.parameterizedType(), dv.statementIndex);
                     if (newDv.causesOfDelay().isDelayed()) {

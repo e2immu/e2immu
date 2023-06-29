@@ -16,9 +16,11 @@ package org.e2immu.analyser.model.variable;
 
 import org.e2immu.analyser.analyser.CausesOfDelay;
 import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.model.expression.VariableExpression;
 import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.Text;
 
+import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 import java.util.function.Predicate;
@@ -34,6 +36,8 @@ import java.util.stream.Stream;
  */
 public class DependentVariable extends VariableWithConcreteReturnType {
 
+    public static final String ARRAY_VARIABLE = "av-";
+    public static final String INDEX_VARIABLE = "iv-";
     public final String name;
     public final String simpleName;
     private final Expression arrayExpression;
@@ -61,6 +65,36 @@ public class DependentVariable extends VariableWithConcreteReturnType {
         name = arrayVariable.fullyQualifiedName() + "[" + indexFqn + "]";
         String indexSimple = indexVariable == null ? indexExpression.minimalOutput() : indexVariable.simpleName();
         simpleName = arrayVariable.simpleName() + "[" + indexSimple + "]";
+    }
+
+    public static DependentVariable create(Identifier identifier,
+                                           Expression array,
+                                           Expression index,
+                                           String statementIndex,
+                                           TypeInfo owningType) {
+        Variable av = DependentVariable.makeVariable(array, array.getIdentifier(), DependentVariable.ARRAY_VARIABLE,
+                owningType);
+        Variable iv = DependentVariable.makeVariable(index, index.getIdentifier(), DependentVariable.INDEX_VARIABLE,
+                owningType);
+        ParameterizedType pt = array.returnType().copyWithOneFewerArrays();
+        return new DependentVariable(identifier, array, Objects.requireNonNull(av), index, iv, pt, statementIndex);
+    }
+
+    public static Variable makeVariable(Expression expression,
+                                        Identifier identifier,
+                                        String variablePrefix,
+                                        TypeInfo owningType) {
+        if (expression.isConstant()) return null;
+        VariableExpression ve;
+        if ((ve = expression.asInstanceOf(VariableExpression.class)) != null) {
+            return ve.variable();
+        }
+        assert !identifier.unstableIdentifier() : "cannot have unstable identifiers here!";
+        String name = variablePrefix + identifier.compact();
+        VariableNature vn = new VariableNature.ScopeVariable();
+        LocalVariable lv = new LocalVariable(Set.of(LocalVariableModifier.FINAL), name, expression.returnType(),
+                List.of(), owningType, vn);
+        return new LocalVariableReference(lv, expression);
     }
 
     public Identifier getIdentifier() {
