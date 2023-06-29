@@ -18,7 +18,7 @@ plugins {
     id 'maven-publish'
 }
 
-version '0.6.0'
+version '0.6.1'
 group 'org.e2immu'
 
 java {
@@ -32,7 +32,7 @@ jar {
 
 
 dependencies {
-    implementation group: 'org.e2immu', name: 'e2immu-support', version: '0.6.0'   // LGPL 3.0
+    implementation group: 'org.e2immu', name: 'e2immu-support', version: '0.6.1'   // LGPL 3.0
     implementation project(':analyser')
     implementation project(':analyser-store-uploader')
     implementation project(':analyser-cli')
@@ -40,9 +40,9 @@ dependencies {
     implementation group: 'org.slf4j', name: 'slf4j-api', version: '1.7.36'        // MIT X-11 License
     implementation group: 'ch.qos.logback', name: 'logback-classic', version: '1.2.11' // EPL v1.0 and the LGPL 2.1
 
-    implementation 'com.github.javaparser:javaparser-core:3.24.10'
-    testImplementation 'org.junit.jupiter:junit-jupiter-api:5.9.0'                 // EPL v2
-    testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.9.0'
+    implementation 'com.github.javaparser:javaparser-core:3.25.3'
+    testImplementation 'org.junit.jupiter:junit-jupiter-api:5.9.3'                 // EPL v2
+    testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.9.3'
 }
 
 test {

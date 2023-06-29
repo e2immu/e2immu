@@ -22,6 +22,7 @@ import org.e2immu.analyser.output.Text;
 import java.util.Objects;
 import java.util.Set;
 import java.util.function.Predicate;
+import java.util.stream.Stream;
 
 /**
  * variable representing a complex expression by name, concretely, used to store array access variables.
@@ -157,5 +158,12 @@ public class DependentVariable extends VariableWithConcreteReturnType {
     @Override
     public int getComplexity() {
         return arrayExpression.getComplexity() + indexExpression.getComplexity();
+    }
+
+    @Override
+    public Stream<Variable> variableStream() {
+        Stream<Variable> s1 = arrayVariable != null ? arrayVariable.variableStream() : Stream.of();
+        Stream<Variable> s2 = indexVariable != null ? indexVariable.variableStream() : Stream.of();
+        return Stream.concat(Stream.of(this), Stream.concat(s1, s2));
     }
 }

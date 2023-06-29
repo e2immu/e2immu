@@ -29,9 +29,11 @@ import org.e2immu.analyser.util.ListUtil;
 import org.e2immu.support.Either;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.function.Predicate;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static org.e2immu.analyser.model.expression.ArrayAccess.ARRAY_VARIABLE;
@@ -299,7 +301,8 @@ public class DelayedVariableExpression extends BaseExpression implements IsVaria
 
     @Override
     public LinkedVariables linkedVariables(EvaluationResult context) {
-        return LinkedVariables.of(variable, causesOfDelay);
+        Map<Variable, DV> map = variable.variableStream().distinct().collect(Collectors.toMap(v -> v, v -> causesOfDelay));
+        return LinkedVariables.of(map);
     }
 
     /*

@@ -625,6 +625,17 @@ public class And extends ExpressionCanBeTooComplex {
             // A unrelated to B, we drop the negation
             return Action.REPLACE;
         }
+
+        // null != a && a instanceof B
+        if (value instanceof InstanceOf i
+                && i.expression() instanceof VariableExpression iv
+                && prev instanceof Negation neg
+                && neg.expression instanceof Equals eq
+                && eq.lhs.isNull()
+                && eq.rhs instanceof VariableExpression ve && ve.variable().equals(iv.variable())) {
+            // remove previous
+            return Action.REPLACE;
+        }
         return null;
     }
 

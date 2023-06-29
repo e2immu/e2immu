@@ -32,6 +32,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 import java.util.function.Predicate;
+import java.util.stream.Stream;
 
 import static org.e2immu.analyser.output.QualifiedName.Required.*;
 
@@ -272,7 +273,15 @@ public class FieldReference extends VariableWithConcreteReturnType {
 
     @Override
     public int getComplexity() {
-        if(isStatic) return 2;
+        if (isStatic) return 2;
         return 1 + scope.getComplexity();
+    }
+
+    @Override
+    public Stream<Variable> variableStream() {
+        if (scopeVariable != null) {
+            return Stream.concat(Stream.of(this), scopeVariable.variableStream());
+        }
+        return Stream.of(this);
     }
 }

@@ -18,6 +18,7 @@ import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.Identifier;
 import org.e2immu.analyser.model.ParameterizedType;
 import org.e2immu.analyser.model.expression.InstanceOf;
+import org.e2immu.analyser.model.expression.Negation;
 import org.e2immu.analyser.model.expression.NullConstant;
 import org.junit.jupiter.api.Test;
 
@@ -86,5 +87,13 @@ public class TestInstanceOf extends CommonAbstractValue {
         assertEquals("!(an instanceof Boolean)&&!(an instanceof Character)", and1.toString());
         Expression or3 = newOrAppend(and1, equals(NullConstant.NULL_CONSTANT, an));
         assertEquals(AND_OF_ORS, or3.toString());
+    }
+
+    @Test
+    public void test5() {
+        Expression e1 = instanceOf(an, new ParameterizedType(PRIMITIVES.boxedBooleanTypeInfo(), 0));
+        Expression e2 = negate(equals(NullConstant.NULL_CONSTANT, an));
+        Expression and = newAndAppend(e2, e1);
+        assertEquals("an instanceof Boolean", and.toString());
     }
 }

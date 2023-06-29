@@ -222,6 +222,12 @@ public class JavaUtilStream {
         @Independent(hc = true)
         @ImmutableContainer(hc = true)
         List<T> toList();
+
+        @NotNull
+        @Modified
+        @Finalizer
+        @Independent(hc = true)
+        <A> A[] toArray(IntFunction<A[]> generator);
     }
 
     @ImmutableContainer

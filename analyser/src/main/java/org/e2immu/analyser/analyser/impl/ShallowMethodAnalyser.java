@@ -235,7 +235,6 @@ public class ShallowMethodAnalyser extends MethodAnalyserImpl {
     }
 
     private DV computeParameterIgnoreModification(ParameterAnalysisImpl.Builder builder) {
-        if (methodInspection.isStatic()) return MultiLevel.NOT_IGNORE_MODS_DV;
         return builder.getParameterInfo().parameterizedType.isAbstractInJavaUtilFunction(analyserContext) ?
                 MultiLevel.IGNORE_MODS_DV : MultiLevel.NOT_IGNORE_MODS_DV;
     }

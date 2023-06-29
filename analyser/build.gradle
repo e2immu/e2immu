@@ -45,8 +45,8 @@ dependencies {
     implementation 'org.ow2.asm:asm:9.4'                  // 3-clause BSD permissive license
 
     // TEST
-    testImplementation 'org.junit.jupiter:junit-jupiter-api:5.9.0'                    // EPL v2.0
-    testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.9.0'
+    testImplementation 'org.junit.jupiter:junit-jupiter-api:5.9.3'                    // EPL v2.0
+    testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.9.3'
 }
 
 version = '0.6.1'

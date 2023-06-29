@@ -27,6 +27,7 @@ import org.e2immu.annotation.NotNull;
 import java.util.Set;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * groups: FieldInfo, ParameterInfo, LocalVariable
@@ -118,7 +119,16 @@ public interface Variable extends OneVariable, Comparable<Variable> {
     /*
     scope variable or index variable is contained in set?
      */
-    default boolean containsAtLeastOneOf(Set<? extends Variable> variables) { return false; }
+    default boolean containsAtLeastOneOf(Set<? extends Variable> variables) {
+        return false;
+    }
 
-    default int getComplexity() { return 1; }
+    default int getComplexity() {
+        return 1;
+    }
+
+    // descend
+    default Stream<Variable> variableStream() {
+        return Stream.of(this);
+    }
 }
