@@ -78,6 +78,11 @@ public class ParameterAnalysisImpl extends AnalysisImpl implements ParameterAnal
         return linksToOtherParameters;
     }
 
+    @Override
+    public Map<FieldInfo, DV> getAssignedToField() {
+        return assignedToField;
+    }
+
     public static class Builder extends AbstractAnalysisBuilder implements ParameterAnalysis {
         private final ParameterInfo parameterInfo;
         private final SetOnceMap<FieldInfo, DV> assignedToField = new SetOnceMap<>();
