@@ -19,10 +19,10 @@ plugins {
 }
 
 group 'org.e2immu'
-version '0.6.1'
+version '0.6.2'
 
 dependencies {
-    implementation group: 'org.e2immu', name: 'e2immu-support', version: '0.6.1'      // LGPL 3.0
+    implementation group: 'org.e2immu', name: 'e2immu-support', version: '0.6.2'      // LGPL 3.0
 
     implementation project(':analyser')
     implementation project(':analyser-store-uploader')
@@ -41,8 +41,8 @@ test {
 }
 
 java {
-    sourceCompatibility = JavaVersion.VERSION_16
-    targetCompatibility = JavaVersion.VERSION_16
+    sourceCompatibility = JavaVersion.VERSION_17
+    targetCompatibility = JavaVersion.VERSION_17
 }
 
 application {

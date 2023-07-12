@@ -24,8 +24,9 @@ import org.e2immu.analyser.model.impl.AnnotationExpressionImpl;
 import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
 import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.parser.Primitives;
+import org.e2immu.analyser.util.CommutableData;
 import org.e2immu.analyser.util.ParSeq;
-import org.e2immu.analyser.util.ParallelGroup;
+import org.e2immu.analyser.util.ParameterParallelGroup;
 import org.e2immu.annotation.Modified;
 import org.e2immu.annotation.NotModified;
 import org.e2immu.support.*;
@@ -218,7 +219,7 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
         public final MethodInfo methodInfo;
         private final SetOnce<StatementAnalysis> firstStatement = new SetOnce<>();
         public final List<ParameterAnalysis> parameterAnalyses;
-        public final TypeAnalysis typeAnalysisOfOwner;
+        public final TypeAnalysisImpl.Builder typeAnalysisOfOwner;
         private final AnalysisProvider analysisProvider;
         private final InspectionProvider inspectionProvider;
 
@@ -226,6 +227,7 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
         private final EventuallyFinal<Eventual> eventual = new EventuallyFinal<>();
         private final EventuallyFinal<Expression> singleReturnValue = new EventuallyFinal<>();
         private final SetOnce<ParSeq<ParameterInfo>> parallelGroups = new SetOnce<>();
+        private final SetOnceMap<ParameterInfo, CommutableData> parallelGroupBuilder = new SetOnceMap<>();
         private final SetOnce<FieldInfo> getSet = new SetOnce<>();
 
         public final EventuallyFinal<Precondition> precondition = new EventuallyFinal<>();
@@ -328,7 +330,8 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
 
         @Override
         public ParSeq<ParameterInfo> getParallelGroups() {
-            return parallelGroups.getOrDefaultNull();
+            return parallelGroups.isSet() ? parallelGroups.get()
+                    : parallelGroupBuilder.isEmpty() ? null : buildParallelGroups();
         }
 
         @Override
@@ -341,7 +344,7 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
                        AnalysisProvider analysisProvider,
                        InspectionProvider inspectionProvider,
                        MethodInfo methodInfo,
-                       TypeAnalysis typeAnalysisOfOwner,
+                       TypeAnalysisImpl.Builder typeAnalysisOfOwner,
                        List<ParameterAnalysis> parameterAnalyses) {
             super(primitives, methodInfo.name);
             this.inspectionProvider = inspectionProvider;
@@ -393,13 +396,31 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
                     annotationChecks.toImmutableMap(),
                     getCompanionAnalyses(),
                     getComputedCompanions(),
-                    parallelGroups.getOrDefaultNull(),
+                    getParallelGroups(),
                     getSet.getOrDefaultNull());
         }
 
+        /*
+        Currently accepts only the all-parallel situation.
+         */
+        private ParSeq<ParameterInfo> buildParallelGroups() {
+            boolean allInSameParallelGroup = parameterAnalyses.stream()
+                    .map(ParameterAnalysis::getParameterInfo)
+                    .allMatch(pi -> parallelGroupBuilder.isSet(pi) && parallelGroupBuilder.get(pi).isDefault());
+            if (allInSameParallelGroup) {
+                return new ParameterParallelGroup();
+            }
+            throw new UnsupportedOperationException("NYI");
+        }
+
         @Override
-        protected void addCommutable() {
-            parallelGroups.set(new ParallelGroup<>());
+        protected void addCommutable(CommutableData commutableData) {
+            assert typeAnalysisOfOwner != null : "There are a number of special cases where the builder is null";
+            typeAnalysisOfOwner.addMethodCommutable(methodInfo, commutableData);
+        }
+
+        public void addParameterCommutable(ParameterInfo parameterInfo, CommutableData commutableData) {
+            parallelGroupBuilder.put(parameterInfo, commutableData);
         }
 
         @Override

@@ -15,12 +15,16 @@
 package org.e2immu.analyser.analysis.impl;
 
 import org.e2immu.analyser.analyser.*;
+import org.e2immu.analyser.analysis.MethodAnalysis;
 import org.e2immu.analyser.analysis.TypeAnalysis;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.VariableExpression;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
 import org.e2immu.analyser.parser.Primitives;
+import org.e2immu.analyser.util.CommutableData;
+import org.e2immu.analyser.util.MethodParSeq;
+import org.e2immu.analyser.util.ParSeq;
 import org.e2immu.annotation.FinalFields;
 import org.e2immu.annotation.Independent;
 import org.e2immu.annotation.type.UtilityClass;
@@ -28,10 +32,7 @@ import org.e2immu.support.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 public class TypeAnalysisImpl extends AnalysisImpl implements TypeAnalysis {
@@ -46,6 +47,7 @@ public class TypeAnalysisImpl extends AnalysisImpl implements TypeAnalysis {
     private final Set<FieldInfo> eventuallyImmutableFields;
     private final Set<FieldInfo> guardedByEventuallyImmutableFields;
     private final Set<FieldInfo> visibleFields;
+    private final ParSeq<MethodInfo> parallelGroups;
 
     private final boolean immutableDeterminedByTypeParameters;
 
@@ -59,7 +61,8 @@ public class TypeAnalysisImpl extends AnalysisImpl implements TypeAnalysis {
                              SetOfTypes hiddenContentTypes,
                              Map<String, MethodInfo> aspects,
                              Set<FieldInfo> visibleFields,
-                             boolean immutableDeterminedByTypeParameters) {
+                             boolean immutableDeterminedByTypeParameters,
+                             ParSeq<MethodInfo> parallelGroups) {
         super(properties, annotations);
         this.typeInfo = typeInfo;
         this.approvedPreconditionsE1 = approvedPreconditionsE1;
@@ -70,6 +73,7 @@ public class TypeAnalysisImpl extends AnalysisImpl implements TypeAnalysis {
         this.guardedByEventuallyImmutableFields = guardedByEventuallyImmutableFields;
         this.visibleFields = visibleFields;
         this.immutableDeterminedByTypeParameters = immutableDeterminedByTypeParameters;
+        this.parallelGroups = parallelGroups;
     }
 
     @Override
@@ -167,6 +171,11 @@ public class TypeAnalysisImpl extends AnalysisImpl implements TypeAnalysis {
         return e2 ? !approvedPreconditionsE2.isEmpty() : !approvedPreconditionsE1.isEmpty();
     }
 
+    @Override
+    public ParSeq<MethodInfo> getParallelGroups() {
+        return parallelGroups;
+    }
+
     public static class CycleInfo {
         public final AddOnceSet<MethodInfo> nonModified = new AddOnceSet<>();
         public final FlipSwitch modified = new FlipSwitch();
@@ -209,6 +218,9 @@ public class TypeAnalysisImpl extends AnalysisImpl implements TypeAnalysis {
         private CausesOfDelay approvedPreconditionsE1Delays;
         private CausesOfDelay approvedPreconditionsE2Delays;
 
+        private final SetOnceMap<MethodInfo, CommutableData> parallelGroupBuilder = new SetOnceMap<>();
+        private final SetOnce<ParSeq<MethodInfo>> parallelGroups = new SetOnce<>();
+        private final AnalyserContext analyserContext;
 
         @Override
         public void internalAllDoneCheck() {
@@ -236,6 +248,7 @@ public class TypeAnalysisImpl extends AnalysisImpl implements TypeAnalysis {
             immutableDeterminedByTypeParameters = new VariableFirstThen<>(initialDelay);
             approvedPreconditionsE2Delays = initialDelay;
             approvedPreconditionsE1Delays = initialDelay;
+            this.analyserContext = analyserContext;
         }
 
         @Override
@@ -471,7 +484,8 @@ public class TypeAnalysisImpl extends AnalysisImpl implements TypeAnalysis {
                     hiddenContentTypes.isSet() ? hiddenContentTypes.get() : SetOfTypes.EMPTY,
                     getAspects(),
                     visibleFields,
-                    immutableDeterminedByTypeParameters.getOrDefault(false));
+                    immutableDeterminedByTypeParameters.getOrDefault(false),
+                    getParallelGroups());
         }
 
         public void setApprovedPreconditionsE1Delays(CausesOfDelay causes) {
@@ -519,6 +533,21 @@ public class TypeAnalysisImpl extends AnalysisImpl implements TypeAnalysis {
             if (!guardedByEventuallyImmutableFields.contains(fieldInfo)) {
                 guardedByEventuallyImmutableFields.add(fieldInfo);
             }
+        }
+
+        public void addMethodCommutable(MethodInfo methodInfo, CommutableData commutableData) {
+            this.parallelGroupBuilder.put(methodInfo, commutableData);
+        }
+
+        // used by JFocus
+        public void setParallelGroups(ParSeq<MethodInfo> parSeq) {
+            this.parallelGroups.set(parSeq);
+        }
+
+        @Override
+        public ParSeq<MethodInfo> getParallelGroups() {
+            return parallelGroups.isSet() ? parallelGroups.get()
+                    : parallelGroupBuilder.isEmpty() ? null : new MethodParSeq(parallelGroupBuilder.toImmutableMap());
         }
     }
 }

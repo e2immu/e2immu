@@ -24,6 +24,7 @@ import org.e2immu.analyser.model.impl.AnnotationExpressionImpl;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
 import org.e2immu.analyser.parser.Primitives;
+import org.e2immu.analyser.util.CommutableData;
 import org.e2immu.annotation.NotModified;
 import org.e2immu.support.EventuallyFinal;
 import org.e2immu.support.SetOnce;
@@ -89,6 +90,7 @@ public class ParameterAnalysisImpl extends AnalysisImpl implements ParameterAnal
         private final EventuallyFinal<CausesOfDelay> causesOfAssignedToFieldDelays = new EventuallyFinal<>();
         public final Location location;
         private final AnalysisProvider analysisProvider;
+        private final SetOnce<MethodAnalysisImpl.Builder> methodAnalysis = new SetOnce<>();
         private final SetOnce<LinkedVariables> linksToParameters = new SetOnce<>();
 
         @Override
@@ -102,6 +104,16 @@ public class ParameterAnalysisImpl extends AnalysisImpl implements ParameterAnal
             this.parameterInfo = parameterInfo;
             this.location = parameterInfo.newLocation();
             this.analysisProvider = analysisProvider;
+        }
+
+        public void setMethodAnalysis(MethodAnalysisImpl.Builder methodAnalysis) {
+            this.methodAnalysis.set(methodAnalysis);
+        }
+
+        @Override
+        protected void addCommutable(CommutableData commutableData) {
+            assert methodAnalysis.isSet() : "Set methodAnalysis immediately after its creation";
+            methodAnalysis.get().addParameterCommutable(parameterInfo, commutableData);
         }
 
         @Override

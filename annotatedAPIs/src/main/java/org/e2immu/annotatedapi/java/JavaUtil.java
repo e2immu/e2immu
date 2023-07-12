@@ -16,7 +16,7 @@ package org.e2immu.annotatedapi.java;
 
 import org.e2immu.annotatedapi.AnnotatedAPI;
 import org.e2immu.annotation.*;
-import org.e2immu.annotation.rare.Commutable;
+import org.e2immu.annotation.Commutable;
 import org.e2immu.annotation.type.UtilityClass;
 
 import java.util.*;
@@ -509,52 +509,42 @@ public class JavaUtil extends AnnotatedAPI {
         // IMPROVE advanced <F> int of$Postcondition$Size(F f1, F f2, java.util.Set<F> retVal) { return isFact(f1.equals(f2)) ? (f1.equals(f2) ? 1: 2): retVal.size(); }
         @ImmutableContainer(hc = true)
         @NotNull(content = true)
-        @Commutable
-        <G> java.util.Set<G> of(@NotNull G e1, @NotNull G e2);
+        <G> java.util.Set<G> of(@Commutable @NotNull G e1, @Commutable @NotNull G e2);
 
         @ImmutableContainer(hc = true)
         @NotNull(content = true)
-        @Commutable
-        <H> java.util.Set<H> of(@NotNull H e1, @NotNull H e2, @NotNull H e3);
+        <H> java.util.Set<H> of(@Commutable @NotNull H e1, @Commutable @NotNull H e2, @Commutable @NotNull H e3);
 
         @ImmutableContainer(hc = true)
         @NotNull(content = true)
-        @Commutable
-        <H> java.util.Set<H> of(@NotNull H e1, @NotNull H e2, @NotNull H e3, @NotNull H e4);
+        <H> java.util.Set<H> of(@Commutable @NotNull H e1, @Commutable @NotNull H e2, @Commutable @NotNull H e3, @Commutable @NotNull H e4);
 
         @ImmutableContainer(hc = true)
         @NotNull(content = true)
-        @Commutable
-        <H> java.util.Set<H> of(@NotNull H e1, @NotNull H e2, @NotNull H e3, @NotNull H e4, @NotNull H e5);
+        <H> java.util.Set<H> of(@Commutable @NotNull H e1, @Commutable @NotNull H e2, @Commutable @NotNull H e3, @Commutable @NotNull H e4, @Commutable @NotNull H e5);
 
         @ImmutableContainer(hc = true)
         @NotNull(content = true)
-        @Commutable
-        <H> java.util.Set<H> of(@NotNull H e1, @NotNull H e2, @NotNull H e3, @NotNull H e4, @NotNull H e5, @NotNull H e6);
+        <H> java.util.Set<H> of(@Commutable @NotNull H e1, @Commutable @NotNull H e2, @Commutable @NotNull H e3, @Commutable @NotNull H e4, @Commutable @NotNull H e5, @Commutable @NotNull H e6);
 
         @ImmutableContainer(hc = true)
         @NotNull(content = true)
-        @Commutable
-        <H> java.util.Set<H> of(@NotNull H e1, @NotNull H e2, @NotNull H e3, @NotNull H e4, @NotNull H e5, @NotNull H e6, @NotNull H e7);
+        <H> java.util.Set<H> of(@Commutable @NotNull H e1, @Commutable @NotNull H e2, @Commutable @NotNull H e3, @Commutable @NotNull H e4, @Commutable @NotNull H e5, @Commutable @NotNull H e6, @Commutable @NotNull H e7);
 
         @ImmutableContainer(hc = true)
         @NotNull(content = true)
-        @Commutable
-        <H> java.util.Set<H> of(@NotNull H e1, @NotNull H e2, @NotNull H e3, @NotNull H e4, @NotNull H e5, @NotNull H e6, @NotNull H e7, @NotNull H e8);
+        <H> java.util.Set<H> of(@Commutable @NotNull H e1, @Commutable @NotNull H e2, @Commutable @NotNull H e3, @Commutable @NotNull H e4, @Commutable @NotNull H e5, @Commutable @NotNull H e6, @Commutable @NotNull H e7, @Commutable @NotNull H e8);
 
         @ImmutableContainer(hc = true)
         @NotNull(content = true)
-        @Commutable
-        <H> java.util.Set<H> of(@NotNull H e1, @NotNull H e2, @NotNull H e3, @NotNull H e4, @NotNull H e5, @NotNull H e6, @NotNull H e7, @NotNull H e8, @NotNull H e9);
+        <H> java.util.Set<H> of(@Commutable @NotNull H e1, @Commutable @NotNull H e2, @Commutable @NotNull H e3, @Commutable @NotNull H e4, @Commutable @NotNull H e5, @Commutable @NotNull H e6, @Commutable @NotNull H e7, @Commutable @NotNull H e8, @Commutable @NotNull H e9);
 
         @ImmutableContainer(hc = true)
         @NotNull(content = true)
-        @Commutable
-        <H> java.util.Set<H> of(@NotNull H e1, @NotNull H e2, @NotNull H e3, @NotNull H e4, @NotNull H e5, @NotNull H e6, @NotNull H e7, @NotNull H e8, @NotNull H e9, @NotNull H e10);
+        <H> java.util.Set<H> of(@Commutable @NotNull H e1, @Commutable @NotNull H e2, @Commutable @NotNull H e3, @Commutable @NotNull H e4, @Commutable @NotNull H e5, @Commutable @NotNull H e6, @Commutable @NotNull H e7, @Commutable @NotNull H e8, @Commutable @NotNull H e9, @Commutable @NotNull H e10);
 
         @ImmutableContainer(hc = true)
         @NotNull(content = true)
-        @Commutable
         <H> java.util.Set<H> of(@NotNull(content = true) @Independent(hc = true) H... hs);
 
         default boolean remove$Modification$Size(int i, Integer j, Object o) {

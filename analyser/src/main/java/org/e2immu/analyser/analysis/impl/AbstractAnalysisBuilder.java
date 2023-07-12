@@ -30,6 +30,7 @@ import org.e2immu.analyser.model.impl.AnnotationExpressionImpl;
 import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
 import org.e2immu.analyser.parser.Messages;
 import org.e2immu.analyser.parser.Primitives;
+import org.e2immu.analyser.util.CommutableData;
 import org.e2immu.annotation.NotNull;
 import org.e2immu.annotation.Nullable;
 import org.e2immu.support.SetOnceMap;
@@ -288,12 +289,14 @@ abstract class AbstractAnalysisBuilder implements Analysis {
                 } else if (e2ImmuAnnotationExpressions.fluent.typeInfo() == t) {
                     // @Fluent
                     setProperty(Property.FLUENT, trueFalse);
-                } else if(e2ImmuAnnotationExpressions.getSet.typeInfo() ==t ) {
+                } else if (e2ImmuAnnotationExpressions.getSet.typeInfo() == t) {
                     // @GetSet
                     getSet(annotationExpression.extract(VALUE, null));
                 } else if (e2ImmuAnnotationExpressions.identity.typeInfo() == t) {
                     // @Identity
                     setProperty(Property.IDENTITY, trueFalse);
+                } else if (e2ImmuAnnotationExpressions.commutable.typeInfo() == t) {
+                    addCommutable(annotationExpression);
 
                     // EVENTUAL ANNOTATIONS
                 } else if (e2ImmuAnnotationExpressions.beforeMark.typeInfo() == t) {
@@ -323,8 +326,6 @@ abstract class AbstractAnalysisBuilder implements Analysis {
                     setProperty(Property.EXTENSION_CLASS, trueFalse);
 
                     // RARE ANNOTATIONS
-                } else if(e2ImmuAnnotationExpressions.commutable.typeInfo() == t) {
-                    addCommutable();
                 } else if (e2ImmuAnnotationExpressions.staticSideEffects.typeInfo() == t) {
                     // @StaticSideEffects
                     setProperty(Property.STATIC_SIDE_EFFECTS, trueFalse);
@@ -393,9 +394,19 @@ abstract class AbstractAnalysisBuilder implements Analysis {
         return messages;
     }
 
-    protected void getSet(String fieldName) { throw new UnsupportedOperationException(); }
+    protected void getSet(String fieldName) {
+        throw new UnsupportedOperationException();
+    }
 
-    protected void addCommutable() {
+    private void addCommutable(AnnotationExpression annotationExpression) {
+        String par = annotationExpression.extract(PAR, "");
+        String seq = annotationExpression.extract(SEQ, "");
+        String par2 = annotationExpression.extract(PAR_2, "");
+        String seq2 = annotationExpression.extract(SEQ_2, "");
+        addCommutable(new CommutableData(par, seq, par2, seq2));
+    }
+
+    protected void addCommutable(CommutableData commutableData) {
         throw new UnsupportedOperationException();
     }
 

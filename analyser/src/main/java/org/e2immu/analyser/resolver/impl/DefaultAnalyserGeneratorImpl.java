@@ -77,7 +77,8 @@ public class DefaultAnalyserGeneratorImpl implements AnalyserGenerator {
                 if (analysis instanceof MethodInfo methodInfo && !methodInfo.methodAnalysis.isSet()) {
                     TypeAnalyser typeAnalyser = typeAnalysers.get(methodInfo.typeInfo);
                     assert typeAnalyser != null : "Cannot find type analyser for " + methodInfo.typeInfo;
-                    MethodAnalyser methodAnalyser = MethodAnalyserFactory.create(methodInfo, typeAnalyser.getTypeAnalysis(),
+                    TypeAnalysisImpl.Builder typeAnalysisImplBuilder = (TypeAnalysisImpl.Builder) typeAnalyser.getTypeAnalysis();
+                    MethodAnalyser methodAnalyser = MethodAnalyserFactory.create(methodInfo, typeAnalysisImplBuilder,
                             false, true, analyserContext);
                     for (ParameterAnalyser parameterAnalyser : methodAnalyser.getParameterAnalysers()) {
                         parameterAnalysersBuilder.put(parameterAnalyser.getParameterInfo(), parameterAnalyser);

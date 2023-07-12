@@ -24,6 +24,7 @@ import org.e2immu.analyser.analysis.ParameterAnalysis;
 import org.e2immu.analyser.analysis.TypeAnalysis;
 import org.e2immu.analyser.analysis.impl.MethodAnalysisImpl;
 import org.e2immu.analyser.analysis.impl.ParameterAnalysisImpl;
+import org.e2immu.analyser.analysis.impl.TypeAnalysisImpl;
 import org.e2immu.analyser.model.*;
 
 import java.util.HashMap;
@@ -32,7 +33,7 @@ import java.util.Map;
 
 public class MethodAnalyserFactory {
     public static MethodAnalyser create(MethodInfo methodInfo,
-                                        TypeAnalysis typeAnalysis,
+                                        TypeAnalysisImpl.Builder typeAnalysis,
                                         boolean isSAM,
                                         boolean allowComputed,
                                         AnalyserContext analyserContextInput) {
@@ -53,6 +54,7 @@ public class MethodAnalyserFactory {
                 MethodAnalysisImpl.Builder methodAnalysis = new MethodAnalysisImpl.Builder(analysisMode,
                         analyserContextInput.getPrimitives(), analyserContextInput, analyserContextInput,
                         methodInfo, typeAnalysis, parameterAnalyses);
+                parameterAnalyses.forEach(pa -> ((ParameterAnalysisImpl.Builder) pa).setMethodAnalysis(methodAnalysis));
                 yield new AggregatingMethodAnalyser(methodInfo, methodAnalysis, parameterAnalysers,
                         parameterAnalyses, analyserContextInput);
             }
@@ -65,6 +67,7 @@ public class MethodAnalyserFactory {
                 MethodAnalysisImpl.Builder methodAnalysis = new MethodAnalysisImpl.Builder(analysisMode,
                         analyserContext.getPrimitives(), analyserContext, analyserContext, methodInfo,
                         typeAnalysis, parameterAnalyses);
+                parameterAnalyses.forEach(pa -> ((ParameterAnalysisImpl.Builder) pa).setMethodAnalysis(methodAnalysis));
                 Map<CompanionMethodName, CompanionAnalyser> companionAnalysers = createCompanionAnalysers(methodInfo,
                         analyserContext, typeAnalysis);
                 companionAnalysers.forEach((cmn, ca) -> {
@@ -81,7 +84,7 @@ public class MethodAnalyserFactory {
     }
 
     public static ShallowMethodAnalyser createShallowMethodAnalyser(MethodInfo methodInfo,
-                                                                    TypeAnalysis typeAnalysis,
+                                                                    TypeAnalysisImpl.Builder typeAnalysis,
                                                                     AnalyserContext analyserContext,
                                                                     boolean enableVisitors) {
         MethodInspection methodInspection = methodInfo.methodInspection.get();
@@ -92,6 +95,7 @@ public class MethodAnalyserFactory {
         MethodAnalysisImpl.Builder methodAnalysis = new MethodAnalysisImpl.Builder(Analysis.AnalysisMode.CONTRACTED,
                 analyserContext.getPrimitives(), analyserContext, analyserContext,
                 methodInfo, typeAnalysis, parameterAnalyses);
+        parameterAnalyses.forEach(pa -> ((ParameterAnalysisImpl.Builder) pa).setMethodAnalysis(methodAnalysis));
         return new ShallowMethodAnalyser(methodInfo, methodAnalysis, parameterAnalyses, analyserContext, enableVisitors);
     }
 

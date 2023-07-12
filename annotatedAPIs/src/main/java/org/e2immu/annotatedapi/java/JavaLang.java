@@ -15,7 +15,7 @@
 package org.e2immu.annotatedapi.java;
 
 import org.e2immu.annotation.*;
-import org.e2immu.annotation.rare.Commutable;
+import org.e2immu.annotation.Commutable;
 import org.e2immu.annotation.rare.IgnoreModifications;
 import org.e2immu.annotation.type.UtilityClass;
 
@@ -535,43 +535,35 @@ class JavaLang {
 
     @UtilityClass
     interface Math$ {
-        @Commutable
-        static int max(int a, int b) {
+        static int max(@Commutable int a, @Commutable int b) {
             return 0;
         }
 
-        @Commutable
-        static int max(float a, float b) {
+        static int max(@Commutable float a, @Commutable float b) {
             return 0;
         }
 
-        @Commutable
-        static int max(double a, double b) {
+        static int max(@Commutable double a, @Commutable double b) {
             return 0;
         }
 
-        @Commutable
-        static int max(long a, long b) {
+        static int max(@Commutable long a, @Commutable long b) {
             return 0;
         }
 
-        @Commutable
-        static int min(int a, int b) {
+        static int min(@Commutable int a, @Commutable int b) {
             return 0;
         }
 
-        @Commutable
-        static int min(float a, float b) {
+        static int min(@Commutable float a, @Commutable float b) {
             return 0;
         }
 
-        @Commutable
-        static int min(double a, double b) {
+        static int min(@Commutable double a, @Commutable double b) {
             return 0;
         }
 
-        @Commutable
-        static int min(long a, long b) {
+        static int min(@Commutable long a, @Commutable long b) {
             return 0;
         }
     }
