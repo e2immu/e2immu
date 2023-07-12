@@ -228,7 +228,8 @@ public class Test_00_Basics_3 extends CommonTestRunner {
                         default -> "s$0";
                     };
                     assertEquals(expectValue, d.currentValue().toString());
-                    assertEquals("this.s:0", d.variableInfo().getLinkedVariables().toString());
+                    String linked = d.iteration() < 2 ? "this.s:0,this:-1" : "this.s:0";
+                    assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
 
                     // copied from S
                     assertDv(d, 2, MultiLevel.NULLABLE_DV, NOT_NULL_EXPRESSION);

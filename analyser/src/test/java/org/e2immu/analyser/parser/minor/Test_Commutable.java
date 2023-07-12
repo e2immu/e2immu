@@ -17,10 +17,19 @@ package org.e2immu.analyser.parser.minor;
 
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.parser.CommonTestRunner;
+import org.e2immu.analyser.util.MethodParSeq;
+import org.e2immu.analyser.visitor.TypeAnalyserVisitor;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.fail;
+
+/*
+With respect to commutable: the absolute minimum has been implemented in e2immu.
+The real code resides in JFocus.
+ */
 public class Test_Commutable extends CommonTestRunner {
     public Test_Commutable() {
         super(true);
@@ -31,6 +40,22 @@ public class Test_Commutable extends CommonTestRunner {
 
         // expect warning that expressions are exactly the same
         testClass("Commutable_0", 0, 1, new DebugConfiguration.Builder()
+                .build());
+    }
+
+    @Test
+    public void test_1() throws IOException {
+
+        TypeAnalyserVisitor typeAnalyserVisitor = d -> {
+            if ("Commutable_1".equals(d.typeInfo().simpleName)) {
+                if (d.typeAnalysis().getParallelGroups() instanceof MethodParSeq methodParSeq) {
+                    assertEquals(5, methodParSeq.immutableMap().size());
+                } else fail();
+            }
+        };
+
+        testClass("Commutable_1", 0, 0, new DebugConfiguration.Builder()
+                .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
                 .build());
     }
 }

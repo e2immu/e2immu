@@ -154,7 +154,8 @@ public class Test_00_Basics_21 extends CommonTestRunner {
             if ("get".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof ReturnVariable) {
                     if ("1".equals(d.statementId())) {
-                        assertEquals("this.t:0", d.variableInfo().getLinkedVariables().toString());
+                        String linked = d.iteration() == 0 ? "this.t:0,this:-1" : "this.t:0";
+                        assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
                     }
                 }
             }

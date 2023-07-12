@@ -167,8 +167,9 @@ record SASubBlocks(StatementAnalysis statementAnalysis, StatementAnalyser statem
     }
 
     private DV isPostCondition(Expression condition) {
-        return condition.variableStream()
-                .map(statementAnalysis::variableHasBeenModified)
+        List<Variable> vars = condition.variableStream().toList();
+        if (vars.isEmpty() && condition.isDelayed()) return condition.causesOfDelay();
+        return vars.stream().map(statementAnalysis::variableHasBeenModified)
                 .reduce(DV.FALSE_DV, (v1, v2) -> {
                     if (v1.valueIsTrue() || v2.valueIsTrue()) return DV.TRUE_DV;
                     if (v1.isDelayed() || v2.isDelayed()) {
