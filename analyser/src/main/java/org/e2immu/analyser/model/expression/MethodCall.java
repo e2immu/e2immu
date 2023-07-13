@@ -170,7 +170,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         boolean sameMethod = methodInfo.equals(that.methodInfo) ||
                 checkSpecialCasesWhereDifferentMethodsAreEqual(methodInfo, that.methodInfo);
         return sameMethod
-                && modificationTimes.equals(that.modificationTimes)
+             // FIXME see Basics_28, but undoubtedly other tests that require this!   && modificationTimes.equals(that.modificationTimes)
                 && parameterExpressions.equals(that.parameterExpressions)
                 && object.equals(that.object);
     }

@@ -4,6 +4,12 @@ import java.net.URI;
 import java.net.http.HttpRequest;
 import java.time.Duration;
 
+/*
+problem:  modification times are linked
+the value of the DEFAULT_TIMEOUT field is delayed, as is with fields.
+The actual value of 'builder' is a method call, which is dependent on modification time.
+Modification time is set "after" the value (instance Builder) !!!
+ */
 public class Basics_28 {
     private static final long DEFAULT_TIMEOUT = 30L;
     private static final String ACCEPT = "Accept";

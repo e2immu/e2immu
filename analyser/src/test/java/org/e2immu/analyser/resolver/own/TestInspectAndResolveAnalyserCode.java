@@ -34,6 +34,7 @@ public class TestInspectAndResolveAnalyserCode {
                 .addClassPath("jmods/java.base.jmod")
                 .addClassPath("jmods/java.compiler.jmod")
                 .addClassPath("jmods/java.xml.jmod") // org.w3c.dom.Document
+                .addClassPath("jmods/java.net.http.jmod")
                 .addClassPath(Input.JAR_WITH_PATH_PREFIX + "org/slf4j")
                 .addClassPath(Input.JAR_WITH_PATH_PREFIX + "com/github/javaparser")
                 .addClassPath(Input.JAR_WITH_PATH_PREFIX + "org/objectweb/asm")

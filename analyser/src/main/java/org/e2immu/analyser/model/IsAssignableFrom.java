@@ -130,6 +130,9 @@ public record IsAssignableFrom(InspectionProvider inspectionProvider,
         if (target.typeInfo != null && from.typeParameter != null) {
             List<ParameterizedType> otherTypeBounds = from.typeParameter.getTypeBounds();
             if (otherTypeBounds.isEmpty()) {
+                if(mode == Mode.COVARIANT_ERASURE) {
+                    return UNBOUND_WILDCARD; // see e.g. Lambda_7, MethodCall_30,_31
+                }
                 return target.typeInfo.isJavaLangObject() ? IN_HIERARCHY : NOT_ASSIGNABLE;
             }
             return otherTypeBounds.stream().mapToInt(bound -> new IsAssignableFrom(inspectionProvider, target, bound)

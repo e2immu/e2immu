@@ -729,18 +729,19 @@ public class ComputeLinkedVariables {
         Map<Variable, Integer> modificationTimesToSet = new HashMap<>();
         for (Variable variable : variablesInClusters) {
             if (!modificationTimesToSet.containsKey(variable)) {
-                Map<Variable, DV> map = weightedGraph.links(variable, LinkedVariables.LINK_DEPENDENT, true);
                 VariableInfoContainer vic = statementAnalysis.getVariableOrDefaultNull(variable.fullyQualifiedName());
                 if (vic != null) {
                     VariableInfo vi = vic.best(stage);
                     DV modified = vi.getProperty(Property.CONTEXT_MODIFIED);
                     int finalValue;
-                    if (modified.isDelayed()) {
+                    Map<Variable, DV> map = weightedGraph.links(variable, LinkedVariables.LINK_DEPENDENT, true);
+                    if (modified.isDelayed() || modificationDelayIn(map.keySet())) {
                         finalValue = -1;
                     } else {
                         int maxIncrement = 0;
                         for (Variable dependent : map.keySet()) {
-                            maxIncrement = Math.max(maxIncrement, modificationTimeIncrements.getOrDefault(dependent, 0));
+                            int increment = modificationTimeIncrements.getOrDefault(dependent, 0);
+                            maxIncrement = Math.max(maxIncrement, increment);
                         }
                         int maxInitial = currentModificationTimes.getOrDefault(variable, -1);
                         for (Variable dependent : map.keySet()) {
@@ -752,7 +753,7 @@ public class ComputeLinkedVariables {
                         finalValue = Math.max(0, maxInitial) + maxIncrement + statementTimeDelta;
                     }
                     for (Variable dependent : map.keySet()) {
-                        modificationTimesToSet.put(dependent, finalValue);
+                        modificationTimesToSet.putIfAbsent(dependent, finalValue);
                     }
                     modificationTimesToSet.put(variable, finalValue);
                 }
@@ -767,6 +768,17 @@ public class ComputeLinkedVariables {
                 }
             }
         });
+    }
+
+    private boolean modificationDelayIn(Set<Variable> variables) {
+        return variables.stream().map(this::cm).reduce(DV.FALSE_DV, DV::max).isDelayed();
+    }
+
+    private DV cm(Variable v) {
+        VariableInfoContainer vic = statementAnalysis.getVariableOrDefaultNull(v.fullyQualifiedName());
+        if (vic == null) return DV.FALSE_DV;
+        VariableInfo vi = vic.best(stage);
+        return vi.getProperty(Property.CONTEXT_MODIFIED);
     }
 
     private boolean isComputedOrMutable(ParameterizedType parameterizedType, AnalyserContext analyserContext) {
