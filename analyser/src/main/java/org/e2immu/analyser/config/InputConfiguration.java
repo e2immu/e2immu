@@ -28,9 +28,11 @@ public record InputConfiguration(List<String> sources,
                                  List<String> restrictSourceToPackages,
                                  String alternativeJREDirectory, Charset sourceEncoding) {
     public static final String DEFAULT_SOURCE_DIRS = "src/main/java";
-    public static final String[] DEFAULT_CLASSPATH = {"build/classes/java/main", "jmods/java.base.jmod", "jmods/java.xml.jmod"};
+    public static final String[] DEFAULT_CLASSPATH = {"build/classes/java/main", "jmods/java.base.jmod",
+            "jmods/java.xml.jmod", "jmods/java.net.http.jmod"};
     public static final String[] CLASSPATH_WITHOUT_ANNOTATED_APIS = {"build/classes/java/main",
-            "jmods/java.base.jmod", "jmods/java.xml.jmod", "src/main/resources/annotations/minimal"};
+            "jmods/java.base.jmod", "jmods/java.xml.jmod", "jmods/java.net.http.jmod",
+            "src/main/resources/annotations/minimal"};
 
     @Override
     public String toString() {

@@ -15,19 +15,17 @@
 package org.e2immu.annotatedapi.java;
 
 import org.e2immu.annotation.*;
-import org.e2immu.annotation.rare.StaticSideEffects;
-import org.e2immu.annotation.type.UtilityClass;
 
-import java.io.InputStream;
-import java.io.OutputStream;
+
 import java.net.URI;
-import java.net.URL;
-import java.net.URLConnection;
-import java.net.URLStreamHandlerFactory;
+
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+import java.nio.ByteBuffer;
 import java.time.Duration;
-import java.util.jar.JarFile;
+import java.util.List;
+import java.util.concurrent.Flow;
 
 public class JavaNetHttp {
     final static String PACKAGE_NAME = "java.net.http";
@@ -93,6 +91,29 @@ public class JavaNetHttp {
             @Fluent
             @Commutable
             Builder version(HttpClient.Version version);
+        }
+
+
+        @Independent
+        interface BodyPublishers {
+
+            // FIXME we cannot find this method
+            //   HttpRequest.BodyPublisher fromPublisher(Flow.Publisher<? extends ByteBuffer> publisher, long contentLength);
+        }
+
+    }
+
+    interface HttpResponse$ {
+
+        @Independent
+        interface BodySubscribers {
+
+            HttpResponse.BodySubscriber<Void> fromSubscriber(Flow.Subscriber<? super List<ByteBuffer>> subscriber);
+        }
+
+        @Independent
+        interface BodyHandlers {
+            HttpResponse.BodyHandler<Void> fromSubscriber(Flow.Subscriber<? super List<ByteBuffer>> subscriber);
         }
     }
 }

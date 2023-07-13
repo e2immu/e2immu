@@ -48,4 +48,18 @@ public class JavaUtilConcurrent {
     interface RunnableFuture$<V> {
 
     }
+
+
+    interface Flow${
+
+        @Independent
+        interface Subscriber<T> {
+
+        }
+
+        @Independent
+        interface Publisher<T> {
+
+        }
+    }
 }
