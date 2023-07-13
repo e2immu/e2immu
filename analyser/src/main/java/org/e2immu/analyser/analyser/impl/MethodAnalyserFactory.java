@@ -33,7 +33,7 @@ import java.util.Map;
 
 public class MethodAnalyserFactory {
     public static MethodAnalyser create(MethodInfo methodInfo,
-                                        TypeAnalysisImpl.Builder typeAnalysis,
+                                        TypeAnalysis typeAnalysis,
                                         boolean isSAM,
                                         boolean allowComputed,
                                         AnalyserContext analyserContextInput) {
@@ -84,7 +84,7 @@ public class MethodAnalyserFactory {
     }
 
     public static ShallowMethodAnalyser createShallowMethodAnalyser(MethodInfo methodInfo,
-                                                                    TypeAnalysisImpl.Builder typeAnalysis,
+                                                                    TypeAnalysis typeAnalysis,
                                                                     AnalyserContext analyserContext,
                                                                     boolean enableVisitors) {
         MethodInspection methodInspection = methodInfo.methodInspection.get();

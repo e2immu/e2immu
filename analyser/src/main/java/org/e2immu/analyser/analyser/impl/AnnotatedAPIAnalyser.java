@@ -181,7 +181,7 @@ public class AnnotatedAPIAnalyser implements AnalyserContext {
         return c;
     }
 
-    private MethodAnalyser createAnalyser(MethodInfo methodInfo, TypeAnalysisImpl.Builder typeAnalysis) {
+    private MethodAnalyser createAnalyser(MethodInfo methodInfo, TypeAnalysis typeAnalysis) {
         boolean isHelperFunctionOrAnnotationMethod = methodInfo.hasStatements();
         if (isHelperFunctionOrAnnotationMethod) {
             assert methodInfo.methodInspection.get().getCompanionMethods().isEmpty();
@@ -333,7 +333,7 @@ public class AnnotatedAPIAnalyser implements AnalyserContext {
     }
 
     // dedicated method exactly for this "isFact" method
-    private void analyseIsFact(MethodInfo methodInfo, TypeAnalysisImpl.Builder typeAnalysis) {
+    private void analyseIsFact(MethodInfo methodInfo, TypeAnalysis typeAnalysis) {
         ParameterInfo parameterInfo = methodInfo.methodInspection.get().getParameters().get(0);
         ParameterAnalysisImpl.Builder parameterAnalysis = new ParameterAnalysisImpl.Builder(
                 getPrimitives(), this, parameterInfo);
@@ -369,7 +369,7 @@ public class AnnotatedAPIAnalyser implements AnalyserContext {
 
 
     // dedicated method exactly for this "isKnown" method
-    private void analyseIsKnown(MethodInfo methodInfo, TypeAnalysisImpl.Builder typeAnalysis) {
+    private void analyseIsKnown(MethodInfo methodInfo, TypeAnalysis typeAnalysis) {
         ParameterInfo parameterInfo = methodInfo.methodInspection.get().getParameters().get(0);
         ParameterAnalysisImpl.Builder parameterAnalysis = new ParameterAnalysisImpl.Builder(
                 getPrimitives(), this, parameterInfo);

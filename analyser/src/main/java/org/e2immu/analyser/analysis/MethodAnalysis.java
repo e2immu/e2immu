@@ -16,6 +16,7 @@ package org.e2immu.analyser.analysis;
 
 import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.util.CommutableData;
 import org.e2immu.analyser.util.ParSeq;
 import org.e2immu.annotation.NotNull;
 
@@ -101,6 +102,8 @@ public interface MethodAnalysis extends Analysis {
      */
     @NotNull
     Set<String> indicesOfEscapesNotInPreOrPostConditions();
+
+    CommutableData getCommutableData();
 
     default MethodLevelData methodLevelData() {
         StatementAnalysis last = getLastStatement();

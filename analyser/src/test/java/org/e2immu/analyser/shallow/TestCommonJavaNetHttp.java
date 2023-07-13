@@ -23,10 +23,8 @@ import org.e2immu.analyser.model.TypeInfo;
 import org.junit.jupiter.api.Test;
 
 import java.net.http.HttpRequest;
-import java.time.Duration;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.*;
 
 public class TestCommonJavaNetHttp extends CommonAnnotatedAPI {
 
@@ -49,6 +47,7 @@ public class TestCommonJavaNetHttp extends CommonAnnotatedAPI {
         assertFalse(methodInfo.methodResolution.get().allowsInterrupts());
         assertEquals(DV.TRUE_DV, methodAnalysis.getProperty(Property.FLUENT));
         assertEquals(MultiLevel.DEPENDENT_DV, methodAnalysis.getProperty(Property.INDEPENDENT));
+        assertTrue(methodAnalysis.getCommutableData().isDefault());
     }
 
     @Test
@@ -60,6 +59,7 @@ public class TestCommonJavaNetHttp extends CommonAnnotatedAPI {
         assertFalse(methodInfo.methodResolution.get().allowsInterrupts());
         assertEquals(DV.TRUE_DV, methodAnalysis.getProperty(Property.FLUENT));
         assertEquals(MultiLevel.DEPENDENT_DV, methodAnalysis.getProperty(Property.INDEPENDENT));
+        assertTrue(methodAnalysis.getCommutableData().isDefault());
     }
 
     @Test
@@ -71,5 +71,6 @@ public class TestCommonJavaNetHttp extends CommonAnnotatedAPI {
         assertFalse(methodInfo.methodResolution.get().allowsInterrupts());
         assertEquals(DV.TRUE_DV, methodAnalysis.getProperty(Property.FLUENT));
         assertEquals(MultiLevel.DEPENDENT_DV, methodAnalysis.getProperty(Property.INDEPENDENT));
+        assertTrue(methodAnalysis.getCommutableData().isDefault());
     }
 }

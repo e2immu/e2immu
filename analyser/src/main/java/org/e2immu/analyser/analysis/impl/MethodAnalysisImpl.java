@@ -54,6 +54,8 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
     public final Map<CompanionMethodName, MethodInfo> computedCompanions;
     public final AnalysisMode analysisMode;
     public final ParSeq<ParameterInfo> parallelGroups;
+    public final CommutableData commutableData; // methods in a type
+
     public final FieldInfo getSet;
     public final Set<String> indicesOfEscapesNotInPreOrPostConditions;
 
@@ -73,7 +75,8 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
                                Map<CompanionMethodName, CompanionAnalysis> companionAnalyses,
                                Map<CompanionMethodName, MethodInfo> computedCompanions,
                                ParSeq<ParameterInfo> parallelGroups,
-                               FieldInfo getSet) {
+                               FieldInfo getSet,
+                               CommutableData commutableData) {
         super(properties, annotations);
         this.methodInfo = methodInfo;
         this.firstStatement = firstStatement;
@@ -90,6 +93,11 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
         this.parallelGroups = parallelGroups;
         this.getSet = getSet;
         this.indicesOfEscapesNotInPreOrPostConditions = indicesOfEscapesNotInPreOrPostConditions;
+        this.commutableData = commutableData;
+    }
+
+    public CommutableData getCommutableData() {
+        return commutableData;
     }
 
     @Override
@@ -219,7 +227,7 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
         public final MethodInfo methodInfo;
         private final SetOnce<StatementAnalysis> firstStatement = new SetOnce<>();
         public final List<ParameterAnalysis> parameterAnalyses;
-        public final TypeAnalysisImpl.Builder typeAnalysisOfOwner;
+        public final TypeAnalysis typeAnalysisOfOwner;
         private final AnalysisProvider analysisProvider;
         private final InspectionProvider inspectionProvider;
 
@@ -239,6 +247,8 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
         public final SetOnceMap<CompanionMethodName, MethodInfo> computedCompanions = new SetOnceMap<>();
 
         public final AnalysisMode analysisMode;
+
+        private final SetOnce<CommutableData> commutableData = new SetOnce<>();
 
         @Override
         public void internalAllDoneCheck() {
@@ -344,7 +354,7 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
                        AnalysisProvider analysisProvider,
                        InspectionProvider inspectionProvider,
                        MethodInfo methodInfo,
-                       TypeAnalysisImpl.Builder typeAnalysisOfOwner,
+                       TypeAnalysis typeAnalysisOfOwner,
                        List<ParameterAnalysis> parameterAnalyses) {
             super(primitives, methodInfo.name);
             this.inspectionProvider = inspectionProvider;
@@ -397,7 +407,8 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
                     getCompanionAnalyses(),
                     getComputedCompanions(),
                     getParallelGroups(),
-                    getSet.getOrDefaultNull());
+                    getSet.getOrDefaultNull(),
+                    getCommutableData());
         }
 
         /*
@@ -415,8 +426,12 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
 
         @Override
         protected void addCommutable(CommutableData commutableData) {
-            assert typeAnalysisOfOwner != null : "There are a number of special cases where the builder is null";
-            typeAnalysisOfOwner.addMethodCommutable(methodInfo, commutableData);
+            this.commutableData.set(commutableData);
+        }
+
+        @Override
+        public CommutableData getCommutableData() {
+            return commutableData.getOrDefaultNull();
         }
 
         public void addParameterCommutable(ParameterInfo parameterInfo, CommutableData commutableData) {
