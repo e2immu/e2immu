@@ -192,6 +192,7 @@ public class TypeMapImpl implements TypeMap {
             trie.freeze();
 
             typeInspections.forEach((typeInfo, typeInspectionBuilder) -> {
+                assert Input.acceptFQN(typeInfo.packageName());
                 if (typeInspectionBuilder.finishedInspection() && !typeInfo.typeInspection.isSet()) {
                     typeInfo.typeInspection.set(typeInspectionBuilder.build(this));
                 }
@@ -283,6 +284,7 @@ public class TypeMapImpl implements TypeMap {
         }
 
         public TypeInspection.Builder ensureTypeInspection(TypeInfo typeInfo, InspectionState inspectionState) {
+            assert Input.acceptFQN(typeInfo.packageName());
             TypeInspection.Builder inMap = typeInspections.get(typeInfo);
             if (inMap == null) {
                 TypeInspection.Builder typeInspection = new TypeInspectionImpl.Builder(typeInfo, inspectionState);
@@ -480,7 +482,7 @@ public class TypeMapImpl implements TypeMap {
             TypeInspection.Builder builder = add(typeInfo, BY_HAND_WITHOUT_STATEMENTS);
 
             boolean isIndependent = isVoid && numberOfParameters == 0;
-            if(isIndependent) {
+            if (isIndependent) {
                 // this is the equivalent of interface Runnable { void run(); }
                 builder.addAnnotation(e2ImmuAnnotationExpressions.independent);
             } else {

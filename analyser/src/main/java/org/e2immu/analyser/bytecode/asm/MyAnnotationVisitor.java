@@ -22,6 +22,7 @@ import org.e2immu.analyser.model.Inspection;
 import org.e2immu.analyser.model.ParameterizedType;
 import org.e2immu.analyser.model.expression.MemberValuePair;
 import org.e2immu.analyser.model.impl.AnnotationExpressionImpl;
+import org.e2immu.analyser.parser.Input;
 import org.objectweb.asm.AnnotationVisitor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -44,9 +45,17 @@ public class MyAnnotationVisitor<T> extends AnnotationVisitor {
         this.typeContext = typeContext;
         this.inspectionBuilder = Objects.requireNonNull(inspectionBuilder);
         LOGGER.debug("My annotation visitor: {}", descriptor);
-        FindType findType = (fqn, path) -> typeContext.typeMap.getOrCreateFromPath(path, TRIGGER_BYTECODE_INSPECTION);
-        ParameterizedType type = ParameterizedTypeFactory.from(typeContext, findType, descriptor).parameterizedType;
-        expressionBuilder = new AnnotationExpressionImpl.Builder().setTypeInfo(type.typeInfo);
+        FindType findType = (fqn, path) -> {
+            if (!Input.acceptPath(path)) return null;
+            return typeContext.typeMap.getOrCreateFromPath(path, TRIGGER_BYTECODE_INSPECTION);
+        };
+        ParameterizedTypeFactory.Result from = ParameterizedTypeFactory.from(typeContext, findType, descriptor);
+        if (from == null) {
+            expressionBuilder = null;
+        } else {
+            ParameterizedType type = from.parameterizedType;
+            expressionBuilder = new AnnotationExpressionImpl.Builder().setTypeInfo(type.typeInfo);
+        }
     }
 
     @Override
@@ -57,14 +66,18 @@ public class MyAnnotationVisitor<T> extends AnnotationVisitor {
 
     @Override
     public void visit(String name, Object value) {
-        LOGGER.debug("Assignment: {} to {}", name, value);
-        Expression expression = ExpressionFactory.from(typeContext, Identifier.constant(value), value);
-        MemberValuePair mvp = new MemberValuePair(name, expression);
-        expressionBuilder.addExpression(mvp);
+        if (expressionBuilder != null) {
+            LOGGER.debug("Assignment: {} to {}", name, value);
+            Expression expression = ExpressionFactory.from(typeContext, Identifier.constant(value), value);
+            MemberValuePair mvp = new MemberValuePair(name, expression);
+            expressionBuilder.addExpression(mvp);
+        }// else: jdk/ annotation
     }
 
     @Override
     public void visitEnd() {
-        inspectionBuilder.addAnnotation(expressionBuilder.build());
+        if (expressionBuilder != null) {
+            inspectionBuilder.addAnnotation(expressionBuilder.build());
+        } // else: jdk/ annotation
     }
 }

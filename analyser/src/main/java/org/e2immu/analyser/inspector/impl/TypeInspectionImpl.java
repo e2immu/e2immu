@@ -21,6 +21,7 @@ import org.e2immu.analyser.inspector.AbstractInspectionBuilder;
 import org.e2immu.analyser.inspector.DollarResolverResult;
 import org.e2immu.analyser.inspector.InspectionState;
 import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.parser.Input;
 import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.parser.TypeMap;
@@ -358,6 +359,7 @@ public class TypeInspectionImpl extends InspectionImpl implements TypeInspection
 
         public TypeInspectionImpl build(InspectionProvider inspectionProvider) {
             Objects.requireNonNull(typeNature);
+            assert Input.acceptFQN(typeInfo.fullyQualifiedName);
             if (typeInfo.needsParent() && parentClass == null) {
                 throw new UnsupportedOperationException("Need a parent class for " + typeInfo.fullyQualifiedName
                         + ". If this error occurs during annotated API inspection, check that the class name is spelled correctly!");

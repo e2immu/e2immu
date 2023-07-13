@@ -170,6 +170,7 @@ public record Input(Configuration configuration,
             // we'll loop over the primary types only
             if (!expansion[expansion.length - 1].contains("$")) {
                 String fqn = ParseAndInspect.fqnOfClassFile(thePackage, expansion);
+                assert Input.acceptFQN(fqn);
                 TypeInfo typeInfo = globalTypeContext.getFullyQualified(fqn, true);
                 if (!typeInfo.typeInspection.isSet()) {
                     String path = fqn.replace(".", "/"); // this is correct!
@@ -233,4 +234,13 @@ public record Input(Configuration configuration,
         }
         return resources;
     }
+
+    public static boolean acceptFQN(String fqn) {
+        return !fqn.startsWith("jdk.internal.");
+    }
+
+    public static boolean acceptPath(String path) {
+        return !path.startsWith("jdk/internal/");
+    }
+
 }

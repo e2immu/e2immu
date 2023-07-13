@@ -23,6 +23,7 @@ import org.e2immu.analyser.config.Configuration;
 import org.e2immu.analyser.config.InputConfiguration;
 import org.e2immu.analyser.inspector.TypeContext;
 import org.e2immu.analyser.model.MultiLevel;
+import org.e2immu.analyser.parser.CommonTestRunner;
 import org.e2immu.analyser.parser.Input;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.Parser;
@@ -43,12 +44,16 @@ public abstract class CommonAnnotatedAPI {
     protected static TypeContext typeContext;
     protected static List<Message> errors;
 
+    /*
+    20230713 works with JDK 20.0.1
+     */
     @BeforeAll
     public static void beforeClass() throws IOException {
         InputConfiguration.Builder inputConfigurationBuilder = new InputConfiguration.Builder()
-                .setAlternativeJREDirectory("/Library/Java/JavaVirtualMachines/adoptopenjdk-16.jdk/Contents/Home")
+                .setAlternativeJREDirectory(CommonTestRunner.CURRENT_JDK)
                 .addClassPath("jmods/java.base.jmod")
                 .addClassPath("jmods/java.xml.jmod")
+                .addClassPath("jmods/java.net.http.jmod")
                 .addClassPath(Input.JAR_WITH_PATH_PREFIX + "org/slf4j")
                 .addClassPath(Input.JAR_WITH_PATH_PREFIX + "org/junit/jupiter/api")
                 .addClassPath(Input.JAR_WITH_PATH_PREFIX + "ch/qos/logback/core/spi")
@@ -72,12 +77,11 @@ public abstract class CommonAnnotatedAPI {
         // not stopping here if there's errors, TestAnnotatedAPIErrors will fail
     }
 
-    protected void testImmutableContainerType(TypeAnalysis typeAnalysis, boolean hcImmutable, boolean hcIndependent) {
+    protected void testImmutableContainerType(TypeAnalysis typeAnalysis, boolean hcImmutable) {
         DV immutableDv = hcImmutable ? MultiLevel.EFFECTIVELY_IMMUTABLE_HC_DV : MultiLevel.EFFECTIVELY_IMMUTABLE_DV;
         assertEquals(immutableDv, typeAnalysis.getProperty(Property.IMMUTABLE));
         assertEquals(MultiLevel.CONTAINER_DV, typeAnalysis.getProperty(Property.CONTAINER));
-        DV independentDv = hcIndependent ? MultiLevel.INDEPENDENT_HC_DV : MultiLevel.INDEPENDENT_DV;
-        assertEquals(independentDv, typeAnalysis.getProperty(Property.INDEPENDENT));
+        assertEquals(MultiLevel.INDEPENDENT_DV, typeAnalysis.getProperty(Property.INDEPENDENT));
 
         assertEquals(DV.FALSE_DV, typeAnalysis.getProperty(Property.EXTENSION_CLASS));
         assertEquals(DV.FALSE_DV, typeAnalysis.getProperty(Property.UTILITY_CLASS));

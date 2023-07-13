@@ -308,7 +308,7 @@ public class AnnotatedAPIAnalyser implements AnalyserContext {
         if (computed.value.isDone()) {
             if (!inMap.equals(computed.value)) {
                 if (typeInfo.typeInspection.get().isPublic()
-                        && typeInfo.isNotJDKInternal()
+                        && Input.acceptFQN(typeInfo.fullyQualifiedName)
                         && independenceIsNotContracted(typeInfo)) {
                     Message message = Message.newMessage(typeInfo.newLocation(),
                             Message.Label.TYPE_HAS_DIFFERENT_VALUE_FOR_INDEPENDENT,

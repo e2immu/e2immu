@@ -154,8 +154,10 @@ record ParseGenerics(TypeContext typeContext, TypeInfo typeInfo, TypeInspection.
 
     List<ParameterizedType> parseParameterTypesOfMethod(TypeContext typeContext, String signature) {
         if (signature.startsWith("()")) {
-            return List.of(ParameterizedTypeFactory.from(typeContext,
-                    findType, signature.substring(2)).parameterizedType);
+            ParameterizedTypeFactory.Result from = ParameterizedTypeFactory.from(typeContext,
+                    findType, signature.substring(2));
+            if (from == null) return null;
+            return List.of(from.parameterizedType);
         }
         List<ParameterizedType> methodTypes = new ArrayList<>();
 
@@ -163,6 +165,7 @@ record ParseGenerics(TypeContext typeContext, TypeInfo typeInfo, TypeInspection.
         iterativeParsing.startPos = 1;
         do {
             iterativeParsing = iterativelyParseMethodTypes(typeContext, signature, iterativeParsing);
+            if (iterativeParsing == null) return null;
             methodTypes.add(iterativeParsing.result);
         } while (iterativeParsing.more);
         return methodTypes;
@@ -171,6 +174,7 @@ record ParseGenerics(TypeContext typeContext, TypeInfo typeInfo, TypeInspection.
     private IterativeParsing<ParameterizedType> iterativelyParseMethodTypes(TypeContext typeContext, String signature, IterativeParsing<ParameterizedType> iterativeParsing) {
         ParameterizedTypeFactory.Result result = ParameterizedTypeFactory.from(typeContext,
                 findType, signature.substring(iterativeParsing.startPos));
+        if (result == null) return null;
         int end = iterativeParsing.startPos + result.nextPos;
         IterativeParsing<ParameterizedType> next = new IterativeParsing<>();
         next.result = result.parameterizedType;

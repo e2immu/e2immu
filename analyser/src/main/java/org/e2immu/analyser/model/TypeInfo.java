@@ -24,6 +24,7 @@ import org.e2immu.analyser.model.impl.LocationImpl;
 import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.OutputTypeInfo;
 import org.e2immu.analyser.output.TypeName;
+import org.e2immu.analyser.parser.Input;
 import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.util.ListUtil;
@@ -89,8 +90,7 @@ public final class TypeInfo implements NamedType, WithInspectionAndAnalysis, Com
     }
 
     public boolean needsParent() {
-        return this.fullyQualifiedName.indexOf('.') > 0 &&
-                !this.fullyQualifiedName.startsWith("java.lang") && isNotJDKInternal();
+        return fullyQualifiedName.indexOf('.') > 0 && !fullyQualifiedName.startsWith("java.lang");
     }
 
     public boolean isJavaLangObject() {
@@ -741,10 +741,6 @@ public final class TypeInfo implements NamedType, WithInspectionAndAnalysis, Com
         ParameterizedType iterablePt = analyserContext.importantClasses().iterable();
         ParameterizedType concreteIterable = concreteType.concreteSuperType(analyserContext, iterablePt);
         return concreteIterable == null ? null : concreteIterable.parameters.get(0);
-    }
-
-    public boolean isNotJDKInternal() {
-        return !fullyQualifiedName.startsWith("jdk.internal");
     }
 
     public Set<ParameterizedType> superTypes(InspectionProvider inspectionProvider) {

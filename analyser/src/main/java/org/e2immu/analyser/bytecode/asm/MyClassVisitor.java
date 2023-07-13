@@ -27,6 +27,7 @@ import org.e2immu.analyser.inspector.impl.MethodInspectionImpl;
 import org.e2immu.analyser.inspector.impl.TypeInspectionImpl;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.EmptyExpression;
+import org.e2immu.analyser.parser.Input;
 import org.e2immu.analyser.util.StringUtil;
 import org.objectweb.asm.*;
 import org.slf4j.Logger;
@@ -109,6 +110,7 @@ public class MyClassVisitor extends ClassVisitor {
             return;
         }
         String fqName = pathToFqn(name);
+        assert Input.acceptFQN(fqName);
         currentType = typeContext.typeMap.get(fqName);
         if (currentType == null) {
             typeInspectionBuilder = typeContext.typeMap.getOrCreateFromPathReturnInspection(name, STARTING_BYTECODE);
@@ -148,6 +150,9 @@ public class MyClassVisitor extends ClassVisitor {
         typeInspectionBuilder.computeAccess(typeContext);
 
         String parentFqName = superName == null ? null : pathToFqn(superName);
+        if (parentFqName != null && !Input.acceptFQN(parentFqName)) {
+            return;
+        }
         if (signature == null) {
             if (superName != null) {
                 TypeInfo typeInfo = mustFindTypeInfo(parentFqName, superName);
@@ -164,14 +169,16 @@ public class MyClassVisitor extends ClassVisitor {
             if (interfaces != null) {
                 for (String interfaceName : interfaces) {
                     String fqn = pathToFqn(interfaceName);
-                    TypeInfo typeInfo = mustFindTypeInfo(fqn, interfaceName);
-                    if (typeInfo == null) {
-                        LOGGER.debug("Stop inspection of {}, interface type {} unknown",
-                                currentType.fullyQualifiedName, fqn);
-                        errorStateForType(fqn);
-                        return;
-                    }
-                    typeInspectionBuilder.addInterfaceImplemented(typeInfo.asParameterizedType(typeContext));
+                    if (Input.acceptFQN(fqn)) {
+                        TypeInfo typeInfo = mustFindTypeInfo(fqn, interfaceName);
+                        if (typeInfo == null) {
+                            LOGGER.debug("Stop inspection of {}, interface type {} unknown",
+                                    currentType.fullyQualifiedName, fqn);
+                            errorStateForType(fqn);
+                            return;
+                        }
+                        typeInspectionBuilder.addInterfaceImplemented(typeInfo.asParameterizedType(typeContext));
+                    } // else: ignore!
                 }
             }
         } else {
@@ -255,6 +262,7 @@ public class MyClassVisitor extends ClassVisitor {
     }
 
     private TypeInfo getOrCreateTypeInfo(String fqn, String path) {
+        if (!Input.acceptFQN(fqn)) return null;
         Matcher m = ILLEGAL_IN_FQN.matcher(fqn);
         if (m.find()) throw new UnsupportedOperationException("Illegal FQN: " + fqn + "; path is " + path);
         // this causes really heavy recursions: return mustFindTypeInfo(fqn, path);
@@ -281,9 +289,11 @@ public class MyClassVisitor extends ClassVisitor {
                 name, descriptor, signature, value, synthetic);
         if (synthetic) return null;
 
-        ParameterizedType type = ParameterizedTypeFactory.from(typeContext,
+        ParameterizedTypeFactory.Result from = ParameterizedTypeFactory.from(typeContext,
                 this::getOrCreateTypeInfo,
-                signature != null ? signature : descriptor).parameterizedType;
+                signature != null ? signature : descriptor);
+        if (from == null) return null; // jdk
+        ParameterizedType type = from.parameterizedType;
 
         FieldInfo fieldInfo = new FieldInfo(Identifier.generate("asm field"), type, name, currentType);
         FieldInspection.Builder fieldInspectionBuilder = new FieldInspectionImpl.Builder(fieldInfo);
@@ -367,6 +377,9 @@ public class MyClassVisitor extends ClassVisitor {
             signatureOrDescription = signatureOrDescription.substring(end + 1); // 1 to get rid of >
         }
         List<ParameterizedType> types = parseGenerics.parseParameterTypesOfMethod(methodContext, signatureOrDescription);
+        if (types == null) {
+            return null; // jdk
+        }
         methodInspectionBuilder.setReturnType(types.get(types.size() - 1));
 
         MethodItem methodItem = null;
