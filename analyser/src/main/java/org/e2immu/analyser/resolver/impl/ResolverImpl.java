@@ -847,14 +847,14 @@ public class ResolverImpl implements Resolver {
                                         MethodInfo methodInfo,
                                         Set<MethodInfo> methodsReached,
                                         boolean doNotDelay) {
-        if (methodResolutionBuilder.allowsInterrupts.isSet()) return;
+        if (methodResolutionBuilder.allowsInterruptsIsSet()) return;
         MethodInspection methodInspection = inspectionProvider.getMethodInspection(methodInfo);
         AnnotationExpression allowsInterruptAnnotation = methodInspection.getAnnotations().stream()
                 .filter(ae -> ae.equals(e2ImmuAnnotationExpressions.allowsInterrupt))
                 .findFirst().orElse(null);
         if (allowsInterruptAnnotation != null) {
             boolean value = allowsInterruptAnnotation.extract("value", true);
-            methodResolutionBuilder.allowsInterrupts.set(value);
+            methodResolutionBuilder.allowsInterruptsSet(value);
             return;
         }
 
@@ -865,11 +865,11 @@ public class ResolverImpl implements Resolver {
             allowsInterrupt = methodsReached.stream().anyMatch(reached ->
                     !inspectionProvider.getMethodInspection(reached).isPrivate() ||
                             methodInfo.methodResolution.isSet() && methodInfo.methodResolution.get().allowsInterrupts() ||
-                            builders.containsKey(reached) && builders.get(reached).allowsInterrupts.getOrDefault(false));
+                            builders.containsKey(reached) && builders.get(reached).allowsInterruptsGetOrDefault(false));
             delays = !doNotDelay && methodsReached.stream().anyMatch(reached ->
                     !inspectionProvider.getMethodInspection(reached).isPrivate() &&
                             builders.containsKey(reached) &&
-                            !builders.get(reached).allowsInterrupts.isSet());
+                            !builders.get(reached).allowsInterruptsIsSet());
             if (!allowsInterrupt) {
                 Block body = inspectionProvider.getMethodInspection(methodInfo).getMethodBody();
                 allowsInterrupt = AllowInterruptVisitor.allowInterrupts(body, builders.keySet());
@@ -879,7 +879,7 @@ public class ResolverImpl implements Resolver {
             delays = false;
         }
         if (doNotDelay || !delays || allowsInterrupt) {
-            methodResolutionBuilder.allowsInterrupts.set(allowsInterrupt);
+            methodResolutionBuilder.allowsInterruptsSet(allowsInterrupt);
         }
     }
 

@@ -15,12 +15,20 @@
 
 package org.e2immu.analyser.parser.basics;
 
+import org.e2immu.analyser.analyser.DV;
+import org.e2immu.analyser.analyser.Property;
+import org.e2immu.analyser.analyser.nonanalyserimpl.VariableInfoImpl;
 import org.e2immu.analyser.config.AnalyserConfiguration;
 import org.e2immu.analyser.config.DebugConfiguration;
+import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.parser.CommonTestRunner;
+import org.e2immu.analyser.visitor.EvaluationResultVisitor;
+import org.e2immu.analyser.visitor.StatementAnalyserVariableVisitor;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class Test_00_Basics_28 extends CommonTestRunner {
 
@@ -38,11 +46,57 @@ public class Test_00_Basics_28 extends CommonTestRunner {
      */
     @Test
     public void test() throws IOException {
+        EvaluationResultVisitor evaluationResultVisitor = d -> {
+            if ("same3".equals(d.methodInfo().name)) {
+                if ("0".equals(d.statementId())) {
+                    Variable builder = findBuilder(d);
+                    assertEquals(0, d.evaluationResult().changeData().get(builder).modificationTimeIncrement());
+                }
+                if ("1.0.0".equals(d.statementId())) {
+                    Variable builder = findBuilder(d);
+                    assertEquals(1, d.evaluationResult().changeData().get(builder).modificationTimeIncrement());
+                }
+            }
+        };
 
-
+        StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+            if ("same3".equals(d.methodInfo().name)) {
+                if ("builder".equals(d.variableName())) {
+                    int modTime = d.variableInfo().getModificationTimeOrNegative();
+                    if ("0".equals(d.statementId())) {
+                        assertEquals(0, d.variableInfo().getModificationTimeOrNegative());
+                        assertDv(d, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                    }
+                    if ("1.0.0".equals(d.statementId())) {
+                        assertDv(d, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
+                        assertEquals(1, modTime); // FIXME or -2, but MUST BE 1
+                    }
+                    if ("1.1.0".equals(d.statementId())) {
+                        assertDv(d, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
+                        assertEquals(1, modTime);
+                    }
+                    if ("1".equals(d.statementId())) {
+                        assertDv(d, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
+                        assertEquals(1, modTime);
+                    }
+                    if ("3".equals(d.statementId())||"4".equals(d.statementId())) {
+                        assertDv(d, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
+                        assertEquals(3, modTime);
+                    }
+                }
+            }
+        };
         testClass("Basics_28", 0, 0, new DebugConfiguration.Builder()
+                        .addEvaluationResultVisitor(evaluationResultVisitor)
+                        .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                         .build(),
                 new AnalyserConfiguration.Builder().build());
+    }
+
+    private static Variable findBuilder(EvaluationResultVisitor.Data d) {
+        return d.evaluationResult().changeData().keySet().stream()
+                .filter(v -> "builder".equals(v.simpleName()))
+                .findFirst().orElseThrow();
     }
 
 }

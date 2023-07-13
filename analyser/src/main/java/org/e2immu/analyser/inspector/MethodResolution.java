@@ -101,7 +101,8 @@ public record MethodResolution(Set<MethodInfo> overrides,
 
         // ************** VARIOUS ODDS AND ENDS
 
-        public final SetOnce<Boolean> allowsInterrupts = new SetOnce<>();
+        private final SetOnce<Boolean> allowsInterrupts = new SetOnce<>();
+
 
         public boolean isAllowsInterrupts() {
             return allowsInterrupts.getOrDefault(true);
@@ -117,6 +118,18 @@ public record MethodResolution(Set<MethodInfo> overrides,
             assert !overrides.contains(methodInfo);
             this.overrides.set(overrides);
             overrides.forEach(override -> override.addImplementation(methodInfo));
+        }
+
+        public boolean allowsInterruptsIsSet() {
+            return allowsInterrupts.isSet();
+        }
+
+        public void allowsInterruptsSet(boolean value) {
+            allowsInterrupts.set(value);
+        }
+
+        public boolean allowsInterruptsGetOrDefault(boolean b) {
+            return allowsInterrupts.getOrDefault(b);
         }
 
         // ***************

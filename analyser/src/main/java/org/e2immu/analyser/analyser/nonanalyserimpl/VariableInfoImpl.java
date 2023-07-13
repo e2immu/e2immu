@@ -45,6 +45,8 @@ import static org.e2immu.analyser.util.EventuallyFinalExtension.setFinalAllowEqu
 
 public class VariableInfoImpl implements VariableInfo {
     private static final Logger LOGGER = LoggerFactory.getLogger(VariableInfoImpl.class);
+    public static final int NO_MODIFICATION_TIME = -2;
+
     private final Location location;
     private final Variable variable;
     private final AssignmentIds assignmentIds;
@@ -224,7 +226,7 @@ public class VariableInfoImpl implements VariableInfo {
 
     @Override
     public int getModificationTimeOrNegative() {
-        return modificationTime.getOrDefault(-2);
+        return modificationTime.getOrDefault(NO_MODIFICATION_TIME);
     }
 
     public void setModificationTimeIfNotYetSet(int modificationTime) {
