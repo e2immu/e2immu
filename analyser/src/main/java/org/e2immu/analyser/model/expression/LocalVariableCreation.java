@@ -51,7 +51,8 @@ public class LocalVariableCreation extends BaseExpression implements Expression 
 
         public Declaration translate(InspectionProvider inspectionProvider, TranslationMap translationMap) {
             LocalVariable tlv = translationMap.translateLocalVariable(localVariable);
-            Expression tex = expression.translate(inspectionProvider, translationMap);
+            Expression tex = expression.isEmpty() ? expression
+                    : expression.translate(inspectionProvider, translationMap);
             if (tlv == localVariable && tex == expression) return this;
             if (localVariable.parameterizedType().isBoxedExcludingVoid() && expression.isNull()
                     && tlv.parameterizedType().isPrimitiveExcludingVoid() && tex.isNull()) {
@@ -199,7 +200,7 @@ public class LocalVariableCreation extends BaseExpression implements Expression 
     public EvaluationResult evaluate(EvaluationResult context, ForwardEvaluationInfo forwardEvaluationInfo) {
         if (forwardEvaluationInfo.isOnlySort()) {
             List<Declaration> evaluatedDeclarations = declarations.stream()
-                    .map(d -> d.expression == null ? d :
+                    .map(d -> d.expression.isEmpty() ? d :
                             new Declaration(d.identifier, d.localVariable,
                                     d.expression.evaluate(context, forwardEvaluationInfo).getExpression()))
                     .toList();
