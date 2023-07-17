@@ -67,6 +67,12 @@ public abstract class CommonAbstractValue {
     protected static VariableExpression i;
     protected static VariableExpression j;
 
+    protected static Variable vin;
+    protected static VariableExpression vine;
+
+    protected static Variable vl, vm;
+    protected static VariableExpression l, m;
+
     protected static Variable vs;
     protected static VariableExpression s, s1, s2, s3, s4, s5, s6;
 
@@ -99,10 +105,18 @@ public abstract class CommonAbstractValue {
         an = new VariableExpression(van);
         bn = new VariableExpression(vbn);
 
+        vin = createVariable("in"); // nullable
+        vine = new VariableExpression(vin);
+
         vi = createVariable("i");
         vj = createVariable("j");
         i = new VariableExpression(vi);
         j = new VariableExpression(vj);
+
+        vl = createVariable("l");
+        vm = createVariable("m");
+        l = new VariableExpression(vl);
+        m = new VariableExpression(vm);
 
         vs = createVariable("s"); // nullable
         s = new VariableExpression(vs);
@@ -127,6 +141,7 @@ public abstract class CommonAbstractValue {
             public ParameterizedType parameterizedType() {
                 if (Set.of("a", "b", "c", "d").contains(name)) return PRIMITIVES.booleanParameterizedType();
                 if (Set.of("i", "j", "k").contains(name)) return PRIMITIVES.intParameterizedType();
+                if (Set.of("l", "m").contains(name)) return PRIMITIVES.doubleParameterizedType();
                 if (Set.of("s", "t", "p").contains(name)) return PRIMITIVES.stringParameterizedType();
                 return PRIMITIVES.intParameterizedType(); // to have something
             }

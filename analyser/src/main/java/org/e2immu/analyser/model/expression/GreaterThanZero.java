@@ -119,7 +119,7 @@ public class GreaterThanZero extends BaseExpression implements Expression {
         if (expression instanceof Negation ne) {
             x = ne.expression;
             lessThan = true;
-            if (!allowEquals && x.returnType().isInt()) {
+            if (!allowEquals && x.returnType().isMathematicallyInteger()) {
                 d = -1;
             } else {
                 d = 0;
@@ -166,10 +166,10 @@ public class GreaterThanZero extends BaseExpression implements Expression {
         }
         if (terms.length == 2 && n0 != null
                 && IntUtil.isMathematicalInteger(n0.doubleValue())
-                && terms[1].returnType().isInt()) {
+                && terms[1].returnType().isMathematicallyInteger()) {
             return twoTerms(identifier, context, allowEquals, primitives, terms, n0);
         }
-        if (terms.length == 2 && terms[0].returnType().isInt() && terms[1].returnType().isInt()) {
+        if (terms.length == 2 && terms[0].returnType().isMathematicallyInteger() && terms[1].returnType().isMathematicallyInteger()) {
             if (!allowEquals) {
                 // +-i +-j > 0
                 expression = Sum.sum(context, new IntConstant(primitives, -1),
@@ -179,8 +179,8 @@ public class GreaterThanZero extends BaseExpression implements Expression {
         }
         if (terms.length == 3 && n0 != null
                 && IntUtil.isMathematicalInteger(n0.doubleValue())
-                && terms[1].returnType().isInt()
-                && terms[2].returnType().isInt()) {
+                && terms[1].returnType().isMathematicallyInteger()
+                && terms[2].returnType().isMathematicallyInteger()) {
 
             if (n0.doubleValue() >= 0 && !allowEquals) {
                 // special cases, i>=j == i-j >=0, 1+i-j>0
@@ -255,7 +255,7 @@ public class GreaterThanZero extends BaseExpression implements Expression {
         }
         Expression term;
         boolean newAllowEquals;
-        if (terms[0].returnType().isInt()) {
+        if (terms[0].returnType().isMathematicallyInteger()) {
             // some int expression >= 0
             if (terms[0] instanceof Negation) {
                 newAllowEquals = false;

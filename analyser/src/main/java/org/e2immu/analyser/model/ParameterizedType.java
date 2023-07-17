@@ -918,4 +918,13 @@ public class ParameterizedType {
     public boolean isInt() {
         return arrays == 0 && typeInfo != null && typeInfo.isInt();
     }
+
+    public boolean isMathematicallyInteger() {
+        return arrays == 0 && typeInfo != null && (
+                typeInfo.isByte() || typeInfo.isBoxedByte() ||
+                        typeInfo.isShort() || typeInfo.isBoxedShort() ||
+                        typeInfo.isInt() || typeInfo.isInteger() ||
+                        typeInfo.isLong() || typeInfo.isBoxedLong() ||
+                        typeInfo.isChar() || typeInfo.isCharacter());
+    }
 }
