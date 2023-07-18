@@ -57,7 +57,7 @@ public class JavaNetHttp {
             Builder GET();
 
             @Fluent
-            @Commutable(seq = "header")
+            @Commutable(seq = "header,0", multi = "headers")
             Builder header(String name, String value);
 
             @Fluent
@@ -77,7 +77,7 @@ public class JavaNetHttp {
             Builder PUT(HttpRequest.BodyPublisher bodyPublisher);
 
             @Fluent
-            @Commutable(seq = "header")
+            @Commutable(seq = "header,0")
             Builder setHeader(String name, String value);
 
             @Fluent

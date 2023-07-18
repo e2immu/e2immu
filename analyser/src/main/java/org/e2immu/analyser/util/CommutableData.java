@@ -1,9 +1,9 @@
 package org.e2immu.analyser.util;
 
-public record CommutableData(String par, String seq, String par2, String seq2) {
+public record CommutableData(String par, String seq, String multi) {
 
     public boolean isDefault() {
-        return par.isBlank() && seq.isBlank() && par2.isBlank() && seq2.isBlank();
+        return par.isBlank() && seq.isBlank() && multi.isBlank();
     }
 
 }

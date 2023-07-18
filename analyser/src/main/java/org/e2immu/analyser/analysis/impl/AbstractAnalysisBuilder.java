@@ -401,9 +401,8 @@ abstract class AbstractAnalysisBuilder implements Analysis {
     private void addCommutable(AnnotationExpression annotationExpression) {
         String par = annotationExpression.extract(PAR, "");
         String seq = annotationExpression.extract(SEQ, "");
-        String par2 = annotationExpression.extract(PAR_2, "");
-        String seq2 = annotationExpression.extract(SEQ_2, "");
-        addCommutable(new CommutableData(par, seq, par2, seq2));
+        String multi = annotationExpression.extract(MULTI, "");
+        addCommutable(new CommutableData(par, seq, multi));
     }
 
     protected void addCommutable(CommutableData commutableData) {
