@@ -282,14 +282,6 @@ public interface TypeInspection extends Inspection {
         return Stream.concat(Stream.of(mine), subTypes);
     }
 
-    default Optional<FieldInfo> findFieldByName(String fieldName, AnalysisProvider analysisProvider) {
-        Optional<FieldInfo> opt = fields().stream().filter(f -> fieldName.equals(f.name)).findFirst();
-        return opt.or(() -> methodStream(Methods.THIS_TYPE_ONLY)
-                .map(m -> analysisProvider.getMethodAnalysis(m).getSetField())
-                .filter(Objects::nonNull)
-                .findFirst());
-    }
-
     interface Builder extends InspectionBuilder<Builder>, TypeInspection {
 
         boolean finishedInspection();

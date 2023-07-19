@@ -539,7 +539,8 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
 
         private FieldInfo findOrCreateField(String fieldName) {
             TypeInspection typeInspection = inspectionProvider.getTypeInspection(methodInfo.typeInfo);
-            Optional<FieldInfo> fieldInfo = typeInspection.findFieldByName(fieldName, analysisProvider);
+            Optional<FieldInfo> fieldInfo = typeInspection.fields().stream()
+                    .filter(f -> f.name.equals(fieldName)).findFirst(); // TODO we're not going up in the hierarchy
             fieldInfo.ifPresent(f -> {
                 // depending on the order, the field can be created for a getter or a setter.
                 if (inspectionProvider.getFieldInspection(f).isSynthetic()) {
