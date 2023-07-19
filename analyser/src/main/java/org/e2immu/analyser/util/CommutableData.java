@@ -6,4 +6,11 @@ public record CommutableData(String par, String seq, String multi) {
         return par.isBlank() && seq.isBlank() && multi.isBlank();
     }
 
+    public boolean isParallel() {
+        return par.isBlank() && seq.isBlank();
+    }
+
+    public boolean isSequential() {
+        return par.isBlank() && !seq.isBlank();
+    }
 }

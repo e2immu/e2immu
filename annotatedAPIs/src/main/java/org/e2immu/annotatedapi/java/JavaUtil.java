@@ -137,6 +137,7 @@ public class JavaUtil extends AnnotatedAPI {
             return contains(e);
         }
 
+        @Commutable(seq = "add", multi = "addAll")
         @Modified
         boolean add(@Independent(hc = true) @NotNull E e);
 
@@ -299,6 +300,7 @@ public class JavaUtil extends AnnotatedAPI {
          @Modified inherited; we're not (yet) inheriting companion methods.
          @Independent(hc=true), @NotNull on parameter "e" inherited.
          */
+        @Commutable(seq = "add", multi = "addAll")
         boolean add(E e);
 
         @Modified
@@ -448,6 +450,7 @@ public class JavaUtil extends AnnotatedAPI {
         }
 
         // @Modified on method, @NotNull, @Independent(hc = true) on parameter inherited
+        @Commutable(multi = "addAll")
         boolean add(E e);
 
         default boolean addAll$Clear$Size(int i, Collection<? extends E> c) {

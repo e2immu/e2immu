@@ -513,8 +513,6 @@ public class AnnotatedAPIAnalyser implements AnalyserContext {
                             }
                         }
                     }
-                    builder.fromAnnotationsIntoProperties(Analyser.AnalyserIdentification.METHOD, true,
-                            methodInfo.methodInspection.get().getAnnotations(), e2ImmuAnnotationExpressions);
                 } else if (entry.getValue() instanceof ComputingMethodAnalyser computingMethodAnalyser) {
                     Analyser.SharedState shared = new Analyser.SharedState(effectivelyFinalIteration,
                             BreakDelayLevel.NONE, null);
