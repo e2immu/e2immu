@@ -233,4 +233,7 @@ public interface MethodAnalysis extends Analysis {
     boolean hasBeenAnalysedUpToIteration0();
 
     FieldInfo getSetField();
+
+    record GetSetEquivalent(MethodInfo methodInfo, Set<ParameterInfo> convertToGetSet) {}
+    GetSetEquivalent getSetEquivalent();
 }

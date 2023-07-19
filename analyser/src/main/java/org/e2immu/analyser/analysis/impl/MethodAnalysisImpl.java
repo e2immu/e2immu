@@ -35,6 +35,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.*;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static org.e2immu.analyser.parser.E2ImmuAnnotationExpressions.*;
 
@@ -57,6 +58,7 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
     public final CommutableData commutableData; // methods in a type
 
     public final FieldInfo getSet;
+    public final GetSetEquivalent getSetEquivalent;
     public final Set<String> indicesOfEscapesNotInPreOrPostConditions;
 
     private MethodAnalysisImpl(MethodInfo methodInfo,
@@ -76,6 +78,7 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
                                Map<CompanionMethodName, MethodInfo> computedCompanions,
                                ParSeq<ParameterInfo> parallelGroups,
                                FieldInfo getSet,
+                               GetSetEquivalent getSetEquivalent,
                                CommutableData commutableData) {
         super(properties, annotations);
         this.methodInfo = methodInfo;
@@ -94,6 +97,13 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
         this.getSet = getSet;
         this.indicesOfEscapesNotInPreOrPostConditions = indicesOfEscapesNotInPreOrPostConditions;
         this.commutableData = commutableData;
+        this.getSetEquivalent = getSetEquivalent;
+        assert !(getSetEquivalent != null && getSet != null) : "GetSet and GetSetEquivalent cannot go together";
+    }
+
+    @Override
+    public GetSetEquivalent getSetEquivalent() {
+        return getSetEquivalent;
     }
 
     public CommutableData getCommutableData() {
@@ -249,6 +259,8 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
         public final AnalysisMode analysisMode;
 
         private final SetOnce<CommutableData> commutableData = new SetOnce<>();
+
+        private final SetOnce<GetSetEquivalent> getSetEquivalent = new SetOnce<>();
 
         @Override
         public void internalAllDoneCheck() {
@@ -407,7 +419,8 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
                     getCompanionAnalyses(),
                     getComputedCompanions(),
                     getParallelGroups(),
-                    getSet.getOrDefaultNull(),
+                    getSetField(),
+                    getSetEquivalent(),
                     getCommutableData());
         }
 
@@ -440,8 +453,61 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
 
         @Override
         protected void getSet(String fieldName) {
+            MethodInspection methodInspection = inspectionProvider.getMethodInspection(methodInfo);
+            assert !getSetEquivalent.isSet();
+            assert !getSet.isSet();
+            if (methodInfo.isConstructor || methodInspection.isFactoryMethod()) {
+                /*
+                 @GetSet on a constructor or factory method has a well-defined meaning.
+                 We search for the smallest constructor or factory method with the same name which
+                 is compatible with a subset of the parameters. Those not in the smallest, get marked as @GetSet
+                 replacements.
+                 */
+                TypeInspection typeInspection = inspectionProvider.getTypeInspection(methodInfo.typeInfo);
+                Stream<MethodInfo> candidateStream;
+                if (methodInfo.isConstructor) {
+                    candidateStream = typeInspection.constructorStream(TypeInspection.Methods.THIS_TYPE_ONLY);
+                } else {
+                    candidateStream = typeInspection.methodStream(TypeInspection.Methods.THIS_TYPE_ONLY)
+                            .filter(m -> m.name.equals(methodInfo.name));
+                }
+                GetSetEquivalent gse = findBestCompatibleMethod(candidateStream, methodInspection);
+                if (gse != null) {
+                    this.getSetEquivalent.set(gse);
+                }
+                return;
+            }
             FieldInfo fieldInfo = fieldName == null ? extractFieldFromMethod() : findOrCreateField(fieldName);
             getSet.set(fieldInfo);
+        }
+
+        /*
+        Return the smallest compatible method, or null. Compatible means that any parameter in the smaller method
+        must exist in the larger one. Empty parameter lists always win.
+         */
+        private GetSetEquivalent findBestCompatibleMethod(Stream<MethodInfo> candidateStream, MethodInspection target) {
+            return candidateStream
+                    .map(mi -> createGetSetEquivalent(mi, target))
+                    .filter(Objects::nonNull)
+                    .max(Comparator.comparingInt(gse -> gse.convertToGetSet().size()))
+                    .orElse(null);
+        }
+
+        /*
+        return null when not compatible.
+         */
+        private GetSetEquivalent createGetSetEquivalent(MethodInfo candidate, MethodInspection target) {
+            MethodInspection mi = inspectionProvider.getMethodInspection(candidate);
+            if (mi.getParameters().size() >= target.getParameters().size()) return null;
+            Set<ParameterInfo> params = new HashSet<>(target.getParameters());
+            for (ParameterInfo pi : mi.getParameters()) {
+                ParameterInfo inSet = params.stream()
+                        .filter(p -> p.name.equals(pi.name) && p.parameterizedType.equals(pi.parameterizedType))
+                        .findFirst().orElse(null);
+                if (inSet == null) return null;
+                params.remove(inSet);
+            }
+            return new GetSetEquivalent(candidate, params);
         }
 
         // SEE ALSO CheckGetSet.class
@@ -735,6 +801,11 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
 
         public void setIndicesOfEscapeNotInPreOrPostCondition(Set<String> indices) {
             indicesOfEscapesNotInPreOrPostConditions.set(Set.copyOf(indices));
+        }
+
+        @Override
+        public GetSetEquivalent getSetEquivalent() {
+            return this.getSetEquivalent.getOrDefaultNull();
         }
     }
 

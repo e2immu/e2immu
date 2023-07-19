@@ -15,6 +15,7 @@
 package org.e2immu.annotatedapi.java;
 
 import org.e2immu.annotation.*;
+import org.e2immu.annotation.method.GetSet;
 
 
 import java.net.URI;
@@ -33,8 +34,14 @@ public class JavaNetHttp {
     @ImmutableContainer
     interface HttpRequest$ {
 
+        @Independent
         @NotNull
         Builder newBuilder();
+
+        @Independent
+        @GetSet // indicating that we can convert to newBuilder().uri(uri)
+        @NotNull
+        Builder newBuilder(URI uri);
 
         @Container(builds = HttpRequest.class)
         interface Builder {

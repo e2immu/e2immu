@@ -17,11 +17,10 @@ package org.e2immu.analyser.shallow;
 import org.e2immu.analyser.analyser.DV;
 import org.e2immu.analyser.analyser.Property;
 import org.e2immu.analyser.analysis.MethodAnalysis;
-import org.e2immu.analyser.model.MethodInfo;
-import org.e2immu.analyser.model.MultiLevel;
-import org.e2immu.analyser.model.TypeInfo;
+import org.e2immu.analyser.model.*;
 import org.junit.jupiter.api.Test;
 
+import java.net.URI;
 import java.net.http.HttpRequest;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -36,6 +35,23 @@ public class TestCommonJavaNetHttp extends CommonAnnotatedAPI {
         assertEquals(DV.FALSE_DV, methodAnalysis.getProperty(Property.MODIFIED_METHOD));
         assertFalse(methodInfo.methodResolution.get().allowsInterrupts());
         assertEquals(MultiLevel.INDEPENDENT_DV, methodAnalysis.getProperty(Property.INDEPENDENT));
+    }
+
+    @Test
+    public void testHttpRequestNewBuilderUri() {
+        TypeInfo uri = typeContext.getFullyQualified(URI.class);
+        TypeInfo typeInfo = typeContext.getFullyQualified(HttpRequest.class);
+        MethodInfo methodInfo = typeInfo.findUniqueMethod("newBuilder", uri);
+        MethodAnalysis methodAnalysis = methodInfo.methodAnalysis.get();
+        assertEquals(DV.FALSE_DV, methodAnalysis.getProperty(Property.MODIFIED_METHOD));
+        assertFalse(methodInfo.methodResolution.get().allowsInterrupts());
+        assertEquals(MultiLevel.INDEPENDENT_DV, methodAnalysis.getProperty(Property.INDEPENDENT));
+        MethodInfo zeroParam = typeInfo.findUniqueMethod("newBuilder", 0);
+        MethodAnalysis.GetSetEquivalent getSetEquivalent = methodAnalysis.getSetEquivalent();
+        assertSame(zeroParam, getSetEquivalent.methodInfo());
+        ParameterInfo firstParam = methodInfo.methodInspection.get().getParameters().get(0);
+        assertEquals(1, getSetEquivalent.convertToGetSet().size());
+        assertSame(firstParam, getSetEquivalent.convertToGetSet().stream().findFirst().orElseThrow());
     }
 
     @Test
