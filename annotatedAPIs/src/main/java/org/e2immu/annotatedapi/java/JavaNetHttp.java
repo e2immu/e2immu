@@ -26,6 +26,7 @@ import java.net.http.HttpResponse;
 import java.nio.ByteBuffer;
 import java.time.Duration;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Flow;
 
 public class JavaNetHttp {
@@ -122,5 +123,32 @@ public class JavaNetHttp {
         interface BodyHandlers {
             HttpResponse.BodyHandler<Void> fromSubscriber(Flow.Subscriber<? super List<ByteBuffer>> subscriber);
         }
+    }
+
+    @ImmutableContainer
+    interface HttpClient$ {
+
+        @Container(builds = HttpClient.class)
+        interface Builder {
+
+            @Fluent
+            @Commutable
+            HttpRequest.Builder connectTimeout(Duration duration);
+
+            @Fluent
+            @Commutable
+            HttpRequest.Builder followRedirects(HttpClient.Redirect policy);
+
+            @Fluent
+            @Commutable
+            HttpRequest.Builder version(HttpClient.Version version);
+        }
+
+        @NotNull
+        @Independent
+        HttpClient.Builder newBuilder();
+
+        @NotModified
+        <T> CompletableFuture<HttpResponse<T>> sendAsync(HttpRequest request, HttpResponse.BodyHandler<T> bodyHandler);
     }
 }

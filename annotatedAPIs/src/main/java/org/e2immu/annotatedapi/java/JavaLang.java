@@ -154,6 +154,12 @@ class JavaLang {
         ClassLoader getClassLoader();
     }
 
+    @ImmutableContainer
+    interface ClassLoader$ {
+        @NotNull
+        Module getUnnamedModule();
+    }
+
     /*
      implicitly, hc=true for immutable; however, the independent does not get this hc=true automatically;
      the type is independent, even if there is a subsequence() method

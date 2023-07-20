@@ -110,6 +110,12 @@ public class ConstructorCall extends BaseExpression implements HasParameterExpre
                 anonymousClass, arrayInitializer);
     }
 
+    // to erase identifier equality
+    public ConstructorCall copy(Identifier identifier) {
+        return new ConstructorCall(identifier, constructor, parameterizedType, diamond, parameterExpressions,
+                anonymousClass, arrayInitializer);
+    }
+
     public ConstructorCall(Identifier identifier,
                            MethodInfo constructor,
                            ParameterizedType parameterizedType,
