@@ -124,6 +124,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         ParameterizedType translatedReturnType = translationMap.translateType(concreteReturnType);
         List<Expression> translatedParameters = parameterExpressions.isEmpty() ? parameterExpressions :
                 parameterExpressions.stream().map(e -> e.translate(inspectionProvider, translationMap))
+                        .filter(e -> !e.isEmpty()) // allows for removal of certain arguments
                         .collect(TranslationCollectors.toList(parameterExpressions));
         String newModificationTimes = Objects.requireNonNullElse(
                 translationMap.modificationTimes(this, translatedObject, translatedParameters), modificationTimes);

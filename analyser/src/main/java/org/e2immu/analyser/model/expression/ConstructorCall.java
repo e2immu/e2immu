@@ -158,7 +158,9 @@ public class ConstructorCall extends BaseExpression implements HasParameterExpre
 
         ParameterizedType translatedType = translationMap.translateType(this.parameterizedType);
         List<Expression> translatedParameterExpressions = parameterExpressions.isEmpty() ? parameterExpressions
-                : parameterExpressions.stream().map(e -> e.translate(inspectionProvider, translationMap))
+                : parameterExpressions.stream()
+                .map(e -> e.translate(inspectionProvider, translationMap))
+                .filter(e -> !e.isEmpty())
                 .collect(TranslationCollectors.toList(parameterExpressions));
         ArrayInitializer translatedInitializer = arrayInitializer == null ? null :
                 TranslationMapImpl.ensureExpressionType(
