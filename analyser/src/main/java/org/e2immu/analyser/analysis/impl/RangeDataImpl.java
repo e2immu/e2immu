@@ -128,8 +128,7 @@ public class RangeDataImpl implements RangeData {
                                        EvaluationResult result) {
         if (result.value() instanceof ArrayInitializer ai) {
             if (statement.structure.initialisers().get(0) instanceof LocalVariableCreation lvc) {
-                LocalVariableReference lvr = lvc.newLocalVariables().get(0);
-                return new ConstantRange(ai, new VariableExpression(lvr));
+                return new ConstantRange(ai, new VariableExpression(lvc.localVariableReference));
             }
         }
         return null;
@@ -234,9 +233,8 @@ public class RangeDataImpl implements RangeData {
                                                          EvaluationResult result) {
         if (statement.getStructure().initialisers().size() == 1
                 && statement.getStructure().initialisers().get(0) instanceof LocalVariableCreation lvc
-                && lvc.declarations.size() == 1) {
-            LocalVariableReference lvr = lvc.declarations.get(0).localVariableReference();
-            DV modified = loopVariableIsModified(statementAnalysis, lvr);
+                && lvc.hasSingleDeclaration()) {
+            DV modified = loopVariableIsModified(statementAnalysis, lvc.localVariableReference);
             if (modified.isDelayed()) {
                 return new Range.Delayed(modified.causesOfDelay(), lvc);
             }
@@ -260,12 +258,12 @@ public class RangeDataImpl implements RangeData {
                         return Range.NO_RANGE;
                     }
                     update = new IntConstant(result.evaluationContext().getPrimitives(), i);
-                    variable = new VariableExpression(lvr);
+                    variable = new VariableExpression(lvc.localVariableReference);
                 } else {
                     return Range.NO_RANGE;
                 }
             } else if (updateExpression instanceof Sum sum && sum.lhs instanceof IntConstant increment
-                    && sum.rhs instanceof VariableExpression ve && ve.variable().equals(lvr)) {
+                    && sum.rhs instanceof VariableExpression ve && ve.variable().equals(lvc.localVariableReference)) {
                 // normal situation i = i + 4
                 update = increment;
                 variable = ve;

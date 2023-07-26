@@ -121,20 +121,19 @@ public class TestBasics extends CommonTest {
         Statement s0 = block.structure.statements().get(0);
         if (s0 instanceof ExpressionAsStatement eas) {
             if (eas.expression instanceof LocalVariableCreation lvc) {
-                assertEquals(2, lvc.declarations.size());
+                assertEquals(1, lvc.moreDeclarations.size());
 
-                LocalVariableCreation.Declaration d0 = lvc.declarations.get(0);
-                assertEquals("i", d0.localVariable().name());
-                assertEquals("4", d0.expression().toString());
-                assertEquals("Type int", d0.localVariable().parameterizedType().toString());
-                assertTrue(d0.localVariable().modifiers().contains(LocalVariableModifier.FINAL));
+                assertEquals("i", lvc.localVariableReference.simpleName());
+                assertEquals("4", lvc.localVariableReference.assignmentExpression.toString());
+                assertEquals("Type int", lvc.localVariableReference.parameterizedType().toString());
+                assertTrue(lvc.localVariableReference.variable.modifiers().contains(LocalVariableModifier.FINAL));
 
-                LocalVariableCreation.Declaration d1 = lvc.declarations.get(1);
-                assertEquals("j", d1.localVariable().name());
-                assertEquals("<empty>", d1.expression().toString());
-                assertEquals(VariableNature.METHOD_WIDE, d1.localVariable().nature());
-                assertEquals("Type int", d1.localVariable().parameterizedType().toString());
-                assertTrue(d1.localVariable().modifiers().contains(LocalVariableModifier.FINAL));
+                LocalVariableCreation.Declaration d1 = lvc.moreDeclarations.get(0);
+                assertEquals("j", d1.localVariableReference().variable.name());
+                assertEquals("<empty>", d1.localVariableReference().assignmentExpression.toString());
+                assertEquals(VariableNature.METHOD_WIDE, d1.localVariableReference().variable.nature());
+                assertEquals("Type int", d1.localVariableReference().parameterizedType().toString());
+                assertTrue(d1.localVariableReference().variable.modifiers().contains(LocalVariableModifier.FINAL));
 
                 assertEquals("final int i=4,j", lvc.minimalOutput());
             } else fail();

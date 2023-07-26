@@ -15,22 +15,26 @@
 package org.e2immu.analyser.parser.functional;
 
 import org.e2immu.analyser.analyser.Property;
+import org.e2immu.analyser.analysis.MethodAnalysis;
+import org.e2immu.analyser.analysis.StatementAnalysis;
+import org.e2immu.analyser.analysis.impl.MethodAnalysisImpl;
+import org.e2immu.analyser.analysis.impl.StatementAnalysisImpl;
 import org.e2immu.analyser.config.DebugConfiguration;
+import org.e2immu.analyser.inspector.TypeContext;
 import org.e2immu.analyser.model.Expression;
+import org.e2immu.analyser.model.MethodInfo;
 import org.e2immu.analyser.model.MultiLevel;
-import org.e2immu.analyser.model.expression.ConstructorCall;
-import org.e2immu.analyser.model.expression.InlinedMethod;
-import org.e2immu.analyser.model.expression.MethodCall;
+import org.e2immu.analyser.model.TypeInfo;
+import org.e2immu.analyser.model.expression.*;
+import org.e2immu.analyser.model.statement.ExpressionAsStatement;
 import org.e2immu.analyser.parser.CommonTestRunner;
-import org.e2immu.analyser.visitor.EvaluationResultVisitor;
-import org.e2immu.analyser.visitor.MethodAnalyserVisitor;
-import org.e2immu.analyser.visitor.StatementAnalyserVariableVisitor;
+import org.e2immu.analyser.parser.functional.testexample.Lambda_18;
+import org.e2immu.analyser.visitor.*;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.fail;
+import static org.junit.jupiter.api.Assertions.*;
 
 public class Test_57_Lambda_AAPI extends CommonTestRunner {
 
@@ -99,5 +103,26 @@ public class Test_57_Lambda_AAPI extends CommonTestRunner {
     public void test_17() throws IOException {
         testClass("Lambda_17", 0, 0, new DebugConfiguration.Builder()
                 .build());
+    }
+
+    @Test
+    public void test_18() throws IOException {
+        TypeContext typeContext = testClass("Lambda_18", 0, 0,
+                new DebugConfiguration.Builder().build());
+        TypeInfo lambda18 = typeContext.getFullyQualified(Lambda_18.class);
+
+        MethodInfo method1 = lambda18.findUniqueMethod("method1", 1);
+        MethodAnalysis methodAnalysis1 = method1.methodAnalysis.get();
+        StatementAnalysis s0 = methodAnalysis1.getFirstStatement();
+        StatementAnalysis s1 = s0.navigationData().next.get().orElseThrow();
+        Lambda l0 = s1.statement().asInstanceOf(ExpressionAsStatement.class).expression
+                .asInstanceOf(LocalVariableCreation.class)
+                .localVariableReference.assignmentExpression.asInstanceOf(MethodCall.class)
+                .parameterExpressions.get(0).asInstanceOf(Lambda.class);
+        assertEquals("Type org.e2immu.analyser.parser.functional.testexample.Lambda_18.$1",
+                l0.implementation.toString());
+        TypeInfo dollar1 = l0.implementation.typeInfo;
+        assert dollar1 != null;
+        assertTrue(dollar1.typeAnalysis.isSet());
     }
 }

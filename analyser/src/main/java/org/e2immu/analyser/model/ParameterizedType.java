@@ -31,6 +31,7 @@ public class ParameterizedType {
     public static final ParameterizedType RETURN_TYPE_OF_CONSTRUCTOR = new ParameterizedType(WildCard.NONE);
     public static final ParameterizedType NO_TYPE_GIVEN_IN_LAMBDA = new ParameterizedType(WildCard.NONE);
     public static final ParameterizedType WILDCARD_PARAMETERIZED_TYPE = new ParameterizedType(WildCard.UNBOUND);
+    public static final ParameterizedType TYPE_OF_EMPTY_EXPRESSION = new ParameterizedType(WildCard.NONE);
 
     public enum WildCard {
         NONE, UNBOUND, SUPER, EXTENDS
@@ -875,12 +876,13 @@ public class ParameterizedType {
     }
 
     public boolean isVoid() {
+        if (this == TYPE_OF_EMPTY_EXPRESSION) return true;
         return arrays == 0 && typeInfo != null && typeInfo.isVoid();
     }
 
     public boolean isVoidOrJavaLangVoid() {
-        return arrays == 0 && typeInfo != null && (typeInfo.isJavaLangVoid() ||
-                typeInfo.isVoid());
+        if (isVoid()) return true;
+        return arrays == 0 && typeInfo != null && typeInfo.isJavaLangVoid();
     }
 
     public boolean isJavaLangString() {

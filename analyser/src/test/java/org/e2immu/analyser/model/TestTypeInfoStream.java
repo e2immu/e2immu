@@ -154,6 +154,13 @@ public class TestTypeInfoStream {
         Expression creationExpression = ConstructorCall.objectCreation(newId(), hashMapConstructor,
                 hashMapParameterizedType, Diamond.NO, List.of());
         ParameterInspectionImpl.Builder p0 = new ParameterInspectionImpl.Builder(newId(), typeT, "value", 0);
+        LocalVariableCreation lvc = new LocalVariableCreation(newId(),
+                new LocalVariableReference(mapLocalVariable, creationExpression));
+        LocalVariable lv = new LocalVariable.Builder()
+                .setOwningType(testTypeInfo)
+                .setName("entry")
+                .setParameterizedType(new ParameterizedType(mapEntry, List.of(primitives.stringParameterizedType(), typeT)))
+                .build();
         MethodInfo put = new MethodInspectionImpl.Builder(testTypeInfo, "put")
                 .setReturnType(typeT)
                 .addParameter(p0)
@@ -162,21 +169,10 @@ public class TestTypeInfoStream {
                 //.addExceptionType(new ParameterizedType(jdk.ioException))
                 .setInspectedBlock(
                         new Block.BlockBuilder(newId())
-                                .addStatement(
-                                        new ExpressionAsStatement(newId(),
-                                                new LocalVariableCreation(primitives,
-                                                        List.of(new LocalVariableCreation.Declaration(newId(),
-                                                                mapLocalVariable, creationExpression)), false)
-                                        )
-                                )
+                                .addStatement(new ExpressionAsStatement(newId(), lvc))
                                 .addStatement(
                                         new ForEachStatement(newId(), null,
-                                                new LocalVariableCreation(Identifier.generate("lvc"), primitives,
-                                                        new LocalVariable.Builder()
-                                                                .setOwningType(testTypeInfo)
-                                                                .setName("entry")
-                                                                .setParameterizedType(new ParameterizedType(mapEntry, List.of(primitives.stringParameterizedType(), typeT)))
-                                                                .build()),
+                                                new LocalVariableCreation(Identifier.generate("lvc"), lv),
                                                 new VariableExpression(new LocalVariableReference(mapLocalVariable, creationExpression)),
                                                 null,
                                                 new Block.BlockBuilder(newId())

@@ -50,7 +50,7 @@ public class TestAnonymousType extends CommonTest {
         Statement s0 = same2Block.structure.statements().get(0);
         if (s0 instanceof ExpressionAsStatement eas) {
             TypeInfo dollarTwo = eas.expression.asInstanceOf(LocalVariableCreation.class)
-                    .declarations.get(0).expression().asInstanceOf(ConstructorCall.class).anonymousClass();
+                    .localVariableReference.assignmentExpression.asInstanceOf(ConstructorCall.class).anonymousClass();
             MethodInfo test = dollarTwo.findUniqueMethod("test", 1);
             Statement t0 = test.methodInspection.get().getMethodBody().getStructure().getStatements().get(0);
             if (t0 instanceof ReturnStatement rs) {

@@ -17,6 +17,7 @@ package org.e2immu.analyser.model.expression;
 import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.Identifier;
 import org.e2immu.analyser.model.LocalVariable;
+import org.e2immu.analyser.model.variable.LocalVariableReference;
 import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.parser.impl.PrimitivesImpl;
@@ -46,11 +47,10 @@ public class TestAssignment {
     @Test
     public void testNormal() {
         LocalVariable lvi = makeLocalVariableInt();
-        LocalVariableCreation i = new LocalVariableCreation(
-                primitives, List.of(new LocalVariableCreation.Declaration(newId(),
-                lvi, new IntConstant(primitives, 0))), false);
+        LocalVariableCreation i = new LocalVariableCreation(newId(),
+                new LocalVariableReference(lvi, new IntConstant(primitives, 0)));
         Expression iPlusEquals1 = new Assignment(primitives,
-                new VariableExpression(i.declarations.get(0).localVariableReference()), new IntConstant(primitives, 1));
+                new VariableExpression(i.localVariableReference), new IntConstant(primitives, 1));
         assertEquals("i=1", iPlusEquals1.minimalOutput());
     }
 
@@ -58,32 +58,30 @@ public class TestAssignment {
     public void testPlusEqualsOne() {
         LocalVariable lvi = makeLocalVariableInt();
         LocalVariableCreation i = new LocalVariableCreation(
-                primitives, List.of(new LocalVariableCreation.Declaration(newId(),
-                lvi, new IntConstant(primitives, 0))), false);
-        VariableExpression ve = new VariableExpression(i.declarations.get(0).localVariableReference());
+                newId(), new LocalVariableReference(lvi, new IntConstant(primitives, 0)));
+        VariableExpression ve = new VariableExpression(i.localVariableReference);
         Expression iPlusEquals1 = new Assignment(newId(), primitives, ve,
                 new IntConstant(primitives, 1), primitives.assignPlusOperatorInt(), null,
-                true, true,null, null);
+                true, true, null, null);
         assertEquals("i+=1", iPlusEquals1.minimalOutput());
 
         Expression iPlusEquals1AsPlusPlusI = new Assignment(newId(), primitives, ve,
                 new IntConstant(primitives, 1), primitives.assignPlusOperatorInt(), true,
-                true, true, null,null);
+                true, true, null, null);
         assertEquals("++i", iPlusEquals1AsPlusPlusI.minimalOutput());
 
         Expression iPlusEquals1AsIPlusPlus = new Assignment(newId(), primitives, ve,
                 new IntConstant(primitives, 1), primitives.assignPlusOperatorInt(), false,
-                true, true,null, null);
+                true, true, null, null);
         assertEquals("i++", iPlusEquals1AsIPlusPlus.minimalOutput());
     }
 
     @Test
     public void testPlusPlus() {
         LocalVariable lvi = makeLocalVariableInt();
-        LocalVariableCreation i = new LocalVariableCreation(
-                primitives, List.of(new LocalVariableCreation.Declaration(newId(),
-                lvi, new IntConstant(primitives, 0))), false);
-        VariableExpression ve = new VariableExpression(i.declarations.get(0).localVariableReference());
+        LocalVariableCreation i = new LocalVariableCreation(newId(),
+                new LocalVariableReference(lvi, new IntConstant(primitives, 0)));
+        VariableExpression ve = new VariableExpression(i.localVariableReference);
         Expression iPlusPlus = new UnaryOperator(newId(), primitives.postfixIncrementOperatorInt(),
                 ve, Precedence.PLUSPLUS);
         assertEquals("i++", iPlusPlus.minimalOutput());

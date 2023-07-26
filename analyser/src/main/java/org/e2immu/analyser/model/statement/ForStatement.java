@@ -87,8 +87,7 @@ public class ForStatement extends LoopStatement {
     public boolean hasExitCondition() {
         Set<Variable> locallyCreated = structure.initialisers().stream()
                 .filter(i -> i instanceof LocalVariableCreation)
-                .flatMap(i -> ((LocalVariableCreation) i).declarations.stream())
-                .map(LocalVariableCreation.Declaration::localVariableReference)
+                .flatMap(i -> i.newLocalVariables().stream())
                 .collect(Collectors.toUnmodifiableSet());
         return structure.expression().variableStream().noneMatch(locallyCreated::contains);
     }

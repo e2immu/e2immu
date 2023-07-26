@@ -404,8 +404,11 @@ public record ExpressionContextImpl(ExpressionContext.ResolverRecursion resolver
         for (com.github.javaparser.ast.expr.Expression resource : tryStmt.getResources()) {
             LocalVariableCreation localVariableCreation = (LocalVariableCreation) tryExpressionContext
                     .parseExpressionStartVoid(resource);
-            for (LocalVariableCreation.Declaration declaration : localVariableCreation.declarations) {
-                tryExpressionContext.variableContext.add(declaration.localVariable(), declaration.expression());
+            LocalVariableReference lvr = localVariableCreation.localVariableReference;
+            tryExpressionContext.variableContext.add(lvr.variable, lvr.assignmentExpression);
+            for (LocalVariableCreation.Declaration declaration : localVariableCreation.moreDeclarations) {
+                LocalVariableReference lvr2 = declaration.localVariableReference();
+                tryExpressionContext.variableContext.add(lvr2.variable, lvr2.assignmentExpression);
             }
             resources.add(localVariableCreation);
         }
@@ -431,7 +434,7 @@ public record ExpressionContextImpl(ExpressionContext.ResolverRecursion resolver
                     .setOwningType(owningType())
                     .setName(name).setParameterizedType(typeOfVariable).build();
             Identifier clauseId = Identifier.from(catchClause);
-            LocalVariableCreation lvc = new LocalVariableCreation(clauseId, typeContext.getPrimitives(), localVariable);
+            LocalVariableCreation lvc = new LocalVariableCreation(clauseId, localVariable);
             TryStatement.CatchParameter catchParameter = new TryStatement.CatchParameter(clauseId, lvc, unionOfTypes);
             ExpressionContextImpl catchExpressionContext = newVariableContext("catch-clause");
             catchExpressionContext.variableContext.add(localVariable, EmptyExpression.EMPTY_EXPRESSION);
@@ -654,7 +657,11 @@ public record ExpressionContextImpl(ExpressionContext.ResolverRecursion resolver
                     declarations.add(declaration);
                     variableContext.add(lv, initializer);
                 }
-                return new LocalVariableCreation(typeContext.getPrimitives(), List.copyOf(declarations), isVar);
+                LocalVariableReference first = declarations.get(0).localVariableReference();
+                Identifier firstIdentifier = declarations.get(0).identifier();
+                List<LocalVariableCreation.Declaration> rest = declarations.size() == 1 ? List.of()
+                        : List.copyOf(declarations.subList(1, declarations.size()));
+                return new LocalVariableCreation(firstIdentifier, first, rest, isVar);
             }
             if (expression.isAssignExpr()) {
                 AssignExpr assignExpr = (AssignExpr) expression;

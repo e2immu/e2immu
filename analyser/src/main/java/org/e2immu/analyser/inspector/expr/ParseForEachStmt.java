@@ -57,10 +57,7 @@ public class ParseForEachStmt {
         newVariableContext.add(localVariable, expression);
         Block block = expressionContext.newVariableContextForEachLoop(newVariableContext)
                 .parseBlockOrStatement(forEachStmt.getBody());
-        LocalVariableCreation.Declaration declaration = new LocalVariableCreation.Declaration(Identifier.from(vde),
-                localVariable, EmptyExpression.EMPTY_EXPRESSION);
-        List<LocalVariableCreation.Declaration> declarations = List.of(declaration);
-        LocalVariableCreation lvc = new LocalVariableCreation(expressionContext.typeContext().getPrimitives(), declarations, isVar);
+        LocalVariableCreation lvc = new LocalVariableCreation(Identifier.from(vde), localVariable);
         return new ForEachStatement(Identifier.positionFrom(forEachStmt), label, lvc, expression,
                 Identifier.positionFrom(forEachStmt.getIterable()), block, comment);
     }

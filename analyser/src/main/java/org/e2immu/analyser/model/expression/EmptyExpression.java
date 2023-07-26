@@ -24,6 +24,7 @@ import org.e2immu.analyser.model.impl.BaseExpression;
 import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.Text;
 import org.e2immu.analyser.parser.InspectionProvider;
+import org.e2immu.analyser.util.UpgradableBooleanMap;
 
 import java.util.Objects;
 import java.util.function.Predicate;
@@ -53,7 +54,12 @@ public final class EmptyExpression extends BaseExpression implements Expression 
 
     @Override
     public ParameterizedType returnType() {
-        throw new UnsupportedOperationException();
+        return ParameterizedType.TYPE_OF_EMPTY_EXPRESSION;
+    }
+
+    @Override
+    public UpgradableBooleanMap<TypeInfo> typesReferenced() {
+        return UpgradableBooleanMap.of();
     }
 
     @Override

@@ -14,15 +14,13 @@
 
 package org.e2immu.analyser.model.variable;
 
-import org.e2immu.analyser.model.Expression;
-import org.e2immu.analyser.model.LocalVariable;
-import org.e2immu.analyser.model.Qualification;
-import org.e2immu.analyser.model.TypeInfo;
+import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.EmptyExpression;
 import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.QualifiedName;
 
 import java.util.Objects;
+import java.util.function.Predicate;
 
 public class LocalVariableReference extends VariableWithConcreteReturnType {
     public final LocalVariable variable;
@@ -103,5 +101,10 @@ public class LocalVariableReference extends VariableWithConcreteReturnType {
     @Override
     public int getComplexity() {
         return COMPLEXITY;
+    }
+
+    @Override
+    public void visit(Predicate<Element> predicate) {
+        // do nothing here! The assignedExpression is only visited in LocalVariableCreation
     }
 }

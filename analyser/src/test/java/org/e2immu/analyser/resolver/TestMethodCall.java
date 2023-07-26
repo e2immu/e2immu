@@ -191,10 +191,10 @@ public class TestMethodCall extends CommonTest {
     private void testConcreteReturnType(MethodInfo method1, String expected) {
         Block b1 = method1.methodInspection.get().getMethodBody();
         LocalVariableCreation a1 = (LocalVariableCreation) (((ExpressionAsStatement) b1.structure.getStatements().get(0)).expression);
-        Lambda l1 = (Lambda) (a1.declarations.get(0).expression());
+        Lambda l1 = (Lambda) (a1.localVariableReference.assignmentExpression);
         Block bl1 = l1.methodInfo.methodInspection.get().getMethodBody();
         LocalVariableCreation al1 = (LocalVariableCreation) (((ExpressionAsStatement) bl1.structure.getStatements().get(0)).expression);
-        MethodCall mc1 = (MethodCall) (al1.declarations.get(0).expression());
+        MethodCall mc1 = (MethodCall) (al1.localVariableReference.assignmentExpression);
         assertEquals(expected, mc1.concreteReturnType.toString());
     }
 

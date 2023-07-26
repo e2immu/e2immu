@@ -47,8 +47,14 @@ public record LocalVariable(Set<LocalVariableModifier> modifiers,
 
     public LocalVariable translate(TranslationMap translationMap) {
         ParameterizedType translatedType = translationMap.translateType(parameterizedType);
-        if(translatedType == parameterizedType) return this;
+        if (translatedType == parameterizedType) return this;
         return new LocalVariable(modifiers, name, translatedType, annotations, owningType, nature);
+    }
+
+    // used by JFocus
+    @SuppressWarnings("unused")
+    public LocalVariable changeName(String newName) {
+        return new LocalVariable(modifiers, newName, parameterizedType, annotations, owningType, nature);
     }
 
     @Override

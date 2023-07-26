@@ -148,6 +148,9 @@ public class JavaNetHttp {
         @Independent
         HttpClient.Builder newBuilder();
 
+        @Independent
+        HttpClient newHttpClient();
+
         @NotModified
         <T> CompletableFuture<HttpResponse<T>> sendAsync(HttpRequest request, HttpResponse.BodyHandler<T> bodyHandler);
     }

@@ -158,6 +158,12 @@ class JavaLang {
     interface ClassLoader$ {
         @NotNull
         Module getUnnamedModule();
+
+        @Independent
+        ClassLoader getPlatformClassLoader();
+
+        @Independent
+        ClassLoader getSystemClassLoader();
     }
 
     /*

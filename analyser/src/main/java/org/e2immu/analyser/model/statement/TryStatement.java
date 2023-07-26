@@ -177,7 +177,7 @@ public class TryStatement extends StatementWithStructure {
                             .map(pt -> new OutputBuilder().add(pt.typeInfo.typeName(
                                     qualification.qualifierRequired(pt.typeInfo))))
                             .collect(OutputBuilder.joining(Symbol.PIPE)))
-                    .add(Space.ONE).add(new Text(localVariableCreation.declarations.get(0).localVariable().name()));
+                    .add(Space.ONE).add(new Text(localVariableCreation.localVariableReference.simpleName()));
         }
 
         @Override

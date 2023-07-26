@@ -1527,7 +1527,8 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
         if (last != null) {
             Expression initialiser = statement.getStructure().initialisers().get(0);
             if (initialiser instanceof LocalVariableCreation lvc) {
-                Variable loopVar = lvc.newLocalVariables().get(0);
+                assert lvc.hasSingleDeclaration();
+                Variable loopVar = lvc.localVariableReference;
                 VariableInfo latestVariableInfo = last.getLatestVariableInfo(loopVar.fullyQualifiedName());
                 if (latestVariableInfo != null) {
                     LinkedVariables linkedOfLoopVar = latestVariableInfo.getLinkedVariables();
@@ -2245,7 +2246,8 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
     public Variable obtainLoopVar() {
         Structure structure = statement().getStructure();
         LocalVariableCreation lvc = (LocalVariableCreation) structure.initialisers().get(0);
-        return lvc.declarations.get(0).localVariableReference();
+        assert lvc.hasSingleDeclaration();
+        return lvc.localVariableReference;
     }
 
     @Override

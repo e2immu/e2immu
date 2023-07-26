@@ -77,7 +77,7 @@ record SAInitializersAndUpdaters(StatementAnalysis statementAnalysis) {
         if (forwardAnalysisInfo.catchVariable() != null) {
             // inject a catch(E1 | E2 e) { } exception variable, directly with assigned value, "read"
             LocalVariableCreation catchVariable = forwardAnalysisInfo.catchVariable();
-            LocalVariable catchLv = catchVariable.declarations.get(0).localVariable();
+            LocalVariable catchLv = catchVariable.localVariableReference.variable;
             String name = catchLv.name();
             if (!statementAnalysis.variableIsSet(name)) {
                 LocalVariableReference lvr = new LocalVariableReference(catchLv);
@@ -111,15 +111,14 @@ record SAInitializersAndUpdaters(StatementAnalysis statementAnalysis) {
                     expressionsToEvaluate.add(PropertyWrapper.wrapPreventIncrementalEvaluation(lvc));
                     addInitializersSeparately = false;
                 }
-                for (LocalVariableCreation.Declaration declaration : lvc.declarations) {
-                    String name = declaration.localVariable().name();
-                    variableCreatedInLoop.add(declaration.localVariableReference());
+                for (LocalVariableReference lvr : lvc.newLocalVariables()) {
+                    String name = lvr.simpleName();
+                    variableCreatedInLoop.add(lvr);
 
                     if (!statementAnalysis.variableIsSet(name)) {
 
                         // create the local (loop) variable
 
-                        LocalVariableReference lvr = new LocalVariableReference(declaration.localVariable());
                         VariableNature variableNature;
                         if (statement() instanceof LoopStatement) {
                             variableNature = new VariableNature.LoopVariable(index(), statementAnalysis);
@@ -136,8 +135,9 @@ record SAInitializersAndUpdaters(StatementAnalysis statementAnalysis) {
                     }
 
                     // what should we evaluate? catch: assign a value which will be read; for(int i=0;...) --> 0 instead of i=0;
-                    if (addInitializersSeparately && declaration.expression() != EmptyExpression.EMPTY_EXPRESSION) {
-                        expressionsToEvaluate.add(PropertyWrapper.wrapPreventIncrementalEvaluation(declaration.expression()));
+                    if (addInitializersSeparately && !lvr.assignmentExpression.isEmpty()) {
+                        Expression pw = PropertyWrapper.wrapPreventIncrementalEvaluation(lvr.assignmentExpression);
+                        expressionsToEvaluate.add(pw);
                     }
                 }
             } else {
