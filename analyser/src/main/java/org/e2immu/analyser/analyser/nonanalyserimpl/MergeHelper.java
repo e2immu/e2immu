@@ -484,13 +484,13 @@ public record MergeHelper(EvaluationContext evaluationContext,
     */
     private Merge.ExpressionAndProperties isNullCheckAndNull(Expression condition, VariableInfo e1, VariableInfo e2) {
         IsVariableExpression ive;
-        if (condition instanceof Equals equals && equals.lhs.isNull()
+        if (condition instanceof Equals equals && equals.lhs.isNullConstant()
                 && (ive = equals.rhs.asInstanceOf(IsVariableExpression.class)) != null
                 && ive.variable().equals(this.vi.variable())
                 && e1.getValue().isInstanceOf(NullConstant.class)) {
             return valueProperties(e2);
         }
-        if (condition instanceof Negation negation && negation.expression instanceof Equals equals && equals.lhs.isNull()
+        if (condition instanceof Negation negation && negation.expression instanceof Equals equals && equals.lhs.isNullConstant()
                 && (ive = equals.rhs.asInstanceOf(IsVariableExpression.class)) != null
                 && ive.variable().equals(this.vi.variable())
                 && e2.getValue().isInstanceOf(NullConstant.class)) {

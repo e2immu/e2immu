@@ -298,23 +298,23 @@ public class InlineConditional extends BaseExpression implements Expression {
 
     @Override
     public ParameterizedType returnType() {
-        if (ifTrue.isNull() && ifFalse.isNull()) {
+        if (ifTrue.isNullConstant() && ifFalse.isNullConstant()) {
             return inspectionProvider.getPrimitives().objectParameterizedType();
         }
-        if (ifTrue.isNull()) return ifFalse.returnType().ensureBoxed(inspectionProvider.getPrimitives());
-        if (ifFalse.isNull()) return ifTrue.returnType().ensureBoxed(inspectionProvider.getPrimitives());
+        if (ifTrue.isNullConstant()) return ifFalse.returnType().ensureBoxed(inspectionProvider.getPrimitives());
+        if (ifFalse.isNullConstant()) return ifTrue.returnType().ensureBoxed(inspectionProvider.getPrimitives());
         return ifTrue.returnType().commonType(inspectionProvider, ifFalse.returnType());
     }
 
     @Override
     public Set<ParameterizedType> erasureTypes(TypeContext typeContext) {
-        if (ifTrue.isNull() && ifFalse.isNull()) {
+        if (ifTrue.isNullConstant() && ifFalse.isNullConstant()) {
             return Set.of(inspectionProvider.getPrimitives().objectParameterizedType());
         }
-        if (ifTrue.isNull()) {
+        if (ifTrue.isNullConstant()) {
             return ifFalse.erasureTypes(typeContext);
         }
-        if (ifFalse.isNull()) return ifTrue.erasureTypes(typeContext);
+        if (ifFalse.isNullConstant()) return ifTrue.erasureTypes(typeContext);
         return SetUtil.immutableUnion(ifTrue.erasureTypes(typeContext), ifFalse.erasureTypes(typeContext));
     }
 

@@ -529,20 +529,21 @@ public record ExpressionContextImpl(ExpressionContext.ResolverRecursion resolver
         assert forwardReturnTypeInfo != null;
         Identifier identifier = Identifier.from(expression);
         try {
+            Primitives primitives = typeContext.getPrimitives();
             if (expression.isStringLiteralExpr()) {
                 StringLiteralExpr stringLiteralExpr = (StringLiteralExpr) expression;
-                return new StringConstant(typeContext.getPrimitives(), stringLiteralExpr.getValue());
+                return new StringConstant(primitives, identifier, stringLiteralExpr.getValue());
             }
             if (expression.isIntegerLiteralExpr()) {
                 IntegerLiteralExpr integerLiteralExpr = (IntegerLiteralExpr) expression;
-                return new IntConstant(typeContext.getPrimitives(), (Integer) integerLiteralExpr.asNumber());
+                return new IntConstant(primitives, identifier, (Integer) integerLiteralExpr.asNumber());
             }
             if (expression.isBooleanLiteralExpr()) {
                 BooleanLiteralExpr booleanLiteralExpr = (BooleanLiteralExpr) expression;
-                return new BooleanConstant(typeContext.getPrimitives(), booleanLiteralExpr.getValue());
+                return new BooleanConstant(primitives, identifier, booleanLiteralExpr.getValue());
             }
             if (expression.isNullLiteralExpr()) {
-                return NullConstant.NULL_CONSTANT;
+                return new NullConstant(identifier);
             }
             if (expression.isCastExpr()) {
                 CastExpr castExpr = (CastExpr) expression;
@@ -555,34 +556,33 @@ public record ExpressionContextImpl(ExpressionContext.ResolverRecursion resolver
                 Expression rhs = parseExpressionStartVoid(binaryExpr.getRight());
                 TypeInfo typeInfo;
                 if (lhs instanceof NullConstant) {
-                    typeInfo = typeContext.getPrimitives().ensureBoxed(rhs.returnType().typeInfo);
+                    typeInfo = primitives.ensureBoxed(rhs.returnType().typeInfo);
                 } else if (rhs instanceof NullConstant) {
-                    typeInfo = typeContext.getPrimitives().ensureBoxed(lhs.returnType().typeInfo);
+                    typeInfo = primitives.ensureBoxed(lhs.returnType().typeInfo);
                 } else if (lhs.returnType().allowsForOperators() || rhs.returnType().allowsForOperators()) {
-                    ParameterizedType widestType = typeContext.getPrimitives().widestType(lhs.returnType(), rhs.returnType());
+                    ParameterizedType widestType = primitives.widestType(lhs.returnType(), rhs.returnType());
                     if (!widestType.isType())
                         throw new UnsupportedOperationException("? for " + lhs.returnType() + " and " + rhs.returnType());
                     typeInfo = widestType.typeInfo;
                 } else {
                     typeInfo = null;
                 }
-                MethodInfo operatorMethod = BinaryOperator.getOperator(typeContext.getPrimitives(), binaryExpr.getOperator(), typeInfo);
+                MethodInfo operatorMethod = BinaryOperator.getOperator(primitives, binaryExpr.getOperator(), typeInfo);
                 return new BinaryOperator(identifier,
-                        typeContext.getPrimitives(), lhs, operatorMethod, rhs,
-                        BinaryOperator.precedence(typeContext.getPrimitives(), operatorMethod));
+                        primitives, lhs, operatorMethod, rhs,
+                        BinaryOperator.precedence(primitives, operatorMethod));
             }
             if (expression.isUnaryExpr()) {
                 UnaryExpr unaryExpr = (UnaryExpr) expression;
                 Expression exp = parseExpressionStartVoid(unaryExpr.getExpression());
                 ParameterizedType pt = exp.returnType();
                 if (pt.typeInfo == null) throw new UnsupportedOperationException("??");
-                MethodInfo operator = UnaryOperator.getOperator(typeContext.getPrimitives(), unaryExpr.getOperator(), pt.typeInfo);
-                Primitives primitives = typeContext.getPrimitives();
+                MethodInfo operator = UnaryOperator.getOperator(primitives, unaryExpr.getOperator(), pt.typeInfo);
                 if (primitives.isPreOrPostFixOperator(operator)) {
                     boolean isPrefix = primitives.isPrefixOperator(operator);
                     MethodInfo associatedAssignment = primitives.prePostFixToAssignment(operator);
-                    return new Assignment(identifier, typeContext.getPrimitives(),
-                            exp, new IntConstant(typeContext.getPrimitives(), 1), associatedAssignment, isPrefix,
+                    return new Assignment(identifier, primitives,
+                            exp, new IntConstant(primitives, identifier, 1), associatedAssignment, isPrefix,
                             true, true, null, null);
                 }
                 return new UnaryOperator(identifier, operator, exp, UnaryOperator.precedence(unaryExpr.getOperator()));
@@ -610,7 +610,7 @@ public record ExpressionContextImpl(ExpressionContext.ResolverRecursion resolver
             if (expression.isClassExpr()) {
                 ClassExpr classExpr = (ClassExpr) expression;
                 ParameterizedType parameterizedType = ParameterizedTypeFactory.from(typeContext, classExpr.getType());
-                return new ClassExpression(typeContext.getPrimitives(), parameterizedType);
+                return new ClassExpression(primitives, parameterizedType);
             }
             if (expression.isNameExpr()) {
                 return ParseNameExpr.parse(this, expression.asNameExpr());
@@ -670,12 +670,12 @@ public record ExpressionContextImpl(ExpressionContext.ResolverRecursion resolver
                         new ForwardReturnTypeInfo(target.returnType()));
                 if (value.returnType().isType() && value.returnType().isPrimitiveExcludingVoid() &&
                         target.returnType().isType() && target.returnType().isPrimitiveExcludingVoid()) {
-                    ParameterizedType widestType = typeContext.getPrimitives().widestType(value.returnType(), target.returnType());
-                    MethodInfo primitiveOperator = Assignment.operator(typeContext.getPrimitives(), assignExpr.getOperator(), widestType.typeInfo);
-                    return new Assignment(identifier, typeContext.getPrimitives(), target, value, primitiveOperator,
+                    ParameterizedType widestType = primitives.widestType(value.returnType(), target.returnType());
+                    MethodInfo primitiveOperator = Assignment.operator(primitives, assignExpr.getOperator(), widestType.typeInfo);
+                    return new Assignment(identifier, primitives, target, value, primitiveOperator,
                             null, true, true, null, null);
                 }
-                return new Assignment(identifier, typeContext.getPrimitives(), target, value);
+                return new Assignment(identifier, primitives, target, value);
             }
             if (expression.isMethodCallExpr()) {
                 if (forwardReturnTypeInfo.erasure()) {
@@ -724,25 +724,25 @@ public record ExpressionContextImpl(ExpressionContext.ResolverRecursion resolver
             }
             if (expression.isLongLiteralExpr()) {
                 String value = expression.asLongLiteralExpr().getValue();
-                return LongConstant.parse(typeContext.getPrimitives(), value);
+                return LongConstant.parse(primitives, value);
             }
             if (expression.isDoubleLiteralExpr()) {
                 String valueWithD = expression.asDoubleLiteralExpr().getValue();
                 if (valueWithD.endsWith("f") || valueWithD.endsWith("F")) {
                     String value = valueWithD.substring(0, valueWithD.length() - 1);
-                    return new FloatConstant(typeContext.getPrimitives(), Float.parseFloat(value));
+                    return new FloatConstant(primitives, Float.parseFloat(value));
                 }
                 String value = valueWithD.endsWith("D") || valueWithD.endsWith("d") ? valueWithD.substring(0, valueWithD.length() - 1) : valueWithD;
-                return new DoubleConstant(typeContext.getPrimitives(), Double.parseDouble(value));
+                return new DoubleConstant(primitives, Double.parseDouble(value));
             }
             if (expression.isCharLiteralExpr()) {
-                return new CharConstant(typeContext.getPrimitives(), expression.asCharLiteralExpr().asChar());
+                return new CharConstant(primitives, expression.asCharLiteralExpr().asChar());
             }
             if (expression.isArrayAccessExpr()) {
                 ArrayAccessExpr arrayAccessExpr = expression.asArrayAccessExpr();
                 Expression scope = parseExpressionStartVoid(arrayAccessExpr.getName());
                 Expression index = parseExpression(arrayAccessExpr.getIndex(),
-                        new ForwardReturnTypeInfo(typeContext.getPrimitives().intParameterizedType()));
+                        new ForwardReturnTypeInfo(primitives.intParameterizedType()));
                 // statement index will be non-empty when the dependent variable is created during analysis
                 DependentVariable dv = DependentVariable.create(identifier, scope, index, "", owningType());
                 return new VariableExpression(dv);
@@ -761,7 +761,7 @@ public record ExpressionContextImpl(ExpressionContext.ResolverRecursion resolver
                 if (patternVariable != null) {
                     variableContext.add(patternVariable);
                 }
-                return new InstanceOf(identifier, typeContext.getPrimitives(), type, e, patternVariable);
+                return new InstanceOf(identifier, primitives, type, e, patternVariable);
             }
             if (expression.isSingleMemberAnnotationExpr()) {
                 SingleMemberAnnotationExpr sma = expression.asSingleMemberAnnotationExpr();
@@ -773,7 +773,7 @@ public record ExpressionContextImpl(ExpressionContext.ResolverRecursion resolver
 
             if (expression.isTextBlockLiteralExpr()) {
                 TextBlockLiteralExpr textBlock = expression.asTextBlockLiteralExpr();
-                return new StringConstant(typeContext.getPrimitives(), textBlock.stripIndent());
+                return new StringConstant(primitives, textBlock.stripIndent());
             }
 
             throw new UnsupportedOperationException("Unknown expression type " + expression +

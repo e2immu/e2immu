@@ -191,14 +191,14 @@ public class BinaryOperator extends BaseExpression implements Expression {
             }
 
             // HERE are the ==null checks
-            if (l == NullConstant.NULL_CONSTANT) {
+            if (l.isNullConstant()) {
                 DV dv = right.isNotNull0(false, forwardEvaluationInfo);
                 if (dv.valueIsTrue()) return new BooleanConstant(primitives, false);
                 if (dv.isDelayed())
                     return DelayedExpression.forNullCheck(identifier, primitives,
                             right.getExpression(), dv.causesOfDelay().merge(r.causesOfDelay()));
             }
-            if (r == NullConstant.NULL_CONSTANT) {
+            if (r.isNullConstant()) {
                 DV dv = left.isNotNull0(false, forwardEvaluationInfo);
                 if (dv.valueIsTrue()) return new BooleanConstant(primitives, false);
                 if (dv.isDelayed())
@@ -208,10 +208,10 @@ public class BinaryOperator extends BaseExpression implements Expression {
             // the following line ensures that a warning is sent when the ENN of a field/parameter is not NULLABLE
             // but the CNN is. The ENN trumps the annotation, but is not used in the computation of the constructor
             // see example in ExternalNotNull_0
-            if (l == NullConstant.NULL_CONSTANT && right.isNotNull0(true,
+            if (l.isNullConstant() && right.isNotNull0(true,
                     forwardEvaluationInfo).valueIsTrue() && r instanceof IsVariableExpression ve) {
                 builder.setProperty(ve.variable(), Property.CANDIDATE_FOR_NULL_PTR_WARNING, DV.TRUE_DV);
-            } else if (r == NullConstant.NULL_CONSTANT && left.isNotNull0(true,
+            } else if (r.isNullConstant() && left.isNotNull0(true,
                     forwardEvaluationInfo).valueIsTrue() && l instanceof IsVariableExpression ve) {
                 builder.setProperty(ve.variable(), Property.CANDIDATE_FOR_NULL_PTR_WARNING, DV.TRUE_DV);
             }
@@ -219,7 +219,7 @@ public class BinaryOperator extends BaseExpression implements Expression {
         }
         if (operator == primitives.equalsOperatorInt()) {
             if (l.equals(r)) return new BooleanConstant(primitives, true);
-            if (l == NullConstant.NULL_CONSTANT || r == NullConstant.NULL_CONSTANT) {
+            if (l.isNullConstant() || r.isNullConstant()) {
                 // TODO need more resolution here to distinguish int vs Integer comparison throw new UnsupportedOperationException();
             }
             return Equals.equals(identifier, context, l, r, forwardEvaluationInfo);
@@ -228,14 +228,14 @@ public class BinaryOperator extends BaseExpression implements Expression {
             if (l.equals(r)) new BooleanConstant(primitives, false);
 
             // HERE are the !=null checks
-            if (l == NullConstant.NULL_CONSTANT) {
+            if (l.isNullConstant()) {
                 DV dv = right.isNotNull0(false, forwardEvaluationInfo);
                 if (dv.valueIsTrue()) return new BooleanConstant(primitives, true);
                 if (dv.isDelayed())
                     return DelayedExpression.forNullCheck(identifier, primitives,
                             right.getExpression(), dv.causesOfDelay().merge(r.causesOfDelay()));
             }
-            if (r == NullConstant.NULL_CONSTANT) {
+            if (r.isNullConstant()) {
                 DV dv = left.isNotNull0(false, forwardEvaluationInfo);
                 if (dv.valueIsTrue()) return new BooleanConstant(primitives, true);
                 if (dv.isDelayed())
@@ -246,7 +246,7 @@ public class BinaryOperator extends BaseExpression implements Expression {
         }
         if (operator == primitives.notEqualsOperatorInt()) {
             if (l.equals(r)) return new BooleanConstant(primitives, false);
-            if (l == NullConstant.NULL_CONSTANT || r == NullConstant.NULL_CONSTANT) {
+            if (l.isNullConstant() || r.isNullConstant()) {
                 // TODO need more resolution throw new UnsupportedOperationException();
             }
             return Negation.negate(context, Equals.equals(identifier, context, l, r, forwardEvaluationInfo));

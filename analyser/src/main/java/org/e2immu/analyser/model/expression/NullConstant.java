@@ -26,7 +26,6 @@ import org.e2immu.analyser.model.expression.util.ExpressionComparator;
 import org.e2immu.analyser.model.impl.BaseExpression;
 import org.e2immu.analyser.output.Keyword;
 import org.e2immu.analyser.output.OutputBuilder;
-import org.e2immu.analyser.output.Text;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.annotation.NotNull;
 
@@ -35,6 +34,10 @@ public class NullConstant extends BaseExpression implements ConstantExpression<O
 
     protected NullConstant() {
         super(Identifier.constant(NullConstant.class), 1);
+    }
+
+    public NullConstant(Identifier identifier) {
+        super(identifier, 1);
     }
 
     @Override
@@ -55,7 +58,7 @@ public class NullConstant extends BaseExpression implements ConstantExpression<O
 
     @Override
     public boolean equals(Object obj) {
-        return obj == this;
+        return obj instanceof NullConstant;
     }
 
     @Override
@@ -66,7 +69,7 @@ public class NullConstant extends BaseExpression implements ConstantExpression<O
         if (max.gt(MultiLevel.NULLABLE_DV) && forwardEvaluationInfo.isComplainInlineConditional()) {
             builder.raiseError(getIdentifier(), Message.Label.NULL_POINTER_EXCEPTION);
         }
-        return builder.setExpression(NULL_CONSTANT).build();
+        return builder.setExpression(this).build();
     }
 
     @Override
@@ -87,5 +90,10 @@ public class NullConstant extends BaseExpression implements ConstantExpression<O
     @Override
     public Object getValue() {
         return null;
+    }
+
+    @Override
+    public boolean isNullConstant() {
+        return true;
     }
 }

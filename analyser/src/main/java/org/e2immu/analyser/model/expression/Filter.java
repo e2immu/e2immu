@@ -289,13 +289,16 @@ public class Filter {
     }
 
     // EXAMPLE: p == null, field != null
-
+    private boolean isNotNull(Expression e) {
+        Negation negatedValue = e.asInstanceOf(Negation.class);
+        return negatedValue != null && negatedValue.expression.isNullConstant();
+    }
 
     public FilterMethod<Variable> individualNullOrNotNullClause() {
         return value -> {
             if (value instanceof Equals equalsValue) {
-                boolean lhsIsNull = equalsValue.lhs.isNull();
-                boolean lhsIsNotNull = equalsValue.lhs.isNotNull();
+                boolean lhsIsNull = equalsValue.lhs.isNullConstant();
+                boolean lhsIsNotNull = isNotNull(equalsValue.lhs);
                 if ((lhsIsNull || lhsIsNotNull) && equalsValue.rhs instanceof IsVariableExpression v) {
                     return new FilterResult<Variable>(Map.of(v.variable(), value), defaultRest);
                 }
@@ -309,8 +312,8 @@ public class Filter {
     public FilterMethod<ParameterInfo> individualNullOrNotNullClauseOnParameter() {
         return value -> {
             if (value instanceof Equals equalsValue) {
-                boolean lhsIsNull = equalsValue.lhs.isNull();
-                boolean lhsIsNotNull = equalsValue.lhs.isNotNull();
+                boolean lhsIsNull = equalsValue.lhs.isNullConstant();
+                boolean lhsIsNotNull = isNotNull(equalsValue.lhs);
                 if ((lhsIsNull || lhsIsNotNull) && equalsValue.rhs instanceof IsVariableExpression v && v.variable() instanceof ParameterInfo p) {
                     return new FilterResult<ParameterInfo>(Map.of(p, value), defaultRest);
                 }

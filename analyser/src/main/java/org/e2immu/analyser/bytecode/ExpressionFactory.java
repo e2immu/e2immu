@@ -26,16 +26,16 @@ public class ExpressionFactory {
 
     public static Expression from(TypeContext typeContext, Identifier identifier, Object value) {
         Primitives primitives = typeContext.getPrimitives();
-        if (value == null) return NullConstant.NULL_CONSTANT;
-        if (value instanceof String s) return new StringConstant(identifier, primitives, s);
-        if (value instanceof Integer i) return new IntConstant(primitives, i);
+        if (value == null) return new NullConstant(identifier);
+        if (value instanceof String s) return new StringConstant(primitives, identifier, s);
+        if (value instanceof Integer i) return new IntConstant(primitives, identifier, i);
         if (value instanceof Short s) return new ShortConstant(primitives, s);
         if (value instanceof Long l) return new LongConstant(primitives, l);
         if (value instanceof Byte b) return new ByteConstant(primitives, b);
         if (value instanceof Double d) return new DoubleConstant(primitives, d);
         if (value instanceof Float f) return new FloatConstant(primitives, f);
         if (value instanceof Character c) return new CharConstant(primitives, c);
-        if (value instanceof Boolean b) return new BooleanConstant(primitives, b);
+        if (value instanceof Boolean b) return new BooleanConstant(primitives, identifier, b);
         if (value instanceof Type t)
             return new TypeExpression(identifier, typeContext.getFullyQualified(t.getClassName(), true)
                     .asParameterizedType(typeContext), Diamond.SHOW_ALL);

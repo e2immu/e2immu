@@ -121,7 +121,7 @@ public class Equals extends BinaryOperator {
         Expression[] terms = Stream.concat(Sum.expandTerms(context, l, false),
                 Sum.expandTerms(context, r, true)).toArray(Expression[]::new);
         Arrays.sort(terms);
-        Expression[] termsOfProducts = Sum.makeProducts(context, terms);
+        Expression[] termsOfProducts = Sum.makeProducts(identifier, context, terms);
 
         if (termsOfProducts.length == 0) {
             return new BooleanConstant(primitives, true);
@@ -152,11 +152,11 @@ public class Equals extends BinaryOperator {
                 newRight = wrapSum(context, termsOfProducts, true);
                 // 4 + i == 0 --> -4 == i
             } else if (d > 0 && !(termsOfProducts[1] instanceof Negation)) {
-                newLeft = IntConstant.intOrDouble(primitives, -d);
+                newLeft = IntConstant.intOrDouble(primitives, identifier, -d);
                 newRight = wrapSum(context, termsOfProducts, false);
                 // -4 + x == 0 --> 4 == x
             } else if (d < 0) {
-                newLeft = IntConstant.intOrDouble(primitives, -d);
+                newLeft = IntConstant.intOrDouble(primitives, identifier, -d);
                 newRight = wrapSum(context, termsOfProducts, false);
             } else {
                 newLeft = termsOfProducts[0];
@@ -271,12 +271,12 @@ public class Equals extends BinaryOperator {
                     And.and(context, notCondition, recursively2));
         }
 
-        if (c.isNull()) {
-            if (inlineConditional.ifTrue.isNull()) {
+        if (c.isNullConstant()) {
+            if (inlineConditional.ifTrue.isNullConstant()) {
                 // null == (a ? null: b) --> a || (b == null)
                 return Or.or(context, inlineConditional.condition, Equals.equals(context, NullConstant.NULL_CONSTANT, inlineConditional.ifFalse));
             }
-            if (inlineConditional.ifFalse.isNull()) {
+            if (inlineConditional.ifFalse.isNullConstant()) {
                 // null== (a ? b : null) --> !a || (b == null)
                 return Or.or(context, Negation.negate(context, inlineConditional.condition), Equals.equals(context, NullConstant.NULL_CONSTANT, inlineConditional.ifTrue));
             }

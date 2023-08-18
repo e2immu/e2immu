@@ -122,9 +122,9 @@ public class LocalVariableCreation extends BaseExpression implements Expression 
                 : lvr.assignmentExpression.translate(inspectionProvider, translationMap);
         if (tlv == lvr.variable && tex == lvr.assignmentExpression) return lvr;
         if (lvr.variable.parameterizedType().isBoxedExcludingVoid()
-                && lvr.assignmentExpression.isNull()
+                && lvr.assignmentExpression.isNullConstant()
                 && tlv.parameterizedType().isPrimitiveExcludingVoid()
-                && tex.isNull()) {
+                && tex.isNullConstant()) {
             // special case: Integer v = null, with type change to int v = null; ... change null to 0
             Expression nullValue = ConstantExpression.nullValue(inspectionProvider.getPrimitives(),
                     tlv.parameterizedType().typeInfo);

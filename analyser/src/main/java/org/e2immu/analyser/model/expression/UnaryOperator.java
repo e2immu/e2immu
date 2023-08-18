@@ -62,7 +62,7 @@ public class UnaryOperator extends BaseExpression implements Expression {
     @Override
     public Expression translate(InspectionProvider inspectionProvider, TranslationMap translationMap) {
         Expression translated = translationMap.translateExpression(this);
-        if(translated != this) return translated;
+        if (translated != this) return translated;
 
         Expression translatedExpression = expression.translate(inspectionProvider, translationMap);
         if (translatedExpression == expression) return this;
@@ -105,18 +105,18 @@ public class UnaryOperator extends BaseExpression implements Expression {
         }
         if (operator == primitives.bitWiseNotOperatorInt()) {
             if (v instanceof IntConstant ic)
-                return new IntConstant(primitives, ~ic.constant());
+                return new IntConstant(primitives, identifier, ~ic.constant());
             return new UnaryOperator(identifier, operator, v, precedence);
         }
         if (operator == primitives.postfixDecrementOperatorInt()
                 || operator == primitives.prefixDecrementOperatorInt()) {
             if (v instanceof IntConstant ic)
-                return new IntConstant(primitives, ic.constant() - 1);
+                return new IntConstant(primitives, identifier, ic.constant() - 1);
             return new UnaryOperator(identifier, operator, v, precedence);
         }
         if (operator == primitives.postfixIncrementOperatorInt() || operator == primitives.prefixIncrementOperatorInt()) {
             if (v instanceof IntConstant ic)
-                return new IntConstant(primitives, ic.constant() + 1);
+                return new IntConstant(primitives, identifier, ic.constant() + 1);
             return new UnaryOperator(identifier, operator, v, precedence);
         }
         throw new UnsupportedOperationException();
@@ -204,7 +204,7 @@ public class UnaryOperator extends BaseExpression implements Expression {
 
     @Override
     public DV getProperty(EvaluationResult context, Property property, boolean duringEvaluation) {
-        return DelayFactory.createDelay(context.evaluationContext().getLocation(duringEvaluation?Stage.EVALUATION: Stage.MERGE),
+        return DelayFactory.createDelay(context.evaluationContext().getLocation(duringEvaluation ? Stage.EVALUATION : Stage.MERGE),
                 CauseOfDelay.Cause.VALUE);
     }
 

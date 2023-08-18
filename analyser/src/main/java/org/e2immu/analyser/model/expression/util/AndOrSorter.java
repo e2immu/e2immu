@@ -95,7 +95,7 @@ public class AndOrSorter {
         } else {
             ee = e;
         }
-        return ee instanceof BinaryOperator eq && (eq.lhs.isNull() != eq.rhs.isNull());
+        return ee instanceof BinaryOperator eq && (eq.lhs.isNullConstant() != eq.rhs.isNullConstant());
     }
 
 }

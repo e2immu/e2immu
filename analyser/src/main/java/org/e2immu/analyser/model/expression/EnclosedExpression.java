@@ -117,6 +117,11 @@ public class EnclosedExpression extends BaseExpression implements Expression {
     }
 
     @Override
+    public boolean isNullConstant() {
+        return inner.isNullConstant();
+    }
+
+    @Override
     public <T extends Element> T asInstanceOf(Class<T> clazz) {
         return inner.asInstanceOf(clazz);
     }

@@ -17,8 +17,6 @@ package org.e2immu.analyser.model.expression;
 import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.util.*;
-import org.e2immu.analyser.model.variable.LocalVariableReference;
-import org.e2immu.analyser.model.variable.This;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.Symbol;
@@ -32,7 +30,6 @@ import org.slf4j.LoggerFactory;
 import java.util.*;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 public class And extends ExpressionCanBeTooComplex {
     private static final Logger LOGGER = LoggerFactory.getLogger(And.class);
@@ -557,7 +554,7 @@ public class And extends ExpressionCanBeTooComplex {
                 if (xb1b < xb2b) return !xb1lt ? Action.ADD : Action.FALSE;
                 if (IntUtil.isMathematicalInteger(xb1b)) {
                     Expression newValue = Equals.equals(evaluationContext,
-                            IntConstant.intOrDouble(primitives, xb1b), xb1x); // null-checks are irrelevant here
+                            IntConstant.intOrDouble(primitives, identifier, xb1b), xb1x); // null-checks are irrelevant here
                     newConcat.set(newConcat.size() - 1, newValue);
                     return Action.SKIP;
                 }
@@ -631,7 +628,7 @@ public class And extends ExpressionCanBeTooComplex {
                 && i.expression() instanceof VariableExpression iv
                 && prev instanceof Negation neg
                 && neg.expression instanceof Equals eq
-                && eq.lhs.isNull()
+                && eq.lhs.isNullConstant()
                 && eq.rhs instanceof VariableExpression ve && ve.variable().equals(iv.variable())) {
             // remove previous
             return Action.REPLACE;

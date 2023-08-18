@@ -130,9 +130,7 @@ public interface Expression extends Element, Comparable<Expression> {
         return LinkedVariables.EMPTY;
     }
 
-    boolean isNotNull();
-
-    boolean isNull();
+    default boolean isNullConstant() { return false; }
 
     boolean equalsNull();
 

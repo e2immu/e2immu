@@ -62,13 +62,13 @@ public class Product extends BinaryOperator {
 
         if (l instanceof Numeric ln && ln.doubleValue() == 0 ||
                 r instanceof Numeric rn && rn.doubleValue() == 0) {
-            return new IntConstant(primitives, 0);
+            return new IntConstant(primitives, identifier, 0);
         }
 
         if (l instanceof Numeric ln && ln.doubleValue() == 1) return r;
         if (r instanceof Numeric rn && rn.doubleValue() == 1) return l;
         if (l instanceof Numeric ln && r instanceof Numeric rn)
-            return IntConstant.intOrDouble(primitives, ln.doubleValue() * rn.doubleValue());
+            return IntConstant.intOrDouble(primitives, identifier, ln.doubleValue() * rn.doubleValue());
 
         // any unknown lingering
         if (l.isEmpty() || r.isEmpty()) throw new UnsupportedOperationException();
@@ -99,7 +99,7 @@ public class Product extends BinaryOperator {
     public Expression removeAllReturnValueParts(Primitives primitives) {
         Expression l = lhs.removeAllReturnValueParts(primitives);
         Expression r = rhs.removeAllReturnValueParts(primitives);
-        if (l == null && r == null) return new IntConstant(primitives, 1);
+        if (l == null && r == null) return new IntConstant(primitives, identifier, 1);
         if (l == null) return r;
         if (r == null) return l;
         return new Product(identifier, primitives, l, r);

@@ -33,19 +33,23 @@ public final class IntConstant extends BaseExpression implements ConstantExpress
     private final Primitives primitives;
     private final int constant;
 
-    public IntConstant(Primitives primitives, int constant) {
-        super(Identifier.constant(constant), constant > 1 || constant < -1 ? 2 : 1);
-        this.primitives = primitives;
+    public IntConstant(Primitives primitives, Identifier identifier, int constant) {
+        super(identifier, constant > 1 || constant < -1 ? 2 : 1);
         this.constant = constant;
+        this.primitives = primitives;
     }
 
-    public static Expression intOrDouble(Primitives primitives, double b) {
+    public IntConstant(Primitives primitives, int constant) {
+        this(primitives, Identifier.constant(constant), constant);
+    }
+
+    public static Expression intOrDouble(Primitives primitives, Identifier identifier, double b) {
         if (IntUtil.isMathematicalInteger(b)) {
             long l = Math.round(b);
             if (l > Integer.MAX_VALUE || l < Integer.MIN_VALUE) {
                 return new LongConstant(primitives, l);
             }
-            return new IntConstant(primitives, (int) l);
+            return new IntConstant(primitives, identifier, (int) l);
         }
         return new DoubleConstant(primitives, b);
     }
@@ -101,7 +105,7 @@ public final class IntConstant extends BaseExpression implements ConstantExpress
 
     @Override
     public Expression negate() {
-        return new IntConstant(primitives, -constant);
+        return new IntConstant(primitives, identifier, -constant);
     }
 
     @Override

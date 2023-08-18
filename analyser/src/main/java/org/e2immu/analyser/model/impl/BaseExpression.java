@@ -46,22 +46,11 @@ public abstract class BaseExpression extends ElementImpl implements Expression {
     }
 
     @Override
-    public boolean isNotNull() {
-        Negation negatedValue = asInstanceOf(Negation.class);
-        return negatedValue != null && negatedValue.expression.isInstanceOf(NullConstant.class);
-    }
-
-    @Override
-    public boolean isNull() {
-        return isInstanceOf(NullConstant.class);
-    }
-
-    @Override
     public boolean equalsNull() {
         if (this instanceof Negation) return false;
         Equals equals;
         if ((equals = asInstanceOf(Equals.class)) != null) {
-            return equals.lhs.isNull();
+            return equals.lhs.isNullConstant();
         }
         return false;
     }
@@ -71,7 +60,7 @@ public abstract class BaseExpression extends ElementImpl implements Expression {
         if (!(this instanceof Negation negation)) return false;
         Equals equals;
         if ((equals = negation.expression.asInstanceOf(Equals.class)) != null) {
-            return equals.lhs.isNull();
+            return equals.lhs.isNullConstant();
         }
         return false;
     }

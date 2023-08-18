@@ -72,28 +72,29 @@ public class Sum extends BinaryOperator {
                                   EvaluationResult evaluationContext, Expression l, Expression r, boolean tryAgain) {
         Primitives primitives = evaluationContext.getPrimitives();
 
-        if (l.equals(r)) return Product.product(identifier, evaluationContext, new IntConstant(primitives, 2), l);
+        if (l.equals(r))
+            return Product.product(identifier, evaluationContext, new IntConstant(primitives, identifier, 2), l);
         IntConstant li;
         if ((li = l.asInstanceOf(IntConstant.class)) != null && li.constant() == 0) return r;
         IntConstant ri;
         if ((ri = r.asInstanceOf(IntConstant.class)) != null && ri.constant() == 0) return l;
         if (l instanceof Negation ln && ln.expression.equals(r) ||
                 r instanceof Negation rn && rn.expression.equals(l)) {
-            return new IntConstant(primitives, 0);
+            return new IntConstant(primitives, identifier, 0);
         }
         Numeric ln;
         Numeric rn;
         if ((ln = l.asInstanceOf(Numeric.class)) != null
                 && (rn = r.asInstanceOf(Numeric.class)) != null) {
-            return IntConstant.intOrDouble(primitives, ln.doubleValue() + rn.doubleValue());
+            return IntConstant.intOrDouble(primitives, identifier, ln.doubleValue() + rn.doubleValue());
         }
         // similar code in Equals (common terms)
 
         Expression[] terms = Stream.concat(expandTerms(evaluationContext, l, false),
                 expandTerms(evaluationContext, r, false)).toArray(Expression[]::new);
         Arrays.sort(terms);
-        Expression[] termsOfProducts = makeProducts(evaluationContext, terms);
-        if (termsOfProducts.length == 0) return new IntConstant(primitives, 0);
+        Expression[] termsOfProducts = makeProducts(identifier, evaluationContext, terms);
+        if (termsOfProducts.length == 0) return new IntConstant(primitives, identifier, 0);
         if (termsOfProducts.length == 1) return termsOfProducts[0];
         Expression newL, newR;
         if (termsOfProducts.length == 2) {
@@ -115,7 +116,7 @@ public class Sum extends BinaryOperator {
         return s;
     }
 
-    static Expression[] makeProducts(EvaluationResult evaluationContext, Expression[] terms) {
+    static Expression[] makeProducts(Identifier identifier, EvaluationResult evaluationContext, Expression[] terms) {
         Primitives primitives = evaluationContext.getPrimitives();
         List<Expression> result = new ArrayList<>(terms.length);
         int pos = 1;
@@ -128,16 +129,16 @@ public class Sum extends BinaryOperator {
             Numeric rn;
             if ((ln = e.asInstanceOf(Numeric.class)) != null
                     && (rn = latest.asInstanceOf(Numeric.class)) != null) {
-                Expression sum = IntConstant.intOrDouble(primitives, ln.doubleValue() + rn.doubleValue());
+                Expression sum = IntConstant.intOrDouble(primitives, identifier, ln.doubleValue() + rn.doubleValue());
                 result.set(latestIndex, sum);
             } else {
                 Factor f1 = getFactor(latest);
                 Factor f2 = getFactor(e);
                 if (f1.term.equals(f2.term)) {
                     if (f1.factor == -f2.factor) {
-                        result.set(latestIndex, new IntConstant(primitives, 0));
+                        result.set(latestIndex, new IntConstant(primitives, identifier, 0));
                     } else {
-                        Expression f = IntConstant.intOrDouble(primitives, f1.factor + f2.factor);
+                        Expression f = IntConstant.intOrDouble(primitives, identifier, f1.factor + f2.factor);
                         Expression product = Product.product(evaluationContext, f, f1.term);
                         result.set(latestIndex, product);
                     }
@@ -234,7 +235,7 @@ public class Sum extends BinaryOperator {
     public Expression removeAllReturnValueParts(Primitives primitives) {
         Expression l = lhs.removeAllReturnValueParts(primitives);
         Expression r = rhs.removeAllReturnValueParts(primitives);
-        if (l == null && r == null) return new IntConstant(primitives, 0);
+        if (l == null && r == null) return new IntConstant(primitives, identifier, 0);
         if (l == null) return r;
         if (r == null) return l;
         return new Sum(identifier, primitives, l, r);

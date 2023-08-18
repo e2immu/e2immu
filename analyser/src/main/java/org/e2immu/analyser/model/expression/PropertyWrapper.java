@@ -416,4 +416,9 @@ public final class PropertyWrapper extends BaseExpression implements Expression,
     public Expression withExpression(Expression negated) {
         return new PropertyWrapper(negated, null, properties, linkedVariables, castType);
     }
+
+    @Override
+    public boolean isNullConstant() {
+        return expression.isNullConstant();
+    }
 }

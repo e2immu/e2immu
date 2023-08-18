@@ -45,7 +45,7 @@ public class Remainder extends BinaryOperator {
         if (r instanceof Numeric rn && rn.doubleValue() == 1) return builder.setExpression(l).build();
         Primitives primitives = evaluationContext.getPrimitives();
         if (l instanceof IntConstant li && r instanceof IntConstant ri)
-            return builder.setExpression(new IntConstant(primitives, li.constant() % ri.constant())).build();
+            return builder.setExpression(new IntConstant(primitives, identifier, li.constant() % ri.constant())).build();
 
         // any unknown lingering
         if (l.isEmpty() || r.isEmpty()) throw new UnsupportedOperationException();
