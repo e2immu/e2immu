@@ -112,6 +112,7 @@ public interface EvaluationContext {
     default int getCurrentStatementTime() {
         return getInitialStatementTime();
     }
+
     /*
      This default implementation is the correct one for basic tests and the companion analyser (we cannot use companions in the
      companion analyser, that would be chicken-and-egg).
@@ -122,7 +123,11 @@ public interface EvaluationContext {
         return Instance.forTesting(variable.parameterizedType());
     }
 
-    default Expression currentValue(Variable variable, Expression scopeValue, Expression indexValue, ForwardEvaluationInfo forwardEvaluationInfo) {
+    default Expression currentValue(Variable variable,
+                                    Expression scopeValue,
+                                    Expression indexValue,
+                                    Identifier identifier,
+                                    ForwardEvaluationInfo forwardEvaluationInfo) {
         throw new UnsupportedOperationException("In " + getClass());
     }
 
@@ -570,6 +575,7 @@ public interface EvaluationContext {
     default Expression getVariableValue(Variable myself,
                                         Expression scopeValue,
                                         Expression indexValue,
+                                        Identifier identifier,
                                         VariableInfo variableInfo,
                                         ForwardEvaluationInfo forwardEvaluationInfo) {
         return variableInfo.getValue();

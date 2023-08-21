@@ -584,7 +584,11 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
     // this happens in the case of confirmed variable fields, where the name indicates the statement time;
     // and in the case of variables assigned in a loop defined outside, where the name indicates the loop statement id
     @Override
-    public Expression currentValue(Variable variable, Expression scopeValue, Expression indexValue, ForwardEvaluationInfo forwardEvaluationInfo) {
+    public Expression currentValue(Variable variable,
+                                   Expression scopeValue,
+                                   Expression indexValue,
+                                   Identifier identifier,
+                                   ForwardEvaluationInfo forwardEvaluationInfo) {
         VariableInfo variableInfo = findForReading(variable, !forwardEvaluationInfo.isAssignmentTarget());
 
         // important! do not use variable in the next statement, but variableInfo.variable()
@@ -597,7 +601,7 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
             return new VariableExpression(variable);
         }
         // NOTE: we use null instead of forwardEvaluationInfo.assignmentTarget()
-        return getVariableValue(null, scopeValue, indexValue, variableInfo, forwardEvaluationInfo);
+        return getVariableValue(null, scopeValue, indexValue, identifier, variableInfo, forwardEvaluationInfo);
     }
 
     @Override
@@ -749,9 +753,9 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
         TranslationMapImpl.Builder builder = new TranslationMapImpl.Builder();
         precondition.visit(e -> {
             if (e instanceof VariableExpression ve && ve.isDependentOnStatementTime()) {
-                builder.put(ve, new VariableExpression(ve.variable()));
+                builder.put(ve, new VariableExpression(ve.identifier, ve.variable()));
             } else if (e instanceof ExpandedVariable ev) {
-                builder.put(ev, new VariableExpression(ev.getVariable()));
+                builder.put(ev, new VariableExpression(ev.identifier, ev.getVariable()));
             }
         });
         TranslationMap translationMap = builder.build();
@@ -850,10 +854,11 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
     public Expression getVariableValue(Variable myself,
                                        Expression scopeValue,
                                        Expression indexValue,
+                                       Identifier identifier,
                                        VariableInfo variableInfo,
                                        ForwardEvaluationInfo forwardEvaluationInfo) {
         // variable fields
-        Expression expression = makeVariableExpression(variableInfo, scopeValue, indexValue);
+        Expression expression = makeVariableExpression(variableInfo, scopeValue, indexValue, identifier);
         if (expression.isDelayed()) return expression;
 
         if (expression instanceof VariableExpression ve && !forwardEvaluationInfo.isIgnoreValueFromState()) {
@@ -893,13 +898,16 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
                 }
             }
             if (isInstance) {
-                return new VariableExpression(v);
+                return new VariableExpression(identifier, v);
             }
         }
         return value;
     }
 
-    public Expression makeVariableExpression(VariableInfo variableInfo, Expression scopeValue, Expression indexValue) {
+    public Expression makeVariableExpression(VariableInfo variableInfo,
+                                             Expression scopeValue,
+                                             Expression indexValue,
+                                             Identifier identifier) {
         VariableExpression.Suffix suffix;
         Variable variable = variableInfo.variable();
         Expression evaluatedScopeValue = scopeValue != null
@@ -945,7 +953,7 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
         } else {
             suffix = VariableExpression.NO_SUFFIX;
         }
-        return new VariableExpression(variable, suffix, evaluatedScopeValue, evaluatedIndexValue);
+        return new VariableExpression(identifier, variable, suffix, evaluatedScopeValue, evaluatedIndexValue);
     }
 
     @Override

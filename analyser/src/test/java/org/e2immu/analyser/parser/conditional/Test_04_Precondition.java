@@ -574,9 +574,9 @@ public class Test_04_Precondition extends CommonTestRunner {
                 if (d.methodAnalysis().preconditionStatus().isDone()) {
                     assertEquals(finalValue, d.methodAnalysis().getPrecondition().toString());
                     And and = d.methodAnalysis().getPrecondition().expression().asInstanceOf(And.class);
-                    assertTrue(Identifier.isListOfPositionalIdentifiers(and.getIdentifier()));
+                    assertTrue(Identifier.acceptIdentifier(and.getIdentifier()));
                     MethodCall mc = and.getExpressions().get(0).asInstanceOf(Negation.class).expression.asInstanceOf(MethodCall.class);
-                    assertTrue(Identifier.isListOfPositionalIdentifiers(mc.getIdentifier()));
+                    assertTrue(Identifier.acceptIdentifier(mc.getIdentifier()));
                     VariableExpression ve = mc.object.asInstanceOf(VariableExpression.class);
                     assertTrue(ve.getIdentifier() instanceof Identifier.PositionalIdentifier);
                 }

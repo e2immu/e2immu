@@ -37,15 +37,18 @@ public class ClassExpression extends BaseExpression implements ConstantExpressio
     private final ParameterizedType parameterizedType; // String
     private final ParameterizedType parameterizedClassType; // Class<String>
 
-    public ClassExpression(Primitives primitives, ParameterizedType parameterizedType, ParameterizedType parameterizedClassType) {
-        super(Identifier.constant(parameterizedType), 2);
+    public ClassExpression(Primitives primitives,
+                           Identifier identifier,
+                           ParameterizedType parameterizedType,
+                           ParameterizedType parameterizedClassType) {
+        super(identifier, 2);
         this.primitives = primitives;
         this.parameterizedType = parameterizedType;
         this.parameterizedClassType = parameterizedClassType;
     }
 
-    public ClassExpression(Primitives primitives, ParameterizedType parameterizedType) {
-        this(primitives, parameterizedType, new ParameterizedType(primitives.classTypeInfo(),
+    public ClassExpression(Primitives primitives, Identifier identifier, ParameterizedType parameterizedType) {
+        this(primitives, identifier, parameterizedType, new ParameterizedType(primitives.classTypeInfo(),
                 List.of(parameterizedType.ensureBoxed(primitives))));
     }
 
@@ -69,7 +72,7 @@ public class ClassExpression extends BaseExpression implements ConstantExpressio
 
         ParameterizedType translatedType = translationMap.translateType(this.parameterizedType);
         if (this.parameterizedType == translatedType) return this;
-        return new ClassExpression(primitives, translatedType);
+        return new ClassExpression(primitives, identifier, translatedType);
     }
 
     @Override

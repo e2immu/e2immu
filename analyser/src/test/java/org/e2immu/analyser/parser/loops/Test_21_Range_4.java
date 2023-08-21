@@ -17,6 +17,7 @@ package org.e2immu.analyser.parser.loops;
 import org.e2immu.analyser.analyser.ForwardEvaluationInfo;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.model.Expression;
+import org.e2immu.analyser.model.Identifier;
 import org.e2immu.analyser.model.variable.ReturnVariable;
 import org.e2immu.analyser.model.variable.VariableNature;
 import org.e2immu.analyser.parser.CommonTestRunner;
@@ -107,7 +108,7 @@ public class Test_21_Range_4 extends CommonTestRunner {
                 if ("i".equals(d.variableName())) {
                     if ("2".equals(d.statementId())) {
                         Expression accordingToState = d.context().evaluationContext().getVariableValue(d.variable(),
-                                null, null, d.variableInfo(), ForwardEvaluationInfo.DEFAULT);
+                                null, null, Identifier.CONSTANT, d.variableInfo(), ForwardEvaluationInfo.DEFAULT);
                         String expect2 = d.iteration() == 0 ? "<v:i>" : "instance type int";
                         assertEquals(expect2, accordingToState.toString());
                     }

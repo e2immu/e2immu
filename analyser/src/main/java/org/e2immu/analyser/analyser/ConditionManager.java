@@ -470,8 +470,9 @@ public record ConditionManager(Expression condition,
         public Expression currentValue(Variable variable,
                                        Expression scopeValue,
                                        Expression indexValue,
+                                       Identifier identifier,
                                        ForwardEvaluationInfo forwardEvaluationInfo) {
-            return new VariableExpression(variable, VariableExpression.NO_SUFFIX, scopeValue, indexValue);
+            return new VariableExpression(identifier, variable, VariableExpression.NO_SUFFIX, scopeValue, indexValue);
         }
     }
 }

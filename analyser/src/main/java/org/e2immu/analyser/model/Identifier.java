@@ -18,6 +18,7 @@ import com.github.javaparser.Position;
 import com.github.javaparser.ast.Node;
 import org.e2immu.analyser.model.expression.BooleanConstant;
 import org.e2immu.analyser.model.expression.EmptyExpression;
+import org.e2immu.analyser.model.expression.IntConstant;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.annotation.FinalFields;
 import org.e2immu.annotation.ImmutableContainer;
@@ -109,10 +110,13 @@ public interface Identifier extends Comparable<Identifier> {
     static boolean isListOfPositionalIdentifiers(Expression expression) {
         AtomicBoolean success = new AtomicBoolean(true);
         expression.visit(e -> {
+            // omnipresent
             if (e instanceof BooleanConstant) return false;
+            // -1,0,1: why? because we need these small constants for trivial computations, e.g. in GreaterThan
+            if (e instanceof IntConstant ic && ic.complexity == 1) return false;
             if (e instanceof EmptyExpression) return false;
             if (e instanceof Expression exp) {
-                if (!isListOfPositionalIdentifiers(exp.getIdentifier())) {
+                if (!acceptIdentifier(exp.getIdentifier())) {
                     success.set(false);
                     return false;
                 }
@@ -122,10 +126,12 @@ public interface Identifier extends Comparable<Identifier> {
         return success.get();
     }
 
-    static boolean isListOfPositionalIdentifiers(Identifier identifier) {
+    static boolean acceptIdentifier(Identifier identifier) {
         return identifier instanceof Identifier.PositionalIdentifier ||
+                identifier instanceof VariableIdentifier || // TODO
+                identifier instanceof StatementTimeIdentifier || // TODO we should clarify their use
                 identifier instanceof Identifier.ListOfIdentifiers list &&
-                        list.identifiers().stream().allMatch(Identifier::isListOfPositionalIdentifiers);
+                        list.identifiers().stream().anyMatch(Identifier::acceptIdentifier);
     }
 
     @ImmutableContainer

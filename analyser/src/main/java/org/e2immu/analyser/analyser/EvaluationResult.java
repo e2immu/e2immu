@@ -681,6 +681,7 @@ public record EvaluationResult(EvaluationContext evaluationContext,
 
         public Expression currentExpression(Variable variable, Expression scopeValue,
                                             Expression indexValue,
+                                            Identifier identifier,
                                             ForwardEvaluationInfo forwardEvaluationInfo) {
             ChangeData currentExpression = valueChanges.get(variable);
             if (currentExpression != null && currentExpression.value != null) {
@@ -691,7 +692,7 @@ public record EvaluationResult(EvaluationContext evaluationContext,
             if (inPrevious != null && inPrevious.value != null) {
                 return inPrevious.value;
             }
-            return evaluationContext.currentValue(variable, scopeValue, indexValue, forwardEvaluationInfo);
+            return evaluationContext.currentValue(variable, scopeValue, indexValue, identifier, forwardEvaluationInfo);
         }
 
         /*

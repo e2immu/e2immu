@@ -95,11 +95,15 @@ public class TestLinkingExpression {
 
             @Override
             public Expression currentValue(Variable variable) {
-                return currentValue(variable, null, null, null);
+                return currentValue(variable, null, null, Identifier.CONSTANT, null);
             }
 
             @Override
-            public Expression currentValue(Variable variable, Expression scopeValue, Expression indexValue, ForwardEvaluationInfo forwardEvaluationInfo) {
+            public Expression currentValue(Variable variable,
+                                           Expression scopeValue,
+                                           Expression indexValue,
+                                           Identifier identifier,
+                                           ForwardEvaluationInfo forwardEvaluationInfo) {
                 if ("v".equals(variable.simpleName())) return new IntConstant(getPrimitives(), 3);
                 throw new UnsupportedOperationException("var = " + variable.fullyQualifiedName());
             }

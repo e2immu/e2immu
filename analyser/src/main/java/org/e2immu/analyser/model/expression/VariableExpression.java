@@ -337,7 +337,7 @@ public class VariableExpression extends BaseExpression implements IsVariableExpr
         } // TODO implement this "source" choice for field reference scope as well
 
         Expression currentValue = builder.currentExpression(source, scopeResult == null ? null : scopeResult.value(),
-                indexResult == null ? null : indexResult.value(), forwardEvaluationInfo);
+                indexResult == null ? null : indexResult.value(), identifier, forwardEvaluationInfo);
 
         // FIXME emergency code, simply trying something out; we may have been here before, though....
         if (currentValue instanceof InlineConditional inlineConditional) {

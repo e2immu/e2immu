@@ -610,7 +610,7 @@ public record ExpressionContextImpl(ExpressionContext.ResolverRecursion resolver
             if (expression.isClassExpr()) {
                 ClassExpr classExpr = (ClassExpr) expression;
                 ParameterizedType parameterizedType = ParameterizedTypeFactory.from(typeContext, classExpr.getType());
-                return new ClassExpression(primitives, parameterizedType);
+                return new ClassExpression(primitives, identifier, parameterizedType);
             }
             if (expression.isNameExpr()) {
                 return ParseNameExpr.parse(this, expression.asNameExpr());

@@ -974,7 +974,7 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
 
                 // do not take vi1 itself, but "the" local copy of the variable
                 EvaluationContext evaluationContext = sharedState.evaluationContext();
-                Expression valueOfVariablePreAssignment = evaluationContext.currentValue(variable, null, null, fwd); // FIXME
+                Expression valueOfVariablePreAssignment = evaluationContext.currentValue(variable, null, null, value.getIdentifier(), fwd); // FIXME
 
                 Identifier generate = Identifier.generate("inline condition var def outside loop");
                 InlineConditional inlineConditional = new InlineConditional(generate,

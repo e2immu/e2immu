@@ -80,19 +80,18 @@ public class InlinedMethod extends BaseExpression implements Expression {
         return myParameters;
     }
 
-    public static Expression of(Identifier identifier,
-                                MethodInfo methodInfo,
+    public static Expression of(MethodInfo methodInfo,
                                 Expression expression,
                                 AnalyserContext analyserContext) {
         Predicate<FieldReference> predicate = containsVariableFields(analyserContext);
-        return of(identifier, methodInfo, expression, predicate, analyserContext);
+        return of(methodInfo, expression, predicate, analyserContext);
     }
 
-    private static Expression of(Identifier identifier,
-                                 MethodInfo methodInfo,
+    private static Expression of(MethodInfo methodInfo,
                                  Expression expression,
                                  Predicate<FieldReference> isVariableField,
                                  InspectionProvider inspectionProvider) {
+        Identifier identifier = expression.getIdentifier();
         ExtractVariablesToBeTranslated ev = new ExtractVariablesToBeTranslated(isVariableField, inspectionProvider, false, false);
         expression.visit(ev);
         if (ev.getCauses().isDone()) {
@@ -189,7 +188,7 @@ public class InlinedMethod extends BaseExpression implements Expression {
             return DelayedExpression.forInlinedMethod(identifier, expression.returnType(),
                     expression, translated.causesOfDelay());
         }
-        return of(identifier, methodInfo, translated, fr -> containsVariableFields, inspectionProvider);
+        return of(methodInfo, translated, fr -> containsVariableFields, inspectionProvider);
     }
 
     @Override
@@ -554,11 +553,12 @@ public class InlinedMethod extends BaseExpression implements Expression {
         public Expression currentValue(Variable variable,
                                        Expression scopeValue,
                                        Expression indexValue,
+                                       Identifier identifier,
                                        ForwardEvaluationInfo forwardEvaluationInfo) {
             if (variable instanceof ParameterInfo pi && pi.owner == methodInfo) {
                 return new VariableExpression(variable);
             }
-            return evaluationContext.currentValue(variable, scopeValue, indexValue, forwardEvaluationInfo);
+            return evaluationContext.currentValue(variable, scopeValue, indexValue, identifier, forwardEvaluationInfo);
         }
 
         @Override

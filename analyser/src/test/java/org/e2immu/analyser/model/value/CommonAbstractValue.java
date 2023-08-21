@@ -290,8 +290,9 @@ public abstract class CommonAbstractValue {
         public Expression currentValue(Variable variable,
                                        Expression scopeValue,
                                        Expression indexValue,
+                                       Identifier identifier,
                                        ForwardEvaluationInfo forwardEvaluationInfo) {
-            return new VariableExpression(variable, VariableExpression.NO_SUFFIX, scopeValue, null);
+            return new VariableExpression(identifier, variable, VariableExpression.NO_SUFFIX, scopeValue, null);
         }
 
         @Override

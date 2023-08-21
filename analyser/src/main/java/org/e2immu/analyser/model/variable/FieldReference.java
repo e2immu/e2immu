@@ -75,13 +75,15 @@ public class FieldReference extends VariableWithConcreteReturnType {
         this.fieldInfo = Objects.requireNonNull(fieldInfo);
         this.isStatic = inspectionProvider.getFieldInspection(fieldInfo).isStatic();
         if (this.isStatic) {
-            Identifier identifier = fieldInfo.owner.getIdentifier();
+            // IMPORTANT: the owner doesn't necessarily have a decent identifier, but the field should have one
+            Identifier identifier = fieldInfo.getIdentifier();
             this.scope = new TypeExpression(identifier, fieldInfo.owner.asSimpleParameterizedType(), Diamond.NO);
             isDefaultScope = true;
             this.scopeVariable = null;
         } else if (scope == null) {
             scopeVariable = new This(inspectionProvider, fieldInfo.owner);
-            this.scope = new VariableExpression(scopeVariable);
+            Identifier identifier = fieldInfo.getIdentifier();
+            this.scope = new VariableExpression(identifier, scopeVariable);
             isDefaultScope = true;
         } else {
             if (scope instanceof VariableExpression ve) {
@@ -91,7 +93,7 @@ public class FieldReference extends VariableWithConcreteReturnType {
                         scopeVariable = ve.variable();
                     } else {
                         scopeVariable = new This(inspectionProvider, fieldInfo.owner);
-                        this.scope = new VariableExpression(scopeVariable);
+                        this.scope = new VariableExpression(ve.identifier, scopeVariable);
                     }
                     isDefaultScope = true;
                 } else {

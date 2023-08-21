@@ -14,10 +14,7 @@
 
 package org.e2immu.analyser.analyser;
 
-import org.e2immu.analyser.model.Expression;
-import org.e2immu.analyser.model.LocalVariable;
-import org.e2immu.analyser.model.Location;
-import org.e2immu.analyser.model.TypeInfo;
+import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.BooleanConstant;
 import org.e2immu.analyser.model.expression.IntConstant;
 import org.e2immu.analyser.model.expression.NullConstant;
@@ -89,8 +86,9 @@ public abstract class CommonVariableInfo {
         public Expression currentValue(Variable variable,
                                        Expression scopeValue,
                                        Expression indexValue,
+                                       Identifier identifier,
                                        ForwardEvaluationInfo forwardEvaluationInfo) {
-            return new VariableExpression(variable, null, null, scopeValue);
+            return new VariableExpression(identifier, variable, null, null, scopeValue);
         }
 
         @Override

@@ -861,13 +861,12 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
      */
     private Expression createInlinedMethod(Expression value) {
         assert value.isDone();
-        Identifier identifier = Identifier.generate("inline method");
         if (value.getComplexity() > Expression.COMPLEXITY_LIMIT_OF_INLINED_METHOD) {
             VariableInfo variableInfo = getReturnAsVariable();
             Properties properties = variableInfo.valueProperties();
-            return Instance.forTooComplex(identifier, value.returnType(), properties);
+            return Instance.forTooComplex(value.getIdentifier(), value.returnType(), properties);
         }
-        return InlinedMethod.of(identifier, methodInfo, value, analyserContext);
+        return InlinedMethod.of(methodInfo, value, analyserContext);
     }
 
 
@@ -1295,8 +1294,9 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
         public Expression currentValue(Variable variable,
                                        Expression scopeValue,
                                        Expression indexValue,
+                                       Identifier identifier,
                                        ForwardEvaluationInfo forwardEvaluationInfo) {
-            return new VariableExpression(variable, VariableExpression.NO_SUFFIX, scopeValue, indexValue);
+            return new VariableExpression(identifier, variable, VariableExpression.NO_SUFFIX, scopeValue, indexValue);
         }
 
         @Override
