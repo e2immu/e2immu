@@ -248,7 +248,7 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
         private final SetOnceMap<ParameterInfo, CommutableData> parallelGroupBuilder = new SetOnceMap<>();
         private final SetOnce<FieldInfo> getSet = new SetOnce<>();
 
-        public final EventuallyFinal<Precondition> precondition = new EventuallyFinal<>();
+        private final EventuallyFinal<Precondition> precondition = new EventuallyFinal<>();
         private final SetOnce<Set<PostCondition>> postConditions = new SetOnce<>();
         private CausesOfDelay postConditionDelays;
         private final SetOnce<Set<String>> indicesOfEscapesNotInPreOrPostConditions = new SetOnce<>();
@@ -807,6 +807,22 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
         @Override
         public GetSetEquivalent getSetEquivalent() {
             return this.getSetEquivalent.getOrDefaultNull();
+        }
+
+        public boolean preconditionIsVariable() {
+            return precondition.isVariable();
+        }
+
+        public void preconditionSetVariable(Precondition pc) {
+            precondition.setVariable(pc);
+        }
+
+        public void preconditionSetFinal(Precondition pc) {
+            precondition.setFinal(pc);
+        }
+
+        public Precondition preconditionGet() {
+            return precondition.get();
         }
     }
 

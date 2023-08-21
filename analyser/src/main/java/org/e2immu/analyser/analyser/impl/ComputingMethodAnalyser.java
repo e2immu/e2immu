@@ -296,15 +296,17 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
 
     // simply copy from last statement, but only when set/delays over
     private AnalysisStatus obtainMostCompletePrecondition() {
-        assert methodAnalysis.precondition.isVariable();
+        assert methodAnalysis.preconditionIsVariable();
 
         MethodLevelData methodLevelData = methodAnalysis.methodLevelData();
         Precondition pc = methodLevelData.combinedPreconditionGet();
         if (!methodLevelData.combinedPreconditionIsFinal()) {
-            methodAnalysis.precondition.setVariable(pc);
+            methodAnalysis.preconditionSetVariable(pc);
             return pc.expression().causesOfDelay();
         }
-        methodAnalysis.precondition.setFinal(pc);
+        assert Identifier.isListOfPositionalIdentifiers(pc.expression());
+
+        methodAnalysis.preconditionSetFinal(pc);
         return DONE;
     }
 
@@ -428,7 +430,7 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
             fieldAnalysesOfTypeInfo = typeInspection.fields().stream().map(analyserContext::getFieldAnalysis).toList();
         }
 
-        if (methodAnalysis.precondition.isVariable()) {
+        if (methodAnalysis.preconditionIsVariable()) {
             assert methodAnalysis.preconditionStatus().isDelayed();
             if (sharedState.breakDelayLevel.acceptMethodOverride()) {
                 LOGGER.debug("Method override: no precondition for eventual");
@@ -436,10 +438,10 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
                 return DONE;
             }
             LOGGER.debug("Delaying compute @Only and @Mark, precondition not set (weird, should be set by now)");
-            methodAnalysis.setPreconditionForEventual(methodAnalysis.precondition.get());
-            return methodAnalysis.precondition.get().causesOfDelay();
+            methodAnalysis.setPreconditionForEventual(methodAnalysis.preconditionGet());
+            return methodAnalysis.preconditionGet().causesOfDelay();
         }
-        Precondition precondition = methodAnalysis.precondition.get();
+        Precondition precondition = methodAnalysis.preconditionGet();
         EvaluationResult context = EvaluationResult.from(sharedState.evaluationContext);
 
         // situation of Lazy

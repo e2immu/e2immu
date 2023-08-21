@@ -338,7 +338,8 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
                 return DONE;
             }
         }
-        Expression nullValue = ConstantExpression.nullValue(analyserContext.getPrimitives(), fieldInfo.type.bestTypeInfo());
+        Expression nullValue = ConstantExpression.nullValue(analyserContext.getPrimitives(),
+                fieldInfo.getIdentifier(), fieldInfo.type.bestTypeInfo());
         fieldAnalysis.setInitialiserValue(nullValue);
         return DONE;
     }
@@ -1193,7 +1194,7 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
         }
         if (!haveInitialiser && !fieldInfo.isExplicitlyFinal() && !occursInAllConstructorsOrOneStaticBlock) {
             Expression nullValue = ConstantExpression.nullValue(analyserContext.getPrimitives(),
-                    fieldInfo.type.bestTypeInfo());
+                    fieldInfo.getIdentifier(), fieldInfo.type.bestTypeInfo());
             values.add(0, new ValueAndPropertyProxy() {
                 @Override
                 public Expression getValue() {

@@ -16,6 +16,8 @@ package org.e2immu.analyser.model;
 
 import com.github.javaparser.Position;
 import com.github.javaparser.ast.Node;
+import org.e2immu.analyser.model.expression.BooleanConstant;
+import org.e2immu.analyser.model.expression.EmptyExpression;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.annotation.FinalFields;
 import org.e2immu.annotation.ImmutableContainer;
@@ -27,6 +29,7 @@ import org.e2immu.annotation.rare.StaticSideEffects;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
@@ -101,6 +104,29 @@ public interface Identifier extends Comparable<Identifier> {
     }
 
     String compact();
+
+
+    static boolean isListOfPositionalIdentifiers(Expression expression) {
+        AtomicBoolean success = new AtomicBoolean(true);
+        expression.visit(e -> {
+            if (e instanceof BooleanConstant) return false;
+            if (e instanceof EmptyExpression) return false;
+            if (e instanceof Expression exp) {
+                if (!isListOfPositionalIdentifiers(exp.getIdentifier())) {
+                    success.set(false);
+                    return false;
+                }
+            }
+            return true;
+        });
+        return success.get();
+    }
+
+    static boolean isListOfPositionalIdentifiers(Identifier identifier) {
+        return identifier instanceof Identifier.PositionalIdentifier ||
+                identifier instanceof Identifier.ListOfIdentifiers list &&
+                        list.identifiers().stream().allMatch(Identifier::isListOfPositionalIdentifiers);
+    }
 
     @ImmutableContainer
     record PositionalIdentifier(short line, short pos, short endLine, short endPos) implements Identifier {

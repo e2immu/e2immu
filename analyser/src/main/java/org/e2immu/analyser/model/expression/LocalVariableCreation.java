@@ -127,6 +127,7 @@ public class LocalVariableCreation extends BaseExpression implements Expression 
                 && tex.isNullConstant()) {
             // special case: Integer v = null, with type change to int v = null; ... change null to 0
             Expression nullValue = ConstantExpression.nullValue(inspectionProvider.getPrimitives(),
+                    lvr.assignmentExpression.getIdentifier(),
                     tlv.parameterizedType().typeInfo);
             return new LocalVariableReference(tlv, nullValue);
         }

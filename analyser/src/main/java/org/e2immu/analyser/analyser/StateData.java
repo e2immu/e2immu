@@ -15,6 +15,7 @@
 package org.e2immu.analyser.analyser;
 
 import org.e2immu.analyser.model.Expression;
+import org.e2immu.analyser.model.Identifier;
 import org.e2immu.analyser.model.Location;
 import org.e2immu.analyser.model.MethodInfo;
 import org.e2immu.analyser.model.expression.*;
@@ -191,6 +192,7 @@ public class StateData {
                 throw ise;
             }
         }
+        assert Identifier.isListOfPositionalIdentifiers(pc.expression());
         return setFinalAllowEquals(precondition, pc);
     }
 

@@ -103,6 +103,7 @@ public record Merge(EvaluationContext evaluationContext,
                 Properties properties;
                 if (fromAnalysis.isDelayed()) {
                     instance = ConstantExpression.nullValue(evaluationContext.getAnalyserContext().getPrimitives(),
+                            fromAnalysis.getIdentifier(),
                             fieldReference.fieldInfo.type.bestTypeInfo());
                     properties = evaluationContext.valuePropertiesOfNullConstant(fieldReference.parameterizedType);
                 } else {

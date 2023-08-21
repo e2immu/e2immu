@@ -68,11 +68,11 @@ public interface ConstantExpression<T> extends Expression {
         }
         throw new UnsupportedOperationException("No info about " + property);
     }
-
-    static Expression nullValue(Primitives primitives, TypeInfo typeInfo) {
+    
+    static Expression nullValue(Primitives primitives, Identifier identifier, TypeInfo typeInfo) {
         if (typeInfo != null) {
-            if (typeInfo.isBoolean()) return new BooleanConstant(primitives, false);
-            if (typeInfo.isInt()) return new IntConstant(primitives, 0);
+            if (typeInfo.isBoolean()) return new BooleanConstant(primitives, identifier, false);
+            if (typeInfo.isInt()) return new IntConstant(primitives, identifier, 0);
             if (typeInfo.isLong()) return new LongConstant(primitives, 0L);
             if (typeInfo.isShort()) return new ShortConstant(primitives, (short) 0);
             if (typeInfo.isByte()) return new ByteConstant(primitives, (byte) 0);
@@ -80,7 +80,7 @@ public interface ConstantExpression<T> extends Expression {
             if (typeInfo.isDouble()) return new DoubleConstant(primitives, 0);
             if (typeInfo.isChar()) return new CharConstant(primitives, '\0');
         }
-        return NullConstant.NULL_CONSTANT;
+        return new NullConstant(identifier);
     }
 
     static Expression create(Primitives primitives, Object object) {

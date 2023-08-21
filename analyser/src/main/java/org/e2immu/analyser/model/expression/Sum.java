@@ -42,7 +42,8 @@ public class Sum extends BinaryOperator {
         Expression tl = lhs.translate(inspectionProvider, translationMap);
         Expression tr = rhs.translate(inspectionProvider, translationMap);
         if (tl == lhs && tr == rhs) return this;
-        return new Sum(identifier, primitives, tl, tr);
+        Identifier id = Identifier.joined("sum", List.of(tl.getIdentifier(), tr.getIdentifier()));
+        return new Sum(id, primitives, tl, tr);
     }
 
     private Sum(Identifier identifier, Primitives primitives, Expression lhs, Expression rhs) {

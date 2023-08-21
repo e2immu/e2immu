@@ -23,6 +23,10 @@ import org.e2immu.analyser.config.AnalyserConfiguration;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.inspector.TypeContext;
 import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.model.expression.And;
+import org.e2immu.analyser.model.expression.MethodCall;
+import org.e2immu.analyser.model.expression.Negation;
+import org.e2immu.analyser.model.expression.VariableExpression;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.ReturnVariable;
 import org.e2immu.analyser.parser.CommonTestRunner;
@@ -569,6 +573,12 @@ public class Test_04_Precondition extends CommonTestRunner {
                 String finalValue = "Precondition[expression=!in.isEmpty()&&!Character.isUpperCase(in.charAt(0)), causes=[escape]]";
                 if (d.methodAnalysis().preconditionStatus().isDone()) {
                     assertEquals(finalValue, d.methodAnalysis().getPrecondition().toString());
+                    And and = d.methodAnalysis().getPrecondition().expression().asInstanceOf(And.class);
+                    assertTrue(Identifier.isListOfPositionalIdentifiers(and.getIdentifier()));
+                    MethodCall mc = and.getExpressions().get(0).asInstanceOf(Negation.class).expression.asInstanceOf(MethodCall.class);
+                    assertTrue(Identifier.isListOfPositionalIdentifiers(mc.getIdentifier()));
+                    VariableExpression ve = mc.object.asInstanceOf(VariableExpression.class);
+                    assertTrue(ve.getIdentifier() instanceof Identifier.PositionalIdentifier);
                 }
                 assertTrue(d.methodAnalysis().getPostConditions().isEmpty(),
                         "Got: " + d.methodAnalysis().getPostConditions().toString());
@@ -580,7 +590,6 @@ public class Test_04_Precondition extends CommonTestRunner {
                         .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                         .build());
     }
-
 
     @Test
     public void test_10() throws IOException {

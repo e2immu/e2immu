@@ -146,7 +146,8 @@ public record Composer(TypeMap typeMap, String destinationPackage, Predicate<Wit
         if (inspection.getModifiers().contains(FieldModifier.FINAL)) {
             TypeInfo bestType = fieldInfo.type.bestTypeInfo();
             builder.setInspectedInitialiserExpression(bestType == null ?
-                    NullConstant.NULL_CONSTANT : ConstantExpression.nullValue(typeMap.getPrimitives(), bestType));
+                    NullConstant.NULL_CONSTANT : ConstantExpression.nullValue(typeMap.getPrimitives(),
+                    fieldInfo.getIdentifier(), bestType));
         }
         newField.fieldInspection.set(builder
                 .setAccess(Inspection.Access.PACKAGE)
@@ -165,12 +166,8 @@ public record Composer(TypeMap typeMap, String destinationPackage, Predicate<Wit
         ParameterizedType returnType = methodInspection.getReturnType();
         builder.setReturnType(returnType);
         if (methodInfo.hasReturnValue()) {
-            Expression defaultReturnValue;
-            if (returnType.typeInfo != null) {
-                defaultReturnValue = ConstantExpression.nullValue(typeMap().getPrimitives(), returnType.typeInfo);
-            } else {
-                defaultReturnValue = NullConstant.NULL_CONSTANT;
-            }
+            Expression defaultReturnValue = ConstantExpression.nullValue(typeMap().getPrimitives(),
+                    methodInfo.getIdentifier(), returnType.typeInfo);
             Statement returnStatement = new ReturnStatement(methodInfo.identifier, defaultReturnValue);
             Block block = new Block.BlockBuilder(Identifier.generate("compose block")).addStatement(returnStatement).build();
             builder.setInspectedBlock(block);

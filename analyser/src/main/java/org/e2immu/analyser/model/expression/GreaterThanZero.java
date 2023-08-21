@@ -261,7 +261,7 @@ public class GreaterThanZero extends BaseExpression implements Expression {
                 newAllowEquals = false;
                 if (allowEquals) {
                     // -x >= 0 == x <= 0 == x < 1 == 1 - x > 0
-                    term = Sum.sum(identifier, context, new IntConstant(primitives, 1), terms[0]);
+                    term = Sum.sum(context, new IntConstant(primitives, 1), terms[0]);
                 } else {
                     // -x > 0 == x < 0 OK
                     term = terms[0];
@@ -273,7 +273,7 @@ public class GreaterThanZero extends BaseExpression implements Expression {
                     term = terms[0];
                 } else {
                     // x > 0 == x >= 1 == -1+x >= 0
-                    term = Sum.sum(identifier, context, new IntConstant(primitives, -1), terms[0]);
+                    term = Sum.sum(context, new IntConstant(primitives, -1), terms[0]);
                 }
             }
         } else {

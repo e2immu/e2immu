@@ -16,6 +16,7 @@ package org.e2immu.analyser.analysis;
 
 import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.analyser.util.AnalyserResult;
+import org.e2immu.analyser.model.Identifier;
 import org.e2immu.analyser.model.MethodInfo;
 import org.e2immu.analyser.model.variable.LocalVariableReference;
 import org.e2immu.analyser.model.variable.ReturnVariable;
@@ -205,6 +206,8 @@ public class MethodLevelData {
             combinedPrecondition.setVariable(all);
             return all.causesOfDelay();
         }
+
+        assert Identifier.isListOfPositionalIdentifiers(all.expression());
 
         setFinalAllowEquals(combinedPrecondition, all);
         return DONE;
