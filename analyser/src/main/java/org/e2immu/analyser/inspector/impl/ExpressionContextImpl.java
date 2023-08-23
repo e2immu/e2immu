@@ -548,7 +548,7 @@ public record ExpressionContextImpl(ExpressionContext.ResolverRecursion resolver
             if (expression.isCastExpr()) {
                 CastExpr castExpr = (CastExpr) expression;
                 ParameterizedType parameterizedType = ParameterizedTypeFactory.from(typeContext, castExpr.getType());
-                return new Cast(parseExpressionStartVoid(castExpr.getExpression()), parameterizedType);
+                return new Cast(identifier, parseExpressionStartVoid(castExpr.getExpression()), parameterizedType);
             }
             if (expression.isBinaryExpr()) {
                 BinaryExpr binaryExpr = (BinaryExpr) expression;

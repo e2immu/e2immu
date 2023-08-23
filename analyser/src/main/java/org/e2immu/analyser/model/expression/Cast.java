@@ -31,9 +31,8 @@ public class Cast extends BaseExpression implements Expression {
     private final Expression expression;
     private final ParameterizedType parameterizedType;
 
-    public Cast(Expression expression, ParameterizedType parameterizedType) {
-        super(Identifier.joined("cast", List.of(expression.getIdentifier())),
-                2 + expression.getComplexity());
+    public Cast(Identifier identifier, Expression expression, ParameterizedType parameterizedType) {
+        super(identifier, 2 + expression.getComplexity());
         this.expression = Objects.requireNonNull(expression);
         this.parameterizedType = Objects.requireNonNull(parameterizedType);
     }
@@ -60,7 +59,7 @@ public class Cast extends BaseExpression implements Expression {
         Expression translatedExpression = expression.translate(inspectionProvider, translationMap);
         ParameterizedType translatedType = translationMap.translateType(this.parameterizedType);
         if (translatedExpression == this.expression && translatedType == this.parameterizedType) return this;
-        return new Cast(translatedExpression, translatedType);
+        return new Cast(identifier, translatedExpression, translatedType);
     }
 
     @Override
@@ -72,7 +71,7 @@ public class Cast extends BaseExpression implements Expression {
     public EvaluationResult evaluate(EvaluationResult context, ForwardEvaluationInfo forwardEvaluationInfo) {
         EvaluationResult er = expression.evaluate(context, forwardEvaluationInfo);
         if (forwardEvaluationInfo.isOnlySort()) {
-            Cast newCast = new Cast(er.getExpression(), parameterizedType);
+            Cast newCast = new Cast(identifier, er.getExpression(), parameterizedType);
             return new EvaluationResult.Builder(context).compose(er).setExpression(newCast).build();
         }
         if (parameterizedType.equals(er.getExpression().returnType())) return er;
@@ -135,7 +134,7 @@ public class Cast extends BaseExpression implements Expression {
     @Override
     public Expression mergeDelays(CausesOfDelay causesOfDelay) {
         if (expression.isDelayed()) {
-            return new Cast(expression.mergeDelays(causesOfDelay), parameterizedType);
+            return new Cast(identifier, expression.mergeDelays(causesOfDelay), parameterizedType);
         }
         return this;
     }

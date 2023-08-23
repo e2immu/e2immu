@@ -173,7 +173,7 @@ public class TestLinkingExpression {
         assertEquals("v:2", lvSubList.toString());
 
         // (Collection<Integer>) new ArrayList<>(v)
-        Cast collectionIntCast = new Cast(newObject, collectionInteger);
+        Cast collectionIntCast = new Cast(Identifier.CONSTANT, newObject, collectionInteger);
         LinkedVariables lvCast = collectionIntCast.linkedVariables(context);
         assertEquals("v:2", lvCast.toString());
     }
