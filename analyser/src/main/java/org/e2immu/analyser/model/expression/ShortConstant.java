@@ -32,8 +32,8 @@ public final class ShortConstant extends BaseExpression implements ConstantExpre
     private final Primitives primitives;
     private final short constant;
 
-    public ShortConstant(Primitives primitives, short constant) {
-        super(Identifier.constant(constant), constant == 0 ? 1 : 2);
+    public ShortConstant(Primitives primitives, Identifier identifier, short constant) {
+        super(identifier, constant == 0 ? 1 : 2);
         this.primitives = primitives;
         this.constant = constant;
     }
@@ -79,7 +79,7 @@ public final class ShortConstant extends BaseExpression implements ConstantExpre
 
     @Override
     public Expression negate() {
-        return new ShortConstant(primitives, (short) (-constant));
+        return new ShortConstant(primitives, identifier, (short) (-constant));
     }
 
     @Override

@@ -33,8 +33,8 @@ public class ByteConstant extends BaseExpression implements ConstantExpression<B
     private final Primitives primitives;
     private final byte constant;
 
-    public ByteConstant(Primitives primitives, byte constant) {
-        super(Identifier.constant(constant), constant == 0 ? 1 : 2);
+    public ByteConstant(Primitives primitives, Identifier identifier, byte constant) {
+        super(identifier, constant == 0 ? 1 : 2);
         this.primitives = primitives;
         this.constant = constant;
     }
@@ -90,7 +90,7 @@ public class ByteConstant extends BaseExpression implements ConstantExpression<B
 
     @Override
     public Expression negate() {
-        return new ByteConstant(primitives, (byte) (-constant));
+        return new ByteConstant(primitives, identifier, (byte) (-constant));
     }
 
     @Override

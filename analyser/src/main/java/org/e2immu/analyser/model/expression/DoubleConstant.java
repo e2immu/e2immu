@@ -32,8 +32,8 @@ public final class DoubleConstant extends BaseExpression implements ConstantExpr
     private final Primitives primitives;
     private final double constant;
 
-    public DoubleConstant(Primitives primitives, double constant) {
-        super(Identifier.constant(constant), constant == 0 ? 1 : 2);
+    public DoubleConstant(Primitives primitives, Identifier identifier, double constant) {
+        super(identifier, constant == 0 ? 1 : 2);
         this.primitives = primitives;
         this.constant = constant;
     }
@@ -84,7 +84,7 @@ public final class DoubleConstant extends BaseExpression implements ConstantExpr
 
     @Override
     public Expression negate() {
-        return new DoubleConstant(primitives, -constant);
+        return new DoubleConstant(primitives, identifier, -constant);
     }
 
     @Override

@@ -1,5 +1,6 @@
 package org.e2immu.analyser.parser.basics.testexample;
 
+
 public class Basics_27 {
 
     private static String expensiveCall(String in) {

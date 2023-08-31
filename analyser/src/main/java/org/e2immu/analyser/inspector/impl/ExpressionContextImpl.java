@@ -724,19 +724,19 @@ public record ExpressionContextImpl(ExpressionContext.ResolverRecursion resolver
             }
             if (expression.isLongLiteralExpr()) {
                 String value = expression.asLongLiteralExpr().getValue();
-                return LongConstant.parse(primitives, value);
+                return LongConstant.parse(primitives, identifier, value);
             }
             if (expression.isDoubleLiteralExpr()) {
                 String valueWithD = expression.asDoubleLiteralExpr().getValue();
                 if (valueWithD.endsWith("f") || valueWithD.endsWith("F")) {
                     String value = valueWithD.substring(0, valueWithD.length() - 1);
-                    return new FloatConstant(primitives, Float.parseFloat(value));
+                    return new FloatConstant(primitives, identifier, Float.parseFloat(value));
                 }
                 String value = valueWithD.endsWith("D") || valueWithD.endsWith("d") ? valueWithD.substring(0, valueWithD.length() - 1) : valueWithD;
-                return new DoubleConstant(primitives, Double.parseDouble(value));
+                return new DoubleConstant(primitives, identifier, Double.parseDouble(value));
             }
             if (expression.isCharLiteralExpr()) {
-                return new CharConstant(primitives, expression.asCharLiteralExpr().asChar());
+                return new CharConstant(primitives, identifier, expression.asCharLiteralExpr().asChar());
             }
             if (expression.isArrayAccessExpr()) {
                 ArrayAccessExpr arrayAccessExpr = expression.asArrayAccessExpr();
@@ -745,7 +745,7 @@ public record ExpressionContextImpl(ExpressionContext.ResolverRecursion resolver
                         new ForwardReturnTypeInfo(primitives.intParameterizedType()));
                 // statement index will be non-empty when the dependent variable is created during analysis
                 DependentVariable dv = DependentVariable.create(identifier, scope, index, "", owningType());
-                return new VariableExpression(dv);
+                return new VariableExpression(identifier, dv);
             }
             if (expression.isInstanceOfExpr()) {
                 InstanceOfExpr instanceOfExpr = expression.asInstanceOfExpr();

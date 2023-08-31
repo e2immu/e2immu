@@ -171,11 +171,11 @@ public class TestAbstractValue extends CommonAbstractValue {
         Expression v = newAndAppend(negate(a), negate(b), newOrAppend(a, b));
         assertEquals(FALSE, v);
 
-        Expression cIsA = equals(new CharConstant(PRIMITIVES, 'a'), c);
-        Expression cIsABis = equals(new CharConstant(PRIMITIVES, 'a'), c);
+        Expression cIsA = equals(new CharConstant(PRIMITIVES, Identifier.CONSTANT, 'a'), c);
+        Expression cIsABis = equals(new CharConstant(PRIMITIVES, Identifier.CONSTANT, 'a'), c);
         assertEquals(cIsA, cIsABis);
 
-        Expression cIsB = equals(new CharConstant(PRIMITIVES, 'b'), c);
+        Expression cIsB = equals(new CharConstant(PRIMITIVES, Identifier.CONSTANT, 'b'), c);
 
         Expression v2 = newAndAppend(negate(cIsA), negate(cIsB), newOrAppend(cIsA, cIsB));
         assertEquals(FALSE, v2);

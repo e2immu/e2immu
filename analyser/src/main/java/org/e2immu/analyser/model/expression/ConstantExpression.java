@@ -68,17 +68,17 @@ public interface ConstantExpression<T> extends Expression {
         }
         throw new UnsupportedOperationException("No info about " + property);
     }
-    
+
     static Expression nullValue(Primitives primitives, Identifier identifier, TypeInfo typeInfo) {
         if (typeInfo != null) {
             if (typeInfo.isBoolean()) return new BooleanConstant(primitives, identifier, false);
             if (typeInfo.isInt()) return new IntConstant(primitives, identifier, 0);
-            if (typeInfo.isLong()) return new LongConstant(primitives, 0L);
-            if (typeInfo.isShort()) return new ShortConstant(primitives, (short) 0);
-            if (typeInfo.isByte()) return new ByteConstant(primitives, (byte) 0);
-            if (typeInfo.isFloat()) return new FloatConstant(primitives, 0);
-            if (typeInfo.isDouble()) return new DoubleConstant(primitives, 0);
-            if (typeInfo.isChar()) return new CharConstant(primitives, '\0');
+            if (typeInfo.isLong()) return new LongConstant(primitives, identifier, 0L);
+            if (typeInfo.isShort()) return new ShortConstant(primitives, identifier, (short) 0);
+            if (typeInfo.isByte()) return new ByteConstant(primitives, identifier, (byte) 0);
+            if (typeInfo.isFloat()) return new FloatConstant(primitives, identifier, 0);
+            if (typeInfo.isDouble()) return new DoubleConstant(primitives, identifier, 0);
+            if (typeInfo.isChar()) return new CharConstant(primitives, identifier, '\0');
         }
         return new NullConstant(identifier);
     }

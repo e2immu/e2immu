@@ -29,12 +29,12 @@ public class ExpressionFactory {
         if (value == null) return new NullConstant(identifier);
         if (value instanceof String s) return new StringConstant(primitives, identifier, s);
         if (value instanceof Integer i) return new IntConstant(primitives, identifier, i);
-        if (value instanceof Short s) return new ShortConstant(primitives, s);
-        if (value instanceof Long l) return new LongConstant(primitives, l);
-        if (value instanceof Byte b) return new ByteConstant(primitives, b);
-        if (value instanceof Double d) return new DoubleConstant(primitives, d);
-        if (value instanceof Float f) return new FloatConstant(primitives, f);
-        if (value instanceof Character c) return new CharConstant(primitives, c);
+        if (value instanceof Short s) return new ShortConstant(primitives, identifier, s);
+        if (value instanceof Long l) return new LongConstant(primitives, identifier, l);
+        if (value instanceof Byte b) return new ByteConstant(primitives, identifier, b);
+        if (value instanceof Double d) return new DoubleConstant(primitives, identifier, d);
+        if (value instanceof Float f) return new FloatConstant(primitives, identifier, f);
+        if (value instanceof Character c) return new CharConstant(primitives, identifier, c);
         if (value instanceof Boolean b) return new BooleanConstant(primitives, identifier, b);
         if (value instanceof Type t)
             return new TypeExpression(identifier, typeContext.getFullyQualified(t.getClassName(), true)

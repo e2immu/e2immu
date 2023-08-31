@@ -31,13 +31,13 @@ public final class LongConstant extends BaseExpression implements ConstantExpres
     private final Primitives primitives;
     private final long constant;
 
-    public LongConstant(Primitives primitives, long constant) {
-        super(Identifier.constant(constant), constant == 0 ? 1 : 2);
+    public LongConstant(Primitives primitives, Identifier identifier, long constant) {
+        super(identifier, constant == 0 ? 1 : 2);
         this.primitives = primitives;
         this.constant = constant;
     }
 
-    public static Expression parse(Primitives primitives, String valueWithL) {
+    public static Expression parse(Primitives primitives, Identifier identifier, String valueWithL) {
         String value = valueWithL.endsWith("L") || valueWithL.endsWith("l") ?
                 valueWithL.substring(0, valueWithL.length() - 1) : valueWithL;
         long l;
@@ -46,7 +46,7 @@ public final class LongConstant extends BaseExpression implements ConstantExpres
         } else {
             l = Long.parseLong(value);
         }
-        return new LongConstant(primitives, l);
+        return new LongConstant(primitives, identifier, l);
     }
 
     @Override
@@ -100,7 +100,7 @@ public final class LongConstant extends BaseExpression implements ConstantExpres
 
     @Override
     public Expression negate() {
-        return new LongConstant(primitives, -constant);
+        return new LongConstant(primitives, identifier, -constant);
     }
 
     @Override

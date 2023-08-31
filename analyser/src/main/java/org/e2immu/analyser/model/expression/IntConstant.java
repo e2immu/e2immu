@@ -47,11 +47,11 @@ public final class IntConstant extends BaseExpression implements ConstantExpress
         if (IntUtil.isMathematicalInteger(b)) {
             long l = Math.round(b);
             if (l > Integer.MAX_VALUE || l < Integer.MIN_VALUE) {
-                return new LongConstant(primitives, l);
+                return new LongConstant(primitives, identifier, l);
             }
             return new IntConstant(primitives, identifier, (int) l);
         }
-        return new DoubleConstant(primitives, b);
+        return new DoubleConstant(primitives, identifier, b);
     }
 
     @Override

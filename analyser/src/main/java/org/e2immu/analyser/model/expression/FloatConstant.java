@@ -31,8 +31,8 @@ public final class FloatConstant extends BaseExpression implements ConstantExpre
     private final Primitives primitives;
     private final float constant;
 
-    public FloatConstant(Primitives primitives, float constant) {
-        super(Identifier.constant(constant), constant == 0 ? 1 : 2);
+    public FloatConstant(Primitives primitives, Identifier identifier, float constant) {
+        super(identifier, constant == 0 ? 1 : 2);
         this.primitives = primitives;
         this.constant = constant;
     }
@@ -88,7 +88,7 @@ public final class FloatConstant extends BaseExpression implements ConstantExpre
 
     @Override
     public Expression negate() {
-        return new FloatConstant(primitives, -constant);
+        return new FloatConstant(primitives, identifier, -constant);
     }
 
     @Override
