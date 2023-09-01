@@ -172,6 +172,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
                 checkSpecialCasesWhereDifferentMethodsAreEqual(methodInfo, that.methodInfo);
         return sameMethod
              // FIXME see Basics_28, but undoubtedly other tests that require this!   && modificationTimes.equals(that.modificationTimes)
+             // https://github.com/e2immu/e2immu/issues/56
                 && parameterExpressions.equals(that.parameterExpressions)
                 && object.equals(that.object);
     }

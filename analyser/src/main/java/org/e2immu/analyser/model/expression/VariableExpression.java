@@ -223,7 +223,7 @@ public class VariableExpression extends BaseExpression implements IsVariableExpr
         }
         Variable translated3 = translationMap.translateVariable(inspectionProvider, variable);
         if (translated3 != variable) {
-            return new VariableExpression(translated3);
+            return new VariableExpression(identifier, translated3);
         }
         if (translationMap.recurseIntoScopeVariables()) {
             if (variable instanceof FieldReference fr) {

@@ -9,6 +9,8 @@ problem:  modification times are linked
 the value of the DEFAULT_TIMEOUT field is delayed, as is with fields.
 The actual value of 'builder' is a method call, which is dependent on modification time.
 Modification time is set "after" the value (instance Builder) !!!
+
+https://github.com/e2immu/e2immu/issues/56
  */
 public class Basics_28 {
     private static final long DEFAULT_TIMEOUT = 30L;
