@@ -83,10 +83,6 @@ public interface Identifier extends Comparable<Identifier> {
         return new IncrementalIdentifier(origin);
     }
 
-    static Identifier catchCondition(String index) {
-        return new CatchConditionIdentifier(index);
-    }
-
     static Identifier loopCondition(String index) {
         return new LoopConditionIdentifier(index);
     }
@@ -289,24 +285,6 @@ public interface Identifier extends Comparable<Identifier> {
         @Override
         public String compact() {
             return "S:" + index;
-        }
-    }
-
-    @ImmutableContainer
-    record CatchConditionIdentifier(String index) implements Identifier {
-        @Override
-        public int compareTo(Identifier o) {
-            return identifierOrder() - o.identifierOrder();
-        }
-
-        @Override
-        public int identifierOrder() {
-            return 4;
-        }
-
-        @Override
-        public String compact() {
-            return "C:" + index;
         }
     }
 

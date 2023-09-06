@@ -41,52 +41,52 @@ public class Test_21_Range extends CommonTestRunner {
             if ("method1".equals(d.methodInfo().name)) {
                 if ("0".equals(d.statementId())) {
                     assertRange(d, "NumericRange[startIncl=0, endExcl=10, increment=1, variableExpression=i]",
-                            "i<=9&&i>=0");
+                            "i<10&&i>=0");
                 }
                 if ("0.0.0".equals(d.statementId())) {
                     if (d.iteration() == 0) {
                         assertTrue(d.condition().isDelayed());
                     } else {
-                        assertEquals("i<=9&&i>=0", d.condition().toString());
+                        assertEquals("i<10&&i>=0", d.condition().toString());
                     }
                 }
                 if ("0.0.1".equals(d.statementId())) {
                     if (d.iteration() == 0) {
                         assertTrue(d.condition().isDelayed());
                     } else {
-                        assertEquals("i<=9&&i>=0", d.condition().toString());
-                        assertEquals("i<=9&&i>=0", d.absoluteState().toString());
+                        assertEquals("i<10&&i>=0", d.condition().toString());
+                        assertEquals("i<10&&i>=0", d.absoluteState().toString());
                     }
                 }
             }
             if ("method2".equals(d.methodInfo().name)) {
                 if ("0".equals(d.statementId())) {
                     assertRange(d, "NumericRange[startIncl=0, endExcl=11, increment=1, variableExpression=i]",
-                            "i<=10&&i>=0");
+                            "i<11&&i>=0");
                 }
             }
             if ("method3".equals(d.methodInfo().name)) {
                 if ("0".equals(d.statementId())) {
                     assertRange(d, "NumericRange[startIncl=0, endExcl=12, increment=1, variableExpression=i]",
-                            "i<=11&&i>=0");
+                            "i<12&&i>=0");
                 }
             }
             if ("method4".equals(d.methodInfo().name)) {
                 if ("0".equals(d.statementId())) {
                     assertRange(d, "NumericRange[startIncl=13, endExcl=-1, increment=-1, variableExpression=i]",
-                            "i<=13&&i>=0");
+                            "i<14&&i>=0");
                 }
             }
             if ("method5".equals(d.methodInfo().name)) {
                 if ("0".equals(d.statementId())) {
                     assertRange(d, "NumericRange[startIncl=0, endExcl=14, increment=4, variableExpression=i]",
-                            "0==i%4&&i<=13&&i>=0");
+                            "0==i%4&&i<14&&i>=0");
                 }
             }
             if ("method6".equals(d.methodInfo().name)) {
                 if ("0".equals(d.statementId())) {
                     assertRange(d, "NumericRange[startIncl=11, endExcl=0, increment=-2, variableExpression=i]",
-                            "1==i%2&&i>=1&&i<=11");
+                            "1==i%2&&i>=1&&i<12");
                 }
             }
         };
@@ -178,28 +178,28 @@ public class Test_21_Range extends CommonTestRunner {
             if ("method1".equals(d.methodInfo().name)) {
                 if ("1".equals(d.statementId())) {
                     assertRange(d, "NumericRange[startIncl=0, endExcl=10, increment=1, variableExpression=i$1]",
-                            "i$1<=9&&i$1>=0");
+                            "i$1<10&&i$1>=0");
                 }
                 if ("1.0.0".equals(d.statementId())) {
                     if (d.iteration() == 0) {
                         assertTrue(d.condition().isDelayed());
                     } else {
-                        assertEquals("i$1<=9&&i$1>=0", d.condition().toString());
+                        assertEquals("i$1<10&&i$1>=0", d.condition().toString());
                     }
                 }
                 if ("1.0.1".equals(d.statementId())) {
                     if (d.iteration() == 0) {
                         assertTrue(d.condition().isDelayed());
                     } else {
-                        assertEquals("i$1<=9&&i$1>=0", d.condition().toString());
-                        assertEquals("i$1<=9&&i$1>=0", d.absoluteState().toString());
+                        assertEquals("i$1<10&&i$1>=0", d.condition().toString());
+                        assertEquals("i$1<10&&i$1>=0", d.absoluteState().toString());
                     }
                 }
             }
             if ("method2".equals(d.methodInfo().name)) {
                 if ("1".equals(d.statementId())) {
                     assertRange(d, "NumericRange[startIncl=0, endExcl=11, increment=1, variableExpression=i$1]",
-                            "i$1<=10&&i$1>=0");
+                            "i$1<11&&i$1>=0");
                     if (d.iteration() > 0) {
                         assertNotNull(d.haveError(Message.Label.USELESS_ASSIGNMENT));
                     }
@@ -208,7 +208,7 @@ public class Test_21_Range extends CommonTestRunner {
             if ("method3".equals(d.methodInfo().name)) {
                 if ("1".equals(d.statementId())) {
                     assertRange(d, "NumericRange[startIncl=0, endExcl=12, increment=1, variableExpression=i$1]",
-                            "i$1<=11&&i$1>=0");
+                            "i$1<12&&i$1>=0");
                 }
                 if ("2".equals(d.statementId())) {
                     String expect = d.iteration() == 0 ? "<s:boolean>" : "12==i";
@@ -224,13 +224,13 @@ public class Test_21_Range extends CommonTestRunner {
             if ("method5".equals(d.methodInfo().name)) {
                 if ("1".equals(d.statementId())) {
                     assertRange(d, "NumericRange[startIncl=0, endExcl=14, increment=4, variableExpression=i$1]",
-                            "0==i$1%4&&i$1<=13&&i$1>=0");
+                            "0==i$1%4&&i$1<14&&i$1>=0");
                 }
             }
             if ("method6".equals(d.methodInfo().name)) {
                 if ("1".equals(d.statementId())) {
                     assertRange(d, "NumericRange[startIncl=11, endExcl=0, increment=-2, variableExpression=i$1]",
-                            "1==i$1%2&&i$1>=1&&i$1<=11");
+                            "1==i$1%2&&i$1>=1&&i$1<12");
                 }
             }
         };

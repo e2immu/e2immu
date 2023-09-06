@@ -767,11 +767,11 @@ record SASubBlocks(StatementAnalysis statementAnalysis, StatementAnalyser statem
             }
             List<Expression> booleanVars = new ArrayList<>();
             Set<Variable> conditionVariables = new HashSet<>();
-            int cnt = 1;
+            int cnt = 0;
             for (Structure s : structure.subStatements()) {
                 if (s.statementExecution() == StatementExecution.CONDITIONALLY) {
-                    String index = index() + "." + (cnt++) + ".0";
-                    booleanVars.add(Instance.forUnspecifiedCatchCondition(index, context.getPrimitives()));
+                   Identifier identifier = tryStatement.catchClauses.get(cnt++).k.identifier;
+                    booleanVars.add(Instance.forUnspecifiedCatchCondition(context.getPrimitives(), identifier));
                     conditionVariables.addAll(s.expression().variables(Element.DescendMode.NO));
                 }
             }

@@ -75,9 +75,8 @@ public final class Instance extends BaseExpression implements Expression {
         return new Instance(identifier, parameterizedType, valueProperties);
     }
 
-    public static Expression forUnspecifiedCatchCondition(String index, Primitives primitives) {
-        return new Instance(Identifier.catchCondition(index),
-                primitives.booleanParameterizedType(),
+    public static Expression forUnspecifiedCatchCondition(Primitives primitives, Identifier identifier) {
+        return new Instance(identifier, primitives.booleanParameterizedType(),
                 EvaluationContext.PRIMITIVE_VALUE_PROPERTIES);
     }
 
