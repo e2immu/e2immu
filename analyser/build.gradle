@@ -27,8 +27,6 @@ jar {
 }
 
 test {
-    exclude '**/failing/*'
-
     maxHeapSize = "2G"
     useJUnitPlatform()
     maxParallelForks = 4

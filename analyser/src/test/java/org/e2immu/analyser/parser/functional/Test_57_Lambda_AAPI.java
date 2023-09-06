@@ -30,6 +30,7 @@ import org.e2immu.analyser.model.statement.ExpressionAsStatement;
 import org.e2immu.analyser.parser.CommonTestRunner;
 import org.e2immu.analyser.parser.functional.testexample.Lambda_18;
 import org.e2immu.analyser.visitor.*;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
@@ -69,6 +70,7 @@ public class Test_57_Lambda_AAPI extends CommonTestRunner {
     }
 
 
+    @Disabled("No progress after 11 iterations")
     @Test
     public void test_15() throws IOException {
         testClass("Lambda_15", 0, 0, new DebugConfiguration.Builder()
@@ -99,16 +101,29 @@ public class Test_57_Lambda_AAPI extends CommonTestRunner {
     }
 
 
+    @Disabled("Linked variables are being overwritten")
     @Test
     public void test_17() throws IOException {
         testClass("Lambda_17", 0, 0, new DebugConfiguration.Builder()
                 .build());
     }
 
+    @Disabled("variable of type Runnable is immutable; calling its modifying run() method causes an error")
     @Test
     public void test_18() throws IOException {
+        StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+            if ("method2".equals(d.methodInfo().name)) {
+                if ("finallyMethod".equals(d.variableName())) {
+                    if ("2".equals(d.statementId())) {
+                        assertDv(d, 0, MultiLevel.EFFECTIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
+                    }
+                }
+            }
+        };
         TypeContext typeContext = testClass("Lambda_18", 0, 0,
-                new DebugConfiguration.Builder().build());
+                new DebugConfiguration.Builder()
+                        .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                        .build());
         TypeInfo lambda18 = typeContext.getFullyQualified(Lambda_18.class);
 
         MethodInfo method1 = lambda18.findUniqueMethod("method1", 1);

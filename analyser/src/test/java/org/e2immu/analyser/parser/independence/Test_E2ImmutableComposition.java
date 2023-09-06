@@ -29,6 +29,8 @@ import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 
+import static org.e2immu.analyser.parser.VisitorTestSupport.IterationInfo.it;
+import static org.e2immu.analyser.parser.VisitorTestSupport.IterationInfo.it0;
 import static org.junit.jupiter.api.Assertions.*;
 
 public class Test_E2ImmutableComposition extends CommonTestRunner {
@@ -133,7 +135,7 @@ public class Test_E2ImmutableComposition extends CommonTestRunner {
                     assertEquals("", d.variableInfo().getLinkedVariables().toString());
                 }
                 if (d.variable() instanceof ReturnVariable) {
-                    assertEquals("this.t:0", d.variableInfo().getLinkedVariables().toString());
+                    assertLinked(d, it0("this.t:0,this:-1"), it(1, "this.t:0"));
                 }
             }
             if ("first".equals(d.methodInfo().name) && "OneWithOne".equals(d.methodInfo().typeInfo.simpleName)) {
@@ -162,8 +164,8 @@ public class Test_E2ImmutableComposition extends CommonTestRunner {
                             : "nullable instance type HasSize/*{L one:3}*/";
                     assertEquals(expected, d.currentValue().toString());
                     String linked = d.iteration() < 4
-                            ? "av-480:20:-1,av-480:20[0]:-1,this.one:-1,this:-1"
-                            : "av-480:20:3,av-480:20[0]:1,this.one:3";
+                            ? "av-480:20:-1,av-480:20[0]:0,this.one:-1,this:-1"
+                            : "av-480:20:3,av-480:20[0]:0,this.one:3";
                     assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
                 }
                 if (d.variableName().startsWith("av-")) {
@@ -196,16 +198,16 @@ public class Test_E2ImmutableComposition extends CommonTestRunner {
                 if (d.variable() instanceof ReturnVariable) {
                     String expected = d.iteration() == 0 ? "<dv:markers[0]>" : "markers[0]";
                     assertEquals(expected, d.currentValue().toString());
-                    String linked = d.iteration() == 0 ? "markers[0]:-1,this.markers:-1" : "markers[0]:1,this.markers:3";
-                    assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
+                    assertLinked(d,
+                            it0("markers[0]:0,this.markers:-1,this:-1"),
+                            it(1, "markers[0]:0,this.markers:3"));
                 }
             }
             if ("ImmutableArrayOfTransparentOnes".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof ParameterInfo pi && "generator".equals(pi.name)) {
                     if ("1".equals(d.statementId())) {
                         // One is transparent, so we're filling the 'ones' array with the equivalent of an unbound parameter type
-                        String linked = d.iteration() < 3 ? "this.ones:-1" : "this.ones:4";
-                        assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
+                        assertLinked(d, it(0, 2, "this.ones:-1"), it(3, "this.ones:4"));
                     }
                 }
             }

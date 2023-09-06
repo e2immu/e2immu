@@ -29,6 +29,7 @@ import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 
+import static org.e2immu.analyser.parser.VisitorTestSupport.IterationInfo.it;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class Test_FactoryMethod extends CommonTestRunner {
@@ -43,40 +44,34 @@ public class Test_FactoryMethod extends CommonTestRunner {
             if ("of2".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof ParameterInfo pi && "t".equals(pi.name)) {
                     if ("3".equals(d.statementId())) {
-                        String linked = d.iteration() == 0 ? "f:-1,tt:-1" : "f:3";
-                        assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
+                        assertLinked(d, it(0, 1, "f:-1,tt:-1"), it(2, "f:3"));
                     }
                 }
                 if (d.variable() instanceof ReturnVariable) {
                     if ("3".equals(d.statementId())) {
-                        String linked = d.iteration() == 0 ? "f:0,t:-1,tt:-1" : "f:0";
-                        assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
+                        assertLinked(d, it(0, 1, "f:0,t:-1,tt:-1"), it(2, "f:0"));
                     }
                 }
                 if ("f".equals(d.variableName())) {
                     if ("3".equals(d.statementId())) {
-                        String linked = d.iteration() == 0 ? "t:-1,tt:-1" : "";
-                        assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
+                        assertLinked(d, it(0, 1, "t:-1,tt:-1"), it(2, ""));
                     }
                 }
             }
             if ("of".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof ParameterInfo pi && "ts".equals(pi.name)) {
                     if ("2".equals(d.statementId())) {
-                        String linked = d.iteration() == 0 ? "f:-1" : "f:4";
-                        assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
+                        assertLinked(d, it(0, 1, "f:-1"), it(2, "f:4"));
                     }
                 }
                 if (d.variable() instanceof ReturnVariable) {
                     if ("2".equals(d.statementId())) {
-                        String linked = d.iteration() == 0 ? "f:0,ts:-1" : "f:0,ts:4";
-                        assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
+                        assertLinked(d, it(0, 1, "f:0,ts:-1"), it(2, "f:0,ts:4"));
                     }
                 }
                 if ("f".equals(d.variableName())) {
                     if ("2".equals(d.statementId())) {
-                        String linked = d.iteration() == 0 ? "ts:-1" : "ts:4";
-                        assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
+                        assertLinked(d, it(0, 1, "ts:-1"), it(2, "ts:4"));
                     }
                 }
             }
@@ -93,20 +88,20 @@ public class Test_FactoryMethod extends CommonTestRunner {
                 }
             }
             if ("copy2".equals(d.methodInfo().name)) {
-                if("result".equals(d.variableName())) {
-                    if("1".equals(d.statementId())) {
+                if ("result".equals(d.variableName())) {
+                    if ("1".equals(d.statementId())) {
                         String linked = d.iteration() == 0 ? "this.list:-1" : "this.list:4";
                         assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
                     }
                 }
                 if (d.variable() instanceof ReturnVariable) {
-                    if("2".equals(d.statementId())) {
+                    if ("2".equals(d.statementId())) {
                         String linked = d.iteration() == 0 ? "result:0,this.list:-1" : "result:0,this.list:4";
                         assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
                     }
                 }
-                if(d.variable() instanceof FieldReference fr && "list".equals(fr.fieldInfo.name)) {
-                    if("1".equals(d.statementId())) {
+                if (d.variable() instanceof FieldReference fr && "list".equals(fr.fieldInfo.name)) {
+                    if ("1".equals(d.statementId())) {
                         String linked = d.iteration() == 0 ? "result:-1" : "result:4";
                         assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
                     }
@@ -115,7 +110,7 @@ public class Test_FactoryMethod extends CommonTestRunner {
         };
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("of".equals(d.methodInfo().name)) {
-                assertDv(d, 4, MultiLevel.INDEPENDENT_HC_DV, Property.INDEPENDENT);
+                assertDv(d, 5, MultiLevel.INDEPENDENT_HC_DV, Property.INDEPENDENT);
             }
         };
 

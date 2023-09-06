@@ -28,6 +28,8 @@ import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 
+import static org.e2immu.analyser.parser.VisitorTestSupport.IterationInfo.it;
+import static org.e2immu.analyser.parser.VisitorTestSupport.IterationInfo.it0;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -115,7 +117,9 @@ public class Test_41_E2InContext extends CommonTestRunner {
                     assertEquals("", d.variableInfo().getLinkedVariables().toString());
                 }
                 if (d.variable() instanceof ReturnVariable) {
-                    assertEquals("this.eventually:0", d.variableInfo().getLinkedVariables().toString());
+                    assertLinked(d,
+                            it(0, 3, "this.eventually:0,this:-1"),
+                            it(4, "this.eventually:0"));
                     assertDv(d, 4, MultiLevel.EVENTUALLY_IMMUTABLE_DV, Property.EXTERNAL_IMMUTABLE);
                     assertDv(d, 4, MultiLevel.EVENTUALLY_IMMUTABLE_DV, Property.IMMUTABLE);
                 }
@@ -157,7 +161,8 @@ public class Test_41_E2InContext extends CommonTestRunner {
                     String delay = switch (d.iteration()) {
                         case 0 -> "initial@Method_E2InContext_2_0-C";
                         case 1 -> "cm@Parameter_t;constructor-to-instance@Method_E2InContext_2_0-E;mom@Parameter_t";
-                        case 2 -> "break_init_delay:this.t@Method_set_1-C;constructor-to-instance@Method_E2InContext_2_0-E";
+                        case 2 ->
+                                "break_init_delay:this.t@Method_set_1-C;constructor-to-instance@Method_E2InContext_2_0-E";
                         default -> "";
                     };
                     assertDv(d, delay, 3, MultiLevel.EVENTUALLY_IMMUTABLE_AFTER_MARK_DV, Property.CONTEXT_IMMUTABLE);
@@ -172,7 +177,7 @@ public class Test_41_E2InContext extends CommonTestRunner {
             if ("t".equals(d.fieldInfo().name)) {
                 assertEquals("<variable value>", d.fieldAnalysis().getValue().toString());
                 String values = d.iteration() == 0
-                        ? "initial:this.t@Method_set_1-C;no precondition info@Method_set_0.0.0-C;state:this.t@Method_set_2-E;values:this.t@Field_t"
+                        ? "initial:this.t@Method_set_1-C;state:this.t@Method_set_2-E;values:this.t@Field_t"
                         : "";
                 assertEquals(values, d.fieldAnalysis().valuesDelayed().toString());
             }

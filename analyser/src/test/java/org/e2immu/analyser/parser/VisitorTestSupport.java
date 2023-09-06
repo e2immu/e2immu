@@ -233,10 +233,27 @@ public abstract class VisitorTestSupport {
     }
 
     protected void assertLinked(StatementAnalyserVariableVisitor.Data d, IterationInfo... iterationInfos) {
-        String links = d.variableInfo().getLinkedVariables().toString();
+        assertLinked(d, d.variableInfo().getLinkedVariables(), iterationInfos);
+    }
+
+    protected void assertLinked(CommonVisitorData d,
+                                LinkedVariables linkedVariables,
+                                IterationInfo... iterationInfos) {
+        String links = linkedVariables.toString();
         for (IterationInfo ii : iterationInfos) {
             if (ii.accepts(d.iteration())) {
                 assertEquals(ii.value, links, "Linked variables iteration " + d.iteration());
+                return;
+            }
+        }
+        fail("Did not see iteration info for iteration " + d.iteration());
+    }
+
+    protected void assertValue(StatementAnalyserVariableVisitor.Data d, IterationInfo... iterationInfos) {
+        String value = d.currentValue().toString();
+        for (IterationInfo ii : iterationInfos) {
+            if (ii.accepts(d.iteration())) {
+                assertEquals(ii.value, value, "Current value iteration " + d.iteration());
                 return;
             }
         }

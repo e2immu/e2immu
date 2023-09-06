@@ -230,7 +230,7 @@ public class Test_57_Lambda extends CommonTestRunner {
 
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("method".equals(d.methodInfo().name)) {
-                String expected = d.iteration() < 2 ? "<m:method>" : "/*inline method*/x.k<=2?3:i$0*`x.k`";
+                String expected = d.iteration() < 2 ? "<m:method>" : "/*inline method*/x.k<3?3:i$0*`x.k`";
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
             }
             if ("get".equals(d.methodInfo().name)) {
@@ -349,7 +349,7 @@ public class Test_57_Lambda extends CommonTestRunner {
         };
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("method".equals(d.methodInfo().name)) {
-                String expected = d.iteration() < 2 ? "<m:method>" : "/*inline method*/x.k<=2?3:i$0*`x.k`";
+                String expected = d.iteration() < 2 ? "<m:method>" : "/*inline method*/x.k<3?3:i$0*`x.k`";
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
             }
         };
