@@ -135,7 +135,7 @@ public class Test_01_Loops_0 extends CommonTestRunner {
             }
             if ("2.0.2".equals(d.statementId())) {
                 assertEquals("true", d.condition().toString());
-                String expectState = d.iteration() == 0 ? "-1-<v:i>+n>=0" : "-2-i$2+n>=0";
+                String expectState = d.iteration() == 0 ? "-1-<v:i>+n>=0" : "-1-i$2+n>0";
                 assertEquals(expectState, d.state().toString());
                 assertEquals(d.iteration() == 0, d.statementAnalysis()
                         .stateData().conditionManagerForNextStatementStatus().isDelayed());

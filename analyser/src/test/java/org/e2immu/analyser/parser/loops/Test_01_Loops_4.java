@@ -115,7 +115,7 @@ public class Test_01_Loops_4 extends CommonTestRunner {
         EvaluationResultVisitor evaluationResultVisitor = d -> {
             if ("method".equals(d.methodInfo().name)) {
                 if ("0".equals(d.statementId())) {
-                    String expectValue = "i<=9";
+                    String expectValue = "i<10";
                     assertEquals(expectValue, d.evaluationResult().value().toString());
                 }
                 if ("0.0.0".equals(d.statementId())) {

@@ -34,12 +34,10 @@ public class Test_01_Loops_25 extends CommonTestRunner {
         super(true);
     }
 
+    // green, but see ConsumerAndArray_0
     @Test
     public void test() throws IOException {
-
-
-        testClass("Loops_25", 1, 0, new DebugConfiguration.Builder()
-
+        testClass("Loops_25", 0, 0, new DebugConfiguration.Builder()
                 .build());
     }
 }

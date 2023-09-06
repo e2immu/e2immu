@@ -2715,6 +2715,9 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
         if (v instanceof ParameterInfo
                 || cnnTravelsToFields && v instanceof FieldReference) return Either.right(Set.of(v));
         VariableInfoContainer vic = findOrNull(v);
+        if (vic == null) {
+            return Either.right(Set.of());
+        }
         if (vic.best(Stage.EVALUATION).getProperty(Property.CNN_TRAVELS_TO_PRECONDITION).valueIsTrue())
             return Either.right(Set.of(v));
         if (v instanceof DependentVariable dv) {

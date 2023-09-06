@@ -54,7 +54,7 @@ public class Test_21_ConstantRange extends CommonTestRunner {
         StatementAnalyserVisitor statementAnalyserVisitor = d -> {
             if ("method".equals(d.methodInfo().name)) {
                 if ("1".equals(d.statementId())) {
-                    String expected = "!\"c\".equals(nullable instance type String)||input.length<=0";
+                    String expected = "input.length<1||!\"c\".equals(nullable instance type String)";
                     assertEquals(expected, d.state().toString());
                 }
             }

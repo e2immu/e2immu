@@ -31,6 +31,7 @@ import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.model.variable.VariableNature;
 import org.e2immu.analyser.parser.CommonTestRunner;
 import org.e2immu.analyser.visitor.*;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
@@ -442,13 +443,13 @@ public class Test_01_Loops_6plus extends CommonTestRunner {
                     }
                     if ("1.0.0".equals(d.statementId())) {
                         // instead of in terms of i, we have an expression in terms of p: MergeHelper.rewriteConditionFromLoopVariableToParameter
-                        String expected = d.iteration() == 0 ? "<c:boolean>?4:<vl:res>" : "p<=9&&p>=0&&i==p?4:instance type int";
+                        String expected = d.iteration() == 0 ? "<c:boolean>?4:<vl:res>" : "p<10&&p>=0&&i==p?4:instance type int";
                         assertEquals(expected, d.currentValue().toString());
                     }
                     if ("1".equals(d.statementId())) {
                         // value is not 4! p could be greater than 10, and then i can never reach p
                         String expected = d.iteration() == 0 ? "<loopIsNotEmptyCondition>?<c:boolean>?4:<vl:res>:3"
-                                : "instance type int<=9&&instance type int>=0?p<=9&&p>=0&&instance type int==p?4:instance type int:3";
+                                : "instance type int<10&&instance type int>=0?p<10&&p>=0&&instance type int==p?4:instance type int:3";
                         // TODO ugly, but solvable; all instances are equal to each other
                         assertEquals(expected, d.currentValue().toString());
                     }
@@ -470,13 +471,13 @@ public class Test_01_Loops_6plus extends CommonTestRunner {
                 if ("1.0.0.0.0".equals(d.statementId())) {
                     String condition = d.iteration() == 0 ? "<c:boolean>" : "i==p";
                     assertEquals(condition, d.condition().toString());
-                    String absState = d.iteration() == 0 ? "<c:boolean>&&<loopIsNotEmptyCondition>" : "i<=9&&i>=0&&i==p";
+                    String absState = d.iteration() == 0 ? "<loopIsNotEmptyCondition>&&<c:boolean>" : "i<10&&i>=0&&i==p";
                     assertEquals(absState, d.absoluteState().toString());
                 }
                 if ("1.0.0".equals(d.statementId())) {
-                    String condition = d.iteration() == 0 ? "<loopIsNotEmptyCondition>" : "i<=9&&i>=0";
+                    String condition = d.iteration() == 0 ? "<loopIsNotEmptyCondition>" : "i<10&&i>=0";
                     assertEquals(condition, d.condition().toString());
-                    String absState = d.iteration() == 0 ? "<loopIsNotEmptyCondition>&&!<c:boolean>" : "i<=9&&i>=0&&i!=p";
+                    String absState = d.iteration() == 0 ? "<loopIsNotEmptyCondition>&&!<c:boolean>" : "i<10&&i>=0&&i!=p";
                     assertEquals(absState, d.absoluteState().toString());
                 }
                 if ("1".equals(d.statementId())) {
@@ -489,7 +490,7 @@ public class Test_01_Loops_6plus extends CommonTestRunner {
                     String breakStmtIndex = list.get(0).getKey();
                     assertEquals("1.0.0.0.1", breakStmtIndex);
                     Expression state = list.get(0).getValue().get();
-                    String expected = d.iteration() == 0 ? "<c:boolean>&&<loopIsNotEmptyCondition>" : "i<=9&&i>=0&&i==p";
+                    String expected = d.iteration() == 0 ? "<loopIsNotEmptyCondition>&&<c:boolean>" : "i<10&&i>=0&&i==p";
                     assertEquals(expected, state.toString());
                 }
             }
@@ -526,7 +527,7 @@ public class Test_01_Loops_6plus extends CommonTestRunner {
             if ("method".equals(d.methodInfo().name)) {
                 if ("1.0.0".equals(d.statementId())) {
                     assertEquals("!map.entrySet().isEmpty()", d.condition().toString());
-                    assertEquals("!map.entrySet().isEmpty()&&9!=entry.getValue()", d.absoluteState().toString());
+                    assertEquals("9!=entry.getValue()&&!map.entrySet().isEmpty()", d.absoluteState().toString());
                 }
                 if ("1".equals(d.statementId())) {
                     assertEquals("true", d.condition().toString());
@@ -726,8 +727,8 @@ public class Test_01_Loops_6plus extends CommonTestRunner {
                 if ("1.0.1.0.1".equals(d.statementId())) {
                     String expected = switch (d.iteration()) {
                         case 0 -> "<null-check>&&<m:isAfter>&&<m:isBefore>";
-                        case 1 -> "<m:isAfter>&&<m:isBefore>&&null!=<f:container.read>";
-                        default -> "`(entry.getValue()).updated.time`>`(entry.getValue()).read.time`&&`new Date(`(entry.getValue()).read.time`+readWithinMillis).time`>`now.time`&&null!=(entry.getValue()).read";
+                        case 1 -> "null!=<f:container.read>&&<m:isAfter>&&<m:isBefore>";
+                        default -> "null!=(entry.getValue()).read&&-1-`(entry.getValue()).read.time`+`(entry.getValue()).updated.time`>=0&&-1-`now.time`+`new Date(`(entry.getValue()).read.time`+readWithinMillis).time`>=0";
                     };
                     assertEquals(expected, d.evaluationResult().value().toString());
                 }

@@ -218,7 +218,7 @@ public class Test_21_Range extends CommonTestRunner {
             if ("method4".equals(d.methodInfo().name)) {
                 if ("1".equals(d.statementId())) {
                     assertRange(d, "NumericRange[startIncl=13, endExcl=-1, increment=-1, variableExpression=i$1]",
-                            "i$1<=13&&i$1>=0");
+                            "i$1<14&&i$1>=0");
                 }
             }
             if ("method5".equals(d.methodInfo().name)) {

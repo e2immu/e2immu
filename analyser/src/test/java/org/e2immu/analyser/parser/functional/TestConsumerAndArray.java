@@ -31,7 +31,7 @@ public class TestConsumerAndArray extends CommonTestRunner {
         super(true);
     }
 
-    @Disabled("We have no value yet, but already have linked variables on a non-primitive. Points to a fundamental issue.")
+    @Disabled("We have no value yet, but already have linked variables on a non-primitive. Points to a fundamental issue. See also Loops_25.")
     @Test
     public void test_0() throws IOException {
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {

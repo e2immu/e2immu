@@ -53,7 +53,7 @@ public class Test_01_Loops_1 extends CommonTestRunner {
                     assertEquals(expect, d.evaluationResult().value().toString());
                 }
                 if ("3".equals(d.statementId())) {
-                    String expect = d.iteration() == 0 ? DELAYED_BY_STATE : "-2-i$2+n>=0?\"abc\":res2$2";
+                    String expect = d.iteration() == 0 ? DELAYED_BY_STATE : "-1-i$2+n>0?\"abc\":res2$2";
                     assertEquals(expect, d.evaluationResult().value().toString());
                 }
             }
@@ -66,7 +66,7 @@ public class Test_01_Loops_1 extends CommonTestRunner {
                         assertEquals("<return value>", d.currentValue().toString());
                     }
                     if ("3".equals(d.statementId())) {
-                        String expected = d.iteration() == 0 ? "<s:String>" : "-2-i$2+n>=0?\"abc\":res2$2";
+                        String expected = d.iteration() == 0 ? "<s:String>" : "-1-i$2+n>0?\"abc\":res2$2";
                         assertEquals(expected, d.currentValue().toString());
                         assertDv(d, 1, MultiLevel.NULLABLE_DV, NOT_NULL_EXPRESSION);
                     }
@@ -86,12 +86,12 @@ public class Test_01_Loops_1 extends CommonTestRunner {
                     }
                     if ("2.0.2".equals(d.statementId())) {
                         // statement says: res="abc", but the value takes the state into account
-                        String expectValue = d.iteration() == 0 ? DELAYED_BY_STATE : "-2-i$2+n>=0?\"abc\":res2$2";
+                        String expectValue = d.iteration() == 0 ? DELAYED_BY_STATE : "-1-i$2+n>0?\"abc\":res2$2";
                         assertEquals(expectValue, d.variableInfo().getValue().toString());
                         assertDv(d, 1, MultiLevel.NULLABLE_DV, NOT_NULL_EXPRESSION);
                     }
                     if ("2".equals(d.statementId())) {
-                        String expectValue = d.iteration() == 0 ? DELAYED_BY_STATE : "-2-i$2+n>=0?\"abc\":res2$2";
+                        String expectValue = d.iteration() == 0 ? DELAYED_BY_STATE : "-1-i$2+n>0?\"abc\":res2$2";
                         assertEquals(expectValue, d.variableInfo().getValue().toString());
                         assertDv(d, 1, MultiLevel.NULLABLE_DV, NOT_NULL_EXPRESSION);
                     }
@@ -118,7 +118,7 @@ public class Test_01_Loops_1 extends CommonTestRunner {
                     // both are NO_VALUE in the first iteration, because we're showing the stateData
                     // and not the local condition manager
                     assertEquals("true", d.condition().toString());
-                    String expectState = d.iteration() == 0 ? "-1-<v:i>+n>=0" : "-2-i$2+n>=0";
+                    String expectState = d.iteration() == 0 ? "-1-<v:i>+n>=0" : "-1-i$2+n>0";
                     assertEquals(expectState, d.absoluteState().toString());
                     assertEquals(d.iteration() == 0, d.conditionManagerForNextStatement().isDelayed());
                 }
@@ -126,7 +126,7 @@ public class Test_01_Loops_1 extends CommonTestRunner {
                     assertEquals("true", d.condition().toString());
                     assertEquals(d.iteration() == 0, d.localConditionManager().isDelayed());
 
-                    String expectState = d.iteration() == 0 ? "-1-<v:i>+n>=0" : "-2-i$2+n>=0";
+                    String expectState = d.iteration() == 0 ? "-1-<v:i>+n>=0" : "-1-i$2+n>0";
 
                     assertEquals(expectState, d.localConditionManager().state().toString());
                     assertEquals(expectState, d.absoluteState().toString());
