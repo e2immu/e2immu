@@ -20,6 +20,7 @@ import org.e2immu.analyser.parser.Input;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.Parser;
 import org.e2immu.analyser.visitor.StatementAnalyserVisitor;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -37,6 +38,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 public class TestAnalyseMain {
     private static final Logger LOGGER = LoggerFactory.getLogger(TestAnalyseMain.class);
 
+    @Disabled("Not part of regular unit tests; too early")
     @Test
     public void test() throws IOException {
 

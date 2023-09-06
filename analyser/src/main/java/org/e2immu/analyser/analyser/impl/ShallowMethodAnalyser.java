@@ -211,8 +211,10 @@ public class ShallowMethodAnalyser extends MethodAnalyserImpl {
                 MethodAnalysis.Eventual eventual = m.methodAnalysis.get().getEventual();
                 if (eventual != null && eventual.test() == Boolean.TRUE) {
                     FieldInfo fieldInfo = eventual.fields().stream().findFirst().orElseThrow();
-                    VariableExpression ve = new VariableExpression(new FieldReference(analyserContext, fieldInfo));
-                    Expression thisExpression = new VariableExpression(new This(analyserContext, m.typeInfo));
+                    FieldReference fieldReference = new FieldReference(analyserContext, fieldInfo);
+                    VariableExpression ve = new VariableExpression(fieldInfo.getIdentifier(), fieldReference);
+                    This thisVar = new This(analyserContext, m.typeInfo);
+                    Expression thisExpression = new VariableExpression(m.identifier, thisVar);
                     Identifier identifier = Identifier.joined("methodCall", List.of(thisExpression.getIdentifier()));
                     MethodCall mc = new MethodCall(identifier, thisExpression, m, List.of());
                     builder.put(mc, ve);

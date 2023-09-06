@@ -132,7 +132,7 @@ record SAEvaluationOfMainExpression(StatementAnalysis statementAnalysis,
         } else if (statement instanceof ThrowStatement) {
             if (methodInfo().hasReturnValue()) {
                 result = modifyReturnValueRemoveConditionBasedOnState(sharedState, result);
-            } else if(statementAnalysis.parent() == null) {
+            } else if (statementAnalysis.parent() == null) {
                 /*
                  void method or constructor; top-level, so we don't reach SASubBlocks.assert/throws.
                  This can never be a pre- or post-condition, as it ALWAYS stops the method
@@ -326,7 +326,7 @@ record SAEvaluationOfMainExpression(StatementAnalysis statementAnalysis,
             Expression newValue = vi.getValue().removeAllReturnValueParts(statementAnalysis.primitives());
             EvaluationResult.Builder builder = new EvaluationResult.Builder(sharedState.context()).compose(result);
             Assignment assignment = new Assignment(statementAnalysis.primitives(),
-                    new VariableExpression(returnVariable), newValue);
+                    new VariableExpression(methodInfo().identifier, returnVariable), newValue);
             EvaluationResult assRes = assignment.evaluate(EvaluationResult.from(sharedState.evaluationContext()),
                     ForwardEvaluationInfo.DEFAULT);
             builder.compose(assRes);
@@ -413,8 +413,8 @@ record SAEvaluationOfMainExpression(StatementAnalysis statementAnalysis,
                     .doNotComplainInlineConditional().setIgnoreValueFromState().build();
             hasAlreadyBeenEvaluated = null;
         }
-        Assignment assignment = new Assignment(statementAnalysis.primitives(),
-                new VariableExpression(new ReturnVariable(methodInfo())), toEvaluate, hasAlreadyBeenEvaluated,
+        VariableExpression ve = new VariableExpression(methodInfo().identifier, new ReturnVariable(methodInfo()));
+        Assignment assignment = new Assignment(statementAnalysis.primitives(), ve, toEvaluate, hasAlreadyBeenEvaluated,
                 directAssignmentVariables);
         EvaluationResult evaluatedAssignment = assignment.evaluate(updatedContext, forwardEvaluationInfo);
         return new EvaluationResult.Builder(context)

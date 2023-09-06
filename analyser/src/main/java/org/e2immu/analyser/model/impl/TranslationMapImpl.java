@@ -29,9 +29,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.function.Function;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 /**
  * Translation takes place from statement, over expression, down to variable and type.
@@ -149,7 +147,7 @@ public class TranslationMapImpl implements TranslationMap {
                 if (fr.scope.isDelayed()) {
                     e = DelayedVariableExpression.forVariable(scopeTranslated, fr.statementTime(), fr.scope.causesOfDelay());
                 } else {
-                    e = new VariableExpression(scopeTranslated);
+                    e = new VariableExpression(fr.scope.getIdentifier(), scopeTranslated);
                 }
                 return new FieldReference(inspectionProvider, fr.fieldInfo, e, fr.getOwningType());
             }
@@ -279,7 +277,8 @@ public class TranslationMapImpl implements TranslationMap {
                     modificationTimesHandler);
         }
 
-        // used externally be CM
+        // used externally
+        @SuppressWarnings("unused")
         public Builder setTranslateAgain(boolean translateAgain) {
             this.translateAgain = translateAgain;
             return this;
@@ -317,7 +316,8 @@ public class TranslationMapImpl implements TranslationMap {
             return this;
         }
 
-        // used by CodeModernizer
+        // used externally
+        @SuppressWarnings("unused")
         public Builder renameVariable(Variable variable, Expression actual) {
             variableExpressions.put(variable, actual);
             return this;

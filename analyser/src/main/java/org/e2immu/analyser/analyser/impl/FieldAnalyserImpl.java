@@ -1667,10 +1667,11 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
                     new VariableCause(fieldReference, fieldInfo.newLocation(), CauseOfDelay.Cause.FIELD_FINAL));
         }
         if (effectivelyFinal.valueIsFalse()) {
-            return new VariableExpression(variable);
+            return new VariableExpression(fieldInfo.getIdentifier(), variable);
         }
         Expression effectivelyFinalValue = fieldAnalysis.getValue();
-        return Objects.requireNonNullElseGet(effectivelyFinalValue, () -> new VariableExpression(variable));
+        return Objects.requireNonNullElseGet(effectivelyFinalValue,
+                () -> new VariableExpression(fieldInfo.getIdentifier(), variable));
     }
 
     @Override
@@ -1800,7 +1801,7 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
                 return FieldAnalyserImpl.this.getVariableValue(variable);
             }
             if (variable instanceof This) {
-                return ComputingTypeAnalyser.getVariableValue(variable);
+                return new VariableExpression(fieldInfo.getIdentifier(), variable);
             }
             if (variable instanceof ParameterInfo) {
                 /*

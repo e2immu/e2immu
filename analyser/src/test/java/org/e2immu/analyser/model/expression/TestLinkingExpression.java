@@ -142,7 +142,7 @@ public class TestLinkingExpression {
         MethodInfo arrayListConstructor = arrayList.findConstructor(collection);
 
         Variable v = new LocalVariableReference(new LocalVariable("v", collectionInteger));
-        VariableExpression ve = new VariableExpression(v);
+        VariableExpression ve = new VariableExpression(collection.identifier, v);
 
         // new ArrayList<>(v), with v a local collection variable
         // because no AnnotatedAPI, v is @Dependent
@@ -194,10 +194,10 @@ public class TestLinkingExpression {
 
         ParameterizedType arrayListInteger = new ParameterizedType(arrayList, List.of(integer()));
         Variable v = new LocalVariableReference(new LocalVariable("v", arrayListInteger));
-        VariableExpression ve = new VariableExpression(v);
+        VariableExpression ve = new VariableExpression(arrayList.identifier, v);
 
         Variable i = new LocalVariableReference(new LocalVariable("i", integer()));
-        VariableExpression vi = new VariableExpression(i);
+        VariableExpression vi = new VariableExpression(arrayList.identifier, i);
 
         // v.add(0, i)
         MethodCall add12 = new MethodCall(Identifier.constant("add12"), ve, addIndex, List.of(newInt(0), vi));
@@ -218,13 +218,13 @@ public class TestLinkingExpression {
         ParameterizedType collectionInteger = new ParameterizedType(collection, List.of(integer()));
 
         Variable v = new LocalVariableReference(new LocalVariable("v", collectionInteger));
-        VariableExpression ve = new VariableExpression(v);
+        VariableExpression ve = new VariableExpression(collections.identifier, v);
 
         Variable i = new LocalVariableReference(new LocalVariable("i", integer()));
-        VariableExpression vi = new VariableExpression(i);
+        VariableExpression vi = new VariableExpression(collections.identifier, i);
 
         Variable j = new LocalVariableReference(new LocalVariable("j", integer()));
-        VariableExpression vj = new VariableExpression(j);
+        VariableExpression vj = new VariableExpression(collections.identifier, j);
 
         // Collections.addAll(v, i, j)
         List<Expression> parameterValues = List.of(ve, vi, vj);
@@ -250,13 +250,13 @@ public class TestLinkingExpression {
         ParameterizedType collectionT = new ParameterizedType(collection, List.of(unbound));
 
         Variable v = new LocalVariableReference(new LocalVariable("v", collectionT));
-        VariableExpression vv = new VariableExpression(v);
+        VariableExpression vv = new VariableExpression(collections.identifier, v);
 
         Variable i = new LocalVariableReference(new LocalVariable("i", collectionT));
-        VariableExpression vi = new VariableExpression(i);
+        VariableExpression vi = new VariableExpression(collections.identifier, i);
 
         Variable j = new LocalVariableReference(new LocalVariable("j", collectionT));
-        VariableExpression vj = new VariableExpression(j);
+        VariableExpression vj = new VariableExpression(collections.identifier, j);
 
         // Collections.addAll(v, i, j), with a link from param 0 -> param 1
         List<Expression> parameterValues = List.of(vv, vi, vj);

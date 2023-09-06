@@ -40,7 +40,7 @@ public class NotNull_4<T> {
      */
     @ImmutableContainer("false")
     public boolean isStrictPrefix(String[] prefix) {
-        TrieNode<T> node = goTo(prefix, prefix.length);
+        TrieNode<T> node = goTo(prefix, prefix.length); // potential null pointer warning
         return node != null && node.data == null;
     }
 

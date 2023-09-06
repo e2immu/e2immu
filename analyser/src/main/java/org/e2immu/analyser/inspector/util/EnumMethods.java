@@ -85,7 +85,8 @@ public class EnumMethods {
 
         var arrayInitializer = new ArrayInitializer(Identifier.generate("enum array init"), typeContext,
                 enumFields.stream().map(fieldInfo -> (Expression)
-                                new VariableExpression(new FieldReference(typeContext, fieldInfo)))
+                                new VariableExpression(fieldInfo.getIdentifier(),
+                                        new FieldReference(typeContext, fieldInfo)))
                         .toList(),
                 enumType.asParameterizedType(typeContext));
         var valuesReturnType = new ParameterizedType(enumType, 1);
@@ -254,14 +255,14 @@ public class EnumMethods {
                                       ParameterInfo v) {
 
         var vName = new MethodCall(Identifier.generate("enum equals param"), false,
-                new VariableExpression(v), nameMethod.getMethodInfo(), nameMethod.getReturnType(), List.of());
+                new VariableExpression(v.identifier, v), nameMethod.getMethodInfo(), nameMethod.getReturnType(), List.of());
 
         var object = typeContext.getFullyQualified(Object.class);
         var equals = object.findUniqueMethod(typeContext, "equals", 1);
         var equalsInspection = typeContext.getMethodInspection(equals);
         var callEquals = new MethodCall(Identifier.generate("enum equals call"), false,
                 vName, equals, equalsInspection.getReturnType(),
-                List.of(new VariableExpression(nameParameter)));
+                List.of(new VariableExpression(nameParameter.identifier, nameParameter)));
 
         return new Block.BlockBuilder(Identifier.generate("enum equals block"))
                 .addStatement(new ReturnStatement(Identifier.generate("enum equals return"), callEquals)).build();

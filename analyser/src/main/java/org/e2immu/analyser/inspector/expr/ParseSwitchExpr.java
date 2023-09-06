@@ -170,7 +170,7 @@ public class ParseSwitchExpr {
                                              ParameterInfo applyParameter) {
         Block.BlockBuilder builder = new Block.BlockBuilder(Identifier.from(switchExpr));
         InspectionProvider ip = newExpressionContext.typeContext();
-        VariableExpression applyParameterExpression = new VariableExpression(applyParameter);
+        VariableExpression applyParameterExpression = new VariableExpression(selector.getIdentifier(), applyParameter);
         TranslationMap translationMap = new TranslationMapImpl.Builder()
                 .put(selector, applyParameterExpression)
                 .setYieldToReturn(true)

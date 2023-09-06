@@ -154,7 +154,7 @@ public class TestTypeInfoStream {
         Expression creationExpression = ConstructorCall.objectCreation(newId(), hashMapConstructor,
                 hashMapParameterizedType, Diamond.NO, List.of());
         ParameterInspectionImpl.Builder p0 = new ParameterInspectionImpl.Builder(newId(), typeT, "value", 0);
-        LocalVariableCreation lvc = new LocalVariableCreation(newId(),
+        LocalVariableCreation lvc = new LocalVariableCreation(newId(), newId(),
                 new LocalVariableReference(mapLocalVariable, creationExpression));
         LocalVariable lv = new LocalVariable.Builder()
                 .setOwningType(testTypeInfo)
@@ -172,8 +172,8 @@ public class TestTypeInfoStream {
                                 .addStatement(new ExpressionAsStatement(newId(), lvc))
                                 .addStatement(
                                         new ForEachStatement(newId(), null,
-                                                new LocalVariableCreation(Identifier.generate("lvc"), lv),
-                                                new VariableExpression(new LocalVariableReference(mapLocalVariable, creationExpression)),
+                                                new LocalVariableCreation(Identifier.generate("lvc"), newId(), lv),
+                                                new VariableExpression(newId(), new LocalVariableReference(mapLocalVariable, creationExpression)),
                                                 null,
                                                 new Block.BlockBuilder(newId())
                                                         .addStatement(new IfElseStatement(newId(),
@@ -273,8 +273,8 @@ public class TestTypeInfoStream {
                         new Block.BlockBuilder(newId()).addStatement(
                                 new ReturnStatement(newId(),
                                         new BinaryOperator(newId(), primitives,
-                                                new VariableExpression(x), primitives.plusOperatorInt(),
-                                                new VariableExpression(y), Precedence.ADDITIVE))).build())
+                                                new VariableExpression(newId(), x), primitives.plusOperatorInt(),
+                                                new VariableExpression(newId(), y), Precedence.ADDITIVE))).build())
                 .build(IP).getMethodInfo();
         intSum.methodResolution.set(new MethodResolution.Builder().build());
         TypeInspection testTypeInspection = new TypeInspectionImpl.Builder(testTypeInfo, BY_HAND)

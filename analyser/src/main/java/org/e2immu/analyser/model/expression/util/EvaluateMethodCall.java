@@ -106,7 +106,8 @@ public class EvaluateMethodCall {
         if (methodInfo.typeInfo.typeInspection.get().isFunctionalInterface() &&
                 (inlineValue = objectValue.asInstanceOf(InlinedMethod.class)) != null &&
                 inlineValue.canBeApplied(context)) {
-            Expression scopeOfObjectValue = new VariableExpression(context.evaluationContext().currentThis());
+            Expression scopeOfObjectValue = new VariableExpression(inlineValue.identifier,
+                    context.evaluationContext().currentThis());
             LinkedVariables linkedVariables = methodCall.linkedVariables(context);
             TranslationMap translationMap = inlineValue.translationMap(context,
                     parameters, scopeOfObjectValue, context.getCurrentType(), identifier, linkedVariables);
@@ -463,13 +464,15 @@ public class EvaluateMethodCall {
                     CompanionMethodName cmn = e.getKey();
                     MethodInfo oldAspectMethod = analyserContext
                             .getTypeAnalysis(objectValue.returnType().typeInfo).getAspects().get(cmn.aspect());
+                    This thisVar = new This(analyserContext, oldAspectMethod.typeInfo);
                     Expression oldValue = new MethodCall(identifier, false,
-                            new VariableExpression(new This(analyserContext, oldAspectMethod.typeInfo)),
+                            new VariableExpression(oldAspectMethod.identifier, thisVar),
                             oldAspectMethod, oldAspectMethod.returnType(), List.of(), modificationTimes);
                     MethodInfo newAspectMethod = analyserContext
                             .getTypeAnalysis(methodInfo.typeInfo).getAspects().get(cmn.aspect());
+                    This newThisVar = new This(analyserContext, newAspectMethod.typeInfo);
                     Expression newValue = new MethodCall(identifier, false,
-                            new VariableExpression(new This(analyserContext, newAspectMethod.typeInfo)),
+                            new VariableExpression(newAspectMethod.identifier, newThisVar),
                             newAspectMethod, newAspectMethod.returnType(), List.of(), modificationTimes);
                     translationMap.put(oldValue, newValue);
                     CompanionAnalysis companionAnalysis = e.getValue();
@@ -527,7 +530,7 @@ public class EvaluateMethodCall {
         StringConstant stringValue;
         if ("java.lang.String.length()".equals(methodInfo.fullyQualifiedName()) &&
                 (stringValue = objectValue.asInstanceOf(StringConstant.class)) != null) {
-            return new IntConstant(primitives, stringValue.constant().length());
+            return new IntConstant(primitives, objectValue.getIdentifier(), stringValue.constant().length());
         }
         ConstantExpression<?> ce;
         if ("equals".equals(methodInfo.name) && params.size() == 1 &&

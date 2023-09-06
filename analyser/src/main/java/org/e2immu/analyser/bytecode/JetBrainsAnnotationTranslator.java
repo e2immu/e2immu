@@ -78,7 +78,8 @@ public class JetBrainsAnnotationTranslator {
             return new ArrayInitializer(id, InspectionProvider.DEFAULT, Arrays.stream(splitComma).map(this::convert).toList());
         }
         try {
-            return new IntConstant(primitives, Integer.parseInt(string));
+            Identifier id = Identifier.generate("asm convert");
+            return new IntConstant(primitives, id, Integer.parseInt(string));
         } catch (NumberFormatException nfe) {
             // that's ok
         }

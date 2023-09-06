@@ -115,7 +115,8 @@ public final class Instance extends BaseExpression implements Expression {
                                                 EvaluationResult context,
                                                 Expression array,
                                                 Variable variable) {
-        DV notNull = context.evaluationContext().getProperty(array, Property.NOT_NULL_EXPRESSION, true, false);
+        DV notNull = context.evaluationContext().getProperty(array, Property.NOT_NULL_EXPRESSION,
+                true, false);
         ParameterizedType baseType = array.returnType().copyWithOneFewerArrays();
         DV notNullOfElement;
         if (baseType.isPrimitiveExcludingVoid()) {
@@ -130,7 +131,7 @@ public final class Instance extends BaseExpression implements Expression {
         CausesOfDelay delays = properties.delays();
         if (delays.isDelayed()) {
             return DelayedExpression.forArrayAccessValue(identifier, variable.parameterizedType(),
-                    new VariableExpression(variable), delays);
+                    new VariableExpression(identifier, variable), delays);
         }
         return new Instance(identifier, variable.parameterizedType(), properties);
     }
@@ -323,15 +324,6 @@ public final class Instance extends BaseExpression implements Expression {
     @Override
     public EvaluationResult evaluate(EvaluationResult context, ForwardEvaluationInfo forwardEvaluationInfo) {
         return new EvaluationResult.Builder(context).setExpression(this).build();
-    }
-
-    @Override
-    public Identifier getIdentifier() {
-        return identifier;
-    }
-
-    public Identifier identifier() {
-        return identifier;
     }
 
     public ParameterizedType parameterizedType() {

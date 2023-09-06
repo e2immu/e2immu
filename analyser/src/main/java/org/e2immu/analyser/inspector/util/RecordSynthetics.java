@@ -76,8 +76,9 @@ public class RecordSynthetics {
 
     // return this.field;
     private static Block getterCodeBlock(ExpressionContext expressionContext, FieldInfo fieldInfo) {
+        FieldReference fieldReference = new FieldReference(expressionContext.typeContext(), fieldInfo);
         var returnStatement = new ReturnStatement(Identifier.generate("accessor return"),
-                new VariableExpression(new FieldReference(expressionContext.typeContext(), fieldInfo)));
+                new VariableExpression(fieldInfo.getIdentifier(), fieldReference));
         return new Block.BlockBuilder(Identifier.generate("accessor block")).addStatement(returnStatement).build();
     }
 }

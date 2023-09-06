@@ -33,7 +33,7 @@ public class ShiftLeft extends BinaryOperator {
     public Expression translate(InspectionProvider inspectionProvider, TranslationMap translationMap) {
         Expression tl = lhs.translate(inspectionProvider, translationMap);
         Expression tr = rhs.translate(inspectionProvider, translationMap);
-        if(tl == lhs && tr == rhs) return this;
+        if (tl == lhs && tr == rhs) return this;
         return new ShiftLeft(identifier, primitives, tl, tr);
     }
 
@@ -43,7 +43,7 @@ public class ShiftLeft extends BinaryOperator {
 
         Primitives primitives = evaluationContext.getPrimitives();
         if (l instanceof IntConstant li && r instanceof IntConstant ri)
-            return new IntConstant(primitives, li.constant() << ri.constant());
+            return new IntConstant(primitives, identifier, li.constant() << ri.constant());
 
         // any unknown lingering
         if (l.isEmpty() || r.isEmpty()) throw new UnsupportedOperationException();

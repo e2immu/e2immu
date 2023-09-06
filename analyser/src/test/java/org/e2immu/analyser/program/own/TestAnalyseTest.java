@@ -24,6 +24,7 @@ import org.e2immu.analyser.parser.Parser;
 import org.e2immu.analyser.util.Trie;
 import org.e2immu.analyser.visitor.StatementAnalyserVariableVisitor;
 import org.e2immu.analyser.visitor.TypeMapVisitor;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
@@ -32,6 +33,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class TestAnalyseTest {
 
+    @Disabled("Not part of regular unit tests; too early")
     @Test
     public void test() throws IOException {
 

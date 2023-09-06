@@ -556,7 +556,7 @@ public class InlinedMethod extends BaseExpression implements Expression {
                                        Identifier identifier,
                                        ForwardEvaluationInfo forwardEvaluationInfo) {
             if (variable instanceof ParameterInfo pi && pi.owner == methodInfo) {
-                return new VariableExpression(variable);
+                return new VariableExpression(pi.identifier, pi);
             }
             return evaluationContext.currentValue(variable, scopeValue, indexValue, identifier, forwardEvaluationInfo);
         }

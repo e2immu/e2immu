@@ -28,7 +28,7 @@ public class VariableExpressionFixedForward extends VariableExpression {
     private final ForwardEvaluationInfo forwardEvaluationInfo;
 
     public VariableExpressionFixedForward(ParameterInfo parameterInfo, ForwardEvaluationInfo forwardEvaluationInfo) {
-        super(parameterInfo);
+        super(parameterInfo.identifier, parameterInfo);
         this.forwardEvaluationInfo = forwardEvaluationInfo;
     }
 

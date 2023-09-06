@@ -39,8 +39,24 @@ public final class IntConstant extends BaseExpression implements ConstantExpress
         this.primitives = primitives;
     }
 
+    // only to be used in tests
     public IntConstant(Primitives primitives, int constant) {
         this(primitives, Identifier.constant(constant), constant);
+    }
+
+    /*
+    -1, 0 and 1 are allowed to have a constant identifier
+     */
+    public static IntConstant one(Primitives primitives) {
+        return new IntConstant(primitives, Identifier.constant(-1), 1);
+    }
+
+    public static IntConstant minusOne(Primitives primitives) {
+        return new IntConstant(primitives, Identifier.constant(0), -1);
+    }
+
+    public static IntConstant zero(Primitives primitives) {
+        return new IntConstant(primitives, Identifier.constant(1), 0);
     }
 
     public static Expression intOrDouble(Primitives primitives, Identifier identifier, double b) {

@@ -73,7 +73,8 @@ public class GreaterThanZero extends BaseExpression implements Expression {
 
     public Expression negate(EvaluationResult context) {
         Expression negated = Negation.negate(context, expression);
-        return GreaterThanZero.greater(identifier, context, negated, new IntConstant(primitives, 0), !allowEquals);
+        IntConstant zero = IntConstant.zero(primitives);
+        return GreaterThanZero.greater(identifier, context, negated, zero, !allowEquals);
     }
 
     /**
@@ -169,11 +170,11 @@ public class GreaterThanZero extends BaseExpression implements Expression {
                 && terms[1].returnType().isMathematicallyInteger()) {
             return twoTerms(identifier, context, allowEquals, primitives, terms, n0);
         }
-        if (terms.length == 2 && terms[0].returnType().isMathematicallyInteger() && terms[1].returnType().isMathematicallyInteger()) {
+        if (terms.length == 2 && terms[0].returnType().isMathematicallyInteger()
+                && terms[1].returnType().isMathematicallyInteger()) {
             if (!allowEquals) {
                 // +-i +-j > 0
-                expression = Sum.sum(context, new IntConstant(primitives, -1),
-                        Sum.sum(context, terms[0], terms[1]));
+                expression = Sum.sum(context, IntConstant.minusOne(primitives), Sum.sum(context, terms[0], terms[1]));
                 allowEquals = true;
             }
         }
@@ -184,7 +185,8 @@ public class GreaterThanZero extends BaseExpression implements Expression {
 
             if (n0.doubleValue() >= 0 && !allowEquals) {
                 // special cases, i>=j == i-j >=0, 1+i-j>0
-                IntConstant minusOne = new IntConstant(primitives, -1 + (int) n0.doubleValue());
+                IntConstant minusOne = new IntConstant(primitives, terms[0].getIdentifier(),
+                        -1 + (int) n0.doubleValue());
                 expression = Sum.sum(context, minusOne, Sum.sum(context, terms[1], terms[2]));
                 allowEquals = true;
             }
@@ -193,19 +195,26 @@ public class GreaterThanZero extends BaseExpression implements Expression {
         return new GreaterThanZero(identifier, primitives, expression, allowEquals);
     }
 
-    private static GreaterThanZero twoTerms(Identifier identifier, EvaluationResult context, boolean allowEquals, Primitives primitives, Expression[] terms, Numeric n0) {
+    private static GreaterThanZero twoTerms(Identifier identifier,
+                                            EvaluationResult context,
+                                            boolean allowEquals,
+                                            Primitives primitives,
+                                            Expression[] terms,
+                                            Numeric n0) {
         // basic int comparisons, take care that we use >= and <
         boolean n0Negated = n0.doubleValue() < 0;
         boolean n1Negated = terms[1] instanceof Negation;
 
         Expression sum;
         boolean newAllowEquals;
+        Identifier idOfN0 = terms[0].getIdentifier();
         if (n0Negated) {
             if (!n1Negated) {
                 newAllowEquals = true;
                 if (!allowEquals) {
                     // -3 + x > 0 == x>3 == x>=4 == -4 + x >= 0
-                    IntConstant minusOne = new IntConstant(primitives, -1 + (int) n0.doubleValue());
+                    IntConstant minusOne = new IntConstant(primitives, idOfN0,
+                            -1 + (int) n0.doubleValue());
                     sum = Sum.sum(context, minusOne, terms[1]);
                 } else {
                     // -3 + x >= 0 == x >= 3 OK
@@ -218,7 +227,8 @@ public class GreaterThanZero extends BaseExpression implements Expression {
                     sum = Sum.sum(context, terms[0], terms[1]);
                 } else {
                     // -3 - x >= 0 == x<=-3 == x<-2 == -2 - x > 0
-                    IntConstant plusOne = new IntConstant(primitives, 1 + (int) n0.doubleValue());
+                    IntConstant plusOne = new IntConstant(primitives, idOfN0,
+                            1 + (int) n0.doubleValue());
                     sum = Sum.sum(context, plusOne, terms[1]);
                 }
             }
@@ -227,7 +237,8 @@ public class GreaterThanZero extends BaseExpression implements Expression {
                 newAllowEquals = true;
                 if (!allowEquals) {
                     // 3 + x > 0 == x>-3 == x>=-2 == 2 + x >= 0
-                    IntConstant minusOne = new IntConstant(primitives, -1 + (int) n0.doubleValue());
+                    IntConstant minusOne = new IntConstant(primitives, idOfN0,
+                            -1 + (int) n0.doubleValue());
                     sum = Sum.sum(context, minusOne, terms[1]);
                 } else {
                     // 3 + x >= 0 == x>=-3 OK
@@ -240,7 +251,8 @@ public class GreaterThanZero extends BaseExpression implements Expression {
                     sum = Sum.sum(context, terms[0], terms[1]);
                 } else {
                     // 3 - x >= 0 == x<=3 == x<4 == 4 - x > 0
-                    IntConstant plusOne = new IntConstant(primitives, 1 + (int) n0.doubleValue());
+                    IntConstant plusOne = new IntConstant(primitives, idOfN0,
+                            1 + (int) n0.doubleValue());
                     sum = Sum.sum(context, plusOne, terms[1]);
                 }
             }
@@ -261,7 +273,7 @@ public class GreaterThanZero extends BaseExpression implements Expression {
                 newAllowEquals = false;
                 if (allowEquals) {
                     // -x >= 0 == x <= 0 == x < 1 == 1 - x > 0
-                    term = Sum.sum(context, new IntConstant(primitives, 1), terms[0]);
+                    term = Sum.sum(context, IntConstant.one(primitives), terms[0]);
                 } else {
                     // -x > 0 == x < 0 OK
                     term = terms[0];
@@ -273,7 +285,7 @@ public class GreaterThanZero extends BaseExpression implements Expression {
                     term = terms[0];
                 } else {
                     // x > 0 == x >= 1 == -1+x >= 0
-                    term = Sum.sum(context, new IntConstant(primitives, -1), terms[0]);
+                    term = Sum.sum(context, IntConstant.minusOne(primitives), terms[0]);
                 }
             }
         } else {

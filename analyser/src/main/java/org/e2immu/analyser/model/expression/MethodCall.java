@@ -669,7 +669,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
                     if (v instanceof ParameterInfo piLambda && piLambda.owner != inlinedMethod.methodInfo()) {
                         DV l = srv.isDelayed() ? srv.causesOfDelay() : level;
                         linksBetweenParametersVarArgs(builder, targetIndex, targetIsVarArgs, l,
-                                new VariableExpression(v),
+                                new VariableExpression(piLambda.identifier, v),
                                 parameterValues, linkedVariables);
                     }
                 }
@@ -688,7 +688,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
                     if (v instanceof ParameterInfo piLambda && piLambda.owner != lambda.methodInfo) {
                         DV l = srv.isDelayed() ? srv.causesOfDelay() : level;
                         linksBetweenParametersVarArgs(builder, targetIndex, targetIsVarArgs, l,
-                                new VariableExpression(v), parameterValues, linkedVariables);
+                                new VariableExpression(piLambda.identifier, v), parameterValues, linkedVariables);
                     }
                 }
             }

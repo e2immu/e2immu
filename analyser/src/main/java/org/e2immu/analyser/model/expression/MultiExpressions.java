@@ -49,7 +49,9 @@ public class MultiExpressions extends BaseExpression implements Expression {
 
     public static Expression from(Identifier identifier, List<Variable> variables) {
         if (variables.isEmpty()) return EmptyExpression.EMPTY_EXPRESSION;
-        MultiExpression multi = MultiExpression.create(variables.stream().map(v -> (Expression) new VariableExpression(v)).toList());
+        MultiExpression multi = MultiExpression.create(variables.stream()
+                .map(v -> (Expression) new VariableExpression(identifier, v))
+                .toList());
         return new MultiExpressions(identifier, InspectionProvider.DEFAULT, multi);
     }
 

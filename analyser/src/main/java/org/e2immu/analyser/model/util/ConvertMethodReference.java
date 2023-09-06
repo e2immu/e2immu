@@ -110,7 +110,7 @@ public class ConvertMethodReference {
 
 
     private static Expression methodCallNoParameters(ParameterInfo firstParameter, MethodInspection concreteMethod) {
-        Expression newScope = new VariableExpression(firstParameter);
+        Expression newScope = new VariableExpression(firstParameter.identifier, firstParameter);
         return new MethodCall(Identifier.generate("method call no parameters"), false, newScope, concreteMethod.getMethodInfo(),
                 concreteMethod.getReturnType(), List.of());
     }
@@ -121,10 +121,11 @@ public class ConvertMethodReference {
     private static Expression methodCallCopyAllParameters(Expression scope,
                                                           MethodInspection concreteMethod,
                                                           MethodInspection interfaceMethod) {
-        List<Expression> parameterExpressions = interfaceMethod
-                .getParameters().stream().map(VariableExpression::new).collect(Collectors.toList());
-        return new MethodCall(Identifier.generate("method call copied parameters"), false, scope, concreteMethod.getMethodInfo(),
-                concreteMethod.getReturnType(), parameterExpressions);
+        List<Expression> parameterExpressions = interfaceMethod.getParameters().stream()
+                .map(parameterInfo -> new VariableExpression(parameterInfo.identifier, parameterInfo))
+                .collect(Collectors.toList());
+        return new MethodCall(Identifier.generate("method call copied parameters"), false, scope,
+                concreteMethod.getMethodInfo(), concreteMethod.getReturnType(), parameterExpressions);
     }
 
 }

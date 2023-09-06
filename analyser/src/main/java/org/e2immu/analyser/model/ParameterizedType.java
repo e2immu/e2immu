@@ -676,10 +676,6 @@ public class ParameterizedType {
 
         TypeInfo bestType = bestTypeInfo(inspectionProvider);
         TypeInfo otherBestType = other.bestTypeInfo(inspectionProvider);
-        if (bestType == null || otherBestType == null) {
-            // unbound type parameter
-            return inspectionProvider.getPrimitives().objectParameterizedType(); // no common type
-        }
         boolean isPrimitive = isPrimitiveExcludingVoid();
         boolean otherIsPrimitive = other.isPrimitiveExcludingVoid();
         if (isPrimitive && otherIsPrimitive) {
@@ -687,6 +683,7 @@ public class ParameterizedType {
         }
         boolean isBoxed = isBoxedExcludingVoid();
         boolean otherIsBoxed = other.isBoxedExcludingVoid();
+
         if ((isPrimitive || isBoxed) && other == ParameterizedType.NULL_CONSTANT) {
             if (isBoxed) return this;
             return inspectionProvider.getPrimitives().boxed(bestType).asParameterizedType(inspectionProvider);
@@ -707,8 +704,9 @@ public class ParameterizedType {
         if (other == ParameterizedType.NULL_CONSTANT) return this;
         if (this == ParameterizedType.NULL_CONSTANT) return other;
 
-        if (bestType == null || otherBestType == null)
+        if (bestType == null || otherBestType == null) {
             return inspectionProvider.getPrimitives().objectParameterizedType(); // no common type
+        }
         if (isAssignableFrom(inspectionProvider, other)) {
             return this;
         }

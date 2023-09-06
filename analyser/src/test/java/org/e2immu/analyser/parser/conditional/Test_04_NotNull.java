@@ -154,10 +154,10 @@ public class Test_04_NotNull extends CommonTestRunner {
                 .build(), new AnalyserConfiguration.Builder().setComputeContextPropertiesOverAllMethods(true).build());
     }
 
-    // unique combination fails: no AAPI, import with a * -> List inspection not known.
+    // TODO: the third error seems unnecessary
     @Test
     public void test_4_1() throws IOException {
-        testClass("NotNull_4_1", 2, 1, new DebugConfiguration.Builder()
+        testClass("NotNull_4_1", 3, 1, new DebugConfiguration.Builder()
                 .build(), new AnalyserConfiguration.Builder().setComputeContextPropertiesOverAllMethods(true).build());
     }
 

@@ -435,13 +435,13 @@ public class Assignment extends BaseExpression implements Expression {
 
     // public because used in JFocus
     public E2 handleBinaryOperator(EvaluationResult context,
-                                    ForwardEvaluationInfo forwardEvaluationInfo,
-                                    Variable newVariableTarget,
-                                    EvaluationResult.Builder builder) {
+                                   ForwardEvaluationInfo forwardEvaluationInfo,
+                                   Variable newVariableTarget,
+                                   EvaluationResult.Builder builder) {
 
         Expression resultOfExpression;
         BinaryOperator operation = new BinaryOperator(identifier,
-                primitives, new VariableExpression(newVariableTarget), binaryOperator, value,
+                primitives, new VariableExpression(identifier, newVariableTarget), binaryOperator, value,
                 BinaryOperator.precedence(context.getPrimitives(), binaryOperator));
         EvaluationResult operationResult = operation.evaluate(context, forwardEvaluationInfo);
         builder.compose(operationResult);
@@ -451,7 +451,7 @@ public class Assignment extends BaseExpression implements Expression {
             resultOfExpression = operationResult.value();
         } else {
             // i++
-            Expression post = new VariableExpression(newVariableTarget);
+            Expression post = new VariableExpression(identifier, newVariableTarget);
             EvaluationResult variableOnly = post.evaluate(context, forwardEvaluationInfo);
             resultOfExpression = variableOnly.value();
             // not composing, any error will have been raised already

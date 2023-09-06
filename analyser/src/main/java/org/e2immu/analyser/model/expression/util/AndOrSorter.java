@@ -19,7 +19,8 @@ import java.util.stream.Collectors;
  */
 
 public class AndOrSorter {
-    private AndOrSorter() {}
+    private AndOrSorter() {
+    }
 
     public static ArrayList<Expression> sort(EvaluationResult context, List<Expression> expressions) {
         TreeMap<Expression, List<Expression>> expressionsByObject = new TreeMap<>();
@@ -83,7 +84,7 @@ public class AndOrSorter {
         }
         List<Variable> vars = base.variables(Element.DescendMode.NO);
         if (vars.size() == 1) {
-            return new VariableExpression(vars.get(0));
+            return new VariableExpression(expression.getIdentifier(), vars.get(0));
         }
         return expression;
     }

@@ -53,21 +53,37 @@ public class TestCommonType {
     }
 
     @Test
-    public void testPrimitivesAndNull() {
-        assertEquals(primitives.integerTypeInfo().asParameterizedType(typeContext),
-                primitives.intParameterizedType().commonType(typeContext, ParameterizedType.NULL_CONSTANT));
-        assertEquals(primitives.integerTypeInfo().asParameterizedType(typeContext),
-                ParameterizedType.NULL_CONSTANT.commonType(typeContext, primitives.intParameterizedType()));
-        assertEquals(primitives.boxedBooleanTypeInfo(),
-                primitives.booleanParameterizedType().commonType(typeContext, ParameterizedType.NULL_CONSTANT).bestTypeInfo());
-        assertEquals(primitives.boxedBooleanTypeInfo(),
-                ParameterizedType.NULL_CONSTANT.commonType(typeContext, primitives.booleanParameterizedType()).bestTypeInfo());
+    public void testPrimitivesAndNull1() {
+        ParameterizedType common1 = primitives.intParameterizedType().commonType(typeContext, ParameterizedType.NULL_CONSTANT);
+        assertEquals(primitives.integerTypeInfo().asParameterizedType(typeContext), common1);
     }
 
     @Test
-    public void testStringAndNull() {
+    public void testPrimitivesAndNull2() {
+        ParameterizedType common2 = ParameterizedType.NULL_CONSTANT.commonType(typeContext, primitives.intParameterizedType());
+        assertEquals(primitives.integerTypeInfo().asParameterizedType(typeContext), common2);
+    }
+
+    @Test
+    public void testPrimitivesAndNull3() {
+        ParameterizedType common3 = primitives.booleanParameterizedType().commonType(typeContext, ParameterizedType.NULL_CONSTANT);
+        assertEquals(primitives.boxedBooleanTypeInfo(), common3.bestTypeInfo());
+    }
+
+    @Test
+    public void testPrimitivesAndNull4() {
+        ParameterizedType common4 = ParameterizedType.NULL_CONSTANT.commonType(typeContext, primitives.booleanParameterizedType());
+        assertEquals(primitives.boxedBooleanTypeInfo(), common4.bestTypeInfo());
+    }
+
+    @Test
+    public void testStringAndNull1() {
         assertEquals(primitives.stringParameterizedType(),
                 primitives.stringParameterizedType().commonType(typeContext, ParameterizedType.NULL_CONSTANT));
+    }
+
+    @Test
+    public void testStringAndNull2() {
         assertEquals(primitives.stringParameterizedType(),
                 ParameterizedType.NULL_CONSTANT.commonType(typeContext, primitives.stringParameterizedType()));
     }

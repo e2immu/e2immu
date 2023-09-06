@@ -96,43 +96,47 @@ public abstract class CommonAbstractValue {
         vb = createVariable("b");
         vc = createVariable("c");
         vd = createVariable("d");
-        a = new VariableExpression(va);
-        b = new VariableExpression(vb);
-        c = new VariableExpression(vc);
-        d = new VariableExpression(vd);
+        a = newVariableExpression(va);
+        b = newVariableExpression(vb);
+        c = newVariableExpression(vc);
+        d = newVariableExpression(vd);
         van = createVariable("an");
         vbn = createVariable("bn");
-        an = new VariableExpression(van);
-        bn = new VariableExpression(vbn);
+        an = newVariableExpression(van);
+        bn = newVariableExpression(vbn);
 
         vin = createVariable("in"); // nullable
-        vine = new VariableExpression(vin);
+        vine = newVariableExpression(vin);
 
         vi = createVariable("i");
         vj = createVariable("j");
-        i = new VariableExpression(vi);
-        j = new VariableExpression(vj);
+        i = newVariableExpression(vi);
+        j = newVariableExpression(vj);
 
         vl = createVariable("l");
         vm = createVariable("m");
-        l = new VariableExpression(vl);
-        m = new VariableExpression(vm);
+        l = newVariableExpression(vl);
+        m = newVariableExpression(vm);
 
         vs = createVariable("s"); // nullable
-        s = new VariableExpression(vs);
-        s1 = new VariableExpression(createVariable("s1"));
-        s2 = new VariableExpression(createVariable("s2"));
-        s3 = new VariableExpression(createVariable("s3"));
-        s4 = new VariableExpression(createVariable("s4"));
-        s5 = new VariableExpression(createVariable("s5"));
-        s6 = new VariableExpression(createVariable("s6"));
+        s = newVariableExpression(vs);
+        s1 = newVariableExpression(createVariable("s1"));
+        s2 = newVariableExpression(createVariable("s2"));
+        s3 = newVariableExpression(createVariable("s3"));
+        s4 = newVariableExpression(createVariable("s4"));
+        s5 = newVariableExpression(createVariable("s5"));
+        s6 = newVariableExpression(createVariable("s6"));
 
         vp = createParameter(); // nullable
-        p = new VariableExpression(vp);
+        p = newVariableExpression(vp);
         delayedP = DelayedVariableExpression.forParameter((ParameterInfo) vp,
                 DelayFactory.createDelay(new SimpleCause(Location.NOT_YET_SET, CauseOfDelay.Cause.NOT_INVOLVED)));
         vq = createVariable("q"); // not intercepted
-        q = new VariableExpression(vq);
+        q = newVariableExpression(vq);
+    }
+
+    static VariableExpression newVariableExpression(Variable vd) {
+        return new VariableExpression(Identifier.CONSTANT, vd);
     }
 
     static Variable createVariable(String name) {

@@ -244,10 +244,12 @@ record SAHelper(StatementAnalysis statementAnalysis) {
                     Expression scopeValue = Objects.requireNonNullElseGet(e.getValue().value(),
                             () -> DelayedVariableExpression.forVariable(e.getKey(), evaluationResult2.statementTime(), evaluationResult2.causesOfDelay()));
                     LocalVariableReference scopeVariable = new LocalVariableReference(lv, scopeValue);
-                    Expression scope = new VariableExpression(scopeVariable);
+                    Identifier statementIdentifier = evaluationResult2.evaluationContext()
+                            .getLocation(Stage.EVALUATION).identifier();
+                    Expression scope = new VariableExpression(statementIdentifier, scopeVariable);
 
                     builder.put(pv, scopeVariable);
-                    builder.addVariableExpression(pv, new VariableExpression(scopeVariable));
+                    builder.addVariableExpression(pv, scope);
 
                     // then, other field references
                     for (Map.Entry<Variable, EvaluationResult.ChangeData> e2 : entriesOfFieldRefs) {

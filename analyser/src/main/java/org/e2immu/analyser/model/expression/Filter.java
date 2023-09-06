@@ -245,7 +245,7 @@ public class Filter {
                 && ve.variable() instanceof FieldReference fr
                 && acceptScope(fr.scope)) {
             if (acceptAndRemapLocalCopy) {
-                builder.put(ve, new VariableExpression(ve.variable()));
+                builder.put(ve, new VariableExpression(ve.identifier, ve.variable()));
             }
             return new FieldReferenceAndTranslationMap(fr, builder.build());
         }
@@ -279,7 +279,7 @@ public class Filter {
                     acceptScope(fieldReference.scope)) {
                 if (acceptAndRemapLocalCopy && variableValue instanceof VariableExpression ve) {
                     TranslationMap tm = new TranslationMapImpl.Builder()
-                            .put(v, new VariableExpression(ve.variable())).build();
+                            .put(v, new VariableExpression(ve.identifier, ve.variable())).build();
                     return new FieldReferenceAndTranslationMap(fieldReference, tm);
                 }
                 return new FieldReferenceAndTranslationMap(fieldReference, null);

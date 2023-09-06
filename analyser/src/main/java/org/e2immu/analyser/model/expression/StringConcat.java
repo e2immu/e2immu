@@ -81,7 +81,7 @@ public class StringConcat extends BinaryOperator {
     public Expression removeAllReturnValueParts(Primitives primitives) {
         Expression l = lhs.removeAllReturnValueParts(primitives);
         Expression r = rhs.removeAllReturnValueParts(primitives);
-        if (l == null && r == null) return new IntConstant(primitives, 0);
+        if (l == null && r == null) return IntConstant.zero(primitives);
         if (l == null) return r;
         if (r == null) return l;
         return new StringConcat(identifier, primitives, l, r);

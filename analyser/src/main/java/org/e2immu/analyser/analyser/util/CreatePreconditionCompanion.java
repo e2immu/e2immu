@@ -83,8 +83,9 @@ public record CreatePreconditionCompanion(InspectionProvider inspectionProvider,
         if (aspect != null) {
             MethodInfo aspectMethod = analysisProvider.getTypeAnalysis(mainInspection.getMethodInfo().typeInfo).getAspects().get(aspect);
             MethodCall methodCall = aspectCall(aspectMethod);
+            ParameterInfo parameterInfo = newParameters.get(0);
             TranslationMapImpl.Builder builder = new TranslationMapImpl.Builder()
-                    .put(methodCall, new VariableExpression(newParameters.get(0)));
+                    .put(methodCall, new VariableExpression(parameterInfo.identifier, parameterInfo));
             mainInspection.getParameters().forEach(pi -> builder.put(pi, newParameters.get(pi.index + 1)));
             return value.translate(inspectionProvider, builder.build());
         }
@@ -107,7 +108,8 @@ public record CreatePreconditionCompanion(InspectionProvider inspectionProvider,
     }
 
     private MethodCall aspectCall(MethodInfo aspectMethod) {
-        return new MethodCall(Identifier.generate("aspect call"), new VariableExpression(new This(inspectionProvider,
-                aspectMethod.typeInfo)), aspectMethod, List.of());
+        This thisVar = new This(inspectionProvider, aspectMethod.typeInfo);
+        VariableExpression ve = new VariableExpression(aspectMethod.identifier, thisVar);
+        return new MethodCall(Identifier.generate("aspect call"), ve, aspectMethod, List.of());
     }
 }

@@ -18,6 +18,7 @@ import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.analyser.delay.DelayFactory;
 import org.e2immu.analyser.analyser.delay.VariableCause;
 import org.e2immu.analyser.model.Expression;
+import org.e2immu.analyser.model.Identifier;
 import org.e2immu.analyser.model.Location;
 import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.expression.DelayedExpression;
@@ -235,6 +236,9 @@ public class VariableInfoImpl implements VariableInfo {
         }
     }
 
+    public Identifier getIdentifier() {
+        return location.identifier();
+    }
     // ***************************** NON-INTERFACE CODE: SETTERS ************************
 
     // return progress

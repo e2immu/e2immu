@@ -30,7 +30,7 @@ public class BitwiseXor extends BinaryOperator {
     public static Expression bitwiseXor(Identifier identifier, EvaluationResult evaluationContext, Expression l, Expression r) {
         Primitives primitives = evaluationContext.getPrimitives();
         if (l instanceof IntConstant li && r instanceof IntConstant ri)
-            return new IntConstant(primitives, li.constant() ^ ri.constant());
+            return new IntConstant(primitives, identifier, li.constant() ^ ri.constant());
 
         // any unknown lingering
         if (l.isEmpty() || r.isEmpty()) throw new UnsupportedOperationException();

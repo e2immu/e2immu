@@ -501,7 +501,8 @@ public class And extends ExpressionCanBeTooComplex {
                     newConcat.remove(newConcat.size() - 1);
                     GreaterThanZero gt;
                     if (ge.expression().returnType().equals(primitives.intParameterizedType())) {
-                        Expression oneLess = Sum.sum(evaluationContext, ge.expression(), new IntConstant(primitives, -1));
+                        Expression oneLess = Sum.sum(evaluationContext, ge.expression(),
+                                IntConstant.minusOne(primitives));
                         gt = new GreaterThanZero(ge.getIdentifier(), primitives, oneLess, true);
                     } else {
                         gt = new GreaterThanZero(ge.getIdentifier(), primitives, ge.expression(), false);
@@ -568,7 +569,8 @@ public class And extends ExpressionCanBeTooComplex {
                     if (ge1.expression() instanceof Sum sum) {
                         result = sum.isZero(evaluationContext);
                     } else {
-                        result = Equals.equals(evaluationContext, ge1.expression(), new IntConstant(evaluationContext.getPrimitives(), 0));
+                        result = Equals.equals(evaluationContext, ge1.expression(),
+                                IntConstant.zero(evaluationContext.getPrimitives()));
                     }
                     newConcat.set(newConcat.size() - 1, result);
                     return Action.SKIP;

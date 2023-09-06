@@ -130,7 +130,7 @@ public class Equals extends BinaryOperator {
             if (termsOfProducts[0] instanceof Numeric) {
                 return new BooleanConstant(primitives, false);
             }
-            IntConstant zero = new IntConstant(primitives, 0);
+            IntConstant zero = IntConstant.zero(primitives);
             if (termsOfProducts[0] instanceof Negation neg) {
                 return new Equals(identifier, primitives, zero, neg.expression);
             }

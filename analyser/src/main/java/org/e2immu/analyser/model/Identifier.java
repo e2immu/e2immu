@@ -26,6 +26,8 @@ import org.e2immu.annotation.Independent;
 import org.e2immu.annotation.NotNull;
 import org.e2immu.annotation.rare.IgnoreModifications;
 import org.e2immu.annotation.rare.StaticSideEffects;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.List;
 import java.util.Objects;
@@ -42,6 +44,7 @@ We'll allow for multiple types of identifiers, because we also generate code (a 
 never seen by the user); in this situation, it's easier to work with unique integers.
  */
 public interface Identifier extends Comparable<Identifier> {
+    Logger LOGGER = LoggerFactory.getLogger(Identifier.class);
 
     int identifierOrder();
 
@@ -107,6 +110,10 @@ public interface Identifier extends Comparable<Identifier> {
     String compact();
 
 
+    /*
+    Except a few basic expressions (boolean constant, trivial ints, empty), expressions are supposed to have
+    a positional identifier, identifying their origin in the source code. This method verifies this.
+     */
     static boolean isListOfPositionalIdentifiers(Expression expression) {
         AtomicBoolean success = new AtomicBoolean(true);
         expression.visit(e -> {
@@ -118,6 +125,8 @@ public interface Identifier extends Comparable<Identifier> {
             if (e instanceof Expression exp) {
                 if (!acceptIdentifier(exp.getIdentifier())) {
                     success.set(false);
+                    LOGGER.error("Expression {} of {} has identifier of {}", exp, exp.getClass(),
+                            exp.getIdentifier().getClass());
                     return false;
                 }
             }
@@ -178,7 +187,6 @@ public interface Identifier extends Comparable<Identifier> {
         }
     }
 
-    @StaticSideEffects
     @ImmutableContainer
     class IncrementalIdentifier implements Identifier {
         @IgnoreModifications

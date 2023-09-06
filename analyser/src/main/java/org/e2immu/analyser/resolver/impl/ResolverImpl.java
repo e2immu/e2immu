@@ -608,8 +608,10 @@ public class ResolverImpl implements Resolver {
             for (FieldInfo fieldInfo : typeInspection.fields()) {
                 FieldInspection fieldInspection = inspectionProvider.getFieldInspection(fieldInfo);
                 if (!fieldInspection.isStatic()) {
-                    VariableExpression target = new VariableExpression(new FieldReference(inspectionProvider, fieldInfo));
-                    VariableExpression parameter = new VariableExpression(methodInspection.getParameters().get(i++));
+                    FieldReference fieldReference = new FieldReference(inspectionProvider, fieldInfo);
+                    VariableExpression target = new VariableExpression(fieldInfo.getIdentifier(), fieldReference);
+                    ParameterInfo parameterInfo = methodInspection.getParameters().get(i++);
+                    VariableExpression parameter = new VariableExpression(parameterInfo.identifier, parameterInfo);
                     Assignment assignment = new Assignment(inspectionProvider.getPrimitives(), target, parameter);
                     Identifier id = Identifier.generate("synthetic assignment compact constructor");
                     blockBuilder.addStatement(new ExpressionAsStatement(id, assignment, null, true));

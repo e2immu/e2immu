@@ -15,6 +15,7 @@
 package org.e2immu.analyser.analyser;
 
 import org.e2immu.analyser.model.Expression;
+import org.e2immu.analyser.model.Identifier;
 import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.util.StringUtil;
@@ -123,6 +124,11 @@ public interface VariableInfo {
     Properties contextProperties();
 
     int getModificationTimeOrNegative();
+
+    /*
+    Backup method, used to create synthetic constructs with this variable.
+     */
+    Identifier getIdentifier();
 
     record MergeOp(Property property, BinaryOperator<DV> operator, DV initial) {
     }

@@ -123,25 +123,28 @@ public class CompanionAnalyser {
             if (aspectVariables >= 1 && parameterInfo.index == 0) {
                 // this is the aspect as a method call
                 MethodInfo aspectMethod = typeAnalysis.getAspects().get(companionMethodName.aspect());
-                Expression scope = new VariableExpression(new This(analyserContext, aspectMethod.typeInfo));
+                This thisVar = new This(analyserContext, aspectMethod.typeInfo);
+                Expression scope = new VariableExpression(aspectMethod.identifier, thisVar);
                 value = new MethodCall(Identifier.generate("companion call"), scope, aspectMethod, List.of());
             } else if (aspectVariables >= 2 && parameterInfo.index == 1) {
                 // this is the initial aspect value in a Modification$Aspect
                 MethodInfo aspectMethod = typeAnalysis.getAspects().get(companionMethodName.aspect());
                 ParameterizedType returnType = parameterInfo.parameterizedType; // instead of aspectMethod.returnType(); make sure they agree bar nullable
                 // the value that we store is the same as that for the post-variable (see previous if-statement)
-                Expression scope = new VariableExpression(new This(analyserContext, aspectMethod.typeInfo));
+                This thisVar = new This(analyserContext, aspectMethod.typeInfo);
+                Expression scope = new VariableExpression(aspectMethod.identifier, thisVar);
                 MethodCall methodValue = new MethodCall(Identifier.generate("companion call"), scope, aspectMethod, List.of());
-                value = new VariableExpression(new PreAspectVariable(returnType, methodValue));
+                PreAspectVariable pre = new PreAspectVariable(returnType, methodValue);
+                value = new VariableExpression(aspectMethod.identifier, pre);
                 companionAnalysis.preAspectVariableValue.set(value);
             } else {
                 ParameterInfo parameterInMain = parameterInfo.index - aspectVariables < mainIndices ?
                         mainMethod.methodInspection.get().getParameters().get(parameterInfo.index - aspectVariables) : null;
                 if (parameterInMain != null && parameterInfo.parameterizedType().equalsErased(parameterInMain.parameterizedType())) {
-                    value = new VariableExpression(parameterInMain);
+                    value = new VariableExpression(parameterInMain.identifier, parameterInMain);
                 } else if (parameterInfo.index == numIndices - 1 && !mainMethod.isVoid() &&
                         parameterInfo.parameterizedType().equalsErased(mainMethod.returnType())) {
-                    value = new VariableExpression(new ReturnVariable(mainMethod));
+                    value = new VariableExpression(mainMethod.identifier, new ReturnVariable(mainMethod));
                 } else {
                     throw new UnsupportedOperationException("Cannot map parameter " + parameterInfo.index + " of " +
                             companionMethodName + " of " + mainMethod.fullyQualifiedName());

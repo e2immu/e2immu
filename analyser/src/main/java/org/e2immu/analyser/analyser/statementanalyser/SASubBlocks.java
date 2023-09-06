@@ -833,7 +833,7 @@ record SASubBlocks(StatementAnalysis statementAnalysis, StatementAnalyser statem
         ParameterizedType returnType = value.returnType();
         if (returnType.arrays > 0) {
             ArrayLength arrayLength = new ArrayLength(value.getIdentifier(), context.getPrimitives(), value);
-            Expression minusOne = Sum.sum(context, arrayLength, new IntConstant(context.getPrimitives(), -1));
+            Expression minusOne = Sum.sum(context, arrayLength, IntConstant.minusOne(context.getPrimitives()));
             return new GreaterThanZero(Identifier.generate("gt0"), context.getPrimitives(),
                     minusOne, true);
         }

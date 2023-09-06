@@ -128,7 +128,7 @@ public class RangeDataImpl implements RangeData {
                                        EvaluationResult result) {
         if (result.value() instanceof ArrayInitializer ai) {
             if (statement.structure.initialisers().get(0) instanceof LocalVariableCreation lvc) {
-                return new ConstantRange(ai, new VariableExpression(lvc.localVariableReference));
+                return new ConstantRange(ai, new VariableExpression(ai.identifier, lvc.localVariableReference));
             }
         }
         return null;
@@ -257,8 +257,9 @@ public class RangeDataImpl implements RangeData {
                     } else {
                         return Range.NO_RANGE;
                     }
-                    update = new IntConstant(result.evaluationContext().getPrimitives(), i);
-                    variable = new VariableExpression(lvc.localVariableReference);
+                    update = new IntConstant(result.evaluationContext().getPrimitives(),
+                            assignment.value.getIdentifier(), i);
+                    variable = new VariableExpression(lvc.lvrIdentifier, lvc.localVariableReference);
                 } else {
                     return Range.NO_RANGE;
                 }

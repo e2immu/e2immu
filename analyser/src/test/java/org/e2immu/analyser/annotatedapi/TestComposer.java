@@ -74,6 +74,7 @@ public class TestComposer {
         }
 
         Path defaultDestination = Path.of(AnnotatedAPIConfiguration.DEFAULT_DESTINATION_DIRECTORY);
+        defaultDestination.toFile().mkdirs();
         try (Stream<Path> walk = Files.walk(defaultDestination)) {
             walk.sorted(Comparator.reverseOrder())
                     .map(Path::toFile)

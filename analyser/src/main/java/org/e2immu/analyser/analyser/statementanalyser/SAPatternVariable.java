@@ -29,12 +29,11 @@ import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.model.variable.VariableNature;
 
 import java.util.List;
-import java.util.Map;
 
 record SAPatternVariable(StatementAnalysis statementAnalysis) {
 
     /*
-    create local variables Y y = x for every sub-expression x instanceof Y y
+    create local variables 'YYY y = x' for every sub-expression x instanceof YYY y
 
     the scope of the variable is determined as follows:
     (1) if the expression is an if-statement, without else: pos = then block, neg = rest of current block
@@ -76,7 +75,7 @@ record SAPatternVariable(StatementAnalysis statementAnalysis) {
         return instanceOfList.stream()
                 .filter(iop -> iop.instanceOf().patternVariable() != null)
                 .map(iop -> new Assignment(evaluationContext.getPrimitives(),
-                        new VariableExpression(iop.instanceOf().patternVariable()),
+                        new VariableExpression(iop.instanceOf().identifier, iop.instanceOf().patternVariable()),
                         PropertyWrapper.propertyWrapper(iop.instanceOf().expression(), null,
                                 iop.instanceOf().parameterizedType())))
                 .toList();

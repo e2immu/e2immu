@@ -138,7 +138,8 @@ public class Test_39_PropagateModification extends CommonTestRunner {
                     typeMap.getPrimitives().charParameterizedType(), "test", system);
             fieldInfo.fieldInspection.set(new FieldInspectionImpl.Builder(fieldInfo).build(typeMap));
             FieldReference fr1 = new FieldReference(typeMap, fieldInfo);
-            FieldReference fr2 = new FieldReference(typeMap, fieldInfo, new VariableExpression(new This(typeMap, map)), map);
+            VariableExpression ve = new VariableExpression(map.identifier, new This(typeMap, map));
+            FieldReference fr2 = new FieldReference(typeMap, fieldInfo, ve, map);
             assertEquals(fr1, fr2);
 
             Set<Variable> s1 = Set.of(fr1);

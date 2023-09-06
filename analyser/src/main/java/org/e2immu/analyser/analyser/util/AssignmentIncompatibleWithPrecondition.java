@@ -17,12 +17,8 @@ package org.e2immu.analyser.analyser.util;
 import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.analysis.MethodAnalysis;
 import org.e2immu.analyser.analysis.StatementAnalysis;
-import org.e2immu.analyser.model.Expression;
-import org.e2immu.analyser.model.FieldInfo;
-import org.e2immu.analyser.model.MethodInfo;
-import org.e2immu.analyser.model.TranslationMap;
+import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.And;
-import org.e2immu.analyser.model.expression.ConstantExpression;
 import org.e2immu.analyser.model.expression.VariableExpression;
 import org.e2immu.analyser.model.impl.TranslationMapImpl;
 import org.e2immu.analyser.model.variable.FieldReference;
@@ -81,7 +77,10 @@ public class AssignmentIncompatibleWithPrecondition {
                                 Expression state = statementAnalysis.stateData().getConditionManagerForNextStatement()
                                         .individualStateInfo(context, ve.variable());
                                 if (!state.isBoolValueTrue()) {
-                                    TranslationMap translationMap = new TranslationMapImpl.Builder().put(new VariableExpression(ve.variable()), new VariableExpression(variable)).build();
+                                    TranslationMap translationMap = new TranslationMapImpl.Builder()
+                                            .put(new VariableExpression(ve.identifier, ve.variable()),
+                                                    new VariableExpression(ve.identifier, variable))
+                                            .build();
                                     Expression translated = state.translate(evaluationContext.getAnalyserContext(), translationMap);
                                     EvaluationContext neutralEc = new ConditionManager.EvaluationContextImpl(analyserContext);
                                     EvaluationResult neutralContext = EvaluationResult.from(neutralEc);
@@ -151,7 +150,10 @@ public class AssignmentIncompatibleWithPrecondition {
                                                    Variable variable,
                                                    Expression value,
                                                    Expression precondition) {
-        TranslationMap translationMap = new TranslationMapImpl.Builder().put(new VariableExpression(variable), value).build();
+        TranslationMap translationMap = new TranslationMapImpl.Builder()
+                // identifier of VE irrelevant
+                .put(new VariableExpression(Identifier.CONSTANT, variable), value)
+                .build();
         Expression translated = precondition.translate(evaluationContext.getAnalyserContext(), translationMap);
         ForwardEvaluationInfo fwd = new ForwardEvaluationInfo.Builder().doNotReevaluateVariableExpressionsDoNotComplain().build();
         Expression reEvaluated = translated.evaluate(EvaluationResult.from(evaluationContext), fwd).getExpression();

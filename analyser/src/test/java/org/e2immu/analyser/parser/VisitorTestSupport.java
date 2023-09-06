@@ -209,4 +209,37 @@ public abstract class VisitorTestSupport {
             assertEquals(s, d.typeAnalysis().getHiddenContentTypes().toString());
         }
     }
+
+    public record IterationInfo(int from, int toExcl, String value) {
+        public static IterationInfo it0(String value) {
+            return new IterationInfo(0, 1, value);
+        }
+
+        public static IterationInfo it1(String value) {
+            return new IterationInfo(1, 2, value);
+        }
+
+        public static IterationInfo it(int from, int toIncl, String value) {
+            return new IterationInfo(from, toIncl + 1, value);
+        }
+
+        public static IterationInfo it(int from, String value) {
+            return new IterationInfo(from, Integer.MAX_VALUE, value);
+        }
+
+        public boolean accepts(int iteration) {
+            return iteration >= from && iteration < toExcl;
+        }
+    }
+
+    protected void assertLinked(StatementAnalyserVariableVisitor.Data d, IterationInfo... iterationInfos) {
+        String links = d.variableInfo().getLinkedVariables().toString();
+        for (IterationInfo ii : iterationInfos) {
+            if (ii.accepts(d.iteration())) {
+                assertEquals(ii.value, links, "Linked variables iteration " + d.iteration());
+                return;
+            }
+        }
+        fail("Did not see iteration info for iteration " + d.iteration());
+    }
 }

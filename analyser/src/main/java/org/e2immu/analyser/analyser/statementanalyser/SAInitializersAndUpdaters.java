@@ -211,7 +211,7 @@ record SAInitializersAndUpdaters(StatementAnalysis statementAnalysis) {
         int i = 0;
         for (Expression updater : updaters) {
             ParameterInfo parameterInfo = eci.methodInfo.methodInspection.get().getParameters().get(i);
-            translationMapBuilder.put(new VariableExpression(parameterInfo), updater);
+            translationMapBuilder.put(new VariableExpression(parameterInfo.identifier, parameterInfo), updater);
             translationMapBuilder.addVariableExpression(parameterInfo, updater);
             IsVariableExpression ive = updater.asInstanceOf(IsVariableExpression.class);
             if (ive != null) {
@@ -276,26 +276,34 @@ record SAInitializersAndUpdaters(StatementAnalysis statementAnalysis) {
                         Expression translated = evaluationContext.getIteration() > 0
                                 ? replaceUnknownFields(evaluationContext, translated1) : translated1;
 
-                        ForwardEvaluationInfo fwd = new ForwardEvaluationInfo.Builder().doNotReevaluateVariableExpressionsDoNotComplain().build();
+                        ForwardEvaluationInfo fwd = new ForwardEvaluationInfo.Builder()
+                                .doNotReevaluateVariableExpressionsDoNotComplain()
+                                .build();
                         EvaluationResult er = translated.evaluate(context, fwd);
                         Expression end = er.value();
                         builder.compose(er);
 
-                        Assignment assignment = new Assignment(Identifier.generate("assignment eci"),
+                        Identifier assignmentIdentifier = Identifier.joined("eci",
+                                List.of(end.getIdentifier(), fieldInfo.getIdentifier()));
+                        Assignment assignment = new Assignment(assignmentIdentifier,
                                 statementAnalysis.primitives(),
-                                new VariableExpression(fr),
-                                end, null, null, false, false, null, null);
+                                new VariableExpression(fieldInfo.getIdentifier(), fr),
+                                end, null, null, false,
+                                false, null, null);
                         assignments.add(assignment);
                         assigned = true;
                     }
                 }
                 if (!assigned && weMustWait) {
                     FieldReference fr = new FieldReference(analyserContext, fieldInfo);
-                    Expression end = DelayedExpression.forECI(fieldInfo.getIdentifier(), eciVariables(), DelayFactory.createDelay(causeOfDelay));
-                    Assignment assignment = new Assignment(Identifier.generate("assignment eci"),
-                            statementAnalysis.primitives(),
-                            new VariableExpression(fr),
-                            end, null, null, false, false, null, null);
+                    Expression end = DelayedExpression.forECI(fieldInfo.getIdentifier(), eciVariables(),
+                            DelayFactory.createDelay(causeOfDelay));
+                    Identifier assignmentIdentifier = Identifier.joined("eci",
+                            List.of(end.getIdentifier(), fieldInfo.getIdentifier()));
+                    Assignment assignment = new Assignment(assignmentIdentifier, statementAnalysis.primitives(),
+                            new VariableExpression(fieldInfo.getIdentifier(), fr),
+                            end, null, null, false,
+                            false, null, null);
                     assignments.add(assignment);
                 }
             }
@@ -307,7 +315,8 @@ record SAInitializersAndUpdaters(StatementAnalysis statementAnalysis) {
     private Expression eciVariables() {
         MethodInfo methodInfo = statementAnalysis.methodAnalysis().getMethodInfo();
         List<Expression> variables = methodInfo.methodInspection.get().getParameters().stream()
-                .map(v -> (Expression) new VariableExpression(v)).toList();
+                .map(parameterInfo -> (Expression) new VariableExpression(parameterInfo.identifier, parameterInfo))
+                .toList();
         return new CommaExpression(variables);
     }
 
@@ -322,7 +331,7 @@ record SAInitializersAndUpdaters(StatementAnalysis statementAnalysis) {
                 // FIXME LV.EMPTY is a temporary stop-gap
                 ExpandedVariable ev = new ExpandedVariable(identifier, variable, properties, LinkedVariables.EMPTY);
                 builder.addVariableExpression(variable, ev);
-                builder.put(new VariableExpression(variable), ev);
+                builder.put(new VariableExpression(identifier, variable), ev);
             }
         }
         TranslationMap translationMap = builder.build();

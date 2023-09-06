@@ -434,7 +434,7 @@ public record ExpressionContextImpl(ExpressionContext.ResolverRecursion resolver
                     .setOwningType(owningType())
                     .setName(name).setParameterizedType(typeOfVariable).build();
             Identifier clauseId = Identifier.from(catchClause);
-            LocalVariableCreation lvc = new LocalVariableCreation(clauseId, localVariable);
+            LocalVariableCreation lvc = new LocalVariableCreation(clauseId, Identifier.from(parameter), localVariable);
             TryStatement.CatchParameter catchParameter = new TryStatement.CatchParameter(clauseId, lvc, unionOfTypes);
             ExpressionContextImpl catchExpressionContext = newVariableContext("catch-clause");
             catchExpressionContext.variableContext.add(localVariable, EmptyExpression.EMPTY_EXPRESSION);
@@ -657,11 +657,12 @@ public record ExpressionContextImpl(ExpressionContext.ResolverRecursion resolver
                     declarations.add(declaration);
                     variableContext.add(lv, initializer);
                 }
-                LocalVariableReference first = declarations.get(0).localVariableReference();
-                Identifier firstIdentifier = declarations.get(0).identifier();
+                LocalVariableCreation.Declaration declaration0 = declarations.get(0);
+                LocalVariableReference first = declaration0.localVariableReference();
+                Identifier firstIdentifier = declaration0.identifier();
                 List<LocalVariableCreation.Declaration> rest = declarations.size() == 1 ? List.of()
                         : List.copyOf(declarations.subList(1, declarations.size()));
-                return new LocalVariableCreation(firstIdentifier, first, rest, isVar);
+                return new LocalVariableCreation(firstIdentifier, declaration0.identifier(), first, rest, isVar);
             }
             if (expression.isAssignExpr()) {
                 AssignExpr assignExpr = (AssignExpr) expression;

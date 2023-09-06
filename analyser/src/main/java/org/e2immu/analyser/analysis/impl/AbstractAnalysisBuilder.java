@@ -20,12 +20,8 @@ import org.e2immu.analyser.analyser.util.GenerateAnnotationsImmutableAndContaine
 import org.e2immu.analyser.analyser.util.GenerateAnnotationsIndependent;
 import org.e2immu.analyser.analysis.Analysis;
 import org.e2immu.analyser.analysis.TypeAnalysis;
-import org.e2immu.analyser.model.AnnotationExpression;
-import org.e2immu.analyser.model.MultiLevel;
-import org.e2immu.analyser.model.Qualification;
-import org.e2immu.analyser.model.TypeInfo;
-import org.e2immu.analyser.model.expression.ConstantExpression;
-import org.e2immu.analyser.model.expression.MemberValuePair;
+import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.model.expression.*;
 import org.e2immu.analyser.model.impl.AnnotationExpressionImpl;
 import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
 import org.e2immu.analyser.parser.Messages;
@@ -169,15 +165,8 @@ abstract class AbstractAnalysisBuilder implements Analysis {
     private boolean generate(E2ImmuAnnotationExpressions e2, Map<Class<?>, Map<String, Object>> map) {
         boolean added = false;
         for (Map.Entry<Class<?>, Map<String, Object>> entry : map.entrySet()) {
-            Stream<MemberValuePair> stream;
-            if (entry.getValue() == GenerateAnnotationsImmutableAndContainer.NO_PARAMS) {
-                stream = Stream.of();
-            } else {
-                stream = entry.getValue().entrySet().stream().map(e -> new MemberValuePair(e.getKey(),
-                        ConstantExpression.create(primitives, e.getValue())));
-            }
-            AnnotationExpression expression = new AnnotationExpressionImpl(e2.immutableAnnotation(entry.getKey()),
-                    stream.toList());
+            TypeInfo typeInfo = e2.immutableAnnotation(entry.getKey());
+            AnnotationExpression expression = AnnotationExpressionImpl.from(primitives, typeInfo, entry.getValue());
             addAnnotation(expression);
             added = true;
         }

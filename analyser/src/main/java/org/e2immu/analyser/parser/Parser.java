@@ -26,6 +26,7 @@ import org.e2immu.analyser.inspector.impl.ExpressionContextImpl;
 import org.e2immu.analyser.model.TypeInfo;
 import org.e2immu.analyser.model.TypeInspection;
 import org.e2immu.analyser.parser.impl.ImportantClassesImpl;
+import org.e2immu.analyser.parser.impl.TypeMapImpl;
 import org.e2immu.analyser.resolver.SortedTypes;
 import org.e2immu.analyser.resolver.TypeCycle;
 import org.e2immu.analyser.resolver.impl.ResolverImpl;
@@ -81,6 +82,13 @@ public class Parser {
         public Set<TypeInfo> allPrimaryTypes() {
             return Stream.concat(annotatedAPISortedTypes.primaryTypeStream(), sourceSortedTypes.primaryTypeStream())
                     .collect(Collectors.toSet());
+        }
+
+        public RunResult buildTypeMap() {
+            if (typeMap instanceof TypeMapImpl.Builder builder) {
+                return new RunResult(annotatedAPISortedTypes, sourceSortedTypes, builder.build());
+            }
+            return this;
         }
 
     }

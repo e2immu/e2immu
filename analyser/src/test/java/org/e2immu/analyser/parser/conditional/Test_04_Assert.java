@@ -93,7 +93,7 @@ public class Test_04_Assert extends CommonTestRunner {
                 }
                 if (d.variable() instanceof ReturnVariable) {
                     if ("3".equals(d.statementId())) {
-                        assertEquals("other instanceof NotDelayed&&null!=other?this:<return value>",
+                        assertEquals("other instanceof NotDelayed?this:<return value>",
                                 d.currentValue().toString());
                         assertEquals("this:0", d.variableInfo().getLinkedVariables().toString());
                     }
@@ -110,7 +110,7 @@ public class Test_04_Assert extends CommonTestRunner {
                     }
                     if ("5".equals(d.statementId())) {
                         String value = switch (d.iteration()) {
-                            case 0, 1 -> "<simplification>?this:<m:addProgress>";
+                            case 0, 1 -> "<instanceOf:NotDelayed>?this:<m:addProgress>";
                             default -> "other instanceof NotDelayed?this:null";
                         };
                         assertEquals(value, d.currentValue().toString());

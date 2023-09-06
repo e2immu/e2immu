@@ -336,16 +336,6 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
         return DONE;
     }
 
-    public static Expression getVariableValue(Variable variable) {
-        if (variable instanceof DependentVariable) {
-            throw new UnsupportedOperationException("NYI");
-        }
-        if (variable instanceof This) {
-            return new VariableExpression(variable);
-        }
-        throw new UnsupportedOperationException();
-    }
-
     private AnalysisStatus computeApprovedPreconditionsFinalFields(SharedState sharedState) {
         if (typeAnalysis.approvedPreconditionsStatus(false).isDone()) {
             return DONE;

@@ -33,9 +33,10 @@ import java.util.stream.Stream;
 
 public class LocalVariableCreation extends BaseExpression implements Expression {
     /*
-    the huge majority of instances will have a single declaration, consisting of an identifier and a
-    local variable reference (with assignment expression).
+    the huge majority of instances will have a single declaration, consisting of an LVC identifier, a
+    local variable reference (with assignment expression) and its associated identifier.
      */
+    public final Identifier lvrIdentifier;
     public final LocalVariableReference localVariableReference;
 
     /*
@@ -65,38 +66,27 @@ public class LocalVariableCreation extends BaseExpression implements Expression 
     }
 
     public LocalVariableCreation(Identifier identifier,
+                                 Identifier lvrIdentifier,
                                  LocalVariableReference localVariableReference,
                                  List<Declaration> moreDeclarations,
                                  boolean isVar) {
         super(identifier, localVariableReference.assignmentExpression.getComplexity() + moreDeclarations.
                 stream().mapToInt(d -> d.localVariableReference.assignmentExpression.getComplexity()).sum());
+        this.lvrIdentifier = lvrIdentifier;
         this.localVariableReference = localVariableReference;
         this.moreDeclarations = moreDeclarations;
         this.isVar = isVar;
     }
 
-    // a bunch of convenience constructors, the first three used by JFocus
-    @SuppressWarnings("unused")
-    public LocalVariableCreation(LocalVariable lv, Expression expression) {
-        this(Identifier.CONSTANT, new LocalVariableReference(lv, expression), List.of(), false);
+    public LocalVariableCreation(Identifier identifier,
+                                 Identifier lvrIdentifier,
+                                 LocalVariableReference localVariableReference) {
+        this(identifier, lvrIdentifier, localVariableReference, List.of(), false);
     }
 
-    @SuppressWarnings("unused")
-    public LocalVariableCreation(Identifier identifier, LocalVariable lv, Expression expression) {
-        this(identifier, new LocalVariableReference(lv, expression), List.of(), false);
-    }
-
-    @SuppressWarnings("unused")
-    public LocalVariableCreation(LocalVariableReference lvr) {
-        this(Identifier.CONSTANT, lvr, List.of(), false);
-    }
-
-    public LocalVariableCreation(Identifier identifier, LocalVariableReference localVariableReference) {
-        this(identifier, localVariableReference, List.of(), false);
-    }
-
-    public LocalVariableCreation(Identifier identifier, LocalVariable localVariable) {
-        this(identifier, new LocalVariableReference(localVariable, EmptyExpression.EMPTY_EXPRESSION), List.of(), false);
+    public LocalVariableCreation(Identifier identifier, Identifier lvrIdentifier, LocalVariable localVariable) {
+        this(identifier, lvrIdentifier,
+                new LocalVariableReference(localVariable, EmptyExpression.EMPTY_EXPRESSION), List.of(), false);
     }
 
     @Override
@@ -143,7 +133,7 @@ public class LocalVariableCreation extends BaseExpression implements Expression 
                 .map(d -> d.translate(inspectionProvider, translationMap))
                 .collect(TranslationCollectors.toList(moreDeclarations));
         if (tLvr == localVariableReference && translatedDeclarations == moreDeclarations) return this;
-        return new LocalVariableCreation(identifier, tLvr, translatedDeclarations, isVar);
+        return new LocalVariableCreation(identifier, lvrIdentifier, tLvr, translatedDeclarations, isVar);
     }
 
     @Override
@@ -256,7 +246,8 @@ public class LocalVariableCreation extends BaseExpression implements Expression 
                                     d.localVariableReference.assignmentExpression
                                             .evaluate(context, forwardEvaluationInfo).getExpression()))
                     .toList();
-            LocalVariableCreation lvc = new LocalVariableCreation(identifier, first, evaluatedDeclarations, isVar);
+            LocalVariableCreation lvc = new LocalVariableCreation(identifier, lvrIdentifier, first,
+                    evaluatedDeclarations, isVar);
             return new EvaluationResult.Builder(context).setExpression(lvc).build();
         }
 
@@ -266,7 +257,8 @@ public class LocalVariableCreation extends BaseExpression implements Expression 
             result = new EvaluationResult.Builder(context).setExpression(localVariableReference.assignmentExpression).build();
         } else {
             Assignment assignment = new Assignment(context.getPrimitives(),
-                    new VariableExpression(localVariableReference), localVariableReference.assignmentExpression);
+                    new VariableExpression(lvrIdentifier, localVariableReference),
+                    localVariableReference.assignmentExpression);
             result = assignment.evaluate(context, forwardEvaluationInfo);
         }
         EvaluationResult.Builder builder = new EvaluationResult.Builder(context).compose(result);
@@ -278,7 +270,7 @@ public class LocalVariableCreation extends BaseExpression implements Expression 
                         .build();
             } else {
                 Assignment assignment = new Assignment(context.getPrimitives(),
-                        new VariableExpression(declaration.localVariableReference),
+                        new VariableExpression(declaration.identifier, declaration.localVariableReference),
                         declaration.localVariableReference.assignmentExpression);
                 assigned = assignment.evaluate(context, forwardEvaluationInfo);
             }

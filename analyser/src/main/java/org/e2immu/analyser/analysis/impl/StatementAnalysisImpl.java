@@ -834,7 +834,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
         /* copy into evaluation, but only if there is no assignment and no reading
 
         reading can change the value (e.g. when a modifying method call occurs), but we have a dedicated
-        method that reads from INITIAL rather than EVAL so we don't have to copy yet.
+        method that reads from INITIAL rather than EVAL, so we don't have to copy yet.
 
         for properties, which are incremental upon reading, we already copy into evaluation,
         because we don't have explicit code available
@@ -984,15 +984,19 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
                 Expression newScope = fr.scope.translate(evaluationContext.getAnalyserContext(), translationMap);
                 if (newScope != fr.scope) {
                     assert fr.scopeVariable != null;
-                    Identifier identifier = Identifier.forVariableOutOfScope(fr.scopeVariable, evaluationContext.statementIndex());
+                    Identifier identifier = Identifier.forVariableOutOfScope(fr.scopeVariable,
+                            evaluationContext.statementIndex());
                     String name = "scope-" + identifier.compact();
                     // if statement index is 2, then 2~ is after 2.x.x, but before 3
                     VariableNature vn = new VariableNature.ScopeVariable(evaluationContext.statementIndex());
-                    LocalVariable lv = new LocalVariable(Set.of(LocalVariableModifier.FINAL), name, fr.scope.returnType(), List.of(), fr.getOwningType(), vn);
+                    LocalVariable lv = new LocalVariable(Set.of(LocalVariableModifier.FINAL), name,
+                            fr.scope.returnType(), List.of(), fr.getOwningType(), vn);
                     LocalVariableReference scopeVariable = new LocalVariableReference(lv, newScope);
-                    Expression scope = new VariableExpression(scopeVariable);
-                    FieldReference newFr = new FieldReference(evaluationContext.getAnalyserContext(), fr.fieldInfo, scope, scopeVariable, fr.getOwningType());
-                    VariableExpression ve = new VariableExpression(identifier, newFr, VariableExpression.NO_SUFFIX, scope, null);
+                    Expression scope = new VariableExpression(identifier, scopeVariable);
+                    FieldReference newFr = new FieldReference(evaluationContext.getAnalyserContext(), fr.fieldInfo,
+                            scope, scopeVariable, fr.getOwningType());
+                    VariableExpression ve = new VariableExpression(identifier, newFr, VariableExpression.NO_SUFFIX,
+                            scope, null);
                     return new RenameVariableResult(newFr, ve, List.of(scopeVariable));
                 }
                 if (fr.scopeVariable instanceof FieldReference) {
@@ -1657,7 +1661,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
                             return false;
                         }
                         // so there is reading AFTER... but
-                        // we'll need to double check that there was no reading before the assignment!
+                        // we'll need to double-check that there was no reading before the assignment!
                         // secondly, we want to ensure that the assignment takes place unconditionally in the block
 
                         VariableInfoContainer atAssignment = sa.getVariable(fqn);
@@ -1781,7 +1785,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
         Expression initialValue;
         LinkedVariables linkedVariables;
         if (variable instanceof DependentVariable dv) {
-            Expression arrayBase = new VariableExpression(dv.arrayVariable());
+            Expression arrayBase = new VariableExpression(dv.arrayExpression().getIdentifier(), dv.arrayVariable());
             LinkedVariables lvArrayBase = arrayBase.linkedVariables(context);
             DV independent = determineIndependentOfArrayBase(context, arrayBase);
             CausesOfDelay causesOfDelay = independent.causesOfDelay().merge(lvArrayBase.causesOfDelay());
@@ -1974,7 +1978,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
         /*
         See ComputingTypeAnalyser.correctIndependentFunctionalInterface(), Lazy. A functional interface comes in as the
         parameter of a non-private method. Modifications on its single, modifying method are ignored. As a consequence,
-        we treat the object as e2immutable.
+        we treat the object as immutable.
          */
         DV ignoreModifications = parameterAnalysis.getProperty(IGNORE_MODIFICATIONS)
                 .maxIgnoreDelay(IGNORE_MODIFICATIONS.falseDv);
@@ -2179,16 +2183,17 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
                         if (vi.getValue().isInstanceOf(NullConstant.class)) {
                             return new Pair<>(vi, DV.MIN_INT_DV);
                         }
-                        DV notNull = evaluationContext.getProperty(new VariableExpression(fieldReference),
-                                NOT_NULL_EXPRESSION, false, false);
+                        VariableExpression ve = new VariableExpression(vi.getIdentifier(), fieldReference);
+                        DV notNull = evaluationContext.getProperty(ve, NOT_NULL_EXPRESSION, false,
+                                false);
                         return new Pair<>(vi, notNull);
                     }
                     return null;
                 })
                 .filter(e -> e != null && (e.v == DV.MIN_INT_DV || e.v.ge(MultiLevel.EFFECTIVELY_NOT_NULL_DV)))
                 .map(e -> {
-                    Expression equals = Equals.equals(context, new VariableExpression(e.k.variable()),
-                            NullConstant.NULL_CONSTANT);
+                    VariableExpression ve = new VariableExpression(e.k.getIdentifier(), e.k.variable());
+                    Expression equals = Equals.equals(context, ve, NullConstant.NULL_CONSTANT);
                     if (e.v.ge(MultiLevel.EFFECTIVELY_NOT_NULL_DV)) {
                         return Negation.negate(context, equals);
                     }

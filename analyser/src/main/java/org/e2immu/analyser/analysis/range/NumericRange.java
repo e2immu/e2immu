@@ -16,7 +16,9 @@ package org.e2immu.analyser.analysis.range;
 
 import org.e2immu.analyser.analyser.EvaluationContext;
 import org.e2immu.analyser.analyser.EvaluationResult;
+import org.e2immu.analyser.analyser.Stage;
 import org.e2immu.analyser.model.Expression;
+import org.e2immu.analyser.model.Identifier;
 import org.e2immu.analyser.model.expression.*;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.parser.Primitives;
@@ -67,7 +69,7 @@ public record NumericRange(int startIncl,
             int diff = increment < 0 ? startIncl - endExcl : endExcl - startIncl;
             int moduloOfStart = diff % absIncrement;
             int value = endExcl + (increment > 0 ? moduloOfStart : 1 - moduloOfStart);
-            return new IntConstant(primitives, value);
+            return new IntConstant(primitives, variableExpression.identifier, value);
         }
         return null;
     }
@@ -75,12 +77,15 @@ public record NumericRange(int startIncl,
     @Override
     public Expression conditions(EvaluationContext evaluationContext) {
         EvaluationResult context = EvaluationResult.from(evaluationContext);
+        Primitives primitives = context.getPrimitives();
+        Identifier identifier = evaluationContext.getLocation(Stage.EVALUATION).identifier();
+
         int count = loopCount();
-        IntConstant start = new IntConstant(evaluationContext.getPrimitives(), startIncl);
+        IntConstant start = new IntConstant(primitives, identifier, startIncl);
         if (count == 1) {
             return Equals.equals(context, start, variableExpression);
         }
-        IntConstant end = new IntConstant(context.getPrimitives(), endExcl);
+        IntConstant end = new IntConstant(primitives, identifier, endExcl);
         Expression geStart;
         Expression ltEnd;
         if (startIncl < endExcl) {
@@ -99,9 +104,9 @@ public record NumericRange(int startIncl,
         // so we add (i % increment)==modOfStart
         int moduloOfStart = startIncl % absIncrement;
         Expression modulo = Remainder.remainder(context, variableExpression,
-                new IntConstant(context.getPrimitives(), absIncrement));
+                new IntConstant(primitives, identifier, absIncrement));
         Expression moduloEquals = Equals.equals(context, modulo,
-                new IntConstant(context.getPrimitives(), moduloOfStart));
+                new IntConstant(primitives, identifier, moduloOfStart));
         return And.and(context, geStart, ltEnd, moduloEquals);
     }
 

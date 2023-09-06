@@ -9,10 +9,10 @@ import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class TestProduct extends CommonAbstractValue {
-    VariableExpression k = new VariableExpression(createVariable("k"));
-    VariableExpression l = new VariableExpression(createVariable("l"));
-    VariableExpression m = new VariableExpression(createVariable("m"));
-    VariableExpression n = new VariableExpression(createVariable("m"));
+    VariableExpression k = newVariableExpression(createVariable("k"));
+    VariableExpression l = newVariableExpression(createVariable("l"));
+    VariableExpression m = newVariableExpression(createVariable("m"));
+    VariableExpression n = newVariableExpression(createVariable("m"));
 
     // TODO build some protection
 

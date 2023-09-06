@@ -118,22 +118,6 @@ public class VariableExpression extends BaseExpression implements IsVariableExpr
                 variable instanceof DependentVariable dv ? dv.indexExpression() : null);
     }
 
-    public VariableExpression(Variable variable) {
-        this(Identifier.constant(variable.fullyQualifiedName() + NO_SUFFIX),
-                variable, NO_SUFFIX, variable instanceof FieldReference fr && !fr.isStatic ? fr.scope :
-                        variable instanceof DependentVariable dv ? dv.arrayExpression() : null,
-                variable instanceof DependentVariable dv ? dv.indexExpression() : null);
-    }
-
-    public VariableExpression(FieldReference fr, Suffix suffix) {
-        this(Identifier.constant(fr.fullyQualifiedName() + suffix), fr, suffix, !fr.isStatic ? fr.scope : null,
-                null);
-    }
-
-    public VariableExpression(Variable variable, Suffix suffix, Expression scopeValue, Expression indexValue) {
-        this(Identifier.constant(variable.fullyQualifiedName() + suffix), variable, suffix, scopeValue, indexValue);
-    }
-
     public VariableExpression(Identifier identifier, Variable variable, Suffix suffix, Expression scopeValue, Expression indexValue) {
         super(identifier, variable.getComplexity());
         this.variable = variable;
@@ -318,7 +302,7 @@ public class VariableExpression extends BaseExpression implements IsVariableExpr
                 Expression replacement;
                 if (delays.isDelayed() || lv.isDelayed()) {
                     replacement = DelayedExpression.forArrayAccessValue(dv.getIdentifier(), dv.parameterizedType,
-                            new VariableExpression(dv), delays.merge(lv.causesOfDelay()));
+                            new VariableExpression(dv.getIdentifier(), dv), delays.merge(lv.causesOfDelay()));
                 } else {
                     Expression instance = Instance.forArrayAccess(dv.getIdentifier(), dv.parameterizedType, properties);
                     if (lv.isEmpty()) {
@@ -446,9 +430,11 @@ public class VariableExpression extends BaseExpression implements IsVariableExpr
                 // the field analyser does not know local variables, so no need for assignments
                 return new EvaluationResult.Builder(context).setExpression(fr.scope).build();
             }
-            assert fr.scopeVariable instanceof LocalVariableReference lvr && lvr.variableNature() instanceof VariableNature.ScopeVariable;
+            assert fr.scopeVariable instanceof LocalVariableReference lvr
+                    && lvr.variableNature() instanceof VariableNature.ScopeVariable;
+            assert fr.scope != null;
             ForwardEvaluationInfo forward = builder.ensureModificationSetNotNull().build();
-            VariableExpression scopeVE = new VariableExpression(fr.scopeVariable);
+            VariableExpression scopeVE = new VariableExpression(fr.scope.getIdentifier(), fr.scopeVariable);
             Assignment assignment = new Assignment(context.getPrimitives(), scopeVE, fr.scope);
             return assignment.evaluate(context, forward);
         }
@@ -468,8 +454,10 @@ public class VariableExpression extends BaseExpression implements IsVariableExpr
     }
 
     // also used by ArrayAccess
-    public static EvaluationResult evaluateForArray(EvaluationResult context, ForwardEvaluationInfo forwardEvaluationInfo,
-                                                    Expression expression, Variable variable,
+    public static EvaluationResult evaluateForArray(EvaluationResult context,
+                                                    ForwardEvaluationInfo forwardEvaluationInfo,
+                                                    Expression expression,
+                                                    Variable variable,
                                                     boolean increaseCnn) {
         if (expression.isConstant()) {
             return new EvaluationResult.Builder(context).setExpression(expression).build();
@@ -480,9 +468,10 @@ public class VariableExpression extends BaseExpression implements IsVariableExpr
             DV higher = increaseCnn ? MultiLevel.composeOneLevelMoreNotNull(cnn) : cnn;
             return ve.evaluate(context, forwardEvaluationInfo.copy().notNullNotAssignment(higher).build());
         }
-        assert variable instanceof LocalVariableReference lvr && lvr.variableNature() instanceof VariableNature.ScopeVariable;
+        assert variable instanceof LocalVariableReference lvr
+                && lvr.variableNature() instanceof VariableNature.ScopeVariable;
         ForwardEvaluationInfo forward = forwardEvaluationInfo.copy().ensureModificationSet().build();
-        VariableExpression scopeVE = new VariableExpression(variable);
+        VariableExpression scopeVE = new VariableExpression(expression.getIdentifier(), variable);
         Assignment assignment = new Assignment(context.getPrimitives(), scopeVE, expression);
         EvaluationResult er = assignment.evaluate(context, forward);
         EvaluationResult.Builder builder = new EvaluationResult.Builder(context).compose(er);

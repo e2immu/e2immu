@@ -105,13 +105,13 @@ public class TestParseGenerics {
 
         Set<TypeParameter> visited = new HashSet<>();
         visited.add(K);
-        assertEquals("java.lang.Enum<K>", ParameterizedTypePrinter.print(newTypeContext,
+        assertEquals("Enum<K>", ParameterizedTypePrinter.print(newTypeContext,
                 Qualification.FULLY_QUALIFIED_NAME, typeBoundK, false, Diamond.SHOW_ALL,
                 false, visited).toString());
         assertSame(K, typeBoundK.parameters.get(0).typeParameter);
 
         ParameterizedType pt = typeInfo.asParameterizedType(typeContext);
-        assertEquals("java.util.EnumMap<K extends java.lang.Enum<K>,V>",
+        assertEquals("java.util.EnumMap<K extends Enum<K>,V>",
                 pt.printForMethodFQN(typeContext, false, Diamond.SHOW_ALL));
     }
 

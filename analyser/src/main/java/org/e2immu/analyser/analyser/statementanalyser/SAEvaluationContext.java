@@ -598,7 +598,7 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
         }
         // on the LHS of an assignment, we do not expand variables that hold {1, 2, 3} array initializers
         if (forwardEvaluationInfo.isAssignmentTarget() && variableInfo.getValue() instanceof ArrayInitializer) {
-            return new VariableExpression(variable);
+            return new VariableExpression(variableInfo.getIdentifier(), variable);
         }
         // NOTE: we use null instead of forwardEvaluationInfo.assignmentTarget()
         return getVariableValue(null, scopeValue, indexValue, identifier, variableInfo, forwardEvaluationInfo);
@@ -698,12 +698,14 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
 
         if (vic.variableNature() instanceof VariableNature.VariableDefinedOutsideLoop) {
             VariableExpression.Suffix suffix = vic.variableNature().suffix();
-            Expression sv = variable instanceof FieldReference fr ? fr.scope : variable instanceof DependentVariable dv ? dv.arrayExpression() : null;
+            Expression sv = variable instanceof FieldReference fr
+                    ? fr.scope
+                    : variable instanceof DependentVariable dv ? dv.arrayExpression() : null;
             Expression iv = variable instanceof DependentVariable dv ? dv.indexExpression() : null;
             VariableExpression veSuffix = new VariableExpression(bestValue.getIdentifier(), variable, suffix, sv, iv);
             Expression e;
             if (bestValue.isDone()) {
-                e = new VariableExpression(variable);
+                e = new VariableExpression(eval.getIdentifier(), variable);
             } else {
                 e = bestValue;
             }
@@ -725,13 +727,14 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
                 VariableExpression ve = new VariableExpression(bestValue.getIdentifier(), variable, suffix, null, null); // FIXME implement
                 translationMap.put(ve, newObject);
             } else {
-                Expression delayed = DelayedExpression.forReplacementObject(variable.parameterizedType(),
-                        bestValue, delays);
-                translationMap.put(DelayedVariableExpression.forVariable(variable, getInitialStatementTime(), delays), delayed);
+                Expression delayed = DelayedExpression.forReplacementObject(variable.parameterizedType(), bestValue,
+                        delays);
+                Expression dve = DelayedVariableExpression.forVariable(variable, getInitialStatementTime(), delays);
+                translationMap.put(dve, delayed);
                 // we add this one as well because the evaluation result, which feeds the state, may have no delays while the actual SAApply does (because of value properties)
                 // see VariableScope_10
                 //if (variable.allowedToCreateVariableExpression()) { TODO implement
-                translationMap.put(new VariableExpression(variable), delayed);
+                translationMap.put(new VariableExpression(eval.getIdentifier(), variable), delayed);
                 //}
             }
         }

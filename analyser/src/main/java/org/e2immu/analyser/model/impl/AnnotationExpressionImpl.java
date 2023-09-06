@@ -15,6 +15,7 @@
 package org.e2immu.analyser.model.impl;
 
 import org.e2immu.analyser.analyser.AnnotationParameters;
+import org.e2immu.analyser.analyser.util.GenerateAnnotationsImmutableAndContainer;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.*;
 import org.e2immu.analyser.model.variable.FieldReference;
@@ -29,6 +30,7 @@ import org.e2immu.annotation.rare.IgnoreModifications;
 
 import java.lang.reflect.Array;
 import java.util.*;
+import java.util.stream.Stream;
 
 import static org.e2immu.analyser.parser.E2ImmuAnnotationExpressions.*;
 
@@ -42,6 +44,23 @@ public record AnnotationExpressionImpl(TypeInfo typeInfo,
     public AnnotationExpressionImpl {
         Objects.requireNonNull(typeInfo);
         Objects.requireNonNull(expressions);
+    }
+
+    public static AnnotationExpression from(Primitives primitives, TypeInfo typeInfo, Map<String, Object> map) {
+        Stream<MemberValuePair> stream;
+        if (map == GenerateAnnotationsImmutableAndContainer.NO_PARAMS) {
+            stream = Stream.of();
+        } else {
+            stream = map.entrySet().stream().map(o -> new MemberValuePair(o.getKey(), create(primitives, o.getValue())));
+        }
+        return new AnnotationExpressionImpl(typeInfo, stream.toList());
+    }
+
+    private static Expression create(Primitives primitives, Object object) {
+        if (object instanceof String string) return new StringConstant(primitives, Identifier.CONSTANT, string);
+        if (object instanceof Boolean bool) return new BooleanConstant(primitives, Identifier.CONSTANT, bool);
+        if (object instanceof Integer integer) return new IntConstant(primitives, Identifier.CONSTANT, integer);
+        throw new UnsupportedOperationException();
     }
 
     // used by the byte code inspector, MyAnnotationVisitor
@@ -84,7 +103,7 @@ public record AnnotationExpressionImpl(TypeInfo typeInfo,
         if (!expressions.isEmpty()) {
             outputBuilder.add(Symbol.LEFT_PARENTHESIS)
                     .add(expressions.stream()
-                            .map(expression ->  expression.output(qualification))
+                            .map(expression -> expression.output(qualification))
                             .collect(OutputBuilder.joining(Symbol.COMMA)))
                     .add(Symbol.RIGHT_PARENTHESIS);
         }
