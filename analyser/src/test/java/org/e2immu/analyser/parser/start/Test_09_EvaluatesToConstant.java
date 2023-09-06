@@ -67,7 +67,7 @@ public class Test_09_EvaluatesToConstant extends CommonTestRunner {
                         null != d.haveError(Message.Label.CONDITION_EVALUATES_TO_CONSTANT));
             }
             if ("1.0.1.0.0".equals(d.statementAnalysis().index())) {
-                String expected = d.iteration() == 0 ? "<null-check>&&<m:contains>" : "false";
+                String expected = d.iteration() == 0 ? "<m:contains>&&<null-check>" : "false";
                 assertEquals(expected, d.absoluteState().toString());
                 assertNull(d.haveError(Message.Label.CONDITION_EVALUATES_TO_CONSTANT));
             }

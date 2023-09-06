@@ -354,8 +354,7 @@ public class Test_22_SubTypes extends CommonTestRunner {
                     assertDv(d, 0, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_EXPRESSION);
                 }
                 if (d.variable() instanceof FieldReference fr && "outerField".equals(fr.fieldInfo.name)) {
-                    String expected = d.iteration() == 0 ? "<s:String>" : "outerField";
-                    assertEquals(expected, d.currentValue().toString());
+                    assertEquals("outerField", d.currentValue().toString());
                     assertDv(d, 0, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.CONTEXT_NOT_NULL);
                 }
             }
@@ -389,7 +388,7 @@ public class Test_22_SubTypes extends CommonTestRunner {
     @Test
     public void test_12() throws IOException {
         // TODO: remove the null-pointer warning next to the null pointer error!
-        testClass("SubTypes_12", 1, 1,
+        testClass("SubTypes_12", 1, 2,
                 new DebugConfiguration.Builder().build(),
                 new AnalyserConfiguration.Builder().setForceAlphabeticAnalysisInPrimaryType(true).build());
     }

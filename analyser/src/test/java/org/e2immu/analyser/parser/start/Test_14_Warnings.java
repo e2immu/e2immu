@@ -92,7 +92,7 @@ public class Test_14_Warnings extends CommonTestRunner {
                     assertEquals("t.length()>=19", d.absoluteState().toString());
                 }
                 if ("1.0.0".equals(d.statementId())) {
-                    assertEquals("t.length()<=18", d.absoluteState().toString());
+                    assertEquals("t.length()<19", d.absoluteState().toString());
                 }
                 // ERROR: t.trim() result is not used
                 if ("2".equals(d.statementId())) {
@@ -221,7 +221,7 @@ public class Test_14_Warnings extends CommonTestRunner {
                 }
             }
             if ("method1".equals(d.methodInfo().name) && "1".equals(d.statementId())) {
-                assertEquals("t.length()<=18", d.evaluationResult().value().toString());
+                assertEquals("t.length()<19", d.evaluationResult().value().toString());
                 assertTrue(d.evaluationResult().value().isInstanceOf(GreaterThanZero.class));
             }
         };

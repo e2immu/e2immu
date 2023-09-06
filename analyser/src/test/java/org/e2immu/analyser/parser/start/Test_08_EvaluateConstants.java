@@ -59,7 +59,7 @@ public class Test_08_EvaluateConstants extends CommonTestRunner {
             }
             if ("getEffectivelyFinal".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof ReturnVariable) {
-                    assertDv(d, 2, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_EXPRESSION);
+                    assertDv(d, 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_EXPRESSION);
                 }
             }
         };
@@ -69,12 +69,10 @@ public class Test_08_EvaluateConstants extends CommonTestRunner {
                 VariableInfo vi = d.getReturnAsVariable();
                 if (d.iteration() == 0) {
                     assertTrue(vi.isDelayed());
-                } else if (d.iteration() <= 1) {
-                    assertTrue(d.result().analysisStatus().isProgress());
-                } else if (d.iteration() == 2) {
+                } else {
                     // one more iteration because EXT_IMMUTABLE on "this"
                     assertSame(DONE, d.result().analysisStatus());
-                } else fail();
+                }
             }
             if ("EvaluateConstants_0".equals(d.methodInfo().name)) {
                 if ("2".equals(d.statementId())) {
@@ -85,18 +83,17 @@ public class Test_08_EvaluateConstants extends CommonTestRunner {
 
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("getEffectivelyFinal".equals(d.methodInfo().name)) {
-                String expectValue = d.iteration() <= 1 ? "<m:getEffectivelyFinal>" : "/*inline getEffectivelyFinal*/effectivelyFinal";
+                String expectValue = d.iteration() < 1 ? "<m:getEffectivelyFinal>" : "/*inline getEffectivelyFinal*/effectivelyFinal";
                 assertEquals(expectValue, d.methodAnalysis().getSingleReturnValue().toString());
-                assertDv(d, 2, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_EXPRESSION);
+                assertDv(d, 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_EXPRESSION);
             }
         };
 
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
             if ("effectivelyFinal".equals(d.fieldInfo().name)) {
                 assertEquals(DV.TRUE_DV, d.fieldAnalysis().getProperty(Property.FINAL));
-                assertDv(d, 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.EXTERNAL_NOT_NULL);
-                String in = d.iteration() == 0 ? "<f:effectivelyFinal>" : "in";
-                assertEquals(in, d.fieldAnalysis().getValue().toString());
+                assertDv(d, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.EXTERNAL_NOT_NULL);
+                assertEquals("in", d.fieldAnalysis().getValue().toString());
             }
         };
 

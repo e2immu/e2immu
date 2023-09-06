@@ -33,6 +33,7 @@ import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 
+import static org.e2immu.analyser.parser.VisitorTestSupport.IterationInfo.*;
 import static org.junit.jupiter.api.Assertions.*;
 
 public class Test_07_DependentVariables extends CommonTestRunner {
@@ -122,7 +123,7 @@ public class Test_07_DependentVariables extends CommonTestRunner {
                 if (d.variable() instanceof ReturnVariable) {
                     String expectValue = d.iteration() == 0 ? "<f:i>" : "i$0";
                     assertEquals(expectValue, d.currentValue().minimalOutput());
-                    assertEquals("this.i:0", d.variableInfo().getLinkedVariables().toString());
+                    assertLinked(d, it0("this.i:0,this:-1"), it(1, "this.i:0"));
 
                     assertDv(d, 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.EXTERNAL_NOT_NULL);
                 }
@@ -259,22 +260,17 @@ public class Test_07_DependentVariables extends CommonTestRunner {
             }
             if ("getX".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof ReturnVariable) {
-                    String expectLinked = switch (d.iteration()) {
-                        case 0, 1 -> "index:-1,this.xs:-1,xs[index]:-1";
-                        default -> "this.xs:2,xs[index]:1";
-                    };
-                    assertEquals(expectLinked, d.variableInfo().getLinkedVariables().toString());
+                    assertLinked(d,
+                            it0("index:-1,this.xs:-1,this:-1,xs[index]:0"),
+                            it1("this.xs:-1,xs[index]:0"),
+                            it(2, "this.xs:2,xs[index]:0"));
                 }
             }
         };
 
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
             if ("xs".equals(d.fieldInfo().name)) {
-                String linked = switch (d.iteration()) {
-                    case 0, 1 -> "index:-1,scope-52:20:-1,xs:-1,xs[index]:-1";
-                    default -> "xs:4";
-                };
-                assertEquals(linked, d.fieldAnalysis().getLinkedVariables().toString());
+                assertEquals("xs:4", d.fieldAnalysis().getLinkedVariables().toString());
             }
         };
 

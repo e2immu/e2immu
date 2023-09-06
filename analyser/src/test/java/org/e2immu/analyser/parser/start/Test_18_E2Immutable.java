@@ -484,7 +484,7 @@ public class Test_18_E2Immutable extends CommonTestRunner {
                 }
                 if (d.variable() instanceof ReturnVariable) {
                     // no linked variables
-                    String linked = d.iteration() <= 1 ? "sub.string:0,this.sub:-1" : "sub.string:0,this.sub:2";
+                    String linked = d.iteration() <= 1 ? "sub.string:0,this.sub:-1,this:-1" : "sub.string:0,this.sub:2";
                     assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
                 }
             }

@@ -54,7 +54,7 @@ public class Test_13_VariableField extends CommonTestRunner {
                 // evaluation of the return value, which is 'string' in the current state
                 if ("1".equals(d.statementId())) {
                     String expectValue = d.iteration() == 0 ? "b&&<m:startsWith>?\"abc\"+<f:string>:<f:string>"
-                            : "string$2.startsWith(\"abc\")&&b?\"abc\"+string$2:string$2";
+                            : "b&&string$2.startsWith(\"abc\")?\"abc\"+string$2:string$2";
                     assertEquals(expectValue, d.evaluationResult().getExpression().toString());
                 }
             }
@@ -122,7 +122,7 @@ public class Test_13_VariableField extends CommonTestRunner {
                     if ("0".equals(d.statementId())) {
                         String expectValue = d.iteration() == 0 ?
                                 "b&&<m:startsWith>?\"abc\"+<f:string>:<return value>" :
-                                "string$0.startsWith(\"abc\")&&b?\"abc\"+string$1:<return value>";
+                                "b&&string$0.startsWith(\"abc\")?\"abc\"+string$1:<return value>";
                         assertEquals(expectValue, d.currentValue().toString());
                     }
                 }

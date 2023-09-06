@@ -65,8 +65,8 @@ public class Test_20_CyclicReferences extends CommonTestRunner {
     public void test_1() throws IOException {
         EvaluationResultVisitor evaluationResultVisitor = d -> {
             if ("findTailRecursion".equals(d.methodInfo().name) && "2".equals(d.statementId())) {
-                assertEquals("!list.isEmpty()&&(list.get(0).equals(find)||CyclicReferences_1.findTailRecursion(find,list.subList(1,list.size())))",
-                        d.evaluationResult().value().toString());
+                String expected = "!list.isEmpty()&&(CyclicReferences_1.findTailRecursion(find,list.subList(1,list.size()))||list.get(0).equals(find))";
+                assertEquals(expected, d.evaluationResult().value().toString());
             }
         };
 

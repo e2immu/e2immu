@@ -263,8 +263,8 @@ public class Test_23_TryStatement extends CommonTestRunner {
             }
         };
 
-        // 2 potential null pointer warnings
-        testClass("TryStatement_10", 0, 2, new DebugConfiguration.Builder()
+        // 1 potential null pointer warning
+        testClass("TryStatement_10", 0, 1, new DebugConfiguration.Builder()
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .build());
     }

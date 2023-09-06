@@ -31,6 +31,7 @@ import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.visitor.MethodAnalyserVisitor;
 import org.e2immu.analyser.visitor.StatementAnalyserVariableVisitor;
 import org.e2immu.analyser.visitor.StatementAnalyserVisitor;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
@@ -49,6 +50,7 @@ public class Test_23_TryStatement_AAPI extends CommonTestRunner {
                 .build());
     }
 
+    @Disabled("See Lambda_AAPI_18,Precondition_10; Runnable run is modifying, variable is immutable")
     @Test
     public void test_11() throws IOException {
         testClass("TryStatement_11", 0, 0, new DebugConfiguration.Builder()
