@@ -32,6 +32,8 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Set;
 
+import static org.e2immu.analyser.parser.VisitorTestSupport.IterationInfo.it;
+import static org.e2immu.analyser.parser.VisitorTestSupport.IterationInfo.it0;
 import static org.junit.jupiter.api.Assertions.*;
 
 public class Test_16_Modification_6 extends CommonTestRunner {
@@ -46,7 +48,7 @@ public class Test_16_Modification_6 extends CommonTestRunner {
 
             if ("add6".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof ParameterInfo p && "values6".equals(p.name)) {
-                    assertDv(d, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                    assertDv(d, 1, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     assertDv(d, MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL_DV, Property.CONTEXT_NOT_NULL);
 
                 } else if (d.variable() instanceof ParameterInfo p && "example6".equals(p.name)) {
@@ -55,11 +57,13 @@ public class Test_16_Modification_6 extends CommonTestRunner {
                     assertEquals(expectValue, d.currentValue().toString());
                     assertDv(d, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.CONTEXT_NOT_NULL);
 
-                    assertEquals("example6.set6:4,values6:4", d.variableInfo().getLinkedVariables().toString());
+                    assertLinked(d, it0("example6.set6:-1,values6:-1"),
+                            it(1, "example6.set6:4,values6:4"));
 
                 } else if ("org.e2immu.analyser.parser.modification.testexample.Modification_6.set6#org.e2immu.analyser.parser.modification.testexample.Modification_6.add6(org.e2immu.analyser.parser.modification.testexample.Modification_6,java.util.Set<String>):0:example6".equals(d.variableName())) {
                     assertDv(d, 1, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
-                    assertEquals("example6:2,values6:4", d.variableInfo().getLinkedVariables().toString());
+                    assertLinked(d, it0("example6:-1,values6:-1"),
+                            it(1, "example6:2,values6:4"));
 
                 } else if ("org.e2immu.analyser.parser.modification.testexample.Modification_6.this".equals(d.variableName())) {
                     // since 20220404 we cannot create variables after iteration 0, so this has to exist, even in static methods
@@ -84,8 +88,9 @@ public class Test_16_Modification_6 extends CommonTestRunner {
                 assertEquals("in6", d.fieldAnalysis().getValue().toString());
                 // in FieldAnalyserImpl.analyseLinked we block all links to field references
                 // that go to the same fieldInfo, disallowing example6.set6:0
-                assertEquals("in6:0", d.fieldAnalysis().getLinkedVariables().toString());
-                assertDv(d, MultiLevel.DEPENDENT_DV, Property.INDEPENDENT);
+                assertLinked(d, d.fieldAnalysis().getLinkedVariables(),
+                        it0("example6:-1,in6:-1,values6:-1"), it(1, "example6:2,in6:0,values6:4"));
+                assertDv(d, 1, MultiLevel.DEPENDENT_DV, Property.INDEPENDENT);
 
                 assertDv(d, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.EXTERNAL_NOT_NULL);
                 assertDv(d, 1, DV.TRUE_DV, Property.MODIFIED_OUTSIDE_METHOD);
@@ -114,7 +119,7 @@ public class Test_16_Modification_6 extends CommonTestRunner {
                     assertEquals(DV.TRUE_DV, vi.getProperty(Property.CONTEXT_MODIFIED));
                 }
 
-                assertDv(d.p(1), 1, MultiLevel.INDEPENDENT_DV, Property.INDEPENDENT);
+                assertDv(d.p(1), 2, MultiLevel.INDEPENDENT_DV, Property.INDEPENDENT);
             }
         };
 

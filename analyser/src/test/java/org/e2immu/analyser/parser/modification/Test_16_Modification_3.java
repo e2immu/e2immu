@@ -34,6 +34,8 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
+import static org.e2immu.analyser.parser.VisitorTestSupport.IterationInfo.it;
+import static org.e2immu.analyser.parser.VisitorTestSupport.IterationInfo.it0;
 import static org.junit.jupiter.api.Assertions.*;
 
 public class Test_16_Modification_3 extends CommonTestRunner {
@@ -81,7 +83,7 @@ public class Test_16_Modification_3 extends CommonTestRunner {
                             assertTrue(variableValue.variable() instanceof FieldReference);
                             assertEquals("set3", d.currentValue().toString());
                         }
-                        assertEquals("this.set3:0", d.variableInfo().getLinkedVariables().toString());
+                        assertLinked(d, it0("this.set3:0,this:-1"), it(1, "this.set3:0"));
                     }
                     if ("1".equals(d.statementId())) {
                         //  the READ is written at level 1
@@ -101,21 +103,21 @@ public class Test_16_Modification_3 extends CommonTestRunner {
                             assertEquals("set3", vi1.getValue().toString());
                             assertEquals(DV.TRUE_DV, d.getProperty(Property.CONTEXT_MODIFIED));
                         }
-                        assertEquals("this.set3:0", d.variableInfo().getLinkedVariables().toString());
+                        assertLinked(d, it0("this.set3:0,this:-1"), it(1, "this.set3:0"));
                     }
                 }
                 if (d.variable() instanceof FieldReference fr && "set3".equals(fr.fieldInfo.name)) {
                     assertEquals("org.e2immu.analyser.parser.modification.testexample.Modification_3.set3", d.variableName());
                     if ("0".equals(d.statementId())) {
-                        assertEquals("local3:0", d.variableInfo().getLinkedVariables().toString());
+                        assertLinked(d, it0("local3:0,this:-1"), it(1, "local3:0"));
                         String expectValue = d.iteration() == 0 ? SET3_DELAYED : INSTANCE_TYPE_HASH_SET;
                         assertEquals(expectValue, d.variableInfo().getValue().toString());
                     }
                     if ("1".equals(d.statementId())) {
                         assertTrue(d.variableInfo().isRead());
-                        assertEquals("local3:0", d.variableInfo().getLinkedVariables().toString());
+                        assertLinked(d, it0("local3:0,this:-1"), it(1, "local3:0"));
                         String expectValue = d.iteration() == 0 ? SET3_DELAYED
-                                : "instance type HashSet<String>/*this.contains(v)&&this.size()>=1*/";
+                                : "instance type HashSet<String>/*this.size()>=1&&this.contains(v)*/";
                         assertEquals(expectValue, d.variableInfo().getValue().toString());
                         assertDv(d, 1, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
                     }
@@ -146,7 +148,7 @@ public class Test_16_Modification_3 extends CommonTestRunner {
                 assertEquals(1, ((FieldAnalysisImpl.Builder) d.fieldAnalysis()).getValues().size());
                 assertEquals(INSTANCE_TYPE_HASH_SET, d.fieldAnalysis().getValue().toString());
                 assertDv(d, 1, DV.TRUE_DV, Property.MODIFIED_OUTSIDE_METHOD);
-                assertTrue(d.fieldAnalysis().getLinkedVariables().isEmpty());
+                assertEquals(d.iteration() > 0, d.fieldAnalysis().getLinkedVariables().isEmpty());
             }
         };
 

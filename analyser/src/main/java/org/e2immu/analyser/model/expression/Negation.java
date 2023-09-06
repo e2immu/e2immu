@@ -14,10 +14,7 @@
 
 package org.e2immu.analyser.model.expression;
 
-import org.e2immu.analyser.analyser.CausesOfDelay;
-import org.e2immu.analyser.analyser.DV;
-import org.e2immu.analyser.analyser.EvaluationResult;
-import org.e2immu.analyser.analyser.Property;
+import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.output.OutputBuilder;
@@ -126,8 +123,15 @@ public class Negation extends UnaryOperator implements ExpressionWrapper {
         MethodInfo operator = v.isNumeric() ?
                 context.getPrimitives().unaryMinusOperatorInt() :
                 context.getPrimitives().logicalNotOperatorBool();
-        return new Negation(context.getPrimitives(), Identifier.joined("neg", List.of(v.getIdentifier())),
+        Negation negation = new Negation(context.getPrimitives(), Identifier.joined("neg", List.of(v.getIdentifier())),
                 operator, v);
+
+        if (v instanceof InstanceOf i) {
+            Expression varIsNull = Equals.equals(i.identifier, context, new NullConstant(i.identifier), i.expression(),
+                    ForwardEvaluationInfo.DEFAULT);
+            return Or.or(context, negation, varIsNull);
+        }
+        return negation;
     }
 
     @Override

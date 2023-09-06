@@ -84,7 +84,7 @@ public class TestInstanceOf extends CommonAbstractValue {
         assertEquals(AND_OF_ORS, and.toString());
 
         Expression and1 = newAndAppend(negate(e1), negate(e2));
-        assertEquals("!(an instanceof Boolean)&&!(an instanceof Character)", and1.toString());
+        assertEquals("(null==an||!(an instanceof Boolean))&&(null==an||!(an instanceof Character))", and1.toString());
         Expression or3 = newOrAppend(and1, equals(NullConstant.NULL_CONSTANT, an));
         assertEquals(AND_OF_ORS, or3.toString());
     }

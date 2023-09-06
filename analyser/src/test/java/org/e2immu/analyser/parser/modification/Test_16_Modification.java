@@ -32,6 +32,7 @@ import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 
+import static org.e2immu.analyser.parser.VisitorTestSupport.IterationInfo.*;
 import static org.junit.jupiter.api.Assertions.*;
 
 public class Test_16_Modification extends CommonTestRunner {
@@ -120,7 +121,7 @@ public class Test_16_Modification extends CommonTestRunner {
                 if (d.variable() instanceof FieldReference fieldReference
                         && "input".equals(fieldReference.fieldInfo.name)) {
                     if ("1".equals(d.statementId())) {
-                        assertDv(d, 2, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.EXTERNAL_NOT_NULL);
+                        assertDv(d, 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.EXTERNAL_NOT_NULL);
                     }
                 }
             }
@@ -128,9 +129,8 @@ public class Test_16_Modification extends CommonTestRunner {
 
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
             if ("input".equals(d.fieldInfo().name)) {
-                assertDv(d, 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.EXTERNAL_NOT_NULL);
-                String expected = d.iteration() == 0 ? "<f:input>" : "input";
-                assertEquals(expected, d.fieldAnalysis().getValue().toString());
+                assertDv(d, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.EXTERNAL_NOT_NULL);
+                assertEquals("input", d.fieldAnalysis().getValue().toString());
             }
             if ("j".equals(d.fieldInfo().name)) {
                 assertDv(d, MultiLevel.CONTAINER_DV, Property.CONTAINER);
@@ -168,7 +168,7 @@ public class Test_16_Modification extends CommonTestRunner {
                 if (d.variable() instanceof ParameterInfo pi && "input".equals(pi.name)) {
                     if ("0".equals(d.statementId())) {
                         assertDv(d, 3, MultiLevel.MUTABLE_DV, Property.EXTERNAL_IMMUTABLE);
-                        assertDv(d, 2, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.EXTERNAL_NOT_NULL);
+                        assertDv(d, 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.EXTERNAL_NOT_NULL);
                         assertDv(d, 0, MultiLevel.MUTABLE_DV, Property.CONTEXT_IMMUTABLE);
                     }
                     if ("1".equals(d.statementId())) {
@@ -176,7 +176,7 @@ public class Test_16_Modification extends CommonTestRunner {
                     }
                 } else if (d.variable() instanceof FieldReference fr && "input".equals(fr.fieldInfo.name)) {
                     assertEquals("1", d.statementId());
-                    assertDv(d, 2, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.EXTERNAL_NOT_NULL);
+                    assertDv(d, 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.EXTERNAL_NOT_NULL);
                     assertDv(d, 3, MultiLevel.MUTABLE_DV, Property.EXTERNAL_IMMUTABLE);
                 } else if (d.variable() instanceof This) {
                     assertDv(d, 0, MultiLevel.NOT_INVOLVED_DV, Property.EXTERNAL_NOT_NULL);
@@ -221,15 +221,19 @@ public class Test_16_Modification extends CommonTestRunner {
                 if ("FaultyImplementation".equals(d.methodInfo().typeInfo.simpleName)) {
                     if (d.variable() instanceof ParameterInfo pi && "errorMessage".equals(pi.name)) {
                         if ("0".equals(d.statementId())) {
-                            String linked = d.iteration() <= 1 ? "this.messages:-1" : "this.messages:3";
-                            assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
+                            assertLinked(d,
+                                    it0("this.messages:-1,this:-1"),
+                                    it1("this.messages:-1"),
+                                    it(2, "this.messages:3"));
                         }
                     }
                     if (d.variable() instanceof FieldReference fr && "messages".equals(fr.fieldInfo.name)) {
                         if ("0".equals(d.statementId())) {
                             // asymmetrical link!
-                            String linked = d.iteration() <= 1 ? "errorMessage:-1" : "";
-                            assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
+                            assertLinked(d,
+                                    it0("errorMessage:-1,this:-1"),
+                                    it1("errorMessage:-1"),
+                                    it(2, ""));
                         }
                     }
                 }

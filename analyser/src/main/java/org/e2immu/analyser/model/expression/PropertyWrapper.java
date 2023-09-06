@@ -37,7 +37,11 @@ public final class PropertyWrapper extends BaseExpression implements Expression,
     private final ParameterizedType castType;
 
 
-    public PropertyWrapper(Expression expression, Expression state, Map<Property, DV> properties, LinkedVariables linkedVariables, ParameterizedType castType) {
+    public PropertyWrapper(Expression expression,
+                           Expression state,
+                           Map<Property, DV> properties,
+                           LinkedVariables linkedVariables,
+                           ParameterizedType castType) {
         super(expression.getIdentifier(), expression.getComplexity());
         assert !(expression instanceof Negation) : "we always want the negation to be on the outside";
         this.expression = expression;
@@ -66,8 +70,8 @@ public final class PropertyWrapper extends BaseExpression implements Expression,
     @Override
     public Expression translate(InspectionProvider inspectionProvider, TranslationMap translationMap) {
         Expression translated = translationMap.translateExpression(this);
-        if(translated != this) return translated;
-        
+        if (translated != this) return translated;
+
         Expression transState = state == null ? null : state.translate(inspectionProvider, translationMap);
         Expression tex = expression.translate(inspectionProvider, translationMap);
         LinkedVariables transLv = linkedVariables == null ? null
@@ -108,8 +112,10 @@ public final class PropertyWrapper extends BaseExpression implements Expression,
         // IMPROVE it would really be good if we never had two PropertyWrappers in a row
 
         Map<Property, DV> reduced = properties == null ? null : reduce(evaluationContext, newValue, properties);
-        boolean dropWrapper = (reduced == null || reduced.isEmpty()) && state == null && linkedVariables == null && castType == null;
-        Expression result = dropWrapper ? newValue : new PropertyWrapper(newValue, state, reduced, linkedVariables, castType);
+        boolean dropWrapper = (reduced == null || reduced.isEmpty())
+                && state == null && linkedVariables == null && castType == null;
+        Expression result = dropWrapper ? newValue
+                : new PropertyWrapper(newValue, state, reduced, linkedVariables, castType);
 
         return builder.setExpression(result).build();
     }
@@ -119,7 +125,8 @@ public final class PropertyWrapper extends BaseExpression implements Expression,
                                             Map<Property, DV> map) {
         return map.entrySet().stream()
                 .filter(e -> {
-                    DV v = context.evaluationContext().getProperty(expression, e.getKey(), true, false);
+                    DV v = context.evaluationContext().getProperty(expression, e.getKey(),
+                            true, false);
                     return !v.equals(e.getValue());
                 })
                 .collect(Collectors.toUnmodifiableMap(Map.Entry::getKey, Map.Entry::getValue));
@@ -279,7 +286,11 @@ public final class PropertyWrapper extends BaseExpression implements Expression,
         }
         DV inMap = properties == null ? null : properties.getOrDefault(property, null);
         if (inMap != null) return inMap;
-        return context.evaluationContext().getProperty(expression, property, duringEvaluation, false);
+        DV dv = context.evaluationContext().getProperty(expression, property, duringEvaluation, false);
+        if (castType != null && property == Property.NOT_NULL_EXPRESSION) {
+            return dv.max(MultiLevel.EFFECTIVELY_NOT_NULL_DV);
+        }
+        return dv;
     }
 
     @Override
@@ -304,7 +315,7 @@ public final class PropertyWrapper extends BaseExpression implements Expression,
     public List<? extends Element> subElements() {
         return List.of(expression);
     }
-    
+
     @Override
     public <T extends Element> T asInstanceOf(Class<T> clazz) {
         return expression.asInstanceOf(clazz);

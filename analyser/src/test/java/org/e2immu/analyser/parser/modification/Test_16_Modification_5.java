@@ -28,6 +28,8 @@ import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 
+import static org.e2immu.analyser.parser.VisitorTestSupport.IterationInfo.it;
+import static org.e2immu.analyser.parser.VisitorTestSupport.IterationInfo.it0;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -55,8 +57,8 @@ public class Test_16_Modification_5 extends CommonTestRunner {
             if ("Modification_5".equals(d.methodInfo().name)) {
                 assertTrue(d.methodInfo().isConstructor);
                 assertEquals(DV.TRUE_DV, d.methodAnalysis().getProperty(Property.MODIFIED_METHOD));
-                assertDv(d.p(0), 1, DV.FALSE_DV, Property.MODIFIED_OUTSIDE_METHOD);
-                assertDv(d.p(0), 1, MultiLevel.INDEPENDENT_DV, Property.INDEPENDENT);
+                assertDv(d.p(0), 2, DV.FALSE_DV, Property.MODIFIED_OUTSIDE_METHOD);
+                assertDv(d.p(0), 2, MultiLevel.INDEPENDENT_DV, Property.INDEPENDENT);
             }
         };
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
@@ -66,8 +68,10 @@ public class Test_16_Modification_5 extends CommonTestRunner {
                 linked hidden content-wise to in5, but because the intersection is immutable, the field is
                 independent, and the parameter as well, and therefore, in5 is @NotModified!
                  */
-                assertEquals("in5:4", d.fieldAnalysis().getLinkedVariables().toString());
-                assertDv(d, MultiLevel.INDEPENDENT_DV, Property.INDEPENDENT);
+                assertLinked(d, d.fieldAnalysis().getLinkedVariables(),
+                        it0("in5:-1,local5:-1,this:-1"),
+                        it(1, "in5:4"));
+                assertDv(d, 1, MultiLevel.INDEPENDENT_DV, Property.INDEPENDENT);
             }
         };
 

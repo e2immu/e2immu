@@ -23,6 +23,8 @@ import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 
+import static org.e2immu.analyser.parser.VisitorTestSupport.IterationInfo.it;
+import static org.e2immu.analyser.parser.VisitorTestSupport.IterationInfo.it0;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class Test_16_Modification_25 extends CommonTestRunner {
@@ -38,7 +40,7 @@ public class Test_16_Modification_25 extends CommonTestRunner {
             if ("add".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof FieldReference fr && "ts".equals(fr.fieldInfo.name)) {
                     if ("1".equals(d.statementId())) {
-                        String linked = d.iteration() == 0 ? "as:-1,bs:-1,cs:-1,r:-1" : "as:4,bs:4,cs:4";
+                        String linked = d.iteration() == 0 ? "as:-1,bs:-1,cs:-1,r:-1,this:-1" : "as:4,bs:4,cs:4";
                         assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
                     }
                 }
@@ -47,12 +49,12 @@ public class Test_16_Modification_25 extends CommonTestRunner {
             if ("add2".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof FieldReference fr && "ts".equals(fr.fieldInfo.name)) {
                     if ("1".equals(d.statementId())) {
-                        assertEquals("as:4", d.variableInfo().getLinkedVariables().toString());
+                        assertLinked(d, it0("as:-1,this:-1"), it(1, "as:4"));
                     }
                 }
-                if(d.variable() instanceof ParameterInfo pi && "as".equals(pi.name)) {
-                    if("1".equals(d.statementId())) {
-                        assertEquals("this.ts:4", d.variableInfo().getLinkedVariables().toString());
+                if (d.variable() instanceof ParameterInfo pi && "as".equals(pi.name)) {
+                    if ("1".equals(d.statementId())) {
+                        assertLinked(d, it0("this.ts:-1,this:-1"), it(1, "this.ts:4"));
                     }
                 }
             }

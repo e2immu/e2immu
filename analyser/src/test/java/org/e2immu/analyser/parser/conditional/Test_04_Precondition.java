@@ -592,7 +592,7 @@ public class Test_04_Precondition extends CommonTestRunner {
                         .build());
     }
 
-    @Disabled("Context-not-null problem on cast variable")
+    @Disabled("inconsistency in lambda immutability, see Lambda_AAPI_18")
     @Test
     public void test_10() throws IOException {
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
@@ -602,8 +602,7 @@ public class Test_04_Precondition extends CommonTestRunner {
                         String expected = d.iteration() < 2 ? "<s:NullPointerException>"
                                 : "`instance type boolean?new TryCatchHelper<>(null,instance type Exception):new TryCatchHelper<>(`supplier`.get(),null).exception`/*(NullPointerException)*/";
                         assertEquals(expected, d.currentValue().toString());
-                        // FIXME a cast variable should always be not null!
-                        assertDv(d, 0, MultiLevel.EFFECTIVELY_NOT_NULL_DV, CONTEXT_NOT_NULL);
+                        assertDv(d, 2, MultiLevel.EFFECTIVELY_NOT_NULL_DV, NOT_NULL_EXPRESSION);
                     }
                 }
             }

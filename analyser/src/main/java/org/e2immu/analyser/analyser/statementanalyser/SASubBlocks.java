@@ -135,9 +135,16 @@ record SASubBlocks(StatementAnalysis statementAnalysis, StatementAnalyser statem
         DV isPostCondition = isPostCondition(expression);
         if (!isPostCondition.valueIsFalse() && canBeRepresented) {
             delays = delays.merge(isPostCondition.causesOfDelay());
-            PostCondition pc = new PostCondition(expression, statementAnalysis.index());
+            Expression potentiallyDelayed;
+            if (isPostCondition.isDelayed() && !expression.isDelayed()) {
+                potentiallyDelayed = DelayedExpression.forPrecondition(expression.getIdentifier(), primitives,
+                        expression, isPostCondition.causesOfDelay());
+            } else {
+                potentiallyDelayed = expression;
+            }
+            PostCondition pc = new PostCondition(potentiallyDelayed, statementAnalysis.index());
             progress = stateData.setPostCondition(pc);
-            LOGGER.debug("Escape with post-condition {}", expression);
+            LOGGER.debug("Escape with post-condition {}", potentiallyDelayed);
             inPreOrPostCondition = true;
         } else {
             // postCondition is false and there are no delays...
@@ -770,7 +777,7 @@ record SASubBlocks(StatementAnalysis statementAnalysis, StatementAnalyser statem
             int cnt = 0;
             for (Structure s : structure.subStatements()) {
                 if (s.statementExecution() == StatementExecution.CONDITIONALLY) {
-                   Identifier identifier = tryStatement.catchClauses.get(cnt++).k.identifier;
+                    Identifier identifier = tryStatement.catchClauses.get(cnt++).k.identifier;
                     booleanVars.add(Instance.forUnspecifiedCatchCondition(context.getPrimitives(), identifier));
                     conditionVariables.addAll(s.expression().variables(Element.DescendMode.NO));
                 }
