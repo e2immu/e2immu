@@ -11,11 +11,11 @@ import java.util.*;
 
 public class DGSimplified_5<T> extends Freezable {
 
-    private static class Node<T> {
-        List<T> dependsOn;
-        final T t;
+    private static class Node<S> {
+        List<S> dependsOn;
+        final S t;
 
-        private Node(T t) {
+        private Node(S t) {
             this.t = t;
         }
     }

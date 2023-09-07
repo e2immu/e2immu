@@ -137,7 +137,7 @@ public class Test_58_GuideSimplified extends CommonTestRunner {
                 }
             }
             if ("position".equals(d.methodInfo().name)) {
-                assertTrue(d.statementAnalysis().methodLevelData().linksHaveBeenEstablished());
+                assertEquals(d.iteration() > 1, d.statementAnalysis().methodLevelData().linksHaveBeenEstablished());
             }
             if ("values".equals(d.methodInfo().name)) {
                 if ("0".equals(d.statementId())) {

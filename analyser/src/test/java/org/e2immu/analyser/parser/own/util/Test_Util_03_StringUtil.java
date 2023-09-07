@@ -46,14 +46,14 @@ public class Test_Util_03_StringUtil extends CommonTestRunner {
                 }
                 if (d.variable() instanceof ReturnVariable) {
                     if ("1".equals(d.statementId())) {
-                        assertEquals("n<=10?Integer.toString(i):<return value>", d.currentValue().toString());
+                        assertEquals("n<11?Integer.toString(i):<return value>", d.currentValue().toString());
                     }
                     if ("2".equals(d.statementId())) {
-                        assertEquals("n<=10?Integer.toString(i):n<=100?i<=9?\"0\"+Integer.toString(i):Integer.toString(i):<return value>",
+                        assertEquals("n<11?Integer.toString(i):n<101?i<10?\"0\"+Integer.toString(i):Integer.toString(i):<return value>",
                                 d.currentValue().toString());
                     }
                     if ("3".equals(d.statementId())) {
-                        assertEquals("n<=10?Integer.toString(i):n<=100?i<=9?\"0\"+Integer.toString(i):Integer.toString(i):n<=1000?i<=9?\"00\"+Integer.toString(i):i<=99?\"0\"+Integer.toString(i):Integer.toString(i):<return value>",
+                        assertEquals("n<11?Integer.toString(i):n<101?i<10?\"0\"+Integer.toString(i):Integer.toString(i):n<1001?i<10?\"00\"+Integer.toString(i):i<100?\"0\"+Integer.toString(i):Integer.toString(i):<return value>",
                                 d.currentValue().toString());
                         assertEquals(193, d.currentValue().getComplexity());
                     }
@@ -90,7 +90,7 @@ public class Test_Util_03_StringUtil extends CommonTestRunner {
 
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("pad".equals(d.methodInfo().name)) {
-                assertEquals("/*inline pad*/n<=10?Integer.toString(i):n<=100?i<=9?\"0\"+Integer.toString(i):Integer.toString(i):n<=1000?i<=9?\"00\"+Integer.toString(i):i<=99?\"0\"+Integer.toString(i):Integer.toString(i):<return value>",
+                assertEquals("/*inline pad*/n<11?Integer.toString(i):n<101?i<10?\"0\"+Integer.toString(i):Integer.toString(i):n<1001?i<10?\"00\"+Integer.toString(i):i<100?\"0\"+Integer.toString(i):Integer.toString(i):<return value>",
                         d.methodAnalysis().getSingleReturnValue().toString());
             }
         };

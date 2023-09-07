@@ -54,8 +54,8 @@ public class Test_45_Project extends CommonTestRunner {
                 if ("2.0.1.0.1".equals(d.statementId())) {
                     String expected = switch (d.iteration()) {
                         case 0 -> "<null-check>&&<m:isAfter>&&<m:isBefore>";
-                        case 1, 2 -> "<m:isAfter>&&<m:isBefore>&&null!=<f:container.read>";
-                        default -> "(entry.getValue()).read.plusMillis(readWithinMillis).isAfter(now$2)&&(entry.getValue()).read.isBefore((entry.getValue()).updated)&&null!=(entry.getValue()).read";
+                        case 1, 2 -> "null!=<f:container.read>&&<m:isAfter>&&<m:isBefore>";
+                        default -> "(entry.getValue()).read.plusMillis(readWithinMillis).isAfter(now$2)&&null!=(entry.getValue()).read&&(entry.getValue()).read.isBefore((entry.getValue()).updated)";
                     };
                     assertEquals(expected, d.evaluationResult().getExpression().toString());
                     EvaluationResult.ChangeData changeData = d.findValueChangeByToString("container.read");
@@ -112,8 +112,8 @@ public class Test_45_Project extends CommonTestRunner {
                 if ("2.0.1.0.1.0.0".equals(d.statementId())) {
                     String expectedCondition = switch (d.iteration()) {
                         case 0 -> "<null-check>&&<m:isAfter>&&<m:isBefore>";
-                        case 1, 2 -> "<m:isAfter>&&<m:isBefore>&&null!=<f:container.read>";
-                        default -> "(entry.getValue()).read.plusMillis(readWithinMillis).isAfter(now$2)&&(entry.getValue()).read.isBefore((entry.getValue()).updated)&&null!=(entry.getValue()).read";
+                        case 1, 2 -> "null!=<f:container.read>&&<m:isAfter>&&<m:isBefore>";
+                        default -> "(entry.getValue()).read.plusMillis(readWithinMillis).isAfter(now$2)&&null!=(entry.getValue()).read&&(entry.getValue()).read.isBefore((entry.getValue()).updated)";
                     };
                     assertEquals(expectedCondition, d.condition().toString());
                     assertEquals("true", d.state().toString());

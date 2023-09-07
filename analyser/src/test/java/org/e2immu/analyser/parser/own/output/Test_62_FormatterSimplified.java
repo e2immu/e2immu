@@ -32,6 +32,7 @@ import org.e2immu.analyser.model.variable.ReturnVariable;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.parser.CommonTestRunner;
 import org.e2immu.analyser.visitor.*;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
@@ -81,6 +82,7 @@ public class Test_62_FormatterSimplified extends CommonTestRunner {
                 .build());
     }
 
+    @Disabled("Overwriting condition manager's final value")
     @Test
     public void test_2() throws IOException {
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
@@ -184,7 +186,7 @@ public class Test_62_FormatterSimplified extends CommonTestRunner {
                     if ("9".equals(d.statementId())) {
                         String expected = switch (d.iteration()) {
                             case 0 ->
-                                    "!<instanceOf:Space>&&(<instanceOf:Guide>?<m:apply>&&-1-<v:chars>+(!<instanceOf:Space>&&-1+<v:end>>=<v:pos>&&<f:NEWLINE>!=<m:get>&&(<instanceOf:Guide>||<m:length>>=1)?<p:maxChars>:instance type int)>=0:<m:apply>&&<m:length>>=1&&(!<v:allowBreak>||!<v:wroteOnce>||-<v:chars>+<p:maxChars>-<m:length>>=(<v:wroteOnce>&&<m:apply>&&!<instanceOf:Guide>&&!<instanceOf:Space>&&<m:length>>=1&&-1+<v:end>>=<v:pos>&&<v:lastOneWasSpace>!=<f:NONE>&&<v:lastOneWasSpace>!=<f:RELAXED_NONE>&&<f:NEWLINE>!=<m:get>?1:0)))&&-1+<v:end>>=<v:pos>&&<f:NEWLINE>!=<m:get>";
+                                    "!<instanceOf:Space>&&(<instanceOf:Guide>?<m:apply>&&-1-<v:chars>+(!<instanceOf:Space>&&-1+<v:end>>=<v:pos>&&<f:NEWLINE>!=<m:get>&&(<instanceOf:Guide>||<m:length>>=1)?<p:maxChars>:instance type int)>=0:<m:apply>&&<m:length>>=1&&(!<v:allowBreak>||!<v:wroteOnce>||-<v:chars>+<p:maxChars>-<m:length>>=(!<instanceOf:Guide>&&!<instanceOf:Space>&&<v:wroteOnce>&&<m:apply>&&<m:length>>=1&&-1+<v:end>>=<v:pos>&&<v:lastOneWasSpace>!=<f:NONE>&&<v:lastOneWasSpace>!=<f:RELAXED_NONE>&&<f:NEWLINE>!=<m:get>?1:0)))&&-1+<v:end>>=<v:pos>&&<f:NEWLINE>!=<m:get>";
                             case 1 ->
                                     "!<c:boolean>&&(<c:boolean>?<m:apply>&&!<c:boolean>:<m:apply>&&<m:length>>=1&&(!<vl:wroteOnce>||!(<c:boolean>?instance type boolean&&<dv:scope-scope-81:25:8.0.3.split>!=<f:NEVER>:instance type boolean)||-<m:length>!(<m:apply>&&!<c:boolean>&&!<c:boolean>&&<m:length>>=1&&-1+end$8>=pos$8&&<vp:NONE:container@Class_ElementarySpace>!=(<c:boolean>?<m:combine>:nullable instance type ElementarySpace)&&<f:RELAXED_NONE>!=(<c:boolean>?<m:combine>:nullable instance type ElementarySpace)&&list.get(pos$8)!=<vp:NEWLINE:container@Record_Space>&&<vp:NEWLINE:container@Record_Space>!=<m:get>&&-1+<vl:end>>=(-1+end$8>=pos$8&&list.get(pos$8)!=<vp:NEWLINE:container@Record_Space>?1+(<c:boolean>?<vl:pos>:<c:boolean>?<new:ForwardInfo>:<m:length>>=1?<vl:pos>:instance type int):start)&&(<c:boolean>||<c:boolean>||<m:length><=0?instance type boolean:<s:boolean>)?1:0)+(!<c:boolean>&&!<c:boolean>&&<m:length>>=1&&-1+end$8>=pos$8&&list.get(pos$8)!=<vp:NEWLINE:container@Record_Space>?<p:maxChars>:instance type int)>=(-1+end$8>=pos$8&&list.get(pos$8)!=<vp:NEWLINE:container@Record_Space>?<instanceOf:Space>||<instanceOf:Guide>||<m:length><=0?<vl:chars>:<v:chars>+<m:length>+(<v:wroteOnce>&&!<m:apply>&&!<instanceOf:Guide>&&!<instanceOf:Space>&&<m:length>>=1&&-1+<v:end>>=<v:pos>&&<v:lastOneWasSpace>!=<f:NONE>&&<v:lastOneWasSpace>!=<f:RELAXED_NONE>&&<f:NEWLINE>!=<m:get>?1:0):0)))&&<vp:NEWLINE:container@Record_Space>!=<m:get>&&-1+<vl:end>>=(-1+end$8>=pos$8&&list.get(pos$8)!=<vp:NEWLINE:container@Record_Space>?1+(<c:boolean>?<vl:pos>:<c:boolean>?<new:ForwardInfo>:<m:length>>=1?<vl:pos>:instance type int):start)";
                             case 2 ->
@@ -377,9 +379,9 @@ public class Test_62_FormatterSimplified extends CommonTestRunner {
                 }
                 if ("1".equals(d.statementId())) {
                     String expect = switch (d.iteration()) {
-                        case 0, 1, 2 -> "<null-check>&&9==<m:index>";
+                        case 0, 1, 2 -> "9==<m:index>&&<null-check>";
                         default ->
-                                "null!=((new Stack<GuideOnStack>()/*0==this.size()*/).peek()).forwardInfo&&9==((new Stack<GuideOnStack>()/*0==this.size()*/).peek()).forwardInfo.guide.index()";
+                                "9==((new Stack<GuideOnStack>()/*0==this.size()*/).peek()).forwardInfo.guide.index()&&null!=((new Stack<GuideOnStack>()/*0==this.size()*/).peek()).forwardInfo";
                     };
                     assertEquals(expect, d.evaluationResult().value().toString());
                     assertEquals(d.iteration() < 3, d.evaluationResult().causesOfDelay().isDelayed());

@@ -27,15 +27,15 @@ import java.util.function.Consumer;
 @ImmutableContainer(after = "frozen", hc = true)
 public class DGSimplified_1<T> extends Freezable {
 
-    private static class Node<T> {
-        List<T> dependsOn;
-        final T t;
+    private static class Node<S> {
+        List<S> dependsOn;
+        final S t;
 
-        private Node(T t) {
+        private Node(S t) {
             this.t = t;
         }
 
-        private Node(T t, List<T> dependsOn) {
+        private Node(S t, List<S> dependsOn) {
             this.t = t;
             this.dependsOn = dependsOn;
         }

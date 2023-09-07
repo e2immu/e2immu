@@ -22,9 +22,9 @@ public class TrieSimplified_5<T> {
 
     private final TrieNode<T> root = new TrieNode<>();
 
-    private static class TrieNode<T> {
-        List<T> data;
-        Map<String, TrieNode<T>> map;
+    private static class TrieNode<S> {
+        List<S> data;
+        Map<String, TrieNode<S>> map;
     }
 
     @NotNull

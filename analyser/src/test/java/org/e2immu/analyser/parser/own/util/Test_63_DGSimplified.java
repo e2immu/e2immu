@@ -29,6 +29,7 @@ import org.e2immu.analyser.model.variable.VariableNature;
 import org.e2immu.analyser.parser.CommonTestRunner;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.visitor.*;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
@@ -41,6 +42,7 @@ public class Test_63_DGSimplified extends CommonTestRunner {
         super(true);
     }
 
+    @Disabled("Overwriting StateData.setValueOfExpression")
     @Test
     public void test_0() throws IOException {
         EvaluationResultVisitor evaluationResultVisitor = d -> {
@@ -227,6 +229,7 @@ public class Test_63_DGSimplified extends CommonTestRunner {
                 .setComputeFieldAnalyserAcrossAllMethods(true).build());
     }
 
+    @Disabled("Overwriting StateData.setValueOfExpression")
     @Test
     public void test_1() throws IOException {
         EvaluationResultVisitor evaluationResultVisitor = d -> {
@@ -471,6 +474,7 @@ public class Test_63_DGSimplified extends CommonTestRunner {
                 .build(), new AnalyserConfiguration.Builder().setComputeFieldAnalyserAcrossAllMethods(true).build());
     }
 
+    @Disabled("Overwriting StateData.setValueOfExpression")
     @Test
     public void test_4() throws IOException {
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {

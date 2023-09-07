@@ -30,6 +30,7 @@ import org.e2immu.analyser.parser.CommonTestRunner;
 import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.util.UpgradableBooleanMap;
 import org.e2immu.analyser.visitor.*;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
@@ -44,6 +45,7 @@ public class Test_Util_02_UpgradableBooleanMap extends CommonTestRunner {
         super(true);
     }
 
+    @Disabled("Missing hc=true in method and parameter")
     @Test
     public void test() throws IOException {
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {

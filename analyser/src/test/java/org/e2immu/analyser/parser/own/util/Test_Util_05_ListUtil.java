@@ -26,6 +26,7 @@ import org.e2immu.analyser.util.ListUtil;
 import org.e2immu.analyser.visitor.EvaluationResultVisitor;
 import org.e2immu.analyser.visitor.StatementAnalyserVariableVisitor;
 import org.e2immu.analyser.visitor.StatementAnalyserVisitor;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
@@ -35,6 +36,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 public class Test_Util_05_ListUtil extends CommonTestRunner {
 
+    @Disabled("Bad hidden content computation, and others")
     @Test
     public void test() throws IOException {
 

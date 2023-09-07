@@ -97,9 +97,9 @@ public class Test_AnalysisProvider extends CommonTestRunner {
                             case 3 ->
                                     "parameterizedType.arrays>=1?<f:EFFECTIVELY_E1IMMUTABLE_DV>:null==`parameterizedType.bestTypeInfo`?<m:max>:<m:isDelayed>?<s:DV>:<return value>";
                             case 4 ->
-                                    "parameterizedType.arrays>=1?<f:EFFECTIVELY_E1IMMUTABLE_DV>:null==`parameterizedType.bestTypeInfo`?<m:max>:`this.getTypeAnalysisNullWhenAbsent(`parameterizedType.bestTypeInfo`).getProperty(AnalysisProvider_0.IMMUTABLE).value`<=-1?this.getTypeAnalysisNullWhenAbsent(`parameterizedType.bestTypeInfo`).getProperty(AnalysisProvider_0.IMMUTABLE):<return value>";
+                                    "parameterizedType.arrays>=1?<f:EFFECTIVELY_E1IMMUTABLE_DV>:null==`parameterizedType.bestTypeInfo`?<m:max>:`this.getTypeAnalysisNullWhenAbsent(`parameterizedType.bestTypeInfo`).getProperty(AnalysisProvider_0.IMMUTABLE).value`<0?this.getTypeAnalysisNullWhenAbsent(`parameterizedType.bestTypeInfo`).getProperty(AnalysisProvider_0.IMMUTABLE):<return value>";
                             default ->
-                                    "parameterizedType.arrays>=1?AnalysisProvider_0.EFFECTIVELY_E1IMMUTABLE_DV:null==`parameterizedType.bestTypeInfo`?`dynamicValue.value`>=`unboundIsMutable?AnalysisProvider_0.NOT_INVOLVED_DV:AnalysisProvider_0.EFFECTIVELY_E2IMMUTABLE_DV.value`?dynamicValue:unboundIsMutable?AnalysisProvider_0.NOT_INVOLVED_DV:AnalysisProvider_0.EFFECTIVELY_E2IMMUTABLE_DV:`this.getTypeAnalysisNullWhenAbsent(`parameterizedType.bestTypeInfo`).getProperty(AnalysisProvider_0.IMMUTABLE).value`<=-1?this.getTypeAnalysisNullWhenAbsent(`parameterizedType.bestTypeInfo`).getProperty(AnalysisProvider_0.IMMUTABLE):<return value>";
+                                    "parameterizedType.arrays>=1?AnalysisProvider_0.EFFECTIVELY_E1IMMUTABLE_DV:null==`parameterizedType.bestTypeInfo`?`dynamicValue.value`>=`unboundIsMutable?AnalysisProvider_0.NOT_INVOLVED_DV:AnalysisProvider_0.EFFECTIVELY_E2IMMUTABLE_DV.value`?dynamicValue:unboundIsMutable?AnalysisProvider_0.NOT_INVOLVED_DV:AnalysisProvider_0.EFFECTIVELY_E2IMMUTABLE_DV:`this.getTypeAnalysisNullWhenAbsent(`parameterizedType.bestTypeInfo`).getProperty(AnalysisProvider_0.IMMUTABLE).value`<0?this.getTypeAnalysisNullWhenAbsent(`parameterizedType.bestTypeInfo`).getProperty(AnalysisProvider_0.IMMUTABLE):<return value>";
                         };
                         assertEquals(expected, d.currentValue().toString());
                     }
@@ -141,7 +141,7 @@ public class Test_AnalysisProvider extends CommonTestRunner {
                 }
                 if ("8".equals(d.statementId())) {
                     String expected = switch (d.iteration()) {
-                        case 0, 1, 2 -> "<m:isAtLeastE2Immutable>&&!<m:isEmpty>";
+                        case 0, 1, 2 -> "!<m:isEmpty>&&<m:isAtLeastE2Immutable>";
                         case 3, 4 -> "!parameterizedType.parameters.isEmpty()&&<m:isAtLeastE2Immutable>";
                         default ->
                                 "!parameterizedType.parameters.isEmpty()&&this.isAtLeastE2Immutable(`dynamicValue.value`>=`this.getTypeAnalysisNullWhenAbsent(`parameterizedType.bestTypeInfo`).getProperty(AnalysisProvider_0.IMMUTABLE).value`?dynamicValue:this.getTypeAnalysisNullWhenAbsent(`parameterizedType.bestTypeInfo`).getProperty(AnalysisProvider_0.IMMUTABLE))";
@@ -608,7 +608,7 @@ public class Test_AnalysisProvider extends CommonTestRunner {
                         .methodsOfOwnClassReached().stream().map(MethodInfo::name).sorted().collect(Collectors.joining(",")));
 
                 String expected = d.iteration() < 5 ? "<m:b>"
-                        : "this.sumImmutableLevels(n<=9?this.a(b0):AnalysisProvider_4.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV)";
+                        : "this.sumImmutableLevels(n<10?this.a(b0):AnalysisProvider_4.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV)";
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
             }
             if ("c".equals(d.methodInfo().name)) {

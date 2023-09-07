@@ -323,8 +323,7 @@ public class Test_Support_02_SetOnce extends CommonTestRunner {
                 assertEquals(expectPc, d.methodAnalysis().getPreconditionForEventual().expression().toString());
 
                 String expected = switch (d.iteration()) {
-                    case 0 -> "<precondition>&&!<null-check>";
-                    case 1 -> "!<null-check>";
+                    case 0, 1 -> "!<null-check>";
                     default -> "null==t";
                 };
                 assertEquals(expected, d.methodAnalysis().getPrecondition().expression().toString());
@@ -360,7 +359,7 @@ public class Test_Support_02_SetOnce extends CommonTestRunner {
                     } else fail();
                 }
                 assertDv(d, DV.FALSE_DV, Property.MODIFIED_METHOD);
-                assertTrue(d.methodAnalysis().methodLevelData().linksHaveBeenEstablished());
+                assertEquals(d.iteration()>0, d.methodAnalysis().methodLevelData().linksHaveBeenEstablished());
 
                 assertDv(d, DV.FALSE_DV, Property.IDENTITY);
                 assertDv(d, 2, MultiLevel.INDEPENDENT_HC_DV, Property.INDEPENDENT);

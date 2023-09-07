@@ -36,6 +36,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+import static org.e2immu.analyser.parser.VisitorTestSupport.IterationInfo.it;
+import static org.e2immu.analyser.parser.VisitorTestSupport.IterationInfo.it0;
 import static org.junit.jupiter.api.Assertions.*;
 
 public class Test_Support_08_SetOnceMap extends CommonTestRunner {
@@ -140,7 +142,9 @@ public class Test_Support_08_SetOnceMap extends CommonTestRunner {
                     if ("4".equals(d.statementId())) {
                         String expectValue = d.iteration() == 0 ? "<p:v>" : "nullable instance type V";
                         assertEquals(expectValue, d.currentValue().toString());
-                        assertEquals("this.map:3", d.variableInfo().getLinkedVariables().toString());
+                        assertLinked(d,
+                                it0("k:-1,this.map:-1,this:-1"),
+                                it(1, "this.map:3"));
                     }
                 }
             }

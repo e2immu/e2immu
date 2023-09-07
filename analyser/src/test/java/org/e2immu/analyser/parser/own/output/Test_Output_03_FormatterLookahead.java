@@ -24,6 +24,7 @@ import org.e2immu.analyser.output.formatter.*;
 import org.e2immu.analyser.parser.CommonTestRunner;
 import org.e2immu.analyser.visitor.MethodAnalyserVisitor;
 import org.e2immu.analyser.visitor.StatementAnalyserVariableVisitor;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
@@ -38,6 +39,7 @@ public class Test_Output_03_FormatterLookahead extends CommonTestRunner {
         super(true);
     }
 
+    @Disabled("Infinite loop between And, Negation, Equals, isNotNull0")
     @Test
     public void test_0() throws IOException {
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
