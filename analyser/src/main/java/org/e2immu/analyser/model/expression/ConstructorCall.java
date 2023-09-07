@@ -225,10 +225,16 @@ public class ConstructorCall extends BaseExpression implements HasParameterExpre
 
     @Override
     public int internalCompareTo(Expression v) {
-        int c = Comparator.nullsFirst(Comparator.comparing(e -> ((ConstructorCall) e).scope)).compare(this, v);
-        if (c != 0) return c;
-        return parameterizedType.detailedString()
-                .compareTo(((ConstructorCall) v).parameterizedType.detailedString());
+        if (v instanceof ConstructorCall cc) {
+            if (scope == null && cc.scope != null) return -1;
+            if (scope != null && cc.scope == null) return 1;
+            if (scope != null) {
+                int c = scope.compareTo(cc.scope);
+                if (c != 0) return c;
+            }
+            return parameterizedType.detailedString().compareTo(cc.parameterizedType.detailedString());
+        }
+        throw new UnsupportedOperationException();
     }
 
     @Override
@@ -599,7 +605,9 @@ public class ConstructorCall extends BaseExpression implements HasParameterExpre
         return parameterExpressions;
     }
 
-    public Expression scope() { return scope; }
+    public Expression scope() {
+        return scope;
+    }
 
     @SuppressWarnings("unused")
     public boolean hasConstructor() {
