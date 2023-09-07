@@ -189,7 +189,7 @@ public class ParseSwitchExpr {
         }
         if (!addedADefault) {
             // no default, so no return statement. To have correct java, we'll add a throws statement
-            builder.addStatement(createThrowStatement(newExpressionContext, ip));
+            builder.addStatement(createThrowStatement(newExpressionContext, ip, Identifier.from(switchExpr)));
         }
         return builder.build();
     }
@@ -234,13 +234,14 @@ public class ParseSwitchExpr {
         return statement;
     }
 
-    private static ThrowStatement createThrowStatement(ExpressionContext newExpressionContext, InspectionProvider ip) {
+    private static ThrowStatement createThrowStatement(ExpressionContext newExpressionContext,
+                                                       InspectionProvider ip,
+                                                       Identifier identifier) {
         TypeInfo runtimeException = newExpressionContext.typeContext().getFullyQualified(RuntimeException.class);
         TypeInspection typeInspection = ip.getTypeInspection(runtimeException);
         MethodInfo constructor = typeInspection.constructors().stream()
                 .filter(m -> ip.getMethodInspection(m).getParameters().isEmpty()).findFirst().orElseThrow();
-        return new ThrowStatement(Identifier.generate("throw at end of switch"),
-                ConstructorCall.objectCreation(Identifier.generate("throw at end of switch object"), constructor,
-                        runtimeException.asParameterizedType(ip), Diamond.NO, List.of()), null);
+        return new ThrowStatement(identifier, ConstructorCall.objectCreation(identifier, null, constructor,
+                runtimeException.asParameterizedType(ip), Diamond.NO, List.of()), null);
     }
 }

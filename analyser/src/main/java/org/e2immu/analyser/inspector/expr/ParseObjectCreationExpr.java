@@ -37,8 +37,24 @@ public class ParseObjectCreationExpr {
     public static Expression parse(ExpressionContext expressionContext,
                                    ObjectCreationExpr objectCreationExpr,
                                    ForwardReturnTypeInfo forwardReturnTypeInfo) {
-        TypeContext typeContext = expressionContext.typeContext();
-
+        TypeContext typeContext;
+        Expression scope;
+        if (objectCreationExpr.getScope().isPresent()) {
+            com.github.javaparser.ast.expr.Expression scopeExpr = objectCreationExpr.getScope().get();
+            scope = expressionContext.parseExpression(scopeExpr, forwardReturnTypeInfo); // TODO check forwardRTI
+            typeContext = expressionContext.newTypeContext("constructor call scope").typeContext();
+            TypeInfo bestType = scope.returnType().bestTypeInfo(expressionContext.typeContext());
+            if (bestType != null) {
+                TypeInspection typeInspection = expressionContext.typeContext().getTypeInspection(bestType);
+                for (TypeInfo sub : typeInspection.subTypes()) {
+                    typeContext.addToContext(sub);
+                }
+                // TODO are there other things we should add to this context??
+            }
+        } else {
+            typeContext = expressionContext.typeContext();
+            scope = null;
+        }
         ParameterizedType typeAsIs = ParameterizedTypeFactory.from(typeContext, objectCreationExpr.getType());
         ParameterizedType formalType = typeAsIs.typeInfo.asParameterizedType(typeContext);
 
@@ -74,7 +90,7 @@ public class ParseObjectCreationExpr {
                     expressionContext.resolver().storeComments(),
                     Map.of(anonymousType, expressionContext.newVariableContext("Anonymous subtype")));
 
-            return ConstructorCall.withAnonymousClass(id, parameterizedType, anonymousType, diamond);
+            return ConstructorCall.withAnonymousClass(id, scope, parameterizedType, anonymousType, diamond);
         }
 
         Map<NamedType, ParameterizedType> typeMap = parameterizedType == null ? null :
@@ -106,7 +122,7 @@ public class ParseObjectCreationExpr {
         }
         // IMPORTANT: every newly created object is different from each other, UNLESS we're a record, then
         // we can check the constructors... See EqualityMode
-        return ConstructorCall.objectCreation(id, candidate.method().methodInspection.getMethodInfo(),
+        return ConstructorCall.objectCreation(id, scope, candidate.method().methodInspection.getMethodInfo(),
                 finalParameterizedType, diamond, candidate.newParameterExpressions());
     }
 

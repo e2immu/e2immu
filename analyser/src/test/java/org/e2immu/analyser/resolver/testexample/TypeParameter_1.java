@@ -7,43 +7,37 @@ import org.e2immu.annotation.eventual.Only;
 import org.e2immu.support.Freezable;
 
 import java.util.*;
-import java.util.function.BiConsumer;
 
-public class TypeParameter_1<T> extends Freezable {
+/*
+type parameter has a bit of a weird name, to facilitate debugging.
+T as a name is too common, and processing of byte code will also go through ParameterizedTypeFactory.
+ */
+public class TypeParameter_1<TP0> extends Freezable {
 
-private static class Node<T> {
-    List<T> dependsOn;
-    final T t;
+    private static class Node<TP0> {
+        List<TP0> dependsOn;
+        final TP0 t;
 
-    private Node(T t) {
-        this.t = t;
+        private Node(TP0 t) {
+            this.t = t;
+        }
+
+        private Node(TP0 t, List<TP0> dependsOn) {
+            this.t = t;
+            this.dependsOn = dependsOn;
+        }
     }
-
-    private Node(T t, List<T> dependsOn) {
-        this.t = t;
-        this.dependsOn = dependsOn;
-    }
-}
 
     @NotModified(after = "frozen")
-    private final Map<T, Node<T>> nodeMap = new HashMap<>();
+    private final Map<TP0, Node<TP0>> nodeMap = new HashMap<>();
 
-    @NotModified
-    public int size() {
-        return nodeMap.size();
-    }
-
-    @NotModified
-    public boolean isEmpty() {
-        return nodeMap.isEmpty();
-    }
     @NotNull
     @Modified
     @Only(before = "frozen")
-    private Node<T> getOrCreate(@NotNull T t) {
+    private Node<TP0> getOrCreate(@NotNull TP0 t) {
         ensureNotFrozen();
         Objects.requireNonNull(t);
-        Node<T> node = nodeMap.get(t);
+        Node<TP0> node = nodeMap.get(t);
         if (node == null) {
             node = new Node<>(t);
             nodeMap.put(t, node);
@@ -51,25 +45,15 @@ private static class Node<T> {
         return node;
     }
 
-    @NotModified(contract = true)
-    public void visit(@NotNull BiConsumer<T, List<T>> consumer) {
-        nodeMap.values().forEach(n -> consumer.accept(n.t, n.dependsOn));
-    }
-
     @Only(before = "frozen")
     @Modified
-    public void addNode(@NotNull @NotModified T t, @NotNull(content = true) Collection<T> dependsOn, boolean bidirectional) {
-        ensureNotFrozen();
-        Node<T> node = getOrCreate(t);
-        for (T d : dependsOn) {
-            if (node.dependsOn == null) node.dependsOn = new LinkedList<>();
-            node.dependsOn.add(d);
+    public void addNode(@NotNull @NotModified TP0 t, @NotNull(content = true) Collection<TP0> dependsOn, boolean bidirectional) {
+        for (TP0 d : dependsOn) {
             if (bidirectional) {
-                Node<T> n = getOrCreate(d);
+                Node<TP0> n = getOrCreate(d);
                 if (n.dependsOn == null) n.dependsOn = new LinkedList<>();
                 n.dependsOn.add(t);
             }
         }
     }
-
 }

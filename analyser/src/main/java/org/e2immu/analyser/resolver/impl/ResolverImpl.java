@@ -334,7 +334,9 @@ public class ResolverImpl implements Resolver {
             // recursion, do subtypes first (no recursion at resolver level!)
             typeInspection.subTypes().forEach(subType -> {
                 LOGGER.debug("From {} into {}", typeInfo.fullyQualifiedName, subType.fullyQualifiedName);
-                doType(subType, topType, expressionContextForBody, methodFieldSubTypeGraph);
+                ExpressionContext expressionContextForSubType = expressionContextForBody
+                        .newTypeContext("sub-type definition");
+                doType(subType, topType, expressionContextForSubType, methodFieldSubTypeGraph);
             });
 
             List<TypeInfo> typeAndAllSubTypes = typeAndAllSubTypes(typeInfo);

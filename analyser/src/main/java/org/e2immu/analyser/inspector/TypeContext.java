@@ -110,7 +110,7 @@ public class TypeContext implements TypeAndInspectionProvider {
             }
             throw new UnsupportedOperationException("?");
         }
-        // try out java.lang; has been pre-loaded
+        // try out java.lang; has been preloaded
         TypeInfo inJavaLang = typeMap.get("java.lang." + name);
         if (inJavaLang != null) return inJavaLang;
 

@@ -61,7 +61,7 @@ public class TestTypeParameter extends CommonTest {
     }
 
     @Test
-    public void test2() throws IOException {
+    public void test2a() throws IOException {
         TypeMap typeMap = inspectAndResolve(TypeParameter_1.class);
 
         TypeInfo typeParameter = typeMap.get(TypeParameter_1.class);
@@ -79,11 +79,29 @@ public class TestTypeParameter extends CommonTest {
         assertEquals(TP0_FQN, p1tp.getOwner().getLeft().fullyQualifiedName);
 
         ForEachStatement forEach = (ForEachStatement) addNode.methodInspection.get().getMethodBody().structure
-                .getStatements().get(2);
+                .getStatements().get(0);
         LocalVariableCreation lvc = (LocalVariableCreation) forEach.structure.initialisers().get(0);
-        assertEquals("T d", lvc.toString());
+        assertEquals("TP0 d", lvc.toString());
         TypeParameter tpLvc = lvc.localVariableReference.parameterizedType.typeParameter;
         assertNotNull(tpLvc);
         assertEquals(TP0_FQN, tpLvc.getOwner().getLeft().toString());
+    }
+
+    @Test
+    public void test2b() throws IOException {
+        TypeMap typeMap = inspectAndResolve(TypeParameter_1.class);
+
+        TypeInfo typeParameter = typeMap.get(TypeParameter_1.class);
+        assertNotNull(typeParameter);
+        MethodInfo getOrCreate = typeParameter.findUniqueMethod("getOrCreate", 1);
+        List<ParameterInfo> getOrCreateParameters = getOrCreate.methodInspection.get().getParameters();
+        ParameterInfo p0 = getOrCreateParameters.get(0);
+        assertNotNull(p0.parameterizedType.typeParameter);
+        String TP0_FQN = TypeParameter_1.class.getCanonicalName();
+        assertEquals(TP0_FQN, p0.parameterizedType.typeParameter.getOwner().getLeft().fullyQualifiedName);
+
+        TypeParameter p1tp = getOrCreate.returnType().parameters.get(0).typeParameter;
+        assertNotNull(p1tp);
+        assertEquals(TP0_FQN, p1tp.getOwner().getLeft().fullyQualifiedName);
     }
 }

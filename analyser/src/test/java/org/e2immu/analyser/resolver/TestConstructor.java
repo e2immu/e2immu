@@ -20,7 +20,7 @@ import org.e2immu.analyser.model.expression.ConstructorCall;
 import org.e2immu.analyser.model.expression.MethodCall;
 import org.e2immu.analyser.model.expression.VariableExpression;
 import org.e2immu.analyser.model.statement.*;
-import org.e2immu.analyser.model.variable.FieldReference;
+import org.e2immu.analyser.model.variable.*;
 import org.e2immu.analyser.parser.TypeMap;
 import org.e2immu.analyser.resolver.testexample.*;
 import org.junit.jupiter.api.Test;
@@ -141,5 +141,43 @@ public class TestConstructor extends CommonTest {
     @Test
     public void test_9() throws IOException {
         inspectAndResolve(Constructor_9.class);
+    }
+
+    @Test
+    public void test_10() throws IOException {
+        TypeMap typeMap = inspectAndResolve(Constructor_10Scope.class);
+        TypeInfo typeInfo = typeMap.get(Constructor_10Scope.class);
+        assertNotNull(typeInfo);
+
+        MethodInfo copy = typeInfo.findUniqueMethod("copy", 1);
+        Block copyBlock = typeMap.getMethodInspection(copy).getMethodBody();
+        ReturnStatement copyRs = (ReturnStatement) copyBlock.structure.statements().get(0);
+        ConstructorCall copyCC = (ConstructorCall) copyRs.expression;
+        assertEquals("c", copyCC.scope().toString());
+
+        MethodInfo getSub = typeInfo.findUniqueMethod("getSub", 1);
+        Block getSubBlock = typeMap.getMethodInspection(getSub).getMethodBody();
+        ReturnStatement getSubRs = (ReturnStatement) getSubBlock.structure.statements().get(0);
+        ConstructorCall getSubCC = (ConstructorCall) getSubRs.expression;
+        assertEquals("this", getSubCC.scope().toString());
+        assertTrue(getSubCC.scope() instanceof VariableExpression ve && ve.variable() instanceof This);
+    }
+
+    @Test
+    public void test_11() throws IOException {
+        TypeMap typeMap = inspectAndResolve(Constructor_11CommonConstructorBlock.class);
+        TypeInfo typeInfo = typeMap.get(Constructor_11CommonConstructorBlock.class);
+        assertNotNull(typeInfo);
+
+        // TODO https://github.com/e2immu/e2immu/issues/57
+    }
+
+    @Test
+    public void test_12() throws IOException {
+        TypeMap typeMap = inspectAndResolve(Constructor_12DoubleBrace.class);
+        TypeInfo typeInfo = typeMap.get(Constructor_12DoubleBrace.class);
+        assertNotNull(typeInfo);
+
+        // TODO
     }
 }

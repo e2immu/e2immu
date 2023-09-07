@@ -22,6 +22,7 @@ import org.e2immu.analyser.model.expression.ConstructorCall;
 import org.e2immu.analyser.model.statement.ReturnStatement;
 import org.e2immu.analyser.parser.TypeMap;
 import org.e2immu.analyser.resolver.testexample.SubType_0;
+import org.e2immu.analyser.resolver.testexample.SubType_1;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
@@ -34,7 +35,7 @@ tests nested anonymous subtypes, and their static property.
 public class TestSubType extends CommonTest {
 
     @Test
-    public void test_0() throws IOException {
+    public void test0() throws IOException {
         TypeMap typeMap = inspectAndResolve(SubType_0.class);
         TypeInfo typeInfo = typeMap.get(SubType_0.class);
         assertNotNull(typeInfo);
@@ -62,6 +63,16 @@ public class TestSubType extends CommonTest {
                 } else fail(s0.getClass().toString());
             } else fail(rs1.getClass().toString());
         } else fail(s1.getClass().toString());
+    }
+
+
+    @Test
+    public void test1() throws IOException {
+        TypeMap typeMap = inspectAndResolve(SubType_1.class);
+        TypeInfo typeInfo = typeMap.get(SubType_1.class);
+        assertNotNull(typeInfo);
+        assertTrue(typeInfo.typeInspection.get().isExtensible());
+
     }
 
 }

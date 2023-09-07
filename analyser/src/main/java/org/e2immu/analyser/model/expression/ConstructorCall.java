@@ -15,6 +15,7 @@
 package org.e2immu.analyser.model.expression;
 
 import org.e2immu.analyser.analyser.*;
+import org.e2immu.analyser.analyser.Properties;
 import org.e2immu.analyser.analysis.FieldAnalysis;
 import org.e2immu.analyser.analysis.MethodAnalysis;
 import org.e2immu.analyser.analysis.TypeAnalysis;
@@ -30,12 +31,10 @@ import org.e2immu.analyser.util.Pair;
 import org.e2immu.analyser.util.UpgradableBooleanMap;
 import org.e2immu.annotation.NotNull;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /*
  Represents first a newly constructed object, then after applying modifying methods, a "used" object
@@ -43,6 +42,7 @@ import java.util.stream.Collectors;
  */
 public class ConstructorCall extends BaseExpression implements HasParameterExpressions {
 
+    private final Expression scope;
     private final MethodInfo constructor;
     private final ParameterizedType parameterizedType;
     private final Diamond diamond;
@@ -60,12 +60,12 @@ public class ConstructorCall extends BaseExpression implements HasParameterExpre
                                                   List<Expression> parameterExpressions,
                                                   ArrayInitializer arrayInitializer,
                                                   Identifier identifier) {
-        return new ConstructorCall(identifier, arrayCreationConstructor, parameterizedType, Diamond.NO,
+        return new ConstructorCall(identifier, null, arrayCreationConstructor, parameterizedType, Diamond.NO,
                 parameterExpressions, null, arrayInitializer);
     }
 
     public static Expression instanceFromSam(MethodInfo sam, ParameterizedType parameterizedType) {
-        return new ConstructorCall(sam.getIdentifier(), null, parameterizedType, Diamond.NO, List.of(),
+        return new ConstructorCall(sam.getIdentifier(), null, null, parameterizedType, Diamond.NO, List.of(),
                 sam.typeInfo, null);
     }
 
@@ -73,10 +73,11 @@ public class ConstructorCall extends BaseExpression implements HasParameterExpre
     When creating an anonymous instance of a class (new SomeType() { })
      */
     public static ConstructorCall withAnonymousClass(Identifier identifier,
+                                                     Expression scope,
                                                      @NotNull ParameterizedType parameterizedType,
                                                      @NotNull TypeInfo anonymousClass,
                                                      Diamond diamond) {
-        return new ConstructorCall(identifier, null, parameterizedType, diamond,
+        return new ConstructorCall(identifier, scope, null, parameterizedType, diamond,
                 List.of(), anonymousClass, null);
     }
 
@@ -87,11 +88,12 @@ public class ConstructorCall extends BaseExpression implements HasParameterExpre
     Others
      */
     public static ConstructorCall objectCreation(Identifier identifier,
+                                                 Expression scope,
                                                  MethodInfo constructor,
                                                  ParameterizedType parameterizedType,
                                                  Diamond diamond,
                                                  List<Expression> parameterExpressions) {
-        return new ConstructorCall(identifier, constructor, parameterizedType, diamond, parameterExpressions,
+        return new ConstructorCall(identifier, scope, constructor, parameterizedType, diamond, parameterExpressions,
                 null, null);
     }
 
@@ -106,17 +108,18 @@ public class ConstructorCall extends BaseExpression implements HasParameterExpre
     }
 
     public ConstructorCall copy(List<Expression> newParameterExpressions) {
-        return new ConstructorCall(identifier, constructor, parameterizedType, diamond, newParameterExpressions,
+        return new ConstructorCall(identifier, scope, constructor, parameterizedType, diamond, newParameterExpressions,
                 anonymousClass, arrayInitializer);
     }
 
     // to erase identifier equality
     public ConstructorCall copy(Identifier identifier) {
-        return new ConstructorCall(identifier, constructor, parameterizedType, diamond, parameterExpressions,
+        return new ConstructorCall(identifier, scope, constructor, parameterizedType, diamond, parameterExpressions,
                 anonymousClass, arrayInitializer);
     }
 
     public ConstructorCall(Identifier identifier,
+                           Expression scope,
                            MethodInfo constructor,
                            ParameterizedType parameterizedType,
                            Diamond diamond,
@@ -131,6 +134,7 @@ public class ConstructorCall extends BaseExpression implements HasParameterExpre
         this.anonymousClass = anonymousClass;
         this.arrayInitializer = arrayInitializer;
         this.diamond = parameterizedType.parameters.isEmpty() ? Diamond.NO : diamond;
+        this.scope = scope;
     }
 
     @Override
@@ -146,6 +150,7 @@ public class ConstructorCall extends BaseExpression implements HasParameterExpre
         return identifier.equals(newObject.identifier) &&
                 parameterizedType.equals(newObject.parameterizedType) &&
                 parameterExpressions.equals(newObject.parameterExpressions) &&
+                Objects.equals(scope, newObject.scope) &&
                 Objects.equals(anonymousClass, newObject.anonymousClass) &&
                 Objects.equals(constructor, newObject.constructor) &&
                 Objects.equals(arrayInitializer, newObject.arrayInitializer);
@@ -153,7 +158,7 @@ public class ConstructorCall extends BaseExpression implements HasParameterExpre
 
     @Override
     public int hashCode() {
-        return Objects.hash(parameterizedType, parameterExpressions, anonymousClass, constructor,
+        return Objects.hash(parameterizedType, parameterExpressions, scope, anonymousClass, constructor,
                 arrayInitializer);
     }
 
@@ -162,6 +167,7 @@ public class ConstructorCall extends BaseExpression implements HasParameterExpre
         Expression translated = translationMap.translateExpression(this);
         if (translated != this) return translated;
 
+        Expression translatedScope = scope == null ? null : translationMap.translateExpression(scope);
         ParameterizedType translatedType = translationMap.translateType(this.parameterizedType);
         List<Expression> translatedParameterExpressions = parameterExpressions.isEmpty() ? parameterExpressions
                 : parameterExpressions.stream()
@@ -171,7 +177,8 @@ public class ConstructorCall extends BaseExpression implements HasParameterExpre
         ArrayInitializer translatedInitializer = arrayInitializer == null ? null :
                 TranslationMapImpl.ensureExpressionType(
                         arrayInitializer.translate(inspectionProvider, translationMap), ArrayInitializer.class);
-        if (translatedType == this.parameterizedType
+        if (translatedScope == scope
+                && translatedType == this.parameterizedType
                 && translatedParameterExpressions == this.parameterExpressions
                 && translatedInitializer == arrayInitializer) {
             return this;
@@ -182,6 +189,7 @@ public class ConstructorCall extends BaseExpression implements HasParameterExpre
             return createDelayedValue(identifier, null, translatedType, causesOfDelay);
         }
         return new ConstructorCall(identifier,
+                translatedScope,
                 constructor,
                 translatedType,
                 diamond,
@@ -203,6 +211,7 @@ public class ConstructorCall extends BaseExpression implements HasParameterExpre
 
     @Override
     public LinkedVariables linkedVariables(EvaluationResult context) {
+        // TODO link to scope if not null
         // instance, no constructor parameter expressions
         if (constructor == null || parameterExpressions.isEmpty()) return LinkedVariables.EMPTY;
         List<Expression> parameterValues = parameterExpressions.stream()
@@ -216,6 +225,8 @@ public class ConstructorCall extends BaseExpression implements HasParameterExpre
 
     @Override
     public int internalCompareTo(Expression v) {
+        int c = Comparator.nullsFirst(Comparator.comparing(e -> ((ConstructorCall) e).scope)).compare(this, v);
+        if (c != 0) return c;
         return parameterizedType.detailedString()
                 .compareTo(((ConstructorCall) v).parameterizedType.detailedString());
     }
@@ -326,6 +337,10 @@ public class ConstructorCall extends BaseExpression implements HasParameterExpre
     @Override
     public OutputBuilder output(Qualification qualification) {
         OutputBuilder outputBuilder = new OutputBuilder();
+        if (scope != null) {
+            outputBuilder.add(outputInParenthesis(qualification, precedence(), scope));
+            outputBuilder.add(Symbol.DOT);
+        }
         if (constructor != null || anonymousClass != null) {
             outputBuilder.add(Keyword.NEW).add(Space.ONE)
                     .add(parameterizedType.copyWithoutArrays().output(qualification, false, diamond));
@@ -373,12 +388,16 @@ public class ConstructorCall extends BaseExpression implements HasParameterExpre
     @Override
     public UpgradableBooleanMap<TypeInfo> typesReferenced() {
         return UpgradableBooleanMap.of(
+                scope == null ? UpgradableBooleanMap.of() : scope.typesReferenced(),
                 parameterizedType.typesReferenced(true),
                 parameterExpressions.stream().flatMap(e -> e.typesReferenced().stream()).collect(UpgradableBooleanMap.collector()));
     }
 
     @Override
     public List<? extends Element> subElements() {
+        if (scope != null) {
+            return Stream.concat(Stream.of(scope), parameterExpressions.stream()).toList();
+        }
         return parameterExpressions;
     }
 
@@ -386,6 +405,13 @@ public class ConstructorCall extends BaseExpression implements HasParameterExpre
     public EvaluationResult evaluate(EvaluationResult context, ForwardEvaluationInfo forwardEvaluationInfo) {
         if (forwardEvaluationInfo.isOnlySort()) {
             return evaluateComponents(context, forwardEvaluationInfo);
+        }
+
+        EvaluationResult scopeResult;
+        if (scope != null) {
+            scopeResult = scope.evaluate(context, forwardEvaluationInfo);
+        } else {
+            scopeResult = null;
         }
 
         // arrayInitializer variant
@@ -409,7 +435,7 @@ public class ConstructorCall extends BaseExpression implements HasParameterExpre
                 false);
         CausesOfDelay parameterDelays = res.v.stream().map(Expression::causesOfDelay).reduce(CausesOfDelay.EMPTY, CausesOfDelay::merge);
         if (parameterDelays.isDelayed()) {
-            return delayedConstructorCall(context, res.k, null, parameterDelays); // FIXME
+            return delayedConstructorCall(context, res.k, parameterDelays); // FIXME
         }
 
         // check state changes of companion methods
@@ -461,24 +487,18 @@ public class ConstructorCall extends BaseExpression implements HasParameterExpre
         } else {
             sortedParameters = evaluatedParams;
         }
-        Expression mc = new ConstructorCall(identifier, constructor, parameterizedType, diamond, sortedParameters,
+        Expression mc = new ConstructorCall(identifier, scope, constructor, parameterizedType, diamond, sortedParameters,
                 anonymousClass, evaluatedArrayInitializer);
         return new EvaluationResult.Builder(context).setExpression(mc).build();
     }
 
     private EvaluationResult delayedConstructorCall(EvaluationResult context,
                                                     EvaluationResult.Builder builder,
-                                                    Properties valueProperties,
                                                     CausesOfDelay causesOfDelay) {
         assert causesOfDelay.isDelayed();
-        builder.setExpression(createDelayedValue(identifier, context, valueProperties, causesOfDelay));
+        builder.setExpression(createDelayedValue(identifier, context, (Properties) null, causesOfDelay));
         // set scope delay
         return builder.build();
-    }
-
-    @Override
-    public Identifier getIdentifier() {
-        return identifier;
     }
 
     @Override
@@ -579,6 +599,9 @@ public class ConstructorCall extends BaseExpression implements HasParameterExpre
         return parameterExpressions;
     }
 
+    public Expression scope() { return scope; }
+
+    @SuppressWarnings("unused")
     public boolean hasConstructor() {
         return constructor != null;
     }

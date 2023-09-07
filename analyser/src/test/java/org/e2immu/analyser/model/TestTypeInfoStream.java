@@ -151,7 +151,7 @@ public class TestTypeInfoStream {
         MethodInfo hashMapConstructor = new MethodInspectionImpl.Builder(hashMap)
                 .setAccess(Inspection.Access.PUBLIC)
                 .build(IP).getMethodInfo();
-        Expression creationExpression = ConstructorCall.objectCreation(newId(), hashMapConstructor,
+        Expression creationExpression = ConstructorCall.objectCreation(newId(), null, hashMapConstructor,
                 hashMapParameterizedType, Diamond.NO, List.of());
         ParameterInspectionImpl.Builder p0 = new ParameterInspectionImpl.Builder(newId(), typeT, "value", 0);
         LocalVariableCreation lvc = new LocalVariableCreation(newId(), newId(),

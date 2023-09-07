@@ -118,7 +118,7 @@ public class TypeInspectorImpl implements TypeInspector {
         builder.setEnclosingMethod(expressionContext.enclosingMethod());
         builder.setAccess(Inspection.Access.PRIVATE);
         builder.addTypeModifier(TypeModifier.FINAL);
-        continueInspection(withSubTypes, members, false, null, null);
+        inspectionInsideType(withSubTypes, members, false, null, null);
     }
 
     /**
@@ -218,7 +218,7 @@ public class TypeInspectorImpl implements TypeInspector {
                 tpIndex++;
             }
         }
-        return continueInspection(expressionContext, typeDeclaration.getMembers(),
+        return inspectionInsideType(expressionContext, typeDeclaration.getMembers(),
                 builder.typeNature() == TypeNature.INTERFACE, recordFields, dollarResolver);
     }
 
@@ -333,8 +333,10 @@ public class TypeInspectorImpl implements TypeInspector {
             expressionContext.typeContext().addToContext(tp);
             tp.inspect(expressionContext.typeContext(), typeParameter);
             builder.addTypeParameter(tp);
-            boolean annotatedWithIndependent = isAnnotatedWithIndependent(typeParameter, expressionContext);
-            if (tp.isAnnotatedWithIndependent() == null) tp.setAnnotatedWithIndependent(annotatedWithIndependent);
+            if (tp.isAnnotatedWithIndependent() == null){
+                boolean annotatedWithIndependent = isAnnotatedWithIndependent(typeParameter, expressionContext);
+                tp.setAnnotatedWithIndependent(annotatedWithIndependent);
+            }
         }
     }
 
@@ -410,7 +412,7 @@ public class TypeInspectorImpl implements TypeInspector {
         doClassOrInterfaceDeclaration(expressionContext, cid);
         builder.addTypeModifier(TypeModifier.PRIVATE);
         builder.setAccess(Inspection.Access.PRIVATE);
-        continueInspection(expressionContext, cid.getMembers(), false, null, null);
+        inspectionInsideType(expressionContext, cid.getMembers(), false, null, null);
     }
 
     // only to be called on primary types
@@ -422,7 +424,7 @@ public class TypeInspectorImpl implements TypeInspector {
                 dollarTypesAreNormalTypes);
     }
 
-    private List<TypeInfo> continueInspection(
+    private List<TypeInfo> inspectionInsideType(
             ExpressionContext expressionContext,
             NodeList<BodyDeclaration<?>> members,
             boolean isInterface,
