@@ -95,10 +95,6 @@ public interface Identifier extends Comparable<Identifier> {
         return new ListOfIdentifiers(expression, identifiers);
     }
 
-    static Identifier forVariableOutOfScope(Variable toRemove, String index) {
-        return new VariableOutOfScopeIdentifier(toRemove.fullyQualifiedName(), toRemove.simpleName(), index);
-    }
-
     static Identifier forStatementTime(int statementTime) {
         return new StatementTimeIdentifier(statementTime);
     }
@@ -304,24 +300,6 @@ public interface Identifier extends Comparable<Identifier> {
         @Override
         public String compact() {
             return "S:" + constant;
-        }
-    }
-
-    @ImmutableContainer
-    record VariableOutOfScopeIdentifier(String fqn, String simpleName, String index) implements Identifier {
-        @Override
-        public int compareTo(Identifier o) {
-            return identifierOrder() - o.identifierOrder();
-        }
-
-        @Override
-        public int identifierOrder() {
-            return 7;
-        }
-
-        @Override
-        public String compact() {
-            return simpleName + ":" + index;
         }
     }
 

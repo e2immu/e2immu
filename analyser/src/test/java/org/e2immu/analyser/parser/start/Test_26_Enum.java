@@ -134,7 +134,7 @@ public class Test_26_Enum extends CommonTestRunner {
                     assertEquals(expectValue, d.evaluationResult().value().toString());
                 }
                 if ("0".equals(d.statementId())) {
-                    String expectValue = d.iteration() < 8 ? "-1-i+<delayed array length>>=0" : "i<=2";
+                    String expectValue = d.iteration() < 8 ? "-1-i+<delayed array length>>=0" : "i<3";
                     assertEquals(expectValue, d.evaluationResult().value().toString());
                     assertEquals(d.iteration() < 8, d.evaluationResult().causesOfDelay().isDelayed());
                 }
@@ -200,7 +200,7 @@ public class Test_26_Enum extends CommonTestRunner {
                         String expected = switch (d.iteration()) {
                             case 0, 1, 2, 3, 4, 5 -> "<loopIsNotEmptyCondition>&&this==<array-access:Enum_1>?<oos:i>:<return value>";
                             case 6, 7 -> "<loopIsNotEmptyCondition>&&<simplification>?<oos:i>:<return value>";
-                            default -> "instance type int<=2&&instance type int>=0&&nullable instance type Enum_1==this?instance type int:<return value>";
+                            default -> "instance type int<3&&instance type int>=0&&nullable instance type Enum_1==this?instance type int:<return value>";
                         };
                         assertEquals(expected, d.currentValue().toString());
                     }

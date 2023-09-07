@@ -788,7 +788,7 @@ public class ComputeLinkedVariables {
         TypeAnalysis typeAnalysis = analyserContext.getTypeAnalysis(bestType);
         if (typeAnalysis.isComputed()) return true;
         DV immutable = typeAnalysis.getProperty(Property.IMMUTABLE);
-        return MultiLevel.isMutable(immutable);
+        return immutable.isDelayed() || MultiLevel.isMutable(immutable);
     }
 
 }

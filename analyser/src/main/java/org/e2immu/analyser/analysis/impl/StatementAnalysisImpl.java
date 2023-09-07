@@ -984,19 +984,17 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
                 Expression newScope = fr.scope.translate(evaluationContext.getAnalyserContext(), translationMap);
                 if (newScope != fr.scope) {
                     assert fr.scopeVariable != null;
-                    Identifier identifier = Identifier.forVariableOutOfScope(fr.scopeVariable,
-                            evaluationContext.statementIndex());
-                    String name = "scope-" + identifier.compact();
+                    String name = "scope-" + fr.scopeVariable.simpleName() + ":" + evaluationContext.statementIndex();
                     // if statement index is 2, then 2~ is after 2.x.x, but before 3
                     VariableNature vn = new VariableNature.ScopeVariable(evaluationContext.statementIndex());
                     LocalVariable lv = new LocalVariable(Set.of(LocalVariableModifier.FINAL), name,
                             fr.scope.returnType(), List.of(), fr.getOwningType(), vn);
                     LocalVariableReference scopeVariable = new LocalVariableReference(lv, newScope);
-                    Expression scope = new VariableExpression(identifier, scopeVariable);
+                    Expression scope = new VariableExpression(fr.scope.getIdentifier(), scopeVariable);
                     FieldReference newFr = new FieldReference(evaluationContext.getAnalyserContext(), fr.fieldInfo,
                             scope, scopeVariable, fr.getOwningType());
-                    VariableExpression ve = new VariableExpression(identifier, newFr, VariableExpression.NO_SUFFIX,
-                            scope, null);
+                    VariableExpression ve = new VariableExpression(fr.scope.getIdentifier(), newFr,
+                            VariableExpression.NO_SUFFIX, scope, null);
                     return new RenameVariableResult(newFr, ve, List.of(scopeVariable));
                 }
                 if (fr.scopeVariable instanceof FieldReference) {
@@ -1142,9 +1140,9 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
             List<ConditionAndVariableInfo> toMerge = filterSubBlocks(evaluationContext, lastStatements, toRemove,
                     inSwitchStatementOldStyle);
             if (!toMerge.isEmpty()) { // a try statement can have more than one, it's only the first we're interested
-                Identifier identifier = Identifier.forVariableOutOfScope(toRemove, index);
                 // and finally, copy the result into prepareMerge
                 VariableInfo best = toMerge.get(0).variableInfo();
+                Identifier identifier = best.getIdentifier();
                 Expression outOfScopeValue;
                 Properties bestProperties = best.valueProperties();
                 if (best.getValue().isDelayed() || bestProperties.delays().isDelayed()) {
@@ -1738,7 +1736,8 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
             // ParameterizedType_0 test
             if (variableNature instanceof VariableNature.LoopVariable && !(statement instanceof ForEachStatement)
                     || variableNature instanceof VariableNature.ScopeVariable) {
-                initializeLoopVariable(vic, variable, evaluationContext.getAnalyserContext());
+                Identifier identifier = evaluationContext.getLocation(INITIAL).identifier();
+                initializeLoopVariable(identifier, vic, variable, evaluationContext.getAnalyserContext());
             } else {
                 initializeLocalOrDependentVariable(vic, variable, EvaluationResult.from(evaluationContext));
             }
@@ -1748,7 +1747,10 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
         return vic;
     }
 
-    private void initializeLoopVariable(VariableInfoContainer vic, Variable variable, AnalyserContext analyserContext) {
+    private void initializeLoopVariable(Identifier identifier,
+                                        VariableInfoContainer vic,
+                                        Variable variable,
+                                        AnalyserContext analyserContext) {
         // but, because we don't evaluate the assignment, we need to assign some value to the loop variable
         // otherwise we'll get delays
         // especially in the case of forEach, the lvc.expression is empty (e.g., 'String s') anyway
@@ -1757,7 +1759,6 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
         ParameterizedType parameterizedType = variable.parameterizedType();
         Properties valueProperties = analyserContext.defaultValueProperties(parameterizedType, true);
         valueProperties.replaceDelaysByMinimalValue();
-        Identifier identifier = Identifier.forVariableOutOfScope(variable, index);
         Instance instance = Instance.forLoopVariable(identifier, variable, valueProperties);
         Properties properties = Properties.of(Map.of(
                 EXTERNAL_NOT_NULL, EXTERNAL_NOT_NULL.valueWhenAbsent(),
@@ -2277,8 +2278,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
             CausesOfDelay causes = evaluatedIterable.isDelayed() ? evaluatedIterable.causesOfDelay() : delayed;
             value = DelayedVariableExpression.forLocalVariableInLoop(loopVar, causes);
         } else {
-            Identifier identifier = Identifier.forVariableOutOfScope(loopVar, index);
-            value = Instance.forLoopVariable(identifier, loopVar, valueProperties);
+            value = Instance.forLoopVariable(evaluatedIterable.getIdentifier(), loopVar, valueProperties);
         }
         LinkedVariables linkedOfIterable = evaluatedIterable.linkedVariables(EvaluationResult.from(evaluationContext))
                 .minimum(LinkedVariables.LINK_ASSIGNED);

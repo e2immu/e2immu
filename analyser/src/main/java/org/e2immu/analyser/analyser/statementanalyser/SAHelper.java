@@ -83,7 +83,8 @@ record SAHelper(StatementAnalysis statementAnalysis) {
             case CONTEXT_CONTAINER -> evaluationContext.isMyselfExcludeThis(variable)
                     ? MultiLevel.NOT_CONTAINER_DV
                     : VariableInfo.MAX_CC.apply(prev, change);
-            case CONTEXT_NOT_NULL -> AnalysisProvider.defaultNotNull(variable.parameterizedType()).max(prev).max(change);
+            case CONTEXT_NOT_NULL ->
+                    AnalysisProvider.defaultNotNull(variable.parameterizedType()).max(prev).max(change);
             default -> throw new UnsupportedOperationException();
         };
     }
@@ -230,19 +231,20 @@ record SAHelper(StatementAnalysis statementAnalysis) {
                 // we have pattern variables, which should not exist in the next iteration. This is not a problem in itself, but it is
                 // where there are also fields that have these pattern variables in their scope. Because the value may have to live on,
                 // a scope variable will need creating for every pattern variable used in a scope
-                List<Map.Entry<Variable, EvaluationResult.ChangeData>> entriesOfFieldRefs = evaluationResult2.changeData().entrySet().stream()
-                        .filter(e1 -> e1.getKey() instanceof FieldReference fr && fr.hasAsScopeVariable(pv)).toList();
+                List<Map.Entry<Variable, EvaluationResult.ChangeData>> entriesOfFieldRefs =
+                        evaluationResult2.changeData().entrySet().stream()
+                                .filter(e1 -> e1.getKey() instanceof FieldReference fr && fr.hasAsScopeVariable(pv)).toList();
                 if (!entriesOfFieldRefs.isEmpty()) {
 
                     // we'll have to create a scope variable
-                    Identifier identifier = Identifier.forVariableOutOfScope(pv, index);
-                    String name = "scope-" + identifier.compact();
+                    String name = "scope-" + pv.simpleName() + ":" + index;
                     VariableNature vn = new VariableNature.ScopeVariable(index);
                     TypeInfo currentType = evaluationResult2.getCurrentType();
                     LocalVariable lv = new LocalVariable(Set.of(LocalVariableModifier.FINAL), name,
                             pv.parameterizedType(), List.of(), currentType, vn);
                     Expression scopeValue = Objects.requireNonNullElseGet(e.getValue().value(),
-                            () -> DelayedVariableExpression.forVariable(e.getKey(), evaluationResult2.statementTime(), evaluationResult2.causesOfDelay()));
+                            () -> DelayedVariableExpression.forVariable(e.getKey(), evaluationResult2.statementTime(),
+                                    evaluationResult2.causesOfDelay()));
                     LocalVariableReference scopeVariable = new LocalVariableReference(lv, scopeValue);
                     Identifier statementIdentifier = evaluationResult2.evaluationContext()
                             .getLocation(Stage.EVALUATION).identifier();
@@ -254,11 +256,13 @@ record SAHelper(StatementAnalysis statementAnalysis) {
                     // then, other field references
                     for (Map.Entry<Variable, EvaluationResult.ChangeData> e2 : entriesOfFieldRefs) {
                         FieldReference fr = (FieldReference) e2.getKey();
-                        assert fr.scopeVariable != null && fr.scopeVariable.equals(pv) : "other situations not yet implemented";
+                        assert fr.scopeVariable != null && fr.scopeVariable.equals(pv)
+                                : "other situations not yet implemented";
 
-
-                        FieldReference newFr = new FieldReference(evaluationResult2.getAnalyserContext(), fr.fieldInfo, scope, scopeVariable, fr.getOwningType());
-                        VariableExpression ve = new VariableExpression(identifier, newFr, VariableExpression.NO_SUFFIX, scope, null);
+                        FieldReference newFr = new FieldReference(evaluationResult2.getAnalyserContext(),
+                                fr.fieldInfo, scope, scopeVariable, fr.getOwningType());
+                        VariableExpression ve = new VariableExpression(statementIdentifier, newFr,
+                                VariableExpression.NO_SUFFIX, scope, null);
                         builder.addVariableExpression(fr, ve);
                         builder.put(fr, newFr);
                     }

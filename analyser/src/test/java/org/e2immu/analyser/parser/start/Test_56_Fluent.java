@@ -75,8 +75,8 @@ public class Test_56_Fluent extends CommonTestRunner {
                         assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, d.getProperty(Property.NOT_NULL_EXPRESSION));
                     }
                     if ("1".equals(d.statementId())) {
-                        assertCurrentValue(d, 27,
-                                "instanceCopy instanceof Fluent_0&&null!=instanceCopy?instanceCopy/*(Fluent_0)*/:new Fluent_0(`instance type Builder.value`)");
+                        String value = "instanceCopy instanceof Fluent_0?instanceCopy/*(Fluent_0)*/:new Fluent_0(`instance type Builder.value`)";
+                        assertCurrentValue(d, 27, value);
 
                         String expectLinks = d.iteration() < 27 ? "instanceCopy:-1" : "instanceCopy:1";
                         assertEquals(expectLinks, d.variableInfo().getLinkedVariables().toString());
@@ -141,7 +141,7 @@ public class Test_56_Fluent extends CommonTestRunner {
                 assertDv(d, DV.FALSE_DV, Property.MODIFIED_METHOD);
 
                 String expect = d.iteration() < 27 ? "<m:copyOf>"
-                        : "/*inline copyOf*/instanceCopy instanceof Fluent_0&&null!=instanceCopy?instanceCopy/*(Fluent_0)*/:new Fluent_0(`instance type Builder.value`)";
+                        : "/*inline copyOf*/instanceCopy instanceof Fluent_0?instanceCopy/*(Fluent_0)*/:new Fluent_0(`instance type Builder.value`)";
                 assertEquals(expect, d.methodAnalysis().getSingleReturnValue().toString());
 
 
@@ -264,7 +264,7 @@ public class Test_56_Fluent extends CommonTestRunner {
         StatementAnalyserVisitor statementAnalyserVisitor = d -> {
             if ("from".equals(d.methodInfo().name)) {
                 if ("0".equals(d.statementId())) {
-                    assertEquals(d.iteration() > 0, d.statementAnalysis().methodLevelData().combinedPreconditionIsFinal());
+                    assertTrue(d.statementAnalysis().methodLevelData().combinedPreconditionIsFinal());
                     assertTrue(d.statementAnalysis().stateData().preconditionIsFinal());
                 }
                 if ("1".equals(d.statementId())) {
@@ -272,9 +272,9 @@ public class Test_56_Fluent extends CommonTestRunner {
                     assertTrue(d.statementAnalysis().stateData().preconditionIsFinal());
 
                     // STEP 5: check preconditionIsDelayed in previous statement, that's OK
-                    assertEquals(d.iteration() > 0, d.conditionManagerForNextStatement().precondition().expression().isDone());
+                    assertTrue(d.conditionManagerForNextStatement().precondition().expression().isDone());
                     // STEP 5bis: combined precondition never becomes final
-                    assertEquals(d.iteration() > 0, d.statementAnalysis().methodLevelData().combinedPreconditionIsFinal());
+                    assertTrue(d.statementAnalysis().methodLevelData().combinedPreconditionIsFinal());
                 }
                 if ("2".equals(d.statementId())) {
                     // STEP 2 parameter 'instance'
