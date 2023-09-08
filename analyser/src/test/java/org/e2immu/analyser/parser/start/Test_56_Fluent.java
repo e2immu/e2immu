@@ -238,11 +238,12 @@ public class Test_56_Fluent extends CommonTestRunner {
 
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("value".equals(d.methodInfo().name) && "IFluent_1".equals(d.methodInfo().typeInfo.simpleName)) {
-                assertEquals(DV.FALSE_DV, d.methodAnalysis().getProperty(Property.MODIFIED_METHOD));
-                assertEquals(DV.FALSE_DV, d.methodAnalysis().getProperty(Property.FLUENT));
-                assertEquals(DV.FALSE_DV, d.methodAnalysis().getProperty(Property.IDENTITY));
-                assertEquals(MultiLevel.INDEPENDENT_DV, d.methodAnalysis().getProperty(Property.INDEPENDENT));
-                assertEquals(MultiLevel.EFFECTIVELY_IMMUTABLE_DV, d.methodAnalysis().getProperty(Property.IMMUTABLE));
+                assertDv(d, DV.FALSE_DV, Property.MODIFIED_METHOD);
+                assertDv(d, DV.FALSE_DV, Property.FLUENT);
+                assertDv(d, DV.FALSE_DV, Property.IDENTITY);
+                assertDv(d, MultiLevel.INDEPENDENT_DV, Property.INDEPENDENT);
+                assertDv(d, MultiLevel.EFFECTIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
+                assertDv(d, 1, MultiLevel.NOT_IGNORE_MODS_DV, Property.IGNORE_MODIFICATIONS);
             }
             if ("identity".equals(d.methodInfo().name)) {
                 assertEquals(DV.FALSE_DV, d.methodAnalysis().getProperty(Property.MODIFIED_METHOD));

@@ -188,6 +188,13 @@ record SAHelper(StatementAnalysis statementAnalysis) {
 
         expression.visit(e -> {
             if (e instanceof MethodCall methodCall) {
+                if (statementAnalysis.methodAnalysis().getMethodInfo().equals(methodCall.methodInfo)) {
+                    return;
+                }
+                if(methodCall.methodInfo.methodResolution.get().ignoreMeBecauseOfPartOfCallCycle()) {
+                    return;
+                }
+
                 // SITUATION 1: the method has been marked with @StaticSideEffects
                 MethodAnalysis methodAnalysis = analyserContext.getMethodAnalysis(methodCall.methodInfo);
                 DV isSSE = methodAnalysis.getProperty(STATIC_SIDE_EFFECTS);
@@ -198,7 +205,7 @@ record SAHelper(StatementAnalysis statementAnalysis) {
                 } else {
                     if (isSSE.valueIsTrue()) {
                         expressions.add(methodCall);
-                        return false;
+                        return;
                     }
                     delay1 = CausesOfDelay.EMPTY;
                 }
@@ -213,19 +220,19 @@ record SAHelper(StatementAnalysis statementAnalysis) {
                         && fr.isStatic) {
                     DV modifying = methodAnalysis.getProperty(MODIFIED_METHOD);
                     if (modifying.valueIsFalse()) {
-                        return false;
+                        return;
                     }
                     FieldAnalysis fieldAnalysis = analyserContext.getFieldAnalysis(fr.fieldInfo);
                     DV ignoreMods = fieldAnalysis.getProperty(EXTERNAL_IGNORE_MODIFICATIONS);
                     if (MultiLevel.NOT_IGNORE_MODS_DV.equals(ignoreMods)) {
-                        return false;
+                        return;
                     }
                     if (modifying.isDelayed() || ignoreMods.isDelayed()) {
                         delay2 = modifying.causesOfDelay().merge(ignoreMods.causesOfDelay());
                     } else {
                         assert modifying.valueIsTrue() && MultiLevel.IGNORE_MODS_DV.equals(ignoreMods);
                         expressions.add(methodCall);
-                        return false;
+                        return;
                     }
                 } else {
                     delay2 = CausesOfDelay.EMPTY;
@@ -243,9 +250,7 @@ record SAHelper(StatementAnalysis statementAnalysis) {
                 if (MultiLevel.IGNORE_MODS_DV.equals(ignoreMods)) {
                     expressions.add(assignment);
                 }
-                return false;
             }
-            return true;
         });
         if (!expressions.isEmpty()) return expressions.get(0);
         if (causesOfDelay.get().isDelayed())

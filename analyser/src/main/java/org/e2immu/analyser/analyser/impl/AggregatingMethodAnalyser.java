@@ -43,6 +43,7 @@ public class AggregatingMethodAnalyser extends MethodAnalyserImpl {
     public static final String IMMUTABLE = "immutable";
     public static final String INDEPENDENT = "independent";
     public static final String FLUENT = "fluent";
+    public static final String SSE = "staticSideEffects";
     public static final String IDENTITY = "identity";
     public static final String IGNORE_MODS = "ignoreModifications";
     public static final String NOT_NULL = "notNull";
@@ -67,6 +68,7 @@ public class AggregatingMethodAnalyser extends MethodAnalyserImpl {
                 .add(IMMUTABLE, iteration -> this.aggregate(Property.IMMUTABLE, DV::min, DV.MAX_INT_DV))
                 .add(INDEPENDENT, iteration -> this.aggregate(Property.INDEPENDENT, DV::min, DV.MAX_INT_DV))
                 .add(FLUENT, iteration -> this.aggregate(Property.FLUENT, DV::max, DV.MIN_INT_DV))
+                .add(SSE, iteration -> this.aggregate(Property.STATIC_SIDE_EFFECTS, DV::max, Property.STATIC_SIDE_EFFECTS.falseDv))
                 .add(IDENTITY, iteration -> this.aggregate(Property.IDENTITY, DV::min, DV.MAX_INT_DV))
                 .add(IGNORE_MODS, iteration -> this.aggregate(Property.IGNORE_MODIFICATIONS, DV::min, DV.MAX_INT_DV))
                 .add(NOT_NULL, iteration -> this.aggregate(Property.NOT_NULL_EXPRESSION, DV::min, DV.MAX_INT_DV))
