@@ -115,10 +115,9 @@ public interface MethodAnalysis extends Analysis {
         return switch (property) {
             case MODIFIED_METHOD_ALT_TEMP -> modifiedMethodOrTempModifiedMethod();
             case CONTAINER, IMMUTABLE, IMMUTABLE_BREAK, NOT_NULL_EXPRESSION, TEMP_MODIFIED_METHOD, MODIFIED_METHOD,
-                    FLUENT, IDENTITY, IGNORE_MODIFICATIONS, INDEPENDENT, CONSTANT ->
+                    FLUENT, IDENTITY, IGNORE_MODIFICATIONS, INDEPENDENT, CONSTANT, STATIC_SIDE_EFFECTS ->
                     getPropertyFromMapDelayWhenAbsent(property);
-            // TODO, for now, we don't compute STATIC_SIDE_EFFECTS; simply passed on from AnnotatedAPIs
-            case FINALIZER, STATIC_SIDE_EFFECTS -> getPropertyFromMapNeverDelay(property);
+            case FINALIZER -> getPropertyFromMapNeverDelay(property);
             default -> throw new PropertyException(Analyser.AnalyserIdentification.METHOD, property);
         };
     }

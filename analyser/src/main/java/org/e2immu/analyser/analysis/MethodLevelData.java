@@ -16,16 +16,14 @@ package org.e2immu.analyser.analysis;
 
 import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.analyser.util.AnalyserResult;
+import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.Identifier;
 import org.e2immu.analyser.model.MethodInfo;
 import org.e2immu.analyser.model.variable.LocalVariableReference;
 import org.e2immu.analyser.model.variable.ReturnVariable;
 import org.e2immu.analyser.model.variable.This;
 import org.e2immu.analyser.parser.Primitives;
-import org.e2immu.support.AddOnceSet;
-import org.e2immu.support.EventuallyFinal;
-import org.e2immu.support.SetOnce;
-import org.e2immu.support.SetOnceMap;
+import org.e2immu.support.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -50,6 +48,7 @@ public class MethodLevelData {
     public static final String COMBINE_PRECONDITION = "combinePrecondition";
     public static final String COMBINE_POST_CONDITIONS = "combinePostConditions";
     public static final String COMBINE_ESCAPE_INDICES = "combineEscapeIndices";
+    public static final String STATIC_SIDE_EFFECTS = "combineStaticSideEffects";
 
     public final SetOnceMap<MethodInfo, Boolean> copyModificationStatusFrom = new SetOnceMap<>();
 
@@ -61,6 +60,8 @@ public class MethodLevelData {
     private final EventuallyFinal<CausesOfDelay> linksHaveBeenEstablished = new EventuallyFinal<>();
 
     private final SetOnce<Set<String>> indicesOfEscapesNotInPreOrPostConditions = new SetOnce<>();
+
+    private final EventuallyFinal<StaticSideEffects> staticSideEffects = new EventuallyFinal<>();
 
     public CausesOfDelay combinedPreconditionIsDelayedSet() {
         if (combinedPrecondition.isFinal()) return CausesOfDelay.EMPTY;
@@ -118,6 +119,7 @@ public class MethodLevelData {
                     .add(COMBINE_PRECONDITION, this::combinePrecondition)
                     .add(COMBINE_POST_CONDITIONS, this::combinePostConditions)
                     .add(COMBINE_ESCAPE_INDICES, this::combineEscapeIndices)
+                    .add(STATIC_SIDE_EFFECTS, this::combineStaticSideEffects)
                     .build();
 
 
@@ -245,5 +247,43 @@ public class MethodLevelData {
 
     public Set<String> getIndicesOfEscapesNotInPreOrPostConditions() {
         return indicesOfEscapesNotInPreOrPostConditions.getOrDefault(Set.of());
+    }
+
+    public boolean staticSideEffectsHaveBeenFound() {
+        return staticSideEffects.isFinal();
+    }
+
+    public StaticSideEffects staticSideEffects() {
+        return staticSideEffects.get();
+    }
+
+    private AnalysisStatus combineStaticSideEffects(SharedState sharedState) {
+        assert staticSideEffects.isVariable();
+
+        Expression current = sharedState.stateData.staticSideEffect();
+        Stream<Expression> currentStream = current.isEmpty() ? Stream.of() : Stream.of(current);
+
+        Stream<Expression> previouStream = sharedState.previous == null
+                ? Stream.of() : sharedState.previous.staticSideEffects.get().expressions().stream();
+        List<StatementAnalysis> subBlocks = sharedState.statementAnalysis.lastStatementsOfNonEmptySubBlocks();
+        Stream<Expression> subStream = subBlocks.stream()
+                .flatMap(sa -> sa.methodLevelData().staticSideEffects().expressions().stream());
+
+        List<Expression> newExpressions = Stream.concat(Stream.concat(currentStream, subStream), previouStream).toList();
+        List<Expression> newExpressionsWithoutDelays = newExpressions.stream().filter(Expression::isDone).toList();
+
+        if (!newExpressionsWithoutDelays.isEmpty()) {
+            // shortcut: as soon as we have one, we don't need more
+            staticSideEffects.setFinal(new StaticSideEffects(newExpressionsWithoutDelays));
+            return DONE;
+        }
+        StaticSideEffects newSSE = new StaticSideEffects(newExpressions);
+        CausesOfDelay causesOfDelay = newSSE.causesOfDelay();
+        if (causesOfDelay.isDone()) {
+            staticSideEffects.setFinal(newSSE);
+            return DONE;
+        }
+        staticSideEffects.setVariable(newSSE);
+        return causesOfDelay;
     }
 }

@@ -15,20 +15,34 @@
 package org.e2immu.analyser.parser.minor.testexample;
 
 import org.e2immu.annotation.*;
+import org.e2immu.annotation.rare.IgnoreModifications;
+import org.e2immu.annotation.rare.StaticSideEffects;
 
 @Container
 public class StaticSideEffects_2<K> {
     private final K k;
 
     private static int counter;
+    @IgnoreModifications
+    private static int counter2;
 
+    @StaticSideEffects
     public StaticSideEffects_2(K k) {
         this.k = k;
+        System.out.println("k is " + k);
     }
 
+    @StaticSideEffects(absent = true)
     @Modified
     public K getK() {
         ++counter;
+        return k;
+    }
+
+    @StaticSideEffects
+    @Modified
+    public K getK2() {
+        ++counter2;
         return k;
     }
 

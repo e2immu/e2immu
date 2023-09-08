@@ -18,13 +18,14 @@ import org.e2immu.analyser.analyser.Properties;
 import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.analyser.util.AnalyserResult;
 import org.e2immu.analyser.analyser.util.VariableAccessReport;
+import org.e2immu.analyser.analysis.FieldAnalysis;
+import org.e2immu.analyser.analysis.MethodAnalysis;
 import org.e2immu.analyser.analysis.StatementAnalysis;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.model.*;
-import org.e2immu.analyser.model.expression.DelayedVariableExpression;
-import org.e2immu.analyser.model.expression.Filter;
-import org.e2immu.analyser.model.expression.VariableExpression;
+import org.e2immu.analyser.model.expression.*;
 import org.e2immu.analyser.model.impl.TranslationMapImpl;
+import org.e2immu.analyser.model.statement.ExpressionAsStatement;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.LocalVariableReference;
 import org.e2immu.analyser.model.variable.Variable;
@@ -35,6 +36,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
 import static org.e2immu.analyser.analyser.Property.*;
@@ -172,6 +174,84 @@ record SAHelper(StatementAnalysis statementAnalysis) {
         groupPropertyValues.set(CONTEXT_CONTAINER, variable, cCont == null ? MultiLevel.NOT_CONTAINER_DV : cCont);
 
         return res;
+    }
+
+    public static Expression computeStaticSideEffect(AnalyserContext analyserContext,
+                                                     StatementAnalysis statementAnalysis) {
+        Expression expression = statementAnalysis.statement().getStructure().expression();
+        if (expression.isEmpty()) {
+            return EmptyExpression.EMPTY_EXPRESSION;
+        }
+
+        AtomicReference<CausesOfDelay> causesOfDelay = new AtomicReference<>(CausesOfDelay.EMPTY);
+        List<Expression> expressions = new ArrayList<>();
+
+        expression.visit(e -> {
+            if (e instanceof MethodCall methodCall) {
+                // SITUATION 1: the method has been marked with @StaticSideEffects
+                MethodAnalysis methodAnalysis = analyserContext.getMethodAnalysis(methodCall.methodInfo);
+                DV isSSE = methodAnalysis.getProperty(STATIC_SIDE_EFFECTS);
+
+                CausesOfDelay delay1;
+                if (isSSE.isDelayed()) {
+                    delay1 = isSSE.causesOfDelay();
+                } else {
+                    if (isSSE.valueIsTrue()) {
+                        expressions.add(methodCall);
+                        return false;
+                    }
+                    delay1 = CausesOfDelay.EMPTY;
+                }
+
+                /*
+                 SITUATION 2: the method's object is a static field whose modifications are ignored,
+                 and it does not modify its parameters
+                 */
+                CausesOfDelay delay2;
+                if (methodCall.object instanceof VariableExpression ve
+                        && ve.variable() instanceof FieldReference fr
+                        && fr.isStatic) {
+                    DV modifying = methodAnalysis.getProperty(MODIFIED_METHOD);
+                    if (modifying.valueIsFalse()) {
+                        return false;
+                    }
+                    FieldAnalysis fieldAnalysis = analyserContext.getFieldAnalysis(fr.fieldInfo);
+                    DV ignoreMods = fieldAnalysis.getProperty(EXTERNAL_IGNORE_MODIFICATIONS);
+                    if (MultiLevel.NOT_IGNORE_MODS_DV.equals(ignoreMods)) {
+                        return false;
+                    }
+                    if (modifying.isDelayed() || ignoreMods.isDelayed()) {
+                        delay2 = modifying.causesOfDelay().merge(ignoreMods.causesOfDelay());
+                    } else {
+                        assert modifying.valueIsTrue() && MultiLevel.IGNORE_MODS_DV.equals(ignoreMods);
+                        expressions.add(methodCall);
+                        return false;
+                    }
+                } else {
+                    delay2 = CausesOfDelay.EMPTY;
+                }
+                causesOfDelay.set(causesOfDelay.get().merge(delay1).merge(delay2));
+            }
+            if (e instanceof Assignment assignment
+                    && assignment.target instanceof VariableExpression ve
+                    && ve.variable() instanceof FieldReference fr && fr.isStatic) {
+                FieldAnalysis fieldAnalysis = analyserContext.getFieldAnalysis(fr.fieldInfo);
+                DV ignoreMods = fieldAnalysis.getProperty(EXTERNAL_IGNORE_MODIFICATIONS);
+                if (ignoreMods.isDelayed()) {
+                    causesOfDelay.set(causesOfDelay.get().merge(ignoreMods.causesOfDelay()));
+                }
+                if (MultiLevel.IGNORE_MODS_DV.equals(ignoreMods)) {
+                    expressions.add(assignment);
+                }
+                return false;
+            }
+            return true;
+        });
+        if (!expressions.isEmpty()) return expressions.get(0);
+        if (causesOfDelay.get().isDelayed())
+            return DelayedExpression.forStaticSideEffects(statementAnalysis.statement().getIdentifier(),
+                    statementAnalysis.primitives(), expression, causesOfDelay.get());
+        return EmptyExpression.EMPTY_EXPRESSION;
     }
 
     public void visitStatementVisitors(String statementId,

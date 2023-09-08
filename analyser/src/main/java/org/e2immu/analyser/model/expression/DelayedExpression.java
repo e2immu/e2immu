@@ -44,7 +44,9 @@ public final class DelayedExpression extends BaseExpression implements Expressio
             "post-condition",
             ParameterizedType.RETURN_TYPE_OF_CONSTRUCTOR, EmptyExpression.EMPTY_EXPRESSION,
             DelayFactory.createDelay(new SimpleCause(Location.NOT_YET_SET, CauseOfDelay.Cause.NO_POST_CONDITION_INFO)));
-
+    public static final DelayedExpression NO_STATIC_SIDE_EFFECT_INFO = new DelayedExpression(Identifier.CONSTANT,
+            "static-side-effect", ParameterizedType.RETURN_TYPE_OF_CONSTRUCTOR, EmptyExpression.EMPTY_EXPRESSION,
+            DelayFactory.createDelay(new SimpleCause(Location.NOT_YET_SET, CauseOfDelay.Cause.NO_SSE_INFO)));
     private final String msg;
     private final ParameterizedType parameterizedType;
     private final Expression original;
@@ -179,6 +181,14 @@ public final class DelayedExpression extends BaseExpression implements Expressio
                                            CausesOfDelay causes) {
         String msg = brackets("instanceOf:" + parameterizedType.printSimple());
         return new DelayedExpression(identifier, msg, primitives.booleanParameterizedType(), original, causes);
+    }
+
+
+    public static Expression forStaticSideEffects(Identifier identifier,
+                                                  Primitives primitives,
+                                                  Expression original,
+                                                  CausesOfDelay causes) {
+        return new DelayedExpression(identifier, "sse", primitives.voidParameterizedType(), original, causes);
     }
 
     public static Expression forUnspecifiedLoopCondition(Identifier identifier,

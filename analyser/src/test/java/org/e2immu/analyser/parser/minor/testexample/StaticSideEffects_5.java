@@ -17,15 +17,15 @@ package org.e2immu.analyser.parser.minor.testexample;
 import org.e2immu.annotation.Identity;
 import org.e2immu.annotation.NotModified;
 import org.e2immu.annotation.NotNull;
+import org.e2immu.annotation.rare.StaticSideEffects;
 
 /*
  must be with AnnotatedAPI because @IgnoreModifications on System.out
-
- "Static Side Effects Only" is a concept that still needs implementation.
  */
 
 public class StaticSideEffects_5 {
 
+    @StaticSideEffects
     @NotModified
     public static void printStatic(String t) {
         System.out.println("This is " + t);
@@ -34,16 +34,19 @@ public class StaticSideEffects_5 {
     }
 
     // shows that we can inherit, AND that order does not matter
+    @StaticSideEffects
     @NotModified
     public static void printMeViaPrint(String ss) {
         print(ss);
     }
 
+    @StaticSideEffects
     @NotModified
     public static void print(String s) {
         System.out.println("This is " + s);
     }
 
+    @StaticSideEffects
     @NotModified
     public static void printConditionally(String s) {
         if ("abc".equals(s)) {
@@ -51,6 +54,7 @@ public class StaticSideEffects_5 {
         }
     }
 
+    @StaticSideEffects
     @NotModified
     public static void printForLoop(@NotNull String[] ks) {
         for (String k : ks) {
@@ -58,6 +62,7 @@ public class StaticSideEffects_5 {
         }
     }
 
+    @StaticSideEffects
     @NotModified
     @Identity
     public static String printMe(String s) {
@@ -66,6 +71,7 @@ public class StaticSideEffects_5 {
     }
 
     // this method is here to show that we can inherit both annotations
+    @StaticSideEffects
     @NotModified
     @Identity
     public static String printMeQuick(String t) {

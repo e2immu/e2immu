@@ -171,8 +171,8 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         boolean sameMethod = methodInfo.equals(that.methodInfo) ||
                 checkSpecialCasesWhereDifferentMethodsAreEqual(methodInfo, that.methodInfo);
         return sameMethod
-             // FIXME see Basics_28, but undoubtedly other tests that require this!   && modificationTimes.equals(that.modificationTimes)
-             // https://github.com/e2immu/e2immu/issues/56
+                // FIXME see Basics_28, but undoubtedly other tests that require this!   && modificationTimes.equals(that.modificationTimes)
+                // https://github.com/e2immu/e2immu/issues/56
                 && parameterExpressions.equals(that.parameterExpressions)
                 && object.equals(that.object);
     }
@@ -182,7 +182,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
      */
     private boolean checkSpecialCasesWhereDifferentMethodsAreEqual(MethodInfo m1, MethodInfo m2) {
         // the following line is there for tests:
-        if(!m1.methodResolution.isSet() || !m2.methodResolution.isSet()) return false;
+        if (!m1.methodResolution.isSet() || !m2.methodResolution.isSet()) return false;
         Set<MethodInfo> overrides1 = m1.methodResolution.get().overrides();
         if (m2.typeInfo.isInterface() && overrides1.contains(m2)) return true;
         Set<MethodInfo> overrides2 = m2.methodResolution.get().overrides();
@@ -479,7 +479,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
                 .map(e -> e.evaluate(context, forwardEvaluationInfo).getExpression()).toList();
         List<Expression> sortedParameters;
         MethodAnalysis methodAnalysis = context.getAnalyserContext().getMethodAnalysisNullWhenAbsent(methodInfo);
-        if(methodAnalysis != null && methodAnalysis.hasParallelGroups()) {
+        if (methodAnalysis != null && methodAnalysis.hasParallelGroups()) {
             sortedParameters = methodAnalysis.sortAccordingToParallelGroupsAndNaturalOrder(parameterExpressions);
         } else {
             sortedParameters = evaluatedParams;
@@ -508,7 +508,13 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         if (methodInfo.methodInspection.get().isAbstract() && forwardEvaluationInfo.allowSwitchingToConcreteMethod()) {
             EvaluationResult objProbe = object.evaluate(context, ForwardEvaluationInfo.DEFAULT);
             Expression expression = objProbe.value();
-            TypeInfo typeInfo = expression.typeInfoOfReturnType();
+            TypeInfo typeInfo;
+            if (expression instanceof VariableExpression ve) {
+                Expression value = context.currentValue(ve.variable());
+                typeInfo = value.typeInfoOfReturnType();
+            } else {
+                typeInfo = expression.typeInfoOfReturnType();
+            }
             if (typeInfo != null) {
                 MethodInfo concrete = methodInfo.implementationIn(typeInfo);
                 concreteMethod = concrete == null ? methodInfo : concrete;
@@ -1155,8 +1161,8 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         if (modified.valueIsTrue()
                 && !context.evaluationContext().inConstructionOrInStaticWithRespectTo(object.returnType().typeInfo)
                 && context.evaluationContext().cannotBeModified(objectValue).valueIsTrue()) {
-            builder.raiseError(getIdentifier(), Message.Label.CALLING_MODIFYING_METHOD_ON_E2IMMU,
-                    "Method: " + concreteMethod.distinguishingName() + ", Type: " + objectValue.returnType());
+            builder.raiseError(getIdentifier(), Message.Label.CALLING_MODIFYING_METHOD_ON_IMMUTABLE_OBJECT,
+                    "Method: " + methodInfo.fullyQualifiedName + ", Type: " + objectValue.returnType());
         }
     }
 
@@ -1180,7 +1186,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
                                     cnnTravelsToFields && v instanceof FieldReference fr && fr.fieldInfo.owner.primaryType() == context.getCurrentType()));
                     if (!isNotNull && !builder.isNotNull(this).valueIsTrue() && !scopeIsFunctionalInterfaceLinkedToParameter) {
                         builder.raiseError(getIdentifier(), Message.Label.POTENTIAL_NULL_POINTER_EXCEPTION,
-                                "Result of method call " + methodInspection.getFullyQualifiedName());
+                                "Result of method call " + methodInfo.fullyQualifiedName());
                     }
                 } // else: delaying is fine
             }

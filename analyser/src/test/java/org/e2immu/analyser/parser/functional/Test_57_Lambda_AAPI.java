@@ -14,6 +14,7 @@
 
 package org.e2immu.analyser.parser.functional;
 
+import org.e2immu.analyser.analyser.DV;
 import org.e2immu.analyser.analyser.Property;
 import org.e2immu.analyser.analysis.MethodAnalysis;
 import org.e2immu.analyser.analysis.StatementAnalysis;
@@ -108,36 +109,38 @@ public class Test_57_Lambda_AAPI extends CommonTestRunner {
                 .build());
     }
 
-    @Disabled("variable of type Runnable is immutable; calling its modifying run() method causes an error")
+    //@Disabled("variable of type Runnable is immutable; calling its modifying run() method causes an error")
     @Test
     public void test_18() throws IOException {
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("method2".equals(d.methodInfo().name)) {
                 if ("finallyMethod".equals(d.variableName())) {
-                    if ("2".equals(d.statementId())) {
+                    if ("0".equals(d.statementId())) {
                         assertDv(d, 0, MultiLevel.EFFECTIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
                     }
                 }
             }
         };
-        TypeContext typeContext = testClass("Lambda_18", 0, 0,
+
+        StatementAnalyserVisitor statementAnalyserVisitor = d -> {
+            if ("run".equals(d.methodInfo().name)) {
+                assertEquals("0", d.statementId());
+                assertTrue(d.statementAnalysis().methodLevelData().staticSideEffectsHaveBeenFound());
+            }
+        };
+
+        MethodAnalyserVisitor methodAnalyserVisitor = d -> {
+            if ("run".equals(d.methodInfo().name)) {
+                assertDv(d, DV.TRUE_DV, Property.STATIC_SIDE_EFFECTS);
+                assertDv(d, DV.FALSE_DV, Property.MODIFIED_METHOD);
+            }
+        };
+
+        testClass("Lambda_18", 0, 0,
                 new DebugConfiguration.Builder()
                         .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                        .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                        .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                         .build());
-        TypeInfo lambda18 = typeContext.getFullyQualified(Lambda_18.class);
-
-        MethodInfo method1 = lambda18.findUniqueMethod("method1", 1);
-        MethodAnalysis methodAnalysis1 = method1.methodAnalysis.get();
-        StatementAnalysis s0 = methodAnalysis1.getFirstStatement();
-        StatementAnalysis s1 = s0.navigationData().next.get().orElseThrow();
-        Lambda l0 = s1.statement().asInstanceOf(ExpressionAsStatement.class).expression
-                .asInstanceOf(LocalVariableCreation.class)
-                .localVariableReference.assignmentExpression.asInstanceOf(MethodCall.class)
-                .parameterExpressions.get(0).asInstanceOf(Lambda.class);
-        assertEquals("Type org.e2immu.analyser.parser.functional.testexample.Lambda_18.$1",
-                l0.implementation.toString());
-        TypeInfo dollar1 = l0.implementation.typeInfo;
-        assert dollar1 != null;
-        assertTrue(dollar1.typeAnalysis.isSet());
     }
 }

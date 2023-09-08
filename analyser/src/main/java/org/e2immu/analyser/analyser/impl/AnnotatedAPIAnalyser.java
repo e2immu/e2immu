@@ -350,6 +350,7 @@ public class AnnotatedAPIAnalyser implements AnalyserContext {
                 this, this, methodInfo, typeAnalysis, parameterAnalyses);
         builder.ensureIsNotEventualUnlessOtherwiseAnnotated();
         builder.setProperty(Property.IDENTITY, Property.IDENTITY.falseDv);
+        builder.setProperty(Property.STATIC_SIDE_EFFECTS, Property.STATIC_SIDE_EFFECTS.falseDv);
         builder.setProperty(Property.IGNORE_MODIFICATIONS, Property.IGNORE_MODIFICATIONS.falseDv);
         builder.setProperty(Property.FLUENT, DV.FALSE_DV);
         builder.setProperty(Property.MODIFIED_METHOD, DV.FALSE_DV);
@@ -386,6 +387,7 @@ public class AnnotatedAPIAnalyser implements AnalyserContext {
                 this, this, methodInfo, typeAnalysis, parameterAnalyses);
         builder.ensureIsNotEventualUnlessOtherwiseAnnotated();
         builder.setProperty(Property.IDENTITY, Property.IDENTITY.falseDv);
+        builder.setProperty(Property.STATIC_SIDE_EFFECTS, Property.STATIC_SIDE_EFFECTS.falseDv);
         builder.setProperty(Property.IGNORE_MODIFICATIONS, Property.IGNORE_MODIFICATIONS.falseDv);
         builder.setProperty(Property.FLUENT, DV.FALSE_DV);
         builder.setProperty(Property.MODIFIED_METHOD, DV.FALSE_DV);

@@ -111,6 +111,7 @@ public class ShallowMethodAnalyser extends MethodAnalyserImpl {
             DV modified = methodInfo.isConstructor ? DV.TRUE_DV : DV.FALSE_DV;
             methodAnalysis.setProperty(Property.MODIFIED_METHOD, modified);
             methodAnalysis.setProperty(Property.FLUENT, DV.FALSE_DV);  // no return statement...
+            methodAnalysis.setProperty(Property.STATIC_SIDE_EFFECTS, DV.FALSE_DV);
             methodAnalysis.setProperty(Property.INDEPENDENT, MultiLevel.INDEPENDENT_DV);
             methodAnalysis.setProperty(Property.CONTAINER, MultiLevel.CONTAINER_DV);
             // the method cannot return a value
@@ -133,7 +134,9 @@ public class ShallowMethodAnalyser extends MethodAnalyserImpl {
 
             CausesOfDelay c5 = computeMethodPropertyIfNecessary(Property.INDEPENDENT, this::computeMethodIndependent);
             checkMethodIndependent();
-            causes = c1.merge(c2).merge(c3).merge(c4).merge(c5);
+            CausesOfDelay c6 = computeMethodPropertyIfNecessary(Property.STATIC_SIDE_EFFECTS,
+                    () -> bestOfOverridesOrWorstValue(Property.STATIC_SIDE_EFFECTS));
+            causes = c1.merge(c2).merge(c3).merge(c4).merge(c5).merge(c6);
         }
 
         CompanionMethodName pre = new CompanionMethodName(methodInfo.name, CompanionMethodName.Action.PRECONDITION, null);

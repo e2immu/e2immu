@@ -202,8 +202,17 @@ record SAEvaluationOfMainExpression(StatementAnalysis statementAnalysis,
         }
         statementAnalysis.stateData().setValueOfExpression(value);
         statementAnalysis.stateData().setEvaluatedExpressionCache(result.evaluatedExpressionCache());
-
-        ProgressAndDelay endResult = ennStatus.combine(statusPost).merge(stateForLoop);
+        CausesOfDelay sseDelay;
+        if (statementAnalysis.stateData().staticSideEffectIsSet()) {
+            sseDelay = CausesOfDelay.EMPTY;
+        } else {
+            // currently not part of progress!
+            Expression staticSideEffect = SAHelper.computeStaticSideEffect(context.getAnalyserContext(),
+                    statementAnalysis);
+            statementAnalysis.stateData().setStaticSideEffect(staticSideEffect);
+            sseDelay = staticSideEffect.causesOfDelay();
+        }
+        ProgressAndDelay endResult = ennStatus.combine(statusPost).merge(stateForLoop).merge(sseDelay);
         return endResult.toAnalysisStatus();
     }
 
@@ -255,6 +264,7 @@ record SAEvaluationOfMainExpression(StatementAnalysis statementAnalysis,
         progress |= stateData.setPostCondition(PostCondition.empty(primitives));
         progress |= stateData.setPreconditionFromMethodCalls(Precondition.empty(primitives));
         progress |= stateData.setEvaluatedExpressionCache(EvaluatedExpressionCache.EMPTY);
+        progress |= stateData.setStaticSideEffect(EmptyExpression.EMPTY_EXPRESSION);
 
         if (statementAnalysis.flowData().timeAfterExecutionNotYetSet()) {
             statementAnalysis.flowData().copyTimeAfterExecutionFromInitialTime();

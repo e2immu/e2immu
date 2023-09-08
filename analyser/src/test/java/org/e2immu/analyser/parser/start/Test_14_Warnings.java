@@ -322,7 +322,7 @@ public class Test_14_Warnings extends CommonTestRunner {
         };
         StatementAnalyserVisitor statementAnalyserVisitor = d -> {
             if ("add".equals(d.methodInfo().name)) {
-                assertEquals(d.iteration() > 0, null != d.haveError(Message.Label.CALLING_MODIFYING_METHOD_ON_E2IMMU));
+                assertEquals(d.iteration() > 0, null != d.haveError(Message.Label.CALLING_MODIFYING_METHOD_ON_IMMUTABLE_OBJECT));
             }
         };
 

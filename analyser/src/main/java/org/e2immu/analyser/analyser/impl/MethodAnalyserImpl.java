@@ -174,6 +174,8 @@ public abstract class MethodAnalyserImpl extends AbstractAnalyser implements Met
             check(e2.notModified);
             analyserResultBuilder.add(CheckModified.check(methodInfo, e2.modified, methodAnalysis));
         }
+        check(e2.staticSideEffects);
+
         analyserResultBuilder.add(CheckGetSet.check(methodInfo, e2.getSet, methodAnalysis));
 
         analyserResultBuilder.add(CheckPrecondition.checkPrecondition(methodInfo, methodAnalysis, companionAnalyses));

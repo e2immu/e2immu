@@ -17,6 +17,7 @@ package org.e2immu.analyser.parser.minor.testexample;
 import org.e2immu.annotation.Container;
 import org.e2immu.annotation.FinalFields;
 import org.e2immu.annotation.Modified;
+import org.e2immu.annotation.rare.StaticSideEffects;
 
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -29,6 +30,7 @@ public class StaticSideEffects_0<K> {
     @Modified
     private static final AtomicInteger counter = new AtomicInteger();
 
+    @StaticSideEffects(absent = true)
     public StaticSideEffects_0(K k) {
         this.k = k;
         count = counter.getAndIncrement();

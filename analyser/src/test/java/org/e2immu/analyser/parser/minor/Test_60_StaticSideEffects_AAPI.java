@@ -105,8 +105,10 @@ public class Test_60_StaticSideEffects_AAPI extends CommonTestRunner {
                         String expectedValue = switch (d.iteration()) {
                             case 0 -> "<null-check>?new AtomicInteger():<f:counter>";
                             case 1 -> "<wrapped:counter>"; // result of breaking delay in Merge
-                            case 2, 3 -> "null==<vp:counter:link@Field_counter>?new AtomicInteger():<vp:counter:link@Field_counter>";
-                            default -> "null==nullable instance type AtomicInteger?new AtomicInteger():nullable instance type AtomicInteger";
+                            case 2, 3 ->
+                                    "null==<vp:counter:link@Field_counter>?new AtomicInteger():<vp:counter:link@Field_counter>";
+                            default ->
+                                    "null==nullable instance type AtomicInteger?new AtomicInteger():nullable instance type AtomicInteger";
                         };
                         assertEquals(expectedValue, d.currentValue().toString());
                         assertDv(d, 4, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_EXPRESSION);
@@ -174,13 +176,36 @@ public class Test_60_StaticSideEffects_AAPI extends CommonTestRunner {
 
     @Test
     public void test_2() throws IOException {
+        MethodAnalyserVisitor methodAnalyserVisitor = d -> {
+            if ("StaticSideEffects_2".equals(d.methodInfo().name)) {
+                assert d.methodInfo().isConstructor;
+                assertDv(d, DV.TRUE_DV, Property.STATIC_SIDE_EFFECTS);
+            }
+        };
+
         testClass("StaticSideEffects_2", 0, 0, new DebugConfiguration.Builder()
+                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .build());
     }
 
     @Test
     public void test_3() throws IOException {
+        MethodAnalyserVisitor methodAnalyserVisitor = d -> {
+            if ("getK".equals(d.methodInfo().name)) {
+                assertDv(d, 1, DV.FALSE_DV, Property.STATIC_SIDE_EFFECTS);
+            }
+        };
+
+        FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
+            if ("counter".equals(d.fieldInfo().name)) {
+                assertDv(d, MultiLevel.NOT_IGNORE_MODS_DV, Property.EXTERNAL_IGNORE_MODIFICATIONS);
+                assertDv(d, 1, DV.TRUE_DV, Property.MODIFIED_OUTSIDE_METHOD);
+            }
+        };
+
         testClass("StaticSideEffects_3", 0, 0, new DebugConfiguration.Builder()
+                .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .build());
     }
 
@@ -194,14 +219,40 @@ public class Test_60_StaticSideEffects_AAPI extends CommonTestRunner {
             }
         };
 
+        MethodAnalyserVisitor methodAnalyserVisitor = d -> {
+            if ("getK".equals(d.methodInfo().name)) {
+                assertDv(d, DV.TRUE_DV, Property.STATIC_SIDE_EFFECTS);
+            }
+        };
+
         testClass("StaticSideEffects_4", 0, 0, new DebugConfiguration.Builder()
                 .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .build());
     }
 
     @Test
     public void test_5() throws IOException {
+        StatementAnalyserVisitor statementAnalyserVisitor = d -> {
+            if ("printStatic".equals(d.methodInfo().name)) {
+                if ("0".equals(d.statementId())) {
+                    String expected = "System.out.println(\"This is \"+t)";
+                    assertEquals(expected, d.statementAnalysis().stateData().staticSideEffect().toString());
+                    String expectedMld = "[" + expected + "]";
+                    assertEquals(expectedMld, d.statementAnalysis().methodLevelData().staticSideEffects()
+                            .expressions().toString());
+                }
+            }
+        };
+        MethodAnalyserVisitor methodAnalyserVisitor = d -> {
+            if ("printStatic".equals(d.methodInfo().name)) {
+                assertDv(d, DV.TRUE_DV, Property.STATIC_SIDE_EFFECTS);
+            }
+        };
+
         testClass("StaticSideEffects_5", 0, 0, new DebugConfiguration.Builder()
+                .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .build());
     }
 

@@ -78,6 +78,7 @@ public interface CauseOfDelay extends Comparable<CauseOfDelay> {
         NEXT_C_IMM("next_c_imm", ""),
         NO_PRECONDITION_INFO("no precondition info", "no precondition information (yet)", HIGH),
         NO_POST_CONDITION_INFO("no post-condition info", "no post-condition information (yet)", HIGH),
+        NO_SSE_INFO("no sse info", "no information about static side effects (yet)"),
         NOT_INVOLVED("not_involved", "Internal"),
         NOT_NULL_PARAMETER("nnp", ""),
         NOT_YET_EXECUTED("not_yet_executed", "Companion analyser has not been executed yet"),

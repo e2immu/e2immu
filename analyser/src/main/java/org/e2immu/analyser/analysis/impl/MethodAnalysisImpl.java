@@ -614,6 +614,10 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
                 }
             }
 
+            if(getProperty(Property.STATIC_SIDE_EFFECTS).valueIsTrue()) {
+                addAnnotation(e2.staticSideEffects);
+            }
+
             if (methodInfo.isConstructor) return;
 
             // @NotModified, @Modified

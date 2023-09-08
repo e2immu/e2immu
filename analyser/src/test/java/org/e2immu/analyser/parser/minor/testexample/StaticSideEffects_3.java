@@ -18,6 +18,7 @@ import org.e2immu.annotation.Container;
 import org.e2immu.annotation.FinalFields;
 import org.e2immu.annotation.Modified;
 import org.e2immu.annotation.NotModified;
+import org.e2immu.annotation.rare.StaticSideEffects;
 
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -33,6 +34,7 @@ public class StaticSideEffects_3<K> {
         this.k = k;
     }
 
+    @StaticSideEffects(absent = true)
     @Modified
     public K getK() {
         counter.getAndIncrement();

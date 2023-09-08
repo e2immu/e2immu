@@ -64,6 +64,7 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
     public static final String ANNOTATE_EVENTUAL = "annotateEventual";
     public static final String COMPUTE_INDEPENDENT = "methodIsIndependent";
     public static final String SET_POST_CONDITION = "setPostCondition";
+    public static final String COMPUTE_SSE = "computeStaticSideEffects";
 
     private final TypeAnalysis typeAnalysis;
     public final StatementAnalyserImpl firstStatementAnalyser;
@@ -149,6 +150,7 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
                         ? computeSetter(false) : computeReturnValue(sharedState))
                 .add(COMPUTE_IMMUTABLE, sharedState -> methodInfo.noReturnValue() ? DONE : computeImmutable(sharedState))
                 .add(COMPUTE_CONTAINER, sharedState -> methodInfo.noReturnValue() ? DONE : computeContainer(sharedState))
+                .add(COMPUTE_SSE, this::computeStaticSideEffects)
                 .add(DETECT_MISSING_STATIC_MODIFIER, (iteration) -> methodInfo.isConstructor ? DONE : detectMissingStaticModifier())
                 .add(EVENTUAL_PREP_WORK, this::eventualPrepWork)
                 .add(ANNOTATE_EVENTUAL, this::annotateEventual)
@@ -1159,6 +1161,24 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
         }
         methodAnalysis.setProperty(INDEPENDENT, independent);
         return AnalysisStatus.of(independent);
+    }
+
+    private AnalysisStatus computeStaticSideEffects(SharedState sharedState) {
+        DV currentValue = methodAnalysis.getProperty(STATIC_SIDE_EFFECTS);
+        assert currentValue.isDelayed();
+
+        MethodLevelData methodLevelData = methodAnalysis.methodLevelData();
+        StaticSideEffects sse = methodLevelData.staticSideEffects();
+        CausesOfDelay causesOfDelay = sse.causesOfDelay();
+
+        if (causesOfDelay.isDelayed()) {
+            return causesOfDelay;
+        }
+
+        DV dv = DV.fromBoolDv(!sse.expressions().isEmpty());
+        LOGGER.debug("Set STATIC_SIDE_EFFECTS of {} to {}", methodInfo.name, dv);
+        methodAnalysis.setProperty(STATIC_SIDE_EFFECTS, dv);
+        return DONE;
     }
 
     @Override

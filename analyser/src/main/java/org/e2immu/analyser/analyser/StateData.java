@@ -21,6 +21,7 @@ import org.e2immu.analyser.model.MethodInfo;
 import org.e2immu.analyser.model.expression.*;
 import org.e2immu.analyser.model.statement.LoopStatement;
 import org.e2immu.analyser.parser.Primitives;
+import org.e2immu.analyser.util.EventuallyFinalExtension;
 import org.e2immu.support.EventuallyFinal;
 import org.e2immu.support.FlipSwitch;
 import org.e2immu.support.SetOnceMap;
@@ -52,12 +53,15 @@ public class StateData {
     private final EventuallyFinal<Expression> absoluteState = new EventuallyFinal<>();
     private final EventuallyFinal<EvaluatedExpressionCache> evaluatedExpressionCache = new EventuallyFinal<>();
 
+    private final EventuallyFinal<Expression> staticSideEffect = new EventuallyFinal<>();
+
     public StateData(Location location, boolean isLoop, Primitives primitives) {
         statesOfInterrupts = isLoop ? new SetOnceMap<>() : null;
         statesOfReturnInLoop = isLoop ? new SetOnceMap<>() : null;
         conditionManagerForNextStatement.setVariable(ConditionManager.initialConditionManager(primitives));
         precondition.setVariable(Precondition.noInformationYet(location, primitives));
         postCondition.setVariable(PostCondition.NO_INFO_YET);
+        staticSideEffect.setVariable(DelayedExpression.NO_STATIC_SIDE_EFFECT_INFO);
     }
 
     public void internalAllDoneCheck() {
@@ -378,5 +382,26 @@ public class StateData {
         if (!escapeNotInPreOrPostConditions.isSet()) {
             escapeNotInPreOrPostConditions.set();
         }
+    }
+
+    public Expression staticSideEffect() {
+        return staticSideEffect.get();
+    }
+
+    /*
+    Convention: EmptyExpression when the current expression is not an SSE
+     */
+    public boolean setStaticSideEffect(Expression expression) {
+        if (expression.isDelayed()) {
+            this.staticSideEffect.setVariable(expression);
+            return false;
+        }
+        boolean progress = this.staticSideEffect.isVariable();
+        EventuallyFinalExtension.setFinalAllowEquals(this.staticSideEffect, expression);
+        return progress;
+    }
+
+    public boolean staticSideEffectIsSet() {
+        return staticSideEffect.isFinal();
     }
 }
