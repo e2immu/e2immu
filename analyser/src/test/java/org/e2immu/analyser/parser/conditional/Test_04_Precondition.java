@@ -592,7 +592,6 @@ public class Test_04_Precondition extends CommonTestRunner {
                         .build());
     }
 
-    @Disabled("inconsistency in lambda immutability, see Lambda_AAPI_18")
     @Test
     public void test_10() throws IOException {
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {

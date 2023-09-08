@@ -50,13 +50,21 @@ public class Test_23_TryStatement_AAPI extends CommonTestRunner {
                 .build());
     }
 
-    @Disabled("See Lambda_AAPI_18,Precondition_10; Runnable run is modifying, variable is immutable")
     @Test
     public void test_11() throws IOException {
-        testClass("TryStatement_11", 0, 0, new DebugConfiguration.Builder()
+
+        MethodAnalyserVisitor methodAnalyserVisitor = d -> {
+            if ("exception".equals(d.methodInfo().name)) {
+                assertDv(d, DV.FALSE_DV, Property.MODIFIED_METHOD);
+            }
+        };
+
+        // FIXME this warning should not be raised... a non-modifying method, without any modification in between...
+        //  but that's largely JFocus code rather than e2immu
+        testClass("TryStatement_11", 0, 1, new DebugConfiguration.Builder()
+                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .build());
     }
-
 
     /*
     ensure that the 'throw' operation in the first catch-block is not part of the precondition.

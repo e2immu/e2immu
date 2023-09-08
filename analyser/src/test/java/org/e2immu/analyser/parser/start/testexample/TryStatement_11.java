@@ -40,4 +40,19 @@ public class TryStatement_11 {
             throw (RuntimeException) tryCatchHelper.exception();
         }
     }
+
+    public static String same3(String in) {
+        ThrowingSupplier<String> supplier = in::toUpperCase;
+        TryCatchHelper<String> tryCatchHelper = tryCatch(supplier);
+        Runnable runFinally = () -> System.out.println(in);
+
+        Exception e = tryCatchHelper.exception();
+        if (e == null) {
+            runFinally.run();
+            return tryCatchHelper.returnValue();
+        } else {
+            runFinally.run();
+            throw (RuntimeException) e;
+        }
+    }
 }
