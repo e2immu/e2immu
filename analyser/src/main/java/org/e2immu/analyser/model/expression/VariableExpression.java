@@ -490,7 +490,7 @@ public class VariableExpression extends BaseExpression implements IsVariableExpr
             LinkedVariables recursive = internalLinkedVariables(dv.arrayVariable(), LinkedVariables.LINK_IS_HC_OF);
             return LinkedVariables.of(variable, linkLevel).merge(recursive);
         }
-        if (variable instanceof FieldReference fr && !fr.scopeIsThis() && fr.scopeVariable != null) {
+        if (variable instanceof FieldReference fr && fr.scopeVariable != null) {
             LinkedVariables recursive = internalLinkedVariables(fr.scopeVariable, LinkedVariables.LINK_IS_HC_OF);
             return LinkedVariables.of(variable, linkLevel).merge(recursive);
         }

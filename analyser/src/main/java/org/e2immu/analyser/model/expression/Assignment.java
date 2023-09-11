@@ -524,12 +524,22 @@ public class Assignment extends BaseExpression implements Expression {
         if (allowStaticallyAssigned) {
             Set<Variable> directAssignment = directAssignmentVariables != null ? directAssignmentVariables
                     : value.directAssignmentVariables();
+            LinkedVariables lv2;
             if (!directAssignment.isEmpty()) {
                 Map<Variable, DV> map = directAssignment.stream()
                         .collect(Collectors.toMap(v -> v, v -> LinkedVariables.LINK_STATICALLY_ASSIGNED));
-                linkedVariables = lvExpression.merge(LinkedVariables.of(map));
+                lv2 = lvExpression.merge(LinkedVariables.of(map));
             } else {
-                linkedVariables = lvExpression;
+                lv2 = lvExpression;
+            }
+            /*
+            additional rule: if we're directly assigned to a field, then the field's scope becomes LINK_IS_HC_OF:3.
+             */
+            Set<Variable> scopesOfStatically = lv2.scopesOfStaticallyAssigned();
+            if(!scopesOfStatically.isEmpty()) {
+                linkedVariables = lv2.ensureDependent(scopesOfStatically);
+            } else {
+                linkedVariables = lv2;
             }
         } else {
             linkedVariables = lvExpression;

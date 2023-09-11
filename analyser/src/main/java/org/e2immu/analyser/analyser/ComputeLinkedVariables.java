@@ -169,7 +169,9 @@ public class ComputeLinkedVariables {
 
         LinkedVariables curated = refToScope
                 .remove(v -> ignore.test(statementAnalysis.getVariableOrDefaultNull(v.fullyQualifiedName()), v));
-
+        if(variable instanceof This) {
+            curated = LinkedVariables.EMPTY;
+        }
         weightedGraph.addNode(variable, curated.variables(), false, DV::min);
         return curated;
     }

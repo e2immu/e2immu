@@ -19,13 +19,11 @@ import org.e2immu.analyser.analyser.delay.NoDelay;
 import org.e2immu.analyser.analyser.util.ComputeIndependent;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.impl.TranslationMapImpl;
+import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.parser.InspectionProvider;
 
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -309,5 +307,29 @@ public class LinkedVariables implements Comparable<LinkedVariables>, Iterable<Ma
 
     public Stream<Variable> assignedOrDependentVariables() {
         return variables.entrySet().stream().filter(e -> isAssignedOrLinked(e.getValue())).map(Map.Entry::getKey);
+    }
+
+    public LinkedVariables ensureDependent(Set<Variable> scopesOfStatically) {
+        if (isEmpty() || this == NOT_YET_SET) return this;
+        Map<Variable, DV> map = variables.entrySet().stream()
+                .collect(Collectors.toMap(Map.Entry::getKey, e -> {
+                    if (scopesOfStatically.contains(e.getKey())) {
+                        assert e.getValue().isDelayed() || LINK_IS_HC_OF.equals(e.getValue());
+                        return LINK_IS_HC_OF;
+                    }
+                    return e.getValue();
+                }));
+        return of(map);
+    }
+
+    /*
+    TODO also do this for dependent variables?
+     */
+    public Set<Variable> scopesOfStaticallyAssigned() {
+        return variables.entrySet().stream()
+                .filter(e -> e.getKey() instanceof FieldReference && e.getValue().equals(LINK_STATICALLY_ASSIGNED))
+                .map(e -> ((FieldReference) e.getKey()).scopeVariable)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toUnmodifiableSet());
     }
 }
