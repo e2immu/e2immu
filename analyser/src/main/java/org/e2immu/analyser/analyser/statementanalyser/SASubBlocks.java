@@ -175,7 +175,7 @@ record SASubBlocks(StatementAnalysis statementAnalysis, StatementAnalyser statem
 
     private DV isPostCondition(Expression condition) {
         List<Variable> vars = condition.variableStream().toList();
-        if (vars.isEmpty() && condition.isDelayed()) return condition.causesOfDelay();
+        if (condition.isDelayed()) return condition.causesOfDelay();
         return vars.stream()
                 .filter(v -> statementAnalysis.variableIsSet(v.fullyQualifiedName()))
                 .map(statementAnalysis::variableHasBeenModified)
