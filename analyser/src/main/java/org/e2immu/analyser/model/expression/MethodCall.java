@@ -389,7 +389,8 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
             Map<ParameterInfo, LinkedVariables> linksToLinkedToObject = firstInCallCycle ? Map.of() :
                     LinkParameters.fromParameterIntoObject(context,
                             context.getAnalyserContext().getMethodInspection(methodInfo),
-                            linkedVariablesOfParameters, objectValue.returnType());
+                            linkedVariablesOfParameters, objectValue.returnType(),
+                            objectValue.formalObjectType(context.getAnalyserContext()));
             if (!linksToLinkedToObject.isEmpty()) {
                 for (Map.Entry<Variable, DV> e : linkedVariablesOfObject) {
                     Variable linkedToObject = e.getKey();

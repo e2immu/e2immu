@@ -42,6 +42,14 @@ public interface Expression extends Element, Comparable<Expression> {
     @NotNull
     ParameterizedType returnType();
 
+    /*
+     Used in MethodCall, link computation between object and parameters/result. See Lambda_17.
+     Must be overridden by all types that represent a functional interface; currently Lambda, InlinedMethod.
+     */
+    default ParameterizedType formalObjectType(InspectionProvider inspectionProvider) {
+        return returnType();
+    }
+
     @NotModified
     @NotNull
     Precedence precedence();
@@ -130,7 +138,9 @@ public interface Expression extends Element, Comparable<Expression> {
         return LinkedVariables.EMPTY;
     }
 
-    default boolean isNullConstant() { return false; }
+    default boolean isNullConstant() {
+        return false;
+    }
 
     boolean equalsNull();
 

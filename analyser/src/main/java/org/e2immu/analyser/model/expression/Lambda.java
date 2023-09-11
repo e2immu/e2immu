@@ -186,6 +186,11 @@ public class Lambda extends BaseExpression implements Expression {
     }
 
     @Override
+    public ParameterizedType formalObjectType(InspectionProvider inspectionProvider) {
+        return methodInfo.typeInfo.asParameterizedType(inspectionProvider);
+    }
+
+    @Override
     public OutputBuilder output(Qualification qualification) {
         OutputBuilder outputBuilder = new OutputBuilder();
         if (parameters.isEmpty()) {

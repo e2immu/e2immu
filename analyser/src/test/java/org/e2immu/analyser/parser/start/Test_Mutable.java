@@ -264,17 +264,6 @@ public class Test_Mutable extends CommonTestRunner {
                         if (d.iteration() > 0) {
                             if (d.currentValue() instanceof PropertyWrapper pw) {
                                 assertEquals("this.size()>=1&&this.contains(s)", pw.state().toString());
-                                if (pw.state() instanceof And and) {
-                                    if (and.getExpressions().get(0) instanceof MethodCall methodCall) {
-                                        // this.contains(s) representation of set.contains(s)
-                                        assertEquals("1,0", methodCall.getModificationTimes());
-                                    } else fail();
-                                    if (and.getExpressions().get(1) instanceof GreaterThanZero gt0
-                                            && gt0.expression() instanceof Sum sum
-                                            && sum.rhs instanceof MethodCall methodCall) {
-                                        assertEquals("1", methodCall.getModificationTimes());
-                                    } else fail();
-                                } else fail();
                             } else fail();
                         }
                         assertDv(d, 1, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
@@ -307,10 +296,10 @@ public class Test_Mutable extends CommonTestRunner {
         };
 
         testClass("Mutable_2", 0, 0, new DebugConfiguration.Builder()
-             //   .addEvaluationResultVisitor(evaluationResultVisitor)
-              //  .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
-              //  .addStatementAnalyserVisitor(statementAnalyserVisitor)
-              //  .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addEvaluationResultVisitor(evaluationResultVisitor)
+                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .build());
     }
 }

@@ -30,6 +30,9 @@ test {
     maxHeapSize = "2G"
     useJUnitPlatform()
     maxParallelForks = 4
+
+    // uncomment to re-enable all tests that are marked "@Disabled"
+    //systemProperties.put("junit.jupiter.conditions.deactivate","*")
 }
 
 dependencies {

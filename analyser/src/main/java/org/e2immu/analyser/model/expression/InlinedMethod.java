@@ -127,6 +127,11 @@ public class InlinedMethod extends BaseExpression implements Expression {
     }
 
     @Override
+    public ParameterizedType formalObjectType(InspectionProvider inspectionProvider) {
+        return methodInfo.typeInfo.asParameterizedType(inspectionProvider);
+    }
+
+    @Override
     public OutputBuilder output(Qualification qualification) {
         String msg = "/*inline " + methodInfo.name + "*/";
         return new OutputBuilder().add(new Text(msg)).add(expression.output(qualification));

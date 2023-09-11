@@ -36,6 +36,7 @@ import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 
+import static org.e2immu.analyser.parser.VisitorTestSupport.IterationInfo.*;
 import static org.junit.jupiter.api.Assertions.*;
 
 public class Test_57_Lambda_AAPI extends CommonTestRunner {
@@ -102,10 +103,30 @@ public class Test_57_Lambda_AAPI extends CommonTestRunner {
     }
 
 
-    @Disabled("Linked variables are being overwritten")
+    //@Disabled("Linked variables are being overwritten")
     @Test
     public void test_17() throws IOException {
-        testClass("Lambda_17", 0, 0, new DebugConfiguration.Builder()
+        StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+            if ("method".equals(d.methodInfo().name)) {
+                if ("f".equals(d.variableName())) {
+                    if ("0".equals(d.statementId())) {
+                        assertLinked(d, it(0, ""));
+                    } else if ("1".equals(d.statementId())) {
+                        assertLinked(d,
+                            //    it0("input:-1"),
+                                it(0, "input:4"));
+                    } else fail();
+                }
+            }
+        };
+        TypeAnalyserVisitor typeAnalyserVisitor = d -> {
+            if ("R".equals(d.typeInfo().simpleName)) {
+                assertDv(d, MultiLevel.EFFECTIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
+            }
+        };
+        testClass("Lambda_17", 0, 2, new DebugConfiguration.Builder()
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
                 .build());
     }
 

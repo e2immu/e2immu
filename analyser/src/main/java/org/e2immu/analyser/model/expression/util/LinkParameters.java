@@ -248,9 +248,15 @@ public class LinkParameters {
     public static Map<ParameterInfo, LinkedVariables> fromParameterIntoObject(EvaluationResult context,
                                                                               MethodInspection methodInspection,
                                                                               List<LinkedVariables> linkedVariables,
-                                                                              ParameterizedType objectType) {
-        DV immutableType = context.evaluationContext().isMyself(objectType) ? MultiLevel.MUTABLE_DV
-                : context.getAnalyserContext().typeImmutable(objectType);
+                                                                              ParameterizedType objectType,
+                                                                              ParameterizedType formalObjectType) {
+        /*
+         formal because we must take the same decision in every iteration. See Lambda_17, where we first find a
+         Lambda (in delayed form) and then an InlinedMethod. The return type of the inlined method is different from
+         the functional interface method's owner.
+         */
+        boolean myself = context.evaluationContext().isMyself(formalObjectType);
+        DV immutableType = myself ? MultiLevel.MUTABLE_DV : context.getAnalyserContext().typeImmutable(formalObjectType);
         Map<ParameterInfo, LinkedVariables> result = new HashMap<>();
         int i = 0;
         for (LinkedVariables sub : linkedVariables) {
@@ -271,8 +277,9 @@ public class LinkParameters {
                     if (linkLevel.isDelayed()) {
                         newLinkMap.put(v, linkLevel);
                     } else {
+                        ParameterizedType ot = myself ? formalObjectType : objectType;
                         DV newLinkLevel = computeLinkLevelFromParameterAndItsLinkedVariables(context,
-                                parameterInfo, linkLevel, v.parameterizedType(), objectType, true);
+                                parameterInfo, linkLevel, v.parameterizedType(), ot, true);
                         if (newLinkLevel.lt(LinkedVariables.LINK_INDEPENDENT)) {
                             newLinkMap.put(v, newLinkLevel);
                         }

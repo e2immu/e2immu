@@ -634,7 +634,6 @@ public class Test_Independent1 extends CommonTestRunner {
     }
 
     // copied from SetOnceMap
-    @Disabled("Hidden content badly computed; works for stream() but not for stream2()")
     @Test
     public void test_12() throws IOException {
         EvaluationResultVisitor evaluationResultVisitor = d -> {
@@ -643,15 +642,6 @@ public class Test_Independent1 extends CommonTestRunner {
                     String expected = d.iteration() < 2 ? "<m:map>"
                             : "map.entrySet().stream().map(/*inline apply*/new Entry<>(e.getKey(),e.getValue()))";
                     assertEquals(expected, d.evaluationResult().getExpression().toString());
-/*
-                    // there is no information about linking to stream in statement 2
-                    // the dependency on the stream() is gone because of the variable substitution.
-                    if (d.iteration() >= 2) {
-                        assertTrue(d.evaluationResult().changeData().values().stream()
-                                .map(EvaluationResult.ChangeData::linkedVariables)
-                                .allMatch(lv -> lv.isEmpty() || "mapped:4".equals(lv.toString())
-                                        || "this.map:4".equals(lv.toString())));
-                    }*/
                 }
             }
         };
@@ -668,7 +658,7 @@ public class Test_Independent1 extends CommonTestRunner {
                 if (d.variable() instanceof ReturnVariable && "2".equals(d.statementId())) {
                     String expected = d.iteration() < 2
                             ? "entries:-1,stream:-1,this.map:-1"
-                            : "entries:4,stream:2,this.map:4"; // FIXME stream:2
+                            : "entries:4,stream:2,this.map:4";
                     assertEquals(expected, d.variableInfo().getLinkedVariables().toString());
                 }
             }
@@ -677,13 +667,13 @@ public class Test_Independent1 extends CommonTestRunner {
                 if ("mapped".equals(d.variableName()) && "2".equals(d.statementId())) {
                     String expected = d.iteration() < 2
                             ? "entries:-1,stream:-1,this.map:-1"
-                            : "entries:4,stream:2,this.map:4"; // FIXME: stream:2
+                            : "entries:4,stream:2,this.map:4";
                     assertEquals(expected, d.variableInfo().getLinkedVariables().toString());
                 }
                 if (d.variable() instanceof ReturnVariable && "3".equals(d.statementId())) {
                     String expected = d.iteration() < 2
                             ? "entries:-1,mapped:0,stream:-1,this.map:-1"
-                            : "entries:4,mapped:0,stream:2,this.map:4"; // FIXME: stream:2
+                            : "entries:4,mapped:0,stream:2,this.map:4";
                     assertEquals(expected, d.variableInfo().getLinkedVariables().toString());
                 }
             }
