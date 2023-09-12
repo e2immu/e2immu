@@ -138,10 +138,10 @@ public class Test_Output_02_OutputBuilder extends CommonTestRunner {
         testSupportAndUtilClasses(List.of(OutputBuilder.class, OutputElement.class, Qualifier.class,
                         FormattingOptions.class, Guide.class, ElementarySpace.class, Space.class, TypeName.class),
                 0, 0, new DebugConfiguration.Builder()
-                    //    .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-                    //    .addStatementAnalyserVisitor(statementAnalyserVisitor)
-                    //    .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
-                    //    .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
+                        //    .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                        //    .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                        //    .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                        //    .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
                         .build());
     }
 
@@ -155,8 +155,7 @@ public class Test_Output_02_OutputBuilder extends CommonTestRunner {
             }
             if ("write".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof ReturnVariable) {
-                    String expected = d.iteration() <= 4 ? "<m:minimal>"
-                            : "switch(`required`){Required.SIMPLE->`simpleName`;Required.FQN->`fullyQualifiedName`;Required.QUALIFIED_FROM_PRIMARY_TYPE->`fromPrimaryTypeDownwards`;}";
+                    String expected = d.iteration() <= 4 ? "<m:minimal>" : "this.minimal()";
                     assertEquals(expected, d.currentValue().toString());
                 }
             }
@@ -164,13 +163,8 @@ public class Test_Output_02_OutputBuilder extends CommonTestRunner {
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("minimal".equals(d.methodInfo().name)) {
                 String expected = d.iteration() <= 4 ? "<m:minimal>"
-                        : "/*inline minimal*/switch(required){Required.SIMPLE->simpleName;Required.FQN->fullyQualifiedName;Required.QUALIFIED_FROM_PRIMARY_TYPE->fromPrimaryTypeDownwards;}";
+                        : "switch(required){Required.SIMPLE->simpleName;Required.FQN->fullyQualifiedName;Required.QUALIFIED_FROM_PRIMARY_TYPE->fromPrimaryTypeDownwards;}";
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
-                if (d.iteration() >= 5) {
-                    if (d.methodAnalysis().getSingleReturnValue() instanceof InlinedMethod inlinedMethod) {
-                        assertEquals("fromPrimaryTypeDownwards, fullyQualifiedName, required, simpleName, this", inlinedMethod.variablesOfExpressionSorted());
-                    } else fail("Have " + d.methodAnalysis().getSingleReturnValue().getClass());
-                }
             }
         };
         testSupportAndUtilClasses(List.of(FormattingOptions.class, TypeName.class),

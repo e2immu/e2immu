@@ -81,9 +81,9 @@ public class Test_Support_05_Lazy extends CommonTestRunner {
                         case 0 -> "<f:t>";
                         case 1 -> "<null-check>?<f*:t>:<m:requireNonNull>";
                         case 2 ->
-                                "<null-check>?<vp:t:break_init_delay:this.t@Method_get_0.0.0-C;constructor-to-instance@Method_get_1-E;ext_not_null@Field_supplier;initial:this.supplier@Method_get_1-C;initial:this.t@Method_get_0-C;values:this.t@Field_t>:<m:requireNonNull>";
+                                "<null-check>?<vp:t:break_init_delay:this.t@Method_get_0.0.0-C;ext_not_null@Field_supplier;initial:this.supplier@Method_get_1-C;initial:this.t@Method_get_0-C;values:this.t@Field_t>:<m:requireNonNull>";
                         case 3, 4, 5, 6, 7 ->
-                                "<null-check>?<vp:t:break_init_delay:this.t@Method_get_0-C;constructor-to-instance@Method_get_1-E;de:this.t@Method_get_2-E;ext_not_null@Field_supplier;initial:this.supplier@Method_get_1-C;initial:this.t@Method_get_0-C;values:this.t@Field_t>:<m:requireNonNull>";
+                                "<null-check>?<vp:t:break_init_delay:this.t@Method_get_0-C;de:this.t@Method_get_2-E;ext_not_null@Field_supplier;initial:this.supplier@Method_get_1-C;initial:this.t@Method_get_0-C;values:this.t@Field_t>:<m:requireNonNull>";
                         case 8, 9 -> "<wrapped:t>";
                         default -> "supplier.get()/*@NotNull*/";
                     };
@@ -161,11 +161,11 @@ public class Test_Support_05_Lazy extends CommonTestRunner {
             assertEquals("<variable value>", d.fieldAnalysis().getValue().toString());
             String expected = switch (d.iteration()) {
                 case 0 ->
-                        "constructor-to-instance@Method_get_1-E;initial:this.supplier@Method_get_1-C;initial:this.t@Method_get_0.0.0-C;values:this.t@Field_t";
+                        "initial:this.supplier@Method_get_1-C;initial:this.t@Method_get_0.0.0-C;values:this.t@Field_t";
                 case 1 ->
-                        "break_init_delay:this.t@Method_get_0.0.0-C;constructor-to-instance@Method_get_1-E;ext_not_null@Field_supplier;initial:this.supplier@Method_get_1-C;initial:this.t@Method_get_0-C;values:this.t@Field_t";
+                        "break_init_delay:this.t@Method_get_0.0.0-C;ext_not_null@Field_supplier;initial:this.supplier@Method_get_1-C;initial:this.t@Method_get_0-C;values:this.t@Field_t";
                 case 2, 3, 4, 5, 6, 7, 8 ->
-                        "break_init_delay:this.t@Method_get_0-C;constructor-to-instance@Method_get_1-E;de:this.t@Method_get_2-E;ext_not_null@Field_supplier;initial:this.supplier@Method_get_1-C;initial:this.t@Method_get_0-C;values:this.t@Field_t";
+                        "break_init_delay:this.t@Method_get_0-C;de:this.t@Method_get_2-E;ext_not_null@Field_supplier;initial:this.supplier@Method_get_1-C;initial:this.t@Method_get_0-C;values:this.t@Field_t";
                 default -> "null,supplier.get()/*@NotNull*/";
             };
             assertEquals(expected, ((FieldAnalysisImpl.Builder) d.fieldAnalysis()).sortedValuesString());
@@ -216,7 +216,7 @@ public class Test_Support_05_Lazy extends CommonTestRunner {
                 new AnalyserConfiguration.Builder().setComputeContextPropertiesOverAllMethods(true).build());
     }
 
-    @Disabled("fails on command line, correct in IntelliJ")
+   // @Disabled("fails on command line, correct in IntelliJ")
     @Test
     public void test1() throws IOException {
         // supplier.get() null context on to supplier, on to parameter

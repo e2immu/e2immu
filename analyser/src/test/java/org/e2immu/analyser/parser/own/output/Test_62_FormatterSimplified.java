@@ -225,7 +225,7 @@ public class Test_62_FormatterSimplified extends CommonTestRunner {
 
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("symbol".equals(d.methodInfo().name)) {
-                String expected = d.iteration() == 0 ? "<m:symbol>" : "/*inline symbol*/symbol";
+                String expected = d.iteration() == 0 ? "<m:symbol>" : "symbol";
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
                 assertDv(d, 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_EXPRESSION);
             }
@@ -265,12 +265,12 @@ public class Test_62_FormatterSimplified extends CommonTestRunner {
     public void test_4() throws IOException {
         EvaluationResultVisitor evaluationResultVisitor = d -> {
             if ("4.0.0.0.0".equals(d.statementId())) {
-                String expect = d.iteration() <= 2 ? "<m:combine>" : "lastOneWasSpace$4";
+                String expect = d.iteration() <= 2 ? "<m:combine>" : "this.combine(lastOneWasSpace$4,null)";
                 assertEquals(expect, d.evaluationResult().value().toString());
             }
         };
 
-        testClass("FormatterSimplified_4", 2, 3, new DebugConfiguration.Builder()
+        testClass("FormatterSimplified_4", 2, 1, new DebugConfiguration.Builder()
                 .addEvaluationResultVisitor(evaluationResultVisitor)
                 .build());
     }
@@ -373,7 +373,7 @@ public class Test_62_FormatterSimplified extends CommonTestRunner {
                         case 1 -> "<vp:forwardInfo:container@Record_ForwardInfo>";
                         case 2 ->
                                 "<vp:forwardInfo:cm@Parameter_guide;cm@Parameter_string;mom@Parameter_guide;mom@Parameter_string>";
-                        default -> "((new Stack<GuideOnStack>()/*0==this.size()*/).peek()).forwardInfo";
+                        default -> "((new Stack<GuideOnStack>()).peek()).forwardInfo";
                     };
                     assertEquals(expect, d.evaluationResult().value().toString());
                 }
@@ -381,7 +381,7 @@ public class Test_62_FormatterSimplified extends CommonTestRunner {
                     String expect = switch (d.iteration()) {
                         case 0, 1, 2 -> "9==<m:index>&&<null-check>";
                         default ->
-                                "9==((new Stack<GuideOnStack>()/*0==this.size()*/).peek()).forwardInfo.guide.index()&&null!=((new Stack<GuideOnStack>()/*0==this.size()*/).peek()).forwardInfo";
+                                "9==((new Stack<GuideOnStack>()).peek()).forwardInfo.guide.index()&&null!=((new Stack<GuideOnStack>()).peek()).forwardInfo";
                     };
                     assertEquals(expect, d.evaluationResult().value().toString());
                     assertEquals(d.iteration() < 3, d.evaluationResult().causesOfDelay().isDelayed());
@@ -405,7 +405,7 @@ public class Test_62_FormatterSimplified extends CommonTestRunner {
                             case 1 -> "<vp:forwardInfo:container@Record_ForwardInfo>";
                             case 2 ->
                                     "<vp:forwardInfo:cm@Parameter_guide;cm@Parameter_string;mom@Parameter_guide;mom@Parameter_string>";
-                            default -> "((new Stack<GuideOnStack>()/*0==this.size()*/).peek()).forwardInfo";
+                            default -> "((new Stack<GuideOnStack>()).peek()).forwardInfo";
                         };
                         assertEquals(expect, d.currentValue().toString());
 
@@ -480,7 +480,7 @@ public class Test_62_FormatterSimplified extends CommonTestRunner {
             if ("apply".equals(d.methodInfo().name)) {
                 assertEquals("$1", d.methodInfo().typeInfo.simpleName);
 
-                String expected = d.iteration() < 3 ? "<m:apply>" : "/*inline apply*/list.get(forwardInfo.pos) instanceof Guide";
+                String expected = d.iteration() < 3 ? "<m:apply>" : "list.get(forwardInfo.pos) instanceof Guide";
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
             }
         };

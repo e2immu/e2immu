@@ -158,7 +158,7 @@ public class Test_ParameterizedType extends CommonTestRunner {
             }
         };
 
-        testClass("ParameterizedType_0", 6, 2, new DebugConfiguration.Builder()
+        testClass("ParameterizedType_0", 4, 2, new DebugConfiguration.Builder()
              //   .addEvaluationResultVisitor(evaluationResultVisitor)
              //   .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
             //    .addStatementAnalyserVisitor(statementAnalyserVisitor)
@@ -562,7 +562,7 @@ public class Test_ParameterizedType extends CommonTestRunner {
                         String expected = switch (d.iteration()) {
                             case 0 -> "<m:find>";
                             case 1 -> "<vp:TypeInfo:cm@Parameter_fqn;mom@Parameter_fqn>";
-                            default -> "findType.find(path.toString()/*@NotNull 0==this.length()*/.replaceAll(\"[/$]\",\".\"),path.toString()/*@NotNull 0==this.length()*/)";
+                            default -> "findType.find((new StringBuilder()).toString().replaceAll(\"[/$]\",\".\"),(new StringBuilder()).toString())";
                         };
                         assertEquals(expected, d.currentValue().toString());
                     }

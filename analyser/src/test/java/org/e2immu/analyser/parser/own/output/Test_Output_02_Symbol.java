@@ -69,7 +69,7 @@ public class Test_Output_02_Symbol extends CommonTestRunner {
                 assertDv(d.p(0), 1, MultiLevel.NULLABLE_DV, Property.NOT_NULL_PARAMETER);
             }
             if ("right".equals(d.methodInfo().name) && "Symbol".equals(d.methodInfo().typeInfo.simpleName)) {
-                String expected = d.iteration() == 0 ? "<m:right>" : "/*inline right*/right";
+                String expected = d.iteration() == 0 ? "<m:right>" : "right";
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
                 String pc = d.iteration() < 4 ? "<precondition>" : "true";
                 assertEquals(pc, d.methodAnalysis().getPreconditionForEventual().expression().toString());

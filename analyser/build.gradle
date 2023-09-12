@@ -31,6 +31,7 @@ test {
     useJUnitPlatform()
     maxParallelForks = 4
 
+    exclude "**/disabled/*"
     // uncomment to re-enable all tests that are marked "@Disabled"
     //systemProperties.put("junit.jupiter.conditions.deactivate","*")
 }

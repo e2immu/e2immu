@@ -138,7 +138,7 @@ public class Test_48_Store extends CommonTestRunner {
                 // independent because non-modifying (no Annotated API)
                 assertDv(d, 1, MultiLevel.INDEPENDENT_DV, Property.INDEPENDENT);
 
-                String expected = d.iteration() == 0 ? "<m:getOrCreate>" : "/*inline getOrCreate*/new Project_0(\"x\")";
+                String expected = d.iteration() == 0 ? "<m:getOrCreate>" : "new Project_0(\"x\")";
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
             }
             if ("handleMultiSet".equals(d.methodInfo().name)) {
