@@ -203,13 +203,13 @@ public class StatementAnalyserImpl implements StatementAnalyser {
      * it loops over the statements of the method.
      *
      * @param iteration             the current iteration
-     * @param forwardAnalysisInfoIn information from the level above
+     * @param forwardAnalysisInfo information from the level above
      * @return the combination of a list of all modifications to be done to parameters, methods, and an AnalysisStatus object.
      * Once the AnalysisStatus reaches DONE, this particular block is not analysed again.
      */
     public AnalyserResult analyseAllStatementsInBlock(int iteration,
                                                       int statementTime,
-                                                      ForwardAnalysisInfo forwardAnalysisInfoIn,
+                                                      ForwardAnalysisInfo forwardAnalysisInfo,
                                                       EvaluationContext closure) {
         try {
             // skip all the statements that are already in the DONE state...
@@ -225,8 +225,9 @@ public class StatementAnalyserImpl implements StatementAnalyser {
             StatementAnalyser previousStatement = previousAndFirst.previous;
             StatementAnalyserImpl statementAnalyser = (StatementAnalyserImpl) previousAndFirst.first;
             Expression switchCondition = new BooleanConstant(statementAnalysis.primitives(), true);
-            ForwardAnalysisInfo forwardAnalysisInfo = forwardAnalysisInfoIn;
-            int currentStatementTime = statementTime;
+            // we may be skipping statements, so if we already have a statement time, take that one
+            int currentStatementTime = statementAnalyser.statementAnalysis.flowData().initialTimeNotYetSet() ?
+                    statementTime : statementAnalyser.statementAnalysis.flowData().getInitialTime();
             do {
                 boolean wasReplacement;
                 EvaluationContext evaluationContext = new SAEvaluationContext(statementAnalysis,

@@ -205,7 +205,14 @@ record SASubBlocks(StatementAnalysis statementAnalysis, StatementAnalyser statem
         boolean canBeRepresented = Precondition.canBeRepresented(combined);
         if (!isPostCondition.valueIsFalse() && canBeRepresented) {
             delays = isPostCondition.causesOfDelay().merge(combined.causesOfDelay());
-            PostCondition pc = new PostCondition(combined, statementAnalysis.index());
+            Expression withIsPostCondition;
+            if (isPostCondition.isDone() || combined.isDelayed()) {
+                withIsPostCondition = combined;
+            } else {
+                withIsPostCondition = DelayedExpression.forPrecondition(assertion.getIdentifier(),
+                        sharedState.context().getPrimitives(), combined, delays);
+            }
+            PostCondition pc = new PostCondition(withIsPostCondition, statementAnalysis.index());
             progress = stateData.setPostCondition(pc);
             inPreOrPostCondition = true;
         } else {
@@ -228,8 +235,14 @@ record SASubBlocks(StatementAnalysis statementAnalysis, StatementAnalyser statem
                         translated.isBoolValueTrue() ? Stream.of() : Stream.of(new Precondition.EscapeCause()),
                         stateData.getPreconditionFromMethodCalls().causes().stream()).toList();
 
-                pc = new Precondition(translated, preconditionCauses);
-                delays = delays.merge(pc.causesOfDelay());
+                Expression withIsPostCondition;
+                if (isPostCondition.isDone() || translated.isDelayed()) {
+                    withIsPostCondition = translated;
+                } else {
+                    withIsPostCondition = DelayedExpression.forPrecondition(assertion.getIdentifier(),
+                            sharedState.context().getPrimitives(), combined, delays);
+                }
+                pc = new Precondition(withIsPostCondition, preconditionCauses);
             } else {
                 // the null/not null of parameters has been handled during the main evaluation
                 pc = Precondition.empty(primitives);
