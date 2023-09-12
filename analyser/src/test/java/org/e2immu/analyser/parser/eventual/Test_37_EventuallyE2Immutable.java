@@ -76,7 +76,7 @@ public class Test_37_EventuallyE2Immutable extends CommonTestRunner {
                 }
                 if ("1.0.0".equals(d.statementId())) {
                     String expect = switch (d.iteration()) {
-                        case 0, 1 -> "!<null-check>";
+                        case 0, 1 -> "<null-check>";
                         default -> "null==t";
                     };
                     assertEquals(expect, d.statementAnalysis().stateData().getPrecondition().expression().toString());
@@ -88,7 +88,7 @@ public class Test_37_EventuallyE2Immutable extends CommonTestRunner {
                     assertTrue(d.statementAnalysis().stateData().getPrecondition().isEmpty());
 
                     String expect = switch (d.iteration()) {
-                        case 0, 1 -> "!<null-check>";
+                        case 0, 1 -> "<null-check>";
                         default -> "null==t";
                     };
                     assertEquals(expect, d.statementAnalysis().methodLevelData().combinedPreconditionGet().expression().toString());
@@ -181,7 +181,7 @@ public class Test_37_EventuallyE2Immutable extends CommonTestRunner {
             }
             if ("setT".equals(d.methodInfo().name)) {
                 String expect = switch (d.iteration()) {
-                    case 0, 1 -> "!<null-check>";
+                    case 0, 1 -> "<null-check>";
                     default -> "null==t";
                 };
                 assertEquals(expect, d.methodAnalysis().getPrecondition().expression().toString());

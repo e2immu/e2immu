@@ -93,9 +93,10 @@ public class Test_00_Basics_14 extends CommonTestRunner {
                     if ("0.0.0".equals(d.statementId())) {
                         String expectValue = switch (d.iteration()) {
                             case 0, 1 -> "<f:t>";
-                            default -> "nullable instance type T";
+                            default -> "null";
                         };
                         assertEquals(expectValue, d.currentValue().toString());
+                        if (d.iteration() >= 2) assertTrue(d.currentValue().isDone());
 
                         assertEquals(MultiLevel.NULLABLE_DV, d.getProperty(CONTEXT_NOT_NULL));
                     } else {

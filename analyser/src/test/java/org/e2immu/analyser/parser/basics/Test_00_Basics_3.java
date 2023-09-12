@@ -74,7 +74,7 @@ public class Test_00_Basics_3 extends CommonTestRunner {
                 }
                 if ("1".equals(d.statementId())) {
                     // should not be sth like null != s$2, because statement time has not advanced since the assignments
-                    String expect = d.iteration() == 0 ? "<null-check>" : "true";
+                    String expect = d.iteration() == 0 ? "!<null-check>" : "true";
                     assertEquals(expect, d.evaluationResult().value().toString());
                 }
             }

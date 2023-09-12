@@ -1133,6 +1133,10 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
             ComputeIndependent computeIndependent = new ComputeIndependent(analyserContext, hiddenContentCurrentType,
                     methodInfo.typeInfo, false);
             ParameterizedType concreteReturnType = variableInfo.getValue().returnType();
+            if(concreteReturnType == ParameterizedType.NULL_CONSTANT) {
+                methodAnalysis.setProperty(INDEPENDENT, INDEPENDENT.bestDv);
+                return DONE;
+            }
             boolean factoryMethod = methodInspection.isFactoryMethod();
             DV computed;
             if (factoryMethod) {

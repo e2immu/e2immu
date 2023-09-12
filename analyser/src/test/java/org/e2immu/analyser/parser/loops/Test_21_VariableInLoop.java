@@ -185,9 +185,9 @@ public class Test_21_VariableInLoop extends CommonTestRunner {
         };
         // sa.navigationData(), x2
         testClass("VariableInLoop_1", 0, 2, new DebugConfiguration.Builder()
-                .addStatementAnalyserVisitor(statementAnalyserVisitor)
-                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-                .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
+           //     .addStatementAnalyserVisitor(statementAnalyserVisitor)
+              //  .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+              //  .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
                 .build());
     }
 

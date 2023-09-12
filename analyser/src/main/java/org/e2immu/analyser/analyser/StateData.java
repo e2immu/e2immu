@@ -20,6 +20,7 @@ import org.e2immu.analyser.model.Location;
 import org.e2immu.analyser.model.MethodInfo;
 import org.e2immu.analyser.model.expression.*;
 import org.e2immu.analyser.model.statement.LoopStatement;
+import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.util.EventuallyFinalExtension;
 import org.e2immu.support.EventuallyFinal;
@@ -29,6 +30,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Predicate;
@@ -40,7 +42,7 @@ public class StateData {
     private static final Logger LOGGER = LoggerFactory.getLogger(StateData.class);
 
     private final EventuallyFinal<ConditionManager> conditionManagerForNextStatement = new EventuallyFinal<>();
-    private final SetOnceMap<VariableExpression, Expression> equalityAccordingToState = new SetOnceMap<>();
+    private final Map<IsVariableExpression, Expression> equalityAccordingToState = new HashMap<>();
     private final EventuallyFinal<Precondition> precondition = new EventuallyFinal<>();
     // used for transfer from SAApply / StatementAnalysis.applyPrecondition to SASubBlocks
     private final EventuallyFinal<Precondition> preconditionFromMethodCalls = new EventuallyFinal<>();
@@ -144,20 +146,21 @@ public class StateData {
         return absoluteState.get();
     }
 
-    public boolean equalityAccordingToStateIsSet(VariableExpression variable) {
-        return equalityAccordingToState.isSet(variable);
-    }
 
-    public void equalityAccordingToStatePut(VariableExpression variable, Expression lhs) {
+    public void equalityAccordingToStatePut(IsVariableExpression variable, Expression lhs) {
         equalityAccordingToState.put(variable, lhs);
     }
 
-    public Stream<Map.Entry<VariableExpression, Expression>> equalityAccordingToStateStream() {
-        return equalityAccordingToState.stream();
+    public Stream<Map.Entry<IsVariableExpression, Expression>> equalityAccordingToStateStream() {
+        return equalityAccordingToState.entrySet().stream();
     }
 
-    public Expression equalityAccordingToStateGetOrDefaultNull(VariableExpression v) {
-        return equalityAccordingToState.getOrDefaultNull(v);
+    public void eraseEqualityAccordingToState(Variable variable) {
+        equalityAccordingToState.keySet().removeIf(ive -> variable.equals(ive.variable()));
+    }
+
+    public Expression equalityAccordingToStateGetOrDefaultNull(IsVariableExpression v) {
+        return equalityAccordingToState.getOrDefault(v, null);
     }
 
     /*

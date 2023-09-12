@@ -15,15 +15,20 @@
 package org.e2immu.analyser.model.expression.util;
 
 import org.e2immu.analyser.model.Expression;
-import org.e2immu.analyser.model.expression.And;
-import org.e2immu.analyser.model.expression.Equals;
-import org.e2immu.analyser.model.expression.MethodCall;
+import org.e2immu.analyser.model.expression.*;
 
 import java.util.List;
 
 public record LhsRhs(Expression lhs, Expression rhs) {
 
     public static List<LhsRhs> extractEqualities(Expression e) {
+        if (e instanceof DelayedExpression de && DelayedExpression.NULL_CHECK.equals(de.msg())) {
+            Expression ee = de;
+            while (ee instanceof DelayedExpression delayedExpression) ee = delayedExpression.getOriginal();
+            if (ee instanceof DelayedVariableExpression dve) {
+                return List.of(new LhsRhs(NullConstant.NULL_CONSTANT, dve));
+            }
+        }
         if (e instanceof Equals equals) {
             return List.of(new LhsRhs(equals.lhs, equals.rhs));
         }

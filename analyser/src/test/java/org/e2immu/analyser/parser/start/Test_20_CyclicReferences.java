@@ -96,11 +96,11 @@ public class Test_20_CyclicReferences extends CommonTestRunner {
             if ("methodB".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof ReturnVariable) {
                     if ("0.0.0".equals(d.statementId())) {
-                        String expected = "CyclicReferences_2.methodA(paramB)";
+                        String expected = "CyclicReferences_2.methodA(\"a\")";
                         assertEquals(expected, d.currentValue().toString());
                     }
                     if ("1".equals(d.statementId())) {
-                        String expected = "\"a\".equals(paramB)?CyclicReferences_2.methodA(paramB):\"b\".equals(paramB)";
+                        String expected = "\"a\".equals(paramB)?CyclicReferences_2.methodA(\"a\"):\"b\".equals(paramB)";
                         assertEquals(expected, d.currentValue().toString());
                     }
                 }
@@ -126,7 +126,7 @@ public class Test_20_CyclicReferences extends CommonTestRunner {
                 assertTrue(methodResolution.methodsOfOwnClassReached().contains(d.methodInfo()));
                 assertFalse(methodResolution.ignoreMeBecauseOfPartOfCallCycle());
                 String expected = d.iteration() == 0 ? "<m:methodB>"
-                        : "\"a\".equals(paramB)?CyclicReferences_2.methodA(paramB):\"b\".equals(paramB)";
+                        : "\"a\".equals(paramB)?CyclicReferences_2.methodA(\"a\"):\"b\".equals(paramB)";
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
             }
             if ("methodA".equals(d.methodInfo().name)) {
@@ -190,7 +190,7 @@ public class Test_20_CyclicReferences extends CommonTestRunner {
                 assertTrue(methodResolution.partOfCallCycle());
                 assertFalse(methodResolution.ignoreMeBecauseOfPartOfCallCycle());
                 String expected = d.iteration() == 0 ? "<m:methodF>"
-                        : "\"a\".equals(paramF)?CyclicReferences_3.methodC(paramF):\"b\".equals(paramF)";
+                        : "\"a\".equals(paramF)?CyclicReferences_3.methodC(\"a\"):\"b\".equals(paramF)";
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
             }
         };

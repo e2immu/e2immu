@@ -167,7 +167,7 @@ public class Test_00_Basics_21 extends CommonTestRunner {
                 assertEquals("0", d.statementId());
                 assertEquals("Precondition[expression=true, causes=[]]",
                         d.statementAnalysis().stateData().getPrecondition().toString());
-                String expected = d.iteration() < 2 ? "<null-check>" : "null!=t$0";
+                String expected = d.iteration() < 2 ? "!<null-check>" : "null!=t$0";
                 assertEquals(expected, d.statementAnalysis().stateData().valueOfExpression.get().toString());
             }
         };

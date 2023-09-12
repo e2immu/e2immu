@@ -228,7 +228,7 @@ public class Test_17_Container extends CommonTestRunner {
         StatementAnalyserVisitor statementAnalyserVisitor = d -> {
             if ("addToS".equals(d.methodInfo().name) && "0.0.0".equals(d.statementId())) {
                 if (d.iteration() == 0) {
-                    assertEquals("<null-check>", d.condition().toString());
+                    assertEquals("!<null-check>", d.condition().toString());
                 } else {
                     assertEquals("null!=s", d.condition().toString());
                 }

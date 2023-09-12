@@ -227,8 +227,8 @@ record SASubBlocks(StatementAnalysis statementAnalysis, StatementAnalyser statem
                 // statement to be delayed until we know the precondition can be accepted.
                 // the identifier of the "assert" expression, in case we have a delayed precondition
                 Identifier identifier = statement().getStructure().expression().getIdentifier();
-                Expression translated = Objects.requireNonNullElse(
-                        sharedState.evaluationContext().acceptAndTranslatePrecondition(identifier, combined),
+                Expression accepted = sharedState.evaluationContext().acceptAndTranslatePrecondition(identifier, combined);
+                Expression translated = Objects.requireNonNullElse(accepted,
                         new BooleanConstant(primitives, true));
 
                 List<Precondition.PreconditionCause> preconditionCauses = Stream.concat(
@@ -243,6 +243,7 @@ record SASubBlocks(StatementAnalysis statementAnalysis, StatementAnalyser statem
                             sharedState.context().getPrimitives(), combined, delays);
                 }
                 pc = new Precondition(withIsPostCondition, preconditionCauses);
+                delays = delays.merge(withIsPostCondition.causesOfDelay());
             } else {
                 // the null/not null of parameters has been handled during the main evaluation
                 pc = Precondition.empty(primitives);

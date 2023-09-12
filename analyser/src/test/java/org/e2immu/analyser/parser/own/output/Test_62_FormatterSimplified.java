@@ -379,7 +379,7 @@ public class Test_62_FormatterSimplified extends CommonTestRunner {
                 }
                 if ("1".equals(d.statementId())) {
                     String expect = switch (d.iteration()) {
-                        case 0, 1, 2 -> "9==<m:index>&&<null-check>";
+                        case 0, 1, 2 -> "9==<m:index>&&!<null-check>";
                         default ->
                                 "9==((new Stack<GuideOnStack>()).peek()).forwardInfo.guide.index()&&null!=((new Stack<GuideOnStack>()).peek()).forwardInfo";
                     };

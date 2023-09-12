@@ -224,27 +224,26 @@ record SAEvaluationOfMainExpression(StatementAnalysis statementAnalysis,
         EvaluationResult.Builder builder = new EvaluationResult.Builder(evaluationContext);
 
         statementAnalysis.stateData().equalityAccordingToStateStream().forEach(e -> {
-            VariableExpression ve = e.getKey();
+            IsVariableExpression ive = e.getKey();
             // if the variable expression is field$0, and we are in statement time 1, we cannot use this expression!
             // TODO is there an equivalent for loop variables?
-            if (!(ve.getSuffix() instanceof VariableExpression.VariableField vf)
+            if (!(ive instanceof VariableExpression ve)
+                    || !(ve.getSuffix() instanceof VariableExpression.VariableField vf)
                     || vf.statementTime() == statementAnalysis.statementTime(EVALUATION)) {
 
-                EvaluationResult context = EvaluationResult.from(evaluationContext);
-                LinkedVariables newLv = e.getValue().linkedVariables(context).minimum(LinkedVariables.LINK_ASSIGNED);
-                LinkedVariables originalLv = e.getKey().linkedVariables(context);
-                LinkedVariables lv = originalLv.merge(newLv);
-                Expression currentValue = evaluationContext.currentValue(ve.variable());
-                Expression wrapped;
+                Expression currentValue = evaluationContext.currentValue(ive.variable());
+                Expression expression;
                 // IMPROVE this is more or less hard coded to solve Identity_2, code should be generalised
-                if (currentValue instanceof Instance instance && instance.valueProperties().getOrDefault(Property.IDENTITY, DV.FALSE_DV).valueIsTrue()) {
-                    wrapped = PropertyWrapper.propertyWrapper(e.getValue(), lv, Map.of(Property.IDENTITY, DV.TRUE_DV));
+                if (currentValue instanceof Instance instance && instance.valueProperties()
+                        .getOrDefault(Property.IDENTITY, DV.FALSE_DV).valueIsTrue()) {
+                    expression = PropertyWrapper.propertyWrapper(e.getValue(), Map.of(Property.IDENTITY, DV.TRUE_DV));
                 } else if (currentValue instanceof PropertyWrapper pw) {
-                    wrapped = PropertyWrapper.propertyWrapper(e.getValue(), lv, pw);
+                    expression = pw;
                 } else {
-                    wrapped = PropertyWrapper.propertyWrapper(e.getValue(), lv);
+                    // we give priority to the value that's in the state; see e.g. CyclicReferences_2
+                    expression = e.getValue();
                 }
-                builder.modifyingMethodAccess(ve.variable(), wrapped, lv);
+                builder.modifyingMethodAccess(ive.variable(), expression, null);
             }
 
         });

@@ -319,13 +319,13 @@ public class Test_Support_02_SetOnce extends CommonTestRunner {
 
                 String expectPc = switch (d.iteration()) {
                     case 0 -> "<precondition>";
-                    case 1 -> "!<null-check>";
+                    case 1 -> "<null-check>";
                     default -> "null==t";
                 };
                 assertEquals(expectPc, d.methodAnalysis().getPreconditionForEventual().expression().toString());
 
                 String expected = switch (d.iteration()) {
-                    case 0, 1 -> "!<null-check>";
+                    case 0, 1 -> "<null-check>";
                     default -> "null==t";
                 };
                 assertEquals(expected, d.methodAnalysis().getPrecondition().expression().toString());

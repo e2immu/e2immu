@@ -109,23 +109,14 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
         // part 2 is at the start of SAApply, where the value will be assigned
         if (base) {
             Expression absoluteState = conditionManager.absoluteState(EvaluationResult.from(this));
-            if (absoluteState.isDone()) {
-                List<LhsRhs> equalities = LhsRhs.extractEqualities(absoluteState);
-                for (LhsRhs lhsRhs : equalities) {
-                    if (lhsRhs.rhs() instanceof VariableExpression ve
-                            && isPresent(ve.variable())
-                            && !lhsRhs.lhs().isInstanceOf(IsVariableExpression.class) // do not assign to other variable!
-                            && !statementAnalysis.stateData().equalityAccordingToStateIsSet(ve)) {
-                        VariableInfoContainer vic = statementAnalysis.getVariable(ve.variable().fullyQualifiedName());
-                        Expression value = lhsRhs.lhs();
-                        assert value.isDone();
-                        // we want to ensure that no values can be written unless the state is done
-                        // the following condition is mostly relevant for CyclicReferences_2,3,4
-                        if (!vic.hasEvaluation() || vic.best(EVALUATION).isDelayed()) {
-                            LOGGER.debug("Caught equality on variable with 'instance' value {}: {}", ve, value);
-                            statementAnalysis.stateData().equalityAccordingToStatePut(ve, value);
-                        }
-                    }
+            List<LhsRhs> equalities = LhsRhs.extractEqualities(absoluteState);
+            for (LhsRhs lhsRhs : equalities) {
+                IsVariableExpression ive = lhsRhs.rhs().asInstanceOf(IsVariableExpression.class);
+                Expression value = lhsRhs.lhs();
+                if (ive != null && !value.isInstanceOf(IsVariableExpression.class)) { // do not assign to other variable!
+                    // FIXME clear after assignment
+                    LOGGER.debug("Caught equality on variable with 'instance' value {}: {}", ive, value);
+                    statementAnalysis.stateData().equalityAccordingToStatePut(ive, value);
                 }
             }
         }

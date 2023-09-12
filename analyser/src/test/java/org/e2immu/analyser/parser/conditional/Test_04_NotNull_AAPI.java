@@ -112,6 +112,19 @@ public class Test_04_NotNull_AAPI extends CommonTestRunner {
             }
         };
 
+        StatementAnalyserVisitor statementAnalyserVisitor = d -> {
+            if ("add".equals(d.methodInfo().name)) {
+                String string = d.statementAnalysis().stateData().equalityAccordingToStateStream().map(Object::toString).sorted().toList().toString();
+                if ("1.0.1.0.0".equals(d.statementId())) {
+                    String expected = d.iteration() == 0 ? "[<f:node.map>=null]" : "[<f:node.map>=null, node$1.map$0=null]";
+                    assertEquals(expected, string);
+                }
+                if ("1.0.1.0.1".equals(d.statementId())) {
+                    assertEquals("", string);
+                }
+            }
+        };
+
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("goTo".equals(d.methodInfo().name)) {
                 String expected = d.iteration() < 2 ? "<m:goTo>"
@@ -128,6 +141,7 @@ public class Test_04_NotNull_AAPI extends CommonTestRunner {
         testClass("NotNull_3", 0, 0, new DebugConfiguration.Builder()
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addStatementAnalyserVisitor(statementAnalyserVisitor)
                 .addBreakDelayVisitor(breakDelayVisitor)
                 .build(), new AnalyserConfiguration.Builder()
                 .setComputeFieldAnalyserAcrossAllMethods(true)
@@ -210,7 +224,7 @@ public class Test_04_NotNull_AAPI extends CommonTestRunner {
         BreakDelayVisitor breakDelayVisitor = d -> assertEquals("----M-MF---", d.delaySequence());
 
         testClass("NotNull_3", 6, 0, new DebugConfiguration.Builder()
-                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                //  .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .addBreakDelayVisitor(breakDelayVisitor)
                 .build(), new AnalyserConfiguration.Builder()
                 .setComputeContextPropertiesOverAllMethods(true)
@@ -218,7 +232,7 @@ public class Test_04_NotNull_AAPI extends CommonTestRunner {
     }
 
 
-   // @Disabled("Erroneous potential null pointer warning on line 50")
+    // @Disabled("Erroneous potential null pointer warning on line 50")
     @Test
     public void test_4() throws IOException {
         EvaluationResultVisitor evaluationResultVisitor = d -> {

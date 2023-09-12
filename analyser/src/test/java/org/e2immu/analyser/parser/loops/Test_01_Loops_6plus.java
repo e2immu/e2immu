@@ -752,7 +752,7 @@ public class Test_01_Loops_6plus extends CommonTestRunner {
             if ("method".equals(d.methodInfo().name)) {
                 if ("1.0.1.0.1".equals(d.statementId())) {
                     String expected = switch (d.iteration()) {
-                        case 0 -> "<null-check>&&<m:isAfter>&&<m:isBefore>";
+                        case 0 -> "!<null-check>&&<m:isAfter>&&<m:isBefore>";
                         case 1 -> "null!=<f:container.read>&&<m:isAfter>&&<m:isBefore>";
                         default ->
                                 "(entry.getValue()).read.plusMillis(readWithinMillis).isAfter(now)&&null!=(entry.getValue()).read&&(entry.getValue()).read.isBefore((entry.getValue()).updated)";

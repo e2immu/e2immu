@@ -79,11 +79,11 @@ public class Test_Support_05_Lazy extends CommonTestRunner {
                 if ("2".equals(d.statementId())) {
                     String value = switch (d.iteration()) {
                         case 0 -> "<f:t>";
-                        case 1 -> "<null-check>?<f*:t>:<m:requireNonNull>";
+                        case 1 -> "<f*:t>";
                         case 2 ->
-                                "<null-check>?<vp:t:break_init_delay:this.t@Method_get_0.0.0-C;ext_not_null@Field_supplier;initial:this.supplier@Method_get_1-C;initial:this.t@Method_get_0-C;values:this.t@Field_t>:<m:requireNonNull>";
+                                "<null-check>?<m:requireNonNull>:<vp:t:break_init_delay:this.t@Method_get_2-C;ext_not_null@Field_supplier;initial:this.t@Method_get_0-C;values:this.t@Field_t>";
                         case 3, 4, 5, 6, 7 ->
-                                "<null-check>?<vp:t:break_init_delay:this.t@Method_get_0-C;de:this.t@Method_get_2-E;ext_not_null@Field_supplier;initial:this.supplier@Method_get_1-C;initial:this.t@Method_get_0-C;values:this.t@Field_t>:<m:requireNonNull>";
+                                "<null-check>?<m:requireNonNull>:<vp:t:break_init_delay:this.t@Method_get_0-C;ext_not_null@Field_supplier;initial:this.supplier@Method_get_1-C;initial:this.t@Method_get_0-C;values:this.t@Field_t>";
                         case 8, 9 -> "<wrapped:t>";
                         default -> "supplier.get()/*@NotNull*/";
                     };
@@ -139,7 +139,7 @@ public class Test_Support_05_Lazy extends CommonTestRunner {
     StatementAnalyserVisitor statementAnalyserVisitor = d -> {
         if ("get".equals(d.methodInfo().name)) {
             String state = switch (d.iteration()) {
-                case 0, 1, 2, 3, 4, 6, 7, 8, 9 -> "!<null-check>";
+                case 0, 1, 2, 3, 4, 6, 7, 8, 9 -> "<null-check>";
                 case 5 -> "<simplification>";
                 default -> "true";
             };
@@ -149,7 +149,7 @@ public class Test_Support_05_Lazy extends CommonTestRunner {
             if ("2".equals(d.statementId())) {
                 // important: if the state says something about t, then after assignment to t this should be removed!
                 assertEquals(state, d.state().toString());
-                assertEquals("", d.statementAnalysis().stateData().equalityAccordingToStateStream()
+                assertEquals("<f:t>=null", d.statementAnalysis().stateData().equalityAccordingToStateStream()
                         .map(Object::toString).collect(Collectors.joining(",")));
             }
         }
@@ -161,11 +161,11 @@ public class Test_Support_05_Lazy extends CommonTestRunner {
             assertEquals("<variable value>", d.fieldAnalysis().getValue().toString());
             String expected = switch (d.iteration()) {
                 case 0 ->
-                        "initial:this.supplier@Method_get_1-C;initial:this.t@Method_get_0.0.0-C;values:this.t@Field_t";
+                        "initial:this.supplier@Method_get_1-C;initial:this.t@Method_get_2-C;values:this.t@Field_t";
                 case 1 ->
-                        "break_init_delay:this.t@Method_get_0.0.0-C;ext_not_null@Field_supplier;initial:this.supplier@Method_get_1-C;initial:this.t@Method_get_0-C;values:this.t@Field_t";
+                        "break_init_delay:this.t@Method_get_2-C;ext_not_null@Field_supplier;initial:this.t@Method_get_0-C;values:this.t@Field_t";
                 case 2, 3, 4, 5, 6, 7, 8 ->
-                        "break_init_delay:this.t@Method_get_0-C;de:this.t@Method_get_2-E;ext_not_null@Field_supplier;initial:this.supplier@Method_get_1-C;initial:this.t@Method_get_0-C;values:this.t@Field_t";
+                        "break_init_delay:this.t@Method_get_0-C;ext_not_null@Field_supplier;initial:this.supplier@Method_get_1-C;initial:this.t@Method_get_0-C;values:this.t@Field_t";
                 default -> "null,supplier.get()/*@NotNull*/";
             };
             assertEquals(expected, ((FieldAnalysisImpl.Builder) d.fieldAnalysis()).sortedValuesString());

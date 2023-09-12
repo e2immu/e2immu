@@ -478,7 +478,7 @@ public class Test_63_DGSimplified extends CommonTestRunner {
         EvaluationResultVisitor evaluationResultVisitor = d -> {
             if ("reverse".equals(d.methodInfo().name)) {
                 if ("1.0.2".equals(d.statementId())) {
-                    String value = d.iteration() == 0 ? "<null-check>"
+                    String value = d.iteration() == 0 ? "!<null-check>"
                             : d.iteration() < 28 ? "null!=<f:node.dependsOn>"
                             : "null!=(nodeMap.get(t)).dependsOn$2";
                     assertEquals(value, d.evaluationResult().value().toString());
@@ -520,7 +520,7 @@ public class Test_63_DGSimplified extends CommonTestRunner {
             if ("reverse".equals(d.methodInfo().name)) {
                 if ("1.0.2".equals(d.statementId())) {
                     assertEquals(2, d.statementAnalysis().flowData().getTimeAfterEvaluation());
-                    String value = d.iteration() == 0 ? "<null-check>"
+                    String value = d.iteration() == 0 ? "!<null-check>"
                             : d.iteration() < 28 ? "null!=<f:node.dependsOn>"
                             : "null!=(nodeMap.get(t)).dependsOn$2";
                     assertEquals(value, d.statementAnalysis().stateData().valueOfExpression.get().toString());

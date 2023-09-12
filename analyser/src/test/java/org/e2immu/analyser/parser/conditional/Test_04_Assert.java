@@ -331,10 +331,22 @@ public class Test_04_Assert extends CommonTestRunner {
                 }
             }
         };
+        MethodAnalyserVisitor methodAnalyserVisitor = d -> {
+            if ("test".equals(d.methodInfo().name)) {
+                assertDv(d, 0, DV.FALSE_DV, Property.MODIFIED_METHOD);
+                // no annotated APIs
+                assertDv(d.p(0), 1, DV.TRUE_DV, Property.MODIFIED_VARIABLE);
+            }
+            if ("containsA".equals(d.methodInfo().name)) {
+                assertDv(d.p(0), 1, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
+                assertDv(d, 0, DV.FALSE_DV, Property.MODIFIED_METHOD);
+            }
+        };
         // ignoring result of method call -> 1 warning
         testClass("Assert_2", 0, 1, new DebugConfiguration.Builder()
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .build());
     }
 

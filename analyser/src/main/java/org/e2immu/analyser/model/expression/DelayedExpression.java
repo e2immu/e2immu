@@ -47,6 +47,7 @@ public final class DelayedExpression extends BaseExpression implements Expressio
     public static final DelayedExpression NO_STATIC_SIDE_EFFECT_INFO = new DelayedExpression(Identifier.CONSTANT,
             "static-side-effect", ParameterizedType.RETURN_TYPE_OF_CONSTRUCTOR, EmptyExpression.EMPTY_EXPRESSION,
             DelayFactory.createDelay(new SimpleCause(Location.NOT_YET_SET, CauseOfDelay.Cause.NO_SSE_INFO)));
+    public static final String NULL_CHECK = "<null-check>";
     private final String msg;
     private final ParameterizedType parameterizedType;
     private final Expression original;
@@ -252,7 +253,7 @@ public final class DelayedExpression extends BaseExpression implements Expressio
                                           Primitives primitives,
                                           Expression original,
                                           CausesOfDelay causes) {
-        return new DelayedExpression(identifier, "<null-check>", primitives.booleanParameterizedType(), original,
+        return new DelayedExpression(identifier, NULL_CHECK, primitives.booleanParameterizedType(), original,
                 causes);
     }
 
@@ -427,5 +428,9 @@ public final class DelayedExpression extends BaseExpression implements Expressio
                 .collect(Collectors.toUnmodifiableMap(e -> new FieldReference(InspectionProvider.DEFAULT, e.getKey(),
                                 scope, currentType),
                         Map.Entry::getValue));
+    }
+
+    public Expression getOriginal() {
+        return original;
     }
 }

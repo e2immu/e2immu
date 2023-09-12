@@ -232,15 +232,19 @@ public class BinaryOperator extends BaseExpression implements Expression {
                 DV dv = right.isNotNull0(false, forwardEvaluationInfo);
                 if (dv.valueIsTrue()) return new BooleanConstant(primitives, true);
                 if (dv.isDelayed())
-                    return DelayedExpression.forNullCheck(identifier, primitives,
-                            right.getExpression(), dv.causesOfDelay().merge(r.causesOfDelay()));
+                    // note that the negation is necessary because we need to distinguish between ==null, !=null,
+                    // see e.g. statementAnalysis.stateData().equalityAccordingToStatePut
+                    return Negation.negate(context,
+                            DelayedExpression.forNullCheck(identifier, primitives,
+                                    right.getExpression(), dv.causesOfDelay().merge(r.causesOfDelay())));
             }
             if (r.isNullConstant()) {
                 DV dv = left.isNotNull0(false, forwardEvaluationInfo);
                 if (dv.valueIsTrue()) return new BooleanConstant(primitives, true);
                 if (dv.isDelayed())
-                    return DelayedExpression.forNullCheck(identifier, primitives,
-                            left.getExpression(), dv.causesOfDelay().merge(l.causesOfDelay()));
+                    // note that the negation is necessary because we need to distinguish between ==null, !=null
+                    return Negation.negate(context, DelayedExpression.forNullCheck(identifier, primitives,
+                            left.getExpression(), dv.causesOfDelay().merge(l.causesOfDelay())));
             }
             return Negation.negate(context, Equals.equals(identifier, context, l, r, forwardEvaluationInfo));
         }

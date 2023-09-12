@@ -73,8 +73,8 @@ public class Test_12_IfStatement extends CommonTestRunner {
         StatementAnalyserVisitor statementAnalyserVisitor = d -> {
             if ("method1".equals(d.methodInfo().name)) {
                 if ("0.0.0".equals(d.statementId())) {
-                    int expected = d.iteration() == 0 ? 0 : 1;
-                    assertEquals(expected, d.statementAnalysis().stateData().equalityAccordingToStateStream().count());
+                    assertEquals("[a=null]", d.statementAnalysis().stateData().equalityAccordingToStateStream()
+                            .map(Object::toString).sorted().toList().toString());
                 }
                 if ("0".equals(d.statementId())) {
                     assertEquals(0, d.statementAnalysis().stateData().equalityAccordingToStateStream().count());

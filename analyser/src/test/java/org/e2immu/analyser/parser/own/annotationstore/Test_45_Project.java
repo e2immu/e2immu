@@ -53,7 +53,7 @@ public class Test_45_Project extends CommonTestRunner {
             if ("recentlyReadAndUpdatedAfterwards".equals(d.methodInfo().name)) {
                 if ("2.0.1.0.1".equals(d.statementId())) {
                     String expected = switch (d.iteration()) {
-                        case 0 -> "<null-check>&&<m:isAfter>&&<m:isBefore>";
+                        case 0 -> "!<null-check>&&<m:isAfter>&&<m:isBefore>";
                         case 1, 2 -> "null!=<f:container.read>&&<m:isAfter>&&<m:isBefore>";
                         default -> "(entry.getValue()).read.plusMillis(readWithinMillis).isAfter(now$2)&&null!=(entry.getValue()).read&&(entry.getValue()).read.isBefore((entry.getValue()).updated)";
                     };
@@ -111,7 +111,7 @@ public class Test_45_Project extends CommonTestRunner {
             if ("recentlyReadAndUpdatedAfterwards".equals(d.methodInfo().name)) {
                 if ("2.0.1.0.1.0.0".equals(d.statementId())) {
                     String expectedCondition = switch (d.iteration()) {
-                        case 0 -> "<null-check>&&<m:isAfter>&&<m:isBefore>";
+                        case 0 -> "!<null-check>&&<m:isAfter>&&<m:isBefore>";
                         case 1, 2 -> "null!=<f:container.read>&&<m:isAfter>&&<m:isBefore>";
                         default -> "(entry.getValue()).read.plusMillis(readWithinMillis).isAfter(now$2)&&null!=(entry.getValue()).read&&(entry.getValue()).read.isBefore((entry.getValue()).updated)";
                     };
