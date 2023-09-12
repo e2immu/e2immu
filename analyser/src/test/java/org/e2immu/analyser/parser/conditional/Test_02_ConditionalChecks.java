@@ -164,7 +164,7 @@ public class Test_02_ConditionalChecks extends CommonTestRunner {
                 assertEquals("3", d.methodAnalysis().getLastStatement().index());
                 assertTrue(d.methodAnalysis().getPrecondition().isEmpty());
                 assertEquals(DV.FALSE_DV, d.methodAnalysis().getProperty(MODIFIED_METHOD));
-                assertEquals("/*inline method1*/" + RETURN_1_VALUE, d.methodAnalysis().getSingleReturnValue().toString());
+                assertEquals(RETURN_1_VALUE, d.methodAnalysis().getSingleReturnValue().toString());
             }
         };
 

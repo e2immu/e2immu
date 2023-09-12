@@ -18,6 +18,8 @@ package org.e2immu.analyser.parser.conditional.testexample;
 // must keep the java.util.* import; it does work with explicit imports.
 // also works when with Annotated APIs, only fails without 20220611
 
+import org.e2immu.annotation.ImmutableContainer;
+
 import java.util.*;
 
 public class NotNull_4_1<T> {
@@ -38,6 +40,7 @@ public class NotNull_4_1<T> {
         return node != null && node.data == null;
     }
 
+    @ImmutableContainer("null")
     public List<T> get(String[] strings) {
         TrieNode<T> node = goTo(strings, strings.length);
         return node == null ? null : node.data;

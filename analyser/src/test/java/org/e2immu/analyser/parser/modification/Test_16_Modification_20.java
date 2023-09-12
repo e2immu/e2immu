@@ -31,6 +31,7 @@ import org.junit.jupiter.api.Test;
 import java.io.IOException;
 import java.util.Set;
 
+import static org.e2immu.analyser.parser.VisitorTestSupport.IterationInfo.*;
 import static org.junit.jupiter.api.Assertions.*;
 
 // detailed explanation in Test_16_Modification_19; note the 2 differences compared to that test.
@@ -133,10 +134,11 @@ public class Test_16_Modification_20 extends CommonTestRunner {
 
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
             if ("set".equals(d.fieldInfo().name)) {
-                String linked = d.iteration() == 0 ? "c:-1,localD:-1,setC:-1,this.s2:-1" : "setC:0";
-                assertEquals(linked, d.fieldAnalysis().getLinkedVariables().toString());
+                assertLinked(d, d.fieldAnalysis().getLinkedVariables(),
+                        it(0, 1, "c:-1,localD:-1,setC:-1,this.s2:-1,this:-1"),
+                        it(2, "setC:0"));
 
-                assertEquals(d.iteration() >= 1, ((FieldAnalysisImpl.Builder) d.fieldAnalysis()).allLinksHaveBeenEstablished().isDone());
+                assertEquals(d.iteration() > 1, ((FieldAnalysisImpl.Builder) d.fieldAnalysis()).allLinksHaveBeenEstablished().isDone());
 
                 assertEquals(DV.TRUE_DV, d.fieldAnalysis().getProperty(Property.FINAL));
                 // value from the constructor
@@ -149,7 +151,7 @@ public class Test_16_Modification_20 extends CommonTestRunner {
             if ("s2".equals(d.fieldInfo().name)) {
                 assertEquals(DV.TRUE_DV, d.fieldAnalysis().getProperty(Property.FINAL));
                 assertEquals("instance type HashSet<String>", d.fieldAnalysis().getValue().toString());
-                assertEquals(d.iteration() >= 1,
+                assertEquals(d.iteration() > 1,
                         ((FieldAnalysisImpl.Builder) d.fieldAnalysis()).allLinksHaveBeenEstablished().isDone());
 
                 assertDv(d, 5, DV.FALSE_DV, Property.MODIFIED_OUTSIDE_METHOD);
@@ -181,14 +183,17 @@ public class Test_16_Modification_20 extends CommonTestRunner {
             }
         };
 
+        BreakDelayVisitor breakDelayVisitor = d -> assertEquals("---M---", d.delaySequence());
+
         //WARN in Method org.e2immu.analyser.parser.modification.testexample.Modification_20.example1() (line 43, pos 9): Potential null pointer exception: Variable: set
         testClass("Modification_20", 0, 1, new DebugConfiguration.Builder()
-                        .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
-                        .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-                        .addStatementAnalyserVisitor(statementAnalyserVisitor)
-                        .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
-                        .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
+                        //     .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                        //     .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                        //     .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                      //  .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+                      //  .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
                         .addTypeMapVisitor(typeMapVisitor)
+                        .addBreakDelayVisitor(breakDelayVisitor)
                         .build(),
                 new AnalyserConfiguration.Builder().setComputeFieldAnalyserAcrossAllMethods(true).build());
     }

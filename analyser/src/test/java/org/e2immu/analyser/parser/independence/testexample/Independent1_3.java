@@ -28,11 +28,13 @@ public class Independent1_3<T> {
     private final T[] ts;
 
     /*
-    we expect @Independent1 rather than @Independent, as the content
-    of 'ts' will be linked copied into the content of 'set'.
+    we expect @Independent(hc=true) rather than @Independent, as the content
+    of 'content' will be copied into the content of 'ts'.
+
+    IMPORTANT: parameter 'content' should not be @Modified
      */
     @SuppressWarnings("unchecked")
-    public Independent1_3( @Independent(hc = true) List<T> content) {
+    public Independent1_3(@Independent(hc = true) List<T> content) {
         this.ts = (T[]) new Object[content.size()];
         Arrays.setAll(this.ts, content::get);
     }

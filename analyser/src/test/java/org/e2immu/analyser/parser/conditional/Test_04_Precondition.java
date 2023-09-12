@@ -75,7 +75,7 @@ public class Test_04_Precondition extends CommonTestRunner {
             }
             if ("useEither3".equals(d.methodInfo().name)) {
                 assertEquals("0", d.statementId());
-                String expected = d.iteration() == 0 ? "<m:either>" : "f1+f2";
+                String expected = d.iteration() == 0 ? "<m:either>" : "Precondition_0.either(f1,f2)";
                 assertEquals(expected, d.evaluationResult().value().toString());
             }
         };
@@ -94,7 +94,7 @@ public class Test_04_Precondition extends CommonTestRunner {
             if ("either".equals(name)) {
                 MethodAnalysis methodAnalysis = d.methodAnalysis();
                 assertEquals("null!=e1||null!=e2", methodAnalysis.getPrecondition().expression().toString());
-                String expected = d.iteration() == 0 ? "<m:either>" : "/*inline either*/e1+e2";
+                String expected = d.iteration() == 0 ? "<m:either>" : "e1+e2";
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
                 assertDv(d.p(0), 1, MultiLevel.NULLABLE_DV, CONTEXT_NOT_NULL);
                 assertDv(d.p(0), 1, MultiLevel.NULLABLE_DV, NOT_NULL_PARAMETER);
@@ -599,7 +599,7 @@ public class Test_04_Precondition extends CommonTestRunner {
                 if ("npe".equals(d.variableName())) {
                     if ("5.0.0".equals(d.statementId())) {
                         String expected = d.iteration() < 2 ? "<s:NullPointerException>"
-                                : "`instance type boolean?new TryCatchHelper<>(null,instance type Exception):new TryCatchHelper<>(`supplier`.get(),null).exception`/*(NullPointerException)*/";
+                                : "Precondition_10.tryCatch(supplier).exception()/*(NullPointerException)*/";
                         assertEquals(expected, d.currentValue().toString());
                         assertDv(d, 2, MultiLevel.EFFECTIVELY_NOT_NULL_DV, NOT_NULL_EXPRESSION);
                     }
@@ -609,7 +609,7 @@ public class Test_04_Precondition extends CommonTestRunner {
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("method".equals(d.methodInfo().name)) {
                 String expected = d.iteration() <= 1 ? "Precondition[expression=<null-check>, causes=[escape, escape]]"
-                        : "Precondition[expression=null==(instance type boolean?new TryCatchHelper<>(null,instance type Exception):new TryCatchHelper<>(`supplier`.get(),null)).exception, causes=[escape, escape]]";
+                        : "Precondition[expression=true, causes=[]]";
                 assertEquals(expected,
                         d.methodAnalysis().getPrecondition().toString());
             }

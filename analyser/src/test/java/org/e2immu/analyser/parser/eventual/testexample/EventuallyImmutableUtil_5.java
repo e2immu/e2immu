@@ -42,7 +42,7 @@ public class EventuallyImmutableUtil_5 {
         private final S s1 = new S();
         private final S s2 = new S();
 
-        // IMPROVE should be @TestMark("s1,s2")
+        @TestMark("s1,s2")
         public boolean isTReady() {
             return s1.isReady() && s2.isReady();
         }
@@ -50,13 +50,12 @@ public class EventuallyImmutableUtil_5 {
 
     private final T t = new T();
 
-
-    // IMPROVE should be @TestMark("t")
+    @TestMark("t")
     public boolean isReady1() {
         return t.s1.isReady() && t.s2.isReady();
     }
 
-    // IMPROVE should be @TestMark("t")
+    @TestMark("t")
     public boolean isReady2() {
         return t.isTReady();
     }

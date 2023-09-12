@@ -70,8 +70,7 @@ public class Test_42_Finalizer extends CommonTestRunner {
             if ("testLinking".equals(d.methodInfo().name)) {
                 if ("ff".equals(d.variableName())) {
                     if ("0".equals(d.statementId())) {
-                        String expected = d.iteration() == 0 ? "<m:set>"
-                                : "nullable instance type Finalizer_0/*@Identity*//*{L f:0}*//*@NotNull*/";
+                        String expected = d.iteration() == 0 ? "<m:set>" : "f/*@NotNull*/";
                         assertEquals(expected, d.currentValue().toString());
                         String linked = d.iteration() == 0 ? "f:-1" : "f:1";
                         assertEquals(linked, d.variableInfo().getLinkedVariables().toString());

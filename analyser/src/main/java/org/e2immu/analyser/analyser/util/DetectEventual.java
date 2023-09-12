@@ -73,7 +73,7 @@ public record DetectEventual(MethodInfo methodInfo,
         }
 
         MethodAnalysis.Eventual fromCompanion = eventualFromCompanion(precondition);
-        if(fromCompanion != null) {
+        if (fromCompanion != null) {
             return fromCompanion;
         }
 
@@ -188,20 +188,18 @@ public record DetectEventual(MethodInfo methodInfo,
         @TestMark first situation: non-modifying method, no preconditions, simply detecting method calls that are @TestMark
         themselves.
         */
+        Expression srv = methodAnalysis.getSingleReturnValue();
         if (precondition != null && precondition.isEmpty()) {
-            Expression srv = methodAnalysis.getSingleReturnValue();
             if (srv.isDelayed()) {
                 LOGGER.debug("Waiting for @TestMark, need single return value of {}", methodInfo.distinguishingName());
                 return MethodAnalysis.delayedEventual(srv.causesOfDelay());
             }
-            if (srv instanceof InlinedMethod inlinedMethod) {
-                MethodAnalysis.Eventual eventual = detectTestMark(inlinedMethod.expression());
-                if (eventual.causesOfDelay().isDelayed()) {
-                    return MethodAnalysis.delayedEventual(eventual.causesOfDelay());
-                }
-                if (eventual != MethodAnalysis.NOT_EVENTUAL) {
-                    return eventual;
-                }
+            MethodAnalysis.Eventual eventual = detectTestMark(srv);
+            if (eventual.causesOfDelay().isDelayed()) {
+                return MethodAnalysis.delayedEventual(eventual.causesOfDelay());
+            }
+            if (eventual != MethodAnalysis.NOT_EVENTUAL) {
+                return eventual;
             }
         }
 
@@ -215,9 +213,8 @@ public record DetectEventual(MethodInfo methodInfo,
         or @TestMark("fields", before="true") which means all conditions false: !field1 && !field2 && ...
 
         */
-        Expression srv = methodAnalysis.getSingleReturnValue();
-        if (srv != null && typeAnalysis.approvedPreconditionsIsNotEmpty(e2) && srv instanceof InlinedMethod im) {
-            FieldsAndBefore fieldsAndBefore = analyseExpression(context, e2, im.expression(), true);
+        if (typeAnalysis.approvedPreconditionsIsNotEmpty(e2)) {
+            FieldsAndBefore fieldsAndBefore = analyseExpression(context, e2, srv, true);
             if (fieldsAndBefore == NO_FIELDS) return MethodAnalysis.NOT_EVENTUAL;
             return new MethodAnalysis.Eventual(fieldsAndBefore.fields, false, null, !fieldsAndBefore.before);
         }
@@ -323,7 +320,7 @@ public record DetectEventual(MethodInfo methodInfo,
     private MethodAnalysis.Eventual eventualFromCompanion(Precondition precondition) {
         Precondition.CompanionCause cc = precondition.singleCompanionCauseOrNull();
         if (cc != null) {
-           Precondition.MethodCallAndNegation mc = precondition.expressionIsPossiblyNegatedMethodCall();
+            Precondition.MethodCallAndNegation mc = precondition.expressionIsPossiblyNegatedMethodCall();
             if (mc != null) {
                 MethodAnalysis analysis = analyserContext.getMethodAnalysis(mc.methodCall().methodInfo);
                 MethodAnalysis.Eventual eventual = analysis.getEventual();

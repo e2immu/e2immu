@@ -81,10 +81,9 @@ public class Test_17_Container extends CommonTestRunner {
                         assertEquals("0-E", d.variableInfo().getReadId());
                         assertFalse(d.variableInfoContainer().isReadInThisStatement());
 
-                        String expected = d.iteration() == 0 ? "<p:p>"
-                                : "nullable instance type Set<String>/*@Identity*//*this.size()>=1&&this.contains(toAdd)*/";
+                        String expected = "nullable instance type Set<String>/*@Identity*/";
                         assertEquals(expected, d.currentValue().toString());
-                        assertDv(d, 1, MultiLevel.NULLABLE_DV, Property.NOT_NULL_EXPRESSION);
+                        assertDv(d, 0, MultiLevel.NULLABLE_DV, Property.NOT_NULL_EXPRESSION);
                         assertDv(d, 2, MultiLevel.NULLABLE_DV, Property.EXTERNAL_NOT_NULL);
                         assertDv(d, 2, MultiLevel.MUTABLE_DV, Property.EXTERNAL_IMMUTABLE);
                     }
@@ -140,7 +139,7 @@ public class Test_17_Container extends CommonTestRunner {
                 assertEquals(DV.FALSE_DV, d.fieldAnalysis().getProperty(Property.FINAL));
                 assertEquals("p:0", d.fieldAnalysis().getLinkedVariables().toString());
 
-                final String DELAYED = "constructor-to-instance@Method_setS_1-E;initial:this.s@Method_setS_1-C;values:this.s@Field_s";
+                final String DELAYED = "initial:this.s@Method_setS_1-C;values:this.s@Field_s";
 
                 assertDv(d, DELAYED, 1, MultiLevel.NULLABLE_DV, Property.EXTERNAL_NOT_NULL);
                 assertDv(d, DELAYED, 1, MultiLevel.MUTABLE_DV, Property.EXTERNAL_IMMUTABLE);
@@ -270,29 +269,29 @@ public class Test_17_Container extends CommonTestRunner {
                 }
                 if ("set3".equals(d.variableName())) {
                     if ("0".equals(d.statementId())) {
-                        assertLinked(d, it0("this.s:0,this:-1"), it(1, "this.s:0"));
+                        assertLinked(d, it(0, "this.s:0,this:3"));
                     }
                     if ("1.0.0".equals(d.statementId())) {
                         assertDv(d, 1, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
-                        assertLinked(d, it0("this.s:0,this:-1"), it(1, "this.s:0"));
+                        assertLinked(d, it(0, "this.s:0,this:3"));
                     }
                     if ("1".equals(d.statementId())) {
-                        assertLinked(d, it0("this.s:0,this:-1"), it(1, "this.s:0"));
+                        assertLinked(d, it(0, "this.s:0,this:3"));
                     }
                 }
                 // this one tests the linking mechanism from the field into the local copy
                 if (S.equals(d.variableName())) {
                     if ("0".equals(d.statementId())) {
                         assertEquals("[0]", d.variableInfo().getReadAtStatementTimes().toString());
-                        assertLinked(d, it0("set3:0,this:-1"), it(1, "set3:0"));
+                        assertLinked(d, it(0, "set3:0,this:3"));
                     }
                     if ("1.0.0".equals(d.statementId())) {
-                        assertLinked(d, it0("set3:0,this:-1"), it(1, "set3:0"));
+                        assertLinked(d, it(0, "set3:0,this:3"));
                         assertDv(d, 1, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
                     }
                     if ("1".equals(d.statementId())) {
                         // NO s3!
-                        assertLinked(d, it0("set3:0,this:-1"), it(1, "set3:0"));
+                        assertLinked(d, it(0, "set3:0,this:3"));
                         assertDv(d, 1, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
                     }
                 }
@@ -308,9 +307,7 @@ public class Test_17_Container extends CommonTestRunner {
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
             if (S.equals(d.fieldInfo().fullyQualifiedName())) {
                 assertDv(d, 1, DV.TRUE_DV, Property.MODIFIED_OUTSIDE_METHOD);
-                assertLinked(d, d.fieldAnalysis().getLinkedVariables(),
-                        it0("p:-1,set3:-1,this:-1"),
-                        it(1, "p:4"));
+                assertLinked(d, d.fieldAnalysis().getLinkedVariables(), it(0, "p:4"));
             }
         };
 
@@ -360,20 +357,21 @@ public class Test_17_Container extends CommonTestRunner {
                 }
                 if ("1".equals(d.statementId())) {
                     assertEquals(DV.TRUE_DV, d.getProperty(Property.CONTEXT_MODIFIED));
-                    assertEquals("modified2:0,this.s:4", d.variableInfo().getLinkedVariables().toString());
+                    assertEquals("modified2:0,this.s:4,this:4",
+                            d.variableInfo().getLinkedVariables().toString());
                 }
             }
             if ("m2".equals(d.methodInfo().name) && S.equals(d.variableName())) {
                 assertDv(d, MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL_DV, Property.CONTEXT_NOT_NULL);
             }
             if ("m1".equals(d.methodInfo().name) && S.equals(d.variableName()) && "1".equals(d.statementId())) {
-                assertDv(d, 4, MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL_DV, Property.CONTEXT_NOT_NULL);
+                assertDv(d, MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL_DV, Property.CONTEXT_NOT_NULL);
             }
         };
 
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("m1".equals(d.methodInfo().name)) {
-                assertEquals(d.iteration() > 3, d.methodAnalysis().methodLevelData().linksHaveBeenEstablished());
+                assertTrue(d.methodAnalysis().methodLevelData().linksHaveBeenEstablished());
             }
             if ("m2".equals(d.methodInfo().name)) {
                 assertTrue(d.methodAnalysis().methodLevelData().linksHaveBeenEstablished());
@@ -385,7 +383,7 @@ public class Test_17_Container extends CommonTestRunner {
 
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
             if ("s".equals(d.fieldInfo().name)) {
-                assertDv(d, 4, MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL_DV, Property.EXTERNAL_NOT_NULL);
+                assertDv(d, MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL_DV, Property.EXTERNAL_NOT_NULL);
             }
         };
 
@@ -420,7 +418,7 @@ public class Test_17_Container extends CommonTestRunner {
             int n = d.methodInfo().methodInspection.get().getParameters().size();
             if (CONTAINER_5.equals(d.methodInfo().name) && n == 0) {
                 if (d.variable() instanceof FieldReference fr && "list".equals(fr.fieldInfo.name)) {
-                    String expectValue = "new ArrayList<>()/*0==this.size()*/";
+                    String expectValue = "new ArrayList<>()";
                     assertEquals(expectValue, d.currentValue().toString());
                 }
             }
@@ -434,14 +432,14 @@ public class Test_17_Container extends CommonTestRunner {
                 }
                 if (d.variable() instanceof FieldReference fr && "list".equals(fr.fieldInfo.name)) {
                     if ("0".equals(d.statementId())) {
-                        String expectValue = "new ArrayList<>()/*0==this.size()*/";
+                        String expectValue = "new ArrayList<>()";
                         assertEquals(expectValue, d.currentValue().toString());
                     }
                     if ("1".equals(d.statementId())) {
                         // even with all the code in EvaluateParameter and MethodCall to transform new objects into instances,
                         // (see Modification_23, _24), we cannot see its effect here (because coll5 is NOT linked to list!!)
                         // However, the field "list" will have an "instance" as value!
-                        String expectValue = d.iteration() == 0 ? "<f:list>" : "new ArrayList<>()/*0==this.size()*/";
+                        String expectValue = d.iteration() == 0 ? "<f:list>" : "new ArrayList<>()";
                         assertEquals(expectValue, d.currentValue().toString());
                     }
                 }

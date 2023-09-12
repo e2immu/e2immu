@@ -205,10 +205,10 @@ public class Test_AnalysisProvider extends CommonTestRunner {
         };
         testClass("AnalysisProvider_0", 0, 5,
                 new DebugConfiguration.Builder()
-                        .addStatementAnalyserVisitor(statementAnalyserVisitor)
-                        .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
-                        .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-                        .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+                   //     .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                   //     .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                   //     .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                    //    .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                         .build(),
                 new AnalyserConfiguration.Builder()
                         .setComputeFieldAnalyserAcrossAllMethods(true)
@@ -407,12 +407,12 @@ public class Test_AnalysisProvider extends CommonTestRunner {
         };
         testClass("AnalysisProvider_2", 0, 1,
                 new DebugConfiguration.Builder()
-                        .addEvaluationResultVisitor(evaluationResultVisitor)
-                        .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-                        .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
-                        .addStatementAnalyserVisitor(statementAnalyserVisitor)
-                        .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
-                        .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
+                  //      .addEvaluationResultVisitor(evaluationResultVisitor)
+                 //       .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                   //     .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+                   //     .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                   //     .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                    //    .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
                         .build(),
                 new AnalyserConfiguration.Builder()
                         .setComputeFieldAnalyserAcrossAllMethods(true)

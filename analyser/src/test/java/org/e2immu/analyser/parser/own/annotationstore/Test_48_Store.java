@@ -117,7 +117,7 @@ public class Test_48_Store extends CommonTestRunner {
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("handleMultiSet".equals(d.methodInfo().name)) {
                 if ("project".equals(d.variableName())) {
-                    String expectValue = d.iteration() == 0? "<m:getOrCreate>" : "new Project_0(\"x\")";
+                    String expectValue = d.iteration() == 0 ? "<m:getOrCreate>" : "new Project_0(\"x\")";
                     assertEquals(expectValue, d.currentValue().toString());
 
                     // it 1: Store_3 is still immutable delayed
@@ -157,7 +157,7 @@ public class Test_48_Store extends CommonTestRunner {
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("Project_0".equals(d.typeInfo().simpleName)) {
                 assertHc(d, 1, "");
-                assertDv(d, 3, MultiLevel.EFFECTIVELY_FINAL_FIELDS_DV, Property.IMMUTABLE);
+                assertDv(d, 13, MultiLevel.EFFECTIVELY_FINAL_FIELDS_DV, Property.IMMUTABLE);
             }
             if ("Store_3".equals(d.typeInfo().simpleName)) {
                 assertHc(d, 0, "");
@@ -166,12 +166,23 @@ public class Test_48_Store extends CommonTestRunner {
             }
         };
 
+        BreakDelayVisitor breakDelayVisitor = d -> {
+            String s = switch (d.typeInfo().simpleName) {
+                case "Project_0" -> "------M-MF-MFT--";
+                case "Store_3" -> "---";
+                default -> fail(d.typeInfo().simpleName);
+            };
+            assertEquals(s, d.delaySequence());
+        };
+
         testClass(List.of("Project_0", "Store_3"), 4, DONT_CARE, new DebugConfiguration.Builder()
-                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
-                .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
-                .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
-                .build(), new AnalyserConfiguration.Builder().build(), new AnnotatedAPIConfiguration.Builder().build());
+                        //  .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                        .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                        .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+                        .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
+                        .addBreakDelayVisitor(breakDelayVisitor)
+                        .build(), new AnalyserConfiguration.Builder().build(),
+                new AnnotatedAPIConfiguration.Builder().build());
     }
 
     @Test

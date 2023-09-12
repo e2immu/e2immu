@@ -32,7 +32,10 @@ public class ReturnValue_0 {
         return square(i) * i;
     }
 
-    @ImmutableContainer("27")
+    /*
+    20230912 disabled inlining, result is not a constant anymore
+     */
+    @ImmutableContainer
     public static int cube3() {
         return cube(3);
     }

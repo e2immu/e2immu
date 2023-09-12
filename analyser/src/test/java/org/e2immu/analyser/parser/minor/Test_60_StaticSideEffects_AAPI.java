@@ -118,7 +118,7 @@ public class Test_60_StaticSideEffects_AAPI extends CommonTestRunner {
                         String expectedValue = switch (d.iteration()) {
                             case 0 -> "<null-check>?new AtomicInteger():<f:counter>";
                             case 1, 2, 3 -> "<wrapped:counter>"; // result of breaking delay in Merge
-                            default -> "instance type AtomicInteger";
+                            default -> "null==nullable instance type AtomicInteger?new AtomicInteger():nullable instance type AtomicInteger";
                         };
                         assertEquals(expectedValue, d.currentValue().toString());
 
@@ -147,9 +147,8 @@ public class Test_60_StaticSideEffects_AAPI extends CommonTestRunner {
                 }
             }
             if ("k".equals(d.fieldInfo().name)) {
-                assertDv(d, 1, MultiLevel.NULLABLE_DV, Property.EXTERNAL_NOT_NULL);
-                String expected = d.iteration() == 0 ? "<f:k>" : "k";
-                assertEquals(expected, d.fieldAnalysis().getValue().toString());
+                assertDv(d, MultiLevel.NULLABLE_DV, Property.EXTERNAL_NOT_NULL);
+                assertEquals("k", d.fieldAnalysis().getValue().toString());
                 assertEquals("k:0", d.fieldAnalysis().getLinkedVariables().toString());
             }
         };

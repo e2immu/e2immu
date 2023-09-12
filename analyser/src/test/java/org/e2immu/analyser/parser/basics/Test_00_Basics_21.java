@@ -50,7 +50,7 @@ public class Test_00_Basics_21 extends CommonTestRunner {
                 if ("0".equals(d.statementId())) {
                     String expectValue = switch (d.iteration()) {
                         case 0, 1 -> "<m:isSet>";
-                        default -> "null!=`other.t`";
+                        default -> "other.isSet()";
                     };
                     assertEquals(expectValue, d.evaluationResult().value().toString());
                     EvaluationResult.ChangeData cd = d.findValueChangeBySubString("other");
@@ -111,7 +111,8 @@ public class Test_00_Basics_21 extends CommonTestRunner {
                         assertEquals("0", d.statementId());
                         String expectValue = switch (d.iteration()) {
                             case 0, 1 -> "<m:isSet>?<p:other>:nullable instance type Basics_21<T>/*@Identity*/";
-                            case 2 -> "null==`other.t`?nullable instance type Basics_21<T>/*@Identity*/:<mod:T>";
+                            case 2 ->
+                                    "(nullable instance type Basics_21<T>/*@Identity*/).isSet()?<mod:T>:nullable instance type Basics_21<T>/*@Identity*/";
                             default -> "nullable instance type Basics_21<T>/*@Identity*/";
                         };
                         assertEquals(expectValue, d.currentValue().toString());
@@ -131,8 +132,8 @@ public class Test_00_Basics_21 extends CommonTestRunner {
                         assertDv(d, MultiLevel.MUTABLE_DV, IMMUTABLE);
                         assertDv(d, 3, MultiLevel.EVENTUALLY_IMMUTABLE_HC_DV, EXTERNAL_IMMUTABLE);
 
-                        String expectLinked = d.iteration() < 2 ? "other:-1" : "other:4";
-                        assertEquals(expectLinked, d.variableInfo().getLinkedVariables().toString());
+                        // always empty
+                        assertEquals("", d.variableInfo().getLinkedVariables().toString());
                     }
                 }
             }
@@ -154,10 +155,20 @@ public class Test_00_Basics_21 extends CommonTestRunner {
             if ("get".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof ReturnVariable) {
                     if ("1".equals(d.statementId())) {
-                        String linked = d.iteration() == 0 ? "this.t:0,this:-1" : "this.t:0";
+                        String linked = "this.t:0,this:3";
                         assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
                     }
                 }
+            }
+        };
+
+        StatementAnalyserVisitor statementAnalyserVisitor = d -> {
+            if ("isSet".equals(d.methodInfo().name)) {
+                assertEquals("0", d.statementId());
+                assertEquals("Precondition[expression=true, causes=[]]",
+                        d.statementAnalysis().stateData().getPrecondition().toString());
+                String expected = d.iteration() < 2 ? "<null-check>" : "null!=t$0";
+                assertEquals(expected, d.statementAnalysis().stateData().valueOfExpression.get().toString());
             }
         };
 
@@ -170,18 +181,34 @@ public class Test_00_Basics_21 extends CommonTestRunner {
                 assertDv(d.p(0), 3, DV.FALSE_DV, CONTEXT_MODIFIED);
                 assertDv(d.p(0), 3, DV.FALSE_DV, MODIFIED_VARIABLE);
             }
+
             if ("set".equals(d.methodInfo().name)) {
                 assertEquals(DV.TRUE_DV, d.methodAnalysis().getProperty(MODIFIED_METHOD));
             }
+
             if ("get".equals(d.methodInfo().name)) {
                 assertDv(d, DV.FALSE_DV, MODIFIED_METHOD);
-                String expect = d.iteration() <= 1 ? "<m:get>" : "/*inline get*/t$0";
+                String expect = d.iteration() <= 1 ? "<m:get>" : "t$0";
                 assertEquals(expect, d.methodAnalysis().getSingleReturnValue().toString());
             }
+
             if ("isSet".equals(d.methodInfo().name)) {
                 assertDv(d, DV.FALSE_DV, MODIFIED_METHOD);
-                String expect = d.iteration() <= 1 ? "<m:isSet>" : "/*inline isSet*/null!=t$0";
-                assertEquals(expect, d.methodAnalysis().getSingleReturnValue().toString());
+                String pre = d.iteration() <= 1 ? "<m:isSet>" : "null!=t$0";
+                assertEquals(pre, d.methodAnalysis().getSingleReturnValue().toString());
+                assertEquals("Precondition[expression=true, causes=[]]",
+                        d.methodAnalysis().getPrecondition().toString());
+                String preEventual = d.iteration() == 0
+                        ? "Precondition[expression=<precondition>, causes=[]]"
+                        : "Precondition[expression=true, causes=[]]";
+                assertEquals(preEventual, d.methodAnalysis().getPreconditionForEventual().toString());
+                String eventual = switch (d.iteration()) {
+                    case 0 -> "[DelayedEventual:initial@Class_Basics_21]";
+                    case 1 -> "[DelayedEventual:final@Field_t]";
+                    case 2 -> "[DelayedEventual:break_init_delay:this.t@Method_set_1.0.0-C]";
+                    default -> "@TestMark: [t]";
+                };
+                assertEquals(eventual, d.methodAnalysis().getEventual().toString());
             }
         };
 
@@ -200,15 +227,23 @@ public class Test_00_Basics_21 extends CommonTestRunner {
             if ("Basics_21".equals(d.typeInfo().simpleName)) {
                 assertDv(d, 2, MultiLevel.EVENTUALLY_IMMUTABLE_HC_DV, IMMUTABLE);
                 assertDv(d, 2, MultiLevel.INDEPENDENT_HC_DV, INDEPENDENT);
+
+                String approved = d.iteration() < 2 ? "{}" : "{t=null==t}";
+                assertEquals(approved, d.typeAnalysis().getApprovedPreconditions(false).toString());
+                assertEquals(approved, d.typeAnalysis().getApprovedPreconditions(true).toString());
             }
         };
 
+        BreakDelayVisitor breakDelayVisitor = d -> assertEquals("-----", d.delaySequence());
+
         testClass("Basics_21", 0, 0, new DebugConfiguration.Builder()
                 .addEvaluationResultVisitor(evaluationResultVisitor)
-                .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addStatementAnalyserVisitor(statementAnalyserVisitor)
                 .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
+                .addBreakDelayVisitor(breakDelayVisitor)
                 .build());
     }
 

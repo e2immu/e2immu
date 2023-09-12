@@ -75,7 +75,7 @@ public class Test_04_NotNull extends CommonTestRunner {
                 }
                 if (d.variable() instanceof ReturnVariable) {
                     if ("0.0.0".equals(d.statementId())) {
-                        String linked = d.iteration() < 5 ? "this.s:-1" : "";
+                        String linked = d.iteration() < 5 ? "this.s:-1,this:-1" : "";
                         assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
                     }
                 }
@@ -104,8 +104,7 @@ public class Test_04_NotNull extends CommonTestRunner {
         };
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("lowerCase".equals(d.methodInfo().name)) {
-                String expected = d.iteration() < 5 ? "<m:lowerCase>"
-                        : "/*inline lowerCase*/null==s?\"?\":s.toLowerCase()";
+                String expected = d.iteration() < 5 ? "<m:lowerCase>" : "null==s?\"?\":s.toLowerCase()";
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
             }
             if ("NotNull_1".equals(d.methodInfo().name)) {
@@ -154,10 +153,9 @@ public class Test_04_NotNull extends CommonTestRunner {
                 .build(), new AnalyserConfiguration.Builder().setComputeContextPropertiesOverAllMethods(true).build());
     }
 
-    // TODO: the third error seems unnecessary
     @Test
     public void test_4_1() throws IOException {
-        testClass("NotNull_4_1", 3, 1, new DebugConfiguration.Builder()
+        testClass("NotNull_4_1", 2, 0, new DebugConfiguration.Builder()
                 .build(), new AnalyserConfiguration.Builder().setComputeContextPropertiesOverAllMethods(true).build());
     }
 

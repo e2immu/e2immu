@@ -23,6 +23,7 @@ import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.inspector.TypeContext;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.InlinedMethod;
+import org.e2immu.analyser.model.expression.PropertyWrapper;
 import org.e2immu.analyser.model.expression.UnknownExpression;
 import org.e2immu.analyser.model.expression.VariableExpression;
 import org.e2immu.analyser.model.variable.FieldReference;
@@ -75,12 +76,12 @@ public class Test_00_Basics_6_1 extends CommonTestRunner {
                     assertEquals(expect, d.currentValue().toString());
                 }
                 if ("n".equals(d.variableName()) && "1".equals(d.statementId())) {
-                    assertEquals("Math.pow(3,3)/*(int)*/", d.currentValue().toString());
+                    assertEquals("Basics_6_1.someMinorMethod(3)", d.currentValue().toString());
                 }
                 if ("r".equals(d.variableName()) && "1".equals(d.statementId())) {
                     String expected = d.iteration() == 0
-                            ? "2*<f:field>+Math.pow(3,3)/*(int)*/"
-                            : "2*field$0+Math.pow(3,3)/*(int)*/";
+                            ? "2*<f:field>+Basics_6_1.someMinorMethod(3)"
+                            : "2*field$0+Basics_6_1.someMinorMethod(3)";
                     assertEquals(expected, d.currentValue().toString());
                 }
             }
@@ -182,10 +183,10 @@ public class Test_00_Basics_6_1 extends CommonTestRunner {
 
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("someMinorMethod".equals(d.methodInfo().name)) {
-                String expected = "/*inline someMinorMethod*/Math.pow(i,3)/*(int)*/";
+                String expected = "Math.pow(i,3)/*(int)*/";
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
 
-                assertTrue(d.methodAnalysis().getSingleReturnValue() instanceof InlinedMethod);
+                assertTrue(d.methodAnalysis().getSingleReturnValue() instanceof PropertyWrapper);
                 assertEquals("", d.methodInfo().methodResolution.get().methodsOfOwnClassReachedSorted());
                 assertFalse(d.methodInfo().methodResolution.get().allowsInterrupts());
 

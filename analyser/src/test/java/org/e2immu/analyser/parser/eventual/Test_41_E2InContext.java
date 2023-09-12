@@ -58,7 +58,7 @@ public class Test_41_E2InContext extends CommonTestRunner {
                         assertDv(d, MultiLevel.MUTABLE_DV, Property.CONTEXT_IMMUTABLE);
                     }
                     if ("1".equals(d.statementId())) {
-                        String expect = d.iteration() < 3 ? "<new:Eventually<String>>" : "instance type Eventually<String>";
+                        String expect = d.iteration() < 3 ? "<new:Eventually<String>>" : "new Eventually<>()";
                         assertEquals(expect, d.currentValue().toString());
                         // so while the instance has value property ERE, the change from ConstructorCall to Instance does not change the value properties
                         assertDv(d, 3, MultiLevel.EVENTUALLY_IMMUTABLE_BEFORE_MARK_DV, Property.IMMUTABLE);
@@ -117,9 +117,7 @@ public class Test_41_E2InContext extends CommonTestRunner {
                     assertEquals("", d.variableInfo().getLinkedVariables().toString());
                 }
                 if (d.variable() instanceof ReturnVariable) {
-                    assertLinked(d,
-                            it(0, 3, "this.eventually:0,this:-1"),
-                            it(4, "this.eventually:0"));
+                    assertLinked(d, it(0, "this.eventually:0,this:3"));
                     assertDv(d, 4, MultiLevel.EVENTUALLY_IMMUTABLE_DV, Property.EXTERNAL_IMMUTABLE);
                     assertDv(d, 4, MultiLevel.EVENTUALLY_IMMUTABLE_DV, Property.IMMUTABLE);
                 }
@@ -160,14 +158,13 @@ public class Test_41_E2InContext extends CommonTestRunner {
                     // from iteration 3, set is @Mark
                     String delay = switch (d.iteration()) {
                         case 0 -> "initial@Method_E2InContext_2_0-C";
-                        case 1 -> "cm@Parameter_t;constructor-to-instance@Method_E2InContext_2_0-E;mom@Parameter_t";
-                        case 2 ->
-                                "break_init_delay:this.t@Method_set_1-C;constructor-to-instance@Method_E2InContext_2_0-E";
+                        case 1 -> "cm@Parameter_t;mom@Parameter_t";
+                        case 2 -> "break_init_delay:this.t@Method_set_1-C";
                         default -> "";
                     };
                     assertDv(d, delay, 3, MultiLevel.EVENTUALLY_IMMUTABLE_AFTER_MARK_DV, Property.CONTEXT_IMMUTABLE);
 
-                    String expected = d.iteration() <= 2 ? "<f:eventually>" : "instance type Eventually<String>";
+                    String expected = d.iteration() <= 2 ? "<f:eventually>" : "new Eventually<>()";
                     assertEquals(expected, d.currentValue().toString());
                 }
             }

@@ -36,21 +36,20 @@ public class Test_16_Modification_24 extends CommonTestRunner {
             if ("method1".equals(d.methodInfo().name)) {
                 if ("middle".equals(d.variableName())) {
                     if ("0".equals(d.statementId()) || "1".equals(d.statementId())) {
-                        assertEquals("new HashMap<>(in)/*this.size()==in.size()*/",
-                                d.currentValue().toString());
+                        assertEquals("new HashMap<>(in)", d.currentValue().toString());
                     }
                     // now comes a method call modifying the keySet, which is dependent on middle
                     if ("2".equals(d.statementId())) {
-                        assertEquals("instance type HashMap<String,Integer>", d.currentValue().toString());
+                        assertEquals("new HashMap<>(in)", d.currentValue().toString());
                     }
                 }
                 if ("keySet".equals(d.variableName())) {
                     if ("1".equals(d.statementId())) {
-                        assertEquals("middle.keySet()/*@NotNull this.size()==in.size()*/", d.currentValue().toString());
+                        assertEquals("(new HashMap<>(in)).keySet()", d.currentValue().toString());
                         assertEquals("in:4,middle:2", d.variableInfo().getLinkedVariables().toString());
                     }
                     if ("2".equals(d.statementId())) {
-                        assertEquals("instance type Set<String>", d.currentValue().toString());
+                        assertEquals("(new HashMap<>(in)).keySet()", d.currentValue().toString());
                         assertEquals("in:4,middle:2", d.variableInfo().getLinkedVariables().toString());
                     }
                 }
@@ -58,13 +57,11 @@ public class Test_16_Modification_24 extends CommonTestRunner {
             if ("method2".equals(d.methodInfo().name)) {
                 if ("middle".equals(d.variableName())) {
                     if ("0".equals(d.statementId())) {
-                        assertEquals("new HashMap<>(in)/*this.size()==in.size()*/",
-                                d.currentValue().toString());
+                        assertEquals("new HashMap<>(in)", d.currentValue().toString());
                     }
                     // now comes a method call modifying the keySet, which is dependent on middle
                     if ("1".equals(d.statementId())) {
-                        assertEquals("instance type HashMap<String,Integer>",
-                                d.currentValue().toString());
+                        assertEquals("new HashMap<>(in)", d.currentValue().toString());
                     }
                 }
             }

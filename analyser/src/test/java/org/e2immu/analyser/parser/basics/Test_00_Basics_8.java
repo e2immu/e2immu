@@ -22,6 +22,7 @@ import org.e2immu.analyser.model.ParameterInfo;
 import org.e2immu.analyser.model.expression.DelayedVariableExpression;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.parser.CommonTestRunner;
+import org.e2immu.analyser.visitor.BreakDelayVisitor;
 import org.e2immu.analyser.visitor.EvaluationResultVisitor;
 import org.e2immu.analyser.visitor.StatementAnalyserVariableVisitor;
 import org.e2immu.analyser.visitor.StatementAnalyserVisitor;
@@ -87,8 +88,7 @@ public class Test_00_Basics_8 extends CommonTestRunner {
                 String linkedVariables = d.variableInfo().getLinkedVariables().toString();
                 if ("j".equals(d.variableName())) {
                     if ("2".equals(d.statementId())) {
-                        String linked = d.iteration() == 0 ? "q:-1,this.i:0,this:-1" : "this.i:0";
-                        assertEquals(linked, linkedVariables, d.statementId());
+                        assertEquals("this.i:0,this:3", linkedVariables, d.statementId());
                         String expectValue = d.iteration() == 0 ? "<f:i>" : "i$1";
                         assertEquals(expectValue, d.currentValue().toString());
                         if (d.iteration() == 0) {
@@ -100,27 +100,27 @@ public class Test_00_Basics_8 extends CommonTestRunner {
                     if ("3".equals(d.statementId())) {
                         String expectValue = d.iteration() == 0 ? "<f:i>" : "i$1";
                         assertEquals(expectValue, d.currentValue().toString());
-                        String linked = d.iteration() == 0 ? "k:0,q:-1,this.i:0,this:-1" : "k:0,this.i:0";
+                        String linked = "k:0,this.i:0,this:3";
                         assertEquals(linked, linkedVariables, d.statementId());
                     }
                     if ("4.0.0.0.0".equals(d.statementId())) {
-                        String linked = d.iteration() == 0 ? "System.out:-1,j0:0,k:0,q:-1,this.i:0,this:-1" : "j0:0,k:0,this.i:0";
+                        String linked = "j0:0,k:0,this.i:0,this:3";
                         assertEquals(linked, linkedVariables, d.statementId());
                     }
                     if ("4.0.0.0.1".equals(d.statementId())) {
-                        String linked = d.iteration() == 0 ? "System.out:-1,j0:0,k:0,q:-1,this.i:-1,this:-1" : "j0:0,k:0";
+                        String linked = "j0:0,k:0,this:3";
                         assertEquals(linked, linkedVariables);
                     }
                     if ("4.0.0.0.2".equals(d.statementId())) {
-                        String linked = d.iteration() == 0 ? "System.out:-1,j0:0,k0:-1,k:0,q:-1,this.i:-1,this:-1" : "j0:0,k:0";
+                        String linked = "j0:0,k:0,this:3";
                         assertEquals(linked, linkedVariables);
                     }
                     if ("4.0.0".equals(d.statementId())) {
-                        String linked = d.iteration() == 0 ? "System.out:-1,k:0,q:-1,this.i:-1,this:-1" : "k:0";
+                        String linked = "k:0,this:3";
                         assertEquals(linked, linkedVariables);
                     }
                     if ("4".equals(d.statementId())) {
-                        String linked = d.iteration() == 0 ? "System.out:-1,k:0,q:-1,this.i:0,this:-1" : "k:0,this.i:0";
+                        String linked = d.iteration() == 0 ? "k:0,q:-1,this.i:0,this:-1" : "k:0,this.i:0,this:3";
                         assertEquals(linked, linkedVariables, d.statementId());
                     }
                 }
@@ -156,17 +156,17 @@ public class Test_00_Basics_8 extends CommonTestRunner {
                 }
                 if (d.variable() instanceof FieldReference fr && "i".equals(fr.fieldInfo.name)) {
                     if ("4.0.0.0.1".equals(d.statementId())) {
-                        String linked = d.iteration() == 0 ? "System.out:-1,j0:-1,j:-1,k:-1,q:-1,this:-1" : "";
+                        String linked = d.iteration() == 0 ? "q:-1" : "";
                         assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
                     }
                     if ("4.0.0".equals(d.statementId())) {
-                        String linked = d.iteration() == 0 ? "System.out:-1,j:-1,k:-1,q:-1,this:-1" : "";
+                        String linked = d.iteration() == 0 ? "q:-1,this:-1" : "this:3";
                         assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
                     }
                     if ("4".equals(d.statementId())) {
                         // the j:0, k:0 come from the fact that the if-block is only executed conditionally, and so,
                         // in case of j!=k, they both still have been assigned.
-                        String linked = d.iteration() == 0 ? "System.out:-1,j:0,k:0,q:-1,this:-1" : "j:0,k:0";
+                        String linked = d.iteration() == 0 ? "j:0,k:0,q:-1,this:-1" : "j:0,k:0,this:3";
                         assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
                     }
                 }
@@ -184,7 +184,7 @@ public class Test_00_Basics_8 extends CommonTestRunner {
                     assertEquals(expected, d.evaluationResult().value().toString());
                 }
                 if ("4.0.0.0.3".equals(d.statementId())) {
-                    String expected = d.iteration() == 0 ? "<simplification>" : "true";
+                    String expected = d.iteration() == 0 ? "q==<p:q>" : "true";
                     assertEquals(expected, d.evaluationResult().value().toString());
                 }
             }
@@ -220,16 +220,19 @@ public class Test_00_Basics_8 extends CommonTestRunner {
                     assertEquals(expected, d.condition().toString());
                 }
                 if ("4.0.0.0.3".equals(d.statementId())) {
-                    String expected = d.iteration() == 0 ? "<simplification>&&<f:i>==<f:i>" : "i$1==i$2";
+                    String expected = d.iteration() == 0 ? "q==<p:q>&&<f:i>==<f:i>" : "i$1==i$2";
                     assertEquals(expected, d.absoluteState().toString());
                 }
             }
         };
 
+        BreakDelayVisitor breakDelayVisitor = d -> assertEquals("----", d.delaySequence());
+
         testClass("Basics_8", 0, 3, new DebugConfiguration.Builder()
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .addStatementAnalyserVisitor(statementAnalyserVisitor)
                 .addEvaluationResultVisitor(evaluationResultVisitor)
+                .addBreakDelayVisitor(breakDelayVisitor)
                 .build());
     }
 }

@@ -28,6 +28,7 @@ import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 
+import static org.e2immu.analyser.parser.VisitorTestSupport.IterationInfo.*;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 
@@ -45,7 +46,7 @@ public class Test_23_ExternalContainer extends CommonTestRunner {
                 if (d.variable() instanceof FieldReference fr && "iField".equals(fr.fieldInfo.name)) {
                     if ("0".equals(d.statementId())) {
                         // link in_hc_of instead of dependent, even if iField is formally mutable, locally not modified
-                        String linked = d.iteration() < 2 ? "in:-1" : "in:3";
+                        String linked = d.iteration() < 3 ? "in:-1,this:-1" : "in:3,this:4";
                         assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
                         assertDv(d, 3, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                         assertDv(d, MultiLevel.NOT_CONTAINER_DV, Property.CONTEXT_CONTAINER);
@@ -121,8 +122,9 @@ public class Test_23_ExternalContainer extends CommonTestRunner {
                 assertDv(d, MultiLevel.CONTAINER_DV, Property.CONTAINER);
                 assertDv(d, DV.FALSE_DV, Property.MODIFIED_OUTSIDE_METHOD);
                 assertDv(d, MultiLevel.EFFECTIVELY_IMMUTABLE_HC_DV, Property.EXTERNAL_IMMUTABLE);
-                String linked = d.iteration() < 4 ? "consumer:-1,this.myContainer:-1,this.myNonContainer:-1,this:-1" : "consumer:0";
-                assertEquals(linked, d.fieldAnalysis().getLinkedVariables().toString());
+                assertLinked(d, d.fieldAnalysis().getLinkedVariables(),
+                        it0("consumer:-1,this:-1"),
+                        it(1, 3, "consumer:-1,this:-1"), it(4, "consumer:0"));
             }
             if ("iField".equals(d.fieldInfo().name)) {
                 // value TRUE but annotation will not be visible

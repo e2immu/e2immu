@@ -92,7 +92,7 @@ public class Test_11_MethodReferences extends CommonTestRunner {
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("stream".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof ReturnVariable) {
-                    String linked = d.iteration() == 0 ? "this.map:-1" : "this.map:4";
+                    String linked = d.iteration() == 0 ? "this.map:-1,this:-1" : "this.map:4,this:4";
                     assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
                     assertDv(d, 1, MultiLevel.MUTABLE_DV, Property.IMMUTABLE);
                 }

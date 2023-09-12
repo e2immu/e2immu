@@ -7,7 +7,6 @@ public abstract class TryStatement_10 {
     public String method(String in) throws Throwable {
         Throwable t0 = catchThrowable();
         if (t0 == null) {
-            // CRASH ONLY WITH ANNOTATED API + THE FOLLOWING LINE:
             System.out.println("input: " + in);
             return in.toUpperCase();
         }

@@ -87,24 +87,21 @@ public class Test_00_Basics_2 extends CommonTestRunner {
                         assertTrue(d.variableInfoContainer().hasEvaluation());
                         assertEquals("<p:collection>", d.currentValue().toString());
                         assertTrue(d.currentValue().isDelayed());
-                        assertEquals("nullable instance type Collection<String>/*@Identity*/",
-                                d.variableInfoContainer().getPreviousOrInitial().getValue().toString());
-                    } else {
-                        assertTrue(d.currentValue() instanceof PropertyWrapper);
-                        assertEquals("nullable instance type Collection<String>/*@Identity*//*this.contains(string$0)*/",
-                                d.currentValue().toString());
                     }
+                    assertEquals("nullable instance type Collection<String>/*@Identity*/",
+                            d.variableInfoContainer().getPreviousOrInitial().getValue().toString());
+
                     assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, d.getProperty(CONTEXT_NOT_NULL));
                     assertEquals(DV.TRUE_DV, d.getProperty(CONTEXT_MODIFIED));
                     assertTrue(d.properties().containsKey(CNN_TRAVELS_TO_PRECONDITION));
                     // cannot be content linked to string, because string is recursively immutable
-                    assertTrue(d.variableInfo().getLinkedVariables().isEmpty());
+                    assertEquals("this:4", d.variableInfo().getLinkedVariables().toString());
                 }
                 if (d.variable() instanceof FieldReference fr && "string".equals(fr.fieldInfo.name)) {
                     assertEquals(STRING_FIELD, d.variableName());
 
                     assertCurrentValue(d, 1,
-                            "constructor-to-instance@Method_add_0-E;initial:this.string@Method_add_0-C;initial@Field_string",
+                            "initial:this.string@Method_add_0-C;initial@Field_string",
                             "nullable instance type String");
                     // string occurs in a not-null context, but one of the values is nullable
                     assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, d.getProperty(CONTEXT_NOT_NULL));

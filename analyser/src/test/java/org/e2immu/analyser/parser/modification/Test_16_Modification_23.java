@@ -36,22 +36,21 @@ public class Test_16_Modification_23 extends CommonTestRunner {
             if ("method1".equals(d.methodInfo().name)) {
                 if ("middle".equals(d.variableName())) {
                     if ("0".equals(d.statementId())) {
-                        assertEquals("new HashMap<>(in)/*this.size()==in.size()*/",
-                                d.currentValue().toString());
+                        assertEquals("new HashMap<>(in)", d.currentValue().toString());
                     }
                     // now comes a method call modifying the keySet, which is dependent on middle
                     if ("2".equals(d.statementId()) || "3".equals(d.statementId())) {
-                        String expected = d.iteration() == 0 ? "<mod:Set<String>>" : "instance type HashMap<String,Integer>";
+                        String expected = d.iteration() == 0 ? "<v:middle>" : "new HashMap<>(in)";
                         assertEquals(expected, d.currentValue().toString());
                     }
                 }
                 if ("keySet".equals(d.variableName())) {
                     if ("1".equals(d.statementId())) {
-                        assertEquals("middle.keySet()/*@NotNull this.size()==in.size()*/", d.currentValue().toString());
+                        assertEquals("(new HashMap<>(in)).keySet()", d.currentValue().toString());
                         assertEquals("in:4,middle:2", d.variableInfo().getLinkedVariables().toString());
                     }
                     if ("2".equals(d.statementId())) {
-                        String expected = d.iteration() == 0 ? "<mod:Set<String>>" : "middle.keySet()/*@NotNull*/";
+                        String expected = d.iteration() == 0 ? "<mod:Set<String>>" : "(new HashMap<>(in)).keySet()";
                         assertEquals(expected, d.currentValue().toString());
                         String linked = d.iteration() == 0 ? "in:-1,middle:-1" : "in:4,middle:2";
                         assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
@@ -61,8 +60,7 @@ public class Test_16_Modification_23 extends CommonTestRunner {
             if ("method2".equals(d.methodInfo().name)) {
                 if ("middle".equals(d.variableName())) {
                     if ("0".equals(d.statementId())) {
-                        assertEquals("new HashMap<>(in)/*this.size()==in.size()*/",
-                                d.currentValue().toString());
+                        assertEquals("new HashMap<>(in)", d.currentValue().toString());
                     }
                     // now comes a method call modifying the keySet, which is dependent on middle
                     if ("1".equals(d.statementId())) {

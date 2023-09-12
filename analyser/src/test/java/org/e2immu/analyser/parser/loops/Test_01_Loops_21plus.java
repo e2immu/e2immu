@@ -405,7 +405,7 @@ public class Test_01_Loops_21plus extends CommonTestRunner {
 
                         assertLinked(d,
                                 it(0, 4, "all:-1,this.xes:-1,this:-1"),
-                                it(5, "this.xes:3"));
+                                it(5, "this.xes:3,this:3"));
                         assertDv(d, DV.TRUE_DV, Property.CNN_TRAVELS_TO_PRECONDITION);
                         assertDv(d, 5, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.CONTEXT_NOT_NULL);
                     }
@@ -415,8 +415,7 @@ public class Test_01_Loops_21plus extends CommonTestRunner {
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
             if ("xes".equals(d.fieldInfo().name)) {
                 assertLinked(d, d.fieldAnalysis().getLinkedVariables(),
-                        it0("System.out:-1,all:-1,this:-1,xesIn:-1"),
-                        it(1, 4, "all:-1,this:-1,xesIn:-1"),
+                        it(0, 4, "all:-1,this:-1,xesIn:-1"),
                         it(5, "xesIn:0"));
                 assertEquals("xesIn", d.fieldAnalysis().getValue().toString());
                 assertDv(d, 4, MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL_DV, Property.EXTERNAL_NOT_NULL);

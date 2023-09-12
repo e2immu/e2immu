@@ -242,8 +242,10 @@ public class Test_61_OutputBuilderSimplified extends CommonTestRunner {
                     if ("1".equals(d.statementId())) {
                         String expected = switch (d.iteration()) {
                             case 0 -> "<f:NONE>==start?new OutputBuilderSimplified_7():<v:result>";
-                            case 1 -> "<vp:NONE:container@Class_Space>==start?new OutputBuilderSimplified_7():instance type OutputBuilderSimplified_7";
-                            default -> "Space.NONE==start?new OutputBuilderSimplified_7():instance type OutputBuilderSimplified_7";
+                            case 1 ->
+                                    "<vp:NONE:container@Class_Space>==start?new OutputBuilderSimplified_7():instance type OutputBuilderSimplified_7";
+                            default ->
+                                    "Space.NONE==start?new OutputBuilderSimplified_7():instance type OutputBuilderSimplified_7";
                         };
                         assertEquals(expected, d.currentValue().toString());
                         assertDv(d, 2, MultiLevel.NOT_CONTAINER_DV, Property.CONTAINER);
@@ -264,9 +266,12 @@ public class Test_61_OutputBuilderSimplified extends CommonTestRunner {
                     }
                     if ("1".equals(d.statementId())) {
                         String expected = switch (d.iteration()) {
-                            case 0 -> "<f:NONE>==nullable instance type OutputElement?nullable instance type OutputElement:<p:start>";
-                            case 1 -> "<vp:NONE:container@Class_Space>==nullable instance type OutputElement?nullable instance type OutputElement:<p:start>";
-                            case 2 -> "Space.NONE==nullable instance type OutputElement?nullable instance type OutputElement:<mod:OutputElement>";
+                            case 0 ->
+                                    "<f:NONE>==nullable instance type OutputElement?nullable instance type OutputElement:<p:start>";
+                            case 1 ->
+                                    "<vp:NONE:container@Class_Space>==nullable instance type OutputElement?nullable instance type OutputElement:<p:start>";
+                            case 2 ->
+                                    "Space.NONE==nullable instance type OutputElement?nullable instance type OutputElement:<mod:OutputElement>";
                             default -> "nullable instance type OutputElement";
                         };
                         assertEquals(expected, d.currentValue().toString());
@@ -301,8 +306,10 @@ public class Test_61_OutputBuilderSimplified extends CommonTestRunner {
                     }
                     if ("3".equals(d.statementId())) {
                         String expected = switch (d.iteration()) {
-                            case 0, 1 -> "<f:NONE>==nullable instance type OutputElement?nullable instance type OutputElement:<p:end>";
-                            case 2 -> "Space.NONE==nullable instance type OutputElement?nullable instance type OutputElement:<mod:OutputElement>";
+                            case 0, 1 ->
+                                    "<f:NONE>==nullable instance type OutputElement?nullable instance type OutputElement:<p:end>";
+                            case 2 ->
+                                    "Space.NONE==nullable instance type OutputElement?nullable instance type OutputElement:<mod:OutputElement>";
                             default -> "nullable instance type OutputElement";
                         };
                         assertEquals(expected, d.currentValue().toString());
@@ -483,13 +490,13 @@ public class Test_61_OutputBuilderSimplified extends CommonTestRunner {
     public void test_11() throws IOException {
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("OutputBuilderSimplified_11".equals(d.typeInfo().simpleName)) {
-                assertDv(d, MultiLevel.EFFECTIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
-            }
-            if ("$1".equals(d.typeInfo().simpleName)) {
                 assertDv(d, 1, MultiLevel.EFFECTIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
             }
-            if ("$2".equals(d.typeInfo().simpleName)) {
+            if ("$1".equals(d.typeInfo().simpleName)) {
                 assertDv(d, 2, MultiLevel.EFFECTIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
+            }
+            if ("$2".equals(d.typeInfo().simpleName)) {
+                assertDv(d, 3, MultiLevel.EFFECTIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
             }
         };
 
@@ -505,11 +512,14 @@ public class Test_61_OutputBuilderSimplified extends CommonTestRunner {
             }
         };
 
+        BreakDelayVisitor breakDelayVisitor = d -> assertEquals("-----", d.delaySequence());
+
         // ignoring the result of a non-modifying method call
         testClass("OutputBuilderSimplified_11", 0, 1, new DebugConfiguration.Builder()
                 .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
                 .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                .addBreakDelayVisitor(breakDelayVisitor)
                 .build());
     }
 
@@ -716,7 +726,7 @@ public class Test_61_OutputBuilderSimplified extends CommonTestRunner {
                 if (d.variable() instanceof ParameterInfo pi && "outputElements".equals(pi.name)) {
                     if ("0".equals(d.statementId())) {
                         // OutputElements are part of the HC of list, so must have 4
-                        String linked = d.iteration() == 0 ? "this.list:-1" : "this.list:4";
+                        String linked = d.iteration() == 0 ? "this.list:-1,this:-1" : "this.list:4";
                         assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
                     }
                 }

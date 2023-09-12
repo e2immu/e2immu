@@ -67,7 +67,7 @@ public class Test_00_Basics_7_1 extends CommonTestRunner {
                 assertEquals(DV.FALSE_DV, d.fieldAnalysis().getProperty(FINAL));
                 assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, d.fieldAnalysis().getProperty(EXTERNAL_NOT_NULL));
                 String sortedValues = d.iteration() == 0
-                        ? "constructor-to-instance@Method_increment_1-E;initial:System.out@Method_increment_1-C;initial:q@Method_increment_1-E;initial:this.i@Method_increment_0-C;initial@Field_i;values:this.i@Field_i"
+                        ? "initial:System.out@Method_increment_1-C;initial:q@Method_increment_1-E;initial:this.i@Method_increment_0-C;initial@Field_i;values:this.i@Field_i"
                         : "0,instance type int";
                 assertEquals(sortedValues, ((FieldAnalysisImpl.Builder) (d.fieldAnalysis())).sortedValuesString());
                 assertDv(d, 1, MultiLevel.NOT_IGNORE_MODS_DV, EXTERNAL_IGNORE_MODIFICATIONS);

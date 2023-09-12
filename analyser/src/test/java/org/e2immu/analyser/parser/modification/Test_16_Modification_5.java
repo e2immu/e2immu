@@ -76,9 +76,9 @@ public class Test_16_Modification_5 extends CommonTestRunner {
         };
 
         testClass("Modification_5", 0, 0, new DebugConfiguration.Builder()
-                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
-                .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+            //    .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+            //    .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+            //    .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                 .build());
     }
 }

@@ -429,7 +429,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         CausesOfDelay delays1 = modified.causesOfDelay().merge(parameterDelays).merge(delayedFinalizer)
                 .merge(objectResult.causesOfDelay()).merge(incrementDelays).merge(linkDelays);
 
-
+/*
         Expression modifiedInstance;
         ModReturn modReturn = checkCompanionMethodsModifying(identifier, builder, context,
                 concreteMethod, object, objectValue, parameterValues, this, modified);
@@ -449,13 +449,13 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         } else {
             // no modification at all
             modifiedInstance = null;
-        }
+        }*/
 
-        CausesOfDelay delays2 = modifiedInstance == null ? delays1 : delays1.merge(modifiedInstance.causesOfDelay());
+       // CausesOfDelay delays2 = modifiedInstance == null ? delays1 : delays1.merge(modifiedInstance.causesOfDelay());
 
-        EvaluationResult mv = new EvaluateMethodCall(context, this, delays2)
+        EvaluationResult mv = new EvaluateMethodCall(context, this, delays1)
                 .methodValue(modified, methodAnalysis, objectIsImplicit, objectValue, concreteReturnType,
-                        parameterValues, forwardEvaluationInfo, modifiedInstance, firstInCallCycle);
+                        parameterValues, forwardEvaluationInfo, null, firstInCallCycle);
         builder.compose(mv);
 
         MethodInspection methodInspection = concreteMethod.methodInspection.get();

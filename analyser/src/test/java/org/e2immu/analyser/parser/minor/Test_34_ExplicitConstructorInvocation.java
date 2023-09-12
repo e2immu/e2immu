@@ -241,8 +241,7 @@ public class Test_34_ExplicitConstructorInvocation extends CommonTestRunner {
 
                         assertEquals(expected, d.currentValue().toString());
                         String linked = switch (d.iteration()) {
-                            case 0 ->
-                                    "ExplicitConstructorInvocation_7.COMPLEXITY:-1,expressions:-1,primitives1:-1,this.complexity:-1,this.expressions:-1,this:-1";
+                            case 0 -> "primitives1:-1,this:-1";
                             case 1 -> "primitives1:-1";
                             default -> "primitives1:1";
                         };
@@ -254,7 +253,7 @@ public class Test_34_ExplicitConstructorInvocation extends CommonTestRunner {
                                 : "3+expressions.stream().mapToInt(Expression::getComplexity).sum()";
                         assertEquals(expected, d.currentValue().toString());
                         String linked = d.iteration() == 0
-                                ? "ExplicitConstructorInvocation_7.COMPLEXITY:-1,expressions:-1,primitives1:-1,this.expressions:-1,this.primitives:-1,this:-1"
+                                ? "ExplicitConstructorInvocation_7.COMPLEXITY:-1,expressions:-1,this.expressions:-1,this:-1"
                                 : "";
                         assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
                     }
@@ -305,7 +304,7 @@ public class Test_34_ExplicitConstructorInvocation extends CommonTestRunner {
                 assertEquals("0", d.statementId());
 
                 if (d.variable() instanceof ParameterInfo pi && "primitives1".equals(pi.name)) {
-                    String linked = d.iteration() == 0 ? "ExplicitConstructorInvocation_7_1.COMPLEXITY:-1,expressions:-1,this.complexity:-1,this.expressions:-1,this.primitives:-1,this:-1" : "this.primitives:1";
+                    String linked = d.iteration() == 0 ? "this.primitives:-1,this:-1" : "this.primitives:1";
                     assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
                 }
             }
@@ -469,7 +468,7 @@ public class Test_34_ExplicitConstructorInvocation extends CommonTestRunner {
                 if (d.variable() instanceof FieldReference fr && "condition".equals(fr.fieldInfo.name)) {
                     if ("parent".equals(fr.scope.toString())) {
                         assertCurrentValue(d, 4, "instance type Expression");
-                        String linked = d.iteration() < 4 ? "this.parent:-1" : "this.parent:2";
+                        String linked = d.iteration() < 4 ? "this.parent:-1,this:-1" : "this.parent:2";
                         assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
                         assertDv(d, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
                     } else if (fr.scopeIsThis()) {
@@ -504,7 +503,7 @@ public class Test_34_ExplicitConstructorInvocation extends CommonTestRunner {
                 assertDv(d.p(0), DV.TRUE_DV, Property.MODIFIED_VARIABLE); // !!!!!! IMPORTANT !!!!!!
             }
             if ("merge".equals(d.methodInfo().name) && "UnknownExpression".equals(d.methodInfo().typeInfo.simpleName)) {
-                String expected = d.iteration() == 0 ? "<m:merge>" : "/*inline merge*/new UnknownExpression(v||condition.other())";
+                String expected = d.iteration() == 0 ? "<m:merge>" : "new UnknownExpression(v||condition.other())";
                 // broken by Cause.SINGLE_RETURN_VALUE
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
                 assertDv(d, 1, MultiLevel.EFFECTIVELY_IMMUTABLE_HC_DV, Property.IMMUTABLE);

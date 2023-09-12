@@ -104,38 +104,27 @@ public class Test_Mutable extends CommonTestRunner {
         };
 
         testClass("Mutable_0", 0, 0, new DebugConfiguration.Builder()
-           //     .addEvaluationResultVisitor(evaluationResultVisitor)
-            //    .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-             //   .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                //     .addEvaluationResultVisitor(evaluationResultVisitor)
+                //    .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                //   .addStatementAnalyserVisitor(statementAnalyserVisitor)
                 .build());
     }
 
-    @Disabled("Overwriting precondition")
     @Test
     public void test_1() throws IOException {
         EvaluationResultVisitor evaluationResultVisitor = d -> {
             if ("method".equals(d.methodInfo().name)) {
                 if ("2".equals(d.statementId())) {
                     if (d.iteration() > 0) {
-                        assertEquals("set.contains(s)?s.length():set.contains(s)?1:0",
+                        assertEquals("set.contains(s)?s.length():0",
                                 d.evaluationResult().getExpression().toString());
-                        if (d.evaluationResult().getExpression() instanceof InlineConditional inline) {
-                            if (inline.condition instanceof MethodCall methodCall) {
-                                assertEquals("0,0", methodCall.getModificationTimes());
-                            } else fail();
-                            if (inline.ifFalse instanceof InlineConditional inline2) {
-                                if (inline2.condition instanceof MethodCall methodCall) {
-                                    assertEquals("1,0", methodCall.getModificationTimes());
-                                } else fail();
-                            } else fail();
-                        } else fail();
                     }
                 }
             }
             if ("static1".equals(d.methodInfo().name)) {
                 if ("2".equals(d.statementId())) {
                     String expected = d.iteration() < 2 ? "<m:method>==<m:length>"
-                            : "s.length()==(`m1.set`.contains(s)?s.length():`m1.set`.contains(s)?1:0)";
+                            : "s.length()==(new Mutable_1()).method(s)";
                     assertEquals(expected, d.evaluationResult().getExpression().toString());
                 }
             }
@@ -182,7 +171,7 @@ public class Test_Mutable extends CommonTestRunner {
             if ("static1".equals(d.methodInfo().name)) {
                 if ("m1".equals(d.variableName())) {
                     if ("1".equals(d.statementId())) {
-                        String expected = d.iteration() < 2 ? "<new:Mutable_1>" : "instance type Mutable_1";
+                        String expected = d.iteration() < 2 ? "<new:Mutable_1>" : "new Mutable_1()";
                         assertEquals(expected, d.currentValue().toString());
                     }
                 }
@@ -210,20 +199,19 @@ public class Test_Mutable extends CommonTestRunner {
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("method".equals(d.methodInfo().name)) {
                 assertDv(d, 1, DV.FALSE_DV, Property.MODIFIED_METHOD);
-                String expected = d.iteration() < 2 ? "<m:method>"
-                        : "/*inline method*/set.contains(s)?s.length():set.contains(s)?1:0";
+                String expected = d.iteration() < 2 ? "<m:method>" : "set.contains(s)?s.length():0";
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
             }
         };
         testClass("Mutable_1", 0, 0, new DebugConfiguration.Builder()
-               // .addEvaluationResultVisitor(evaluationResultVisitor)
-               // .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
-               // .addStatementAnalyserVisitor(statementAnalyserVisitor)
-               // .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addEvaluationResultVisitor(evaluationResultVisitor)
+                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .build());
     }
 
-    @Disabled("Method call's equality needs to include statement time")
+    //   @Disabled("Method call's equality needs to include statement time")
     @Test
     public void test_2() throws IOException {
         EvaluationResultVisitor evaluationResultVisitor = d -> {
@@ -258,14 +246,9 @@ public class Test_Mutable extends CommonTestRunner {
                         assertModificationTime(d, 1, 0);
                     }
                     if ("1".equals(d.statementId())) {
-                        String expected = d.iteration() == 0 ? "<f:set>"
-                                : "instance type HashSet<String>/*this.size()>=1&&this.contains(s)*/";
+                        String expected = d.iteration() == 0 ? "<f:set>" : "instance type HashSet<String>";
                         assertEquals(expected, d.currentValue().toString());
-                        if (d.iteration() > 0) {
-                            if (d.currentValue() instanceof PropertyWrapper pw) {
-                                assertEquals("this.size()>=1&&this.contains(s)", pw.state().toString());
-                            } else fail();
-                        }
+
                         assertDv(d, 1, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
                         assertModificationTime(d, 1, 1);
                     }

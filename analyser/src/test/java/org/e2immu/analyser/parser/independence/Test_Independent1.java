@@ -25,6 +25,7 @@ import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.ParameterInfo;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.ReturnVariable;
+import org.e2immu.analyser.model.variable.This;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.parser.CommonTestRunner;
 import org.e2immu.analyser.visitor.*;
@@ -54,18 +55,20 @@ public class Test_Independent1 extends CommonTestRunner {
                             : "nullable instance type Consumer<T>/*@Identity*//*@IgnoreMods*/";
                     assertEquals(expected, d.currentValue().toString());
                     assertDv(d, 1, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
-                    assertEquals("", d.variableInfo().getLinkedVariables().toString());
+                    assertEquals("this:4", d.variableInfo().getLinkedVariables().toString());
                 }
                 if (d.variable() instanceof FieldReference fr && "t".equals(fr.fieldInfo.name)) {
                     assertTrue(fr.scopeIsThis());
                     assertDv(d, 1, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
-                    assertEquals("consumer:3", d.variableInfo().getLinkedVariables().toString());
+                    assertLinked(d,
+                            it0("consumer:-1,this:-1"),
+                            it(1, "consumer:3,this:4"));
                 }
             }
         };
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("visit".equals(d.methodInfo().name)) {
-                assertDv(d.p(0), 1, MultiLevel.INDEPENDENT_HC_DV, Property.INDEPENDENT);
+                assertDv(d.p(0), 2, MultiLevel.INDEPENDENT_HC_DV, Property.INDEPENDENT);
                 // implicitly present:
                 assertDv(d.p(0), MultiLevel.IGNORE_MODS_DV, Property.IGNORE_MODIFICATIONS);
                 assertDv(d.p(0), DV.FALSE_DV, Property.MODIFIED_VARIABLE); // because of @IgnoreModifications
@@ -92,12 +95,12 @@ public class Test_Independent1 extends CommonTestRunner {
                 if (d.variable() instanceof FieldReference fr && "set".equals(fr.fieldInfo.name)) {
                     assertTrue(fr.scopeIsThis());
                     if ("1".equals(d.statementId())) {
-                        assertEquals("ts:4", d.variableInfo().getLinkedVariables().toString());
+                        assertEquals("this:3,ts:4", d.variableInfo().getLinkedVariables().toString());
                     }
                 }
                 if (d.variable() instanceof ParameterInfo pi && "ts".equals(pi.name)) {
                     if ("1".equals(d.statementId())) {
-                        assertEquals("this.set:4", d.variableInfo().getLinkedVariables().toString());
+                        assertEquals("this.set:4,this:4", d.variableInfo().getLinkedVariables().toString());
                     }
                 }
             }
@@ -146,7 +149,40 @@ public class Test_Independent1 extends CommonTestRunner {
 
     @Test
     public void test_3() throws IOException {
+        StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+            if ("Independent1_3".equals(d.methodInfo().name)) {
+                if (d.variable() instanceof FieldReference fr && "ts".equals(fr.fieldInfo.name)) {
+                    if ("0".equals(d.statementId())) {
+                        assertLinked(d, it(0, ""));
+                    }
+                    if ("1".equals(d.statementId())) {
+                        assertLinked(d, it(0, "content:4,this:3"));
+                    }
+                }
+                if (d.variable() instanceof ParameterInfo pi && "content".equals(pi.name)) {
+                    if ("0".equals(d.statementId())) {
+                        assertLinked(d, it(0, ""));
+                        assertDv(d, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                    }
+                    if ("1".equals(d.statementId())) {
+                        assertLinked(d, it(0, "this.ts:4,this:4"));
+                        assertDv(d, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                    }
+                }
+                if (d.variable() instanceof This) {
+                    if ("0".equals(d.statementId())) {
+                        assertLinked(d, it(0, ""));
+                        assertDv(d, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                    }
+                    if ("1".equals(d.statementId())) {
+                        assertLinked(d, it(0, ""));
+                        assertDv(d, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
+                    }
+                }
+            }
+        };
         testClass("Independent1_3", 0, 0, new DebugConfiguration.Builder()
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .build());
     }
 
@@ -169,14 +205,16 @@ public class Test_Independent1 extends CommonTestRunner {
                     if ("0.0.0".equals(d.statementId())) {
                         // StatementAnalysisImpl.evaluationOfForEachVariable generates the this.ts:-1,3
                         // the "accept" call generates consumer:-1,3
-                        String linked = d.iteration() == 0 ? "consumer:-1,this.ts:-1,this:-1" : "consumer:3,this.ts:3";
+                        String linked = d.iteration() == 0 ? "consumer:-1,this.ts:-1,this:-1"
+                                : "consumer:3,this.ts:3,this:3";
                         assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
                     }
                 }
                 if (d.variable() instanceof FieldReference fr && "ts".equals(fr.fieldInfo.name)) {
                     assertTrue(fr.scopeIsThis());
                     if ("0".equals(d.statementId())) {
-                        String linked = d.iteration() == 0 ? "consumer:-1,this:-1" : "consumer:4";
+                        String linked = d.iteration() == 0 ? "consumer:-1,this:-1"
+                                : "consumer:4,this:4";
                         assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
                     }
                 }
@@ -193,15 +231,14 @@ public class Test_Independent1 extends CommonTestRunner {
             if ("visit".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof ParameterInfo pi && "consumer".equals(pi.name)) {
                     if ("0.0.0".equals(d.statementId())) {
-                        String linked = d.iteration() == 0 ? "t:-1,this.ts:-1,this:-1,tt:-1" : "";
-                        assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
+                        assertEquals("", d.variableInfo().getLinkedVariables().toString());
                     }
                 }
                 if ("t".equals(d.variableName())) {
                     if ("0.0.0".equals(d.statementId())) {
                         String linked = switch (d.iteration()) {
-                            case 0 -> "consumer:-1,this.ts:-1,this:-1,tt:-1";
-                            default -> "this.ts:3";
+                            case 0 -> "this.ts:-1,this:-1";
+                            default -> "this.ts:3,this:3";
                         };
                         assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
                     }
@@ -249,7 +286,7 @@ public class Test_Independent1 extends CommonTestRunner {
             if ("ImmutableArrayOfTransparentOnes".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof ParameterInfo pi && "generator".equals(pi.name)) {
                     if ("1".equals(d.statementId())) {
-                        String linked = d.iteration() < 2 ? "this.ones:-1" : "this.ones:4";
+                        String linked = d.iteration() < 2 ? "this.ones:-1,this:-1" : "this.ones:4,this:4";
                         assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
                     }
                 }
@@ -265,7 +302,7 @@ public class Test_Independent1 extends CommonTestRunner {
             }
             if ("apply".equals(d.methodInfo().name)) {
                 assertEquals("$1", d.methodInfo().typeInfo.simpleName);
-                String expected = d.iteration() <= 1 ? "<m:apply>" : "/*inline apply*/generator.get()";
+                String expected = d.iteration() <= 1 ? "<m:apply>" : "generator.get()";
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
                 List<Variable> vars = d.methodAnalysis().getSingleReturnValue().variables();
                 assertEquals("[org.e2immu.analyser.parser.independence.testexample.Independent1_5.ImmutableArrayOfTransparentOnes.ImmutableArrayOfTransparentOnes(org.e2immu.analyser.parser.independence.testexample.Independent1_5.One<Integer>[],java.util.function.Supplier<org.e2immu.analyser.parser.independence.testexample.Independent1_5.One<Integer>>):1:generator]", vars.toString());
@@ -291,15 +328,13 @@ public class Test_Independent1 extends CommonTestRunner {
                 if (d.variable() instanceof ParameterInfo pi && "consumer".equals(pi.name)) {
                     if ("0.0.0".equals(d.statementId())) {
                         assertLinked(d,
-                                it0("one:-1,this.ones:-1,this:-1"),
-                                it1("one:-1,this.ones:-1"),
+                                it(0, 1, "one:-1,this.ones:-1,this:-1"),
                                 it(2, ""));
                     }
                     if ("0".equals(d.statementId())) {
                         assertLinked(d,
-                                it0("this.ones:-1,this:-1"),
-                                it1("this.ones:-1"),
-                                it(2, "this.ones:4"));
+                                it(0, 1, "this.ones:-1,this:-1"),
+                                it(2, "this.ones:4,this:4"));
                     }
                 }
                 if ("one".equals(d.variableName())) {
@@ -307,22 +342,20 @@ public class Test_Independent1 extends CommonTestRunner {
                         VariableInfo eval0 = d.variableInfoContainer().getPreviousOrInitial();
                         // set in StatementAnalysisImpl.evaluationOfForEachVariable
                         assertLinked(d, eval0.getLinkedVariables(),
-                                it0("this.ones:-1,this:-1"),
-                                it1("this.ones:-1"),
-                                it(2, "this.ones:3"));
+                                it(0, 1, "this.ones:-1,this:-1"),
+                                it(2, "this.ones:3,this:3"));
 
                         // consumer comes in via the method call, this.ones via statement 0, evaluation
                         assertLinked(d,
-                                it0("consumer:-1,this.ones:-1,this:-1"),
-                                it1("consumer:-1,this.ones:-1"),
-                                it(2, "consumer:3,this.ones:3"));
+                                it(0, 1, "consumer:-1,this.ones:-1,this:-1"),
+                                it(2, "consumer:3,this.ones:3,this:3"));
                     }
                 }
             }
             if ("ImmutableArrayOfOnes".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof ParameterInfo pi && "generator".equals(pi.name)) {
                     if ("1".equals(d.statementId())) {
-                        String linked = d.iteration() < 2 ? "this.ones:-1" : "this.ones:4";
+                        String linked = d.iteration() < 2 ? "this.ones:-1,this:-1" : "this.ones:4,this:4";
                         assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
                     }
                 }
@@ -331,8 +364,8 @@ public class Test_Independent1 extends CommonTestRunner {
                 if (d.variable() instanceof ReturnVariable) {
                     String linked = switch (d.iteration()) {
                         case 0 -> "index:-1,ones[index]:0,this.ones:-1,this:-1";
-                        case 1 -> "ones[index]:0,this.ones:-1";
-                        default -> "ones[index]:0,this.ones:3";
+                        case 1 -> "ones[index]:0,this.ones:-1,this:-1";
+                        default -> "ones[index]:0,this.ones:3,this:3";
                     };
                     assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
                 }
@@ -346,9 +379,8 @@ public class Test_Independent1 extends CommonTestRunner {
             }
             if ("apply".equals(d.methodInfo().name)) {
                 assertEquals("$1", d.methodInfo().typeInfo.simpleName);
-                String expected = d.iteration() < 2 ? "<m:apply>" : "/*inline apply*/generator.get()";
-                assertEquals(expected,
-                        d.methodAnalysis().getSingleReturnValue().toString());
+                String expected = d.iteration() < 2 ? "<m:apply>" : "generator.get()";
+                assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
                 List<Variable> vars = d.methodAnalysis().getSingleReturnValue().variables();
                 assertEquals("[org.e2immu.analyser.parser.independence.testexample.Independent1_6.ImmutableArrayOfOnes.ImmutableArrayOfOnes(int,java.util.function.Supplier<org.e2immu.analyser.parser.independence.testexample.Independent1_6.One<T>>):1:generator]", vars.toString());
             }
@@ -364,9 +396,8 @@ public class Test_Independent1 extends CommonTestRunner {
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
             if ("ones".equals(d.fieldInfo().name)) {
                 assertLinked(d, d.fieldAnalysis().getLinkedVariables(),
-                        it0("consumer:-1,generator:-1,this:-1"),
-                        it1("consumer:-1,generator:-1"),
-                        it(2, "generator:4"));
+                        it(0, 1, "consumer:-1,generator:-1,this:-1"),
+                        it(2, "generator:4,this:3"));
             }
             if ("t".equals(d.fieldInfo().name)) {
                 assertEquals("t:0", d.fieldAnalysis().getLinkedVariables().toString());
@@ -429,7 +460,7 @@ public class Test_Independent1 extends CommonTestRunner {
                 .build());
     }
 
-    @Disabled("Overwriting variable value")
+    @Disabled("Not reaching conclusion")
     @Test
     public void test_9() throws IOException {
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
@@ -442,7 +473,7 @@ public class Test_Independent1 extends CommonTestRunner {
             if ("stream".equals(d.methodInfo().name)) {
                 assertEquals("0", d.statementId());
                 if (d.variable() instanceof ReturnVariable) {
-                    String linked = d.iteration() < 14 ? "this.map:-1" : "this.map:4";
+                    String linked = d.iteration() < 14 ? "this.map:-1,this:-1" : "this.map:4,this:4";
                     assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
                 }
             }
@@ -464,7 +495,7 @@ public class Test_Independent1 extends CommonTestRunner {
             if ("of".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof ReturnVariable) {
                     if ("2".equals(d.statementId())) {
-                        String linked = d.iteration() < 7 ? "maps:-1,result:0" : "maps:4,result:0";
+                        String linked = d.iteration() < 7 ? "maps:-1,result:0" : "result:0";
                         assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
                     }
                 }
@@ -472,18 +503,17 @@ public class Test_Independent1 extends CommonTestRunner {
         };
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("stream".equals(d.methodInfo().name)) {
-                String expected = d.iteration() < 14 ? "<m:stream>"
-                        : "/*inline stream*/map.entrySet().stream().map(/*inline apply*/new ImmutableEntry<>(e.getKey(),e.getValue()))";
+                String expected = d.iteration() < 14 ? "<m:stream>" : "map.entrySet().stream().map(instance type $1)";
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
-                assertDv(d, 14, MultiLevel.INDEPENDENT_HC_DV, Property.INDEPENDENT);
+                assertDv(d, BIG, MultiLevel.INDEPENDENT_HC_DV, Property.INDEPENDENT);
                 if (d.iteration() >= 14) {
                     assertEquals("Type java.util.stream.Stream<org.e2immu.analyser.parser.independence.testexample.Independent1_9.ImmutableEntry<T>>",
                             d.methodAnalysis().getSingleReturnValue().returnType().toString());
                 }
             }
             if ("entries".equals(d.methodInfo().name)) {
-                assertDv(d, 14, MultiLevel.EFFECTIVELY_IMMUTABLE_HC_DV, Property.IMMUTABLE);
-                assertDv(d, 14, MultiLevel.INDEPENDENT_HC_DV, Property.INDEPENDENT);
+                assertDv(d, BIG, MultiLevel.EFFECTIVELY_IMMUTABLE_HC_DV, Property.IMMUTABLE);
+                assertDv(d, BIG, MultiLevel.INDEPENDENT_HC_DV, Property.INDEPENDENT);
             }
             if ("of".equals(d.methodInfo().name)) {
                 /*
@@ -491,7 +521,7 @@ public class Test_Independent1 extends CommonTestRunner {
                  return value rather than at the fields.  A complication will be that variables do not link to the return
                  value currently.
                  */
-                assertDv(d.p(0), 17, MultiLevel.INDEPENDENT_DV, Property.INDEPENDENT);
+                assertDv(d.p(0), 8, MultiLevel.INDEPENDENT_DV, Property.INDEPENDENT);
             }
         };
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
@@ -502,14 +532,14 @@ public class Test_Independent1 extends CommonTestRunner {
         };
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("Independent1_9".equals(d.typeInfo().simpleName)) {
-                assertDv(d, 14, MultiLevel.EFFECTIVELY_IMMUTABLE_HC_DV, Property.IMMUTABLE);
+                assertDv(d, BIG, MultiLevel.EFFECTIVELY_IMMUTABLE_HC_DV, Property.IMMUTABLE);
             }
         };
         testClass("Independent1_9", 0, 0, new DebugConfiguration.Builder()
-                //    .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-                //   .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
-                //  .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
-                //  .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
+                // .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+                .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
                 .build());
     }
 
@@ -541,7 +571,7 @@ public class Test_Independent1 extends CommonTestRunner {
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("of".equals(d.methodInfo().name)) {
                 String expected = d.iteration() < 12 ? "<m:of>"
-                        : "/*inline of*/null==maps||maps.length<1?new Independent1_9_1<>():instance type Independent1_9_1<T>";
+                        : "null==maps||maps.length<1?new Independent1_9_1<>():instance type Independent1_9_1<T>";
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
                 assertDv(d, MultiLevel.INDEPENDENT_HC_DV, Property.INDEPENDENT);
                 assertDv(d, 12, MultiLevel.EFFECTIVELY_IMMUTABLE_HC_DV, Property.IMMUTABLE);
@@ -549,13 +579,13 @@ public class Test_Independent1 extends CommonTestRunner {
                 assertDv(d.p(0), 12, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
             }
             if ("stream".equals(d.methodInfo().name)) {
-                String expected = d.iteration() < 10 ? "<m:stream>" : "/*inline stream*/map.keySet().stream()";
+                String expected = d.iteration() < 10 ? "<m:stream>" : "map.keySet().stream()";
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
                 assertDv(d, 10, MultiLevel.INDEPENDENT_HC_DV, Property.INDEPENDENT);
                 assertDv(d, 10, MultiLevel.MUTABLE_DV, Property.IMMUTABLE);
             }
             if ("keys".equals(d.methodInfo().name)) {
-                String expected = d.iteration() < 10 ? "<m:keys>" : "/*inline keys*/`map`.keySet().stream().toList()";
+                String expected = d.iteration() < 10 ? "<m:keys>" : "this.stream().toList()";
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
                 assertDv(d, 10, MultiLevel.INDEPENDENT_HC_DV, Property.INDEPENDENT);
                 assertDv(d, 10, MultiLevel.EFFECTIVELY_IMMUTABLE_HC_DV, Property.IMMUTABLE);
@@ -603,28 +633,28 @@ public class Test_Independent1 extends CommonTestRunner {
                 if (d.variable() instanceof ParameterInfo pi && "other".equals(pi.name)) {
                     assertLinked(d,
                             it0("other.list:-1,this.list:-1,this:-1"),
-                            it(1, "other.list:4,this.list:4"));
+                            it(1, "other.list:4,this.list:4,this:4"));
                 }
             }
             if ("addAllCC".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof ParameterInfo pi && "other".equals(pi.name)) {
                     assertLinked(d,
                             it0("other.list:-1,this.list:-1,this:-1"),
-                            it(1, "other.list:4,this.list:4"));
+                            it(1, "other.list:4,this.list:4,this:4"));
                 }
             }
             if ("addAllMR".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof ParameterInfo pi && "other".equals(pi.name)) {
                     assertLinked(d,
-                            it0("other.list:-1,this.list:-1"),
-                            it(1, "other.list:4,this.list:4"));
+                            it0("other.list:-1,this.list:-1,this:-1"),
+                            it(1, "other.list:4,this.list:4,this:4"));
                 }
             }
             if ("addAllMR2".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof ParameterInfo pi && "other".equals(pi.name)) {
                     assertLinked(d,
                             it0("other.list:-1,this.list:-1,this:-1"),
-                            it(1, "other.list:4,this.list:4"));
+                            it(1, "other.list:4,this.list:4,this:4"));
                 }
             }
         };
@@ -639,8 +669,7 @@ public class Test_Independent1 extends CommonTestRunner {
         EvaluationResultVisitor evaluationResultVisitor = d -> {
             if ("stream2".equals(d.methodInfo().name)) {
                 if ("2".equals(d.statementId())) {
-                    String expected = d.iteration() < 2 ? "<m:map>"
-                            : "map.entrySet().stream().map(/*inline apply*/new Entry<>(e.getKey(),e.getValue()))";
+                    String expected = d.iteration() < 15 ? "<m:map>" : "map.entrySet().stream().map(instance type $2)";
                     assertEquals(expected, d.evaluationResult().getExpression().toString());
                 }
             }
@@ -648,32 +677,36 @@ public class Test_Independent1 extends CommonTestRunner {
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("stream".equals(d.methodInfo().name)) {
                 if ("entries".equals(d.variableName()) && "0".equals(d.statementId())) {
-                    String expected = d.iteration() == 0 ? "this.map:-1" : "this.map:2";
+                    String expected = d.iteration() < 15
+                            ? "this.map:-1,this:-1"
+                            : "this.map:2,this:3";
                     assertEquals(expected, d.variableInfo().getLinkedVariables().toString());
                 }
                 if ("stream".equals(d.variableName()) && "1".equals(d.statementId())) {
-                    String expected = d.iteration() == 0 ? "entries:-1,this.map:-1" : "entries:4,this.map:4";
+                    String expected = d.iteration() < 15
+                            ? "entries:-1,this.map:-1,this:-1"
+                            : "entries:4,this.map:4,this:4";
                     assertEquals(expected, d.variableInfo().getLinkedVariables().toString());
                 }
                 if (d.variable() instanceof ReturnVariable && "2".equals(d.statementId())) {
-                    String expected = d.iteration() < 2
-                            ? "entries:-1,stream:-1,this.map:-1"
-                            : "entries:4,stream:2,this.map:4";
+                    String expected = d.iteration() < 15
+                            ? "entries:-1,stream:-1,this.map:-1,this:-1"
+                            : "entries:4,stream:2,this.map:4,this:4";
                     assertEquals(expected, d.variableInfo().getLinkedVariables().toString());
                 }
             }
 
             if ("stream2".equals(d.methodInfo().name)) {
                 if ("mapped".equals(d.variableName()) && "2".equals(d.statementId())) {
-                    String expected = d.iteration() < 2
-                            ? "entries:-1,stream:-1,this.map:-1"
-                            : "entries:4,stream:2,this.map:4";
+                    String expected = d.iteration() < 15
+                            ? "entries:-1,stream:-1,this.map:-1,this:-1"
+                            : "entries:4,stream:2,this.map:4,this:4";
                     assertEquals(expected, d.variableInfo().getLinkedVariables().toString());
                 }
                 if (d.variable() instanceof ReturnVariable && "3".equals(d.statementId())) {
-                    String expected = d.iteration() < 2
-                            ? "entries:-1,mapped:0,stream:-1,this.map:-1"
-                            : "entries:4,mapped:0,stream:2,this.map:4";
+                    String expected = d.iteration() < 15
+                            ? "entries:-1,mapped:0,stream:-1,this.map:-1,this:-1"
+                            : "entries:4,mapped:0,stream:2,this.map:4,this:4";
                     assertEquals(expected, d.variableInfo().getLinkedVariables().toString());
                 }
             }

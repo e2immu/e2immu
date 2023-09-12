@@ -445,7 +445,7 @@ public class ConstructorCall extends BaseExpression implements HasParameterExpre
         }
 
         // check state changes of companion methods
-        Expression instance;
+     /*   Expression instance;
         if (constructor != null) {
             MethodCall.ModReturn modReturn = MethodCall.checkCompanionMethodsModifying(identifier, res.k, context,
                     constructor, null, this, res.v, this, DV.TRUE_DV);
@@ -461,8 +461,8 @@ public class ConstructorCall extends BaseExpression implements HasParameterExpre
             }
         } else {
             instance = this;
-        }
-        res.k.setExpression(instance);
+        }*/
+        res.k.setExpression(this);
 
         if (constructor != null &&
                 (!constructor.methodResolution.isSet() || constructor.methodResolution.get().allowsInterrupts())) {

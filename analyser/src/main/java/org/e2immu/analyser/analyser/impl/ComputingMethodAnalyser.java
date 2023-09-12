@@ -572,6 +572,8 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
                 assert value.isDelayed() || value instanceof VariableExpression ve && ve.variable().equals(getter);
                 methodAnalysis.setGetSetField(getter.fieldInfo);
             }
+
+            // FIXME in the same PrimaryType, switch to field. Outside, switch to getter
         }
 
         ParameterizedType concreteReturnType = value.isInstanceOf(NullConstant.class) ? methodInfo.returnType() : value.returnType();
@@ -628,6 +630,10 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
 
         // try to compute the dynamic immutable status of value
 
+        // FIXME if non-modifying IN iteration 0, make in-line of NON-EVAL, for expansion
+        //  within the PT if there are no fields
+        //  no expansion outside of the PT if there are any instance fields
+        //  return DONE to ensure we don't come back here; nne will have to wait
         Expression valueBeforeInlining = value;
         if (!value.isConstant()) {
             DV modifiesInstance = methodAnalysis.getProperty(MODIFIED_METHOD_ALT_TEMP);
@@ -646,10 +652,10 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
                  whether the result is something sensible or not.
                  */
                 assert value.isDone();
-                value = createInlinedMethod(value);
-                if (value.isDelayed()) {
-                    return delayedSrv(concreteReturnType, value, value.causesOfDelay(), true);
-                }
+            //    value = createInlinedMethod(value);
+            //    if (value.isDelayed()) {
+            //        return delayedSrv(concreteReturnType, value, value.causesOfDelay(), true);
+            //    }
             }
         }
         assert notNullExpression.isDone();

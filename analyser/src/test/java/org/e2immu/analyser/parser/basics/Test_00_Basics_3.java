@@ -228,7 +228,7 @@ public class Test_00_Basics_3 extends CommonTestRunner {
                         default -> "s$0";
                     };
                     assertEquals(expectValue, d.currentValue().toString());
-                    String linked = d.iteration() < 2 ? "this.s:0,this:-1" : "this.s:0";
+                    String linked = "this.s:0,this:3";
                     assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
 
                     // copied from S

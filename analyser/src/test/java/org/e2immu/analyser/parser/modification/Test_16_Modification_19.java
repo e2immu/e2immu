@@ -24,14 +24,12 @@ import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.This;
 import org.e2immu.analyser.parser.CommonTestRunner;
-import org.e2immu.analyser.visitor.FieldAnalyserVisitor;
-import org.e2immu.analyser.visitor.MethodAnalyserVisitor;
-import org.e2immu.analyser.visitor.StatementAnalyserVariableVisitor;
-import org.e2immu.analyser.visitor.TypeAnalyserVisitor;
+import org.e2immu.analyser.visitor.*;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 
+import static org.e2immu.analyser.parser.VisitorTestSupport.IterationInfo.*;
 import static org.junit.jupiter.api.Assertions.*;
 
 /*
@@ -75,7 +73,7 @@ public class Test_16_Modification_19 extends CommonTestRunner {
                 }
                 if (d.variable() instanceof FieldReference fr && "s2".equals(fr.fieldInfo.name)) {
                     if ("0".equals(d.statementId())) {
-                        String link = d.iteration() == 0 ? "c:-1" : "c:2";
+                        String link = d.iteration() < 2 ? "c:-1,this:-1" : "c:2,this:3";
                         assertEquals(link, d.variableInfo().getLinkedVariables().toString());
                         assertDv(d, 2, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
                     }
@@ -85,13 +83,13 @@ public class Test_16_Modification_19 extends CommonTestRunner {
                         String expectedDelay = switch (d.iteration()) {
                             case 0 -> "initial:this.s2@Method_example1_0-C";
                             case 1 -> "cm@Parameter_setC;mom@Parameter_setC";
-                            case 2 -> "cm@Parameter_c;cm@Parameter_d;initial:this.s2@Method_example1_0-C";
+                            case 2 -> "break_mom_delay@Parameter_setC;cm@Parameter_c;cm@Parameter_d;cm@Parameter_setC;initial:this.s2@Method_example1_0-C;mom@Parameter_setC";
                             default -> "xxx";
                         };
                         assertCurrentValue(d, 3, expectedDelay, "new C1(s2)");
 
-                        String link = d.iteration() == 0 ? "this.s2:-1" : "this.s2:2";
-                        assertEquals(link, d.variableInfo().getLinkedVariables().toString());
+                        assertLinked(d, it(0, 1, "this.s2:-1,this:-1"),
+                                it(2, "this.s2:2,this:3"));
 
                         assertDv(d, 2, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
                     }
@@ -106,13 +104,13 @@ public class Test_16_Modification_19 extends CommonTestRunner {
                         };
                         assertEquals(expectValue, d.currentValue().toString());
 
-                        String links = d.iteration() < 3 ? "c:-1,this.s2:-1" : "c:2,this.s2:2";
+                        String links = d.iteration() < 3 ? "c:-1,this.s2:-1,this:-1" : "c:2,this.s2:2,this:3";
                         assertEquals(links, d.variableInfo().getLinkedVariables().toString());
 
                         assertNotNull(fr.scopeVariable);
                         assertEquals("c", fr.scopeVariable.toString());
 
-                        String cmDelay = "cm@Parameter_c;initial:this.s2@Method_example1_0-C";
+                        String cmDelay = "cm@Parameter_c;cm@Parameter_setC;initial:this.s2@Method_example1_0-C;mom@Parameter_setC";
                         assertDv(d, cmDelay, 1, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
                     }
                 }
@@ -155,8 +153,9 @@ public class Test_16_Modification_19 extends CommonTestRunner {
                 assertEquals("setC", d.fieldAnalysis().getValue().toString());
                 assertTrue(d.fieldAnalysis().getValue().isDone());
 
-                String linked = d.iteration() < 3 ? "c:-1,localD:-1,setC:-1,this.s2:-1" : "setC:0,this.s2:2";
-                assertEquals(linked, d.fieldAnalysis().getLinkedVariables().toString());
+                assertLinked(d, d.fieldAnalysis().getLinkedVariables(),
+                        it(0, 2, "c:-1,localD:-1,setC:-1,this.s2:-1,this:-1"),
+                        it(3, "setC:0,this.s2:2,this:3"));
                 assertEquals(d.iteration() >= 3,
                         ((FieldAnalysisImpl.Builder) d.fieldAnalysis()).allLinksHaveBeenEstablished().isDone());
 
@@ -173,11 +172,14 @@ public class Test_16_Modification_19 extends CommonTestRunner {
             }
         };
 
+        BreakDelayVisitor breakDelayVisitor = d -> assertEquals("-----", d.delaySequence());
+
         testClass("Modification_19", 0, 2, new DebugConfiguration.Builder()
                         .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                         .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                         .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                         .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
+                        .addBreakDelayVisitor(breakDelayVisitor)
                         .build(),
                 new AnalyserConfiguration.Builder().setComputeFieldAnalyserAcrossAllMethods(true).build());
     }

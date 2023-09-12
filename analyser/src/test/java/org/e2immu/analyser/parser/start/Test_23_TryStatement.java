@@ -89,7 +89,7 @@ public class Test_23_TryStatement extends CommonTestRunner {
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("method".equals(d.methodInfo().name)) {
                 Expression srv = d.methodAnalysis().getSingleReturnValue();
-                String expected = d.iteration() == 0 ? "<m:method>" : "/*inline method*/instance type String";
+                String expected = d.iteration() == 0 ? "<m:method>" : "instance type String";
                 assertEquals(expected, srv.toString());
             }
         };
@@ -254,11 +254,9 @@ public class Test_23_TryStatement extends CommonTestRunner {
 
     @Test
     public void test_10() throws IOException {
-
-        // no preconditions
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("method".equals(d.methodInfo().name)) {
-                assertEquals("Precondition[expression=true, causes=[]]",
+                assertEquals("Precondition[expression=null==this.catchThrowable(), causes=[escape]]",
                         d.methodAnalysis().getPrecondition().toString());
             }
         };

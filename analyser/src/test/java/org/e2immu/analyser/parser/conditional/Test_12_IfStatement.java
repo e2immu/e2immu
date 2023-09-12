@@ -124,12 +124,14 @@ public class Test_12_IfStatement extends CommonTestRunner {
                 if ("0".equals(d.statementId())) {
                     String expectValue = d.iteration() == 0 ? "<m:get>" : "map.get(label3)";
                     assertEquals(expectValue, d.currentValue().toString());
-                    String linked = d.iteration() == 0 ? "label3:-1,this.map:-1" : "";
+                    String linked = d.iteration() == 0 ? "label3:-1,this.map:-1,this:-1" : "this:4";
                     assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
                 }
             }
             if ("get2".equals(d.methodInfo().name) && d.variable() instanceof This) {
-                assertDv(d, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                if ("0".equals(d.statementId())) {
+                    assertDv(d, 1, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                }
             }
             if ("get1".equals(d.methodInfo().name) && d.variable() instanceof ReturnVariable) {
                 String expected = d.iteration() == 0
@@ -142,15 +144,15 @@ public class Test_12_IfStatement extends CommonTestRunner {
 
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("get1".equals(d.methodInfo().name) && d.iteration() >= 2) {
-                assertEquals("/*inline get1*/null==map.get(label1)?defaultValue1:map.get(label1)",
+                assertEquals("null==map.get(label1)?defaultValue1:map.get(label1)",
                         d.methodAnalysis().getSingleReturnValue().toString());
             }
             if ("get2".equals(d.methodInfo().name) && d.iteration() >= 2) {
-                assertEquals("/*inline get2*/null==map.get(label2)?defaultValue2:map.get(label2)",
+                assertEquals("null==map.get(label2)?defaultValue2:map.get(label2)",
                         d.methodAnalysis().getSingleReturnValue().toString());
             }
             if ("get3".equals(d.methodInfo().name) && d.iteration() >= 2) {
-                assertEquals("/*inline get3*/null==map.get(label3)?defaultValue3:map.get(label3)",
+                assertEquals("null==map.get(label3)?defaultValue3:map.get(label3)",
                         d.methodAnalysis().getSingleReturnValue().toString());
             }
         };
@@ -213,15 +215,15 @@ public class Test_12_IfStatement extends CommonTestRunner {
 
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("get1".equals(d.methodInfo().name) && d.iteration() >= 2) {
-                assertEquals("/*inline get1*/null==map.get(label1)?defaultValue1:map.get(label1)",
+                assertEquals("null==map.get(label1)?defaultValue1:map.get(label1)",
                         d.methodAnalysis().getSingleReturnValue().toString());
             }
             if ("get2".equals(d.methodInfo().name) && d.iteration() >= 2) {
-                assertEquals("/*inline get2*/null==map.get(label2)?defaultValue2:map.get(label2)",
+                assertEquals("null==map.get(label2)?defaultValue2:map.get(label2)",
                         d.methodAnalysis().getSingleReturnValue().toString());
             }
             if ("get3".equals(d.methodInfo().name) && d.iteration() >= 2) {
-                assertEquals("/*inline get3*/null==map.get(label3)?defaultValue3:map.get(label3)",
+                assertEquals("null==map.get(label3)?defaultValue3:map.get(label3)",
                         d.methodAnalysis().getSingleReturnValue().toString());
             }
         };
@@ -292,8 +294,7 @@ public class Test_12_IfStatement extends CommonTestRunner {
         };
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("pad".equals(d.methodInfo().name)) {
-                assertEquals("/*inline pad*/i<10?\"\"+i:<return value>", d.methodAnalysis().getSingleReturnValue().toString());
-                assertTrue(d.methodAnalysis().getSingleReturnValue() instanceof InlinedMethod);
+                assertEquals("i<10?\"\"+i:<return value>", d.methodAnalysis().getSingleReturnValue().toString());
             }
         };
         testClass("IfStatement_7", 0, 0, new DebugConfiguration.Builder()
@@ -307,8 +308,7 @@ public class Test_12_IfStatement extends CommonTestRunner {
     public void test_8() throws IOException {
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("pad".equals(d.methodInfo().name)) {
-                assertEquals("/*inline pad*/i<10?\"\"+i:<return value>", d.methodAnalysis().getSingleReturnValue().toString());
-                assertTrue(d.methodAnalysis().getSingleReturnValue() instanceof InlinedMethod);
+                assertEquals("i<10?\"\"+i:<return value>", d.methodAnalysis().getSingleReturnValue().toString());
             }
         };
         testClass("IfStatement_8", 0, 0, new DebugConfiguration.Builder()
@@ -341,7 +341,7 @@ public class Test_12_IfStatement extends CommonTestRunner {
                 if (d.variable() instanceof ReturnVariable) {
                     if ("0".equals(d.statementId())) {
                         String expected = d.iteration() == 0
-                                ? "<null-check>?null:<return value>" : "null==in?null:<return value>";
+                                ? "<null-check>?null:<return value>" : "null==IfStatement_9.expensiveCall(in)?null:<return value>";
                         assertEquals(expected, d.currentValue().toString());
                     }
                 }
@@ -365,7 +365,7 @@ public class Test_12_IfStatement extends CommonTestRunner {
             }
             if ("method".equals(d.methodInfo().name)) {
                 if ("0".equals(d.statementId())) {
-                    String state = d.iteration() == 0 ? "!<null-check>" : "null!=in";
+                    String state = d.iteration() == 0 ? "!<null-check>" : "null!=IfStatement_9.expensiveCall(in)";
                     assertEquals(state, d.state().toString());
                 }
             }
@@ -373,12 +373,12 @@ public class Test_12_IfStatement extends CommonTestRunner {
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("expensiveCall".equals(d.methodInfo().name)) {
                 String expected = d.iteration() == 0 ? "<m:expensiveCall>"
-                        : "/*inline expensiveCall*/null==in?null:in.isEmpty()?\"empty\":Character.isAlphabetic(in.charAt(0))?in:\"non-alpha\"";
+                        : "null==in?null:in.isEmpty()?\"empty\":Character.isAlphabetic(in.charAt(0))?in:\"non-alpha\"";
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
             }
             if ("method".equals(d.methodInfo().name)) {
                 String expected = d.iteration() < 2 ? "<m:method>"
-                        : "/*inline method*/null==in?null:\"Not null: \"+(in.isEmpty()?\"empty\":Character.isAlphabetic(in.charAt(0))?in:\"non-alpha\")";
+                        : "null==IfStatement_9.expensiveCall(in)?null:\"Not null: \"+IfStatement_9.expensiveCall(in)";
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
             }
         };

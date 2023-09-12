@@ -31,6 +31,7 @@ import org.junit.jupiter.api.Test;
 import java.io.IOException;
 import java.util.Set;
 
+import static org.e2immu.analyser.parser.VisitorTestSupport.IterationInfo.it;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -72,7 +73,7 @@ public class Test_25_FieldReference extends CommonTestRunner {
                 assertEquals("Map.of(\"X\",new ChangeData(Map.of(\"3\",3)))", d.fieldAnalysis().getValue().toString());
 
                 // the field is not linked to any other field or parameter
-                assertEquals("", d.fieldAnalysis().getLinkedVariables().toString());
+                assertLinked(d, d.fieldAnalysis().getLinkedVariables(), it(0, 1, "this:-1"), it(2, ""));
 
                 // it is not linked, it is not exposed; and its dynamic type is immutable IF we know that Map.of()
                 // returns an immutable map. but we don't. HOWEVER, because there are no Annotated APIs, there is no info
@@ -87,15 +88,14 @@ public class Test_25_FieldReference extends CommonTestRunner {
                 assertDv(d, 1, DV.FALSE_DV, Property.MODIFIED_METHOD);
                 assertDv(d, DV.FALSE_DV, Property.IDENTITY);
                 assertDv(d.p(0), 1, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
-                String expected = d.iteration() == 0 ? "<m:get>" : "/*inline get*/`properties`.get(s)";
+                String expected = d.iteration() == 0 ? "<m:get>" : "this.properties().get(s)";
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
             }
             if ("properties".equals(d.methodInfo().name) && "ChangeData".equals(d.methodInfo().typeInfo.simpleName)) {
                 assertDv(d, DV.FALSE_DV, Property.MODIFIED_METHOD);
                 assertDv(d, DV.FALSE_DV, Property.IDENTITY);
-                String expected = d.iteration() == 0 ? "<m:properties>" : "/*inline properties*/properties";
+                String expected = d.iteration() == 0 ? "<m:properties>" : "properties";
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
-                if (d.iteration() > 0) assertTrue(d.methodAnalysis().getSingleReturnValue() instanceof InlinedMethod);
             }
         };
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {

@@ -31,9 +31,9 @@ public enum Enum_4 {
         return cnt;
     }
 
-    @ImmutableContainer("/*inline highest*/Enum_4.THREE")
+    @ImmutableContainer
     public static Enum_4 highest() {
-        assert 1 == ONE.getCnt(); // warning: always true
+        assert 1 == ONE.getCnt(); // inlining disabled, no warning
         assert 2 == TWO.cnt;      // warning: always true
         return THREE;
     }

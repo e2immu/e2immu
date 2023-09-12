@@ -75,7 +75,7 @@ public class Test_56_Fluent extends CommonTestRunner {
                         assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, d.getProperty(Property.NOT_NULL_EXPRESSION));
                     }
                     if ("1".equals(d.statementId())) {
-                        String value = "instanceCopy instanceof Fluent_0?instanceCopy/*(Fluent_0)*/:new Fluent_0(`instance type Builder.value`)";
+                        String value = "instanceCopy instanceof Fluent_0?instanceCopy/*(Fluent_0)*/:(new Builder()/*@NotNull*/).build()";
                         assertCurrentValue(d, 27, value);
 
                         String expectLinks = d.iteration() < 27 ? "instanceCopy:-1" : "instanceCopy:1";
@@ -100,15 +100,13 @@ public class Test_56_Fluent extends CommonTestRunner {
                         assertDv(d, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
                     }
                     if ("2".equals(d.statementId())) {
-                        String linked = d.iteration() == 0 ? "instanceFrom:-1" : "";
-                        assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
+                        assertEquals("", d.variableInfo().getLinkedVariables().toString());
                         assertDv(d, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
                     }
                 }
                 if (d.variable() instanceof ReturnVariable) {
                     if ("2".equals(d.statementId())) {
-                        String expected = d.iteration() == 0 ? "instanceFrom:-1,this:-1" : "this:1";
-                        assertEquals(expected, d.variableInfo().getLinkedVariables().toString());
+                        assertEquals("this:1", d.variableInfo().getLinkedVariables().toString());
                     }
                 }
             }
@@ -141,7 +139,7 @@ public class Test_56_Fluent extends CommonTestRunner {
                 assertDv(d, DV.FALSE_DV, Property.MODIFIED_METHOD);
 
                 String expect = d.iteration() < 27 ? "<m:copyOf>"
-                        : "/*inline copyOf*/instanceCopy instanceof Fluent_0?instanceCopy/*(Fluent_0)*/:new Fluent_0(`instance type Builder.value`)";
+                        : "instanceCopy instanceof Fluent_0?instanceCopy/*(Fluent_0)*/:(new Builder()/*@NotNull*/).build()";
                 assertEquals(expect, d.methodAnalysis().getSingleReturnValue().toString());
 
 

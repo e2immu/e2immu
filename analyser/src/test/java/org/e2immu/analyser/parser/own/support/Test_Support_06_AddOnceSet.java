@@ -77,12 +77,12 @@ public class Test_Support_06_AddOnceSet extends CommonTestRunner {
             }
             if ("toImmutableSet".equals(d.methodInfo().name)) {
                 String expected = d.iteration() == 0 ? "<m:toImmutableSet>"
-                        : "/*inline toImmutableSet*/Set.copyOf(set.keySet())";
+                        : "Set.copyOf(set.keySet())";
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
                 assertDv(d, 1, MultiLevel.EFFECTIVELY_IMMUTABLE_HC_DV, Property.IMMUTABLE);
             }
             if ("stream".equals(d.methodInfo().name)) {
-                String expected = d.iteration() == 0 ? "<m:stream>" : "/*inline stream*/set.keySet().stream()";
+                String expected = d.iteration() == 0 ? "<m:stream>" : "set.keySet().stream()";
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
                 assertDv(d, 1, MultiLevel.INDEPENDENT_HC_DV, Property.INDEPENDENT);
                 assertDv(d, 1, MultiLevel.MUTABLE_DV, Property.IMMUTABLE);
@@ -103,7 +103,7 @@ public class Test_Support_06_AddOnceSet extends CommonTestRunner {
             if ("forEach".equals(d.methodInfo().name)) {
                 assertEquals("0", d.statementId());
                 if (d.variable() instanceof ParameterInfo pi && "consumer".equals(pi.name)) {
-                    String linked = d.iteration() == 0 ? "this.set:-1" : "this.set:4";
+                    String linked = d.iteration() < 3 ? "this.set:-1,this:-1" : "this.set:4,this:4";
                     assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
                 }
             }
@@ -116,6 +116,16 @@ public class Test_Support_06_AddOnceSet extends CommonTestRunner {
                 }
             }
         };
+
+        BreakDelayVisitor breakDelayVisitor = d -> {
+            String s = switch (d.typeInfo().simpleName) {
+                case "AddOnceSet" -> "-----";
+                case "Freezable" -> "----";
+                default -> fail(d.typeInfo().simpleName);
+            };
+            assertEquals(s, d.delaySequence());
+        };
+
         // IMPROVE the warning could go if we use companions with "contains"? (instead of the "true")
         testSupportAndUtilClasses(List.of(AddOnceSet.class, Freezable.class), 0, 1, new DebugConfiguration.Builder()
                 .addTypeMapVisitor(typeMapVisitor)
@@ -123,6 +133,7 @@ public class Test_Support_06_AddOnceSet extends CommonTestRunner {
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                .addBreakDelayVisitor(breakDelayVisitor)
                 .build());
     }
 

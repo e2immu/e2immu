@@ -24,10 +24,7 @@ import org.e2immu.analyser.model.ParameterInfo;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.This;
 import org.e2immu.analyser.parser.CommonTestRunner;
-import org.e2immu.analyser.visitor.FieldAnalyserVisitor;
-import org.e2immu.analyser.visitor.MethodAnalyserVisitor;
-import org.e2immu.analyser.visitor.StatementAnalyserVariableVisitor;
-import org.e2immu.analyser.visitor.TypeAnalyserVisitor;
+import org.e2immu.analyser.visitor.*;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
@@ -222,17 +219,15 @@ public class Test_16_Modification extends CommonTestRunner {
                     if (d.variable() instanceof ParameterInfo pi && "errorMessage".equals(pi.name)) {
                         if ("0".equals(d.statementId())) {
                             assertLinked(d,
-                                    it0("this.messages:-1,this:-1"),
-                                    it1("this.messages:-1"),
-                                    it(2, "this.messages:3"));
+                                    it(0, 1, "this.messages:-1,this:-1"),
+                                    it(2, "this.messages:3,this:3"));
                         }
                     }
                     if (d.variable() instanceof FieldReference fr && "messages".equals(fr.fieldInfo.name)) {
                         if ("0".equals(d.statementId())) {
                             // asymmetrical link!
                             assertLinked(d,
-                                    it0("errorMessage:-1,this:-1"),
-                                    it1("errorMessage:-1"),
+                                    it(0, 1, "errorMessage:-1,this:-1"),
                                     it(2, ""));
                         }
                     }
@@ -288,11 +283,14 @@ public class Test_16_Modification extends CommonTestRunner {
             }
         };
 
+        BreakDelayVisitor breakDelayVisitor = d -> assertEquals("----", d.delaySequence());
+
         testClass("Modification_16_M", 1, 0, new DebugConfiguration.Builder()
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                 .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
+                .addBreakDelayVisitor(breakDelayVisitor)
                 .build());
     }
 

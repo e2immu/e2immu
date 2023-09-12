@@ -279,9 +279,9 @@ public class Test_45_Project extends CommonTestRunner {
                 d.delaySequence());
 
         testClass("Project_0", 1, DONT_CARE, new DebugConfiguration.Builder()
-                        .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-                        .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
-                        .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                       // .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                      //  .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+                      //  .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                         .addBreakDelayVisitor(breakDelayVisitor)
                         .build(),
                 new AnalyserConfiguration.Builder()

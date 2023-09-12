@@ -47,7 +47,7 @@ public class Test_04_Assert extends CommonTestRunner {
                 if ("2".equals(d.statementId())) {
                     String expected = switch (d.iteration()) {
                         case 0, 1 -> "<m:isDelayed>";
-                        default -> "!`causes`.isEmpty()";
+                        default -> "this.isDelayed()";
                     };
                     assertEquals(expected, d.evaluationResult().value().toString());
                 }
@@ -62,8 +62,8 @@ public class Test_04_Assert extends CommonTestRunner {
                 }
                 if ("2".equals(d.statementId())) {
                     String expected = switch (d.iteration()) {
-                        case 0, 1 -> "Precondition[expression=<m:isDelayed>, causes=[escape]]";
-                        default -> "Precondition[expression=!causes.isEmpty(), causes=[escape]]";
+                        case 0, 1 -> "Precondition[expression=<precondition>, causes=[escape]]";
+                        default -> "Precondition[expression=this.isDelayed(), causes=[escape]]";
                     };
                     assertEquals(expected, d.statementAnalysis().stateData().getPrecondition().toString());
                 }
@@ -118,9 +118,9 @@ public class Test_04_Assert extends CommonTestRunner {
                         // however, the previous linking is taken into account, and only the linking to "other"
                         // remains to be solved.
                         String linked = switch (d.iteration()) {
-                            case 0 -> "CausesOfDelay.LIMIT:-1,limit:-1,merge:0,other:-1,this:0";
-                            case 1 -> "merge:0,other:-1,this:0";
-                            default -> "merge:0,this:0";
+                            // case 0 -> "CausesOfDelay.LIMIT:-1,limit:-1,merge:-1,other:-1,this:0";
+                            case 0, 1 -> "merge:-1,other:-1,this:0";
+                            default -> "merge:4,this:0";
                         };
                         assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
                     }
@@ -128,8 +128,8 @@ public class Test_04_Assert extends CommonTestRunner {
                 if ("merge".equals(d.variableName())) {
                     if ("4".equals(d.statementId())) {
                         String linked = switch (d.iteration()) {
-                            case 0 -> "CausesOfDelay.LIMIT:-1,limit:-1,other:-1,this:0";
-                            case 1 -> "other:-1,this:0";
+                            //       case 0 -> "CausesOfDelay.LIMIT:-1,limit:-1,other:-1,this:0";
+                            case 0, 1 -> "other:-1,this:0";
                             default -> "this:0";
                         };
                         assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
@@ -148,8 +148,8 @@ public class Test_04_Assert extends CommonTestRunner {
                                 : "this";
                         assertEquals(value, d.currentValue().toString());
                         String linked = switch (d.iteration()) {
-                            case 0 -> "CausesOfDelay.LIMIT:-1,limit:-1,other:-1,this:0";
-                            case 1 -> "other:-1,this:0";
+                            //case 0 -> "CausesOfDelay.LIMIT:-1,limit:-1,other:-1,this:0";
+                            case 0, 1 -> "other:-1,this:0";
                             default -> "this:0";
                         };
                         assertEquals(linked, d.variableInfo().getLinkedVariables().toString());

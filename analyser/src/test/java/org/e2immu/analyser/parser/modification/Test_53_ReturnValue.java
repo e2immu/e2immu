@@ -35,7 +35,8 @@ public class Test_53_ReturnValue extends CommonTestRunner {
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("cube".equals(d.methodInfo().name)) {
                 if (d.iteration() > 0) {
-                    assertEquals("/*inline cube*/i*i*i", d.methodAnalysis().getSingleReturnValue().toString());
+                    assertEquals("ReturnValue_0.square(i)*i",
+                            d.methodAnalysis().getSingleReturnValue().toString());
                 }
             }
         };

@@ -21,6 +21,7 @@ import org.e2immu.analyser.config.AnalyserConfiguration;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.ParameterInfo;
+import org.e2immu.analyser.model.expression.ConstructorCall;
 import org.e2immu.analyser.model.expression.PropertyWrapper;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.ReturnVariable;
@@ -39,6 +40,11 @@ This test requires the CONTEXT_MODIFICATION assignment to a variable to be delay
 is not yet known. See ComputeLinkedVariables.write and Test_16_Modification_19.
  */
 public class Test_00_Basics_20 extends CommonTestRunner {
+
+    public static final String LIST_THIS_DELAY = "this.list:-1,this:-1";
+    public static final String LIST_3_THIS_3 = "this.list:3,this:3";
+    public static final String LIST_4_THIS_4 = "this.list:4,this:4";
+
     public Test_00_Basics_20() {
         super(true);
     }
@@ -49,7 +55,7 @@ public class Test_00_Basics_20 extends CommonTestRunner {
             assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, cd.getProperty(CONTEXT_NOT_NULL));
 
             EvaluationResult.ChangeData cdFirst = d.findValueChangeByToString("getFirstC1");
-            String expectedLv = d.iteration() == 0 ? "this.list:-1" : "this.list:3";
+            String expectedLv = d.iteration() == 0 ? LIST_THIS_DELAY : LIST_3_THIS_3;
             assertEquals(expectedLv, cdFirst.linkedVariables().toString());
         }
         if ("test1".equals(d.methodInfo().name) && "4".equals(d.statementId())) {
@@ -59,7 +65,7 @@ public class Test_00_Basics_20 extends CommonTestRunner {
         }
         if ("getListC2".equals(d.methodInfo().name)) {
             EvaluationResult.ChangeData cd = d.findValueChangeByToString("getListC2");
-            String expected = d.iteration() == 0 ? "this.list:-1" : "this.list:4";
+            String expected = d.iteration() == 0 ? LIST_THIS_DELAY : LIST_4_THIS_4;
             assertEquals(expected, cd.linkedVariables().toString());
         }
         if ("test2".equals(d.methodInfo().name) && "4".equals(d.statementId())) {
@@ -91,7 +97,7 @@ public class Test_00_Basics_20 extends CommonTestRunner {
                 if (d.variable() instanceof ReturnVariable) {
                     String expectValue = d.iteration() == 0 ? "<m:get>" : "list.get(0)";
                     assertEquals(expectValue, d.currentValue().toString());
-                    String linked = d.iteration() == 0 ? "this.list:-1" : "this.list:3";
+                    String linked = d.iteration() == 0 ? LIST_THIS_DELAY : LIST_3_THIS_3;
                     assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
                 }
             }
@@ -106,7 +112,7 @@ public class Test_00_Basics_20 extends CommonTestRunner {
                 if (d.variable() instanceof ReturnVariable) {
                     String expectValue = d.iteration() == 0 ? "<m:get>" : "list.get(0)";
                     assertEquals(expectValue, d.currentValue().toString());
-                    String linked = d.iteration() == 0 ? "this.list:-1" : "this.list:3";
+                    String linked = d.iteration() == 0 ? LIST_THIS_DELAY : LIST_3_THIS_3;
                     assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
                 }
             }
@@ -121,7 +127,7 @@ public class Test_00_Basics_20 extends CommonTestRunner {
                 if (d.variable() instanceof ReturnVariable) {
                     String expectValue = d.iteration() == 0 ? "<m:get>" : "list.get(0)";
                     assertEquals(expectValue, d.currentValue().toString());
-                    String linked = d.iteration() == 0 ? "this.list:-1" : "this.list:3";
+                    String linked = d.iteration() == 0 ? LIST_THIS_DELAY : LIST_3_THIS_3;
                     assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
                 }
             }
@@ -136,7 +142,7 @@ public class Test_00_Basics_20 extends CommonTestRunner {
                 if (d.variable() instanceof ReturnVariable) {
                     String expectValue = d.iteration() == 0 ? "<m:get>" : "list.get(0)";
                     assertEquals(expectValue, d.currentValue().toString());
-                    String linked = d.iteration() == 0 ? "this.list:-1" : "this.list:3";
+                    String linked = d.iteration() == 0 ? LIST_THIS_DELAY : LIST_3_THIS_3;
                     assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
                 }
             }
@@ -145,7 +151,7 @@ public class Test_00_Basics_20 extends CommonTestRunner {
                 if (d.variable() instanceof ReturnVariable) {
                     String expected = d.iteration() == 0 ? "<new:ArrayList<T>>" : "new ArrayList<>(list)";
                     assertEquals(expected, d.currentValue().toString());
-                    String expectedLv = d.iteration() == 0 ? "this.list:-1" : "this.list:4";
+                    String expectedLv = d.iteration() == 0 ? LIST_THIS_DELAY : LIST_4_THIS_4;
                     assertEquals(expectedLv, d.variableInfo().getLinkedVariables().toString());
                 }
             }
@@ -153,7 +159,7 @@ public class Test_00_Basics_20 extends CommonTestRunner {
                 if (d.variable() instanceof ReturnVariable) {
                     String expected = d.iteration() == 0 ? "<new:ArrayList<Object>>" : "new ArrayList<>(list)";
                     assertEquals(expected, d.currentValue().toString());
-                    String expectedLv = d.iteration() == 0 ? "this.list:-1" : "this.list:4";
+                    String expectedLv = d.iteration() == 0 ? LIST_THIS_DELAY : LIST_4_THIS_4;
                     assertEquals(expectedLv, d.variableInfo().getLinkedVariables().toString());
                 }
             }
@@ -161,14 +167,14 @@ public class Test_00_Basics_20 extends CommonTestRunner {
                 if (d.variable() instanceof ReturnVariable) {
                     String expected = d.iteration() == 0 ? "<new:ArrayList<T>>" : "new ArrayList<>(list)";
                     assertEquals(expected, d.currentValue().toString());
-                    String expectedLv = d.iteration() == 0 ? "this.list:-1" : "this.list:4";
+                    String expectedLv = d.iteration() == 0 ? LIST_THIS_DELAY : LIST_4_THIS_4;
                     assertEquals(expectedLv, d.variableInfo().getLinkedVariables().toString());
                 }
             }
 
             if ("test1".equals(d.methodInfo().name)) {
                 if ("i".equals(d.variableName())) {
-                    String expected = d.iteration() <= 1 ? "<new:I>" : "instance type I";
+                    String expected = d.iteration() <= 1 ? "<new:I>" : "new I()";
                     if ("1".equals(d.statementId())) {
                         assertEquals(expected, d.currentValue().toString());
                     }
@@ -183,14 +189,13 @@ public class Test_00_Basics_20 extends CommonTestRunner {
                 }
                 if ("list".equals(d.variableName())) {
                     if ("2".equals(d.statementId())) {
-                        String expectValue = "new ArrayList<>()/*0==this.size()*/";
+                        String expectValue = "new ArrayList<>()";
                         assertEquals(expectValue, d.currentValue().toString());
-                        assertTrue(d.currentValue() instanceof PropertyWrapper);
+                        assertTrue(d.currentValue() instanceof ConstructorCall);
                         assertEquals(MultiLevel.CONTAINER_DV, d.getProperty(CONTAINER));
                     }
                     if ("3".equals(d.statementId())) {
-                        String expectValue = d.iteration() <= 1 ? "<v:list>"
-                                : "instance type ArrayList<I>/*1==this.size()&&this.contains(i)*/";
+                        String expectValue = d.iteration() <= 1 ? "<v:list>" : "new ArrayList<>()";
                         assertEquals(expectValue, d.currentValue().toString());
 
                         // while class "I" is independent, it is also mutable. It is the latter property that is relevant
@@ -292,6 +297,8 @@ public class Test_00_Basics_20 extends CommonTestRunner {
         }
     };
 
+    BreakDelayVisitor breakDelayVisitor = d -> assertEquals("---", d.delaySequence());
+
     // if we compute @NotNull over all methods, field C1.list will be @NotNull; alternatively, it will be
     // @Nullable. This is now a configuration change, which, by default, is "false"
 
@@ -302,6 +309,7 @@ public class Test_00_Basics_20 extends CommonTestRunner {
                 .addAfterFieldAnalyserVisitor(createFieldAnalyserVisitor(expectNotNull))
                 .addAfterMethodAnalyserVisitor(createMethodAnalyserVisitor(expectNotNull))
                 .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
+                .addBreakDelayVisitor(breakDelayVisitor)
                 .build(), new AnalyserConfiguration.Builder()
                 .setComputeContextPropertiesOverAllMethods(expectNotNull)
                 .build());

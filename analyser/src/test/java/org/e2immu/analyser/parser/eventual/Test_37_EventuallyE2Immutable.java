@@ -55,8 +55,7 @@ public class Test_37_EventuallyE2Immutable extends CommonTestRunner {
             if ("set2".equals(d.methodInfo().name)) {
                 assertEquals("0", d.statementId());
                 if (d.variable() instanceof This) {
-                    String linked = d.iteration() == 0 ? "t2:-1" : "";
-                    assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
+                    assertEquals("", d.variableInfo().getLinkedVariables().toString());
                 }
                 // an external modification of the value of t2 implies a modification of the hidden content of "this"
                 if (d.variable() instanceof ParameterInfo pi && "t2".equals(pi.name)) {
@@ -106,7 +105,7 @@ public class Test_37_EventuallyE2Immutable extends CommonTestRunner {
 
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("getT".equals(d.methodInfo().name)) {
-                String expected = d.iteration() <= 1 ? "<m:getT>" : "/*inline getT*/t$0";
+                String expected = d.iteration() <= 1 ? "<m:getT>" : "t$0";
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
             }
             if ("setT".equals(d.methodInfo().name)) {
@@ -343,15 +342,16 @@ public class Test_37_EventuallyE2Immutable extends CommonTestRunner {
             if ("error4".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof ParameterInfo p && "other".equals(p.name)) {
                     if ("0".equals(d.statementId())) {
-                        String expected = "nullable instance type EventuallyE2Immutable_4<T>/*@Identity*/";
+                        String expected = d.iteration() < 2 ? "<p:other>"
+                                : "nullable instance type EventuallyE2Immutable_4<T>/*@Identity*/";
                         assertEquals(expected, d.currentValue().toString());
                         assertDv(d, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
 
-                        // assertDv(d, MultiLevel.MUTABLE_DV, Property.CONTEXT_IMMUTABLE);
                         assertDv(d, 3, MultiLevel.EVENTUALLY_IMMUTABLE_HC_AFTER_MARK_DV, Property.CONTEXT_IMMUTABLE);
                     }
                     if ("1".equals(d.statementId())) {
-                        String expected = "nullable instance type EventuallyE2Immutable_4<T>/*@Identity*/";
+                        String expected = d.iteration() < 2 ? "<p:other>"
+                                : "nullable instance type EventuallyE2Immutable_4<T>/*@Identity*/";
                         assertEquals(expected, d.currentValue().toString());
                         assertDv(d, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
                         assertDv(d, 3, MultiLevel.EVENTUALLY_IMMUTABLE_HC_AFTER_MARK_DV, Property.CONTEXT_IMMUTABLE);
@@ -645,17 +645,9 @@ public class Test_37_EventuallyE2Immutable extends CommonTestRunner {
                 if ("0".equals(d.statementId())) {
                     String expected = switch (d.iteration()) {
                         case 0, 1 -> "<m:isNotYetSet>";
-                        default -> "null==`other.t`";
+                        default -> "other.isNotYetSet()";
                     };
                     assertEquals(expected, d.evaluationResult().value().toString());
-                    if (d.iteration() >= 2) {
-                        if (d.evaluationResult().value() instanceof Equals equals) {
-                            if (equals.rhs instanceof ExpandedVariable ev) {
-                                assertEquals("ListOfIdentifiers[expression=inline, identifiers=[StatementTimeIdentifier[statementTime=0], VariableIdentifier[variable=other.t, index=-]]]",
-                                        ev.identifier.toString());
-                            } else fail();
-                        } else fail();
-                    }
                 }
                 if ("0.0.0".equals(d.statementId())) {
                     String expected = switch (d.iteration()) {
@@ -671,7 +663,7 @@ public class Test_37_EventuallyE2Immutable extends CommonTestRunner {
                 if ("0.0.0".equals(d.statementId())) {
                     String expected = switch (d.iteration()) {
                         case 0, 1 -> "<m:isNotYetSet>";
-                        default -> "null==`other.t`";
+                        default -> "other.isNotYetSet()";
                     };
                     assertEquals(expected, d.condition().toString());
                 }
@@ -679,25 +671,16 @@ public class Test_37_EventuallyE2Immutable extends CommonTestRunner {
         };
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("getT".equals(d.methodInfo().name)) {
-                String expected = d.iteration() <= 1 ? "<m:getT>" : "/*inline getT*/t$0";
+                String expected = d.iteration() <= 1 ? "<m:getT>" : "t$0";
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
-                if (d.iteration() >= 2) {
-                    if (d.methodAnalysis().getSingleReturnValue() instanceof InlinedMethod inlinedMethod) {
-                        assertEquals("t$0, this", inlinedMethod.variablesOfExpressionSorted());
-                    }
-                }
+
                 String pc = d.iteration() <= 1 ? "Precondition[expression=!<null-check>, causes=[escape]]"
                         : "Precondition[expression=null!=t, causes=[escape]]";
                 assertEquals(pc, d.methodAnalysis().getPrecondition().toString());
             }
             if ("isNotYetSet".equals(d.methodInfo().name)) {
-                String expected = d.iteration() <= 1 ? "<m:isNotYetSet>" : "/*inline isNotYetSet*/null==t$0";
+                String expected = d.iteration() <= 1 ? "<m:isNotYetSet>" : "null==t$0";
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
-                if (d.iteration() >= 2) {
-                    if (d.methodAnalysis().getSingleReturnValue() instanceof InlinedMethod inlinedMethod) {
-                        assertEquals("t$0, this", inlinedMethod.variablesOfExpressionSorted());
-                    }
-                }
             }
         };
         testClass("EventuallyE2Immutable_11", 2, 0, new DebugConfiguration.Builder()

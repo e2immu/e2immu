@@ -123,7 +123,7 @@ public class Test_07_DependentVariables extends CommonTestRunner {
                 if (d.variable() instanceof ReturnVariable) {
                     String expectValue = d.iteration() == 0 ? "<f:i>" : "i$0";
                     assertEquals(expectValue, d.currentValue().minimalOutput());
-                    assertLinked(d, it0("this.i:0,this:-1"), it(1, "this.i:0"));
+                    assertLinked(d, it(0, "this.i:0,this:3"));
 
                     assertDv(d, 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.EXTERNAL_NOT_NULL);
                 }
@@ -138,7 +138,7 @@ public class Test_07_DependentVariables extends CommonTestRunner {
                 if (d.variable() instanceof ReturnVariable) {
                     String expectValue = switch (d.iteration()) {
                         case 0 -> "<dv:xs[index]>";
-                        case 1 -> "<v:xs[index]>/*{DL xs:-1}*/";
+                        case 1 -> "<v:xs[index]>/*{DL this:-1,xs:-1}*/";
                         default -> "xs[index]";
                     };
                     assertEquals(expectValue, d.currentValue().minimalOutput());
@@ -151,10 +151,10 @@ public class Test_07_DependentVariables extends CommonTestRunner {
                 }
                 if (d.variable() instanceof DependentVariable dv) {
                     assertEquals("xs[index]", dv.simpleName);
-                    String expected = d.iteration() < 2 ? "<v:xs[index]>/*{DL xs:-1}*/" : "nullable instance type X/*{L xs:2}*/";
+                    String expected = d.iteration() < 2 ? "<v:xs[index]>/*{DL this:-1,xs:-1}*/" : "nullable instance type X/*{L this:2,xs:2}*/";
                     assertEquals(expected, d.currentValue().toString());
                     // DVE has no linking info (so this.xs:-1) goes out in iteration 0
-                    String linked = d.iteration() < 2 ? "this.xs:-1" : "this.xs:2";
+                    String linked = d.iteration() < 2 ? "this.xs:-1,this:-1" : "this.xs:2,this:2";
                     assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
 
                     assertDv(d, MultiLevel.NULLABLE_DV, Property.CONTEXT_NOT_NULL);
@@ -167,7 +167,7 @@ public class Test_07_DependentVariables extends CommonTestRunner {
                     if ("1".equals(d.statementId())) {
                         String expected = "nullable instance type X[]/*@Identity*/";
                         assertEquals(expected, d.currentValue().toString());
-                        assertEquals("this.xs:4", d.variableInfo().getLinkedVariables().toString());
+                        assertEquals("this.xs:4,this:4", d.variableInfo().getLinkedVariables().toString());
                     }
                 }
                 if (d.variable() instanceof FieldReference fr && "xs".equals(fr.fieldInfo.name)) {
@@ -179,7 +179,7 @@ public class Test_07_DependentVariables extends CommonTestRunner {
                     }
                     if ("1".equals(d.statementId())) {
                         // no link, because the link target (p) is @NotModified in System.arraycopy
-                        assertEquals("p:4", d.variableInfo().getLinkedVariables().toString());
+                        assertEquals("p:4,this:3", d.variableInfo().getLinkedVariables().toString());
                     }
                 }
             }
@@ -206,7 +206,7 @@ public class Test_07_DependentVariables extends CommonTestRunner {
 
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
             if ("xs".equals(d.fieldInfo().name)) {
-                assertEquals("p:4", d.fieldAnalysis().getLinkedVariables().toString());
+                assertEquals("p:4,this:3", d.fieldAnalysis().getLinkedVariables().toString());
                 assertEquals("instance type X[]", d.fieldAnalysis().getValue().toString());
                 assertDv(d, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.EXTERNAL_NOT_NULL);
             }
@@ -254,7 +254,7 @@ public class Test_07_DependentVariables extends CommonTestRunner {
                 assertTrue(d.methodInfo().isConstructor);
                 if (d.variable() instanceof FieldReference fr && "xs".equals(fr.fieldInfo.name)) {
                     if ("1".equals(d.statementId())) {
-                        assertEquals("xs:4", d.variableInfo().getLinkedVariables().toString());
+                        assertEquals("this:3,xs:4", d.variableInfo().getLinkedVariables().toString());
                     }
                 }
             }
@@ -262,15 +262,15 @@ public class Test_07_DependentVariables extends CommonTestRunner {
                 if (d.variable() instanceof ReturnVariable) {
                     assertLinked(d,
                             it0("index:-1,this.xs:-1,this:-1,xs[index]:0"),
-                            it1("this.xs:-1,xs[index]:0"),
-                            it(2, "this.xs:2,xs[index]:0"));
+                            it1("this.xs:-1,this:-1,xs[index]:0"),
+                            it(2, "this.xs:2,this:2,xs[index]:0"));
                 }
             }
         };
 
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
             if ("xs".equals(d.fieldInfo().name)) {
-                assertEquals("xs:4", d.fieldAnalysis().getLinkedVariables().toString());
+                assertEquals("this:3,xs:4", d.fieldAnalysis().getLinkedVariables().toString());
             }
         };
 
@@ -285,7 +285,7 @@ public class Test_07_DependentVariables extends CommonTestRunner {
 
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("getX".equals(d.methodInfo().name)) {
-                String expected = d.iteration() < 2 ? "<m:getX>" : "/*inline getX*/xs[index]";
+                String expected = d.iteration() < 2 ? "<m:getX>" : "xs[index]";
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
                 assertDv(d, 3, MultiLevel.DEPENDENT_DV, Property.INDEPENDENT);
             }
@@ -330,16 +330,15 @@ public class Test_07_DependentVariables extends CommonTestRunner {
                         assertEquals(expected, d.currentValue().toString());
                     }
                     if ("0.0.2.0.2".equals(d.statementId())) {
-                        String expected = d.iteration() == 0 ? "<v:added>" : "true";
-                        assertEquals(expected, d.currentValue().toString());
+                        assertEquals("true", d.currentValue().toString());
                     }
                     if ("0.0.2".equals(d.statementId())) {
-                        String expected = d.iteration() == 0 ? "<dv:bs[1]>?<v:added>:<dv:bs[0]>" : "bs[0]||bs[1]";
+                        String expected = d.iteration() == 0 ? "<dv:bs[0]>||<dv:bs[1]>" : "bs[0]||bs[1]";
                         assertEquals(expected, d.currentValue().toString());
                     }
                     if ("0.0.3".equals(d.statementId())) {
                         String expected = d.iteration() == 0
-                                ? "<dv:bs[1]>||<dv:bs[2]>?<v:added>:<dv:bs[0]>"
+                                ? "<dv:bs[0]>||<dv:bs[1]>||<dv:bs[2]>"
                                 : "bs[0]||bs[1]||bs[2]";
                         assertEquals(expected, d.currentValue().toString());
                     }
@@ -438,12 +437,10 @@ public class Test_07_DependentVariables extends CommonTestRunner {
                         assertEquals("a", d.currentValue().toString());
                     }
                     if ("0.0.2".equals(d.statementId())) {
-                        String expected = d.iteration() == 0 ? "b?<v:added>:a" : "a||b";
-                        assertEquals(expected, d.currentValue().toString());
+                        assertEquals("a||b", d.currentValue().toString());
                     }
                     if ("0.0.3".equals(d.statementId())) {
-                        String expected = d.iteration() == 0 ? "b||c?<v:added>:a" : "a||b||c";
-                        assertEquals(expected, d.currentValue().toString());
+                        assertEquals("a||b||c", d.currentValue().toString());
                     }
                 }
             }

@@ -137,7 +137,7 @@ public class Test_58_GuideSimplified extends CommonTestRunner {
                 }
             }
             if ("position".equals(d.methodInfo().name)) {
-                assertEquals(d.iteration() > 1, d.statementAnalysis().methodLevelData().linksHaveBeenEstablished());
+                assertTrue(d.statementAnalysis().methodLevelData().linksHaveBeenEstablished());
             }
             if ("values".equals(d.methodInfo().name)) {
                 if ("0".equals(d.statementId())) {
@@ -186,12 +186,15 @@ public class Test_58_GuideSimplified extends CommonTestRunner {
             }
         };
 
+        BreakDelayVisitor breakDelayVisitor = d -> assertEquals("----", d.delaySequence());
+
         testClass("GuideSimplified_4", 0, 0, new DebugConfiguration.Builder()
                 .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .addStatementAnalyserVisitor(statementAnalyserVisitor)
                 .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addBreakDelayVisitor(breakDelayVisitor)
                 .build(), new AnalyserConfiguration.Builder()
                 .setComputeContextPropertiesOverAllMethods(true)
                 .setComputeFieldAnalyserAcrossAllMethods(true)

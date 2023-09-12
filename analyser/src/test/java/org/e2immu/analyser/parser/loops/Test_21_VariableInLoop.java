@@ -52,7 +52,7 @@ public class Test_21_VariableInLoop extends CommonTestRunner {
 
                         VariableInfo eval = d.variableInfoContainer().best(Stage.EVALUATION);
                         assertEquals(expected, eval.getValue().toString());
-                        String expectMerge = d.iteration() == 0 ? "<vl:found>" : "true";
+                        String expectMerge = d.iteration() == 0 ? "<simplification>" : "true";
                         assertEquals(expectMerge, d.currentValue().toString()); // result of merge, should always be "true"
                     }
                     if ("1.0.0.0.0.0.0".equals(d.statementId())) {
@@ -256,7 +256,7 @@ public class Test_21_VariableInLoop extends CommonTestRunner {
                 }
                 if ("toDo".equals(d.variableName())) {
                     if ("0".equals(d.statementId())) {
-                        assertEquals("new HashSet<>(strings)/*this.size()==strings.size()*/",
+                        assertEquals("new HashSet<>(strings)",
                                 d.currentValue().toString());
                     }
                     if ("2.0.0".equals(d.statementId())) {

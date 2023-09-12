@@ -40,7 +40,7 @@ public class Test_25_Record extends CommonTestRunner {
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("string".equals(d.methodInfo().name)) {
                 assertEquals(4, d.methodInfo().getComplexity());
-                String sv = d.iteration() == 0 ? "<m:string>" : "/*inline string*/string";
+                String sv = d.iteration() == 0 ? "<m:string>" : "string";
                 assertEquals(sv, d.methodAnalysis().getSingleReturnValue().toString());
                 MethodInspection mi = d.methodInfo().methodInspection.get();
                 Block block = mi.getMethodBody();
@@ -67,7 +67,7 @@ public class Test_25_Record extends CommonTestRunner {
         StatementAnalyserVisitor statementAnalyserVisitor = d -> {
             if ("method".equals(d.methodInfo().name)) {
                 if ("1".equals(d.statementId())) {
-                    String expected = d.iteration() == 0 ? "!<null-check>" : "null!=test.x";
+                    String expected = d.iteration() == 0 ? "!<null-check>" : "null!=test.x()";
                     assertEquals(expected, d.absoluteState().toString());
                 }
             }

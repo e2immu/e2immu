@@ -17,6 +17,7 @@ package org.e2immu.analyser.parser.conditional.testexample;
 // simpler than NotNull_3
 
 import org.e2immu.annotation.ImmutableContainer;
+import org.e2immu.annotation.NotNull;
 
 import java.util.Map;
 import java.util.HashMap;
@@ -28,20 +29,21 @@ public class NotNull_4<T> {
 
     private static class TrieNode<T> {
         List<T> data;
-        final Map<String, TrieNode<T>> map = new HashMap<>();
+        final Map<String, TrieNode<T>> map = new HashMap<>(); // ERROR: unused
     }
 
-    private TrieNode<T> goTo(String[] strings, int upToPosition) {
+    @NotNull(absent = true)
+    private TrieNode<T> goTo(@NotNull String[] strings, int upToPosition) {
         return strings.length <= upToPosition ? null : root;
     }
 
     /* the call to goTo causes an error: Part of short-circuit expression evaluates to constant"
     because goTo always returns null with these values. This is correct!
      */
-    @ImmutableContainer("false")
-    public boolean isStrictPrefix(String[] prefix) {
-        TrieNode<T> node = goTo(prefix, prefix.length); // potential null pointer warning
-        return node != null && node.data == null;
+    @ImmutableContainer
+    public boolean isStrictPrefix(@NotNull String[] prefix) {
+        TrieNode<T> node = goTo(prefix, prefix.length);
+        return node != null && node.data == null; // ERROR: node.data is always null
     }
 
     @ImmutableContainer("null")

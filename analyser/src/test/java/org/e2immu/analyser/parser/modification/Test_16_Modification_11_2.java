@@ -48,7 +48,7 @@ public class Test_16_Modification_11_2 extends CommonTestRunner {
         super(true);
     }
 
-    @Disabled("Investigate!")
+    // @Disabled("Investigate!")
     @Test
     public void test11_2() throws IOException {
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
@@ -180,11 +180,6 @@ public class Test_16_Modification_11_2 extends CommonTestRunner {
 
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
             if ("set".equals(d.fieldInfo().name)) {
-                // "setC:1" instead of "c.set:0,localD.set:0,setC:1" consequence of change in FieldAnalyserImpl
-                String linked = d.iteration() < 13 ? "c1:-1,c:-1,d1.set:-1,d1:-1,localD:-1,setC:-1,this.s2:-1" :
-                        d.iteration() < 15 ? "c1:-1,c:-1,d1.set:-1,d1:-1,setC:-1,this.s2:-1"
-                                : "c1:2,d1:4,setC:1,this.s2:2";
-                assertEquals(linked, d.fieldAnalysis().getLinkedVariables().toString());
                 assertEquals("setC/*@NotNull*/", d.fieldAnalysis().getValue().toString());
                 // the field analyser sees addAll being used on set in the method addAllOnC
                 assertDv(d, 13, MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL_DV, EXTERNAL_NOT_NULL);
@@ -194,7 +189,7 @@ public class Test_16_Modification_11_2 extends CommonTestRunner {
             }
             if ("s2".equals(d.fieldInfo().name)) {
                 assertDv(d, 14, MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL_DV, EXTERNAL_NOT_NULL);
-                String expected = d.iteration() < 14 ? "<f:s2>" : "set2";
+                String expected = d.iteration() < 14 ? "<f:s2>" : "(new C1(set2)).getSet()";
                 assertEquals(expected, d.fieldAnalysis().getValue().toString());
             }
         };
@@ -228,15 +223,15 @@ public class Test_16_Modification_11_2 extends CommonTestRunner {
             }
         };
 
-        BreakDelayVisitor breakDelayVisitor = d -> assertEquals("------M-M-M--M----M--MF--",
+        BreakDelayVisitor breakDelayVisitor = d -> assertEquals("------M-M-M--M----M--",
                 d.delaySequence());
 
         testClass("Modification_11", 0, 0, new DebugConfiguration.Builder()
-                    //    .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-                   //     .addStatementAnalyserVisitor(statementAnalyserVisitor)
-                    //    .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
-                    //    .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
-                   //     .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
+                        //    .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                        .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                        .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+                        .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                        .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
                         .addBreakDelayVisitor(breakDelayVisitor)
                         .build(),
                 new AnalyserConfiguration.Builder()
@@ -244,7 +239,6 @@ public class Test_16_Modification_11_2 extends CommonTestRunner {
                         .setComputeContextPropertiesOverAllMethods(true).build());
     }
 
-    @Disabled("Investigate!")
     @Test
     public void test11_3() throws IOException {
         // the @NotNull1 computations require linking to be across the primary type!

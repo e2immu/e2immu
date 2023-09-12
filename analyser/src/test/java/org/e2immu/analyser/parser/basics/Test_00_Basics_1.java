@@ -155,7 +155,7 @@ public class Test_00_Basics_1 extends CommonTestRunner {
                 assertEquals(GET_F1_RETURN, d.variableName());
                 assertTrue(d.variableInfo().isAssigned());
 
-                String linked = d.iteration() == 0 ? "this.f1:0,this:-1" : "this.f1:0";
+                String linked = "this.f1:0,this:3";
                 assertEquals(linked, d.variableInfo().getLinkedVariables().toString()); // without p0
 
                 String expectValue = d.iteration() == 0 ? "<f:f1>" : "f1";
@@ -171,7 +171,7 @@ public class Test_00_Basics_1 extends CommonTestRunner {
             assertTrue(d.statementAnalysis().methodLevelData().linksHaveBeenEstablished());
         }
         if ("getF1".equals(d.methodInfo().name)) {
-            assertEquals(d.iteration() > 0, d.statementAnalysis().methodLevelData().linksHaveBeenEstablished());
+            assertTrue(d.statementAnalysis().methodLevelData().linksHaveBeenEstablished());
         }
     };
 

@@ -180,6 +180,7 @@ public class Test_51_InstanceOf extends CommonTestRunner {
                 }
             }
         };
+
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("add".equals(d.methodInfo().name)) {
                 // FALSE because no AnnotatedAPI, addAll is not modifying!
@@ -190,21 +191,26 @@ public class Test_51_InstanceOf extends CommonTestRunner {
             if ("getBase".equals(d.methodInfo().name)) {
                 // Stream is mutable; is it linked?
                 assertDv(d, 1, MultiLevel.MUTABLE_DV, Property.IMMUTABLE);
-                String expect = d.iteration() == 0 ? "<m:getBase>" : "/*inline getBase*/base.stream()";
+                String expect = d.iteration() == 0 ? "<m:getBase>" : "base.stream()";
                 assertEquals(expect, d.methodAnalysis().getSingleReturnValue().toString());
 
-                assertDv(d, 1, MultiLevel.DEPENDENT_DV, Property.INDEPENDENT);
+                assertDv(d, 5, MultiLevel.DEPENDENT_DV, Property.INDEPENDENT);
             }
         };
+
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("InstanceOf_3".equals(d.typeInfo().simpleName)) {
-                assertDv(d, 1, MultiLevel.EFFECTIVELY_FINAL_FIELDS_DV, Property.IMMUTABLE);
+                assertDv(d, 5, MultiLevel.EFFECTIVELY_FINAL_FIELDS_DV, Property.IMMUTABLE);
             }
         };
+
+        BreakDelayVisitor breakDelayVisitor = d -> assertEquals("---MFT-", d.delaySequence());
+
         testClass("InstanceOf_3", 0, 1, new DebugConfiguration.Builder()
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
+                .addBreakDelayVisitor(breakDelayVisitor)
                 .build());
     }
 
@@ -1005,7 +1011,7 @@ public class Test_51_InstanceOf extends CommonTestRunner {
                 }
                 if ("1.0.0".equals(d.statementId())) {
                     String expected = d.iteration() <= 3 ? "<m:toList>"
-                            : "FindInstanceOfPatterns.find(expression/*(UnaryOperator)*/.eu).stream().map(/*inline apply*/new InstanceOfPositive(iop.instanceOf,!iop.positive)).toList()";
+                            : "FindInstanceOfPatterns.find(expression/*(UnaryOperator)*/.eu).stream().map(instance type $2).toList()";
                     assertEquals(expected, d.evaluationResult().value().toString());
                     assertEquals(d.iteration() <= 3, d.evaluationResult().causesOfDelay().isDelayed());
                 }
@@ -1021,7 +1027,7 @@ public class Test_51_InstanceOf extends CommonTestRunner {
                         case 1, 2, 3 ->
                                 "expression instanceof Negation?<m:toList>:expression instanceof UnaryOperator&&<m:isUnaryNot>&&(null==expression||!(expression instanceof Negation))?<m:toList>:expression instanceof InstanceOf?<m:of>:(nullable instance type List<Expression>).stream().flatMap(instance type $3).toList()";
                         default ->
-                                "expression instanceof Negation?FindInstanceOfPatterns.find(expression/*(Negation)*/.en).stream().map(/*inline apply*/new InstanceOfPositive(iop.instanceOf,!iop.positive)).toList():expression instanceof UnaryOperator&&expression/*(UnaryOperator)*/.operator.isUnaryNot()&&(null==expression||!(expression instanceof Negation))?FindInstanceOfPatterns.find(expression/*(UnaryOperator)*/.eu).stream().map(/*inline apply*/new InstanceOfPositive(iop.instanceOf,!iop.positive)).toList():expression instanceof InstanceOf?List.of(new InstanceOfPositive(expression/*(InstanceOf)*/,true)):(nullable instance type List<Expression>).stream().flatMap(instance type $3).toList()";
+                                "expression instanceof Negation?FindInstanceOfPatterns.find(expression/*(Negation)*/.en).stream().map(instance type $1).toList():expression instanceof UnaryOperator&&expression/*(UnaryOperator)*/.operator.isUnaryNot()&&(null==expression||!(expression instanceof Negation))?FindInstanceOfPatterns.find(expression/*(UnaryOperator)*/.eu).stream().map(instance type $2).toList():expression instanceof InstanceOf?List.of(new InstanceOfPositive(expression/*(InstanceOf)*/,true)):(nullable instance type List<Expression>).stream().flatMap(instance type $3).toList()";
                     };
                     assertEquals(expected, d.evaluationResult().value().toString());
                 }

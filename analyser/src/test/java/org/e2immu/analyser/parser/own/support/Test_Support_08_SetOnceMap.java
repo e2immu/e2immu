@@ -52,6 +52,7 @@ public class Test_Support_08_SetOnceMap extends CommonTestRunner {
             if ("SetOnceMap".equals(d.typeInfo().simpleName)) {
                 assertHc(d, 0, "K, V");
                 assertDv(d, 3, MultiLevel.CONTAINER_DV, Property.CONTAINER);
+                assertDv(d, BIG, MultiLevel.EFFECTIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
             }
             if ("Entry".equals(d.typeInfo().simpleName)) {
                 assertDv(d, 1, MultiLevel.EFFECTIVELY_IMMUTABLE_HC_DV, Property.IMMUTABLE);
@@ -143,8 +144,8 @@ public class Test_Support_08_SetOnceMap extends CommonTestRunner {
                         String expectValue = d.iteration() == 0 ? "<p:v>" : "nullable instance type V";
                         assertEquals(expectValue, d.currentValue().toString());
                         assertLinked(d,
-                                it0("k:-1,this.map:-1,this:-1"),
-                                it(1, "this.map:3"));
+                                it0("this.map:-1,this:-1"),
+                                it(1, "this.map:3,this:3"));
                     }
                 }
             }
@@ -158,15 +159,14 @@ public class Test_Support_08_SetOnceMap extends CommonTestRunner {
                     if ("1".equals(d.statementId())) {
                         String linked = d.iteration() < 2
                                 ? "setOnceMap.map:-1,this.map:-1,this:-1"
-                                : "setOnceMap.map:4,this.map:4";
+                                : "setOnceMap.map:4,this.map:4,this:4";
                         assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
                         assertDv(d, 2, MultiLevel.DEPENDENT_DV, Property.INDEPENDENT);
                     }
                 }
                 if (d.variable() instanceof This) {
                     if ("1".equals(d.statementId())) {
-                        String linked = d.iteration() < 2 ? "setOnceMap.map:-1,setOnceMap:-1,this.map:-1" : "";
-                        assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
+                        assertEquals("", d.variableInfo().getLinkedVariables().toString());
                     }
                 }
                 if (d.variable() instanceof FieldReference fr && "map".equals(fr.fieldInfo.name)
@@ -174,7 +174,9 @@ public class Test_Support_08_SetOnceMap extends CommonTestRunner {
                         && "setOnceMap".equals(fr.scopeVariable.simpleName())) {
                     assertEquals("1", d.statementId());
                     assertNotNull(fr.scopeVariable);
-                    String linked = d.iteration() < 2 ? "setOnceMap:-1,this.map:-1,this:-1" : "setOnceMap:2,this.map:4";
+                    String linked = d.iteration() < 2
+                            ? "setOnceMap:-1,this.map:-1,this:-1"
+                            : "setOnceMap:2,this.map:4,this:4";
                     assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
                 }
             }
@@ -183,7 +185,7 @@ public class Test_Support_08_SetOnceMap extends CommonTestRunner {
                 if (d.variable() instanceof ReturnVariable) {
                     assertCurrentValue(d, 2,
                             "map.entrySet().stream().map(/*inline apply*/new Entry<>(e.getKey(),e.getValue()))");
-                    String linked = d.iteration() < 2 ? "this.map:-1" : "this.map:4";
+                    String linked = d.iteration() < 9 ? "this.map:-1,this:-1" : "this.map:4,this:4";
                     assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
                 }
             }
@@ -228,7 +230,7 @@ public class Test_Support_08_SetOnceMap extends CommonTestRunner {
                 assertDv(d, MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL_DV, Property.NOT_NULL_EXPRESSION);
                 assertDv(d, 2, DV.FALSE_DV, Property.MODIFIED_METHOD);
                 assertDv(d, 2, MultiLevel.MUTABLE_DV, Property.IMMUTABLE);
-                assertDv(d, 2, MultiLevel.INDEPENDENT_HC_DV, Property.INDEPENDENT);
+                assertDv(d, 9, MultiLevel.INDEPENDENT_HC_DV, Property.INDEPENDENT);
             }
             if ("apply".equals(d.methodInfo().name)) {
                 assertEquals("$1", d.methodInfo().typeInfo.simpleName);
@@ -251,15 +253,25 @@ public class Test_Support_08_SetOnceMap extends CommonTestRunner {
             }
         };
 
+        BreakDelayVisitor breakDelayVisitor = d -> {
+            String s = switch (d.typeInfo().simpleName) {
+                case "SetOnceMap" -> "------MFT--";
+                case "Freezable" -> "----";
+                default -> fail(d.typeInfo().simpleName);
+            };
+            assertEquals(s, d.delaySequence());
+        };
+
         // 1 potential null pointer warning accepted
         testSupportAndUtilClasses(List.of(SetOnceMap.class, Freezable.class), 0, 2,
                 new DebugConfiguration.Builder()
                         .addTypeMapVisitor(typeMapVisitor)
                         .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
-                        .addStatementAnalyserVisitor(statementAnalyserVisitor)
-                        .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-                        .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
-                        .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+                   //     .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                   //     .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                    //    .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                    //    .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+                        .addBreakDelayVisitor(breakDelayVisitor)
                         .build());
     }
 

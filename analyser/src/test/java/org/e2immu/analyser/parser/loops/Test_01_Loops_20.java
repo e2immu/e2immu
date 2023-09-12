@@ -28,8 +28,7 @@ import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 public class Test_01_Loops_20 extends CommonTestRunner {
 
@@ -53,9 +52,9 @@ public class Test_01_Loops_20 extends CommonTestRunner {
                         assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, vi.getProperty(Property.NOT_NULL_EXPRESSION));
                     }
                     if ("1.0.0".equals(d.statementId())) {
-                        assertTrue(d.variableInfoContainer().hasEvaluation());
-                        assertCurrentValue(d, 1, PATH_SPLIT);
-                        assertDv(d, 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_EXPRESSION);
+                        assertFalse(d.variableInfoContainer().hasEvaluation());
+                        assertCurrentValue(d, 0, PATH_SPLIT);
+                        assertDv(d, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_EXPRESSION);
                     }
                     assertEquals("Type String[]", d.currentValue().returnType().toString());
                 }

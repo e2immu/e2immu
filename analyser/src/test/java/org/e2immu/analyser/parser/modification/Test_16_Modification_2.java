@@ -71,12 +71,9 @@ public class Test_16_Modification_2 extends CommonTestRunner {
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("getFirst".equals(d.methodInfo().name)) {
                 String expected = d.iteration() == 0 ? "<m:getFirst>" : """
-                        /*inline getFirst*/set2ter.isEmpty()?"":set2ter.stream().findAny().orElseThrow()\
+                       set2ter.isEmpty()?"":set2ter.stream().findAny().orElseThrow()\
                         """;
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
-                if (d.iteration() > 0) {
-                    assertTrue(d.methodAnalysis().getSingleReturnValue() instanceof InlinedMethod);
-                }
             }
         };
 

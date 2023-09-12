@@ -85,16 +85,9 @@ public class Test_57_Lambda_AAPI extends CommonTestRunner {
             if ("same1".equals(d.methodInfo().name)) {
                 String expected = d.iteration() == 0
                         ? "<m:toArray>"
-                        : "list.stream().filter(/*inline test*/mask.startsWith(s)).toArray(/*inline apply*/new String[n])";
+                        : "list.stream().filter(instance type $1).toArray(instance type $2)";
                 Expression expression = d.evaluationResult().getExpression();
                 assertEquals(expected, expression.toString());
-                if (d.iteration() > 0) {
-                    if (expression instanceof MethodCall methodCall
-                            && methodCall.parameterExpressions.get(0) instanceof InlinedMethod inlinedMethod
-                            && inlinedMethod.expression() instanceof ConstructorCall constructorCall) {
-                        assertEquals(1, constructorCall.parameterizedType().arrays);
-                    } else fail();
-                }
             }
         };
         testClass("Lambda_16", 0, 0, new DebugConfiguration.Builder()
