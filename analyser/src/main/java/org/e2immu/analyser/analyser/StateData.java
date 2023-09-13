@@ -53,7 +53,6 @@ public class StateData {
     private final SetOnceMap<String, EventuallyFinal<Expression>> statesOfReturnInLoop;
     public final EventuallyFinal<Expression> valueOfExpression = new EventuallyFinal<>();
     private final EventuallyFinal<Expression> absoluteState = new EventuallyFinal<>();
-    private final EventuallyFinal<EvaluatedExpressionCache> evaluatedExpressionCache = new EventuallyFinal<>();
 
     private final EventuallyFinal<Expression> staticSideEffect = new EventuallyFinal<>();
 
@@ -73,7 +72,6 @@ public class StateData {
         assert postCondition.isFinal();
         assert valueOfExpression.isFinal();
         assert absoluteState.isFinal();
-        assert evaluatedExpressionCache.isFinal();
         assert statesOfInterrupts == null || statesOfInterrupts.valueStream().allMatch(EventuallyFinal::isFinal);
         assert statesOfReturnInLoop == null || statesOfReturnInLoop.valueStream().allMatch(EventuallyFinal::isFinal);
     }
@@ -108,9 +106,6 @@ public class StateData {
         if (absoluteState.isVariable()) {
             absoluteState.setFinal(unreachable);
         }
-        if (evaluatedExpressionCache.isVariable()) {
-            evaluatedExpressionCache.setFinal(EvaluatedExpressionCache.EMPTY);
-        }
     }
 
     public boolean setAbsoluteState(EvaluationContext evaluationContext) {
@@ -123,23 +118,6 @@ public class StateData {
             return true;
         }
         return false;
-    }
-
-    public boolean setEvaluatedExpressionCache(EvaluatedExpressionCache cache) {
-        if (cache.delays().isDone()) {
-            if (evaluatedExpressionCache.isVariable()) {
-                evaluatedExpressionCache.setFinal(cache);
-                return true;
-            }
-        } else {
-            evaluatedExpressionCache.setVariable(cache);
-        }
-        return false;
-    }
-
-    @SuppressWarnings("unused") // used in CM
-    public EvaluatedExpressionCache getEvaluatedExpressionCache() {
-        return evaluatedExpressionCache.get();
     }
 
     public Expression getAbsoluteState() {

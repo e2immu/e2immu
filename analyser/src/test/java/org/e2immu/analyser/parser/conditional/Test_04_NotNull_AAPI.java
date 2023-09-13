@@ -118,8 +118,13 @@ public class Test_04_NotNull_AAPI extends CommonTestRunner {
                 if ("1.0.1.0.0".equals(d.statementId())) {
                     String expected = d.iteration() == 0 ? "[<f:node.map>=null]" : "[<f:node.map>=null, node$1.map$0=null]";
                     assertEquals(expected, string);
+                    String cm = "CM{condition=<null-check>;parent=CM{condition=<null-check>;parent=CM{condition=strings.length>=1;parent=CM{condition=strings.length>=1;parent=CM{parent=CM{}}}}}}";
+                    assertEquals(cm, d.conditionManagerForNextStatement().toString());
                 }
                 if ("1.0.1.0.1".equals(d.statementId())) {
+                    // IMPORTANT: the null-check on node.map should be gone, since node.map was overwritten in
+                    // the previous statement. As a consequence, equalityAccordingTo... should be empty too.
+                    assertEquals("strings.length>=1", d.absoluteState().toString());
                     assertEquals("", string);
                 }
             }

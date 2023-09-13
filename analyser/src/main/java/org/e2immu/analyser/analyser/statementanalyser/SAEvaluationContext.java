@@ -114,7 +114,6 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
                 IsVariableExpression ive = lhsRhs.rhs().asInstanceOf(IsVariableExpression.class);
                 Expression value = lhsRhs.lhs();
                 if (ive != null && !value.isInstanceOf(IsVariableExpression.class)) { // do not assign to other variable!
-                    // FIXME clear after assignment
                     LOGGER.debug("Caught equality on variable with 'instance' value {}: {}", ive, value);
                     statementAnalysis.stateData().equalityAccordingToStatePut(ive, value);
                 }

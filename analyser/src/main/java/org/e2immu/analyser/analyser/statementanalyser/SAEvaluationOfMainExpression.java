@@ -201,7 +201,6 @@ record SAEvaluationOfMainExpression(StatementAnalysis statementAnalysis,
                     sharedState.localConditionManager().causesOfDelay());
         }
         statementAnalysis.stateData().setValueOfExpression(value);
-        statementAnalysis.stateData().setEvaluatedExpressionCache(result.evaluatedExpressionCache());
         CausesOfDelay sseDelay;
         if (statementAnalysis.stateData().staticSideEffectIsSet()) {
             sseDelay = CausesOfDelay.EMPTY;
@@ -262,7 +261,6 @@ record SAEvaluationOfMainExpression(StatementAnalysis statementAnalysis,
         progress |= stateData.setPrecondition(Precondition.empty(primitives));
         progress |= stateData.setPostCondition(PostCondition.empty(primitives));
         progress |= stateData.setPreconditionFromMethodCalls(Precondition.empty(primitives));
-        progress |= stateData.setEvaluatedExpressionCache(EvaluatedExpressionCache.EMPTY);
         progress |= stateData.setStaticSideEffect(EmptyExpression.EMPTY_EXPRESSION);
 
         if (statementAnalysis.flowData().timeAfterExecutionNotYetSet()) {
@@ -322,8 +320,7 @@ record SAEvaluationOfMainExpression(StatementAnalysis statementAnalysis,
 
 
     /*
-    fixme: this works in simpler situations, but does not when (much) more complex.
-
+    NOTE: this works in simpler situations, but does not when (much) more complex.
      */
     private EvaluationResult modifyReturnValueRemoveConditionBasedOnState(StatementAnalyserSharedState sharedState,
                                                                           EvaluationResult result) {
