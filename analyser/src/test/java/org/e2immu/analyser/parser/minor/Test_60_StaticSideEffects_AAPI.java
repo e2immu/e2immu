@@ -76,7 +76,7 @@ public class Test_60_StaticSideEffects_AAPI extends CommonTestRunner {
                     assertTrue(d.statementAnalysis().flowData().interruptsFlowIsSet());
                 }
                 if ("1".equals(d.statementId())) {
-                    assertEquals("CM{parent=CM{}}", d.statementAnalysis().stateData().getConditionManagerForNextStatement().toString());
+                    assertEquals("CM{ignore=k;parent=CM{}}", d.statementAnalysis().stateData().getConditionManagerForNextStatement().toString());
                 }
                 if ("2".equals(d.statementId())) {
                     assertEquals("true", d.state().toString());

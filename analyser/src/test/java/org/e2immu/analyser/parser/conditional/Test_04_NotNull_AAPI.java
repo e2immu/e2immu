@@ -114,18 +114,44 @@ public class Test_04_NotNull_AAPI extends CommonTestRunner {
 
         StatementAnalyserVisitor statementAnalyserVisitor = d -> {
             if ("add".equals(d.methodInfo().name)) {
-                String string = d.statementAnalysis().stateData().equalityAccordingToStateStream().map(Object::toString).sorted().toList().toString();
+                String string = d.statementAnalysis().stateData().equalityAccordingToStateStream()
+                        .map(Object::toString).sorted().toList().toString();
+                String equality = d.iteration() == 0 ? "[<f:node.map>=null]" : "[<f:node.map>=null, node$1.map$0=null]";
                 if ("1.0.1.0.0".equals(d.statementId())) {
-                    String expected = d.iteration() == 0 ? "[<f:node.map>=null]" : "[<f:node.map>=null, node$1.map$0=null]";
-                    assertEquals(expected, string);
-                    String cm = "CM{condition=<null-check>;parent=CM{condition=<null-check>;parent=CM{condition=strings.length>=1;parent=CM{condition=strings.length>=1;parent=CM{parent=CM{}}}}}}";
+                    assertEquals(equality, string);
+
+                    // no local ignore
+                    String cm = d.iteration() == 0
+                            ? "CM{condition=<null-check>;parent=CM{condition=<null-check>;parent=CM{condition=strings.length>=1;parent=CM{condition=strings.length>=1;parent=CM{ignore=node;parent=CM{}}}}}}"
+                            : "CM{condition=null==node$1.map$0;parent=CM{condition=null==node$1.map$0;parent=CM{condition=strings.length>=1;parent=CM{condition=strings.length>=1;parent=CM{ignore=node;parent=CM{}}}}}}";
                     assertEquals(cm, d.conditionManagerForNextStatement().toString());
+                    String absolute = d.iteration() == 0
+                            ? "<null-check>&&strings.length>=1"
+                            : "null==node$1.map$0&&strings.length>=1";
+                    assertEquals(absolute, d.absoluteState().toString());
                 }
                 if ("1.0.1.0.1".equals(d.statementId())) {
+                    assertEquals(equality, string);
+
+                    // local ignore: map
+                    String cm = d.iteration() == 0
+                            ? "CM{condition=<null-check>;ignore=map;parent=CM{condition=<null-check>;parent=CM{condition=strings.length>=1;parent=CM{condition=strings.length>=1;parent=CM{ignore=node;parent=CM{}}}}}}"
+                            : "CM{condition=null==node$1.map$0;ignore=map;parent=CM{condition=null==node$1.map$0;parent=CM{condition=strings.length>=1;parent=CM{condition=strings.length>=1;parent=CM{ignore=node;parent=CM{}}}}}}";
+                    assertEquals(cm, d.conditionManagerForNextStatement().toString());
+
                     // IMPORTANT: the null-check on node.map should be gone, since node.map was overwritten in
-                    // the previous statement. As a consequence, equalityAccordingTo... should be empty too.
+                    // this statement.
                     assertEquals("strings.length>=1", d.absoluteState().toString());
-                    assertEquals("", string);
+                }
+                if ("1.0.1.0.2".equals(d.statementId())) {
+                    assertEquals("[]", string);
+
+                    // local ignore: map and newTrieNode
+                    String cm = d.iteration() == 0
+                            ? "CM{condition=<null-check>;ignore=map,newTrieNode;parent=CM{condition=<null-check>;parent=CM{condition=strings.length>=1;parent=CM{condition=strings.length>=1;parent=CM{ignore=node;parent=CM{}}}}}}"
+                            : "CM{condition=null==node$1.map$0;ignore=map,newTrieNode;parent=CM{condition=null==node$1.map$0;parent=CM{condition=strings.length>=1;parent=CM{condition=strings.length>=1;parent=CM{ignore=node;parent=CM{}}}}}}";
+                    assertEquals(cm, d.conditionManagerForNextStatement().toString());
+                    assertEquals("strings.length>=1", d.absoluteState().toString());
                 }
             }
         };
@@ -161,7 +187,7 @@ public class Test_04_NotNull_AAPI extends CommonTestRunner {
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("add".equals(d.methodInfo().name)) {
                 if ("newTrieNode".equals(d.variableName())) {
-                    if ("1.0.1.0.2".equals(d.statementId())) {
+                    if ("1.0.1.0.3".equals(d.statementId())) {
                         assertLinked(d,
                                 it0("node.map:-1,node:-1,this.root:-1,this:-1"),
                                 it(1, "node.map:3,node:3,this.root:3,this:3"));
@@ -191,7 +217,7 @@ public class Test_04_NotNull_AAPI extends CommonTestRunner {
                     }
                 }
                 if ("node".equals(d.variableName())) {
-                    if ("1.0.1.0.2".equals(d.statementId())) {
+                    if ("1.0.1.0.3".equals(d.statementId())) {
                         assertDv(d, 1, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
                     }
                     if ("1.0.1.1.1".equals(d.statementId())) {
@@ -229,7 +255,7 @@ public class Test_04_NotNull_AAPI extends CommonTestRunner {
         BreakDelayVisitor breakDelayVisitor = d -> assertEquals("----M-MF---", d.delaySequence());
 
         testClass("NotNull_3", 6, 0, new DebugConfiguration.Builder()
-                //  .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .addBreakDelayVisitor(breakDelayVisitor)
                 .build(), new AnalyserConfiguration.Builder()
                 .setComputeContextPropertiesOverAllMethods(true)

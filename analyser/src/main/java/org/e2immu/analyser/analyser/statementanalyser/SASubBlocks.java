@@ -64,11 +64,13 @@ record SASubBlocks(StatementAnalysis statementAnalysis, StatementAnalyser statem
             return analysisStatus;
         }
 
-        // IMPROVE this should also be implemented on the haveSubBlocks side
-        Set<Variable> variablesAssigned = statementAnalysis.variableStream().filter(vi -> vi.isAssignedAt(index()))
-                .map(VariableInfo::variable).collect(Collectors.toUnmodifiableSet());
-        ConditionManager cm = sharedState.localConditionManager().removeFromState(sharedState.context(),
-                variablesAssigned);
+        // FIXME this should also be implemented on the haveSubBlocks side
+        Set<Variable> variablesAssigned = Stream.concat(
+                        statementAnalysis.variableStream().filter(vi -> vi.isAssignedAt(index()))
+                                .map(VariableInfo::variable),
+                        sharedState.localConditionManager().ignore().stream())
+                .collect(Collectors.toUnmodifiableSet());
+        ConditionManager cm = sharedState.localConditionManager().removeVariables(variablesAssigned);
 
         AnalysisStatus statusFromStatement;
         ConditionManager cmFromStatement;
@@ -81,11 +83,6 @@ record SASubBlocks(StatementAnalysis statementAnalysis, StatementAnalyser statem
             cmFromStatement = cm; // the change in condition manager comes from the surrounding block
             statusFromStatement = statusFromLocalCm.combine(statusFromThrows);
         } else {
-            // FIXME this should also be implemented on the haveSubBlocks side
-            //Set<FieldInfo> fieldsWithBreakDelay = statementAnalysis.fieldsWithBreakInitDelay();
-            //if (!fieldsWithBreakDelay.isEmpty()) {
-            //    cm = cm.removeDelaysOn(statementAnalysis.primitives(), fieldsWithBreakDelay);
-            //}
             cmFromStatement = cm;
             statusFromStatement = statusFromLocalCm.combine(AnalysisStatus.of(ensureEmptyPreAndPostCondition()));
         }

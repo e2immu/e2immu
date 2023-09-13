@@ -196,14 +196,14 @@ public class BinaryOperator extends BaseExpression implements Expression {
                 if (dv.valueIsTrue()) return new BooleanConstant(primitives, false);
                 if (dv.isDelayed())
                     return DelayedExpression.forNullCheck(identifier, primitives,
-                            right.getExpression(), dv.causesOfDelay().merge(r.causesOfDelay()));
+                            newEquals(l, r), dv.causesOfDelay().merge(r.causesOfDelay()));
             }
             if (r.isNullConstant()) {
                 DV dv = left.isNotNull0(false, forwardEvaluationInfo);
                 if (dv.valueIsTrue()) return new BooleanConstant(primitives, false);
                 if (dv.isDelayed())
                     return DelayedExpression.forNullCheck(identifier, primitives,
-                            left.getExpression(), dv.causesOfDelay().merge(l.causesOfDelay()));
+                            newEquals(r, l), dv.causesOfDelay().merge(l.causesOfDelay()));
             }
             // the following line ensures that a warning is sent when the ENN of a field/parameter is not NULLABLE
             // but the CNN is. The ENN trumps the annotation, but is not used in the computation of the constructor
@@ -236,15 +236,16 @@ public class BinaryOperator extends BaseExpression implements Expression {
                     // see e.g. statementAnalysis.stateData().equalityAccordingToStatePut
                     return Negation.negate(context,
                             DelayedExpression.forNullCheck(identifier, primitives,
-                                    right.getExpression(), dv.causesOfDelay().merge(r.causesOfDelay())));
+                                    newEquals(l, r), dv.causesOfDelay().merge(r.causesOfDelay())));
             }
             if (r.isNullConstant()) {
                 DV dv = left.isNotNull0(false, forwardEvaluationInfo);
                 if (dv.valueIsTrue()) return new BooleanConstant(primitives, true);
                 if (dv.isDelayed())
                     // note that the negation is necessary because we need to distinguish between ==null, !=null
+                    // furthermore, we expect null to be on the left in LhsRhs.extractEqualities
                     return Negation.negate(context, DelayedExpression.forNullCheck(identifier, primitives,
-                            left.getExpression(), dv.causesOfDelay().merge(l.causesOfDelay())));
+                            newEquals(r, l), dv.causesOfDelay().merge(l.causesOfDelay())));
             }
             return Negation.negate(context, Equals.equals(identifier, context, l, r, forwardEvaluationInfo));
         }
@@ -323,6 +324,10 @@ public class BinaryOperator extends BaseExpression implements Expression {
             return UnsignedShiftRight.unsignedShiftRight(identifier, context, l, r);
         }
         throw new UnsupportedOperationException("Operator " + operator.fullyQualifiedName());
+    }
+
+    private  Expression newEquals(Expression l, Expression r) {
+        return new Equals(identifier, primitives, l, r);
     }
 
     private EvaluationResult shortCircuit(EvaluationResult context,

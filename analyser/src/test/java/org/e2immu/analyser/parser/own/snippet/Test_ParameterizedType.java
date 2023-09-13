@@ -518,7 +518,7 @@ public class Test_ParameterizedType extends CommonTestRunner {
                 assertDv(d, 16, MultiLevel.EFFECTIVELY_IMMUTABLE_HC_DV, Property.IMMUTABLE);
             }
         };
-        testClass("ParameterizedType_2", 2, DONT_CARE,
+        testClass("ParameterizedType_2", 1, DONT_CARE,
                 new DebugConfiguration.Builder()
                    //     .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
                         .build(),

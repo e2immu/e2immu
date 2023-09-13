@@ -89,16 +89,20 @@ public class Equals extends BinaryOperator {
                 }
                 DV dv = context.evaluationContext().isNotNull0(r, false, forwardEvaluationInfo);
                 if (dv.valueIsTrue()) return new BooleanConstant(primitives, false);
-                if (dv.isDelayed())
-                    return DelayedExpression.forNullCheck(identifier, primitives,
-                            r, dv.causesOfDelay().merge(r.causesOfDelay()));
+                if (dv.isDelayed()) {
+                    Expression original = new Equals(identifier, primitives, l, r);
+                    return DelayedExpression.forNullCheck(identifier, primitives, original,
+                            dv.causesOfDelay().merge(r.causesOfDelay()));
+                }
             }
             if (r.isInstanceOf(NullConstant.class)) {
                 DV dv = context.evaluationContext().isNotNull0(l, false, forwardEvaluationInfo);
                 if (dv.valueIsTrue()) return new BooleanConstant(primitives, false);
-                if (dv.isDelayed())
-                    return DelayedExpression.forNullCheck(identifier, primitives,
-                            l, dv.causesOfDelay().merge(l.causesOfDelay()));
+                if (dv.isDelayed()) {
+                    Expression original = new Equals(identifier, primitives, r, l);
+                    return DelayedExpression.forNullCheck(identifier, primitives, original,
+                            dv.causesOfDelay().merge(l.causesOfDelay()));
+                }
             }
         }
         ConstantExpression<?> lc, rc;

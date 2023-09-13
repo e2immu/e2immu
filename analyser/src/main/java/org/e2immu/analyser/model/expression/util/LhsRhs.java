@@ -22,12 +22,8 @@ import java.util.List;
 public record LhsRhs(Expression lhs, Expression rhs) {
 
     public static List<LhsRhs> extractEqualities(Expression e) {
-        if (e instanceof DelayedExpression de && DelayedExpression.NULL_CHECK.equals(de.msg())) {
-            Expression ee = de;
-            while (ee instanceof DelayedExpression delayedExpression) ee = delayedExpression.getOriginal();
-            if (ee instanceof DelayedVariableExpression dve) {
-                return List.of(new LhsRhs(NullConstant.NULL_CONSTANT, dve));
-            }
+        if (e instanceof DelayedExpression de) {
+            return extractEqualities(de.getOriginal());
         }
         if (e instanceof Equals equals) {
             return List.of(new LhsRhs(equals.lhs, equals.rhs));

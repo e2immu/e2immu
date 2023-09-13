@@ -14,7 +14,6 @@
 
 package org.e2immu.analyser.analyser;
 
-import org.e2immu.analyser.model.Element;
 import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.Identifier;
 import org.e2immu.analyser.model.ParameterInfo;
@@ -47,6 +46,7 @@ public record ConditionManager(Expression condition,
                                Expression state,
                                Set<Variable> stateVariables,
                                Precondition precondition,
+                               Set<Variable> ignore,
                                ConditionManager parent) {
 
     private static final Set<Variable> NO_VARS = Set.of();
@@ -57,7 +57,7 @@ public record ConditionManager(Expression condition,
 
     private ConditionManager() {
         this(UnknownExpression.forSpecial(), NO_VARS, UnknownExpression.forSpecial(), NO_VARS,
-                new Precondition(UnknownExpression.forSpecial(), List.of()), null);
+                new Precondition(UnknownExpression.forSpecial(), List.of()), NO_VARS, null);
     }
 
     public ConditionManager {
@@ -98,12 +98,13 @@ public record ConditionManager(Expression condition,
 
     public static ConditionManager initialConditionManager(Primitives primitives) {
         BooleanConstant TRUE = new BooleanConstant(primitives, true);
-        return new ConditionManager(TRUE, NO_VARS, TRUE, NO_VARS, Precondition.empty(TRUE), null);
+        return new ConditionManager(TRUE, NO_VARS, TRUE, NO_VARS, Precondition.empty(TRUE), NO_VARS, null);
     }
 
     public static ConditionManager impossibleConditionManager(Primitives primitives) {
         BooleanConstant FALSE = new BooleanConstant(primitives, true);
-        return new ConditionManager(FALSE, NO_VARS, FALSE, NO_VARS, new Precondition(FALSE, List.of()), null);
+        return new ConditionManager(FALSE, NO_VARS, FALSE, NO_VARS, new Precondition(FALSE, List.of()), NO_VARS,
+                null);
     }
 
     /*
@@ -113,7 +114,7 @@ public record ConditionManager(Expression condition,
     public ConditionManager newAtStartOfNewBlock(Primitives primitives, Expression condition,
                                                  Set<Variable> conditionVariables, Precondition precondition) {
         return new ConditionManager(condition, conditionVariables, new BooleanConstant(primitives, true),
-                NO_VARS, precondition, this);
+                NO_VARS, precondition, NO_VARS, this);
     }
 
     /*
@@ -123,17 +124,19 @@ public record ConditionManager(Expression condition,
     public ConditionManager withCondition(EvaluationResult context, Expression switchCondition,
                                           Set<Variable> conditionVariables) {
         return new ConditionManager(combine(context, condition, switchCondition),
-                combine(this.conditionVariables, conditionVariables), state, stateVariables, precondition, this);
+                combine(this.conditionVariables, conditionVariables), state, stateVariables, precondition, NO_VARS,
+                this);
     }
 
     /*
     adds a new layer (parent this)
     Widely used, mostly in SASubBlocks to create the CM of the ExecutionOfBlock objects
     */
-    public ConditionManager newAtStartOfNewBlockDoNotChangePrecondition(Primitives primitives, Expression condition,
+    public ConditionManager newAtStartOfNewBlockDoNotChangePrecondition(Primitives primitives,
+                                                                        Expression condition,
                                                                         Set<Variable> conditionVariables) {
         return new ConditionManager(condition, conditionVariables, new BooleanConstant(primitives, true),
-                NO_VARS, precondition, this);
+                NO_VARS, precondition, NO_VARS, this);
     }
 
     /*
@@ -141,7 +144,8 @@ public record ConditionManager(Expression condition,
     Used to: create a child CM that has more state
     */
     public ConditionManager addState(Expression state, Set<Variable> stateVariables) {
-        return new ConditionManager(condition, conditionVariables, state, stateVariables, precondition, this);
+        return new ConditionManager(condition, conditionVariables, state, stateVariables, precondition, NO_VARS,
+                this);
     }
 
     /*
@@ -150,7 +154,8 @@ public record ConditionManager(Expression condition,
     This is the feedback loop from MethodLevelData.combinedPrecondition back into the condition manager
      */
     public ConditionManager withPrecondition(Precondition combinedPrecondition) {
-        return new ConditionManager(condition, conditionVariables, state, stateVariables, combinedPrecondition, parent);
+        return new ConditionManager(condition, conditionVariables, state, stateVariables, combinedPrecondition, ignore,
+                parent);
     }
 
     /*
@@ -159,7 +164,7 @@ public record ConditionManager(Expression condition,
      */
     public ConditionManager withoutState(Primitives primitives) {
         return new ConditionManager(condition, conditionVariables,
-                new BooleanConstant(primitives, true), NO_VARS, precondition, parent);
+                new BooleanConstant(primitives, true), NO_VARS, precondition, ignore, parent);
     }
 
     /*
@@ -173,28 +178,85 @@ public record ConditionManager(Expression condition,
         if (addToState.isBoolValueTrue()) return this;
         Expression newState = combine(evaluationContext, state, addToState);
         return new ConditionManager(condition, conditionVariables, newState,
-                combine(stateVariables, addToStateVariables), precondition, parent);
+                combine(stateVariables, addToStateVariables), precondition, ignore, parent);
+    }
+
+    /*
+    Re-assignments of variables... affects absoluteState computations!
+     */
+    public ConditionManager removeVariables(Set<Variable> variablesAssigned) {
+        return new ConditionManager(condition, conditionVariables, state, stateVariables, precondition,
+                variablesAssigned, parent);
     }
 
     public Expression absoluteState(EvaluationResult evaluationContext) {
-        return absoluteState(evaluationContext, false);
+        return absoluteState(evaluationContext, false, Set.of());
     }
 
-    private Expression absoluteState(EvaluationResult evaluationContext, boolean doingNullCheck) {
+    private Expression absoluteState(EvaluationResult context,
+                                     boolean doingNullCheck,
+                                     Set<Variable> ignoreFromChildren) {
+        Set<Variable> cumulativeIgnore = SetUtil.immutableUnion(ignoreFromChildren, ignore);
         Expression[] expressions;
         int complexity;
+        Expression cleanState = expressionWithoutVariables(context, state, cumulativeIgnore);
         if (parent == null) {
-            expressions = new Expression[]{state};
-            complexity = state.getComplexity();
+            expressions = new Expression[]{cleanState};
+            complexity = cleanState.getComplexity();
         } else {
-            Expression parentAbsolute = parent.absoluteState(evaluationContext, doingNullCheck);
-            expressions = new Expression[]{condition, state, parentAbsolute};
-            complexity = condition.getComplexity() + state.getComplexity() + parentAbsolute.getComplexity();
+            Expression parentAbsolute = parent.absoluteState(context, doingNullCheck, cumulativeIgnore);
+            Expression cleanCondition = expressionWithoutVariables(context, condition, cumulativeIgnore);
+            expressions = new Expression[]{cleanCondition, cleanState, parentAbsolute};
+            complexity = cleanCondition.getComplexity() + cleanState.getComplexity() + parentAbsolute.getComplexity();
         }
         if (complexity > LIMIT_ON_COMPLEXITY) {
-            return Instance.forTooComplex(getIdentifier(), evaluationContext.getPrimitives().booleanParameterizedType());
+            return Instance.forTooComplex(getIdentifier(), context.getPrimitives().booleanParameterizedType());
         }
-        return And.and(evaluationContext, doingNullCheck, expressions);
+        return And.and(context, doingNullCheck, expressions);
+    }
+
+    public Expression expressionWithoutVariables(EvaluationResult context,
+                                                 Expression expression,
+                                                 Set<Variable> cumulativeIgnore) {
+        if (cumulativeIgnore.isEmpty()) return expression;
+        if (expression instanceof ConstantExpression<?>) return expression;
+        IsVariableExpression ive = expression.asInstanceOf(IsVariableExpression.class);
+
+        if (ive != null) {
+            if (expression.returnType().isBooleanOrBoxedBoolean() && cumulativeIgnore.contains(ive.variable())) {
+                return new BooleanConstant(context.getPrimitives(), true); // REMOVE!
+            }
+            return expression; // we'll catch this one later
+        }
+        if (expression instanceof Negation negation) {
+            Expression e = expressionWithoutVariables(context, negation.expression, cumulativeIgnore);
+            if (e.isBoolValueTrue()) return e; // REMOVE!
+            return expression;
+        }
+        if (expression instanceof And and) {
+            Expression[] filtered = and.getExpressions().stream()
+                    .map(e -> expressionWithoutVariables(context, e, cumulativeIgnore))
+                    .filter(e -> !e.isBoolValueTrue())
+                    .toArray(Expression[]::new);
+            return And.and(and.identifier, context, filtered);
+        }
+        if (expression instanceof BinaryOperator operator) {
+            Expression lhs = expressionWithoutVariables(context, operator.lhs, cumulativeIgnore);
+            Expression rhs = expressionWithoutVariables(context, operator.rhs, cumulativeIgnore);
+            IsVariableExpression lhsVar = lhs.asInstanceOf(IsVariableExpression.class);
+            IsVariableExpression rhsVar = rhs.asInstanceOf(IsVariableExpression.class);
+            if (lhsVar != null && cumulativeIgnore.contains(lhsVar.variable()) ||
+                    rhsVar != null && cumulativeIgnore.contains(rhsVar.variable())) {
+                return new BooleanConstant(context.getPrimitives(), true); // REMOVE!
+            }
+        }
+        if (expression instanceof DelayedExpression de) {
+            Expression e = expressionWithoutVariables(context, de.getOriginal(), cumulativeIgnore);
+            if (e.isBoolValueTrue()) return e; // REMOVE!
+            return expression;
+        }
+        // TODO ... simplified for now
+        return expression;
     }
 
     public Identifier getIdentifier() {
@@ -225,7 +287,7 @@ public record ConditionManager(Expression condition,
         assert !value.returnType().isBooleanOrBoxedBoolean() : "Got " + value.getClass() + ", type " + value.returnType();
         Expression conditionalPart = value.extractConditions(context.getPrimitives());
         if (conditionalPart.isBoolValueTrue()) return value;
-        Expression absoluteState = absoluteState(context, false);
+        Expression absoluteState = absoluteState(context, false, Set.of());
         if (absoluteState.isEmpty() || absoluteState.isBoolValueTrue()) return value;
         Expression newState = And.and(context, absoluteState, conditionalPart);
         if (newState.equals(conditionalPart) || newState.equals(absoluteState)) {
@@ -248,7 +310,7 @@ public record ConditionManager(Expression condition,
         assert value.returnType().isBooleanOrBoxedBoolean() : "Got " + value.getClass() + ", type " + value.returnType();
         if (value.isBoolValueFalse()) return value; // no matter what the conditions and state is
 
-        Expression absoluteState = absoluteState(context, doingNullCheck);
+        Expression absoluteState = absoluteState(context, doingNullCheck, Set.of());
         if (absoluteState.isEmpty() || value.isEmpty()) throw new UnsupportedOperationException();
         /*
         check on true: no state, so don't do anything
@@ -308,7 +370,7 @@ public record ConditionManager(Expression condition,
         if (context.evaluationContext().preventAbsoluteStateComputation()) {
             state = this.state;
         } else {
-            state = absoluteState(context, false);
+            state = absoluteState(context, false, Set.of());
         }
         return findIndividualNull(state, context, Filter.FilterMode.ACCEPT, requireEqualsNull);
 
@@ -343,7 +405,7 @@ public record ConditionManager(Expression condition,
      an AND of negations of the remainder after getting rid of != null, == null clauses.
      */
     public Expression precondition(EvaluationResult evaluationContext) {
-        Expression absoluteState = absoluteState(evaluationContext, false);
+        Expression absoluteState = absoluteState(evaluationContext, false, Set.of());
         if (absoluteState.isEmpty()) throw new UnsupportedOperationException();
         Expression negated = Negation.negate(evaluationContext, absoluteState);
 
@@ -366,7 +428,7 @@ public record ConditionManager(Expression condition,
      */
     public Expression individualStateInfo(EvaluationResult evaluationContext, Variable variable) {
         Filter filter = new Filter(evaluationContext, Filter.FilterMode.ACCEPT);
-        Expression absoluteState = absoluteState(evaluationContext, false);
+        Expression absoluteState = absoluteState(evaluationContext, false, Set.of());
         Expression combinedWithPrecondition;
         if (precondition.isEmpty()) {
             combinedWithPrecondition = absoluteState;
@@ -397,40 +459,18 @@ public record ConditionManager(Expression condition,
         return parent == null ? mine : mine.merge(parent.causesOfDelay());
     }
 
+    private static String nice(Set<Variable> set) {
+        return set.stream().map(Variable::simpleName).sorted().collect(Collectors.joining(","));
+    }
+
     @Override
     public String toString() {
         return "CM{" +
                 (condition.isBoolValueTrue() ? "" : "condition=" + condition + ";") +
                 (state.isBoolValueTrue() ? "" : "state=" + state + ";") +
                 (precondition.isEmpty() ? "" : "pc=" + precondition + ";") +
+                (ignore.isEmpty() ? "" : "ignore=" + nice(ignore) + ";") +
                 (parent == null ? "" : parent == SPECIAL ? "**" : "parent=" + parent) + '}';
-    }
-
-    public ConditionManager removeFromState(EvaluationResult evaluationContext, Set<Variable> variablesAssigned) {
-        Primitives primitives = evaluationContext.getPrimitives();
-        Expression withoutNegation = state instanceof Negation negation ? negation.expression : state;
-        if (withoutNegation instanceof Equals equals && !Collections.disjoint(equals.variables(), variablesAssigned)) {
-            Expression newState = state.isDelayed()
-                    ? DelayedExpression.forSimplification(getIdentifier(), primitives.booleanParameterizedType(),
-                    state, state.causesOfDelay())
-                    : new BooleanConstant(primitives, true);
-            Set<Variable> nsv = new HashSet<>(newState.variables());
-            return new ConditionManager(condition, conditionVariables, newState, nsv, precondition, parent);
-        }
-        if (withoutNegation instanceof And and) {
-            Expression[] expressions = and.getExpressions().stream()
-                    .filter(e -> Collections.disjoint(e.variables(), variablesAssigned))
-                    .toArray(Expression[]::new);
-            Expression s = expressions.length == 0 ? new BooleanConstant(primitives, true) :
-                    And.and(evaluationContext, expressions);
-            Set<Variable> nsv = new HashSet<>(s.variables());
-            return new ConditionManager(condition, conditionVariables, s, nsv, precondition, parent);
-        }
-        return this;
-    }
-
-    public boolean isEmpty() {
-        return condition.isBoolValueTrue() && state.isBoolValueTrue() && precondition().isEmpty() && (parent == null || parent().isEmpty());
     }
 
     public List<Variable> variables() {
@@ -459,11 +499,6 @@ public record ConditionManager(Expression condition,
         @Override
         public Primitives getPrimitives() {
             return analyserContext.getPrimitives();
-        }
-
-        @Override
-        public DV isNotNull0(Expression value, boolean useEnnInsteadOfCnn, ForwardEvaluationInfo forwardEvaluationInfo) {
-            return DV.FALSE_DV;
         }
 
         @Override

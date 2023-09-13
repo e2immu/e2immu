@@ -201,11 +201,12 @@ public class InstanceOf extends BaseExpression implements Expression {
             return builder.setExpression(newInstanceOf).build();
         }
         Expression notNull;
+        Expression original = Negation.negate(context,
+                Equals.equals(identifier, context, value, NullConstant.NULL_CONSTANT, forwardEvaluationInfo));
         if (evalNotNull.valueIsFalse()) {
-            notNull = Negation.negate(context,
-                    Equals.equals(identifier, context, value, NullConstant.NULL_CONSTANT, forwardEvaluationInfo));
+            notNull = original;
         } else {
-            notNull = DelayedExpression.forNullCheck(getIdentifier(), primitives, this, evalNotNull.causesOfDelay());
+            notNull = DelayedExpression.forNullCheck(getIdentifier(), primitives, original, evalNotNull.causesOfDelay());
         }
         return builder
                 .setExpression(And.and(context, newInstanceOf, notNull))

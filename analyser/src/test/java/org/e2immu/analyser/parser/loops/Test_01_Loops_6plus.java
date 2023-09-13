@@ -710,7 +710,7 @@ public class Test_01_Loops_6plus extends CommonTestRunner {
                 if ("1.0.1".equals(d.statementId())) {
                     if (d.iteration() == 0) {
                         ConditionManager cm = d.statementAnalysis().stateData().getConditionManagerForNextStatement();
-                        assertEquals("CM{condition=<loopIsNotEmptyCondition>;parent=CM{condition=<loopIsNotEmptyCondition>;parent=CM{parent=CM{}}}}",
+                        assertEquals("CM{condition=<loopIsNotEmptyCondition>;ignore=key;parent=CM{condition=<loopIsNotEmptyCondition>;parent=CM{ignore=result;parent=CM{}}}}",
                                 cm.toString());
                         assertTrue(cm.condition().isDelayed());
                         assertTrue(cm.isDelayed());

@@ -64,6 +64,6 @@ class ConditionManagerHelper {
         }
         // swap condition for the one from forwardAnalysisInfo
         return new ConditionManager(condition, conditionVariables, previousCm.state(),
-                previousCm.stateVariables(), combinedPrecondition, previousCm.parent());
+                previousCm.stateVariables(), combinedPrecondition, previousCm.ignore(), previousCm.parent());
     }
 }

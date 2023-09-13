@@ -52,6 +52,7 @@ public class NotNull_3<T> {
         for (String s : strings) {
             TrieNode<T> newTrieNode;
             if (node.map == null) { // 1.0.1
+                System.out.println("dummy statement");
                 node.map = new HashMap<>();
                 newTrieNode = new TrieNode<>();
                 node.map.put(s, newTrieNode);

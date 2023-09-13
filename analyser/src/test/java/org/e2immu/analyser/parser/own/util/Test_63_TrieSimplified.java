@@ -371,8 +371,8 @@ public class Test_63_TrieSimplified extends CommonTestRunner {
                 }
                 if ("1".equals(d.statementId())) {
                     String expected = d.iteration() == 0
-                            ? "CM{state=(!<loopIsNotEmptyCondition>||!<null-check>)&&(!<loopIsNotEmptyCondition>||!<null-check>);parent=CM{}}"
-                            : "CM{state=instance type int>=upToPosition;parent=CM{}}";
+                            ? "CM{state=(!<loopIsNotEmptyCondition>||!<null-check>)&&(!<loopIsNotEmptyCondition>||!<null-check>);ignore=node;parent=CM{}}"
+                            : "CM{state=instance type int>=upToPosition;ignore=node;parent=CM{}}";
                     assertEquals(expected, d.statementAnalysis().stateData().getConditionManagerForNextStatement().toString());
                 }
                 if ("2".equals(d.statementId())) {
