@@ -226,10 +226,10 @@ public class Test_AnalysisProvider extends CommonTestRunner {
             if ("defaultImmutable".equals(d.methodInfo().name) && numParams == 3) {
                 if ("typeAnalysis".equals(d.variableName())) {
                     if ("5".equals(d.statementId())) {
-                        assertDv(d, 18, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                        assertDv(d, 4, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     }
                     if ("7".equals(d.statementId())) {
-                        assertDv(d, 18, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                        assertDv(d, 4, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     }
                     if ("8.0.0".equals(d.statementId())) {
                         assertLinked(d, it0("AnalysisProvider_1.EFFECTIVELY_E1IMMUTABLE_DV:-1,AnalysisProvider_1.EFFECTIVELY_E2IMMUTABLE_DV:-1,AnalysisProvider_1.IMMUTABLE:-1,AnalysisProvider_1.NOT_INVOLVED_DV:-1,baseValue:-1,bestType:-1,doSum:-1,dynamicBaseValue:-1,dynamicValue:-1,parameterizedType.arrays:-1,parameterizedType.parameters:-1,parameterizedType:-1,this:-1,unboundIsMutable:-1"),
@@ -237,9 +237,8 @@ public class Test_AnalysisProvider extends CommonTestRunner {
                                         "AnalysisProvider_1.EFFECTIVELY_E2IMMUTABLE_DV:-1,AnalysisProvider_1.IMMUTABLE:-1,AnalysisProvider_1.NOT_INVOLVED_DV:-1,baseValue:-1,bestType:-1,doSum:-1,dynamicBaseValue:-1,dynamicValue:-1,parameterizedType:-1,this:-1"),
                                 it(3, 3,
                                         "AnalysisProvider_1.EFFECTIVELY_E2IMMUTABLE_DV:-1,AnalysisProvider_1.IMMUTABLE:-1,AnalysisProvider_1.NOT_INVOLVED_DV:-1,baseValue:-1,doSum:-1,dynamicBaseValue:-1,dynamicValue:-1,this:-1"),
-                                it(4, 17, "baseValue:-1,bestType:-1,doSum:-1,parameterizedType:-1,this:-1"),
-                                it(18, "baseValue:2,doSum:2,this:2"));
-                        assertDv(d, 18, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                                it(4, "baseValue:2,doSum:2,this:2"));
+                        assertDv(d, 4, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     }
                 }
             }
@@ -250,11 +249,10 @@ public class Test_AnalysisProvider extends CommonTestRunner {
                     assertLinked(d, it0("NOT_YET_SET"),
                             it(1, 2, "AnalysisProvider_1.EFFECTIVELY_E2IMMUTABLE_DV:-1,AnalysisProvider_1.IMMUTABLE:-1,AnalysisProvider_1.NOT_INVOLVED_DV:-1,baseValue:-1,bestType:-1,doSum:-1,dynamicBaseValue:-1,dynamicValue:-1,parameterizedType:-1,this:-1"),
                             it(3, 3, "AnalysisProvider_1.EFFECTIVELY_E2IMMUTABLE_DV:-1,AnalysisProvider_1.IMMUTABLE:-1,AnalysisProvider_1.NOT_INVOLVED_DV:-1,baseValue:-1,doSum:-1,dynamicBaseValue:-1,dynamicValue:-1,this:-1"),
-                            it(4, 17, "baseValue:-1,bestType:-1,doSum:-1,parameterizedType:-1,this:-1"),
-                            it(18, "baseValue:2,doSum:2,this:2"));
+                            it(4, "baseValue:2,doSum:2,this:2"));
 
                     assertFalse(d.variableInfoContainer().hasMerge());
-                    assertDv(d, 18, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                    assertDv(d, 4, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                 }
             }
         };

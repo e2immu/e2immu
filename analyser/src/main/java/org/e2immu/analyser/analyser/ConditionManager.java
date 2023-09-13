@@ -199,20 +199,19 @@ public record ConditionManager(Expression condition,
         Set<Variable> cumulativeIgnore = SetUtil.immutableUnion(ignoreFromChildren, ignore);
         Expression[] expressions;
         int complexity;
-        Expression cleanState = expressionWithoutVariables(context, state, cumulativeIgnore);
         if (parent == null) {
-            expressions = new Expression[]{cleanState};
-            complexity = cleanState.getComplexity();
+            expressions = new Expression[]{state};
+            complexity = state.getComplexity();
         } else {
             Expression parentAbsolute = parent.absoluteState(context, doingNullCheck, cumulativeIgnore);
             Expression cleanCondition = expressionWithoutVariables(context, condition, cumulativeIgnore);
-            expressions = new Expression[]{cleanCondition, cleanState, parentAbsolute};
-            complexity = cleanCondition.getComplexity() + cleanState.getComplexity() + parentAbsolute.getComplexity();
+            expressions = new Expression[]{cleanCondition, state, parentAbsolute};
+            complexity = cleanCondition.getComplexity() + state.getComplexity() + parentAbsolute.getComplexity();
         }
         if (complexity > LIMIT_ON_COMPLEXITY) {
             return Instance.forTooComplex(getIdentifier(), context.getPrimitives().booleanParameterizedType());
         }
-        return And.and(context, doingNullCheck, expressions);
+        return And.and(Identifier.CONSTANT, context, doingNullCheck, expressions);
     }
 
     public Expression expressionWithoutVariables(EvaluationResult context,
@@ -319,17 +318,18 @@ public record ConditionManager(Expression condition,
         if (precondition.isEmpty()) {
             combinedWithPrecondition = absoluteState;
         } else {
-            combinedWithPrecondition = And.and(context, doingNullCheck, absoluteState, precondition.expression());
+            combinedWithPrecondition = And.and(Identifier.CONSTANT, context, doingNullCheck, absoluteState,
+                    precondition.expression());
         }
         // this one solves boolean problems; in a boolean context, there is no difference
         // between the value and the condition
-        Expression resultWithPrecondition = And.and(context, doingNullCheck, combinedWithPrecondition, value);
+        Expression resultWithPrecondition = And.and(Identifier.CONSTANT, context, doingNullCheck, combinedWithPrecondition, value);
         if (resultWithPrecondition.equals(combinedWithPrecondition)) {
             // constant true: adding the value has no effect at all
             return new BooleanConstant(context.getPrimitives(), true);
         }
         // return the result without precondition
-        Expression result = And.and(context, doingNullCheck, absoluteState, value);
+        Expression result = And.and(Identifier.CONSTANT, context, doingNullCheck, absoluteState, value);
         if (result instanceof And and && and.getExpressions().stream().anyMatch(value::equals)) {
             return value;
         }

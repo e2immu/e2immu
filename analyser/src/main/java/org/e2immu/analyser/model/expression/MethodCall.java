@@ -1441,23 +1441,15 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
             //          linkedVariables, object.returnType(), true);
         }
 
-        // FIXME the problem in Independent1_12 is to do with the mix-up between using the object (variable 'stream')
-        //   and the object value, map.entrySet().stream(). Coming from Assignment, we only see the latter.
-        //   we should see both, link 'stream' :2 and add the max(...) for the object value so as to link :4 to 'map'
         // RULE 4: otherwise, we link to the object, even if the object is 'this'
         // note that we cannot use STATICALLY_ASSIGNED here
-        Expression objectOrItsValue;
-        if (object instanceof VariableExpression) {
-            objectOrItsValue = object;
-        } else {
-            objectOrItsValue = object.evaluate(context, ForwardEvaluationInfo.DEFAULT).value();
-        }
-        LinkedVariables linkedVariablesOfObject = objectOrItsValue.linkedVariables(context).minimum(LinkedVariables.LINK_ASSIGNED);
+
+        LinkedVariables linkedVariablesOfObject = object.linkedVariables(context).minimum(LinkedVariables.LINK_ASSIGNED);
         if (linkedVariablesOfObject.isEmpty()) {
             // there is no linking...
             return LinkedVariables.EMPTY;
         }
-        ParameterizedType returnTypeOfObject = objectOrItsValue.returnType();
+        ParameterizedType returnTypeOfObject = object.returnType();
         DV immutableOfObject = context.getAnalyserContext().typeImmutable(returnTypeOfObject);
         if (!context.evaluationContext().isMyself(returnTypeOfObject) && immutableOfObject.isDelayed()) {
             return linkedVariablesOfObject.changeToDelay(immutableOfObject);

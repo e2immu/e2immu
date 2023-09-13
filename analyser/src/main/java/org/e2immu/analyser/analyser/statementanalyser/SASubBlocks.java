@@ -27,6 +27,7 @@ import org.e2immu.analyser.analysis.range.Range;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.*;
 import org.e2immu.analyser.model.statement.*;
+import org.e2immu.analyser.model.variable.ReturnVariable;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.Primitives;
@@ -66,7 +67,9 @@ record SASubBlocks(StatementAnalysis statementAnalysis, StatementAnalyser statem
 
         // FIXME this should also be implemented on the haveSubBlocks side
         Set<Variable> variablesAssigned = Stream.concat(
-                        statementAnalysis.variableStream().filter(vi -> vi.isAssignedAt(index()))
+                        statementAnalysis.variableStream()
+                                .filter(vi -> !(vi.variable() instanceof ReturnVariable))
+                                .filter(vi -> vi.isAssignedAt(index()))
                                 .map(VariableInfo::variable),
                         sharedState.localConditionManager().ignore().stream())
                 .collect(Collectors.toUnmodifiableSet());

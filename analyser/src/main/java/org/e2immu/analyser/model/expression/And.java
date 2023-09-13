@@ -90,6 +90,7 @@ public class And extends ExpressionCanBeTooComplex {
 
     // we try to maintain a CNF
     private Expression append(EvaluationResult context, boolean doingNullChecks, Expression... values) {
+        assert !doingNullChecks || identifier == Identifier.CONSTANT;
 
         // STEP 1: check that all values return boolean!
         int complexity = 0;
@@ -440,7 +441,9 @@ public class And extends ExpressionCanBeTooComplex {
                 List<Expression> result = new ArrayList<>(or.expressions().size());
                 boolean foundTrue = false;
                 for (Expression clause : or.expressions()) {
-                    Expression and = new And(Identifier.joined("and", List.of(prev.getIdentifier(), clause.getIdentifier())),
+                    Identifier id = doingNullChecks ? Identifier.CONSTANT
+                            : Identifier.joined("and", List.of(prev.getIdentifier(), clause.getIdentifier()));
+                    Expression and = new And(id,
                             evaluationContext.getPrimitives()).append(evaluationContext, doingNullChecks, prev, clause);
                     if (and.isBoolValueTrue()) {
                         foundTrue = true;

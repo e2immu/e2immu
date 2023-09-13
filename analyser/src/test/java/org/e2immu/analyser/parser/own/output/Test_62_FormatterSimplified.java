@@ -82,7 +82,7 @@ public class Test_62_FormatterSimplified extends CommonTestRunner {
                 .build());
     }
 
-    @Disabled("Overwriting condition manager's final value")
+    //@Disabled("Overwriting condition manager's final value")
     @Test
     public void test_2() throws IOException {
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {

@@ -52,7 +52,7 @@ public class Test_Output_03_Formatter extends CommonTestRunner {
     }
 
     // the real deal
-    @Disabled("Infinite loop between And, Negation, Equals, isNotNull0")
+    //@Disabled("Infinite loop between And, Negation, Equals, isNotNull0")
     @Test
     public void test_1() throws IOException {
         EvaluationResultVisitor evaluationResultVisitor = d -> {
@@ -247,14 +247,14 @@ public class Test_Output_03_Formatter extends CommonTestRunner {
                         Forward.class, Lookahead.class, CurrentExceeds.class, ForwardInfo.class, GuideOnStack.class,
                         ElementarySpace.class, OutputElement.class, FormattingOptions.class,
                         TypeName.class, Qualifier.class, Guide.class, Symbol.class, Space.class, Split.class),
-                0, 26, new DebugConfiguration.Builder()
+                0, 28, new DebugConfiguration.Builder()
                    //     .addEvaluationResultVisitor(evaluationResultVisitor)
                     //    .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                     //    .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                     //    .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                     //    .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
                     //    .addStatementAnalyserVisitor(statementAnalyserVisitor)
-                    //    .addBreakDelayVisitor(breakDelayVisitor)
+                        .addBreakDelayVisitor(breakDelayVisitor)
                         .build(),
                 new AnalyserConfiguration.Builder().setComputeFieldAnalyserAcrossAllMethods(true).build());
     }

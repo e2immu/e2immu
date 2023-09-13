@@ -56,25 +56,29 @@ public final class Or extends ExpressionCanBeTooComplex {
     }
 
     public static Expression or(Identifier identifier, EvaluationResult context, Expression... values) {
-        return new Or(identifier, context.getPrimitives()).append(context, values);
+        return new Or(identifier, context.getPrimitives()).append(context, false, values);
     }
 
     public static Expression or(EvaluationResult context, Expression... values) {
+        return or(context, false, values);
+    }
+
+    public static Expression or(EvaluationResult context, boolean doingNullChecks, Expression... values) {
         Identifier id = Identifier.joined("or", Arrays.stream(values).map(Expression::getIdentifier).toList());
-        return new Or(id, context.getPrimitives()).append(context, values);
+        return new Or(id, context.getPrimitives()).append(context, doingNullChecks, values);
     }
 
     public static Expression or(EvaluationResult context, List<Expression> values) {
         Identifier id = Identifier.joined("or", values.stream().map(Expression::getIdentifier).toList());
-        return new Or(id, context.getPrimitives()).append(context, values);
+        return new Or(id, context.getPrimitives()).append(context, false, values);
     }
 
-    private Expression append(EvaluationResult context, Expression... values) {
-        return append(context, Arrays.asList(values));
+    private Expression append(EvaluationResult context, boolean doingNullChecks, Expression... values) {
+        return append(context, doingNullChecks, Arrays.asList(values));
     }
 
     // we try to maintain a CNF
-    private Expression append(EvaluationResult context, List<Expression> values) {
+    private Expression append(EvaluationResult context, boolean doingNullChecks, List<Expression> values) {
 
         // STEP 1: trivial reductions
 
@@ -187,14 +191,14 @@ public final class Or extends ExpressionCanBeTooComplex {
         ArrayList<Expression> finalValues = concat;
         if (firstAnd != null) {
             Expression[] components = firstAnd.getExpressions().stream()
-                    .map(v -> append(context, ListUtil.immutableConcat(finalValues, List.of(v))))
+                    .map(v -> append(context, doingNullChecks, ListUtil.immutableConcat(finalValues, List.of(v))))
                     .toArray(Expression[]::new);
             if (LOGGER.isDebugEnabled()) {
                 LOGGER.debug("Found And-clause {}, components for new And are {}", firstAnd, Arrays.toString(components));
             }
             int complexityComponents = Arrays.stream(components).mapToInt(Expression::getComplexity).sum();
             if (complexityComponents < context.evaluationContext().limitOnComplexity()) {
-                return And.and(context, components);
+                return And.and(context, doingNullChecks, components);
             }
         }
         if (finalValues.size() == 1) return finalValues.get(0);
@@ -280,7 +284,7 @@ public final class Or extends ExpressionCanBeTooComplex {
                 .map(v -> v.evaluate(context, forwardEvaluationInfo)).toArray(EvaluationResult[]::new);
         Expression[] clauses = Arrays.stream(clauseResults).map(EvaluationResult::value).toArray(Expression[]::new);
         Identifier id = Identifier.joined("or", Arrays.stream(clauses).map(Expression::getIdentifier).toList());
-        Expression or = new Or(id, primitives).append(context, clauses);
+        Expression or = new Or(id, primitives).append(context, false, clauses);
         return new EvaluationResult.Builder(context).compose(clauseResults).setExpression(or).build();
     }
 

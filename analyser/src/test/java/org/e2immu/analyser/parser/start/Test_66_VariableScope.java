@@ -961,18 +961,16 @@ public class Test_66_VariableScope extends CommonTestRunner {
             if ("removeInSubBlockMerge".equals(d.methodInfo().name) && "VariableDefinedOutsideLoop".equals(d.methodInfo().typeInfo.simpleName)) {
                 if ("1".equals(d.statementId())) {
                     String expected = d.iteration() == 0 ? "CM{state=!<instanceOf:VariableDefinedOutsideLoop>||!<m:startsWith>;ignore=vn;parent=CM{}}"
-                            : "CM{state=!scope-vdol:1.statementIndex.startsWith(index+\".\")||!(vn instanceof VariableDefinedOutsideLoop);ignore=vn;parent=CM{}}";
+                            : "CM{state=!scope-vdol:1.statementIndex.startsWith(index+\".\")||null==vn||!(vn instanceof VariableDefinedOutsideLoop);ignore=vn;parent=CM{}}";
                     assertEquals(expected, d.conditionManagerForNextStatement().toString());
                 }
                 if ("2".equals(d.statementId())) {
                     String expected = switch (d.iteration()) {
                         case 0 -> "CM{state=!<instanceOf:VariableDefinedOutsideLoop>||!<m:startsWith>;ignore=vn;parent=CM{}}";
-                        case 1, 2, 3 ->
-                                "CM{state=(!scope-vdol:1.statementIndex.startsWith(index+\".\")||<null-check>||!(vn$1 instanceof VariableDefinedOutsideLoop)||<null-check>||<dv:scope-vdol:1.previousVariableNature>==this)&&(!scope-vdol:1.statementIndex.startsWith(index+\".\")||!(vn instanceof VariableDefinedOutsideLoop));ignore=vn;parent=CM{}}";
-                        case 4, 5 ->
-                                "CM{state=(!scope-vdol:1.statementIndex.startsWith(index+\".\")||!(vn instanceof VariableDefinedOutsideLoop))&&(!scope-vdol:1.statementIndex.startsWith(index+\".\")||!(vn$1 instanceof VariableDefinedOutsideLoop)||<null-check>||<dv:scope-vdol:1.previousVariableNature>==this);ignore=vn;parent=CM{}}";
+                        case 1, 2, 3, 4, 5 ->
+                                "CM{state=(!scope-vdol:1.statementIndex.startsWith(index+\".\")||null==vn||!(vn instanceof VariableDefinedOutsideLoop))&&(!scope-vdol:1.statementIndex.startsWith(index+\".\")||null==vn$1||!(vn$1 instanceof VariableDefinedOutsideLoop)||<null-check>||<dv:scope-vdol:1.previousVariableNature>==this);ignore=vn;parent=CM{}}";
                         default ->
-                                "CM{state=(!scope-vdol:1.statementIndex.startsWith(index+\".\")||!(vn instanceof VariableDefinedOutsideLoop))&&(!scope-vdol:1.statementIndex.startsWith(index+\".\")||!(vn$1 instanceof VariableDefinedOutsideLoop)||scope-vdol:1.previousVariableNature==this);ignore=vn;parent=CM{}}";
+                                "CM{state=(!scope-vdol:1.statementIndex.startsWith(index+\".\")||null==vn||!(vn instanceof VariableDefinedOutsideLoop))&&(!scope-vdol:1.statementIndex.startsWith(index+\".\")||null==vn$1||!(vn$1 instanceof VariableDefinedOutsideLoop)||scope-vdol:1.previousVariableNature==this);ignore=vn;parent=CM{}}";
                     };
                     assertEquals(expected, d.conditionManagerForNextStatement().toString());
                 }

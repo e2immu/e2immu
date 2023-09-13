@@ -132,6 +132,10 @@ public class Test_21_Range_4 extends CommonTestRunner {
 
                     String expectState = d.iteration() == 0 ? "<s:boolean>&&1!=<v:i>" : "10==i";
                     assertEquals(expectState, d.state().toString());
+                    String cm = d.iteration() == 0
+                            ? "CM{state=<s:boolean>&&1!=<v:i>;ignore=i;parent=CM{}}"
+                            : "CM{state=10==i;ignore=i;parent=CM{}}";
+                    assertEquals(cm, d.conditionManagerForNextStatement().toString());
                 }
                 if ("2".equals(d.statementId())) {
                     String expect = d.iteration() == 0 ? "Optional.empty" : "Optional[i=10]";

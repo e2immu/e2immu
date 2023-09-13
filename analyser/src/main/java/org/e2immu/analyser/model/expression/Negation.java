@@ -74,10 +74,6 @@ public class Negation extends UnaryOperator implements ExpressionWrapper {
 
     public static Expression negate(EvaluationResult context, boolean doingNullChecks, @NotNull Expression v) {
         Objects.requireNonNull(v);
-        if (v instanceof PropertyWrapper pw) {
-            Expression negated = negate(context, doingNullChecks, pw.expression());
-            return pw.withExpression(negated);
-        }
         if (v instanceof BooleanConstant boolValue) {
             return boolValue.negate();
         }
@@ -128,8 +124,8 @@ public class Negation extends UnaryOperator implements ExpressionWrapper {
 
         if (v instanceof InstanceOf i) {
             Expression varIsNull = Equals.equals(i.identifier, context, new NullConstant(i.identifier), i.expression(),
-                    ForwardEvaluationInfo.DEFAULT);
-            return Or.or(context, negation, varIsNull);
+                    doingNullChecks, ForwardEvaluationInfo.DEFAULT);
+            return Or.or(context, doingNullChecks, negation, varIsNull);
         }
         return negation;
     }
