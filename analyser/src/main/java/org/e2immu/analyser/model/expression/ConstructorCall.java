@@ -27,6 +27,7 @@ import org.e2immu.analyser.output.*;
 import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.Primitives;
+import org.e2immu.analyser.util.ListUtil;
 import org.e2immu.analyser.util.Pair;
 import org.e2immu.analyser.util.UpgradableBooleanMap;
 import org.e2immu.annotation.NotNull;
@@ -224,17 +225,20 @@ public class ConstructorCall extends BaseExpression implements HasParameterExpre
     }
 
     @Override
-    public int internalCompareTo(Expression v) {
+    public int internalCompareTo(Expression v) throws ExpressionComparator.InternalError {
         if (v instanceof ConstructorCall cc) {
+            int c = getMethodInfo().fullyQualifiedName.compareTo(cc.getMethodInfo().fullyQualifiedName);
+            if (c != 0) return c;
+            int d = ListUtil.compare(parameterExpressions, cc.parameterExpressions);
+            if (d != 0) return d;
             if (scope == null && cc.scope != null) return -1;
             if (scope != null && cc.scope == null) return 1;
             if (scope != null) {
-                int c = scope.compareTo(cc.scope);
-                if (c != 0) return c;
+                return scope.compareTo(cc.scope);
             }
-            return parameterizedType.detailedString().compareTo(cc.parameterizedType.detailedString());
+            return 0;
         }
-        throw new UnsupportedOperationException();
+        throw new ExpressionComparator.InternalError();
     }
 
     @Override

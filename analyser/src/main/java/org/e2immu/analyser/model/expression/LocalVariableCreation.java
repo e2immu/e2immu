@@ -17,12 +17,14 @@ package org.e2immu.analyser.model.expression;
 import org.e2immu.analyser.analyser.EvaluationResult;
 import org.e2immu.analyser.analyser.ForwardEvaluationInfo;
 import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.model.expression.util.ExpressionComparator;
 import org.e2immu.analyser.model.expression.util.TranslationCollectors;
 import org.e2immu.analyser.model.impl.BaseExpression;
 import org.e2immu.analyser.model.variable.LocalVariableReference;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.output.*;
 import org.e2immu.analyser.parser.InspectionProvider;
+import org.e2immu.analyser.util.ListUtil;
 import org.e2immu.analyser.util.UpgradableBooleanMap;
 
 import java.util.List;
@@ -49,7 +51,8 @@ public class LocalVariableCreation extends BaseExpression implements Expression 
         return moreDeclarations.isEmpty();
     }
 
-    public record Declaration(Identifier identifier, LocalVariableReference localVariableReference) {
+    public record Declaration(Identifier identifier, LocalVariableReference localVariableReference)
+            implements Comparable<Declaration> {
         public Declaration(Identifier identifier, LocalVariable localVariable, Expression expression) {
             this(identifier, new LocalVariableReference(localVariable, expression));
         }
@@ -62,6 +65,11 @@ public class LocalVariableCreation extends BaseExpression implements Expression 
             LocalVariableReference translated = translateLvr(localVariableReference, inspectionProvider, translationMap);
             if (translated == localVariableReference) return this;
             return new Declaration(identifier, translated);
+        }
+
+        @Override
+        public int compareTo(Declaration o) {
+            return localVariableReference.compareTo(o.localVariableReference);
         }
     }
 
@@ -138,8 +146,19 @@ public class LocalVariableCreation extends BaseExpression implements Expression 
 
     @Override
     public int order() {
-        return 0;
+        return ExpressionComparator.ORDER_LOCAL_VAR_CREATION;
     }
+
+    @Override
+    public int internalCompareTo(Expression v) throws ExpressionComparator.InternalError {
+        if (v instanceof LocalVariableCreation lvc) {
+            int c = localVariableReference.compareTo(lvc.localVariableReference);
+            if (c != 0) return c;
+            return ListUtil.compare(moreDeclarations, lvc.moreDeclarations);
+        }
+        throw new ExpressionComparator.InternalError();
+    }
+
 
     @Override
     public ParameterizedType returnType() {

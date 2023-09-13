@@ -18,6 +18,7 @@ import org.e2immu.analyser.analyser.EvaluationResult;
 import org.e2immu.analyser.analyser.ForwardEvaluationInfo;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.Precedence;
+import org.e2immu.analyser.model.expression.util.ExpressionComparator;
 import org.e2immu.analyser.model.impl.BaseExpression;
 import org.e2immu.analyser.output.OutputBuilder;
 
@@ -55,6 +56,11 @@ final class PackagePrefixExpression extends BaseExpression implements Expression
     @Override
     public int order() {
         return 0;
+    }
+
+    @Override
+    public int internalCompareTo(Expression v) throws ExpressionComparator.InternalError {
+        throw new ExpressionComparator.InternalError();
     }
 
     public PackagePrefix packagePrefix() {

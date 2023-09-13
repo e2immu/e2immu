@@ -353,7 +353,15 @@ public final class DelayedExpression extends BaseExpression implements Expressio
 
     @Override
     public int order() {
-        return ExpressionComparator.ORDER_NO_VALUE;
+        return ExpressionComparator.ORDER_DELAYED_EXPRESSION;
+    }
+
+    @Override
+    public int internalCompareTo(Expression v) throws ExpressionComparator.InternalError {
+        if (v instanceof DelayedExpression de) {
+            return original.compareTo(de.original);
+        }
+        throw new ExpressionComparator.InternalError();
     }
 
     @Override

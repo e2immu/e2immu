@@ -306,8 +306,10 @@ public class Test_ParameterizedType extends CommonTestRunner {
                     if ("5".equals(d.statementId())) {
                         String merge = switch (d.iteration()) {
                             case 0, 1, 2 -> "<s:IterativeParsing>";
-                            default -> "'>'==<m:charAt>?instance type IterativeParsing:instance type IterativeParsing";
-                            //     '>'==signature.charAt((ParameterizedType_2.from(typeContext,findType,signature.substring(0))).nextPos)?instance type IterativeParsing:instance type IterativeParsing
+                            case 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13 ->
+                                    "'>'==<m:charAt>?instance type IterativeParsing:instance type IterativeParsing";
+                            default ->
+                                    "'>'==signature.charAt((ParameterizedType_2.from(typeContext,findType,signature.substring(0))).nextPos)?instance type IterativeParsing:instance type IterativeParsing";
                         };
                         assertEquals(merge, d.currentValue().toString());
                         assertEquals(d.iteration() < 14, d.currentValue().isDelayed());

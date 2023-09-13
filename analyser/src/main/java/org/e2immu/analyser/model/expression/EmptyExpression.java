@@ -79,7 +79,15 @@ public final class EmptyExpression extends BaseExpression implements Expression 
 
     @Override
     public int order() {
-        return ExpressionComparator.ORDER_NO_VALUE;
+        return ExpressionComparator.ORDER_EMPTY_EXPRESSION;
+    }
+
+    @Override
+    public int internalCompareTo(Expression v) throws ExpressionComparator.InternalError {
+        if (v instanceof EmptyExpression ee) {
+            return msg.compareTo(ee.msg);
+        }
+        throw new ExpressionComparator.InternalError();
     }
 
     @Override

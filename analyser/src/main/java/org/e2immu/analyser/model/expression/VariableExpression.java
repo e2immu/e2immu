@@ -156,18 +156,13 @@ public class VariableExpression extends BaseExpression implements IsVariableExpr
     }
 
     @Override
-    public int internalCompareTo(Expression v) {
-        InlineConditional ic;
-        Expression e;
-        if ((ic = v.asInstanceOf(InlineConditional.class)) != null) {
-            e = ic.condition;
-        } else e = v;
+    public int internalCompareTo(Expression v) throws ExpressionComparator.InternalError {
         IsVariableExpression ive;
-        if ((ive = e.asInstanceOf(IsVariableExpression.class)) != null) {
+        if ((ive = v.asInstanceOf(IsVariableExpression.class)) != null) {
             // compare variables
             return variableId().compareTo(ive.variableId());
         }
-        throw new UnsupportedOperationException();
+        throw new ExpressionComparator.InternalError();
     }
 
     public Suffix getSuffix() {

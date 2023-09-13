@@ -122,7 +122,15 @@ public final class DelayedWrappedExpression extends BaseExpression implements Ex
 
     @Override
     public int order() {
-        return ExpressionComparator.ORDER_NO_VALUE;
+        return ExpressionComparator.ORDER_DELAYED_WRAPPED_EXPRESSION;
+    }
+
+    @Override
+    public int internalCompareTo(Expression v) throws ExpressionComparator.InternalError {
+        if (v instanceof DelayedWrappedExpression dwe) {
+            return expression.compareTo(dwe.expression);
+        }
+        throw new ExpressionComparator.InternalError();
     }
 
     @Override

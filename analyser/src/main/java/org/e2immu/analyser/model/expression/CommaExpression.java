@@ -16,12 +16,14 @@ package org.e2immu.analyser.model.expression;
 
 import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.model.expression.util.ExpressionComparator;
 import org.e2immu.analyser.model.expression.util.TranslationCollectors;
 import org.e2immu.analyser.model.impl.BaseExpression;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.Symbol;
 import org.e2immu.analyser.parser.InspectionProvider;
+import org.e2immu.analyser.util.ListUtil;
 
 import java.util.List;
 import java.util.function.Predicate;
@@ -99,7 +101,15 @@ public class CommaExpression extends BaseExpression implements Expression {
 
     @Override
     public int order() {
-        return 0;
+        return ExpressionComparator.ORDER_COMMA;
+    }
+
+    @Override
+    public int internalCompareTo(Expression v) throws ExpressionComparator.InternalError{
+        if (v instanceof CommaExpression ce) {
+            return ListUtil.compare(expressions, ce.expressions);
+        }
+        throw new ExpressionComparator.InternalError();
     }
 
     @Override

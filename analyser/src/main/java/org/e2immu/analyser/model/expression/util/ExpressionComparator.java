@@ -16,12 +16,17 @@ package org.e2immu.analyser.model.expression.util;
 
 import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.expression.ExpressionWrapper;
+import org.e2immu.analyser.model.expression.InlineConditional;
 import org.e2immu.annotation.rare.IgnoreModifications;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.Comparator;
 import java.util.IdentityHashMap;
 
 public class ExpressionComparator implements Comparator<Expression> {
+    private static final Logger LOGGER = LoggerFactory.getLogger(ExpressionComparator.class);
+
     public static final int ORDER_CONSTANT_NULL = 30;
     public static final int ORDER_CONSTANT_BOOLEAN = 31;
     public static final int ORDER_CONSTANT_BYTE = 32;
@@ -47,16 +52,26 @@ public class ExpressionComparator implements Comparator<Expression> {
     public static final int ORDER_BOOLEAN_XOR = 51;
 
     // variables, types
-    public static final int ORDER_ARRAY = 61;
-    public static final int ORDER_INSTANCE = 62;
-    public static final int ORDER_NEW_INSTANCE = 63;
-    public static final int ORDER_ARRAY_LENGTH = 64;
-    public static final int ORDER_INLINE_METHOD = 65;
-    public static final int ORDER_METHOD = 66;
-    public static final int ORDER_VARIABLE = 67;
-    public static final int ORDER_EXPANDED_VARIABLE = 68;
-    public static final int ORDER_TYPE = 69;
-    public static final int ORDER_NO_VALUE = 70;
+    public static final int ORDER_ARRAY = 60;
+    public static final int ORDER_INSTANCE = 61;
+    public static final int ORDER_NEW_INSTANCE = 62;
+    public static final int ORDER_ARRAY_LENGTH = 63;
+    public static final int ORDER_INLINE_METHOD = 64;
+    public static final int ORDER_METHOD = 65;
+    public static final int ORDER_METHOD_REFERENCE = 66;
+    public static final int ORDER_LAMBDA = 67;
+    public static final int ORDER_VARIABLE = 68;
+    public static final int ORDER_EXPANDED_VARIABLE = 69;
+    public static final int ORDER_TYPE = 70;
+    public static final int ORDER_DELAYED_EXPRESSION = 71;
+    public static final int ORDER_DELAYED_WRAPPED_EXPRESSION = 72;
+    public static final int ORDER_EMPTY_EXPRESSION = 73;
+    public static final int ORDER_CONTRACT_MARK = 74;
+    public static final int ORDER_MULTI_EXPRESSION = 75;
+    public static final int ORDER_COMMA = 76;
+    public static final int ORDER_LOCAL_VAR_CREATION = 77;
+    public static final int ORDER_UNKNOWN = 78;
+    public static final int ORDER_SWITCH = 79;
 
     // boolean operations
     public static final int ORDER_INSTANCE_OF = 81;
@@ -68,6 +83,7 @@ public class ExpressionComparator implements Comparator<Expression> {
     // must be later than any other binary operator (unevaluated)
     public static final int ORDER_BINARY_OPERATOR = 87;
     public static final int ORDER_UNARY_OPERATOR = 88;
+
 
     // irrelevant, normally
     public static final int ORDER_MVP = 90;
@@ -126,8 +142,15 @@ public class ExpressionComparator implements Comparator<Expression> {
         if (w != 0) return w;
 
         // same type of wrapper, but maybe different specifics (PropertyWrapper has a lot of fields, Negation has none)
-        int u = v1.internalCompareTo(v2);
-        if (u != 0) return u;
+        try {
+            int u = v1.internalCompareTo(v2);
+            if (u != 0) return u;
+        } catch (InternalError ie) {
+            LOGGER.error("Comparison at order {}", v1.order());
+            LOGGER.error("Expression 1: '{}' of {}", v1, v1.getClass());
+            LOGGER.error("Expression 2: '{}' of {}", v2, v2.getClass());
+            throw new UnsupportedOperationException();
+        }
 
         if (u1.count == 1 && u2.count == 1) {
             // everything has been compared, no need to delve deeper
@@ -137,9 +160,25 @@ public class ExpressionComparator implements Comparator<Expression> {
         return compare(((ExpressionWrapper) v1).getExpression(), ((ExpressionWrapper) v2).getExpression());
     }
 
+    public static class InternalError extends Exception {
+    }
+
     private int compareWithoutWrappers(Expression v1, Expression v2) {
         int orderDiff = v1.order() - v2.order();
         if (orderDiff != 0) return orderDiff;
-        return v1.internalCompareTo(v2);
+        try {
+            if (v1 instanceof InlineConditional inlineConditional && !(v2 instanceof InlineConditional)) {
+                return inlineConditional.condition.internalCompareTo(v2);
+            }
+            if (v2 instanceof InlineConditional inlineConditional && !(v1 instanceof InlineConditional)) {
+                return v1.internalCompareTo(inlineConditional.condition);
+            }
+            return v1.internalCompareTo(v2);
+        } catch (InternalError ie) {
+            LOGGER.error("Comparison at order {}", v1.order());
+            LOGGER.error("Expression 1: '{}' of {}", v1, v1.getClass());
+            LOGGER.error("Expression 2: '{}' of {}", v2, v2.getClass());
+            throw new UnsupportedOperationException();
+        }
     }
 }

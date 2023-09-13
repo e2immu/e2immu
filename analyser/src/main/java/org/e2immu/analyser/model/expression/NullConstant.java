@@ -18,10 +18,7 @@ import org.e2immu.analyser.analyser.DV;
 import org.e2immu.analyser.analyser.EvaluationResult;
 import org.e2immu.analyser.analyser.ForwardEvaluationInfo;
 import org.e2immu.analyser.analyser.Property;
-import org.e2immu.analyser.model.Identifier;
-import org.e2immu.analyser.model.MultiLevel;
-import org.e2immu.analyser.model.ParameterizedType;
-import org.e2immu.analyser.model.Qualification;
+import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.util.ExpressionComparator;
 import org.e2immu.analyser.model.impl.BaseExpression;
 import org.e2immu.analyser.output.Keyword;
@@ -85,6 +82,11 @@ public class NullConstant extends BaseExpression implements ConstantExpression<O
     @Override
     public int order() {
         return ExpressionComparator.ORDER_CONSTANT_NULL;
+    }
+
+    @Override
+    public int internalCompareTo(Expression v) throws ExpressionComparator.InternalError {
+        return 0; // they're all the same!
     }
 
     @Override

@@ -326,7 +326,7 @@ public class Test_02_ConditionalChecks extends CommonTestRunner {
                 }
                 if ("1".equals(d.statementId())) {
                     if (RETURN5.equals(d.variableName())) {
-                        assertEquals("<return value>&&null!=o&&o.getClass()==this.getClass()||o==this",
+                        assertEquals("null!=o&&<return value>&&o.getClass()==this.getClass()||o==this",
                                 d.currentValue().toString());
                     }
                 }

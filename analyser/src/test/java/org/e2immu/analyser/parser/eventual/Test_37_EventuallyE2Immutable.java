@@ -371,7 +371,7 @@ public class Test_37_EventuallyE2Immutable extends CommonTestRunner {
                 String expectPc = switch (d.iteration()) {
                     case 0 -> "Precondition[expression=<precondition>, causes=[]]";
                     case 1 ->
-                            "Precondition[expression=<precondition>&&<precondition>&&<precondition>&&<precondition>, causes=[]]";
+                            "Precondition[expression=<precondition>&&<precondition>, causes=[]]";
                     default ->
                             "Precondition[expression=null!=t, causes=[methodCall:getT, methodCall:setT, methodCall:getT, methodCall:setT]]";
                 };

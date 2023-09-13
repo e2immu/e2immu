@@ -117,16 +117,11 @@ public class ExpandedVariable extends BaseExpression {
     }
 
     @Override
-    public int internalCompareTo(Expression v) {
-        InlineConditional ic;
-        Expression e;
-        if ((ic = v.asInstanceOf(InlineConditional.class)) != null) {
-            e = ic.condition;
-        } else e = v;
-        if (e instanceof ExpandedVariable ev) {
+    public int internalCompareTo(Expression v) throws ExpressionComparator.InternalError{
+        if (v instanceof ExpandedVariable ev) {
             return variable.compareTo(ev.variable);
         }
-        throw new UnsupportedOperationException();
+        throw new ExpressionComparator.InternalError();
     }
 
     @Override

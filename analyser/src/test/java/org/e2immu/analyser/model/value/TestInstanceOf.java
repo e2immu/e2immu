@@ -64,7 +64,8 @@ public class TestInstanceOf extends CommonAbstractValue {
         assertEquals("a instanceof Boolean", newAndAppend(e1, e2).toString());
 
         // a instanceof Object remains
-        assertEquals("!(a instanceof Boolean)&&a instanceof Object", newAndAppend(e1, negate(e2)).toString());
+        // the negation is expanded!
+        assertEquals("a instanceof Object&&(null==a||!(a instanceof Boolean))", newAndAppend(e1, negate(e2)).toString());
     }
 
     private static final String AND_OF_ORS = "(null==an||!(an instanceof Boolean))&&(null==an||!(an instanceof Character))";

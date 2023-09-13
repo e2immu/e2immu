@@ -74,6 +74,11 @@ public class UnaryOperator extends BaseExpression implements Expression {
         return ExpressionComparator.ORDER_UNARY_OPERATOR; // not yet evaluated
     }
 
+    @Override
+    public int internalCompareTo(Expression v) throws ExpressionComparator.InternalError {
+        return expression.compareTo(((UnaryOperator) v).expression);
+    }
+
     public static Precedence precedence(@NotNull @NotModified UnaryExpr.Operator operator) {
         return switch (operator) {
             case POSTFIX_DECREMENT, POSTFIX_INCREMENT, PLUS, MINUS -> Precedence.PLUSPLUS;

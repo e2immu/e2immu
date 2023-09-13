@@ -99,14 +99,8 @@ public class InstanceOf extends BaseExpression implements Expression {
     }
 
     @Override
-    public int internalCompareTo(Expression v) {
-        Expression e;
-        if (v instanceof InlineConditional inlineConditional) {
-            e = inlineConditional.condition;
-        } else {
-            e = v;
-        }
-        if (e instanceof InstanceOf other) {
+    public int internalCompareTo(Expression v) throws ExpressionComparator.InternalError {
+        if (v instanceof InstanceOf other) {
             if (expression instanceof VariableExpression ve
                     && other.expression instanceof VariableExpression ve2) {
                 int c = ve.variable().fullyQualifiedName().compareTo(ve2.variable().fullyQualifiedName());
@@ -117,7 +111,7 @@ public class InstanceOf extends BaseExpression implements Expression {
             if (c != 0) return c;
             return expression.compareTo(other.expression);
         }
-        throw new UnsupportedOperationException("Comparing to " + e + " -- " + e.getClass());
+        throw new ExpressionComparator.InternalError();
     }
 
     @Override

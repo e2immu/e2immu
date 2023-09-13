@@ -18,6 +18,7 @@ import org.e2immu.analyser.analyser.EvaluationResult;
 import org.e2immu.analyser.analyser.ForwardEvaluationInfo;
 import org.e2immu.analyser.inspector.TypeContext;
 import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.model.expression.util.ExpressionComparator;
 import org.e2immu.analyser.model.impl.BaseExpression;
 import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.Text;
@@ -97,6 +98,10 @@ public final class ConstructorCallErasure extends BaseExpression implements Eras
         return 0;
     }
 
+    @Override
+    public int internalCompareTo(Expression v) throws ExpressionComparator.InternalError {
+        throw new ExpressionComparator.InternalError();
+    }
 
     @Override
     public Set<ParameterizedType> erasureTypes(TypeContext typeContext) {

@@ -106,6 +106,16 @@ public final class MemberValuePair extends BaseExpression implements Expression 
     }
 
     @Override
+    public int internalCompareTo(Expression v) throws ExpressionComparator.InternalError {
+        if (v instanceof MemberValuePair mvp) {
+            int c = name.compareTo(mvp.name);
+            if (c == 0) return value.get().compareTo(mvp.value.get());
+            return c;
+        }
+        throw new ExpressionComparator.InternalError();
+    }
+
+    @Override
     public EvaluationResult evaluate(EvaluationResult context, ForwardEvaluationInfo forwardEvaluationInfo) {
         throw new UnsupportedOperationException();
     }

@@ -25,6 +25,11 @@ public interface Numeric extends Negatable {
     }
 
     @Override
+    default Double numericValue() {
+        return doubleValue();
+    }
+
+    @Override
     default boolean isNegatedOrNumericNegative() {
         return doubleValue() < 0;
     }

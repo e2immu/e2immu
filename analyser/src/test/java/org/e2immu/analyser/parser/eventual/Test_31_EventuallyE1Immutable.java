@@ -232,7 +232,7 @@ public class Test_31_EventuallyE1Immutable extends CommonTestRunner {
                     if ("1".equals(d.statementId())) {
                         String expected = switch (d.iteration()) {
                             case 0 -> "<return value>||i>=<f:j>";
-                            case 1 -> "<return value>||i>=<wrapped:j>";
+                            case 1 -> "i>=<wrapped:j>||<return value>";
                             default -> "<return value>||i>=j$0";
                         };
                         assertEquals(expected, d.currentValue().toString());

@@ -20,6 +20,7 @@ import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.EmptyExpression;
 import org.e2immu.analyser.model.expression.LocalVariableCreation;
 import org.e2immu.analyser.model.expression.Precedence;
+import org.e2immu.analyser.model.expression.util.ExpressionComparator;
 import org.e2immu.analyser.model.impl.BaseExpression;
 import org.e2immu.analyser.model.impl.TranslationMapImpl;
 import org.e2immu.analyser.output.*;
@@ -193,6 +194,11 @@ public class TryStatement extends StatementWithStructure {
         @Override
         public int order() {
             throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public int internalCompareTo(Expression v) throws ExpressionComparator.InternalError {
+            throw new ExpressionComparator.InternalError();
         }
 
         @Override

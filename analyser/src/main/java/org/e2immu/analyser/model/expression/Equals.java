@@ -139,7 +139,7 @@ public class Equals extends BinaryOperator {
                 return new Equals(identifier, primitives, zero, neg.expression);
             }
             // 0 == 3*x --> 0 == x
-            if (termsOfProducts[0] instanceof Product p && p.lhs instanceof Numeric) {
+            if (termsOfProducts[0] instanceof Product p && p.lhs.numericValue() != null) {
                 return new Equals(identifier, primitives, zero, p.rhs);
             }
             return new Equals(identifier, primitives, zero, termsOfProducts[0]);
@@ -148,9 +148,9 @@ public class Equals extends BinaryOperator {
         Expression newRight;
 
         // 4 == xx; -4 == -x, ...
-        if (termsOfProducts[0] instanceof Numeric numeric) {
+        Double d = termsOfProducts[0].numericValue();
+        if (d != null) {
             // -4 + -x --> -4 == x
-            double d = numeric.doubleValue();
             if (d < 0 && termsOfProducts[1] instanceof Negation) {
                 newLeft = termsOfProducts[0];
                 newRight = wrapSum(context, termsOfProducts, true);

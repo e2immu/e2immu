@@ -17,6 +17,7 @@ package org.e2immu.analyser.model;
 import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.inspector.TypeContext;
 import org.e2immu.analyser.model.expression.*;
+import org.e2immu.analyser.model.expression.util.ExpressionComparator;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.LocalVariableReference;
 import org.e2immu.analyser.model.variable.Variable;
@@ -98,9 +99,7 @@ public interface Expression extends Element, Comparable<Expression> {
     @Override
     int compareTo(Expression v);
 
-    default int internalCompareTo(Expression v) {
-        return 0;
-    }
+    int internalCompareTo(Expression v) throws ExpressionComparator.InternalError;
 
     default boolean isConstant() {
         return false;
@@ -323,4 +322,8 @@ public interface Expression extends Element, Comparable<Expression> {
         }
         return null;
     }
+
+   default Double numericValue() {
+        return null;
+   }
 }

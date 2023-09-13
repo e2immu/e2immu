@@ -570,10 +570,7 @@ public class BinaryOperator extends BaseExpression implements Expression {
     @Override
     public int internalCompareTo(Expression v) {
         BinaryOperator b;
-        if (v instanceof InlineConditional inlineConditional &&
-                inlineConditional.condition instanceof BinaryOperator binaryOperator) {
-            b = binaryOperator;
-        } else if (v instanceof BinaryOperator binaryOperator) {
+        if (v instanceof BinaryOperator binaryOperator) {
             b = binaryOperator;
         } else if (v instanceof GreaterThanZero gt0) {
             return compareBinaryToGt0(this, gt0);

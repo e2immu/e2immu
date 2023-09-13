@@ -17,6 +17,7 @@ package org.e2immu.analyser.model.expression;
 import org.e2immu.analyser.analyser.Properties;
 import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.model.expression.util.ExpressionComparator;
 import org.e2immu.analyser.model.impl.BaseExpression;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.output.OutputBuilder;
@@ -195,7 +196,7 @@ public final class PropertyWrapper extends BaseExpression implements Expression,
     }
 
     @Override
-    public int internalCompareTo(Expression v) {
+    public int internalCompareTo(Expression v) throws ExpressionComparator.InternalError {
         if (v instanceof PropertyWrapper pw) {
             int c = nullLast(state, pw.state, Comparator.naturalOrder());
             if (c != 0) return c;
@@ -205,7 +206,7 @@ public final class PropertyWrapper extends BaseExpression implements Expression,
             if (e != 0) return e;
             return nullLast(linkedVariables, pw.linkedVariables, Comparator.naturalOrder());
         }
-        throw new UnsupportedOperationException();
+        throw new ExpressionComparator.InternalError();
     }
 
     private static <T> int nullLast(T t1, T t2, Comparator<T> comparator) {
@@ -424,8 +425,9 @@ public final class PropertyWrapper extends BaseExpression implements Expression,
         return expression.isNegatedOrNumericNegative();
     }
 
-    public Expression withExpression(Expression negated) {
-        return new PropertyWrapper(negated, null, properties, linkedVariables, castType);
+    @Override
+    public Double numericValue() {
+        return expression.numericValue();
     }
 
     @Override

@@ -966,7 +966,7 @@ public class Test_66_VariableScope extends CommonTestRunner {
                 }
                 if ("2".equals(d.statementId())) {
                     String expected = switch (d.iteration()) {
-                        case 0 -> "CM{state=!<instanceOf:VariableDefinedOutsideLoop>||!<m:startsWith>;ignore=vn;parent=CM{}}";
+                        case 0 -> "CM{state=(!<instanceOf:VariableDefinedOutsideLoop>||!<m:startsWith>)&&(!<instanceOf:VariableDefinedOutsideLoop>||!<m:startsWith>||<null-check>||<dv:scope-vdol:1.previousVariableNature>==this);ignore=vn;parent=CM{}}";
                         case 1, 2, 3, 4, 5 ->
                                 "CM{state=(!scope-vdol:1.statementIndex.startsWith(index+\".\")||null==vn||!(vn instanceof VariableDefinedOutsideLoop))&&(!scope-vdol:1.statementIndex.startsWith(index+\".\")||null==vn$1||!(vn$1 instanceof VariableDefinedOutsideLoop)||<null-check>||<dv:scope-vdol:1.previousVariableNature>==this);ignore=vn;parent=CM{}}";
                         default ->

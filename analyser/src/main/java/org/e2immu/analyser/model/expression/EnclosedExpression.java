@@ -17,6 +17,7 @@ package org.e2immu.analyser.model.expression;
 import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.inspector.TypeContext;
 import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.model.expression.util.ExpressionComparator;
 import org.e2immu.analyser.model.impl.BaseExpression;
 import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.Symbol;
@@ -62,6 +63,11 @@ public class EnclosedExpression extends BaseExpression implements Expression {
     @Override
     public int order() {
         return inner.order();
+    }
+
+    @Override
+    public int internalCompareTo(Expression v) throws ExpressionComparator.InternalError {
+        return inner.compareTo(((EnclosedExpression) v).inner);
     }
 
     @Override
@@ -144,5 +150,10 @@ public class EnclosedExpression extends BaseExpression implements Expression {
     @Override
     public LinkedVariables linkedVariables(EvaluationResult context) {
         return inner.linkedVariables(context);
+    }
+
+    @Override
+    public Double numericValue() {
+        return inner.numericValue();
     }
 }

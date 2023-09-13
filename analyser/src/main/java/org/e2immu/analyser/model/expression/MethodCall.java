@@ -451,7 +451,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
             modifiedInstance = null;
         }*/
 
-       // CausesOfDelay delays2 = modifiedInstance == null ? delays1 : delays1.merge(modifiedInstance.causesOfDelay());
+        // CausesOfDelay delays2 = modifiedInstance == null ? delays1 : delays1.merge(modifiedInstance.causesOfDelay());
 
         EvaluationResult mv = new EvaluateMethodCall(context, this, delays1)
                 .methodValue(modified, methodAnalysis, objectIsImplicit, objectValue, concreteReturnType,
@@ -1206,19 +1206,11 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
 
     @Override
     public int internalCompareTo(Expression v) {
-        if (v instanceof InlineConditional inline) {
-            return internalCompareTo(inline.condition);
-        }
         MethodCall mv = (MethodCall) v;
         int c = methodInfo.fullyQualifiedName().compareTo(mv.methodInfo.fullyQualifiedName());
         if (c != 0) return c;
-        int i = 0;
-        while (i < parameterExpressions.size()) {
-            if (i >= mv.parameterExpressions.size()) return 1;
-            c = parameterExpressions.get(i).compareTo(mv.parameterExpressions.get(i));
-            if (c != 0) return c;
-            i++;
-        }
+        int d = ListUtil.compare(parameterExpressions, mv.parameterExpressions);
+        if (d != 0) return d;
         return object.compareTo(mv.object);
     }
 

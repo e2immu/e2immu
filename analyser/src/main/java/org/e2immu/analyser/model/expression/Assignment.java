@@ -18,6 +18,7 @@ import com.github.javaparser.ast.expr.AssignExpr;
 import org.e2immu.analyser.analyser.Properties;
 import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.model.expression.util.ExpressionComparator;
 import org.e2immu.analyser.model.impl.BaseExpression;
 import org.e2immu.analyser.model.variable.DependentVariable;
 import org.e2immu.analyser.model.variable.FieldReference;
@@ -275,13 +276,13 @@ public class Assignment extends BaseExpression implements Expression {
     }
 
     @Override
-    public int internalCompareTo(Expression v) {
+    public int internalCompareTo(Expression v) throws ExpressionComparator.InternalError {
         if (v instanceof Assignment other) {
             int c = target.compareTo(other.target);
             if (c != 0) return c;
             return value.compareTo(other.value);
         }
-        throw new UnsupportedOperationException();
+        throw new ExpressionComparator.InternalError();
     }
 
     @Override

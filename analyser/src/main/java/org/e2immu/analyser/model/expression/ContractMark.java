@@ -62,7 +62,12 @@ public final class ContractMark extends BaseExpression implements Expression {
 
     @Override
     public int order() {
-        return ExpressionComparator.ORDER_NO_VALUE;
+        return ExpressionComparator.ORDER_CONTRACT_MARK;
+    }
+
+    @Override
+    public int internalCompareTo(Expression v) throws ExpressionComparator.InternalError {
+        throw new ExpressionComparator.InternalError();
     }
 
     @Override

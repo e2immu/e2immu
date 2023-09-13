@@ -19,6 +19,7 @@ import org.e2immu.analyser.analyser.util.ComputeIndependent;
 import org.e2immu.analyser.analysis.MethodAnalysis;
 import org.e2immu.analyser.analysis.ParameterAnalysis;
 import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.model.expression.util.ExpressionComparator;
 import org.e2immu.analyser.model.variable.This;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.output.OutputBuilder;
@@ -77,7 +78,17 @@ public class MethodReference extends ExpressionWithMethodReferenceResolution {
 
     @Override
     public int order() {
-        return 0;
+        return ExpressionComparator.ORDER_METHOD_REFERENCE;
+    }
+
+    @Override
+    public int internalCompareTo(Expression v) throws ExpressionComparator.InternalError {
+        if (v instanceof MethodReference mr) {
+            int c = methodInfo.fullyQualifiedName.compareTo(mr.methodInfo.fullyQualifiedName);
+            if (c == 0) return scope.compareTo(mr.scope);
+            return c;
+        }
+        throw new ExpressionComparator.InternalError();
     }
 
     @Override

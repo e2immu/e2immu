@@ -20,6 +20,7 @@ import org.e2immu.analyser.analyser.ForwardEvaluationInfo;
 import org.e2immu.analyser.analyser.Property;
 import org.e2immu.analyser.analysis.TypeAnalysis;
 import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.model.expression.util.ExpressionComparator;
 import org.e2immu.analyser.model.impl.BaseExpression;
 import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.Text;
@@ -186,7 +187,15 @@ public class UnknownExpression extends BaseExpression implements Expression {
 
     @Override
     public int order() {
-        return 0;
+        return ExpressionComparator.ORDER_UNKNOWN;
+    }
+
+    @Override
+    public int internalCompareTo(Expression v) throws ExpressionComparator.InternalError {
+        if(v instanceof UnknownExpression ue) {
+            return msg.compareTo(ue.msg);
+        }
+        throw new ExpressionComparator.InternalError();
     }
 
     public String msg() {

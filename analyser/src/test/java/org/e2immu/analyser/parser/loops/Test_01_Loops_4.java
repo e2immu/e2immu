@@ -38,7 +38,7 @@ public class Test_01_Loops_4 extends CommonTestRunner {
     public void test_4() throws IOException {
         StatementAnalyserVisitor statementAnalyserVisitor = d -> {
             if ("method".equals(d.methodInfo().name)) {
-                String expected = d.iteration() == 0 ? "!<c:boolean>||!<loopIsNotEmptyCondition>" : "1!=instance type int";
+                String expected = d.iteration() == 0 ? "!<loopIsNotEmptyCondition>||!<c:boolean>" : "1!=instance type int";
                 if ("0".equals(d.statementId())) {
                     assertEquals(expected, d.state().toString());
                     assertNull(d.haveError(Message.Label.INLINE_CONDITION_EVALUATES_TO_CONSTANT));

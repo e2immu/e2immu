@@ -342,14 +342,14 @@ public class TestConditionalValue extends CommonAbstractValue {
         Expression abc = new StringConstant(PRIMITIVES, "abc");
         Expression empty = new StringConstant(PRIMITIVES, "");
         Expression test = inline(a, empty, abc);
-        assertEquals(27, test.compareTo(abc));
-        assertEquals(-27, abc.compareTo(test));
+        assertEquals(28, test.compareTo(abc));
+        assertEquals(-28, abc.compareTo(test));
 
         Expression string = new ExpandedVariable(Identifier.CONSTANT, vs, Properties.EMPTY, LinkedVariables.EMPTY);
         Expression inline1 = inline(b, string, test);
         Expression inline2 = inline(b, string, abc);
-        assertEquals(27, inline1.compareTo(inline2));
-        assertEquals(-27, inline2.compareTo(inline1));
+        assertEquals(28, inline1.compareTo(inline2));
+        assertEquals(-28, inline2.compareTo(inline1));
     }
 
     // a second test in TestEqualsMethod

@@ -371,14 +371,11 @@ public class GreaterThanZero extends BaseExpression implements Expression {
     }
 
     @Override
-    public int internalCompareTo(Expression v) {
-        if (v instanceof InlineConditional inline) {
-            return expression.compareTo(inline.condition);
-        }
+    public int internalCompareTo(Expression v) throws ExpressionComparator.InternalError {
         if (v instanceof BinaryOperator binary) {
             return -BinaryOperator.compareBinaryToGt0(binary, this);
         }
-        if (!(v instanceof GreaterThanZero)) throw new UnsupportedOperationException();
+        if (!(v instanceof GreaterThanZero)) throw new ExpressionComparator.InternalError();
 
         int c = BinaryOperator.compareVariables(this, v);
         if (c != 0) return c;

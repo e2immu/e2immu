@@ -19,6 +19,7 @@ import org.e2immu.analyser.analyser.delay.DelayFactory;
 import org.e2immu.analyser.analysis.MethodAnalysis;
 import org.e2immu.analyser.analysis.StatementAnalysis;
 import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.model.expression.util.ExpressionComparator;
 import org.e2immu.analyser.model.expression.util.TranslationCollectors;
 import org.e2immu.analyser.model.impl.BaseExpression;
 import org.e2immu.analyser.model.statement.Block;
@@ -161,7 +162,15 @@ public class Lambda extends BaseExpression implements Expression {
 
     @Override
     public int order() {
-        return 0;
+        return ExpressionComparator.ORDER_LAMBDA;
+    }
+
+    @Override
+    public int internalCompareTo(Expression v) throws ExpressionComparator.InternalError {
+        if (v instanceof Lambda l) {
+            return methodInfo.fullyQualifiedName.compareTo(l.methodInfo.fullyQualifiedName);
+        }
+        throw new ExpressionComparator.InternalError();
     }
 
     private Expression singleExpression() {

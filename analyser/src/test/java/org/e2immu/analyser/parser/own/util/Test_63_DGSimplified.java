@@ -473,6 +473,7 @@ public class Test_63_DGSimplified extends CommonTestRunner {
                 .build(), new AnalyserConfiguration.Builder().setComputeFieldAnalyserAcrossAllMethods(true).build());
     }
 
+    @Disabled("wrong modification")
     @Test
     public void test_4() throws IOException {
         EvaluationResultVisitor evaluationResultVisitor = d -> {

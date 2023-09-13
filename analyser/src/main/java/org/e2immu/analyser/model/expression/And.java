@@ -599,8 +599,9 @@ public class And extends ExpressionCanBeTooComplex {
         }
 
         // a instanceof A && !(a instanceof B)
-        if (value instanceof Negation n && n.expression instanceof InstanceOf negI1
-                && prev instanceof InstanceOf i2 && negI1.expression().equals(i2.expression())) {
+        // is written as: a instanceof A && (null==a||!(a instanceof B))
+        InstanceOf negI1 = isNegationOfInstanceOf(value);
+        if (negI1 != null && prev instanceof InstanceOf i2 && negI1.expression().equals(i2.expression())) {
             if (negI1.parameterizedType().isAssignableFrom(evaluationContext.getAnalyserContext(), i2.parameterizedType())) {
                 // B is the most generic, so we have a contradiction
                 return Action.FALSE;
@@ -614,8 +615,8 @@ public class And extends ExpressionCanBeTooComplex {
         }
 
         // !(a instanceof A) && a instanceof B
-        if (value instanceof InstanceOf i1 && prev instanceof Negation n && n.expression instanceof InstanceOf negI2 &&
-                negI2.expression().equals(i1.expression())) {
+        InstanceOf negI2 = isNegationOfInstanceOf(prev);
+        if (value instanceof InstanceOf i1 && negI2 != null && negI2.expression().equals(i1.expression())) {
             if (negI2.parameterizedType().isAssignableFrom(evaluationContext.getAnalyserContext(), i1.parameterizedType())) {
                 // B is the most generic, so we have a contradiction
                 return Action.FALSE;
@@ -639,6 +640,18 @@ public class And extends ExpressionCanBeTooComplex {
             return Action.REPLACE;
         }
         return null;
+    }
+
+    // a instanceof A && !(a instanceof B)
+    // is written as: a instanceof A && (null==a||!(a instanceof B))
+    private InstanceOf isNegationOfInstanceOf(Expression expression) {
+        return expression instanceof Or or
+                && or.expressions().size() == 2
+                && or.expressions().get(0) instanceof Equals equals
+                && equals.lhs.isNullConstant()
+                && or.expressions().get(1) instanceof Negation negation
+                && negation.expression instanceof InstanceOf instance
+                && instance.expression().equals(equals.rhs) ? instance : null;
     }
 
     private List<Expression> components(Expression value) {
@@ -729,9 +742,6 @@ public class And extends ExpressionCanBeTooComplex {
 
     @Override
     public int internalCompareTo(Expression v) {
-        if (v instanceof InlineConditional inlineConditional) {
-            return internalCompareTo(inlineConditional.condition);
-        }
         And andValue = (And) v;
         return ListUtil.compare(expressions, andValue.expressions);
     }

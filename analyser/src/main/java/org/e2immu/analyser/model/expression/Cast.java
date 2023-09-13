@@ -16,6 +16,7 @@ package org.e2immu.analyser.model.expression;
 
 import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.model.expression.util.ExpressionComparator;
 import org.e2immu.analyser.model.impl.BaseExpression;
 import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.Symbol;
@@ -65,6 +66,14 @@ public class Cast extends BaseExpression implements Expression {
     @Override
     public int order() {
         return 0;
+    }
+
+    @Override
+    public int internalCompareTo(Expression v) throws ExpressionComparator.InternalError {
+        if (v instanceof Cast cast) {
+            return expression.compareTo(cast.expression);
+        }
+        throw new ExpressionComparator.InternalError();
     }
 
     @Override

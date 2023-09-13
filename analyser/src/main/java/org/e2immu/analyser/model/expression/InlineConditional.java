@@ -18,6 +18,7 @@ import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.inspector.TypeContext;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.util.EvaluateInlineConditional;
+import org.e2immu.analyser.model.expression.util.ExpressionComparator;
 import org.e2immu.analyser.model.expression.util.MultiExpression;
 import org.e2immu.analyser.model.impl.BaseExpression;
 import org.e2immu.analyser.model.variable.Variable;
@@ -110,7 +111,7 @@ public class InlineConditional extends BaseExpression implements Expression {
     }
 
     @Override
-    public int internalCompareTo(Expression v) {
+    public int internalCompareTo(Expression v) throws ExpressionComparator.InternalError {
         if (v instanceof InlineConditional other) {
             int c = condition.compareTo(other.condition);
             if (c == 0) {
@@ -122,14 +123,7 @@ public class InlineConditional extends BaseExpression implements Expression {
             }
             return c;
         }
-        // because the internal order of an inline is equal to that of the condition, we can encounter every other expression
-        // type here
-        int c = condition.compareTo(v);
-        if (c == 0) {
-            // let's put the inline conditional at the back
-            return 1;
-        }
-        return c;
+        throw new ExpressionComparator.InternalError();
     }
 
     @Override

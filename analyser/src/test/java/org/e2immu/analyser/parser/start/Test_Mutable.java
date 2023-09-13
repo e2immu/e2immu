@@ -123,7 +123,7 @@ public class Test_Mutable extends CommonTestRunner {
             }
             if ("static1".equals(d.methodInfo().name)) {
                 if ("2".equals(d.statementId())) {
-                    String expected = d.iteration() < 2 ? "<m:method>==<m:length>"
+                    String expected = d.iteration() < 2 ? "<m:length>==<m:method>"
                             : "s.length()==(new Mutable_1()).method(s)";
                     assertEquals(expected, d.evaluationResult().getExpression().toString());
                 }

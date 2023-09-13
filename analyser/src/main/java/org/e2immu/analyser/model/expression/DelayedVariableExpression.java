@@ -158,19 +158,14 @@ public class DelayedVariableExpression extends BaseExpression implements IsVaria
     // code very similar to that in VariableExpression; that's important, because we need to keep them closely
     // aligned AND compatible with equals: sometimes we use TreeMaps, sometimes we use HashMaps.
     @Override
-    public int internalCompareTo(Expression v) {
-        InlineConditional ic;
-        Expression e;
-        if ((ic = v.asInstanceOf(InlineConditional.class)) != null) {
-            e = ic.condition;
-        } else e = v;
+    public int internalCompareTo(Expression v) throws ExpressionComparator.InternalError {
         IsVariableExpression ive;
-        if ((ive = e.asInstanceOf(IsVariableExpression.class)) != null) {
+        if ((ive = v.asInstanceOf(IsVariableExpression.class)) != null) {
             // compare variables
             int c = variableId().compareTo(ive.variableId());
             if (c == 0) {
                 DelayedVariableExpression dve;
-                if ((dve = e.asInstanceOf(DelayedVariableExpression.class)) != null) {
+                if ((dve = v.asInstanceOf(DelayedVariableExpression.class)) != null) {
                     return statementTime - dve.statementTime;
                 }
                 // same variable, but the other one is not delayed
@@ -178,7 +173,7 @@ public class DelayedVariableExpression extends BaseExpression implements IsVaria
             }
             return c;
         }
-        throw new UnsupportedOperationException();
+        throw new ExpressionComparator.InternalError();
     }
 
     @Override

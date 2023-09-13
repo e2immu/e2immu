@@ -203,7 +203,18 @@ public class Negation extends UnaryOperator implements ExpressionWrapper {
     }
 
     @Override
+    public Double numericValue() {
+        Double d = expression.numericValue();
+        return d == null ? null : -d;
+    }
+
+    @Override
     public boolean isNegatedOrNumericNegative() {
         return true;
     }
+
+    // @Override
+    // public <T extends Element> T asInstanceOf(Class<T> clazz) {
+    //     return expression.asInstanceOf(clazz);
+    // }
 }

@@ -75,20 +75,21 @@ public class Sum extends BinaryOperator {
 
         if (l.equals(r))
             return Product.product(identifier, evaluationContext, new IntConstant(primitives, identifier, 2), l);
-        IntConstant li;
-        if ((li = l.asInstanceOf(IntConstant.class)) != null && li.constant() == 0) return r;
-        IntConstant ri;
-        if ((ri = r.asInstanceOf(IntConstant.class)) != null && ri.constant() == 0) return l;
-        if (l instanceof Negation ln && ln.expression.equals(r) ||
-                r instanceof Negation rn && rn.expression.equals(l)) {
+
+        Double ln = l.numericValue();
+        Double rn = r.numericValue();
+
+        if (ln != null && rn != null) {
+            return IntConstant.intOrDouble(primitives, identifier, ln + rn);
+        }
+        if (ln != null && ln == 0.0) return r;
+        if (rn != null && rn == 0.0) return l;
+
+        if (l instanceof Negation nl && nl.expression.equals(r) ||
+                r instanceof Negation nr && nr.expression.equals(l)) {
             return new IntConstant(primitives, identifier, 0);
         }
-        Numeric ln;
-        Numeric rn;
-        if ((ln = l.asInstanceOf(Numeric.class)) != null
-                && (rn = r.asInstanceOf(Numeric.class)) != null) {
-            return IntConstant.intOrDouble(primitives, identifier, ln.doubleValue() + rn.doubleValue());
-        }
+
         // similar code in Equals (common terms)
 
         Expression[] terms = Stream.concat(expandTerms(evaluationContext, l, false),

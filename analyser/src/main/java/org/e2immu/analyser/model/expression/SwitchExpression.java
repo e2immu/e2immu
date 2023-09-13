@@ -16,6 +16,7 @@ package org.e2immu.analyser.model.expression;
 
 import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.model.expression.util.ExpressionComparator;
 import org.e2immu.analyser.model.expression.util.MultiExpression;
 import org.e2immu.analyser.model.impl.BaseExpression;
 import org.e2immu.analyser.model.statement.ExpressionAsStatement;
@@ -165,7 +166,16 @@ public class SwitchExpression extends BaseExpression implements Expression, HasS
 
     @Override
     public int order() {
-        return 0;
+        return ExpressionComparator.ORDER_SWITCH;
+    }
+
+    @Override
+    public int internalCompareTo(Expression v) throws ExpressionComparator.InternalError {
+        if (v instanceof SwitchExpression se) {
+            int c = selector.compareTo(se.selector);
+            if (c != 0) return c;
+        }
+        throw new ExpressionComparator.InternalError();
     }
 
     @Override

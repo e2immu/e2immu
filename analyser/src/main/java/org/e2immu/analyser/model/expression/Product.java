@@ -60,15 +60,16 @@ public class Product extends BinaryOperator {
     private static Expression internalProduct(Identifier identifier, EvaluationResult evaluationContext, Expression l, Expression r) {
         Primitives primitives = evaluationContext.getPrimitives();
 
-        if (l instanceof Numeric ln && ln.doubleValue() == 0 ||
-                r instanceof Numeric rn && rn.doubleValue() == 0) {
+        Double ln = l.numericValue();
+        Double rn = r.numericValue();
+
+        if (ln != null && ln == 0 || rn != null && rn == 0) {
             return new IntConstant(primitives, identifier, 0);
         }
 
-        if (l instanceof Numeric ln && ln.doubleValue() == 1) return r;
-        if (r instanceof Numeric rn && rn.doubleValue() == 1) return l;
-        if (l instanceof Numeric ln && r instanceof Numeric rn)
-            return IntConstant.intOrDouble(primitives, identifier, ln.doubleValue() * rn.doubleValue());
+        if (ln != null && ln == 1) return r;
+        if (rn != null && rn == 1) return l;
+        if (ln != null && rn != null) return IntConstant.intOrDouble(primitives, identifier, ln * rn);
 
         // any unknown lingering
         if (l.isEmpty() || r.isEmpty()) throw new UnsupportedOperationException();
