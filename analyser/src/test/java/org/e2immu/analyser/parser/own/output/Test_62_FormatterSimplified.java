@@ -138,7 +138,7 @@ public class Test_62_FormatterSimplified extends CommonTestRunner {
                     }
                     if ("8.0.3".equals(d.statementId())) {
                         String expected = switch (d.iteration()) {
-                            case 0 -> "<instanceOf:Symbol>?<m:symbol>:<instanceOf:Guide>?\"\":<m:write>";
+                            case 0 -> "<instanceOf:Symbol>?<m:symbol>:<m:write>";
                             case 1, 2 -> "<c:boolean>?<m:symbol>:<c:boolean>?\"\":\"abc\"";
                             default ->
                                     "outputElement instanceof Symbol symbol?`list.get(pos$8)/*(Symbol)*/.symbol`:outputElement instanceof Guide?\"\":\"abc\"";
@@ -154,7 +154,7 @@ public class Test_62_FormatterSimplified extends CommonTestRunner {
                     }
                     if ("8.0.4.1.0.1.0.0.03".equals(d.statementId())) {
                         String expected = d.iteration() < 3
-                                ? "<instanceOf:Symbol>?<m:symbol>:<instanceOf:Guide>?\"\":<m:write>"
+                                ? "<instanceOf:Symbol>?<m:symbol>:<m:write>"
                                 : "outputElement instanceof Symbol symbol?`list.get(pos$8)/*(Symbol)*/.symbol`:outputElement instanceof Guide?\"\":\"abc\"";
                         assertEquals(expected, d.currentValue().toString());
                         assertFalse(d.variableInfo().getLinkedVariables().stream()
@@ -186,9 +186,9 @@ public class Test_62_FormatterSimplified extends CommonTestRunner {
                     if ("9".equals(d.statementId())) {
                         String expected = switch (d.iteration()) {
                             case 0 ->
-                                    "!<instanceOf:Space>&&(<instanceOf:Guide>?<m:apply>&&-1-<v:chars>+(!<instanceOf:Space>&&-1+<v:end>>=<v:pos>&&<f:NEWLINE>!=<m:get>&&(<instanceOf:Guide>||<m:length>>=1)?<p:maxChars>:instance type int)>=0:<m:apply>&&<m:length>>=1&&(!<v:allowBreak>||!<v:wroteOnce>||-<v:chars>+<p:maxChars>-<m:length>>=(!<instanceOf:Guide>&&!<instanceOf:Space>&&<v:wroteOnce>&&<m:apply>&&<m:length>>=1&&-1+<v:end>>=<v:pos>&&<v:lastOneWasSpace>!=<f:NONE>&&<v:lastOneWasSpace>!=<f:RELAXED_NONE>&&<f:NEWLINE>!=<m:get>?1:0)))&&-1+<v:end>>=<v:pos>&&<f:NEWLINE>!=<m:get>";
+                                    "!<instanceOf:Space>&&<m:apply>&&<m:length>>=1&&-1+<v:end>>=<v:pos>&&<f:NEWLINE>!=<m:get>&&(!<v:allowBreak>||!<v:wroteOnce>||-<v:chars>+<p:maxChars>-<m:length>>=(!<instanceOf:Guide>&&<v:wroteOnce>&&<m:apply>&&<m:length>>=1&&-1+<v:end>>=<v:pos>&&<v:lastOneWasSpace>!=<f:NONE>&&<v:lastOneWasSpace>!=<f:RELAXED_NONE>&&<f:NEWLINE>!=<m:get>?1:0))";
                             case 1 ->
-                                    "!<c:boolean>&&(<c:boolean>?<m:apply>&&!<c:boolean>:<m:apply>&&<m:length>>=1&&(!<vl:wroteOnce>||!(<c:boolean>?instance type boolean&&<dv:scope-scope-81:25:8.0.3.split>!=<f:NEVER>:instance type boolean)||-<m:length>!(<m:apply>&&!<c:boolean>&&!<c:boolean>&&<m:length>>=1&&-1+end$8>=pos$8&&<vp:NONE:container@Class_ElementarySpace>!=(<c:boolean>?<m:combine>:nullable instance type ElementarySpace)&&<f:RELAXED_NONE>!=(<c:boolean>?<m:combine>:nullable instance type ElementarySpace)&&list.get(pos$8)!=<vp:NEWLINE:container@Record_Space>&&<vp:NEWLINE:container@Record_Space>!=<m:get>&&-1+<vl:end>>=(-1+end$8>=pos$8&&list.get(pos$8)!=<vp:NEWLINE:container@Record_Space>?1+(<c:boolean>?<vl:pos>:<c:boolean>?<new:ForwardInfo>:<m:length>>=1?<vl:pos>:instance type int):start)&&(<c:boolean>||<c:boolean>||<m:length><=0?instance type boolean:<s:boolean>)?1:0)+(!<c:boolean>&&!<c:boolean>&&<m:length>>=1&&-1+end$8>=pos$8&&list.get(pos$8)!=<vp:NEWLINE:container@Record_Space>?<p:maxChars>:instance type int)>=(-1+end$8>=pos$8&&list.get(pos$8)!=<vp:NEWLINE:container@Record_Space>?<instanceOf:Space>||<instanceOf:Guide>||<m:length><=0?<vl:chars>:<v:chars>+<m:length>+(<v:wroteOnce>&&!<m:apply>&&!<instanceOf:Guide>&&!<instanceOf:Space>&&<m:length>>=1&&-1+<v:end>>=<v:pos>&&<v:lastOneWasSpace>!=<f:NONE>&&<v:lastOneWasSpace>!=<f:RELAXED_NONE>&&<f:NEWLINE>!=<m:get>?1:0):0)))&&<vp:NEWLINE:container@Record_Space>!=<m:get>&&-1+<vl:end>>=(-1+end$8>=pos$8&&list.get(pos$8)!=<vp:NEWLINE:container@Record_Space>?1+(<c:boolean>?<vl:pos>:<c:boolean>?<new:ForwardInfo>:<m:length>>=1?<vl:pos>:instance type int):start)";
+                                    "!<c:boolean>&&(<c:boolean>?<m:apply>&&!<c:boolean>:<m:apply>&&([list.get(pos$8),<v:allowBreak>,<vl:chars>,<vl:end>,end$8,<v:lastOneWasSpace>,<vp:NONE:container@Class_ElementarySpace>,<f:RELAXED_NONE>,<f:RELAXED_NONE>,<vp:NEWLINE:container@Record_Space>,<dv:scope-scope-81:25:8.0.3.split>,<f:NEVER>,<p:maxChars>,<vl:pos>,pos$8,<vl:wroteOnce>,<c:boolean>,<m:get>,<m:get>,<m:length>,<s:boolean>,<c:boolean>,<instanceOf:Space>,<new:ForwardInfo>,<m:combine>,<c:boolean>,<m:apply>,<too complex>])&&<m:length>>=1)&&<vp:NEWLINE:container@Record_Space>!=<m:get>&&-1+<vl:end>>=(-1+end$8>=pos$8&&list.get(pos$8)!=<vp:NEWLINE:container@Record_Space>?1+(<c:boolean>?<vl:pos>:<c:boolean>?<new:ForwardInfo>:<m:length>>=1?<vl:pos>:instance type int):start)";
                             case 2 ->
                                     "!<c:boolean>&&(<c:boolean>?<m:apply>&&!<c:boolean>:<m:apply>&&<m:length>>=1&&(!<vl:wroteOnce>||!(<c:boolean>?instance type boolean&&<dv:scope-scope-81:25:8.0.3.split>!=<f:NEVER>:instance type boolean)||-<m:length>!(<m:apply>&&!<c:boolean>&&!<c:boolean>&&<m:length>>=1&&-1+end$8>=pos$8&&list.get(pos$8)!=<vp:NEWLINE:cm@Parameter_split;mom@Parameter_split>&&<vp:NEWLINE:cm@Parameter_split;mom@Parameter_split>!=<m:get>&&(<c:boolean>?<m:combine>:nullable instance type ElementarySpace)!=(-1+end$8>=pos$8&&list.get(pos$8)!=<vp:NEWLINE:cm@Parameter_split;mom@Parameter_split>?<f:NONE>:instance type ElementarySpace/*new ElementarySpace()*/)&&-1+<vl:end>>=(-1+end$8>=pos$8&&list.get(pos$8)!=<vp:NEWLINE:cm@Parameter_split;mom@Parameter_split>?1+(<c:boolean>?instance type int:<c:boolean>?<new:ForwardInfo>:<m:length>>=1?<vl:pos>:instance type int):start)&&(<c:boolean>||<c:boolean>||<m:length><=0?instance type boolean:<s:boolean>)&&(nullable instance type ElementarySpace!=instance type ElementarySpace/*new ElementarySpace()*/||<f:RELAXED_NONE>!=<m:combine>)?1:0)+(!<c:boolean>&&!<c:boolean>&&<m:length>>=1&&-1+end$8>=pos$8&&list.get(pos$8)!=<vp:NEWLINE:cm@Parameter_split;mom@Parameter_split>?<p:maxChars>:instance type int)>=(-1+end$8>=pos$8&&list.get(pos$8)!=<vp:NEWLINE:cm@Parameter_split;mom@Parameter_split>?<instanceOf:Space>||<instanceOf:Guide>||<m:length><=0?<vl:chars>:<v:chars>+<m:length>+(<v:wroteOnce>&&!<m:apply>&&!<instanceOf:Guide>&&!<instanceOf:Space>&&<m:length>>=1&&-1+<v:end>>=<v:pos>&&<v:lastOneWasSpace>!=<f:NONE>&&<v:lastOneWasSpace>!=<f:RELAXED_NONE>&&<f:NEWLINE>!=<m:get>?1:0):0)))&&<vp:NEWLINE:cm@Parameter_split;mom@Parameter_split>!=<m:get>&&-1+<vl:end>>=(-1+end$8>=pos$8&&list.get(pos$8)!=<vp:NEWLINE:cm@Parameter_split;mom@Parameter_split>?1+(<c:boolean>?instance type int:<c:boolean>?<new:ForwardInfo>:<m:length>>=1?<vl:pos>:instance type int):start)";
                             default ->
@@ -207,7 +207,8 @@ public class Test_62_FormatterSimplified extends CommonTestRunner {
             }
             if ("forward".equals(d.methodInfo().name)) {
                 if ("8".equals(d.statementId())) {
-                    assertTrue(d.statementAnalysis().stateData().conditionManagerForNextStatementStatus().isDone());
+                    assertEquals(d.iteration() >= 4,
+                            d.statementAnalysis().stateData().conditionManagerForNextStatementStatus().isDone());
                 }
                 if ("8.0.3".equals(d.statementId())) {
                     /*
@@ -244,14 +245,18 @@ public class Test_62_FormatterSimplified extends CommonTestRunner {
                 assertDv(d, MultiLevel.CONTAINER_DV, Property.CONTAINER);
             }
         };
+
+        BreakDelayVisitor breakDelayVisitor = d -> assertEquals("-----", d.delaySequence());
+
         // 2 errors: overwriting a previous value; valid, I'd say
         // 2 re-assignment warnings, ok given the null returned by elementarySpace
-        testClass("FormatterSimplified_2", 2, 2, new DebugConfiguration.Builder()
-               // .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-               // .addStatementAnalyserVisitor(statementAnalyserVisitor)
-              //  .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
-              //  .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
-              //  .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+        testClass("FormatterSimplified_2", 2, 0, new DebugConfiguration.Builder()
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
+                .addBreakDelayVisitor(breakDelayVisitor)
                 .build());
     }
 

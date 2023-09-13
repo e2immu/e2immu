@@ -83,7 +83,6 @@ public class Test_01_Loops_21plus extends CommonTestRunner {
         }
     };
 
-    @Disabled("No progress")
     @Test
     public void test_21() throws IOException {
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
@@ -292,7 +291,6 @@ public class Test_01_Loops_21plus extends CommonTestRunner {
                 .build());
     }
 
-    @Disabled("No progress")
     @Test
     public void test_21_3() throws IOException {
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
@@ -352,7 +350,6 @@ public class Test_01_Loops_21plus extends CommonTestRunner {
     }
 
     // identical, but for a statement at 2.0.2
-    @Disabled("No progress")
     @Test
     public void test_22() throws IOException {
         testClass("Loops_22", 0, 0, new DebugConfiguration.Builder()

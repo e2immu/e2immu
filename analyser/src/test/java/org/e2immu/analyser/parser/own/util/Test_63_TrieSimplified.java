@@ -304,7 +304,6 @@ public class Test_63_TrieSimplified extends CommonTestRunner {
     }
 
     // see also test_4; difference: before introduction of "Inspector", TrieNode was not analysed, since it has no statements
-    @Disabled("change LVs")
     @Test
     public void test_2() throws IOException {
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
@@ -546,7 +545,6 @@ public class Test_63_TrieSimplified extends CommonTestRunner {
     }
 
     // added some code to TrieNode test 2
-    @Disabled("change LVs")
     @Test
     public void test_4() throws IOException {
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {

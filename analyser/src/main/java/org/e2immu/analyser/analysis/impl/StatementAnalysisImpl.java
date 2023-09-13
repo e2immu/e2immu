@@ -1500,11 +1500,15 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
                 groupPropertyValues.getMap(CONTEXT_MODIFIED), Map.of(), statementTimeDelta, modificationTimes,
                 conditionCauses, true);
 
+        CausesOfDelay delaysOfValuesOfIgnored = prepareMerge.toIgnore.stream()
+                .map(vic -> vic.best(MERGE).getValue().causesOfDelay()).reduce(CausesOfDelay.EMPTY, CausesOfDelay::merge);
+
         return delay
                 .combine(backLink.delays)
                 .combine(ennStatus).combine(cnnStatus).combine(cmStatus).combine(extImmStatus)
                 .combine(extContStatus).combine(cImmStatus).combine(cContStatus).combine(extIgnModStatus)
                 .merge(externalDelaysOnIgnoredVariables)
+                .merge(delaysOfValuesOfIgnored)
                 .addProgress(progress);
     }
 

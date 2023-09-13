@@ -70,7 +70,8 @@ public class Test_ParameterizedType extends CommonTestRunner {
                     String expected = d.iteration() == 0 ? "<m:isEmpty>" : "List.of().isEmpty()";
                     assertEquals(expected, d.condition().toString());
                     String reached = switch (d.iteration()) {
-                        case 0 -> "initial:from.typeInfo@Method_targetIsATypeParameter_3-C;initial:from@Method_targetIsATypeParameter_3-E;initial:target.typeParameter@Method_targetIsATypeParameter_0-C";
+                        case 0 ->
+                                "initial:from.typeInfo@Method_targetIsATypeParameter_3-C;initial:from@Method_targetIsATypeParameter_3-E;initial:target.typeParameter@Method_targetIsATypeParameter_0-C";
                         case 1 -> "CONDITIONALLY:1"; // should be a delay
                         default -> "never reaches this point";
                     };
@@ -78,7 +79,8 @@ public class Test_ParameterizedType extends CommonTestRunner {
                 }
                 if ("4.0.1".equals(d.statementId())) {
                     String reached = switch (d.iteration()) {
-                        case 0 -> "initial:from.typeInfo@Method_targetIsATypeParameter_3-C;initial:from@Method_targetIsATypeParameter_3-E";
+                        case 0 ->
+                                "initial:from.typeInfo@Method_targetIsATypeParameter_3-C;initial:from@Method_targetIsATypeParameter_3-E";
                         case 1, 2 -> "CONDITIONALLY:1";
                         default -> throw new UnsupportedOperationException();
                     };
@@ -159,10 +161,10 @@ public class Test_ParameterizedType extends CommonTestRunner {
         };
 
         testClass("ParameterizedType_0", 4, 2, new DebugConfiguration.Builder()
-             //   .addEvaluationResultVisitor(evaluationResultVisitor)
-             //   .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-            //    .addStatementAnalyserVisitor(statementAnalyserVisitor)
-            //    .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
+                //   .addEvaluationResultVisitor(evaluationResultVisitor)
+                //   .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                //    .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                //    .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
                 .build());
     }
 
@@ -199,31 +201,13 @@ public class Test_ParameterizedType extends CommonTestRunner {
                             : "'L'==('['==firstChar$0.0.06?signature.charAt(1+firstCharPos$0.0.06):'+'==signature.charAt(0)||'-'==signature.charAt(0)?signature.charAt(1):signature.charAt(0))";
                     assertEquals(expected, d.evaluationResult().value().toString());
                 }
-                if ("0.0.11".equals(d.statementId())) {
-                    String expected = switch (d.iteration()) {
-                        case 0 -> "<f:WILDCARD_STAR>==<m:charAt>?<new:Result>:<f:CHAR_L>==(<v:firstChar>==<f:ARRAY_BRACKET>?<m:charAt>:<v:firstChar>==<f:MINUS_SUPER>||<v:firstChar>==<f:PLUS_EXTENDS>?<m:charAt>:<v:firstChar>)?<m:normalType>:<f:TYPE_PARAM_T>==(<v:firstChar>==<f:ARRAY_BRACKET>?<m:charAt>:<v:firstChar>==<f:MINUS_SUPER>||<v:firstChar>==<f:PLUS_EXTENDS>?<m:charAt>:<v:firstChar>)?<null-check>?<new:Result>:<new:Result>:(<v:firstChar>==<f:ARRAY_BRACKET>?1+<v:arrays>:<s:int>)>=1?<s:Result>:<new:Result>";
-                        case 1 -> "'*'==signature.charAt(0)?<new:Result>:'L'==('['==(<v:firstChar>==<f:ARRAY_BRACKET>?<m:charAt>:<v:firstChar>==<f:MINUS_SUPER>||<v:firstChar>==<f:PLUS_EXTENDS>?signature.charAt(1):<v:firstChar>)?signature.charAt(1+('['==firstChar$0.0.06?1+firstCharPos$0.0.06:'+'==signature.charAt(0)||'-'==signature.charAt(0)?1:0)):'+'==signature.charAt(0)||'-'==signature.charAt(0)?signature.charAt(1):signature.charAt(0))?<m:normalType>:'T'==('['==(<v:firstChar>==<f:ARRAY_BRACKET>?<m:charAt>:<v:firstChar>==<f:MINUS_SUPER>||<v:firstChar>==<f:PLUS_EXTENDS>?signature.charAt(1):<v:firstChar>)?signature.charAt(1+('['==firstChar$0.0.06?1+firstCharPos$0.0.06:'+'==signature.charAt(0)||'-'==signature.charAt(0)?1:0)):'+'==signature.charAt(0)||'-'==signature.charAt(0)?signature.charAt(1):signature.charAt(0))?<null-check>?<new:Result>:<new:Result>:('['==(<v:firstChar>==<f:ARRAY_BRACKET>?<m:charAt>:<v:firstChar>==<f:MINUS_SUPER>||<v:firstChar>==<f:PLUS_EXTENDS>?signature.charAt(1):<v:firstChar>)?1+('['==firstChar$0.0.06?1+arrays$0.0.06:0):0)>=1?<new:Result>:<new:Result>";
-                        case 2 -> "'*'==signature.charAt(0)?<new:Result>:'L'==('['==('['==firstChar$0.0.06?signature.charAt(1+firstCharPos$0.0.06):'+'==signature.charAt(0)||'-'==signature.charAt(0)?signature.charAt(1):signature.charAt(0))?signature.charAt(1+('['==firstChar$0.0.06?1+firstCharPos$0.0.06:'+'==signature.charAt(0)||'-'==signature.charAt(0)?1:0)):'+'==signature.charAt(0)||'-'==signature.charAt(0)?signature.charAt(1):signature.charAt(0))?<m:normalType>:'T'==('['==('['==firstChar$0.0.06?signature.charAt(1+firstCharPos$0.0.06):'+'==signature.charAt(0)||'-'==signature.charAt(0)?signature.charAt(1):signature.charAt(0))?signature.charAt(1+('['==firstChar$0.0.06?1+firstCharPos$0.0.06:'+'==signature.charAt(0)||'-'==signature.charAt(0)?1:0)):'+'==signature.charAt(0)||'-'==signature.charAt(0)?signature.charAt(1):signature.charAt(0))?([typeContext.get(signature.substring(1+('['==('['==firstChar$0.0.06?signature.charAt(1+firstCharPos$0.0.06):'+'==signature.charAt(0)||'-'==signature.charAt(0)?signature.charAt(1):signature.charAt(0))?1+('['==firstChar$0.0.06?1+firstCharPos$0.0.06:'+'==signature.charAt(0)||'-'==signature.charAt(0)?1:0):'+'==signature.charAt(0)||'-'==signature.charAt(0)?1:0),signature.indexOf(';')),false),typeContext.get(signature.substring(1+('['==('['==('['==firstChar$0.0.06?signature.charAt(1+firstCharPos$0.0.06):'+'==signature.charAt(0)||'-'==signature.charAt(0)?signature.charAt(1):signature.charAt(0))?signature.charAt(1+('['==firstChar$0.0.06?1+firstCharPos$0.0.06:'+'==signature.charAt(0)||'-'==signature.charAt(0)?1:0)):'+'==signature.charAt(0)||'-'==signature.charAt(0)?signature.charAt(1):signature.charAt(0))?1+('['==('['==firstChar$0.0.06?signature.charAt(1+firstCharPos$0.0.06):'+'==signature.charAt(0)||'-'==signature.charAt(0)?signature.charAt(1):signature.charAt(0))?1+('['==firstChar$0.0.06?1+firstCharPos$0.0.06:'+'==signature.charAt(0)||'-'==signature.charAt(0)?1:0):'+'==signature.charAt(0)||'-'==signature.charAt(0)?1:0):'+'==signature.charAt(0)||'-'==signature.charAt(0)?1:0),signature.indexOf(';')),false),instance type boolean])?<new:Result>:<new:Result>:('['==('['==firstChar$0.0.06?signature.charAt(1+firstCharPos$0.0.06):'+'==signature.charAt(0)||'-'==signature.charAt(0)?signature.charAt(1):signature.charAt(0))?1+('['==firstChar$0.0.06?1+arrays$0.0.06:0):0)>=1?<new:Result>:new Result(primitivePt,1,false)";
-                        case 3 -> "'*'==signature.charAt(0)?new Result(ParameterizedType.WILDCARD_PARAMETERIZED_TYPE,1,false):'L'==('['==('['==firstChar$0.0.06?signature.charAt(1+firstCharPos$0.0.06):'+'==signature.charAt(0)||'-'==signature.charAt(0)?signature.charAt(1):signature.charAt(0))?signature.charAt(1+('['==firstChar$0.0.06?1+firstCharPos$0.0.06:'+'==signature.charAt(0)||'-'==signature.charAt(0)?1:0)):'+'==signature.charAt(0)||'-'==signature.charAt(0)?signature.charAt(1):signature.charAt(0))?<m:normalType>:'T'==('['==('['==firstChar$0.0.06?signature.charAt(1+firstCharPos$0.0.06):'+'==signature.charAt(0)||'-'==signature.charAt(0)?signature.charAt(1):signature.charAt(0))?signature.charAt(1+('['==firstChar$0.0.06?1+firstCharPos$0.0.06:'+'==signature.charAt(0)||'-'==signature.charAt(0)?1:0)):'+'==signature.charAt(0)||'-'==signature.charAt(0)?signature.charAt(1):signature.charAt(0))?([typeContext.get(signature.substring(1+('['==('['==firstChar$0.0.06?signature.charAt(1+firstCharPos$0.0.06):'+'==signature.charAt(0)||'-'==signature.charAt(0)?signature.charAt(1):signature.charAt(0))?1+('['==firstChar$0.0.06?1+firstCharPos$0.0.06:'+'==signature.charAt(0)||'-'==signature.charAt(0)?1:0):'+'==signature.charAt(0)||'-'==signature.charAt(0)?1:0),signature.indexOf(';')),false),typeContext.get(signature.substring(1+('['==('['==('['==firstChar$0.0.06?signature.charAt(1+firstCharPos$0.0.06):'+'==signature.charAt(0)||'-'==signature.charAt(0)?signature.charAt(1):signature.charAt(0))?signature.charAt(1+('['==firstChar$0.0.06?1+firstCharPos$0.0.06:'+'==signature.charAt(0)||'-'==signature.charAt(0)?1:0)):'+'==signature.charAt(0)||'-'==signature.charAt(0)?signature.charAt(1):signature.charAt(0))?1+('['==('['==firstChar$0.0.06?signature.charAt(1+firstCharPos$0.0.06):'+'==signature.charAt(0)||'-'==signature.charAt(0)?signature.charAt(1):signature.charAt(0))?1+('['==firstChar$0.0.06?1+firstCharPos$0.0.06:'+'==signature.charAt(0)||'-'==signature.charAt(0)?1:0):'+'==signature.charAt(0)||'-'==signature.charAt(0)?1:0):'+'==signature.charAt(0)||'-'==signature.charAt(0)?1:0),signature.indexOf(';')),false),instance type boolean])?<new:Result>:<new:Result>:('['==('['==firstChar$0.0.06?signature.charAt(1+firstCharPos$0.0.06):'+'==signature.charAt(0)||'-'==signature.charAt(0)?signature.charAt(1):signature.charAt(0))?1+('['==firstChar$0.0.06?1+arrays$0.0.06:0):0)>=1?new Result(new ParameterizedType(primitivePt.typeInfo,arrays),arrays+1,false):new Result(primitivePt,1,false)";
-                        case 4, 5, 6, 7, 8, 9, 10, 11 -> "'*'==signature.charAt(0)?new Result(ParameterizedType.WILDCARD_PARAMETERIZED_TYPE,1,false):'L'==('['==('['==firstChar$0.0.06?signature.charAt(1+firstCharPos$0.0.06):'+'==signature.charAt(0)||'-'==signature.charAt(0)?signature.charAt(1):signature.charAt(0))?signature.charAt(1+('['==firstChar$0.0.06?1+firstCharPos$0.0.06:'+'==signature.charAt(0)||'-'==signature.charAt(0)?1:0)):'+'==signature.charAt(0)||'-'==signature.charAt(0)?signature.charAt(1):signature.charAt(0))?<m:normalType>:'T'==('['==('['==firstChar$0.0.06?signature.charAt(1+firstCharPos$0.0.06):'+'==signature.charAt(0)||'-'==signature.charAt(0)?signature.charAt(1):signature.charAt(0))?signature.charAt(1+('['==firstChar$0.0.06?1+firstCharPos$0.0.06:'+'==signature.charAt(0)||'-'==signature.charAt(0)?1:0)):'+'==signature.charAt(0)||'-'==signature.charAt(0)?signature.charAt(1):signature.charAt(0))?([typeContext.get(signature.substring(1+('['==('['==firstChar$0.0.06?signature.charAt(1+firstCharPos$0.0.06):'+'==signature.charAt(0)||'-'==signature.charAt(0)?signature.charAt(1):signature.charAt(0))?1+('['==firstChar$0.0.06?1+firstCharPos$0.0.06:'+'==signature.charAt(0)||'-'==signature.charAt(0)?1:0):'+'==signature.charAt(0)||'-'==signature.charAt(0)?1:0),signature.indexOf(';')),false),typeContext.get(signature.substring(1+('['==('['==('['==firstChar$0.0.06?signature.charAt(1+firstCharPos$0.0.06):'+'==signature.charAt(0)||'-'==signature.charAt(0)?signature.charAt(1):signature.charAt(0))?signature.charAt(1+('['==firstChar$0.0.06?1+firstCharPos$0.0.06:'+'==signature.charAt(0)||'-'==signature.charAt(0)?1:0)):'+'==signature.charAt(0)||'-'==signature.charAt(0)?signature.charAt(1):signature.charAt(0))?1+('['==('['==firstChar$0.0.06?signature.charAt(1+firstCharPos$0.0.06):'+'==signature.charAt(0)||'-'==signature.charAt(0)?signature.charAt(1):signature.charAt(0))?1+('['==firstChar$0.0.06?1+firstCharPos$0.0.06:'+'==signature.charAt(0)||'-'==signature.charAt(0)?1:0):'+'==signature.charAt(0)||'-'==signature.charAt(0)?1:0):'+'==signature.charAt(0)||'-'==signature.charAt(0)?1:0),signature.indexOf(';')),false),instance type boolean])?new Result(typeContext.getPrimitives().objectParameterizedType(),signature.indexOf(';')+1,true):new Result(new ParameterizedType((TypeParameter)typeContext.get(signature.substring(1+('['==firstChar$0.0.06?1+firstCharPos$0.0.06:'+'==signature.charAt(0)||'-'==signature.charAt(0)?1:0),signature.indexOf(';')),false),arrays,wildCard),signature.indexOf(';')+1,false):('['==('['==firstChar$0.0.06?signature.charAt(1+firstCharPos$0.0.06):'+'==signature.charAt(0)||'-'==signature.charAt(0)?signature.charAt(1):signature.charAt(0))?1+('['==firstChar$0.0.06?1+arrays$0.0.06:0):0)>=1?new Result(new ParameterizedType(primitivePt.typeInfo,arrays),arrays+1,false):new Result(primitivePt,1,false)";
-                        default -> "('['==('['==firstChar$0.0.06?signature.charAt(1+firstCharPos$0.0.06):'+'==signature.charAt(0)||'-'==signature.charAt(0)?signature.charAt(1):signature.charAt(0))?1+('['==firstChar$0.0.06?1+arrays$0.0.06:0):0)>=1?new Result(new ParameterizedType(primitivePt.typeInfo,arrays),arrays+1,false):([signature.charAt(0),signature.charAt(1),signature.charAt(1+firstCharPos$0.0.06),signature.charAt(1+('['==firstChar$0.0.06?1+firstCharPos$0.0.06:'+'==signature.charAt(0)||'-'==signature.charAt(0)?1:0)),arrays$0.0.06,firstChar$0.0.06,instance type boolean])?instance type boolean?new Result(typeContext.getPrimitives().objectParameterizedType(),signature.indexOf(';')+1,true):new Result(new ParameterizedType((TypeParameter)typeContext.get(signature.substring(1+('['==firstChar$0.0.06?1+firstCharPos$0.0.06:'+'==signature.charAt(0)||'-'==signature.charAt(0)?1:0),signature.indexOf(';')),false),arrays,wildCard),signature.indexOf(';')+1,false):([signature.charAt(0),signature.charAt(1),signature.charAt(1+firstCharPos$0.0.06),signature.charAt(1+('['==firstChar$0.0.06?1+firstCharPos$0.0.06:'+'==signature.charAt(0)||'-'==signature.charAt(0)?1:0)),arrays$0.0.06,firstChar$0.0.06,instance type boolean])?instance type boolean?null:new Result(`parameterizedType`,`semiColon`+1,`typeNotFoundError`):'*'==signature.charAt(0)?new Result(ParameterizedType.WILDCARD_PARAMETERIZED_TYPE,1,false):new Result(primitivePt,1,false)";
-                    };
-                    assertEquals(expected, d.evaluationResult().value().toString());
-                    assertEquals(d.iteration() <= 11, d.evaluationResult().causesOfDelay().isDelayed());
-                }
             }
             if ("iterativelyParseTypes".equals(d.methodInfo().name)) {
                 if ("0".equals(d.statementId())) {
-                    String expected = d.iteration() < 13 ? "<m:from>"
+                    String expected = d.iteration() < 14 ? "<m:from>"
                             : "ParameterizedType_2.from(typeContext,findType,signature.substring(0))";
                     assertEquals(expected, d.evaluationResult().value().toString());
                     assertEquals(d.iteration() < 14, d.evaluationResult().causesOfDelay().isDelayed());
-                }
-            }
-            if ("normalType".equals(d.methodInfo().name)) {
-                // call to iterativelyParseTypes
-                if ("06.0.5.0.3.0.0".equals(d.statementId())) {
-                    assertEquals(d.iteration() < 3, d.status().isDelayed());
                 }
             }
         };
@@ -246,8 +230,10 @@ public class Test_ParameterizedType extends CommonTestRunner {
                 if ("wildCard".equals(d.variableName())) {
                     String expected = switch (d.iteration()) {
                         case 0, 1 -> "<vl:wildCard>";
-                        case 2, 3 -> "'+'==signature.charAt(0)?<vp:EXTENDS:cm@Parameter_name>:'-'==signature.charAt(0)?<vp:SUPER:cm@Parameter_name>:<vp:NONE:cm@Parameter_name>";
-                        default -> "'+'==signature.charAt(0)?WildCard.EXTENDS:'-'==signature.charAt(0)?WildCard.SUPER:WildCard.NONE";
+                        case 2, 3 ->
+                                "'+'==signature.charAt(0)?<vp:EXTENDS:cm@Parameter_name>:'-'==signature.charAt(0)?<vp:SUPER:cm@Parameter_name>:<vp:NONE:cm@Parameter_name>";
+                        default ->
+                                "'+'==signature.charAt(0)?WildCard.EXTENDS:'-'==signature.charAt(0)?WildCard.SUPER:WildCard.NONE";
                     };
                     if ("0.0.06".equals(d.statementId())) {
                         assertEquals(expected, d.currentValue().toString());
@@ -265,7 +251,8 @@ public class Test_ParameterizedType extends CommonTestRunner {
                         String expected2 = switch (d.iteration()) {
                             case 0, 1, 2, 3 -> "<vl:wildCard>";
                             case 4, 5, 6, 7, 8, 9, 10, 11, 12 -> "<mod:WildCard>";
-                            default -> "'+'==signature.charAt(0)?WildCard.EXTENDS:'-'==signature.charAt(0)?WildCard.SUPER:WildCard.NONE";
+                            default ->
+                                    "'+'==signature.charAt(0)?WildCard.EXTENDS:'-'==signature.charAt(0)?WildCard.SUPER:WildCard.NONE";
                         };
                         assertEquals(expected2, d.currentValue().toString());
                         assertDv(d, 13, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
@@ -273,10 +260,10 @@ public class Test_ParameterizedType extends CommonTestRunner {
                 }
                 if ("0.0.07.0.0".equals(d.statementId())) {
                     if (d.variable() instanceof ParameterInfo pi && "typeContext".equals(pi.name)) {
-                        assertDv(d, 6, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                        assertDv(d, 13, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     }
                     if (d.variable() instanceof ParameterInfo pi && "signature".equals(pi.name)) {
-                        assertDv(d, 6, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                        assertDv(d, 13, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     }
                     if ("arrays".equals(d.variableName())) {
                         assertDv(d, 6, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
@@ -290,7 +277,8 @@ public class Test_ParameterizedType extends CommonTestRunner {
                         String expected = switch (d.iteration()) {
                             case 0 -> "<s:ParameterizedType>";
                             case 1 -> "<m:primitive>";
-                            default -> "switch('['==('['==firstChar$0.0.06?signature.charAt(1+firstCharPos$0.0.06):'+'==signature.charAt(0)||'-'==signature.charAt(0)?signature.charAt(1):signature.charAt(0))?signature.charAt(1+('['==firstChar$0.0.06?1+firstCharPos$0.0.06:'+'==signature.charAt(0)||'-'==signature.charAt(0)?1:0)):'+'==signature.charAt(0)||'-'==signature.charAt(0)?signature.charAt(1):signature.charAt(0)){'B'->typeContext.getPrimitives().byteParameterizedType();'C'->typeContext.getPrimitives().charParameterizedType();default->throw new RuntimeException(\"Char \"+firstChar+\" does NOT represent a primitive!\");}";
+                            default ->
+                                    "ParameterizedType_2.primitive(typeContext.getPrimitives(),'['==firstChar$0.0.06?signature.charAt(1+firstCharPos$0.0.06):'+'==signature.charAt(0)||'-'==signature.charAt(0)?signature.charAt(1):signature.charAt(0))";
                         };
                         assertEquals(expected, d.currentValue().toString());
                     }
@@ -319,7 +307,7 @@ public class Test_ParameterizedType extends CommonTestRunner {
                         String merge = switch (d.iteration()) {
                             case 0, 1, 2 -> "<s:IterativeParsing>";
                             default -> "'>'==<m:charAt>?instance type IterativeParsing:instance type IterativeParsing";
-                            //        default -> "'>'==signature.charAt((ParameterizedType_2.from(typeContext,findType,signature.substring(0))).nextPos)?instance type IterativeParsing:instance type IterativeParsing";
+                            //     '>'==signature.charAt((ParameterizedType_2.from(typeContext,findType,signature.substring(0))).nextPos)?instance type IterativeParsing:instance type IterativeParsing
                         };
                         assertEquals(merge, d.currentValue().toString());
                         assertEquals(d.iteration() < 14, d.currentValue().isDelayed());
@@ -343,7 +331,7 @@ public class Test_ParameterizedType extends CommonTestRunner {
             if ("normalType".equals(d.methodInfo().name)) {
                 if ("typeParameters".equals(d.variableName())) {
                     if ("03".equals(d.statementId())) {
-                        assertCurrentValue(d, 0, "new ArrayList<>()/*0==this.size()*/");
+                        assertCurrentValue(d, 0, "new ArrayList<>()");
                     }
                     /*
                      the loop changes the newly created object into an instance... but there's an inner loop, which
@@ -356,7 +344,7 @@ public class Test_ParameterizedType extends CommonTestRunner {
                         assertEquals(expected, eval.getValue().toString());
                         if (d.iteration() >= 4) {
                             if (eval.getValue() instanceof Instance instance) {
-                                assertEquals("PositionalIdentifier[line=203, pos=17, endLine=209, endPos=48]",
+                                assertEquals("PositionalIdentifier[line=193, pos=9, endLine=221, endPos=9]",
                                         instance.identifier.toString());
                             } else fail();
                         }
@@ -375,7 +363,8 @@ public class Test_ParameterizedType extends CommonTestRunner {
                         assertEquals("03-E", eval.getAssignmentIds().toString());
 
                         assertTrue(d.variableInfoContainer().hasMerge());
-                        assertEquals("<vl:typeParameters>", d.currentValue().toString());
+                        String value = d.iteration() < 4 ? "<vl:typeParameters>" : "instance type List<ParameterizedType>";
+                        assertEquals(value, d.currentValue().toString());
                         assertEquals("03-E", d.variableInfo().getAssignmentIds().toString());
                     }
                     if ("06.0.5.0.3.0.0".equals(d.statementId())) {
@@ -398,26 +387,26 @@ public class Test_ParameterizedType extends CommonTestRunner {
                 assertTrue(methodResolution.partOfCallCycle());
                 assertEquals("from, iterativelyParseTypes, normalType", methodResolution.callCycleSorted());
                 assertTrue(methodResolution.ignoreMeBecauseOfPartOfCallCycle());
-                assertDv(d, 13, DV.FALSE_DV, Property.MODIFIED_METHOD);
-                assertDv(d, 13, DV.FALSE_DV, Property.TEMP_MODIFIED_METHOD);
-                assertDv(d, 14, MultiLevel.CONTAINER_DV, Property.CONTAINER);
-                assertDv(d.p(0), 14, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
+                assertDv(d, 14, DV.FALSE_DV, Property.MODIFIED_METHOD);
+                assertDv(d, 14, DV.FALSE_DV, Property.TEMP_MODIFIED_METHOD);
+                assertDv(d, 15, MultiLevel.CONTAINER_DV, Property.CONTAINER);
+                assertDv(d.p(0), 15, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
                 assertDv(d.p(1), 15, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
                 assertDv(d.p(2), 15, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
                 assertDv(d.p(3), 15, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
 
-                String expected = d.iteration() < 14 ? "<m:iterativelyParseTypes>" : "/*inline iterativelyParseTypes*/next";
+                String expected = d.iteration() < 15 ? "<m:iterativelyParseTypes>" : "next";
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
             }
             if ("normalType".equals(d.methodInfo().name)) {
                 assertTrue(methodResolution.partOfCallCycle());
                 assertEquals("from, iterativelyParseTypes, normalType", methodResolution.callCycleSorted());
                 assertFalse(methodResolution.ignoreMeBecauseOfPartOfCallCycle());
-                assertDv(d, 13, DV.FALSE_DV, Property.MODIFIED_METHOD);
-                assertDv(d, BIG, DV.FALSE_DV, Property.TEMP_MODIFIED_METHOD);
-                assertDv(d.p(0), BIG, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
+                assertDv(d, 14, DV.FALSE_DV, Property.MODIFIED_METHOD);
+                assertDv(d, 11, DV.FALSE_DV, Property.TEMP_MODIFIED_METHOD);
+                assertDv(d.p(0), 12, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
                 assertDv(d.p(1), 12, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
-                assertDv(d.p(2), BIG, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
+                assertDv(d.p(2), 12, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
                 assertDv(d.p(3), 0, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
                 assertDv(d.p(4), 12, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
                 assertDv(d.p(5), 0, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
@@ -428,10 +417,11 @@ public class Test_ParameterizedType extends CommonTestRunner {
                 // ignoreMe... means that the "from" call in iterativelyParseTypes cannot cause delays
                 // the order of resolution should therefore be "iterativelyParseTypes", then "normalType", then "from"
                 assertFalse(methodResolution.ignoreMeBecauseOfPartOfCallCycle());
-                assertDv(d, 14, DV.FALSE_DV, Property.MODIFIED_METHOD);
+                assertDv(d, 15, DV.FALSE_DV, Property.MODIFIED_METHOD);
                 assertDv(d, 13, DV.FALSE_DV, Property.TEMP_MODIFIED_METHOD);
                 assertDv(d.p(1), 14, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
-                String expected = d.iteration() < 13 ? "<m:from>" : "<undetermined return value>"; // too complex for inline
+                String expected = d.iteration() < 14 ? "<m:from>" :
+                        "'*'==signature.charAt(0)?new Result(ParameterizedType.WILDCARD_PARAMETERIZED_TYPE,1,false):'L'==('['==('['==instance type char?signature.charAt(1+instance type int):'+'==signature.charAt(0)||'-'==signature.charAt(0)?signature.charAt(1):signature.charAt(0))?signature.charAt(1+('['==instance type char?1+instance type int:'+'==signature.charAt(0)||'-'==signature.charAt(0)?1:0)):'+'==signature.charAt(0)||'-'==signature.charAt(0)?signature.charAt(1):signature.charAt(0))?ParameterizedType_2.normalType(typeContext,findType,signature,'['==('['==instance type char?signature.charAt(1+instance type int):'+'==signature.charAt(0)||'-'==signature.charAt(0)?signature.charAt(1):signature.charAt(0))?1+('['==instance type char?1+instance type int:0):0,'+'==signature.charAt(0)?WildCard.EXTENDS:'-'==signature.charAt(0)?WildCard.SUPER:WildCard.NONE,'['==('['==instance type char?signature.charAt(1+instance type int):'+'==signature.charAt(0)||'-'==signature.charAt(0)?signature.charAt(1):signature.charAt(0))?1+('['==instance type char?1+instance type int:'+'==signature.charAt(0)||'-'==signature.charAt(0)?1:0):'+'==signature.charAt(0)||'-'==signature.charAt(0)?1:0):([signature.charAt(0),signature.charAt(1),signature.charAt(1+('['==instance type char?1+instance type int:'+'==signature.charAt(0)||'-'==signature.charAt(0)?1:0)),signature.charAt(1+('['==instance type char?1+instance type int:'+'==signature.charAt(0)||'-'==signature.charAt(0)?1:0)),'['==instance type char?signature.charAt(1+instance type int):'+'==signature.charAt(0)||'-'==signature.charAt(0)?signature.charAt(1):signature.charAt(0),instance type boolean])?([signature.charAt(0),signature.charAt(1),signature.charAt(1+('['==instance type char?1+instance type int:'+'==signature.charAt(0)||'-'==signature.charAt(0)?1:0)),signature.charAt(1+('['==instance type char?1+instance type int:'+'==signature.charAt(0)||'-'==signature.charAt(0)?1:0)),typeContext.get(signature.substring(1+('['==('['==('['==instance type char?signature.charAt(1+instance type int):'+'==signature.charAt(0)||'-'==signature.charAt(0)?signature.charAt(1):signature.charAt(0))?signature.charAt(1+('['==instance type char?1+instance type int:'+'==signature.charAt(0)||'-'==signature.charAt(0)?1:0)):'+'==signature.charAt(0)||'-'==signature.charAt(0)?signature.charAt(1):signature.charAt(0))?1+('['==('['==instance type char?signature.charAt(1+instance type int):'+'==signature.charAt(0)||'-'==signature.charAt(0)?signature.charAt(1):signature.charAt(0))?1+('['==instance type char?1+instance type int:'+'==signature.charAt(0)||'-'==signature.charAt(0)?1:0):([signature.charAt(0),signature.charAt(1),signature.charAt(1+('['==instance type char?1+instance type int:'+'==signature.charAt(0)||'-'==signature.charAt(0)?1:0)),signature.charAt(1+('['==instance type char?1+instance type int:'+'==signature.charAt(0)||'-'==signature.charAt(0)?1:0)),'['==instance type char?signature.charAt(1+instance type int):'+'==signature.charAt(0)||'-'==signature.charAt(0)?signature.charAt(1):signature.charAt(0),instance type boolean])?1:0):'+'==signature.charAt(0)||'-'==signature.charAt(0)?1:0),signature.indexOf(';')),false),'['==instance type char?signature.charAt(1+instance type int):'+'==signature.charAt(0)||'-'==signature.charAt(0)?signature.charAt(1):signature.charAt(0),instance type boolean])?new Result(typeContext.getPrimitives().objectParameterizedType(),signature.indexOf(';')+1,true):new Result(new ParameterizedType((TypeParameter)typeContext.get(signature.substring(1+('['==instance type char?1+instance type int:'+'==signature.charAt(0)||'-'==signature.charAt(0)?1:0),signature.indexOf(';')),false),'['==instance type char?1+instance type int:0,'+'==signature.charAt(0)?WildCard.EXTENDS:'-'==signature.charAt(0)?WildCard.SUPER:WildCard.NONE),signature.indexOf(';')+1,false):('['==('['==instance type char?signature.charAt(1+instance type int):'+'==signature.charAt(0)||'-'==signature.charAt(0)?signature.charAt(1):signature.charAt(0))?1+('['==instance type char?1+instance type int:0):0)>=1?new Result(new ParameterizedType(scope-primitivePt:0.typeInfo,'['==instance type char?1+instance type int:0),('['==instance type char?1+instance type int:0)+1,false):new Result(ParameterizedType_2.primitive(typeContext.getPrimitives(),'['==instance type char?signature.charAt(1+instance type int):'+'==signature.charAt(0)||'-'==signature.charAt(0)?signature.charAt(1):signature.charAt(0)),1,false)";
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
                 assertDv(d, 3, MultiLevel.EFFECTIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
                 assertDv(d, 3, MultiLevel.INDEPENDENT_DV, Property.INDEPENDENT);
@@ -442,7 +432,7 @@ public class Test_ParameterizedType extends CommonTestRunner {
                 assertDv(d.p(0), 1, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
                 assertDv(d.p(1), DV.FALSE_DV, Property.MODIFIED_VARIABLE);
                 String expected = d.iteration() <= 1 ? "<m:primitive>"
-                        : "/*inline primitive*/switch(firstChar){'B'->primitives.byteParameterizedType();'C'->primitives.charParameterizedType();default->throw new RuntimeException(\"Char \"+firstChar+\" does NOT represent a primitive!\");}";
+                        : "switch(firstChar){'B'->primitives.byteParameterizedType();'C'->primitives.charParameterizedType();default->throw new RuntimeException(\"Char \"+firstChar+\" does NOT represent a primitive!\");}";
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
             }
             if ("getPrimitives".equals(d.methodInfo().name)) {
@@ -493,15 +483,16 @@ public class Test_ParameterizedType extends CommonTestRunner {
             }
         };
 
-        // TODO one of the null pointer problems is that "from" is nullable, which it is clearly not
-        // the other 3 null pointer issues are valid
-        testClass("ParameterizedType_2", 3, DONT_CARE,
+        BreakDelayVisitor breakDelayVisitor = d -> assertEquals("------M--M-M----", d.delaySequence());
+
+        testClass("ParameterizedType_2", 2, DONT_CARE,
                 new DebugConfiguration.Builder()
-                     //   .addEvaluationResultVisitor(evaluationResultVisitor)
-                      //  .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-                      //  .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
-                      //  .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
-                      //  .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
+                        .addEvaluationResultVisitor(evaluationResultVisitor)
+                        .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                        .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                        .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+                        .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
+                        .addBreakDelayVisitor(breakDelayVisitor)
                         .build());
     }
 
@@ -520,7 +511,7 @@ public class Test_ParameterizedType extends CommonTestRunner {
         };
         testClass("ParameterizedType_2", 1, DONT_CARE,
                 new DebugConfiguration.Builder()
-                   //     .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
+                        //     .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
                         .build(),
                 new AnalyserConfiguration.Builder().setComputeFieldAnalyserAcrossAllMethods(true).build());
     }
@@ -562,7 +553,8 @@ public class Test_ParameterizedType extends CommonTestRunner {
                         String expected = switch (d.iteration()) {
                             case 0 -> "<m:find>";
                             case 1 -> "<vp:TypeInfo:cm@Parameter_fqn;mom@Parameter_fqn>";
-                            default -> "findType.find((new StringBuilder()).toString().replaceAll(\"[/$]\",\".\"),(new StringBuilder()).toString())";
+                            default ->
+                                    "findType.find((new StringBuilder()).toString().replaceAll(\"[/$]\",\".\"),(new StringBuilder()).toString())";
                         };
                         assertEquals(expected, d.currentValue().toString());
                     }

@@ -12,46 +12,43 @@
  * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.e2immu.analyser.parser.functional;
+package org.e2immu.analyser.parser.loops;
 
 import org.e2immu.analyser.config.DebugConfiguration;
-import org.e2immu.analyser.model.ParameterInfo;
 import org.e2immu.analyser.parser.CommonTestRunner;
 import org.e2immu.analyser.visitor.StatementAnalyserVariableVisitor;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
-public class TestConsumerAndArray extends CommonTestRunner {
+public class Test_01_Loops_26 extends CommonTestRunner {
 
-    public TestConsumerAndArray() {
+    public Test_01_Loops_26() {
         super(true);
     }
 
-    //@Disabled("We have no value yet, but already have linked variables on a non-primitive. Points to a fundamental issue. See also Loops_25.")
     @Test
-    public void test_0() throws IOException {
+    public void test() throws IOException {
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
-            if ("method1".equals(d.methodInfo().name)) {
-                if (d.variable() instanceof ParameterInfo pi && "array".equals(pi.name)) {
-                    if ("0".equals(d.statementId())) {
-                        String expected = d.iteration() == 0 ? "<v:array[3]>" : "nullable instance type T[]/*@Identity*/";
-                        assertEquals(expected, d.currentValue().toString());
-                        assertEquals(d.iteration() >= 1, d.variableInfo().linkedVariablesIsSet()); // should not be possible if there is no value yet
-                        String expectLink = d.iteration() == 0 ? "array[3]:-1,consumer:-1" : "consumer:3";
-                        assertEquals(expectLink, d.variableInfo().getLinkedVariables().toString());
+            if ("method".equals(d.methodInfo().name)) {
+                if ("pos".equals(d.variableName())) {
+                    String value = d.iteration() < 2 ? "<vl:pos>" : "0";
+                    if ("3.0.0".equals(d.statementId())) {
+                        assertEquals(value, d.currentValue().toString());
+                    }
+                    if ("3.0.1.0.0".equals(d.statementId())) {
+                        assertEquals(value, d.currentValue().toString());
+                    }
+                    if ("3.0.1".equals(d.statementId())) {
+                        assertEquals(value, d.currentValue().toString());
                     }
                 }
             }
         };
-
-        testClass("ConsumerAndArray_0", 0, 0, new DebugConfiguration.Builder()
+        testClass("Loops_26", 0, 0, new DebugConfiguration.Builder()
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .build());
     }
-
-
 }
