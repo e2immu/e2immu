@@ -152,6 +152,7 @@ public final class Instance extends BaseExpression implements Expression {
         return new Instance(identifier, parameterizedType, valueProperties);
     }
 
+    // must only be used by ExpressionCanBeTooComplex.reducedComplexity
     public static Instance forTooComplex(Identifier identifier,
                                          ParameterizedType parameterizedType) {
         return new Instance(identifier, parameterizedType, EvaluationContext.PRIMITIVE_VALUE_PROPERTIES);

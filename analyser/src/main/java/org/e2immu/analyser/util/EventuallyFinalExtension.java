@@ -39,8 +39,10 @@ public class EventuallyFinalExtension {
                 eventuallyFinal.setFinal(t);
             } catch (RuntimeException re) {
                 LOGGER.error("Overwriting final value: old: {}, new {}", eventuallyFinal.get(), t);
-                LOGGER.error("ToString equal? {}", t.toString().equals(eventuallyFinal.get().toString()));
+                boolean toStringEquals = t.toString().equals(eventuallyFinal.get().toString());
+                LOGGER.error("ToString equal? {}", toStringEquals);
                 ((Logger) LoggerFactory.getLogger(Configuration.EQUALS)).setLevel(Level.DEBUG);
+                // leave this 2nd equals call, helps debugging!!!
                 LOGGER.error("Computed equality: {}", t.equals(eventuallyFinal.get()));
                 throw re;
             }

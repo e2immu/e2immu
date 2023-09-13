@@ -42,7 +42,6 @@ public class Test_Expressions extends CommonTestRunner {
         super(true);
     }
 
-    @Disabled("Internal all done check assertion fails")
     @Test
     public void test_0() throws IOException {
         EvaluationResultVisitor evaluationResultVisitor = d -> {
@@ -53,8 +52,10 @@ public class Test_Expressions extends CommonTestRunner {
                 if ("2".equals(d.statementId())) {
                     String expected = switch (d.iteration()) {
                         case 0 -> "<instanceOf:ConstantExpression<?>>&&<null-check>&&expression instanceof Product";
-                        case 1 -> "<null-check>&&expression/*(Product)*/.lhs instanceof ConstantExpression<?>&&expression instanceof Product&&null!=expression/*(Product)*/.lhs";
-                        default -> "expression/*(Product)*/.lhs instanceof ConstantExpression<?>&&expression/*(Product)*/.rhs instanceof MethodCall&&expression instanceof Product&&null!=expression/*(Product)*/.lhs&&null!=expression/*(Product)*/.rhs&&null!=expression/*(Product)*/.rhs/*(MethodCall)*/";
+                        case 1 ->
+                                "<null-check>&&expression/*(Product)*/.lhs instanceof ConstantExpression<?>&&expression instanceof Product&&null!=expression/*(Product)*/.lhs";
+                        default ->
+                                "expression/*(Product)*/.lhs instanceof ConstantExpression<?>&&expression/*(Product)*/.rhs instanceof MethodCall&&expression instanceof Product&&null!=expression/*(Product)*/.lhs&&null!=expression/*(Product)*/.rhs&&null!=expression/*(Product)*/.rhs/*(MethodCall)*/";
                     };
                     assertEquals(expected, d.evaluationResult().value().toString());
                 }
@@ -327,7 +328,7 @@ public class Test_Expressions extends CommonTestRunner {
                 assertDv(d, MultiLevel.EFFECTIVELY_IMMUTABLE_HC_DV, IMMUTABLE);
             }
             if ("LinearInequalityInOneVariable".equals(d.typeInfo().simpleName)) {
-                assertDv(d, 13, MultiLevel.INDEPENDENT_HC_DV, INDEPENDENT);
+                assertDv(d, 14, MultiLevel.INDEPENDENT_HC_DV, INDEPENDENT);
                 // FIXME this used to be 14
                 assertDv(d, 99, MultiLevel.NOT_CONTAINER_INCONCLUSIVE, CONTAINER);
             }
@@ -338,14 +339,19 @@ public class Test_Expressions extends CommonTestRunner {
         };
 
 
-        testClass("Expressions_0", 2, 16,
+        BreakDelayVisitor breakDelayVisitor = d -> assertEquals(
+                "---------M---M-M---M--M--M--M--M-MF-----MF--MF-----M-MF-MF------MF-MFT---MFT--MFT--M-MFT-------",
+                d.delaySequence());
+
+        testClass("Expressions_0", 3, DONT_CARE,
                 new DebugConfiguration.Builder()
-                     //   .addEvaluationResultVisitor(evaluationResultVisitor)
-                   //     .addStatementAnalyserVisitor(statementAnalyserVisitor)
-                   //     .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-                   //     .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
-                        .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
-                        .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
+                        //   .addEvaluationResultVisitor(evaluationResultVisitor)
+                        //     .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                        //     .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                        //     .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                        //     .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+                        //   .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
+                        .addBreakDelayVisitor(breakDelayVisitor)
                         .build(),
                 new AnalyserConfiguration.Builder()
                         .setComputeFieldAnalyserAcrossAllMethods(true)

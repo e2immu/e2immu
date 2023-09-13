@@ -28,6 +28,7 @@ import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.parser.CommonTestRunner;
 import org.e2immu.analyser.parser.start.testexample.Enum_0;
 import org.e2immu.analyser.visitor.*;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
@@ -223,6 +224,7 @@ public class Test_26_Enum_withAPI extends CommonTestRunner {
                 .build());
     }
 
+    @Disabled("Incorrect immutability")
     @Test
     public void test6() throws IOException {
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {

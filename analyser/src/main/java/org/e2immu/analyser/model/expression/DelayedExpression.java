@@ -288,12 +288,12 @@ public final class DelayedExpression extends BaseExpression implements Expressio
      */
     @Override
     public boolean equals(Object o) {
-        return this == o || o instanceof DelayedExpression de && identifier.equals(de.identifier);
+        return this == o || o instanceof DelayedExpression de && original.equals(de.original);
     }
 
     @Override
     public int hashCode() {
-        return identifier.hashCode();
+        return original.hashCode();
     }
 
     @Override

@@ -232,6 +232,7 @@ public class StateData {
     public boolean setLocalConditionManagerForNextStatement(ConditionManager localConditionManager) {
         try {
             if (localConditionManager.isSafeDelayed()) {
+                assert conditionManagerForNextStatement.isVariable();
                 conditionManagerForNextStatement.setVariable(localConditionManager);
                 return false;
             }

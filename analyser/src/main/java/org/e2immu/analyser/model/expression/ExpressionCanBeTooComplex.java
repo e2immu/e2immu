@@ -38,9 +38,10 @@ public abstract class ExpressionCanBeTooComplex extends BaseExpression implement
     // make a MultiValue with one component per variable (so that they are marked "read")
     // and one per assignment. Even though the And may be too complex, we should not ignore READ/ASSIGNED AT
     // information
-    protected Expression reducedComplexity(EvaluationResult evaluationContext,
-                                           List<Expression> expressions,
-                                           Expression[] values) {
+    public static Expression reducedComplexity(Identifier identifier,
+                                               EvaluationResult evaluationContext,
+                                               List<Expression> expressions,
+                                               Expression[] values) {
         ParameterizedType booleanType = evaluationContext.getPrimitives().booleanParameterizedType();
 
         CausesOfDelay causesOfDelay = Arrays.stream(values).map(Expression::causesOfDelay)

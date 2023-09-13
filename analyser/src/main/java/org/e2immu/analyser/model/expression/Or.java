@@ -103,7 +103,7 @@ public final class Or extends ExpressionCanBeTooComplex {
         boolean changes = complexity < context.evaluationContext().limitOnComplexity();
         if (!changes) {
             LOGGER.debug("Not analysing OR operation, complexity {}", complexity);
-            return reducedComplexity(context, expressions, values.toArray(Expression[]::new));
+            return reducedComplexity(identifier, context, expressions, values.toArray(Expression[]::new));
         }
         assert complexity < Expression.HARD_LIMIT_ON_COMPLEXITY : "Complexity reached " + complexity;
 

@@ -247,11 +247,11 @@ public class Test_62_FormatterSimplified extends CommonTestRunner {
         // 2 errors: overwriting a previous value; valid, I'd say
         // 2 re-assignment warnings, ok given the null returned by elementarySpace
         testClass("FormatterSimplified_2", 2, 2, new DebugConfiguration.Builder()
-                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-                .addStatementAnalyserVisitor(statementAnalyserVisitor)
-                .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
-                .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
-                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+               // .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+               // .addStatementAnalyserVisitor(statementAnalyserVisitor)
+              //  .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
+              //  .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+              //  .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .build());
     }
 

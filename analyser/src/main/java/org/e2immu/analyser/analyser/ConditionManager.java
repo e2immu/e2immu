@@ -66,6 +66,24 @@ public record ConditionManager(Expression condition,
         checkBooleanOrUnknown(Objects.requireNonNull(state));
         checkVariables(state, Objects.requireNonNull(stateVariables));
         Objects.requireNonNull(precondition);
+        Objects.requireNonNull(ignore);
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        ConditionManager that = (ConditionManager) o;
+        return condition.equals(that.condition)
+                && state.equals(that.state)
+                && precondition.equals(that.precondition)
+                && ignore.equals(that.ignore)
+                && Objects.equals(parent, that.parent);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(condition, state, precondition, ignore, parent);
     }
 
     // there can be more, but all the expression's variables should be included
@@ -200,16 +218,16 @@ public record ConditionManager(Expression condition,
         Expression[] expressions;
         int complexity;
         if (parent == null) {
-            expressions = new Expression[]{state};
-            complexity = state.getComplexity();
-        } else {
-            Expression parentAbsolute = parent.absoluteState(context, doingNullCheck, cumulativeIgnore);
-            Expression cleanCondition = expressionWithoutVariables(context, condition, cumulativeIgnore);
-            expressions = new Expression[]{cleanCondition, state, parentAbsolute};
-            complexity = cleanCondition.getComplexity() + state.getComplexity() + parentAbsolute.getComplexity();
+            return state;
         }
-        if (complexity > LIMIT_ON_COMPLEXITY) {
-            return Instance.forTooComplex(getIdentifier(), context.getPrimitives().booleanParameterizedType());
+        Expression parentAbsolute = parent.absoluteState(context, doingNullCheck, cumulativeIgnore);
+        Expression cleanCondition = expressionWithoutVariables(context, condition, cumulativeIgnore);
+        expressions = new Expression[]{cleanCondition, state, parentAbsolute};
+        complexity = cleanCondition.getComplexity() + state.getComplexity() + parentAbsolute.getComplexity();
+
+        if (complexity > Expression.SOFT_LIMIT_ON_COMPLEXITY) {
+            Expression[] values = {cleanCondition, state, parentAbsolute};
+            return ExpressionCanBeTooComplex.reducedComplexity(Identifier.CONSTANT, context, List.of(), values);
         }
         return And.and(Identifier.CONSTANT, context, doingNullCheck, expressions);
     }
@@ -340,14 +358,15 @@ public record ConditionManager(Expression condition,
         return SetUtil.immutableUnion(cv1, cv2);
     }
 
-    private Expression combine(EvaluationResult evaluationContext, Expression e1, Expression e2) {
+    private Expression combine(EvaluationResult context, Expression e1, Expression e2) {
         Objects.requireNonNull(e2);
         if (e1.isEmpty() || e2.isEmpty()) throw new UnsupportedOperationException();
         int complexity = e1.getComplexity() + e2.getComplexity();
-        if (complexity > LIMIT_ON_COMPLEXITY) {
-            return Instance.forTooComplex(getIdentifier(), evaluationContext.getPrimitives().booleanParameterizedType());
+        if (complexity > Expression.SOFT_LIMIT_ON_COMPLEXITY) {
+            Identifier identifier = Identifier.joined("combine", List.of(e1.getIdentifier(), e2.getIdentifier()));
+            return ExpressionCanBeTooComplex.reducedComplexity(identifier, context, List.of(), new Expression[]{e1, e2});
         }
-        return And.and(evaluationContext, e1, e2);
+        return And.and(context, e1, e2);
     }
 
     /**

@@ -2444,7 +2444,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
             Expression preconditionExpression = precondition.expression();
             if (preconditionExpression.isBoolValueFalse()) {
                 ensure(Message.newMessage(location, Message.Label.INCOMPATIBLE_PRECONDITION));
-                progress = stateData.setPreconditionAllowEquals(Precondition.empty(primitives()));
+                progress = stateData.setPreconditionAllowEquals(Precondition.empty(primitives));
             } else {
                 if (preconditionExpression.isDelayed()) {
                     LOGGER.debug("Apply of {}, {} is delayed because of precondition",
@@ -2456,10 +2456,17 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
                 if (precondition.singleCompanionCauseOrNull() != null) {
                     translated = precondition.expression(); // keep as is
                 } else {
-                    translated = evaluationContext.acceptAndTranslatePrecondition(precondition.expression().getIdentifier(), precondition.expression());
+                    Identifier id = precondition.expression().getIdentifier();
+                    translated = evaluationContext.acceptAndTranslatePrecondition(id, precondition.expression());
                 }
                 if (translated != null) {
-                    Precondition pc = new Precondition(translated, precondition.causes());
+                    Precondition pc;
+                    if (translated instanceof MultiExpressions) {
+                        LOGGER.debug("Ignoring precondition that is too complex in {}", index);
+                        pc = Precondition.empty(primitives); // too complex
+                    } else {
+                        pc = new Precondition(translated, precondition.causes());
+                    }
                     progress = stateData.setPrecondition(pc);
                     EvaluationResult context = EvaluationResult.from(evaluationContext);
                     Expression result = localConditionManager.evaluate(context, translated, false);
@@ -2467,7 +2474,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
                         ensure(Message.newMessage(location, Message.Label.INCOMPATIBLE_PRECONDITION));
                     }
                 } else {
-                    progress = stateData.setPrecondition(Precondition.empty(primitives()));
+                    progress = stateData.setPrecondition(Precondition.empty(primitives));
                 }
             }
         } else if (!stateData().preconditionIsFinal()) {

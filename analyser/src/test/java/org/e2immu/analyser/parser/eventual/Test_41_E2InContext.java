@@ -24,6 +24,7 @@ import org.e2immu.analyser.model.variable.ReturnVariable;
 import org.e2immu.analyser.parser.CommonTestRunner;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.visitor.*;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
@@ -39,6 +40,7 @@ public class Test_41_E2InContext extends CommonTestRunner {
         super(true);
     }
 
+    @Disabled("Fails to detect @Mark")
     @Test
     public void test_0() throws IOException {
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {

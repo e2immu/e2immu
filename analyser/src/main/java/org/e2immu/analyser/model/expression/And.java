@@ -118,7 +118,7 @@ public class And extends ExpressionCanBeTooComplex {
         boolean changes = complexity < context.evaluationContext().limitOnComplexity();
         if (!changes) {
             LOGGER.debug("Not analysing AND operation, complexity {}", complexity);
-            return reducedComplexity(context, expressions, values);
+            return reducedComplexity(identifier, context, expressions, values);
         }
         assert complexity < Expression.HARD_LIMIT_ON_COMPLEXITY : "Complexity reached " + complexity;
 

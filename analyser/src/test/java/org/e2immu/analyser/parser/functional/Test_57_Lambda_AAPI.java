@@ -95,8 +95,6 @@ public class Test_57_Lambda_AAPI extends CommonTestRunner {
                 .build());
     }
 
-
-    //@Disabled("Linked variables are being overwritten")
     @Test
     public void test_17() throws IOException {
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {

@@ -1023,7 +1023,7 @@ public class Test_51_InstanceOf extends CommonTestRunner {
                 if ("3".equals(d.statementId())) {
                     String expected = switch (d.iteration()) {
                         case 0 ->
-                                "<instanceOf:Negation>?<m:toList>:<instanceOf:UnaryOperator>&&!<instanceOf:Negation>&&<m:isUnaryNot>?<m:toList>:<instanceOf:InstanceOf>?<m:of>:<m:toList>";
+                                "<instanceOf:Negation>?<m:toList>:<simplification>?<m:toList>:<m:toList>";
                         case 1, 2, 3 ->
                                 "expression instanceof Negation?<m:toList>:expression instanceof UnaryOperator&&<m:isUnaryNot>&&(null==expression||!(expression instanceof Negation))?<m:toList>:expression instanceof InstanceOf?<m:of>:(nullable instance type List<Expression>).stream().flatMap(instance type $3).toList()";
                         default ->

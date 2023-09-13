@@ -341,7 +341,7 @@ public class Test_63_TrieSimplified extends CommonTestRunner {
                 if ("2".equals(d.statementId())) {
                     String expected = switch (d.iteration()) {
                         case 0 ->
-                                "<loopIsNotEmptyCondition>?<null-check>?<vp::container@Class_TrieNode>:<null-check>?<vp::container@Class_TrieNode>:<m:get>:<f:root>";
+                                "<loopIsNotEmptyCondition>?<null-check>||<null-check>?<vp::container@Class_TrieNode>:<m:get>:<f:root>";
                         case 1 -> "-1-(instance type int)+upToPosition>=0?null:<f:root>";
                         default -> "-1-(instance type int)+upToPosition>=0?null:root";
                     };
@@ -476,7 +476,7 @@ public class Test_63_TrieSimplified extends CommonTestRunner {
                     if ("2".equals(d.statementId())) {
                         String expectValue = switch (d.iteration()) {
                             case 0 ->
-                                    "<loopIsNotEmptyCondition>?<null-check>?<vp::container@Class_TrieNode>:<null-check>?<vp::container@Class_TrieNode>:<m:get>:<f:root>";
+                                    "<loopIsNotEmptyCondition>?<null-check>||<null-check>?<vp::container@Class_TrieNode>:<m:get>:<f:root>";
                             case 1 -> "-1-(instance type int)+upToPosition>=0?null:<f:root>";
                             default -> "-1-(instance type int)+upToPosition>=0?null:root";
                         };
