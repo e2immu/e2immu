@@ -417,7 +417,7 @@ public class Test_Util_06_DependencyGraph extends CommonTestRunner {
 
         BreakDelayVisitor breakDelayVisitor = d -> {
             if ("DependencyGraph".equals(d.typeInfo().simpleName)) {
-                assertEquals("------M-M---M----M-M--M-M-MF-MFT--", d.delaySequence());
+                assertEquals("------M-M---M----M-M--M--M-MF-MFT--", d.delaySequence());
             }
         };
 

@@ -286,10 +286,14 @@ public class Test_AnalysisProvider extends CommonTestRunner {
                 assertDv(d.p(0), DV.TRUE_DV, Property.MODIFIED_VARIABLE); // default value
             }
         };
+
+        BreakDelayVisitor breakDelayVisitor = d -> assertEquals("---------M--M--MF------", d.delaySequence());
+
         testClass("AnalysisProvider_1", 0, 6,
                 new DebugConfiguration.Builder()
                         .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                         .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                        .addBreakDelayVisitor(breakDelayVisitor)
                         .build(),
                 new AnalyserConfiguration.Builder()
                         .setComputeFieldAnalyserAcrossAllMethods(true)

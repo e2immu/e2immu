@@ -400,7 +400,18 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
                             DV fromLinkedToParameterToLinkedToObject = ee.getValue();
                             DV fromLinkedToObjectToObject = e.getValue();
                             DV combined = fromLinkedToParameterToLinkedToObject.max(fromLinkedToObjectToObject);
-                            builder.link(linkedToParameter, linkedToObject, combined);
+                            DV delayed;
+                            if (objectValue.isDelayed()) {
+                                /*
+                                this extra delay is necessary to prevent Lambda_AAPI_17 to come to too early a link conclusion
+                                adding stronger delays in LinkParameters.computeLinkedVariablesOfParameters is detrimental to
+                                ECI_10.
+                                 */
+                                delayed = combined.causesOfDelay().merge(objectValue.causesOfDelay());
+                            } else {
+                                delayed = combined;
+                            }
+                            builder.link(linkedToParameter, linkedToObject, delayed);
                             linkDelays = linkDelays.merge(combined.causesOfDelay());
                         }
                     }

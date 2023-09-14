@@ -178,12 +178,14 @@ public class Test_61_OutputBuilderSimplified extends CommonTestRunner {
                 }
             }
         };
+        BreakDelayVisitor breakDelayVisitor = d -> assertEquals("----", d.delaySequence());
 
         // the warning is correct but not particularly useful, because we have no way of ensuring that "new LinkedList"
         // will become content not null
         testClass("OutputBuilderSimplified_3", 0, 1, new DebugConfiguration.Builder()
                         .addEvaluationResultVisitor(evaluationResultVisitor)
                         .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                        .addBreakDelayVisitor(breakDelayVisitor)
                         .build(),
                 new AnalyserConfiguration.Builder()
                         .setComputeContextPropertiesOverAllMethods(true)

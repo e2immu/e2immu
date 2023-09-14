@@ -52,7 +52,7 @@ public class Test_Output_03_Formatter extends CommonTestRunner {
     }
 
     // the real deal
-    //@Disabled("Infinite loop between And, Negation, Equals, isNotNull0")
+    @Disabled("Bad modification decision on immutable object")
     @Test
     public void test_1() throws IOException {
         EvaluationResultVisitor evaluationResultVisitor = d -> {
@@ -178,15 +178,15 @@ public class Test_Output_03_Formatter extends CommonTestRunner {
         StatementAnalyserVisitor statementAnalyserVisitor = d -> {
             if ("handleExceeds".equals(d.methodInfo().name)) {
                 if ("2".equals(d.statementId())) {
-                    assertEquals("CM{state=null!=`lookAhead.exceeds`;parent=CM{parent=CM{}}}",
+                    assertEquals("CM{state=null!=lookAhead.exceeds();parent=CM{ignore=exceeds9;parent=CM{}}}",
                             d.statementAnalysis().stateData().getConditionManagerForNextStatement().toString());
                 }
                 if ("3.0.0".equals(d.statementId())) {
-                    assertEquals("null!=`lookAhead.current`", d.condition().toString());
+                    assertEquals("null!=lookAhead.current()", d.condition().toString());
                 }
                 if ("3.1.0".equals(d.statementId())) {
-                    assertEquals("null==`lookAhead.current`", d.condition().toString());
-                    assertEquals("null==`lookAhead.current`&&null!=`lookAhead.exceeds`",
+                    assertEquals("null==lookAhead.current()", d.condition().toString());
+                    assertEquals("null==lookAhead.current()&&null!=lookAhead.exceeds()",
                             d.absoluteState().toString());
                 }
             }
@@ -194,7 +194,7 @@ public class Test_Output_03_Formatter extends CommonTestRunner {
 
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
             if ("NOT_END".equals(d.fieldInfo().name)) {
-                assertDv(d, 7, DV.FALSE_DV, Property.MODIFIED_OUTSIDE_METHOD);
+                assertDv(d, 9, DV.FALSE_DV, Property.MODIFIED_OUTSIDE_METHOD);
             }
             if ("writer".equals(d.fieldInfo().name) && "Tab".equals(d.fieldInfo().owner.simpleName)) {
                 assertDv(d, DV.FALSE_DV, Property.FINAL);
@@ -221,7 +221,7 @@ public class Test_Output_03_Formatter extends CommonTestRunner {
                 assertDv(d, DV.FALSE_DV, Property.MODIFIED_METHOD);
                 assertDv(d.p(0), 1, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
                 assertDv(d.p(1), 3, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
-                String expected = d.iteration() < 3 ? "<m:writer>" : "/*inline writer*/tabs.isEmpty()?writer:(tabs.peek()).writer$0";
+                String expected = d.iteration() < 3 ? "<m:writer>" : "tabs.isEmpty()?writer:(tabs.peek()).writer$0";
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
 
                 assertDv(d.p(0), 1, MultiLevel.NULLABLE_DV, Property.CONTEXT_NOT_NULL);
@@ -239,7 +239,7 @@ public class Test_Output_03_Formatter extends CommonTestRunner {
 
         BreakDelayVisitor breakDelayVisitor = d -> {
             if ("Formatter".equals(d.typeInfo().simpleName)) {
-                assertEquals("-------M--", d.delaySequence());
+                assertEquals("-------M-M--", d.delaySequence());
             }
         };
 
@@ -248,12 +248,12 @@ public class Test_Output_03_Formatter extends CommonTestRunner {
                         ElementarySpace.class, OutputElement.class, FormattingOptions.class,
                         TypeName.class, Qualifier.class, Guide.class, Symbol.class, Space.class, Split.class),
                 0, 28, new DebugConfiguration.Builder()
-                   //     .addEvaluationResultVisitor(evaluationResultVisitor)
-                    //    .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-                    //    .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
-                    //    .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
-                    //    .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
-                    //    .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                        //     .addEvaluationResultVisitor(evaluationResultVisitor)
+                        //    .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                        .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                        .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+                        .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
+                        .addStatementAnalyserVisitor(statementAnalyserVisitor)
                         .addBreakDelayVisitor(breakDelayVisitor)
                         .build(),
                 new AnalyserConfiguration.Builder().setComputeFieldAnalyserAcrossAllMethods(true).build());

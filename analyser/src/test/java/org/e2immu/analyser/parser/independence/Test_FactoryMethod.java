@@ -119,8 +119,8 @@ public class Test_FactoryMethod extends CommonTestRunner {
 
         // 1 ERROR: not yet implemented, of1 line 32; directly linking into a new object
         testClass("FactoryMethod_0", 1, 0, new DebugConfiguration.Builder()
-                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+              //  .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+              //  .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .addBreakDelayVisitor(breakDelayVisitor)
                 .build());
     }

@@ -818,8 +818,8 @@ public class Test_66_VariableScope extends CommonTestRunner {
                         assertEquals(expected, d.currentValue().toString());
                         assertLinked(d,
                                 it0("guideGenerator:0,methodCall:-1,outputBuilder:-1,qualification:-1,this.object:-1,this:-1"),
-                                it1("guideGenerator:0,outputBuilder:-1"),
-                                it(2, "guideGenerator:0,outputBuilder:2"));
+                                it(1, 2, "guideGenerator:0,outputBuilder:-1"),
+                                it(3, "guideGenerator:0,outputBuilder:2"));
                     }
                 }
                 if ("outputBuilder".equals(d.variableName())) {
@@ -837,22 +837,26 @@ public class Test_66_VariableScope extends CommonTestRunner {
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("output2".equals(d.methodInfo().name)) {
                 assertDv(d, 2, DV.FALSE_DV, Property.MODIFIED_METHOD);
-                String expected = d.iteration() < 3 ? "<m:output2>"
+                String expected = d.iteration() < 4 ? "<m:output2>"
                         : "new OutputBuilder(new LinkedList<>())";
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
                 assertDv(d.p(0), 1, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
-                assertDv(d.p(1), 3, DV.TRUE_DV, Property.MODIFIED_VARIABLE);
+                assertDv(d.p(1), 4, DV.TRUE_DV, Property.MODIFIED_VARIABLE);
             }
         };
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("MethodCall".equals(d.typeInfo().simpleName)) {
-                assertDv(d, 3, MultiLevel.EFFECTIVELY_FINAL_FIELDS_DV, Property.IMMUTABLE);
+                assertDv(d, 4, MultiLevel.EFFECTIVELY_FINAL_FIELDS_DV, Property.IMMUTABLE);
             }
         };
-        testClass("VariableScope_8_2", 1, DONT_CARE, new DebugConfiguration.Builder()
+
+        BreakDelayVisitor breakDelayVisitor = d -> assertEquals("-------", d.delaySequence());
+
+        testClass("VariableScope_8_2", 1, 7, new DebugConfiguration.Builder()
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
+                .addBreakDelayVisitor(breakDelayVisitor)
                 .build());
     }
 
