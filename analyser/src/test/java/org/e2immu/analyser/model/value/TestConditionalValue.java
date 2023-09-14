@@ -67,7 +67,7 @@ public class TestConditionalValue extends CommonAbstractValue {
         Expression and1 = And.and(context, a, cv1);
         assertEquals("a&&b", and1.toString());
         Expression and2 = And.and(context, negate(a), cv1);
-        assertEquals("!a&&c", and2.toString());
+        assertEquals("c&&!a", and2.toString());
     }
 
     // ensure that the short-cuts in TestEqualsConstantInline do NOT apply

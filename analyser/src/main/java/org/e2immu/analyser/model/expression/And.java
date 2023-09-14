@@ -208,12 +208,11 @@ public class And extends ExpressionCanBeTooComplex {
             newConcat.add(conditionalValue.ifTrue);
             return Action.SKIP;
         }
-        // !A && A ? B : C --> !A && C
-        if (value instanceof InlineConditional conditionalValue &&
-                prev != null &&
-                conditionalValue.condition.equals(Negation.negate(evaluationContext, prev))) {
-            newConcat.add(conditionalValue.ifFalse);
-            return Action.SKIP;
+        // A ? B : C && !A --> !A && C
+        if (prev instanceof InlineConditional conditionalValue &&
+                conditionalValue.condition.equals(Negation.negate(evaluationContext, value))) {
+            newConcat.set(newConcat.size()-1, conditionalValue.ifFalse);
+            return Action.ADD;
         }
 
         // A && (!A || ...) ==> we can remove the !A
