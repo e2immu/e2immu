@@ -20,10 +20,20 @@ public abstract class Lambda_15 {
     }
 
     public List<String> same2(List<String> list) {
-        Predicate<String> stringPredicate = new Predicate<String>() {
+        Predicate<String> stringPredicate = new Predicate<>() {
             @Override
             public boolean test(String s) {
-                return test(s);
+                return testString(s);
+            }
+        };
+        return list.stream().filter(stringPredicate).toList();
+    }
+
+    public List<String> same2B(List<String> list) {
+        Predicate<String> stringPredicate = new Predicate<>() {
+            @Override
+            public boolean test(String s) {
+                return Lambda_15.this.testString(s);
             }
         };
         return list.stream().filter(stringPredicate).toList();

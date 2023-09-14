@@ -15,6 +15,7 @@
 package org.e2immu.analyser.parser.functional;
 
 import org.e2immu.analyser.analyser.DV;
+import org.e2immu.analyser.analyser.Properties;
 import org.e2immu.analyser.analyser.Property;
 import org.e2immu.analyser.analysis.MethodAnalysis;
 import org.e2immu.analyser.analysis.StatementAnalysis;
@@ -25,6 +26,7 @@ import org.e2immu.analyser.inspector.TypeContext;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.*;
 import org.e2immu.analyser.model.statement.ExpressionAsStatement;
+import org.e2immu.analyser.model.variable.This;
 import org.e2immu.analyser.parser.CommonTestRunner;
 import org.e2immu.analyser.parser.functional.testexample.Lambda_18;
 import org.e2immu.analyser.visitor.*;
@@ -32,6 +34,7 @@ import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
+import java.util.Map;
 
 import static org.e2immu.analyser.parser.VisitorTestSupport.IterationInfo.*;
 import static org.junit.jupiter.api.Assertions.*;
@@ -68,10 +71,34 @@ public class Test_57_Lambda_AAPI extends CommonTestRunner {
                 .build());
     }
 
-
     @Test
     public void test_15() throws IOException {
+        StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+            if ("test".equals(d.methodInfo().name) && "$2".equals(d.methodInfo().typeInfo.simpleName)) {
+                assertEquals("0", d.statementId());
+                if (d.variable() instanceof This thisVar && "Lambda_15".equals(thisVar.typeInfo.simpleName)) {
+                    assertEquals("0-E", d.variableInfo().getReadId());
+                }
+                if (d.variable() instanceof This thisVar && "$2".equals(thisVar.typeInfo.simpleName)) {
+                    assertEquals("0-E", d.variableInfo().getReadId());
+                }
+            }
+        };
+
+        StatementAnalyserVisitor statementAnalyserVisitor = d -> {
+            if ("same2".equals(d.methodInfo().name) || "same2B".equals(d.methodInfo().name)) {
+                if ("0".equals(d.statementId())) {
+                    Properties properties = d.statementAnalysis().propertiesFromSubAnalysers().
+                            filter(v -> v.getKey() instanceof This).map(Map.Entry::getValue).findFirst().orElseThrow();
+                    DV read = properties.get(Property.READ);
+                    assertTrue(read.valueIsTrue());
+                }
+            }
+        };
+
         testClass("Lambda_15", 0, 0, new DebugConfiguration.Builder()
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addStatementAnalyserVisitor(statementAnalyserVisitor)
                 .build());
     }
 

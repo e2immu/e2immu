@@ -53,13 +53,43 @@ public record Scope(Expression expression,
     public Expression ensureExplicit(MethodInspection methodInspection,
                                      Identifier identifier,
                                      InspectionProvider inspectionProvider,
+                                     boolean scopeIsThis,
                                      ExpressionContext expressionContext) {
-        if (objectIsImplicit()) {
+        /*
+         in 3 situations, we compute (or potentially correct) the scope.
+         In the case of a static method, we always replace by the class containing the method.
+         In the case of this: we use the type of the current class in case of extension, but not in case of sub-typing,
+         because we have to be able to indicate that we're reading the correct "this" in the VariableAccess report.
+         In case of parent-child, we activate the "super" boolean.
+         See e.g. Lambda_15.
+         IMPROVE! https://github.com/e2immu/e2immu/issues/60
+         */
+        if (objectIsImplicit() || methodInspection.isStatic() || scopeIsThis) {
+            TypeInfo exact = methodInspection.getMethodInfo().typeInfo;
             if (methodInspection.isStatic()) {
-                return new TypeExpression(identifier, methodInspection.getMethodInfo()
-                        .typeInfo.asParameterizedType(inspectionProvider), Diamond.NO);
+                return new TypeExpression(identifier, exact.asParameterizedType(inspectionProvider), Diamond.NO);
             }
-            Variable thisVariable = new This(inspectionProvider, expressionContext.enclosingType());
+            TypeInfo current = expressionContext.enclosingType();
+            TypeInfo typeInfo;
+            boolean writeSuper;
+            TypeInfo explicitlyWriteType;
+            if (current == exact
+                    || exact.isJavaLangObject()
+                    || current.recursivelyImplements(inspectionProvider, exact.fullyQualifiedName) != null) {
+                typeInfo = current; // the same type
+                writeSuper = false;
+                explicitlyWriteType = null;
+            } else if (current.parentalHierarchyContains(exact, inspectionProvider)) {
+                typeInfo = current;
+                writeSuper = true;
+                explicitlyWriteType = null;
+            } else {
+                // relationship must be inner class of ...
+                typeInfo = exact;
+                writeSuper = false;
+                explicitlyWriteType = exact;
+            }
+            Variable thisVariable = new This(inspectionProvider, typeInfo, explicitlyWriteType, writeSuper);
             return new VariableExpression(identifier, thisVariable);
         }
         return expression;

@@ -259,10 +259,13 @@ public class Test_48_Store extends CommonTestRunner {
     - check for null constant in method call modification
     - @Fluent
     - infinite delay loop
+
+    NOTE: the error relates to "vertx" not being used, because its role as object in the method call is replaced
+    by the type expression Vertx!! This should result in a warning.
      */
     @Test
     public void test_7() throws IOException {
-        testClass("Store_7", 0, 0, new DebugConfiguration.Builder()
+        testClass("Store_7", 1, 0, new DebugConfiguration.Builder()
                 .build());
     }
 

@@ -287,8 +287,9 @@ public record DetectEventual(MethodInfo methodInfo,
         }
         // @TestMark method on This, FieldReference
         VariableExpression ve;
-        if (expressionAfterNegation instanceof MethodCall methodCall &&
-                ((ve = methodCall.object.asInstanceOf(VariableExpression.class)) != null)) {
+        if (expressionAfterNegation instanceof MethodCall methodCall
+                && !methodInfo.equals(methodCall.methodInfo) // block recursive results (Basics_30)
+                && ((ve = methodCall.object.asInstanceOf(VariableExpression.class)) != null)) {
             MethodAnalysis methodCallAnalysis = analyserContext.getMethodAnalysis(methodCall.methodInfo);
             MethodAnalysis.Eventual mao = methodCallAnalysis.getEventual();
             if (mao.causesOfDelay().isDelayed()) {

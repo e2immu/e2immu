@@ -21,6 +21,8 @@ import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.EmptyExpression;
 import org.e2immu.analyser.model.expression.MethodCall;
 import org.e2immu.analyser.model.expression.MethodCallErasure;
+import org.e2immu.analyser.model.expression.VariableExpression;
+import org.e2immu.analyser.model.variable.This;
 import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.parser.Primitives;
 import org.slf4j.Logger;
@@ -96,8 +98,9 @@ public record ParseMethodCallExpr(TypeContext typeContext) {
             assert candidate != null : "Should have found a unique candidate for " + errorInfo.toString(typeContext);
             LOGGER.debug("Resulting method is {}", candidate.method.methodInspection.getMethodInfo().fullyQualifiedName);
 
+            boolean scopeIsThis = scope.expression() instanceof VariableExpression ve && ve.variable() instanceof This;
             Expression newScope = scope.ensureExplicit(candidate.method.methodInspection,
-                    Identifier.from(methodCallExpr), typeContext, expressionContext);
+                    Identifier.from(methodCallExpr), typeContext, scopeIsThis, expressionContext);
             ParameterizedType returnType = candidate.returnType(typeContext, expressionContext.primaryType());
             LOGGER.debug("Concrete return type of {} is {}", errorInfo.methodName, returnType.detailedString(typeContext));
 
