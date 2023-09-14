@@ -14,14 +14,13 @@
 
 package org.e2immu.analyser.resolver.testexample;
 
-import static org.e2immu.analyser.resolver.testexample.importhelper.MultiLevel.*;
-import org.e2immu.analyser.resolver.testexample.importhelper.Level;
-import static org.e2immu.analyser.resolver.testexample.importhelper.MultiLevel.Effective.*;
+import org.e2immu.analyser.resolver.testexample.importhelper.RLevel;
+import static org.e2immu.analyser.resolver.testexample.importhelper.RMultiLevel.Effective.*;
 
 public class Import_0 {
 
     public void method() {
-        System.out.println(Level.LEVEL+": "+E1);
+        System.out.println(RLevel.LEVEL+": "+E1);
     }
 
 }

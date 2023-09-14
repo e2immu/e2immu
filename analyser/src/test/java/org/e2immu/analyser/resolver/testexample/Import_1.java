@@ -14,17 +14,16 @@
 
 package org.e2immu.analyser.resolver.testexample;
 
-import org.e2immu.analyser.resolver.testexample.importhelper.Level;
+import org.e2immu.analyser.resolver.testexample.importhelper.RLevel;
 
 // in case this line gets removed by automatic import improvement (it is essential to the test)
 // import static org.e2immu.analyser.resolver.testexample.importhelper.MultiLevel.*;
-import static org.e2immu.analyser.resolver.testexample.importhelper.MultiLevel.*;
-import static org.e2immu.analyser.resolver.testexample.importhelper.MultiLevel.Effective.*;
+import static org.e2immu.analyser.resolver.testexample.importhelper.RMultiLevel.Effective.*;
 
 public class Import_1 {
 
     public void method() {
-        System.out.println(Level.LEVEL+": "+E1);
+        System.out.println(RLevel.LEVEL+": "+E1);
     }
 
 }

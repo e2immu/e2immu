@@ -14,16 +14,5 @@
 
 package org.e2immu.analyser.resolver.testexample.importhelper;
 
-
-public class StatementAnalysisImpl implements StatementAnalysis {
-
-    @Override
-    public FindLoopResult create(int line) {
-        return new FindLoopResult(this, line);
-    }
-
-    @Override
-    public int compareTo(StatementAnalysis o) {
-        return 0;
-    }
+public interface RAnalysis {
 }

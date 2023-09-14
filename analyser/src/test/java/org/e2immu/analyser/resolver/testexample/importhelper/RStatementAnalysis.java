@@ -14,9 +14,9 @@
 
 package org.e2immu.analyser.resolver.testexample.importhelper;
 
-public interface StatementAnalysis extends Analysis, Comparable<StatementAnalysis> {
+public interface RStatementAnalysis extends RAnalysis, Comparable<RStatementAnalysis> {
     FindLoopResult create(int line);
 
-    record FindLoopResult(StatementAnalysis statementAnalysis, int line) {
+    record FindLoopResult(RStatementAnalysis statementAnalysis, int line) {
     }
 }

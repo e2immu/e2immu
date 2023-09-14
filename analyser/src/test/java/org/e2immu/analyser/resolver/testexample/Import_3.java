@@ -14,12 +14,12 @@
 
 package org.e2immu.analyser.resolver.testexample;
 
-import org.e2immu.analyser.resolver.testexample.importhelper.TypeInspectionImpl;
+import org.e2immu.analyser.resolver.testexample.importhelper.RTypeInspectionImpl;
 
 public class Import_3 {
 
     // this is bad coding, we should refer to Methods directly via the interface, as in Import_4
     public void method() {
-        System.out.println(TypeInspectionImpl.Methods.B);
+        System.out.println(RTypeInspectionImpl.Methods.B);
     }
 }

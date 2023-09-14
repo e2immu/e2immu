@@ -14,12 +14,12 @@
 
 package org.e2immu.analyser.resolver.testexample;
 
-import org.e2immu.analyser.resolver.testexample.importhelper.StatementAnalysisImpl;
+import org.e2immu.analyser.resolver.testexample.importhelper.RStatementAnalysisImpl;
 
 public class Import_8 {
     public void method() {
-        StatementAnalysisImpl sa = new StatementAnalysisImpl();
-        StatementAnalysisImpl.FindLoopResult findLoopResult = sa.create(3);
+        RStatementAnalysisImpl sa = new RStatementAnalysisImpl();
+        RStatementAnalysisImpl.FindLoopResult findLoopResult = sa.create(3);
 
     }
 }

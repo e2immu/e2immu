@@ -21,7 +21,7 @@ import static org.e2immu.analyser.model.MultiLevel.Effective.*;
 import static org.e2immu.analyser.model.MultiLevel.Level.*;
 import static org.junit.jupiter.api.Assertions.*;
 
-public class TestMultiLevel {
+public class TestRMultiRLevel {
 
     @Test
     public void testLookup() {

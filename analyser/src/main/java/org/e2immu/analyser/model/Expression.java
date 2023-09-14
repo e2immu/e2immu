@@ -326,4 +326,11 @@ public interface Expression extends Element, Comparable<Expression> {
    default Double numericValue() {
         return null;
    }
+
+   /*
+   helps to avoid a gigantic dependency cycle, started in ExpressionComparator
+    */
+   default Expression conditionOfInlineConditional() {
+        return null;
+   }
 }

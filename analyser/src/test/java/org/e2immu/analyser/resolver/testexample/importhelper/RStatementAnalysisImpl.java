@@ -14,8 +14,16 @@
 
 package org.e2immu.analyser.resolver.testexample.importhelper;
 
-public interface Expression {
-    enum MethodStatic {
-        A, B, C
+
+public class RStatementAnalysisImpl implements RStatementAnalysis {
+
+    @Override
+    public FindLoopResult create(int line) {
+        return new FindLoopResult(this, line);
+    }
+
+    @Override
+    public int compareTo(RStatementAnalysis o) {
+        return 0;
     }
 }

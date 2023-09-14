@@ -23,6 +23,7 @@ import org.e2immu.analyser.model.statement.ReturnStatement;
 import org.e2immu.analyser.parser.TypeMap;
 import org.e2immu.analyser.resolver.testexample.SubType_0;
 import org.e2immu.analyser.resolver.testexample.SubType_1;
+import org.e2immu.analyser.resolver.testexample.importhelper.SubType_2;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
@@ -70,6 +71,15 @@ public class TestSubType extends CommonTest {
     public void test1() throws IOException {
         TypeMap typeMap = inspectAndResolve(SubType_1.class);
         TypeInfo typeInfo = typeMap.get(SubType_1.class);
+        assertNotNull(typeInfo);
+        assertTrue(typeInfo.typeInspection.get().isExtensible());
+
+    }
+
+    @Test
+    public void test2() throws IOException {
+        TypeMap typeMap = inspectAndResolve(SubType_2.class, TestImport.IMPORT_HELPER);
+        TypeInfo typeInfo = typeMap.get(SubType_2.class);
         assertNotNull(typeInfo);
         assertTrue(typeInfo.typeInspection.get().isExtensible());
 

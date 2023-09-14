@@ -14,11 +14,11 @@
 
 package org.e2immu.analyser.resolver.testexample;
 
-import org.e2immu.analyser.resolver.testexample.importhelper.TypeInspection;
+import org.e2immu.analyser.resolver.testexample.importhelper.RTypeInspection;
 
 public class Import_4 {
 
     public void method() {
-        System.out.println(TypeInspection.Methods.B);
+        System.out.println(RTypeInspection.Methods.B);
     }
 }

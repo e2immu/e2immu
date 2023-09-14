@@ -14,5 +14,5 @@
 
 package org.e2immu.analyser.resolver.testexample.importhelper;
 
-public interface Analysis {
+public class RTypeInspectionImpl implements RTypeInspection {
 }

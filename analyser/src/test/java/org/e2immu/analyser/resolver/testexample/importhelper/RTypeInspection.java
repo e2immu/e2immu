@@ -14,5 +14,8 @@
 
 package org.e2immu.analyser.resolver.testexample.importhelper;
 
-public interface ErasureExpression extends Expression {
+public interface RTypeInspection {
+    enum Methods {
+        A, B, C
+    }
 }

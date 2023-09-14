@@ -14,6 +14,8 @@
 
 package org.e2immu.analyser.resolver.testexample.importhelper;
 
-public class Level {
-    public static final String LEVEL = "?";
+public interface RExpression extends RElement, Comparable<RExpression> {
+    enum MethodStatic {
+        A, B, C
+    }
 }

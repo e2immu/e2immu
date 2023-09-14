@@ -12,21 +12,8 @@
  * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.e2immu.analyser.analyser;
+package org.e2immu.analyser.resolver.testexample.importhelper;
 
-import org.junit.jupiter.api.Test;
-
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
-public class TestLevelSuffixes {
-
-    @Test
-    public void test() {
-        String[] order = {"-", "0", "0-C", "0-E", "0.0.0", "0.0.0-E", "0.0.0.0.0", "0.0.0.1.0", "0.0.0:M", "0:M"};
-        for (int i = 0; i < order.length - 1; i++) {
-            for (int j = i + 1; j < order.length; j++) {
-                assertTrue(order[i].compareTo(order[j]) < 0);
-            }
-        }
-    }
+public class RLevel {
+    public static final String LEVEL = "?";
 }

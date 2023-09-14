@@ -16,7 +16,6 @@ package org.e2immu.analyser.model.expression.util;
 
 import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.expression.ExpressionWrapper;
-import org.e2immu.analyser.model.expression.InlineConditional;
 import org.e2immu.annotation.rare.IgnoreModifications;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -167,11 +166,13 @@ public class ExpressionComparator implements Comparator<Expression> {
         int orderDiff = v1.order() - v2.order();
         if (orderDiff != 0) return orderDiff;
         try {
-            if (v1 instanceof InlineConditional inlineConditional && !(v2 instanceof InlineConditional)) {
-                return inlineConditional.condition.internalCompareTo(v2);
+            Expression c1 = v1.conditionOfInlineConditional();
+            Expression c2 = v2.conditionOfInlineConditional();
+            if (c1 != null && c2 == null) {
+                return c1.internalCompareTo(v2);
             }
-            if (v2 instanceof InlineConditional inlineConditional && !(v1 instanceof InlineConditional)) {
-                return v1.internalCompareTo(inlineConditional.condition);
+            if (c2 != null && c1 == null) {
+                return v1.internalCompareTo(c2);
             }
             return v1.internalCompareTo(v2);
         } catch (InternalError ie) {

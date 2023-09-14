@@ -14,8 +14,5 @@
 
 package org.e2immu.analyser.resolver.testexample.importhelper;
 
-public interface TypeInspection {
-    enum Methods {
-        A, B, C
-    }
+public interface RErasureExpression extends RExpression {
 }

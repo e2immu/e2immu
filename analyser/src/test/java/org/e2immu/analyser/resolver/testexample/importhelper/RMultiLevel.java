@@ -14,5 +14,16 @@
 
 package org.e2immu.analyser.resolver.testexample.importhelper;
 
-public class TypeInspectionImpl implements TypeInspection {
+public class RMultiLevel {
+
+    public enum Effective {
+        E1, E2;
+
+        public static Effective of(int index) {
+            return index == 1 ? E1: E2;
+        }
+    }
+    public enum Level {
+        ONE, TWO, THREE
+    }
 }

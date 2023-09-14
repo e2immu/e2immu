@@ -15,11 +15,11 @@
 package org.e2immu.analyser.resolver.testexample;
 
 // IMPORTANT: keep this import static...* statement!
-import org.e2immu.analyser.resolver.testexample.importhelper.MultiLevel;
+import org.e2immu.analyser.resolver.testexample.importhelper.RMultiLevel;
 
 import java.util.Set;
 
-import static org.e2immu.analyser.resolver.testexample.importhelper.MultiLevel.Effective.*;
+import static org.e2immu.analyser.resolver.testexample.importhelper.RMultiLevel.Effective.*;
 
 public class Import_10 {
 
@@ -33,7 +33,7 @@ public class Import_10 {
     }
 
     // completely irrelevant but here we use the enum constants
-    public Boolean method2(MultiLevel.Effective effective) {
+    public Boolean method2(RMultiLevel.Effective effective) {
         if(effective == E1) {
             return true;
         }

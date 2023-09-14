@@ -22,6 +22,6 @@ import java.util.Map;
 public class Import_5 {
 
     public void method() {
-        Map<String, ErasureExpression.MethodStatic> map = Map.of("abc", Expression.MethodStatic.B) ;
+        Map<String, RErasureExpression.MethodStatic> map = Map.of("abc", RExpression.MethodStatic.B) ;
     }
 }

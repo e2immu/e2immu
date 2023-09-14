@@ -17,7 +17,7 @@ package org.e2immu.analyser.resolver.testexample;
 import java.util.*;
 import java.util.stream.Stream;
 
-import static org.e2immu.analyser.resolver.testexample.importhelper.MultiLevel.Effective.*;
+import static org.e2immu.analyser.resolver.testexample.importhelper.RMultiLevel.Effective.*;
 
 public class FieldAccess_1 {
 
