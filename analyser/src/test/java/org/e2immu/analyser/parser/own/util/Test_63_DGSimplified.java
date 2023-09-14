@@ -42,7 +42,6 @@ public class Test_63_DGSimplified extends CommonTestRunner {
         super(true);
     }
 
-    @Disabled("Overwriting StateData.setValueOfExpression")
     @Test
     public void test_0() throws IOException {
         EvaluationResultVisitor evaluationResultVisitor = d -> {
@@ -214,7 +213,7 @@ public class Test_63_DGSimplified extends CommonTestRunner {
             }
         };
 
-        BreakDelayVisitor breakDelayVisitor = d -> assertEquals("----M-M-M-M-M--MF-MFT----MF---", d.delaySequence());
+        BreakDelayVisitor breakDelayVisitor = d -> assertEquals("----M-M-M-M--MF-MFT----MF---", d.delaySequence());
 
         testClass("DGSimplified_0", 0, 1, new DebugConfiguration.Builder()
                 //   .addEvaluationResultVisitor(evaluationResultVisitor)
@@ -228,7 +227,6 @@ public class Test_63_DGSimplified extends CommonTestRunner {
                 .setComputeFieldAnalyserAcrossAllMethods(true).build());
     }
 
-    @Disabled("Overwriting StateData.setValueOfExpression")
     @Test
     public void test_1() throws IOException {
         EvaluationResultVisitor evaluationResultVisitor = d -> {
@@ -295,11 +293,11 @@ public class Test_63_DGSimplified extends CommonTestRunner {
         };
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("recursivelyComputeDependencies".equals(d.methodInfo().name)) {
-                assertDv(d, 4, DV.FALSE_DV, Property.MODIFIED_METHOD);
+                assertDv(d, 22, DV.FALSE_DV, Property.MODIFIED_METHOD);
             }
             if ("accept".equals(d.methodInfo().name)) {
                 if ("$1".equals(d.methodInfo().typeInfo.simpleName)) { // recursivelyComputeDependencies
-                    assertDv(d, 5, DV.FALSE_DV, Property.MODIFIED_METHOD);
+                    assertDv(d, 23, DV.FALSE_DV, Property.MODIFIED_METHOD);
                 } else if ("$3".equals(d.methodInfo().typeInfo.simpleName)) {// visit
                     assertDv(d, DV.FALSE_DV, Property.MODIFIED_METHOD);
                 }
@@ -316,7 +314,7 @@ public class Test_63_DGSimplified extends CommonTestRunner {
                 //   .addEvaluationResultVisitor(evaluationResultVisitor)
                 //   .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
-                //   .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .addBreakDelayVisitor(breakDelayVisitor)
                 .build(), new AnalyserConfiguration.Builder().setComputeFieldAnalyserAcrossAllMethods(true).build());
     }

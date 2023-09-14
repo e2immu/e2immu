@@ -31,6 +31,7 @@ import org.junit.jupiter.api.Test;
 import java.io.IOException;
 
 import static org.e2immu.analyser.analyser.Property.*;
+import static org.e2immu.analyser.parser.VisitorTestSupport.IterationInfo.it;
 import static org.junit.jupiter.api.Assertions.*;
 
 
@@ -97,8 +98,7 @@ public class Test_00_Basics_21 extends CommonTestRunner {
                         assertEquals(expectValue, d.currentValue().toString());
 
                         // other is linked to this with common HC
-                        String expectLinked = d.iteration() < 2 ? "this:-1" : "this:4";
-                        assertEquals(expectLinked, d.variableInfo().getLinkedVariables().toString());
+                        assertLinked(d, it(0, 1, "this:-1"), it(2, "this:4"));
 
                         assertDv(d, 2, DV.FALSE_DV, CONTEXT_MODIFIED);
 
@@ -121,8 +121,7 @@ public class Test_00_Basics_21 extends CommonTestRunner {
                                 .getProperty(CONTEXT_IMMUTABLE));
                         assertDv(d, 3, MultiLevel.EVENTUALLY_IMMUTABLE_HC_AFTER_MARK_DV, CONTEXT_IMMUTABLE);
 
-                        String expectLinked = d.iteration() < 2 ? "this:-1" : "this:4";
-                        assertEquals(expectLinked, d.variableInfo().getLinkedVariables().toString());
+                        assertLinked(d, it(0, 1, "this:-1"), it(2, "this:4"));
 
                         assertDv(d, 2, DV.FALSE_DV, CONTEXT_MODIFIED);
                     }
@@ -155,8 +154,7 @@ public class Test_00_Basics_21 extends CommonTestRunner {
             if ("get".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof ReturnVariable) {
                     if ("1".equals(d.statementId())) {
-                        String linked = "this.t:0,this:3";
-                        assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
+                        assertLinked(d, it(0, "this.t:0,this:3"));
                     }
                 }
             }

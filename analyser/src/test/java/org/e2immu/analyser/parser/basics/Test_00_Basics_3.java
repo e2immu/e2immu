@@ -321,12 +321,15 @@ public class Test_00_Basics_3 extends CommonTestRunner {
             }
         };
 
+        BreakDelayVisitor breakDelayVisitor = d -> assertEquals("----", d.delaySequence());
+
         testClass("Basics_3", 0, 2, new DebugConfiguration.Builder()
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .addEvaluationResultVisitor(evaluationResultVisitor)
                 .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                 .addStatementAnalyserVisitor(statementAnalyserVisitor)
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                .addBreakDelayVisitor(breakDelayVisitor)
                 .build());
     }
 

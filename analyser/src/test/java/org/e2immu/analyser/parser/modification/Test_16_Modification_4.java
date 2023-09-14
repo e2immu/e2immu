@@ -135,11 +135,11 @@ public class Test_16_Modification_4 extends CommonTestRunner {
 
         // we've set the "compute context properties over all methods" to true
         testClass("Modification_4", 0, 0, new DebugConfiguration.Builder()
-                  //      .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
-                 //       .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-                  //      .addStatementAnalyserVisitor(statementAnalyserVisitor)
-                  //      .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
-                  //      .addBreakDelayVisitor(breakDelayVisitor)
+                        //       .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                        .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+                        .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                        .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                        .addBreakDelayVisitor(breakDelayVisitor)
                         .build(),
                 new AnalyserConfiguration.Builder()
                         .setComputeContextPropertiesOverAllMethods(true).build());

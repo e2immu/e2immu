@@ -282,7 +282,7 @@ public class Test_45_Project extends CommonTestRunner {
                        // .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                       //  .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                       //  .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
-                        .addBreakDelayVisitor(breakDelayVisitor)
+                     //   .addBreakDelayVisitor(breakDelayVisitor)
                         .build(),
                 new AnalyserConfiguration.Builder()
                         .setComputeContextPropertiesOverAllMethods(true)

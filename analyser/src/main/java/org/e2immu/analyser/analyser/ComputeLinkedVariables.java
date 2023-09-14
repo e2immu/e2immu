@@ -25,6 +25,7 @@ import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.ParameterInfo;
 import org.e2immu.analyser.model.ParameterizedType;
 import org.e2immu.analyser.model.TypeInfo;
+import org.e2immu.analyser.model.expression.DelayedVariableExpression;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.ReturnVariable;
 import org.e2immu.analyser.model.variable.This;
@@ -125,8 +126,9 @@ public class ComputeLinkedVariables {
                 if (iteration1Plus || !ignore.test(vic, variable)) {
                     done.add(variable);
                     VariableInfo vi1 = vic.getPreviousOrInitial();
+                    VariableInfo viE = vic.best(EVALUATION);
                     LinkedVariables linkedVariables = add(statementAnalysis, ignore, reassigned, externalLinkedVariables,
-                            weightedGraph, vi1, variable);
+                            weightedGraph, vi1, viE, variable);
                     for (Map.Entry<Variable, DV> e : linkedVariables) {
                         Variable v = e.getKey();
                         if (!done.contains(v)) {
@@ -158,6 +160,7 @@ public class ComputeLinkedVariables {
                                        Function<Variable, LinkedVariables> externalLinkedVariables,
                                        WeightedGraph weightedGraph,
                                        VariableInfo vi1,
+                                       VariableInfo viE,
                                        Variable variable) {
         boolean isBeingReassigned = reassigned.contains(variable);
 
@@ -171,6 +174,11 @@ public class ComputeLinkedVariables {
                 .remove(v -> ignore.test(statementAnalysis.getVariableOrDefaultNull(v.fullyQualifiedName()), v));
         if(variable instanceof This) {
             curated = LinkedVariables.EMPTY;
+        } else if(viE != vi1
+                && viE.getValue() instanceof DelayedVariableExpression dve
+                && dve.msg.startsWith("<vl:")
+                && !curated.isDelayed()) {
+           curated = curated.changeNonStaticallyAssignedToDelay(viE.getValue().causesOfDelay());
         }
         weightedGraph.addNode(variable, curated.variables(), false, DV::min);
         return curated;

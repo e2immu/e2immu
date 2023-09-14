@@ -547,12 +547,13 @@ public class Test_63_TrieSimplified extends CommonTestRunner {
     // added some code to TrieNode test 2
     @Test
     public void test_4() throws IOException {
-        TypeAnalyserVisitor typeAnalyserVisitor = d -> {
-            if ("TrieNode".equals(d.typeInfo().simpleName)) {
-                assertDv(d, MultiLevel.EFFECTIVELY_IMMUTABLE_HC_DV, Property.IMMUTABLE);
+        EvaluationResultVisitor evaluationResultVisitor = d -> {
+            if ("add".equals(d.methodInfo().name)) {
+                if ("2".equals(d.statementId())) {
+                //    assertEquals("<vl:node>", d.evaluationResult().value().toString());
+                }
             }
         };
-
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("add".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof FieldReference fr && "root".equals(fr.fieldInfo.name)) {
@@ -575,6 +576,7 @@ public class Test_63_TrieSimplified extends CommonTestRunner {
                     if ("0".equals(d.statementId())) {
                         String expect = d.iteration() <= 1 ? "<f:root>" : "root";
                         assertEquals(expect, d.currentValue().toString(), "statement " + d.statementId());
+                        assertLinked(d, it(0, 1, "this.root:0,this:-1"), it(2, "this.root:0,this:3"));
                         assertDv(d, 2, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                         assertDv(d, 2, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.EXTERNAL_NOT_NULL);
                     }
@@ -585,9 +587,11 @@ public class Test_63_TrieSimplified extends CommonTestRunner {
                             case 0, 1, 2 -> "<vl:node>";
                             default -> "root";
                         };
+                        assertLinked(d, it(0, 1, "this.root:0,this:-1"), it(2, "this.root:0,this:3"));
                         assertEquals(expect, d.currentValue().toString(), "statement " + d.statementId());
                     }
                     if ("2".equals(d.statementId())) {
+                        assertLinked(d, it(0, 1, "this.root:0,this:-1"), it(2, "this.root:0,this:3"));
                         assertDv(d, 2, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     }
                 }
@@ -619,10 +623,20 @@ public class Test_63_TrieSimplified extends CommonTestRunner {
             }
         };
 
+        TypeAnalyserVisitor typeAnalyserVisitor = d -> {
+            if ("TrieNode".equals(d.typeInfo().simpleName)) {
+                assertDv(d, MultiLevel.EFFECTIVELY_IMMUTABLE_HC_DV, Property.IMMUTABLE);
+            }
+        };
+
+        BreakDelayVisitor breakDelayVisitor = d -> assertEquals("----M--", d.delaySequence());
+
         testClass("TrieSimplified_4", 0, 2, new DebugConfiguration.Builder()
-                //   .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-                //   .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+                .addEvaluationResultVisitor(evaluationResultVisitor)
+                //  .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                 .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
+                .addBreakDelayVisitor(breakDelayVisitor)
                 .build());
     }
 

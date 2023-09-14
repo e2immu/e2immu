@@ -260,7 +260,7 @@ public class Test_21_VariableInLoop extends CommonTestRunner {
                                 d.currentValue().toString());
                     }
                     if ("2.0.0".equals(d.statementId())) {
-                        String expected = d.iteration() <= 1 ? "<vl:toDo>" : "instance type HashSet<String>";
+                        String expected = d.iteration() <= 1 ? "<vl:toDo>" : "instance type Set<String>";
                         assertEquals(expected, d.currentValue().toString());
                         assertDv(d, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     }

@@ -36,6 +36,8 @@ import java.util.Map;
 import java.util.Set;
 
 import static org.e2immu.analyser.analyser.Property.*;
+import static org.e2immu.analyser.parser.VisitorTestSupport.IterationInfo.it;
+import static org.e2immu.analyser.parser.VisitorTestSupport.IterationInfo.it0;
 import static org.junit.jupiter.api.Assertions.*;
 
 public class Test_00_Basics_2 extends CommonTestRunner {
@@ -95,7 +97,7 @@ public class Test_00_Basics_2 extends CommonTestRunner {
                     assertEquals(DV.TRUE_DV, d.getProperty(CONTEXT_MODIFIED));
                     assertTrue(d.properties().containsKey(CNN_TRAVELS_TO_PRECONDITION));
                     // cannot be content linked to string, because string is recursively immutable
-                    assertEquals("this:4", d.variableInfo().getLinkedVariables().toString());
+                    assertLinked(d, it(0, "this:4"));
                 }
                 if (d.variable() instanceof FieldReference fr && "string".equals(fr.fieldInfo.name)) {
                     assertEquals(STRING_FIELD, d.variableName());
@@ -210,6 +212,8 @@ public class Test_00_Basics_2 extends CommonTestRunner {
             }
         };
 
+        BreakDelayVisitor breakDelayVisitor = d -> assertEquals("---", d.delaySequence());
+
         testClass("Basics_2", 0, 1, new DebugConfiguration.Builder()
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .addStatementAnalyserVisitor(statementAnalyserVisitor)
@@ -217,6 +221,7 @@ public class Test_00_Basics_2 extends CommonTestRunner {
                 .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                 .addEvaluationResultVisitor(evaluationResultVisitor)
                 .addTypeMapVisitor(typeMapVisitor)
+                .addBreakDelayVisitor(breakDelayVisitor)
                 .build());
     }
 

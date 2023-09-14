@@ -189,8 +189,11 @@ public class Test_04_NotNull extends CommonTestRunner {
                 }
             }
         };
+        BreakDelayVisitor breakDelayVisitor  = d -> assertEquals("----", d.delaySequence());
+
         testClass("NotNull_5", 0, 0, new DebugConfiguration.Builder()
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addBreakDelayVisitor(breakDelayVisitor)
                 .build(), new AnalyserConfiguration.Builder().build());
     }
 
