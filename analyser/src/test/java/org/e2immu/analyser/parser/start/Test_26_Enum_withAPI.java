@@ -20,10 +20,7 @@ import org.e2immu.analyser.analyser.Property;
 import org.e2immu.analyser.analysis.MethodAnalysis;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.inspector.TypeContext;
-import org.e2immu.analyser.model.MethodInfo;
-import org.e2immu.analyser.model.MultiLevel;
-import org.e2immu.analyser.model.ParameterInfo;
-import org.e2immu.analyser.model.TypeInfo;
+import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.parser.CommonTestRunner;
 import org.e2immu.analyser.parser.start.testexample.Enum_0;
@@ -224,13 +221,27 @@ public class Test_26_Enum_withAPI extends CommonTestRunner {
                 .build());
     }
 
-    @Disabled("Incorrect immutability")
+    //@Disabled("Incorrect immutability")
     @Test
     public void test6() throws IOException {
+        EvaluationResultVisitor evaluationResultVisitor = d -> {
+            if ("returnTwo".equals(d.methodInfo().name)) {
+                String expected = d.iteration() < 4 ? "<m:valueOf>" : "Enum_6.valueOf(\"TWO\")";
+                Expression value = d.evaluationResult().value();
+                assertEquals(expected, value.toString());
+                if (d.iteration() >= 4) {
+                    assertEquals("Type org.e2immu.analyser.parser.start.testexample.Enum_6",
+                            value.returnType().toString());
+                    assertEquals(MultiLevel.MUTABLE_DV, d.evaluationResult().getProperty(value, Property.IMMUTABLE));
+                }
+            }
+        };
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             assertFalse(d.allowBreakDelay());
 
             if ("returnTwo".equals(d.methodInfo().name)) {
+                String expected = d.iteration() < 4 ? "<m:returnTwo>" : "Enum_6.valueOf(\"TWO\")";
+                assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
                 // important: even if valueOf() is immutable_hc, we must fill in the concrete type, which is mutable!
                 assertDv(d, 4, MultiLevel.MUTABLE_DV, Property.IMMUTABLE);
             }
@@ -244,6 +255,7 @@ public class Test_26_Enum_withAPI extends CommonTestRunner {
             }
         };
         testClass("Enum_6", 0, 0, new DebugConfiguration.Builder()
+                .addEvaluationResultVisitor(evaluationResultVisitor)
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
                 .build());

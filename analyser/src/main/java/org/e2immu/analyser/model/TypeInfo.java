@@ -710,6 +710,10 @@ public final class TypeInfo implements NamedType, WithInspectionAndAnalysis, Com
 
     public boolean isMyself(ParameterizedType type, InspectionProvider inspectionProvider) {
         TypeInfo bestType = type.bestTypeInfo(inspectionProvider);
+        return isMyself(bestType, inspectionProvider);
+    }
+
+    public boolean isMyself(TypeInfo bestType, InspectionProvider inspectionProvider) {
         if (equals(bestType)) return true;
         TypeInfo primaryVariable = bestType == null ? null : bestType.primaryType();
         TypeInfo primaryMyself = primaryType();

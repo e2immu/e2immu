@@ -243,10 +243,6 @@ public class ConstructorCall extends BaseExpression implements HasParameterExpre
 
     @Override
     public DV getProperty(EvaluationResult context, Property property, boolean duringEvaluation) {
-        if (property == Property.CONTAINER && context.getCurrentType().isMyself(returnType(), context.getAnalyserContext())) {
-            return parameterizedType.arrays > 0 ? MultiLevel.CONTAINER_DV : MultiLevel.NOT_CONTAINER_DV;
-            // ALWAYS, regardless of the actual value
-        }
         ParameterizedType pt;
         AnalyserContext analyserContext = context.getAnalyserContext();
         if (anonymousClass != null) {
@@ -257,12 +253,20 @@ public class ConstructorCall extends BaseExpression implements HasParameterExpre
         return switch (property) {
             case NOT_NULL_EXPRESSION -> notNullValue();
             case IDENTITY, IGNORE_MODIFICATIONS -> analyserContext.defaultValueProperty(property, pt);
-            case IMMUTABLE, IMMUTABLE_BREAK -> immutableValue(pt, analyserContext);
-            case CONTAINER -> analyserContext.typeContainer(pt);
-            case INDEPENDENT -> independentValue(pt, analyserContext);
+            case IMMUTABLE, IMMUTABLE_BREAK -> immutableValue(pt, context);
+            case CONTAINER -> containerValue(pt, context);
+            case INDEPENDENT -> independentValue(pt, context);
             case CONTEXT_MODIFIED -> DV.FALSE_DV;
             default -> throw new UnsupportedOperationException("ConstructorCall has no value for " + property);
         };
+    }
+
+    private DV containerValue(ParameterizedType pt, EvaluationResult context) {
+        if (context.getCurrentType().isMyself(returnType(), context.getAnalyserContext())) {
+            return parameterizedType.arrays > 0 ? MultiLevel.CONTAINER_DV : MultiLevel.NOT_CONTAINER_DV;
+            // ALWAYS, regardless of the actual value
+        }
+        return context.getAnalyserContext().typeContainer(pt);
     }
 
     /*
@@ -283,29 +287,39 @@ public class ConstructorCall extends BaseExpression implements HasParameterExpre
         return MultiLevel.EFFECTIVELY_NOT_NULL_DV;
     }
 
-    private DV independentValue(ParameterizedType pt, AnalyserContext analyserContext) {
+    private DV independentValue(ParameterizedType pt, EvaluationResult context) {
+        if (constructor != null && constructor.typeInfo.isMyself(context.getCurrentType(), context.getAnalyserContext())) {
+            return MultiLevel.DEPENDENT_DV;
+        }
         if (anonymousClass != null) {
-            DV immutable = immutableValue(pt, analyserContext);
+            DV immutable = immutableValue(pt, context);
             if (MultiLevel.isAtLeastEventuallyImmutableHC(immutable)) {
                 return MultiLevel.independentCorrespondingToImmutableLevelDv(MultiLevel.level(immutable));
             }
             if (immutable.isDelayed()) return immutable;
             return MultiLevel.DEPENDENT_DV;
         }
-        return analyserContext.defaultValueProperty(Property.INDEPENDENT, pt);
+        return context.getAnalyserContext().defaultValueProperty(Property.INDEPENDENT, pt);
     }
 
-    private DV immutableValue(ParameterizedType pt, AnalyserContext analyserContext) {
-        DV dv = analyserContext.typeImmutable(pt);
+    private DV immutableValue(ParameterizedType pt, EvaluationResult context) {
+        if (constructor != null && constructor.typeInfo.isMyself(context.getCurrentType(), context.getAnalyserContext())) {
+            return MultiLevel.MUTABLE_DV;
+        }
+        DV dv = context.getAnalyserContext().typeImmutable(pt);
         if (dv.isDone() && MultiLevel.effective(dv) == MultiLevel.Effective.EVENTUAL) {
             return MultiLevel.beforeImmutableDv(MultiLevel.level(dv));
         }
         // this is the value for use in the statement analyser, for inner classes (non-static nested classes)
         if (anonymousClass != null) {
-            TypeAnalysis typeAnalysis = analyserContext.getTypeAnalysis(anonymousClass);
+            TypeAnalysis typeAnalysis = context.getAnalyserContext().getTypeAnalysis(anonymousClass);
             return typeAnalysis.getProperty(Property.PARTIAL_IMMUTABLE);
         }
-        return dv;
+        if (parameterizedType.arrays > 0) {
+            return MultiLevel.EFFECTIVELY_FINAL_FIELDS_DV;
+        }
+        return new DynamicImmutableOfConstructor(context, constructor, parameterExpressions, returnType())
+                .compute(dv);
     }
 
     @Override

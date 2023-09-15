@@ -34,7 +34,9 @@ public class SMapList {
         return new HashMap<>();
     }
 
-    private SMapList() {}
+    private SMapList() {
+    }
+
     /*
     IMPROVE: we have to contract the @NotModified, because the computation is currently not able
     to determine that it is not modifying (semantically, the "new LinkedList()" is ignored).
@@ -80,7 +82,7 @@ public class SMapList {
 
     @NotNull
     @NotModified
-    @Independent // IMPROVE (hc = true)
+    @Independent
     public static <A, B> List<B> list(@NotNull @NotModified Map<A, List<B>> map, @NotNull A a) {
         if (a == null) {
             throw new IllegalArgumentException(NULL_KEY);
@@ -93,7 +95,8 @@ public class SMapList {
     }
 
     @NotNull
-    // FIXME ?? @ImmutableContainer(hc = true)
+    @Independent
+    @ImmutableContainer(hc = true)
     public static <A, B> Map<A, List<B>> immutable(@NotModified @NotNull(content = true) Map<A, List<B>> map) {
         Map<A, List<B>> tmp = new HashMap<>();
         for (Entry<A, List<B>> e : map.entrySet()) {
@@ -105,7 +108,7 @@ public class SMapList {
 
     @NotNull
     @NotModified
-    @Independent // IMPROVE hc=true
+    @Independent
     public static <A, B> Map<A, List<B>> copy(@NotNull(content = true) @NotModified Map<A, List<B>> map) {
         Map<A, List<B>> tmp = new HashMap<>();
         for (Entry<A, List<B>> e : map.entrySet()) {

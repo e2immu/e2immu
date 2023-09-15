@@ -243,9 +243,11 @@ public record ComputeTypeImmutable(AnalyserContext analyserContext,
                 // in the eventual case, we only need to look at the non-modifying methods
                 // calling a modifying method will result in an error
                 if (modified.valueIsFalse()) {
-                    causesMethods = causesMethods.merge(nonModifyingMethod(w, methodAnalyser));
+                    CausesOfDelay nonModifyingDelays = nonModifyingMethod(w, methodAnalyser);
+                    causesMethods = causesMethods.merge(nonModifyingDelays);
                 } else if (modified.valueIsTrue()) {
-                    causesMethods = causesMethods.merge(modifyingMethod(w, methodAnalyser));
+                    CausesOfDelay delay = modifyingMethod(w, methodAnalyser);
+                    causesMethods = causesMethods.merge(delay);
                 } // excluded earlier in approved preconditions for immutability: no idea about modification, ignored
             }
         }
@@ -314,7 +316,7 @@ public record ComputeTypeImmutable(AnalyserContext analyserContext,
         }
         // TODO while it works at the moment, the code is a bit of a mess (indep checks only for identical types, check on srv and returnTypeImmutable, ...)
         MultiLevel.Effective returnTypeEffectiveImmutable = MultiLevel.effectiveAtImmutableLevel(returnTypeImmutable);
-        if (returnTypeEffectiveImmutable.lt(MultiLevel.Effective.EVENTUAL)) {
+        if (returnTypeImmutable.lt(MultiLevel.EVENTUALLY_IMMUTABLE_DV)) {
             // rule 5, continued: if not primitive, not Immutable, then the result must be Independent of the support types
             DV independent = methodAnalyser.getMethodAnalysis().getProperty(Property.INDEPENDENT);
             if (independent.isDelayed()) {

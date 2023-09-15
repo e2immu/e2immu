@@ -575,11 +575,15 @@ public class Test_66_VariableScope extends CommonTestRunner {
                 assertHc(d, 0, "Message");
             }
         };
+
+        BreakDelayVisitor breakDelayVisitor = d -> assertEquals("----", d.delaySequence());
+
         // we want to warn against using a finalizer on a parameter (line 47)
         testClass("VariableScope_7", 1, 0, new DebugConfiguration.Builder()
                 .addEvaluationResultVisitor(evaluationResultVisitor)
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
+                .addBreakDelayVisitor(breakDelayVisitor)
                 .build());
     }
 

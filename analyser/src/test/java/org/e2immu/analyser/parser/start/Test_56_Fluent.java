@@ -64,25 +64,25 @@ public class Test_56_Fluent extends CommonTestRunner {
                     }
                     // calls from, which is CM false in iteration 2
                     if ("1".equals(d.statementId())) {
-                        assertDv(d, 13, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                        assertDv(d, 11, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     }
                 }
                 // equals is evaluated after copyOf, so CM in the parameter of equals is only visible in iteration 3
                 if (d.variable() instanceof ReturnVariable) {
                     if ("0.0.0".equals(d.statementId())) {
-                        assertCurrentValue(d, 27, "instanceCopy/*(Fluent_0)*/");
+                        assertCurrentValue(d, 25, "instanceCopy/*(Fluent_0)*/");
                         assertTrue(d.currentValue() instanceof PropertyWrapper, "Have " + d.currentValue().getClass());
                         assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, d.getProperty(Property.NOT_NULL_EXPRESSION));
                     }
                     if ("1".equals(d.statementId())) {
                         String value = "instanceCopy instanceof Fluent_0?instanceCopy/*(Fluent_0)*/:(new Builder()/*@NotNull*/).build()";
-                        assertCurrentValue(d, 27, value);
+                        assertCurrentValue(d, 25, value);
 
-                        String expectLinks = d.iteration() < 27 ? "instanceCopy:-1" : "instanceCopy:1";
+                        String expectLinks = d.iteration() < 25 ? "instanceCopy:-1" : "instanceCopy:1";
                         assertEquals(expectLinks, d.variableInfo().getLinkedVariables().toString());
 
                         // computation of NNE is important here!
-                        assertDv(d, 27, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_EXPRESSION);
+                        assertDv(d, 25, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_EXPRESSION);
                     }
                 }
             }
@@ -138,18 +138,18 @@ public class Test_56_Fluent extends CommonTestRunner {
                 // @NotModified
                 assertDv(d, DV.FALSE_DV, Property.MODIFIED_METHOD);
 
-                String expect = d.iteration() < 27 ? "<m:copyOf>"
+                String expect = d.iteration() < 25 ? "<m:copyOf>"
                         : "instanceCopy instanceof Fluent_0?instanceCopy/*(Fluent_0)*/:(new Builder()/*@NotNull*/).build()";
                 assertEquals(expect, d.methodAnalysis().getSingleReturnValue().toString());
 
 
                 assertDv(d, DV.FALSE_DV, Property.FLUENT);
-                assertDv(d, 27, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_EXPRESSION);
+                assertDv(d, 25, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_EXPRESSION);
                 assertDv(d, 2, MultiLevel.INDEPENDENT_DV, Property.INDEPENDENT);
             }
 
             if ("build".equals(d.methodInfo().name)) {
-                assertDv(d, 27, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_EXPRESSION);
+                assertDv(d, 25, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_EXPRESSION);
                 assertDv(d, DV.FALSE_DV, Property.MODIFIED_METHOD);
                 assertDv(d, 2, MultiLevel.INDEPENDENT_DV, Property.INDEPENDENT);
             }
@@ -207,11 +207,21 @@ public class Test_56_Fluent extends CommonTestRunner {
             }
         };
 
+        BreakDelayVisitor breakDelayVisitor = d -> {
+            String s = switch (d.typeInfo().simpleName) {
+                case "IFluent_0", "Fluent_0" -> "-----M-M---M--M---M-M-MFT--";
+                default -> fail(d.typeInfo().simpleName + ": " + d.delaySequence());
+            };
+            assertEquals(s, d.delaySequence(), d.typeInfo().simpleName);
+        };
+
+
         testClass(List.of("a.IFluent_0", "Fluent_0"), 0, 1, new DebugConfiguration.Builder()
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
                 .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+                .addBreakDelayVisitor(breakDelayVisitor)
                 .build(), new AnalyserConfiguration.Builder().build(), new AnnotatedAPIConfiguration.Builder().build());
     }
 

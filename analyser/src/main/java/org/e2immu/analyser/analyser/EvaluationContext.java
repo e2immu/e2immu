@@ -249,10 +249,6 @@ public interface EvaluationContext {
             assert formalType != null : "Use other call!";
             return valuePropertiesOfNullConstant(formalType);
         }
-        if (value instanceof ConstructorCall cc && cc.constructor() != null && isMyself(cc.returnType())) {
-            // see e.g. FactoryMethod_1; in the statement analyzer, we'll act as if the type is mutable/dependent
-            return valuePropertiesOfFormalType(cc.returnType(), MultiLevel.EFFECTIVELY_NOT_NULL_DV);
-        }
         if (value instanceof UnknownExpression ue && UnknownExpression.RETURN_VALUE.equals(ue.msg())) {
             return valuePropertiesOfFormalType(getCurrentMethod().getMethodInspection().getReturnType());
         }

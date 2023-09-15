@@ -16,6 +16,11 @@ package org.e2immu.analyser.parser.functional.testexample;
 
 // lambda inside new object creation
 
+import org.e2immu.annotation.Container;
+import org.e2immu.annotation.FinalFields;
+import org.e2immu.annotation.ImmutableContainer;
+import org.e2immu.annotation.Independent;
+
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Function;
@@ -26,6 +31,8 @@ public class Lambda_10 {
         Map<T, String> collapsed(S input);
     }
 
+    @FinalFields
+    @Container
     record AnalyserComponentsImpl<T, S>(Map<T, Function<S, String>> map) implements AnalyserComponents<T, S> {
         @Override
         public Map<T, String> collapsed(S input) {
@@ -33,6 +40,9 @@ public class Lambda_10 {
         }
     }
 
+    @Container
+    @FinalFields
+    @Independent(hc = true)
     static class Builder<T, S> {
         private final Map<T, Function<S, String>> map = new HashMap<>();
 
@@ -41,11 +51,14 @@ public class Lambda_10 {
             return this;
         }
 
+        @ImmutableContainer(hc = true)
         public AnalyserComponentsImpl<T, S> build() {
-            return new AnalyserComponentsImpl<>(Map.copyOf(map));
+            Map<T, Function<S, String>> immMap = Map.copyOf(map);
+            return new AnalyserComponentsImpl<>(immMap);
         }
     }
 
+    @ImmutableContainer
     public final AnalyserComponents<String, Integer> analyserComponents =
             new Builder<String, Integer>()
                     .add("identity", i -> "" + i)

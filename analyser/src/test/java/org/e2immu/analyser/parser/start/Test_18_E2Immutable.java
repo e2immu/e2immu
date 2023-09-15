@@ -798,4 +798,17 @@ public class Test_18_E2Immutable extends CommonTestRunner {
                 .build());
     }
 
+    // see also Lambda_10
+    @Test
+    public void test_17() throws IOException {
+        testClass("E2Immutable_17", 0, 0, new DebugConfiguration.Builder()
+                .build());
+    }
+
+    @Test
+    public void test_18() throws IOException {
+        testClass("E2Immutable_18", 0, 0, new DebugConfiguration.Builder()
+                .build());
+    }
+
 }

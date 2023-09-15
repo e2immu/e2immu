@@ -82,8 +82,7 @@ public class Test_16_Modification_19 extends CommonTestRunner {
                     if ("0".equals(d.statementId())) {
                         String expectedDelay = switch (d.iteration()) {
                             case 0 -> "initial:this.s2@Method_example1_0-C";
-                            case 1 -> "cm@Parameter_setC;mom@Parameter_setC";
-                            case 2 -> "break_mom_delay@Parameter_setC;cm@Parameter_c;cm@Parameter_d;cm@Parameter_setC;initial:this.s2@Method_example1_0-C;mom@Parameter_setC";
+                            case 1, 2 -> "break_mom_delay@Parameter_setC;cm@Parameter_c;cm@Parameter_d;cm@Parameter_setC;initial:this.s2@Method_example1_0-C;mom@Parameter_setC";
                             default -> "xxx";
                         };
                         assertCurrentValue(d, 3, expectedDelay, "new C1(s2)");

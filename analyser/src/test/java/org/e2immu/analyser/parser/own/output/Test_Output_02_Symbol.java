@@ -25,6 +25,7 @@ import org.e2immu.analyser.output.OutputElement;
 import org.e2immu.analyser.output.Space;
 import org.e2immu.analyser.output.Symbol;
 import org.e2immu.analyser.parser.CommonTestRunner;
+import org.e2immu.analyser.visitor.BreakDelayVisitor;
 import org.e2immu.analyser.visitor.MethodAnalyserVisitor;
 import org.e2immu.analyser.visitor.StatementAnalyserVariableVisitor;
 import org.junit.jupiter.api.Test;
@@ -32,8 +33,7 @@ import org.junit.jupiter.api.Test;
 import java.io.IOException;
 import java.util.List;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.*;
 
 public class Test_Output_02_Symbol extends CommonTestRunner {
 
@@ -76,11 +76,23 @@ public class Test_Output_02_Symbol extends CommonTestRunner {
             }
         };
 
+        BreakDelayVisitor breakDelayVisitor = d -> {
+            String s = switch (d.typeInfo().simpleName) {
+                case "FormattingOptions" -> "----";
+                case "OutputElement" -> "--";
+                case "Space" -> "-----";
+                case "Symbol" -> "----";
+                default -> fail(d.typeInfo().simpleName + ": " + d.delaySequence());
+            };
+            assertEquals(s, d.delaySequence(), d.typeInfo().simpleName);
+        };
+
         // TODO solve errors at some point?
         testSupportAndUtilClasses(List.of(OutputElement.class, FormattingOptions.class, Symbol.class, Space.class),
                 2, 0, new DebugConfiguration.Builder()
-                        .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-                        .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                     //   .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                     //   .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                        .addBreakDelayVisitor(breakDelayVisitor)
                         .build(),
                 new AnalyserConfiguration.Builder().setComputeFieldAnalyserAcrossAllMethods(true).build());
     }

@@ -26,10 +26,7 @@ import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.ReturnVariable;
 import org.e2immu.analyser.output.*;
 import org.e2immu.analyser.parser.CommonTestRunner;
-import org.e2immu.analyser.visitor.MethodAnalyserVisitor;
-import org.e2immu.analyser.visitor.StatementAnalyserVariableVisitor;
-import org.e2immu.analyser.visitor.StatementAnalyserVisitor;
-import org.e2immu.analyser.visitor.TypeAnalyserVisitor;
+import org.e2immu.analyser.visitor.*;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
@@ -44,7 +41,7 @@ public class Test_Output_02_OutputBuilder extends CommonTestRunner {
         super(true);
     }
 
-    @Disabled("Bug in dynamicImmutable")
+    //@Disabled("Bug in dynamicImmutable")
     @Test
     public void test() throws IOException {
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
@@ -101,15 +98,16 @@ public class Test_Output_02_OutputBuilder extends CommonTestRunner {
                 }
             }
         };
+
         StatementAnalyserVisitor statementAnalyserVisitor = d -> {
             if ("apply".equals(d.methodInfo().name) && "$4".equals(d.methodInfo().typeInfo.simpleName)) {
                 if ("2.0.0".equals(d.statementId())) { // a.add(separator); add is fluent; the identity is there because "a" is the first parameter of apply
-                    String expected = d.iteration() < 2 ? "<m:add>"
-                            : "nullable instance type OutputBuilder/*@Identity*//*{L a:0}*//*@NotNull*/";
+                    String expected = d.iteration() < 3 ? "<m:add>" : "a/*@NotNull*/";
                     assertEquals(expected, d.statementAnalysis().stateData().valueOfExpression.get().toString());
                 }
             }
         };
+
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("add".equals(d.methodInfo().name)) {
                 ParameterInfo p0 = d.methodInfo().methodInspection.get().getParameters().get(0);
@@ -117,11 +115,11 @@ public class Test_Output_02_OutputBuilder extends CommonTestRunner {
                 String typeOfParameter = p0.parameterizedType.typeInfo.simpleName;
                 if ("OutputBuilder".equals(typeOfParameter)) {
                     assertDv(d, DV.TRUE_DV, Property.MODIFIED_METHOD);
-                    assertDv(d.p(0), 3, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
+                    assertDv(d.p(0), 2, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
                 } else if ("OutputElement".equals(typeOfParameter)) {
                     assertDv(d, DV.TRUE_DV, Property.MODIFIED_METHOD);
-                    assertDv(d.p(0), 3, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
-                    assertDv(d.p(0), 3, MultiLevel.INDEPENDENT_HC_DV, Property.INDEPENDENT);
+                    assertDv(d.p(0), 2, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
+                    assertDv(d.p(0), 2, MultiLevel.INDEPENDENT_HC_DV, Property.INDEPENDENT);
                 } else fail();
             }
             if ("joining".equals(d.methodInfo().name)) {
@@ -132,18 +130,35 @@ public class Test_Output_02_OutputBuilder extends CommonTestRunner {
                 }
             }
         };
+
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("OutputElement".equals(d.typeInfo().simpleName)) {
                 assertDv(d, MultiLevel.EFFECTIVELY_IMMUTABLE_HC_DV, Property.IMMUTABLE);
             }
         };
+
+        BreakDelayVisitor breakDelayVisitor = d -> {
+            String s = switch (d.typeInfo().simpleName) {
+                case "ElementarySpace", "Space" -> "-----";
+                case "FormattingOptions" -> "----";
+                case "OutputElement" -> "--";
+                case "Qualifier" -> "-";
+                case "Guide" -> "------";
+                case "TypeName" -> "-------";
+                case "OutputBuilder" -> "-------M-M-M--M----M-M-M-M----";
+                default -> fail(d.typeInfo().simpleName + ": " + d.delaySequence());
+            };
+            assertEquals(s, d.delaySequence(), d.typeInfo().simpleName);
+        };
+
         testSupportAndUtilClasses(List.of(OutputBuilder.class, OutputElement.class, Qualifier.class,
                         FormattingOptions.class, Guide.class, ElementarySpace.class, Space.class, TypeName.class),
                 0, 0, new DebugConfiguration.Builder()
                         //    .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-                        //    .addStatementAnalyserVisitor(statementAnalyserVisitor)
-                        //    .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
-                        //    .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
+                        .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                        .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                        .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
+                        .addBreakDelayVisitor(breakDelayVisitor)
                         .build());
     }
 

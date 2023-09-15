@@ -1281,10 +1281,6 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         AnalyserContext analyserContext = context.getAnalyserContext();
         MethodInspection methodInspection = analyserContext.getMethodInspection(methodInfo);
 
-        if (methodInspection.isFactoryMethod()) {
-            return factoryMethodDynamicallyImmutable(methodAnalysis, formal, context);
-        }
-
         /*
         There is one situation where we need to deviate from the value of the concrete return type: when we know
         through analysis of the statement, that the dynamic immutable value is higher than the formal one.
@@ -1309,7 +1305,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
              */
             return concreteImmutable;
         }
-        assert MultiLevel.isMutable(normalImmutable) && MultiLevel.level(dynamicImmutable) == MultiLevel.Level.IMMUTABLE_HC.level;
+        assert MultiLevel.isMutable(normalImmutable);
         Inference inference = inferImmutable(analyserContext, concreteReturnType);
         if (inference.causes.isDelayed()) return inference.causes;
         return analyserContext.typeImmutable(concreteReturnType, inference.map);
@@ -1344,48 +1340,6 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
             }
         }
         return new Inference(causes, map);
-    }
-
-    private DV factoryMethodDynamicallyImmutable(MethodAnalysis methodAnalysis, DV formal, EvaluationResult context) {
-        if (MultiLevel.isAtLeastEventuallyRecursivelyImmutable(formal) || !MultiLevel.isAtLeastEventuallyImmutableHC(formal)) {
-            return formal;
-        }
-        // immutable with hidden content, the result is determined by the immutability values of the parameters
-        DV minParams = MultiLevel.EFFECTIVELY_IMMUTABLE_DV;
-        int i = 0;
-        CausesOfDelay causesOfDelay = CausesOfDelay.EMPTY;
-        for (Expression pe : parameterExpressions) {
-            DV immutable = context.getProperty(pe, Property.IMMUTABLE);
-            if (!MultiLevel.isAtLeastEventuallyRecursivelyImmutable(immutable)) {
-                ParameterAnalysis parameterAnalysis = methodAnalysis.getParameterAnalyses().get(i);
-                DV independent = parameterAnalysis.getProperty(Property.INDEPENDENT);
-                if (independent.isDelayed()) {
-                    causesOfDelay = causesOfDelay.merge(independent.causesOfDelay());
-                } else if (MultiLevel.INDEPENDENT_DV.gt(independent)) {
-                    DV dv;
-                    if (MultiLevel.INDEPENDENT_HC_DV.equals(independent)) {
-                        ComputeIndependent ci = new ComputeIndependent(context.getAnalyserContext(), context.getCurrentType());
-                        ParameterizedType formalParameterType = methodInfo.methodInspection.get().formalParameterType(i);
-                        DV linkLevel = ci.directedLinkLevelOfTwoHCRelatedTypes(formalParameterType, methodInfo.returnType());
-                        boolean shareHiddenContent = LinkedVariables.LINK_COMMON_HC.equals(linkLevel);
-                        if (shareHiddenContent) {
-                            dv = ci.immutableOfIntersectionOfHiddenContent(pe.returnType(), concreteReturnType);
-                        } else {
-                            dv = immutable;
-                        }
-                    } else {
-                        // dependent, directly take immutable value
-                        dv = immutable;
-                    }
-                    minParams = minParams.min(dv);
-                } // else: ignore
-            }
-            i++;
-        }
-        if (minParams.isDelayed() || causesOfDelay.isDelayed()) {
-            return minParams.causesOfDelay().merge(causesOfDelay);
-        }
-        return minParams;
     }
 
     /*
@@ -1431,20 +1385,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
                     .changeNonStaticallyAssignedToDelay(identity);
         }
 
-        // RULE 3: in a factory method, the result links to the parameters, directly
-        MethodInspection methodInspection = context.getAnalyserContext().getMethodInspection(methodInfo);
-        if (methodInspection.isFactoryMethod()) {
-            //List<Expression> parameterValues = parameterExpressions.stream()
-            //        .map(pe -> pe.evaluate(context, ForwardEvaluationInfo.DEFAULT).value())
-            //        .toList();
-            //List<LinkedVariables> linkedVariables = LinkParameters.computeLinkedVariablesOfParameters(context, parameterExpressions, parameterValues);
-            // content link to the parameters, and all variables normally linked to them
-            return LinkedVariables.EMPTY; // FIXME implement!!
-            ///   return ConstructorCall.combineArgumentIndependenceWithFormalParameterIndependence(context, methodInspection,
-            //          linkedVariables, object.returnType(), true);
-        }
-
-        // RULE 4: otherwise, we link to the object, even if the object is 'this'
+        // RULE 3: otherwise, we link to the object, even if the object is 'this'
         // note that we cannot use STATICALLY_ASSIGNED here
 
         LinkedVariables linkedVariablesOfObject = object.linkedVariables(context).minimum(LinkedVariables.LINK_ASSIGNED);

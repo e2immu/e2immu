@@ -452,15 +452,6 @@ public class Test_57_Lambda extends CommonTestRunner {
                 .build());
     }
 
-
-    @Disabled("Bug in dynamicImmutable")
-    @Test
-    public void test_10() throws IOException {
-        // ignoring result of put(...) because not A API, method is non-modifying
-        testClass("Lambda_10", 0, 1, new DebugConfiguration.Builder()
-                .build());
-    }
-
     @Test
     public void test_11() throws IOException {
         // potential null pointer, System.out
