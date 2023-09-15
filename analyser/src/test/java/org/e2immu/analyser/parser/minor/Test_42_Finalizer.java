@@ -52,9 +52,8 @@ public class Test_42_Finalizer extends CommonTestRunner {
                 assertEquals(DV.TRUE_DV, d.methodAnalysis().getProperty(Property.FINALIZER));
             }
             if ("set".equals(d.methodInfo().name)) {
-                String expected = d.iteration() == 0 ? "<m:set>" : "this";
-                assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
-                assertDv(d, 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_EXPRESSION);
+                assertEquals("this", d.methodAnalysis().getSingleReturnValue().toString());
+                assertDv(d, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_EXPRESSION);
             }
         };
 
@@ -70,10 +69,8 @@ public class Test_42_Finalizer extends CommonTestRunner {
             if ("testLinking".equals(d.methodInfo().name)) {
                 if ("ff".equals(d.variableName())) {
                     if ("0".equals(d.statementId())) {
-                        String expected = d.iteration() == 0 ? "<m:set>" : "f/*@NotNull*/";
-                        assertEquals(expected, d.currentValue().toString());
-                        String linked = d.iteration() == 0 ? "f:-1" : "f:1";
-                        assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
+                        assertEquals("f/*@NotNull*/", d.currentValue().toString());
+                        assertEquals("f:1", d.variableInfo().getLinkedVariables().toString());
                     }
                 }
             }

@@ -59,7 +59,7 @@ public class Test_57_Lambda extends CommonTestRunner {
                 if (d.iteration() >= 2) {
                     Expression srv = d.methodAnalysis().getSingleReturnValue();
                     if (srv instanceof ConstructorCall cc) {
-                            assertEquals("$1", cc.anonymousClass().simpleName);
+                        assertEquals("$1", cc.anonymousClass().simpleName);
                     } else fail("Got " + srv.getClass());
                 }
                 assertDv(d, 1, MultiLevel.CONTAINER_DV, Property.CONTAINER);
@@ -213,7 +213,7 @@ public class Test_57_Lambda extends CommonTestRunner {
 
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("method".equals(d.methodInfo().name)) {
-                String expected = d.iteration() < 2 ? "<m:method>" : "x.k<3?3:f.get()*i$0";
+                String expected = d.iteration() == 0 ? "<m:method>" : "x.k<3?3:f.get()*i$0";
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
             }
             if ("get".equals(d.methodInfo().name)) {
@@ -332,7 +332,7 @@ public class Test_57_Lambda extends CommonTestRunner {
         };
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("method".equals(d.methodInfo().name)) {
-                String expected = d.iteration() < 2 ? "<m:method>" : "x.k<3?3:f.get()*i$0";
+                String expected = d.iteration() == 0 ? "<m:method>" : "x.k<3?3:f.get()*i$0";
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
             }
         };
@@ -429,11 +429,12 @@ public class Test_57_Lambda extends CommonTestRunner {
             }
         };
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
-            if ("get".equals(d.methodInfo().name) && d.iteration() > 0) {
-                assertEquals("i$0", d.methodAnalysis().getSingleReturnValue().toString());
+            if ("get".equals(d.methodInfo().name)) {
+                String expected = d.iteration() == 0 ? "<m:get>" : "i$0";
+                assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
             }
-            if ("method".equals(d.methodInfo().name) && d.iteration() > 0) {
-                String expected = d.iteration() < 3 ? "<m:method>" : "inner.supplier().get()*inner.i$0";
+            if ("method".equals(d.methodInfo().name)) {
+                String expected = d.iteration() < 2 ? "<m:method>" : "inner.supplier().get()*inner.i$0";
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
             }
         };

@@ -572,93 +572,14 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
                 assert value.isDelayed() || value instanceof VariableExpression ve && ve.variable().equals(getter);
                 methodAnalysis.setGetSetField(getter.fieldInfo);
             }
-
-            // FIXME in the same PrimaryType, switch to field. Outside, switch to getter
+            // TODO in the same PrimaryType, switch to field. Outside, switch to getter
         }
 
         ParameterizedType concreteReturnType = value.isInstanceOf(NullConstant.class) ? methodInfo.returnType() : value.returnType();
-
         DV notNullExpression = variableInfo.getProperty(NOT_NULL_EXPRESSION);
         if (value.isDelayed() || value.isInitialReturnExpression()) {
-
-            // it is possible that none of the return statements are reachable... in which case there should be no delay,
-            // and no SRV
-            if (noReturnStatementReachable()) {
-                UnknownExpression ue = UnknownExpression.forNoReturnValue(methodInfo.identifier, methodInfo.returnType());
-                methodAnalysis.setSingleReturnValue(ue);
-                methodAnalysis.setProperty(Property.IDENTITY, IDENTITY.falseDv);
-                methodAnalysis.setProperty(IGNORE_MODIFICATIONS, IGNORE_MODIFICATIONS.falseDv);
-                methodAnalysis.setProperty(Property.FLUENT, DV.FALSE_DV);
-                methodAnalysis.setProperty(Property.NOT_NULL_EXPRESSION, MultiLevel.EFFECTIVELY_NOT_NULL_DV);
-                methodAnalysis.setProperty(Property.IMMUTABLE, MultiLevel.EFFECTIVELY_IMMUTABLE_DV);
-                methodAnalysis.setProperty(INDEPENDENT, MultiLevel.INDEPENDENT_DV);
-                methodAnalysis.setProperty(Property.CONTAINER, MultiLevel.CONTAINER_DV);
-                methodAnalysis.setProperty(CONSTANT, DV.FALSE_DV);
-                return DONE;
-            }
-            LOGGER.debug("It {} method {} has return value {}, delaying", sharedState.evaluationContext.getIteration(),
-                    methodInfo, value.minimalOutput());
-            if (value.isDelayed()) {
-                if (sharedState.breakDelayLevel.acceptMethodOverride()) {
-                    LOGGER.debug("Method override: set rescue value for {}", methodInfo);
-                    Properties valueProps = Properties.of(Map.of(
-                            IDENTITY, methodAnalysis.getPropertyFromMapNeverDelay(IDENTITY),
-                            IGNORE_MODIFICATIONS, methodAnalysis.getPropertyFromMapNeverDelay(IGNORE_MODIFICATIONS),
-                            NOT_NULL_EXPRESSION, methodAnalysis.getPropertyFromMapNeverDelay(NOT_NULL_EXPRESSION),
-                            IMMUTABLE, methodAnalysis.getPropertyFromMapNeverDelay(IMMUTABLE),
-                            INDEPENDENT, methodAnalysis.getPropertyFromMapNeverDelay(INDEPENDENT),
-                            CONTAINER, methodAnalysis.getPropertyFromMapNeverDelay(CONTAINER)
-                    ));
-                    Expression instance = Instance.forMethodResult(methodInfo.getIdentifier(), methodInfo.returnType(), valueProps);
-                    methodAnalysis.setSingleReturnValue(instance);
-                    methodAnalysis.setProperty(Property.IDENTITY, valueProps.get(IDENTITY));
-                    methodAnalysis.setProperty(IGNORE_MODIFICATIONS, valueProps.get(IGNORE_MODIFICATIONS));
-                    methodAnalysis.setProperty(Property.FLUENT, DV.FALSE_DV);
-                    methodAnalysis.setProperty(Property.NOT_NULL_EXPRESSION, valueProps.get(NOT_NULL_EXPRESSION));
-                    methodAnalysis.setProperty(Property.IMMUTABLE, valueProps.get(IMMUTABLE));
-                    /*
-                     INDEPENDENT of a method is not necessarily determined by the return type's INDEPENDENT
-                     */
-                    methodAnalysis.setProperty(Property.CONTAINER, valueProps.get(CONTAINER));
-                    methodAnalysis.setProperty(CONSTANT, DV.FALSE_DV);
-                    return DONE;
-                }
-                return delayedSrv(concreteReturnType, value, variableInfo.getValue().causesOfDelay(), true);
-            }
-            throw new UnsupportedOperationException("? no delays, and initial return expression even though return statements are reachable");
+            return delayedOrUnreachableMethodResult(sharedState, variableInfo, value, concreteReturnType);
         }
-
-        // try to compute the dynamic immutable status of value
-
-        // FIXME if non-modifying IN iteration 0, make in-line of NON-EVAL, for expansion
-        //  within the PT if there are no fields
-        //  no expansion outside of the PT if there are any instance fields
-        //  return DONE to ensure we don't come back here; nne will have to wait
-        Expression valueBeforeInlining = value;
-        if (!value.isConstant()) {
-            DV modifiesInstance = methodAnalysis.getProperty(MODIFIED_METHOD_ALT_TEMP);
-            DV modifiesParameters = methodAnalysis.parameterAnalyses.stream()
-                    .map(pa -> pa.getProperty(MODIFIED_VARIABLE))
-                    .reduce(DV.FALSE_DV, DV::max);
-            DV modified = modifiesInstance.max(modifiesParameters);
-            if (modified.isDelayed()) {
-                LOGGER.debug("Delaying return value of {}, waiting for MODIFIED (we may try to inline!)", methodInfo);
-                return delayedSrv(concreteReturnType, value, modified.causesOfDelay(), false);
-            }
-            if (modified.valueIsFalse()) {
-                /*
-                 As a general rule, we make non-modifying methods inline-able, even if they contain references to variable
-                 fields and local loop variables. It'll depend on where they are expanded
-                 whether the result is something sensible or not.
-                 */
-                assert value.isDone();
-            //    value = createInlinedMethod(value);
-            //    if (value.isDelayed()) {
-            //        return delayedSrv(concreteReturnType, value, value.causesOfDelay(), true);
-            //    }
-            }
-        }
-        assert notNullExpression.isDone();
 
         /* we already have a value for the value property NNE. We wait, however, until we have a value for ENN as well
         if we take the non-constructing methods along for NNE computation, and the value is a variable (only variables
@@ -666,7 +587,7 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
          */
         DV externalNotNull;
         if ((analyserContext.getConfiguration().analyserConfiguration().computeContextPropertiesOverAllMethods() ||
-                methodInfo.inConstruction()) && valueBeforeInlining.isInstanceOf(VariableExpression.class)) {
+                methodInfo.inConstruction()) && value.isInstanceOf(VariableExpression.class)) {
             externalNotNull = variableInfo.getProperty(EXTERNAL_NOT_NULL);
             if (externalNotNull.isDelayed()) {
                 LOGGER.debug("Delaying return value of {}, waiting for NOT_NULL", methodInfo);
@@ -703,7 +624,7 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
         LOGGER.debug("Mark method {} as @Constant? {}", methodInfo, isConstant);
 
 
-        if (setFluent(valueBeforeInlining)) {
+        if (setFluent(value)) {
             computeSetter(true);
         }
 
@@ -720,6 +641,57 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
         }
 
         return DONE;
+    }
+
+    private AnalysisStatus delayedOrUnreachableMethodResult(SharedState sharedState,
+                                                            VariableInfo variableInfo,
+                                                            Expression value,
+                                                            ParameterizedType concreteReturnType) {
+        // it is possible that none of the return statements are reachable... in which case there should be no delay,
+        // and no SRV
+        if (noReturnStatementReachable()) {
+            UnknownExpression ue = UnknownExpression.forNoReturnValue(methodInfo.identifier, methodInfo.returnType());
+            methodAnalysis.setSingleReturnValue(ue);
+            methodAnalysis.setProperty(Property.IDENTITY, IDENTITY.falseDv);
+            methodAnalysis.setProperty(IGNORE_MODIFICATIONS, IGNORE_MODIFICATIONS.falseDv);
+            methodAnalysis.setProperty(Property.FLUENT, DV.FALSE_DV);
+            methodAnalysis.setProperty(Property.NOT_NULL_EXPRESSION, MultiLevel.EFFECTIVELY_NOT_NULL_DV);
+            methodAnalysis.setProperty(Property.IMMUTABLE, MultiLevel.EFFECTIVELY_IMMUTABLE_DV);
+            methodAnalysis.setProperty(INDEPENDENT, MultiLevel.INDEPENDENT_DV);
+            methodAnalysis.setProperty(Property.CONTAINER, MultiLevel.CONTAINER_DV);
+            methodAnalysis.setProperty(CONSTANT, DV.FALSE_DV);
+            return DONE;
+        }
+        LOGGER.debug("It {} method {} has return value {}, delaying", sharedState.evaluationContext.getIteration(),
+                methodInfo, value.minimalOutput());
+        if (value.isDelayed()) {
+            if (sharedState.breakDelayLevel.acceptMethodOverride()) {
+                LOGGER.debug("Method override: set rescue value for {}", methodInfo);
+                Properties valueProps = Properties.of(Map.of(
+                        IDENTITY, methodAnalysis.getPropertyFromMapNeverDelay(IDENTITY),
+                        IGNORE_MODIFICATIONS, methodAnalysis.getPropertyFromMapNeverDelay(IGNORE_MODIFICATIONS),
+                        NOT_NULL_EXPRESSION, methodAnalysis.getPropertyFromMapNeverDelay(NOT_NULL_EXPRESSION),
+                        IMMUTABLE, methodAnalysis.getPropertyFromMapNeverDelay(IMMUTABLE),
+                        INDEPENDENT, methodAnalysis.getPropertyFromMapNeverDelay(INDEPENDENT),
+                        CONTAINER, methodAnalysis.getPropertyFromMapNeverDelay(CONTAINER)
+                ));
+                Expression instance = Instance.forMethodResult(methodInfo.getIdentifier(), methodInfo.returnType(), valueProps);
+                methodAnalysis.setSingleReturnValue(instance);
+                methodAnalysis.setProperty(Property.IDENTITY, valueProps.get(IDENTITY));
+                methodAnalysis.setProperty(IGNORE_MODIFICATIONS, valueProps.get(IGNORE_MODIFICATIONS));
+                methodAnalysis.setProperty(Property.FLUENT, DV.FALSE_DV);
+                methodAnalysis.setProperty(Property.NOT_NULL_EXPRESSION, valueProps.get(NOT_NULL_EXPRESSION));
+                methodAnalysis.setProperty(Property.IMMUTABLE, valueProps.get(IMMUTABLE));
+                /*
+                 INDEPENDENT of a method is not necessarily determined by the return type's INDEPENDENT
+                 */
+                methodAnalysis.setProperty(Property.CONTAINER, valueProps.get(CONTAINER));
+                methodAnalysis.setProperty(CONSTANT, DV.FALSE_DV);
+                return DONE;
+            }
+            return delayedSrv(concreteReturnType, value, variableInfo.getValue().causesOfDelay(), true);
+        }
+        throw new UnsupportedOperationException("? no delays, and initial return expression even though return statements are reachable");
     }
 
     private FieldReference isGetter() {

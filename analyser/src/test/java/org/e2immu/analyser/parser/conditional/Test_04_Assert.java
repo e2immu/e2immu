@@ -183,7 +183,7 @@ public class Test_04_Assert extends CommonTestRunner {
             }
             if ("merge".equals(d.methodInfo().name)) {
                 assertEquals("SimpleSet", d.methodInfo().typeInfo.simpleName);
-                assertDv(d, 1, DV.TRUE_DV, Property.FLUENT);
+                assertDv(d, DV.TRUE_DV, Property.FLUENT);
                 assertDv(d, DV.FALSE_DV, Property.MODIFIED_METHOD);
                 // returns self, so independent
                 assertDv(d, 3, MultiLevel.INDEPENDENT_DV, Property.INDEPENDENT);

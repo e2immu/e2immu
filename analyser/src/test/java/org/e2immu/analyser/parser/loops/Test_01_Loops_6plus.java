@@ -729,7 +729,7 @@ public class Test_01_Loops_6plus extends CommonTestRunner {
                 assertHc(d, 0, "");
             }
         };
-        BreakDelayVisitor breakDelayVisitor = d -> assertEquals("----M-MF--MFT--", d.delaySequence());
+        BreakDelayVisitor breakDelayVisitor = d -> assertEquals("----MF--MFT--", d.delaySequence());
 
         // TODO see Loops_17, one warning too many
         testClass("Loops_18", 0, 2, new DebugConfiguration.Builder()

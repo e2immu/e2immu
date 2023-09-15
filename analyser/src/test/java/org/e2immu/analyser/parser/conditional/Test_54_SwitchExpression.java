@@ -112,8 +112,7 @@ public class Test_54_SwitchExpression extends CommonTestRunner {
             }
             if ("method".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof ReturnVariable) {
-                    String expected = d.iteration() < 3 ? "<m:apply>"
-                            : "(instance type $1).apply(c)";
+                    String expected = d.iteration() < 2 ? "<m:apply>" : "(instance type $1).apply(c)";
                     assertEquals(expected, d.currentValue().toString());
                 }
                 if (d.variable() instanceof FieldReference fr && "out".equals(fr.fieldInfo.name)) {

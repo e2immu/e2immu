@@ -234,7 +234,7 @@ public class Test_22_SubTypes extends CommonTestRunner {
                 ParameterAnalysis p0 = d.parameterAnalyses().get(0);
                 assertEquals("set1", ((ParameterAnalysisImpl.Builder) p0).simpleName);
                 assertDv(d.p(0), 1, DV.TRUE_DV, Property.MODIFIED_VARIABLE);
-                assertDv(d, 1, MultiLevel.MUTABLE_DV, Property.IMMUTABLE);
+                assertDv(d, MultiLevel.MUTABLE_DV, Property.IMMUTABLE);
             }
         };
 

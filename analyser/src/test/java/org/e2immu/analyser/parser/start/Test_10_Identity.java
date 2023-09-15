@@ -177,9 +177,9 @@ public class Test_10_Identity extends CommonTestRunner {
             }
             if ("idem2".equals(d.methodInfo().name)) {
                 assertDv(d, 1, DV.FALSE_DV, Property.MODIFIED_METHOD);
-                assertDv(d, 2, DV.TRUE_DV, Property.IDENTITY);
+                assertDv(d, 1, DV.TRUE_DV, Property.IDENTITY);
 
-                String expect = d.iteration() < 2 ? "<m:idem2>" : "s/*@NotNull*/";
+                String expect = d.iteration() == 0 ? "<m:idem2>" : "s/*@NotNull*/";
                 assertEquals(expect, d.methodAnalysis().getSingleReturnValue().toString());
 
                 assertDv(d.p(0), 2, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_PARAMETER);
@@ -213,8 +213,9 @@ public class Test_10_Identity extends CommonTestRunner {
                 if (d.variable() instanceof ReturnVariable) {
                     if ("1".equals(d.statementId())) {
                         assertEquals("s:0", d.variableInfo().getLinkedVariables().toString());
-                        assertValue(d, "<m:equals>?<m:idem>:<p:s>", "\"a\".equals(s)?<m:idem>:s", "s");
-                        assertDv(d, 2, DV.TRUE_DV, IDENTITY);
+                        String expected = d.iteration() == 0 ? "<m:equals>?<m:idem>:<p:s>" : "s";
+                        assertEquals(expected, d.currentValue().toString());
+                        assertDv(d, 1, DV.TRUE_DV, IDENTITY);
                     }
                 }
             }
@@ -222,11 +223,11 @@ public class Test_10_Identity extends CommonTestRunner {
 
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("idem3".equals(d.methodInfo().name)) {
-                String expected = d.iteration() < 3 ? "<m:idem3>" : "s";
+                String expected = d.iteration() == 0 ? "<m:idem3>" : "s";
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
-                assertDv(d, 3, DV.TRUE_DV, Property.IDENTITY);
+                assertDv(d, 1, DV.TRUE_DV, Property.IDENTITY);
                 assertDv(d, DV.FALSE_DV, Property.MODIFIED_METHOD);
-                assertDv(d, 3, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_EXPRESSION);
+                assertDv(d, 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_EXPRESSION);
             }
             if ("idem2".equals(d.methodInfo().name)) {
                 assertDv(d.p(0), 2, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
@@ -236,10 +237,13 @@ public class Test_10_Identity extends CommonTestRunner {
             }
         };
 
+        BreakDelayVisitor breakDelayVisitor = d -> assertEquals("----", d.delaySequence());
+
         testClass("Identity_2", 0, 0, new DebugConfiguration.Builder()
                         .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                         .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                         .addTypeMapVisitor(typeMapVisitor)
+                        .addBreakDelayVisitor(breakDelayVisitor)
                         .build(),
                 new AnalyserConfiguration.Builder().setSkipTransformations(true).build());
     }
@@ -249,8 +253,7 @@ public class Test_10_Identity extends CommonTestRunner {
         EvaluationResultVisitor evaluationResultVisitor = d -> {
             if ("idem4".equals(d.methodInfo().name) && "1".equals(d.statementId())) {
                 // double property wrapper
-                String expect = d.iteration() == 0 ? "<m:equals>?<m:idem>:<p:s>"
-                        : d.iteration() == 1 ? "\"a\".equals(s)?<m:idem>:s": "s";
+                String expect = d.iteration() == 0 ? "<m:equals>?<m:idem>:<p:s>" : "s";
                 assertEquals(expect, d.evaluationResult().value().toString());
             }
         };
@@ -277,11 +280,11 @@ public class Test_10_Identity extends CommonTestRunner {
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("idem2".equals(d.methodInfo().name)) {
                 assertDv(d, 1, DV.FALSE_DV, Property.MODIFIED_METHOD);
-                assertDv(d, 2, DV.TRUE_DV, Property.IDENTITY);
+                assertDv(d, 1, DV.TRUE_DV, Property.IDENTITY);
             }
             if ("idem4".equals(d.methodInfo().name)) {
                 assertDv(d, 1, DV.FALSE_DV, Property.MODIFIED_METHOD);
-                assertDv(d, 3, DV.TRUE_DV, Property.IDENTITY);
+                assertDv(d, 1, DV.TRUE_DV, Property.IDENTITY);
             }
         };
 

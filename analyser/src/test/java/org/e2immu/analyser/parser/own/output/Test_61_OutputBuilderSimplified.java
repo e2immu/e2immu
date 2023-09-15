@@ -434,7 +434,7 @@ public class Test_61_OutputBuilderSimplified extends CommonTestRunner {
             }
             if ("apply".equals(d.methodInfo().name) && "$6".equals(d.methodInfo().typeInfo.simpleName)) {
                 assertEquals("$2", d.methodInfo().typeInfo.packageNameOrEnclosingType.getRight().simpleName);
-                String expected = d.iteration() < 4 ? "<m:apply>" : "new OutputBuilderSimplified_7()";
+                String expected = d.iteration() < 3 ? "<m:apply>" : "new OutputBuilderSimplified_7()";
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
 
                 assertDv(d.p(0), 4, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_PARAMETER);
@@ -627,7 +627,7 @@ public class Test_61_OutputBuilderSimplified extends CommonTestRunner {
             if ("apply".equals(d.methodInfo().name) && "$5".equals(d.methodInfo().typeInfo.simpleName)) {
                 assertEquals("$2", d.methodInfo().typeInfo.packageNameOrEnclosingType.getRight().simpleName);
                 // combiner!
-                String expected = d.iteration() < 4 ? "<m:apply>"
+                String expected = d.iteration() < 3 ? "<m:apply>"
                         : "aa.list.isEmpty()?bb:bb.list.isEmpty()?aa:aa/*@NotNull*/";
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
 
@@ -637,7 +637,7 @@ public class Test_61_OutputBuilderSimplified extends CommonTestRunner {
             if ("apply".equals(d.methodInfo().name) && "$6".equals(d.methodInfo().typeInfo.simpleName)) {
                 assertEquals("$2", d.methodInfo().typeInfo.packageNameOrEnclosingType.getRight().simpleName);
                 // finisher!
-                String expected = d.iteration() < 4 ? "<m:apply>" : "new OutputBuilderSimplified_12()";
+                String expected = d.iteration() < 3 ? "<m:apply>" : "new OutputBuilderSimplified_12()";
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
 
                 assertDv(d.p(0), 4, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_PARAMETER);

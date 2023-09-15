@@ -714,11 +714,11 @@ public class Test_66_VariableScope extends CommonTestRunner {
                 assertDv(d, DV.FALSE_DV, Property.MODIFIED_METHOD);
             }
             if ("output".equals(d.methodInfo().name) && "MethodCall".equals(d.methodInfo().typeInfo.simpleName)) {
-                assertDv(d, 21, DV.FALSE_DV, Property.MODIFIED_METHOD);
+                assertDv(d, 20, DV.FALSE_DV, Property.MODIFIED_METHOD);
             }
             if ("output2".equals(d.methodInfo().name)) {
                 assertDv(d, 20, DV.FALSE_DV, Property.MODIFIED_METHOD);
-                String expected = d.iteration() < 21 ? "<m:output2>"
+                String expected = d.iteration() < 20 ? "<m:output2>"
                         : "new OutputBuilder(new LinkedList<>())";
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
 
@@ -782,7 +782,7 @@ public class Test_66_VariableScope extends CommonTestRunner {
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("output2".equals(d.methodInfo().name)) {
                 assertDv(d, 20, DV.FALSE_DV, Property.MODIFIED_METHOD);
-                String expected = d.iteration() < 21 ? "<m:output2>"
+                String expected = d.iteration() < 20 ? "<m:output2>"
                         : "new OutputBuilder(new LinkedList<>())";
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
                 assertDv(d.p(0), 21, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
@@ -837,7 +837,7 @@ public class Test_66_VariableScope extends CommonTestRunner {
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("output2".equals(d.methodInfo().name)) {
                 assertDv(d, 2, DV.FALSE_DV, Property.MODIFIED_METHOD);
-                String expected = d.iteration() < 4 ? "<m:output2>"
+                String expected = d.iteration() < 3 ? "<m:output2>"
                         : "new OutputBuilder(new LinkedList<>())";
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
                 assertDv(d.p(0), 1, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
@@ -846,11 +846,11 @@ public class Test_66_VariableScope extends CommonTestRunner {
         };
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("MethodCall".equals(d.typeInfo().simpleName)) {
-                assertDv(d, 4, MultiLevel.EFFECTIVELY_FINAL_FIELDS_DV, Property.IMMUTABLE);
+                assertDv(d, 3, MultiLevel.EFFECTIVELY_FINAL_FIELDS_DV, Property.IMMUTABLE);
             }
         };
 
-        BreakDelayVisitor breakDelayVisitor = d -> assertEquals("-------", d.delaySequence());
+        BreakDelayVisitor breakDelayVisitor = d -> assertEquals("------", d.delaySequence());
 
         testClass("VariableScope_8_2", 1, 7, new DebugConfiguration.Builder()
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)

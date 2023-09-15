@@ -341,7 +341,7 @@ public class Test_12_IfStatement extends CommonTestRunner {
                 if (d.variable() instanceof ReturnVariable) {
                     if ("0".equals(d.statementId())) {
                         String expected = d.iteration() == 0
-                                ? "<null-check>?null:<return value>" : "null==IfStatement_9.expensiveCall(in)?null:<return value>";
+                                ? "<simplification>?null:<return value>" : "null==IfStatement_9.expensiveCall(in)?null:<return value>";
                         assertEquals(expected, d.currentValue().toString());
                     }
                 }
@@ -365,19 +365,18 @@ public class Test_12_IfStatement extends CommonTestRunner {
             }
             if ("method".equals(d.methodInfo().name)) {
                 if ("0".equals(d.statementId())) {
-                    String state = d.iteration() == 0 ? "!<null-check>" : "null!=IfStatement_9.expensiveCall(in)";
+                    String state = d.iteration() == 0 ? "!<simplification>" : "null!=IfStatement_9.expensiveCall(in)";
                     assertEquals(state, d.state().toString());
                 }
             }
         };
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("expensiveCall".equals(d.methodInfo().name)) {
-                String expected = d.iteration() == 0 ? "<m:expensiveCall>"
-                        : "null==in?null:in.isEmpty()?\"empty\":Character.isAlphabetic(in.charAt(0))?in:\"non-alpha\"";
+                String expected = "null==in?null:in.isEmpty()?\"empty\":Character.isAlphabetic(in.charAt(0))?in:\"non-alpha\"";
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
             }
             if ("method".equals(d.methodInfo().name)) {
-                String expected = d.iteration() < 2 ? "<m:method>"
+                String expected = d.iteration() == 0 ? "<m:method>"
                         : "null==IfStatement_9.expensiveCall(in)?null:\"Not null: \"+IfStatement_9.expensiveCall(in)";
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
             }

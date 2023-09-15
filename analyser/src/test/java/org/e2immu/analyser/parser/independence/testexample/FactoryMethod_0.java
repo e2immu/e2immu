@@ -27,12 +27,12 @@ import java.util.stream.Stream;
 public class FactoryMethod_0<T> {
 
     private final List<T> list = new ArrayList<>();
-
+/*
     @Independent // because the return value does not link to t
     public static <T> FactoryMethod_0<T> of1(@Independent(hc = true) T t) {
         return new FactoryMethod_0<T>().add(t);
     }
-
+*/
     @Independent // because the return value does not link to t, tt
     public static <T> FactoryMethod_0<T> of2(@Independent(hc = true) T t,
                                              @Independent(hc = true) T tt) {
@@ -41,7 +41,7 @@ public class FactoryMethod_0<T> {
         f.add(tt);
         return f;
     }
-
+/*
     @Independent(hc = true) // ts links to ts, common hidden content
     public static <T> FactoryMethod_0<T> of(@Independent(hc = true) T[] ts) {
         FactoryMethod_0<T> f = new FactoryMethod_0<>();
@@ -49,7 +49,7 @@ public class FactoryMethod_0<T> {
             f.add(t);
         }
         return f;
-    }
+    }*/
 
     @Fluent
     @Modified(construction = true)
@@ -57,7 +57,7 @@ public class FactoryMethod_0<T> {
         list.add(t);
         return this;
     }
-
+/*
     @Independent(hc = true)
     public T get(int index) {
         return list.get(index);
@@ -78,5 +78,5 @@ public class FactoryMethod_0<T> {
         List<T> result = new ArrayList<>(list.size());
         this.list.stream().forEach(e -> result.add(e));
         return result;
-    }
+    }*/
 }

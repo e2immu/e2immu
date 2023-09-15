@@ -136,10 +136,9 @@ public class Test_48_Store extends CommonTestRunner {
                 assertDv(d, 1, DV.FALSE_DV, Property.MODIFIED_METHOD);
 
                 // independent because non-modifying (no Annotated API)
-                assertDv(d, 1, MultiLevel.INDEPENDENT_DV, Property.INDEPENDENT);
+                assertDv(d, MultiLevel.INDEPENDENT_DV, Property.INDEPENDENT);
 
-                String expected = d.iteration() == 0 ? "<m:getOrCreate>" : "new Project_0(\"x\")";
-                assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
+                assertEquals("new Project_0(\"x\")", d.methodAnalysis().getSingleReturnValue().toString());
             }
             if ("handleMultiSet".equals(d.methodInfo().name)) {
                 assertDv(d, 1, DV.FALSE_DV, Property.MODIFIED_METHOD);
@@ -157,7 +156,7 @@ public class Test_48_Store extends CommonTestRunner {
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("Project_0".equals(d.typeInfo().simpleName)) {
                 assertHc(d, 1, "");
-                assertDv(d, 13, MultiLevel.EFFECTIVELY_FINAL_FIELDS_DV, Property.IMMUTABLE);
+                assertDv(d, 11, MultiLevel.EFFECTIVELY_FINAL_FIELDS_DV, Property.IMMUTABLE);
             }
             if ("Store_3".equals(d.typeInfo().simpleName)) {
                 assertHc(d, 0, "");
@@ -168,7 +167,7 @@ public class Test_48_Store extends CommonTestRunner {
 
         BreakDelayVisitor breakDelayVisitor = d -> {
             String s = switch (d.typeInfo().simpleName) {
-                case "Project_0" -> "------M-MF-MFT--";
+                case "Project_0" -> "------MF-MFT--";
                 case "Store_3" -> "---";
                 default -> fail(d.typeInfo().simpleName);
             };

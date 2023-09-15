@@ -504,13 +504,13 @@ public class Test_63_TrieSimplified extends CommonTestRunner {
             int n = d.methodInfo().methodInspection.get().getParameters().size();
             if ("goTo".equals(d.methodInfo().name) && n == 1) {
                 assertDv(d, 2, DV.FALSE_DV, Property.MODIFIED_METHOD);
-                String expected = d.iteration() < 3 ? "<m:goTo>"
+                String expected = d.iteration() < 2 ? "<m:goTo>"
                         : "this.goTo(strings,strings.length)";
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
             }
             if ("goTo".equals(d.methodInfo().name) && n == 2) {
                 assertDv(d, 1, DV.FALSE_DV, Property.MODIFIED_METHOD);
-                String expected = d.iteration() <= 1 ? "<m:goTo>"
+                String expected = d.iteration() < 2 ? "<m:goTo>"
                         : "-1-(instance type int)+upToPosition>=0?null:root";
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
             }

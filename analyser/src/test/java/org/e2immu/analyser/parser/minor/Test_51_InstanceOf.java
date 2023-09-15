@@ -1022,8 +1022,7 @@ public class Test_51_InstanceOf extends CommonTestRunner {
                 }
                 if ("3".equals(d.statementId())) {
                     String expected = switch (d.iteration()) {
-                        case 0 ->
-                                "<instanceOf:Negation>?<m:toList>:<simplification>?<m:toList>:<m:toList>";
+                        case 0 -> "<instanceOf:Negation>?<m:toList>:<simplification>?<m:toList>:<m:toList>";
                         case 1, 2, 3 ->
                                 "expression instanceof Negation?<m:toList>:expression instanceof UnaryOperator&&<m:isUnaryNot>&&(null==expression||!(expression instanceof Negation))?<m:toList>:expression instanceof InstanceOf?<m:of>:(nullable instance type List<Expression>).stream().flatMap(instance type $3).toList()";
                         default ->
@@ -1231,7 +1230,7 @@ public class Test_51_InstanceOf extends CommonTestRunner {
             }
             // $3 is the lambda in statement 3 of FindInstanceOfPatterns.find
             if ("apply".equals(d.methodInfo().name) && "$3".equals(d.methodInfo().typeInfo.simpleName)) {
-                assertDv(d, 1, MultiLevel.MUTABLE_DV, Property.IMMUTABLE);
+                assertDv(d, MultiLevel.MUTABLE_DV, Property.IMMUTABLE);
             }
             if ("find".equals(d.methodInfo().name)) {
                 assertFalse(d.methodInfo().methodResolution.get().ignoreMeBecauseOfPartOfCallCycle());

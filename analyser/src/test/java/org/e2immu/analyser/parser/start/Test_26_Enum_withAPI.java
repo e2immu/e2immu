@@ -108,7 +108,7 @@ public class Test_26_Enum_withAPI extends CommonTestRunner {
                 assertFalse(d.methodInfo().methodResolution.get().overrides().isEmpty());
                 assertEquals(DV.FALSE_DV, d.methodAnalysis().getProperty(Property.MODIFIED_METHOD));
 
-                String expected = d.iteration() == 0 ? "<m:test>" : "(instance type String).equals(name)";
+                String expected = "(instance type String).equals(name)";
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
             }
             if ("valueOf".equals(d.methodInfo().name)) {

@@ -88,9 +88,7 @@ public class Test_23_TryStatement extends CommonTestRunner {
 
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("method".equals(d.methodInfo().name)) {
-                Expression srv = d.methodAnalysis().getSingleReturnValue();
-                String expected = d.iteration() == 0 ? "<m:method>" : "instance type String";
-                assertEquals(expected, srv.toString());
+                assertEquals("instance type String", d.methodAnalysis().getSingleReturnValue().toString());
             }
         };
 

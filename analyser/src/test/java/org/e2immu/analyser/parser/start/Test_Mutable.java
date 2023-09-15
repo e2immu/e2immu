@@ -199,7 +199,7 @@ public class Test_Mutable extends CommonTestRunner {
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("method".equals(d.methodInfo().name)) {
                 assertDv(d, 1, DV.FALSE_DV, Property.MODIFIED_METHOD);
-                String expected = d.iteration() < 2 ? "<m:method>" : "set.contains(s)?s.length():0";
+                String expected = d.iteration() == 0 ? "<m:method>" : "set.contains(s)?s.length():0";
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
             }
         };
@@ -273,7 +273,7 @@ public class Test_Mutable extends CommonTestRunner {
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("method".equals(d.methodInfo().name)) {
                 assertDv(d, 1, DV.TRUE_DV, Property.MODIFIED_METHOD);
-                String expected = d.iteration() < 2 ? "<m:method>" : "set.contains(s)?s.length():-1";
+                String expected = d.iteration() == 0 ? "<m:method>" : "set.contains(s)?s.length():-1";
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
             }
         };

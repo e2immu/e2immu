@@ -83,7 +83,7 @@ public class Test_30_SwitchStatement extends CommonTestRunner {
 
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("method".equals(d.methodInfo().name)) {
-                assertDv(d, 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_EXPRESSION);
+                assertDv(d, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_EXPRESSION);
             }
         };
 
@@ -98,8 +98,7 @@ public class Test_30_SwitchStatement extends CommonTestRunner {
     public void test_3() throws IOException {
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("method".equals(d.methodInfo().name)) {
-                String expected = d.iteration() == 0 ? "<m:method>" : "b";
-                assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
+                assertEquals("b", d.methodAnalysis().getSingleReturnValue().toString());
             }
         };
 

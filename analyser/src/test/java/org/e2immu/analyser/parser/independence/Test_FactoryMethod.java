@@ -16,6 +16,7 @@
 package org.e2immu.analyser.parser.independence;
 
 
+import org.e2immu.analyser.analyser.DV;
 import org.e2immu.analyser.analyser.Property;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.model.MultiLevel;
@@ -119,8 +120,26 @@ public class Test_FactoryMethod extends CommonTestRunner {
 
         // 1 ERROR: not yet implemented, of1 line 32; directly linking into a new object
         testClass("FactoryMethod_0", 1, 0, new DebugConfiguration.Builder()
-              //  .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-              //  .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                //  .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                //  .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                .addBreakDelayVisitor(breakDelayVisitor)
+                .build());
+    }
+
+
+    @Test
+    public void test_1() throws IOException {
+
+        MethodAnalyserVisitor methodAnalyserVisitor = d -> {
+            if ("add".equals(d.methodInfo().name)) {
+                assertDv(d, DV.TRUE_DV, Property.FLUENT);
+            }
+        };
+
+        BreakDelayVisitor breakDelayVisitor = d -> assertEquals("-------", d.delaySequence());
+
+        testClass("FactoryMethod_1", 1, 0, new DebugConfiguration.Builder()
+                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .addBreakDelayVisitor(breakDelayVisitor)
                 .build());
     }

@@ -530,7 +530,7 @@ public class Test_AnalysisProvider extends CommonTestRunner {
                 assertTrue(methodResolution.partOfCallCycle());
                 assertTrue(methodResolution.ignoreMeBecauseOfPartOfCallCycle()); // this one "breaks" the call cycle
 
-                String expected = d.iteration() < 7 ? "<m:apply>" : "this.a(pt)";
+                String expected = d.iteration() < 6 ? "<m:apply>" : "this.a(pt)";
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
             }
         };
@@ -585,7 +585,7 @@ public class Test_AnalysisProvider extends CommonTestRunner {
                 assertEquals(callCycle, methodResolution
                         .methodsOfOwnClassReached().stream().map(MethodInfo::name).sorted().collect(Collectors.joining(",")));
 
-                String expected = d.iteration() < 7 ? "<m:a>" : "nullable instance type DV";
+                String expected = d.iteration() < 6 ? "<m:a>" : "nullable instance type DV";
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
             }
             if ("b".equals(d.methodInfo().name)) {
@@ -594,7 +594,7 @@ public class Test_AnalysisProvider extends CommonTestRunner {
                 assertEquals(callCycle, methodResolution
                         .methodsOfOwnClassReached().stream().map(MethodInfo::name).sorted().collect(Collectors.joining(",")));
 
-                String expected = d.iteration() < 5 ? "<m:b>"
+                String expected = d.iteration() < 4 ? "<m:b>"
                         : "this.sumImmutableLevels(n<10?this.c(b0):AnalysisProvider_4.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV)";
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
             }
@@ -604,8 +604,7 @@ public class Test_AnalysisProvider extends CommonTestRunner {
                 assertTrue(methodResolution.partOfCallCycle());
                 assertFalse(methodResolution.ignoreMeBecauseOfPartOfCallCycle());
 
-                String expected = d.iteration() == 0 ? "<m:c>" : "this.a(c0)";
-                assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
+                assertEquals("this.a(c0)", d.methodAnalysis().getSingleReturnValue().toString());
             }
         };
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
