@@ -25,6 +25,7 @@ import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.ReturnVariable;
 import org.e2immu.analyser.parser.CommonTestRunner;
 import org.e2immu.analyser.visitor.BreakDelayVisitor;
+import org.e2immu.analyser.visitor.EvaluationResultVisitor;
 import org.e2immu.analyser.visitor.MethodAnalyserVisitor;
 import org.e2immu.analyser.visitor.StatementAnalyserVariableVisitor;
 import org.junit.jupiter.api.Test;
@@ -116,12 +117,11 @@ public class Test_FactoryMethod extends CommonTestRunner {
             }
         };
 
-        BreakDelayVisitor breakDelayVisitor = d -> assertEquals("-------", d.delaySequence());
+        BreakDelayVisitor breakDelayVisitor = d -> assertEquals("-----", d.delaySequence());
 
-        // 1 ERROR: not yet implemented, of1 line 32; directly linking into a new object
-        testClass("FactoryMethod_0", 1, 0, new DebugConfiguration.Builder()
-                //  .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-                //  .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+        testClass("FactoryMethod_0", 0, 0, new DebugConfiguration.Builder()
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .addBreakDelayVisitor(breakDelayVisitor)
                 .build());
     }
@@ -130,15 +130,48 @@ public class Test_FactoryMethod extends CommonTestRunner {
     @Test
     public void test_1() throws IOException {
 
-        MethodAnalyserVisitor methodAnalyserVisitor = d -> {
-            if ("add".equals(d.methodInfo().name)) {
-                assertDv(d, DV.TRUE_DV, Property.FLUENT);
+        EvaluationResultVisitor evaluationResultVisitor = d -> {
+            if ("of".equals(d.methodInfo().name)) {
+                if ("0".equals(d.statementId())) {
+                    assertEquals("new FactoryMethod_1<>()", d.evaluationResult().value().toString());
+                }
             }
         };
 
-        BreakDelayVisitor breakDelayVisitor = d -> assertEquals("-------", d.delaySequence());
+        StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+            if ("of".equals(d.methodInfo().name)) {
+                if ("f".equals(d.variableName())) {
+                    if ("0".equals(d.statementId())) {
+                        assertLinked(d, it(0, ""));
+                        assertCurrentValue(d, 0, "new FactoryMethod_1<>()");
+                    }
+                    if ("1".equals(d.statementId())) {
+                        assertLinked(d, it(0, 1, "t:-1"), it(2, ""));
+                        assertCurrentValue(d, 2, "new FactoryMethod_1<>()");
+                    }
+                }
+            }
+        };
 
-        testClass("FactoryMethod_1", 1, 0, new DebugConfiguration.Builder()
+        MethodAnalyserVisitor methodAnalyserVisitor = d -> {
+            if ("add".equals(d.methodInfo().name)) {
+                assertDv(d, DV.TRUE_DV, Property.FLUENT);
+                assertDv(d, 1, DV.TRUE_DV, Property.MODIFIED_METHOD);
+                assertDv(d.p(0), 2, MultiLevel.INDEPENDENT_HC_DV, Property.INDEPENDENT);
+                assertDv(d.p(0), 2, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
+            }
+
+            if ("of".equals(d.methodInfo().name)) {
+                String expected = d.iteration() < 2 ? "<m:of>" : "new FactoryMethod_1<>()";
+                assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
+            }
+        };
+
+        BreakDelayVisitor breakDelayVisitor = d -> assertEquals("-----", d.delaySequence());
+
+        testClass("FactoryMethod_1", 0, 0, new DebugConfiguration.Builder()
+                .addEvaluationResultVisitor(evaluationResultVisitor)
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .addBreakDelayVisitor(breakDelayVisitor)
                 .build());

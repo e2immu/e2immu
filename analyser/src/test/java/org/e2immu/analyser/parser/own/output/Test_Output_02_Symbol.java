@@ -71,7 +71,7 @@ public class Test_Output_02_Symbol extends CommonTestRunner {
             if ("right".equals(d.methodInfo().name) && "Symbol".equals(d.methodInfo().typeInfo.simpleName)) {
                 String expected = d.iteration() == 0 ? "<m:right>" : "right";
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
-                String pc = d.iteration() < 4 ? "<precondition>" : "true";
+                String pc = d.iteration() < 2 ? "<precondition>" : "true";
                 assertEquals(pc, d.methodAnalysis().getPreconditionForEventual().expression().toString());
             }
         };

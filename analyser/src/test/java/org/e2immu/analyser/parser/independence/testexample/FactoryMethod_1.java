@@ -25,7 +25,6 @@ public class FactoryMethod_1<T> {
 
     private final List<T> list = new ArrayList<>();
 
-    @Identity
     @Independent // because the return value does not link to t
     public static <T> FactoryMethod_1<T> of(@Independent(hc = true) T t) {
         FactoryMethod_1<T> f = new FactoryMethod_1<>();

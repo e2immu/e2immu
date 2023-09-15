@@ -123,7 +123,8 @@ public class Test_Mutable extends CommonTestRunner {
             }
             if ("static1".equals(d.methodInfo().name)) {
                 if ("2".equals(d.statementId())) {
-                    String expected = d.iteration() < 2 ? "<m:length>==<m:method>"
+                    String expected = d.iteration() == 0 ? "<m:length>==<m:method>"
+                            : d.iteration() == 1 ? "(new Mutable_1()).method(s)==<m:length>"
                             : "s.length()==(new Mutable_1()).method(s)";
                     assertEquals(expected, d.evaluationResult().getExpression().toString());
                 }
@@ -171,7 +172,7 @@ public class Test_Mutable extends CommonTestRunner {
             if ("static1".equals(d.methodInfo().name)) {
                 if ("m1".equals(d.variableName())) {
                     if ("1".equals(d.statementId())) {
-                        String expected = d.iteration() < 2 ? "<new:Mutable_1>" : "new Mutable_1()";
+                        String expected = d.iteration() == 0 ? "<v:m1>" : "new Mutable_1()";
                         assertEquals(expected, d.currentValue().toString());
                     }
                 }
@@ -179,8 +180,7 @@ public class Test_Mutable extends CommonTestRunner {
             if ("static2".equals(d.methodInfo().name)) {
                 if ("m1".equals(d.variableName())) {
                     if ("0".equals(d.statementId())) {
-                        String expected = d.iteration() < 2 ? "<new:Mutable_1>" : "new Mutable_1()";
-                        assertEquals(expected, d.currentValue().toString());
+                        assertEquals("new Mutable_1()", d.currentValue().toString());
                     }
                 }
             }

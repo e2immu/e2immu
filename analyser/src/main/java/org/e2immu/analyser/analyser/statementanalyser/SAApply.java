@@ -398,18 +398,9 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
                 valueProperties, valueProperties.delays());
 
         Properties changeDataProperties = Properties.of(changeData.properties());
-        boolean myself = sharedState.evaluationContext().isMyself(variable);
-        Properties merged = SAHelper.mergeAssignment(variable, valueProperties, changeDataProperties,
+        Properties combined = SAHelper.mergeAssignment(variable, valueProperties, changeDataProperties,
                 externalProperties, groupPropertyValues);
         // LVs start empty, the changeData.linkedVariables will be added later
-        Properties combined;
-        if (myself && variable instanceof FieldReference fr && !fr.fieldInfo.fieldInspection.get().isStatic()) {
-            // captures self-referencing instance fields (but not static fields, as in Enum_)
-            // a similar check exists in StatementAnalysisImpl.initializeFieldReference
-            combined = sharedState.evaluationContext().ensureMyselfValueProperties(merged);
-        } else {
-            combined = merged;
-        }
 
         boolean progressSet;
         if (!detectBreakDelayInAssignment(variable, vic, changeData, valueToWrite,
