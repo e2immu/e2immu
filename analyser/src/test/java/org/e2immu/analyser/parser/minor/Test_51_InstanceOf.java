@@ -374,12 +374,10 @@ public class Test_51_InstanceOf extends CommonTestRunner {
                         VariableInfo prev = d.variableInfoContainer().getPreviousOrInitial();
                         assertEquals("nullable instance type Object/*@Identity*/", prev.getValue().toString());
 
-                        String expect = d.iteration() == 0 ? "<mod:String>" : "nullable instance type Object/*@Identity*/";
+                        String expect = d.iteration() == 0 ? "<p:object>" : "nullable instance type Object/*@Identity*/";
                         assertEquals(expect, d.currentValue().toString());
                         assertEquals("Type Object", p.parameterizedType.toString());
-
-                        String linked = d.iteration() == 0 ? "string:-1" : "string:1";
-                        assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
+                        assertEquals("string:1", d.variableInfo().getLinkedVariables().toString());
 
                         assertDv(d, MultiLevel.NULLABLE_DV, Property.CONTEXT_NOT_NULL);
                     }
@@ -500,12 +498,16 @@ public class Test_51_InstanceOf extends CommonTestRunner {
                 assertDv(d, MultiLevel.EFFECTIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
             }
         };
+
+        BreakDelayVisitor breakDelayVisitor = d -> assertEquals("---", d.delaySequence());
+
         testClass("InstanceOf_9", 0, 0, new DebugConfiguration.Builder()
                 .addEvaluationResultVisitor(evaluationResultVisitor)
                 .addStatementAnalyserVisitor(statementAnalyserVisitor)
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .addTypeMapVisitor(typeMapVisitor)
                 .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
+                .addBreakDelayVisitor(breakDelayVisitor)
                 .build());
     }
 

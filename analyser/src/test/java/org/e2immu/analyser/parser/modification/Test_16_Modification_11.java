@@ -82,7 +82,7 @@ public class Test_16_Modification_11 extends CommonTestRunner {
                     if ("0".equals(d.statementId())) {
                         assertDv(d, 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.CONTEXT_NOT_NULL);
                         String expected = switch (d.iteration()) {
-                            case 0, 1, 2 -> "c:-1,this:-1";
+                            case 0, 1 -> "c:-1,this:-1";
                             default -> "c:2,this:3";
                         };
                         assertEquals(expected, d.variableInfo().getLinkedVariables().toString());
@@ -92,7 +92,7 @@ public class Test_16_Modification_11 extends CommonTestRunner {
                     if ("0".equals(d.statementId())) {
                         assertEquals(MultiLevel.NULLABLE_DV, d.getProperty(Property.CONTEXT_NOT_NULL));
                         String expectLinked = switch (d.iteration()) {
-                            case 0, 1, 2 -> "this.s2:-1,this:-1";
+                            case 0, 1 -> "this.s2:-1,this:-1";
                             default -> "this.s2:2,this:3";
                         };
                         assertEquals(expectLinked, d.variableInfo().getLinkedVariables().toString());
@@ -124,7 +124,7 @@ public class Test_16_Modification_11 extends CommonTestRunner {
             if ("Modification_11".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof FieldReference fr && "s2".equals(fr.fieldInfo.name)) {
                     if ("1".equals(d.statementId())) {
-                        String expectValue = d.iteration() <= 1 ? "<m:getSet>" : "(new C1(set2)).getSet()";
+                        String expectValue = d.iteration() == 0 ? "<m:getSet>" : "(new C1(set2)).getSet()";
                         assertEquals(expectValue, d.currentValue().toString());
                     }
                 }
@@ -154,7 +154,7 @@ public class Test_16_Modification_11 extends CommonTestRunner {
                 assertDv(d, 1, DV.TRUE_DV, Property.MODIFIED_OUTSIDE_METHOD);
             }
             if ("s2".equals(d.fieldInfo().name)) {
-                assertDv(d, 2, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.EXTERNAL_NOT_NULL);
+                assertDv(d, 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.EXTERNAL_NOT_NULL);
             }
         };
 

@@ -649,11 +649,11 @@ public class Test_01_Loops_6plus extends CommonTestRunner {
                     if ("1".equals(d.statementId())) {
                         String expected = switch (d.iteration()) {
                             case 0 ->
-                                    "<loopIsNotEmptyCondition>?<vl:result>:new HashMap<>()/*AnnotatedAPI.isKnown(true)&&0==this.size()*/";
+                                    "<loopIsNotEmptyCondition>?<vl:result>:new HashMap<>()";
                             case 1 ->
-                                    "kvStore$0.entrySet().isEmpty()?new HashMap<>()/*AnnotatedAPI.isKnown(true)&&0==this.size()*/:<vl:result>";
+                                    "kvStore$0.entrySet().isEmpty()?new HashMap<>():<vl:result>";
                             default ->
-                                    "kvStore$0.entrySet().isEmpty()?new HashMap<>()/*AnnotatedAPI.isKnown(true)&&0==this.size()*/:instance type Map<String,String>";
+                                    "kvStore$0.entrySet().isEmpty()?new HashMap<>():instance type Map<String,String>";
                         };
                         assertEquals(expected, d.currentValue().toString());
                         if (d.iteration() >= 2) {
@@ -666,16 +666,16 @@ public class Test_01_Loops_6plus extends CommonTestRunner {
                 if ("entry".equals(d.variableName())) {
                     if ("1.0.0".equals(d.statementId())) {
                         assertLinked(d,
-                                it0("key:-1,this.kvStore:-1"),
-                                it(1, 2, "this.kvStore:-1,this:-1"),
-                                it(3, "this.kvStore:2"));
+                                it0("key:-1,this.kvStore:-1,this:-1"),
+                                it(1, 3, "this.kvStore:-1,this:-1"),
+                                it(4, "this.kvStore:2"));
                         assertDv(d, 1, MultiLevel.MUTABLE_DV, IMMUTABLE);
                     }
                     if ("1.0.1.0.0".equals(d.statementId())) {
                         assertLinked(d,
-                                it0("container:-1,key:-1,this.kvStore:-1"),
-                                it(1, 2, "this.kvStore:-1,this:-1"),
-                                it(3, "this.kvStore:2"));
+                                it0("container:-1,key:-1,this.kvStore:-1,this:-1"),
+                                it(1, 3, "this.kvStore:-1,this:-1"),
+                                it(4, "this.kvStore:2"));
                     }
                 }
                 if (d.variable() instanceof FieldReference fr && "kvStore".equals(fr.fieldInfo.name)) {
@@ -683,23 +683,23 @@ public class Test_01_Loops_6plus extends CommonTestRunner {
                         assertTrue(d.variableInfoContainer().hasEvaluation());
                         assertFalse(d.variableInfoContainer().hasMerge());
 
-                        assertLinked(d, it0("entry:-1,key:-1"),
-                                it(1, 2, "entry:-1,this:-1"),
-                                it(3, "entry:2"));
+                        assertLinked(d, it0("entry:-1,key:-1,this:-1"),
+                                it(1, 3, "entry:-1,this:-1"),
+                                it(4, "entry:2"));
                     }
                     if ("1".equals(d.statementId())) {
                         assertTrue(d.variableInfoContainer().hasEvaluation());
                         VariableInfo eval = d.variableInfoContainer().best(Stage.EVALUATION);
 
                         assertLinked(d, eval.getLinkedVariables(),
-                                it0("entry:-1"),
-                                it(1, 2, "entry:-1,this:-1"),
-                                it(3, "entry:2"));
+                                it0("entry:-1,this:-1"),
+                                it(1, 3, "entry:-1,this:-1"),
+                                it(4, "entry:2"));
 
                         assertTrue(d.variableInfoContainer().hasMerge());
-                        assertLinked(d, it0("queried:-1"),
-                                it(1, 2, "this:-1"),
-                                it(3, "entry:2"));
+                        assertLinked(d, it0("this:-1"),
+                                it(1, 3, "this:-1"),
+                                it(4, "entry:2"));
                     }
                 }
             }
@@ -734,7 +734,7 @@ public class Test_01_Loops_6plus extends CommonTestRunner {
         // TODO see Loops_17, one warning too many
         testClass("Loops_18", 0, 2, new DebugConfiguration.Builder()
                 .addEvaluationResultVisitor(evaluationResultVisitor)
-                //    .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+            //    .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .addStatementAnalyserVisitor(statementAnalyserVisitor)
                 .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
                 .addBreakDelayVisitor(breakDelayVisitor)
@@ -776,7 +776,7 @@ public class Test_01_Loops_6plus extends CommonTestRunner {
                     if ("1.0.1".equals(d.statementId())) {
                         String expected = switch (d.iteration()) {
                             case 0 -> "<m:contains>?instance type long:<p:readWithinMillis>";
-                            case 1 -> "queried.contains(entry.getKey())?instance type long:<p:readWithinMillis>";
+                            case 1 -> "<p:readWithinMillis>";
                             default -> "instance type long";
                         };
                         assertEquals(expected, d.currentValue().toString());

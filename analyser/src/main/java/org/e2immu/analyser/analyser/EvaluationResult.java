@@ -71,7 +71,6 @@ EvaluatedExpressionCache will be stored in StatementAnalysis.stateData() for use
 public record EvaluationResult(EvaluationContext evaluationContext,
                                Expression value,
                                List<Expression> storedValues,
-                               EvaluatedExpressionCache evaluatedExpressionCache,
                                CausesOfDelay causesOfDelay,
                                Messages messages,
                                Map<Variable, ChangeData> changeData,
@@ -97,13 +96,12 @@ public record EvaluationResult(EvaluationContext evaluationContext,
     }
 
     public EvaluationResult copy(EvaluationContext evaluationContext) {
-        return new EvaluationResult(evaluationContext, value, storedValues, evaluatedExpressionCache,
-                causesOfDelay, messages, changeData, precondition);
+        return new EvaluationResult(evaluationContext, value, storedValues, causesOfDelay, messages, changeData,
+                precondition);
     }
 
     public static EvaluationResult from(EvaluationContext evaluationContext) {
         return new EvaluationResult(evaluationContext, null, List.of(),
-                EvaluatedExpressionCache.EMPTY,
                 CausesOfDelay.EMPTY, Messages.EMPTY, Map.of(), Precondition.empty(evaluationContext.getPrimitives()));
     }
 
@@ -216,15 +214,12 @@ public record EvaluationResult(EvaluationContext evaluationContext,
                 storedValues.stream().map(e -> e.translate(inspectionProvider, translationMap)).toList();
         CausesOfDelay translatedCauses = causesOfDelay.translate(inspectionProvider, translationMap);
         Precondition translatedPrecondition = precondition == null ? null : precondition.translate(inspectionProvider, translationMap);
-        EvaluatedExpressionCache translatedEvaluatedExpressionCache = evaluatedExpressionCache.translate(inspectionProvider, translationMap);
         return new EvaluationResult(evaluationContext, translatedValue, translatedStoredValues,
-                translatedEvaluatedExpressionCache,
                 translatedCauses, messages, newMap, translatedPrecondition);
     }
 
     public EvaluationResult withNewEvaluationContext(EvaluationContext newEc) {
-        return new EvaluationResult(newEc, value, storedValues, evaluatedExpressionCache,
-                causesOfDelay, messages, changeData, precondition);
+        return new EvaluationResult(newEc, value, storedValues, causesOfDelay, messages, changeData, precondition);
     }
 
     public LinkedVariables linkedVariables(Variable variable) {
@@ -239,8 +234,8 @@ public record EvaluationResult(EvaluationContext evaluationContext,
         CausesOfDelay newChangeDataDelays = newChangeData.values()
                 .stream().map(e -> e.delays).reduce(CausesOfDelay.EMPTY, CausesOfDelay::merge);
         CausesOfDelay newCauses = value.causesOfDelay().merge(newChangeDataDelays);
-        return new EvaluationResult(evaluationContext, value, storedValues, evaluatedExpressionCache,
-                newCauses, messages, newChangeData, precondition);
+        return new EvaluationResult(evaluationContext, value, storedValues, newCauses, messages, newChangeData,
+                precondition);
     }
 
     public DV containsModification() {
@@ -434,7 +429,6 @@ public record EvaluationResult(EvaluationContext evaluationContext,
             }
             this.causesOfDelay = this.causesOfDelay.merge(evaluationResult.causesOfDelay);
             this.messages.addAll(evaluationResult.getMessageStream());
-            evaluatedExpressions.putAll(evaluationResult.evaluatedExpressionCache().map());
 
             for (Map.Entry<Variable, ChangeData> e : evaluationResult.changeData.entrySet()) {
                 valueChanges.merge(e.getKey(), e.getValue(), ChangeData::merge);
@@ -491,10 +485,8 @@ public record EvaluationResult(EvaluationContext evaluationContext,
                     addCausesOfDelay(value.causesOfDelay());
                 }
             }
-            EvaluatedExpressionCache evaluatedExpressionCache = new EvaluatedExpressionCache(evaluatedExpressions);
             EvaluationContext ec = evaluationContext.updateStatementTime(statementTime);
-            return new EvaluationResult(ec, value,
-                    storedExpressions == null ? null : List.copyOf(storedExpressions), evaluatedExpressionCache,
+            return new EvaluationResult(ec, value, storedExpressions == null ? null : List.copyOf(storedExpressions),
                     causesOfDelay, messages, valueChanges, precondition);
         }
 

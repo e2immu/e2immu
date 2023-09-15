@@ -93,7 +93,7 @@ public class Test_00_Basics_7 extends CommonTestRunner {
                         assertTrue(d.variableInfoContainer().hasMerge());
                         assertEquals("0" + Stage.MERGE, d.variableInfo().getReadId());
 
-                        String expect = d.iteration() == 0 ? "b?<p:p>:" + INSTANCE_TYPE_INT_IDENTITY : INSTANCE_TYPE_INT_IDENTITY;
+                        String expect = d.iteration() == 0 ? "<p:p>" : INSTANCE_TYPE_INT_IDENTITY;
                         assertEquals(expect, d.currentValue().toString());
                         assertDv(d, 1, DV.TRUE_DV, IDENTITY);
                         assertDv(d, MultiLevel.EFFECTIVELY_NOT_NULL_DV, CONTEXT_NOT_NULL);

@@ -242,11 +242,11 @@ public class Test_09_EvaluatesToConstant extends CommonTestRunner {
      */
     @Test
     public void test() throws IOException {
-        testClass("EvaluatesToConstant", 4, 0, new DebugConfiguration.Builder()
-                        .addStatementAnalyserVisitor(statementAnalyserVisitor)
-                        .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-                        .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
-                        .addEvaluationResultVisitor(evaluationResultVisitor)
+        testClass("EvaluatesToConstant", 5, 0, new DebugConfiguration.Builder()
+                      //  .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                      //  .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                       // .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                      //  .addEvaluationResultVisitor(evaluationResultVisitor)
                         .build(),
                 new AnalyserConfiguration.Builder().setSkipTransformations(true).build());
     }

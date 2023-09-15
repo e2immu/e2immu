@@ -301,7 +301,7 @@ public class Test_34_ExplicitConstructorInvocation extends CommonTestRunner {
                 assertEquals("0", d.statementId());
 
                 if (d.variable() instanceof ParameterInfo pi && "primitives1".equals(pi.name)) {
-                    String linked = d.iteration() == 0 ? "this:-1" : "this.primitives:1";
+                    String linked = d.iteration() == 0 ? "this.primitives:-1,this:-1" : "this.primitives:1";
                     assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
                 }
             }
@@ -312,7 +312,7 @@ public class Test_34_ExplicitConstructorInvocation extends CommonTestRunner {
                     }
                     if ("2".equals(d.statementId())) {
                         // goes through SAApply.delayVariablesNotMentioned(), so no value yet in iteration 0
-                        String expected = d.iteration() == 0 ? "<f:primitives>" : "primitives2/*@NotNull*/";
+                        String expected = "primitives2/*@NotNull*/";
                         assertEquals(expected, d.currentValue().toString());
                     }
                 }
@@ -393,7 +393,7 @@ public class Test_34_ExplicitConstructorInvocation extends CommonTestRunner {
                     String linked = d.iteration() <= 2 ? "UnknownExpression.E1:-1" : "UnknownExpression.E1:1";
                     assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
                     String expected = switch (d.iteration()) {
-                        case 0 -> "<f:E1>/*@NotNull*/"; // Objects.requireNotNull(E1), identity + @NN property
+                        case 0 -> "<f:E1>"; // Objects.requireNotNull(E1), identity + @NN property
                         case 1 -> "<vp:E1:container@Record_UnknownExpression>";
                         case 2 ->
                                 "<vp:E1:break_imm_delay@Method_merge;cm@Parameter_condition;initial:this.v@Method_merge_0-C;srv@Method_merge>";
@@ -405,7 +405,7 @@ public class Test_34_ExplicitConstructorInvocation extends CommonTestRunner {
                     String linked = d.iteration() <= 2 ? "UnknownExpression.E2:-1" : "UnknownExpression.E2:1";
                     assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
                     String expected = switch (d.iteration()) {
-                        case 0 -> "<dv:UnknownExpression.E2>";
+                        case 0 -> "<f:E2>";
                         case 1 -> "<vp:E2:container@Record_UnknownExpression>";
                         case 2 ->
                                 "<vp:E2:break_imm_delay@Method_merge;cm@Parameter_condition;initial:this.v@Method_merge_0-C;srv@Method_merge>";
@@ -421,34 +421,27 @@ public class Test_34_ExplicitConstructorInvocation extends CommonTestRunner {
                 if (d.variable() instanceof ParameterInfo pi && "condition".equals(pi.name)) {
                     if ("0".equals(d.statementId())) {
                         assertEquals("", d.variableInfo().getLinkedVariables().toString());
-                        String expected = d.iteration() == 0 ? "<mod:Expression>" : "nullable instance type Expression/*@Identity*/";
+                        String expected = "nullable instance type Expression/*@Identity*/";
                         assertEquals(expected, d.currentValue().toString());
                     }
                 }
                 if (d.variable() instanceof ParameterInfo pi && "state".equals(pi.name)) {
                     if ("1".equals(d.statementId())) {
-                        String linked = d.iteration() == 0 ? "condition:-1,parent:-1,precondition:-1" : "";
-                        assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
-                        String expected = d.iteration() == 0 ? "<p:state>" : "nullable instance type Expression";
+                        assertEquals("", d.variableInfo().getLinkedVariables().toString());
+                        String expected = "nullable instance type Expression";
                         assertEquals(expected, d.currentValue().toString());
                     }
                 }
                 if (d.variable() instanceof FieldReference fr && "condition".equals(fr.fieldInfo.name)) {
                     if ("3".equals(d.statementId())) {
-                        String linked = d.iteration() == 0 ? "condition:0,parent:-1,precondition:-1,state:-1" : "condition:0";
-                        assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
-                        String expected = d.iteration() == 0 ? "<s:Expression>" : "condition";
-                        assertEquals(expected, d.currentValue().toString());
+                        assertEquals("condition:0", d.variableInfo().getLinkedVariables().toString());
+                        assertEquals("condition", d.currentValue().toString());
                     }
                 }
                 if (d.variable() instanceof FieldReference fr && "state".equals(fr.fieldInfo.name)) {
                     if ("4".equals(d.statementId())) {
-                        String linked = d.iteration() == 0
-                                ? "condition:-1,parent:-1,precondition:-1,state:0,this.condition:-1"
-                                : "state:0";
-                        assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
-                        String expected = d.iteration() == 0 ? "<p:state>" : "state";
-                        assertEquals(expected, d.currentValue().toString());
+                        assertEquals("state:0", d.variableInfo().getLinkedVariables().toString());
+                        assertEquals("state", d.currentValue().toString());
                     }
                 }
             }
@@ -456,19 +449,19 @@ public class Test_34_ExplicitConstructorInvocation extends CommonTestRunner {
                 assertEquals("0", d.statementId());
                 if (d.variable() instanceof FieldReference fr && "parent".equals(fr.fieldInfo.name)) {
                     assertTrue(fr.scopeIsThis());
-                    assertCurrentValue(d, 4, "nullable instance type C");
+                    assertCurrentValue(d, 3, "nullable instance type C");
                     String linked = d.iteration() == 0 ? "NOT_YET_SET" : "";
                     assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
                     assertDv(d, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
                 }
                 if (d.variable() instanceof FieldReference fr && "condition".equals(fr.fieldInfo.name)) {
                     if ("parent".equals(fr.scope.toString())) {
-                        assertCurrentValue(d, 4, "instance type Expression");
-                        String linked = d.iteration() < 4 ? "this.parent:-1,this:-1" : "this.parent:2";
+                        assertCurrentValue(d, 3, "instance type Expression");
+                        String linked = d.iteration() < 3 ? "this.parent:-1,this:-1" : "this.parent:2";
                         assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
                         assertDv(d, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
                     } else if (fr.scopeIsThis()) {
-                        assertCurrentValue(d, 4, "instance type Expression");
+                        assertCurrentValue(d, 3, "instance type Expression");
                         assertEquals("", d.variableInfo().getLinkedVariables().toString());
                         assertDv(d, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     } else fail("Found " + fr.scope);
@@ -488,7 +481,7 @@ public class Test_34_ExplicitConstructorInvocation extends CommonTestRunner {
                                 && "parent".equals(pi.name));
                     }
                     // parent is of mySelf type; IMMUTABLE_BREAK...
-                    assertDv(d, 3, MultiLevel.EFFECTIVELY_FINAL_FIELDS_DV, Property.EXTERNAL_IMMUTABLE);
+                    assertDv(d, 2, MultiLevel.EFFECTIVELY_FINAL_FIELDS_DV, Property.EXTERNAL_IMMUTABLE);
                 }
             }
         };
@@ -507,7 +500,7 @@ public class Test_34_ExplicitConstructorInvocation extends CommonTestRunner {
                 assertDv(d.p(0), 1, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
             }
             if ("absolute".equals(d.methodInfo().name)) {
-                String expected = d.iteration() < 4 ? "<m:absolute>"
+                String expected = d.iteration() < 3 ? "<m:absolute>"
                         : "null==parent?condition:condition.merge(parent.condition)";
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
                 assertDv(d, DV.TRUE_DV, Property.MODIFIED_METHOD);
@@ -521,16 +514,16 @@ public class Test_34_ExplicitConstructorInvocation extends CommonTestRunner {
                 assertDv(d, 1, MultiLevel.EFFECTIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
             }
             if ("C".equals(d.typeInfo().simpleName)) {
-                assertDv(d, 2, MultiLevel.EFFECTIVELY_FINAL_FIELDS_DV, Property.IMMUTABLE);
+                assertDv(d, 1, MultiLevel.EFFECTIVELY_FINAL_FIELDS_DV, Property.IMMUTABLE);
             }
         };
-        BreakDelayVisitor breakDelayVisitor = d -> assertEquals("------", d.delaySequence());
+        BreakDelayVisitor breakDelayVisitor = d -> assertEquals("-----", d.delaySequence());
 
         testClass("ExplicitConstructorInvocation_10", 0, 0, new DebugConfiguration.Builder()
-          //      .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-          //      .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
-          //      .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
-          //      .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
+                .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                 .addBreakDelayVisitor(breakDelayVisitor)
                 .build());
     }

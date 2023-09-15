@@ -159,7 +159,7 @@ public class Test_04_NotNull_AAPI extends CommonTestRunner {
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("goTo".equals(d.methodInfo().name)) {
                 String expected = d.iteration() < 2 ? "<m:goTo>"
-                        : "-1-(instance type int)+upToPosition>=0?null==(null==node$1.map$0?node$1:node$1.map$0.get(nullable instance type String)).map$1.get(nullable instance type String)||null==(null==node$1.map$0?node$1:node$1.map$0.get(nullable instance type String)).map$1?null:null==node$1.map$0?node$1:node$1.map$0.get(nullable instance type String):root";
+                        : "-1-(instance type int)+upToPosition>=0&&(null==(null==node$1.map$0?node$1:node$1.map$0.get(nullable instance type String)).map$1.get(nullable instance type String)||null==(null==node$1.map$0?node$1:node$1.map$0.get(nullable instance type String)).map$1)?null:-1-(instance type int)+upToPosition>=0?null==node$1.map$0?node$1:node$1.map$0.get(nullable instance type String):root";
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
                 assertDv(d, 2, MultiLevel.NULLABLE_DV, Property.NOT_NULL_EXPRESSION);
             }
@@ -352,9 +352,7 @@ public class Test_04_NotNull_AAPI extends CommonTestRunner {
         EvaluationResultVisitor evaluationResultVisitor = d -> {
             if ("method3".equals(d.methodInfo().name)) {
                 if ("2".equals(d.statementId())) {
-                    String expected = d.iteration() == 0
-                            ? "<null-check>?null:\"Not null: \"+NotNull_6.compute(in)+\" == \"+NotNull_6.compute(in)"
-                            : "null==NotNull_6.compute(in)?null:\"Not null: \"+NotNull_6.compute(in)+\" == \"+NotNull_6.compute(in)";
+                    String expected = "null==NotNull_6.compute(in)?null:\"Not null: \"+NotNull_6.compute(in)+\" == \"+NotNull_6.compute(in)";
                     assertEquals(expected, d.evaluationResult().getExpression().toString());
                 }
             }
@@ -363,9 +361,7 @@ public class Test_04_NotNull_AAPI extends CommonTestRunner {
             if ("method2".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof ReturnVariable) {
                     if ("1".equals(d.statementId())) {
-                        String expected = d.iteration() == 0
-                                ? "<simplification>?null:\"Not null: \"+<m:compute>+\" == \"+<m:compute>"
-                                : "null==NotNull_6.compute(in)?null:\"Not null: \"+NotNull_6.compute(in)+\" == \"+NotNull_6.compute(in)";
+                        String expected = "null==NotNull_6.compute(in)?null:\"Not null: \"+NotNull_6.compute(in)+\" == \"+NotNull_6.compute(in)";
                         assertEquals(expected, d.currentValue().toString());
                     }
                 }
@@ -374,8 +370,8 @@ public class Test_04_NotNull_AAPI extends CommonTestRunner {
         StatementAnalyserVisitor statementAnalyserVisitor = d -> {
             if ("method2".equals(d.methodInfo().name)) {
                 if ("1".equals(d.statementId())) {
-                    String state = d.iteration() == 0 ? "!<simplification>" : "null!=NotNull_6.compute(in)";
-                    assertEquals(state, d.statementAnalysis().stateData().getAbsoluteState().toString());
+                    assertEquals("null!=NotNull_6.compute(in)",
+                            d.statementAnalysis().stateData().getAbsoluteState().toString());
                 }
             }
         };
@@ -386,17 +382,14 @@ public class Test_04_NotNull_AAPI extends CommonTestRunner {
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
             }
             if ("method".equals(d.methodInfo().name)) {
-                String expected = d.iteration() == 0 ? "<m:method>" : "null==NotNull_6.compute(s)";
-                assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
+                assertEquals("null==NotNull_6.compute(s)", d.methodAnalysis().getSingleReturnValue().toString());
             }
             if ("method2".equals(d.methodInfo().name)) {
-                String expected = d.iteration() == 0 ? "<m:method2>"
-                        : "null==NotNull_6.compute(in)?null:\"Not null: \"+NotNull_6.compute(in)+\" == \"+NotNull_6.compute(in)";
+                String expected = "null==NotNull_6.compute(in)?null:\"Not null: \"+NotNull_6.compute(in)+\" == \"+NotNull_6.compute(in)";
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
             }
             if ("method3".equals(d.methodInfo().name)) {
-                String expected = d.iteration() == 0 ? "<m:method3>"
-                        : "null==NotNull_6.compute(in)?null:\"Not null: \"+NotNull_6.compute(in)+\" == \"+NotNull_6.compute(in)";
+                String expected = "null==NotNull_6.compute(in)?null:\"Not null: \"+NotNull_6.compute(in)+\" == \"+NotNull_6.compute(in)";
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
             }
         };

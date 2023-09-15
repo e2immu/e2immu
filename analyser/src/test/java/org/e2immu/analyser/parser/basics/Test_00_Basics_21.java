@@ -74,7 +74,7 @@ public class Test_00_Basics_21 extends CommonTestRunner {
                     String linkedReverse = d.iteration() < 2 ? "other:-1" : "other:4";
                     assertEquals(linkedReverse, cdThis.linkedVariables().toString());
 
-                    assertEquals(d.iteration() <= 2, d.evaluationResult().causesOfDelay().isDelayed());
+                    assertEquals(d.iteration() < 2, d.evaluationResult().causesOfDelay().isDelayed());
                 }
             }
             if ("set".equals(d.methodInfo().name)) {
@@ -92,7 +92,6 @@ public class Test_00_Basics_21 extends CommonTestRunner {
                     if ("0.0.0".equals(d.statementId())) {
                         String expectValue = switch (d.iteration()) {
                             case 0, 1 -> "<p:other>";
-                            case 2 -> "<mod:T>";
                             default -> "nullable instance type Basics_21<T>/*@Identity*/";
                         };
                         assertEquals(expectValue, d.currentValue().toString());
@@ -111,8 +110,6 @@ public class Test_00_Basics_21 extends CommonTestRunner {
                         assertEquals("0", d.statementId());
                         String expectValue = switch (d.iteration()) {
                             case 0, 1 -> "<m:isSet>?<p:other>:nullable instance type Basics_21<T>/*@Identity*/";
-                            case 2 ->
-                                    "(nullable instance type Basics_21<T>/*@Identity*/).isSet()?<mod:T>:nullable instance type Basics_21<T>/*@Identity*/";
                             default -> "nullable instance type Basics_21<T>/*@Identity*/";
                         };
                         assertEquals(expectValue, d.currentValue().toString());

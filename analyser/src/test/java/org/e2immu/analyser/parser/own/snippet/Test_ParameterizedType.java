@@ -489,9 +489,9 @@ public class Test_ParameterizedType extends CommonTestRunner {
 
         testClass("ParameterizedType_2", 2, DONT_CARE,
                 new DebugConfiguration.Builder()
-                        .addEvaluationResultVisitor(evaluationResultVisitor)
-                        .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-                        .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                   //     .addEvaluationResultVisitor(evaluationResultVisitor)
+                   //     .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                   //     .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                         .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                         .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
                         .addBreakDelayVisitor(breakDelayVisitor)

@@ -522,11 +522,21 @@ public record MergeHelper(EvaluationContext evaluationContext,
     }
 
     private Merge.ExpressionAndProperties inlineConditional(Expression condition, VariableInfo ifTrue, VariableInfo ifFalse, boolean one) {
-        if (ifTrue.isDelayed() && !ifFalse.isDelayed() && conditionsMetForBreakingInitialisationDelay(ifTrue)) {
-            return valuePropertiesWrapToBreakFieldInitDelay(ifFalse);
+        if (ifTrue.isDelayed() && !ifFalse.isDelayed()) {
+            if (conditionsMetForBreakingInitialisationDelay(ifTrue)) {
+                return valuePropertiesWrapToBreakFieldInitDelay(ifFalse);
+            }
+            if(ifTrue.variable() instanceof ParameterInfo && !condition.isDelayed()) {
+                return valueProperties(ifTrue);
+            }
         }
-        if (!ifTrue.isDelayed() && ifFalse.isDelayed() && conditionsMetForBreakingInitialisationDelay(ifFalse)) {
-            return valuePropertiesWrapToBreakFieldInitDelay(ifTrue);
+        if (!ifTrue.isDelayed() && ifFalse.isDelayed()) {
+            if (conditionsMetForBreakingInitialisationDelay(ifFalse)) {
+                return valuePropertiesWrapToBreakFieldInitDelay(ifTrue);
+            }
+            if(ifFalse.variable() instanceof ParameterInfo && !condition.isDelayed()) {
+                return valueProperties(ifFalse);
+            }
         }
         EvaluationResult context = EvaluationResult.from(evaluationContext);
         Expression safe;

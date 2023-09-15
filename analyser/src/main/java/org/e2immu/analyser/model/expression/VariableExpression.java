@@ -317,20 +317,6 @@ public class VariableExpression extends BaseExpression implements IsVariableExpr
 
         Expression currentValue = builder.currentExpression(source, scopeResult == null ? null : scopeResult.value(),
                 indexResult == null ? null : indexResult.value(), identifier, forwardEvaluationInfo);
-
-        // FIXME emergency code, simply trying something out; we may have been here before, though....
-        if (currentValue instanceof InlineConditional inlineConditional) {
-            List<Variable> variablesInCondition = inlineConditional.condition.variables();
-            if (Collections.disjoint(variablesInCondition, forwardEvaluationInfo.getEvaluating())) {
-                ConditionManager cm = context.evaluationContext().getConditionManager();
-                Expression newCondition = cm.evaluate(context, inlineConditional.condition, false);
-                if (newCondition.isBoolValueTrue()) {
-                    currentValue = inlineConditional.ifTrue;
-                } else if (newCondition.isBoolValueFalse()) {
-                    currentValue = inlineConditional.ifFalse;
-                }
-            }
-        }
         builder.setExpression(currentValue);
 
         // no statement analyser... no need to compute all these properties

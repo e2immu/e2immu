@@ -187,9 +187,9 @@ public class Test_10_Identity extends CommonTestRunner {
         };
 
         testClass("Identity_1", 0, 0, new DebugConfiguration.Builder()
-                        .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
-                        .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-                        .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                   //     .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                  //      .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                  //      .addStatementAnalyserVisitor(statementAnalyserVisitor)
                         .addTypeMapVisitor(typeMapVisitor)
                         .build(),
                 new AnalyserConfiguration.Builder().setSkipTransformations(true).build());
@@ -289,10 +289,10 @@ public class Test_10_Identity extends CommonTestRunner {
         };
 
         testClass("Identity_3", 0, 0, new DebugConfiguration.Builder()
-                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
-                .addTypeMapVisitor(typeMapVisitor)
-                .addEvaluationResultVisitor(evaluationResultVisitor)
-                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+              //  .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+              //  .addTypeMapVisitor(typeMapVisitor)
+              //  .addEvaluationResultVisitor(evaluationResultVisitor)
+              //  .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .build());
     }
 

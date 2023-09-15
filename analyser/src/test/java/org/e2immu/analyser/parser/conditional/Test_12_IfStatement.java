@@ -63,7 +63,7 @@ public class Test_12_IfStatement extends CommonTestRunner {
                 if (d.variable() instanceof ReturnVariable) {
                     if ("1".equals(d.statementId())) {
                         String expected = d.iteration() == 0
-                                ? "null==(null==nullable instance type String/*@Identity*/?nullable instance type String/*@Identity*/:<p:a>)?\"b\":null==nullable instance type String/*@Identity*/?nullable instance type String/*@Identity*/:<p:a>"
+                                ? "<null-check>?\"b\":<p:a>"
                                 : "null==a?\"b\":a";
                         assertEquals(expected, d.currentValue().toString());
                     }
@@ -248,8 +248,7 @@ public class Test_12_IfStatement extends CommonTestRunner {
             if ("method1".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof ReturnVariable) {
                     if ("0".equals(d.statementId())) {
-                        String expected = d.iteration() == 0 ? "null==set||<simplification>?null:<return value>" : "null";
-                        assertEquals(expected, d.currentValue().toString());
+                        assertEquals("null", d.currentValue().toString());
                     }
                     if ("1".equals(d.statementId())) {
                         String expected = switch (d.iteration()) {
@@ -264,15 +263,14 @@ public class Test_12_IfStatement extends CommonTestRunner {
         StatementAnalyserVisitor statementAnalyserVisitor = d -> {
             if ("method1".equals(d.methodInfo().name)) {
                 if ("1".equals(d.statementId())) {
-                    assertEquals(d.iteration() > 0, d.statementAnalysis().flowData().isUnreachable());
+                    assertTrue( d.statementAnalysis().flowData().isUnreachable());
                 }
             }
         };
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("method1".equals(d.methodInfo().name)) {
-                assertDv(d, 1, DV.FALSE_DV, Property.MODIFIED_METHOD);
-                String expected = d.iteration() == 0 ? "<m:method1>" : "null";
-                assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
+                assertDv(d,  DV.FALSE_DV, Property.MODIFIED_METHOD);
+                assertEquals("null", d.methodAnalysis().getSingleReturnValue().toString());
             }
         };
         // 4 errors, 3 in method1, 1 in method2
@@ -340,8 +338,7 @@ public class Test_12_IfStatement extends CommonTestRunner {
             if ("method".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof ReturnVariable) {
                     if ("0".equals(d.statementId())) {
-                        String expected = d.iteration() == 0
-                                ? "<simplification>?null:<return value>" : "null==IfStatement_9.expensiveCall(in)?null:<return value>";
+                        String expected =  "null==IfStatement_9.expensiveCall(in)?null:<return value>";
                         assertEquals(expected, d.currentValue().toString());
                     }
                 }
@@ -365,7 +362,7 @@ public class Test_12_IfStatement extends CommonTestRunner {
             }
             if ("method".equals(d.methodInfo().name)) {
                 if ("0".equals(d.statementId())) {
-                    String state = d.iteration() == 0 ? "!<simplification>" : "null!=IfStatement_9.expensiveCall(in)";
+                    String state = "null!=IfStatement_9.expensiveCall(in)";
                     assertEquals(state, d.state().toString());
                 }
             }
@@ -376,8 +373,7 @@ public class Test_12_IfStatement extends CommonTestRunner {
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
             }
             if ("method".equals(d.methodInfo().name)) {
-                String expected = d.iteration() == 0 ? "<m:method>"
-                        : "null==IfStatement_9.expensiveCall(in)?null:\"Not null: \"+IfStatement_9.expensiveCall(in)";
+                String expected = "null==IfStatement_9.expensiveCall(in)?null:\"Not null: \"+IfStatement_9.expensiveCall(in)";
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
             }
         };

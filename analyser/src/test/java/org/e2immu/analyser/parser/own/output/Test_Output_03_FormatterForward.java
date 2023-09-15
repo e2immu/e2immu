@@ -15,8 +15,10 @@
 
 package org.e2immu.analyser.parser.own.output;
 
+import org.e2immu.analyser.analyser.VariableInfo;
 import org.e2immu.analyser.config.AnalyserConfiguration;
 import org.e2immu.analyser.config.DebugConfiguration;
+import org.e2immu.analyser.model.ParameterInfo;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.VariableNature;
 import org.e2immu.analyser.output.*;
@@ -40,31 +42,41 @@ import static org.junit.jupiter.api.Assertions.*;
 
 public class Test_Output_03_FormatterForward extends CommonTestRunner {
 
+    public static final String OPTIONS = "nullable instance type FormattingOptions/*@Identity*/";
+
     public Test_Output_03_FormatterForward() {
         super(true);
     }
 
-    @Disabled("Infinite loop between And, Negation, Equals, isNotNull0")
+    // @Disabled("Infinite loop between And, Negation, Equals, isNotNull0")
     @Test
     public void test_0() throws IOException {
         EvaluationResultVisitor evaluationResultVisitor = d -> {
-            if ("8.0.4.1.0.1.0.0.07".equals(d.statementId())) {
-                String expected = switch (d.iteration()) {
-                    case 0 -> "<instanceOf:Symbol>?<dv:scope-scope-58:37:8.0.3.split>:<f:NEVER>";
-                    case 1 -> "outputElement instanceof Symbol symbol?<dv:scope-scope-58:37:8.0.3.split>:Split.NEVER";
-                    default -> "outputElement instanceof Symbol symbol?scope-scope-58:37:8.0.3.split:Split.NEVER";
-                };
-                assertEquals(expected, d.evaluationResult().value().toString());
-                assertEquals(d.iteration() <= 1, d.evaluationResult().value().isDelayed());
-                assertEquals(d.iteration() <= 1, d.evaluationResult().causesOfDelay().isDelayed());
+            if ("forward".equals(d.methodInfo().name)) {
+                if ("8.0.4.1.0.1.0.0.07".equals(d.statementId())) {
+                    String expected = switch (d.iteration()) {
+                        case 0 -> "<instanceOf:Symbol>?<dv:scope-scope-58:37:8.0.3.split>:<f:NEVER>";
+                        case 1 ->
+                                "outputElement instanceof Symbol symbol?<dv:scope-scope-58:37:8.0.3.split>:Split.NEVER";
+                        default -> "outputElement instanceof Symbol symbol?scope-scope-58:37:8.0.3.split:Split.NEVER";
+                    };
+                    assertEquals(expected, d.evaluationResult().value().toString());
+                    assertEquals(d.iteration() <= 1, d.evaluationResult().value().isDelayed());
+                    assertEquals(d.iteration() <= 1, d.evaluationResult().causesOfDelay().isDelayed());
 
-                if (d.iteration() >= 2) {
-                    assertEquals(5, d.evaluationResult().changeData().size());
-                    String scopes = d.evaluationResult().changeData().keySet().stream()
-                            .filter(v -> v instanceof FieldReference fr && "split".equals(fr.fieldInfo.name))
-                            .map(v -> ((FieldReference) v).scope.toString())
-                            .sorted().collect(Collectors.joining(", "));
-                    assertEquals("scope-scope-54:25:8.0.3, scope-scope-58:37:8.0.3", scopes);
+                    if (d.iteration() >= 2) {
+                        assertEquals(5, d.evaluationResult().changeData().size());
+                        String scopes = d.evaluationResult().changeData().keySet().stream()
+                                .filter(v -> v instanceof FieldReference fr && "split".equals(fr.fieldInfo.name))
+                                .map(v -> ((FieldReference) v).scope.toString())
+                                .sorted().collect(Collectors.joining(", "));
+                        assertEquals("scope-scope-54:25:8.0.3, scope-scope-58:37:8.0.3", scopes);
+                    }
+                }
+                if ("8.0.4.0.0".equals(d.statementId())) {
+                    String expected = d.iteration() < 2 ? "<m:combine>" :
+                            "Forward.combine(outputElement instanceof Symbol symbol?Forward.combine(lastOneWasSpace$8,list.get(pos$8)/*(Symbol)*/.left().elementarySpace(options)):nullable instance type ElementarySpace,list.get(pos$8)/*(Space)*/.elementarySpace(options))";
+                    assertEquals(expected, d.evaluationResult().value().toString());
                 }
             }
         };
@@ -83,7 +95,7 @@ public class Test_Output_03_FormatterForward extends CommonTestRunner {
                 String expected = d.iteration() == 0 ? "<instanceOf:Symbol>?<dv:scope-scope-54:25:8.0.3.split>:<vl:split>"
                         : "outputElement instanceof Symbol symbol?scope-scope-54:25:8.0.3.split:nullable instance type Split";
                 if ("8.0.3.0.0".equals(d.statementId()) || "8.0.3.0.5".equals(d.statementId())) {
-                    String v = d.iteration() == 0 ? "<f:symbol.left().split>" : "`list.get(pos$8)/*(Symbol)*/.left`.split";
+                    String v = d.iteration() == 0 ? "<f:symbol.left().split>" : "(list.get(pos$8)/*(Symbol)*/.left()).split";
                     assertEquals(v, d.currentValue().toString());
                 }
                 // transitioning from 8.0.3.0.0->5 to 8.0.3, we see that symbol is expanded in the scope
@@ -95,7 +107,8 @@ public class Test_Output_03_FormatterForward extends CommonTestRunner {
                     String v = switch (d.iteration()) {
                         case 0 -> "<instanceOf:Symbol>?<dv:scope-scope-54:25:8.0.3.split>:<vl:split>";
                         case 1 -> "<new:ForwardInfo>";
-                        default -> "outputElement instanceof Symbol symbol?scope-scope-54:25:8.0.3.split:nullable instance type Split";
+                        default ->
+                                "outputElement instanceof Symbol symbol?scope-scope-54:25:8.0.3.split:nullable instance type Split";
                     };
                     assertEquals(v, d.currentValue().toString());
                 }
@@ -122,6 +135,25 @@ public class Test_Output_03_FormatterForward extends CommonTestRunner {
                 if ("8.0.4.1.0.0.1".equals(d.statementId())) {
                     assertTrue(d.variableInfoContainer().hasEvaluation());
                     assertTrue(d.variableInfoContainer().hasMerge());
+                }
+            }
+            if (d.variable() instanceof ParameterInfo pi && "options".equals(pi.name)) {
+                if ("8.0.2".equals(d.statementId())) {
+                    assertEquals(OPTIONS, d.currentValue().toString());
+                }
+                if ("8.0.3.0.0".equals(d.statementId())) {
+                    assertEquals(OPTIONS, d.currentValue().toString());
+                }
+                if ("8.0.3.0.5".equals(d.statementId())) {
+                    String value = d.iteration() < 2 ? "<p:options>" : OPTIONS;
+                    assertEquals(value, d.currentValue().toString());
+                }
+                if ("8.0.3".equals(d.statementId())) {
+                    VariableInfo vi1 = d.variableInfoContainer().getPreviousOrInitial();
+                    assertTrue(d.variableInfoContainer().isPrevious());
+                    assertEquals(OPTIONS, vi1.getValue().toString());
+                    String value = d.iteration() < 2 ? "<p:options>" : OPTIONS;
+                    assertEquals(value, d.currentValue().toString());
                 }
             }
         };

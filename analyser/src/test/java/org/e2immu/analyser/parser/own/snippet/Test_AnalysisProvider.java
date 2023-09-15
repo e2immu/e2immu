@@ -123,8 +123,9 @@ public class Test_AnalysisProvider extends CommonTestRunner {
             if ("apply".equals(d.methodInfo().name) && "$5".equals(d.methodInfo().typeInfo.simpleName)) {
                 String expected = switch (d.iteration()) {
                     case 0, 1 -> "Precondition[expression=<precondition>, causes=[]]";
-                    case 2 -> "Precondition[expression=<inline>, causes=[]]";
-                    default -> "Precondition[expression=1==`cause`.priority, causes=[methodCall:containsCauseOfDelay]]";
+                    case 2, 3 -> "Precondition[expression=<inline>, causes=[]]";
+                    default ->
+                            "Precondition[expression=AnalysisProvider_0.highPriority(Cause.TYPE_ANALYSIS), causes=[methodCall:containsCauseOfDelay]]";
                 };
                 assertEquals(expected, d.statementAnalysis().stateData().getPrecondition().toString());
             }
@@ -143,8 +144,9 @@ public class Test_AnalysisProvider extends CommonTestRunner {
                 }
                 if ("8".equals(d.statementId())) {
                     String expected = switch (d.iteration()) {
-                        case 0, 1, 2 -> "!<m:isEmpty>&&<m:isAtLeastE2Immutable>";
-                        case 3, 4 -> "!parameterizedType.parameters.isEmpty()&&<m:isAtLeastE2Immutable>";
+                        case 0, 1, 2, 3 -> "!<m:isEmpty>&&<m:isAtLeastE2Immutable>";
+                        case 4 ->
+                                "!<m:isEmpty>&&this.isAtLeastE2Immutable(dynamicValue.max(this.getTypeAnalysisNullWhenAbsent(parameterizedType.bestTypeInfo()).getProperty(AnalysisProvider_0.IMMUTABLE)))";
                         default ->
                                 "!parameterizedType.parameters.isEmpty()&&this.isAtLeastE2Immutable(`dynamicValue.value`>=`this.getTypeAnalysisNullWhenAbsent(`parameterizedType.bestTypeInfo`).getProperty(AnalysisProvider_0.IMMUTABLE).value`?dynamicValue:this.getTypeAnalysisNullWhenAbsent(`parameterizedType.bestTypeInfo`).getProperty(AnalysisProvider_0.IMMUTABLE))";
                     };
@@ -159,9 +161,7 @@ public class Test_AnalysisProvider extends CommonTestRunner {
                                 "constructor-to-instance@Method_defaultImmutable_4-E;initial:parameterizedType.arrays@Method_defaultImmutable_1-C;initial:parameterizedType@Method_defaultImmutable_1-E;initial:this.value@Method_isDone_0-C;srv@Method_bestTypeInfo;srv@Method_isDone";
                         case 2 ->
                                 "cm@Parameter_name;constructor-to-instance@Method_defaultImmutable_4-E;initial:parameterizedType.arrays@Method_defaultImmutable_1-C;initial:parameterizedType@Method_defaultImmutable_1-E;initial:this.value@Method_isDone_0-C;mom@Parameter_name;srv@Method_bestTypeInfo;srv@Method_isDone";
-                        case 3 ->
-                                "cm@Parameter_name;de:baseValue@Method_defaultImmutable_6-E;mom@Parameter_name;srv@Method_bestTypeInfo";
-                        case 4 -> "initial@Field_EFFECTIVELY_E2IMMUTABLE_DV;initial@Field_NOT_INVOLVED_DV";
+                        case 3, 4, 5 -> "[22 delays]";
                         default -> "CONDITIONALLY:1";
                     };
                     assertEquals(reached, d.statementAnalysis().flowData().getGuaranteedToBeReachedInMethod().toString());
@@ -169,7 +169,7 @@ public class Test_AnalysisProvider extends CommonTestRunner {
                 if ("8.0.2".equals(d.statementId())) {
                     String expected = switch (d.iteration()) {
                         case 0, 1, 2, 3 -> "<m:valueIsTrue>";
-                        case 4 -> "<c:boolean>";
+                        case 4, 5 -> "<c:boolean>";
                         default ->
                                 "1==`this.getTypeAnalysisNullWhenAbsent(`parameterizedType.bestTypeInfo`).immutableCanBeIncreasedByTypeParameters().value`";
                     };
@@ -183,7 +183,7 @@ public class Test_AnalysisProvider extends CommonTestRunner {
             if ("containsCauseOfDelay".equals(d.methodInfo().name)) {
                 String expected = d.iteration() < 2
                         ? "Precondition[expression=<precondition>, causes=[escape]]"
-                        : "Precondition[expression=1==cause.priority, causes=[escape]]";
+                        : "Precondition[expression=AnalysisProvider_0.highPriority(cause), causes=[escape]]";
                 assertEquals(expected, d.methodAnalysis().getPrecondition().toString());
             }
         };
@@ -193,24 +193,28 @@ public class Test_AnalysisProvider extends CommonTestRunner {
             }
             if ("EFFECTIVELY_E1IMMUTABLE_DV".equals(d.fieldInfo().name)) {
                 assertEquals(d.iteration() > 0, d.fieldAnalysis().getLinkedVariables().isDone());
-                assertDv(d, 5, DV.FALSE_DV, Property.MODIFIED_OUTSIDE_METHOD);
-                assertDv(d, 5, MultiLevel.NOT_CONTAINER_DV, Property.CONTAINER_RESTRICTION);
-                String expected = d.iteration() < 4 ? "<f:EFFECTIVELY_E1IMMUTABLE_DV>" : "instance type DV";
+                assertDv(d, 20, DV.FALSE_DV, Property.MODIFIED_OUTSIDE_METHOD);
+                assertDv(d, 20, MultiLevel.NOT_CONTAINER_DV, Property.CONTAINER_RESTRICTION);
+                String expected = d.iteration() < 2 ? "<f:EFFECTIVELY_E1IMMUTABLE_DV>" : "new DV(5,List.of(Cause.C1))";
                 assertEquals(expected, d.fieldAnalysis().getValue().toString());
 
-                assertDv(d, 2, MultiLevel.EFFECTIVELY_FINAL_FIELDS_DV, Property.EXTERNAL_IMMUTABLE);
-                assertDv(d, 3, MultiLevel.INDEPENDENT_DV, Property.INDEPENDENT);
+                assertDv(d, 2, MultiLevel.EFFECTIVELY_IMMUTABLE_DV, Property.EXTERNAL_IMMUTABLE);
+                assertDv(d, 2, MultiLevel.INDEPENDENT_DV, Property.INDEPENDENT);
                 assertDv(d, 4, MultiLevel.CONTAINER_DV, Property.CONTAINER);
                 assertDv(d, 0, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.EXTERNAL_NOT_NULL);
                 assertDv(d, 0, MultiLevel.NOT_IGNORE_MODS_DV, Property.EXTERNAL_IGNORE_MODIFICATIONS);
             }
         };
+
+        BreakDelayVisitor breakDelayVisitor = d -> assertEquals("--------M--M--MF-MF----", d.delaySequence());
+
         testClass("AnalysisProvider_0", 0, 5,
                 new DebugConfiguration.Builder()
-                        //     .addStatementAnalyserVisitor(statementAnalyserVisitor)
-                        //     .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                        //   .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                        //  .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                         //     .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-                        //    .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+                        .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+                        .addBreakDelayVisitor(breakDelayVisitor)
                         .build(),
                 new AnalyserConfiguration.Builder()
                         .setComputeFieldAnalyserAcrossAllMethods(true)
@@ -245,14 +249,14 @@ public class Test_AnalysisProvider extends CommonTestRunner {
             if ("apply".equals(d.methodInfo().name) && "$4".equals(d.methodInfo().typeInfo.simpleName)) {
                 assertEquals("0", d.statementId()); // pt -> defaultImmutable(pt, true)
                 if ("typeAnalysis".equals(d.variableName())) {
-                    assertTrue(d.variableInfoContainer().hasEvaluation());
+                    assertFalse(d.variableInfoContainer().hasEvaluation());
                     assertLinked(d, it0("NOT_YET_SET"),
                             it(1, 2, "AnalysisProvider_1.EFFECTIVELY_E2IMMUTABLE_DV:-1,AnalysisProvider_1.IMMUTABLE:-1,AnalysisProvider_1.NOT_INVOLVED_DV:-1,baseValue:-1,bestType:-1,doSum:-1,dynamicBaseValue:-1,dynamicValue:-1,parameterizedType:-1,this:-1"),
                             it(3, 3, "AnalysisProvider_1.EFFECTIVELY_E2IMMUTABLE_DV:-1,AnalysisProvider_1.IMMUTABLE:-1,AnalysisProvider_1.NOT_INVOLVED_DV:-1,baseValue:-1,doSum:-1,dynamicBaseValue:-1,dynamicValue:-1,this:-1"),
                             it(4, "baseValue:2,doSum:2,this:2"));
 
                     assertFalse(d.variableInfoContainer().hasMerge());
-                    assertDv(d, 4, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                    assertDv(d, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                 }
             }
         };

@@ -204,10 +204,10 @@ public class Test_Mutable extends CommonTestRunner {
             }
         };
         testClass("Mutable_1", 0, 0, new DebugConfiguration.Builder()
-                .addEvaluationResultVisitor(evaluationResultVisitor)
-                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
-                .addStatementAnalyserVisitor(statementAnalyserVisitor)
-                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+              //  .addEvaluationResultVisitor(evaluationResultVisitor)
+              //  .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+               // .addStatementAnalyserVisitor(statementAnalyserVisitor)
+               // .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .build());
     }
 

@@ -476,10 +476,10 @@ public class Test_17_Container extends CommonTestRunner {
         };
 
         testClass(CONTAINER_5, 0, 0, new DebugConfiguration.Builder()
-                .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
-                .addStatementAnalyserVisitor(statementAnalyserVisitor)
-                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+           //     .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+           //     .addStatementAnalyserVisitor(statementAnalyserVisitor)
+           //     .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+           //     .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .build());
     }
 

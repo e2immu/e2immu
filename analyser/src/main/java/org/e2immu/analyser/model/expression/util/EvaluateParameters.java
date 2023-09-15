@@ -263,7 +263,9 @@ public class EvaluateParameters {
                                                        Variable theVariable,
                                                        DV dvLink,
                                                        Variable variable) {
-        if (variable instanceof This || variable instanceof ReturnVariable
+        if (variable instanceof This
+                || variable instanceof ParameterInfo // because they are always an instance anyway
+                || variable instanceof ReturnVariable
                 || !variableIsRecursivelyPresentOrField(context.evaluationContext(), variable)) {
             return false;
         }
