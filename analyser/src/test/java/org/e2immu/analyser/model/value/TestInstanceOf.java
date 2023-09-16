@@ -97,4 +97,12 @@ public class TestInstanceOf extends CommonAbstractValue {
         Expression and = newAndAppend(e2, e1);
         assertEquals("an instanceof Boolean", and.toString());
     }
+
+    @Test
+    public void test6() {
+        Expression e1 = instanceOf(an, new ParameterizedType(PRIMITIVES.boxedBooleanTypeInfo(), 0));
+        Expression e2 = equals(NullConstant.NULL_CONSTANT, an);
+        Expression and = newAndAppend(e2, e1);
+        assertEquals("false", and.toString());
+    }
 }

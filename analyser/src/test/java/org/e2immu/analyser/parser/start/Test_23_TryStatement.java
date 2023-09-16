@@ -254,7 +254,7 @@ public class Test_23_TryStatement extends CommonTestRunner {
     public void test_10() throws IOException {
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("method".equals(d.methodInfo().name)) {
-                assertEquals("Precondition[expression=null==this.catchThrowable(), causes=[escape]]",
+                assertEquals("Precondition[expression=null==this.catchThrowable(), causes=[escape, escape]]",
                         d.methodAnalysis().getPrecondition().toString());
             }
         };

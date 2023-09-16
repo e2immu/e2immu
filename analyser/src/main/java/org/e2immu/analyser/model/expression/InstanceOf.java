@@ -182,29 +182,10 @@ public class InstanceOf extends BaseExpression implements Expression {
                     instance.parameterizedType()), context);
             return builder.compose(er).setExpression(er.value()).build();
         }
-        if (value.isInstanceOf(MethodCall.class)) {
-            return builder.setExpression(this).build(); // no clue, too deep
-        }
 
-        InstanceOf newInstanceOf = new InstanceOf(identifier,
-                primitives, parameterizedType, evaluationResult.getExpression(), null);
-
-        // whatever it is, it is not null; we're more interested in that, than it its type which is guarded by the compiler
-        DV evalNotNull = context.evaluationContext().isNotNull0(value, false, forwardEvaluationInfo);
-        if (evalNotNull.valueIsTrue()) {
-            return builder.setExpression(newInstanceOf).build();
-        }
-        Expression notNull;
-        Expression original = Negation.negate(context,
-                Equals.equals(identifier, context, value, NullConstant.NULL_CONSTANT, forwardEvaluationInfo));
-        if (evalNotNull.valueIsFalse()) {
-            notNull = original;
-        } else {
-            notNull = DelayedExpression.forNullCheck(getIdentifier(), primitives, original, evalNotNull.causesOfDelay());
-        }
-        return builder
-                .setExpression(And.and(context, newInstanceOf, notNull))
-                .build();
+        InstanceOf newInstanceOf = new InstanceOf(identifier, primitives, parameterizedType,
+                evaluationResult.getExpression(), null);
+        return builder.setExpression(newInstanceOf).build();
     }
 
     @Override

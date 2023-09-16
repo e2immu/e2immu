@@ -423,7 +423,6 @@ public class And extends ExpressionCanBeTooComplex {
                     return Action.FALSE;
                 }
             }
-            return Action.ADD;
         }
         return null;
     }
@@ -637,6 +636,15 @@ public class And extends ExpressionCanBeTooComplex {
                 && eq.rhs instanceof VariableExpression ve && ve.variable().equals(iv.variable())) {
             // remove previous
             return Action.REPLACE;
+        }
+        // null == a && a instanceof B
+        if (value instanceof InstanceOf i
+                && i.expression() instanceof VariableExpression iv
+                && prev instanceof Equals eq
+                && eq.lhs.isNullConstant()
+                && eq.rhs instanceof VariableExpression ve && ve.variable().equals(iv.variable())) {
+            // remove previous
+            return Action.FALSE;
         }
         return null;
     }

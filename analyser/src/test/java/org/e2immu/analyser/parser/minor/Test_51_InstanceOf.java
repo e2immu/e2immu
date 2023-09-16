@@ -276,10 +276,9 @@ public class Test_51_InstanceOf extends CommonTestRunner {
                 .build());
     }
 
-    @Disabled("transfer from null property to parameter failing")
     @Test
     public void test_6() throws IOException {
-        testClass("InstanceOf_6", 3, 0, new DebugConfiguration.Builder()
+        testClass("InstanceOf_6", 2, 0, new DebugConfiguration.Builder()
                 .build());
     }
 
@@ -289,7 +288,6 @@ public class Test_51_InstanceOf extends CommonTestRunner {
                 .build());
     }
 
-    @Disabled("transfer from null property to parameter failing")
     @Test
     public void test_8() throws IOException {
         EvaluationResultVisitor evaluationResultVisitor = d -> {
@@ -308,7 +306,7 @@ public class Test_51_InstanceOf extends CommonTestRunner {
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("method".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof ParameterInfo pi && "in".equals(pi.name)) {
-                    assertDv(d, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.CONTEXT_NOT_NULL);
+                    assertDv(d, MultiLevel.NULLABLE_DV, Property.CONTEXT_NOT_NULL);
                 }
                 if (d.variable() instanceof ReturnVariable) {
                     if ("0".equals(d.statementId())) {
@@ -716,15 +714,14 @@ public class Test_51_InstanceOf extends CommonTestRunner {
                 new AnalyserConfiguration.Builder().setComputeFieldAnalyserAcrossAllMethods(true).build());
     }
 
-    @Disabled("null check of variable d has gone missing")
+    //  @Disabled("null check of variable d has gone missing")
     @Test
     public void test_11() throws IOException {
         EvaluationResultVisitor evaluationResultVisitor = d -> {
             if ("0.0.1.0.0".equals(d.statementId())) {
                 EvaluationResult.ChangeData cd = d.findValueChangeBySubString("evaluationContext");
                 String linked = switch (d.iteration()) {
-                    case 0 -> "evaluationContext:0,sum:-1,this.expression:-1,this:-1,v:-1";
-                    case 1, 2 -> "sum:-1,this.expression:-1,this:-1,v:-1";
+                    case 0, 1, 2 -> "sum:-1,this.expression:-1,this:-1,v:-1";
                     case 3, 4, 5, 6, 7, 8 -> "v:-1";
                     default -> "";
                 };
@@ -735,18 +732,16 @@ public class Test_51_InstanceOf extends CommonTestRunner {
             if ("method".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof ParameterInfo p && "evaluationContext".equals(p.name)) {
                     if ("0.0.0".equals(d.statementId())) {
-                        assertDv(d, 1, MultiLevel.NOT_CONTAINER_DV, Property.CONTAINER);
+                        assertDv(d, MultiLevel.NOT_CONTAINER_DV, Property.CONTAINER);
                         assertDv(d, MultiLevel.NOT_CONTAINER_DV, Property.CONTEXT_CONTAINER);
-                        String expected = d.iteration() == 0 ? "<p:evaluationContext>"
-                                : "nullable instance type EvaluationContext/*@Identity*/";
+                        String expected = "nullable instance type EvaluationContext/*@Identity*/";
                         assertEquals(expected, d.currentValue().toString());
                     }
 
                     if ("0.0.1.0.0".equals(d.statementId())) {
                         // 0.0.1-E
                         VariableInfo initial = d.variableInfoContainer().getPreviousOrInitial();
-                        String initialValue = d.iteration() == 0 ? "<p:evaluationContext>"
-                                : "nullable instance type EvaluationContext/*@Identity*/";
+                        String initialValue = "nullable instance type EvaluationContext/*@Identity*/";
                         assertEquals(initialValue, initial.getValue().toString());
 
                         String expectLv = d.iteration() < 9 ? "d:-1,sum:-1,this.expression:-1,this:-1,v:-1" : "";
