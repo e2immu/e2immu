@@ -1244,8 +1244,10 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
             boolean internalCycle = methodInfo.methodResolution.get().ignoreMeBecauseOfPartOfCallCycle();
 
             if (Property.IMMUTABLE == property) {
-                DV dynamic = dynamicImmutable(formal, methodAnalysis, context);
-                return internalCycle ? dynamic.maxIgnoreDelay(property.falseDv) : dynamic;
+                DynamicImmutableOfMethod dynamic = new DynamicImmutableOfMethod(context, methodInfo,
+                        parameterExpressions, concreteReturnType);
+                DV dv = dynamic.dynamicImmutable(formal, methodAnalysis);
+                return internalCycle ? dv.maxIgnoreDelay(property.falseDv) : dv;
             }
 
             if (Property.INDEPENDENT == property) {
@@ -1271,76 +1273,6 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         return formal;
     }
 
-    private DV dynamicImmutable(DV formal, MethodAnalysis methodAnalysis, EvaluationResult context) {
-        DV identity = methodAnalysis.getProperty(Property.IDENTITY);
-        if (identity.isDelayed()) return identity;
-        if (identity.valueIsTrue()) {
-            return context.evaluationContext().getProperty(parameterExpressions.get(0), Property.IMMUTABLE,
-                    true, true);
-        }
-        AnalyserContext analyserContext = context.getAnalyserContext();
-        MethodInspection methodInspection = analyserContext.getMethodInspection(methodInfo);
-
-        /*
-        There is one situation where we need to deviate from the value of the concrete return type: when we know
-        through analysis of the statement, that the dynamic immutable value is higher than the formal one.
-
-        E2Immutable_11: method firstEntry() should be immutable, rather than mutable. Must go through the
-        immutableDeterminedByTypeParameters() code!
-
-        Enum_6: method returnTwo must return mutable, even if the formal=dynamic value is higher
-        MethodReferences_3: method stream() must return mutable: the type parameter is mutable, formal=dynamic is higher
-         */
-        DV dynamicImmutable = methodAnalysis.getProperty(Property.IMMUTABLE);
-        if (MultiLevel.isAtLeastEventuallyRecursivelyImmutable(dynamicImmutable)) return dynamicImmutable;
-        DV normalImmutable = analyserContext.typeImmutable(methodInspection.getReturnType());
-        DV concreteImmutable = analyserContext.typeImmutable(concreteReturnType);
-        CausesOfDelay causes = dynamicImmutable.causesOfDelay().merge(normalImmutable.causesOfDelay())
-                .merge(concreteImmutable.causesOfDelay());
-        if (causes.isDelayed()) return causes;
-        if (dynamicImmutable.equals(normalImmutable)) {
-            /*
-             there is no difference between the immutability of a method and the immutability of its return type,
-             so we don't have to do any acrobatics
-             */
-            return concreteImmutable;
-        }
-        assert MultiLevel.isMutable(normalImmutable);
-        Inference inference = inferImmutable(analyserContext, concreteReturnType);
-        if (inference.causes.isDelayed()) return inference.causes;
-        return analyserContext.typeImmutable(concreteReturnType, inference.map);
-    }
-
-    private record Inference(CausesOfDelay causes, Map<ParameterizedType, DV> map) {
-    }
-
-    private static final Inference EMPTY = new Inference(CausesOfDelay.EMPTY, Map.of());
-
-    private Inference inferImmutable(AnalyserContext analyserContext, ParameterizedType type) {
-        if (type.typeInfo == null) return EMPTY;
-        DV immutable = analyserContext.typeImmutable(type);
-        if (immutable.isDelayed()) return new Inference(immutable.causesOfDelay(), Map.of());
-        if (MultiLevel.isAtLeastEventuallyRecursivelyImmutable(immutable)) return EMPTY;
-
-        Map<ParameterizedType, DV> map = new HashMap<>();
-        map.put(type, MultiLevel.EFFECTIVELY_IMMUTABLE_HC_DV);
-        CausesOfDelay causes = CausesOfDelay.EMPTY;
-        if (MultiLevel.isMutable(immutable)) {
-            /*
-             all parameter types must be at least immutable_hc, for the main type to be immutable_hc; so we add them, unless
-             they're obviously recursively immutable
-             */
-            for (ParameterizedType parameter : type.parameters) {
-                Inference inference = inferImmutable(analyserContext, parameter);
-                if (inference.causes.isDelayed()) {
-                    causes = causes.merge(inference.causes);
-                } else {
-                    map.putAll(inference.map);
-                }
-            }
-        }
-        return new Inference(causes, map);
-    }
 
     /*
     In general, the method result 'a', in 'a = b.method(c, d)', can link to 'b', 'c' and/or 'd'.

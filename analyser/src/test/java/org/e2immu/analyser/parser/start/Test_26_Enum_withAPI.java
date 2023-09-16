@@ -221,7 +221,6 @@ public class Test_26_Enum_withAPI extends CommonTestRunner {
                 .build());
     }
 
-    //@Disabled("Incorrect immutability")
     @Test
     public void test6() throws IOException {
         EvaluationResultVisitor evaluationResultVisitor = d -> {
