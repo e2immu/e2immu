@@ -85,7 +85,8 @@ public class LinkParameters {
     private static List<LinkedVariables> additionalLinkingFunctionalInterface2(EvaluationResult context,
                                                                                Expression parameterExpression,
                                                                                Expression parameterValue) {
-        MethodTypeParameterMap sam = parameterExpression.returnType().findSingleAbstractMethodOfInterface(InspectionProvider.DEFAULT);
+        MethodTypeParameterMap sam = parameterExpression.returnType()
+                .findSingleAbstractMethodOfInterface(context.getAnalyserContext());
         assert sam != null;
         MethodInfo methodInfo;
         TypeInfo nestedType;

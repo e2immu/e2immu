@@ -517,7 +517,7 @@ public class ComputedParameterAnalyser extends ParameterAnalyserImpl {
                 && map.values().stream().allMatch(LinkedVariables::isAssigned)) {
             DV immutable = analyserContext.typeImmutable(parameterInfo.parameterizedType);
             Map<Variable, DV> map2 = map.entrySet().stream().collect(Collectors
-                    .toUnmodifiableMap(e -> new FieldReference(InspectionProvider.DEFAULT, e.getKey()), Map.Entry::getValue));
+                    .toUnmodifiableMap(e -> new FieldReference(analyserContext, e.getKey()), Map.Entry::getValue));
             DV independent = independentFromFields(immutable, map2);
             parameterAnalysis.setProperty(INDEPENDENT, independent);
             if (independent.isDelayed()) {

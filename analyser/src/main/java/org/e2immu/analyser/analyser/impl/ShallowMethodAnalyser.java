@@ -532,7 +532,7 @@ public class ShallowMethodAnalyser extends MethodAnalyserImpl {
 
     private DV bestOfParameterOverrides(ParameterInfo parameterInfo, Property property) {
         return methodInfo.methodResolution.get().overrides().stream()
-                .filter(mi -> mi.analysisAccessible(InspectionProvider.DEFAULT))
+                .filter(mi -> mi.analysisAccessible(analyserContext))
                 .map(mi -> {
                     ParameterInfo p = mi.methodInspection.get().getParameters().get(parameterInfo.index);
                     ParameterAnalysis pa = analyserContext.getParameterAnalysis(p);

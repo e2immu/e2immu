@@ -172,13 +172,13 @@ public class InstanceOf extends BaseExpression implements Expression {
         }
         VariableExpression ve;
         if ((ve = value.asInstanceOf(VariableExpression.class)) != null) {
-            if (parameterizedType.isAssignableFrom(InspectionProvider.defaultFrom(primitives), ve.variable().parameterizedType())) {
+            if (parameterizedType.isAssignableFrom(context.getAnalyserContext(), ve.variable().parameterizedType())) {
                 return builder.setExpression(new BooleanConstant(primitives, true)).build();
             }
         }
         Instance instance;
         if ((instance = value.asInstanceOf(Instance.class)) != null) {
-            EvaluationResult er = BooleanConstant.of(parameterizedType.isAssignableFrom(InspectionProvider.defaultFrom(primitives),
+            EvaluationResult er = BooleanConstant.of(parameterizedType.isAssignableFrom(context.getAnalyserContext(),
                     instance.parameterizedType()), context);
             return builder.compose(er).setExpression(er.value()).build();
         }

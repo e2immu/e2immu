@@ -44,7 +44,7 @@ public record ComputeIndependent(AnalyserContext analyserContext,
     the value chosen here in case of "isMyself" has an impact, obviously; see e.g. Container_7, E2Immutable_15
      */
     private DV typeImmutable(ParameterizedType pt) {
-        if (myselfIsMutable && currentType.isMyself(pt, InspectionProvider.DEFAULT)) {
+        if (myselfIsMutable && currentType.isMyself(pt, analyserContext)) {
             return MultiLevel.MUTABLE_DV;
         }
         return analyserContext.typeImmutable(pt);

@@ -444,7 +444,7 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
         if (methodInspection.getMethodInfo().inConstruction()) return false;
         if (methodInspection.isStatic()) return false;
         return !methodInspection.getMethodInfo().typeInfo
-                .recursivelyInConstructionOrStaticWithRespectTo(InspectionProvider.DEFAULT, typeInfo);
+                .recursivelyInConstructionOrStaticWithRespectTo(analyserContext, typeInfo);
     }
 
     /*
@@ -678,10 +678,10 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
                     ParameterAnalysis parameterAnalysis = analyserContext.getParameterAnalysis(parameterInfo);
                     DV modified = parameterAnalysis.getProperty(Property.MODIFIED_VARIABLE);
                     if (modified.isDelayed() && methodAnalyser.hasCode()) {
-                        TypeInfo firstStaticEnclosingType = this.typeInfo.firstStaticEnclosingType(InspectionProvider.DEFAULT);
+                        TypeInfo firstStaticEnclosingType = this.typeInfo.firstStaticEnclosingType(analyserContext);
                         TypeInfo ptType = parameterInfo.parameterizedType.typeInfo;
                         if (ptType != null
-                                && ptType.firstStaticEnclosingType(InspectionProvider.DEFAULT).equals(firstStaticEnclosingType)) {
+                                && ptType.firstStaticEnclosingType(analyserContext).equals(firstStaticEnclosingType)) {
                             /*
                              self... we'll occasionally be shooting ourselves in the foot!
                              without the value property CONTAINER, we have no value, which may delay MODIFIED...
@@ -758,14 +758,14 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
         boolean inconclusive = false;
         DV valueFromFields = myFieldAnalysers.stream()
                 .filter(fa -> !fa.getFieldInfo().fieldInspection.get().isPrivate())
-                .filter(fa -> !typeInfo.isMyself(fa.getFieldInfo().type, InspectionProvider.DEFAULT))
+                .filter(fa -> !typeInfo.isMyself(fa.getFieldInfo().type, analyserContext))
                 .map(fa -> independenceOfField(fa.getFieldAnalysis()))
                 .reduce(MultiLevel.INDEPENDENT_DV, DV::min);
         if (valueFromFields.isDelayed()) {
             if (sharedState.breakDelayLevel().acceptType()) {
                 valueFromFields = myFieldAnalysers.stream()
                         .filter(fa -> !fa.getFieldInfo().fieldInspection.get().isPrivate())
-                        .filter(fa -> !typeInfo.isMyself(fa.getFieldInfo().type, InspectionProvider.DEFAULT))
+                        .filter(fa -> !typeInfo.isMyself(fa.getFieldInfo().type, analyserContext))
                         .map(fa -> independenceOfField(fa.getFieldAnalysis()))
                         .filter(DV::isDone)
                         .reduce(MultiLevel.INDEPENDENT_DV, DV::min);
@@ -861,9 +861,9 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
     }
 
     private boolean parameterNotOfSelfType(ParameterAnalysis pa) {
-        TypeInfo firstStaticEnclosingType = typeInfo.firstStaticEnclosingType(InspectionProvider.DEFAULT);
+        TypeInfo firstStaticEnclosingType = typeInfo.firstStaticEnclosingType(analyserContext);
         TypeInfo ptType = pa.getParameterInfo().parameterizedType.typeInfo;
-        if (ptType != null && ptType.firstStaticEnclosingType(InspectionProvider.DEFAULT).equals(firstStaticEnclosingType)) {
+        if (ptType != null && ptType.firstStaticEnclosingType(analyserContext).equals(firstStaticEnclosingType)) {
             LOGGER.debug("Skip parameter {} for independent computation, of self type", pa);
             return false; // skip!!
         }

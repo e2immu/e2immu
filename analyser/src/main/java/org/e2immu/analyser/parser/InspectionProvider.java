@@ -41,6 +41,7 @@ public interface InspectionProvider {
         }
     };
 
+    // RESTRICTED TO TESTING ONLY!
     static InspectionProvider defaultFrom(Primitives primitives) {
         return new InspectionProvider() {
             @Override
@@ -79,6 +80,6 @@ public interface InspectionProvider {
 
     @NotNull
     default MethodInspection.Builder newMethodInspectionBuilder(Identifier identifier, TypeInfo typeInfo, String methodName) {
-        throw new UnsupportedOperationException("Not implemented in "+getClass());
+        throw new UnsupportedOperationException("Not implemented in " + getClass());
     }
 }

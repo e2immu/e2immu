@@ -882,7 +882,7 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
             return worstOverValues.causesOfDelay(); //DELAY EXIT POINT
         }
 
-        if (MultiLevel.MUTABLE_DV.equals(worstOverValues) && fieldInfo.owner.isMyself(fieldInfo.type, InspectionProvider.DEFAULT)) {
+        if (MultiLevel.MUTABLE_DV.equals(worstOverValues) && fieldInfo.owner.isMyself(fieldInfo.type, analyserContext)) {
             if (staticallyImmutable.isDelayed()) {
                 LOGGER.debug("Delaying @Immutable on {}, self-type, waiting for immutable of type", fieldInfo);
             } else {

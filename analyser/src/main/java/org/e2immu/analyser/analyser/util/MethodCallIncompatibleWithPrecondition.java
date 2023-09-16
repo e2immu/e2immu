@@ -126,7 +126,7 @@ public class MethodCallIncompatibleWithPrecondition {
 
                             TypeAnalysis typeAnalysis = analyserContext.getTypeAnalysis(methodCall.methodInfo.typeInfo);
                             MethodInfo aspectMethod = typeAnalysis.getAspects().get(companionMethodName.aspect());
-                            This thisVar = new This(InspectionProvider.DEFAULT, aspectMethod.typeInfo);
+                            This thisVar = new This(analyserContext, aspectMethod.typeInfo);
                             TranslationMap translationMap = new TranslationMapImpl.Builder()
                                     .put(thisVar, ve.variable()).build();
                             Expression translated = value.translate(analyserContext, translationMap);
@@ -163,7 +163,7 @@ public class MethodCallIncompatibleWithPrecondition {
                         LOGGER.debug("Found invariant expression {} for method call", invariant);
 
                         TranslationMap translationMap = new TranslationMapImpl.Builder()
-                                .put(new This(InspectionProvider.DEFAULT, aspectMain.typeInfo), ve.variable()).build();
+                                .put(new This(analyserContext, aspectMain.typeInfo), ve.variable()).build();
                         Expression translated = invariant.translate(analyserContext, translationMap);
                         additionalComponents.add(translated);
                     }
