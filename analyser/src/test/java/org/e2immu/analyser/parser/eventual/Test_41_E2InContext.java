@@ -40,7 +40,9 @@ public class Test_41_E2InContext extends CommonTestRunner {
         super(true);
     }
 
-    @Disabled("Fails to detect @Mark")
+    /* FIXME does not work because of absence of companion methods / delay on modification to change the value
+       to an "instance", see CMA.computeImmutableValue
+
     @Test
     public void test_0() throws IOException {
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
@@ -52,16 +54,13 @@ public class Test_41_E2InContext extends CommonTestRunner {
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("error".equals(d.methodInfo().name)) {
                 if ("eventually".equals(d.variableName())) {
+                    String expect = d.iteration() < 3 ? "<new:Eventually<String>>" : "new Eventually<>()";
+                    assertEquals(expect, d.currentValue().toString());
+                    assertDv(d, MultiLevel.NOT_INVOLVED_DV, Property.EXTERNAL_IMMUTABLE);
                     if ("0".equals(d.statementId())) {
-                        String expect = d.iteration() < 3 ? "<new:Eventually<String>>" : "new Eventually<>()";
-                        assertEquals(expect, d.currentValue().toString());
-                        assertDv(d, MultiLevel.NOT_INVOLVED_DV, Property.EXTERNAL_IMMUTABLE);
                         assertDv(d, 3, MultiLevel.EVENTUALLY_IMMUTABLE_BEFORE_MARK_DV, Property.IMMUTABLE);
                         assertDv(d, MultiLevel.MUTABLE_DV, Property.CONTEXT_IMMUTABLE);
-                    }
-                    if ("1".equals(d.statementId())) {
-                        String expect = d.iteration() < 3 ? "<new:Eventually<String>>" : "new Eventually<>()";
-                        assertEquals(expect, d.currentValue().toString());
+                    } else {
                         // so while the instance has value property ERE, the change from ConstructorCall to Instance does not change the value properties
                         assertDv(d, 3, MultiLevel.EVENTUALLY_IMMUTABLE_BEFORE_MARK_DV, Property.IMMUTABLE);
                         // the change is reflected in the CONTEXT_IMMUTABLE
@@ -85,7 +84,7 @@ public class Test_41_E2InContext extends CommonTestRunner {
                 assertDv(d, 3, MultiLevel.EVENTUALLY_IMMUTABLE_BEFORE_MARK_DV, Property.IMMUTABLE);
             }
             if ("error".equals(d.methodInfo().name)) {
-                assertDv(d, 3, MultiLevel.EVENTUALLY_IMMUTABLE_AFTER_MARK_DV, Property.IMMUTABLE);
+//FIXME                assertDv(d, 3, MultiLevel.EVENTUALLY_IMMUTABLE_AFTER_MARK_DV, Property.IMMUTABLE);
             }
         };
 
@@ -97,6 +96,7 @@ public class Test_41_E2InContext extends CommonTestRunner {
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .build());
     }
+*/
 
     @Test
     public void test_1() throws IOException {

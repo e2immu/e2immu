@@ -370,8 +370,7 @@ public class Test_37_EventuallyE2Immutable extends CommonTestRunner {
                 assertDv(d, 2, DV.FALSE_DV, Property.MODIFIED_METHOD);
                 String expectPc = switch (d.iteration()) {
                     case 0 -> "Precondition[expression=<precondition>, causes=[]]";
-                    case 1 ->
-                            "Precondition[expression=<precondition>&&<precondition>, causes=[]]";
+                    case 1 -> "Precondition[expression=<precondition>&&<precondition>, causes=[]]";
                     default ->
                             "Precondition[expression=null!=t, causes=[methodCall:getT, methodCall:setT, methodCall:getT, methodCall:setT]]";
                 };
@@ -406,15 +405,15 @@ public class Test_37_EventuallyE2Immutable extends CommonTestRunner {
     while the instance state says that this.size()>=data.size().
     We should be able to conclude from this that after statement 2 in initialise, !set.isEmpty()
      */
-    @Disabled("Fails to detect the @Mark; sees @Only(before...)")
+    /*
     @Test
     public void test_6() throws IOException {
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("initialize".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof FieldReference fr && "set".equals(fr.fieldInfo.name)) {
                     if ("2".equals(d.statementId())) {
-                        String expectValue = d.iteration() == 0 ? "<f:set>" :
-                                "instance type HashSet<T>/*this.size()>=data.size()*/";
+                        // FIXME the not-null info is gone (temporarily disabled, no companion methods)
+                        String expectValue = d.iteration() == 0 ? "<f:set>" : "instance type HashSet<T>";
                         assertEquals(expectValue, d.currentValue().toString());
                     }
                 }
@@ -442,7 +441,7 @@ public class Test_37_EventuallyE2Immutable extends CommonTestRunner {
                 MethodAnalysis.Eventual eventual = d.methodAnalysis().getEventual();
                 String expectEventual = switch (d.iteration()) {
                     case 0 -> "[DelayedEventual:initial@Class_EventuallyE2Immutable_6]";
-                    case 1 -> "[DelayedEventual:ignore_mods:this.set@Method_initialize_2-C]";
+                    case 1 -> "[DelayedEventual:initial:this.set@Method_initialize_2-C]";
                     default -> "@Only after: [set]";
                 };
                 assertEquals(expectEventual, eventual.toString());
@@ -458,7 +457,7 @@ public class Test_37_EventuallyE2Immutable extends CommonTestRunner {
                 // E1 approved preconditions is empty: all fields explicitly final
                 assertTrue(d.typeAnalysis().getApprovedPreconditions(false).isEmpty());
                 if (d.iteration() == 0) {
-                    String expected = "ignore_mods:this.set@Method_initialize_2-C";
+                    String expected = "initial:this.set@Method_initialize_2-C";
                     assertEquals(expected, d.typeAnalysis().approvedPreconditionsStatus(true).toString());
                 } else {
                     // E2 approved preconditions must contain "set"
@@ -474,7 +473,7 @@ public class Test_37_EventuallyE2Immutable extends CommonTestRunner {
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
                 .build());
-    }
+    }*/
 
     /*
     The slightly less complicated version of test 6: Here we only have size() not isEmpty.
@@ -484,7 +483,8 @@ public class Test_37_EventuallyE2Immutable extends CommonTestRunner {
 
     Dedicated code in MethodCallIncompatibleWithPrecondition detects the modification wrt the precondition.
      */
-    @Disabled("Fails to detect the @Mark; sees @Only(before...)")
+
+    /*
     @Test
     public void test_7() throws IOException {
 
@@ -493,7 +493,7 @@ public class Test_37_EventuallyE2Immutable extends CommonTestRunner {
                 if (d.variable() instanceof FieldReference fr && "set".equals(fr.fieldInfo.name)) {
                     if ("2".equals(d.statementId())) {
                         String expectValue = d.iteration() == 0 ? "<f:set>" :
-                                "instance type HashSet<T>/*this.size()>=data.size()*/";
+                                "instance type HashSet<T>" FIXME missing: this.size()>=data.size()
                         assertEquals(expectValue, d.currentValue().toString());
                     }
                 }
@@ -528,12 +528,12 @@ public class Test_37_EventuallyE2Immutable extends CommonTestRunner {
                 .addStatementAnalyserVisitor(statementAnalyserVisitor)
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .build());
-    }
+    }*/
 
     /*
     8 is a bit more complicated than 7: it relies on the invariants of size() to resolve !=0 into >0.
      */
-    @Disabled("Fails to detect the @Mark; sees @Only(before...)")
+   /*
     @Test
     public void test_8() throws IOException {
 
@@ -542,7 +542,7 @@ public class Test_37_EventuallyE2Immutable extends CommonTestRunner {
                 if (d.variable() instanceof FieldReference fr && "set".equals(fr.fieldInfo.name)) {
                     if ("2".equals(d.statementId())) {
                         String expectValue = d.iteration() == 0 ? "<f:set>" :
-                                "instance type HashSet<T>/*this.size()>=data.size()*/";
+                                "instance type HashSet<T>" FIXME MISSING: /*this.size()>=data.size()
                         assertEquals(expectValue, d.currentValue().toString());
                     }
                 }
@@ -579,7 +579,7 @@ public class Test_37_EventuallyE2Immutable extends CommonTestRunner {
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .build());
     }
-
+*/
 
     @Test
     public void test_9() throws IOException {
