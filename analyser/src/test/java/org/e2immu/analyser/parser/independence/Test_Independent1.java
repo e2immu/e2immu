@@ -692,19 +692,19 @@ public class Test_Independent1 extends CommonTestRunner {
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("stream".equals(d.methodInfo().name)) {
                 if ("entries".equals(d.variableName()) && "0".equals(d.statementId())) {
-                    String expected = d.iteration() < 11
+                    String expected = d.iteration() == 0
                             ? "this.map:-1,this:-1"
                             : "this.map:2,this:3";
                     assertEquals(expected, d.variableInfo().getLinkedVariables().toString());
                 }
                 if ("stream".equals(d.variableName()) && "1".equals(d.statementId())) {
-                    String expected = d.iteration() < 11
+                    String expected = d.iteration() == 0
                             ? "entries:-1,this.map:-1,this:-1"
                             : "entries:4,this.map:4,this:4";
                     assertEquals(expected, d.variableInfo().getLinkedVariables().toString());
                 }
                 if (d.variable() instanceof ReturnVariable && "2".equals(d.statementId())) {
-                    String expected = d.iteration() < 11
+                    String expected = d.iteration() < 2
                             ? "entries:-1,stream:-1,this.map:-1,this:-1"
                             : "entries:4,stream:2,this.map:4,this:4";
                     assertEquals(expected, d.variableInfo().getLinkedVariables().toString());
@@ -713,20 +713,20 @@ public class Test_Independent1 extends CommonTestRunner {
 
             if ("stream2".equals(d.methodInfo().name)) {
                 if ("mapped".equals(d.variableName()) && "2".equals(d.statementId())) {
-                    String expected = d.iteration() < 11
+                    String expected = d.iteration() < 2
                             ? "entries:-1,stream:-1,this.map:-1,this:-1"
                             : "entries:4,stream:2,this.map:4,this:4";
                     assertEquals(expected, d.variableInfo().getLinkedVariables().toString());
                 }
                 if (d.variable() instanceof ReturnVariable && "3".equals(d.statementId())) {
-                    String expected = d.iteration() < 11
+                    String expected = d.iteration() < 2
                             ? "entries:-1,mapped:0,stream:-1,this.map:-1,this:-1"
                             : "entries:4,mapped:0,stream:2,this.map:4,this:4";
                     assertEquals(expected, d.variableInfo().getLinkedVariables().toString());
                 }
             }
         };
-        BreakDelayVisitor breakDelayVisitor = d -> assertEquals("-----MF-MFT--", d.delaySequence());
+        BreakDelayVisitor breakDelayVisitor = d -> assertEquals("-----", d.delaySequence());
 
         testClass("Independent1_12", 0, 2, new DebugConfiguration.Builder()
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)

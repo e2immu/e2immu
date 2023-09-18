@@ -103,7 +103,7 @@ public class Test_Support_06_AddOnceSet extends CommonTestRunner {
             if ("forEach".equals(d.methodInfo().name)) {
                 assertEquals("0", d.statementId());
                 if (d.variable() instanceof ParameterInfo pi && "consumer".equals(pi.name)) {
-                    String linked = d.iteration() < 3 ? "this.set:-1,this:-1" : "this.set:4,this:4";
+                    String linked = d.iteration() == 0 ? "this.set:-1,this:-1" : "this.set:4,this:4";
                     assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
                 }
             }

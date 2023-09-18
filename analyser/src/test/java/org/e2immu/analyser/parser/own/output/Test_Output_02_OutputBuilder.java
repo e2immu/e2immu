@@ -145,7 +145,7 @@ public class Test_Output_02_OutputBuilder extends CommonTestRunner {
                 case "Qualifier" -> "-";
                 case "Guide" -> "------";
                 case "TypeName" -> "-------";
-                case "OutputBuilder" -> "-------M-M-M--M----M-M-M-M----";
+                case "OutputBuilder" -> "--------M-M-M--M---";
                 default -> fail(d.typeInfo().simpleName + ": " + d.delaySequence());
             };
             assertEquals(s, d.delaySequence(), d.typeInfo().simpleName);

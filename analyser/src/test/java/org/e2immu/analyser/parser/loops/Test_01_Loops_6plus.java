@@ -567,8 +567,8 @@ public class Test_01_Loops_6plus extends CommonTestRunner {
                         assertTrue(d.variableInfoContainer().hasEvaluation());
                         VariableInfo eval = d.variableInfoContainer().best(Stage.EVALUATION);
                         assertLinked(d, eval.getLinkedVariables(),
-                                it(0, 9, "entry:-1,this:-1"),
-                                it(10, "entry:2,this:3"));
+                                it0("entry:-1,this:-1"),
+                                it(1, "entry:2,this:3"));
                     }
                 }
             }
@@ -613,7 +613,7 @@ public class Test_01_Loops_6plus extends CommonTestRunner {
                 assertDv(d, 3, MultiLevel.NULLABLE_DV, EXTERNAL_NOT_NULL);
             }
         };
-        BreakDelayVisitor breakDelayVisitor = d -> assertEquals("---M--MF--MFT--", d.delaySequence());
+        BreakDelayVisitor breakDelayVisitor = d -> assertEquals("---M---", d.delaySequence());
 
         testClass("Loops_17", 0, 1, new DebugConfiguration.Builder()
                         .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
@@ -648,10 +648,8 @@ public class Test_01_Loops_6plus extends CommonTestRunner {
                 if ("result".equals(d.variableName())) {
                     if ("1".equals(d.statementId())) {
                         String expected = switch (d.iteration()) {
-                            case 0 ->
-                                    "<loopIsNotEmptyCondition>?<vl:result>:new HashMap<>()";
-                            case 1 ->
-                                    "kvStore$0.entrySet().isEmpty()?new HashMap<>():<vl:result>";
+                            case 0 -> "<loopIsNotEmptyCondition>?<vl:result>:new HashMap<>()";
+                            case 1 -> "kvStore$0.entrySet().isEmpty()?new HashMap<>():<vl:result>";
                             default ->
                                     "kvStore$0.entrySet().isEmpty()?new HashMap<>():instance type Map<String,String>";
                         };
@@ -667,15 +665,13 @@ public class Test_01_Loops_6plus extends CommonTestRunner {
                     if ("1.0.0".equals(d.statementId())) {
                         assertLinked(d,
                                 it0("key:-1,this.kvStore:-1,this:-1"),
-                                it(1, 3, "this.kvStore:-1,this:-1"),
-                                it(4, "this.kvStore:2"));
+                                it(1, "this.kvStore:2,this:3"));
                         assertDv(d, 1, MultiLevel.MUTABLE_DV, IMMUTABLE);
                     }
                     if ("1.0.1.0.0".equals(d.statementId())) {
                         assertLinked(d,
                                 it0("container:-1,key:-1,this.kvStore:-1,this:-1"),
-                                it(1, 3, "this.kvStore:-1,this:-1"),
-                                it(4, "this.kvStore:2"));
+                                it(1, "this.kvStore:2,this:3"));
                     }
                 }
                 if (d.variable() instanceof FieldReference fr && "kvStore".equals(fr.fieldInfo.name)) {
@@ -684,8 +680,7 @@ public class Test_01_Loops_6plus extends CommonTestRunner {
                         assertFalse(d.variableInfoContainer().hasMerge());
 
                         assertLinked(d, it0("entry:-1,key:-1,this:-1"),
-                                it(1, 3, "entry:-1,this:-1"),
-                                it(4, "entry:2"));
+                                it(1, "entry:2,this:3"));
                     }
                     if ("1".equals(d.statementId())) {
                         assertTrue(d.variableInfoContainer().hasEvaluation());
@@ -693,13 +688,10 @@ public class Test_01_Loops_6plus extends CommonTestRunner {
 
                         assertLinked(d, eval.getLinkedVariables(),
                                 it0("entry:-1,this:-1"),
-                                it(1, 3, "entry:-1,this:-1"),
-                                it(4, "entry:2"));
+                                it(1, "entry:2,this:3"));
 
                         assertTrue(d.variableInfoContainer().hasMerge());
-                        assertLinked(d, it0("this:-1"),
-                                it(1, 3, "this:-1"),
-                                it(4, "entry:2"));
+                        assertLinked(d, it0("this:-1"), it(1, "this:3"));
                     }
                 }
             }
@@ -729,12 +721,12 @@ public class Test_01_Loops_6plus extends CommonTestRunner {
                 assertHc(d, 0, "");
             }
         };
-        BreakDelayVisitor breakDelayVisitor = d -> assertEquals("----MF--MFT--", d.delaySequence());
+        BreakDelayVisitor breakDelayVisitor = d -> assertEquals("----", d.delaySequence());
 
         // TODO see Loops_17, one warning too many
         testClass("Loops_18", 0, 2, new DebugConfiguration.Builder()
                 .addEvaluationResultVisitor(evaluationResultVisitor)
-            //    .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .addStatementAnalyserVisitor(statementAnalyserVisitor)
                 .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
                 .addBreakDelayVisitor(breakDelayVisitor)

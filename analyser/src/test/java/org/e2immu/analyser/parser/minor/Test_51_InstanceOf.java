@@ -194,17 +194,17 @@ public class Test_51_InstanceOf extends CommonTestRunner {
                 String expect = d.iteration() == 0 ? "<m:getBase>" : "base.stream()";
                 assertEquals(expect, d.methodAnalysis().getSingleReturnValue().toString());
 
-                assertDv(d, 5, MultiLevel.DEPENDENT_DV, Property.INDEPENDENT);
+                assertDv(d, 1, MultiLevel.DEPENDENT_DV, Property.INDEPENDENT);
             }
         };
 
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("InstanceOf_3".equals(d.typeInfo().simpleName)) {
-                assertDv(d, 5, MultiLevel.EFFECTIVELY_FINAL_FIELDS_DV, Property.IMMUTABLE);
+                assertDv(d, 1, MultiLevel.EFFECTIVELY_FINAL_FIELDS_DV, Property.IMMUTABLE);
             }
         };
 
-        BreakDelayVisitor breakDelayVisitor = d -> assertEquals("---MFT-", d.delaySequence());
+        BreakDelayVisitor breakDelayVisitor = d -> assertEquals("---", d.delaySequence());
 
         testClass("InstanceOf_3", 0, 1, new DebugConfiguration.Builder()
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
@@ -714,7 +714,6 @@ public class Test_51_InstanceOf extends CommonTestRunner {
                 new AnalyserConfiguration.Builder().setComputeFieldAnalyserAcrossAllMethods(true).build());
     }
 
-    @Disabled("Excessive iterations, inconclusive @Container computation")
     @Test
     public void test_11() throws IOException {
         EvaluationResultVisitor evaluationResultVisitor = d -> {
@@ -913,15 +912,15 @@ public class Test_51_InstanceOf extends CommonTestRunner {
             }
         };
 
-        BreakDelayVisitor breakDelayVisitor = d -> assertEquals("-----M-MF---", d.delaySequence());
+        BreakDelayVisitor breakDelayVisitor = d -> assertEquals("-----M-MF--", d.delaySequence());
 
         testClass("InstanceOf_11", 0, 2, new DebugConfiguration.Builder()
               //  .addEvaluationResultVisitor(evaluationResultVisitor)
              //   .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
              //   .addStatementAnalyserVisitor(statementAnalyserVisitor)
              //   .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
-            //    .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
-             //   .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                 .addBreakDelayVisitor(breakDelayVisitor)
                 .build());
     }

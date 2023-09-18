@@ -1346,7 +1346,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
                 DV immutable = context.getAnalyserContext().typeImmutable(e.getKey().parameterizedType());
                 assert e.getValue().lt(LinkedVariables.LINK_INDEPENDENT);
 
-                if (variable() instanceof This) {
+                if (e.getKey() instanceof This) {
                     /*
                      without this line, we get loops of CONTEXT_IMMUTABLE delays, see e.g., Test_Util_07_Trie
                      */
