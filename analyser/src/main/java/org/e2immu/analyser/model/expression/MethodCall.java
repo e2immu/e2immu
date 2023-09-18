@@ -474,14 +474,6 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
 
         checkCommonErrors(builder, context, concreteMethod, objectValue);
 
-        if (identifier instanceof Identifier.PositionalIdentifier &&
-                !(object instanceof VariableExpression ve && ve.variable() instanceof This
-                        && parameterValues.isEmpty())) {
-            builder.addEvaluatedExpression(identifier, builder.getExpression());
-            builder.addEvaluatedExpression(identifier, objectValue);
-            builder.addEvaluatedExpressions(identifier, parameterValues);
-        }
-
         return builder.build();
     }
 

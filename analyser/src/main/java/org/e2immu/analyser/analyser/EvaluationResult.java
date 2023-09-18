@@ -381,7 +381,6 @@ public record EvaluationResult(EvaluationContext evaluationContext,
         private int statementTime;
         private final Map<Variable, ChangeData> valueChanges = new HashMap<>();
         private Precondition precondition;
-        private final Map<Identifier, List<Expression>> evaluatedExpressions = new HashMap<>();
 
         public Builder(EvaluationResult evaluationResult) {
             this.previousResult = Objects.requireNonNull(evaluationResult);
@@ -488,16 +487,6 @@ public record EvaluationResult(EvaluationContext evaluationContext,
             EvaluationContext ec = evaluationContext.updateStatementTime(statementTime);
             return new EvaluationResult(ec, value, storedExpressions == null ? null : List.copyOf(storedExpressions),
                     causesOfDelay, messages, valueChanges, precondition);
-        }
-
-        public void addEvaluatedExpression(Identifier identifier, Expression expression) {
-            addEvaluatedExpressions(identifier, List.of(expression));
-        }
-
-        public void addEvaluatedExpressions(Identifier identifier, List<Expression> parameterValues) {
-            assert identifier instanceof Identifier.PositionalIdentifier;
-            evaluatedExpressions.merge(identifier, parameterValues,
-                    (l1, l2) -> Stream.concat(l1.stream(), l2.stream()).toList());
         }
 
         /**
