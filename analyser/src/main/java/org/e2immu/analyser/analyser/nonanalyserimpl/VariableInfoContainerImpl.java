@@ -50,6 +50,8 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
     private final FlipSwitch removed = new FlipSwitch();
     private final SetOnceMap<Property, DV> propertyOverrides;
 
+    private final FlipSwitch copyToMerge = new FlipSwitch();
+
     /*
     factory method for existing variables; potentially revert VariableDefinedOutsideLoop nature
      */
@@ -548,6 +550,17 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
     }
 
     @Override
+    public void copyInitialFrom(VariableInfo vi1) {
+        VariableInfoImpl dest = getToWrite(Stage.INITIAL);
+        assert dest != null;
+        dest.setValue(vi1.getValue());
+        vi1.getProperties().forEach((k, v) -> {
+            DV dv = dest.getProperty(k, null);
+            if (dv == null || dv.isDelayed()) dest.setProperty(k, v);
+        });
+    }
+
+    @Override
     public boolean copyFromEvalIntoMerge(GroupPropertyValues groupPropertyValues) {
         assert hasMerge();
 
@@ -652,5 +665,15 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
     public void setModificationTimeIfNotYetSet(int modificationTime, Stage stage) {
         VariableInfoImpl vii = getToWrite(stage);
         vii.setModificationTimeIfNotYetSet(modificationTime);
+    }
+
+    @Override
+    public boolean isCopyToMerge() {
+        return copyToMerge.isSet();
+    }
+
+    @Override
+    public void ensureCopyToMerge() {
+        if (!copyToMerge.isSet()) copyToMerge.set();
     }
 }

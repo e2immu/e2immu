@@ -1074,6 +1074,21 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
                 } else {
                     if (mergeWhenNotRemove.test(variable)) {
                         VariableInfoContainer vicMerge = vicToAdd == null ? vic : vicToAdd;
+                        if(useVic != null && vicToAdd == null) {
+                            // we'll copy from "vic"
+                            vic.ensureCopyToMerge();
+                        }
+                        /*
+                        See Loops_21: if the vic was copied from lastStatements, and it did not exist before, we must
+                        ensure that a delayed initial gets updated when the initial of the lastStatements is done.
+                         */
+                        if (vic != vicToAdd
+                                && vicToAdd != null
+                                && vic.isCopyToMerge()
+                                && vicToAdd.getPreviousOrInitial().getValue().isDelayed()
+                                && !vic.getPreviousOrInitial().getValue().isDelayed()) {
+                            vicToAdd.copyInitialFrom(vic.getPreviousOrInitial());
+                        }
                         prepareMerge.toMerge.add(vicMerge);
                     } else if (vicToAdd != null) {
                         prepareMerge.toIgnore.add(vicToAdd);

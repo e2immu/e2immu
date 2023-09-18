@@ -211,4 +211,10 @@ public interface VariableInfoContainer {
     }
 
     void setModificationTimeIfNotYetSet(int modificationTime, Stage stage);
+
+    void copyInitialFrom(VariableInfo previousOrInitial);
+
+    void ensureCopyToMerge();
+
+    boolean isCopyToMerge();
 }

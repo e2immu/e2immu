@@ -56,17 +56,17 @@ public class Test_Output_03_FormatterLookahead extends CommonTestRunner {
                 }
                 if ("scope-52:44".equals(d.variableName())) {
                     if ("2".equals(d.statementId())) { // if(...) statement
-                        assertEquals("-1-lineLength+`forwardInfo.chars`+(null==`forwardInfo.string`?0:`forwardInfo.string`.length())>=0?nullable instance type GuideOnStack:nullable instance type GuideOnStack", d.currentValue().toString());
+                        assertEquals("-1+forwardInfo.charsPlusString()>=lineLength?nullable instance type GuideOnStack:nullable instance type GuideOnStack", d.currentValue().toString());
                         String linked = d.iteration() == 0 ? "startOfGuides:-1" : "startOfGuides:3";
                         assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
                     }
                     if ("3".equals(d.statementId())) { // LVC outputElement = list.get(forwardInfo.pos())
                         String expected = d.iteration() == 0 ? "<v:scope-52:44>"
-                                : "-1-lineLength+`forwardInfo.chars`+(null==`forwardInfo.string`?0:`forwardInfo.string`.length())>=0?nullable instance type GuideOnStack:nullable instance type GuideOnStack";
+                                : "-1+forwardInfo.charsPlusString()>=lineLength?nullable instance type GuideOnStack:nullable instance type GuideOnStack";
                         assertEquals(expected, d.currentValue().toString());
                         String linked = switch (d.iteration()) {
                             case 0 ->
-                                    "currentForwardInfo:-1,exceeds:-1,forwardInfo:-1,lineLength:-1,list:-1,options:-1,outputElement:-1,prioritySplit:-1,scope-90:64:-1,scope-guideOnStack:2.0.2.forwardInfo:-1,scope-guideOnStack:2.0.2:-1,start:-1,startOfGuides.get(0).forwardInfo:-1,startOfGuides.peek().forwardInfo:-1,startOfGuides:-1";
+                                    "currentForwardInfo:-1,exceeds:-1,lineLength:-1,options:-1,prioritySplit:-1,scope-90:64:-1,scope-guideOnStack:2.0.2.forwardInfo:-1,scope-guideOnStack:2.0.2:-1,start:-1,startOfGuides.get(0).forwardInfo:-1,startOfGuides.peek().forwardInfo:-1,startOfGuides:-1";
                             case 1 -> "forwardInfo:-1,list:-1,outputElement:-1,startOfGuides:-1";
                             default -> "forwardInfo:4,startOfGuides:3";
                         };
@@ -78,14 +78,11 @@ public class Test_Output_03_FormatterLookahead extends CommonTestRunner {
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("apply".equals(d.methodInfo().name)) {
                 assertEquals("$1", d.methodInfo().typeInfo.simpleName);
-                String expected = d.iteration() < 3
+                String expected = d.iteration() < 2
                         ? "<m:apply>"
-                        : "/*inline apply*/-1-lineLength+`forwardInfo.chars`+(null==`forwardInfo.string`?0:`forwardInfo.string`.length())>=0?(!startOfGuides.isEmpty()||!`forwardInfo.symbol`||(null==`forwardInfo.string`?instance type boolean:list.get(`forwardInfo.pos`)==Space.NEWLINE)||null!=prioritySplit.get())&&(!startOfGuides.isEmpty()||(null==`forwardInfo.string`?instance type boolean:list.get(`forwardInfo.pos`)==Space.NEWLINE)||null!=`forwardInfo.string`||null!=prioritySplit.get()):null==`forwardInfo.string`?instance type boolean:list.get(`forwardInfo.pos`)==Space.NEWLINE";
+                        : "-1+forwardInfo.charsPlusString()>=lineLength?((forwardInfo.isGuide()?instance type boolean:list.get(forwardInfo.pos())==Space.NEWLINE)||!forwardInfo.isGuide()||null!=prioritySplit.get()||!startOfGuides.isEmpty())&&((forwardInfo.isGuide()?instance type boolean:list.get(forwardInfo.pos())==Space.NEWLINE)||!forwardInfo.symbol()||null!=prioritySplit.get()||!startOfGuides.isEmpty()):forwardInfo.isGuide()?instance type boolean:list.get(forwardInfo.pos())==Space.NEWLINE";
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
-                String vars = d.iteration() < 2
-                        ? "NEWLINE,forwardInfo,lineLength,list,prioritySplit,startOfGuides"
-                        : "NEWLINE,lineLength,list,prioritySplit,startOfGuides";
-                assertEquals(vars,
+                assertEquals("NEWLINE,forwardInfo,lineLength,list,prioritySplit,startOfGuides",
                         d.methodAnalysis().getSingleReturnValue().variableStream().map(Variable::simpleName)
                                 .sorted().distinct().collect(Collectors.joining(",")));
             }
