@@ -16,6 +16,7 @@ package org.e2immu.analyser.parser.functional;
 
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.model.ParameterInfo;
+import org.e2immu.analyser.model.variable.DependentVariable;
 import org.e2immu.analyser.parser.CommonTestRunner;
 import org.e2immu.analyser.visitor.StatementAnalyserVariableVisitor;
 import org.junit.jupiter.api.Disabled;
@@ -31,19 +32,23 @@ public class TestConsumerAndArray extends CommonTestRunner {
         super(true);
     }
 
-    //@Disabled("We have no value yet, but already have linked variables on a non-primitive. Points to a fundamental issue. See also Loops_25.")
     @Test
     public void test_0() throws IOException {
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("method1".equals(d.methodInfo().name)) {
+                assertEquals("0", d.statementId());
                 if (d.variable() instanceof ParameterInfo pi && "array".equals(pi.name)) {
-                    if ("0".equals(d.statementId())) {
-                        String expected = d.iteration() == 0 ? "<v:array[3]>" : "nullable instance type T[]/*@Identity*/";
-                        assertEquals(expected, d.currentValue().toString());
-                        assertEquals(d.iteration() >= 1, d.variableInfo().linkedVariablesIsSet()); // should not be possible if there is no value yet
-                        String expectLink = d.iteration() == 0 ? "array[3]:-1,consumer:-1" : "consumer:3";
-                        assertEquals(expectLink, d.variableInfo().getLinkedVariables().toString());
-                    }
+                    String expected = d.iteration() == 0 ? "<p:array>" : "nullable instance type T[]/*@Identity*/";
+                    assertEquals(expected, d.currentValue().toString());
+                    assertEquals("consumer:3", d.variableInfo().getLinkedVariables().toString());
+                }
+                if (d.variable() instanceof DependentVariable dv && "array".equals(dv.arrayVariable().simpleName())) {
+                    assertEquals("3", dv.indexExpression().toString());
+                    String expectLink = "array:3,consumer:3";
+                    assertEquals(expectLink, d.variableInfo().getLinkedVariables().toString());
+                }
+                if (d.variable() instanceof ParameterInfo pi && "consumer".equals(pi.name)) {
+                    assertEquals("", d.variableInfo().getLinkedVariables().toString());
                 }
             }
         };

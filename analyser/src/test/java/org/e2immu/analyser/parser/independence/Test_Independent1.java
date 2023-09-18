@@ -403,18 +403,22 @@ public class Test_Independent1 extends CommonTestRunner {
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
             if ("ones".equals(d.fieldInfo().name)) {
                 assertLinked(d, d.fieldAnalysis().getLinkedVariables(),
-                        it(0, 1, "consumer:-1,generator:-1,this:-1"),
+                        it0("consumer:-1,generator:-1,ones[index]:-1,this:-1"),
+                        it1("consumer:-1,generator:-1,this:-1"),
                         it(2, "generator:4,this:3"));
             }
             if ("t".equals(d.fieldInfo().name)) {
                 assertEquals("t:0", d.fieldAnalysis().getLinkedVariables().toString());
             }
         };
+        BreakDelayVisitor breakDelayVisitor = d -> assertEquals("------", d.delaySequence());
+
         testClass("Independent1_6", 0, 0, new DebugConfiguration.Builder()
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
                 .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+                .addBreakDelayVisitor(breakDelayVisitor)
                 .build());
     }
 
@@ -546,10 +550,10 @@ public class Test_Independent1 extends CommonTestRunner {
         BreakDelayVisitor breakDelayVisitor = d -> assertEquals("----", d.delaySequence());
 
         testClass("Independent1_9", 0, 0, new DebugConfiguration.Builder()
-            //    .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-            //    .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
-            //    .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
-             //   .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
+                //    .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                //    .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                //    .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+                //   .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
                 .addBreakDelayVisitor(breakDelayVisitor)
                 .build());
     }

@@ -24,10 +24,7 @@ import org.e2immu.analyser.model.variable.DependentVariable;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.VariableNature;
 import org.e2immu.analyser.parser.CommonTestRunner;
-import org.e2immu.analyser.visitor.FieldAnalyserVisitor;
-import org.e2immu.analyser.visitor.MethodAnalyserVisitor;
-import org.e2immu.analyser.visitor.StatementAnalyserVariableVisitor;
-import org.e2immu.analyser.visitor.StatementAnalyserVisitor;
+import org.e2immu.analyser.visitor.*;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
@@ -212,7 +209,7 @@ public class Test_01_Loops_21plus extends CommonTestRunner {
                         DV override = d.variableInfoContainer().propertyOverrides().getOrDefaultNull(CONTEXT_MODIFIED);
                         assertEquals(d.iteration() >= 4, DV.TRUE_DV.equals(override));
 
-                        assertEquals("", d.variableInfo().getLinkedVariables().toString());
+                        assertEquals("array[i]:-1,array[i][j]:-1", d.variableInfo().getLinkedVariables().toString());
                         String expected = d.iteration() < 4 ? "<vl:array>" : "instance type String[][]";
                         assertEquals(expected, d.currentValue().toString());
 
@@ -221,11 +218,22 @@ public class Test_01_Loops_21plus extends CommonTestRunner {
                         assertDv(d, 4, DV.TRUE_DV, CONTEXT_MODIFIED);
                     }
                 }
+                if("array[i]".equals(d.variableName())) {
+                    if ("2.0.1.0.2".equals(d.statementId())) {
+                        assertDv(d, 4, DV.TRUE_DV, CONTEXT_MODIFIED);
+                        assertEquals("<array-access:String[]>", d.currentValue().toString());
+                        assertLinked(d, it(0, "array:-1,array[i][j]:-1"));
+                    }
+                }
             }
         };
+
+        BreakDelayVisitor breakDelayVisitor  = d -> assertEquals("----M-", d.delaySequence());
+
         // potential null pointer array[i][j].length()
         testClass("Loops_21_1", 0, 1, new DebugConfiguration.Builder()
-                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+               // .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addBreakDelayVisitor(breakDelayVisitor)
                 .build());
     }
 

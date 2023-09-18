@@ -272,7 +272,8 @@ public class VariableExpression extends BaseExpression implements IsVariableExpr
             assert scopeResult != null;
             assert indexResult != null;
             Expression computedScope = scopeResult.value();
-            builder.link(dv, dv.arrayVariable(), LinkedVariables.LINK_IS_HC_OF);
+            DV link = computedScope.isDelayed() ? computedScope.causesOfDelay() : LinkedVariables.LINK_IS_HC_OF;
+            builder.link(dv, dv.arrayVariable(), link);
 
             if (computedScope instanceof ArrayInitializer initializer && indexResult.value() instanceof Numeric in) {
                 // known array, known index (a[] = {1,2,3}, a[2] == 3)

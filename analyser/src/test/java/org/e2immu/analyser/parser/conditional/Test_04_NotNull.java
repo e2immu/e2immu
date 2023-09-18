@@ -170,14 +170,14 @@ public class Test_04_NotNull extends CommonTestRunner {
                     if ("1.0.0.0.1".equals(d.statementId())) {
                         String expected = d.iteration() == 0 ? "<s:String>" : "s";
                         assertEquals(expected, d.currentValue().toString());
-                        assertDv(d, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                        assertDv(d, 1, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     }
                 }
                 if ("s".equals(d.variableName())) {
                     if ("1.0.0.0.1".equals(d.statementId())) {
                         String expected = d.iteration() == 0 ? "<v:s>" : "nullable instance type String";
                         assertEquals(expected, d.currentValue().toString());
-                        assertDv(d, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                        assertDv(d, 1, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     }
                 }
                 if ("iv-44:25".equals(d.variableName())) {

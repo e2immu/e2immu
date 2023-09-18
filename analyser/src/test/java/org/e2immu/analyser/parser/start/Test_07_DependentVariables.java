@@ -206,7 +206,8 @@ public class Test_07_DependentVariables extends CommonTestRunner {
 
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
             if ("xs".equals(d.fieldInfo().name)) {
-                assertEquals("p:4,this:3", d.fieldAnalysis().getLinkedVariables().toString());
+                String expected = d.iteration() == 0 ? "p:-1,this:-1,xs[index]:-1" : "p:4,this:3";
+                assertEquals(expected, d.fieldAnalysis().getLinkedVariables().toString());
                 assertEquals("instance type X[]", d.fieldAnalysis().getValue().toString());
                 assertDv(d, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.EXTERNAL_NOT_NULL);
             }
@@ -216,12 +217,15 @@ public class Test_07_DependentVariables extends CommonTestRunner {
             }
         };
 
+        BreakDelayVisitor breakDelayVisitor = d -> assertEquals("-----", d.delaySequence());
+
         testClass("DependentVariables_1", 0, 0, new DebugConfiguration.Builder()
                 .addEvaluationResultVisitor(evaluationResultVisitor)
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
                 .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+                .addBreakDelayVisitor(breakDelayVisitor)
                 .build());
     }
 
@@ -270,7 +274,8 @@ public class Test_07_DependentVariables extends CommonTestRunner {
 
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
             if ("xs".equals(d.fieldInfo().name)) {
-                assertEquals("this:3,xs:4", d.fieldAnalysis().getLinkedVariables().toString());
+                String expected = d.iteration() == 0 ? "this:-1,xs:-1,xs[index]:-1,xs[index]:-1" : "this:3,xs:4";
+                assertEquals(expected, d.fieldAnalysis().getLinkedVariables().toString());
             }
         };
 
@@ -294,11 +299,14 @@ public class Test_07_DependentVariables extends CommonTestRunner {
             }
         };
 
+        BreakDelayVisitor breakDelayVisitor = d -> assertEquals("-----", d.delaySequence());
+
         testClass("DependentVariables_2", 0, 1, new DebugConfiguration.Builder()
                 .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
                 .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addBreakDelayVisitor(breakDelayVisitor)
                 .build());
     }
 
