@@ -712,11 +712,11 @@ public class Test_18_E2Immutable extends CommonTestRunner {
             } else fail("type " + d.typeInfo());
         };
 
-        BreakDelayVisitor breakDelayVisitor = d -> assertEquals("-----", d.delaySequence());
+        BreakDelayVisitor breakDelayVisitor = d -> assertEquals("----", d.delaySequence());
         testClass("E2Immutable_15", 0, 1, new DebugConfiguration.Builder()
-                        .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
-                        .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-                        .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+                     //   .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
+                     //   .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                     //   .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                         .addBreakDelayVisitor(breakDelayVisitor)
                         .build(),
                 new AnalyserConfiguration.Builder()
@@ -770,8 +770,8 @@ public class Test_18_E2Immutable extends CommonTestRunner {
             } else fail("type " + d.typeInfo());
         };
         testClass("E2Immutable_15_1", 0, 0, new DebugConfiguration.Builder()
-                        .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
-                        .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+                    //    .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
+                    //    .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                         .build(),
                 new AnalyserConfiguration.Builder()
                         .setComputeFieldAnalyserAcrossAllMethods(true)

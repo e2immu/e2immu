@@ -140,7 +140,7 @@ public class Test_38_SetOnceMap extends CommonTestRunner {
             }
         };
 
-        BreakDelayVisitor breakDelayVisitor = d -> assertEquals("------", d.delaySequence());
+        BreakDelayVisitor breakDelayVisitor = d -> assertEquals("-----", d.delaySequence());
 
         // 1 potential null pointer warning accepted
         testClass("SetOnceMap_0", 0, 0,

@@ -185,7 +185,7 @@ public class Test_58_GuideSimplified extends CommonTestRunner {
             }
         };
 
-        BreakDelayVisitor breakDelayVisitor = d -> assertEquals("----", d.delaySequence());
+        BreakDelayVisitor breakDelayVisitor = d -> assertEquals("----M-M-M-MF-----", d.delaySequence());
 
         testClass("GuideSimplified_4", 0, 0, new DebugConfiguration.Builder()
            //     .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)

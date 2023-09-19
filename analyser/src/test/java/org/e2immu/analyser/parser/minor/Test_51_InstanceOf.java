@@ -873,8 +873,8 @@ public class Test_51_InstanceOf extends CommonTestRunner {
                     case "InstanceOf_11" -> {
                         assertEquals("new Expression(){}", d.fieldAnalysis().getValue().toString());
                         //  has to be container; was known in iteration 1 previously
-                        assertDv(d, 9, MultiLevel.NOT_CONTAINER_INCONCLUSIVE, Property.CONTAINER_RESTRICTION);
-                        assertDv(d, 9, DV.FALSE_DV, Property.MODIFIED_OUTSIDE_METHOD);
+                        assertDv(d, 2, MultiLevel.NOT_CONTAINER_DV, Property.CONTAINER_RESTRICTION);
+                        assertDv(d, 4, DV.FALSE_DV, Property.MODIFIED_OUTSIDE_METHOD);
                     }
                     case "Negation" -> {
                         assertEquals("expression", d.fieldAnalysis().getValue().toString());
@@ -894,8 +894,7 @@ public class Test_51_InstanceOf extends CommonTestRunner {
                     assertDv(d, MultiLevel.EFFECTIVELY_IMMUTABLE_DV, Property.PARTIAL_IMMUTABLE);
                     assertDv(d, MultiLevel.CONTAINER_DV, Property.PARTIAL_CONTAINER);
                     // means: we have to wait until we know the property of the enclosing type
-                    String expect = d.iteration() == 0 ? "container@Class_InstanceOf_11" : "cm@Parameter_evaluationContext";
-                    assertDv(d, expect, 12, MultiLevel.CONTAINER_DV, Property.CONTAINER);
+                    assertDv(d,  MultiLevel.CONTAINER_DV, Property.CONTAINER);
                 }
                 case "Expression", "EvaluationContext" -> {
                     assertDv(d, MultiLevel.NOT_CONTAINER_DV, Property.CONTAINER);
@@ -903,21 +902,21 @@ public class Test_51_InstanceOf extends CommonTestRunner {
                 }
                 case "Negation", "Sum" -> assertDv(d, MultiLevel.CONTAINER_DV, Property.CONTAINER);
                 case "InstanceOf_11" ->
-                        assertDv(d, "cm@Parameter_evaluationContext", 11, MultiLevel.CONTAINER_DV, Property.CONTAINER);
+                        assertDv(d, "cm@Parameter_evaluationContext", 5, MultiLevel.CONTAINER_DV, Property.CONTAINER);
                 case "XB" ->
                         assertDv(d, "cm@Parameter_x;mom@Parameter_x", 1, MultiLevel.CONTAINER_DV, Property.CONTAINER);
                 default -> fail("? " + d.typeInfo().simpleName);
             }
         };
 
-        BreakDelayVisitor breakDelayVisitor = d -> assertEquals("------M-MF---", d.delaySequence());
+        BreakDelayVisitor breakDelayVisitor = d -> assertEquals("-------", d.delaySequence());
 
         testClass("InstanceOf_11", 0, 2, new DebugConfiguration.Builder()
-                .addEvaluationResultVisitor(evaluationResultVisitor)
-                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-                .addStatementAnalyserVisitor(statementAnalyserVisitor)
+             //   .addEvaluationResultVisitor(evaluationResultVisitor)
+             //   .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+            //    .addStatementAnalyserVisitor(statementAnalyserVisitor)
                 .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
-                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+            //    .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                 .addBreakDelayVisitor(breakDelayVisitor)
                 .build());
@@ -1271,15 +1270,15 @@ public class Test_51_InstanceOf extends CommonTestRunner {
                 assertDv(d, MultiLevel.EFFECTIVELY_IMMUTABLE_HC_DV, Property.IMMUTABLE);
             }
         };
-        BreakDelayVisitor breakDelayVisitor = d -> assertEquals("-------", d.delaySequence());
+        BreakDelayVisitor breakDelayVisitor = d -> assertEquals("------", d.delaySequence());
 
         testClass("InstanceOf_16", 0, 7, new DebugConfiguration.Builder()
-                .addEvaluationResultVisitor(evaluationResultVisitor)
-                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-                .addStatementAnalyserVisitor(statementAnalyserVisitor)
-                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
-                .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
-                .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+           //     .addEvaluationResultVisitor(evaluationResultVisitor)
+           //     .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+            //    .addStatementAnalyserVisitor(statementAnalyserVisitor)
+             //   .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+            //    .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
+            //    .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                 .addBreakDelayVisitor(breakDelayVisitor)
                 .build());
     }

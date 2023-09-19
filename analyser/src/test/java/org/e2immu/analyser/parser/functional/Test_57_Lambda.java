@@ -49,7 +49,7 @@ public class Test_57_Lambda extends CommonTestRunner {
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("collector".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof ReturnVariable) {
-                    assertDv(d, 1, MultiLevel.CONTAINER_DV, Property.CONTAINER);
+                    assertDv(d,  MultiLevel.CONTAINER_DV, Property.CONTAINER);
                     assertDv(d, 1, MultiLevel.EFFECTIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
                 }
             }
@@ -227,7 +227,7 @@ public class Test_57_Lambda extends CommonTestRunner {
             }
         };
 
-        BreakDelayVisitor breakDelayVisitor = d -> assertEquals("----", d.delaySequence());
+        BreakDelayVisitor breakDelayVisitor = d -> assertEquals("---", d.delaySequence());
 
         testClass("Lambda_3", 0, 0, new DebugConfiguration.Builder()
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
@@ -339,7 +339,7 @@ public class Test_57_Lambda extends CommonTestRunner {
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
             }
         };
-        BreakDelayVisitor breakDelayVisitor = d -> assertEquals("----", d.delaySequence());
+        BreakDelayVisitor breakDelayVisitor = d -> assertEquals("---", d.delaySequence());
 
         testClass("Lambda_4", 0, 0, new DebugConfiguration.Builder()
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
@@ -405,7 +405,7 @@ public class Test_57_Lambda extends CommonTestRunner {
                 assertDv(d.p(0), MultiLevel.CONTAINER_DV, Property.CONTAINER);
             }
         };
-        BreakDelayVisitor breakDelayVisitor = d -> assertEquals("-----", d.delaySequence());
+        BreakDelayVisitor breakDelayVisitor = d -> assertEquals("----", d.delaySequence());
         testClass("Lambda_6", 0, 0, new DebugConfiguration.Builder()
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)

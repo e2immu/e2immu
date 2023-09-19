@@ -808,7 +808,7 @@ public class Test_Independent1 extends CommonTestRunner {
                 }
             }
         };
-        BreakDelayVisitor breakDelayVisitor = d -> assertEquals("-----", d.delaySequence());
+        BreakDelayVisitor breakDelayVisitor = d -> assertEquals("----", d.delaySequence());
 
         testClass("Independent1_12", 0, 2, new DebugConfiguration.Builder()
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)

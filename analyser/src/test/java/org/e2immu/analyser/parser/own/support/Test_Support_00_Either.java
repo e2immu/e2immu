@@ -46,112 +46,114 @@ public class Test_Support_00_Either extends CommonTestRunner {
         A local = left;
         return local != null ? local : Objects.requireNonNull(orElse);
      */
-
-    StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
-        if ("getLeftOrElse".equals(d.methodInfo().name)) {
-            if (d.variable() instanceof ParameterInfo orElse && "orElse".equals(orElse.name)) {
-                if ("0".equals(d.statementId())) {
-                    // FIXME what do we want here?         assertEquals(MultiLevel.NOT_CONTAINER_DV, d.getProperty(Property.CONTAINER));
-                }
-                if ("1".equals(d.statementId())) {
-                    String expectValue = d.iteration() == 0 ? "<p:orElse>" : "nullable instance type A/*@Identity*/";
-                    assertEquals(expectValue, d.currentValue().toString());
-                }
-            }
-            if (d.variable() instanceof ReturnVariable) {
-                if ("1".equals(d.statementId())) {
-                    String expectValue = d.iteration() == 0
-                            ? "<null-check>?orElse/*@NotNull*/:<f:left>"
-                            : "null==left?orElse/*@NotNull*/:left";
-                    assertEquals(expectValue, d.currentValue().toString());
-                    assertDv(d, 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_EXPRESSION);
-                }
-            }
-        }
-        if ("Either".equals(d.methodInfo().name)) {
-            if (d.variable() instanceof FieldReference fr && fr.fieldInfo.name.equals("left")) {
-                assertEquals(MultiLevel.NULLABLE_DV, d.getProperty(Property.CONTEXT_NOT_NULL));
-                assertEquals("a", d.currentValue().toString());
-                assertEquals(MultiLevel.NULLABLE_DV, d.getProperty(Property.NOT_NULL_EXPRESSION));
-            }
-            if (d.variable() instanceof FieldReference fr && fr.fieldInfo.name.equals("right")) {
-                assertEquals(MultiLevel.NULLABLE_DV, d.getProperty(Property.CONTEXT_NOT_NULL));
-                assertEquals("b", d.currentValue().toString());
-                assertEquals(MultiLevel.NULLABLE_DV, d.getProperty(Property.NOT_NULL_EXPRESSION));
-            }
-            if (d.variable() instanceof ParameterInfo a && "a".equals(a.name)) {
-                assertEquals(MultiLevel.NULLABLE_DV, d.getProperty(Property.CONTEXT_NOT_NULL));
-                assertEquals(MultiLevel.NULLABLE_DV, d.getProperty(Property.NOT_NULL_EXPRESSION));
-            }
-            if (d.variable() instanceof ParameterInfo b && "b".equals(b.name)) {
-                assertEquals(MultiLevel.NULLABLE_DV, d.getProperty(Property.CONTEXT_NOT_NULL));
-                assertEquals(MultiLevel.NULLABLE_DV, d.getProperty(Property.NOT_NULL_EXPRESSION));
-            }
-        }
-    };
-
-    EvaluationResultVisitor evaluationResultVisitor = d -> {
-        if ("Either".equals(d.methodInfo().name) && "0".equals(d.statementId())) {
-            assertEquals("(null==a||null!=b)&&(null!=a||null==b)", d.evaluationResult().value().toString());
-        }
-    };
-
-    StatementAnalyserVisitor statementAnalyserVisitor = d -> {
-        if ("Either".equals(d.methodInfo().name)) {
-            if ("0.0.0".equals(d.statementId())) {
-                assertEquals("(null==a||null!=b)&&(null!=a||null==b)", d.condition().toString());
-                assertEquals("true", d.state().toString());
-                assertEquals("(null==a||null==b)&&(null!=a||null!=b)",
-                        d.statementAnalysis().stateData().getPrecondition().expression().toString());
-            }
-            if ("0".equals(d.statementId())) {
-                assertEquals("(null==a||null==b)&&(null!=a||null!=b)",
-                        d.statementAnalysis().methodLevelData().combinedPreconditionGet().expression().toString());
-            }
-        }
-    };
-
-    MethodAnalyserVisitor methodAnalyserVisitor = d -> {
-        if ("getLeftOrElse".equals(d.methodInfo().name)) {
-            VariableInfo tv = d.getReturnAsVariable();
-            Expression retVal = tv.getValue();
-            assertTrue(retVal instanceof InlineConditional);
-            InlineConditional conditionalValue = (InlineConditional) retVal;
-            String expectValue = d.iteration() == 0
-                    ? "<null-check>?orElse/*@NotNull*/:<f:left>"
-                    : "null==left?orElse/*@NotNull*/:left";
-            assertEquals(expectValue, conditionalValue.toString());
-            assertDv(d, 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_EXPRESSION);
-        }
-        if ("Either".equals(d.methodInfo().name)) {
-            assertEquals("(null==a||null==b)&&(null!=a||null!=b)",
-                    d.methodAnalysis().getPrecondition().expression().toString());
-            assertDv(d.p(0), 1, MultiLevel.NULLABLE_DV, Property.NOT_NULL_PARAMETER);
-            assertDv(d.p(1), 1, MultiLevel.NULLABLE_DV, Property.NOT_NULL_PARAMETER);
-        }
-    };
-
-    FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
-        if ("left".equals(d.fieldInfo().name)) {
-            assertEquals("a", d.fieldAnalysis().getValue().toString());
-            assertEquals(MultiLevel.NULLABLE_DV, d.fieldAnalysis().getProperty(Property.EXTERNAL_NOT_NULL));
-        }
-        if ("right".equals(d.fieldInfo().name)) {
-            assertEquals("b", d.fieldAnalysis().getValue().toString());
-            assertEquals(MultiLevel.NULLABLE_DV, d.fieldAnalysis().getProperty(Property.EXTERNAL_NOT_NULL));
-        }
-    };
-
-    // we do expect 2x potential null pointer exception, because you can call getLeft() when you initialised with right() and vice versa
-
     @Test
     public void test() throws IOException {
+        StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+            if ("getLeftOrElse".equals(d.methodInfo().name)) {
+                if (d.variable() instanceof ParameterInfo orElse && "orElse".equals(orElse.name)) {
+                    if ("0".equals(d.statementId())) {
+                        // FIXME what do we want here?         assertEquals(MultiLevel.NOT_CONTAINER_DV, d.getProperty(Property.CONTAINER));
+                    }
+                    if ("1".equals(d.statementId())) {
+                        String expectValue = d.iteration() == 0 ? "<p:orElse>" : "nullable instance type A/*@Identity*/";
+                        assertEquals(expectValue, d.currentValue().toString());
+                    }
+                }
+                if (d.variable() instanceof ReturnVariable) {
+                    if ("1".equals(d.statementId())) {
+                        String expectValue = d.iteration() == 0
+                                ? "<null-check>?orElse/*@NotNull*/:<f:left>"
+                                : "null==left?orElse/*@NotNull*/:left";
+                        assertEquals(expectValue, d.currentValue().toString());
+                        assertDv(d, 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_EXPRESSION);
+                    }
+                }
+            }
+            if ("Either".equals(d.methodInfo().name)) {
+                if (d.variable() instanceof FieldReference fr && fr.fieldInfo.name.equals("left")) {
+                    assertEquals(MultiLevel.NULLABLE_DV, d.getProperty(Property.CONTEXT_NOT_NULL));
+                    assertEquals("a", d.currentValue().toString());
+                    assertEquals(MultiLevel.NULLABLE_DV, d.getProperty(Property.NOT_NULL_EXPRESSION));
+                }
+                if (d.variable() instanceof FieldReference fr && fr.fieldInfo.name.equals("right")) {
+                    assertEquals(MultiLevel.NULLABLE_DV, d.getProperty(Property.CONTEXT_NOT_NULL));
+                    assertEquals("b", d.currentValue().toString());
+                    assertEquals(MultiLevel.NULLABLE_DV, d.getProperty(Property.NOT_NULL_EXPRESSION));
+                }
+                if (d.variable() instanceof ParameterInfo a && "a".equals(a.name)) {
+                    assertEquals(MultiLevel.NULLABLE_DV, d.getProperty(Property.CONTEXT_NOT_NULL));
+                    assertEquals(MultiLevel.NULLABLE_DV, d.getProperty(Property.NOT_NULL_EXPRESSION));
+                }
+                if (d.variable() instanceof ParameterInfo b && "b".equals(b.name)) {
+                    assertEquals(MultiLevel.NULLABLE_DV, d.getProperty(Property.CONTEXT_NOT_NULL));
+                    assertEquals(MultiLevel.NULLABLE_DV, d.getProperty(Property.NOT_NULL_EXPRESSION));
+                }
+            }
+        };
+
+        EvaluationResultVisitor evaluationResultVisitor = d -> {
+            if ("Either".equals(d.methodInfo().name) && "0".equals(d.statementId())) {
+                assertEquals("(null==a||null!=b)&&(null!=a||null==b)", d.evaluationResult().value().toString());
+            }
+        };
+
+        StatementAnalyserVisitor statementAnalyserVisitor = d -> {
+            if ("Either".equals(d.methodInfo().name)) {
+                if ("0.0.0".equals(d.statementId())) {
+                    assertEquals("(null==a||null!=b)&&(null!=a||null==b)", d.condition().toString());
+                    assertEquals("true", d.state().toString());
+                    assertEquals("(null==a||null==b)&&(null!=a||null!=b)",
+                            d.statementAnalysis().stateData().getPrecondition().expression().toString());
+                }
+                if ("0".equals(d.statementId())) {
+                    assertEquals("(null==a||null==b)&&(null!=a||null!=b)",
+                            d.statementAnalysis().methodLevelData().combinedPreconditionGet().expression().toString());
+                }
+            }
+        };
+
+        MethodAnalyserVisitor methodAnalyserVisitor = d -> {
+            if ("getLeftOrElse".equals(d.methodInfo().name)) {
+                VariableInfo tv = d.getReturnAsVariable();
+                Expression retVal = tv.getValue();
+                assertTrue(retVal instanceof InlineConditional);
+                InlineConditional conditionalValue = (InlineConditional) retVal;
+                String expectValue = d.iteration() == 0
+                        ? "<null-check>?orElse/*@NotNull*/:<f:left>"
+                        : "null==left?orElse/*@NotNull*/:left";
+                assertEquals(expectValue, conditionalValue.toString());
+                assertDv(d, 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_EXPRESSION);
+            }
+            if ("Either".equals(d.methodInfo().name)) {
+                assertEquals("(null==a||null==b)&&(null!=a||null!=b)",
+                        d.methodAnalysis().getPrecondition().expression().toString());
+                assertDv(d.p(0), 1, MultiLevel.NULLABLE_DV, Property.NOT_NULL_PARAMETER);
+                assertDv(d.p(1), 1, MultiLevel.NULLABLE_DV, Property.NOT_NULL_PARAMETER);
+            }
+        };
+
+        FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
+            if ("left".equals(d.fieldInfo().name)) {
+                assertEquals("a", d.fieldAnalysis().getValue().toString());
+                assertEquals(MultiLevel.NULLABLE_DV, d.fieldAnalysis().getProperty(Property.EXTERNAL_NOT_NULL));
+            }
+            if ("right".equals(d.fieldInfo().name)) {
+                assertEquals("b", d.fieldAnalysis().getValue().toString());
+                assertEquals(MultiLevel.NULLABLE_DV, d.fieldAnalysis().getProperty(Property.EXTERNAL_NOT_NULL));
+            }
+        };
+
+        // FIXME
+        BreakDelayVisitor breakDelayVisitor = d-> assertEquals("----MF--MF--MFT--", d.delaySequence());
+
+        // we do expect 2x potential null pointer exception, because you can call getLeft() when you initialised with right() and vice versa
         testSupportAndUtilClasses(List.of(Either.class), 0, 2, new DebugConfiguration.Builder()
                 .addEvaluationResultVisitor(evaluationResultVisitor)
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .addStatementAnalyserVisitor(statementAnalyserVisitor)
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+                .addBreakDelayVisitor(breakDelayVisitor)
                 .build());
     }
 

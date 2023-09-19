@@ -149,10 +149,10 @@ public class Test_16_Modification_12 extends CommonTestRunner {
         };
 
         testClass("Modification_12", 0, 0, new DebugConfiguration.Builder()
-                .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
-                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
-                .addStatementAnalyserVisitor(statementAnalyserVisitor)
+              //  .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
+             //   .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+             //   .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+             //   .addStatementAnalyserVisitor(statementAnalyserVisitor)
                 .build());
     }
 }

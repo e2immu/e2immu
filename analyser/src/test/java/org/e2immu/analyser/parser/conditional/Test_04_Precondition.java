@@ -612,7 +612,7 @@ public class Test_04_Precondition extends CommonTestRunner {
                         d.methodAnalysis().getPrecondition().toString());
             }
         };
-        BreakDelayVisitor breakDelayVisitor = d -> assertEquals("-----", d.delaySequence());
+        BreakDelayVisitor breakDelayVisitor = d -> assertEquals("----", d.delaySequence());
 
         testClass("Precondition_10", 0, 0,
                 new DebugConfiguration.Builder()

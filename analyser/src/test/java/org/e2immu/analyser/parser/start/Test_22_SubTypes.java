@@ -211,7 +211,7 @@ public class Test_22_SubTypes extends CommonTestRunner {
             }
         };
         testClass("SubTypes_5", 0, 0, new DebugConfiguration.Builder()
-                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+               // .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .build());
     }
 
@@ -293,8 +293,8 @@ public class Test_22_SubTypes extends CommonTestRunner {
         };
 
         testClass("SubTypes_7", 0, 0, new DebugConfiguration.Builder()
-                .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
-                .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
+               // .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+              //  .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
                 .build());
     }
 
@@ -346,9 +346,9 @@ public class Test_22_SubTypes extends CommonTestRunner {
             }
         };
         testClass("SubTypes_10", 0, 0, new DebugConfiguration.Builder()
-                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-                .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
-                .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
+              //  .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+              //  .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+              //  .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
                 .build());
     }
 

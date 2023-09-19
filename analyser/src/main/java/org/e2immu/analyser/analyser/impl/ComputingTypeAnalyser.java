@@ -27,11 +27,7 @@ import org.e2immu.analyser.analysis.*;
 import org.e2immu.analyser.analysis.impl.TypeAnalysisImpl;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.*;
-import org.e2immu.analyser.model.variable.DependentVariable;
 import org.e2immu.analyser.model.variable.FieldReference;
-import org.e2immu.analyser.model.variable.This;
-import org.e2immu.analyser.model.variable.Variable;
-import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.visitor.TypeAnalyserVisitor;
 import org.e2immu.annotation.NotModified;
@@ -90,7 +86,7 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
     private List<MethodAnalyser> myMethodAndConstructorAnalysersExcludingSAMs;
     private List<MethodAnalyser> myMethodAnalysers;
     private List<MethodAnalyser> myConstructors;
-    private List<TypeAnalysis> parentAndOrEnclosingTypeAnalysis;
+    private TypeAnalysis parentTypeAnalysis;
     private List<FieldAnalyser> myFieldAnalysers;
     private ComputeTypeImmutable computeTypeImmutable;
 
@@ -216,23 +212,17 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
         this.myMethodAndConstructorAnalysersExcludingSAMs = List.copyOf(myMethodAndConstructorAnalysersExcludingSAMs);
         this.myFieldAnalysers = List.copyOf(myFieldAnalysers);
 
-        Either<String, TypeInfo> pe = typeInfo.packageNameOrEnclosingType;
-        List<TypeAnalysis> tmp = new ArrayList<>(2);
-        if (pe.isRight() && !typeInfo.isStatic()) {
-            tmp.add(analyserContext.getTypeAnalysis(pe.getRight()));
-        }
         ParameterizedType parentClass = typeInspection.parentClass();
         if (parentClass != null && !parentClass.isJavaLangObject()) {
             TypeAnalyser typeAnalyser = analyserContext.getTypeAnalyser(parentClass.typeInfo);
-            tmp.add(typeAnalyser != null ? typeAnalyser.getTypeAnalysis() : parentClass.typeInfo.typeAnalysis.get());
+            parentTypeAnalysis = typeAnalyser != null ? typeAnalyser.getTypeAnalysis() : parentClass.typeInfo.typeAnalysis.get();
         }
-        parentAndOrEnclosingTypeAnalysis = List.copyOf(tmp);
 
         // running this here may save an iteration
         analyseHiddenContentTypes();
 
         computeTypeImmutable = new ComputeTypeImmutable(analyserContext, typeInfo, typeInspection, typeAnalysis,
-                parentAndOrEnclosingTypeAnalysis, myMethodAnalysers, myConstructors, myFieldAnalysers);
+                parentTypeAnalysis, myMethodAnalysers, myConstructors, myFieldAnalysers);
     }
 
     @Override
@@ -655,16 +645,23 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
         Property ALT_CONTAINER;
         AnalysisStatus ALT_DONE;
 
-        MaxValueStatus parentOrEnclosing = parentOrEnclosingMustHaveTheSameProperty(CONTAINER);
-        if (MARKER != parentOrEnclosing.status) {
-            if (parentOrEnclosing.status.isDelayed()) {
+        /*
+        parent must have the same property: because there are/may be accessible methods in the parent that
+        can be accessed from a child object.
+
+        enclosing?? non-private methods of an enclosing class are accessible from within the class, but
+        not from outside, on the child object.
+         */
+        MaxValueStatus parent = parentMustHaveTheSameProperty(CONTAINER);
+        if (MARKER != parent.status) {
+            if (parent.status.isDelayed()) {
                 ALT_CONTAINER = Property.PARTIAL_CONTAINER;
-                ALT_DONE = AnalysisStatus.of(parentOrEnclosing.status.causesOfDelay());
+                ALT_DONE = AnalysisStatus.of(parent.status.causesOfDelay());
             } else {
                 DV current = typeAnalysis.getProperty(CONTAINER);
                 assert current.isDone();
                 typeAnalysis.setPropertyIfAbsentOrDelayed(PARTIAL_CONTAINER, current);
-                return parentOrEnclosing.status;
+                return parent.status;
             }
         } else {
             ALT_CONTAINER = CONTAINER;
@@ -740,7 +737,7 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
      * <p>
      * Return the minimum value of ZERO, ONE and TWO.
      *
-     * @return true if a decision was made
+     * @return DONE if a decision was made
      */
     private AnalysisStatus analyseIndependent(SharedState sharedState) {
         DV typeIndependent = typeAnalysis.getProperty(Property.INDEPENDENT);
@@ -752,7 +749,7 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
             return DONE;
         }
 
-        MaxValueStatus parentOrEnclosing = parentOrEnclosingMustHaveTheSameProperty(Property.INDEPENDENT);
+        MaxValueStatus parentOrEnclosing = parentMustHaveTheSameProperty(Property.INDEPENDENT);
         if (MARKER != parentOrEnclosing.status) return parentOrEnclosing.status;
 
         boolean inconclusive = false;
@@ -909,23 +906,20 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
 
     private static final AnalysisStatus MARKER = new NotDelayed(4, "MARKER"); // temporary marker
 
-    private MaxValueStatus parentOrEnclosingMustHaveTheSameProperty(Property property) {
-        DV[] propertyValues = parentAndOrEnclosingTypeAnalysis.stream()
-                .map(typeAnalysis -> typeAnalysis.getProperty(property))
-                .toArray(DV[]::new);
-        if (propertyValues.length == 0) return new MaxValueStatus(property.bestDv, MARKER);
-        DV min = Arrays.stream(propertyValues).reduce(DV.MAX_INT_DV, DV::min);
-        if (min.isDelayed()) {
+    private MaxValueStatus parentMustHaveTheSameProperty(Property property) {
+        if (parentTypeAnalysis == null) return new MaxValueStatus(property.bestDv, MARKER);
+        DV propertyValue = parentTypeAnalysis.getProperty(property);
+        if (propertyValue.isDelayed()) {
             LOGGER.debug("Waiting with {} on {}, parent or enclosing class's status not yet known", property, typeInfo);
-            typeAnalysis.setProperty(property, min.causesOfDelay());
-            return new MaxValueStatus(min, min.causesOfDelay());
+            typeAnalysis.setProperty(property, propertyValue.causesOfDelay());
+            return new MaxValueStatus(propertyValue, propertyValue.causesOfDelay());
         }
-        if (min.equals(property.falseDv)) {
+        if (propertyValue.equals(property.falseDv)) {
             LOGGER.debug("{} set to least value for {}, because of parent", typeInfo, property);
             typeAnalysis.setProperty(property, property.falseDv);
             return new MaxValueStatus(property.falseDv, DONE);
         }
-        return new MaxValueStatus(min, MARKER);
+        return new MaxValueStatus(propertyValue, MARKER);
     }
 
 

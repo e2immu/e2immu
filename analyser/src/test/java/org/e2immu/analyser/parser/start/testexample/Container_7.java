@@ -37,8 +37,8 @@ public class Container_7 {
     private static final int oneTwoThree = 123;
     private static final int nineEightSeven = 987;
 
-    // NOTE! this one is not a container, because it is not static
-    @Container(absent = true)
+    // NOTE! this one is a container: the modifying method 'put' is not accessible via Complex
+    @Container
     public class Complex {
         final int i, j;
 

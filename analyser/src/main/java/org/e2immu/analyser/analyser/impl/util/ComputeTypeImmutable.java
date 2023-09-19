@@ -45,7 +45,7 @@ public record ComputeTypeImmutable(AnalyserContext analyserContext,
                                    TypeInfo typeInfo,
                                    TypeInspection typeInspection,
                                    TypeAnalysisImpl.Builder typeAnalysis,
-                                   List<TypeAnalysis> parentAndOrEnclosingTypeAnalysis,
+                                   TypeAnalysis parentTypeAnalysis,
                                    List<MethodAnalyser> myMethodAnalysers,
                                    List<MethodAnalyser> myConstructors,
                                    List<FieldAnalyser> myFieldAnalysers) {
@@ -173,7 +173,7 @@ public record ComputeTypeImmutable(AnalyserContext analyserContext,
         assert fromParentOrEnclosing.gt(MultiLevel.MUTABLE_DV);
         int levelParent = MultiLevel.level(fromParentOrEnclosing);
         if (MultiLevel.Level.IMMUTABLE_HC.level == levelParent) {
-            DV noHiddenContentInParentEnclosing = parentOrEnclosingHaveNoHiddenContent();
+            DV noHiddenContentInParentEnclosing = parentHasNoHiddenContent();
             if (noHiddenContentInParentEnclosing.isDelayed()) {
                 return noHiddenContentInParentEnclosing;
             }
@@ -198,13 +198,11 @@ public record ComputeTypeImmutable(AnalyserContext analyserContext,
 
     E2Immutable_15_1 is an example where there could be a delay cycle between a (non-static) anonymous type
      */
-    private DV parentOrEnclosingHaveNoHiddenContent() {
-        CausesOfDelay delays = parentAndOrEnclosingTypeAnalysis.stream()
-                .filter(ta -> ta.getTypeInfo().isAbstract())
-                .map(TypeAnalysis::hiddenContentDelays)
-                .reduce(CausesOfDelay.EMPTY, CausesOfDelay::merge);
+    private DV parentHasNoHiddenContent() {
+        CausesOfDelay delays = parentTypeAnalysis == null || !parentTypeAnalysis.getTypeInfo().isAbstract()
+                ? CausesOfDelay.EMPTY : parentTypeAnalysis.hiddenContentDelays();
         if (delays.isDelayed()) return delays;
-        boolean b = parentAndOrEnclosingTypeAnalysis.stream().allMatch(ta -> ta.getHiddenContentTypes().isEmpty());
+        boolean b = parentTypeAnalysis == null || parentTypeAnalysis.getHiddenContentTypes().isEmpty();
         return DV.fromBoolDv(b);
     }
 
@@ -315,7 +313,6 @@ public record ComputeTypeImmutable(AnalyserContext analyserContext,
             return returnTypeImmutable.causesOfDelay().merge(marker);
         }
         // TODO while it works at the moment, the code is a bit of a mess (indep checks only for identical types, check on srv and returnTypeImmutable, ...)
-        MultiLevel.Effective returnTypeEffectiveImmutable = MultiLevel.effectiveAtImmutableLevel(returnTypeImmutable);
         if (returnTypeImmutable.lt(MultiLevel.EVENTUALLY_IMMUTABLE_DV)) {
             // rule 5, continued: if not primitive, not Immutable, then the result must be Independent of the support types
             DV independent = methodAnalyser.getMethodAnalysis().getProperty(Property.INDEPENDENT);
@@ -557,9 +554,9 @@ public record ComputeTypeImmutable(AnalyserContext analyserContext,
 
     private AnalysisStatus fromParentOrEnclosing(Work w, Analyser.SharedState sharedState) {
         DV partialImmutable = typeAnalysis.getProperty(Property.PARTIAL_IMMUTABLE);
-        w.fromParentOrEnclosing = parentAndOrEnclosingTypeAnalysis.stream()
-                .map(typeAnalysis -> typeAnalysis.getProperty(Property.IMMUTABLE))
-                .reduce(Property.IMMUTABLE.bestDv, DV::min);
+        w.fromParentOrEnclosing = parentTypeAnalysis == null
+                ? IMMUTABLE.bestDv
+                : parentTypeAnalysis.getProperty(Property.IMMUTABLE);
 
         // parent: we need to know if it is EFFECTIVE, or EVENTUAL
         w.parentEffective = effectiveImmutableOfParent();

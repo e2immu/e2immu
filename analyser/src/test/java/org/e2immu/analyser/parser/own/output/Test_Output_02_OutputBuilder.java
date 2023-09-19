@@ -33,6 +33,8 @@ import org.junit.jupiter.api.Test;
 import java.io.IOException;
 import java.util.List;
 
+import static org.e2immu.analyser.parser.VisitorTestSupport.IterationInfo.it;
+import static org.e2immu.analyser.parser.VisitorTestSupport.IterationInfo.it0;
 import static org.junit.jupiter.api.Assertions.*;
 
 public class Test_Output_02_OutputBuilder extends CommonTestRunner {
@@ -47,7 +49,7 @@ public class Test_Output_02_OutputBuilder extends CommonTestRunner {
             if ("accumulator".equals(d.methodInfo().name)) {
                 assertEquals("0", d.statementId());
                 if (d.variable() instanceof ParameterInfo pi && "separator".equals(pi.name)) {
-                    assertDv(d, 4, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                    assertDv(d, 3, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                 }
             }
             if ("accept".equals(d.methodInfo().name) && "$3".equals(d.methodInfo().typeInfo.simpleName)) {
@@ -60,26 +62,26 @@ public class Test_Output_02_OutputBuilder extends CommonTestRunner {
 
                         String linked = switch (d.iteration()) {
                             case 0 -> "NOT_YET_SET";
-                            case 1, 2, 3 -> "a:-1";
-                            default -> "a:3"; // should have been :3
+                            case 1, 2 -> "a:-1";
+                            default -> "a:3";
                         };
                         assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
 
-                        assertDv(d, 4, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                        assertDv(d, 3, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     }
                 }
                 if (d.variable() instanceof FieldReference fr && "NONE".equals(fr.fieldInfo.name)) {
                     if ("0".equals(d.statementId())) {
                         assertFalse(d.variableInfoContainer().hasEvaluation());
 
-                        assertEquals("<m:isEmpty>||!<m:notStart>?instance type Space/*new Space(ElementarySpace.NONE,ElementarySpace.NONE,Split.NEVER)*/:<f:NONE>",
-                                d.currentValue().toString());
+                        String expected = d.iteration() == 0
+                                ? "!<m:notStart>||<m:isEmpty>?instance type Space/*new Space(ElementarySpace.NONE,ElementarySpace.NONE,Split.NEVER)*/:<f:NONE>"
+                                : "instance type Space/*new Space(ElementarySpace.NONE,ElementarySpace.NONE,Split.NEVER)*/";
+                        assertEquals(expected, d.currentValue().toString());
                         assertEquals("", d.variableInfo().getLinkedVariables().toString());
                     }
                     if ("0.0.0".equals(d.statementId())) {
-                        assertEquals("<m:notStart>?<f:NONE>:instance type Space/*new Space(ElementarySpace.NONE,ElementarySpace.NONE,Split.NEVER)*/",
-                                d.currentValue().toString());
-                        assertEquals("", d.variableInfo().getLinkedVariables().toString());
+                        assertLinked(d, it(0, ""));
                     }
                     if ("0.0.0.0.0".equals(d.statementId())) {
                         String expected = d.iteration() == 0 ? "<f:NONE>"
@@ -88,11 +90,23 @@ public class Test_Output_02_OutputBuilder extends CommonTestRunner {
                         assertEquals("", d.variableInfo().getLinkedVariables().toString());
                     }
                     if ("0.0.0.0.2".equals(d.statementId())) {
-                        String expected = d.iteration() < 2 ? "<f:NONE>"
+                        String expected = d.iteration() == 0 ? "<f:NONE>"
                                 : "instance type Space/*new Space(ElementarySpace.NONE,ElementarySpace.NONE,Split.NEVER)*/";
                         assertEquals(expected, d.currentValue().toString());
-                        String linked = d.iteration() == 0 ? "" : "b:-1,end:-1,start:-1"; // FIXME
-                        assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
+                        assertEquals("", d.variableInfo().getLinkedVariables().toString());
+                    }
+                }
+            }
+            if ("joining".equals(d.methodInfo().name)) {
+                int n = d.methodInfo().methodInspection.get().getParameters().size();
+                if (1 == n) {
+                    if (d.variable() instanceof ParameterInfo pi && "separator".equals(pi.name)) {
+                        assertDv(d, 5, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                    }
+                    if (d.variable() instanceof ReturnVariable) {
+                        String expected = d.iteration() < 4 ? "<m:joining>"
+                                : "OutputBuilder.joining(separator,Space.NONE,Space.NONE,Guide.defaultGuideGenerator())";
+                        assertEquals(expected, d.currentValue().toString());
                     }
                 }
             }
@@ -123,9 +137,20 @@ public class Test_Output_02_OutputBuilder extends CommonTestRunner {
             }
             if ("joining".equals(d.methodInfo().name)) {
                 int n = d.methodInfo().methodInspection.get().getParameters().size();
-                if (n == 4) {
+                if (n == 1) {
+                    assertDv(d.p(0), 6, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
+                } else if (n == 2) {
+                    assertDv(d.p(0), 6, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
+                    assertDv(d.p(1), 6, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
+                } else if (n == 4) {
                     // separator
                     assertDv(d.p(0), 5, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
+                    assertDv(d.p(1), 5, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
+                    assertDv(d.p(2), 5, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
+                    assertDv(d.p(3), 5, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
+                    String value = d.iteration() < 3 ? "<m:joining>"
+                            : "new Collector<>(){final AtomicInteger countMid=new AtomicInteger();public Supplier<OutputBuilder> supplier(){return OutputBuilder::new;}public BiConsumer<OutputBuilder,OutputBuilder> accumulator(){return (a,b)->{... debugging ...};}public BinaryOperator<OutputBuilder> combiner(){return (a,b)->{... debugging ...};}public Function<OutputBuilder,OutputBuilder> finisher(){return t->{... debugging ...};}public Set<Characteristics> characteristics(){return Set.of(Characteristics.CONCURRENT);}}";
+                    assertEquals(value, d.methodAnalysis().getSingleReturnValue().toString());
                 }
             }
         };
@@ -133,6 +158,9 @@ public class Test_Output_02_OutputBuilder extends CommonTestRunner {
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("OutputElement".equals(d.typeInfo().simpleName)) {
                 assertDv(d, MultiLevel.EFFECTIVELY_IMMUTABLE_HC_DV, Property.IMMUTABLE);
+            }
+            if ("OutputBuilder".equals(d.typeInfo().simpleName)) {
+                assertDv(d, 6, MultiLevel.CONTAINER_DV, Property.CONTAINER);
             }
         };
 
@@ -144,7 +172,7 @@ public class Test_Output_02_OutputBuilder extends CommonTestRunner {
                 case "Qualifier" -> "-";
                 case "Guide" -> "------";
                 case "TypeName" -> "-------";
-                case "OutputBuilder" -> "--------M-M-M--M--MFT--";
+                case "OutputBuilder" -> "--------";
                 default -> fail(d.typeInfo().simpleName + ": " + d.delaySequence());
             };
             assertEquals(s, d.delaySequence(), d.typeInfo().simpleName);
@@ -153,7 +181,7 @@ public class Test_Output_02_OutputBuilder extends CommonTestRunner {
         testSupportAndUtilClasses(List.of(OutputBuilder.class, OutputElement.class, Qualifier.class,
                         FormattingOptions.class, Guide.class, ElementarySpace.class, Space.class, TypeName.class),
                 0, 0, new DebugConfiguration.Builder()
-                        //    .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                        .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                         .addStatementAnalyserVisitor(statementAnalyserVisitor)
                         .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                         .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
