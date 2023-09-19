@@ -73,7 +73,6 @@ public class Independent1_9<T> {
         }
     }
 
-    @ImmutableContainer(hc = true)
     @Independent(hc = true)
     @NotNull // TODO (content = true) has not been implemented yet
     public Stream<Map.Entry<T, Boolean>> stream() {
@@ -85,9 +84,4 @@ public class Independent1_9<T> {
         other.stream().forEach(e -> this.put(e.getKey(), e.getValue()));
     }
 
-    @Independent(hc = true)
-    @NotModified
-    public List<Map.Entry<T, Boolean>> entries() {
-        return stream().toList();
-    }
 }

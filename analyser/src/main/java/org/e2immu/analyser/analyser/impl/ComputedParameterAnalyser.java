@@ -253,12 +253,15 @@ public class ComputedParameterAnalyser extends ParameterAnalyserImpl {
             VariableInfo viParam = lastStatement.findOrNull(parameterInfo, Stage.MERGE);
             if (viParam != null) {
                 if (!viParam.linkedVariablesIsSet()) {
+                    /*
+                    Looks like a good idea, but Independent1_9 shows that any param break should come AFTER a field break
+
                     if (sharedState.breakDelayLevel().acceptParameter() && viParam.getLinkedVariables().causesOfDelay()
                             .containsCauseOfDelay(CauseOfDelay.Cause.LINKING)) {
                         LOGGER.debug("Breaking parameter delay in independent, parameter {}", parameterInfo.fullyQualifiedName);
                         parameterAnalysis.setProperty(INDEPENDENT, INDEPENDENT_DV);
                         return DONE;
-                    }
+                    }*/
                     LOGGER.debug("Delay independent in parameter {}, waiting for linked1variables in statement {}",
                             parameterInfo.fullyQualifiedName(), lastStatement.index());
                     delay = DelayFactory.createDelay(new VariableCause(parameterInfo, lastStatement.location(Stage.MERGE),
@@ -288,13 +291,15 @@ public class ComputedParameterAnalyser extends ParameterAnalyserImpl {
                     .toList();
             for (VariableInfo vi : vis) {
                 if (!vi.linkedVariablesIsSet()) {
+                    /*
+                    Removed because the "other" independent delay break comes too early in Independent1_9.
                     if (sharedState.breakDelayLevel().acceptParameter() && vi.getLinkedVariables().causesOfDelay()
                             .containsCauseOfDelay(CauseOfDelay.Cause.LINKING)) {
                         LOGGER.debug("Breaking parameter delay in independent, parameter {}, field {}",
                                 parameterInfo, vi.variable());
                         parameterAnalysis.setProperty(INDEPENDENT, INDEPENDENT_DV);
                         return DONE;
-                    }
+                    }*/
                     LOGGER.debug("Delay independent in parameter {}, waiting for linked1variables in statement {}",
                             parameterInfo.fullyQualifiedName(), lastStatement.index());
                     delay = delay.merge(DelayFactory.createDelay(new VariableCause(vi.variable(), lastStatement.location(Stage.MERGE),

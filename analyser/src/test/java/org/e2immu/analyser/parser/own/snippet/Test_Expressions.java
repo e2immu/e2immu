@@ -340,7 +340,7 @@ public class Test_Expressions extends CommonTestRunner {
 
 
         BreakDelayVisitor breakDelayVisitor = d -> assertEquals(
-                "--------M---M-M---M--M--M--M--M-MF-----MF--MF-----M-MF-MF------MF-MFT---MFT--MFT--M-MFT------",
+                "--------M---M-M---M--M-M--M--M-MF-MF-MF-MF-MF--MF--MF-----MF--MF-----M-MF-MF------MF-MFT---MFT--MFT--M-MFT------",
                 d.delaySequence());
 
         testClass("Expressions_0", 3, DONT_CARE,

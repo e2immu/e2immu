@@ -309,7 +309,7 @@ public class Test_63_DGSimplified extends CommonTestRunner {
                 assertEquals(expected, ((FieldAnalysisImpl.Builder) d.fieldAnalysis()).sortedValuesString());
             }
         };
-        BreakDelayVisitor breakDelayVisitor = d -> assertEquals("----M-M-M--M--MF-MFT-----", d.delaySequence());
+        BreakDelayVisitor breakDelayVisitor = d -> assertEquals("----M-M-M--M--MF-MFT-------", d.delaySequence());
         testClass("DGSimplified_1", 4, 1, new DebugConfiguration.Builder()
                 //   .addEvaluationResultVisitor(evaluationResultVisitor)
                 //   .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
@@ -324,7 +324,7 @@ public class Test_63_DGSimplified extends CommonTestRunner {
         EvaluationResultVisitor evaluationResultVisitor = d -> {
             if ("reverse".equals(d.methodInfo().name)) {
                 if ("1.0.0".equals(d.statementId())) {
-                    String expected = d.iteration() < 19 ? "<m:addNode>" : "<no return value>";
+                    String expected = d.iteration() < 21 ? "<m:addNode>" : "<no return value>";
                     assertEquals(expected, d.evaluationResult().value().toString());
                 }
             }
@@ -332,7 +332,7 @@ public class Test_63_DGSimplified extends CommonTestRunner {
         StatementAnalyserVisitor statementAnalyserVisitor = d -> {
             if ("reverse".equals(d.methodInfo().name)) {
                 if ("1.0.0".equals(d.statementId())) {
-                    String expected = d.iteration() < 19 ? "<m:addNode>" : "<no return value>";
+                    String expected = d.iteration() < 21 ? "<m:addNode>" : "<no return value>";
                     assertEquals(expected, d.statementAnalysis().stateData().valueOfExpression.get().toString());
                 }
             }
@@ -344,7 +344,7 @@ public class Test_63_DGSimplified extends CommonTestRunner {
                 }
             }
         };
-        BreakDelayVisitor breakDelayVisitor = d -> assertEquals("----M---M--M-MF-MFT------", d.delaySequence());
+        BreakDelayVisitor breakDelayVisitor = d -> assertEquals("----M--M--M-MF-MFT------", d.delaySequence());
 
         testClass("DGSimplified_2", 2, 0, new DebugConfiguration.Builder()
                 .addStatementAnalyserVisitor(statementAnalyserVisitor)

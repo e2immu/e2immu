@@ -718,7 +718,7 @@ public class Test_66_VariableScope extends CommonTestRunner {
                 assertDv(d, DV.FALSE_DV, Property.MODIFIED_METHOD);
             }
             if ("output".equals(d.methodInfo().name) && "MethodCall".equals(d.methodInfo().typeInfo.simpleName)) {
-                assertDv(d, 20, DV.FALSE_DV, Property.MODIFIED_METHOD);
+                assertDv(d, 21, DV.FALSE_DV, Property.MODIFIED_METHOD);
             }
             if ("output2".equals(d.methodInfo().name)) {
                 assertDv(d, 20, DV.FALSE_DV, Property.MODIFIED_METHOD);

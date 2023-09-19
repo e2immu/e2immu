@@ -471,53 +471,108 @@ public class Test_Independent1 extends CommonTestRunner {
                 .build());
     }
 
-    @Disabled("Not reaching conclusion")
+    /*
+     EXAMPLE OF NECESSARY FIELD DELAY BREAK
+
+     factory method "of" uses 'putAll', and creates an object of the class.
+     'putAll' uses 'stream', and 'put' in a Lambda (without the Lambda, the delays remain!!)
+     'put' has no method dependencies, depends on field 'map'
+     'stream' creates ImmutableEntry objects, depends on field 'map'
+
+     removing the factory method + putAll removes the delay breaking problems.
+     delay was broken in independent computation of param of 'accept', which is too early.
+     The real delay break we need here is the one in field 'map', linked variables.
+     In the current scheme, field breaks come late, resulting in it 12...
+     */
     @Test
     public void test_9() throws IOException {
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("putAll".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof ParameterInfo pi && "other".equals(pi.name)) {
-                    String linked = d.iteration() < 15 ? "this:-1" : "this:4";
+                    String linked = d.iteration() < 13 ? "this:-1" : "this:4";
                     assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
+                }
+            }
+            if ("put".equals(d.methodInfo().name)) {
+                if (d.variable() instanceof ParameterInfo pi && "t".equals(pi.name)) {
+                    String linked = d.iteration() < 12 ? "this.map:-1,this:-1" : "this.map:3,this:3";
+                    if ("0".equals(d.statementId())) {
+                        assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
+                        String value = d.iteration() < 12
+                                ? "<m:containsKey>?nullable instance type T/*@Identity*/:<p:t>"
+                                : "nullable instance type T/*@Identity*/";
+                        assertEquals(value, d.currentValue().toString());
+                    }
+                    if ("0.0.0".equals(d.statementId())) {
+                        assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
+                        String value = d.iteration() < 12 ? "<p:t>" : "nullable instance type T/*@Identity*/";
+                        assertEquals(value, d.currentValue().toString());
+                    }
+                }
+                if (d.variable() instanceof FieldReference fr && "map".equals(fr.fieldInfo.name)) {
+                    if ("0.0.0".equals(d.statementId())) {
+                        String linked = d.iteration() < 12 ? "t:-1,this:-1" : "";
+                        assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
+                        String value = d.iteration() < 12 ? "<f:map>" : "instance type HashMap<T,Boolean>";
+                        assertEquals(value, d.currentValue().toString());
+                    }
+                    if ("0".equals(d.statementId())) {
+                        String linked = d.iteration() < 12 ? "t:-1,this:-1" : "";
+                        assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
+                        String value = switch (d.iteration()) {
+                            case 0 -> "<f:map>";
+                            case 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11 ->
+                                    "<vp:map:ext_not_null@Field_map;initial:this.map@Method_put_0-C>";
+                            default -> "instance type HashMap<T,Boolean>";
+                        };
+                        assertEquals(value, d.currentValue().toString());
+                    }
                 }
             }
             if ("stream".equals(d.methodInfo().name)) {
                 assertEquals("0", d.statementId());
                 if (d.variable() instanceof ReturnVariable) {
-                    String linked = d.iteration() < 14 ? "this.map:-1,this:-1" : "this.map:4,this:4";
+                    String linked = d.iteration() < 12 ? "this.map:-1,this:-1" : "this.map:4,this:4";
                     assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
-                }
-            }
-            if ("entries".equals(d.methodInfo().name)) {
-                assertEquals("0", d.statementId());
-                if (d.variable() instanceof ReturnVariable) {
-                    String linked = d.iteration() < 14 ? "this:-1" : "this:4";
-                    assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
-                    assertCurrentValue(d, 14,
-                            "`map`.entrySet().stream().map(/*inline apply*/new ImmutableEntry<>(e.getKey(),e.getValue())).toList()");
-                    if (d.iteration() >= 14) {
-                        // NOTE: there is no ImmutableEntry here!
-                        assertEquals("Type java.util.List<java.util.Map.Entry<T,Boolean>>",
-                                d.variableInfo().getValue().returnType().toString());
-                    }
-                    assertDv(d, 14, MultiLevel.EFFECTIVELY_IMMUTABLE_HC_DV, Property.IMMUTABLE);
                 }
             }
             if ("of".equals(d.methodInfo().name)) {
+                if ("result".equals(d.variableName())) {
+                    if ("1.0.0.0.0".equals(d.statementId())) {
+                        assertLinked(d, it(0, 13, "map:-1,maps:-1"), it(14, "map:4,maps:4"));
+                    }
+                    if ("2".equals(d.statementId())) {
+                        assertLinked(d, it(0, 13, "maps:-1"), it(14, "maps:4"));
+                    }
+                }
                 if (d.variable() instanceof ReturnVariable) {
                     if ("2".equals(d.statementId())) {
-                        String linked = d.iteration() < 7 ? "maps:-1,result:0" : "result:0";
+                        String linked = d.iteration() < 14 ? "maps:-1,result:0" : "maps:4,result:0";
                         assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
                     }
                 }
             }
         };
+
+        StatementAnalyserVisitor statementAnalyserVisitor = d -> {
+            if ("putAll".equals(d.methodInfo().name)) {
+                assertEquals("0", d.statementId());
+                String properties = switch (d.iteration()) {
+                    case 0 ->
+                            "other={context-modified=assign_to_field@Parameter_t, context-not-null=nullable:1}, this={context-modified=initial:this.map@Method_put_0-C;initial@Field_map, read=true:1}";
+                    default ->
+                            "other={context-modified=link:t@Method_put_0:M;link:this.map@Method_put_0:M, context-not-null=nullable:1}, this={context-modified=ext_not_null@Field_map;initial:this.map@Method_put_0-C;initial@Field_map;link:t@Method_put_0:M;link:this.map@Method_put_0:M, read=true:1}";
+                };
+//                assertEquals(properties, d.statementAnalysis().propertiesFromSubAnalysersSortedToString());
+            }
+        };
+
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("stream".equals(d.methodInfo().name)) {
-                String expected = d.iteration() < 14 ? "<m:stream>" : "map.entrySet().stream().map(instance type $1)";
+                String expected = d.iteration() < 12 ? "<m:stream>" : "map.entrySet().stream().map(instance type $1)";
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
-                assertDv(d, BIG, MultiLevel.INDEPENDENT_HC_DV, Property.INDEPENDENT);
-                if (d.iteration() >= 14) {
+                assertDv(d, 12, MultiLevel.INDEPENDENT_HC_DV, Property.INDEPENDENT);
+                if (d.iteration() >= 12) {
                     assertEquals("Type java.util.stream.Stream<org.e2immu.analyser.parser.independence.testexample.Independent1_9.ImmutableEntry<T>>",
                             d.methodAnalysis().getSingleReturnValue().returnType().toString());
                 }
@@ -526,34 +581,51 @@ public class Test_Independent1 extends CommonTestRunner {
                 assertDv(d, BIG, MultiLevel.EFFECTIVELY_IMMUTABLE_HC_DV, Property.IMMUTABLE);
                 assertDv(d, BIG, MultiLevel.INDEPENDENT_HC_DV, Property.INDEPENDENT);
             }
+            if ("putAll".equals(d.methodInfo().name)) {
+                assertDv(d.p(0), 14, MultiLevel.EFFECTIVELY_IMMUTABLE_HC_DV, Property.IMMUTABLE);
+                assertDv(d.p(0), 14, MultiLevel.INDEPENDENT_HC_DV, Property.INDEPENDENT);
+            }
+            if ("put".equals(d.methodInfo().name)) {
+                // FIXME at iteration 13, while accept's parameter is independent in iteration 5. this is seriously weird
+                assertDv(d.p(0), 13, MultiLevel.INDEPENDENT_HC_DV, Property.INDEPENDENT);
+                assertDv(d.p(0), 13, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+            }
             if ("of".equals(d.methodInfo().name)) {
                 /*
                  IMPROVE this should be _HC, but there is no code yet in ComputedParameterAnalyser to look at the method
                  return value rather than at the fields.  A complication will be that variables do not link to the return
                  value currently.
                  */
-                assertDv(d.p(0), 8, MultiLevel.INDEPENDENT_DV, Property.INDEPENDENT);
+                assertDv(d, 14, MultiLevel.INDEPENDENT_HC_DV, Property.INDEPENDENT);
+            }
+            if ("accept".equals(d.methodInfo().name)) {
+                assertEquals("$2", d.methodInfo().typeInfo.simpleName);
+                String label = "org.e2immu.analyser.parser.independence.testexample.Independent1_9.$2.accept(java.util.Map.Entry<T,Boolean>):0";
+                assertEquals(label, d.p(0).label());
+                assertDv(d, 12, DV.TRUE_DV, Property.MODIFIED_METHOD);
+                assertDv(d.p(0), 14, MultiLevel.INDEPENDENT_HC_DV, Property.INDEPENDENT);
             }
         };
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
             if ("map".equals(d.fieldInfo().name)) {
                 assertDv(d, MultiLevel.MUTABLE_DV, Property.EXTERNAL_IMMUTABLE);
-                assertDv(d, MultiLevel.INDEPENDENT_DV, Property.INDEPENDENT);
+                assertDv(d, 11, MultiLevel.INDEPENDENT_DV, Property.INDEPENDENT);
             }
         };
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("Independent1_9".equals(d.typeInfo().simpleName)) {
-                assertDv(d, BIG, MultiLevel.EFFECTIVELY_IMMUTABLE_HC_DV, Property.IMMUTABLE);
+                assertDv(d, 12, MultiLevel.EFFECTIVELY_IMMUTABLE_HC_DV, Property.IMMUTABLE);
             }
         };
 
-        BreakDelayVisitor breakDelayVisitor = d -> assertEquals("----", d.delaySequence());
+        BreakDelayVisitor breakDelayVisitor = d -> assertEquals("-----M--M-MF----", d.delaySequence());
 
         testClass("Independent1_9", 0, 0, new DebugConfiguration.Builder()
-                //    .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-                //    .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
-                //    .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
-                //   .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+                .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
                 .addBreakDelayVisitor(breakDelayVisitor)
                 .build());
     }
