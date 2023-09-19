@@ -249,11 +249,14 @@ public class Test_23_ExternalContainer extends CommonTestRunner {
                 assertDv(d, 1, MultiLevel.NOT_CONTAINER_DV, Property.CONTAINER);
             }
         };
+        BreakDelayVisitor breakDelayVisitor = d -> assertEquals("-------M--", d.delaySequence());
+
         testClass("ExternalContainer_1", 0, 0, new DebugConfiguration.Builder()
-                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
-                .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+             //   .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+             //   .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+            //    .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                 .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
+                .addBreakDelayVisitor(breakDelayVisitor)
                 .build());
     }
 

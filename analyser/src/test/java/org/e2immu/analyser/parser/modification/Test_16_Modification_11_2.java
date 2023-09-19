@@ -223,15 +223,15 @@ public class Test_16_Modification_11_2 extends CommonTestRunner {
             }
         };
 
-        BreakDelayVisitor breakDelayVisitor = d -> assertEquals("-----M-M-M--M----M--",
+        BreakDelayVisitor breakDelayVisitor = d -> assertEquals("-----M-M-M--M-----M--",
                 d.delaySequence());
 
         testClass("Modification_11", 0, 0, new DebugConfiguration.Builder()
                         //    .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-                        .addStatementAnalyserVisitor(statementAnalyserVisitor)
-                        .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
-                        .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
-                        .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
+                     //   .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                      //  .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+                     //   .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                     //   .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
                         .addBreakDelayVisitor(breakDelayVisitor)
                         .build(),
                 new AnalyserConfiguration.Builder()

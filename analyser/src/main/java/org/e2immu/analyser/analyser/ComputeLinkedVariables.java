@@ -171,7 +171,7 @@ public class ComputeLinkedVariables {
                         .filter(e -> e.getValue().equals(LinkedVariables.LINK_IS_HC_OF) || e.getValue().isDelayed())
                         .map(Map.Entry::getKey).toList();
                 if (mapped3.size() > 1) {
-                    LOGGER.debug("Augmenting links: found {}", mapped3);
+                    LOGGER.trace("Augmenting links: found {}", mapped3);
                     Variable v1 = mapped3.get(0);
                     for (Variable v2 : mapped3.subList(1, mapped3.size())) {
                         Set<Variable> to = toAdd3.computeIfAbsent(v1, k -> new HashSet<>());
@@ -187,7 +187,7 @@ public class ComputeLinkedVariables {
         for (Map.Entry<Variable, Set<Variable>> entry : toAdd3.entrySet()) {
             Map<Variable, DV> map = entry.getValue().stream()
                     .collect(Collectors.toUnmodifiableMap(e -> e, e -> LinkedVariables.LINK_COMMON_HC.max(delays.get())));
-            LOGGER.debug("Augmenting links: from {} to {}", entry.getKey().simpleName(), map);
+            LOGGER.trace("Augmenting links: from {} to {}", entry.getKey().simpleName(), map);
             weightedGraph.addNode(entry.getKey(), map, true, (v1, v2) -> {
                 if (v1.le(LINK_DEPENDENT) || v2.le(LINK_DEPENDENT)) {
                     if(v1.isDelayed()) return v2;

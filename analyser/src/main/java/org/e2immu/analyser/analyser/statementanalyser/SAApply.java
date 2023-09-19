@@ -395,7 +395,7 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
         Properties externalProperties = sharedState.evaluationContext().getExternalProperties(valueToWrite);
 
         Expression valueToWritePossiblyDelayed = delayAssignmentValue(sharedState, valueToWrite,
-                valueProperties, valueProperties.delays());
+                valueProperties.delays());
 
         Properties changeDataProperties = Properties.of(changeData.properties());
         Properties combined = SAHelper.mergeAssignment(variable, valueProperties, changeDataProperties,
@@ -585,7 +585,6 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
 
     private Expression delayAssignmentValue(StatementAnalyserSharedState sharedState,
                                             Expression valueToWrite,
-                                            Properties valueProperties,
                                             CausesOfDelay valuePropertiesIsDelayed) {
         boolean valueToWriteIsDelayed = valueToWrite.isDelayed();
         CausesOfDelay causes;
@@ -596,7 +595,7 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
         }
         if (!valueToWriteIsDelayed && causes.isDelayed()) {
             return valueToWrite.createDelayedValue(valueToWrite.getIdentifier(),
-                    EvaluationResult.from(sharedState.evaluationContext()), valueProperties, causes);
+                    EvaluationResult.from(sharedState.evaluationContext()), causes);
         }
         return valueToWrite;
     }

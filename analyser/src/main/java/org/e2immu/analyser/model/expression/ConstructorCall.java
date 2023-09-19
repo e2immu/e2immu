@@ -520,7 +520,7 @@ public class ConstructorCall extends BaseExpression implements HasParameterExpre
                                                     EvaluationResult.Builder builder,
                                                     CausesOfDelay causesOfDelay) {
         assert causesOfDelay.isDelayed();
-        builder.setExpression(createDelayedValue(identifier, context, (Properties) null, causesOfDelay));
+        builder.setExpression(createDelayedValue(identifier, context, causesOfDelay));
         // set scope delay
         return builder.build();
     }
@@ -528,7 +528,6 @@ public class ConstructorCall extends BaseExpression implements HasParameterExpre
     @Override
     public Expression createDelayedValue(Identifier identifier,
                                          EvaluationResult context,
-                                         Properties valueProperties,
                                          CausesOfDelay causes) {
         return createDelayedValue(identifier, context, parameterizedType, causes);
     }

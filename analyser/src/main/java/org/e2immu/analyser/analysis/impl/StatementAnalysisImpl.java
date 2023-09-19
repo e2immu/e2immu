@@ -1074,7 +1074,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
                 } else {
                     if (mergeWhenNotRemove.test(variable)) {
                         VariableInfoContainer vicMerge = vicToAdd == null ? vic : vicToAdd;
-                        if(useVic != null && vicToAdd == null) {
+                        if (useVic != null && vicToAdd == null) {
                             // we'll copy from "vic"
                             vic.ensureCopyToMerge();
                         }
@@ -1939,7 +1939,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
             CausesOfDelay causes = combined.delays();
             if (causes.isDelayed()) {
                 toWrite = DelayedVariableExpression.forDelayedValueProperties(fieldReference, statementTime(INITIAL),
-                        properties, causes);
+                        causes);
             } else {
                 toWrite = value;
             }

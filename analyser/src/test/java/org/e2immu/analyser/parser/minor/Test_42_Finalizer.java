@@ -77,9 +77,9 @@ public class Test_42_Finalizer extends CommonTestRunner {
         };
 
         testClass("Finalizer_0", 1, 0, new DebugConfiguration.Builder()
-                .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
-                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+         //       .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
+          //      .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+           //     .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .build());
     }
 

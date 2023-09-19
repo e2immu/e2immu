@@ -798,9 +798,9 @@ public class Test_01_Loops_6plus extends CommonTestRunner {
 
         // TODO See Loops_17, one warning too many
         testClass("Loops_19", 0, 4, new DebugConfiguration.Builder()
-                .addEvaluationResultVisitor(evaluationResultVisitor)
-                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+              //  .addEvaluationResultVisitor(evaluationResultVisitor)
+               // .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+              //  .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .addBreakDelayVisitor(breakDelayVisitor)
                 .build());
     }

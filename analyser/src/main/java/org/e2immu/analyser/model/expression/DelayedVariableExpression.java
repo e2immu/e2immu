@@ -40,20 +40,11 @@ public class DelayedVariableExpression extends BaseExpression implements IsVaria
     public final Variable variable;
     public final CausesOfDelay causesOfDelay;
     public final int statementTime;
-    private final Properties properties;
 
     private DelayedVariableExpression(String msg,
                                       Variable variable,
                                       int statementTime,
                                       CausesOfDelay causesOfDelay) {
-        this(msg, variable, statementTime, causesOfDelay, null);
-    }
-
-    private DelayedVariableExpression(String msg,
-                                      Variable variable,
-                                      int statementTime,
-                                      CausesOfDelay causesOfDelay,
-                                      Properties properties) {
         super(Identifier.constant(variable.fullyQualifiedName() + ":" + statementTime),
                 variable.getComplexity());
         this.msg = msg;
@@ -64,7 +55,6 @@ public class DelayedVariableExpression extends BaseExpression implements IsVaria
                 : "Causes of delay: " + causesOfDelay;
         assert causesOfDelay.isDelayed();
         this.variable = variable;
-        this.properties = properties;
     }
 
     public static DelayedVariableExpression forParameter(ParameterInfo parameterInfo,
@@ -114,10 +104,9 @@ public class DelayedVariableExpression extends BaseExpression implements IsVaria
 
     public static Expression forDelayedValueProperties(Variable variable,
                                                        int statementTime,
-                                                       Properties properties,
                                                        CausesOfDelay causesOfDelay) {
         String msg = "<vp:" + variable.simpleName() + ":" + causesOfDelay + ">";
-        return new DelayedVariableExpression(msg, variable, statementTime, causesOfDelay, properties);
+        return new DelayedVariableExpression(msg, variable, statementTime, causesOfDelay);
     }
 
     public static Expression forMerge(Variable variable, CausesOfDelay causes) {
@@ -242,15 +231,7 @@ public class DelayedVariableExpression extends BaseExpression implements IsVaria
 
     @Override
     public DV getProperty(EvaluationResult context, Property property, boolean duringEvaluation) {
-        if (properties != null) {
-            return properties.getOrDefault(property, causesOfDelay);
-        }
         return causesOfDelay;
-    }
-
-    @Override
-    public DV hardCodedPropertyOrNull(Property property) {
-        return properties == null ? null : properties.getOrDefaultNull(property);
     }
 
     // special treatment because of == equality.

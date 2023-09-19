@@ -344,11 +344,14 @@ public class Test_62_FormatterSimplified extends CommonTestRunner {
             }
         };
 
+        BreakDelayVisitor breakDelayVisitor = d -> assertEquals("------", d.delaySequence());
+
         // guide becomes ENN, which is harsh, but for now we'll keep it as is
         testClass("FormatterSimplified_6", 0, 3, new DebugConfiguration.Builder()
-                .addEvaluationResultVisitor(evaluationResultVisitor)
-                .addStatementAnalyserVisitor(statementAnalyserVisitor)
-                .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+             //   .addEvaluationResultVisitor(evaluationResultVisitor)
+              //  .addStatementAnalyserVisitor(statementAnalyserVisitor)
+             //   .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+                .addBreakDelayVisitor(breakDelayVisitor)
                 .build());
     }
 

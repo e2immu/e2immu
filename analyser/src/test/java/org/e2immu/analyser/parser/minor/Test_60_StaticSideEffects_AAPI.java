@@ -163,13 +163,16 @@ public class Test_60_StaticSideEffects_AAPI extends CommonTestRunner {
             }
         };
 
+        BreakDelayVisitor breakDelayVisitor = d-> assertEquals("-------", d.delaySequence());
+
         testClass("StaticSideEffects_1", 0, 0, new DebugConfiguration.Builder()
-                .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
-                .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
-                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-                .addStatementAnalyserVisitor(statementAnalyserVisitor)
-                .addEvaluationResultVisitor(evaluationResultVisitor)
-                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+              //  .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+              //  .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
+              //  .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+              //  .addStatementAnalyserVisitor(statementAnalyserVisitor)
+              //  .addEvaluationResultVisitor(evaluationResultVisitor)
+              //  .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                .addBreakDelayVisitor(breakDelayVisitor)
                 .build());
     }
 

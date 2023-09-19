@@ -28,6 +28,7 @@ import org.e2immu.analyser.model.expression.Equals;
 import org.e2immu.analyser.model.expression.ExpandedVariable;
 import org.e2immu.analyser.model.expression.InlinedMethod;
 import org.e2immu.analyser.model.variable.FieldReference;
+import org.e2immu.analyser.model.variable.ReturnVariable;
 import org.e2immu.analyser.model.variable.This;
 import org.e2immu.analyser.parser.CommonTestRunner;
 import org.e2immu.analyser.parser.Message;
@@ -403,7 +404,73 @@ public class Test_37_EventuallyE2Immutable extends CommonTestRunner {
     // variant where b is not of primitive type; see ComputeLinkedVariables.augmentGraph
     @Test
     public void test_5B() throws IOException {
+        StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+            if ("getT".equals(d.methodInfo().name)) {
+                if (d.variable() instanceof FieldReference fr && "t".equals(fr.fieldInfo.name)) {
+                    assertDv(d, 2, MultiLevel.NULLABLE_DV, Property.EXTERNAL_NOT_NULL);
+                    if ("0".equals(d.statementId())) {
+                        assertDv(d, 4, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.CONTEXT_NOT_NULL);
+                        assertDv(d, 4, MultiLevel.NULLABLE_DV, Property.NOT_NULL_EXPRESSION);
+                    }
+                    if ("1".equals(d.statementId())) {
+                        String value = switch (d.iteration()) {
+                            case 0 -> "<f:t>";
+                            case 1, 2, 3 -> "<wrapped:t>";
+                            default -> "";
+                        };
+                        assertEquals(value, d.currentValue().toString());
+
+                        // we don't reach these:
+                        assertDv(d, BIG, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_EXPRESSION);
+                        assertDv(d, BIG, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.CONTEXT_NOT_NULL);
+                    }
+                }
+            }
+            if (d.variable() instanceof ReturnVariable) {
+                if ("1".equals(d.statementId())) {
+                    String value = switch (d.iteration()) {
+                        case 0 -> "<f:t>";
+                        case 1 -> "<s:T>";
+                        case 2, 3 -> "<vp:t:link@Field_t>";
+                        default -> "t$0";
+                    };
+                    assertEquals(value, d.currentValue().toString());
+                    assertDv(d, 2, MultiLevel.NULLABLE_DV, Property.NOT_NULL_EXPRESSION);
+                    assertDv(d, MultiLevel.NULLABLE_DV, Property.CONTEXT_NOT_NULL);
+                }
+            }
+        };
+        StatementAnalyserVisitor statementAnalyserVisitor = d -> {
+            if ("getT".equals(d.methodInfo().name)) {
+                String pc = d.statementAnalysis().stateData().getPrecondition().toString();
+                String pcValue = switch (d.iteration()) {
+                    case 0, 1 -> "Precondition[expression=!<null-check>, causes=[escape]]";
+                    case 2, 3 -> "Precondition[expression=null!=<vp:t:link@Field_t>, causes=[escape]]";
+                    default -> "Precondition[expression=null!=t, causes=[escape]]";
+                };
+                if ("0".equals(d.statementId())) {
+                    assertEquals("CM{parent=CM{}}", d.localConditionManager().toString());
+                    assertEquals("Precondition[expression=true, causes=[]]", pc);
+                    assertEquals(pcValue, d.statementAnalysis().methodLevelData().combinedPreconditionGet().toString());
+                }
+                if ("1".equals(d.statementId())) {
+                    assertEquals("CM{pc=Precondition[expression=<precondition>, causes=[]];parent=CM{}}",
+                            d.localConditionManager().toString());
+                    // FIXME there is no effect on the nullability ??
+                    assertEquals("true", d.localConditionManager().absoluteState(d.context()).toString());
+                    assertEquals(pcValue, d.statementAnalysis().methodLevelData().combinedPreconditionGet().toString());
+                }
+                if ("0.0.0".equals(d.statementId())) {
+                    assertEquals(pcValue, pc);
+                }
+            }
+        };
+
+        BreakDelayVisitor breakDelayVisitor = d -> assertEquals("-------", d.delaySequence());
         testClass("EventuallyE2Immutable_5B", 0, 0, new DebugConfiguration.Builder()
+                //.addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                // .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                .addBreakDelayVisitor(breakDelayVisitor)
                 .build());
     }
 

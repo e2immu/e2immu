@@ -190,7 +190,7 @@ public interface Expression extends Element, Comparable<Expression> {
     Expression stateTranslateThisTo(InspectionProvider inspectionProvider, FieldReference fieldReference);
 
     @NotNull
-    Expression createDelayedValue(Identifier identifier, EvaluationResult context, Properties properties, CausesOfDelay causes);
+    Expression createDelayedValue(Identifier identifier, EvaluationResult context, CausesOfDelay causes);
 
     @NotNull
     default CausesOfDelay causesOfDelay() {

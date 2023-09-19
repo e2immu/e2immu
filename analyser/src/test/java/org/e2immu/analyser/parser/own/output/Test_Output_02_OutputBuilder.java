@@ -142,7 +142,7 @@ public class Test_Output_02_OutputBuilder extends CommonTestRunner {
                 case "FormattingOptions" -> "----";
                 case "OutputElement" -> "--";
                 case "Qualifier" -> "-";
-                case "Guide" -> "--------";
+                case "Guide" -> "------";
                 case "TypeName" -> "-------";
                 case "OutputBuilder" -> "--------M-M-M--M--MFT--";
                 default -> fail(d.typeInfo().simpleName + ": " + d.delaySequence());

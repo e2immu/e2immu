@@ -112,12 +112,11 @@ public abstract class BaseExpression extends ElementImpl implements Expression {
     @Override
     public Expression createDelayedValue(Identifier identifier,
                                          EvaluationResult context,
-                                         Properties valueProperties,
                                          CausesOfDelay causes) {
         IsVariableExpression ive;
         if ((ive = asInstanceOf(IsVariableExpression.class)) != null) {
             Expression delayed = DelayedVariableExpression.forDelayedValueProperties(ive.variable(),
-                    context.evaluationContext().getInitialStatementTime(), valueProperties, causes);
+                    context.evaluationContext().getInitialStatementTime(), causes);
             if (this instanceof PropertyWrapper propertyWrapper) {
                 return propertyWrapper.copy(delayed);
             }

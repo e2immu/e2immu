@@ -300,13 +300,13 @@ public class Test_Util_06_DependencyGraph extends CommonTestRunner {
         };
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("DependencyGraph".equals(d.typeInfo().simpleName)) {
-                assertDv(d, 20, MultiLevel.EVENTUALLY_IMMUTABLE_HC_DV, Property.IMMUTABLE);
-                assertDv(d, 20, MultiLevel.INDEPENDENT_HC_INCONCLUSIVE, Property.INDEPENDENT);
+                assertDv(d, 28, MultiLevel.EVENTUALLY_IMMUTABLE_HC_DV, Property.IMMUTABLE);
+                assertDv(d, 28, MultiLevel.INDEPENDENT_HC_INCONCLUSIVE, Property.INDEPENDENT);
             }
             if ("$4".equals(d.typeInfo().simpleName)) {
-                assertDv(d, 21, MultiLevel.EVENTUALLY_IMMUTABLE_HC_DV, Property.IMMUTABLE);
-                assertDv(d, 21, MultiLevel.INDEPENDENT_HC_INCONCLUSIVE, Property.INDEPENDENT);
-                assertDv(d, 21, MultiLevel.NOT_CONTAINER_DV, Property.CONTAINER);
+                assertDv(d, 29, MultiLevel.EVENTUALLY_IMMUTABLE_HC_DV, Property.IMMUTABLE);
+                assertDv(d, 29, MultiLevel.INDEPENDENT_HC_INCONCLUSIVE, Property.INDEPENDENT);
+                assertDv(d, 29, MultiLevel.NOT_CONTAINER_DV, Property.CONTAINER);
                 assertDv(d, 3, MultiLevel.CONTAINER_DV, Property.PARTIAL_CONTAINER);
             }
         };
@@ -417,7 +417,7 @@ public class Test_Util_06_DependencyGraph extends CommonTestRunner {
 
         BreakDelayVisitor breakDelayVisitor = d -> {
             if ("DependencyGraph".equals(d.typeInfo().simpleName)) {
-                assertEquals("------M---M-----M--M--M-MF-MFT---", d.delaySequence());
+                assertEquals("------M--M-----M--M--M-MF-MFT---", d.delaySequence());
             }
         };
 
@@ -427,8 +427,8 @@ public class Test_Util_06_DependencyGraph extends CommonTestRunner {
                       //  .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                       //  .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                       //  .addStatementAnalyserVisitor(statementAnalyserVisitor)
-                     //   .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
-                     //   .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+                        .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
+                        .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                         .addBreakDelayVisitor(breakDelayVisitor)
                         .build(),
                 new AnalyserConfiguration.Builder().setComputeFieldAnalyserAcrossAllMethods(false).build());
