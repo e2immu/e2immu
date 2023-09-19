@@ -21,6 +21,7 @@ import org.e2immu.analyser.config.AnalyserConfiguration;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.parser.CommonTestRunner;
+import org.e2immu.analyser.visitor.BreakDelayVisitor;
 import org.e2immu.analyser.visitor.FieldAnalyserVisitor;
 import org.e2immu.analyser.visitor.MethodAnalyserVisitor;
 import org.e2immu.analyser.visitor.TypeAnalyserVisitor;
@@ -106,8 +107,8 @@ public class Test_Independent extends CommonTestRunner {
                 assertHc(d, 0, "");
             }
             if ("MethodAnalyserImpl".equals(d.typeInfo().simpleName)) {
-                assertDv(d, 3, MultiLevel.EFFECTIVELY_FINAL_FIELDS_DV, Property.IMMUTABLE);
-                assertDv(d, 3, MultiLevel.DEPENDENT_DV, Property.INDEPENDENT);
+                assertDv(d, 7, MultiLevel.EFFECTIVELY_FINAL_FIELDS_DV, Property.IMMUTABLE);
+                assertDv(d, 7, MultiLevel.DEPENDENT_DV, Property.INDEPENDENT);
                 assertHc(d, 2, "");
             }
             if ("AnalyserContext".equals(d.typeInfo().simpleName)) {
@@ -119,10 +120,14 @@ public class Test_Independent extends CommonTestRunner {
                 assertDv(d, 2, MultiLevel.EFFECTIVELY_FINAL_FIELDS_DV, Property.IMMUTABLE);
             }
         };
+
+        BreakDelayVisitor breakDelayVisitor = d -> assertEquals("-----MF---", d.delaySequence());
+
         testClass("Independent_4", 0, 4, new DebugConfiguration.Builder()
                         .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                         .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
                         .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+                        .addBreakDelayVisitor(breakDelayVisitor)
                         .build(),
                 new AnalyserConfiguration.Builder()
                         .setComputeFieldAnalyserAcrossAllMethods(true)

@@ -60,7 +60,7 @@ public class Test_04_NotNull_AAPI extends CommonTestRunner {
                         String linked = switch (d.iteration()) {
                             case 0 -> "data:-1,node.data:-1,node.map:-1,strings:-1,this.root:0,this:-1";
                             case 1 -> "data:-1,node.data:-1,node.map:-1,this.root:0,this:-1";
-                            default -> "node.map:3,this.root:0,this:3";
+                            default -> "node.data:4,node.map:3,this.root:0,this:3";
                         };
                         assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
                     }
@@ -79,7 +79,7 @@ public class Test_04_NotNull_AAPI extends CommonTestRunner {
                             String linked = switch (d.iteration()) {
                                 case 0 -> "data:-1,node.data:-1,node:-1,strings:-1,this.root:-1,this:-1";
                                 case 1 -> "data:-1,node.data:-1,node:-1,this.root:-1,this:-1";
-                                default -> "node:2,this.root:2,this:3";
+                                default -> "node.data:4,node:2,this.root:2,this:3";
                             };
                             assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
                         }
@@ -227,7 +227,7 @@ public class Test_04_NotNull_AAPI extends CommonTestRunner {
                         assertDv(d, 1, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
                         assertLinked(d,
                                 it0("newTrieNode:-1,node.map:-1,s:-1,this.root:0,this:-1"),
-                                it(1, "this.root:0,this:3"));
+                                it(1, "node.map:4,this.root:0,this:3"));
                     }
                     if ("1.0.2".equals(d.statementId())) {
                         assertLinked(d,
@@ -263,7 +263,6 @@ public class Test_04_NotNull_AAPI extends CommonTestRunner {
     }
 
 
-    // @Disabled("Erroneous potential null pointer warning on line 50")
     @Test
     public void test_4() throws IOException {
         EvaluationResultVisitor evaluationResultVisitor = d -> {
@@ -328,10 +327,13 @@ public class Test_04_NotNull_AAPI extends CommonTestRunner {
             }
         };
 
+        BreakDelayVisitor breakDelayVisitor = d -> assertEquals("----", d.delaySequence());
+
         testClass("NotNull_4", 2, 0, new DebugConfiguration.Builder()
                 .addEvaluationResultVisitor(evaluationResultVisitor)
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addBreakDelayVisitor(breakDelayVisitor)
                 .build(), new AnalyserConfiguration.Builder().setComputeContextPropertiesOverAllMethods(true).build());
     }
 
@@ -399,5 +401,12 @@ public class Test_04_NotNull_AAPI extends CommonTestRunner {
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .addEvaluationResultVisitor(evaluationResultVisitor)
                 .build(), new AnalyserConfiguration.Builder().setNormalizeMore(true).build());
+    }
+
+    @Disabled("Null pointer warning is wrong!")
+    @Test
+    public void test_8() throws IOException {
+        testClass("NotNull_8", 0, 0, new DebugConfiguration.Builder()
+                .build(), new AnalyserConfiguration.Builder().setComputeContextPropertiesOverAllMethods(false).build());
     }
 }

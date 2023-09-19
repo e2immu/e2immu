@@ -450,7 +450,7 @@ public class Test_34_ExplicitConstructorInvocation extends CommonTestRunner {
                 if (d.variable() instanceof FieldReference fr && "parent".equals(fr.fieldInfo.name)) {
                     assertTrue(fr.scopeIsThis());
                     assertCurrentValue(d, 3, "nullable instance type C");
-                    String linked = d.iteration() == 0 ? "NOT_YET_SET" : "";
+                    String linked = d.iteration() < 3 ? "parent.condition:-1,this:-1" : "";
                     assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
                     assertDv(d, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
                 }
@@ -758,7 +758,7 @@ public class Test_34_ExplicitConstructorInvocation extends CommonTestRunner {
         };
 
         BreakDelayVisitor breakDelayVisitor = d -> {
-            assertEquals("--------M---MF--MF--MF---MF-", d.delaySequence());
+            assertEquals("--------M-MF--MF--MF--MF--MF--MF--MF--MF----MFT--", d.delaySequence());
         };
 
         testClass("ExplicitConstructorInvocation_13", 0, 1, new DebugConfiguration.Builder()

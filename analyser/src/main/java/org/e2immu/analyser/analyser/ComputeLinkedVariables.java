@@ -36,11 +36,12 @@ import org.slf4j.LoggerFactory;
 
 import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiPredicate;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-import static org.e2immu.analyser.analyser.LinkedVariables.LINK_STATICALLY_ASSIGNED;
+import static org.e2immu.analyser.analyser.LinkedVariables.*;
 import static org.e2immu.analyser.analyser.Stage.EVALUATION;
 
 /*
@@ -147,11 +148,57 @@ public class ComputeLinkedVariables {
             start = new HashSet<>(linked);
             iteration1Plus = true;
         }
+        augmentGraph(weightedGraph);
         ClusterResult cr = computeClusters(weightedGraph, done);
 
         return new ComputeLinkedVariables(statementAnalysis, stage, ignore, weightedGraph, cr.variablesInClusters(), cr.clusters,
                 cr.returnValueCluster, cr.rv, evaluationContext.breakDelayLevel(), oneBranchHasBecomeUnreachable,
                 linkingNotYetSet);
+    }
+
+    /*
+    when a variable point LINK_IS_HC_OF to 2 other variables, these two variables must be linked with COMMON_HC
+    See e.g. ListUtil for a nice example, which is pretty common.
+     */
+    private static void augmentGraph(WeightedGraph weightedGraph) {
+        Map<Variable, Set<Variable>> toAdd3 = new HashMap<>();
+        AtomicReference<CausesOfDelay> delays = new AtomicReference<>(CausesOfDelay.EMPTY);
+        weightedGraph.visit((v, map) -> {
+            if (map != null) {
+                List<Variable> mapped3 = map.entrySet().stream()
+                        .filter(e -> !(e.getKey() instanceof This))
+                        .filter(e -> !e.getKey().parameterizedType().isPrimitiveExcludingVoid())
+                        .filter(e -> e.getValue().equals(LinkedVariables.LINK_IS_HC_OF) || e.getValue().isDelayed())
+                        .map(Map.Entry::getKey).toList();
+                if (mapped3.size() > 1) {
+                    LOGGER.debug("Augmenting links: found {}", mapped3);
+                    Variable v1 = mapped3.get(0);
+                    for (Variable v2 : mapped3.subList(1, mapped3.size())) {
+                        Set<Variable> to = toAdd3.computeIfAbsent(v1, k -> new HashSet<>());
+                        to.add(v2);
+                    }
+                    CausesOfDelay allDelays = map.values().stream()
+                            .map(DV::causesOfDelay)
+                            .reduce(CausesOfDelay.EMPTY, CausesOfDelay::merge);
+                    delays.set(delays.get().merge(allDelays));
+                }
+            }
+        });
+        for (Map.Entry<Variable, Set<Variable>> entry : toAdd3.entrySet()) {
+            Map<Variable, DV> map = entry.getValue().stream()
+                    .collect(Collectors.toUnmodifiableMap(e -> e, e -> LinkedVariables.LINK_COMMON_HC.max(delays.get())));
+            LOGGER.debug("Augmenting links: from {} to {}", entry.getKey().simpleName(), map);
+            weightedGraph.addNode(entry.getKey(), map, true, (v1, v2) -> {
+                if (v1.le(LINK_DEPENDENT) || v2.le(LINK_DEPENDENT)) {
+                    if(v1.isDelayed()) return v2;
+                    if(v2.isDelayed()) return v1;
+                    DV min = v1.min(v2);
+                    assert min.isDone();
+                    return min;
+                }
+                return v1.max(v2); // COMMON_HC priority over IS_HC_OF, but delays must come through
+            });
+        }
     }
 
     private static LinkedVariables add(StatementAnalysis statementAnalysis,
@@ -172,13 +219,13 @@ public class ComputeLinkedVariables {
 
         LinkedVariables curated = refToScope
                 .remove(v -> ignore.test(statementAnalysis.getVariableOrDefaultNull(v.fullyQualifiedName()), v));
-        if(variable instanceof This) {
+        if (variable instanceof This) {
             curated = LinkedVariables.EMPTY;
-        } else if(viE != vi1
+        } else if (viE != vi1
                 && viE.getValue() instanceof DelayedVariableExpression dve
                 && dve.msg.startsWith("<vl:")
                 && !curated.isDelayed()) {
-           curated = curated.changeNonStaticallyAssignedToDelay(viE.getValue().causesOfDelay());
+            curated = curated.changeNonStaticallyAssignedToDelay(viE.getValue().causesOfDelay());
         }
         weightedGraph.addNode(variable, curated.variables(), false, DV::min);
         return curated;

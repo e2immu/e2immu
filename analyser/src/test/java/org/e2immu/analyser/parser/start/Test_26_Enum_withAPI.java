@@ -135,6 +135,8 @@ public class Test_26_Enum_withAPI extends CommonTestRunner {
             }
         };
 
+        BreakDelayVisitor breakDelayVisitor = d-> assertEquals("-----", d.delaySequence());
+
         TypeContext typeContext = testClass("Enum_0", 0, 0, new DebugConfiguration.Builder()
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
@@ -142,6 +144,7 @@ public class Test_26_Enum_withAPI extends CommonTestRunner {
                 .addStatementAnalyserVisitor(statementAnalyserVisitor)
                 .addEvaluationResultVisitor(evaluationResultVisitor)
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addBreakDelayVisitor(breakDelayVisitor)
                 .build());
         TypeInfo enum0 = typeContext.getFullyQualified(Enum_0.class);
         MethodInfo name = enum0.findUniqueMethod("name", 0);

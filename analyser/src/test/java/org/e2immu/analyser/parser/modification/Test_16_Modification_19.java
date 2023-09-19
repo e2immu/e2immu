@@ -103,13 +103,14 @@ public class Test_16_Modification_19 extends CommonTestRunner {
                         };
                         assertEquals(expectValue, d.currentValue().toString());
 
-                        String links = d.iteration() < 3 ? "c:-1,this.s2:-1,this:-1" : "c:2,this.s2:2,this:3";
+                        String links = d.iteration() < 3 ? "c:-1,localD.set:-1,localD:-1,this.s2:-1,this:-1"
+                                : "c:2,this.s2:2,this:3";
                         assertEquals(links, d.variableInfo().getLinkedVariables().toString());
 
                         assertNotNull(fr.scopeVariable);
                         assertEquals("c", fr.scopeVariable.toString());
 
-                        String cmDelay = "cm@Parameter_c;cm@Parameter_setC;initial:this.s2@Method_example1_0-C;mom@Parameter_setC";
+                        String cmDelay = "cm@Parameter_c;cm@Parameter_d;cm@Parameter_setC;initial:this.s2@Method_example1_0-C;mom@Parameter_setC";
                         assertDv(d, cmDelay, 1, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
                     }
                 }
@@ -153,7 +154,7 @@ public class Test_16_Modification_19 extends CommonTestRunner {
                 assertTrue(d.fieldAnalysis().getValue().isDone());
 
                 assertLinked(d, d.fieldAnalysis().getLinkedVariables(),
-                        it(0, 2, "c:-1,localD:-1,setC:-1,this.s2:-1,this:-1"),
+                        it(0, 2, "c.set:-1,c:-1,localD.set:-1,localD:-1,setC:-1,this.s2:-1,this:-1"),
                         it(3, "setC:0,this.s2:2,this:3"));
                 assertEquals(d.iteration() >= 3,
                         ((FieldAnalysisImpl.Builder) d.fieldAnalysis()).allLinksHaveBeenEstablished().isDone());

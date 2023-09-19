@@ -205,7 +205,7 @@ public class Test_Independent1 extends CommonTestRunner {
             if ("visit".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof ParameterInfo pi && "consumer".equals(pi.name)) {
                     if ("0.0.0".equals(d.statementId())) {
-                        assertEquals("", d.variableInfo().getLinkedVariables().toString());
+                        assertLinked(d, it0("t:-1,this.ts:-1,this:-1"), it(1, "this.ts:4"));
                     }
                 }
                 if ("t".equals(d.variableName())) {
@@ -227,8 +227,11 @@ public class Test_Independent1 extends CommonTestRunner {
                 }
             }
         };
+        BreakDelayVisitor breakDelayVisitor = d -> assertEquals("-----", d.delaySequence());
+
         testClass("Independent1_4", 0, 0, new DebugConfiguration.Builder()
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addBreakDelayVisitor(breakDelayVisitor)
                 .build());
     }
 
@@ -336,7 +339,7 @@ public class Test_Independent1 extends CommonTestRunner {
                     if ("0.0.0".equals(d.statementId())) {
                         assertLinked(d,
                                 it(0, 1, "one:-1,this.ones:-1,this:-1"),
-                                it(2, ""));
+                                it(2, "this.ones:4"));
                     }
                     if ("0".equals(d.statementId())) {
                         assertLinked(d,
@@ -466,8 +469,11 @@ public class Test_Independent1 extends CommonTestRunner {
                 assertDv(d, DV.FALSE_DV, Property.MODIFIED_OUTSIDE_METHOD);
             }
         };
+        BreakDelayVisitor breakDelayVisitor = d -> assertEquals("-----", d.delaySequence());
+
         testClass("Independent1_8", 0, 0, new DebugConfiguration.Builder()
                 .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+                .addBreakDelayVisitor(breakDelayVisitor)
                 .build());
     }
 
@@ -560,10 +566,14 @@ public class Test_Independent1 extends CommonTestRunner {
                 String properties = switch (d.iteration()) {
                     case 0 ->
                             "other={context-modified=assign_to_field@Parameter_t, context-not-null=nullable:1}, this={context-modified=initial:this.map@Method_put_0-C;initial@Field_map, read=true:1}";
-                    default ->
+                    case 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11 ->
                             "other={context-modified=link:t@Method_put_0:M;link:this.map@Method_put_0:M, context-not-null=nullable:1}, this={context-modified=ext_not_null@Field_map;initial:this.map@Method_put_0-C;initial@Field_map;link:t@Method_put_0:M;link:this.map@Method_put_0:M, read=true:1}";
+                    case 12 ->
+                            "other={context-modified=link:t@Method_put_0:M;link:this.map@Method_put_0:M, context-not-null=nullable:1}, this={context-modified=link:t@Method_put_0:M;link:this.map@Method_put_0:M, read=true:1}";
+                    default ->
+                            "other={context-modified=false:0, context-not-null=nullable:1}, this={context-modified=true:1, read=true:1}";
                 };
-//                assertEquals(properties, d.statementAnalysis().propertiesFromSubAnalysersSortedToString());
+                assertEquals(properties, d.statementAnalysis().propertiesFromSubAnalysersSortedToString());
             }
         };
 
@@ -709,7 +719,7 @@ public class Test_Independent1 extends CommonTestRunner {
     @Test
     public void test_10() throws IOException {
         // TODO NOT YET IMPLEMENTED
-        testClass("Independent1_10", 4, 1, new DebugConfiguration.Builder()
+        testClass("Independent1_10", 0, 1, new DebugConfiguration.Builder()
                 .build());
     }
 

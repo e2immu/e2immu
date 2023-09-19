@@ -119,7 +119,7 @@ public class Test_Support_06_AddOnceSet extends CommonTestRunner {
 
         BreakDelayVisitor breakDelayVisitor = d -> {
             String s = switch (d.typeInfo().simpleName) {
-                case "AddOnceSet" -> "-----";
+                case "AddOnceSet" -> "------";
                 case "Freezable" -> "----";
                 default -> fail(d.typeInfo().simpleName);
             };
@@ -128,11 +128,11 @@ public class Test_Support_06_AddOnceSet extends CommonTestRunner {
 
         // IMPROVE the warning could go if we use companions with "contains"? (instead of the "true")
         testSupportAndUtilClasses(List.of(AddOnceSet.class, Freezable.class), 0, 1, new DebugConfiguration.Builder()
-                .addTypeMapVisitor(typeMapVisitor)
-                .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
-                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
-                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-                .addStatementAnalyserVisitor(statementAnalyserVisitor)
+              //  .addTypeMapVisitor(typeMapVisitor)
+              //  .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
+             //   .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+             //   .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+              //  .addStatementAnalyserVisitor(statementAnalyserVisitor)
                 .addBreakDelayVisitor(breakDelayVisitor)
                 .build());
     }

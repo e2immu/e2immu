@@ -134,11 +134,14 @@ public class Test_37_EventuallyE2Immutable extends CommonTestRunner {
             }
         };
 
+        BreakDelayVisitor breakDelayVisitor = d -> assertEquals("-----", d.delaySequence());
+
         testClass("EventuallyE2Immutable_0", 0, 0, new DebugConfiguration.Builder()
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .addStatementAnalyserVisitor(statementAnalyserVisitor)
                 .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                .addBreakDelayVisitor(breakDelayVisitor)
                 .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                 .build());
     }
@@ -394,6 +397,13 @@ public class Test_37_EventuallyE2Immutable extends CommonTestRunner {
     @Test
     public void test_5() throws IOException {
         testClass("EventuallyE2Immutable_5", 0, 0, new DebugConfiguration.Builder()
+                .build());
+    }
+
+    // variant where b is not of primitive type; see ComputeLinkedVariables.augmentGraph
+    @Test
+    public void test_5B() throws IOException {
+        testClass("EventuallyE2Immutable_5B", 0, 0, new DebugConfiguration.Builder()
                 .build());
     }
 

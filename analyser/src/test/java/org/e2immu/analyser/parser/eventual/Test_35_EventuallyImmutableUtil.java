@@ -187,25 +187,29 @@ public class Test_35_EventuallyImmutableUtil extends CommonTestRunner {
                 assertEquals(expected2, d.methodAnalysis().getSingleReturnValue().toString());
             }
             if ("isTReady".equals(d.methodInfo().name)) {
-                String expectT = d.iteration() <= 1 ? "<m:isTReady>" : "s1.isReady()&&s2.isReady()";
+                String expectT = d.iteration() < 3 ? "<m:isTReady>" : "s1.isReady()&&s2.isReady()";
                 assertEquals(expectT, d.methodAnalysis().getSingleReturnValue().toString());
-                assertDv(d, 2, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_EXPRESSION);
+                assertDv(d, 3, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_EXPRESSION);
             }
 
             if ("isReady1".equals(d.methodInfo().name)) {
-                String expected1 = d.iteration() <= 3 ? "<m:isReady1>" : "t.s1.isReady()&&t.s2.isReady()";
+                String expected1 = d.iteration() < 5 ? "<m:isReady1>" : "t.s1.isReady()&&t.s2.isReady()";
                 assertEquals(expected1, d.methodAnalysis().getSingleReturnValue().toString());
-                assertDv(d, 4, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_EXPRESSION);
+                assertDv(d, 5, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_EXPRESSION);
             }
 
             if ("isReady2".equals(d.methodInfo().name)) {
-                String expected2 = d.iteration() <= 3 ? "<m:isReady2>" : "t.isTReady()";
+                String expected2 = d.iteration() < 5 ? "<m:isReady2>" : "t.isTReady()";
                 assertEquals(expected2, d.methodAnalysis().getSingleReturnValue().toString());
-                assertDv(d, 4, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_EXPRESSION);
+                assertDv(d, 5, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_EXPRESSION);
             }
         };
+
+        BreakDelayVisitor breakDelayVisitor = d -> assertEquals("-------", d.delaySequence());
+
         testClass("EventuallyImmutableUtil_5", 0, 0, new DebugConfiguration.Builder()
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                .addBreakDelayVisitor(breakDelayVisitor)
                 .build());
     }
 

@@ -36,6 +36,8 @@ import org.junit.jupiter.api.Test;
 import java.io.IOException;
 import java.util.Set;
 
+import static org.e2immu.analyser.parser.VisitorTestSupport.IterationInfo.it;
+import static org.e2immu.analyser.parser.VisitorTestSupport.IterationInfo.it0;
 import static org.junit.jupiter.api.Assertions.*;
 
 public class Test_22_SubTypes extends CommonTestRunner {
@@ -57,7 +59,9 @@ public class Test_22_SubTypes extends CommonTestRunner {
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
             if ("key".equals(d.fieldInfo().name) && SUBTYPE_CONSTRUCTOR.equals(d.fieldInfo().owner.simpleName)) {
                 assertEquals(DV.TRUE_DV, d.fieldAnalysis().getProperty(Property.FINAL));
-                assertEquals("key:0", d.fieldAnalysis().getLinkedVariables().toString());
+                assertLinked(d, d.fieldAnalysis().getLinkedVariables(),
+                        it0("key:-1,this.value:-1"),
+                        it(1, "key:0"));
             }
         };
 
@@ -103,12 +107,15 @@ public class Test_22_SubTypes extends CommonTestRunner {
             }
         };
 
+        BreakDelayVisitor breakDelayVisitor = d -> assertEquals("---", d.delaySequence());
+
         testClass("SubTypes_1", 0, 0, new DebugConfiguration.Builder()
                 .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .addStatementAnalyserVisitor(statementAnalyserVisitor)
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .addEvaluationResultVisitor(evaluationResultVisitor)
+                .addBreakDelayVisitor(breakDelayVisitor)
                 .build());
     }
 

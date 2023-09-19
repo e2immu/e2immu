@@ -456,6 +456,16 @@ public class Test_02_ConditionalChecks extends CommonTestRunner {
                 .build(), new AnalyserConfiguration.Builder().setSkipTransformations(true).build());
     }
 
+    // FIXME this is not good, ways too many iterations; cause = augmentGraph in ComputeLinkedVariables
+    @Test
+    public void test4B() throws IOException {
+        BreakDelayVisitor breakDelayVisitor = d -> assertEquals("---MF--MFT--", d.delaySequence());
+
+        testClass("ConditionalChecks_4B", 0, 0, new DebugConfiguration.Builder()
+                .addBreakDelayVisitor(breakDelayVisitor)
+                .build(), new AnalyserConfiguration.Builder().setSkipTransformations(true).build());
+    }
+
     @Test
     public void test5x() {
         assertEquals("abc", method(0, 10));

@@ -73,7 +73,9 @@ public class Test_25_FieldReference extends CommonTestRunner {
                 assertEquals("Map.of(\"X\",new ChangeData(Map.of(\"3\",3)))", d.fieldAnalysis().getValue().toString());
 
                 // the field is not linked to any other field or parameter
-                assertLinked(d, d.fieldAnalysis().getLinkedVariables(), it(0, 1, "this:-1"), it(2, ""));
+                assertLinked(d, d.fieldAnalysis().getLinkedVariables(),
+                        it(0, 1, "scope-cd:0.properties:-1,scope-cd:0:-1,this.evaluationContext:-1,this:-1"),
+                        it(2, ""));
 
                 // it is not linked, it is not exposed; and its dynamic type is immutable IF we know that Map.of()
                 // returns an immutable map. but we don't. HOWEVER, because there are no Annotated APIs, there is no info
@@ -140,7 +142,7 @@ public class Test_25_FieldReference extends CommonTestRunner {
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("getProperty".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof FieldReference fr && "setP".equals(fr.fieldInfo.name)) {
-                    assertDv(d, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                    assertDv(d, 2, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                 }
             }
             if ("copy".equals(d.methodInfo().name)) {

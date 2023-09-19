@@ -18,6 +18,7 @@ import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.model.ParameterInfo;
 import org.e2immu.analyser.model.variable.DependentVariable;
 import org.e2immu.analyser.parser.CommonTestRunner;
+import org.e2immu.analyser.visitor.BreakDelayVisitor;
 import org.e2immu.analyser.visitor.StatementAnalyserVariableVisitor;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
@@ -40,7 +41,7 @@ public class TestConsumerAndArray extends CommonTestRunner {
                 if (d.variable() instanceof ParameterInfo pi && "array".equals(pi.name)) {
                     String expected = d.iteration() == 0 ? "<p:array>" : "nullable instance type T[]/*@Identity*/";
                     assertEquals(expected, d.currentValue().toString());
-                    assertEquals("consumer:3", d.variableInfo().getLinkedVariables().toString());
+                    assertEquals("consumer:4", d.variableInfo().getLinkedVariables().toString());
                 }
                 if (d.variable() instanceof DependentVariable dv && "array".equals(dv.arrayVariable().simpleName())) {
                     assertEquals("3", dv.indexExpression().toString());
@@ -48,13 +49,15 @@ public class TestConsumerAndArray extends CommonTestRunner {
                     assertEquals(expectLink, d.variableInfo().getLinkedVariables().toString());
                 }
                 if (d.variable() instanceof ParameterInfo pi && "consumer".equals(pi.name)) {
-                    assertEquals("", d.variableInfo().getLinkedVariables().toString());
+                    assertEquals("array:4", d.variableInfo().getLinkedVariables().toString());
                 }
             }
         };
+        BreakDelayVisitor breakDelayVisitor = d -> assertEquals("---", d.delaySequence());
 
         testClass("ConsumerAndArray_0", 0, 0, new DebugConfiguration.Builder()
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addBreakDelayVisitor(breakDelayVisitor)
                 .build());
     }
 

@@ -32,6 +32,8 @@ import java.io.IOException;
 import java.util.Set;
 
 import static org.e2immu.analyser.analyser.Property.*;
+import static org.e2immu.analyser.parser.VisitorTestSupport.IterationInfo.it;
+import static org.e2immu.analyser.parser.VisitorTestSupport.IterationInfo.it0;
 import static org.junit.jupiter.api.Assertions.*;
 
 public class Test_18_E2Immutable extends CommonTestRunner {
@@ -335,7 +337,9 @@ public class Test_18_E2Immutable extends CommonTestRunner {
     public void test_5() throws IOException {
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
             if ("map5".equals(d.fieldInfo().name)) {
-                assertEquals("map5Param:4", d.fieldAnalysis().getLinkedVariables().toString());
+                assertLinked(d, d.fieldAnalysis().getLinkedVariables(),
+                        it0("input:-1,map5Param:-1"),
+                        it(1, "map5Param:4"));
             }
         };
 
@@ -511,12 +515,15 @@ public class Test_18_E2Immutable extends CommonTestRunner {
             }
         };
 
+        BreakDelayVisitor breakDelayVisitor = d -> assertEquals("---", d.delaySequence());
+
         // whether we get an error for a field not read depends on the analyser configuration
         // if we compute across the whole type, we don't raise the error
         testClass("E2Immutable_10", 0, 0, new DebugConfiguration.Builder()
                         .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                         .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                         .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
+                        .addBreakDelayVisitor(breakDelayVisitor)
                         .build(),
                 new AnalyserConfiguration.Builder().setComputeFieldAnalyserAcrossAllMethods(true).build());
     }
@@ -704,10 +711,13 @@ public class Test_18_E2Immutable extends CommonTestRunner {
                 assertDv(d, 1, MultiLevel.MUTABLE_DV, IMMUTABLE);
             } else fail("type " + d.typeInfo());
         };
+
+        BreakDelayVisitor breakDelayVisitor = d -> assertEquals("-----", d.delaySequence());
         testClass("E2Immutable_15", 0, 1, new DebugConfiguration.Builder()
                         .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
                         .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                         .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+                        .addBreakDelayVisitor(breakDelayVisitor)
                         .build(),
                 new AnalyserConfiguration.Builder()
                         .setComputeFieldAnalyserAcrossAllMethods(true)

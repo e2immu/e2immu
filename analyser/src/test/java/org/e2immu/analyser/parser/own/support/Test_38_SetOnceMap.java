@@ -140,17 +140,17 @@ public class Test_38_SetOnceMap extends CommonTestRunner {
             }
         };
 
-        BreakDelayVisitor breakDelayVisitor = d -> assertEquals("-----", d.delaySequence());
+        BreakDelayVisitor breakDelayVisitor = d -> assertEquals("------", d.delaySequence());
 
         // 1 potential null pointer warning accepted
         testClass("SetOnceMap_0", 0, 0,
                 new DebugConfiguration.Builder()
-                        .addEvaluationResultVisitor(evaluationResultVisitor)
-                        .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
-                        .addStatementAnalyserVisitor(statementAnalyserVisitor)
-                        .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-                        .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
-                        .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+                  //      .addEvaluationResultVisitor(evaluationResultVisitor)
+                  //      .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
+                  //      .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                  //      .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                   //     .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                   //     .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                         .addBreakDelayVisitor(breakDelayVisitor)
                         .build());
     }

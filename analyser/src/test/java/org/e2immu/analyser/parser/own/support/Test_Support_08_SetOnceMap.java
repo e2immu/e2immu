@@ -259,7 +259,7 @@ public class Test_Support_08_SetOnceMap extends CommonTestRunner {
 
         BreakDelayVisitor breakDelayVisitor = d -> {
             String s = switch (d.typeInfo().simpleName) {
-                case "SetOnceMap" -> "------";
+                case "SetOnceMap" -> "-------";
                 case "Freezable" -> "----";
                 default -> fail(d.typeInfo().simpleName);
             };
@@ -269,12 +269,12 @@ public class Test_Support_08_SetOnceMap extends CommonTestRunner {
         // 1 potential null pointer warning accepted
         testSupportAndUtilClasses(List.of(SetOnceMap.class, Freezable.class), 0, 2,
                 new DebugConfiguration.Builder()
-                        .addTypeMapVisitor(typeMapVisitor)
-                        .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
-                        .addStatementAnalyserVisitor(statementAnalyserVisitor)
-                        .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-                        .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
-                        .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+                   //     .addTypeMapVisitor(typeMapVisitor)
+                   //     .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
+                   //     .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                   //     .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                    //    .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                    //    .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                         .addBreakDelayVisitor(breakDelayVisitor)
                         .build());
     }

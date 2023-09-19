@@ -35,6 +35,8 @@ import java.io.IOException;
 
 import static org.e2immu.analyser.analyser.Property.*;
 import static org.e2immu.analyser.model.MultiLevel.MUTABLE_DV;
+import static org.e2immu.analyser.parser.VisitorTestSupport.IterationInfo.it;
+import static org.e2immu.analyser.parser.VisitorTestSupport.IterationInfo.it0;
 import static org.junit.jupiter.api.Assertions.*;
 
 public class Test_00_Basics_7 extends CommonTestRunner {
@@ -324,19 +326,27 @@ public class Test_00_Basics_7 extends CommonTestRunner {
             }
         };
 
+        BreakDelayVisitor breakDelayVisitor = d -> assertEquals("-----", d.delaySequence());
+
         testClass("Basics_7", 0, 1, new DebugConfiguration.Builder()
                         .addStatementAnalyserVisitor(statementAnalyserVisitor)
                         .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                         .addEvaluationResultVisitor(evaluationResultVisitor)
                         .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                         .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+                        .addBreakDelayVisitor(breakDelayVisitor)
                         .build(),
                 new AnalyserConfiguration.Builder().setForceExtraDelayForTesting(true).build());
     }
 
     @Test
     public void test7bis() throws IOException {
-        testClass("Basics_7", 0, 1, new DebugConfiguration.Builder().build(),
+        BreakDelayVisitor breakDelayVisitor = d -> assertEquals("----", d.delaySequence());
+
+
+        testClass("Basics_7", 0, 1, new DebugConfiguration.Builder()
+                        .addBreakDelayVisitor(breakDelayVisitor)
+                        .build(),
                 new AnalyserConfiguration.Builder().setForceExtraDelayForTesting(false).build());
     }
 }

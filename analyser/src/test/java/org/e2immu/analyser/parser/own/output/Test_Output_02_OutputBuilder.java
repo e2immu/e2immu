@@ -41,7 +41,6 @@ public class Test_Output_02_OutputBuilder extends CommonTestRunner {
         super(true);
     }
 
-    //@Disabled("Bug in dynamicImmutable")
     @Test
     public void test() throws IOException {
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
@@ -143,9 +142,9 @@ public class Test_Output_02_OutputBuilder extends CommonTestRunner {
                 case "FormattingOptions" -> "----";
                 case "OutputElement" -> "--";
                 case "Qualifier" -> "-";
-                case "Guide" -> "------";
+                case "Guide" -> "--------";
                 case "TypeName" -> "-------";
-                case "OutputBuilder" -> "--------M-M-M--M---";
+                case "OutputBuilder" -> "--------M-M-M--M--MFT--";
                 default -> fail(d.typeInfo().simpleName + ": " + d.delaySequence());
             };
             assertEquals(s, d.delaySequence(), d.typeInfo().simpleName);

@@ -191,7 +191,7 @@ public class Test_57_Lambda extends CommonTestRunner {
                     if ("x".equals(fr.scope.toString())) {
                         String expected = d.iteration() == 0 ? "<f:x.k>" : "instance type int";
                         assertEquals(expected, d.currentValue().toString());
-                        String linked = d.iteration() == 0 ? "NOT_YET_SET" : "x:2";
+                        String linked = d.iteration() == 0 ? "NOT_YET_SET" : "scope-36:37:4,x:2";
                         assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
 
                         assertEquals("0", d.statementId());
@@ -227,10 +227,13 @@ public class Test_57_Lambda extends CommonTestRunner {
             }
         };
 
+        BreakDelayVisitor breakDelayVisitor = d -> assertEquals("----", d.delaySequence());
+
         testClass("Lambda_3", 0, 0, new DebugConfiguration.Builder()
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+                .addBreakDelayVisitor(breakDelayVisitor)
                 .build());
     }
 
@@ -336,10 +339,13 @@ public class Test_57_Lambda extends CommonTestRunner {
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
             }
         };
+        BreakDelayVisitor breakDelayVisitor = d -> assertEquals("----", d.delaySequence());
+
         testClass("Lambda_4", 0, 0, new DebugConfiguration.Builder()
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .addStatementAnalyserVisitor(statementAnalyserVisitor)
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                .addBreakDelayVisitor(breakDelayVisitor)
                 .build());
     }
 
@@ -366,7 +372,7 @@ public class Test_57_Lambda extends CommonTestRunner {
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("applyMethod".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof FieldReference fr && "i".equals(fr.fieldInfo.name)) {
-                    assertDv(d, 1, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                    assertDv(d, 2, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                 }
             }
         };
@@ -389,7 +395,7 @@ public class Test_57_Lambda extends CommonTestRunner {
             }
             if ("applyMethod".equals(d.methodInfo().name)) {
                 Expression e = d.methodAnalysis().getSingleReturnValue();
-                if (d.iteration() > 0) {
+                if (d.iteration() >= 2) {
                     assertEquals("this.method().apply(i,i)", e.toString());
                 } else {
                     assertTrue(d.methodAnalysis().getSingleReturnValue().isDelayed());
@@ -399,9 +405,11 @@ public class Test_57_Lambda extends CommonTestRunner {
                 assertDv(d.p(0), MultiLevel.CONTAINER_DV, Property.CONTAINER);
             }
         };
+        BreakDelayVisitor breakDelayVisitor = d -> assertEquals("-----", d.delaySequence());
         testClass("Lambda_6", 0, 0, new DebugConfiguration.Builder()
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                .addBreakDelayVisitor(breakDelayVisitor)
                 .build());
     }
 

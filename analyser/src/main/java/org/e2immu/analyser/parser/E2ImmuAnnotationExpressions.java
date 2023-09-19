@@ -53,7 +53,7 @@ public class E2ImmuAnnotationExpressions {
     public final static String CONTRACT = "contract";
     public final static String HIDDEN_CONTENT = "hc";
     public final static String INCONCLUSIVE = "inconclusive";
-    public final static String PARAMETERS = "parameters";
+    public final static String HC_PARAMETERS = "hcParameters";
     public final static String VALUE = "value";
     public final static String PAR = "par";
     public final static String SEQ = "seq";

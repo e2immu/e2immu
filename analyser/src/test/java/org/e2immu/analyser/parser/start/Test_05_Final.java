@@ -36,6 +36,7 @@ import java.io.IOException;
 import static org.e2immu.analyser.analyser.Property.*;
 import static org.e2immu.analyser.analysis.FlowData.ALWAYS;
 import static org.e2immu.analyser.analysis.FlowData.NEVER;
+import static org.e2immu.analyser.parser.VisitorTestSupport.IterationInfo.*;
 import static org.junit.jupiter.api.Assertions.*;
 
 /*
@@ -188,8 +189,10 @@ public class Test_05_Final extends CommonTestRunner {
             if ("s1".equals(d.fieldInfo().name)) {
                 String expect = d.iteration() == 0 ? "<f:s1>" : "[s1+\"abc\",s1]";
                 assertEquals(expect, d.fieldAnalysis().getValue().toString());
-                String linked = d.iteration() == 0 ? "s1:-1,s1:-1,this.s3:-1" : "s1:0";
-                assertEquals(linked, d.fieldAnalysis().getLinkedVariables().toString());
+                assertLinked(d, d.fieldAnalysis().getLinkedVariables(),
+                        it0("s1:-1,s1:-1,this.s2:-1,this.s3:-1,this.s4:-1"),
+                        it1("s1:-1,this.s2:-1,this.s3:-1,this.s4:-1"),
+                        it(2, "s1:0"));
             }
             if ("s2".equals(d.fieldInfo().name)) {
                 String expectValue = d.iteration() == 0 ? "<f:s2>" : "[null,s2]";
@@ -197,7 +200,8 @@ public class Test_05_Final extends CommonTestRunner {
                     assertTrue(d.fieldAnalysis().getValue() instanceof MultiValue);
                 }
                 assertEquals(expectValue, d.fieldAnalysis().getValue().toString());
-                assertEquals("s2:0", d.fieldAnalysis().getLinkedVariables().toString());
+                String linked = d.iteration() < 2 ? "s2:-1,this.s1:-1,this.s3:-1,this.s4:-1" : "s2:0";
+                assertEquals(linked, d.fieldAnalysis().getLinkedVariables().toString());
             }
             if ("s4".equals(d.fieldInfo().name)) {
                 assertEquals(MultiLevel.NULLABLE_DV, d.fieldAnalysis().getProperty(EXTERNAL_NOT_NULL));
@@ -227,12 +231,15 @@ public class Test_05_Final extends CommonTestRunner {
             }
         };
 
+        BreakDelayVisitor breakDelayVisitor = d -> assertEquals("-----", d.delaySequence());
+
         testClass(FINAL_CHECKS, 5, 0, new DebugConfiguration.Builder()
                 .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .addStatementAnalyserVisitor(statementAnalyserVisitor)
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .addEvaluationResultVisitor(evaluationResultVisitor)
+                .addBreakDelayVisitor(breakDelayVisitor)
                 .build());
     }
 

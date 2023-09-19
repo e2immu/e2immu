@@ -139,6 +139,9 @@ public class JavaUtilStream {
     @Container
     interface Stream$<T> {
 
+        @NotNull
+        Stream.Builder<T> builder();
+
         /*
          Factory method, result dependent on parameters
          */

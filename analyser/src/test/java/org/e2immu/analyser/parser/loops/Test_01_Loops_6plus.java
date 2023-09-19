@@ -691,7 +691,7 @@ public class Test_01_Loops_6plus extends CommonTestRunner {
                                 it(1, "entry:2,this:3"));
 
                         assertTrue(d.variableInfoContainer().hasMerge());
-                        assertLinked(d, it0("this:-1"), it(1, "this:3"));
+                        assertLinked(d, it0("scope-container:1.0.1:-1,this:-1"), it(1, "this:3"));
                     }
                 }
             }
@@ -794,11 +794,14 @@ public class Test_01_Loops_6plus extends CommonTestRunner {
                 assertDv(d, 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, NOT_NULL_EXPRESSION);
             }
         };
+        BreakDelayVisitor breakDelayVisitor = d -> assertEquals("-----", d.delaySequence());
+
         // TODO See Loops_17, one warning too many
         testClass("Loops_19", 0, 4, new DebugConfiguration.Builder()
                 .addEvaluationResultVisitor(evaluationResultVisitor)
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                .addBreakDelayVisitor(breakDelayVisitor)
                 .build());
     }
 }

@@ -26,14 +26,14 @@ Example of supplier linking
 public class Independent1_10<T> {
     private final List<T> list = new ArrayList<>();
 
-    @Independent(hc = true)
-    public static <T> Independent1_10<T> of(@Independent(hc = true) T... ts) {
+    @Independent
+    public static <T> Independent1_10<T> of(@Independent(hcReturnValue = true) T... ts) {
         Independent1_10<T> result = new Independent1_10<>();
         result.fill(new Supplier<>() {
             int i;
 
             @Override
-            @Independent(hc = true)
+            @Independent // TODO we have no way of marking that we're linking to a parameter
             public T get() {
                 return i < ts.length ? ts[i++] : null;
             }

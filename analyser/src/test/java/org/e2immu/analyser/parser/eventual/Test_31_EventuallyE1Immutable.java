@@ -208,12 +208,15 @@ public class Test_31_EventuallyE1Immutable extends CommonTestRunner {
             }
         };
 
+        BreakDelayVisitor breakDelayVisitor = d -> assertEquals("-----", d.delaySequence());
+
         testClass("EventuallyE1Immutable_0", 0, 0, new DebugConfiguration.Builder()
                 .addEvaluationResultVisitor(evaluationResultVisitor)
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .addStatementAnalyserVisitor(statementAnalyserVisitor)
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
+                .addBreakDelayVisitor(breakDelayVisitor)
                 .build());
     }
 
@@ -270,9 +273,12 @@ public class Test_31_EventuallyE1Immutable extends CommonTestRunner {
             if ("addIfGreater".equals(d.methodInfo().name)) {
                 if ("1".equals(d.statementId())) {
                     String expected = switch (d.iteration()) {
-                        case 0 -> "CM{state=-1-i+<f:j>>=0;pc=Precondition[expression=<precondition>, causes=[]];parent=CM{}}";
-                        case 1 -> "CM{state=-1-i+<wrapped:j>>=0;pc=Precondition[expression=<precondition>, causes=[]];parent=CM{}}";
-                        default -> "CM{state=-1-i+j$0>=0;pc=Precondition[expression=j>=1, causes=[escape]];parent=CM{}}";
+                        case 0 ->
+                                "CM{state=-1-i+<f:j>>=0;pc=Precondition[expression=<precondition>, causes=[]];parent=CM{}}";
+                        case 1 ->
+                                "CM{state=-1-i+<wrapped:j>>=0;pc=Precondition[expression=<precondition>, causes=[]];parent=CM{}}";
+                        default ->
+                                "CM{state=-1-i+j$0>=0;pc=Precondition[expression=j>=1, causes=[escape]];parent=CM{}}";
                     };
                     assertEquals(expected,
                             d.statementAnalysis().stateData().getConditionManagerForNextStatement().toString());
@@ -297,11 +303,14 @@ public class Test_31_EventuallyE1Immutable extends CommonTestRunner {
             }
         };
 
+        BreakDelayVisitor breakDelayVisitor = d -> assertEquals("-----", d.delaySequence());
+
         testClass("EventuallyE1Immutable_2_M", 0, 0, new DebugConfiguration.Builder()
                         .addStatementAnalyserVisitor(statementAnalyserVisitor)
                         .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                         .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                         .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
+                        .addBreakDelayVisitor(breakDelayVisitor)
                         .build(),
                 new AnalyserConfiguration.Builder().setForceExtraDelayForTesting(true).build());
     }
@@ -318,8 +327,11 @@ public class Test_31_EventuallyE1Immutable extends CommonTestRunner {
             }
         };
 
+        BreakDelayVisitor breakDelayVisitor = d -> assertEquals("-----", d.delaySequence());
+
         testClass("EventuallyE1Immutable_3", 0, 0, new DebugConfiguration.Builder()
                 .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
+                .addBreakDelayVisitor(breakDelayVisitor)
                 .build());
     }
 }

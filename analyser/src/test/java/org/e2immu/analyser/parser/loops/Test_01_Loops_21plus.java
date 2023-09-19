@@ -20,19 +20,16 @@ import org.e2immu.analyser.analysis.ParameterAnalysis;
 import org.e2immu.analyser.config.AnalyserConfiguration;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.model.MultiLevel;
-import org.e2immu.analyser.model.variable.DependentVariable;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.VariableNature;
 import org.e2immu.analyser.parser.CommonTestRunner;
 import org.e2immu.analyser.visitor.*;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 
 import static org.e2immu.analyser.analyser.Property.*;
 import static org.e2immu.analyser.parser.VisitorTestSupport.IterationInfo.it;
-import static org.e2immu.analyser.parser.VisitorTestSupport.IterationInfo.it0;
 import static org.junit.jupiter.api.Assertions.*;
 
 public class Test_01_Loops_21plus extends CommonTestRunner {
@@ -115,7 +112,8 @@ public class Test_01_Loops_21plus extends CommonTestRunner {
                         assertEquals(prevValue, prev.getValue().toString());
 
                         String mergeValue = switch (d.iteration()) {
-                            case 0 -> "<loopIsNotEmptyCondition>&&<loopIsNotEmptyCondition>?<m:charAt>+\"->\"+<m:charAt>:<array-access:String>";
+                            case 0 ->
+                                    "<loopIsNotEmptyCondition>&&<loopIsNotEmptyCondition>?<m:charAt>+\"->\"+<m:charAt>:<array-access:String>";
                             case 1, 2, 3 ->
                                     "-1-<oos:i>+n>0&&-1-<oos:j>+m>=0?<m:charAt>+\"->\"+<m:charAt>:nullable instance type String";
                             default ->
@@ -158,9 +156,9 @@ public class Test_01_Loops_21plus extends CommonTestRunner {
                         assertDv(d, MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL_DV, Property.NOT_NULL_EXPRESSION);
                     }
                     if ("2.0.1.0.2".equals(d.statementId())) {
-                        String expected = d.iteration() <= 3 ? "<vl:array>" : "instance type String[][]";
+                        String expected = d.iteration() < 4 ? "<vl:array>" : "instance type String[][]";
                         assertEquals(expected, d.currentValue().toString());
-                        String linked = d.iteration() == 0
+                        String linked = d.iteration() < 4
                                 ? "array[i]:-1,array[i][j]:-1,i:-1,inner:-1,innerMod:-1,j:-1,outer:-1,outerMod:-1"
                                 : "";
                         assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
@@ -184,7 +182,8 @@ public class Test_01_Loops_21plus extends CommonTestRunner {
                         assertEquals(expectedE, eval.getValue().toString());
                         assertEquals("", eval.getLinkedVariables().toString());
 
-                        String linked = d.iteration() == 0 ? "array[i]:-1,array[i][j]:-1,i:-1,inner:-1,outer:-1" : "";
+                        String linked = d.iteration() < 4 ? "array[i]:-1,array[i][j]:-1,i:-1,inner:-1,outer:-1"
+                                : "array[i]:4";
                         assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
                         assertDv(d, DV.TRUE_DV, CONTEXT_MODIFIED);
                         assertDv(d, 1, MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL_DV, CONTEXT_NOT_NULL);
@@ -218,9 +217,12 @@ public class Test_01_Loops_21plus extends CommonTestRunner {
                 assertEquals(d.iteration() >= 5, d.statusesAsMap().values().stream().noneMatch(AnalysisStatus::isDelayed));
             }
         };
+        BreakDelayVisitor breakDelayVisitor = d -> assertEquals("----M-", d.delaySequence());
+
         testClass("Loops_21", 0, 0, new DebugConfiguration.Builder()
                 .addStatementAnalyserVisitor(statementAnalyserVisitor)
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addBreakDelayVisitor(breakDelayVisitor)
                 .build());
     }
 
@@ -251,7 +253,7 @@ public class Test_01_Loops_21plus extends CommonTestRunner {
                         DV override = d.variableInfoContainer().propertyOverrides().getOrDefaultNull(CONTEXT_MODIFIED);
                         assertEquals(d.iteration() >= 4, DV.TRUE_DV.equals(override));
 
-                        assertEquals("array[i]:-1,array[i][j]:-1", d.variableInfo().getLinkedVariables().toString());
+                        assertLinked(d, it(0, 3, "array[i]:-1,array[i][j]:-1"), it(4, ""));
                         String expected = d.iteration() < 4 ? "<vl:array>" : "instance type String[][]";
                         assertEquals(expected, d.currentValue().toString());
 
@@ -262,9 +264,11 @@ public class Test_01_Loops_21plus extends CommonTestRunner {
                 }
                 if ("array[i]".equals(d.variableName())) {
                     if ("2.0.1.0.2".equals(d.statementId())) {
-                        assertDv(d, 4, DV.TRUE_DV, CONTEXT_MODIFIED);
-                        assertEquals("<array-access:String[]>", d.currentValue().toString());
-                        assertLinked(d, it(0, "array:-1,array[i][j]:-1"));
+                        assertDv(d, 4, DV.FALSE_DV, CONTEXT_MODIFIED);
+                        String value = d.iteration() < 4 ? "<array-access:String[]>" : "instance type String[]";
+                        assertEquals(value, d.currentValue().toString());
+                        assertLinked(d, it(0, 3, "array:-1,array[i][j]:-1"),
+                                it(4, "array:3"));
                     }
                 }
             }
@@ -274,7 +278,7 @@ public class Test_01_Loops_21plus extends CommonTestRunner {
 
         // potential null pointer array[i][j].length()
         testClass("Loops_21_1", 0, 1, new DebugConfiguration.Builder()
-                // .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .addBreakDelayVisitor(breakDelayVisitor)
                 .build());
     }
@@ -305,39 +309,16 @@ public class Test_01_Loops_21plus extends CommonTestRunner {
                             assertEquals(expected, d.currentValue().toString());
                             assertDv(d, 4, MultiLevel.EFFECTIVELY_NOT_NULL_DV, NOT_NULL_EXPRESSION);
                         }
-                    } else fail("?: " + d.variableName());
-                }
-                if (d.variableName().startsWith("av-")) {
-                    if ("av-32:17".equals(d.variableName())) {
-                        if ("2.0.2.0.2".equals(d.statementId())) {
-                            String expected = switch (d.iteration()) {
-                                case 0, 1, 2, 3 -> "<dv:array[i]>";
-                                default -> "array$2.0.2[i$2.0.2]$2.0.2";
-                            };
-                            assertEquals(expected, d.currentValue().toString());
-                        }
-                        if ("2.0.2".equals(d.statementId())) {
-                            String expected = switch (d.iteration()) {
-                                case 0 -> "<loopIsNotEmptyCondition>?<dv:array[i]>:nullable instance type String[]";
-                                case 1, 2, 3 -> "-1-<oos:j>+m>=0?<dv:array[i]>:nullable instance type String[]";
-                                default ->
-                                        "-1-(instance type int)+m>=0?array$2.0.2[i$2.0.2]$2.0.2:nullable instance type String[]";
-                            };
-                            assertEquals(expected, d.currentValue().toString());
-                        }
-                    } else if ("av-32:17[j]".equals(d.variableName())) {
-                        assertEquals("2.0.2.0.2", d.statementId());
-                        String expected = d.iteration() < 4
-                                ? "<m:charAt>+\"->\"+<m:charAt>"
-                                : "outer$2.0.2.charAt(i$2.0.2%outer$2.0.2.length())+\"->\"+inner$2.0.2.charAt(j%inner$2.0.2.length())";
-                        assertEquals(expected, d.currentValue().toString());
-                        assertDv(d, 4, MultiLevel.EFFECTIVELY_NOT_NULL_DV, NOT_NULL_EXPRESSION);
-                    } else fail("?: " + d.variableName());
+                    } else if (!"array[i][j]".equals(d.variableName())) {
+                        fail("?: " + d.variableName());
+                    }
                 }
             }
         };
+        BreakDelayVisitor breakDelayVisitor = d -> assertEquals("----M-", d.delaySequence());
         testClass("Loops_21_2", 0, 0, new DebugConfiguration.Builder()
-                // .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addBreakDelayVisitor(breakDelayVisitor)
                 .build());
     }
 
@@ -352,7 +333,7 @@ public class Test_01_Loops_21plus extends CommonTestRunner {
                             assertDv(d, MultiLevel.EFFECTIVELY_NOT_NULL_DV, NOT_NULL_EXPRESSION);
                         }
                         if ("2.0.0".equals(d.statementId())) {
-                            String expected = d.iteration() < 4 ? "<vl:array>" : "instance type String[][]";
+                            String expected = d.iteration() == 0 ? "<vl:array>" : "instance type String[][]";
                             assertEquals(expected, d.currentValue().toString());
                             assertDv(d, 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, NOT_NULL_EXPRESSION);
                         }
@@ -362,40 +343,14 @@ public class Test_01_Loops_21plus extends CommonTestRunner {
                             assertEquals(expected, d.currentValue().toString());
                             assertDv(d, 4, MultiLevel.NULLABLE_DV, NOT_NULL_EXPRESSION);
                         }
-                    } else fail("?: " + d.variableName());
-                }
-                if (d.variableName().startsWith("av-")) {
-                    if ("av-31:17".equals(d.variableName())) {
-                        // represents array[i] as the array variable of array[i][]
-                        if ("2.0.1.0.2".equals(d.statementId())) {
-                            String expected = switch (d.iteration()) {
-                                case 0, 1, 2, 3 -> "<dv:array[i]>";
-                                default -> "array$2.0.1[i$2.0.1]$2.0.1";
-                            };
-                            assertEquals(expected, d.currentValue().toString());
-                        }
-                        if ("2.0.1".equals(d.statementId())) {
-                            String expected = switch (d.iteration()) {
-                                case 0 -> "<loopIsNotEmptyCondition>?<dv:array[i]>:nullable instance type String[]";
-                                case 1, 2, 3 -> "-1-<oos:j>+m>=0?<dv:array[i]>:nullable instance type String[]";
-                                default ->
-                                        "-1-(instance type int)+m>=0?array$2.0.1[i$2.0.1]$2.0.1:nullable instance type String[]";
-                            };
-                            assertEquals(expected, d.currentValue().toString());
-                        }
-                    } else if ("av-31:17[j]".equals(d.variableName())) {
-                        assertEquals("2.0.1.0.2", d.statementId());
-                        String expected = d.iteration() < 4
-                                ? "<m:charAt>+\"->\"+<m:charAt>"
-                                : "outer$2.0.1.charAt(i$2.0.1%outer$2.0.1.length())+\"->\"+inner$2.0.1.charAt(j%inner$2.0.1.length())";
-                        assertEquals(expected, d.currentValue().toString());
-                        assertDv(d, 4, MultiLevel.EFFECTIVELY_NOT_NULL_DV, NOT_NULL_EXPRESSION);
-                    } else fail("?: " + d.variableName());
+                    } else {
+                        assertEquals("array[i][j]", d.variableName());
+                    }
                 }
             }
         };
         testClass("Loops_21_3", 0, 1, new DebugConfiguration.Builder()
-                // .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .build());
     }
 
@@ -403,7 +358,7 @@ public class Test_01_Loops_21plus extends CommonTestRunner {
     @Test
     public void test_22() throws IOException {
         testClass("Loops_22", 0, 0, new DebugConfiguration.Builder()
-                //    .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .build());
     }
 

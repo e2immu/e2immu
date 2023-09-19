@@ -23,10 +23,7 @@ import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.parser.CommonTestRunner;
 import org.e2immu.analyser.parser.Message;
-import org.e2immu.analyser.visitor.FieldAnalyserVisitor;
-import org.e2immu.analyser.visitor.StatementAnalyserVariableVisitor;
-import org.e2immu.analyser.visitor.StatementAnalyserVisitor;
-import org.e2immu.analyser.visitor.TypeAnalyserVisitor;
+import org.e2immu.analyser.visitor.*;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
@@ -51,7 +48,9 @@ public class Test_65_ConditionalInitialization extends CommonTestRunner {
                         String expect = switch (d.iteration()) {
                             case 0 -> "<m:isEmpty>?Set.of(\"a\",\"b\"):<f:set>";
                             case 1 -> "<wrapped:set>";// result of breaking init delay
-                            default -> "(instance type Set<String>).isEmpty()?Set.of(\"a\",\"b\"):instance type Set<String>";
+                            case 2, 3 -> "<m:isEmpty>?Set.of(\"a\",\"b\"):<vp:set:link@Field_set>";
+                            default ->
+                                    "(instance type Set<String>).isEmpty()?Set.of(\"a\",\"b\"):instance type Set<String>";
                         };
                         assertEquals(expect, d.currentValue().toString());
                     }
@@ -69,20 +68,23 @@ public class Test_65_ConditionalInitialization extends CommonTestRunner {
                 }
                 assertEquals(DV.FALSE_DV, d.fieldAnalysis().getProperty(Property.FINAL));
                 assertDv(d, 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.EXTERNAL_NOT_NULL);
-                assertDv(d, 1, MultiLevel.MUTABLE_DV, Property.EXTERNAL_IMMUTABLE);
+                assertDv(d, 3, MultiLevel.MUTABLE_DV, Property.EXTERNAL_IMMUTABLE);
             }
         };
 
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("ConditionalInitialization_0".equals(d.typeInfo().simpleName)) {
-                assertDv(d, 1, MultiLevel.MUTABLE_DV, Property.IMMUTABLE);
+                assertDv(d, 3, MultiLevel.MUTABLE_DV, Property.IMMUTABLE);
             }
         };
+
+        BreakDelayVisitor breakDelayVisitor = d -> assertEquals("------", d.delaySequence());
 
         testClass("ConditionalInitialization_0", 0, 0, new DebugConfiguration.Builder()
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                 .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
+                .addBreakDelayVisitor(breakDelayVisitor)
                 .build());
     }
 

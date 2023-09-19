@@ -776,13 +776,13 @@ public class JavaUtil extends AnnotatedAPI {
         @Independent(hc = true)
         <T> List<T> asList(T... ts);
 
-        <T> void setAll(@NotNull T[] array, @NotNull @Independent(parameters = {0}, hc = true) IntFunction<? extends T> generator);
+        <T> void setAll(@NotNull T[] array, @NotNull @Independent(hcParameters = {0}) IntFunction<? extends T> generator);
     }
 
     @UtilityClass
     interface Collections$ {
 
-        <T> boolean addAll(@NotNull @Modified @Independent(parameters = {1}, hc = true) Collection<? super T> c, @NotModified T... elements);
+        <T> boolean addAll(@NotNull @Modified @Independent(hcParameters = {1}) Collection<? super T> c, @NotModified T... elements);
     }
 
     /*

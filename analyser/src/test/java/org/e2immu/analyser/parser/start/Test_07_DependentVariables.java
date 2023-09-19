@@ -274,8 +274,10 @@ public class Test_07_DependentVariables extends CommonTestRunner {
 
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
             if ("xs".equals(d.fieldInfo().name)) {
-                String expected = d.iteration() == 0 ? "this:-1,xs:-1,xs[index]:-1,xs[index]:-1" : "this:3,xs:4";
-                assertEquals(expected, d.fieldAnalysis().getLinkedVariables().toString());
+                assertLinked(d, d.fieldAnalysis().getLinkedVariables(),
+                        it0("this:-1,xs:-1,xs[index]:-1,xs[index]:-1"),
+                        it1("this:-1,xs:-1,xs[index]:-1"),
+                        it(2, "this:3,xs:4"));
             }
         };
 

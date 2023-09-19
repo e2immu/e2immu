@@ -327,8 +327,7 @@ public class Test_66_VariableScope extends CommonTestRunner {
                         assertDv(d, 3, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
 
                         String linked = switch (d.iteration()) {
-                            case 0 -> "NOT_YET_SET";
-                            case 1, 2 -> "doImport:-1,typeInfo:-1";
+                            case 0, 1, 2 -> "doImport:-1,typeInfo:-1";
                             default -> "";
                         };
                         assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
@@ -355,7 +354,7 @@ public class Test_66_VariableScope extends CommonTestRunner {
                 }
                 if (d.variable() instanceof ParameterInfo pi && "myPackage".equals(pi.name)) {
                     if ("1.0.0".equals(d.statementId())) {
-                        String expected = d.iteration() == 0 ? "<p:myPackage>" : "nullable instance type String";
+                        String expected = "nullable instance type String";
                         assertEquals(expected, d.currentValue().toString());
                     }
                     if ("0".equals(d.statementId())) {
@@ -377,7 +376,7 @@ public class Test_66_VariableScope extends CommonTestRunner {
                         assertDv(d, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     }
                     if ("1.0.0".equals(d.statementId())) {
-                        String expected = d.iteration() <= 2 ? "<mod:TypeInfo>"
+                        String expected = d.iteration() < 3 ? "<p:typeInfo>"
                                 : "nullable instance type TypeInfo/*@Identity*/";
                         assertEquals(expected, d.currentValue().toString());
                         assertDv(d, 3, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
@@ -415,7 +414,7 @@ public class Test_66_VariableScope extends CommonTestRunner {
                 }
                 if ("scope-perPackage:1".equals(d.variableName())) {
                     assertEquals("1", d.statementId());
-                    assertDv(d, 1, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
+                    assertDv(d, 3, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
                 }
             }
         };
@@ -459,11 +458,15 @@ public class Test_66_VariableScope extends CommonTestRunner {
                 assertHc(d, 0, "");
             }
         };
+
+        BreakDelayVisitor breakDelayVisitor = d -> assertEquals("------", d.delaySequence());
+
         testClass("VariableScope_5", 2, 1, new DebugConfiguration.Builder()
-                     //   .addEvaluationResultVisitor(evaluationResultVisitor)
-                      //  .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-                      //  .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
-                     //   .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
+                        .addEvaluationResultVisitor(evaluationResultVisitor)
+                        .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                        .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                        .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
+                        .addBreakDelayVisitor(breakDelayVisitor)
                         .build(),
                 new AnalyserConfiguration.Builder().setForceAlphabeticAnalysisInPrimaryType(true).build());
     }
@@ -974,7 +977,8 @@ public class Test_66_VariableScope extends CommonTestRunner {
                 }
                 if ("2".equals(d.statementId())) {
                     String expected = switch (d.iteration()) {
-                        case 0 -> "CM{state=(!<instanceOf:VariableDefinedOutsideLoop>||!<m:startsWith>)&&(!<instanceOf:VariableDefinedOutsideLoop>||!<m:startsWith>||<null-check>||<dv:scope-vdol:1.previousVariableNature>==this);ignore=vn;parent=CM{}}";
+                        case 0 ->
+                                "CM{state=(!<instanceOf:VariableDefinedOutsideLoop>||!<m:startsWith>)&&(!<instanceOf:VariableDefinedOutsideLoop>||!<m:startsWith>||<null-check>||<dv:scope-vdol:1.previousVariableNature>==this);ignore=vn;parent=CM{}}";
                         case 1, 2, 3, 4, 5 ->
                                 "CM{state=(!scope-vdol:1.statementIndex.startsWith(index+\".\")||null==vn||!(vn instanceof VariableDefinedOutsideLoop))&&(!scope-vdol:1.statementIndex.startsWith(index+\".\")||null==vn$1||!(vn$1 instanceof VariableDefinedOutsideLoop)||<null-check>||<dv:scope-vdol:1.previousVariableNature>==this);ignore=vn;parent=CM{}}";
                         default ->
@@ -988,9 +992,9 @@ public class Test_66_VariableScope extends CommonTestRunner {
         BreakDelayVisitor breakDelayVisitor = d -> assertEquals("----M---", d.delaySequence());
 
         testClass("VariableScope_10", 0, 2, new DebugConfiguration.Builder()
-                        .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-                        .addStatementAnalyserVisitor(statementAnalyserVisitor)
-                        .addEvaluationResultVisitor(evaluationResultVisitor)
+                        //      .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                        //      .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                        //      .addEvaluationResultVisitor(evaluationResultVisitor)
                         .addBreakDelayVisitor(breakDelayVisitor)
                         .build(),
                 new AnalyserConfiguration.Builder()

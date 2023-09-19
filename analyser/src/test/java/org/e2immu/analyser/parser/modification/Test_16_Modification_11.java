@@ -99,7 +99,7 @@ public class Test_16_Modification_11 extends CommonTestRunner {
                     }
                     if ("2".equals(d.statementId())) {
                         String expectLinked = switch (d.iteration()) {
-                            case 0, 1, 2 -> "this.s2:-1,this:-1";
+                            case 0, 1, 2 -> "c.set:-1,localD.set:-1,localD:-1,this.s2:-1,this:-1";
                             default -> "this.s2:2,this:3";
                         };
                         assertEquals(expectLinked, d.variableInfo().getLinkedVariables().toString());

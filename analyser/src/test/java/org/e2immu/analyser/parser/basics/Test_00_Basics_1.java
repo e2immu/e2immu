@@ -32,6 +32,8 @@ import static org.e2immu.analyser.analyser.DV.FALSE_DV;
 import static org.e2immu.analyser.analyser.DV.TRUE_DV;
 import static org.e2immu.analyser.analyser.Property.*;
 import static org.e2immu.analyser.model.MultiLevel.*;
+import static org.e2immu.analyser.parser.VisitorTestSupport.IterationInfo.it;
+import static org.e2immu.analyser.parser.VisitorTestSupport.IterationInfo.it0;
 import static org.junit.jupiter.api.Assertions.*;
 
 public class Test_00_Basics_1 extends CommonTestRunner {
@@ -116,13 +118,13 @@ public class Test_00_Basics_1 extends CommonTestRunner {
 
                     assertDv(d, MUTABLE_DV, CONTEXT_IMMUTABLE);
 
-                    assertDv(d, 1, EFFECTIVELY_FINAL_FIELDS_DV, EXTERNAL_IMMUTABLE);
+                    assertDv(d, 2, EFFECTIVELY_FINAL_FIELDS_DV, EXTERNAL_IMMUTABLE);
                     assertTrue(d.iteration() <= 2);
                     assertEquals("", d.variableInfo().getLinkedVariables().toString());
                 }
                 if ("1".equals(d.statementId())) {
                     assertEquals(MUTABLE_DV, d.getProperty(IMMUTABLE));
-                    assertDv(d, 1, EFFECTIVELY_FINAL_FIELDS_DV, EXTERNAL_IMMUTABLE);
+                    assertDv(d, 2, EFFECTIVELY_FINAL_FIELDS_DV, EXTERNAL_IMMUTABLE);
                 }
             }
         }
@@ -131,7 +133,7 @@ public class Test_00_Basics_1 extends CommonTestRunner {
                 assertEquals("0", d.statementId());
                 String expected = d.iteration() == 0 ? "<f:f1>" : "nullable instance type Set<String>";
                 assertEquals(expected, d.currentValue().toString());
-                assertEquals("", d.variableInfo().getLinkedVariables().toString());
+                assertLinked(d, it0("s:-1"), it(1, ""));
                 assertDv(d, 1, NULLABLE_DV, CONTEXT_NOT_NULL);
                 assertDv(d, 1, NOT_IGNORE_MODS_DV, IGNORE_MODIFICATIONS);
                 assertDv(d, 1, NOT_IGNORE_MODS_DV, EXTERNAL_IGNORE_MODIFICATIONS);
@@ -180,20 +182,21 @@ public class Test_00_Basics_1 extends CommonTestRunner {
             assertEquals(TRUE_DV, d.fieldAnalysis().getProperty(FINAL));
 
             assertEquals("p0", d.fieldAnalysis().getValue().toString());
-            assertEquals("p0:0", d.fieldAnalysis().getLinkedVariables().toString());
+            assertLinked(d, d.fieldAnalysis().getLinkedVariables(),
+                    it0("p0:-1,s1:-1,s:-1"), it(1, "p0:0"));
 
-            assertDv(d, FALSE_DV, MODIFIED_OUTSIDE_METHOD);
+            assertDv(d, 1, FALSE_DV, MODIFIED_OUTSIDE_METHOD);
             assertDv(d, NULLABLE_DV, EXTERNAL_NOT_NULL);
             assertDv(d, MUTABLE_DV, EXTERNAL_IMMUTABLE);
-            assertDv(d, DEPENDENT_DV, INDEPENDENT);
+            assertDv(d, 1, DEPENDENT_DV, INDEPENDENT);
         }
     };
 
     MethodAnalyserVisitor methodAnalyserVisitor = d -> {
         if (BASICS_1.equals(d.methodInfo().name)) {
             assertDv(d.p(0), 1, FALSE_DV, CONTEXT_MODIFIED);
-            assertDv(d.p(0), 1, FALSE_DV, MODIFIED_OUTSIDE_METHOD);
-            assertDv(d.p(0), 1, FALSE_DV, MODIFIED_VARIABLE);
+            assertDv(d.p(0), 2, FALSE_DV, MODIFIED_OUTSIDE_METHOD);
+            assertDv(d.p(0), 2, FALSE_DV, MODIFIED_VARIABLE);
 
             assertDv(d.p(0), 1, NULLABLE_DV, CONTEXT_NOT_NULL);
             assertDv(d.p(0), 1, NULLABLE_DV, EXTERNAL_NOT_NULL);
@@ -208,7 +211,7 @@ public class Test_00_Basics_1 extends CommonTestRunner {
     TypeAnalyserVisitor typeAnalyserVisitor = d -> {
         if ("Basics_1".equals(d.typeInfo().simpleName)) {
             assertTrue(d.typeAnalysis().getHiddenContentTypes().isEmpty());
-            assertDv(d, EFFECTIVELY_FINAL_FIELDS_DV, IMMUTABLE);
+            assertDv(d, 1, EFFECTIVELY_FINAL_FIELDS_DV, IMMUTABLE);
         }
     };
 
@@ -216,6 +219,8 @@ public class Test_00_Basics_1 extends CommonTestRunner {
         TypeInfo set = typeMap.get(Set.class);
         assertEquals(MUTABLE_DV, set.typeAnalysis.get().getProperty(IMMUTABLE));
     };
+
+    BreakDelayVisitor breakDelayVisitor = d -> assertEquals("---", d.delaySequence());
 
     @Test
     public void test() throws IOException {
@@ -228,6 +233,7 @@ public class Test_00_Basics_1 extends CommonTestRunner {
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
                 .addTypeMapVisitor(typeMapVisitor)
+                .addBreakDelayVisitor(breakDelayVisitor)
                 .build());
     }
 

@@ -756,7 +756,7 @@ public class Test_51_InstanceOf extends CommonTestRunner {
                         assertEquals(expected, d.currentValue().toString());
 
                         //  after first delay breaking
-                        assertDv(d, 5, MultiLevel.NOT_CONTAINER_DV, Property.CONTEXT_CONTAINER);
+                        assertDv(d, 6, MultiLevel.NOT_CONTAINER_DV, Property.CONTEXT_CONTAINER);
 
                         assertDv(d, 9, MultiLevel.NOT_CONTAINER_DV, Property.CONTAINER);
                         assertDv(d, 9, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
@@ -846,8 +846,8 @@ public class Test_51_InstanceOf extends CommonTestRunner {
 
                 // only reason for waiting would be nonNumericPartOfLhs, where it appears as argument
                 // but there are still delays in clustering in 0.0.1.0.0 in iteration 2
-                assertDv(d.p(0), 10, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
-                assertDv(d.p(0), 10, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
+                assertDv(d.p(0), 11, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                assertDv(d.p(0), 11, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
             }
             if ("nonNumericPartOfLhs".equals(d.methodInfo().name)) {
                 assertDv(d, DV.FALSE_DV, Property.MODIFIED_METHOD);
@@ -858,7 +858,7 @@ public class Test_51_InstanceOf extends CommonTestRunner {
                 assertDv(d.p(0), 1, MultiLevel.INDEPENDENT_DV, Property.INDEPENDENT);
             }
             if ("numericPartOfLhs".equals(d.methodInfo().name)) {
-                assertDv(d, 1, DV.FALSE_DV, Property.MODIFIED_METHOD);
+                assertDv(d, 2, DV.FALSE_DV, Property.MODIFIED_METHOD);
             }
             if ("XB".equals(d.methodInfo().name)) {
                 assertDv(d.p(0), 1, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
@@ -873,8 +873,8 @@ public class Test_51_InstanceOf extends CommonTestRunner {
                     case "InstanceOf_11" -> {
                         assertEquals("new Expression(){}", d.fieldAnalysis().getValue().toString());
                         //  has to be container; was known in iteration 1 previously
-                        assertDv(d, 8, MultiLevel.NOT_CONTAINER_INCONCLUSIVE, Property.CONTAINER_RESTRICTION);
-                        assertDv(d, 8, DV.FALSE_DV, Property.MODIFIED_OUTSIDE_METHOD);
+                        assertDv(d, 9, MultiLevel.NOT_CONTAINER_INCONCLUSIVE, Property.CONTAINER_RESTRICTION);
+                        assertDv(d, 9, DV.FALSE_DV, Property.MODIFIED_OUTSIDE_METHOD);
                     }
                     case "Negation" -> {
                         assertEquals("expression", d.fieldAnalysis().getValue().toString());
@@ -895,7 +895,7 @@ public class Test_51_InstanceOf extends CommonTestRunner {
                     assertDv(d, MultiLevel.CONTAINER_DV, Property.PARTIAL_CONTAINER);
                     // means: we have to wait until we know the property of the enclosing type
                     String expect = d.iteration() == 0 ? "container@Class_InstanceOf_11" : "cm@Parameter_evaluationContext";
-                    assertDv(d, expect, 11, MultiLevel.CONTAINER_DV, Property.CONTAINER);
+                    assertDv(d, expect, 12, MultiLevel.CONTAINER_DV, Property.CONTAINER);
                 }
                 case "Expression", "EvaluationContext" -> {
                     assertDv(d, MultiLevel.NOT_CONTAINER_DV, Property.CONTAINER);
@@ -903,14 +903,14 @@ public class Test_51_InstanceOf extends CommonTestRunner {
                 }
                 case "Negation", "Sum" -> assertDv(d, MultiLevel.CONTAINER_DV, Property.CONTAINER);
                 case "InstanceOf_11" ->
-                        assertDv(d, "cm@Parameter_evaluationContext", 10, MultiLevel.CONTAINER_DV, Property.CONTAINER);
+                        assertDv(d, "cm@Parameter_evaluationContext", 11, MultiLevel.CONTAINER_DV, Property.CONTAINER);
                 case "XB" ->
                         assertDv(d, "cm@Parameter_x;mom@Parameter_x", 1, MultiLevel.CONTAINER_DV, Property.CONTAINER);
                 default -> fail("? " + d.typeInfo().simpleName);
             }
         };
 
-        BreakDelayVisitor breakDelayVisitor = d -> assertEquals("-----M-MF---", d.delaySequence());
+        BreakDelayVisitor breakDelayVisitor = d -> assertEquals("------M-MF---", d.delaySequence());
 
         testClass("InstanceOf_11", 0, 2, new DebugConfiguration.Builder()
                 .addEvaluationResultVisitor(evaluationResultVisitor)
@@ -1038,15 +1038,15 @@ public class Test_51_InstanceOf extends CommonTestRunner {
 
                 if (d.variable() instanceof ParameterInfo pi && pi.owner == d.methodInfo() && "expression".equals(pi.name)) {
                     if ("0".equals(d.statementId())) {
-                        assertDv(d, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                        assertDv(d, 4, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     }
                     if ("1".equals(d.statementId())) {
-                        assertDv(d, 1, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                        assertDv(d, 4, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     }
                     if ("2".equals(d.statementId())) {
                         assertTrue(d.variableInfoContainer().hasEvaluation());
                         VariableInfo eval = d.variableInfoContainer().best(Stage.EVALUATION);
-                        if (d.iteration() > 0) {
+                        if (d.iteration() >= 4) {
                             assertEquals(DV.FALSE_DV, eval.getProperty(Property.CONTEXT_MODIFIED));
                         } else {
                             assertTrue(eval.getProperty(Property.CONTEXT_MODIFIED).isDelayed());
@@ -1063,7 +1063,7 @@ public class Test_51_InstanceOf extends CommonTestRunner {
                         };
                         assertEquals(linked, eval.getLinkedVariables().toString());
 
-                        assertDv(d, 1, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                        assertDv(d, 4, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                         String expected = d.iteration() == 0 ? "<p:expression>" : "nullable instance type Expression/*@Identity*/";
                         assertEquals(expected, d.currentValue().toString());
                     }
@@ -1170,16 +1170,17 @@ public class Test_51_InstanceOf extends CommonTestRunner {
                 } else if (d.variable() instanceof FieldReference fr && "positive".equals(fr.fieldInfo.name)) {
                     assertNotNull(fr.scopeVariable);
                     assertEquals("iop", fr.scopeVariable.simpleName());
-                    assertDv(d, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
-                    assertEquals("iop:2", lvs);
+                    assertDv(d, 4, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                    String expected = d.iteration() < 4 ? "iop.instanceOf:-1,iop:-1" : "iop:2";
+                    assertEquals(expected, lvs);
 
                 } else if (d.variable() instanceof ParameterInfo pi && "iop".equals(pi.name)) {
-                    assertDv(d, 1, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                    assertDv(d, 4, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
 
                 } else if (d.variable() instanceof FieldReference fr && "instanceOf".equals(fr.fieldInfo.name)) {
                     assertNotNull(fr.scopeVariable);
                     assertEquals("iop", fr.scopeVariable.simpleName());
-                    assertDv(d, 1, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                    assertDv(d, 4, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                 } else if (d.variable() instanceof ReturnVariable) {
                     assertDv(d, MultiLevel.NULLABLE_DV, Property.CONTEXT_NOT_NULL);
                 } else fail("Have " + d.variableName());

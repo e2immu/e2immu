@@ -21,7 +21,6 @@ import org.e2immu.analyser.analyser.util.GenerateAnnotationsIndependent;
 import org.e2immu.analyser.analysis.Analysis;
 import org.e2immu.analyser.analysis.TypeAnalysis;
 import org.e2immu.analyser.model.*;
-import org.e2immu.analyser.model.expression.*;
 import org.e2immu.analyser.model.impl.AnnotationExpressionImpl;
 import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
 import org.e2immu.analyser.parser.Messages;
@@ -202,7 +201,7 @@ abstract class AbstractAnalysisBuilder implements Analysis {
         boolean container = false;
         DV independent = DV.MIN_INT_DV;
         DV linkLevel = null;
-        int[] linkParameters = null;
+        int[] linkHcParameters = null;
 
         // immutable values
         MultiLevel.Level levelImmutable = MultiLevel.Level.ABSENT;
@@ -253,7 +252,7 @@ abstract class AbstractAnalysisBuilder implements Analysis {
                     if (analyserIdentification == Analyser.AnalyserIdentification.PARAMETER) {
                         linkLevel = parameters.absent() ? LinkedVariables.LINK_DEPENDENT :
                                 hc ? LinkedVariables.LINK_COMMON_HC : LinkedVariables.LINK_INDEPENDENT;
-                        linkParameters = annotationExpression.extract(PARAMETERS, INT_ARRAY);
+                        linkHcParameters = annotationExpression.extract(HC_PARAMETERS, INT_ARRAY);
                     }
                 } else if (e2ImmuAnnotationExpressions.container.typeInfo() == t) {
                     // @Container, allowing absent
@@ -377,8 +376,8 @@ abstract class AbstractAnalysisBuilder implements Analysis {
             boolean test = !before; // default == after==true == before==false
             writeEventual(markValue, false, null, test);
         }
-        if (linkParameters != null) {
-            writeLinkParameters(linkLevel, linkParameters);
+        if (linkHcParameters != null) {
+            writeLinkParameters(LinkedVariables.LINK_COMMON_HC, linkHcParameters);
         }
         return messages;
     }

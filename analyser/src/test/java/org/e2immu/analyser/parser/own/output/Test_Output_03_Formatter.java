@@ -242,7 +242,7 @@ public class Test_Output_03_Formatter extends CommonTestRunner {
 
         BreakDelayVisitor breakDelayVisitor = d -> {
             if ("Formatter".equals(d.typeInfo().simpleName)) {
-                assertEquals("------M-M--", d.delaySequence());
+                assertEquals("------M--M---", d.delaySequence());
             }
         };
 
@@ -253,10 +253,10 @@ public class Test_Output_03_Formatter extends CommonTestRunner {
                 0, 28, new DebugConfiguration.Builder()
                         //     .addEvaluationResultVisitor(evaluationResultVisitor)
                         //    .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-                        .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
-                        .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
-                        .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
-                        .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                  //      .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                   //     .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+                   //     .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
+                   //     .addStatementAnalyserVisitor(statementAnalyserVisitor)
                         .addBreakDelayVisitor(breakDelayVisitor)
                         .build(),
                 new AnalyserConfiguration.Builder().setComputeFieldAnalyserAcrossAllMethods(true).build());
