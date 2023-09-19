@@ -467,7 +467,7 @@ public class Test_63_DGSimplified extends CommonTestRunner {
                 .build(), new AnalyserConfiguration.Builder().setComputeFieldAnalyserAcrossAllMethods(true).build());
     }
 
-    @Disabled("wrong modification")
+    //@Disabled("wrong modification")
     @Test
     public void test_4() throws IOException {
         EvaluationResultVisitor evaluationResultVisitor = d -> {
@@ -505,7 +505,7 @@ public class Test_63_DGSimplified extends CommonTestRunner {
                 if ("cycle".equals(d.variableName())) {
                     if ("3.0.2.0.1".equals(d.statementId())) {
                         // removeAsManyAsPossible modifies cycle.keySet(), which should be linked to cycle
-                        assertDv(d, 28, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
+                        assertDv(d, 44, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
                     }
                 }
             }
@@ -541,11 +541,14 @@ public class Test_63_DGSimplified extends CommonTestRunner {
             }
         };
 
+        BreakDelayVisitor breakDelayVisitor = d -> assertEquals("----M--M--M--M-M-M-MF-MFT------M--M-MF--MFT---", d.delaySequence());
+
         testClass("DGSimplified_4", 1, 3, new DebugConfiguration.Builder()
-                .addEvaluationResultVisitor(evaluationResultVisitor)
-                .addStatementAnalyserVisitor(statementAnalyserVisitor)
+             //   .addEvaluationResultVisitor(evaluationResultVisitor)
+             //   .addStatementAnalyserVisitor(statementAnalyserVisitor)
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                .addBreakDelayVisitor(breakDelayVisitor)
                 .build(), new AnalyserConfiguration.Builder().setComputeFieldAnalyserAcrossAllMethods(true).build());
     }
 

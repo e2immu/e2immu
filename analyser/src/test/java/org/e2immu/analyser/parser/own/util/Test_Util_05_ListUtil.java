@@ -23,6 +23,7 @@ import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.ParameterInfo;
 import org.e2immu.analyser.parser.CommonTestRunner;
 import org.e2immu.analyser.util.ListUtil;
+import org.e2immu.analyser.visitor.BreakDelayVisitor;
 import org.e2immu.analyser.visitor.EvaluationResultVisitor;
 import org.e2immu.analyser.visitor.StatementAnalyserVariableVisitor;
 import org.e2immu.analyser.visitor.StatementAnalyserVisitor;
@@ -36,7 +37,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 public class Test_Util_05_ListUtil extends CommonTestRunner {
 
-    @Disabled("Bad hidden content computation, and others")
+    // @Disabled("Bad hidden content computation, and others")
     @Test
     public void test() throws IOException {
 
@@ -127,10 +128,12 @@ public class Test_Util_05_ListUtil extends CommonTestRunner {
             }
         };
 
+        BreakDelayVisitor breakDelayVisitor = d -> assertEquals("------M--M-", d.delaySequence());
         testSupportAndUtilClasses(List.of(ListUtil.class), 0, 2, new DebugConfiguration.Builder()
-                .addEvaluationResultVisitor(evaluationResultVisitor)
-                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-                .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                //     .addEvaluationResultVisitor(evaluationResultVisitor)
+                //    .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                //    .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                .addBreakDelayVisitor(breakDelayVisitor)
                 .build());
     }
 

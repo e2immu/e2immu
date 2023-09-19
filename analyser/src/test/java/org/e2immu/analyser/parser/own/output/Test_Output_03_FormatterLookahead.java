@@ -39,7 +39,6 @@ public class Test_Output_03_FormatterLookahead extends CommonTestRunner {
         super(true);
     }
 
-    @Disabled("Infinite loop between And, Negation, Equals, isNotNull0")
     @Test
     public void test_0() throws IOException {
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {

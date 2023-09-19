@@ -55,7 +55,7 @@ public class Test_Output_03_Formatter extends CommonTestRunner {
     //Forward.combine(nullable instance type ElementarySpace,list.get(pos$8)/*(Space)*/.elementarySpace(options))
     // the real deal
 
-    @Disabled("Bad modification decision on immutable object")
+    //@Disabled("Bad modification decision on immutable object")
     @Test
     public void test_1() throws IOException {
         EvaluationResultVisitor evaluationResultVisitor = d -> {
