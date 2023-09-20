@@ -300,8 +300,8 @@ public class Test_Util_06_DependencyGraph extends CommonTestRunner {
         };
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("DependencyGraph".equals(d.typeInfo().simpleName)) {
-                assertDv(d, 28, MultiLevel.EVENTUALLY_IMMUTABLE_HC_DV, Property.IMMUTABLE);
-                assertDv(d, 28, MultiLevel.INDEPENDENT_HC_INCONCLUSIVE, Property.INDEPENDENT);
+                assertDv(d, 29, MultiLevel.EVENTUALLY_IMMUTABLE_HC_DV, Property.IMMUTABLE);
+                assertDv(d, 29, MultiLevel.INDEPENDENT_HC_INCONCLUSIVE, Property.INDEPENDENT);
             }
             if ("$4".equals(d.typeInfo().simpleName)) {
                 assertDv(d, 2, MultiLevel.EFFECTIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
@@ -417,7 +417,7 @@ public class Test_Util_06_DependencyGraph extends CommonTestRunner {
 
         BreakDelayVisitor breakDelayVisitor = d -> {
             if ("DependencyGraph".equals(d.typeInfo().simpleName)) {
-                assertEquals("------M-----M--M--M--M-MF-MFT---", d.delaySequence());
+                assertEquals("------S-----S--S--S--S-SF-SFMT---", d.delaySequence());
             }
         };
 

@@ -217,7 +217,7 @@ public class Test_01_Loops_21plus extends CommonTestRunner {
                 assertEquals(d.iteration() >= 5, d.statusesAsMap().values().stream().noneMatch(AnalysisStatus::isDelayed));
             }
         };
-        BreakDelayVisitor breakDelayVisitor = d -> assertEquals("----M-", d.delaySequence());
+        BreakDelayVisitor breakDelayVisitor = d -> assertEquals("----S-", d.delaySequence());
 
         testClass("Loops_21", 0, 0, new DebugConfiguration.Builder()
                 .addStatementAnalyserVisitor(statementAnalyserVisitor)
@@ -274,7 +274,7 @@ public class Test_01_Loops_21plus extends CommonTestRunner {
             }
         };
 
-        BreakDelayVisitor breakDelayVisitor = d -> assertEquals("----M-", d.delaySequence());
+        BreakDelayVisitor breakDelayVisitor = d -> assertEquals("----S-", d.delaySequence());
 
         // potential null pointer array[i][j].length()
         testClass("Loops_21_1", 0, 1, new DebugConfiguration.Builder()
@@ -315,7 +315,7 @@ public class Test_01_Loops_21plus extends CommonTestRunner {
                 }
             }
         };
-        BreakDelayVisitor breakDelayVisitor = d -> assertEquals("----M-", d.delaySequence());
+        BreakDelayVisitor breakDelayVisitor = d -> assertEquals("----S-", d.delaySequence());
         testClass("Loops_21_2", 0, 0, new DebugConfiguration.Builder()
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .addBreakDelayVisitor(breakDelayVisitor)

@@ -23,8 +23,6 @@ import org.e2immu.analyser.analysis.impl.ValueAndPropertyProxy;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.ParameterInfo;
-import org.e2immu.analyser.model.expression.InlinedMethod;
-import org.e2immu.analyser.model.expression.Negation;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.LocalVariableReference;
 import org.e2immu.analyser.model.variable.ReturnVariable;
@@ -56,7 +54,7 @@ public class Test_Support_02_SetOnce extends CommonTestRunner {
                 assertEquals("T", d.typeAnalysis().getHiddenContentTypes().toString());
                 String expectE1 = d.iteration() < 4 ? "{}" : "{t=null==t}";
                 assertEquals(expectE1, d.typeAnalysis().getApprovedPreconditionsFinalFields().toString());
-                String expectE2 = d.iteration() < BIG ? "{}" : "{t=null==t}";
+                String expectE2 = d.iteration() < 4 ? "{}" : "{t=null==t}";
                 assertEquals(expectE2, d.typeAnalysis().getApprovedPreconditionsImmutable().toString());
             }
         };
@@ -257,8 +255,6 @@ public class Test_Support_02_SetOnce extends CommonTestRunner {
                             case 1 -> "final@Field_t";
                             case 2 -> "break_init_delay:this.t@Method_set_1.0.0-C";
                             case 3, 4 -> "link@Field_t";
-                            case 5, 6 ->
-                                    "break_init_delay:this.t@Method_set_1.0.0-C;break_mom_delay@Parameter_t;cm@Parameter_o;cm@Parameter_t;link:o@Method_equals_3:M;link:this.t@Method_equals_3:M;link@Field_t;mom@Parameter_t";
                             default -> "eve_immutable_hc:10";
                         };
                         assertEquals(extImm, eval.getProperty(EXTERNAL_IMMUTABLE).toString());
@@ -280,8 +276,8 @@ public class Test_Support_02_SetOnce extends CommonTestRunner {
                     }
                     if ("3".equals(d.statementId())) {
                         assertLinked(d,
-                                it(0, BIG, "setOnce.t:-1,setOnce:-1,this.t:-1"),
-                                it(BIG + 1, "setOnce:1"));
+                                it(0, 3, "setOnce.t:-1,setOnce:-1,this.t:-1"),
+                                it(4, "setOnce:1"));
                     }
                 }
                 if (d.variable() instanceof FieldReference fr && "t".equals(fr.fieldInfo.name)) {
@@ -298,19 +294,19 @@ public class Test_Support_02_SetOnce extends CommonTestRunner {
                         };
                         assertEquals(initial, vi1.getValue().toString());
 
-                        String expected = d.iteration() < BIG ? "<f:t>" : "nullable instance type T";
+                        String expected = d.iteration() < 4 ? "<f:t>" : "nullable instance type T";
                         assertEquals(expected, d.currentValue().toString());
 
                         assertLinked(d,
-                                it(0, BIG, "o:-1,setOnce.t:-1,setOnce:-1"),
-                                it(BIG + 1, "o:2,setOnce:2"));
+                                it(0, 3, "o:-1,setOnce.t:-1,setOnce:-1"),
+                                it(4, ""));
                     } else if (fr.scopeVariable != null && "setOnce".equals(fr.scopeVariable.simpleName())) {
-                        String expected = d.iteration() <= BIG ? "<f:setOnce.t>" : "nullable instance type ?";
+                        String expected = d.iteration() < 4 ? "<f:setOnce.t>" : "nullable instance type ?";
                         assertEquals(expected, d.currentValue().toString());
 
                         assertLinked(d,
-                                it(0, BIG, "o:-1,setOnce:-1,this.t:-1"),
-                                it(BIG + 1, "o:2,setOnce:2"));
+                                it(0, 3, "o:-1,setOnce:-1,this.t:-1"),
+                                it(4, "o:2,setOnce:2"));
                     } else fail("have " + fr.scopeVariable);
                 }
             }
@@ -336,7 +332,7 @@ public class Test_Support_02_SetOnce extends CommonTestRunner {
                 assertEquals(DV.TRUE_DV, d.methodAnalysis().getProperty(Property.MODIFIED_METHOD));
 
                 MethodAnalysis.Eventual eventual = d.methodAnalysis().getEventual();
-                if (d.iteration() >= BIG) {
+                if (d.iteration() >= 5) {
                     assertTrue(eventual.mark());
                 } else {
                     assertTrue(eventual.causesOfDelay().isDelayed());
@@ -366,7 +362,7 @@ public class Test_Support_02_SetOnce extends CommonTestRunner {
 
 
                 MethodAnalysis.Eventual eventual = d.methodAnalysis().getEventual();
-                if (d.iteration() >= BIG) {
+                if (d.iteration() >= 5) {
                     assertTrue(eventual.after());
                 } else {
                     assertTrue(eventual.causesOfDelay().isDelayed());
@@ -390,7 +386,7 @@ public class Test_Support_02_SetOnce extends CommonTestRunner {
                 assertDv(d, DV.TRUE_DV, Property.MODIFIED_METHOD);
 
                 MethodAnalysis.Eventual eventual = d.methodAnalysis().getEventual();
-                if (d.iteration() >= BIG) {
+                if (d.iteration() >= 5) {
                     assertTrue(eventual.mark());
                 } else {
                     assertTrue(eventual.causesOfDelay().isDelayed());
@@ -449,14 +445,10 @@ public class Test_Support_02_SetOnce extends CommonTestRunner {
             if ("equals".equals(d.methodInfo().name)) {
                 if ("3".equals(d.statementId())) {
                     String delays = switch (d.iteration()) {
-                        case 0 -> "initial:this.t@Method_equals_3-C";
-                        case 1 -> "[11 delays]";
-                        case 2 ->
-                                "break_init_delay:this.t@Method_set_1.0.0-C;cm@Parameter_o;cm@Parameter_t;link:o@Method_equals_3:M;link:this.t@Method_equals_3:M;link@Field_t;mom@Parameter_t";
-                        case 3 ->
-                                "cm@Parameter_o;cm@Parameter_t;link:o@Method_equals_3:M;link:this.t@Method_equals_3:M;link@Field_t;mom@Parameter_t";
-                        case 4, 5, 6 ->
-                                "break_init_delay:this.t@Method_set_1.0.0-C;break_mom_delay@Parameter_t;cm@Parameter_o;cm@Parameter_t;link:o@Method_equals_3:M;link:this.t@Method_equals_3:M;link@Field_t;mom@Parameter_t";
+                        case 0 -> "initial:setOnce.t@Method_equals_3-C;initial:this.t@Method_equals_3-C";
+                        case 1 ->
+                                "initial:this.t@Method_set_1.0.0-C;state:this.t@Method_set_1.0.1-E;values:this.t@Field_t";
+                        case 2, 3 -> "link@Field_t";
                         default -> "";
                     };
                     assertEquals(delays, d.evaluationResult().causesOfDelay().toString());
@@ -464,17 +456,16 @@ public class Test_Support_02_SetOnce extends CommonTestRunner {
             }
         };
 
-        // FIXME
-        BreakDelayVisitor breakDelayVisitor = d -> assertEquals("-------MF--MFT--", d.delaySequence());
+        BreakDelayVisitor breakDelayVisitor = d -> assertEquals("-------", d.delaySequence());
 
         testSupportAndUtilClasses(List.of(SetOnce.class), 0, 0, new DebugConfiguration.Builder()
-            //    .addEvaluationResultVisitor(evaluationResultVisitor)
-            //    .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
-             //   .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
-             //   .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
-            //    .addStatementAnalyserVisitor(statementAnalyserVisitor)
-             //   .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-              //  .addBreakDelayVisitor(breakDelayVisitor)
+                .addEvaluationResultVisitor(evaluationResultVisitor)
+                .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
+                .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addBreakDelayVisitor(breakDelayVisitor)
                 .build());
     }
 

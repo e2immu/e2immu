@@ -990,7 +990,7 @@ public class Test_66_VariableScope extends CommonTestRunner {
             }
         };
 
-        BreakDelayVisitor breakDelayVisitor = d -> assertEquals("----M---", d.delaySequence());
+        BreakDelayVisitor breakDelayVisitor = d -> assertEquals("----S---", d.delaySequence());
 
         testClass("VariableScope_10", 0, 2, new DebugConfiguration.Builder()
                         //      .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)

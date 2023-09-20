@@ -209,7 +209,7 @@ public class Test_56_Fluent extends CommonTestRunner {
 
         BreakDelayVisitor breakDelayVisitor = d -> {
             String s = switch (d.typeInfo().simpleName) {
-                case "IFluent_0", "Fluent_0" -> "-----M-M---M--M---MFT--";
+                case "IFluent_0", "Fluent_0" -> "-----S---S--S---SFM-SFM--SFMT--";
                 default -> fail(d.typeInfo().simpleName + ": " + d.delaySequence());
             };
             assertEquals(s, d.delaySequence(), d.typeInfo().simpleName);
@@ -308,7 +308,7 @@ public class Test_56_Fluent extends CommonTestRunner {
             }
         };
 
-        BreakDelayVisitor breakDelayVisitor = d -> assertEquals("-----M-M---M--M--", d.delaySequence());
+        BreakDelayVisitor breakDelayVisitor = d -> assertEquals("-----S---S--S---SFM-SFM-", d.delaySequence());
 
         TypeContext typeContext = testClass(List.of("a.IFluent_1", "Fluent_1"),
                 List.of("jmods/java.compiler.jmod"),

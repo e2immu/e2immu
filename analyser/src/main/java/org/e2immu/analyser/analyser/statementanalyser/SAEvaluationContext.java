@@ -94,7 +94,7 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
                         boolean delayStatementBecauseOfECI,
                         BreakDelayLevel breakDelayLevel) {
         super(closure == null ? 1 : closure.getDepth() + 1, iteration,
-                breakDelayLevel.max(statementAnalysis.isBrokeDelay() ? BreakDelayLevel.STATEMENT_METHOD : BreakDelayLevel.NONE),
+                breakDelayLevel.max(statementAnalysis.isBrokeDelay() ? BreakDelayLevel.STATEMENT : BreakDelayLevel.NONE),
                 conditionManager, closure);
         this.statementAnalyser = statementAnalyser;
         this.localAnalysers = localAnalysers;

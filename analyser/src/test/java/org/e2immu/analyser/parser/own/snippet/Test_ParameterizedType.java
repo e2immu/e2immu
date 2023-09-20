@@ -485,7 +485,7 @@ public class Test_ParameterizedType extends CommonTestRunner {
             }
         };
 
-        BreakDelayVisitor breakDelayVisitor = d -> assertEquals("------M--M-M----", d.delaySequence());
+        BreakDelayVisitor breakDelayVisitor = d -> assertEquals("------S--S-S----", d.delaySequence());
 
         testClass("ParameterizedType_2", 2, DONT_CARE,
                 new DebugConfiguration.Builder()

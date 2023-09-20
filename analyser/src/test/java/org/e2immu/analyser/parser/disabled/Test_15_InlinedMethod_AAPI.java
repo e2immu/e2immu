@@ -418,7 +418,7 @@ public class Test_15_InlinedMethod_AAPI extends CommonTestRunner {
             }
         };
 
-        BreakDelayVisitor breakDelayVisitor = d -> assertEquals("----MF--MF--MFT-", d.delaySequence());
+        BreakDelayVisitor breakDelayVisitor = d -> assertEquals("----SF--SF--SFMT-", d.delaySequence());
 
         testClass("InlinedMethod_11", 1, 5, new DebugConfiguration.Builder()
                    .addEvaluationResultVisitor(evaluationResultVisitor)

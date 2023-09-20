@@ -613,7 +613,7 @@ public class Test_01_Loops_6plus extends CommonTestRunner {
                 assertDv(d, 3, MultiLevel.NULLABLE_DV, EXTERNAL_NOT_NULL);
             }
         };
-        BreakDelayVisitor breakDelayVisitor = d -> assertEquals("---M---", d.delaySequence());
+        BreakDelayVisitor breakDelayVisitor = d -> assertEquals("---S---", d.delaySequence());
 
         testClass("Loops_17", 0, 1, new DebugConfiguration.Builder()
                         .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)

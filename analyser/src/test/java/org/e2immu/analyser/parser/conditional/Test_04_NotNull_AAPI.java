@@ -252,7 +252,7 @@ public class Test_04_NotNull_AAPI extends CommonTestRunner {
             }
         };
 
-        BreakDelayVisitor breakDelayVisitor = d -> assertEquals("----M-MF---", d.delaySequence());
+        BreakDelayVisitor breakDelayVisitor = d -> assertEquals("----S-SF---", d.delaySequence());
 
         testClass("NotNull_3", 6, 0, new DebugConfiguration.Builder()
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)

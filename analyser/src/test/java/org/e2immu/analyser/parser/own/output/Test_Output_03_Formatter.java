@@ -242,7 +242,7 @@ public class Test_Output_03_Formatter extends CommonTestRunner {
 
         BreakDelayVisitor breakDelayVisitor = d -> {
             if ("Formatter".equals(d.typeInfo().simpleName)) {
-                assertEquals("------M--", d.delaySequence());
+                assertEquals("------S--", d.delaySequence());
             }
         };
 

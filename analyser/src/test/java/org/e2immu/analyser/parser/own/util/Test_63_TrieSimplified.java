@@ -101,7 +101,7 @@ public class Test_63_TrieSimplified extends CommonTestRunner {
                 }
             }
         };
-        BreakDelayVisitor breakDelayVisitor = d -> assertEquals("----M--M--", d.delaySequence());
+        BreakDelayVisitor breakDelayVisitor = d -> assertEquals("----S--S--", d.delaySequence());
         // null ptr warning
         testClass("TrieSimplified_0", 4, 0, new DebugConfiguration.Builder()
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)

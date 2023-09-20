@@ -80,8 +80,7 @@ public class Test_Output_02_Symbol extends CommonTestRunner {
             String s = switch (d.typeInfo().simpleName) {
                 case "FormattingOptions" -> "----";
                 case "OutputElement" -> "--";
-                case "Space" -> "-----";
-                case "Symbol" -> "-----";
+                case "Space", "Symbol" -> "-----";
                 default -> fail(d.typeInfo().simpleName + ": " + d.delaySequence());
             };
             assertEquals(s, d.delaySequence(), d.typeInfo().simpleName);

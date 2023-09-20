@@ -121,7 +121,7 @@ public class Test_Independent extends CommonTestRunner {
             }
         };
 
-        BreakDelayVisitor breakDelayVisitor = d -> assertEquals("-----MF---", d.delaySequence());
+        BreakDelayVisitor breakDelayVisitor = d -> assertEquals("-----SF---", d.delaySequence());
 
         testClass("Independent_4", 0, 4, new DebugConfiguration.Builder()
                         .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)

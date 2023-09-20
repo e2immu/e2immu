@@ -281,26 +281,26 @@ public class Test_Util_02_UpgradableBooleanMap extends CommonTestRunner {
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
             if ("map".equals(d.fieldInfo().name)) {
                 assertEquals("instance type HashMap<T,Boolean>", d.fieldAnalysis().getValue().toString());
-                assertDv(d, 22, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.EXTERNAL_NOT_NULL);
+                assertDv(d, 20, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.EXTERNAL_NOT_NULL);
                 assertDv(d, MultiLevel.NOT_IGNORE_MODS_DV, Property.EXTERNAL_IGNORE_MODIFICATIONS);
 
                 // only link is from t --3--> map, which is not included (at this point)
-                String linked = d.iteration() < 22 ? "t:-1,this:-1" : "";
+                String linked = d.iteration() < 20 ? "t:-1,t:-1,this:-1" : "";
                 assertEquals(linked, d.fieldAnalysis().getLinkedVariables().toString());
                 // NOT modified outside method, because the put/putAll are part of construction!!!
-                assertDv(d, DV.FALSE_DV, Property.MODIFIED_OUTSIDE_METHOD);
+                assertDv(d, 20, DV.FALSE_DV, Property.MODIFIED_OUTSIDE_METHOD);
 
                 // consequence of linking: no direct assignment, no outgoing links
-                assertDv(d, 22, MultiLevel.INDEPENDENT_DV, Property.INDEPENDENT);
+                assertDv(d, 20, MultiLevel.INDEPENDENT_DV, Property.INDEPENDENT);
             }
         };
 
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("UpgradableBooleanMap".equals(d.typeInfo().simpleName)) {
                 assertEquals("T", d.typeAnalysis().getHiddenContentTypes().toString());
-                assertDv(d, 23, MultiLevel.EFFECTIVELY_IMMUTABLE_HC_DV, Property.IMMUTABLE);
-                assertDv(d, 25, MultiLevel.CONTAINER_DV, Property.CONTAINER);
-                assertDv(d, 26, MultiLevel.INDEPENDENT_HC_DV, Property.INDEPENDENT);
+                assertDv(d, 21, MultiLevel.EFFECTIVELY_IMMUTABLE_HC_DV, Property.IMMUTABLE);
+                assertDv(d, 23, MultiLevel.CONTAINER_DV, Property.CONTAINER);
+                assertDv(d, 23, MultiLevel.INDEPENDENT_HC_DV, Property.INDEPENDENT);
             }
 
             if ("$1".equals(d.typeInfo().simpleName)) {
@@ -309,7 +309,7 @@ public class Test_Util_02_UpgradableBooleanMap extends CommonTestRunner {
                 TypeInfo upgradable = d.typeInfo().packageNameOrEnclosingType.getRight();
                 assertEquals("UpgradableBooleanMap", upgradable.simpleName);
                 assertTrue(d.typeInfo().recursivelyInConstructionOrStaticWithRespectTo(InspectionProvider.DEFAULT, upgradable));
-                assertDv(d, 25, MultiLevel.EFFECTIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
+                assertDv(d, 23, MultiLevel.EFFECTIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
             }
 
             if ("$2".equals(d.typeInfo().simpleName)) {
@@ -321,20 +321,20 @@ public class Test_Util_02_UpgradableBooleanMap extends CommonTestRunner {
                 assertEquals("accumulator", d.typeInspection().enclosingMethod().name);
                 assertTrue(d.typeInfo().recursivelyInConstructionOrStaticWithRespectTo(InspectionProvider.DEFAULT, upgradable));
                 assertFalse(d.typeInfo().recursivelyInConstructionOrStaticWithRespectTo(InspectionProvider.DEFAULT, collector));
-                assertDv(d, 26, MultiLevel.EFFECTIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
+                assertDv(d, MultiLevel.EFFECTIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
             }
         };
 
-        BreakDelayVisitor breakDelayVisitor = d -> assertEquals("----M--M-M--M--M---M-MF-----",
+        BreakDelayVisitor breakDelayVisitor = d -> assertEquals("----S--S--S--S---S-SF-----",
                 d.delaySequence());
 
         testSupportAndUtilClasses(List.of(UpgradableBooleanMap.class),
                 0, 0, new DebugConfiguration.Builder()
-                     //   .addStatementAnalyserVisitor(statementAnalyserVisitor)
-                    //    .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-                   //     .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
-                   //     .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
-                    //    .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
+                        //   .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                        //    .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                        //     .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                        .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+                        .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
                         .addBreakDelayVisitor(breakDelayVisitor)
                         .build());
     }

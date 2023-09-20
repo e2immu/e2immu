@@ -16,10 +16,11 @@ package org.e2immu.analyser.analyser.impl.util;
 
 public enum BreakDelayLevel {
     NONE('-', 0),
-    STATEMENT_METHOD('M', 1),
+    STATEMENT('S', 1),
     FIELD('F', 2),
-    TYPE('T', 3),
-    METHOD_OVERRIDE('O', 4);
+    METHOD('M', 3),
+    TYPE('T', 4),
+    METHOD_OVERRIDE('O', 5);
 
     private final int level;
     public final char symbol;
@@ -40,10 +41,11 @@ public enum BreakDelayLevel {
     private BreakDelayLevel from(int level) {
         return switch (level) {
             case 0 -> NONE;
-            case 1 -> STATEMENT_METHOD;
+            case 1 -> STATEMENT;
             case 2 -> FIELD;
-            case 3 -> TYPE;
-            case 4 -> METHOD_OVERRIDE;
+            case 3 -> METHOD;
+            case 4 -> TYPE;
+            case 5 -> METHOD_OVERRIDE;
             default -> throw new UnsupportedOperationException();
         };
     }
@@ -61,7 +63,7 @@ public enum BreakDelayLevel {
     }
 
     public boolean acceptMethod() {
-        return level >= STATEMENT_METHOD.level;
+        return level >= METHOD.level;
     }
 
     public boolean acceptField() {
@@ -69,7 +71,7 @@ public enum BreakDelayLevel {
     }
 
     public boolean acceptStatement() {
-        return level >= STATEMENT_METHOD.level;
+        return level >= STATEMENT.level;
     }
 
     public boolean acceptMethodOverride() {

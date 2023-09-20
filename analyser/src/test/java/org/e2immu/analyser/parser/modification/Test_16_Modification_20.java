@@ -174,7 +174,7 @@ public class Test_16_Modification_20 extends CommonTestRunner {
             }
         };
 
-        BreakDelayVisitor breakDelayVisitor = d -> assertEquals("---M-MF---", d.delaySequence());
+        BreakDelayVisitor breakDelayVisitor = d -> assertEquals("---S-SF---", d.delaySequence());
 
         //WARN in Method org.e2immu.analyser.parser.modification.testexample.Modification_20.example1() (line 43, pos 9): Potential null pointer exception: Variable: set
         testClass("Modification_20", 0, 1, new DebugConfiguration.Builder()

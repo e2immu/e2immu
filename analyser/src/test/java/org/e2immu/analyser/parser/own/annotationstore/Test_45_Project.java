@@ -275,7 +275,7 @@ public class Test_45_Project extends CommonTestRunner {
             }
         };
 
-        BreakDelayVisitor breakDelayVisitor = d -> assertEquals("------M-M-MF-MF-MF-MF-MF----MF---MF---",
+        BreakDelayVisitor breakDelayVisitor = d -> assertEquals("------S-S-SF-SF-SF-SF-SF----SF---SF---",
                 d.delaySequence());
 
         testClass("Project_0", 1, DONT_CARE, new DebugConfiguration.Builder()

@@ -197,7 +197,7 @@ public class Test_Support_05_Lazy extends CommonTestRunner {
     };
 
     BreakDelayVisitor breakDelayVisitor = d -> {
-        assertEquals("---MF-----", d.delaySequence());
+        assertEquals("---SF-----", d.delaySequence());
     };
 
     @Test

@@ -52,7 +52,7 @@ public class Test_Support_00_Either extends CommonTestRunner {
             if ("getLeftOrElse".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof ParameterInfo orElse && "orElse".equals(orElse.name)) {
                     if ("0".equals(d.statementId())) {
-                        // FIXME what do we want here?         assertEquals(MultiLevel.NOT_CONTAINER_DV, d.getProperty(Property.CONTAINER));
+                        assertEquals(MultiLevel.CONTAINER_DV, d.getProperty(Property.CONTAINER));
                     }
                     if ("1".equals(d.statementId())) {
                         String expectValue = d.iteration() == 0 ? "<p:orElse>" : "nullable instance type A/*@Identity*/";
@@ -143,17 +143,16 @@ public class Test_Support_00_Either extends CommonTestRunner {
             }
         };
 
-        // FIXME
-        BreakDelayVisitor breakDelayVisitor = d-> assertEquals("----MF--MF--MFT--", d.delaySequence());
+        BreakDelayVisitor breakDelayVisitor = d -> assertEquals("-----", d.delaySequence());
 
         // we do expect 2x potential null pointer exception, because you can call getLeft() when you initialised with right() and vice versa
         testSupportAndUtilClasses(List.of(Either.class), 0, 2, new DebugConfiguration.Builder()
-           //     .addEvaluationResultVisitor(evaluationResultVisitor)
-           //     .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
-           //     .addStatementAnalyserVisitor(statementAnalyserVisitor)
-           //     .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-           //     .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
-            //    .addBreakDelayVisitor(breakDelayVisitor)
+                .addEvaluationResultVisitor(evaluationResultVisitor)
+                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+                .addBreakDelayVisitor(breakDelayVisitor)
                 .build());
     }
 

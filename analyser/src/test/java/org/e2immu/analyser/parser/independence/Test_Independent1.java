@@ -628,7 +628,7 @@ public class Test_Independent1 extends CommonTestRunner {
             }
         };
 
-        BreakDelayVisitor breakDelayVisitor = d -> assertEquals("-----M--M-MF----", d.delaySequence());
+        BreakDelayVisitor breakDelayVisitor = d -> assertEquals("-----S--S-SF----", d.delaySequence());
 
         testClass("Independent1_9", 0, 0, new DebugConfiguration.Builder()
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
@@ -704,7 +704,7 @@ public class Test_Independent1 extends CommonTestRunner {
             }
         };
 
-        BreakDelayVisitor breakDelayVisitor = d -> assertEquals("---M--M-MF---", d.delaySequence());
+        BreakDelayVisitor breakDelayVisitor = d -> assertEquals("---S--S-SF---", d.delaySequence());
 
         testClass("Independent1_9_1", 0, 0, new DebugConfiguration.Builder()
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)

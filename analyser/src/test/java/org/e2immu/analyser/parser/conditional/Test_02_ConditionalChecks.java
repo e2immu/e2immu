@@ -477,7 +477,7 @@ public class Test_02_ConditionalChecks extends CommonTestRunner {
                 assertDv(d, DV.FALSE_DV, MODIFIED_OUTSIDE_METHOD);
             }
         };
-        BreakDelayVisitor breakDelayVisitor = d -> assertEquals("---MF---", d.delaySequence());
+        BreakDelayVisitor breakDelayVisitor = d -> assertEquals("---SF---", d.delaySequence());
 
         testClass("ConditionalChecks_4B", 0, 1, new DebugConfiguration.Builder()
               //  .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)

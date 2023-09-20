@@ -206,7 +206,7 @@ public class Test_AnalysisProvider extends CommonTestRunner {
             }
         };
 
-        BreakDelayVisitor breakDelayVisitor = d -> assertEquals("--------M-M--MF-MF----", d.delaySequence());
+        BreakDelayVisitor breakDelayVisitor = d -> assertEquals("--------S-S--SF-SF----", d.delaySequence());
 
         testClass("AnalysisProvider_0", 0, 5,
                 new DebugConfiguration.Builder()
@@ -291,7 +291,7 @@ public class Test_AnalysisProvider extends CommonTestRunner {
             }
         };
 
-        BreakDelayVisitor breakDelayVisitor = d -> assertEquals("---------M--M--MF-MF------", d.delaySequence());
+        BreakDelayVisitor breakDelayVisitor = d -> assertEquals("---------S--S--SF-SF------", d.delaySequence());
 
         testClass("AnalysisProvider_1", 0, 6,
                 new DebugConfiguration.Builder()

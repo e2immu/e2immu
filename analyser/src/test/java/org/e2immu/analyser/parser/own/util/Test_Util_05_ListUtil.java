@@ -191,7 +191,7 @@ public class Test_Util_05_ListUtil extends CommonTestRunner {
             }
         };
 
-        BreakDelayVisitor breakDelayVisitor = d -> assertEquals("------M--M-", d.delaySequence());
+        BreakDelayVisitor breakDelayVisitor = d -> assertEquals("------S--S-", d.delaySequence());
         testSupportAndUtilClasses(List.of(ListUtil.class), 1, 1, new DebugConfiguration.Builder()
                 .addEvaluationResultVisitor(evaluationResultVisitor)
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)

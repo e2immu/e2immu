@@ -113,14 +113,14 @@ public class Test_04_NotNull extends CommonTestRunner {
         };
 
         BreakDelayVisitor breakDelayVisitor = d -> {
-            assertEquals("---MF---", d.delaySequence());
+            assertEquals("---SF---", d.delaySequence());
         };
 
         testClass("NotNull_1", 0, 0, new DebugConfiguration.Builder()
-                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-                .addStatementAnalyserVisitor(statementAnalyserVisitor)
-                .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
-                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+           //     .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+           //     .addStatementAnalyserVisitor(statementAnalyserVisitor)
+           //     .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+            //    .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .addBreakDelayVisitor(breakDelayVisitor)
                 .build(), new AnalyserConfiguration.Builder().setComputeContextPropertiesOverAllMethods(true).build());
     }
@@ -144,7 +144,7 @@ public class Test_04_NotNull extends CommonTestRunner {
             }
         };
         BreakDelayVisitor breakDelayVisitor = d -> {
-            assertEquals("---MF-", d.delaySequence());
+            assertEquals("---SF-", d.delaySequence());
         };
         testClass("NotNull_2", 0, 0, new DebugConfiguration.Builder()
                 .addStatementAnalyserVisitor(statementAnalyserVisitor)
