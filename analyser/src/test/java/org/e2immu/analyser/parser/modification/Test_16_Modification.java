@@ -243,7 +243,7 @@ public class Test_16_Modification extends CommonTestRunner {
                 }
                 if ("FaultyImplementation".equals(d.methodInfo().typeInfo.simpleName)) {
                     assertDv(d, MultiLevel.CONTAINER_DV, Property.CONTAINER);
-                    assertDv(d, 3, MultiLevel.DEPENDENT_DV, Property.INDEPENDENT);
+                    assertDv(d, 2, MultiLevel.DEPENDENT_DV, Property.INDEPENDENT);
                 }
             }
             if ("addError".equals(d.methodInfo().name)) {
@@ -273,7 +273,7 @@ public class Test_16_Modification extends CommonTestRunner {
 
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("FaultyImplementation".equals(d.typeInfo().simpleName)) {
-                assertHc(d, 2, "");
+                assertHc(d, 1, "");
                 assertDv(d, 3, MultiLevel.DEPENDENT_DV, Property.INDEPENDENT);
             }
             if ("ErrorRegistry".equals(d.typeInfo().simpleName)) {

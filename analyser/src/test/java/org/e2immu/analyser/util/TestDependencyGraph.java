@@ -73,7 +73,8 @@ public class TestDependencyGraph {
         graph.addNode('b', List.of('c'));
         graph.addNode('c', List.of());
         List<Character> sorted = graph.sorted(NO_CYCLES, null, null);
-        assertEquals("[c, a, b]", sorted.toString());
+        // NOTE: cba instead of cab, LinkedHashMap instead of HashMap
+        assertEquals("[c, b, a]", sorted.toString());
 
         assertEquals("[a, c]", graph.dependencies('a').toString());
         assertEquals("[b, c]", graph.dependencies('b').toString());

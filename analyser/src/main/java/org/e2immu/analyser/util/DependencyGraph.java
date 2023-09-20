@@ -39,8 +39,9 @@ public class DependencyGraph<T> extends Freezable {
         }
     }
 
+    // linkedHashMap to maintain the order when "sorted" is called.
     @NotModified(after = "frozen")
-    private final Map<T, Node<T>> nodeMap = new HashMap<>();
+    private final Map<T, Node<T>> nodeMap = new LinkedHashMap<>();
 
     @NotModified
     public int size() {
@@ -229,7 +230,7 @@ public class DependencyGraph<T> extends Freezable {
     public List<T> sorted(Consumer<List<T>> reportPartOfCycle,
                           Consumer<T> reportIndependent,
                           Comparator<T> backupComparator) {
-        Map<T, Node<T>> toDo = new HashMap<>(nodeMap);
+        Map<T, Node<T>> toDo = new LinkedHashMap<>(nodeMap);
         Set<T> done = new HashSet<>();
         List<T> result = new ArrayList<>(nodeMap.size());
         while (!toDo.isEmpty()) {
@@ -253,7 +254,7 @@ public class DependencyGraph<T> extends Freezable {
             }
             if (keys.isEmpty()) {
                 // find the core of the cycle
-                Map<T, Node<T>> cycle = new HashMap<>(toDo);
+                Map<T, Node<T>> cycle = new LinkedHashMap<>(toDo);
                 List<T> removed = removeAsManyAsPossible(cycle.keySet());
                 removed.forEach(t -> {
                     result.add(t);
@@ -283,7 +284,7 @@ public class DependencyGraph<T> extends Freezable {
 
     // return a sub-map, starting off at some point, and then following links
     private Map<T, Node<T>> startArbitrarily(Map<T, Node<T>> cycle) {
-        Map<T, Node<T>> sub = new HashMap<>();
+        Map<T, Node<T>> sub = new LinkedHashMap<>();
         Node<T> first = cycle.values().stream().findFirst().orElseThrow();
         sub.put(first.t, first);
         recursivelyAddToSubGraph(first, sub, cycle);
@@ -315,7 +316,7 @@ public class DependencyGraph<T> extends Freezable {
      between the elements.
      */
     public List<SortResult<T>> sortedSequenceOfParallel(Comparator<T> parallelSorter) {
-        Map<T, Node<T>> toDo = new HashMap<>(nodeMap);
+        Map<T, Node<T>> toDo = new LinkedHashMap<>(nodeMap);
         Set<T> done = new HashSet<>();
         List<SortResult<T>> result = new ArrayList<>(nodeMap.size());
         int iteration = 0;

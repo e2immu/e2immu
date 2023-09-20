@@ -35,8 +35,7 @@ import java.io.IOException;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.*;
 
 /*
 Breaking the delays in "get()":
@@ -70,11 +69,11 @@ public class Test_Support_05_Lazy extends CommonTestRunner {
         if ("get".equals(d.methodInfo().name)) {
             if (d.variable() instanceof FieldReference s && "supplier".equals(s.fieldInfo.name)) {
                 assertFalse(d.variableInfo().isAssigned());
-                assertDv(d, 10, MultiLevel.IGNORE_MODS_DV, Property.IGNORE_MODIFICATIONS);
+                assertDv(d, 7, MultiLevel.IGNORE_MODS_DV, Property.IGNORE_MODIFICATIONS);
             }
             if (d.variable() instanceof ReturnVariable) {
                 if ("0.0.0".equals(d.statementId())) {
-                    assertCurrentValue(d, 10, "t$0");
+                    assertCurrentValue(d, 7, "t$0");
                 }
                 if ("2".equals(d.statementId())) {
                     String value = switch (d.iteration()) {
@@ -82,19 +81,21 @@ public class Test_Support_05_Lazy extends CommonTestRunner {
                         case 1 -> "<f*:t>";
                         case 2 ->
                                 "<null-check>?<m:requireNonNull>:<vp:t:break_init_delay:this.t@Method_get_2-C;ext_not_null@Field_supplier;initial:this.t@Method_get_0-C;values:this.t@Field_t>";
-                        case 3, 4, 5, 6, 7 ->
+                        case 3, 4 ->
                                 "<null-check>?<m:requireNonNull>:<vp:t:break_init_delay:this.t@Method_get_0-C;ext_not_null@Field_supplier;initial:this.supplier@Method_get_1-C;initial:this.t@Method_get_0-C;values:this.t@Field_t>";
-                        case 8, 9 -> "<wrapped:t>";
+                        case 5 -> "<wrapped:t>";
+                        case 6 ->
+                                "<null-check>?<s:T>:<vp:t:break_init_delay:this.t@Method_get_0-C;ext_not_null@Field_supplier;initial:this.supplier@Method_get_1-C;initial:this.t@Method_get_0-C;values:this.t@Field_t>";
                         default -> "supplier.get()/*@NotNull*/";
                     };
-//                    assertEquals(value, d.currentValue().toString());
-                    assertEquals(d.iteration() >= 10, d.currentValue().isDone());
-                    assertDv(d, 10, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_EXPRESSION);
+                    assertEquals(value, d.currentValue().toString());
+                    assertEquals(d.iteration() >= 7, d.currentValue().isDone());
+                    assertDv(d, 7, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_EXPRESSION);
                 }
             }
             if (d.variable() instanceof FieldReference t && "supplier".equals(t.fieldInfo.name)) {
-                assertCurrentValue(d, 10, "instance type Supplier<T>/*@IgnoreMods*/");
-                assertDv(d, 10, MultiLevel.EFFECTIVELY_IMMUTABLE_HC_DV, Property.IMMUTABLE);
+                assertCurrentValue(d, 7, "instance type Supplier<T>/*@IgnoreMods*/");
+                assertDv(d, 7, MultiLevel.EFFECTIVELY_IMMUTABLE_HC_DV, Property.IMMUTABLE);
             }
 
             if (d.variable() instanceof FieldReference t && "t".equals(t.fieldInfo.name)) {
@@ -102,29 +103,30 @@ public class Test_Support_05_Lazy extends CommonTestRunner {
                 assertEquals("this", t.scope.toString());
 
                 if ("0.0.0".equals(d.statementId())) {
-                    assertCurrentValue(d, 10, "nullable instance type T");
+                    assertCurrentValue(d, 7, "nullable instance type T");
                 }
                 if ("0".equals(d.statementId())) {
-                    assertCurrentValue(d, 10, "nullable instance type T");
+                    assertCurrentValue(d, 7, "nullable instance type T");
                 }
                 if ("1".equals(d.statementId())) {
                     // should this not be supplier.get()? no, get() is modifying
                     String expect = switch (d.iteration()) {
-                        case 0, 1, 2, 3, 4, 5, 6, 7 -> "<m:requireNonNull>";
-                        case 8, 9 -> "<wrapped:t>";
+                        case 0, 1, 2, 3, 4 -> "<m:requireNonNull>";
+                        case 5 -> "<wrapped:t>";
+                        case 6 -> "<s:T>";
                         default -> "supplier.get()/*@NotNull*/";
                     };
                     assertEquals(expect, d.currentValue().toString());
-                    assertDv(d, 10, DV.FALSE_DV, Property.IDENTITY);
+                    assertDv(d, 7, DV.FALSE_DV, Property.IDENTITY);
                 }
                 if ("2".equals(d.statementId())) {
                     String expect = switch (d.iteration()) {
-                        case 0, 1, 2, 3, 4, 5, 6, 7 -> "<m:requireNonNull>";
-                        case 8, 9 -> "<wrapped:t>";
+                        case 0, 1, 2, 3, 4 -> "<m:requireNonNull>";
+                        case 5, 6 -> "<wrapped:t>";
                         default -> "supplier.get()/*@NotNull*/";
                     };
                     assertEquals(expect, d.currentValue().toString());
-                    assertDv(d, 10, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_EXPRESSION);
+                    assertDv(d, 7, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_EXPRESSION);
                 }
             }
         }
@@ -135,13 +137,12 @@ public class Test_Support_05_Lazy extends CommonTestRunner {
         }
     };
 
-
     StatementAnalyserVisitor statementAnalyserVisitor = d -> {
         if ("get".equals(d.methodInfo().name)) {
             String state = switch (d.iteration()) {
-                case 0, 1, 2, 3, 4, 6, 7, 8, 9 -> "<null-check>";
-                case 5 -> "<simplification>";
-                default -> "true";
+                case 0, 1, 2, 3, 4, 5 -> "<null-check>";
+                case 6 -> "null==<vp:t:link@Field_t>";
+                default -> "null==t$0";
             };
             if ("1".equals(d.statementId())) {
                 assertEquals(state, d.state().toString());
@@ -149,8 +150,6 @@ public class Test_Support_05_Lazy extends CommonTestRunner {
             if ("2".equals(d.statementId())) {
                 // important: if the state says something about t, then after assignment to t this should be removed!
                 assertEquals(state, d.state().toString());
-           //     assertEquals("<f:t>=null", d.statementAnalysis().stateData().equalityAccordingToStateStream()
-            //            .map(Object::toString).collect(Collectors.joining(",")));
             }
         }
     };
@@ -160,19 +159,18 @@ public class Test_Support_05_Lazy extends CommonTestRunner {
             assertEquals(DV.FALSE_DV, d.fieldAnalysis().getProperty(Property.FINAL));
             assertEquals("<variable value>", d.fieldAnalysis().getValue().toString());
             String expected = switch (d.iteration()) {
-                case 0 ->
-                        "initial:this.supplier@Method_get_1-C;initial:this.t@Method_get_2-C;values:this.t@Field_t";
+                case 0 -> "initial:this.supplier@Method_get_1-C;initial:this.t@Method_get_2-C;values:this.t@Field_t";
                 case 1 ->
                         "break_init_delay:this.t@Method_get_2-C;ext_not_null@Field_supplier;initial:this.t@Method_get_0-C;values:this.t@Field_t";
-                case 2, 3, 4, 5, 6, 7, 8 ->
+                case 2, 3, 4 ->
                         "break_init_delay:this.t@Method_get_0-C;ext_not_null@Field_supplier;initial:this.supplier@Method_get_1-C;initial:this.t@Method_get_0-C;values:this.t@Field_t";
                 default -> "null,supplier.get()/*@NotNull*/";
             };
-//            assertEquals(expected, ((FieldAnalysisImpl.Builder) d.fieldAnalysis()).sortedValuesString());
-            assertEquals(d.iteration() >= 9, d.fieldAnalysis().valuesDelayed().isDone());
+            assertEquals(expected, ((FieldAnalysisImpl.Builder) d.fieldAnalysis()).sortedValuesString());
+            assertEquals(d.iteration() >= 5, d.fieldAnalysis().valuesDelayed().isDone());
 
-            assertDv(d, 9, MultiLevel.NULLABLE_DV, Property.EXTERNAL_NOT_NULL);
-            assertDv(d, 9, MultiLevel.EFFECTIVELY_IMMUTABLE_HC_DV, Property.EXTERNAL_IMMUTABLE);
+            assertDv(d, 5, MultiLevel.NULLABLE_DV, Property.EXTERNAL_NOT_NULL);
+            assertDv(d, 6, MultiLevel.EFFECTIVELY_IMMUTABLE_HC_DV, Property.EXTERNAL_IMMUTABLE);
         }
         if ("supplier".equals(d.fieldInfo().name)) {
             assertEquals(DV.TRUE_DV, d.fieldAnalysis().getProperty(Property.FINAL));
@@ -185,10 +183,10 @@ public class Test_Support_05_Lazy extends CommonTestRunner {
     MethodAnalyserVisitor methodAnalyserVisitor = d -> {
         if (!"Lazy".equals(d.methodInfo().typeInfo.simpleName)) return;
         if ("get".equals(d.methodInfo().name)) {
-            String expect = d.iteration() < 10 ? "Precondition[expression=<precondition>, causes=[]]"
+            String expect = d.iteration() < 7 ? "Precondition[expression=<precondition>, causes=[]]"
                     : "Precondition[expression=null==t, causes=[state]]";
             assertEquals(expect, d.methodAnalysis().getPreconditionForEventual().toString());
-            assertDv(d, 10, MultiLevel.EFFECTIVELY_IMMUTABLE_HC_DV, Property.IMMUTABLE);
+            assertDv(d, 7, MultiLevel.EFFECTIVELY_IMMUTABLE_HC_DV, Property.IMMUTABLE);
         }
     };
 
@@ -199,7 +197,7 @@ public class Test_Support_05_Lazy extends CommonTestRunner {
     };
 
     BreakDelayVisitor breakDelayVisitor = d -> {
-        assertEquals("---MF-MF----", d.delaySequence());
+        assertEquals("---MF-----", d.delaySequence());
     };
 
     @Test
@@ -216,16 +214,15 @@ public class Test_Support_05_Lazy extends CommonTestRunner {
                 new AnalyserConfiguration.Builder().setComputeContextPropertiesOverAllMethods(true).build());
     }
 
-   // @Disabled("fails on command line, correct in IntelliJ")
     @Test
     public void test1() throws IOException {
         // supplier.get() null context on to supplier, on to parameter
         testSupportAndUtilClasses(List.of(Lazy.class), 0, 0, new DebugConfiguration.Builder()
-                  //      .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
-                 //       .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
-                 //       .addStatementAnalyserVisitor(statementAnalyserVisitor)
-                 //       .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-                  //      .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
+                        .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                        .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                        .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+                        .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                        .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
                         .addBreakDelayVisitor(breakDelayVisitor)
                         .build(),
                 new AnalyserConfiguration.Builder().setComputeContextPropertiesOverAllMethods(true).build());

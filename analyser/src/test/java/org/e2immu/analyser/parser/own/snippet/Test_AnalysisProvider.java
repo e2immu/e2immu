@@ -589,7 +589,7 @@ public class Test_AnalysisProvider extends CommonTestRunner {
                 assertEquals(callCycle, methodResolution
                         .methodsOfOwnClassReached().stream().map(MethodInfo::name).sorted().collect(Collectors.joining(",")));
 
-                String expected = d.iteration() < 6 ? "<m:a>" : "nullable instance type DV";
+                String expected = d.iteration() < 5 ? "<m:a>" : "nullable instance type DV";
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
             }
             if ("b".equals(d.methodInfo().name)) {
@@ -598,7 +598,7 @@ public class Test_AnalysisProvider extends CommonTestRunner {
                 assertEquals(callCycle, methodResolution
                         .methodsOfOwnClassReached().stream().map(MethodInfo::name).sorted().collect(Collectors.joining(",")));
 
-                String expected = d.iteration() < 4 ? "<m:b>"
+                String expected = d.iteration() < 3 ? "<m:b>"
                         : "this.sumImmutableLevels(n<10?this.c(b0):AnalysisProvider_4.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV)";
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
             }
@@ -613,16 +613,17 @@ public class Test_AnalysisProvider extends CommonTestRunner {
         };
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
             if ("EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV".equals(d.fieldInfo().name)) {
-                assertDv(d, 4, DV.TRUE_DV, Property.MODIFIED_OUTSIDE_METHOD);
+                assertDv(d, 3, DV.TRUE_DV, Property.MODIFIED_OUTSIDE_METHOD);
             }
         };
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("DV".equals(d.typeInfo().simpleName)) {
-                assertDv(d, 2, MultiLevel.EFFECTIVELY_FINAL_FIELDS_DV, Property.IMMUTABLE);
-                assertDv(d, 2, MultiLevel.DEPENDENT_DV, Property.INDEPENDENT);
+                assertDv(d, 1, MultiLevel.EFFECTIVELY_FINAL_FIELDS_DV, Property.IMMUTABLE);
+                assertDv(d, 1, MultiLevel.DEPENDENT_DV, Property.INDEPENDENT);
                 assertDv(d, 1, MultiLevel.CONTAINER_DV, Property.CONTAINER);
             }
         };
+        BreakDelayVisitor breakDelayVisitor = d -> assertEquals("-------", d.delaySequence());
         testClass("AnalysisProvider_4", 0, 0,
                 new DebugConfiguration.Builder()
                         .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
@@ -630,6 +631,7 @@ public class Test_AnalysisProvider extends CommonTestRunner {
                         .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
                         .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                         .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                        .addBreakDelayVisitor(breakDelayVisitor)
                         .build(),
                 new AnalyserConfiguration.Builder()
                         .setComputeFieldAnalyserAcrossAllMethods(true)

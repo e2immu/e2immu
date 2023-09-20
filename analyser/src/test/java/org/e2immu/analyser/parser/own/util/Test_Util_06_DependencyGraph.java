@@ -295,7 +295,7 @@ public class Test_Util_06_DependencyGraph extends CommonTestRunner {
         };
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
             if ("nodeMap".equals(d.fieldInfo().name)) {
-                assertEquals("instance type HashMap<T,Node<T>>", d.fieldAnalysis().getValue().toString());
+                assertEquals("instance type LinkedHashMap<T,Node<T>>", d.fieldAnalysis().getValue().toString());
             }
         };
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
@@ -417,7 +417,7 @@ public class Test_Util_06_DependencyGraph extends CommonTestRunner {
 
         BreakDelayVisitor breakDelayVisitor = d -> {
             if ("DependencyGraph".equals(d.typeInfo().simpleName)) {
-                assertEquals("------M--M-----M--M--M-MF-MFT---", d.delaySequence());
+                assertEquals("------M-----M--M--M--M-MF-MFT---", d.delaySequence());
             }
         };
 

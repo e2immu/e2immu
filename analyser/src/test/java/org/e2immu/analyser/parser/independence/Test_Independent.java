@@ -50,7 +50,7 @@ public class Test_Independent extends CommonTestRunner {
                 assertHc(d, 0, "");
             }
             if ("ISet".equals(d.typeInfo().simpleName)) {
-                assertHc(d, 2, "");
+                assertHc(d, 1, "");
             }
         };
         testClass("Independent_2", 0, 0, new DebugConfiguration.Builder()

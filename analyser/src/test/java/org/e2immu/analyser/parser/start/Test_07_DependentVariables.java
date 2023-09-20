@@ -187,11 +187,11 @@ public class Test_07_DependentVariables extends CommonTestRunner {
 
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("getX".equals(d.methodInfo().name)) {
-                assertDv(d, 3, MultiLevel.DEPENDENT_DV, Property.INDEPENDENT);
+                assertDv(d, 2, MultiLevel.DEPENDENT_DV, Property.INDEPENDENT);
             }
             if ("XS".equals(d.methodInfo().name)) {
                 assertTrue(d.methodInfo().isConstructor);
-                assertDv(d.p(0), 3, MultiLevel.DEPENDENT_DV, Property.INDEPENDENT);
+                assertDv(d.p(0), 2, MultiLevel.DEPENDENT_DV, Property.INDEPENDENT);
             }
         };
 
@@ -200,7 +200,7 @@ public class Test_07_DependentVariables extends CommonTestRunner {
                 assertDv(d, 1, MultiLevel.MUTABLE_DV, Property.IMMUTABLE);
             }
             if ("XS".equals(d.typeInfo().simpleName)) {
-                assertHc(d, 2, "");
+                assertHc(d, 1, "");
             }
         };
 
@@ -217,7 +217,7 @@ public class Test_07_DependentVariables extends CommonTestRunner {
             }
         };
 
-        BreakDelayVisitor breakDelayVisitor = d -> assertEquals("-----", d.delaySequence());
+        BreakDelayVisitor breakDelayVisitor = d -> assertEquals("----", d.delaySequence());
 
         testClass("DependentVariables_1", 0, 0, new DebugConfiguration.Builder()
                 .addEvaluationResultVisitor(evaluationResultVisitor)
@@ -286,7 +286,7 @@ public class Test_07_DependentVariables extends CommonTestRunner {
                 assertHc(d, 0, "");
             }
             if ("XS".equals(d.typeInfo().simpleName)) {
-                assertHc(d, 2, "");
+                assertHc(d, 1, "");
             }
         };
 
@@ -294,14 +294,14 @@ public class Test_07_DependentVariables extends CommonTestRunner {
             if ("getX".equals(d.methodInfo().name)) {
                 String expected = d.iteration() < 2 ? "<m:getX>" : "xs[index]";
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
-                assertDv(d, 3, MultiLevel.DEPENDENT_DV, Property.INDEPENDENT);
+                assertDv(d, 2, MultiLevel.DEPENDENT_DV, Property.INDEPENDENT);
             }
             if ("XS".equals(d.methodInfo().name)) {
                 assertTrue(d.methodInfo().isConstructor);
             }
         };
 
-        BreakDelayVisitor breakDelayVisitor = d -> assertEquals("-----", d.delaySequence());
+        BreakDelayVisitor breakDelayVisitor = d -> assertEquals("----", d.delaySequence());
 
         testClass("DependentVariables_2", 0, 1, new DebugConfiguration.Builder()
                 .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)

@@ -967,6 +967,30 @@ public class JavaUtil extends AnnotatedAPI {
 
 
     @Container
+    static class LinkedHashMap$<K, V> {
+        // content is known
+        boolean LinkedHashMap$Modification$Size(int post) {
+            return post == 0;
+        }
+
+        boolean LinkedHashMap$Postcondition() {
+            return org.e2immu.annotatedapi.AnnotatedAPI.isKnown(false);
+        }
+
+        public LinkedHashMap$() {
+        }
+
+        // content is not known
+        boolean LinkedHashMap$Modification$Size(int post, Map<? extends K, ? extends V> map) {
+            return post == map.size();
+        }
+
+        public LinkedHashMap$(@NotNull(content = true) @Independent(hc = true) Map<? extends K, ? extends V> map) {
+        }
+    }
+
+
+    @Container
     static class TreeMap$<K, V> {
         // content is known
         boolean TreeMap$Modification$Size(int post) {
@@ -1023,11 +1047,6 @@ public class JavaUtil extends AnnotatedAPI {
 
     @Container
     interface WeakHashMap$ {
-
-    }
-
-    @Container
-    interface LinkedHashMap$ {
 
     }
 

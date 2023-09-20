@@ -472,7 +472,7 @@ public class Test_ParameterizedType extends CommonTestRunner {
             }
             if ("Result".equals(d.typeInfo().simpleName)) {
                 assertDv(d, 2, MultiLevel.EFFECTIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
-                if (d.iteration() >= 2) {
+                if (d.iteration() >= 1) {
                     assertEquals("", d.typeAnalysis().getHiddenContentTypes().toString());
                 } else {
                     assertTrue(d.typeAnalysis().hiddenContentDelays().isDelayed());

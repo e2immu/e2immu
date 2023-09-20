@@ -49,7 +49,7 @@ public class Test_Output_02_OutputBuilder extends CommonTestRunner {
             if ("accumulator".equals(d.methodInfo().name)) {
                 assertEquals("0", d.statementId());
                 if (d.variable() instanceof ParameterInfo pi && "separator".equals(pi.name)) {
-                    assertDv(d, 3, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                    assertDv(d, 2, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                 }
             }
             if ("accept".equals(d.methodInfo().name) && "$3".equals(d.methodInfo().typeInfo.simpleName)) {
@@ -62,12 +62,12 @@ public class Test_Output_02_OutputBuilder extends CommonTestRunner {
 
                         String linked = switch (d.iteration()) {
                             case 0 -> "NOT_YET_SET";
-                            case 1, 2 -> "a:-1";
+                            case 1 -> "a:-1";
                             default -> "a:3";
                         };
                         assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
 
-                        assertDv(d, 3, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                        assertDv(d, 2, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     }
                 }
                 if (d.variable() instanceof FieldReference fr && "NONE".equals(fr.fieldInfo.name)) {
@@ -101,10 +101,10 @@ public class Test_Output_02_OutputBuilder extends CommonTestRunner {
                 int n = d.methodInfo().methodInspection.get().getParameters().size();
                 if (1 == n) {
                     if (d.variable() instanceof ParameterInfo pi && "separator".equals(pi.name)) {
-                        assertDv(d, 5, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                        assertDv(d, 4, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     }
                     if (d.variable() instanceof ReturnVariable) {
-                        String expected = d.iteration() < 4 ? "<m:joining>"
+                        String expected = d.iteration() < 3 ? "<m:joining>"
                                 : "OutputBuilder.joining(separator,Space.NONE,Space.NONE,Guide.defaultGuideGenerator())";
                         assertEquals(expected, d.currentValue().toString());
                     }
@@ -115,7 +115,7 @@ public class Test_Output_02_OutputBuilder extends CommonTestRunner {
         StatementAnalyserVisitor statementAnalyserVisitor = d -> {
             if ("apply".equals(d.methodInfo().name) && "$4".equals(d.methodInfo().typeInfo.simpleName)) {
                 if ("2.0.0".equals(d.statementId())) { // a.add(separator); add is fluent; the identity is there because "a" is the first parameter of apply
-                    String expected = d.iteration() < 3 ? "<m:add>" : "a/*@NotNull*/";
+                    String expected = d.iteration() < 2 ? "<m:add>" : "a/*@NotNull*/";
                     assertEquals(expected, d.statementAnalysis().stateData().valueOfExpression.get().toString());
                 }
             }
@@ -138,17 +138,17 @@ public class Test_Output_02_OutputBuilder extends CommonTestRunner {
             if ("joining".equals(d.methodInfo().name)) {
                 int n = d.methodInfo().methodInspection.get().getParameters().size();
                 if (n == 1) {
-                    assertDv(d.p(0), 6, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
+                    assertDv(d.p(0), 5, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
                 } else if (n == 2) {
-                    assertDv(d.p(0), 6, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
-                    assertDv(d.p(1), 6, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
-                } else if (n == 4) {
-                    // separator
                     assertDv(d.p(0), 5, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
                     assertDv(d.p(1), 5, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
-                    assertDv(d.p(2), 5, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
-                    assertDv(d.p(3), 5, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
-                    String value = d.iteration() < 3 ? "<m:joining>"
+                } else if (n == 4) {
+                    // separator
+                    assertDv(d.p(0), 4, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
+                    assertDv(d.p(1), 4, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
+                    assertDv(d.p(2), 4, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
+                    assertDv(d.p(3), 4, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
+                    String value = d.iteration() < 2 ? "<m:joining>"
                             : "new Collector<>(){final AtomicInteger countMid=new AtomicInteger();public Supplier<OutputBuilder> supplier(){return OutputBuilder::new;}public BiConsumer<OutputBuilder,OutputBuilder> accumulator(){return (a,b)->{... debugging ...};}public BinaryOperator<OutputBuilder> combiner(){return (a,b)->{... debugging ...};}public Function<OutputBuilder,OutputBuilder> finisher(){return t->{... debugging ...};}public Set<Characteristics> characteristics(){return Set.of(Characteristics.CONCURRENT);}}";
                     assertEquals(value, d.methodAnalysis().getSingleReturnValue().toString());
                 }
@@ -160,7 +160,7 @@ public class Test_Output_02_OutputBuilder extends CommonTestRunner {
                 assertDv(d, MultiLevel.EFFECTIVELY_IMMUTABLE_HC_DV, Property.IMMUTABLE);
             }
             if ("OutputBuilder".equals(d.typeInfo().simpleName)) {
-                assertDv(d, 6, MultiLevel.CONTAINER_DV, Property.CONTAINER);
+                assertDv(d, 5, MultiLevel.CONTAINER_DV, Property.CONTAINER);
             }
         };
 
@@ -171,8 +171,7 @@ public class Test_Output_02_OutputBuilder extends CommonTestRunner {
                 case "OutputElement" -> "--";
                 case "Qualifier" -> "-";
                 case "Guide" -> "------";
-                case "TypeName" -> "-------";
-                case "OutputBuilder" -> "--------";
+                case "TypeName", "OutputBuilder" -> "-------";
                 default -> fail(d.typeInfo().simpleName + ": " + d.delaySequence());
             };
             assertEquals(s, d.delaySequence(), d.typeInfo().simpleName);
