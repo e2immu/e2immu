@@ -14,6 +14,8 @@
 
 package org.e2immu.analyser.parser.own.util.testexample;
 
+import org.e2immu.annotation.NotModified;
+
 import java.util.List;
 import java.util.Map;
 
@@ -36,6 +38,7 @@ public class TrieSimplified_4<T> {
         }
     }
 
+    @NotModified
     public TrieNode<T> add() {
         TrieNode<T> node = root;
 

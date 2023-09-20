@@ -20,7 +20,6 @@ import org.e2immu.analyser.analyser.delay.DelayFactory;
 import org.e2immu.analyser.analyser.delay.SimpleCause;
 import org.e2immu.analyser.analyser.util.ComputeIndependent;
 import org.e2immu.analyser.analysis.MethodAnalysis;
-import org.e2immu.analyser.analysis.ParameterAnalysis;
 import org.e2immu.analyser.analysis.StatementAnalysis;
 import org.e2immu.analyser.analysis.TypeAnalysis;
 import org.e2immu.analyser.model.*;
@@ -361,7 +360,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
                 builder.contextNotNullIsNotNullable(ive.variable());
 
         // process parameters
-        Pair<EvaluationResult.Builder, List<Expression>> res = EvaluateParameters.transform(parameterExpressions,
+        Pair<EvaluationResult.Builder, List<Expression>> res = EvaluateParameters.go(parameterExpressions,
                 objectResult, forwardEvaluationInfo, concreteMethod,
                 firstInCallCycle, objectValue, allowUpgradeCnnOfScope);
         List<Expression> parameterValues = res.v;

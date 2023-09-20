@@ -43,13 +43,13 @@ public class EvaluateParameters {
             Map.of(Property.CONTEXT_MODIFIED, DV.FALSE_DV,
                     Property.CONTEXT_NOT_NULL, MultiLevel.NULLABLE_DV);
 
-    public static Pair<EvaluationResult.Builder, List<Expression>> transform(List<Expression> parameterExpressions,
-                                                                             EvaluationResult context,
-                                                                             ForwardEvaluationInfo forwardEvaluationInfo,
-                                                                             MethodInfo methodInfo,
-                                                                             boolean recursiveOrPartOfCallCycle,
-                                                                             Expression scopeObject,
-                                                                             boolean allowUpgradeCnnOfScope) {
+    public static Pair<EvaluationResult.Builder, List<Expression>> go(List<Expression> parameterExpressions,
+                                                                      EvaluationResult context,
+                                                                      ForwardEvaluationInfo forwardEvaluationInfo,
+                                                                      MethodInfo methodInfo,
+                                                                      boolean recursiveOrPartOfCallCycle,
+                                                                      Expression scopeObject,
+                                                                      boolean allowUpgradeCnnOfScope) {
         int n = methodInfo == null ? 10 : methodInfo.methodInspection.get().getParameters().size();
         List<Expression> parameterValues = new ArrayList<>(n);
         int i = 0;
@@ -246,6 +246,14 @@ public class EvaluateParameters {
             Variable variable = e.getKey();
             changed |= potentiallyChangeOneVariable(context, parameterInfo, parameterExpression, parameterValue,
                     contextModified, builder, lvExpression, theVariable, dv, variable);
+            if (!contextModified.valueIsFalse()) {
+                /* modifyingMethod(map.keySet) -> must also mark map as context modified; see Modification_29 */
+                if (dv.isDelayed() || dv.ge(LinkedVariables.LINK_STATICALLY_ASSIGNED) && dv.le(LinkedVariables.LINK_DEPENDENT)) {
+                    DV value = dv.isDone() ? contextModified : dv;
+                    builder.markContextModified(variable, value);
+                    changed = true;
+                }
+            }
         }
         if (changed) {
             return builder.build();

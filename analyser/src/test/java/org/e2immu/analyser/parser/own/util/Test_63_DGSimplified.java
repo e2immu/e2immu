@@ -34,6 +34,8 @@ import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 
+import static org.e2immu.analyser.parser.VisitorTestSupport.IterationInfo.it;
+import static org.e2immu.analyser.parser.VisitorTestSupport.IterationInfo.it0;
 import static org.junit.jupiter.api.Assertions.*;
 
 public class Test_63_DGSimplified extends CommonTestRunner {
@@ -503,9 +505,23 @@ public class Test_63_DGSimplified extends CommonTestRunner {
             }
             if ("sorted".equals(d.methodInfo().name)) {
                 if ("cycle".equals(d.variableName())) {
+                    if ("3.0.2.0.0".equals(d.statementId())) {
+                        // removeAsManyAsPossible modifies cycle.keySet(), which should be linked to cycle
+                        assertDv(d, 25, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                        assertCurrentValue(d, 25, "new HashMap<>(toDo)");
+                        assertLinked(d,
+                                it0("backupComparator:-1,done:-1,keys:-1,reportIndependent:-1,reportPartOfCycle:-1,result:-1,scope-96:40:-1,scope-scope-96:40:3.0.1.dependsOn:-1,scope-scope-96:40:3.0.1:-1,this.nodeMap:-1,this:-1,toDo:-1"),
+                                it(1, 24, "done:-1,keys:-1,reportIndependent:-1,scope-96:40:-1,scope-scope-96:40:3.0.1.dependsOn:-1,scope-scope-96:40:3.0.1:-1,this.nodeMap:-1,this:-1,toDo:-1"),
+                                it(25, "done:4,keys:4,reportIndependent:4,scope-96:40:4,this.nodeMap:4,this:4,toDo:4"));
+                    }
                     if ("3.0.2.0.1".equals(d.statementId())) {
                         // removeAsManyAsPossible modifies cycle.keySet(), which should be linked to cycle
-                        assertDv(d, 44, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
+                        assertLinked(d,
+                                it0("backupComparator:-1,done:-1,keys:-1,reportIndependent:-1,reportPartOfCycle:-1,result:-1,scope-96:40:-1,scope-scope-96:40:3.0.1.dependsOn:-1,scope-scope-96:40:3.0.1:-1,this.nodeMap:-1,this:-1,toDo:-1"),
+                                it(1, 24, "done:-1,keys:-1,reportIndependent:-1,scope-96:40:-1,scope-scope-96:40:3.0.1.dependsOn:-1,scope-scope-96:40:3.0.1:-1,this.nodeMap:-1,this:-1,toDo:-1"),
+                                it(25, 43, "done:-1,keys:-1,reportIndependent:-1,scope-96:40:-1,this.nodeMap:-1,this:-1,toDo:-1"),
+                                it(44, "done:4,keys:4,reportIndependent:4,scope-96:40:4,this.nodeMap:4,this:4,toDo:4"));
+                        assertDv(d, 27, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
                     }
                 }
             }
@@ -544,8 +560,8 @@ public class Test_63_DGSimplified extends CommonTestRunner {
         BreakDelayVisitor breakDelayVisitor = d -> assertEquals("----M--M--M--M-M-M-MF-MFT------M--M-MF--MFT---", d.delaySequence());
 
         testClass("DGSimplified_4", 1, 3, new DebugConfiguration.Builder()
-             //   .addEvaluationResultVisitor(evaluationResultVisitor)
-             //   .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                //   .addEvaluationResultVisitor(evaluationResultVisitor)
+                //   .addStatementAnalyserVisitor(statementAnalyserVisitor)
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .addBreakDelayVisitor(breakDelayVisitor)

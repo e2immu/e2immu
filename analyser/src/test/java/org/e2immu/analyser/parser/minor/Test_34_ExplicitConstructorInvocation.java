@@ -435,13 +435,15 @@ public class Test_34_ExplicitConstructorInvocation extends CommonTestRunner {
                 if (d.variable() instanceof FieldReference fr && "condition".equals(fr.fieldInfo.name)) {
                     if ("3".equals(d.statementId())) {
                         assertEquals("condition:0", d.variableInfo().getLinkedVariables().toString());
-                        assertEquals("condition", d.currentValue().toString());
+                        String value = d.iteration() == 0 ? "<s:Expression>" : "condition";
+                        assertEquals(value, d.currentValue().toString());
                     }
                 }
                 if (d.variable() instanceof FieldReference fr && "state".equals(fr.fieldInfo.name)) {
                     if ("4".equals(d.statementId())) {
                         assertEquals("state:0", d.variableInfo().getLinkedVariables().toString());
-                        assertEquals("state", d.currentValue().toString());
+                        String state = d.iteration() == 0 ? "<s:Expression>" : "state";
+                        assertEquals(state, d.currentValue().toString());
                     }
                 }
             }
@@ -449,19 +451,19 @@ public class Test_34_ExplicitConstructorInvocation extends CommonTestRunner {
                 assertEquals("0", d.statementId());
                 if (d.variable() instanceof FieldReference fr && "parent".equals(fr.fieldInfo.name)) {
                     assertTrue(fr.scopeIsThis());
-                    assertCurrentValue(d, 3, "nullable instance type C");
-                    String linked = d.iteration() < 3 ? "parent.condition:-1,this:-1" : "";
+                    assertCurrentValue(d, 4, "nullable instance type C");
+                    String linked = d.iteration() < 4 ? "parent.condition:-1,this:-1" : "";
                     assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
                     assertDv(d, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
                 }
                 if (d.variable() instanceof FieldReference fr && "condition".equals(fr.fieldInfo.name)) {
                     if ("parent".equals(fr.scope.toString())) {
-                        assertCurrentValue(d, 3, "instance type Expression");
-                        String linked = d.iteration() < 3 ? "this.parent:-1,this:-1" : "this.parent:2";
+                        assertCurrentValue(d, 4, "instance type Expression");
+                        String linked = d.iteration() < 4 ? "this.parent:-1,this:-1" : "this.parent:2";
                         assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
                         assertDv(d, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
                     } else if (fr.scopeIsThis()) {
-                        assertCurrentValue(d, 3, "instance type Expression");
+                        assertCurrentValue(d, 4, "instance type Expression");
                         assertEquals("", d.variableInfo().getLinkedVariables().toString());
                         assertDv(d, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     } else fail("Found " + fr.scope);
@@ -481,7 +483,7 @@ public class Test_34_ExplicitConstructorInvocation extends CommonTestRunner {
                                 && "parent".equals(pi.name));
                     }
                     // parent is of mySelf type; IMMUTABLE_BREAK...
-                    assertDv(d, 2, MultiLevel.EFFECTIVELY_FINAL_FIELDS_DV, Property.EXTERNAL_IMMUTABLE);
+                    assertDv(d, 3, MultiLevel.EFFECTIVELY_FINAL_FIELDS_DV, Property.EXTERNAL_IMMUTABLE);
                 }
             }
         };
@@ -500,7 +502,7 @@ public class Test_34_ExplicitConstructorInvocation extends CommonTestRunner {
                 assertDv(d.p(0), 1, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
             }
             if ("absolute".equals(d.methodInfo().name)) {
-                String expected = d.iteration() < 3 ? "<m:absolute>"
+                String expected = d.iteration() < 4 ? "<m:absolute>"
                         : "null==parent?condition:condition.merge(parent.condition)";
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
                 assertDv(d, DV.TRUE_DV, Property.MODIFIED_METHOD);
@@ -514,10 +516,10 @@ public class Test_34_ExplicitConstructorInvocation extends CommonTestRunner {
                 assertDv(d, 1, MultiLevel.EFFECTIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
             }
             if ("C".equals(d.typeInfo().simpleName)) {
-                assertDv(d, 1, MultiLevel.EFFECTIVELY_FINAL_FIELDS_DV, Property.IMMUTABLE);
+                assertDv(d, 2, MultiLevel.EFFECTIVELY_FINAL_FIELDS_DV, Property.IMMUTABLE);
             }
         };
-        BreakDelayVisitor breakDelayVisitor = d -> assertEquals("-----", d.delaySequence());
+        BreakDelayVisitor breakDelayVisitor = d -> assertEquals("------", d.delaySequence());
 
         testClass("ExplicitConstructorInvocation_10", 0, 0, new DebugConfiguration.Builder()
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
