@@ -758,7 +758,7 @@ public class Test_34_ExplicitConstructorInvocation extends CommonTestRunner {
         };
 
         BreakDelayVisitor breakDelayVisitor = d -> {
-            assertEquals("--------M-MF--MF--MF--MF--MF--MF--MF--MF----MFT--", d.delaySequence());
+            assertEquals("--------MF--MF--MF--MF--MF--MF--MF--MF----MFT--", d.delaySequence());
         };
 
         testClass("ExplicitConstructorInvocation_13", 0, 1, new DebugConfiguration.Builder()

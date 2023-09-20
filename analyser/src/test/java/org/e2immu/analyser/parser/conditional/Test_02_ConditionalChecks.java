@@ -459,9 +459,30 @@ public class Test_02_ConditionalChecks extends CommonTestRunner {
     // FIXME this is not good, ways too many iterations; cause = augmentGraph in ComputeLinkedVariables
     @Test
     public void test4B() throws IOException {
+        StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+            if ("method5".equals(d.methodInfo().name)) {
+                if ("conditionalChecks".equals(d.variableName())) {
+                    if ("2".equals(d.statementId())) {
+                        String value = switch (d.iteration()) {
+                            case 0 -> "<vp:o:container@Class_ConditionalChecks_4B>/*(ConditionalChecks_4B)*/";
+                            case 1 ->
+                                    "<vp:o:cm@Parameter_o;cm@Parameter_s;initial:this.s@Method_method5_3-C;mom@Parameter_s>/*(ConditionalChecks_4B)*/";
+                            case 2 ->
+                                    "<vp:o:cm@Parameter_o;cm@Parameter_s;initial:this.s@Method_method5_3-C;link:o@Method_method5_3:M;link:this.s@Method_method5_3:M;mom@Parameter_s>/*(ConditionalChecks_4B)*/";
+                            case 3, 4, 5, 6, 7, 8, 9 ->
+                                    "<vp:o:break_mom_delay@Parameter_s;cm@Parameter_o;cm@Parameter_s;initial:this.s@Method_method5_3-C;link:o@Method_method5_3:M;link:this.s@Method_method5_3:M;mom@Parameter_s>/*(ConditionalChecks_4B)*/";
+                            default -> "o/*(ConditionalChecks_4B)*/";
+                        };
+                        assertEquals(value, d.currentValue().toString());
+                        assertDv(d, MultiLevel.EFFECTIVELY_NOT_NULL_DV, NOT_NULL_EXPRESSION);
+                    }
+                }
+            }
+        };
         BreakDelayVisitor breakDelayVisitor = d -> assertEquals("---MF--MFT--", d.delaySequence());
 
-        testClass("ConditionalChecks_4B", 0, 0, new DebugConfiguration.Builder()
+        testClass("ConditionalChecks_4B", 0, 1, new DebugConfiguration.Builder()
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .addBreakDelayVisitor(breakDelayVisitor)
                 .build(), new AnalyserConfiguration.Builder().setSkipTransformations(true).build());
     }

@@ -385,10 +385,6 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
                     })
                     .reduce(DV.TRUE_DV, DV::min);
             if (haveEventuallyImmutableFields.isDelayed()) {
-                if (sharedState.breakDelayLevel().acceptMethod()) {
-                    LOGGER.debug("Breaking eventual precondition delay on {}", methodInfo);
-                    break;
-                }
                 LOGGER.debug("Delaying eventual in {} until we know about @Immutable of fields", methodInfo);
                 methodAnalysis.setPreconditionForEventual(Precondition.forDelayed(methodInfo.identifier,
                         EmptyExpression.EMPTY_EXPRESSION, haveEventuallyImmutableFields.causesOfDelay(), primitives));
@@ -772,12 +768,8 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
         }
         Expression expression = methodAnalysis.getSingleReturnValue();
         if (expression.isDelayed()) {
-            if (breakDelayLevel.acceptMethod()) {
-                LOGGER.debug("Breaking @Container delay on {}", methodInfo);
-            } else {
-                LOGGER.debug("Delaying @Container on {} until return value is set", methodInfo);
-                return methodInfo.delay(CauseOfDelay.Cause.VALUE).merge(expression.causesOfDelay());
-            }
+            LOGGER.debug("Delaying @Container on {} until return value is set", methodInfo);
+            return methodInfo.delay(CauseOfDelay.Cause.VALUE).merge(expression.causesOfDelay());
         }
         if (expression.isConstant()) {
             return MultiLevel.CONTAINER_DV;
@@ -804,6 +796,9 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
         Expression expression = methodAnalysis.getSingleReturnValue();
         if (expression.isDelayed()) {
             if (breakDelayLevel.acceptMethod()) {
+                /*
+                this break avoids a type delay in Fluent_1
+                 */
                 LOGGER.debug("Breaking @Immutable delay on {}", methodInfo);
             } else {
                 LOGGER.debug("Delaying @Immutable on {} until return value is set", methodInfo);
@@ -1105,7 +1100,7 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
             ComputeIndependent computeIndependent = new ComputeIndependent(analyserContext, hiddenContentCurrentType,
                     methodInfo.typeInfo, false);
             ParameterizedType concreteReturnType = variableInfo.getValue().returnType();
-            if(concreteReturnType == ParameterizedType.NULL_CONSTANT) {
+            if (concreteReturnType == ParameterizedType.NULL_CONSTANT) {
                 methodAnalysis.setProperty(INDEPENDENT, INDEPENDENT.bestDv);
                 return DONE;
             }

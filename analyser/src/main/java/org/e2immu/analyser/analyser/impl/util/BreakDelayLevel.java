@@ -19,7 +19,7 @@ public enum BreakDelayLevel {
     STATEMENT_METHOD('M', 1),
     FIELD('F', 2),
     TYPE('T', 3),
-    METHOD_FIELD_OVERRIDE('O', 4);
+    METHOD_OVERRIDE('O', 4);
 
     private final int level;
     public final char symbol;
@@ -30,11 +30,11 @@ public enum BreakDelayLevel {
     }
 
     public BreakDelayLevel next() {
-        return from(Math.min(METHOD_FIELD_OVERRIDE.level, level + 1));
+        return from(Math.min(METHOD_OVERRIDE.level, level + 1));
     }
 
     public boolean stop() {
-        return this == METHOD_FIELD_OVERRIDE;
+        return this == METHOD_OVERRIDE;
     }
 
     private BreakDelayLevel from(int level) {
@@ -43,7 +43,7 @@ public enum BreakDelayLevel {
             case 1 -> STATEMENT_METHOD;
             case 2 -> FIELD;
             case 3 -> TYPE;
-            case 4 -> METHOD_FIELD_OVERRIDE;
+            case 4 -> METHOD_OVERRIDE;
             default -> throw new UnsupportedOperationException();
         };
     }
@@ -68,19 +68,11 @@ public enum BreakDelayLevel {
         return level >= FIELD.level;
     }
 
-    public boolean acceptParameter() {
-        return level >= STATEMENT_METHOD.level;
-    }
-
     public boolean acceptStatement() {
         return level >= STATEMENT_METHOD.level;
     }
 
     public boolean acceptMethodOverride() {
-        return level >= METHOD_FIELD_OVERRIDE.level;
-    }
-
-    public boolean acceptFieldOverride() {
-        return level >= METHOD_FIELD_OVERRIDE.level;
+        return level >= METHOD_OVERRIDE.level;
     }
 }

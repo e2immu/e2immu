@@ -26,6 +26,8 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 class SimpleSet extends AbstractDelay {
+    private static final int HARD_LIMIT = 30;
+
     private final List<CauseOfDelay> causes;
     private final int maxPriority;
 
@@ -65,14 +67,15 @@ class SimpleSet extends AbstractDelay {
         if (maxPriority < other.maxPriority()) return other;
         if (maxPriority > other.maxPriority()) return this;
         if (maxPriority == CauseOfDelay.LOW) return this; // we're delayed, the other is too, same level
+        if (numberOfDelays() > HARD_LIMIT || other.numberOfDelays() > HARD_LIMIT) return this;
 
         // more complicated than simply merge two sets. We keep only the earliest location of each delay
         Map<String, CauseOfDelay> map = new HashMap<>();
         causes.stream()
                 .filter(c -> c.cause().priority == CauseOfDelay.HIGH)
                 .forEach(c -> map.merge(c.withoutStatementIdentifier(), c, (c1, c2) -> {
-            throw new UnsupportedOperationException("This set should already have been merged properly: " + causes);
-        }));
+                    throw new UnsupportedOperationException("This set should already have been merged properly: " + causes);
+                }));
         return mergeIntoMapAndReturn(other.causesStream().filter(c -> c.cause().priority == CauseOfDelay.HIGH), map);
     }
 
@@ -126,7 +129,9 @@ class SimpleSet extends AbstractDelay {
         assert other.isDelayed();
         assert isDelayed();
         CausesOfDelay merge;
-        if (limit && (other.numberOfDelays() > LIMIT || numberOfDelays() > LIMIT)) {
+        if (limit && (other.numberOfDelays() > LIMIT || numberOfDelays() > LIMIT)
+                || other.numberOfDelays() > HARD_LIMIT
+                || numberOfDelays() > HARD_LIMIT) {
             merge = this;
         } else {
             merge = merge(other.causesOfDelay());

@@ -70,19 +70,19 @@ public class Test_56_Fluent extends CommonTestRunner {
                 // equals is evaluated after copyOf, so CM in the parameter of equals is only visible in iteration 3
                 if (d.variable() instanceof ReturnVariable) {
                     if ("0.0.0".equals(d.statementId())) {
-                        assertCurrentValue(d, 25, "instanceCopy/*(Fluent_0)*/");
+                        assertCurrentValue(d, 21, "instanceCopy/*(Fluent_0)*/");
                         assertTrue(d.currentValue() instanceof PropertyWrapper, "Have " + d.currentValue().getClass());
                         assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, d.getProperty(Property.NOT_NULL_EXPRESSION));
                     }
                     if ("1".equals(d.statementId())) {
                         String value = "instanceCopy instanceof Fluent_0?instanceCopy/*(Fluent_0)*/:(new Builder()/*@NotNull*/).build()";
-                        assertCurrentValue(d, 25, value);
+                        assertCurrentValue(d, 21, value);
 
-                        String expectLinks = d.iteration() < 25 ? "instanceCopy:-1" : "instanceCopy:1";
+                        String expectLinks = d.iteration() < 21 ? "instanceCopy:-1" : "instanceCopy:1";
                         assertEquals(expectLinks, d.variableInfo().getLinkedVariables().toString());
 
                         // computation of NNE is important here!
-                        assertDv(d, 25, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_EXPRESSION);
+                        assertDv(d, 21, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_EXPRESSION);
                     }
                 }
             }
@@ -138,18 +138,18 @@ public class Test_56_Fluent extends CommonTestRunner {
                 // @NotModified
                 assertDv(d, DV.FALSE_DV, Property.MODIFIED_METHOD);
 
-                String expect = d.iteration() < 25 ? "<m:copyOf>"
+                String expect = d.iteration() < 21 ? "<m:copyOf>"
                         : "instanceCopy instanceof Fluent_0?instanceCopy/*(Fluent_0)*/:(new Builder()/*@NotNull*/).build()";
                 assertEquals(expect, d.methodAnalysis().getSingleReturnValue().toString());
 
 
                 assertDv(d, DV.FALSE_DV, Property.FLUENT);
-                assertDv(d, 25, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_EXPRESSION);
+                assertDv(d, 21, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_EXPRESSION);
                 assertDv(d, 2, MultiLevel.INDEPENDENT_DV, Property.INDEPENDENT);
             }
 
             if ("build".equals(d.methodInfo().name)) {
-                assertDv(d, 25, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_EXPRESSION);
+                assertDv(d, 21, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_EXPRESSION);
                 assertDv(d, DV.FALSE_DV, Property.MODIFIED_METHOD);
                 assertDv(d, 2, MultiLevel.INDEPENDENT_DV, Property.INDEPENDENT);
             }
@@ -209,7 +209,7 @@ public class Test_56_Fluent extends CommonTestRunner {
 
         BreakDelayVisitor breakDelayVisitor = d -> {
             String s = switch (d.typeInfo().simpleName) {
-                case "IFluent_0", "Fluent_0" -> "-----M-M---M--M---M-M-MFT--";
+                case "IFluent_0", "Fluent_0" -> "-----M-M---M--M---MFT--";
                 default -> fail(d.typeInfo().simpleName + ": " + d.delaySequence());
             };
             assertEquals(s, d.delaySequence(), d.typeInfo().simpleName);
@@ -227,22 +227,6 @@ public class Test_56_Fluent extends CommonTestRunner {
 
     @Test
     public void test_1() throws IOException {
-        TypeAnalyserVisitor typeAnalyserVisitor = d -> {
-            if ("IFluent_1".equals(d.typeInfo().simpleName)) {
-                assertFalse(d.typeInfo().typePropertiesAreContracted()); // they are aggregated!
-                assertEquals("", d.typeAnalysis().hiddenContentDelays().toString());
-                assertTrue(d.typeAnalysis().getHiddenContentTypes().isEmpty());
-
-                assertTrue(d.typeInfo().typeResolution.get().hasOneKnownGeneratedImplementation());
-                assertDv(d, 1, MultiLevel.EFFECTIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
-            }
-            if ("Fluent_1".equals(d.typeInfo().simpleName)) {
-                assertDv(d, 1, MultiLevel.EFFECTIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
-                assertFalse(d.typeInfo().typePropertiesAreContracted());
-                assertEquals("", d.typeAnalysis().hiddenContentDelays().toString());
-                assertTrue(d.typeAnalysis().getHiddenContentTypes().isEmpty());
-            }
-        };
 
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("value".equals(d.methodInfo().name) && "IFluent_1".equals(d.methodInfo().typeInfo.simpleName)) {
@@ -307,6 +291,25 @@ public class Test_56_Fluent extends CommonTestRunner {
             }
         };
 
+        TypeAnalyserVisitor typeAnalyserVisitor = d -> {
+            if ("IFluent_1".equals(d.typeInfo().simpleName)) {
+                assertFalse(d.typeInfo().typePropertiesAreContracted()); // they are aggregated!
+                assertEquals("", d.typeAnalysis().hiddenContentDelays().toString());
+                assertTrue(d.typeAnalysis().getHiddenContentTypes().isEmpty());
+
+                assertTrue(d.typeInfo().typeResolution.get().hasOneKnownGeneratedImplementation());
+                assertDv(d, 1, MultiLevel.EFFECTIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
+            }
+            if ("Fluent_1".equals(d.typeInfo().simpleName)) {
+                assertDv(d, 1, MultiLevel.EFFECTIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
+                assertFalse(d.typeInfo().typePropertiesAreContracted());
+                assertEquals("", d.typeAnalysis().hiddenContentDelays().toString());
+                assertTrue(d.typeAnalysis().getHiddenContentTypes().isEmpty());
+            }
+        };
+
+        BreakDelayVisitor breakDelayVisitor = d -> assertEquals("-----M-M---M--M--", d.delaySequence());
+
         TypeContext typeContext = testClass(List.of("a.IFluent_1", "Fluent_1"),
                 List.of("jmods/java.compiler.jmod"),
                 0, 1, new DebugConfiguration.Builder()
@@ -314,6 +317,7 @@ public class Test_56_Fluent extends CommonTestRunner {
                         .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
                         .addStatementAnalyserVisitor(statementAnalyserVisitor)
                         .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                        .addBreakDelayVisitor(breakDelayVisitor)
                         .build(), new AnalyserConfiguration.Builder().build(),
                 new AnnotatedAPIConfiguration.Builder().build());
         TypeInfo iFluent1 = typeContext.typeMap.get(IFluent_1.class);

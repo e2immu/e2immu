@@ -269,15 +269,6 @@ public class EvaluateParameters {
                 || !variableIsRecursivelyPresentOrField(context.evaluationContext(), variable)) {
             return false;
         }
-        if (context.evaluationContext().breakDelayLevel().acceptParameter()
-                && parameterInfo != null
-                && contextModified.causesOfDelay().containsCauseOfDelay(CauseOfDelay.Cause.MODIFIED_OUTSIDE_METHOD,
-                c -> c instanceof SimpleCause sc && sc.location().getInfo().equals(parameterInfo))) {
-            LOGGER.debug("Breaking delay -- for now only used in Basics_24");
-            context.evaluationContext().getCurrentStatement().getStatementAnalysis().setBrokeDelay();
-            return false;
-        }
-
         // done/non-delayed situation first...
         CausesOfDelay delays = dvLink.causesOfDelay().merge(parameterValue.causesOfDelay())
                 .merge(contextModified.causesOfDelay());

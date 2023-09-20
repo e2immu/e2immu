@@ -165,14 +165,14 @@ public class Test_16_Modification_11_2 extends CommonTestRunner {
 
         StatementAnalyserVisitor statementAnalyserVisitor = d -> {
             if ("add".equals(d.methodInfo().name) && "C1".equals(d.methodInfo().typeInfo.simpleName)) {
-                assertEquals(d.iteration() > 0, d.statementAnalysis().methodLevelData().linksHaveBeenEstablished());
+                assertEquals(d.iteration() >= 9, d.statementAnalysis().methodLevelData().linksHaveBeenEstablished());
             }
             if ("example1".equals(d.methodInfo().name)) {
                 if ("0".equals(d.statementId())) {
                     assertNull(d.haveError(Message.Label.POTENTIAL_NULL_POINTER_EXCEPTION));
                 }
                 if ("2".equals(d.statementId())) {
-                    assertEquals(d.iteration() >= 14,
+                    assertEquals(d.iteration() >= 10,
                             d.statementAnalysis().methodLevelData().linksHaveBeenEstablished());
                 }
             }
@@ -182,26 +182,26 @@ public class Test_16_Modification_11_2 extends CommonTestRunner {
             if ("set".equals(d.fieldInfo().name)) {
                 assertEquals("setC/*@NotNull*/", d.fieldAnalysis().getValue().toString());
                 // the field analyser sees addAll being used on set in the method addAllOnC
-                assertDv(d, 12, MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL_DV, EXTERNAL_NOT_NULL);
+                assertDv(d, 8, MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL_DV, EXTERNAL_NOT_NULL);
                 assertDv(d, 1, DV.TRUE_DV, MODIFIED_OUTSIDE_METHOD);
 
                 assertEquals("setC/*@NotNull*/", d.fieldAnalysis().getValue().toString());
             }
             if ("s2".equals(d.fieldInfo().name)) {
-                assertDv(d, 13, MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL_DV, EXTERNAL_NOT_NULL);
-                String expected = d.iteration() < 13 ? "<f:s2>" : "(new C1(set2)).getSet()";
+                assertDv(d, 9, MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL_DV, EXTERNAL_NOT_NULL);
+                String expected = d.iteration() < 9 ? "<f:s2>" : "(new C1(set2)).getSet()";
                 assertEquals(expected, d.fieldAnalysis().getValue().toString());
             }
         };
 
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("C1".equals(d.methodInfo().name)) {
-                assertDv(d.p(0), 13, MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL_DV, NOT_NULL_PARAMETER);
+                assertDv(d.p(0), 9, MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL_DV, NOT_NULL_PARAMETER);
                 assertDv(d.p(0), 2, DV.TRUE_DV, MODIFIED_VARIABLE);
 
                 // depends on linked variables of C1.set
                 CausesOfDelay causes = d.methodAnalysis().getParameterAnalyses().get(0).assignedToFieldDelays();
-                assertEquals(d.iteration() >= 13, causes.isDone());
+                assertEquals(d.iteration() >= 9, causes.isDone());
             }
             if ("addAll".equals(d.methodInfo().name)) {
                 assertDv(d.p(0), 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, NOT_NULL_PARAMETER);
@@ -214,24 +214,24 @@ public class Test_16_Modification_11_2 extends CommonTestRunner {
 
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("Modification_11".equals(d.typeInfo().simpleName)) {
-                assertHc(d, 1, "");
+                assertHc(d, 9, "");
             }
             if ("C1".equals(d.typeInfo().simpleName)) {
                 assertHc(d, 0, "");
                 assertDv(d, 2, MultiLevel.NOT_CONTAINER_DV, Property.CONTAINER);
-                assertDv(d, 1, MultiLevel.EFFECTIVELY_FINAL_FIELDS_DV, IMMUTABLE);
+                assertDv(d, 9, MultiLevel.EFFECTIVELY_FINAL_FIELDS_DV, IMMUTABLE);
             }
         };
 
-        BreakDelayVisitor breakDelayVisitor = d -> assertEquals("-----M-M-M--M-----M--",
+        BreakDelayVisitor breakDelayVisitor = d -> assertEquals("-----M--M-----M--",
                 d.delaySequence());
 
         testClass("Modification_11", 0, 0, new DebugConfiguration.Builder()
                         //    .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-                     //   .addStatementAnalyserVisitor(statementAnalyserVisitor)
-                      //  .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
-                     //   .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
-                     //   .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
+                        .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                        .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+                        .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                        .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
                         .addBreakDelayVisitor(breakDelayVisitor)
                         .build(),
                 new AnalyserConfiguration.Builder()
