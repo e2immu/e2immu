@@ -210,9 +210,9 @@ public class TestLinkingExpression {
         TypeInfo collections = typeContext.getFullyQualified(Collections.class);
         MethodInfo addAll = collections.findUniqueMethod("addAll", 2);
 
-
+        Map<ParameterInfo, LinkedVariables> crossLinks = addAll.crossLinks(context.getAnalyserContext());
         assertEquals("{java.util.Collections.addAll(java.util.Collection<? super T>,T...):0:c=elements:4}",
-                addAll.crossLinks(context.getAnalyserContext()).toString());
+                crossLinks.toString());
 
         TypeInfo collection = typeContext.getFullyQualified(Collection.class);
         ParameterizedType collectionInteger = new ParameterizedType(collection, List.of(integer()));

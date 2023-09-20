@@ -328,19 +328,17 @@ public class Test_Expressions extends CommonTestRunner {
                 assertDv(d, MultiLevel.EFFECTIVELY_IMMUTABLE_HC_DV, IMMUTABLE);
             }
             if ("LinearInequalityInOneVariable".equals(d.typeInfo().simpleName)) {
-                assertDv(d, 14, MultiLevel.INDEPENDENT_HC_DV, INDEPENDENT);
-                // FIXME this used to be 14
-                assertDv(d, 99, MultiLevel.NOT_CONTAINER_INCONCLUSIVE, CONTAINER);
+                assertDv(d, 100, MultiLevel.INDEPENDENT_HC_DV, INDEPENDENT);
+                assertDv(d, 100, MultiLevel.NOT_CONTAINER_INCONCLUSIVE, CONTAINER);
             }
             if ("Term".equals(d.typeInfo().simpleName)) {
-                // FIXME !!
-                assertDv(d, 76, MultiLevel.EFFECTIVELY_IMMUTABLE_HC_DV, IMMUTABLE);
+                assertDv(d, 78, MultiLevel.EFFECTIVELY_IMMUTABLE_HC_DV, IMMUTABLE);
             }
         };
 
 
         BreakDelayVisitor breakDelayVisitor = d -> assertEquals(
-                "--------M---M-M---M--M-M--M--M-MF-MF-MF-MF-MF--MF--MF-----MF--MF-----M-MF-MF------MF-MFT---MFT--MFT--M-MFT------",
+                "-------M---M-M---M-M-M--M--M-MF-MF-MF-MF-MF--MF--MF---MF-MF-MF--MF-----M-MF-MF------MF-MFT---MFT--MFT--M-MFT-------",
                 d.delaySequence());
 
         testClass("Expressions_0", 3, DONT_CARE,
@@ -350,7 +348,7 @@ public class Test_Expressions extends CommonTestRunner {
                         //     .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                         //     .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                         //     .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
-                        //   .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
+                        .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
                         .addBreakDelayVisitor(breakDelayVisitor)
                         .build(),
                 new AnalyserConfiguration.Builder()

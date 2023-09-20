@@ -291,12 +291,12 @@ public class Test_AnalysisProvider extends CommonTestRunner {
             }
         };
 
-        BreakDelayVisitor breakDelayVisitor = d -> assertEquals("---------M--M--MF------", d.delaySequence());
+        BreakDelayVisitor breakDelayVisitor = d -> assertEquals("---------M--M--MF-MF------", d.delaySequence());
 
         testClass("AnalysisProvider_1", 0, 6,
                 new DebugConfiguration.Builder()
-                    //    .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
-                    //    .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                        .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                        //    .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                         .addBreakDelayVisitor(breakDelayVisitor)
                         .build(),
                 new AnalyserConfiguration.Builder()

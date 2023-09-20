@@ -120,7 +120,7 @@ public class Test_16_Modification_20 extends CommonTestRunner {
 
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("C1".equals(d.methodInfo().name)) {
-                assertDv(d.p(0), 4, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
+                assertDv(d.p(0), 7, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
                 assertDv(d.p(0), 1, MultiLevel.DEPENDENT_DV, Property.INDEPENDENT);
                 assertDv(d.p(0), 1, MultiLevel.NULLABLE_DV, Property.NOT_NULL_PARAMETER);
             }
@@ -135,26 +135,25 @@ public class Test_16_Modification_20 extends CommonTestRunner {
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
             if ("set".equals(d.fieldInfo().name)) {
                 assertLinked(d, d.fieldAnalysis().getLinkedVariables(),
-                        it(0, 1, "c:-1,localD:-1,setC:-1,this.s2:-1,this:-1"),
-                        it(2, "setC:0"));
-
-                assertEquals(d.iteration() > 1, ((FieldAnalysisImpl.Builder) d.fieldAnalysis()).allLinksHaveBeenEstablished().isDone());
+                        it(0, 5, "c.set:-1,c:-1,localD.set:-1,localD:-1,setC:-1,this.s2:-1,this:-1"),
+                        it(6, "setC:0"));
+                if (d.iteration() == 6) assertTrue(d.allowBreakDelay());
 
                 assertEquals(DV.TRUE_DV, d.fieldAnalysis().getProperty(Property.FINAL));
                 // value from the constructor
                 assertEquals("setC", d.fieldAnalysis().getValue().toString());
                 assertDv(d, MultiLevel.NULLABLE_DV, Property.EXTERNAL_NOT_NULL);
-                assertDv(d, 3, DV.FALSE_DV, Property.MODIFIED_OUTSIDE_METHOD);
+                assertDv(d, 6, DV.FALSE_DV, Property.MODIFIED_OUTSIDE_METHOD);
                 // note that while the type of the field is transparent in C1, we do not verify that here
                 assertDv(d, 0, MultiLevel.MUTABLE_DV, Property.EXTERNAL_IMMUTABLE);
             }
             if ("s2".equals(d.fieldInfo().name)) {
                 assertEquals(DV.TRUE_DV, d.fieldAnalysis().getProperty(Property.FINAL));
                 assertEquals("instance type HashSet<String>", d.fieldAnalysis().getValue().toString());
-                assertEquals(d.iteration() > 1,
-                        ((FieldAnalysisImpl.Builder) d.fieldAnalysis()).allLinksHaveBeenEstablished().isDone());
 
-                assertDv(d, 5, DV.FALSE_DV, Property.MODIFIED_OUTSIDE_METHOD);
+                assertEquals(d.iteration() >= 8,
+                        ((FieldAnalysisImpl.Builder) d.fieldAnalysis()).allLinksHaveBeenEstablished().isDone());
+                assertDv(d, 8, DV.FALSE_DV, Property.MODIFIED_OUTSIDE_METHOD);
             }
         };
 
@@ -175,23 +174,14 @@ public class Test_16_Modification_20 extends CommonTestRunner {
             }
         };
 
-        StatementAnalyserVisitor statementAnalyserVisitor = d -> {
-            if ("example1".equals(d.methodInfo().name)) {
-                if ("0".equals(d.statementId())) {
-                    assertEquals(d.iteration() == 3, d.allowBreakDelay());
-                }
-            }
-        };
-
-        BreakDelayVisitor breakDelayVisitor = d -> assertEquals("---M---", d.delaySequence());
+        BreakDelayVisitor breakDelayVisitor = d -> assertEquals("---M-MF---", d.delaySequence());
 
         //WARN in Method org.e2immu.analyser.parser.modification.testexample.Modification_20.example1() (line 43, pos 9): Potential null pointer exception: Variable: set
         testClass("Modification_20", 0, 1, new DebugConfiguration.Builder()
-                        //     .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                        .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                         //     .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-                        //     .addStatementAnalyserVisitor(statementAnalyserVisitor)
-                      //  .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
-                      //  .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
+                        .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+                        .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
                         .addTypeMapVisitor(typeMapVisitor)
                         .addBreakDelayVisitor(breakDelayVisitor)
                         .build(),

@@ -23,8 +23,7 @@
     <!-- parameter 0 in Collections.addAll -->
     <item name='java.util.Collections boolean addAll(java.util.Collection&lt;? super T&gt;, T[]) 0'>
         <annotation name='org.e2immu.annotation.Independent'>
-            <param name="parameters" val="{1}"/>
-            <param name="hc" val="true"/>
+            <param name="hcParameters" val="{1}"/>
         </annotation>
         <annotation name='org.e2immu.annotation.NotNull'/>
         <annotation name='org.e2immu.annotation.Modified'/>

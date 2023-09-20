@@ -58,7 +58,7 @@ record SASubBlocks(StatementAnalysis statementAnalysis, StatementAnalyser statem
         List<Optional<StatementAnalyser>> startOfBlocks = statementAnalyser.navigationData().blocks.get();
         AnalysisStatus statusFromLocalCm = AnalysisStatus.of(sharedState.localConditionManager().causesOfDelay());
 
-        if (!startOfBlocks.isEmpty()) {
+        if (!startOfBlocks.isEmpty() && startOfBlocks.stream().anyMatch(Optional::isPresent)) {
             AnalysisStatus analysisStatus = haveSubBlocks(sharedState, startOfBlocks).combine(statusFromLocalCm)
                     .toAnalysisStatus();
             ensureEmptyPreAndPostCondition();

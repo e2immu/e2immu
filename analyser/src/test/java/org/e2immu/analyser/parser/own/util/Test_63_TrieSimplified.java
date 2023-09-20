@@ -587,16 +587,17 @@ public class Test_63_TrieSimplified extends CommonTestRunner {
                     if ("1".equals(d.statementId())) {
                         // IMPORTANT: the variable is not read in the loop, but we cannot know that in iteration 0
                         // it therefore must participate in the delay scheme, SAApply.setValueForVariablesInLoopDefinedOutsideAssignedInside
+                        assertLinked(d, it0("this.root:0,this:-1"), it(1, "this.root:0,this:3"));
                         String expect = switch (d.iteration()) {
-                            case 0, 1, 2, 3, 4 -> "<vl:node>";
-                            default -> "instance type TrieNode<T>";
+                            case 0 -> "<vl:node>";
+                            case 1, 2 -> "<f:root>";
+                            default -> "root";
                         };
-                        assertLinked(d, it(0, 4, "this.root:0,this:-1"), it(5, "this.root:0,this:3"));
                         assertEquals(expect, d.currentValue().toString(), "statement " + d.statementId());
                     }
                     if ("2".equals(d.statementId())) {
-                        assertLinked(d, it(0, 4, "this.root:0,this:-1"), it(5, "this.root:0,this:3"));
-                        assertDv(d, 5, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                        assertLinked(d, it(0, 2, "this.root:0,this:-1"), it(3, "this.root:0,this:3"));
+                        assertDv(d, 3, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     }
                 }
                 if (d.variable() instanceof ReturnVariable) {
@@ -607,7 +608,8 @@ public class Test_63_TrieSimplified extends CommonTestRunner {
                     }
                     if ("2".equals(d.statementId())) {
                         String expect = switch (d.iteration()) {
-                            case 0, 1, 2, 3, 4 -> "<vl:node>";
+                            case 0 -> "<vl:node>";
+                            case 1, 2 -> "<f:root>";
                             default -> "root";
                         };
                         assertEquals(expect, d.currentValue().toString());
@@ -633,7 +635,7 @@ public class Test_63_TrieSimplified extends CommonTestRunner {
             }
         };
 
-        BreakDelayVisitor breakDelayVisitor = d -> assertEquals("-----M--", d.delaySequence());
+        BreakDelayVisitor breakDelayVisitor = d -> assertEquals("-----", d.delaySequence());
 
         testClass("TrieSimplified_4", 0, 2, new DebugConfiguration.Builder()
                 .addEvaluationResultVisitor(evaluationResultVisitor)
@@ -983,7 +985,7 @@ public class Test_63_TrieSimplified extends CommonTestRunner {
                 String eqAccordingToState = d.statementAnalysis().stateData().equalityAccordingToStateStream()
                         .map(Object::toString).sorted().collect(Collectors.joining(","));
                 if ("1.0.1.0.0".equals(d.statementId())) {
-                    String eq =switch (d.iteration()) {
+                    String eq = switch (d.iteration()) {
                         case 0 -> "<f:node.map>=null";
                         default -> "<f:node.map>=null,node$1.map$0=null";
                     };
