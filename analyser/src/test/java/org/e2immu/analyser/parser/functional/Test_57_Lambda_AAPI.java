@@ -178,7 +178,7 @@ public class Test_57_Lambda_AAPI extends CommonTestRunner {
             if ("method2".equals(d.methodInfo().name)) {
                 if ("finallyMethod".equals(d.variableName())) {
                     if ("0".equals(d.statementId())) {
-                        assertDv(d, 0, MultiLevel.EFFECTIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
+                        assertDv(d, MultiLevel.MUTABLE_DV, Property.IMMUTABLE); // myself
                     }
                 }
             }

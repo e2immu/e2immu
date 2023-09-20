@@ -189,6 +189,8 @@ public class Test_Support_04_FirstThen extends CommonTestRunner {
             assertEquals(DV.FALSE_DV, objectsParam.parameterAnalysis.get().getProperty(Property.MODIFIED_VARIABLE));
         };
 
+        BreakDelayVisitor breakDelayVisitor = d -> assertEquals("-----------", d.delaySequence());
+
         testSupportAndUtilClasses(List.of(FirstThen.class), 0, 0, new DebugConfiguration.Builder()
           //      .addEvaluationResultVisitor(evaluationResultVisitor)
            //     .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
@@ -197,6 +199,7 @@ public class Test_Support_04_FirstThen extends CommonTestRunner {
            //     .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
            //     .addStatementAnalyserVisitor(statementAnalyserVisitor)
             //    .addTypeMapVisitor(typeMapVisitor)
+                .addBreakDelayVisitor(breakDelayVisitor)
                 .build());
     }
 

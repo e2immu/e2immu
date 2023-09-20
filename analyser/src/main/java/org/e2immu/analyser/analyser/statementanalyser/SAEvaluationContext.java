@@ -163,11 +163,6 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
     }
 
     @Override
-    public int getIteration() {
-        return iteration;
-    }
-
-    @Override
     public TypeInfo getCurrentType() {
         return methodInfo().typeInfo;
     }
@@ -336,6 +331,12 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
             DV dv;
             if (NOT_NULL_EXPRESSION == property) {
                 dv = nneForValue(value, ignoreStateInConditionManager);
+            } else if ((CONTAINER == property || IMMUTABLE == property || INDEPENDENT == property)
+                    && isMyself(value.returnType())) {
+                // NOTE: IDENTITY of self-types is not really a problem, therefore we enumerate the properties rather than
+                // taking all value properties (except NNE)
+                // See e.g. ConditionalChecks_4B (cast in equals())
+                dv = property.falseDv;
             } else {
                 dv = value.getProperty(context, property, duringEvaluation);
             }

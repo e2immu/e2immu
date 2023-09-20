@@ -461,7 +461,7 @@ public class Test_26_Enum extends CommonTestRunner {
                     // the result of the hard-coded method call valueOf
                     String expect = d.iteration() == 0 ? "<valueOf:Enum_5>" : "instance type Enum_5";
                     assertEquals(expect, d.currentValue().toString());
-                    assertDv(d, 1, MultiLevel.EFFECTIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
+                    assertDv(d,  MultiLevel.MUTABLE_DV, Property.IMMUTABLE); // myself
                 }
             }
         };

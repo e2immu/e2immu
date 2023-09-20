@@ -1551,10 +1551,9 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
         }
         assert fieldAnalysis.getProperty(Property.MODIFIED_OUTSIDE_METHOD).isDelayed();
 
-        boolean isPrimitive = fieldInfo.type.isPrimitiveExcludingVoid();
-        // too dangerous to catch @E2Immutable because of down-casts
-        if (isPrimitive) {
-            LOGGER.debug("Field {} is @NotModified, since it is of primitive type", fqn);
+        // too dangerous to catch @Immutable because of down-casts
+        if (fieldInfo.type.isPrimitiveStringClass()) {
+            LOGGER.debug("Field {} is @NotModified, since it is of primitive/String/Class type", fqn);
             fieldAnalysis.setProperty(Property.MODIFIED_OUTSIDE_METHOD, DV.FALSE_DV);
             return DONE;
         }

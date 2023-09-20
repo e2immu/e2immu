@@ -272,14 +272,17 @@ public class Test_26_Enum_withAPI extends CommonTestRunner {
                         String expected = d.iteration() == 0 ? "<new:Enum_11[]>" : "new Enum_11[Enum_11.GROUPS]";
                         assertEquals(expected, d.currentValue().toString());
                         // arrays are ALWAYS containers!
-                        assertDv(d, 1, MultiLevel.CONTAINER_DV, Property.CONTAINER);
+                        assertDv(d,  MultiLevel.NOT_CONTAINER_DV, Property.CONTAINER); // myself
                     }
                 }
             }
         };
+        BreakDelayVisitor breakDelayVisitor = d -> assertEquals("----M-M--MF-MF--MF--MF--MF---MF--MF--MF--MF---MFT--", d.delaySequence());
+
         // potential null pointer for Modifier.getKeyword()
         testClass("Enum_11", 0, 1, new DebugConfiguration.Builder()
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addBreakDelayVisitor(breakDelayVisitor)
                 .build());
     }
 }

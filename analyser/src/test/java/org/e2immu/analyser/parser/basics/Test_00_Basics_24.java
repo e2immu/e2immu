@@ -101,7 +101,7 @@ public class Test_00_Basics_24 extends CommonTestRunner {
 
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
             if ("s".equals(d.fieldInfo().name)) {
-                assertDv(d, 1, DV.FALSE_DV, Property.MODIFIED_OUTSIDE_METHOD);
+                assertDv(d,  DV.FALSE_DV, Property.MODIFIED_OUTSIDE_METHOD);
                 String linked = switch (d.iteration()) {
                     case 0 -> "a:-1,pos:-1,s:-1,this.map:-1,this:-1,x:-1";
                     default -> "s:0";

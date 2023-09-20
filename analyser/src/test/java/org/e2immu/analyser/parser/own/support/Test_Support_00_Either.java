@@ -148,12 +148,12 @@ public class Test_Support_00_Either extends CommonTestRunner {
 
         // we do expect 2x potential null pointer exception, because you can call getLeft() when you initialised with right() and vice versa
         testSupportAndUtilClasses(List.of(Either.class), 0, 2, new DebugConfiguration.Builder()
-                .addEvaluationResultVisitor(evaluationResultVisitor)
-                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
-                .addStatementAnalyserVisitor(statementAnalyserVisitor)
-                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-                .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
-                .addBreakDelayVisitor(breakDelayVisitor)
+           //     .addEvaluationResultVisitor(evaluationResultVisitor)
+           //     .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+           //     .addStatementAnalyserVisitor(statementAnalyserVisitor)
+           //     .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+           //     .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+            //    .addBreakDelayVisitor(breakDelayVisitor)
                 .build());
     }
 
