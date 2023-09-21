@@ -1301,17 +1301,18 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         if (identity.valueIsTrue()) {
             return parameterExpressions.get(0).linkedVariables(context).minimum(LinkedVariables.LINK_ASSIGNED);
         }
+        LinkedVariables linkedVariablesOfObject = object.linkedVariables(context)
+                .minimum(LinkedVariables.LINK_ASSIGNED); // should be delay-able!
+
         if (identity.isDelayed() && !parameterExpressions.isEmpty()) {
             // temporarily link to both the object and the parameter, in a delayed way
-            return object.linkedVariables(context)
+            return linkedVariablesOfObject
                     .merge(parameterExpressions.get(0).linkedVariables(context))
                     .changeNonStaticallyAssignedToDelay(identity);
         }
 
         // RULE 3: otherwise, we link to the object, even if the object is 'this'
         // note that we cannot use STATICALLY_ASSIGNED here
-
-        LinkedVariables linkedVariablesOfObject = object.linkedVariables(context).minimum(LinkedVariables.LINK_ASSIGNED);
         if (linkedVariablesOfObject.isEmpty()) {
             // there is no linking...
             return LinkedVariables.EMPTY;

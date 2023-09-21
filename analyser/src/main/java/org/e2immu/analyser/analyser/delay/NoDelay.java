@@ -16,7 +16,6 @@ package org.e2immu.analyser.analyser.delay;
 
 import org.e2immu.analyser.analyser.CausesOfDelay;
 import org.e2immu.analyser.analyser.DV;
-import org.e2immu.analyser.util.WeightedGraph;
 
 import java.util.Objects;
 
@@ -116,8 +115,8 @@ public class NoDelay implements DV {
     }
 
     @Override
-    public int compareTo(WeightedGraph.Weight o) {
-        return value - ((DV) o).value();
+    public int compareTo(DV o) {
+        return value - o.value();
     }
 
     @Override

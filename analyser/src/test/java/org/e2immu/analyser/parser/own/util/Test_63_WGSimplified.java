@@ -26,6 +26,7 @@ import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.This;
 import org.e2immu.analyser.parser.CommonTestRunner;
 import org.e2immu.analyser.parser.Message;
+import org.e2immu.analyser.visitor.EvaluationResultVisitor;
 import org.e2immu.analyser.visitor.FieldAnalyserVisitor;
 import org.e2immu.analyser.visitor.StatementAnalyserVariableVisitor;
 import org.e2immu.analyser.visitor.StatementAnalyserVisitor;
@@ -158,10 +159,55 @@ public class Test_63_WGSimplified extends CommonTestRunner {
             }
         };
         testClass("WGSimplified_0", 7, 1, new DebugConfiguration.Builder()
-              //  .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                //  .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .addStatementAnalyserVisitor(statementAnalyserVisitor)
                 .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                 .build(), new AnalyserConfiguration.Builder().setComputeFieldAnalyserAcrossAllMethods(true).build());
     }
 
+    /*
+    very similar code, but with a redundant check, and a "this is not good" exception
+     */
+    @Test
+    public void test_1() throws IOException {
+        testClass("WGSimplified_1", 0, 0, new DebugConfiguration.Builder()
+                .build(), new AnalyserConfiguration.Builder().setComputeFieldAnalyserAcrossAllMethods(true).build());
+    }
+
+    /*
+    the test is here because without the recursive call, we are overwriting context modified
+     */
+    @Test
+    public void test_2() throws IOException {
+        StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+            if ("accept".equals(d.methodInfo().name) && "recursivelyComputeLinks".equals(d.enclosingMethod().name)) {
+                assertEquals("$1", d.methodInfo().typeInfo.simpleName);
+            }
+        };
+        StatementAnalyserVisitor statementAnalyserVisitor = d -> {
+            if ("accept".equals(d.methodInfo().name) && "$1".equals(d.methodInfo().typeInfo.simpleName)) {
+                if ("0.0.0".equals(d.statementId())) {
+                    String state = d.iteration() == 0
+                            ? "(d.isDelayed()||d.isDone())&&(d.isDelayed()||<null-check>||<m:le>)&&(d.isDone()||followDelayed)&&(<null-check>||followDelayed||<m:le>)"
+                            : "(d.isDelayed()||d.isDone())&&(d.isDelayed()||d.le(maxValueIncl)||null==maxValueIncl)&&(d.isDone()||followDelayed)&&(d.le(maxValueIncl)||null==maxValueIncl||followDelayed)";
+                    assertEquals(state, d.localConditionManager().absoluteState(d.context()).toString());
+                }
+                if ("0.0.2.0.0".equals(d.statementId())) {
+                    String state = switch (d.iteration()) {
+                        case 0 ->
+                                "<null-check>&&(d.isDelayed()||d.isDone())&&(d.isDelayed()||<null-check>||<m:le>)&&(d.isDone()||followDelayed)&&(<null-check>||followDelayed||<m:le>)";
+                        case 1 ->
+                                "<null-check>&&(d.isDelayed()||d.isDone())&&(d.isDelayed()||d.le(maxValueIncl)||null==maxValueIncl)&&(d.isDone()||followDelayed)&&(d.le(maxValueIncl)||null==maxValueIncl||followDelayed)";
+                        default ->
+                                "null==distanceToStartingPoint.get(n)&&(d.isDelayed()||d.isDone())&&(d.isDelayed()||d.le(maxValueIncl)||null==maxValueIncl)&&(d.isDone()||followDelayed)&&(d.le(maxValueIncl)||null==maxValueIncl||followDelayed)";
+                    };
+                    assertEquals(state, d.localConditionManager().absoluteState(d.context()).toString());
+                }
+            }
+        };
+        testClass("WGSimplified_2", 0, 0, new DebugConfiguration.Builder()
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                .build(), new AnalyserConfiguration.Builder().setComputeFieldAnalyserAcrossAllMethods(true).build());
+    }
 }

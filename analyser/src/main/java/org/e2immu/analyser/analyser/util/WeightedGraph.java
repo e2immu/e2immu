@@ -108,13 +108,9 @@ public class WeightedGraph extends Freezable {
                     DV currentDistanceToN = distanceToStartingPoint.get(n);
                     if (currentDistanceToN == null) {
                         // we've not been at N before
-                        if (d.isDelayed() || maxValueIncl == null || d.le(maxValueIncl)) {
-                            distanceToStartingPoint.put(n, distanceToN);
-                            DV newMax = LINK_IS_HC_OF.equals(d) ? LINK_COMMON_HC : maxValueIncl;
-                            recursivelyComputeLinks(n, distanceToStartingPoint, newMax, followDelayed);
-                        } else {
-                            distanceToStartingPoint.put(n, DV.MAX_INT_DV); // beyond max value
-                        }
+                        distanceToStartingPoint.put(n, distanceToN);
+                        DV newMax = LINK_IS_HC_OF.equals(d) ? LINK_COMMON_HC : maxValueIncl;
+                        recursivelyComputeLinks(n, distanceToStartingPoint, newMax, followDelayed);
                     } else {
                         DV newDistanceToN = min(distanceToN, currentDistanceToN);
                         distanceToStartingPoint.put(n, newDistanceToN);

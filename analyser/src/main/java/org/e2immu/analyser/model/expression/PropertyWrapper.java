@@ -352,7 +352,9 @@ public final class PropertyWrapper extends BaseExpression implements Expression,
 
     @Override
     public boolean hasState() {
-        return state != null && !(state instanceof BooleanConstant bc && bc.constant());
+        return state != null
+                && state.returnType().isBoolean()
+                && !state.isConstant();
     }
 
     public Expression state() {

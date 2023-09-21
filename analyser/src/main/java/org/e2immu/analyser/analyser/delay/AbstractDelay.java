@@ -18,11 +18,6 @@ import org.e2immu.analyser.analyser.AnalysisStatus;
 import org.e2immu.analyser.analyser.CauseOfDelay;
 import org.e2immu.analyser.analyser.CausesOfDelay;
 import org.e2immu.analyser.analyser.DV;
-import org.e2immu.analyser.model.TranslationMap;
-import org.e2immu.analyser.parser.InspectionProvider;
-import org.e2immu.analyser.util.WeightedGraph;
-
-import java.util.stream.Collectors;
 
 
 public abstract class AbstractDelay implements CausesOfDelay {
@@ -76,8 +71,8 @@ public abstract class AbstractDelay implements CausesOfDelay {
     }
 
     @Override
-    public int compareTo(WeightedGraph.Weight o) {
-        return value() - ((DV) o).value();
+    public int compareTo(DV o) {
+        return value() - o.value();
     }
 
 
