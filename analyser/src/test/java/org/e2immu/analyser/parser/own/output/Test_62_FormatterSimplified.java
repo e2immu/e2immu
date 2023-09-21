@@ -285,7 +285,7 @@ public class Test_62_FormatterSimplified extends CommonTestRunner {
             if ("writeLine".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof ParameterInfo p0 && "list".equals(p0.name)) {
                     if ("0.0.0".equals(d.statementId())) {
-                        assertEquals(MultiLevel.NULLABLE_DV, d.getProperty(Property.CONTEXT_NOT_NULL));
+                        assertDv(d, 1, MultiLevel.NULLABLE_DV, Property.CONTEXT_NOT_NULL);
                     }
                 }
             }
@@ -348,9 +348,9 @@ public class Test_62_FormatterSimplified extends CommonTestRunner {
 
         // guide becomes ENN, which is harsh, but for now we'll keep it as is
         testClass("FormatterSimplified_6", 0, 3, new DebugConfiguration.Builder()
-             //   .addEvaluationResultVisitor(evaluationResultVisitor)
-              //  .addStatementAnalyserVisitor(statementAnalyserVisitor)
-             //   .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+                //   .addEvaluationResultVisitor(evaluationResultVisitor)
+                //  .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                //   .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                 .addBreakDelayVisitor(breakDelayVisitor)
                 .build());
     }

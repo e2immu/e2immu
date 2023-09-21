@@ -91,7 +91,7 @@ public class Test_22_SubTypes extends CommonTestRunner {
             if ("methodWithSubType".equals(d.methodInfo().name)) {
                 if ("1".equals(d.statementId())) {
                     String expected = d.iteration() == 0
-                            ? "s={context-modified=initial:this.key@Method_toString_0-C;initial:this.value@Method_toString_0-C;link@NOT_YET_SET, context-not-null=nullable:1, read=true:1}, this={context-modified=initial:this.key@Method_toString_0-C;initial:this.value@Method_toString_0-C}"
+                            ? "s={context-modified=initial:this.key@Method_toString_0-C;initial:this.value@Method_toString_0-C;link@NOT_YET_SET, context-not-null=initial:this.key@Method_toString_0-C;initial:this.value@Method_toString_0-C, read=true:1}, this={context-modified=initial:this.key@Method_toString_0-C;initial:this.value@Method_toString_0-C}"
                             : "s={context-modified=false:0, context-not-null=nullable:1, read=true:1}, this={context-modified=false:0}";
                     assertEquals(expected, d.statementAnalysis().propertiesFromSubAnalysersSortedToString());
                 }

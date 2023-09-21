@@ -12,17 +12,17 @@ import java.util.TreeMap;
 import java.util.function.BiConsumer;
 import java.util.function.BinaryOperator;
 
-public class WGSimplified_2 {
+public class WGSimplified_3 {
 
     public interface Variable extends Comparable<Variable> {
     }
 
-    @Container
     interface DV {
         DV min(DV other);
 
         DV max(DV other);
 
+        // modifying method, in general
         boolean le(DV other);
 
         boolean lt(DV other);
@@ -105,7 +105,7 @@ public class WGSimplified_2 {
         return result;
     }
 
-    @NotModified
+    @Modified
     private void recursivelyComputeLinks(@NotNull Variable v,
                                          @NotNull Map<Variable, DV> distanceToStartingPoint,
                                          DV maxValueIncl,
@@ -126,13 +126,13 @@ public class WGSimplified_2 {
                     if (currentDistanceToN == null) {
                         distanceToStartingPoint.put(n, distanceToN);
                         DV newMax = LINK_IS_HC_OF.equals(d) ? LINK_COMMON_HC : maxValueIncl;
-                        recursivelyComputeLinks(n, distanceToStartingPoint, newMax, followDelayed);
+                   //     recursivelyComputeLinks(n, distanceToStartingPoint, newMax, followDelayed);
                     } else {
                         DV newDistanceToN = min(distanceToN, currentDistanceToN);
                         distanceToStartingPoint.put(n, newDistanceToN);
                         if (newDistanceToN.lt(currentDistanceToN)) {
                             DV newMax = LINK_IS_HC_OF.equals(d) ? LINK_COMMON_HC : maxValueIncl;
-                            recursivelyComputeLinks(n, distanceToStartingPoint, newMax, followDelayed);
+                   //         recursivelyComputeLinks(n, distanceToStartingPoint, newMax, followDelayed);
                         }
                     }
                 }

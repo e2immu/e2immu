@@ -202,7 +202,7 @@ public class StatementAnalyserImpl implements StatementAnalyser {
      * Main recursive method, which follows the navigation chain for all statements in a block. When called from the method analyser,
      * it loops over the statements of the method.
      *
-     * @param iteration             the current iteration
+     * @param iteration           the current iteration
      * @param forwardAnalysisInfo information from the level above
      * @return the combination of a list of all modifications to be done to parameters, methods, and an AnalysisStatus object.
      * Once the AnalysisStatus reaches DONE, this particular block is not analysed again.
@@ -642,11 +642,8 @@ public class StatementAnalyserImpl implements StatementAnalyser {
     private AnalysisStatus transferFromClosureToResult(StatementAnalyserSharedState statementAnalyserSharedState) {
         StatementAnalysis last = myMethodAnalyser.getMethodAnalysis().getLastStatement();
         EvaluationContext closure = statementAnalyserSharedState.evaluationContext().getClosure();
-        MethodInfo methodInfo = myMethodAnalyser.getMethodInfo();
 
-        // See AnalysisProvider_1, which relies on firstCallInCycle; See Lambda_19Recursion, which does not
-        boolean firstCallInCycle = methodInfo.methodResolution.get().ignoreMeBecauseOfPartOfCallCycle();
-        if (last != statementAnalysis || closure == null || firstCallInCycle) {
+        if (last != statementAnalysis || closure == null) {
             analyserResultBuilder.setVariableAccessReport(VariableAccessReport.EMPTY);
             return DONE;
         }
@@ -657,6 +654,10 @@ public class StatementAnalyserImpl implements StatementAnalyser {
         boolean linksHaveBeenEstablished = linksEstablished.isDone();
         AtomicReference<CausesOfDelay> causes = new AtomicReference<>(linksEstablished.causesOfDelay());
 
+        // See AnalysisProvider_1, which relies on firstCallInCycle; See Lambda_19Recursion, which does not
+        MethodInfo methodInfo = myMethodAnalyser.getMethodInfo();
+        boolean firstCallInCycle = methodInfo.methodResolution.get().ignoreMeBecauseOfPartOfCallCycle();
+
         statementAnalysis.variableStream()
                 .filter(vi -> closure.acceptForVariableAccessReport(vi.variable(), currentType))
                 .forEach(vi -> {
@@ -664,19 +665,24 @@ public class StatementAnalyserImpl implements StatementAnalyser {
                     if (vi.isRead()) {
                         builder.addVariableRead(variable);
                     }
-                    DV modified = vi.getProperty(Property.CONTEXT_MODIFIED);
-                    if (modified.isDone() && linksHaveBeenEstablished) {
-                        builder.addContextProperty(variable, Property.CONTEXT_MODIFIED, modified);
-                    } else {
-                        CausesOfDelay delays = modified.causesOfDelay().merge(linksEstablished.causesOfDelay());
-                        builder.addContextProperty(variable, Property.CONTEXT_MODIFIED, delays);
-                        causes.set(causes.get().merge(modified.causesOfDelay()));
-                    }
-                    if (!(variable instanceof This)) {
-                        DV notNull = vi.getProperty(Property.CONTEXT_NOT_NULL);
-                        builder.addContextProperty(variable, Property.CONTEXT_NOT_NULL, notNull);
-                        if (notNull.isDelayed()) {
-                            causes.set(causes.get().merge(notNull.causesOfDelay()));
+                    if (!firstCallInCycle) {
+                        DV modified = vi.getProperty(Property.CONTEXT_MODIFIED);
+                        if (modified.isDone() && linksHaveBeenEstablished) {
+                            builder.addContextProperty(variable, Property.CONTEXT_MODIFIED, modified);
+                        } else {
+                            CausesOfDelay delays = modified.causesOfDelay().merge(linksEstablished.causesOfDelay());
+                            builder.addContextProperty(variable, Property.CONTEXT_MODIFIED, delays);
+                            causes.set(causes.get().merge(modified.causesOfDelay()));
+                        }
+                        if (!(variable instanceof This)) {
+                            DV notNull = vi.getProperty(Property.CONTEXT_NOT_NULL);
+                            if (notNull.isDone() && linksHaveBeenEstablished) {
+                                builder.addContextProperty(variable, Property.CONTEXT_NOT_NULL, notNull);
+                            } else {
+                                CausesOfDelay delays = notNull.causesOfDelay().merge(linksEstablished.causesOfDelay());
+                                builder.addContextProperty(variable, Property.CONTEXT_NOT_NULL, delays);
+                                causes.set(causes.get().merge(notNull.causesOfDelay()));
+                            }
                         }
                     }
                 });

@@ -26,10 +26,7 @@ import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.This;
 import org.e2immu.analyser.parser.CommonTestRunner;
 import org.e2immu.analyser.parser.Message;
-import org.e2immu.analyser.visitor.EvaluationResultVisitor;
-import org.e2immu.analyser.visitor.FieldAnalyserVisitor;
-import org.e2immu.analyser.visitor.StatementAnalyserVariableVisitor;
-import org.e2immu.analyser.visitor.StatementAnalyserVisitor;
+import org.e2immu.analyser.visitor.*;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
@@ -182,20 +179,42 @@ public class Test_63_WGSimplified extends CommonTestRunner {
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("accept".equals(d.methodInfo().name) && "recursivelyComputeLinks".equals(d.enclosingMethod().name)) {
                 assertEquals("$1", d.methodInfo().typeInfo.simpleName);
+
+                if (d.variable() instanceof FieldReference fr && "LINK_COMMON_HC".equals(fr.fieldInfo.name)) {
+                    if ("0.0.0".equals(d.statementId()) || "0.0.2.0.0".equals(d.statementId())
+                            || "0.0.2.1.1".equals(d.statementId())) {
+                        fail();
+                    }
+                    if ("0.0.2.0.1".equals(d.statementId())) {
+                        assertDv(d, 2, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                    }
+                    if ("0.0.2.1.2.0.0".equals(d.statementId())) {
+                        assertDv(d, 2, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                    }
+                    if ("0.0.2.1.2.0.1".equals(d.statementId())) {
+                        assertDv(d, 2, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                    }
+                }
             }
         };
         StatementAnalyserVisitor statementAnalyserVisitor = d -> {
+            if("recursivelyComputeLinks".equals(d.methodInfo().name)) {
+                if("3.0.0".equals(d.statementId())) {
+                    // there are no properties, because the lambda is the first in the call chain... this is painful
+                    //assertEquals("", d.statementAnalysis().propertiesFromSubAnalysersSortedToString());
+                }
+            }
             if ("accept".equals(d.methodInfo().name) && "$1".equals(d.methodInfo().typeInfo.simpleName)) {
                 if ("0.0.0".equals(d.statementId())) {
                     String state = d.iteration() == 0
-                            ? "(d.isDelayed()||d.isDone())&&(d.isDelayed()||<null-check>||<m:le>)&&(d.isDone()||followDelayed)&&(<null-check>||followDelayed||<m:le>)"
+                            ? "(d.isDelayed()||d.isDone())&&(d.isDelayed()||d.le(maxValueIncl)||<null-check>)&&(d.isDone()||followDelayed)&&(d.le(maxValueIncl)||<null-check>||followDelayed)"
                             : "(d.isDelayed()||d.isDone())&&(d.isDelayed()||d.le(maxValueIncl)||null==maxValueIncl)&&(d.isDone()||followDelayed)&&(d.le(maxValueIncl)||null==maxValueIncl||followDelayed)";
                     assertEquals(state, d.localConditionManager().absoluteState(d.context()).toString());
                 }
                 if ("0.0.2.0.0".equals(d.statementId())) {
                     String state = switch (d.iteration()) {
                         case 0 ->
-                                "<null-check>&&(d.isDelayed()||d.isDone())&&(d.isDelayed()||<null-check>||<m:le>)&&(d.isDone()||followDelayed)&&(<null-check>||followDelayed||<m:le>)";
+                                "<null-check>&&(d.isDelayed()||d.isDone())&&(d.isDelayed()||d.le(maxValueIncl)||<null-check>)&&(d.isDone()||followDelayed)&&(d.le(maxValueIncl)||<null-check>||followDelayed)";
                         case 1 ->
                                 "<null-check>&&(d.isDelayed()||d.isDone())&&(d.isDelayed()||d.le(maxValueIncl)||null==maxValueIncl)&&(d.isDone()||followDelayed)&&(d.le(maxValueIncl)||null==maxValueIncl||followDelayed)";
                         default ->
@@ -205,9 +224,46 @@ public class Test_63_WGSimplified extends CommonTestRunner {
                 }
             }
         };
-        testClass("WGSimplified_2", 0, 0, new DebugConfiguration.Builder()
+
+        MethodAnalyserVisitor methodAnalyserVisitor = d -> {
+            if ("recursivelyComputeLinks".equals(d.methodInfo().name)) {
+                assertDv(d, 3, DV.FALSE_DV, Property.MODIFIED_METHOD);
+            }
+        };
+
+        testClass("WGSimplified_2", 0, 4, new DebugConfiguration.Builder()
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                .build(), new AnalyserConfiguration.Builder().setComputeFieldAnalyserAcrossAllMethods(true).build());
+    }
+
+    @Test
+    public void test_3() throws IOException {
+        StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+            if ("accept".equals(d.methodInfo().name) && "recursivelyComputeLinks".equals(d.enclosingMethod().name)) {
+                assertEquals("$1", d.methodInfo().typeInfo.simpleName);
+
+                if (d.variable() instanceof FieldReference fr && "LINK_COMMON_HC".equals(fr.fieldInfo.name)) {
+                    if ("0.0.0".equals(d.statementId()) || "0.0.2.0.0".equals(d.statementId())
+                            || "0.0.2.1.1".equals(d.statementId())) {
+                        fail();
+                    }
+                    if ("0.0.2.0.1".equals(d.statementId())) {
+                        // because le is modifying, and at some point, maxValueIncl ~ LINK_COMMON_HC
+                        assertDv(d, 3, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
+                    }
+                    if ("0.0.2.1.2.0.0".equals(d.statementId())) {
+                        assertDv(d, 3, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
+                    }
+                    if ("0.0.2.1.2.0.1".equals(d.statementId())) {
+                        assertDv(d, 3, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
+                    }
+                }
+            }
+        };
+        testClass("WGSimplified_3", 0, 0, new DebugConfiguration.Builder()
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .build(), new AnalyserConfiguration.Builder().setComputeFieldAnalyserAcrossAllMethods(true).build());
     }
 }

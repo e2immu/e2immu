@@ -23,10 +23,9 @@ public class SwitchExpression_4 {
     public static String method(Choice c, boolean b) {
         return switch (c) {
             case ONE -> "a";
-            //case TWO -> {       crashes JavaParser 3.24.1
-            //    yield b+"";
-            //}
-            case TWO -> "b";
+            case TWO -> {
+                yield b+"";
+            }
             case THREE -> {
                 System.out.println("?");
                 if (b) {

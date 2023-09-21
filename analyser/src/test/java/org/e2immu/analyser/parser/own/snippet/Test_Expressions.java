@@ -328,17 +328,17 @@ public class Test_Expressions extends CommonTestRunner {
                 assertDv(d, MultiLevel.EFFECTIVELY_IMMUTABLE_HC_DV, IMMUTABLE);
             }
             if ("LinearInequalityInOneVariable".equals(d.typeInfo().simpleName)) {
-                assertDv(d, 103, MultiLevel.INDEPENDENT_HC_DV, INDEPENDENT);
-                assertDv(d, 103, MultiLevel.NOT_CONTAINER_INCONCLUSIVE, CONTAINER);
+                assertDv(d, 101, MultiLevel.INDEPENDENT_HC_DV, INDEPENDENT);
+                assertDv(d, 101, MultiLevel.NOT_CONTAINER_INCONCLUSIVE, CONTAINER);
             }
             if ("Term".equals(d.typeInfo().simpleName)) {
-                assertDv(d, 78, MultiLevel.EFFECTIVELY_IMMUTABLE_HC_DV, IMMUTABLE);
+                assertDv(d, 76, MultiLevel.EFFECTIVELY_IMMUTABLE_HC_DV, IMMUTABLE);
             }
         };
 
 
         BreakDelayVisitor breakDelayVisitor = d -> assertEquals(
-                "-------S---S-S---S-S-S--S--S-SF-SF-SF-SF-SF--SF--SF---SF-SF-SF--SF-----S-SF-SF------SF-SFMT---SFMT--SFMT--S-SFMT-------",
+                "-------S---S-S---S-S-S--S--S-SF-SF-SF-SF-SF--SF--SF---SF-SF-SF--SF-----SF-SF------SF-SFMT---SFMT--SFMT--S-SFMT-------",
                 d.delaySequence());
 
         testClass("Expressions_0", 3, DONT_CARE,

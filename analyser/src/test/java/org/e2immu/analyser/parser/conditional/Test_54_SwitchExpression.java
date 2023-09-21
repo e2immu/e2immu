@@ -118,6 +118,9 @@ public class Test_54_SwitchExpression extends CommonTestRunner {
                 if (d.variable() instanceof FieldReference fr && "out".equals(fr.fieldInfo.name)) {
                     fail();
                 }
+                if (d.variable() instanceof ParameterInfo pi && "b".equals(pi.name)) {
+                    //  assertTrue(d.variableInfoContainer().isReadInThisStatement());
+                }
             }
         };
         StatementAnalyserVisitor statementAnalyserVisitor = d -> {
@@ -127,6 +130,16 @@ public class Test_54_SwitchExpression extends CommonTestRunner {
                         && rs.expression instanceof MethodCall mc
                         && mc.object instanceof Lambda lambda
                         && "$1".equals(lambda.definesType().simpleName));
+
+                String expected = switch (d.iteration()) {
+                    case 0 ->
+                            "b={context-modified=initial:Choice.ONE@Method_apply_0-C;initial:Choice.THREE@Method_apply_2-C;initial:Choice.TWO@Method_apply_1-C;initial:selector$1@Method_apply_0-E;link@NOT_YET_SET, context-not-null=initial:Choice.ONE@Method_apply_0-C;initial:Choice.THREE@Method_apply_2-C;initial:Choice.TWO@Method_apply_1-C;initial:selector$1@Method_apply_0-E, read=true:1}, c={context-modified=initial:Choice.ONE@Method_apply_0-C;initial:Choice.THREE@Method_apply_2-C;initial:Choice.TWO@Method_apply_1-C;initial:selector$1@Method_apply_0-E, context-not-null=initial:Choice.ONE@Method_apply_0-C;initial:Choice.THREE@Method_apply_2-C;initial:Choice.TWO@Method_apply_1-C;initial:selector$1@Method_apply_0-E}, this={context-modified=initial:Choice.ONE@Method_apply_0-C;initial:Choice.THREE@Method_apply_2-C;initial:Choice.TWO@Method_apply_1-C;initial:selector$1@Method_apply_0-E}";
+                    case 1 ->
+                            "b={context-modified=initial:Choice.ONE@Method_apply_0-C;initial:Choice.TWO@Method_apply_1-C;initial:selector$1@Method_apply_0-E, context-not-null=initial:Choice.ONE@Method_apply_0-C;initial:Choice.TWO@Method_apply_1-C;initial:selector$1@Method_apply_0-E, read=true:1}, c={context-modified=initial:Choice.ONE@Method_apply_0-C;initial:Choice.TWO@Method_apply_1-C;initial:selector$1@Method_apply_0-E, context-not-null=initial:Choice.ONE@Method_apply_0-C;initial:Choice.TWO@Method_apply_1-C;initial:selector$1@Method_apply_0-E}, this={context-modified=initial:Choice.ONE@Method_apply_0-C;initial:Choice.TWO@Method_apply_1-C;initial:selector$1@Method_apply_0-E}";
+                    default -> "b={context-modified=false:0, context-not-null=not_null:5, read=true:1}, c={context-modified=false:0, context-not-null=nullable:1}, this={context-modified=false:0}";
+                };
+                assertEquals(expected,
+                        d.statementAnalysis().propertiesFromSubAnalysersSortedToString());
             }
         };
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {

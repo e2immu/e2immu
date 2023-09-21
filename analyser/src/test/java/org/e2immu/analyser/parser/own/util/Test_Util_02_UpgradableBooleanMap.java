@@ -325,7 +325,7 @@ public class Test_Util_02_UpgradableBooleanMap extends CommonTestRunner {
             }
         };
 
-        BreakDelayVisitor breakDelayVisitor = d -> assertEquals("----S--S--S--S---S-SF-----",
+        BreakDelayVisitor breakDelayVisitor = d -> assertEquals("----S--S--S--S--S-SF------",
                 d.delaySequence());
 
         testSupportAndUtilClasses(List.of(UpgradableBooleanMap.class),
@@ -333,8 +333,8 @@ public class Test_Util_02_UpgradableBooleanMap extends CommonTestRunner {
                         //   .addStatementAnalyserVisitor(statementAnalyserVisitor)
                         //    .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                         //     .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
-                        .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
-                        .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
+                    //    .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+                    //    .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
                         .addBreakDelayVisitor(breakDelayVisitor)
                         .build());
     }

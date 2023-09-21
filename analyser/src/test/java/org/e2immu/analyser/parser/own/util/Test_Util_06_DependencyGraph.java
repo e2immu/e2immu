@@ -505,7 +505,7 @@ public class Test_Util_06_DependencyGraph extends CommonTestRunner {
                 assertDv(d.p(0), 2, MultiLevel.DEPENDENT_DV, Property.INDEPENDENT);
             }
         };
-        testSupportAndUtilClasses(List.of(DependencyGraph.class, Freezable.class), 8, DONT_CARE,
+        testSupportAndUtilClasses(List.of(DependencyGraph.class, Freezable.class), 7, DONT_CARE,
                 new DebugConfiguration.Builder()
                         //         .addEvaluationResultVisitor(evaluationResultVisitor)
                         //         .addAfterMethodAnalyserVisitor(mavForFreezable)
