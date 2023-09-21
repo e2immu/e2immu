@@ -203,8 +203,8 @@ public class EvaluateParameters {
         // unnecessary stress to the shallow analyser
         Expression parameterValue = parameterResult.value();
         if (!contextModified.valueIsFalse() && !forwardEvaluationInfo.isInCompanionExpression()) {
-            EvaluationResult er = potentiallyModifyConstructorCall(context, parameterInfo, parameterExpression,
-                    parameterValue, contextModified);
+            EvaluationResult er = potentiallyModifyConstructorCall(context, parameterExpression, parameterValue,
+                    contextModified);
             if (er != null) {
                 afterModification = er.getExpression() == null ? parameterValue : er.getExpression();
                 builder.compose(er);
@@ -229,7 +229,6 @@ public class EvaluateParameters {
     IMPORTANT: we're not allowed to change linked variables!
      */
     private static EvaluationResult potentiallyModifyConstructorCall(EvaluationResult context,
-                                                                     ParameterInfo parameterInfo,
                                                                      Expression parameterExpression,
                                                                      Expression parameterValue,
                                                                      DV contextModified) {
@@ -244,8 +243,8 @@ public class EvaluateParameters {
         for (Map.Entry<Variable, DV> e : linkedVariables.variables().entrySet()) {
             DV dv = e.getValue();
             Variable variable = e.getKey();
-            changed |= potentiallyChangeOneVariable(context, parameterInfo, parameterExpression, parameterValue,
-                    contextModified, builder, lvExpression, theVariable, dv, variable);
+            changed |= potentiallyChangeOneVariable(context, parameterExpression, parameterValue, contextModified,
+                    builder, lvExpression, theVariable, dv, variable);
             if (!contextModified.valueIsFalse()) {
                 /* modifyingMethod(map.keySet) -> must also mark map as context modified; see Modification_29 */
                 if (dv.isDelayed() || dv.ge(LinkedVariables.LINK_STATICALLY_ASSIGNED) && dv.le(LinkedVariables.LINK_DEPENDENT)) {
@@ -262,7 +261,6 @@ public class EvaluateParameters {
     }
 
     public static boolean potentiallyChangeOneVariable(EvaluationResult context,
-                                                       ParameterInfo parameterInfo,
                                                        Expression parameterExpression,
                                                        Expression parameterValue,
                                                        DV contextModified,
@@ -286,7 +284,9 @@ public class EvaluateParameters {
                 Expression varVal = context.currentValue(variable);
                 ConstructorCall cc;
                 Expression newInstance;
-                if ((cc = varVal.asInstanceOf(ConstructorCall.class)) != null && cc.constructor() != null) {
+                if (varVal != null
+                        && (cc = varVal.asInstanceOf(ConstructorCall.class)) != null
+                        && cc.constructor() != null) {
                     Properties valueProperties = context.evaluationContext().getValueProperties(cc);
                     newInstance = Instance.forMethodResult(cc.identifier, cc.returnType(), valueProperties);
                 } else if (varVal instanceof PropertyWrapper pw && pw.hasState()) {

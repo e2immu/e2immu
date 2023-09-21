@@ -643,6 +643,8 @@ public class StatementAnalyserImpl implements StatementAnalyser {
         StatementAnalysis last = myMethodAnalyser.getMethodAnalysis().getLastStatement();
         EvaluationContext closure = statementAnalyserSharedState.evaluationContext().getClosure();
         MethodInfo methodInfo = myMethodAnalyser.getMethodInfo();
+
+        // See AnalysisProvider_1, which relies on firstCallInCycle; See Lambda_19Recursion, which does not
         boolean firstCallInCycle = methodInfo.methodResolution.get().ignoreMeBecauseOfPartOfCallCycle();
         if (last != statementAnalysis || closure == null || firstCallInCycle) {
             analyserResultBuilder.setVariableAccessReport(VariableAccessReport.EMPTY);

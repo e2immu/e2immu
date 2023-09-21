@@ -245,6 +245,19 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
             if (firstStatementAnalyser != null) {
                 firstStatementAnalyser.makeUnreachable();
             }
+            methodAnalysis.setPropertyIfAbsentOrDelayed(TEMP_MODIFIED_METHOD, DV.FALSE_DV);
+            methodAnalysis.setPropertyIfAbsentOrDelayed(MODIFIED_METHOD, DV.FALSE_DV);
+            boolean isCycle = methodInfo.methodResolution.get().partOfCallCycle();
+            if (isCycle) {
+                // see code in computeModifiedInternalCycles()
+                Set<MethodInfo> cycle = methodInfo.methodResolution.get().callCycle();
+                TypeAnalysisImpl.Builder ptBuilder = methodInfo.typeInfo.isPrimaryType() ? (TypeAnalysisImpl.Builder) typeAnalysis
+                        : (TypeAnalysisImpl.Builder) analyserContext.getTypeAnalysis(methodInfo.typeInfo.primaryType());
+                TypeAnalysisImpl.CycleInfo cycleInfo = ptBuilder.nonModifiedCountForMethodCallCycle.get(cycle);
+                if (cycleInfo != null && !cycleInfo.nonModified.contains(methodInfo)) {
+                    cycleInfo.nonModified.add(methodInfo);
+                }
+            }
             return true;
         }
         return false;
@@ -872,6 +885,8 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
 
     The MethodCall expression has separate logic to not change the CNN of the object for cyclic and recursive calls.
     Similar code exists in EvaluateParameters.
+
+    See also code in makeUnreachable, for what to do in case one of the methods in the cycle becomes unreachable.
      */
     private AnalysisStatus computeModifiedInternalCycles() {
         boolean isCycle = methodInfo.methodResolution.get().partOfCallCycle();

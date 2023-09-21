@@ -17,21 +17,14 @@ package org.e2immu.analyser.parser.functional;
 import org.e2immu.analyser.analyser.DV;
 import org.e2immu.analyser.analyser.Properties;
 import org.e2immu.analyser.analyser.Property;
-import org.e2immu.analyser.analysis.MethodAnalysis;
-import org.e2immu.analyser.analysis.StatementAnalysis;
-import org.e2immu.analyser.analysis.impl.MethodAnalysisImpl;
-import org.e2immu.analyser.analysis.impl.StatementAnalysisImpl;
+import org.e2immu.analyser.analyser.VariableInfo;
 import org.e2immu.analyser.config.DebugConfiguration;
-import org.e2immu.analyser.inspector.TypeContext;
 import org.e2immu.analyser.model.*;
-import org.e2immu.analyser.model.expression.*;
-import org.e2immu.analyser.model.statement.ExpressionAsStatement;
+import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.ReturnVariable;
 import org.e2immu.analyser.model.variable.This;
 import org.e2immu.analyser.parser.CommonTestRunner;
-import org.e2immu.analyser.parser.functional.testexample.Lambda_18;
 import org.e2immu.analyser.visitor.*;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
@@ -171,7 +164,6 @@ public class Test_57_Lambda_AAPI extends CommonTestRunner {
                 .build());
     }
 
-    //@Disabled("variable of type Runnable is immutable; calling its modifying run() method causes an error")
     @Test
     public void test_18() throws IOException {
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
@@ -203,6 +195,160 @@ public class Test_57_Lambda_AAPI extends CommonTestRunner {
                         .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                         .addStatementAnalyserVisitor(statementAnalyserVisitor)
                         .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                        .build());
+    }
+
+    /*
+    Solved by a hack in ComputeLinkedVariables, writing of ENN
+     */
+
+    @Test
+    public void test_19_Recursion() throws IOException {
+
+        StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+            if ("recursive".equals(d.methodInfo().name)) {
+                if (d.variable() instanceof ParameterInfo pi && "k".equals(pi.name)) {
+                    VariableInfo vi1 = d.variableInfoContainer().getPreviousOrInitial();
+                    assertEquals("0".equals(d.statementId()), d.variableInfoContainer().isInitial());
+                    DV enn1 = vi1.getProperty(Property.EXTERNAL_NOT_NULL);
+                    assertEquals(MultiLevel.NOT_INVOLVED_DV, enn1);
+                    assertDv(d, MultiLevel.NOT_INVOLVED_DV, Property.EXTERNAL_NOT_NULL);
+                }
+                if (d.variable() instanceof FieldReference fr && "field".equals(fr.fieldInfo.name)) {
+                    if ("0".equals(d.statementId())) {
+                        VariableInfo vi1 = d.variableInfoContainer().getPreviousOrInitial();
+                        assertTrue(d.variableInfoContainer().isInitial());
+                        DV enn1 = vi1.getProperty(Property.EXTERNAL_NOT_NULL);
+                        if (d.iteration() == 0) {
+                            assertTrue(enn1.isDelayed());
+                        } else {
+                            // copied in from the field analyzer
+                            assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, enn1);
+                        }
+                        assertTrue(d.variableInfoContainer().hasEvaluation());
+                        // must be NOT_INVOLVED because assigned!
+                        assertDv(d, MultiLevel.NOT_INVOLVED_DV, Property.EXTERNAL_NOT_NULL);
+                        assertFalse(d.variableInfoContainer().hasMerge());
+
+                        assertLinked(d, it(0, "k:0"));
+                    }
+                    if ("1".equals(d.statementId())) {
+                        VariableInfo vi1 = d.variableInfoContainer().getPreviousOrInitial();
+                        assertFalse(d.variableInfoContainer().isInitial());
+                        DV enn1 = vi1.getProperty(Property.EXTERNAL_NOT_NULL);
+                        // points to 0-E, which is NOT_INVOLVED because of the assignment
+                        assertEquals(MultiLevel.NOT_INVOLVED_DV, enn1);
+                    }
+                }
+            }
+            if ("accept".equals(d.methodInfo().name)) {
+                assertEquals("$1", d.methodInfo().typeInfo.simpleName);
+                if (d.variable() instanceof FieldReference fr && "field".equals(fr.fieldInfo.name)) {
+                    if ("0.0.0".equals(d.statementId())) {
+                        // the recursive call
+                        VariableInfo vi1 = d.variableInfoContainer().getPreviousOrInitial();
+                        DV enn1 = vi1.getProperty(Property.EXTERNAL_NOT_NULL);
+                        if (d.iteration() == 0) {
+                            assertTrue(enn1.isDelayed()); // we'd expect this to be copied from recursive:1, NOT_INVOLVED
+                        } else {
+                            // copied in from the field analyzer, and FIXME here is the conflict!!!
+                            assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, enn1);
+                        }
+
+                        // an evaluation is being created in iteration 1; and being overwritten at the same time
+                        assertEquals(d.iteration() > 0, d.variableInfoContainer().hasEvaluation());
+                        assertLinked(d, it0("NOT_YET_SET"), it(1, "k:0"));
+                        assertDv(d, 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.EXTERNAL_NOT_NULL);
+                    }
+                }
+                if (d.variable() instanceof ParameterInfo pi && "k".equals(pi.name)) {
+                    if ("0.0.0".equals(d.statementId())) {
+                        VariableInfo vi1 = d.variableInfoContainer().getPreviousOrInitial();
+                        DV enn1 = vi1.getProperty(Property.EXTERNAL_NOT_NULL);
+                        assertEquals(MultiLevel.NOT_INVOLVED_DV, enn1);
+
+                        assertLinked(d, it0("NOT_YET_SET"), it(1, "this.field:0"));
+                        assertDv(d, MultiLevel.NOT_INVOLVED_DV, Property.EXTERNAL_NOT_NULL);
+                    }
+                }
+            }
+        };
+
+        StatementAnalyserVisitor statementAnalyserVisitor = d -> {
+            if ("recursive".equals(d.methodInfo().name)) {
+                if ("1".equals(d.statementId())) {
+                    /*
+                     NOTE: firstCallInCycle == true, so there won't be any info coming from the lambda.
+                     See StatementAnalyzerImpl.transferFromClosureToResult.
+                     */
+                    assertEquals("", d.statementAnalysis().propertiesFromSubAnalysersSortedToString());
+                }
+            }
+        };
+
+        //warning: potential null pointer on list in statement 2 of recursive
+        testClass("Lambda_19Recursion", 0, 1,
+                new DebugConfiguration.Builder()
+                        .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                        .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                        .build());
+    }
+
+    @Test
+    public void test_19_Unreachable1() throws IOException {
+        testClass("Lambda_19Unreachable", 2, 2,
+                new DebugConfiguration.Builder().build());
+    }
+
+    /*
+    recursive call cycle, on of the methods becomes unreachable. See CMA.makeUnreachable()
+     */
+    @Test
+    public void test_19_Unreachable2() throws IOException {
+        StatementAnalyserVisitor statementAnalyserVisitor = d -> {
+            if ("recursive".equals(d.methodInfo().name)) {
+                if ("1.0.0".equals(d.statementId())) {
+                    if (d.iteration() == 0) {
+                        assertTrue(d.statementAnalysis().flowData().getGuaranteedToBeReachedInMethod().isDelayed());
+                    } else fail("Unreachable, we should not get here");
+                }
+            }
+            if ("accept".equals(d.methodInfo().name)) {
+                assertEquals("$1", d.methodInfo().typeInfo.simpleName);
+                if ("0".equals(d.statementId())) {
+                    if (d.iteration() == 0) {
+                        // first statement always reachable
+                        assertTrue(d.statementAnalysis().flowData().getGuaranteedToBeReachedInMethod().isDone());
+                    } else fail("Unreachable, we should not get here");
+                }
+            }
+        };
+
+        MethodAnalyserVisitor methodAnalyserVisitor = d -> {
+            if ("accept".equals(d.methodInfo().name)) {
+                assertEquals("$1", d.methodInfo().typeInfo.simpleName);
+                assertEquals(0, d.iteration(), "Unreachable; cannot be seen after iteration 0");
+            }
+        };
+
+        BreakDelayVisitor breakDelayVisitor = d -> assertEquals("----", d.delaySequence());
+
+        testClass("Lambda_19Unreachable2", 2, 0,
+                new DebugConfiguration.Builder()
+                        .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                        .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                        .addBreakDelayVisitor(breakDelayVisitor)
+                        .build());
+    }
+
+
+    @Test
+    public void test_19_Merge() throws IOException {
+        BreakDelayVisitor breakDelayVisitor = d -> assertEquals("----", d.delaySequence());
+
+        testClass("Lambda_19Merge", 1, 0,
+                new DebugConfiguration.Builder()
+                        .addBreakDelayVisitor(breakDelayVisitor)
                         .build());
     }
 }

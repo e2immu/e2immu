@@ -190,8 +190,8 @@ public class ComputeLinkedVariables {
             LOGGER.trace("Augmenting links: from {} to {}", entry.getKey().simpleName(), map);
             weightedGraph.addNode(entry.getKey(), map, true, (v1, v2) -> {
                 if (v1.le(LINK_DEPENDENT) || v2.le(LINK_DEPENDENT)) {
-                    if(v1.isDelayed()) return v2;
-                    if(v2.isDelayed()) return v1;
+                    if (v1.isDelayed()) return v2;
+                    if (v2.isDelayed()) return v1;
                     DV min = v1.min(v2);
                     assert min.isDone();
                     return min;
@@ -405,18 +405,26 @@ public class ComputeLinkedVariables {
         VariableInfoContainer vic = statementAnalysis.getVariableOrDefaultNull(variable.fullyQualifiedName());
         boolean progress = false;
         if (vic != null) {
+            VariableInfo vi = vic.ensureLevelForPropertiesLinkedVariables(statementAnalysis.location(stage), stage);
+            DV current = vi.getProperty(property);
+
             DV value;
             boolean complain;
             if ((property == Property.CONTEXT_NOT_NULL || property == Property.CONTEXT_IMMUTABLE
                     || property == Property.CONTEXT_CONTAINER) && oneBranchHasBecomeUnreachable) {
                 value = valueInput;
                 complain = false;
+            } else if (valueInput.isDone()
+                    && property.propertyType == Property.PropertyType.EXTERNAL
+                    && MultiLevel.NOT_INVOLVED_DV.equals(current)
+                    && !valueInput.equals(current)) {
+                // See Lambda_19Recursion... don't see another way out; in the lambda we don't see the assignment
+                value = MultiLevel.NOT_INVOLVED_DV;
+                complain = clusterComplain;
             } else {
                 value = valueInput;
                 complain = clusterComplain;
             }
-            VariableInfo vi = vic.ensureLevelForPropertiesLinkedVariables(statementAnalysis.location(stage), stage);
-            DV current = vi.getProperty(property);
             VariableInfo vi1 = vic.getPreviousOrInitial();
             DV previous = vi1.getProperty(property);
             if (property.propertyType == Property.PropertyType.CONTEXT && property.bestDv.equals(previous)) {

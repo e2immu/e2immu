@@ -128,14 +128,14 @@ public class WeightedGraph extends Freezable {
         }
     }
 
-    private DV min(DV d1, DV d2) {
+    private static DV min(DV d1, DV d2) {
         if (d1.equals(LINK_STATICALLY_ASSIGNED) || d2.equals(LINK_STATICALLY_ASSIGNED)) {
             return LINK_STATICALLY_ASSIGNED;
         }
         return d1.min(d2);
     }
 
-    private DV max(DV d1, DV d2) {
+    private static DV max(DV d1, DV d2) {
         return d1.max(d2);
     }
 

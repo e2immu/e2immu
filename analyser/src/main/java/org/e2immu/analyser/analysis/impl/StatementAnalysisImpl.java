@@ -1323,9 +1323,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
                 // in previous iterations there was data for us, but now there isn't; copy from I/E into M
                 progress |= destination.copyFromEvalIntoMerge(groupPropertyValues);
                 linkedVariablesMap.put(renamed, destination.best(MERGE).getLinkedVariables());
-            } else {
-                throw new UnsupportedOperationException("Have not yet encountered this situation");
-            }
+            } // else: see e.g. Lambda_19Merge; for now no reason to do anything more
         }
 
         rawVariableStream().forEach(e -> {
