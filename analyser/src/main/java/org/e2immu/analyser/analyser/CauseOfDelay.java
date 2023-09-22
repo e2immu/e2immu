@@ -18,8 +18,10 @@ import org.e2immu.analyser.model.FieldInfo;
 import org.e2immu.analyser.model.Location;
 import org.e2immu.analyser.model.TranslationMap;
 import org.e2immu.analyser.parser.InspectionProvider;
+import org.e2immu.annotation.Container;
 import org.e2immu.annotation.NotNull;
 
+@Container
 public interface CauseOfDelay extends Comparable<CauseOfDelay> {
     int LOW = 0;
     int HIGH = 1;
@@ -128,10 +130,12 @@ public interface CauseOfDelay extends Comparable<CauseOfDelay> {
 
     boolean variableIsField(FieldInfo fieldInfo);
 
+    @NotNull
     String withoutStatementIdentifier();
 
     @NotNull
     Location location();
 
+    @NotNull
     CauseOfDelay translate(InspectionProvider inspectionProvider, TranslationMap translationMap);
 }

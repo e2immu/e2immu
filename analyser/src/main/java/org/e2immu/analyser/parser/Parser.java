@@ -15,8 +15,6 @@
 package org.e2immu.analyser.parser;
 
 import com.github.javaparser.ParseException;
-import org.e2immu.analyser.analyser.AnalyserContext;
-import org.e2immu.analyser.analyser.MethodAnalyser;
 import org.e2immu.analyser.analyser.PrimaryTypeAnalyser;
 import org.e2immu.analyser.analyser.impl.AnnotatedAPIAnalyser;
 import org.e2immu.analyser.analyser.impl.PrimaryTypeAnalyserImpl;
@@ -24,7 +22,6 @@ import org.e2immu.analyser.bytecode.OnDemandInspection;
 import org.e2immu.analyser.config.Configuration;
 import org.e2immu.analyser.inspector.*;
 import org.e2immu.analyser.inspector.impl.ExpressionContextImpl;
-import org.e2immu.analyser.model.MethodInfo;
 import org.e2immu.analyser.model.TypeInfo;
 import org.e2immu.analyser.model.TypeInspection;
 import org.e2immu.analyser.parser.impl.ImportantClassesImpl;
@@ -144,7 +141,7 @@ public class Parser {
             for (TypeCycle typeCycle : resolvedSourceTypes.typeCycles()) {
                 analyseSortedTypeCycle(typeCycle, shallowAnalyser);
             }
-            shallowAnalyser.validateIndependence();
+            messages.addAll(shallowAnalyser.validateIndependence());
         }
 
         return new RunResult(sortedAnnotatedAPITypes, resolvedSourceTypes, typeMap);

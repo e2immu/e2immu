@@ -298,17 +298,19 @@ public class AnnotatedAPIAnalyser implements AnalyserContext {
         }
     }
 
-    public void validateIndependence() {
+    public Stream<Message> validateIndependence() {
+        List<Message> validationMessages = new ArrayList<>();
         typeAnalyses.forEach(((typeInfo, typeAnalysis) -> {
             try {
                 DV inMap = typeAnalysis.getPropertyFromMapNeverDelay(Property.INDEPENDENT);
                 ValueExplanation computed = computeIndependent(typeInfo, typeAnalysis);
-                validateIndependent(typeInfo, inMap, computed);
+                validationMessages.addAll(validateIndependent(typeInfo, inMap, computed));
             } catch (IllegalStateException ise) {
                 LOGGER.error("Caught exception while validating independence of {}", typeInfo);
                 throw ise;
             }
         }));
+        return validationMessages.stream();
     }
 
     /*
@@ -320,7 +322,8 @@ public class AnnotatedAPIAnalyser implements AnalyserContext {
     If the computed value is HIGHER, we have made a programming error
     If the computed value is LOWER, the user should put a higher one
      */
-    private void validateIndependent(TypeInfo typeInfo, DV inMap, ValueExplanation computed) {
+    private List<Message> validateIndependent(TypeInfo typeInfo, DV inMap, ValueExplanation computed) {
+        List<Message> msgs = new ArrayList<>();
         if (computed.value.isDone()) {
             if (!inMap.equals(computed.value)) {
                 if (typeInfo.typeInspection.get().isPublic()
@@ -330,10 +333,11 @@ public class AnnotatedAPIAnalyser implements AnalyserContext {
                             Message.Label.TYPE_HAS_DIFFERENT_VALUE_FOR_INDEPENDENT,
                             "Found " + inMap + ", computed " + computed.value
                                     + " in " + computed.explanation);
-                    messages.add(message);
+                    msgs.add(message);
                 }
             }
         } // else: we're at the edge of the known/analysed types, we're not exploring further and rely on the value
+        return msgs;
     }
 
     /*

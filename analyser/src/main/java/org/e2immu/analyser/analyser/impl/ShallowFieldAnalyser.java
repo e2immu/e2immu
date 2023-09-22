@@ -97,6 +97,7 @@ public class ShallowFieldAnalyser {
         DV annotatedImmutable = fieldAnalysisBuilder.getPropertyFromMapDelayWhenAbsent(Property.IMMUTABLE);
         DV formallyImmutable = analysisProvider.typeImmutable(fieldInfo.type);
         DV immutable = MultiLevel.MUTABLE_DV.maxIgnoreDelay(annotatedImmutable.maxIgnoreDelay(formallyImmutable));
+        fieldAnalysisBuilder.setProperty(Property.EXTERNAL_IMMUTABLE, immutable);
         DV annotatedIndependent = fieldAnalysisBuilder.getPropertyFromMapDelayWhenAbsent(Property.INDEPENDENT);
         DV formallyIndependent = analysisProvider.typeIndependent(fieldInfo.type);
         DV independent = MultiLevel.DEPENDENT_DV.maxIgnoreDelay(annotatedIndependent.maxIgnoreDelay(formallyIndependent));
@@ -105,18 +106,24 @@ public class ShallowFieldAnalyser {
         Properties properties = Properties.of(Map.of(Property.NOT_NULL_EXPRESSION, notNull,
                 Property.IMMUTABLE, immutable, Property.INDEPENDENT, independent, Property.CONTAINER, typeIsContainer,
                 Property.IGNORE_MODIFICATIONS, ignoreMods, Property.IDENTITY, DV.FALSE_DV));
+
+        DV constant;
         Expression value;
         if (fieldAnalysisBuilder.getProperty(Property.FINAL).valueIsTrue()
                 && fieldInfo.fieldInspection.get().fieldInitialiserIsSet()) {
             Expression initialiser = fieldInfo.fieldInspection.get().getFieldInitialiser().initialiser().unwrapIfConstant();
             if (initialiser.isConstant()) {
                 value = initialiser;
+                constant = DV.TRUE_DV;
             } else {
                 value = Instance.forField(fieldInfo, initialiser.returnType(), properties);
+                constant = DV.FALSE_DV;
             }
         } else {
             value = Instance.forField(fieldInfo, null, properties);
+            constant = DV.FALSE_DV;
         }
+        fieldAnalysisBuilder.setProperty(Property.CONSTANT, constant);
         fieldAnalysisBuilder.setValue(value);
         fieldInfo.setAnalysis(fieldAnalysisBuilder.build());
     }
