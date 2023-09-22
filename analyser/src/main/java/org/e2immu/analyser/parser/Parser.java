@@ -16,6 +16,7 @@ package org.e2immu.analyser.parser;
 
 import com.github.javaparser.ParseException;
 import org.e2immu.analyser.analyser.AnalyserContext;
+import org.e2immu.analyser.analyser.MethodAnalyser;
 import org.e2immu.analyser.analyser.PrimaryTypeAnalyser;
 import org.e2immu.analyser.analyser.impl.AnnotatedAPIAnalyser;
 import org.e2immu.analyser.analyser.impl.PrimaryTypeAnalyserImpl;
@@ -23,6 +24,7 @@ import org.e2immu.analyser.bytecode.OnDemandInspection;
 import org.e2immu.analyser.config.Configuration;
 import org.e2immu.analyser.inspector.*;
 import org.e2immu.analyser.inspector.impl.ExpressionContextImpl;
+import org.e2immu.analyser.model.MethodInfo;
 import org.e2immu.analyser.model.TypeInfo;
 import org.e2immu.analyser.model.TypeInspection;
 import org.e2immu.analyser.parser.impl.ImportantClassesImpl;
@@ -127,8 +129,22 @@ public class Parser {
             typeMap = input.globalTypeContext().typeMap.build();
             // we pass on the Java sources for the PrimaryTypeAnalyser, while all other loaded types
             // will be sent to the ShallowAnalyser
-            AnalyserContext shallowContext = runShallowAnalyser(typeMap, sortedAnnotatedAPITypes, resolvedSourceTypes);
-            runPrimaryTypeAnalyser(typeMap, shallowContext, resolvedSourceTypes);
+            AnnotatedAPIAnalyser shallowAnalyser = runShallowAnalyser(typeMap, sortedAnnotatedAPITypes, resolvedSourceTypes);
+
+            for (TypeMapVisitor typeMapVisitor : configuration.debugConfiguration().typeMapVisitors()) {
+                typeMapVisitor.visit(typeMap);
+            }
+            if (LOGGER.isDebugEnabled()) {
+                LOGGER.debug("Analysing primary types:\n{}", resolvedSourceTypes);
+            }
+
+            assert shallowAnalyser.methodAnalysersForPrimaryTypeAnalyzer().isEmpty()  // we have computing method analyzers
+                    || !resolvedSourceTypes.typeCycles().isEmpty(); // we have non-shallow classes to analyze
+
+            for (TypeCycle typeCycle : resolvedSourceTypes.typeCycles()) {
+                analyseSortedTypeCycle(typeCycle, shallowAnalyser);
+            }
+            shallowAnalyser.validateIndependence();
         }
 
         return new RunResult(sortedAnnotatedAPITypes, resolvedSourceTypes, typeMap);
@@ -231,26 +247,15 @@ public class Parser {
         }
     }
 
-    private void runPrimaryTypeAnalyser(TypeMap typeMap, AnalyserContext shallowContext, SortedTypes sortedTypes) {
-        for (TypeMapVisitor typeMapVisitor : configuration.debugConfiguration().typeMapVisitors()) {
-            typeMapVisitor.visit(typeMap);
-        }
-        if (LOGGER.isDebugEnabled()) {
-            LOGGER.debug("Analysing primary types:\n{}", sortedTypes);
-        }
-
-        for (TypeCycle typeCycle : sortedTypes.typeCycles()) {
-            analyseSortedTypeCycle(typeCycle, shallowContext);
-        }
-    }
-
-    private void analyseSortedTypeCycle(TypeCycle typeCycle, AnalyserContext analyserContext) {
+    private void analyseSortedTypeCycle(TypeCycle typeCycle, AnnotatedAPIAnalyser annotatedAPIAnalyser) {
         ImportantClassesImpl importantClasses = new ImportantClassesImpl(input.globalTypeContext());
-        PrimaryTypeAnalyser primaryTypeAnalyser = new PrimaryTypeAnalyserImpl(analyserContext, typeCycle, configuration,
+        PrimaryTypeAnalyser primaryTypeAnalyser = new PrimaryTypeAnalyserImpl(annotatedAPIAnalyser, typeCycle,
+                configuration,
                 getTypeContext().getPrimitives(),
                 importantClasses,
                 Either.right(getTypeContext()),
-                getTypeContext().typeMap.getE2ImmuAnnotationExpressions());
+                getTypeContext().typeMap.getE2ImmuAnnotationExpressions(),
+                annotatedAPIAnalyser.methodAnalysersForPrimaryTypeAnalyzer());
         try {
             primaryTypeAnalyser.analyse();
         } catch (RuntimeException rte) {
@@ -280,7 +285,7 @@ public class Parser {
         messages.addAll(primaryTypeAnalyser.getMessageStream());
     }
 
-    private AnalyserContext runShallowAnalyser(TypeMap typeMap, SortedTypes annotatedAPITypes, SortedTypes sourceTypes) {
+    private AnnotatedAPIAnalyser runShallowAnalyser(TypeMap typeMap, SortedTypes annotatedAPITypes, SortedTypes sourceTypes) {
 
         // the following block of code ensures that primary types of the annotated APIs
         // are processed in the correct order
@@ -307,20 +312,10 @@ public class Parser {
 
         AnnotatedAPIAnalyser annotatedAPIAnalyser = new AnnotatedAPIAnalyser(types, configuration,
                 getTypeContext().getPrimitives(), new ImportantClassesImpl(getTypeContext()),
-                typeMap.getE2ImmuAnnotationExpressions(), typeMap);
-        Stream<Message> analyse = annotatedAPIAnalyser.analyse();
+                typeMap.getE2ImmuAnnotationExpressions(), typeMap, sourceTypes);
+        annotatedAPIAnalyser.analyse();
 
-        // only complain if we have annotated APIs to correct
-        if (!annotatedAPITypes.isEmpty()) {
-            messages.addAll(analyse);
-        }
-
-        assert types.stream()
-                .filter(t -> t.typeInspection.get().isPublic())
-                .allMatch(typeInfo -> typeInfo.typeAnalysis.isSet() &&
-                        typeInfo.typeInspection.get().methodsAndConstructors(TypeInspection.Methods.THIS_TYPE_ONLY_EXCLUDE_FIELD_SAM)
-                                .filter(m -> m.methodInspection.get().isPublic())
-                                .allMatch(methodInfo -> methodInfo.methodAnalysis.isSet())) : "All method analysis set";
+        messages.addAll(annotatedAPIAnalyser.messageStream());
         return annotatedAPIAnalyser;
     }
 

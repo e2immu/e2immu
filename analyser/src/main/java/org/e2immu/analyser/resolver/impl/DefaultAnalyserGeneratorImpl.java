@@ -46,8 +46,13 @@ public class DefaultAnalyserGeneratorImpl implements AnalyserGenerator {
 
     // NOTE: we use LinkedHashMaps to preserve the sorting order
 
-    public DefaultAnalyserGeneratorImpl(List<SortedType> sortedTypes, Configuration configuration, AnalyserContext analyserContext) {
-        name = sortedTypes.stream().map(sortedType -> sortedType.primaryType().fullyQualifiedName).collect(Collectors.joining(","));
+    public DefaultAnalyserGeneratorImpl(List<SortedType> sortedTypes,
+                                        Configuration configuration,
+                                        AnalyserContext analyserContext,
+                                        Map<MethodInfo, MethodAnalyser> methodAnalysersFromShallow) {
+        name = sortedTypes.stream()
+                .map(sortedType -> sortedType.primaryType().fullyQualifiedName)
+                .collect(Collectors.joining(","));
         primaryTypes = sortedTypes.stream().map(SortedType::primaryType).collect(Collectors.toUnmodifiableSet());
 
         // do the types first, so we can pass on a TypeAnalysis objects
@@ -70,7 +75,7 @@ public class DefaultAnalyserGeneratorImpl implements AnalyserGenerator {
         // filtering out those methods that have not been defined is not a good idea, since the MethodAnalysisImpl object
         // can only reach TypeAnalysisImpl, and not its builder. We'd better live with empty methods in the method analyser.
         Map<ParameterInfo, ParameterAnalyser> parameterAnalysersBuilder = new LinkedHashMap<>();
-        Map<MethodInfo, MethodAnalyser> methodAnalysersBuilder = new LinkedHashMap<>();
+        Map<MethodInfo, MethodAnalyser> methodAnalysersBuilder = new LinkedHashMap<>(methodAnalysersFromShallow);
         sortedTypes.forEach(sortedType -> {
             List<WithInspectionAndAnalysis> analyses = sortedType.methodsFieldsSubTypes();
             analyses.forEach(analysis -> {

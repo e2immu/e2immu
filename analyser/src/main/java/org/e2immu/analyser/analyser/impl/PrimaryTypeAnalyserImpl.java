@@ -75,7 +75,8 @@ public class PrimaryTypeAnalyserImpl implements PrimaryTypeAnalyser {
                                    Primitives primitives,
                                    ImportantClasses importantClasses,
                                    Either<PatternMatcher<StatementAnalyser>, TypeContext> patternMatcherOrTypeContext,
-                                   E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions) {
+                                   E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions,
+                                   Map<MethodInfo, MethodAnalyser> methodAnalysersFromShallow) {
         this.parent = parent;
         this.configuration = configuration;
         this.e2ImmuAnnotationExpressions = e2ImmuAnnotationExpressions;
@@ -85,8 +86,8 @@ public class PrimaryTypeAnalyserImpl implements PrimaryTypeAnalyser {
         this.primitives = primitives;
         this.importantClasses = importantClasses;
 
-        AnalyserGenerator analyserGenerator = typeCycle
-                .createAnalyserGeneratorAndGenerateAnalysers(configuration, this);
+        AnalyserGenerator analyserGenerator = typeCycle.createAnalyserGeneratorAndGenerateAnalysers(configuration,
+                this, methodAnalysersFromShallow);
         this.name = analyserGenerator.getName();
         this.analysers = analyserGenerator.getAnalysers();
         this.primaryTypes = analyserGenerator.getPrimaryTypes();

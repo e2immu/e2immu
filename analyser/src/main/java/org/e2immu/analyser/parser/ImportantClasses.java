@@ -16,6 +16,13 @@ package org.e2immu.analyser.parser;
 
 import org.e2immu.analyser.model.ParameterizedType;
 
+/*
+We need meta-information in TypeInfo the parameterized type of the TypeInfo object corresponding to
+java.lang.Iterable. The TypeContext, which can provide this, is not generally available during analysis;
+especially, it is not part of the AnalyserContext.
+
+This interface provides limited access to the type context in AnalyserContext.
+ */
 public interface ImportantClasses {
 
     ParameterizedType iterable();

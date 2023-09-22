@@ -30,6 +30,7 @@ import org.e2immu.analyser.model.expression.UnknownExpression;
 import org.e2immu.analyser.model.expression.VariableExpression;
 import org.e2immu.analyser.parser.*;
 import org.e2immu.analyser.pattern.PatternMatcher;
+import org.e2immu.analyser.resolver.SortedTypes;
 import org.e2immu.analyser.util.DependencyGraph;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -83,12 +84,15 @@ public class AnnotatedAPIAnalyser implements AnalyserContext {
     private final Map<MethodInfo, MethodAnalyser> methodAnalysers;
     private final TypeMap typeMap;
 
+    private final Map<MethodInfo, MethodAnalyser> computingMethodAnalyzers = new HashMap<>();
+
     public AnnotatedAPIAnalyser(List<TypeInfo> types,
                                 Configuration configuration,
                                 Primitives primitives,
                                 ImportantClasses importantClasses,
                                 E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions,
-                                TypeMap typeMap) {
+                                TypeMap typeMap,
+                                SortedTypes sortedTypes) {
         this.typeMap = typeMap;
         shallowFieldAnalyser = new ShallowFieldAnalyser(this, this,
                 e2ImmuAnnotationExpressions);
@@ -116,6 +120,8 @@ public class AnnotatedAPIAnalyser implements AnalyserContext {
         }
         assert checksOnOrder(sorted);
 
+        Set<TypeInfo> primarySourceTypes = sortedTypes.primaryTypeStream().collect(Collectors.toUnmodifiableSet());
+
         typeAnalyses = new LinkedHashMap<>(); // we keep the order provided
         methodAnalysers = new LinkedHashMap<>(); // we keep the order!
         for (TypeInfo typeInfo : sorted) {
@@ -128,7 +134,10 @@ public class AnnotatedAPIAnalyser implements AnalyserContext {
                     .filter(methodInfo -> methodInfo.methodInspection.get().isPubliclyAccessible()
                             // the Object.clone() method is protected, but has to be accessible because it can be called on arrays
                             // see Independent1_5
-                            || methodInfo.typeInfo.isJavaLangObject())
+                            || methodInfo.typeInfo.isJavaLangObject()
+                            // is part of a primary type being source-analysed
+                            || primarySourceTypes.contains(methodInfo.typeInfo.primaryType())
+                    )
                     .forEach(methodInfo -> {
                         try {
                             if (TypeInfo.IS_FACT_FQN.equals(methodInfo.fullyQualifiedName())) {
@@ -195,10 +204,8 @@ public class AnnotatedAPIAnalyser implements AnalyserContext {
 
     /**
      * Main entry point
-     *
-     * @return the message stream of all sub-analysers
      */
-    public Stream<Message> analyse() {
+    public void analyse() {
         LOGGER.debug("Starting AnnotatedAPI analysis on {} types", typeAnalyses.size());
 
         hardcodedCrucialClasses();
@@ -226,9 +233,9 @@ public class AnnotatedAPIAnalyser implements AnalyserContext {
         LOGGER.info("Finished AnnotatedAPI type and field analysis of {} types; have {} messages of my own",
                 typeAnalyses.size(), messages.size());
 
-        Map<MethodInfo, MethodAnalyser> nonShallowOrWithCompanions = new HashMap<>();
+        Map<MethodInfo, MethodAnalyser> withCompanions = new HashMap<>();
         methodAnalysers.forEach((methodInfo, analyser) -> {
-            if (analyser instanceof ShallowMethodAnalyser) {
+            if (analyser instanceof ShallowMethodAnalyser shallowMethodAnalyser) {
                 try {
                     analyser.analyse(new Analyser.SharedState(0, BreakDelayLevel.NONE, null));
                 } catch (RuntimeException runtimeException) {
@@ -239,19 +246,28 @@ public class AnnotatedAPIAnalyser implements AnalyserContext {
                 if (hasNoCompanionMethods) {
                     methodInfo.setAnalysis(analyser.getAnalysis().build());
                 } else {
-                    nonShallowOrWithCompanions.put(methodInfo, analyser);
+                    withCompanions.put(methodInfo, shallowMethodAnalyser);
                 }
+            } else if (methodInfo.fullyQualifiedName.startsWith("org.e2immu.annotatedapi")) {
+                /*
+                The few real methods here (currently 4) are support methods for the companion methods. They are simple enough
+                to be analyzed by "iterativeMethodAnalysis".
+                 */
+                withCompanions.put(methodInfo, analyser);
             } else {
-                nonShallowOrWithCompanions.put(methodInfo, analyser);
+                computingMethodAnalyzers.put(methodInfo, analyser);
             }
         });
-        LOGGER.info("Finished AnnotatedAPI shallow method analysis on methods without companion methods, {} remaining",
-                nonShallowOrWithCompanions.size());
-        if (!nonShallowOrWithCompanions.isEmpty()) {
-            iterativeMethodAnalysis(nonShallowOrWithCompanions);
-        }
-        validateIndependence();
 
+        LOGGER.info("Have {} shallow analysers with companions", withCompanions.size());
+        if (!withCompanions.isEmpty()) {
+            iterativeMethodAnalysis(withCompanions);
+        }
+
+        LOGGER.info("Finished AnnotatedAPI analyses, {} remaining CMAs", computingMethodAnalyzers.size());
+    }
+
+    public Stream<Message> messageStream() {
         return Stream.concat(methodAnalysers.values().stream().flatMap(MethodAnalyser::getMessageStream),
                 Stream.concat(shallowFieldAnalyser.getMessageStream(), messages.getMessageStream()));
     }
@@ -282,7 +298,7 @@ public class AnnotatedAPIAnalyser implements AnalyserContext {
         }
     }
 
-    private void validateIndependence() {
+    public void validateIndependence() {
         typeAnalyses.forEach(((typeInfo, typeAnalysis) -> {
             try {
                 DV inMap = typeAnalysis.getPropertyFromMapNeverDelay(Property.INDEPENDENT);
@@ -327,6 +343,10 @@ public class AnnotatedAPIAnalyser implements AnalyserContext {
     private boolean independenceIsNotContracted(TypeInfo typeInfo) {
         Optional<AnnotationExpression> opt = typeInfo.hasInspectedAnnotation(e2ImmuAnnotationExpressions.independent);
         return opt.stream().noneMatch(ae -> ae.e2ImmuAnnotationParameters().contract());
+    }
+
+    public Map<MethodInfo, MethodAnalyser> methodAnalysersForPrimaryTypeAnalyzer() {
+        return computingMethodAnalyzers;
     }
 
     private record ValueExplanation(DV value, String explanation) {

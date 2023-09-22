@@ -131,7 +131,7 @@ public class StatementAnalyserImpl implements StatementAnalyser {
         StatementAnalyserImpl previous = null;
         for (Statement statement : statements) {
             String padded = pad(statementIndex, statements.size());
-            String iPlusSt = adjustedIndices.isEmpty() ? "" + padded : adjustedIndices + "." + padded;
+            String iPlusSt = adjustedIndices.isEmpty() ? padded : adjustedIndices + "." + padded;
             StatementAnalyserImpl statementAnalyser = new StatementAnalyserImpl(analyserContext, myMethodAnalyser, statement, parent, iPlusSt, inSyncBlock);
             if (previous != null) {
                 previous.statementAnalysis.navigationData().next.set(Optional.of(statementAnalyser.statementAnalysis));
@@ -259,13 +259,13 @@ public class StatementAnalyserImpl implements StatementAnalyser {
 
                 statementAnalyser = (StatementAnalyserImpl) statementAnalyser.navigationDataNextGet().orElse(null);
 
-                if (result.analysisStatus().isProgress() && forwardAnalysisInfo.breakDelayLevel().acceptStatement()) {
+                //if (result.analysisStatus().isProgress() && forwardAnalysisInfo.breakDelayLevel().acceptStatement()) {
                     // LOGGER.debug("**** Removing allow break delay for subsequent statements ****");
                     // uncomment the following statement if you want to break only delays at one statement,
                     // instead of in the whole method
                     // Expressions_0 will suffer a lot of you do that (currently at 50+ iterations)
                     //forwardAnalysisInfo = forwardAnalysisInfo.removeAllowBreakDelay();
-                }
+                //}
             } while (statementAnalyser != null);
             return builder.build();
         } catch (Throwable rte) {
@@ -561,7 +561,8 @@ public class StatementAnalyserImpl implements StatementAnalyser {
                                 analyserContext.getPrimitives(),
                                 analyserContext.importantClasses(),
                                 Either.left(analyserContext.getPatternMatcher()),
-                                analyserContext.getE2ImmuAnnotationExpressions());
+                                analyserContext.getE2ImmuAnnotationExpressions(),
+                                Map.of());
                         primaryTypeAnalyser.initialize();
                         return primaryTypeAnalyser;
                     }).toList();

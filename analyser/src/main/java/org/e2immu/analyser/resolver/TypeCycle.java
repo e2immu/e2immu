@@ -15,9 +15,12 @@
 package org.e2immu.analyser.resolver;
 
 import org.e2immu.analyser.analyser.AnalyserContext;
+import org.e2immu.analyser.analyser.MethodAnalyser;
 import org.e2immu.analyser.config.Configuration;
+import org.e2immu.analyser.model.MethodInfo;
 import org.e2immu.analyser.model.TypeInfo;
 
+import java.util.Map;
 import java.util.stream.Stream;
 
 /**
@@ -37,8 +40,10 @@ import java.util.stream.Stream;
  */
 public interface TypeCycle {
 
-    AnalyserGenerator createAnalyserGeneratorAndGenerateAnalysers(Configuration configuration,
-                                                                  AnalyserContext analyserContext);
+    AnalyserGenerator createAnalyserGeneratorAndGenerateAnalysers
+            (Configuration configuration,
+             AnalyserContext analyserContext,
+             Map<MethodInfo, MethodAnalyser> methodAnalyzersFromShallow);
 
     Stream<TypeInfo> primaryTypeStream();
 }

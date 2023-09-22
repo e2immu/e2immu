@@ -41,7 +41,6 @@ import org.e2immu.analyser.model.expression.util.MultiExpression;
 import org.e2immu.analyser.model.impl.LocationImpl;
 import org.e2immu.analyser.model.variable.*;
 import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
-import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.resolver.impl.ListOfSortedTypes;
 import org.e2immu.analyser.resolver.impl.SortedType;
@@ -383,7 +382,8 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
                             analyserContext.getPrimitives(),
                             analyserContext.importantClasses(),
                             Either.left(analyserContext.getPatternMatcher()),
-                            analyserContext.getE2ImmuAnnotationExpressions());
+                            analyserContext.getE2ImmuAnnotationExpressions(),
+                            Map.of());
                     primaryTypeAnalyser.initialize();
                     anonymousTypeAnalyser.setFinal(primaryTypeAnalyser);
                     recursivelyAddPrimaryTypeAnalyserToAnalyserContext(primaryTypeAnalyser);

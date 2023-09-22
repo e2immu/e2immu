@@ -15,21 +15,45 @@
 package org.e2immu.analyser.resolver.impl;
 
 import org.e2immu.analyser.analyser.AnalyserContext;
+import org.e2immu.analyser.analyser.MethodAnalyser;
 import org.e2immu.analyser.config.Configuration;
+import org.e2immu.analyser.model.MethodInfo;
 import org.e2immu.analyser.model.TypeInfo;
 import org.e2immu.analyser.resolver.AnalyserGenerator;
 import org.e2immu.analyser.resolver.TypeCycle;
 
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-public record ListOfSortedTypes(List<SortedType> sortedTypes) implements TypeCycle {
+public class ListOfSortedTypes implements TypeCycle {
+    private final List<SortedType> sortedTypes;
+
+    public ListOfSortedTypes(List<SortedType> sortedTypes) {
+        this.sortedTypes = sortedTypes;
+    }
 
     @Override
-    public AnalyserGenerator createAnalyserGeneratorAndGenerateAnalysers(Configuration configuration,
-                                                                         AnalyserContext analyserContext) {
-        return new DefaultAnalyserGeneratorImpl(sortedTypes, configuration, analyserContext);
+    public AnalyserGenerator createAnalyserGeneratorAndGenerateAnalysers
+            (Configuration configuration,
+             AnalyserContext analyserContext,
+             Map<MethodInfo, MethodAnalyser> methodAnalyzersFromShallow) {
+
+        Map<MethodInfo, MethodAnalyser> selectionOfAnalyzers = methodAnalyzersFromShallow.entrySet().stream()
+                .filter(this::accept)
+                .collect(Collectors.toUnmodifiableMap(Map.Entry::getKey, Map.Entry::getValue));
+
+        return new DefaultAnalyserGeneratorImpl(sortedTypes, configuration, analyserContext, selectionOfAnalyzers);
+    }
+
+    /*
+    the method analyzers belong to types which have been shallow analyzed (essentially, they're default and static
+    methods of interfaces).
+    their types will not be in the list of sorted types. However, their dependent types may be.
+     */
+    private boolean accept(Map.Entry<MethodInfo, MethodAnalyser> entry) {
+        return true; // FIXME how to do this?
     }
 
     @Override
