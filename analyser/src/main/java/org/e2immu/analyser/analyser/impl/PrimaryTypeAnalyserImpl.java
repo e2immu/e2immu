@@ -16,10 +16,10 @@ package org.e2immu.analyser.analyser.impl;
 
 import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.analyser.impl.util.BreakDelayLevel;
+import org.e2immu.analyser.analyser.nonanalyserimpl.GlobalAnalyserContext;
 import org.e2immu.analyser.analyser.util.AnalyserResult;
 import org.e2immu.analyser.analysis.Analysis;
 import org.e2immu.analyser.config.Configuration;
-import org.e2immu.analyser.inspector.TypeContext;
 import org.e2immu.analyser.inspector.impl.MethodInspectionImpl;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
@@ -66,20 +66,14 @@ public class PrimaryTypeAnalyserImpl implements PrimaryTypeAnalyser {
     private final FlipSwitch unreachable = new FlipSwitch();
     private final List<BreakDelayLevel> delaySequence = new LinkedList<>();
 
-    public PrimaryTypeAnalyserImpl(AnalyserContext parent,
-                                   TypeCycle typeCycle,
-                                   Configuration configuration,
-                                   Primitives primitives,
-                                   ImportantClasses importantClasses,
-                                   E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions) {
-        this.parent = parent;
-        this.configuration = configuration;
-        this.e2ImmuAnnotationExpressions = e2ImmuAnnotationExpressions;
-        Objects.requireNonNull(primitives);
-        this.primitives = primitives;
-        this.importantClasses = importantClasses;
+    public PrimaryTypeAnalyserImpl(AnalyserContext parent, TypeCycle typeCycle) {
+        this.parent = Objects.requireNonNull(parent);
+        this.configuration = parent.getConfiguration();
+        this.e2ImmuAnnotationExpressions = parent.getE2ImmuAnnotationExpressions();
+        this.primitives = parent.getPrimitives();
+        this.importantClasses = parent.importantClasses();
 
-        AnalyserGenerator analyserGenerator = typeCycle.createAnalyserGeneratorAndGenerateAnalysers(configuration, this);
+        AnalyserGenerator analyserGenerator = typeCycle.createAnalyserGeneratorAndGenerateAnalysers(this);
         this.name = analyserGenerator.getName();
         this.analysers = analyserGenerator.getAnalysers();
         this.primaryTypes = analyserGenerator.getPrimaryTypes();
@@ -107,7 +101,7 @@ public class PrimaryTypeAnalyserImpl implements PrimaryTypeAnalyser {
 
             builder.add(analyser, supplier);
         }
-        // TODO in larger contexts, removing the allowBreakDelay immediately may be excessively slow
+        // In larger contexts, removing the allowBreakDelay immediately may be excessively slow
         // maybe we should do that per PrimaryType, keeping a map?
         analyserComponents = builder
                 .setUpdateUponProgress(SharedState::removeAllowBreakDelay)
@@ -280,6 +274,9 @@ public class PrimaryTypeAnalyserImpl implements PrimaryTypeAnalyser {
     @Override
     public void write() {
         analysers.forEach(Analyser::write);
+        if(parent instanceof GlobalAnalyserContext globalAnalyserContext) {
+            analysers.forEach(a -> globalAnalyserContext.write(a.getAnalysis()));
+        }
     }
 
     @Override
@@ -379,5 +376,10 @@ public class PrimaryTypeAnalyserImpl implements PrimaryTypeAnalyser {
     @Override
     public boolean isUnreachable() {
         return unreachable.isSet();
+    }
+
+    @Override
+    public boolean inAnnotatedAPIAnalysis() {
+        return parent.inAnnotatedAPIAnalysis();
     }
 }

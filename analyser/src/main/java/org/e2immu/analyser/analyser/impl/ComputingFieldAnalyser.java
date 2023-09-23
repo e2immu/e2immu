@@ -26,14 +26,13 @@ import org.e2immu.analyser.analyser.delay.SimpleCause;
 import org.e2immu.analyser.analyser.delay.VariableCause;
 import org.e2immu.analyser.analyser.impl.util.BreakDelayLevel;
 import org.e2immu.analyser.analyser.nonanalyserimpl.AbstractEvaluationContextImpl;
-import org.e2immu.analyser.analyser.nonanalyserimpl.ExpandableAnalyserContextImpl;
+import org.e2immu.analyser.analyser.nonanalyserimpl.LocalAnalyserContext;
 import org.e2immu.analyser.analyser.util.AnalyserResult;
 import org.e2immu.analyser.analyser.util.ComputeIndependent;
 import org.e2immu.analyser.analyser.util.VariableAccessReport;
 import org.e2immu.analyser.analysis.Analysis;
 import org.e2immu.analyser.analysis.FieldAnalysis;
 import org.e2immu.analyser.analysis.TypeAnalysis;
-import org.e2immu.analyser.analysis.impl.FieldAnalysisImpl;
 import org.e2immu.analyser.analysis.impl.ValueAndPropertyProxy;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.*;
@@ -46,7 +45,6 @@ import org.e2immu.analyser.resolver.impl.ListOfSortedTypes;
 import org.e2immu.analyser.resolver.impl.SortedType;
 import org.e2immu.analyser.util.StreamUtil;
 import org.e2immu.analyser.visitor.FieldAnalyserVisitor;
-import org.e2immu.support.Either;
 import org.e2immu.support.EventuallyFinal;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -96,7 +94,7 @@ public class ComputingFieldAnalyser extends FieldAnalyserImpl implements FieldAn
                                   TypeInfo primaryType,
                                   TypeAnalysis ownerTypeAnalysis,
                                   AnalyserContext nonExpandableAnalyserContext) {
-        super(new ExpandableAnalyserContextImpl(nonExpandableAnalyserContext), primaryType, ownerTypeAnalysis, fieldInfo);
+        super(new LocalAnalyserContext(nonExpandableAnalyserContext), primaryType, ownerTypeAnalysis, fieldInfo);
         this.acrossAllMethods = analyserContext.getConfiguration().analyserConfiguration().computeFieldAnalyserAcrossAllMethods();
         fieldCanBeWrittenFromOutsideThisPrimaryType = !fieldInfo.fieldInspection.get().isPrivate() &&
                 !fieldInfo.isExplicitlyFinal();
@@ -352,11 +350,7 @@ public class ComputingFieldAnalyser extends FieldAnalyserImpl implements FieldAn
                     SortedType sortedType = fieldInitialiser.anonymousTypeCreated().typeResolution.get().sortedType();
                     ListOfSortedTypes listOfSortedTypes = new ListOfSortedTypes(List.of(sortedType));
                     PrimaryTypeAnalyser primaryTypeAnalyser = new PrimaryTypeAnalyserImpl(analyserContext,
-                            listOfSortedTypes,
-                            analyserContext.getConfiguration(),
-                            analyserContext.getPrimitives(),
-                            analyserContext.importantClasses(),
-                            analyserContext.getE2ImmuAnnotationExpressions());
+                            listOfSortedTypes);
                     primaryTypeAnalyser.initialize();
                     anonymousTypeAnalyser.setFinal(primaryTypeAnalyser);
                     recursivelyAddPrimaryTypeAnalyserToAnalyserContext(primaryTypeAnalyser);
@@ -384,7 +378,7 @@ public class ComputingFieldAnalyser extends FieldAnalyserImpl implements FieldAn
     private void recursivelyAddPrimaryTypeAnalyserToAnalyserContext(PrimaryTypeAnalyser analyser) {
         AnalyserContext context = analyserContext;
         while (context != null) {
-            if (context instanceof ExpandableAnalyserContextImpl expandable) {
+            if (context instanceof LocalAnalyserContext expandable) {
                 expandable.addPrimaryTypeAnalyser(analyser);
             }
             context = context.getParent();

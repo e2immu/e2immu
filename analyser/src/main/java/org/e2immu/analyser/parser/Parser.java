@@ -17,9 +17,9 @@ package org.e2immu.analyser.parser;
 import com.github.javaparser.ParseException;
 import org.e2immu.analyser.analyser.AnalyserContext;
 import org.e2immu.analyser.analyser.PrimaryTypeAnalyser;
-import org.e2immu.analyser.analyser.impl.AnnotatedAPIAnalyser;
 import org.e2immu.analyser.analyser.impl.PrimaryTypeAnalyserImpl;
-import org.e2immu.analyser.analyser.nonanalyserimpl.ExpandableAnalyserContextImpl;
+import org.e2immu.analyser.analyser.nonanalyserimpl.GlobalAnalyserContext;
+import org.e2immu.analyser.analyser.nonanalyserimpl.LocalAnalyserContext;
 import org.e2immu.analyser.bytecode.OnDemandInspection;
 import org.e2immu.analyser.config.Configuration;
 import org.e2immu.analyser.inspector.*;
@@ -33,7 +33,6 @@ import org.e2immu.analyser.resolver.TypeCycle;
 import org.e2immu.analyser.resolver.impl.ResolverImpl;
 import org.e2immu.analyser.util.Trie;
 import org.e2immu.analyser.visitor.TypeMapVisitor;
-import org.e2immu.support.Either;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -128,24 +127,24 @@ public class Parser {
 
             // creating the typeMap ensures that all inspections and resolutions are set.
             typeMap = input.globalTypeContext().typeMap.build();
-            ExpandableAnalyserContextImpl analyserContext = new ExpandableAnalyserContextImpl
-                    (input.globalTypeContext().getPrimitives(), configuration, importantClasses,
-                            typeMap.getE2ImmuAnnotationExpressions(), true);
+            GlobalAnalyserContext annotatedAPIContext = new GlobalAnalyserContext(input.globalTypeContext().getPrimitives(),
+                    configuration, importantClasses, typeMap.getE2ImmuAnnotationExpressions(),
+                    true);
 
             for (TypeCycle typeCycle : sortedAnnotatedAPITypes.typeCycles()) {
-                runAnalyzer(importantClasses, analyserContext, typeCycle);
+                runAnalyzer(annotatedAPIContext, typeCycle);
             }
             for (TypeMapVisitor typeMapVisitor : configuration.debugConfiguration().typeMapVisitors()) {
                 typeMapVisitor.visit(typeMap);
             }
 
             // the analyser context essentially stays the same: incremental analysis
-            AnalyserContext sourceContext = analyserContext.with(false);
+            AnalyserContext sourceContext = annotatedAPIContext.with(false);
             for (TypeCycle typeCycle : resolvedSourceTypes.typeCycles()) {
                 if (LOGGER.isDebugEnabled()) {
                     LOGGER.debug("Analysing primary type cycle:\n{}", typeCycle);
                 }
-                runAnalyzer(importantClasses, sourceContext, typeCycle);
+                runAnalyzer(sourceContext, typeCycle);
             }
         }
 
@@ -250,12 +249,8 @@ public class Parser {
         }
     }
 
-    private void runAnalyzer(ImportantClasses importantClasses, AnalyserContext analyserContext, TypeCycle typeCycle) {
-        PrimaryTypeAnalyser primaryTypeAnalyser = new PrimaryTypeAnalyserImpl(analyserContext, typeCycle,
-                configuration,
-                getTypeContext().getPrimitives(),
-                importantClasses,
-                getTypeContext().typeMap.getE2ImmuAnnotationExpressions());
+    private void runAnalyzer(AnalyserContext analyserContext, TypeCycle typeCycle) {
+        PrimaryTypeAnalyser primaryTypeAnalyser = new PrimaryTypeAnalyserImpl(analyserContext, typeCycle);
         try {
             primaryTypeAnalyser.analyse();
         } catch (RuntimeException rte) {
@@ -283,11 +278,6 @@ public class Parser {
             throw rte;
         }
         messages.addAll(primaryTypeAnalyser.getMessageStream());
-    }
-
-    private static boolean checkOnDuplicates(List<TypeInfo> types) {
-        Set<TypeInfo> set = new HashSet<>(types);
-        return types.size() == set.size();
     }
 
     public record ComposerData(Collection<TypeInfo> primaryTypes, TypeMap typeMap) {

@@ -17,7 +17,7 @@ package org.e2immu.analyser.analyser.impl;
 import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.analyser.check.CheckImmutable;
 import org.e2immu.analyser.analyser.check.CheckIndependent;
-import org.e2immu.analyser.analyser.nonanalyserimpl.ExpandableAnalyserContextImpl;
+import org.e2immu.analyser.analyser.nonanalyserimpl.LocalAnalyserContext;
 import org.e2immu.analyser.analysis.Analysis;
 import org.e2immu.analyser.analysis.impl.TypeAnalysisImpl;
 import org.e2immu.analyser.model.*;
@@ -62,7 +62,7 @@ public abstract class TypeAnalyserImpl extends AbstractAnalyser implements TypeA
                             TypeInfo primaryType,
                             AnalyserContext analyserContextInput,
                             Analysis.AnalysisMode analysisMode) {
-        super("Type " + typeInfo.simpleName, new ExpandableAnalyserContextImpl(analyserContextInput));
+        super("Type " + typeInfo.simpleName, new LocalAnalyserContext(analyserContextInput));
         this.typeInfo = typeInfo;
         this.primaryType = primaryType;
         typeInspection = typeInfo.typeInspection.get();

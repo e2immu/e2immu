@@ -15,13 +15,9 @@
 package org.e2immu.analyser.resolver.impl;
 
 import org.e2immu.analyser.analyser.*;
-import org.e2immu.analyser.analyser.impl.AggregatingTypeAnalyser;
-import org.e2immu.analyser.analyser.impl.ComputingTypeAnalyser;
-import org.e2immu.analyser.analyser.impl.ComputingFieldAnalyser;
-import org.e2immu.analyser.analyser.impl.MethodAnalyserFactory;
+import org.e2immu.analyser.analyser.impl.*;
 import org.e2immu.analyser.analysis.TypeAnalysis;
 import org.e2immu.analyser.analysis.impl.TypeAnalysisImpl;
-import org.e2immu.analyser.config.Configuration;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.resolver.AnalyserGenerator;
 import org.e2immu.analyser.util.ListUtil;
@@ -32,8 +28,8 @@ import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-public class DefaultAnalyserGeneratorImpl implements AnalyserGenerator {
-    private static final Logger LOGGER = LoggerFactory.getLogger(DefaultAnalyserGeneratorImpl.class);
+public class DefaultAnalyserGenerator implements AnalyserGenerator {
+    private static final Logger LOGGER = LoggerFactory.getLogger(DefaultAnalyserGenerator.class);
 
     public final Set<TypeInfo> primaryTypes;
     public final List<Analyser> analysers;
@@ -46,13 +42,14 @@ public class DefaultAnalyserGeneratorImpl implements AnalyserGenerator {
 
     // NOTE: we use LinkedHashMaps to preserve the sorting order
 
-    public DefaultAnalyserGeneratorImpl(List<SortedType> sortedTypes,
-                                        Configuration configuration,
-                                        AnalyserContext analyserContext) {
+    public DefaultAnalyserGenerator(List<SortedType> sortedTypes,
+                                    AnalyserContext analyserContext) {
         name = sortedTypes.stream()
                 .map(sortedType -> sortedType.primaryType().fullyQualifiedName)
                 .collect(Collectors.joining(","));
         primaryTypes = sortedTypes.stream().map(SortedType::primaryType).collect(Collectors.toUnmodifiableSet());
+
+        boolean inAnnotatedAPI = analyserContext.inAnnotatedAPIAnalysis();
 
         // do the types first, so we can pass on a TypeAnalysis objects
         Map<TypeInfo, TypeAnalyser> typeAnalysersBuilder = new LinkedHashMap<>();
@@ -60,10 +57,13 @@ public class DefaultAnalyserGeneratorImpl implements AnalyserGenerator {
                 sortedType.methodsFieldsSubTypes().forEach(mfs -> {
                     if (mfs instanceof TypeInfo typeInfo && !typeInfo.typeAnalysis.isSet()) {
                         TypeAnalyser typeAnalyser;
-                        if (typeInfo.isAggregated()) {
-                            typeAnalyser = new AggregatingTypeAnalyser(typeInfo, sortedType.primaryType(), analyserContext);
+                        TypeInfo primaryType = sortedType.primaryType();
+                        if (inAnnotatedAPI || typeInfo.isInterface(analyserContext)) {
+                            typeAnalyser = new ShallowTypeAnalyser(typeInfo, primaryType, analyserContext);
+                        } else if (typeInfo.isAggregated()) {
+                            typeAnalyser = new AggregatingTypeAnalyser(typeInfo, primaryType, analyserContext);
                         } else {
-                            typeAnalyser = new ComputingTypeAnalyser(typeInfo, sortedType.primaryType(), analyserContext);
+                            typeAnalyser = new ComputingTypeAnalyser(typeInfo, primaryType, analyserContext);
                         }
                         typeAnalysersBuilder.put(typeInfo, typeAnalyser);
                     }
@@ -83,7 +83,7 @@ public class DefaultAnalyserGeneratorImpl implements AnalyserGenerator {
                     assert typeAnalyser != null : "Cannot find type analyser for " + methodInfo.typeInfo;
                     TypeAnalysis typeAnalysis = typeAnalyser.getTypeAnalysis();
                     MethodAnalyser methodAnalyser = MethodAnalyserFactory.create(methodInfo, typeAnalysis,
-                            false, true, analyserContext);
+                            false, true, analyserContext, inAnnotatedAPI);
                     for (ParameterAnalyser parameterAnalyser : methodAnalyser.getParameterAnalysers()) {
                         parameterAnalysersBuilder.put(parameterAnalyser.getParameterInfo(), parameterAnalyser);
                     }
@@ -108,8 +108,14 @@ public class DefaultAnalyserGeneratorImpl implements AnalyserGenerator {
                     if (mfs instanceof FieldInfo fieldInfo) {
                         if (!fieldInfo.fieldAnalysis.isSet()) {
                             TypeAnalysis ownerTypeAnalysis = typeAnalysers.get(fieldInfo.owner).getTypeAnalysis();
-                            analyser = new ComputingFieldAnalyser(fieldInfo, sortedType.primaryType(), ownerTypeAnalysis,
-                                    analyserContext);
+                            TypeInfo primaryType = sortedType.primaryType();
+                            if (inAnnotatedAPI || fieldInfo.owner.isInterface(analyserContext)) {
+                                analyser = new ShallowFieldAnalyser(fieldInfo, primaryType, ownerTypeAnalysis,
+                                        analyserContext);
+                            } else {
+                                analyser = new ComputingFieldAnalyser(fieldInfo, primaryType, ownerTypeAnalysis,
+                                        analyserContext);
+                            }
                             fieldAnalysersBuilder.put(fieldInfo, (FieldAnalyser) analyser);
                         } else {
                             analyser = null;
@@ -136,13 +142,18 @@ public class DefaultAnalyserGeneratorImpl implements AnalyserGenerator {
             else throw new UnsupportedOperationException();
         });
 
-        boolean forceAlphabeticAnalysis = configuration.analyserConfiguration().forceAlphabeticAnalysisInPrimaryType();
+        boolean forceAlphabeticAnalysis = analyserContext.getConfiguration().analyserConfiguration()
+                .forceAlphabeticAnalysisInPrimaryType();
         if (forceAlphabeticAnalysis) {
             methodAnalysersInOrder.sort(Comparator.comparing(ma -> ma.getMethodInfo().fullyQualifiedName));
             typeAnalysersInOrder.sort(Comparator.comparing(ta -> ta.getTypeInfo().fullyQualifiedName));
             fieldAnalysersInOrder.sort(Comparator.comparing(fa -> fa.getFieldInfo().fullyQualifiedName));
         }
-        analysers = ListUtil.immutableConcat(methodAnalysersInOrder, fieldAnalysersInOrder, typeAnalysersInOrder);
+        if(inAnnotatedAPI) {
+            analysers = ListUtil.immutableConcat(typeAnalysersInOrder, methodAnalysersInOrder, fieldAnalysersInOrder);
+        } else {
+            analysers = ListUtil.immutableConcat(methodAnalysersInOrder, fieldAnalysersInOrder, typeAnalysersInOrder);
+        }
         assert analysers.size() == new HashSet<>(analysers).size() : "There are be duplicates among the analysers?";
     }
 

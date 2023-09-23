@@ -17,29 +17,23 @@ package org.e2immu.analyser.analyser.impl;
 import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.analyser.util.AnalyserResult;
 import org.e2immu.analyser.analysis.Analysis;
-import org.e2immu.analyser.analysis.FieldAnalysis;
 import org.e2immu.analyser.analysis.TypeAnalysis;
 import org.e2immu.analyser.analysis.impl.FieldAnalysisImpl;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.Instance;
-import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
-import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.parser.Message;
-import org.e2immu.analyser.parser.Messages;
-import org.e2immu.analyser.visitor.TypeAnalyserVisitor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Map;
-import java.util.stream.Stream;
 
 public class ShallowFieldAnalyser extends FieldAnalyserImpl implements FieldAnalyser {
     private static final Logger LOGGER = LoggerFactory.getLogger(ShallowFieldAnalyser.class);
 
 
-    public ShallowFieldAnalyser(TypeInfo primaryType,
+    public ShallowFieldAnalyser(FieldInfo fieldInfo, TypeInfo primaryType,
                                 TypeAnalysis ownerTypeAnalysis,
-                                FieldInfo fieldInfo, AnalyserContext analyserContext) {
+                                AnalyserContext analyserContext) {
         super(analyserContext, primaryType, ownerTypeAnalysis, fieldInfo);
     }
 

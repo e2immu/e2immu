@@ -15,15 +15,11 @@
 package org.e2immu.analyser.resolver.impl;
 
 import org.e2immu.analyser.analyser.AnalyserContext;
-import org.e2immu.analyser.analyser.MethodAnalyser;
-import org.e2immu.analyser.config.Configuration;
-import org.e2immu.analyser.model.MethodInfo;
 import org.e2immu.analyser.model.TypeInfo;
 import org.e2immu.analyser.resolver.AnalyserGenerator;
 import org.e2immu.analyser.resolver.TypeCycle;
 
 import java.util.List;
-import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -35,9 +31,8 @@ public class ListOfSortedTypes implements TypeCycle {
     }
 
     @Override
-    public AnalyserGenerator createAnalyserGeneratorAndGenerateAnalysers(Configuration configuration,
-                                                                         AnalyserContext analyserContext) {
-        return new DefaultAnalyserGeneratorImpl(sortedTypes, configuration, analyserContext);
+    public AnalyserGenerator createAnalyserGeneratorAndGenerateAnalysers(AnalyserContext analyserContext) {
+        return new DefaultAnalyserGenerator(sortedTypes, analyserContext);
     }
 
     @Override

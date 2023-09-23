@@ -18,13 +18,12 @@ import org.e2immu.analyser.analyser.AnalyserContext;
 import org.e2immu.analyser.analyser.AnnotationParameters;
 import org.e2immu.analyser.analyser.MethodAnalyser;
 import org.e2immu.analyser.analyser.ParameterAnalyser;
-import org.e2immu.analyser.analyser.nonanalyserimpl.ExpandableAnalyserContextImpl;
+import org.e2immu.analyser.analyser.nonanalyserimpl.LocalAnalyserContext;
 import org.e2immu.analyser.analysis.Analysis;
 import org.e2immu.analyser.analysis.ParameterAnalysis;
 import org.e2immu.analyser.analysis.TypeAnalysis;
 import org.e2immu.analyser.analysis.impl.MethodAnalysisImpl;
 import org.e2immu.analyser.analysis.impl.ParameterAnalysisImpl;
-import org.e2immu.analyser.analysis.impl.TypeAnalysisImpl;
 import org.e2immu.analyser.model.*;
 
 import java.util.HashMap;
@@ -36,12 +35,13 @@ public class MethodAnalyserFactory {
                                         TypeAnalysis typeAnalysis,
                                         boolean isSAM,
                                         boolean allowComputed,
-                                        AnalyserContext analyserContextInput) {
+                                        AnalyserContext analyserContextInput,
+                                        boolean inAnnotatedAPI) {
         TypeInspection typeInspection = analyserContextInput.getTypeInspection(methodInfo.typeInfo);
         TypeResolution typeResolution = methodInfo.typeInfo.typeResolution.get();
         MethodInspection methodInspection = methodInfo.methodInspection.get();
         Analysis.AnalysisMode analysisMode = computeAnalysisMode(methodInspection, typeInspection, typeResolution,
-                allowComputed);
+                allowComputed, inAnnotatedAPI);
 
         return switch (analysisMode) {
             case CONTRACTED -> createShallowMethodAnalyser(methodInfo, typeAnalysis, analyserContextInput, true);
@@ -59,7 +59,7 @@ public class MethodAnalyserFactory {
                         parameterAnalyses, analyserContextInput);
             }
             case COMPUTED -> {
-                AnalyserContext analyserContext = new ExpandableAnalyserContextImpl(analyserContextInput);
+                AnalyserContext analyserContext = new LocalAnalyserContext(analyserContextInput);
                 List<? extends ParameterAnalyser> parameterAnalysers = methodInspection.getParameters().stream()
                         .map(parameterInfo -> new ComputedParameterAnalyser(analyserContext, parameterInfo)).toList();
                 List<ParameterAnalysis> parameterAnalyses = parameterAnalysers.stream()
@@ -101,7 +101,10 @@ public class MethodAnalyserFactory {
 
     private static Analysis.AnalysisMode computeAnalysisMode(MethodInspection methodInspection,
                                                              TypeInspection typeInspection,
-                                                             TypeResolution typeResolution, boolean allowComputed) {
+                                                             TypeResolution typeResolution,
+                                                             boolean allowComputed,
+                                                             boolean inAnnotatedAPI) {
+        if (inAnnotatedAPI) return Analysis.AnalysisMode.CONTRACTED;
         boolean isAbstract = (typeInspection.isInterface() || typeInspection.isAnnotation()) &&
                 !methodInspection.isDefault() && !methodInspection.isStatic() ||
                 methodInspection.isAbstract();

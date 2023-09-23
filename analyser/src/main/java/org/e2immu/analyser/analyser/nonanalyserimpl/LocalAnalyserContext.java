@@ -29,7 +29,7 @@ import org.e2immu.support.SetOnceMap;
 import java.util.Objects;
 import java.util.stream.Stream;
 
-public class ExpandableAnalyserContextImpl implements AnalyserContext {
+public class LocalAnalyserContext implements AnalyserContext {
 
     private final AnalyserContext parent;
     private final SetOnceMap<MethodInfo, MethodAnalyser> methodAnalysers;
@@ -43,32 +43,32 @@ public class ExpandableAnalyserContextImpl implements AnalyserContext {
     private final ImportantClasses importantClasses;
     private final E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions;
 
-    public ExpandableAnalyserContextImpl(AnalyserContext parent) {
+    public LocalAnalyserContext(AnalyserContext parent) {
         this(Objects.requireNonNull(parent),
                 parent.getPrimitives(), parent.getConfiguration(), parent.importantClasses(),
                 parent.getE2ImmuAnnotationExpressions(), parent.inAnnotatedAPIAnalysis(),
                 new SetOnceMap<>(), new SetOnceMap<>(), new SetOnceMap<>(), new SetOnceMap<>());
     }
 
-    public ExpandableAnalyserContextImpl(Primitives primitives,
-                                         Configuration configuration,
-                                         ImportantClasses importantClasses,
-                                         E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions,
-                                         boolean inAnnotatedAPIAnalysis) {
+    public LocalAnalyserContext(Primitives primitives,
+                                Configuration configuration,
+                                ImportantClasses importantClasses,
+                                E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions,
+                                boolean inAnnotatedAPIAnalysis) {
         this(null, primitives, configuration, importantClasses, e2ImmuAnnotationExpressions, inAnnotatedAPIAnalysis,
                 new SetOnceMap<>(), new SetOnceMap<>(), new SetOnceMap<>(), new SetOnceMap<>());
     }
 
-    private ExpandableAnalyserContextImpl(AnalyserContext parent,
-                                          Primitives primitives,
-                                          Configuration configuration,
-                                          ImportantClasses importantClasses,
-                                          E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions,
-                                          boolean inAnnotatedAPIAnalysis,
-                                          SetOnceMap<TypeInfo, TypeAnalyser> typeAnalysers,
-                                          SetOnceMap<MethodInfo, MethodAnalyser> methodAnalysers,
-                                          SetOnceMap<FieldInfo, FieldAnalyser> fieldAnalysers,
-                                          SetOnceMap<ParameterInfo, ParameterAnalyser> parameterAnalysers) {
+    private LocalAnalyserContext(AnalyserContext parent,
+                                 Primitives primitives,
+                                 Configuration configuration,
+                                 ImportantClasses importantClasses,
+                                 E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions,
+                                 boolean inAnnotatedAPIAnalysis,
+                                 SetOnceMap<TypeInfo, TypeAnalyser> typeAnalysers,
+                                 SetOnceMap<MethodInfo, MethodAnalyser> methodAnalysers,
+                                 SetOnceMap<FieldInfo, FieldAnalyser> fieldAnalysers,
+                                 SetOnceMap<ParameterInfo, ParameterAnalyser> parameterAnalysers) {
         this.parent = parent;
         this.primitives = primitives;
         this.configuration = configuration;
@@ -81,8 +81,8 @@ public class ExpandableAnalyserContextImpl implements AnalyserContext {
         this.parameterAnalysers = parameterAnalysers;
     }
 
-    public ExpandableAnalyserContextImpl with(boolean inAnnotatedAPIAnalysis) {
-        return new ExpandableAnalyserContextImpl(parent, primitives, configuration, importantClasses,
+    public LocalAnalyserContext with(boolean inAnnotatedAPIAnalysis) {
+        return new LocalAnalyserContext(parent, primitives, configuration, importantClasses,
                 e2ImmuAnnotationExpressions, inAnnotatedAPIAnalysis, typeAnalysers, methodAnalysers, fieldAnalysers,
                 parameterAnalysers);
     }
@@ -224,7 +224,7 @@ public class ExpandableAnalyserContextImpl implements AnalyserContext {
         });
     }
 
-    public void addAll(ExpandableAnalyserContextImpl previous) {
+    public void addAll(LocalAnalyserContext previous) {
         methodAnalysers.putAll(previous.methodAnalysers);
         typeAnalysers.putAll(previous.typeAnalysers);
         fieldAnalysers.putAll(previous.fieldAnalysers);

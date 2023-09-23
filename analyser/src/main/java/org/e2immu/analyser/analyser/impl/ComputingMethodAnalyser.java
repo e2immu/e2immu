@@ -18,7 +18,7 @@ import org.e2immu.analyser.analyser.Properties;
 import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.analyser.impl.util.BreakDelayLevel;
 import org.e2immu.analyser.analyser.nonanalyserimpl.AbstractEvaluationContextImpl;
-import org.e2immu.analyser.analyser.nonanalyserimpl.ExpandableAnalyserContextImpl;
+import org.e2immu.analyser.analyser.nonanalyserimpl.LocalAnalyserContext;
 import org.e2immu.analyser.analyser.statementanalyser.StatementAnalyserImpl;
 import org.e2immu.analyser.analyser.util.AnalyserResult;
 import org.e2immu.analyser.analyser.util.ComputeIndependent;
@@ -171,7 +171,7 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
 
     @Override
     public void receiveAdditionalTypeAnalysers(Collection<PrimaryTypeAnalyser> typeAnalysers) {
-        ExpandableAnalyserContextImpl expandable = (ExpandableAnalyserContextImpl) analyserContext;
+        LocalAnalyserContext expandable = (LocalAnalyserContext) analyserContext;
         typeAnalysers.forEach(expandable::addPrimaryTypeAnalyser);
     }
 

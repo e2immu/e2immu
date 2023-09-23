@@ -40,9 +40,7 @@ import java.util.stream.Stream;
  */
 public interface TypeCycle {
 
-    AnalyserGenerator createAnalyserGeneratorAndGenerateAnalysers
-            (Configuration configuration,
-             AnalyserContext analyserContext);
+    AnalyserGenerator createAnalyserGeneratorAndGenerateAnalysers(AnalyserContext analyserContext);
 
     Stream<TypeInfo> primaryTypeStream();
 }

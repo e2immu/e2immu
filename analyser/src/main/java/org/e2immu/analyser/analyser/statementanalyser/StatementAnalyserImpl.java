@@ -17,7 +17,7 @@ package org.e2immu.analyser.analyser.statementanalyser;
 import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.analyser.impl.PrimaryTypeAnalyserImpl;
 import org.e2immu.analyser.analyser.impl.util.BreakDelayLevel;
-import org.e2immu.analyser.analyser.nonanalyserimpl.ExpandableAnalyserContextImpl;
+import org.e2immu.analyser.analyser.nonanalyserimpl.LocalAnalyserContext;
 import org.e2immu.analyser.analyser.util.AnalyserResult;
 import org.e2immu.analyser.analyser.util.VariableAccessReport;
 import org.e2immu.analyser.analysis.FlowData;
@@ -68,7 +68,7 @@ public class StatementAnalyserImpl implements StatementAnalyser {
 
     public final StatementAnalysis statementAnalysis;
     private final MethodAnalyser myMethodAnalyser;
-    private final ExpandableAnalyserContextImpl analyserContext;
+    private final LocalAnalyserContext analyserContext;
     public final NavigationData<StatementAnalyser> navigationData = new NavigationData<>();
 
     // shared state over the different analysers
@@ -90,7 +90,7 @@ public class StatementAnalyserImpl implements StatementAnalyser {
                                   StatementAnalysis parent,
                                   String index,
                                   boolean inSyncBlock) {
-        this.analyserContext = new ExpandableAnalyserContextImpl(Objects.requireNonNull(analyserContext));
+        this.analyserContext = new LocalAnalyserContext(Objects.requireNonNull(analyserContext));
         this.myMethodAnalyser = Objects.requireNonNull(methodAnalyser);
         this.statementAnalysis = new StatementAnalysisImpl(analyserContext.getPrimitives(),
                 methodAnalyser.getMethodAnalysis(), statement, parent, index, inSyncBlock);
@@ -532,11 +532,7 @@ public class StatementAnalyserImpl implements StatementAnalyser {
                         // we'll use the default analyser generator here
                         ListOfSortedTypes listOfSortedTypes = new ListOfSortedTypes(List.of(sortedType));
                         PrimaryTypeAnalyser primaryTypeAnalyser = new PrimaryTypeAnalyserImpl(analyserContext,
-                                listOfSortedTypes,
-                                analyserContext.getConfiguration(),
-                                analyserContext.getPrimitives(),
-                                analyserContext.importantClasses(),
-                                analyserContext.getE2ImmuAnnotationExpressions());
+                                listOfSortedTypes);
                         primaryTypeAnalyser.initialize();
                         return primaryTypeAnalyser;
                     }).toList();
@@ -570,7 +566,7 @@ public class StatementAnalyserImpl implements StatementAnalyser {
     private void recursivelyAddPrimaryTypeAnalysersToAnalyserContext(List<PrimaryTypeAnalyser> analysers) {
         AnalyserContext context = analyserContext;
         while (context != null) {
-            if (context instanceof ExpandableAnalyserContextImpl expandable) {
+            if (context instanceof LocalAnalyserContext expandable) {
                 analysers.forEach(expandable::addPrimaryTypeAnalyser);
             }
             context = context.getParent();
