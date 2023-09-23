@@ -31,65 +31,19 @@ import java.util.stream.Stream;
 
 public class LocalAnalyserContext implements AnalyserContext {
 
-    private final AnalyserContext parent;
-    private final SetOnceMap<MethodInfo, MethodAnalyser> methodAnalysers;
-    private final SetOnceMap<TypeInfo, TypeAnalyser> typeAnalysers;
-    private final SetOnceMap<FieldInfo, FieldAnalyser> fieldAnalysers;
-    private final SetOnceMap<ParameterInfo, ParameterAnalyser> parameterAnalysers;
-
-    private final Primitives primitives;
-    private final boolean inAnnotatedAPIAnalysis;
-    private final Configuration configuration;
-    private final ImportantClasses importantClasses;
-    private final E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions;
+    public final AnalyserContext parent;
+    private final SetOnceMap<MethodInfo, MethodAnalyser> methodAnalysers = new SetOnceMap<>();
+    private final SetOnceMap<TypeInfo, TypeAnalyser> typeAnalysers = new SetOnceMap<>();
+    private final SetOnceMap<FieldInfo, FieldAnalyser> fieldAnalysers = new SetOnceMap<>();
+    private final SetOnceMap<ParameterInfo, ParameterAnalyser> parameterAnalysers = new SetOnceMap<>();
 
     public LocalAnalyserContext(AnalyserContext parent) {
-        this(Objects.requireNonNull(parent),
-                parent.getPrimitives(), parent.getConfiguration(), parent.importantClasses(),
-                parent.getE2ImmuAnnotationExpressions(), parent.inAnnotatedAPIAnalysis(),
-                new SetOnceMap<>(), new SetOnceMap<>(), new SetOnceMap<>(), new SetOnceMap<>());
-    }
-
-    public LocalAnalyserContext(Primitives primitives,
-                                Configuration configuration,
-                                ImportantClasses importantClasses,
-                                E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions,
-                                boolean inAnnotatedAPIAnalysis) {
-        this(null, primitives, configuration, importantClasses, e2ImmuAnnotationExpressions, inAnnotatedAPIAnalysis,
-                new SetOnceMap<>(), new SetOnceMap<>(), new SetOnceMap<>(), new SetOnceMap<>());
-    }
-
-    private LocalAnalyserContext(AnalyserContext parent,
-                                 Primitives primitives,
-                                 Configuration configuration,
-                                 ImportantClasses importantClasses,
-                                 E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions,
-                                 boolean inAnnotatedAPIAnalysis,
-                                 SetOnceMap<TypeInfo, TypeAnalyser> typeAnalysers,
-                                 SetOnceMap<MethodInfo, MethodAnalyser> methodAnalysers,
-                                 SetOnceMap<FieldInfo, FieldAnalyser> fieldAnalysers,
-                                 SetOnceMap<ParameterInfo, ParameterAnalyser> parameterAnalysers) {
-        this.parent = parent;
-        this.primitives = primitives;
-        this.configuration = configuration;
-        this.importantClasses = importantClasses;
-        this.e2ImmuAnnotationExpressions = e2ImmuAnnotationExpressions;
-        this.inAnnotatedAPIAnalysis = inAnnotatedAPIAnalysis;
-        this.typeAnalysers = typeAnalysers;
-        this.methodAnalysers = methodAnalysers;
-        this.fieldAnalysers = fieldAnalysers;
-        this.parameterAnalysers = parameterAnalysers;
-    }
-
-    public LocalAnalyserContext with(boolean inAnnotatedAPIAnalysis) {
-        return new LocalAnalyserContext(parent, primitives, configuration, importantClasses,
-                e2ImmuAnnotationExpressions, inAnnotatedAPIAnalysis, typeAnalysers, methodAnalysers, fieldAnalysers,
-                parameterAnalysers);
+        this.parent = Objects.requireNonNull(parent);
     }
 
     @Override
     public ImportantClasses importantClasses() {
-        return importantClasses;
+        return parent.importantClasses();
     }
 
     @Override
@@ -99,34 +53,33 @@ public class LocalAnalyserContext implements AnalyserContext {
 
     @Override
     public Primitives getPrimitives() {
-        return primitives;
+        return parent.getPrimitives();
     }
 
     @Override
     public Configuration getConfiguration() {
-        return configuration;
+        return parent.getConfiguration();
     }
 
     @Override
     public boolean inAnnotatedAPIAnalysis() {
-        return inAnnotatedAPIAnalysis;
+        return parent.inAnnotatedAPIAnalysis();
     }
 
     @Override
     public E2ImmuAnnotationExpressions getE2ImmuAnnotationExpressions() {
-        return e2ImmuAnnotationExpressions;
+        return parent.getE2ImmuAnnotationExpressions();
     }
 
     @Override
     public Stream<MethodAnalyser> methodAnalyserStream() {
-        if (parent == null) return methodAnalysers.valueStream();
         return Stream.concat(parent.methodAnalyserStream(), this.methodAnalysers.valueStream());
     }
 
     @Override
     public MethodAnalyser getMethodAnalyser(MethodInfo methodInfo) {
         MethodAnalyser ma = this.methodAnalysers.getOrDefaultNull(methodInfo);
-        if (ma == null && parent != null) {
+        if (ma == null) {
             return parent.getMethodAnalyser(methodInfo);
         }
         return ma;
@@ -136,14 +89,13 @@ public class LocalAnalyserContext implements AnalyserContext {
     public MethodAnalysis getMethodAnalysis(MethodInfo methodInfo) {
         MethodAnalyser ma = this.methodAnalysers.getOrDefaultNull(methodInfo);
         if (ma != null) return ma.getMethodAnalysis();
-        if (parent != null) return parent.getMethodAnalysis(methodInfo);
-        throw new UnsupportedOperationException("Cannot find method analysis of " + methodInfo.fullyQualifiedName);
+        return parent.getMethodAnalysis(methodInfo);
     }
 
     @Override
     public ParameterAnalyser getParameterAnalyser(ParameterInfo parameterInfo) {
         ParameterAnalyser ma = this.parameterAnalysers.getOrDefaultNull(parameterInfo);
-        if (ma == null && parent != null) {
+        if (ma == null) {
             return parent.getParameterAnalyser(parameterInfo);
         }
         return ma;
@@ -153,15 +105,13 @@ public class LocalAnalyserContext implements AnalyserContext {
     public ParameterAnalysis getParameterAnalysis(ParameterInfo parameterInfo) {
         ParameterAnalyser pa = this.parameterAnalysers.getOrDefaultNull(parameterInfo);
         if (pa != null) return pa.getParameterAnalysis();
-        MethodAnalysis methodAnalysis = getMethodAnalysis(parameterInfo.owner);
-        assert methodAnalysis != null : "Cannot find method analysis of " + parameterInfo.owner.fullyQualifiedName;
-        return methodAnalysis.getParameterAnalyses().get(parameterInfo.index);
+        return getMethodAnalysis(parameterInfo.owner).getParameterAnalyses().get(parameterInfo.index);
     }
 
     @Override
     public TypeAnalyser getTypeAnalyser(TypeInfo typeInfo) {
         TypeAnalyser ta = this.typeAnalysers.getOrDefaultNull(typeInfo);
-        if (ta == null && parent != null) {
+        if (ta == null) {
             return parent.getTypeAnalyser(typeInfo);
         }
         return ta;
@@ -170,7 +120,7 @@ public class LocalAnalyserContext implements AnalyserContext {
     @Override
     public FieldAnalyser getFieldAnalyser(FieldInfo fieldInfo) {
         FieldAnalyser fa = this.fieldAnalysers.getOrDefaultNull(fieldInfo);
-        if (fa == null && parent != null) {
+        if (fa == null) {
             return parent.getFieldAnalyser(fieldInfo);
         }
         return fa;
@@ -180,8 +130,7 @@ public class LocalAnalyserContext implements AnalyserContext {
     public TypeAnalysis getTypeAnalysis(TypeInfo typeInfo) {
         TypeAnalyser typeAnalyser = this.typeAnalysers.getOrDefaultNull(typeInfo);
         if (typeAnalyser != null) return typeAnalyser.getTypeAnalysis();
-        if (parent != null) return parent.getTypeAnalysis(typeInfo);
-        throw new UnsupportedOperationException("Cannot find type analysis of " + typeInfo.fullyQualifiedName);
+        return parent.getTypeAnalysis(typeInfo);
     }
 
     @Override
@@ -200,13 +149,11 @@ public class LocalAnalyserContext implements AnalyserContext {
     public FieldAnalysis getFieldAnalysis(FieldInfo fieldInfo) {
         FieldAnalyser fa = this.fieldAnalysers.getOrDefaultNull(fieldInfo);
         if (fa != null) return fa.getFieldAnalysis();
-        if (parent != null) return parent.getFieldAnalysis(fieldInfo);
-        throw new UnsupportedOperationException("Cannot find field analysis of " + fieldInfo.fullyQualifiedName);
+        return parent.getFieldAnalysis(fieldInfo);
     }
 
     @Override
     public MethodInspection.Builder newMethodInspectionBuilder(Identifier identifier, TypeInfo typeInfo, String methodName) {
-        assert parent != null : "Not for an ExpandableAnalyser to implement";
         return parent.newMethodInspectionBuilder(identifier, typeInfo, methodName);
     }
 

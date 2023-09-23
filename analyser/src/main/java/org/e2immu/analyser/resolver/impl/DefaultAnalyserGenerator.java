@@ -142,19 +142,40 @@ public class DefaultAnalyserGenerator implements AnalyserGenerator {
             else throw new UnsupportedOperationException();
         });
 
-        boolean forceAlphabeticAnalysis = analyserContext.getConfiguration().analyserConfiguration()
-                .forceAlphabeticAnalysisInPrimaryType();
-        if (forceAlphabeticAnalysis) {
-            methodAnalysersInOrder.sort(Comparator.comparing(ma -> ma.getMethodInfo().fullyQualifiedName));
-            typeAnalysersInOrder.sort(Comparator.comparing(ta -> ta.getTypeInfo().fullyQualifiedName));
-            fieldAnalysersInOrder.sort(Comparator.comparing(fa -> fa.getFieldInfo().fullyQualifiedName));
-        }
-        if(inAnnotatedAPI) {
+        if (inAnnotatedAPI) {
+            typeAnalysersInOrder.sort(DefaultAnalyserGenerator::annotatedAPITypeComparator);
             analysers = ListUtil.immutableConcat(typeAnalysersInOrder, methodAnalysersInOrder, fieldAnalysersInOrder);
         } else {
+            boolean forceAlphabeticAnalysis = analyserContext.getConfiguration().analyserConfiguration()
+                    .forceAlphabeticAnalysisInPrimaryType();
+            if (forceAlphabeticAnalysis) {
+                methodAnalysersInOrder.sort(Comparator.comparing(ma -> ma.getMethodInfo().fullyQualifiedName));
+                typeAnalysersInOrder.sort(Comparator.comparing(ta -> ta.getTypeInfo().fullyQualifiedName));
+                fieldAnalysersInOrder.sort(Comparator.comparing(fa -> fa.getFieldInfo().fullyQualifiedName));
+            }
             analysers = ListUtil.immutableConcat(methodAnalysersInOrder, fieldAnalysersInOrder, typeAnalysersInOrder);
         }
         assert analysers.size() == new HashSet<>(analysers).size() : "There are be duplicates among the analysers?";
+    }
+
+    private static int annotatedAPITypeComparator(TypeAnalyser ta1, TypeAnalyser ta2) {
+        TypeInfo t1 = ta1.getTypeInfo();
+        TypeInfo t2 = ta2.getTypeInfo();
+        if (t1 == t2 || t1.equals(t2)) throw new IllegalArgumentException();
+        if (t1.isJavaLangObject()) return -1;
+        if (t2.isJavaLangObject()) return 1;
+
+        Set<TypeInfo> super1 = t1.typeResolution.get(t1.fullyQualifiedName).superTypesExcludingJavaLangObject();
+        if (super1.contains(t2)) {
+            return 1;
+        }
+        Set<TypeInfo> super2 = t2.typeResolution.get(t2.fullyQualifiedName).superTypesExcludingJavaLangObject();
+        if (super2.contains(t1)) {
+            return -1;
+        }
+        int c = t1.fullyQualifiedName.compareTo(t2.fullyQualifiedName);
+        assert c != 0;
+        return c;
     }
 
     @Override

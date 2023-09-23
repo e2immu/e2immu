@@ -96,7 +96,7 @@ public class ShallowTypeAnalyser extends TypeAnalyserImpl {
     public AnalyserResult analyse(SharedState sharedState) {
         try {
             analyzer.accept(sharedState);
-            analyserResultBuilder.setAnalysisStatus(AnalysisStatus.DONE_ALL);
+            analyserResultBuilder.setAnalysisStatus(AnalysisStatus.DONE);
             return analyserResultBuilder.build();
         } catch (RuntimeException rte) {
             LOGGER.error("Caught exception in ShallowTypeAnalyser {}", typeInfo.fullyQualifiedName);
@@ -105,6 +105,7 @@ public class ShallowTypeAnalyser extends TypeAnalyserImpl {
     }
 
     private void hardCodedHc(SharedState sharedState) {
+        LOGGER.info("Hardcoded analyser on {}", typeInfo.fullyQualifiedName);
         typeAnalysis.setProperty(Property.INDEPENDENT, MultiLevel.INDEPENDENT_DV);
         typeAnalysis.setProperty(Property.IMMUTABLE, MultiLevel.EFFECTIVELY_IMMUTABLE_HC_DV);
         typeAnalysis.setProperty(Property.CONTAINER, MultiLevel.CONTAINER_DV);
@@ -112,6 +113,7 @@ public class ShallowTypeAnalyser extends TypeAnalyserImpl {
     }
 
     private void hardCoded(SharedState sharedState) {
+        LOGGER.info("Hardcoded analyser on {}", typeInfo.fullyQualifiedName);
         typeAnalysis.setProperty(Property.INDEPENDENT, MultiLevel.INDEPENDENT_DV);
         typeAnalysis.setProperty(Property.IMMUTABLE, MultiLevel.EFFECTIVELY_IMMUTABLE_DV);
         typeAnalysis.setProperty(Property.CONTAINER, MultiLevel.CONTAINER_DV);
@@ -119,6 +121,7 @@ public class ShallowTypeAnalyser extends TypeAnalyserImpl {
     }
 
     private void shallowAnalyzer(SharedState sharedState) {
+        LOGGER.info("Shallow type analyser on {}", typeInfo.fullyQualifiedName);
         TypeInspection typeInspection = typeInfo.typeInspection.get();
         Analyser.AnalyserIdentification identification = typeInfo.isAbstract()
                 ? Analyser.AnalyserIdentification.ABSTRACT_TYPE
@@ -149,7 +152,7 @@ public class ShallowTypeAnalyser extends TypeAnalyserImpl {
         SetOfTypes hiddenContentTypes = new SetOfTypes(typeParametersAsParameterizedTypes);
         typeAnalysis.setHiddenContentTypes(hiddenContentTypes);
 
-        ensureImmutableAndContainerInShallowTypeAnalysis(typeAnalysis);
+        ensureImmutableAndContainer();
         Message message = simpleComputeIndependent(analyserContext, typeAnalysis,
                 m -> m.methodInspection.get().isPubliclyAccessible());
         if (message != null) {
@@ -158,14 +161,14 @@ public class ShallowTypeAnalyser extends TypeAnalyserImpl {
         computeImmutableDeterminedByTypeParameters(typeInspection, typeAnalysis);
     }
 
-    private void ensureImmutableAndContainerInShallowTypeAnalysis(TypeAnalysisImpl.Builder builder) {
-        DV immutable = builder.getPropertyFromMapDelayWhenAbsent(Property.IMMUTABLE);
+    private void ensureImmutableAndContainer() {
+        DV immutable = typeAnalysis.getPropertyFromMapDelayWhenAbsent(Property.IMMUTABLE);
         if (immutable.isDelayed()) {
-            builder.setProperty(Property.IMMUTABLE, MultiLevel.MUTABLE_DV);
+            typeAnalysis.setProperty(Property.IMMUTABLE, MultiLevel.MUTABLE_DV);
         }
-        DV container = builder.getPropertyFromMapDelayWhenAbsent(Property.CONTAINER);
+        DV container = typeAnalysis.getPropertyFromMapDelayWhenAbsent(Property.CONTAINER);
         if (container.isDelayed()) {
-            builder.setProperty(Property.CONTAINER, MultiLevel.NOT_CONTAINER_DV);
+            typeAnalysis.setProperty(Property.CONTAINER, MultiLevel.NOT_CONTAINER_DV);
         }
     }
 

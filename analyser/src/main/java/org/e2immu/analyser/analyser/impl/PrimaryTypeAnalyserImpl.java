@@ -18,7 +18,7 @@ import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.analyser.impl.util.BreakDelayLevel;
 import org.e2immu.analyser.analyser.nonanalyserimpl.GlobalAnalyserContext;
 import org.e2immu.analyser.analyser.util.AnalyserResult;
-import org.e2immu.analyser.analysis.Analysis;
+import org.e2immu.analyser.analysis.*;
 import org.e2immu.analyser.config.Configuration;
 import org.e2immu.analyser.inspector.impl.MethodInspectionImpl;
 import org.e2immu.analyser.model.*;
@@ -274,7 +274,7 @@ public class PrimaryTypeAnalyserImpl implements PrimaryTypeAnalyser {
     @Override
     public void write() {
         analysers.forEach(Analyser::write);
-        if(parent instanceof GlobalAnalyserContext globalAnalyserContext) {
+        if (parent instanceof GlobalAnalyserContext globalAnalyserContext) {
             analysers.forEach(a -> globalAnalyserContext.write(a.getAnalysis()));
         }
     }
@@ -346,6 +346,30 @@ public class PrimaryTypeAnalyserImpl implements PrimaryTypeAnalyser {
             return parent.getParameterAnalyser(parameterInfo);
         }
         return parameterAnalyser;
+    }
+
+    @Override
+    public ParameterAnalysis getParameterAnalysis(ParameterInfo parameterInfo) {
+        ParameterAnalyser pa = parameterAnalysers.get(parameterInfo);
+        return pa != null ? pa.getParameterAnalysis() : parent.getParameterAnalysis(parameterInfo);
+    }
+
+    @Override
+    public FieldAnalysis getFieldAnalysis(FieldInfo fieldInfo) {
+        FieldAnalyser fieldAnalyser = fieldAnalysers.get(fieldInfo);
+        return fieldAnalyser != null ? fieldAnalyser.getFieldAnalysis() : parent.getFieldAnalysis(fieldInfo);
+    }
+
+    @Override
+    public TypeAnalysis getTypeAnalysis(TypeInfo typeInfo) {
+        TypeAnalyser typeAnalyser = typeAnalysers.get(typeInfo);
+        return typeAnalyser != null ? typeAnalyser.getTypeAnalysis() : parent.getTypeAnalysis(typeInfo);
+    }
+
+    @Override
+    public MethodAnalysis getMethodAnalysis(MethodInfo methodInfo) {
+        MethodAnalyser methodAnalyser = methodAnalysers.get(methodInfo);
+        return methodAnalyser != null ? methodAnalyser.getMethodAnalysis() : parent.getMethodAnalysis(methodInfo);
     }
 
     @Override

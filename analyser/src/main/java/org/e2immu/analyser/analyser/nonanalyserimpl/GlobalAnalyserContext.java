@@ -23,9 +23,6 @@ import org.e2immu.analyser.parser.ImportantClasses;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.support.SetOnceMap;
 
-import java.util.Objects;
-import java.util.stream.Stream;
-
 public class GlobalAnalyserContext implements AnalyserContext {
 
     private final SetOnceMap<MethodInfo, MethodAnalysis> methodAnalyses;
@@ -101,38 +98,13 @@ public class GlobalAnalyserContext implements AnalyserContext {
     }
 
     @Override
-    public Stream<MethodAnalyser> methodAnalyserStream() {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public MethodAnalyser getMethodAnalyser(MethodInfo methodInfo) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
     public MethodAnalysis getMethodAnalysis(MethodInfo methodInfo) {
         return methodAnalyses.get(methodInfo);
     }
 
     @Override
-    public ParameterAnalyser getParameterAnalyser(ParameterInfo parameterInfo) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
     public ParameterAnalysis getParameterAnalysis(ParameterInfo parameterInfo) {
         return parameterAnalyses.get(parameterInfo);
-    }
-
-    @Override
-    public TypeAnalyser getTypeAnalyser(TypeInfo typeInfo) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public FieldAnalyser getFieldAnalyser(FieldInfo fieldInfo) {
-        throw new UnsupportedOperationException();
     }
 
     @Override
@@ -143,11 +115,6 @@ public class GlobalAnalyserContext implements AnalyserContext {
     @Override
     public TypeAnalysis getTypeAnalysisNullWhenAbsent(TypeInfo typeInfo) {
         return typeAnalyses.getOrDefaultNull(typeInfo);
-    }
-
-    @Override
-    public Stream<FieldAnalyser> fieldAnalyserStream() {
-        throw new UnsupportedOperationException();
     }
 
     @Override

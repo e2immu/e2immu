@@ -19,12 +19,14 @@ import org.e2immu.analyser.analyser.util.AnalyserResult;
 import org.e2immu.analyser.analysis.Analysis;
 import org.e2immu.analyser.analysis.TypeAnalysis;
 import org.e2immu.analyser.analysis.impl.FieldAnalysisImpl;
+import org.e2immu.analyser.analysis.impl.ValueAndPropertyProxy;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.Instance;
 import org.e2immu.analyser.parser.Message;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.List;
 import java.util.Map;
 
 public class ShallowFieldAnalyser extends FieldAnalyserImpl implements FieldAnalyser {
@@ -68,11 +70,7 @@ public class ShallowFieldAnalyser extends FieldAnalyserImpl implements FieldAnal
     }
 
     private void mainAnalyser() {
-        FieldAnalysisImpl.Builder fieldAnalysisBuilder = new FieldAnalysisImpl.Builder(analyserContext.getPrimitives(),
-                AnalysisProvider.DEFAULT_PROVIDER,
-                fieldInfo, analyserContext.getTypeAnalysis(fieldInfo.owner));
-
-        analyserResultBuilder.addMessages(fieldAnalysisBuilder
+        analyserResultBuilder.addMessages(fieldAnalysis
                 .fromAnnotationsIntoProperties(Analyser.AnalyserIdentification.FIELD, true,
                         fieldInfo.fieldInspection.get().getAnnotations(),
                         analyserContext.getE2ImmuAnnotationExpressions()));
@@ -82,53 +80,53 @@ public class ShallowFieldAnalyser extends FieldAnalyserImpl implements FieldAnal
 
         boolean enumField = typeIsEnum && fieldInspection.isSynthetic();
 
-        if (!fieldAnalysisBuilder.properties.isDone(Property.FINAL)) {
+        if (!fieldAnalysis.properties.isDone(Property.FINAL)) {
             // the following code is here to save some @Final annotations in annotated APIs where there already is a `final` keyword.
-            fieldAnalysisBuilder.setProperty(Property.FINAL, DV.fromBoolDv(fieldInfo.isExplicitlyFinal() || enumField));
+            fieldAnalysis.setProperty(Property.FINAL, DV.fromBoolDv(fieldInfo.isExplicitlyFinal() || enumField));
         }
 
         // unless annotated with something heavier, ...
         DV notNull;
-        if (!fieldAnalysisBuilder.properties.isDone(Property.EXTERNAL_NOT_NULL)) {
+        if (!fieldAnalysis.properties.isDone(Property.EXTERNAL_NOT_NULL)) {
             notNull = enumField ? MultiLevel.EFFECTIVELY_NOT_NULL_DV : AnalysisProvider.defaultNotNull(fieldInfo.type);
-            fieldAnalysisBuilder.setProperty(Property.EXTERNAL_NOT_NULL, notNull);
+            fieldAnalysis.setProperty(Property.EXTERNAL_NOT_NULL, notNull);
         } else {
-            notNull = fieldAnalysisBuilder.getPropertyFromMapNeverDelay(Property.EXTERNAL_NOT_NULL);
+            notNull = fieldAnalysis.getPropertyFromMapNeverDelay(Property.EXTERNAL_NOT_NULL);
         }
 
         DV typeIsContainer;
-        if (!fieldAnalysisBuilder.properties.isDone(Property.CONTAINER)) {
-            if (fieldAnalysisBuilder.bestType == null) {
+        if (!fieldAnalysis.properties.isDone(Property.CONTAINER)) {
+            if (fieldAnalysis.bestType == null) {
                 typeIsContainer = MultiLevel.CONTAINER_DV;
             } else {
-                TypeAnalysis typeAnalysis = analyserContext.getTypeAnalysisNullWhenAbsent(fieldAnalysisBuilder.bestType);
+                TypeAnalysis typeAnalysis = analyserContext.getTypeAnalysisNullWhenAbsent(fieldAnalysis.bestType);
                 if (typeAnalysis != null) {
                     typeIsContainer = typeAnalysis.getProperty(Property.CONTAINER);
                 } else {
                     typeIsContainer = Property.CONTAINER.falseDv;
                     if (fieldInfo.fieldInspection.get().isPublic()) {
                         Message m = Message.newMessage(fieldInfo.newLocation(), Message.Label.TYPE_ANALYSIS_NOT_AVAILABLE,
-                                fieldAnalysisBuilder.bestType.fullyQualifiedName);
+                                fieldAnalysis.bestType.fullyQualifiedName);
                         analyserResultBuilder.add(m);
                     }
                 }
             }
-            fieldAnalysisBuilder.setProperty(Property.CONTAINER, typeIsContainer);
+            fieldAnalysis.setProperty(Property.CONTAINER, typeIsContainer);
         } else {
-            typeIsContainer = fieldAnalysisBuilder.properties.getOrDefaultNull(Property.CONTAINER);
+            typeIsContainer = fieldAnalysis.properties.getOrDefaultNull(Property.CONTAINER);
         }
-        if (!fieldAnalysisBuilder.properties.isDone(Property.CONTAINER_RESTRICTION)) {
-            fieldAnalysisBuilder.setProperty(Property.CONTAINER_RESTRICTION, Property.CONTAINER_RESTRICTION.falseDv);
+        if (!fieldAnalysis.properties.isDone(Property.CONTAINER_RESTRICTION)) {
+            fieldAnalysis.setProperty(Property.CONTAINER_RESTRICTION, Property.CONTAINER_RESTRICTION.falseDv);
         }
 
-        DV annotatedImmutable = fieldAnalysisBuilder.getPropertyFromMapDelayWhenAbsent(Property.IMMUTABLE);
+        DV annotatedImmutable = fieldAnalysis.getPropertyFromMapDelayWhenAbsent(Property.IMMUTABLE);
         DV formallyImmutable = analyserContext.typeImmutable(fieldInfo.type);
         DV immutable = MultiLevel.MUTABLE_DV.maxIgnoreDelay(annotatedImmutable.maxIgnoreDelay(formallyImmutable));
-        fieldAnalysisBuilder.setProperty(Property.EXTERNAL_IMMUTABLE, immutable);
-        DV annotatedIndependent = fieldAnalysisBuilder.getPropertyFromMapDelayWhenAbsent(Property.INDEPENDENT);
+        fieldAnalysis.setProperty(Property.EXTERNAL_IMMUTABLE, immutable);
+        DV annotatedIndependent = fieldAnalysis.getPropertyFromMapDelayWhenAbsent(Property.INDEPENDENT);
         DV formallyIndependent = analyserContext.typeIndependent(fieldInfo.type);
         DV independent = MultiLevel.DEPENDENT_DV.maxIgnoreDelay(annotatedIndependent.maxIgnoreDelay(formallyIndependent));
-        DV ignoreMods = fieldAnalysisBuilder.getPropertyFromMapNeverDelay(Property.IGNORE_MODIFICATIONS);
+        DV ignoreMods = fieldAnalysis.getPropertyFromMapNeverDelay(Property.IGNORE_MODIFICATIONS);
 
         Properties properties = Properties.of(Map.of(Property.NOT_NULL_EXPRESSION, notNull,
                 Property.IMMUTABLE, immutable, Property.INDEPENDENT, independent, Property.CONTAINER, typeIsContainer,
@@ -136,7 +134,7 @@ public class ShallowFieldAnalyser extends FieldAnalyserImpl implements FieldAnal
 
         DV constant;
         Expression value;
-        if (fieldAnalysisBuilder.getProperty(Property.FINAL).valueIsTrue()
+        if (fieldAnalysis.getProperty(Property.FINAL).valueIsTrue()
                 && fieldInspection.fieldInitialiserIsSet()) {
             Expression initialiser = fieldInspection.getFieldInitialiser().initialiser().unwrapIfConstant();
             if (initialiser.isConstant()) {
@@ -150,9 +148,13 @@ public class ShallowFieldAnalyser extends FieldAnalyserImpl implements FieldAnal
             value = Instance.forField(fieldInfo, null, properties);
             constant = DV.FALSE_DV;
         }
-        fieldAnalysisBuilder.setInitialiserValue(value);
-        fieldAnalysisBuilder.setProperty(Property.CONSTANT, constant);
-        fieldAnalysisBuilder.setValue(value);
+        fieldAnalysis.setInitialiserValue(value);
+        fieldAnalysis.setProperty(Property.CONSTANT, constant);
+        fieldAnalysis.setValue(value);
+        ValueAndPropertyProxy vap = new ValueAndPropertyProxy.ProxyData(value, properties, LinkedVariables.EMPTY,
+                ValueAndPropertyProxy.Origin.INITIALISER);
+        fieldAnalysis.setValues(List.of(vap), CausesOfDelay.EMPTY);
+        fieldAnalysis.setLinkedVariables(LinkedVariables.EMPTY);
     }
 
     @Override

@@ -57,27 +57,27 @@ public interface AnalyserContext extends AnalysisProvider, InspectionProvider {
     }
 
     default Stream<MethodAnalyser> methodAnalyserStream() {
-        return null;
+        throw new UnsupportedOperationException();
     }
 
     default MethodAnalyser getMethodAnalyser(MethodInfo methodInfo) {
-        return null;
+        throw new UnsupportedOperationException();
     }
 
     default FieldAnalyser getFieldAnalyser(FieldInfo fieldInfo) {
-        return null;
+        throw new UnsupportedOperationException();
     }
 
     default Stream<FieldAnalyser> fieldAnalyserStream() {
-        return null;
+        throw new UnsupportedOperationException();
     }
 
     default TypeAnalyser getTypeAnalyser(TypeInfo typeInfo) {
-        return null;
+        throw new UnsupportedOperationException();
     }
 
     default ParameterAnalyser getParameterAnalyser(ParameterInfo parameterInfo) {
-        return null;
+        throw new UnsupportedOperationException();
     }
 
     default AnalyserContext getParent() {
@@ -85,73 +85,31 @@ public interface AnalyserContext extends AnalysisProvider, InspectionProvider {
     }
 
     default FieldAnalysis getFieldAnalysis(FieldInfo fieldInfo) {
-        FieldAnalyser fieldAnalyser = getFieldAnalyser(fieldInfo);
-        if (fieldAnalyser == null) {
-            AnalyserContext parent = getParent();
-            if (parent != null) return parent.getFieldAnalysis(fieldInfo);
-            return fieldInfo.fieldAnalysis.get(fieldInfo.fullyQualifiedName());
-        }
-        return fieldAnalyser.getFieldAnalysis();
+        return fieldInfo.fieldAnalysis.get(fieldInfo.fullyQualifiedName);
     }
 
     default ParameterAnalysis getParameterAnalysis(ParameterInfo parameterInfo) {
-        if (parameterInfo.parameterAnalysis.isSet()) return parameterInfo.parameterAnalysis.get();
-        ParameterAnalyser parameterAnalyser = getParameterAnalyser(parameterInfo);
-        if (parameterAnalyser != null) {
-            return parameterAnalyser.getParameterAnalysis();
-        }
-        MethodAnalysis methodAnalysis = getMethodAnalysis(parameterInfo.owner);
-        if (methodAnalysis != null) {
-            return methodAnalysis.getParameterAnalyses().get(parameterInfo.index);
-        }
-        AnalyserContext parent = getParent();
-        if (parent != null) return parent.getParameterAnalysis(parameterInfo);
-
-        throw new UnsupportedOperationException("Parameter analysis of " + parameterInfo.fullyQualifiedName() + " not yet set");
+        return parameterInfo.parameterAnalysis.get(parameterInfo.fullyQualifiedName);
     }
 
     default TypeAnalysis getTypeAnalysis(TypeInfo typeInfo) {
-        TypeAnalyser typeAnalyser = getTypeAnalyser(typeInfo);
-        if (typeAnalyser == null) {
-            AnalyserContext parent = getParent();
-            if (parent != null) return parent.getTypeAnalysis(typeInfo);
-            return typeInfo.typeAnalysis.get(typeInfo.fullyQualifiedName);
-        }
-        return typeAnalyser.getTypeAnalysis();
+        return typeInfo.typeAnalysis.get(typeInfo.fullyQualifiedName);
     }
 
     default TypeAnalysis getTypeAnalysisNullWhenAbsent(TypeInfo typeInfo) {
-        TypeAnalyser typeAnalyser = getTypeAnalyser(typeInfo);
-        if (typeAnalyser == null) {
-            AnalyserContext parent = getParent();
-            if (parent != null) return parent.getTypeAnalysisNullWhenAbsent(typeInfo);
-            return typeInfo.typeAnalysis.getOrDefaultNull();
-        }
-        return typeAnalyser.getTypeAnalysis();
+        return typeInfo.typeAnalysis.getOrDefaultNull();
     }
 
     default MethodAnalysis getMethodAnalysis(MethodInfo methodInfo) {
-        MethodAnalyser methodAnalyser = getMethodAnalyser(methodInfo);
-        if (methodAnalyser == null) {
-            AnalyserContext parent = getParent();
-            if (parent != null) return parent.getMethodAnalysis(methodInfo);
-            return methodInfo.methodAnalysis.get(methodInfo.fullyQualifiedName);
-        }
-        return methodAnalyser.getMethodAnalysis();
+        return methodInfo.methodAnalysis.get(methodInfo.fullyQualifiedName);
     }
 
     default MethodAnalysis getMethodAnalysisNullWhenAbsent(MethodInfo methodInfo) {
-        MethodAnalyser methodAnalyser = getMethodAnalyser(methodInfo);
-        if (methodAnalyser == null) {
-            AnalyserContext parent = getParent();
-            if (parent != null) return parent.getMethodAnalysisNullWhenAbsent(methodInfo);
-            return methodInfo.methodAnalysis.getOrDefaultNull();
-        }
-        return methodAnalyser.getMethodAnalysis();
+        return methodInfo.methodAnalysis.getOrDefaultNull();
     }
 
     default FieldInspection getFieldInspection(FieldInfo fieldInfo) {
-        return fieldInfo.fieldInspection.get();
+        return fieldInfo.fieldInspection.get(fieldInfo.fullyQualifiedName);
     }
 
     default TypeInspection getTypeInspection(TypeInfo typeInfo) {
