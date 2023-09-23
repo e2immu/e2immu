@@ -45,12 +45,15 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import static org.e2immu.analyser.analysis.Analysis.AnalysisMode.CONTRACTED;
+
 // field and types have been done already!
 public class ShallowMethodAnalyser extends MethodAnalyserImpl {
     private static final Logger LOGGER = LoggerFactory.getLogger(ShallowMethodAnalyser.class);
 
     private static final Set<String> EXCEPTIONS_TO_CONTAINER = Set.of("java.util.Collection.toArray(T[])");
     private final boolean enableVisitors;
+    private final Function<SharedState, AnalyserResult> analyser;
 
     public ShallowMethodAnalyser(MethodInfo methodInfo,
                                  MethodAnalysisImpl.Builder methodAnalysis,
@@ -59,6 +62,13 @@ public class ShallowMethodAnalyser extends MethodAnalyserImpl {
                                  boolean enableVisitors) {
         super(methodInfo, methodAnalysis, List.of(), parameterAnalyses, Map.of(), false, analyserContext);
         this.enableVisitors = enableVisitors;
+        if (TypeInfo.IS_FACT_FQN.equals(methodInfo.fullyQualifiedName)) {
+            analyser = this::analyseIsFact;
+        } else if (TypeInfo.IS_KNOWN_FQN.equals(methodInfo.fullyQualifiedName)) {
+            analyser = this::analyseIsKnown;
+        } else {
+            analyser = this::internalAnalyse;
+        }
     }
 
     @Override
@@ -73,12 +83,112 @@ public class ShallowMethodAnalyser extends MethodAnalyserImpl {
 
     @Override
     public AnalyserResult analyse(SharedState sharedState) {
+        return analyser.apply(sharedState);
+    }
+
+    private AnalyserResult internalAnalyse(SharedState sharedState) {
         try {
-            return internalAnalyse(sharedState.iteration());
+            AnalysisStatus combined = AnalysisStatus.DONE;
+            for (Map.Entry<CompanionMethodName, MethodInfo> e : methodInfo.methodInspection.get().getCompanionMethods().entrySet()) {
+                CompanionMethodName cmn = e.getKey();
+                if (!methodAnalysis.companionAnalyses.isSet(cmn)) {
+                    LOGGER.debug("Starting companion analyser for {}", cmn);
+
+                    CompanionAnalyser companionAnalyser = new CompanionAnalyser(analyserContext,
+                            analyserContext.getTypeAnalysis(methodInfo.typeInfo), cmn, e.getValue(),
+                            methodInfo, AnnotationParameters.CONTRACT);
+                    AnalysisStatus analysisStatus = companionAnalyser.analyse(sharedState.iteration());
+                    if (analysisStatus.isDone()) {
+                        CompanionAnalysis companionAnalysis = companionAnalyser.companionAnalysis.build();
+                        methodAnalysis.companionAnalyses.put(cmn, companionAnalysis);
+                    } else {
+                        assert analysisStatus.isDelayed();
+                        LOGGER.debug("Delaying analysis of {} in {}", cmn, methodInfo.fullyQualifiedName());
+                        combined = combined.combine(analysisStatus);
+                    }
+                }
+            }
+            return internalAnalyse(sharedState.iteration()).with(combined);
         } catch (RuntimeException re) {
             LOGGER.error("Error while analysing method {}", methodInfo.fullyQualifiedName);
             throw re;
         }
+    }
+
+
+    // dedicated method exactly for this "isFact" method
+    private AnalyserResult analyseIsFact(SharedState sharedState) {
+        ParameterInfo parameterInfo = methodInfo.methodInspection.get().getParameters().get(0);
+        ParameterAnalysisImpl.Builder parameterAnalysis = new ParameterAnalysisImpl.Builder(
+                analyserContext.getPrimitives(), analyserContext, parameterInfo);
+        parameterAnalysis.setProperty(Property.IDENTITY, Property.IDENTITY.falseDv);
+        parameterAnalysis.setProperty(Property.IGNORE_MODIFICATIONS, Property.IGNORE_MODIFICATIONS.falseDv);
+        parameterAnalysis.setProperty(Property.NOT_NULL_EXPRESSION, MultiLevel.EFFECTIVELY_NOT_NULL_DV);
+        parameterAnalysis.setProperty(Property.CONTEXT_NOT_NULL, MultiLevel.EFFECTIVELY_NOT_NULL_DV);
+        parameterAnalysis.setProperty(Property.CONTEXT_MODIFIED, DV.FALSE_DV);
+        parameterAnalysis.setProperty(Property.MODIFIED_OUTSIDE_METHOD, DV.FALSE_DV);
+        parameterAnalysis.setProperty(Property.CONTAINER_RESTRICTION, MultiLevel.NOT_CONTAINER_DV);
+
+        TypeAnalysis typeAnalysis = analyserContext.getTypeAnalysis(methodInfo.typeInfo);
+        List<ParameterAnalysis> parameterAnalyses = List.of((ParameterAnalysis) parameterAnalysis.build());
+        MethodAnalysisImpl.Builder builder = new MethodAnalysisImpl.Builder(CONTRACTED, analyserContext.getPrimitives(),
+                analyserContext, analyserContext, methodInfo, typeAnalysis, parameterAnalyses);
+        builder.ensureIsNotEventualUnlessOtherwiseAnnotated();
+        builder.setProperty(Property.IDENTITY, Property.IDENTITY.falseDv);
+        builder.setProperty(Property.STATIC_SIDE_EFFECTS, Property.STATIC_SIDE_EFFECTS.falseDv);
+        builder.setProperty(Property.IGNORE_MODIFICATIONS, Property.IGNORE_MODIFICATIONS.falseDv);
+        builder.setProperty(Property.FLUENT, DV.FALSE_DV);
+        builder.setProperty(Property.MODIFIED_METHOD, DV.FALSE_DV);
+        builder.setProperty(Property.CONTEXT_MODIFIED, DV.FALSE_DV);
+        builder.setProperty(Property.INDEPENDENT, MultiLevel.INDEPENDENT_DV);
+        builder.setProperty(Property.CONTEXT_NOT_NULL, MultiLevel.EFFECTIVELY_NOT_NULL_DV);
+        builder.setProperty(Property.NOT_NULL_EXPRESSION, MultiLevel.EFFECTIVELY_NOT_NULL_DV);
+        builder.setProperty(Property.IMMUTABLE, MultiLevel.EFFECTIVELY_IMMUTABLE_DV);
+        builder.setProperty(Property.CONTAINER, MultiLevel.CONTAINER_DV);
+        builder.companionAnalyses.freeze();
+        VariableExpression ve = new VariableExpression(parameterInfo.identifier, parameterInfo);
+        builder.setSingleReturnValue(new InlinedMethod(Identifier.generate("isFact"), methodInfo, ve, Set.of(ve),
+                false));
+        LOGGER.debug("Provided analysis of dedicated method {}", methodInfo.fullyQualifiedName());
+        return AnalyserResult.EMPTY;
+    }
+
+
+    // dedicated method exactly for this "isKnown" method
+    private AnalyserResult analyseIsKnown(SharedState sharedState) {
+        ParameterInfo parameterInfo = methodInfo.methodInspection.get().getParameters().get(0);
+        ParameterAnalysisImpl.Builder parameterAnalysis = new ParameterAnalysisImpl.Builder(
+                analyserContext.getPrimitives(), analyserContext, parameterInfo);
+        parameterAnalysis.setProperty(Property.IDENTITY, Property.IDENTITY.falseDv);
+        parameterAnalysis.setProperty(Property.IGNORE_MODIFICATIONS, Property.IGNORE_MODIFICATIONS.falseDv);
+        parameterAnalysis.setProperty(Property.NOT_NULL_EXPRESSION, MultiLevel.EFFECTIVELY_NOT_NULL_DV);
+        parameterAnalysis.setProperty(Property.CONTEXT_NOT_NULL, MultiLevel.EFFECTIVELY_NOT_NULL_DV);
+        parameterAnalysis.setProperty(Property.CONTEXT_MODIFIED, DV.FALSE_DV);
+        parameterAnalysis.setProperty(Property.MODIFIED_OUTSIDE_METHOD, DV.FALSE_DV);
+        parameterAnalysis.setProperty(Property.CONTAINER_RESTRICTION, MultiLevel.NOT_CONTAINER_DV);
+
+        TypeAnalysis typeAnalysis = analyserContext.getTypeAnalysis(methodInfo.typeInfo);
+        List<ParameterAnalysis> parameterAnalyses = List.of((ParameterAnalysis) parameterAnalysis.build());
+        MethodAnalysisImpl.Builder builder = new MethodAnalysisImpl.Builder(CONTRACTED, analyserContext.getPrimitives(),
+                analyserContext, analyserContext, methodInfo, typeAnalysis, parameterAnalyses);
+        builder.ensureIsNotEventualUnlessOtherwiseAnnotated();
+        builder.setProperty(Property.IDENTITY, Property.IDENTITY.falseDv);
+        builder.setProperty(Property.STATIC_SIDE_EFFECTS, Property.STATIC_SIDE_EFFECTS.falseDv);
+        builder.setProperty(Property.IGNORE_MODIFICATIONS, Property.IGNORE_MODIFICATIONS.falseDv);
+        builder.setProperty(Property.FLUENT, DV.FALSE_DV);
+        builder.setProperty(Property.MODIFIED_METHOD, DV.FALSE_DV);
+        builder.setProperty(Property.CONTEXT_MODIFIED, DV.FALSE_DV);
+        builder.setProperty(Property.INDEPENDENT, MultiLevel.INDEPENDENT_DV);
+        builder.setProperty(Property.CONTEXT_NOT_NULL, MultiLevel.EFFECTIVELY_NOT_NULL_DV);
+        builder.setProperty(Property.NOT_NULL_EXPRESSION, MultiLevel.EFFECTIVELY_NOT_NULL_DV);
+        builder.setProperty(Property.IMMUTABLE, MultiLevel.EFFECTIVELY_IMMUTABLE_DV);
+        builder.setProperty(Property.CONTAINER, MultiLevel.CONTAINER_DV);
+
+        builder.companionAnalyses.freeze();
+        builder.setSingleReturnValue(UnknownExpression.forHardcodedMethodReturnValue(methodInfo.identifier,
+                analyserContext.getPrimitives().booleanParameterizedType(), "isKnown return value"));
+        LOGGER.debug("Provided analysis of dedicated method {}", methodInfo.fullyQualifiedName());
+        return AnalyserResult.EMPTY;
     }
 
     private AnalyserResult internalAnalyse(int iteration) {

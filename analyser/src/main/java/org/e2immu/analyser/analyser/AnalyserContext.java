@@ -24,10 +24,7 @@ import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
 import org.e2immu.analyser.parser.ImportantClasses;
 import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.parser.Primitives;
-import org.e2immu.analyser.pattern.PatternMatcher;
 
-import java.util.Set;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
@@ -56,10 +53,6 @@ public interface AnalyserContext extends AnalysisProvider, InspectionProvider {
     }
 
     default E2ImmuAnnotationExpressions getE2ImmuAnnotationExpressions() {
-        return null;
-    }
-
-    default PatternMatcher<StatementAnalyser> getPatternMatcher() {
         return null;
     }
 

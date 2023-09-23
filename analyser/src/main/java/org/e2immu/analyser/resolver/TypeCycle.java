@@ -42,8 +42,7 @@ public interface TypeCycle {
 
     AnalyserGenerator createAnalyserGeneratorAndGenerateAnalysers
             (Configuration configuration,
-             AnalyserContext analyserContext,
-             Map<MethodInfo, MethodAnalyser> methodAnalyzersFromShallow);
+             AnalyserContext analyserContext);
 
     Stream<TypeInfo> primaryTypeStream();
 }

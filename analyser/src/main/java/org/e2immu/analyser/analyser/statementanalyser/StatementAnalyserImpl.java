@@ -15,8 +15,6 @@
 package org.e2immu.analyser.analyser.statementanalyser;
 
 import org.e2immu.analyser.analyser.*;
-import org.e2immu.analyser.analyser.delay.DelayFactory;
-import org.e2immu.analyser.analyser.delay.ProgressWrapper;
 import org.e2immu.analyser.analyser.impl.PrimaryTypeAnalyserImpl;
 import org.e2immu.analyser.analyser.impl.util.BreakDelayLevel;
 import org.e2immu.analyser.analyser.nonanalyserimpl.ExpandableAnalyserContextImpl;
@@ -32,11 +30,9 @@ import org.e2immu.analyser.model.statement.*;
 import org.e2immu.analyser.model.variable.This;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.parser.Message;
-import org.e2immu.analyser.pattern.PatternMatcher;
 import org.e2immu.analyser.resolver.impl.ListOfSortedTypes;
 import org.e2immu.analyser.resolver.impl.SortedType;
 import org.e2immu.annotation.Container;
-import org.e2immu.support.Either;
 import org.e2immu.support.FlipSwitch;
 import org.e2immu.support.SetOnce;
 import org.slf4j.Logger;
@@ -229,19 +225,11 @@ public class StatementAnalyserImpl implements StatementAnalyser {
             int currentStatementTime = statementAnalyser.statementAnalysis.flowData().initialTimeNotYetSet() ?
                     statementTime : statementAnalyser.statementAnalysis.flowData().getInitialTime();
             do {
-                boolean wasReplacement;
                 EvaluationContext evaluationContext = new SAEvaluationContext(statementAnalysis,
                         myMethodAnalyser, this, analyserContext,
                         localAnalysers, iteration, currentStatementTime,
                         forwardAnalysisInfo.conditionManager(), closure,
                         delaySubsequentStatementBecauseOfECI, forwardAnalysisInfo.breakDelayLevel());
-                if (analyserContext.getConfiguration().analyserConfiguration().skipTransformations()) {
-                    wasReplacement = false;
-                } else {
-                    // first attempt at detecting a transformation
-                    wasReplacement = statementAnalyser.checkForPatterns(evaluationContext);
-                    statementAnalyser = (StatementAnalyserImpl) statementAnalyser.followReplacements();
-                }
                 StatementAnalysis previousStatementAnalysis = previousStatement == null ? null : previousStatement.getStatementAnalysis();
                 EvaluationResult context = EvaluationResult.from(evaluationContext);
                 switchCondition = forwardAnalysisInfo.conditionInSwitchStatement(context, previousStatement, switchCondition,
@@ -251,7 +239,7 @@ public class StatementAnalyserImpl implements StatementAnalyser {
                         .withCondition(context, switchCondition, switchConditionVariables));
 
                 AnalyserResult result = statementAnalyser.analyseSingleStatement(iteration, currentStatementTime, closure,
-                        wasReplacement, previousStatementAnalysis, statementInfo, delaySubsequentStatementBecauseOfECI);
+                        previousStatementAnalysis, statementInfo, delaySubsequentStatementBecauseOfECI);
                 delaySubsequentStatementBecauseOfECI |= result.analysisStatus().causesOfDelay().containsCauseOfDelay(CauseOfDelay.Cause.ECI);
                 currentStatementTime = statementAnalyser.statementAnalysis.statementTime(Stage.MERGE);
                 builder.add(result);
@@ -392,12 +380,6 @@ public class StatementAnalyserImpl implements StatementAnalyser {
         return new PreviousAndFirst(previous, statementAnalyser);
     }
 
-    private boolean checkForPatterns(EvaluationContext evaluationContext) {
-        PatternMatcher<StatementAnalyser> patternMatcher = analyserContext.getPatternMatcher();
-        MethodInfo methodInfo = myMethodAnalyser.getMethodInfo();
-        return patternMatcher.matchAndReplace(methodInfo, this, evaluationContext);
-    }
-
     @Override
     public AnalyserComponents<String, StatementAnalyserSharedState> getAnalyserComponents() {
         return analyserComponents;
@@ -405,7 +387,6 @@ public class StatementAnalyserImpl implements StatementAnalyser {
 
     /**
      * @param iteration                            the iteration
-     * @param wasReplacement                       boolean, to ensure that the effect of a replacement warrants continued analysis
      * @param previous                             null if there was no previous statement in this block
      * @param delaySubsequentStatementBecauseOfECI explicit constructor invocation cannot be carried out, we'll have to wait
      * @return the combination of a list of all modifications to be done to parameters, methods, and an AnalysisStatus object.
@@ -414,7 +395,6 @@ public class StatementAnalyserImpl implements StatementAnalyser {
     private AnalyserResult analyseSingleStatement(int iteration,
                                                   int statementTime,
                                                   EvaluationContext closure,
-                                                  boolean wasReplacement,
                                                   StatementAnalysis previous,
                                                   ForwardAnalysisInfo forwardAnalysisInfo,
                                                   boolean delaySubsequentStatementBecauseOfECI) {
@@ -489,10 +469,6 @@ public class StatementAnalyserImpl implements StatementAnalyser {
                     .addTypeAnalysers(localAnalysers.getOrDefault(List.of())) // unreachable statement...
                     .addMessages(statementAnalysis.messageStream())
                     .setAnalysisStatus(overallStatus)
-                    .combineAnalysisStatus(wasReplacement
-                            ? new ProgressWrapper(DelayFactory.createDelay(statementAnalysis.location(Stage.MERGE),
-                            CauseOfDelay.Cause.REPLACEMENT))
-                            : DONE, false)
                     .build();
 
             helper.visitStatementVisitors(statementAnalysis.index(), result, sharedState,
@@ -560,9 +536,7 @@ public class StatementAnalyserImpl implements StatementAnalyser {
                                 analyserContext.getConfiguration(),
                                 analyserContext.getPrimitives(),
                                 analyserContext.importantClasses(),
-                                Either.left(analyserContext.getPatternMatcher()),
-                                analyserContext.getE2ImmuAnnotationExpressions(),
-                                Map.of());
+                                analyserContext.getE2ImmuAnnotationExpressions());
                         primaryTypeAnalyser.initialize();
                         return primaryTypeAnalyser;
                     }).toList();

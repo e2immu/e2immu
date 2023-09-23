@@ -14,30 +14,14 @@
 
 package org.e2immu.analyser.config;
 
-import org.e2immu.analyser.analyser.AnalysisProvider;
-import org.e2immu.analyser.analyser.StatementAnalyser;
-import org.e2immu.analyser.parser.TypeAndInspectionProvider;
-import org.e2immu.analyser.pattern.PatternMatcher;
 import org.e2immu.annotation.Container;
-
-import java.util.Objects;
 
 public record AnalyserConfiguration(boolean skipTransformations,
                                     boolean computeContextPropertiesOverAllMethods,
                                     boolean computeFieldAnalyserAcrossAllMethods,
                                     boolean forceExtraDelayForTesting,
                                     boolean forceAlphabeticAnalysisInPrimaryType,
-                                    boolean normalizeMore,
-                                    PatternMatcherProvider<StatementAnalyser> patternMatcherProvider) {
-
-    public AnalyserConfiguration {
-        Objects.requireNonNull(patternMatcherProvider);
-    }
-
-    public PatternMatcher<StatementAnalyser> newPatternMatcher(TypeAndInspectionProvider inspectionProvider,
-                                                               AnalysisProvider analysisProvider) {
-        return patternMatcherProvider.newPatternMatcher(inspectionProvider, analysisProvider);
-    }
+                                    boolean normalizeMore) {
 
     @Container(builds = AnalyserConfiguration.class)
     public static class Builder {
@@ -50,15 +34,8 @@ public record AnalyserConfiguration(boolean skipTransformations,
         private boolean forceAlphabeticAnalysisInPrimaryType;
         private boolean normalizeMore;
 
-        private PatternMatcherProvider<StatementAnalyser> patternMatcherProvider;
-
         public Builder setSkipTransformations(boolean skipTransformations) {
             this.skipTransformations = skipTransformations;
-            return this;
-        }
-
-        public Builder setPatternMatcherProvider(PatternMatcherProvider<StatementAnalyser> patternMatcherProvider) {
-            this.patternMatcherProvider = patternMatcherProvider;
             return this;
         }
 
@@ -93,9 +70,7 @@ public record AnalyserConfiguration(boolean skipTransformations,
                     computeFieldAnalyserAcrossAllMethods,
                     forceExtraDelayForTesting,
                     forceAlphabeticAnalysisInPrimaryType,
-                    normalizeMore,
-                    patternMatcherProvider == null ?
-                            (ip, ap) -> PatternMatcher.NO_PATTERN_MATCHER : patternMatcherProvider);
+                    normalizeMore);
         }
     }
 

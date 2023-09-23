@@ -35,25 +35,9 @@ public class ListOfSortedTypes implements TypeCycle {
     }
 
     @Override
-    public AnalyserGenerator createAnalyserGeneratorAndGenerateAnalysers
-            (Configuration configuration,
-             AnalyserContext analyserContext,
-             Map<MethodInfo, MethodAnalyser> methodAnalyzersFromShallow) {
-
-        Map<MethodInfo, MethodAnalyser> selectionOfAnalyzers = methodAnalyzersFromShallow.entrySet().stream()
-                .filter(this::accept)
-                .collect(Collectors.toUnmodifiableMap(Map.Entry::getKey, Map.Entry::getValue));
-
-        return new DefaultAnalyserGeneratorImpl(sortedTypes, configuration, analyserContext, selectionOfAnalyzers);
-    }
-
-    /*
-    the method analyzers belong to types which have been shallow analyzed (essentially, they're default and static
-    methods of interfaces).
-    their types will not be in the list of sorted types. However, their dependent types may be.
-     */
-    private boolean accept(Map.Entry<MethodInfo, MethodAnalyser> entry) {
-        return true; // FIXME how to do this?
+    public AnalyserGenerator createAnalyserGeneratorAndGenerateAnalysers(Configuration configuration,
+                                                                         AnalyserContext analyserContext) {
+        return new DefaultAnalyserGeneratorImpl(sortedTypes, configuration, analyserContext);
     }
 
     @Override

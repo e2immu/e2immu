@@ -743,7 +743,7 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
         DV typeIndependent = typeAnalysis.getProperty(Property.INDEPENDENT);
         if (typeIndependent.isDone()) return DONE;
         if (typeInfo.typePropertiesAreContracted()) {
-            Message message = AnnotatedAPIAnalyser.simpleComputeIndependent(analyserContext, typeAnalysis,
+            Message message = ShallowTypeAnalyser.simpleComputeIndependent(analyserContext, typeAnalysis,
                     m -> !m.methodInspection.get().isPrivate());
             if (message != null) analyserResultBuilder.add(message);
             return DONE;

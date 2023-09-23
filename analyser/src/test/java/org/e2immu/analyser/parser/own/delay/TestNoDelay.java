@@ -18,6 +18,7 @@ package org.e2immu.analyser.parser.own.delay;
 import org.e2immu.analyser.analyser.CauseOfDelay;
 import org.e2immu.analyser.analyser.DV;
 import org.e2immu.analyser.analyser.Property;
+import org.e2immu.analyser.analyser.VariableInfo;
 import org.e2immu.analyser.analyser.delay.NoDelay;
 import org.e2immu.analyser.analysis.ParameterAnalysis;
 import org.e2immu.analyser.config.DebugConfiguration;
@@ -25,6 +26,7 @@ import org.e2immu.analyser.model.MethodInfo;
 import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.ParameterInfo;
 import org.e2immu.analyser.model.TypeInfo;
+import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.ReturnVariable;
 import org.e2immu.analyser.parser.CommonTestRunner;
 import org.e2immu.analyser.util.StringUtil;
@@ -44,9 +46,33 @@ public class TestNoDelay extends CommonTestRunner {
 
     @Test
     public void test() throws IOException {
+        StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+            if ("Cause".equals(d.methodInfo().name)) {
+                int n = d.methodInfo().methodInspection.get().getParameters().size();
+                if (2 == n) {
+                    if (d.variable() instanceof FieldReference fr && "LOW".equals(fr.fieldInfo.name)) {
+                        VariableInfo vi1 = d.variableInfoContainer().getPreviousOrInitial();
+                        assertTrue(d.variableInfoContainer().isInitial());
+                        assertEquals(MultiLevel.EFFECTIVELY_IMMUTABLE_DV, vi1.getProperty(Property.CONTEXT_IMMUTABLE));
+
+                        assertTrue(d.variableInfoContainer().hasEvaluation());
+                        assertDv(d, MultiLevel.EFFECTIVELY_IMMUTABLE_DV, Property.CONTEXT_IMMUTABLE);
+                    }
+                }
+            }
+        };
+        MethodAnalyserVisitor methodAnalyserVisitor = d -> {
+            if ("Cause".equals(d.methodInfo().name)) {
+                int n = d.methodInfo().methodInspection.get().getParameters().size();
+                if (3 == n) {
+                    assertDv(d.p(2), MultiLevel.EFFECTIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
+                }
+            }
+        };
         List<Class<?>> classes = List.of(CauseOfDelay.class, DV.class, NoDelay.class);
         testSupportAndUtilClasses(classes, 0, 0, new DebugConfiguration.Builder()
-
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .build());
     }
 

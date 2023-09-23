@@ -24,7 +24,6 @@ import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
 import org.e2immu.analyser.parser.ImportantClasses;
 import org.e2immu.analyser.parser.Primitives;
-import org.e2immu.analyser.pattern.PatternMatcher;
 import org.e2immu.support.SetOnceMap;
 
 import java.util.Objects;
@@ -32,19 +31,65 @@ import java.util.stream.Stream;
 
 public class ExpandableAnalyserContextImpl implements AnalyserContext {
 
-    public final AnalyserContext parent;
-    private final SetOnceMap<MethodInfo, MethodAnalyser> methodAnalysers = new SetOnceMap<>();
-    private final SetOnceMap<TypeInfo, TypeAnalyser> typeAnalysers = new SetOnceMap<>();
-    private final SetOnceMap<FieldInfo, FieldAnalyser> fieldAnalysers = new SetOnceMap<>();
-    private final SetOnceMap<ParameterInfo, ParameterAnalyser> parameterAnalysers = new SetOnceMap<>();
+    private final AnalyserContext parent;
+    private final SetOnceMap<MethodInfo, MethodAnalyser> methodAnalysers;
+    private final SetOnceMap<TypeInfo, TypeAnalyser> typeAnalysers;
+    private final SetOnceMap<FieldInfo, FieldAnalyser> fieldAnalysers;
+    private final SetOnceMap<ParameterInfo, ParameterAnalyser> parameterAnalysers;
+
+    private final Primitives primitives;
+    private final boolean inAnnotatedAPIAnalysis;
+    private final Configuration configuration;
+    private final ImportantClasses importantClasses;
+    private final E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions;
 
     public ExpandableAnalyserContextImpl(AnalyserContext parent) {
-        this.parent = Objects.requireNonNull(parent);
+        this(Objects.requireNonNull(parent),
+                parent.getPrimitives(), parent.getConfiguration(), parent.importantClasses(),
+                parent.getE2ImmuAnnotationExpressions(), parent.inAnnotatedAPIAnalysis(),
+                new SetOnceMap<>(), new SetOnceMap<>(), new SetOnceMap<>(), new SetOnceMap<>());
+    }
+
+    public ExpandableAnalyserContextImpl(Primitives primitives,
+                                         Configuration configuration,
+                                         ImportantClasses importantClasses,
+                                         E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions,
+                                         boolean inAnnotatedAPIAnalysis) {
+        this(null, primitives, configuration, importantClasses, e2ImmuAnnotationExpressions, inAnnotatedAPIAnalysis,
+                new SetOnceMap<>(), new SetOnceMap<>(), new SetOnceMap<>(), new SetOnceMap<>());
+    }
+
+    private ExpandableAnalyserContextImpl(AnalyserContext parent,
+                                          Primitives primitives,
+                                          Configuration configuration,
+                                          ImportantClasses importantClasses,
+                                          E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions,
+                                          boolean inAnnotatedAPIAnalysis,
+                                          SetOnceMap<TypeInfo, TypeAnalyser> typeAnalysers,
+                                          SetOnceMap<MethodInfo, MethodAnalyser> methodAnalysers,
+                                          SetOnceMap<FieldInfo, FieldAnalyser> fieldAnalysers,
+                                          SetOnceMap<ParameterInfo, ParameterAnalyser> parameterAnalysers) {
+        this.parent = parent;
+        this.primitives = primitives;
+        this.configuration = configuration;
+        this.importantClasses = importantClasses;
+        this.e2ImmuAnnotationExpressions = e2ImmuAnnotationExpressions;
+        this.inAnnotatedAPIAnalysis = inAnnotatedAPIAnalysis;
+        this.typeAnalysers = typeAnalysers;
+        this.methodAnalysers = methodAnalysers;
+        this.fieldAnalysers = fieldAnalysers;
+        this.parameterAnalysers = parameterAnalysers;
+    }
+
+    public ExpandableAnalyserContextImpl with(boolean inAnnotatedAPIAnalysis) {
+        return new ExpandableAnalyserContextImpl(parent, primitives, configuration, importantClasses,
+                e2ImmuAnnotationExpressions, inAnnotatedAPIAnalysis, typeAnalysers, methodAnalysers, fieldAnalysers,
+                parameterAnalysers);
     }
 
     @Override
     public ImportantClasses importantClasses() {
-        return parent.importantClasses();
+        return importantClasses;
     }
 
     @Override
@@ -54,38 +99,34 @@ public class ExpandableAnalyserContextImpl implements AnalyserContext {
 
     @Override
     public Primitives getPrimitives() {
-        return parent.getPrimitives();
+        return primitives;
     }
 
     @Override
     public Configuration getConfiguration() {
-        return parent.getConfiguration();
+        return configuration;
     }
 
     @Override
     public boolean inAnnotatedAPIAnalysis() {
-        return parent.inAnnotatedAPIAnalysis();
+        return inAnnotatedAPIAnalysis;
     }
 
     @Override
     public E2ImmuAnnotationExpressions getE2ImmuAnnotationExpressions() {
-        return parent.getE2ImmuAnnotationExpressions();
-    }
-
-    @Override
-    public PatternMatcher<StatementAnalyser> getPatternMatcher() {
-        return parent.getPatternMatcher();
+        return e2ImmuAnnotationExpressions;
     }
 
     @Override
     public Stream<MethodAnalyser> methodAnalyserStream() {
+        if (parent == null) return methodAnalysers.valueStream();
         return Stream.concat(parent.methodAnalyserStream(), this.methodAnalysers.valueStream());
     }
 
     @Override
     public MethodAnalyser getMethodAnalyser(MethodInfo methodInfo) {
         MethodAnalyser ma = this.methodAnalysers.getOrDefaultNull(methodInfo);
-        if (ma == null) {
+        if (ma == null && parent != null) {
             return parent.getMethodAnalyser(methodInfo);
         }
         return ma;
@@ -95,13 +136,14 @@ public class ExpandableAnalyserContextImpl implements AnalyserContext {
     public MethodAnalysis getMethodAnalysis(MethodInfo methodInfo) {
         MethodAnalyser ma = this.methodAnalysers.getOrDefaultNull(methodInfo);
         if (ma != null) return ma.getMethodAnalysis();
-        return parent.getMethodAnalysis(methodInfo);
+        if (parent != null) return parent.getMethodAnalysis(methodInfo);
+        throw new UnsupportedOperationException("Cannot find method analysis of " + methodInfo.fullyQualifiedName);
     }
 
     @Override
     public ParameterAnalyser getParameterAnalyser(ParameterInfo parameterInfo) {
         ParameterAnalyser ma = this.parameterAnalysers.getOrDefaultNull(parameterInfo);
-        if (ma == null) {
+        if (ma == null && parent != null) {
             return parent.getParameterAnalyser(parameterInfo);
         }
         return ma;
@@ -111,13 +153,15 @@ public class ExpandableAnalyserContextImpl implements AnalyserContext {
     public ParameterAnalysis getParameterAnalysis(ParameterInfo parameterInfo) {
         ParameterAnalyser pa = this.parameterAnalysers.getOrDefaultNull(parameterInfo);
         if (pa != null) return pa.getParameterAnalysis();
-        return getMethodAnalysis(parameterInfo.owner).getParameterAnalyses().get(parameterInfo.index);
+        MethodAnalysis methodAnalysis = getMethodAnalysis(parameterInfo.owner);
+        assert methodAnalysis != null : "Cannot find method analysis of " + parameterInfo.owner.fullyQualifiedName;
+        return methodAnalysis.getParameterAnalyses().get(parameterInfo.index);
     }
 
     @Override
     public TypeAnalyser getTypeAnalyser(TypeInfo typeInfo) {
         TypeAnalyser ta = this.typeAnalysers.getOrDefaultNull(typeInfo);
-        if (ta == null) {
+        if (ta == null && parent != null) {
             return parent.getTypeAnalyser(typeInfo);
         }
         return ta;
@@ -126,7 +170,7 @@ public class ExpandableAnalyserContextImpl implements AnalyserContext {
     @Override
     public FieldAnalyser getFieldAnalyser(FieldInfo fieldInfo) {
         FieldAnalyser fa = this.fieldAnalysers.getOrDefaultNull(fieldInfo);
-        if (fa == null) {
+        if (fa == null && parent != null) {
             return parent.getFieldAnalyser(fieldInfo);
         }
         return fa;
@@ -136,7 +180,8 @@ public class ExpandableAnalyserContextImpl implements AnalyserContext {
     public TypeAnalysis getTypeAnalysis(TypeInfo typeInfo) {
         TypeAnalyser typeAnalyser = this.typeAnalysers.getOrDefaultNull(typeInfo);
         if (typeAnalyser != null) return typeAnalyser.getTypeAnalysis();
-        return parent.getTypeAnalysis(typeInfo);
+        if (parent != null) return parent.getTypeAnalysis(typeInfo);
+        throw new UnsupportedOperationException("Cannot find type analysis of " + typeInfo.fullyQualifiedName);
     }
 
     @Override
@@ -155,11 +200,13 @@ public class ExpandableAnalyserContextImpl implements AnalyserContext {
     public FieldAnalysis getFieldAnalysis(FieldInfo fieldInfo) {
         FieldAnalyser fa = this.fieldAnalysers.getOrDefaultNull(fieldInfo);
         if (fa != null) return fa.getFieldAnalysis();
-        return parent.getFieldAnalysis(fieldInfo);
+        if (parent != null) return parent.getFieldAnalysis(fieldInfo);
+        throw new UnsupportedOperationException("Cannot find field analysis of " + fieldInfo.fullyQualifiedName);
     }
 
     @Override
     public MethodInspection.Builder newMethodInspectionBuilder(Identifier identifier, TypeInfo typeInfo, String methodName) {
+        assert parent != null : "Not for an ExpandableAnalyser to implement";
         return parent.newMethodInspectionBuilder(identifier, typeInfo, methodName);
     }
 

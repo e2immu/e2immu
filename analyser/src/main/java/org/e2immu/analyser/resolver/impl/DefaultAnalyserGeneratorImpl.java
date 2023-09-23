@@ -17,7 +17,7 @@ package org.e2immu.analyser.resolver.impl;
 import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.analyser.impl.AggregatingTypeAnalyser;
 import org.e2immu.analyser.analyser.impl.ComputingTypeAnalyser;
-import org.e2immu.analyser.analyser.impl.FieldAnalyserImpl;
+import org.e2immu.analyser.analyser.impl.ComputingFieldAnalyser;
 import org.e2immu.analyser.analyser.impl.MethodAnalyserFactory;
 import org.e2immu.analyser.analysis.TypeAnalysis;
 import org.e2immu.analyser.analysis.impl.TypeAnalysisImpl;
@@ -48,8 +48,7 @@ public class DefaultAnalyserGeneratorImpl implements AnalyserGenerator {
 
     public DefaultAnalyserGeneratorImpl(List<SortedType> sortedTypes,
                                         Configuration configuration,
-                                        AnalyserContext analyserContext,
-                                        Map<MethodInfo, MethodAnalyser> methodAnalysersFromShallow) {
+                                        AnalyserContext analyserContext) {
         name = sortedTypes.stream()
                 .map(sortedType -> sortedType.primaryType().fullyQualifiedName)
                 .collect(Collectors.joining(","));
@@ -75,7 +74,7 @@ public class DefaultAnalyserGeneratorImpl implements AnalyserGenerator {
         // filtering out those methods that have not been defined is not a good idea, since the MethodAnalysisImpl object
         // can only reach TypeAnalysisImpl, and not its builder. We'd better live with empty methods in the method analyser.
         Map<ParameterInfo, ParameterAnalyser> parameterAnalysersBuilder = new LinkedHashMap<>();
-        Map<MethodInfo, MethodAnalyser> methodAnalysersBuilder = new LinkedHashMap<>(methodAnalysersFromShallow);
+        Map<MethodInfo, MethodAnalyser> methodAnalysersBuilder = new LinkedHashMap<>();
         sortedTypes.forEach(sortedType -> {
             List<WithInspectionAndAnalysis> analyses = sortedType.methodsFieldsSubTypes();
             analyses.forEach(analysis -> {
@@ -109,7 +108,7 @@ public class DefaultAnalyserGeneratorImpl implements AnalyserGenerator {
                     if (mfs instanceof FieldInfo fieldInfo) {
                         if (!fieldInfo.fieldAnalysis.isSet()) {
                             TypeAnalysis ownerTypeAnalysis = typeAnalysers.get(fieldInfo.owner).getTypeAnalysis();
-                            analyser = new FieldAnalyserImpl(fieldInfo, sortedType.primaryType(), ownerTypeAnalysis,
+                            analyser = new ComputingFieldAnalyser(fieldInfo, sortedType.primaryType(), ownerTypeAnalysis,
                                     analyserContext);
                             fieldAnalysersBuilder.put(fieldInfo, (FieldAnalyser) analyser);
                         } else {

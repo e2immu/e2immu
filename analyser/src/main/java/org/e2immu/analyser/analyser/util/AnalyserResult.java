@@ -31,6 +31,10 @@ public record AnalyserResult(AnalysisStatus analysisStatus,
     public static final AnalyserResult EMPTY = new AnalyserResult(AnalysisStatus.DONE,
             Messages.EMPTY, VariableAccessReport.EMPTY, List.of());
 
+    public AnalyserResult with(AnalysisStatus combined) {
+        return new AnalyserResult(analysisStatus.combine(combined), messages, variableAccessReport, localAnalysers);
+    }
+
     public static class Builder {
         private AnalysisStatus analysisStatus = AnalysisStatus.DONE;
         private final Messages messages = new Messages();

@@ -15,11 +15,11 @@
 package org.e2immu.analyser.analyser.util;
 
 import org.e2immu.analyser.analyser.*;
+import org.e2immu.analyser.analyser.impl.ComputingFieldAnalyser;
 import org.e2immu.analyser.analysis.TypeAnalysis;
 import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.ParameterizedType;
 import org.e2immu.analyser.model.TypeInfo;
-import org.e2immu.analyser.parser.InspectionProvider;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -59,7 +59,7 @@ public record ComputeIndependent(AnalyserContext analyserContext,
      * Case 2: {@link org.e2immu.analyser.analyser.impl.ComputingMethodAnalyser}
      * The first type ('a') is the concrete return type, the second ('b') is a field
      * <p>
-     * Case 3: {@link org.e2immu.analyser.analyser.impl.FieldAnalyserImpl}
+     * Case 3: {@link ComputingFieldAnalyser}
      * The first type ('a') is the field's (formal? concrete?) type
      * <p>
      * The link level has not been adjusted to the mutability of the inclusion or intersection type:

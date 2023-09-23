@@ -26,12 +26,10 @@ import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
 import org.e2immu.analyser.parser.ImportantClasses;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.Primitives;
-import org.e2immu.analyser.pattern.PatternMatcher;
 import org.e2immu.analyser.resolver.AnalyserGenerator;
 import org.e2immu.analyser.resolver.TypeCycle;
 import org.e2immu.analyser.util.Pair;
 import org.e2immu.analyser.visitor.BreakDelayVisitor;
-import org.e2immu.support.Either;
 import org.e2immu.support.FlipSwitch;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -50,7 +48,6 @@ when there is a circular dependency that cannot easily be ignored.
 public class PrimaryTypeAnalyserImpl implements PrimaryTypeAnalyser {
     private static final Logger LOGGER = LoggerFactory.getLogger(PrimaryTypeAnalyserImpl.class);
 
-    private final PatternMatcher<StatementAnalyser> patternMatcher;
     public final String name;
     public final Set<TypeInfo> primaryTypes;
     public final List<Analyser> analysers;
@@ -74,20 +71,15 @@ public class PrimaryTypeAnalyserImpl implements PrimaryTypeAnalyser {
                                    Configuration configuration,
                                    Primitives primitives,
                                    ImportantClasses importantClasses,
-                                   Either<PatternMatcher<StatementAnalyser>, TypeContext> patternMatcherOrTypeContext,
-                                   E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions,
-                                   Map<MethodInfo, MethodAnalyser> methodAnalysersFromShallow) {
+                                   E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions) {
         this.parent = parent;
         this.configuration = configuration;
         this.e2ImmuAnnotationExpressions = e2ImmuAnnotationExpressions;
         Objects.requireNonNull(primitives);
-        this.patternMatcher = patternMatcherOrTypeContext.isLeft() ? patternMatcherOrTypeContext.getLeft() :
-                configuration.analyserConfiguration().newPatternMatcher(patternMatcherOrTypeContext.getRight(), this);
         this.primitives = primitives;
         this.importantClasses = importantClasses;
 
-        AnalyserGenerator analyserGenerator = typeCycle.createAnalyserGeneratorAndGenerateAnalysers(configuration,
-                this, methodAnalysersFromShallow);
+        AnalyserGenerator analyserGenerator = typeCycle.createAnalyserGeneratorAndGenerateAnalysers(configuration, this);
         this.name = analyserGenerator.getName();
         this.analysers = analyserGenerator.getAnalysers();
         this.primaryTypes = analyserGenerator.getPrimaryTypes();
@@ -275,7 +267,6 @@ public class PrimaryTypeAnalyserImpl implements PrimaryTypeAnalyser {
 
     @Override
     public AnalyserResult analyse(SharedState sharedState) {
-        patternMatcher.startNewIteration();
         analyserResultBuilder = new AnalyserResult.Builder();
         AnalysisStatus analysisStatus = analyserComponents.run(sharedState);
         LOGGER.info("At end of PTA analysis, done {} of {} components, progress? {}",
@@ -302,11 +293,6 @@ public class PrimaryTypeAnalyserImpl implements PrimaryTypeAnalyser {
     @Override
     public MethodInspection.Builder newMethodInspectionBuilder(Identifier identifier, TypeInfo typeInfo, String methodName) {
         return new MethodInspectionImpl.Builder(identifier, typeInfo, methodName);
-    }
-
-    @Override
-    public PatternMatcher<StatementAnalyser> getPatternMatcher() {
-        return patternMatcher;
     }
 
     @Override

@@ -16,11 +16,10 @@
 package org.e2immu.analyser.parser.basics;
 
 import org.e2immu.analyser.analyser.*;
-import org.e2immu.analyser.analyser.impl.FieldAnalyserImpl;
+import org.e2immu.analyser.analyser.impl.ComputingFieldAnalyser;
 import org.e2immu.analyser.config.AnalyserConfiguration;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.model.*;
-import org.e2immu.analyser.model.expression.PropertyWrapper;
 import org.e2immu.analyser.model.expression.VariableExpression;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.ReturnVariable;
@@ -37,7 +36,6 @@ import java.util.Set;
 
 import static org.e2immu.analyser.analyser.Property.*;
 import static org.e2immu.analyser.parser.VisitorTestSupport.IterationInfo.it;
-import static org.e2immu.analyser.parser.VisitorTestSupport.IterationInfo.it0;
 import static org.junit.jupiter.api.Assertions.*;
 
 public class Test_00_Basics_2 extends CommonTestRunner {
@@ -59,17 +57,17 @@ public class Test_00_Basics_2 extends CommonTestRunner {
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
             if (d.iteration() == 0) {
                 Map<AnalysisStatus, Set<String>> expect = Map.of(AnalysisStatus.DONE, Set.of(
-                        FieldAnalyserImpl.EVALUATE_INITIALISER,
-                        FieldAnalyserImpl.ANALYSE_CONTAINER));
+                        ComputingFieldAnalyser.EVALUATE_INITIALISER,
+                        ComputingFieldAnalyser.ANALYSE_CONTAINER));
                 assertSubMap(expect, d.statuses());
             }
             if (d.iteration() == 1) {
                 Map<AnalysisStatus, Set<String>> expect = Map.of(AnalysisStatus.DONE, Set.of(
-                        FieldAnalyserImpl.EVALUATE_INITIALISER,
-                        FieldAnalyserImpl.ANALYSE_CONTAINER,
-                        FieldAnalyserImpl.ANALYSE_FINAL,
-                        FieldAnalyserImpl.ANALYSE_FINAL_VALUE,
-                        FieldAnalyserImpl.ANALYSE_NOT_NULL));
+                        ComputingFieldAnalyser.EVALUATE_INITIALISER,
+                        ComputingFieldAnalyser.ANALYSE_CONTAINER,
+                        ComputingFieldAnalyser.ANALYSE_FINAL,
+                        ComputingFieldAnalyser.ANALYSE_FINAL_VALUE,
+                        ComputingFieldAnalyser.ANALYSE_NOT_NULL));
                 assertSubMap(expect, d.statuses());
             }
             if ("string".equals(d.fieldInfo().name)) {
