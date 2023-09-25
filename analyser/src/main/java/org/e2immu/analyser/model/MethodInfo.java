@@ -28,6 +28,7 @@ import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.OutputMethodInfo;
 import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.util.UpgradableBooleanMap;
+import org.e2immu.analyser.util.UpgradableIntMap;
 import org.e2immu.annotation.NotNull;
 import org.e2immu.support.SetOnce;
 import org.e2immu.support.SetOnceMap;
@@ -178,6 +179,46 @@ public class MethodInfo implements WithInspectionAndAnalysis {
                 .flatMap(cm -> cm.typesReferenced().stream()).collect(UpgradableBooleanMap.collector());
 
         return UpgradableBooleanMap.of(constructorTypes, parameterTypes, analysedAnnotationTypes,
+                annotationTypes, exceptionTypes, companionMethodTypes, bodyTypes);
+    }
+
+    public static final int METHOD_WEIGHT = 10;
+    public static final int METHOD_EXPRESSION_WEIGHT = 1;
+
+    @Override
+    public UpgradableIntMap<TypeInfo> typesReferenced2() {
+        if (!hasBeenInspected()) return UpgradableIntMap.of();
+        MethodInspection inspection = methodInspection.get();
+
+        UpgradableIntMap<TypeInfo> constructorTypes = isConstructor ? UpgradableIntMap.of() :
+                inspection.getReturnType().typesReferenced2(METHOD_WEIGHT);
+
+        UpgradableIntMap<TypeInfo> parameterTypes =
+                inspection.getParameters().stream()
+                        .flatMap(p -> p.typesReferenced2().stream()).collect(UpgradableIntMap.collector());
+
+        UpgradableIntMap<TypeInfo> annotationTypes =
+                inspection.getAnnotations().stream().flatMap(ae ->
+                                ae.typesReferenced2(TypeInfo.ANNOTATION_WEIGHT).stream())
+                        .collect(UpgradableIntMap.collector());
+
+        UpgradableIntMap<TypeInfo> analysedAnnotationTypes =
+                hasBeenAnalysed() ? methodAnalysis.get().getAnnotationStream()
+                        .filter(e -> e.getValue().isVisible())
+                        .flatMap(e -> e.getKey().typesReferenced2(TypeInfo.ANNOTATION_WEIGHT).stream())
+                        .collect(UpgradableIntMap.collector()) : UpgradableIntMap.of();
+
+        UpgradableIntMap<TypeInfo> exceptionTypes =
+                inspection.getExceptionTypes().stream().flatMap(et ->
+                        et.typesReferenced2(METHOD_WEIGHT).stream()).collect(UpgradableIntMap.collector());
+
+        UpgradableIntMap<TypeInfo> bodyTypes = hasBeenInspected() ?
+                inspection.getMethodBody().typesReferenced2(METHOD_EXPRESSION_WEIGHT) : UpgradableIntMap.of();
+
+        UpgradableIntMap<TypeInfo> companionMethodTypes = inspection.getCompanionMethods().values().stream()
+                .flatMap(cm -> cm.typesReferenced2().stream()).collect(UpgradableIntMap.collector());
+
+        return UpgradableIntMap.of(constructorTypes, parameterTypes, analysedAnnotationTypes,
                 annotationTypes, exceptionTypes, companionMethodTypes, bodyTypes);
     }
 

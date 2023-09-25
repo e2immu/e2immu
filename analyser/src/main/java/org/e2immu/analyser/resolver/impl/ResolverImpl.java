@@ -17,6 +17,7 @@ package org.e2immu.analyser.resolver.impl;
 import com.github.javaparser.ast.expr.Expression;
 import com.github.javaparser.ast.stmt.BlockStmt;
 import org.e2immu.analyser.analyser.nonanalyserimpl.GlobalAnalyserContext;
+import org.e2immu.analyser.analyser.util.TypeGraph;
 import org.e2immu.analyser.inspector.*;
 import org.e2immu.analyser.inspector.impl.ExpressionContextImpl;
 import org.e2immu.analyser.inspector.impl.FieldInspectionImpl;
@@ -127,7 +128,7 @@ public class ResolverImpl implements Resolver {
 
     @Override
     public SortedTypes resolve(Map<TypeInfo, ExpressionContext> inspectedTypes) {
-        DependencyGraph<TypeInfo> typeGraph = new DependencyGraph<>();
+        TypeGraph typeGraph = new TypeGraph();
         Map<TypeInfo, TypeResolution.Builder> resolutionBuilders = new HashMap<>();
         Set<TypeInfo> stayWithin = inspectedTypes.keySet().stream()
                 .flatMap(typeInfo -> typeAndAllSubTypes(typeInfo).stream())
@@ -172,7 +173,7 @@ public class ResolverImpl implements Resolver {
         }
     }
 
-    private List<TypeInfo> sortWarnForCircularDependencies(DependencyGraph<TypeInfo> typeGraph,
+    private List<TypeInfo> sortWarnForCircularDependencies(TypeGraph typeGraph,
                                                            Map<TypeInfo, TypeResolution.Builder> resolutionBuilders) {
         Set<TypeInfo> inCycle = new HashSet<>();
 
@@ -180,10 +181,10 @@ public class ResolverImpl implements Resolver {
         return typeGraph.sorted(cycle -> {
                     List<TypeInfo> restrictedCycle = new LinkedList<>(cycle);
                     restrictedCycle.removeAll(inCycle);
-                    if (LOGGER.isDebugEnabled()) {
-                        LOGGER.debug("Cycle of size {} cycle reduced to {}", cycle.size(), restrictedCycle.size());
-                        restrictedCycle.forEach(ti -> LOGGER.debug("\t" + ti.fullyQualifiedName));
-                    }
+                  //  if (LOGGER.isDebugEnabled()) {
+                        LOGGER.info("Cycle of size {} cycle reduced to {}", cycle.size(), restrictedCycle.size());
+                        restrictedCycle.forEach(ti -> LOGGER.info("\t" + ti.fullyQualifiedName));
+                   // }
                     boolean addMessage = true;
                     Set<TypeInfo> cycleAsSet = restrictedCycle.stream().collect(Collectors.toUnmodifiableSet());
                     for (TypeInfo typeInfo : restrictedCycle) {
@@ -198,7 +199,7 @@ public class ResolverImpl implements Resolver {
                     }
                     inCycle.addAll(restrictedCycle);
                 },
-                typeInfo -> LOGGER.debug("Adding {}", typeInfo.fullyQualifiedName),
+                typeInfo -> LOGGER.info("Adding {}", typeInfo.fullyQualifiedName),
                 Comparator.comparing(typeInfo -> typeInfo.fullyQualifiedName));
     }
 
@@ -258,7 +259,7 @@ public class ResolverImpl implements Resolver {
         builder.setSuperTypesExcludingJavaLangObject(superTypes);
     }
 
-    private SortedType addToTypeGraph(DependencyGraph<TypeInfo> typeGraph,
+    private SortedType addToTypeGraph(TypeGraph typeGraph,
                                       Set<TypeInfo> stayWithin,
                                       TypeInfo typeInfo,
                                       ExpressionContext expressionContextOfFile) {
@@ -274,17 +275,15 @@ public class ResolverImpl implements Resolver {
 
         // remove myself and all my enclosing types, and stay within the set of inspectedTypes
         // only add primary types!
-        Set<TypeInfo> typeDependencies = typeInfo.typesReferenced().stream().map(Map.Entry::getKey)
-                .map(TypeInfo::primaryType)
-                .collect(Collectors.toCollection(HashSet::new));
-
-        typeAndAllSubTypes.forEach(typeDependencies::remove);
-        typeDependencies.remove(typeInfo);
-        typeDependencies.retainAll(stayWithin);
+        Map<TypeInfo, Integer> typeDependencies = typeInfo.typesReferenced2().stream()
+                .filter(e -> e.getKey() != typeInfo
+                        && stayWithin.contains(e.getKey())
+                        && !typeAndAllSubTypes.contains(e.getKey()))
+                .collect(Collectors.toUnmodifiableMap(Map.Entry::getKey, Map.Entry::getValue));
 
         GlobalAnalyserContext.HardCoded hardCoded = GlobalAnalyserContext.HARDCODED_TYPES.get(typeInfo.fullyQualifiedName);
-        List<TypeInfo> dependsOn = hardCoded != null && hardCoded.eraseDependencies ? List.of()
-                : List.copyOf(typeDependencies);
+        Map<TypeInfo, Integer> dependsOn = hardCoded != null && hardCoded.eraseDependencies ? Map.of()
+                : Map.copyOf(typeDependencies);
         typeGraph.addNode(typeInfo, dependsOn);
         List<WithInspectionAndAnalysis> sorted = methodFieldSubTypeGraph.sorted(null, null,
                 Comparator.comparing(WithInspectionAndAnalysis::fullyQualifiedName));

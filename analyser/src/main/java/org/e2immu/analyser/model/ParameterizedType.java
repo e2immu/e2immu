@@ -20,6 +20,7 @@ import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.parser.PrimitivesWithoutParameterizedType;
 import org.e2immu.analyser.util.UpgradableBooleanMap;
+import org.e2immu.analyser.util.UpgradableIntMap;
 import org.e2immu.annotation.NotNull;
 
 import java.util.*;
@@ -754,6 +755,14 @@ public class ParameterizedType {
                 parameters.stream().flatMap(pt -> pt.typesReferenced(explicit).stream()).collect(UpgradableBooleanMap.collector()),
                 isType() && !typeInfo.isPrimitiveExcludingVoid() ?
                         UpgradableBooleanMap.of(typeInfo, explicit) : UpgradableBooleanMap.of());
+    }
+
+    public UpgradableIntMap<TypeInfo> typesReferenced2(int weight) {
+        return UpgradableIntMap.of(
+                parameters.stream().flatMap(pt -> pt.typesReferenced2(weight).stream()).collect(UpgradableIntMap.collector()),
+                isType() && !typeInfo.isPrimitiveExcludingVoid()
+                        ? UpgradableIntMap.of(typeInfo, weight)
+                        : UpgradableIntMap.of());
     }
 
     public boolean equalsErased(ParameterizedType other) {

@@ -24,6 +24,7 @@ import org.e2immu.analyser.output.Symbol;
 import org.e2immu.analyser.output.Text;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.util.UpgradableBooleanMap;
+import org.e2immu.analyser.util.UpgradableIntMap;
 import org.e2immu.annotation.ImmutableContainer;
 import org.e2immu.annotation.rare.Finalizer;
 import org.e2immu.annotation.rare.IgnoreModifications;
@@ -241,6 +242,11 @@ public record AnnotationExpressionImpl(TypeInfo typeInfo,
     @Override
     public UpgradableBooleanMap<TypeInfo> typesReferenced() {
         return UpgradableBooleanMap.of(typeInfo, true);
+    }
+
+    @Override
+    public UpgradableIntMap<TypeInfo> typesReferenced2(int weight) {
+        return UpgradableIntMap.of(typeInfo, weight);
     }
 
     private static final Set<String> FQN_ALWAYS_CONTRACT = Set.of(Finalizer.class.getCanonicalName(),

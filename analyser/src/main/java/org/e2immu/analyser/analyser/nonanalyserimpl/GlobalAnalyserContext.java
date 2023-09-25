@@ -82,21 +82,20 @@ public class GlobalAnalyserContext implements AnalyserContext {
 
     public enum HardCoded {
         IMMUTABLE(true), IMMUTABLE_HC(true),
-        MUTABLE_NOT_CONTAINER(false),
-        MUTABLE_CONTAINER(false),
+        MUTABLE_NOT_CONTAINER_DO_NOT_ERASE(false),
+        MUTABLE_CONTAINER_DO_NOT_ERASE(false),
         NO(false),
         NON_MODIFIED(false),
         NOT_MODIFIED_PARAM(false);
 
         public final boolean eraseDependencies;
+
         HardCoded(boolean eraseDependencies) {
             this.eraseDependencies = eraseDependencies;
         }
     }
 
     public static Map<String, HardCoded> HARDCODED_TYPES = Collections.unmodifiableMap(new HashMap<>() {{
-        // FIXME purpose: breaking dep cycles, default values; see also noDelay in SMA
-
         put("java.lang.Annotation", HardCoded.IMMUTABLE_HC);
         put("java.lang.Enum", HardCoded.IMMUTABLE_HC);
         put("java.lang.Object", HardCoded.IMMUTABLE_HC);
@@ -110,35 +109,17 @@ public class GlobalAnalyserContext implements AnalyserContext {
         put("java.lang.Package", HardCoded.IMMUTABLE);
         put("java.lang.constant.Constable", HardCoded.IMMUTABLE_HC);
         put("java.lang.constant.ConstantDesc", HardCoded.IMMUTABLE_HC);
-     //   put("java.lang.constant.DynamicConstantDesc", HardCoded.IMMUTABLE);
-     //   put("java.lang.Thread", HardCoded.IMMUTABLE_HC);
-      //  put("java.nio.charset.CharsetDecoder", HardCoded.IMMUTABLE);
-     //   put("java.lang.invoke.MethodHandles.Lookup", HardCoded.IMMUTABLE);
 
-        // FIXME mutable containers a t m retain their dependencies -> do not help in cycle breaking (List, Set!)
-   /*     put("java.lang.StringBuffer", HardCoded.MUTABLE_CONTAINER);
-        put("java.lang.StringBuilder", HardCoded.MUTABLE_CONTAINER);
-        put("java.io.PrintStream", HardCoded.MUTABLE_CONTAINER); // Throwable
-        put("java.io.PrintWriter", HardCoded.MUTABLE_CONTAINER); // Throwable
-        put("java.io.ObjectInputStream", HardCoded.MUTABLE_CONTAINER); // Throwable
-        put("java.io.ObjectOutputStream", HardCoded.MUTABLE_CONTAINER); // Throwable
-        put("java.util.Set", HardCoded.MUTABLE_CONTAINER); // Throwable
-        put("java.util.List", HardCoded.MUTABLE_CONTAINER); // Throwable
-        put("java.lang.AbstractStringBuilder", HardCoded.MUTABLE_CONTAINER);
+        put("java.util.Map", HardCoded.MUTABLE_CONTAINER_DO_NOT_ERASE); // ClassValue
+        put("java.util.AbstractMap", HardCoded.MUTABLE_CONTAINER_DO_NOT_ERASE); // ClassValue
+        put("java.util.WeakHashMap", HardCoded.MUTABLE_CONTAINER_DO_NOT_ERASE); // ClassValue
+        put("java.lang.ref.WeakReference", HardCoded.MUTABLE_CONTAINER_DO_NOT_ERASE); // ClassValue
+        put("java.util.Collection", HardCoded.MUTABLE_CONTAINER_DO_NOT_ERASE); //  companion
+        put("java.lang.Throwable", HardCoded.MUTABLE_NOT_CONTAINER_DO_NOT_ERASE);
 
-        put("java.util.function.Consumer", HardCoded.MUTABLE_NOT_CONTAINER); // Optional
-        put("java.util.function.Predicate", HardCoded.MUTABLE_NOT_CONTAINER); // Optional
-        put("java.util.function.Function", HardCoded.MUTABLE_NOT_CONTAINER); // Optional
-        put("java.util.function.Supplier", HardCoded.MUTABLE_CONTAINER); // Optional
-        put("java.lang.Runnable", HardCoded.MUTABLE_CONTAINER); // Optional
-*/
-        put("java.util.Map", HardCoded.MUTABLE_CONTAINER); // ClassValue
-        put("java.util.AbstractMap", HardCoded.MUTABLE_CONTAINER); // ClassValue
-        put("java.util.WeakHashMap", HardCoded.MUTABLE_CONTAINER); // ClassValue
-        put("java.lang.ref.WeakReference", HardCoded.MUTABLE_CONTAINER); // ClassValue
+        put("org.e2immu.annotatedapi.AnnotatedAPI", HardCoded.IMMUTABLE_HC);
 
-        put("java.util.Collection", HardCoded.MUTABLE_CONTAINER); //  companion
-
+        // primitives, boxed
         put("java.lang.Boolean", HardCoded.IMMUTABLE);
         put("java.lang.Byte", HardCoded.IMMUTABLE);
         put("java.lang.Character", HardCoded.IMMUTABLE);
@@ -149,43 +130,20 @@ public class GlobalAnalyserContext implements AnalyserContext {
         put("java.lang.Short", HardCoded.IMMUTABLE);
         put("java.lang.String", HardCoded.IMMUTABLE);
         put("java.lang.Void", HardCoded.IMMUTABLE);
-        put("java.lang.Number", HardCoded.IMMUTABLE);
-
-        put("boolean", HardCoded.IMMUTABLE);
-        put("byte", HardCoded.IMMUTABLE);
-        put("char", HardCoded.IMMUTABLE);
-        put("double", HardCoded.IMMUTABLE);
-        put("float", HardCoded.IMMUTABLE);
-        put("int", HardCoded.IMMUTABLE);
-        put("long", HardCoded.IMMUTABLE);
-        put("short", HardCoded.IMMUTABLE);
-        put("void", HardCoded.IMMUTABLE);
-        put("java.lang.Throwable", HardCoded.MUTABLE_NOT_CONTAINER);
-        put("org.e2immu.annotatedapi.AnnotatedAPI", HardCoded.IMMUTABLE_HC);
     }});
 
     public static Map<String, List<String>> PARAMETER_ANALYSES = Map.of("org.e2immu.annotatedapi.AnnotatedAPI.isKnown(boolean)",
             List.of("org.e2immu.annotatedapi.AnnotatedAPI.isKnown(boolean):0:test"));
 
     public static Map<String, HardCoded> HARDCODED_METHODS = Collections.unmodifiableMap(new HashMap<>() {{
-        //    put("java.util.Comparator.compare(T,T)", HardCoded.NON_MODIFIED);
         put("java.lang.CharSequence.length()", HardCoded.NON_MODIFIED);
         put("org.e2immu.annotatedapi.AnnotatedAPI.isKnown(boolean)", HardCoded.NON_MODIFIED);
-        //   put("java.lang.CharSequence.isEmpty()", HardCoded.NON_MODIFIED);
-        //    put("java.lang.CharSequence.charAt(int)", HardCoded.NON_MODIFIED);
-        //    put("java.lang.Object.equals(Object)", HardCoded.NON_MODIFIED);
-        //    put("java.lang.Comparable.compareTo(T)", HardCoded.NON_MODIFIED);
-            put("java.util.Collection.size()", HardCoded.NON_MODIFIED);
-            put("java.util.Map.size()", HardCoded.NON_MODIFIED);//companion of LinkedHashMap
+        put("java.util.Collection.size()", HardCoded.NON_MODIFIED);
+        put("java.util.Map.size()", HardCoded.NON_MODIFIED);//companion of LinkedHashMap
     }});
 
+    // occur in companions
     public static Map<String, HardCoded> HARDCODED_PARAMETERS = Collections.unmodifiableMap(new HashMap<>() {{
-        //   put("java.lang.String.startsWith(String):0:prefix", HardCoded.NOT_MODIFIED_PARAM);
-        //    put("java.lang.String.endsWith(String):0:suffix", HardCoded.NOT_MODIFIED_PARAM);
-        //        put("java.lang.String.contains(CharSequence):0:s", HardCoded.NOT_MODIFIED_PARAM);
-        //     put("java.lang.CharSequence.charAt(int):0:i", HardCoded.NOT_MODIFIED_PARAM);
-        //    put("java.lang.Object.equals(Object):0:obj", HardCoded.NOT_MODIFIED_PARAM);
-        //    put("java.lang.Comparable.compareTo(T):0:t", HardCoded.NOT_MODIFIED_PARAM);
         put("org.e2immu.annotatedapi.AnnotatedAPI.isKnown(boolean):0:test", HardCoded.NOT_MODIFIED_PARAM);
     }});
 
@@ -278,9 +236,9 @@ public class GlobalAnalyserContext implements AnalyserContext {
             @Override
             public List<ParameterAnalysis> getParameterAnalyses() {
                 List<String> fqns = PARAMETER_ANALYSES.get(fullyQualifiedName);
-                for (String fqn: fqns) {
+                for (String fqn : fqns) {
                     ParameterAnalysis pa = hardCodedParameters.get(fqn);
-                    if(pa == null) throw new UnsupportedOperationException("Cannot find "+fqn);
+                    if (pa == null) throw new UnsupportedOperationException("Cannot find " + fqn);
                 }
                 return fqns.stream().map(hardCodedParameters::get).toList();
             }
@@ -527,13 +485,13 @@ public class GlobalAnalyserContext implements AnalyserContext {
                         case CONTAINER -> MultiLevel.CONTAINER_DV;
                         default -> throw new UnsupportedOperationException();
                     };
-                    case MUTABLE_NOT_CONTAINER -> switch (property) {
+                    case MUTABLE_NOT_CONTAINER_DO_NOT_ERASE -> switch (property) {
                         case IMMUTABLE -> MultiLevel.MUTABLE_DV;
                         case INDEPENDENT -> MultiLevel.DEPENDENT_DV;
                         case CONTAINER -> MultiLevel.NOT_CONTAINER_DV;
                         default -> throw new UnsupportedOperationException();
                     };
-                    case MUTABLE_CONTAINER -> switch (property) {
+                    case MUTABLE_CONTAINER_DO_NOT_ERASE -> switch (property) {
                         case IMMUTABLE -> MultiLevel.MUTABLE_DV;
                         case INDEPENDENT -> MultiLevel.DEPENDENT_DV;
                         case CONTAINER -> MultiLevel.CONTAINER_DV;

@@ -24,6 +24,7 @@ import org.e2immu.analyser.output.Text;
 import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.util.UpgradableBooleanMap;
+import org.e2immu.analyser.util.UpgradableIntMap;
 
 import java.util.List;
 import java.util.Objects;
@@ -108,6 +109,11 @@ public class ClassExpression extends BaseExpression implements ConstantExpressio
     @Override
     public UpgradableBooleanMap<TypeInfo> typesReferenced() {
         return parameterizedType.typesReferenced(true);
+    }
+
+    @Override
+    public UpgradableIntMap<TypeInfo> typesReferenced2(int weight) {
+        return parameterizedType.typesReferenced2(weight);
     }
 
     @Override

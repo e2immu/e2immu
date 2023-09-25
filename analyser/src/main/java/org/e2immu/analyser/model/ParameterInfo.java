@@ -24,6 +24,7 @@ import org.e2immu.analyser.model.impl.LocationImpl;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.output.*;
 import org.e2immu.analyser.util.UpgradableBooleanMap;
+import org.e2immu.analyser.util.UpgradableIntMap;
 import org.e2immu.annotation.Container;
 import org.e2immu.support.SetOnce;
 
@@ -231,6 +232,23 @@ public class ParameterInfo implements Variable, WithInspectionAndAnalysis {
                 : UpgradableBooleanMap.of();
 
         return UpgradableBooleanMap.of(parameterizedType.typesReferenced(explicit), analysedAnnotations, inspectedAnnotations);
+    }
+
+    public static final int PARAMETER_WEIGHT = 100;
+
+    @Override
+    public UpgradableIntMap<TypeInfo> typesReferenced2() {
+        UpgradableIntMap<TypeInfo> inspectedAnnotations =
+                parameterInspection.get().getAnnotations().stream()
+                        .flatMap(ae -> ae.typesReferenced2(TypeInfo.ANNOTATION_WEIGHT).stream())
+                        .collect(UpgradableIntMap.collector());
+        UpgradableIntMap<TypeInfo> analysedAnnotations = hasBeenAnalysed()
+                ? parameterAnalysis.get().getAnnotationStream()
+                .flatMap(ae -> ae.getKey().typesReferenced2(TypeInfo.ANNOTATION_WEIGHT).stream())
+                .collect(UpgradableIntMap.collector())
+                : UpgradableIntMap.of();
+        return UpgradableIntMap.of(parameterizedType.typesReferenced2(PARAMETER_WEIGHT), analysedAnnotations,
+                inspectedAnnotations);
     }
 
     // as variable

@@ -23,6 +23,7 @@ import org.e2immu.analyser.model.expression.EmptyExpression;
 import org.e2immu.analyser.model.impl.LocationImpl;
 import org.e2immu.analyser.output.*;
 import org.e2immu.analyser.util.UpgradableBooleanMap;
+import org.e2immu.analyser.util.UpgradableIntMap;
 import org.e2immu.support.SetOnce;
 
 import java.util.ArrayList;
@@ -117,6 +118,26 @@ public class FieldInfo implements WithInspectionAndAnalysis {
                 fieldInspection.isSet() && fieldInspection.get().fieldInitialiserIsSet() ?
                         fieldInspection.get().getFieldInitialiser().initialiser().typesReferenced()
                         : UpgradableBooleanMap.of()
+        );
+    }
+
+    public static final int FIELD_WEIGHT = 50;
+    public static final int FIELD_EXPRESSION_WEIGHT = 1;
+
+    @Override
+    public UpgradableIntMap<TypeInfo> typesReferenced2() {
+        return UpgradableIntMap.of(
+                type.typesReferenced2(FIELD_WEIGHT),
+                fieldInspection.isSet() ? fieldInspection.get().getAnnotations().stream()
+                        .flatMap(a -> a.typesReferenced2(TypeInfo.ANNOTATION_WEIGHT).stream()).collect(UpgradableIntMap.collector())
+                        : UpgradableIntMap.of(),
+                hasBeenAnalysed() ? fieldAnalysis.get().getAnnotationStream()
+                        .filter(e -> e.getValue().isVisible())
+                        .flatMap(e -> e.getKey().typesReferenced2(TypeInfo.ANNOTATION_WEIGHT).stream())
+                        .collect(UpgradableIntMap.collector()) : UpgradableIntMap.of(),
+                fieldInspection.isSet() && fieldInspection.get().fieldInitialiserIsSet() ?
+                        fieldInspection.get().getFieldInitialiser().initialiser().typesReferenced2(FIELD_EXPRESSION_WEIGHT)
+                        : UpgradableIntMap.of()
         );
     }
 

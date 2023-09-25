@@ -107,7 +107,7 @@ public class PrimaryTypeAnalyserImpl implements PrimaryTypeAnalyser {
                 .setUpdateUponProgress(SharedState::removeAllowBreakDelay)
                 .setExecuteConditionally(this::executeConditionally)
                 .build();
-        LOGGER.debug("List of analysers: {}", analysers);
+        LOGGER.trace("List of analysers: {}", analysers);
     }
 
     private boolean executeConditionally(Analyser analyser, SharedState sharedState) {

@@ -18,6 +18,7 @@ import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.util.UpgradableBooleanMap;
+import org.e2immu.analyser.util.UpgradableIntMap;
 import org.e2immu.annotation.NotNull;
 
 import java.util.ArrayList;
@@ -72,6 +73,11 @@ public interface Element {
     @NotNull
     default UpgradableBooleanMap<TypeInfo> typesReferenced() {
         return subElements().stream().flatMap(e -> e.typesReferenced().stream()).collect(UpgradableBooleanMap.collector());
+    }
+
+    @NotNull
+    default UpgradableIntMap<TypeInfo> typesReferenced2(int weight) {
+        return subElements().stream().flatMap(e -> e.typesReferenced2(weight).stream()).collect(UpgradableIntMap.collector());
     }
 
     enum DescendMode {

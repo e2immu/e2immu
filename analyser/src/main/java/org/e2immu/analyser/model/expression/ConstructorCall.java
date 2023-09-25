@@ -30,6 +30,7 @@ import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.util.ListUtil;
 import org.e2immu.analyser.util.Pair;
 import org.e2immu.analyser.util.UpgradableBooleanMap;
+import org.e2immu.analyser.util.UpgradableIntMap;
 import org.e2immu.annotation.NotNull;
 
 import java.util.*;
@@ -415,6 +416,14 @@ public class ConstructorCall extends BaseExpression implements HasParameterExpre
                 scope == null ? UpgradableBooleanMap.of() : scope.typesReferenced(),
                 parameterizedType.typesReferenced(true),
                 parameterExpressions.stream().flatMap(e -> e.typesReferenced().stream()).collect(UpgradableBooleanMap.collector()));
+    }
+
+    @Override
+    public UpgradableIntMap<TypeInfo> typesReferenced2(int weight) {
+        return UpgradableIntMap.of(scope == null ? UpgradableIntMap.of() : scope.typesReferenced2(weight),
+                parameterizedType.typesReferenced2(weight),
+                parameterExpressions.stream().flatMap(e -> e.typesReferenced2(weight).stream())
+                        .collect(UpgradableIntMap.collector()));
     }
 
     @Override

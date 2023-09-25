@@ -29,6 +29,7 @@ import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.util.ListUtil;
 import org.e2immu.analyser.util.UpgradableBooleanMap;
+import org.e2immu.analyser.util.UpgradableIntMap;
 import org.e2immu.annotation.NotNull;
 import org.e2immu.support.Either;
 import org.e2immu.support.SetOnce;
@@ -534,6 +535,53 @@ public final class TypeInfo implements NamedType, WithInspectionAndAnalysis, Com
 
                 // types from subTypes
                 inspection.subTypes().stream().flatMap(a -> a.typesReferenced().stream()).collect(UpgradableBooleanMap.collector())
+
+        );
+    }
+
+    public static final int PARENT_WEIGHT = 100_000;
+    public static final int INTERFACE_WEIGHT = 10_000;
+    public static final int ENCLOSING_WEIGHT = 10_000;
+    public static final int ANNOTATION_WEIGHT = 10;
+
+    @Override
+    public UpgradableIntMap<TypeInfo> typesReferenced2() {
+        if (!typeInspection.isSet()) return UpgradableIntMap.of();
+        TypeInspection inspection = typeInspection.get();
+
+        UpgradableIntMap<TypeInfo> fromParent = inspection.parentClass() == null ? UpgradableIntMap.of()
+                : inspection.parentClass().typesReferenced2(PARENT_WEIGHT);
+
+        UpgradableIntMap<TypeInfo> enclosingType = packageNameOrEnclosingType.isRight() && !isStatic() && !isInterface() ?
+                UpgradableIntMap.of(packageNameOrEnclosingType.getRight(), ENCLOSING_WEIGHT) : UpgradableIntMap.of();
+
+        UpgradableIntMap<TypeInfo> fromInterfaces = inspection.interfacesImplemented().stream()
+                .flatMap(i -> i.typesReferenced2(INTERFACE_WEIGHT).stream())
+                .collect(UpgradableIntMap.collector());
+
+        UpgradableIntMap<TypeInfo> inspectedAnnotations = inspection.getAnnotations().stream()
+                .flatMap(a -> a.typesReferenced2(ANNOTATION_WEIGHT).stream()).collect(UpgradableIntMap.collector());
+
+        UpgradableIntMap<TypeInfo> analysedAnnotations = hasBeenAnalysed() ? typeAnalysis.get().getAnnotationStream()
+                .flatMap(entry -> entry.getKey().typesReferenced2(ANNOTATION_WEIGHT).stream()).collect(UpgradableIntMap.collector())
+                : UpgradableIntMap.of();
+
+        return UpgradableIntMap.of(
+                fromParent,
+                enclosingType,
+                fromInterfaces,
+                inspectedAnnotations,
+                analysedAnnotations,
+
+                // types from methods and constructors and their parameters
+                inspection.methodsAndConstructors(TypeInspection.Methods.THIS_TYPE_ONLY)
+                        .flatMap(a -> a.typesReferenced2().stream()).collect(UpgradableIntMap.collector()),
+
+                // types from fields
+                inspection.fields().stream().flatMap(a -> a.typesReferenced2().stream()).collect(UpgradableIntMap.collector()),
+
+                // types from subTypes
+                inspection.subTypes().stream().flatMap(a -> a.typesReferenced2().stream()).collect(UpgradableIntMap.collector())
 
         );
     }

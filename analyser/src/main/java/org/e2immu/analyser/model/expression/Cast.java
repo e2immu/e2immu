@@ -22,6 +22,7 @@ import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.Symbol;
 import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.util.UpgradableBooleanMap;
+import org.e2immu.analyser.util.UpgradableIntMap;
 
 import java.util.List;
 import java.util.Objects;
@@ -113,6 +114,11 @@ public class Cast extends BaseExpression implements Expression {
     @Override
     public UpgradableBooleanMap<TypeInfo> typesReferenced() {
         return UpgradableBooleanMap.of(expression.typesReferenced(), parameterizedType.typesReferenced(true));
+    }
+
+    @Override
+    public UpgradableIntMap<TypeInfo> typesReferenced2(int weight) {
+        return UpgradableIntMap.of(expression.typesReferenced2(weight), parameterizedType.typesReferenced2(weight));
     }
 
     @Override

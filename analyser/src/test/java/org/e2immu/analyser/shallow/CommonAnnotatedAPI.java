@@ -50,6 +50,15 @@ public abstract class CommonAnnotatedAPI {
      */
     @BeforeAll
     public static void beforeClass() throws IOException {
+       InitData initData = initialize();
+       typeContext = initData.typeContext;
+       errors = initData.errors;
+    }
+
+    public record InitData(TypeContext typeContext, List<Message> errors) {
+    }
+
+    public static InitData initialize() throws IOException {
         InputConfiguration.Builder inputConfigurationBuilder = new InputConfiguration.Builder()
                 .setAlternativeJREDirectory(CommonTestRunner.CURRENT_JDK)
                 .addClassPath("jmods/java.base.jmod")
@@ -69,17 +78,18 @@ public abstract class CommonAnnotatedAPI {
         configuration.initializeLoggers();
         Parser parser = new Parser(configuration);
         parser.run();
-        typeContext = parser.getTypeContext();
-        errors = parser.getMessages()
+        TypeContext typeContext = parser.getTypeContext();
+        List<Message> errors = parser.getMessages()
                 .filter(m -> m.message().severity == Message.Severity.ERROR)
                 .toList();
         LOGGER.info("Have {} error messages", errors.size());
         errors.stream().sorted(Comparator.comparing(Message::location))
                 .forEach(e -> LOGGER.info(e.toString()));
         // not stopping here if there's errors, TestAnnotatedAPIErrors will fail
+        return new InitData(typeContext, errors);
     }
 
-    protected void testImmutableContainerType(TypeAnalysis typeAnalysis, boolean hcImmutable) {
+    protected static void testImmutableContainerType(TypeAnalysis typeAnalysis, boolean hcImmutable) {
         DV immutableDv = hcImmutable ? MultiLevel.EFFECTIVELY_IMMUTABLE_HC_DV : MultiLevel.EFFECTIVELY_IMMUTABLE_DV;
         assertEquals(immutableDv, typeAnalysis.getProperty(Property.IMMUTABLE));
         assertEquals(MultiLevel.CONTAINER_DV, typeAnalysis.getProperty(Property.CONTAINER));

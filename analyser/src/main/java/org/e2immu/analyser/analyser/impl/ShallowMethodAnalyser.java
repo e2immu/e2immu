@@ -288,7 +288,7 @@ public class ShallowMethodAnalyser extends MethodAnalyserImpl {
         ParameterizedType pt = builder.getParameterInfo().parameterizedType;
         if (pt.isPrimitiveExcludingVoid()) return MultiLevel.EFFECTIVELY_NOT_NULL_DV;
         DV override = bestOfParameterOverrides(builder.getParameterInfo(), Property.NOT_NULL_PARAMETER);
-        return MultiLevel.NULLABLE_DV.maxIgnoreDelay(override);
+        return MultiLevel.NULLABLE_DV.max(override);
     }
 
     /*
@@ -584,8 +584,8 @@ public class ShallowMethodAnalyser extends MethodAnalyserImpl {
                 .map(mi -> {
                     ParameterInfo p = mi.methodInspection.get().getParameters().get(parameterInfo.index);
                     ParameterAnalysis pa = analyserContext.getParameterAnalysisNullWhenAbsent(p);
-                    return pa == null ? property.falseDv : pa.getPropertyFromMapNeverDelay(property);
-                }).reduce(DV.MIN_INT_DV, DV::maxIgnoreDelay);
+                    return pa == null ? property.falseDv : pa.getProperty(property);
+                }).reduce(DV.MIN_INT_DV, DV::max);
     }
 
     @Override
