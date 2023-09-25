@@ -500,7 +500,7 @@ public class Test_14_Warnings extends CommonTestRunner {
 
                 if ("IsNotAContainer".equals(d.methodInfo().typeInfo.simpleName)) {
                     Set<MethodAnalysis> overrides = d.methodAnalysis()
-                            .getOverrides(d.evaluationContext().getAnalyserContext());
+                            .getOverrides(d.evaluationContext().getAnalyserContext(), true);
                     assertFalse(overrides.isEmpty());
 
                     assertDv(d, DV.FALSE_DV, MODIFIED_METHOD); // method modifies parameter, not a field!

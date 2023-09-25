@@ -48,6 +48,13 @@ public class JavaIo {
         void close();
     }
 
+    @Container
+    interface Flushable$ {
+
+        @Modified
+        void flush();
+    }
+
     /*
      Extending FilterOutputStream, PrintStream cannot be container, cannot be independent.
 

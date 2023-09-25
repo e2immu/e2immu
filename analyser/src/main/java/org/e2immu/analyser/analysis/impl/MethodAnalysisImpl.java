@@ -151,8 +151,8 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
     }
 
     @Override
-    public Set<MethodAnalysis> getOverrides(AnalysisProvider analysisProvider) {
-        return overrides(analysisProvider, methodInfo, this);
+    public Set<MethodAnalysis> getOverrides(AnalysisProvider analysisProvider, boolean complainIfNotAnalyzed) {
+        return overrides(analysisProvider, methodInfo, this, true);
     }
 
     @Override
@@ -614,7 +614,7 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
                 }
             }
 
-            if(getProperty(Property.STATIC_SIDE_EFFECTS).valueIsTrue()) {
+            if (getProperty(Property.STATIC_SIDE_EFFECTS).valueIsTrue()) {
                 addAnnotation(e2.staticSideEffects);
             }
 
@@ -704,8 +704,8 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
         }
 
         @Override
-        public Set<MethodAnalysis> getOverrides(AnalysisProvider analysisProvider) {
-            return overrides(analysisProvider, methodInfo, this);
+        public Set<MethodAnalysis> getOverrides(AnalysisProvider analysisProvider, boolean complainIfNotAnalyzed) {
+            return overrides(analysisProvider, methodInfo, this, complainIfNotAnalyzed);
         }
 
         @Override
@@ -832,11 +832,16 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
 
     private static Set<MethodAnalysis> overrides(AnalysisProvider analysisProvider,
                                                  MethodInfo methodInfo,
-                                                 MethodAnalysis methodAnalysis) {
+                                                 MethodAnalysis methodAnalysis,
+                                                 boolean complainIfNotAnalyzed) {
         try {
             return methodInfo.methodResolution.get().overrides().stream()
                     .filter(mi -> mi.analysisAccessible(InspectionProvider.DEFAULT))
-                    .map(mi -> mi == methodInfo ? methodAnalysis : analysisProvider.getMethodAnalysis(mi))
+                    .map(mi -> mi == methodInfo ? methodAnalysis :
+                            complainIfNotAnalyzed ?
+                                    analysisProvider.getMethodAnalysis(mi) :
+                                    analysisProvider.getMethodAnalysisNullWhenAbsent(mi))
+                    .filter(Objects::nonNull)
                     .collect(Collectors.toSet());
         } catch (RuntimeException rte) {
             LOGGER.error("Cannot compute method analysis of {}", methodInfo.distinguishingName());

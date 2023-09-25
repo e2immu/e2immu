@@ -129,7 +129,7 @@ public abstract class ParameterAnalyserImpl extends AbstractAnalyser implements 
     }
 
     protected DV computeValueFromOverrides(Property property, boolean filter) {
-        return analyserContext.getMethodAnalysis(parameterInfo.owner).getOverrides(analyserContext)
+        return analyserContext.getMethodAnalysis(parameterInfo.owner).getOverrides(analyserContext, true)
                 .stream()
                 .map(ma -> ma.getMethodInfo().methodInspection.get().getParameters().get(parameterInfo.index))
                 .filter(pi -> !filter || !(property == INDEPENDENT || property == IMMUTABLE) || !pi.parameterizedType.isUnboundTypeParameter())

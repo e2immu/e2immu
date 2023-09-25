@@ -51,4 +51,8 @@ public class JavaNio {
         @Modified
         CharBuffer get(@Modified char[] dst);
     }
+
+    interface ByteBuffer$ {
+
+    }
 }

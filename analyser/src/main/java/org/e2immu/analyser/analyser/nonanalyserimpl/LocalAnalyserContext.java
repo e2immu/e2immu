@@ -141,6 +141,13 @@ public class LocalAnalyserContext implements AnalyserContext {
     }
 
     @Override
+    public ParameterAnalysis getParameterAnalysisNullWhenAbsent(ParameterInfo parameterInfo) {
+        ParameterAnalyser parameterAnalyser = parameterAnalysers.get(parameterInfo);
+        return parameterAnalyser != null ? parameterAnalyser.getParameterAnalysis()
+                : parent.getParameterAnalysisNullWhenAbsent(parameterInfo);
+    }
+
+    @Override
     public Stream<FieldAnalyser> fieldAnalyserStream() {
         return Stream.concat(parent.fieldAnalyserStream(), this.fieldAnalysers.valueStream());
     }

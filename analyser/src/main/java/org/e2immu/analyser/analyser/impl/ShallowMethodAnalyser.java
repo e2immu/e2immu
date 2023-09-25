@@ -16,6 +16,7 @@ package org.e2immu.analyser.analyser.impl;
 
 import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.analyser.impl.util.BreakDelayLevel;
+import org.e2immu.analyser.analyser.nonanalyserimpl.LocalAnalyserContext;
 import org.e2immu.analyser.analyser.statementanalyser.StatementAnalyserImpl;
 import org.e2immu.analyser.analyser.util.AnalyserResult;
 import org.e2immu.analyser.analyser.util.VariableAccessReport;
@@ -34,6 +35,7 @@ import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.Messages;
 import org.e2immu.analyser.visitor.MethodAnalyserVisitor;
+import org.e2immu.support.FlipSwitch;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -53,7 +55,8 @@ public class ShallowMethodAnalyser extends MethodAnalyserImpl {
 
     private static final Set<String> EXCEPTIONS_TO_CONTAINER = Set.of("java.util.Collection.toArray(T[])");
     private final boolean enableVisitors;
-    private final Function<SharedState, AnalyserResult> analyser;
+
+    private final FlipSwitch annotationsHaveBeenSet = new FlipSwitch();
 
     public ShallowMethodAnalyser(MethodInfo methodInfo,
                                  MethodAnalysisImpl.Builder methodAnalysis,
@@ -62,13 +65,6 @@ public class ShallowMethodAnalyser extends MethodAnalyserImpl {
                                  boolean enableVisitors) {
         super(methodInfo, methodAnalysis, List.of(), parameterAnalyses, Map.of(), false, analyserContext);
         this.enableVisitors = enableVisitors;
-        if (TypeInfo.IS_FACT_FQN.equals(methodInfo.fullyQualifiedName)) {
-            analyser = this::analyseIsFact;
-        } else if (TypeInfo.IS_KNOWN_FQN.equals(methodInfo.fullyQualifiedName)) {
-            analyser = this::analyseIsKnown;
-        } else {
-            analyser = this::internalAnalyse;
-        }
     }
 
     @Override
@@ -83,10 +79,11 @@ public class ShallowMethodAnalyser extends MethodAnalyserImpl {
 
     @Override
     public AnalyserResult analyse(SharedState sharedState) {
-        return analyser.apply(sharedState);
+        return internalAnalyse(sharedState);
     }
 
     private AnalyserResult internalAnalyse(SharedState sharedState) {
+        LOGGER.debug("Shallow method analyser {}", methodInfo.fullyQualifiedName);
         try {
             AnalysisStatus combined = AnalysisStatus.DONE;
             for (Map.Entry<CompanionMethodName, MethodInfo> e : methodInfo.methodInspection.get().getCompanionMethods().entrySet()) {
@@ -94,16 +91,19 @@ public class ShallowMethodAnalyser extends MethodAnalyserImpl {
                 if (!methodAnalysis.companionAnalyses.isSet(cmn)) {
                     LOGGER.debug("Starting companion analyser for {}", cmn);
 
-                    CompanionAnalyser companionAnalyser = new CompanionAnalyser(analyserContext,
-                            analyserContext.getTypeAnalysis(methodInfo.typeInfo), cmn, e.getValue(),
+                    TypeAnalysis typeAnalysis = analyserContext.getTypeAnalysis(methodInfo.typeInfo);
+                    LocalAnalyserContext localAnalyserContext = new LocalAnalyserContext(analyserContext);
+                    CompanionAnalyser companionAnalyser = new CompanionAnalyser(localAnalyserContext,
+                            typeAnalysis, cmn, e.getValue(),
                             methodInfo, AnnotationParameters.CONTRACT);
                     AnalysisStatus analysisStatus = companionAnalyser.analyse(sharedState.iteration());
                     if (analysisStatus.isDone()) {
                         CompanionAnalysis companionAnalysis = companionAnalyser.companionAnalysis.build();
                         methodAnalysis.companionAnalyses.put(cmn, companionAnalysis);
                     } else {
-                        assert analysisStatus.isDelayed();
-                        LOGGER.debug("Delaying analysis of {} in {}", cmn, methodInfo.fullyQualifiedName());
+                        LOGGER.debug("Delaying analysis of {} in {} because {}", cmn, methodInfo.fullyQualifiedName(),
+                                analysisStatus.causesOfDelay());
+                        //   assert !analysisStatus.isDelayed();
                         combined = combined.combine(analysisStatus);
                     }
                 }
@@ -113,82 +113,6 @@ public class ShallowMethodAnalyser extends MethodAnalyserImpl {
             LOGGER.error("Error while analysing method {}", methodInfo.fullyQualifiedName);
             throw re;
         }
-    }
-
-
-    // dedicated method exactly for this "isFact" method
-    private AnalyserResult analyseIsFact(SharedState sharedState) {
-        ParameterInfo parameterInfo = methodInfo.methodInspection.get().getParameters().get(0);
-        ParameterAnalysisImpl.Builder parameterAnalysis = new ParameterAnalysisImpl.Builder(
-                analyserContext.getPrimitives(), analyserContext, parameterInfo);
-        parameterAnalysis.setProperty(Property.IDENTITY, Property.IDENTITY.falseDv);
-        parameterAnalysis.setProperty(Property.IGNORE_MODIFICATIONS, Property.IGNORE_MODIFICATIONS.falseDv);
-        parameterAnalysis.setProperty(Property.NOT_NULL_EXPRESSION, MultiLevel.EFFECTIVELY_NOT_NULL_DV);
-        parameterAnalysis.setProperty(Property.CONTEXT_NOT_NULL, MultiLevel.EFFECTIVELY_NOT_NULL_DV);
-        parameterAnalysis.setProperty(Property.CONTEXT_MODIFIED, DV.FALSE_DV);
-        parameterAnalysis.setProperty(Property.MODIFIED_OUTSIDE_METHOD, DV.FALSE_DV);
-        parameterAnalysis.setProperty(Property.CONTAINER_RESTRICTION, MultiLevel.NOT_CONTAINER_DV);
-
-        TypeAnalysis typeAnalysis = analyserContext.getTypeAnalysis(methodInfo.typeInfo);
-        List<ParameterAnalysis> parameterAnalyses = List.of((ParameterAnalysis) parameterAnalysis.build());
-        MethodAnalysisImpl.Builder builder = new MethodAnalysisImpl.Builder(CONTRACTED, analyserContext.getPrimitives(),
-                analyserContext, analyserContext, methodInfo, typeAnalysis, parameterAnalyses);
-        builder.ensureIsNotEventualUnlessOtherwiseAnnotated();
-        builder.setProperty(Property.IDENTITY, Property.IDENTITY.falseDv);
-        builder.setProperty(Property.STATIC_SIDE_EFFECTS, Property.STATIC_SIDE_EFFECTS.falseDv);
-        builder.setProperty(Property.IGNORE_MODIFICATIONS, Property.IGNORE_MODIFICATIONS.falseDv);
-        builder.setProperty(Property.FLUENT, DV.FALSE_DV);
-        builder.setProperty(Property.MODIFIED_METHOD, DV.FALSE_DV);
-        builder.setProperty(Property.CONTEXT_MODIFIED, DV.FALSE_DV);
-        builder.setProperty(Property.INDEPENDENT, MultiLevel.INDEPENDENT_DV);
-        builder.setProperty(Property.CONTEXT_NOT_NULL, MultiLevel.EFFECTIVELY_NOT_NULL_DV);
-        builder.setProperty(Property.NOT_NULL_EXPRESSION, MultiLevel.EFFECTIVELY_NOT_NULL_DV);
-        builder.setProperty(Property.IMMUTABLE, MultiLevel.EFFECTIVELY_IMMUTABLE_DV);
-        builder.setProperty(Property.CONTAINER, MultiLevel.CONTAINER_DV);
-        builder.companionAnalyses.freeze();
-        VariableExpression ve = new VariableExpression(parameterInfo.identifier, parameterInfo);
-        builder.setSingleReturnValue(new InlinedMethod(Identifier.generate("isFact"), methodInfo, ve, Set.of(ve),
-                false));
-        LOGGER.debug("Provided analysis of dedicated method {}", methodInfo.fullyQualifiedName());
-        return AnalyserResult.EMPTY;
-    }
-
-
-    // dedicated method exactly for this "isKnown" method
-    private AnalyserResult analyseIsKnown(SharedState sharedState) {
-        ParameterInfo parameterInfo = methodInfo.methodInspection.get().getParameters().get(0);
-        ParameterAnalysisImpl.Builder parameterAnalysis = new ParameterAnalysisImpl.Builder(
-                analyserContext.getPrimitives(), analyserContext, parameterInfo);
-        parameterAnalysis.setProperty(Property.IDENTITY, Property.IDENTITY.falseDv);
-        parameterAnalysis.setProperty(Property.IGNORE_MODIFICATIONS, Property.IGNORE_MODIFICATIONS.falseDv);
-        parameterAnalysis.setProperty(Property.NOT_NULL_EXPRESSION, MultiLevel.EFFECTIVELY_NOT_NULL_DV);
-        parameterAnalysis.setProperty(Property.CONTEXT_NOT_NULL, MultiLevel.EFFECTIVELY_NOT_NULL_DV);
-        parameterAnalysis.setProperty(Property.CONTEXT_MODIFIED, DV.FALSE_DV);
-        parameterAnalysis.setProperty(Property.MODIFIED_OUTSIDE_METHOD, DV.FALSE_DV);
-        parameterAnalysis.setProperty(Property.CONTAINER_RESTRICTION, MultiLevel.NOT_CONTAINER_DV);
-
-        TypeAnalysis typeAnalysis = analyserContext.getTypeAnalysis(methodInfo.typeInfo);
-        List<ParameterAnalysis> parameterAnalyses = List.of((ParameterAnalysis) parameterAnalysis.build());
-        MethodAnalysisImpl.Builder builder = new MethodAnalysisImpl.Builder(CONTRACTED, analyserContext.getPrimitives(),
-                analyserContext, analyserContext, methodInfo, typeAnalysis, parameterAnalyses);
-        builder.ensureIsNotEventualUnlessOtherwiseAnnotated();
-        builder.setProperty(Property.IDENTITY, Property.IDENTITY.falseDv);
-        builder.setProperty(Property.STATIC_SIDE_EFFECTS, Property.STATIC_SIDE_EFFECTS.falseDv);
-        builder.setProperty(Property.IGNORE_MODIFICATIONS, Property.IGNORE_MODIFICATIONS.falseDv);
-        builder.setProperty(Property.FLUENT, DV.FALSE_DV);
-        builder.setProperty(Property.MODIFIED_METHOD, DV.FALSE_DV);
-        builder.setProperty(Property.CONTEXT_MODIFIED, DV.FALSE_DV);
-        builder.setProperty(Property.INDEPENDENT, MultiLevel.INDEPENDENT_DV);
-        builder.setProperty(Property.CONTEXT_NOT_NULL, MultiLevel.EFFECTIVELY_NOT_NULL_DV);
-        builder.setProperty(Property.NOT_NULL_EXPRESSION, MultiLevel.EFFECTIVELY_NOT_NULL_DV);
-        builder.setProperty(Property.IMMUTABLE, MultiLevel.EFFECTIVELY_IMMUTABLE_DV);
-        builder.setProperty(Property.CONTAINER, MultiLevel.CONTAINER_DV);
-
-        builder.companionAnalyses.freeze();
-        builder.setSingleReturnValue(UnknownExpression.forHardcodedMethodReturnValue(methodInfo.identifier,
-                analyserContext.getPrimitives().booleanParameterizedType(), "isKnown return value"));
-        LOGGER.debug("Provided analysis of dedicated method {}", methodInfo.fullyQualifiedName());
-        return AnalyserResult.EMPTY;
     }
 
     private AnalyserResult internalAnalyse(int iteration) {
@@ -212,9 +136,12 @@ public class ShallowMethodAnalyser extends MethodAnalyserImpl {
             }
         });
 
-        List<AnnotationExpression> annotations = methodInfo.methodInspection.get().getAnnotations();
-        analyserResultBuilder.addMessages(methodAnalysis.fromAnnotationsIntoProperties(Analyser.AnalyserIdentification.METHOD,
-                true, annotations, e2));
+        if(!annotationsHaveBeenSet.isSet()) {
+            List<AnnotationExpression> annotations = methodInfo.methodInspection.get().getAnnotations();
+            analyserResultBuilder.addMessages(methodAnalysis.fromAnnotationsIntoProperties(Analyser.AnalyserIdentification.METHOD,
+                    true, annotations, e2));
+            annotationsHaveBeenSet.set();
+        }
 
         CausesOfDelay causes;
         if (explicitlyEmpty) {
@@ -248,6 +175,7 @@ public class ShallowMethodAnalyser extends MethodAnalyserImpl {
                     () -> bestOfOverridesOrWorstValue(Property.STATIC_SIDE_EFFECTS));
             causes = c1.merge(c2).merge(c3).merge(c4).merge(c5).merge(c6);
         }
+        //assert !causes.isDelayed() : "Have delays in " + methodInfo.fullyQualifiedName + ": " + causes;
 
         CompanionMethodName pre = new CompanionMethodName(methodInfo.name, CompanionMethodName.Action.PRECONDITION, null);
         MethodInfo precondition = methodInspection.getCompanionMethods().get(pre);
@@ -290,27 +218,29 @@ public class ShallowMethodAnalyser extends MethodAnalyserImpl {
 
      */
     private void handlePrecondition(MethodInfo precondition) {
-        LOGGER.debug("Handle precondition {}", precondition.fullyQualifiedName);
-        Expression expression = precondition.extractSingleReturnExpression();
-        Precondition.CompanionCause companionCause = new Precondition.CompanionCause(precondition);
-        Precondition pc = new Precondition(expression, List.of(companionCause));
-        methodAnalysis.setPrecondition(pc);
+        if(methodAnalysis.preconditionIsVariable()) {
+            LOGGER.debug("Handle precondition {}", precondition.fullyQualifiedName);
+            Expression expression = precondition.extractSingleReturnExpression();
+            Precondition.CompanionCause companionCause = new Precondition.CompanionCause(precondition);
+            Precondition pc = new Precondition(expression, List.of(companionCause));
+            methodAnalysis.setPrecondition(pc);
 
-        TranslationMap allKnownTestMarks = testMarkTranslationMap();
-        Expression translated = expression.translate(analyserContext, allKnownTestMarks);
-        if (translated != expression) {
-            Precondition pce = new Precondition(translated, List.of(companionCause));
-            methodAnalysis.setPreconditionForEventual(pce);
+            TranslationMap allKnownTestMarks = testMarkTranslationMap();
+            Expression translated = expression.translate(analyserContext, allKnownTestMarks);
+            if (translated != expression) {
+                Precondition pce = new Precondition(translated, List.of(companionCause));
+                methodAnalysis.setPreconditionForEventual(pce);
 
-            // TODO this is very hardcoded, and corresponds to code in Precondition.expressionIsPossiblyNegatedMethodCall
-            boolean negation = pce.expression() instanceof Negation || pce.expression() instanceof UnaryOperator uo && uo.isNegation();
-            Set<FieldInfo> fields = translated.variableStream()
-                    .filter(v -> v instanceof FieldReference)
-                    .map(v -> ((FieldReference) v).fieldInfo)
-                    .collect(Collectors.toUnmodifiableSet());
-            assert !fields.isEmpty();
-            MethodAnalysis.Eventual eventual = new MethodAnalysis.Eventual(fields, false, !negation, null);
-            methodAnalysis.setEventual(eventual);
+                // TODO this is very hardcoded, and corresponds to code in Precondition.expressionIsPossiblyNegatedMethodCall
+                boolean negation = pce.expression() instanceof Negation || pce.expression() instanceof UnaryOperator uo && uo.isNegation();
+                Set<FieldInfo> fields = translated.variableStream()
+                        .filter(v -> v instanceof FieldReference)
+                        .map(v -> ((FieldReference) v).fieldInfo)
+                        .collect(Collectors.toUnmodifiableSet());
+                assert !fields.isEmpty();
+                MethodAnalysis.Eventual eventual = new MethodAnalysis.Eventual(fields, false, !negation, null);
+                methodAnalysis.setEventual(eventual);
+            }
         }
     }
 
@@ -389,7 +319,7 @@ public class ShallowMethodAnalyser extends MethodAnalyserImpl {
     }
 
     private CausesOfDelay computeMethodPropertyIfNecessary(Property property, Supplier<DV> computer) {
-        DV inMap = methodAnalysis.getPropertyFromMapDelayWhenAbsent(property);
+        DV inMap = methodAnalysis.getProperty(property);
         if (inMap.isDelayed()) {
             DV computed = computer.get();
             //   if (computed.isDone()) {
@@ -403,13 +333,13 @@ public class ShallowMethodAnalyser extends MethodAnalyserImpl {
     private static CausesOfDelay computeParameterPropertyIfNecessary(ParameterAnalysisImpl.Builder builder,
                                                                      Property property,
                                                                      Function<ParameterAnalysisImpl.Builder, DV> computer) {
-        DV inMap = builder.getPropertyFromMapDelayWhenAbsent(property);
+        DV inMap = builder.getProperty(property);
         if (inMap.isDelayed()) {
             DV computed = computer.apply(builder);
             builder.setProperty(property, computed);
             return computed.causesOfDelay();
         }
-        return inMap.causesOfDelay();
+        return CausesOfDelay.EMPTY;
     }
 
     private DV bestOfOverridesOrWorstValue(Property property) {
@@ -447,7 +377,7 @@ public class ShallowMethodAnalyser extends MethodAnalyserImpl {
         // check identity and parameter contract
         if (methodAnalysis.properties.getOrDefault(Property.IDENTITY, DV.FALSE_DV).equals(DV.TRUE_DV)) {
             ParameterAnalysis p0 = parameterAnalyses.get(0);
-            return p0.getProperty(Property.CONTAINER);
+            return p0.getPropertyFromMapDelayWhenAbsent(Property.CONTAINER);
         }
         return MultiLevel.NOT_CONTAINER_DV;
     }
@@ -455,8 +385,9 @@ public class ShallowMethodAnalyser extends MethodAnalyserImpl {
     // in a @Container type, @Fluent or void ==> @Modified, unless otherwise specified
     private DV computeMethodModified() {
         if (methodInfo.isConstructor) return DV.TRUE_DV;
-        DV fluent = methodAnalysis.getProperty(Property.FLUENT);
-        DV typeContainer = analyserContext.getTypeAnalysis(methodInfo.typeInfo).getProperty(Property.CONTAINER);
+        DV fluent = methodAnalysis.getPropertyFromMapDelayWhenAbsent(Property.FLUENT);
+        DV typeContainer = analyserContext.getTypeAnalysis(methodInfo.typeInfo)
+                .getPropertyFromMapDelayWhenAbsent(Property.CONTAINER);
         boolean voidMethod = methodInfo.noReturnValue();
         DV addToModified = DV.fromBoolDv(typeContainer.equals(MultiLevel.CONTAINER_DV) && (fluent.valueIsTrue() || voidMethod));
         return DV.FALSE_DV.maxIgnoreDelay(bestOfOverrides(Property.MODIFIED_METHOD)).max(addToModified);
@@ -480,7 +411,7 @@ public class ShallowMethodAnalyser extends MethodAnalyserImpl {
         TypeAnalysis ownerAnalysis = analyserContext.getTypeAnalysis(builder.getParameterInfo().owner.typeInfo);
         DV typeContainer = ownerAnalysis.getPropertyFromMapNeverDelay(Property.CONTAINER);
 
-        DV inMap = builder.getPropertyFromMapDelayWhenAbsent(Property.MODIFIED_VARIABLE);
+        DV inMap = builder.getProperty(Property.MODIFIED_VARIABLE);
         if (inMap.isDelayed()) {
             DV value;
             if (typeContainer.equals(MultiLevel.CONTAINER_DV)) {
@@ -497,23 +428,24 @@ public class ShallowMethodAnalyser extends MethodAnalyserImpl {
                 }
             }
             builder.setProperty(Property.MODIFIED_VARIABLE, value);
-            return typeContainer.causesOfDelay();
-        }
-        if (override.valueIsFalse() && inMap.valueIsTrue()) {
-            analyserResultBuilder.add(Message.newMessage(builder.getParameterInfo().newLocation(),
-                    Message.Label.WORSE_THAN_OVERRIDDEN_METHOD_PARAMETER,
-                    "Override was non-modifying, while this parameter is modifying"));
-        } else if (typeContainer.equals(MultiLevel.CONTAINER_DV) && inMap.valueIsTrue()) {
-            if (!EXCEPTIONS_TO_CONTAINER.contains(methodInfo.fullyQualifiedName)) {
+        } else {
+            if (override.valueIsFalse() && inMap.valueIsTrue()) {
                 analyserResultBuilder.add(Message.newMessage(builder.getParameterInfo().newLocation(),
-                        Message.Label.CONTRADICTING_ANNOTATIONS, "Type is @Container, parameter is @Modified"));
+                        Message.Label.WORSE_THAN_OVERRIDDEN_METHOD_PARAMETER,
+                        "Override was non-modifying, while this parameter is modifying"));
+            } else if (typeContainer.equals(MultiLevel.CONTAINER_DV) && inMap.valueIsTrue()) {
+                if (!EXCEPTIONS_TO_CONTAINER.contains(methodInfo.fullyQualifiedName)) {
+                    analyserResultBuilder.add(Message.newMessage(builder.getParameterInfo().newLocation(),
+                            Message.Label.CONTRADICTING_ANNOTATIONS, "Type is @Container, parameter is @Modified"));
+                }
             }
         }
         return CausesOfDelay.EMPTY;
     }
 
     private DV computeParameterImmutable(ParameterAnalysisImpl.Builder builder) {
-        return analyserContext.typeImmutable(builder.getParameterInfo().parameterizedType);
+        DV typeImmutable = analyserContext.typeImmutable(builder.getParameterInfo().parameterizedType);
+        return typeImmutable.isDelayed() ? MultiLevel.EFFECTIVELY_IMMUTABLE_DV: typeImmutable;
     }
 
     private DV computeParameterIndependent(ParameterAnalysisImpl.Builder builder) {
@@ -532,7 +464,7 @@ public class ShallowMethodAnalyser extends MethodAnalyserImpl {
                 int immutableLevel = MultiLevel.level(immutable);
                 DV maxImmutable = MultiLevel.independentCorrespondingToImmutableLevelDv(immutableLevel);
                 TypeAnalysis ownerAnalysis = analyserContext.getTypeAnalysis(builder.getParameterInfo().owner.typeInfo);
-                DV independentType = ownerAnalysis.getProperty(Property.INDEPENDENT);
+                DV independentType = ownerAnalysis.getPropertyFromMapDelayWhenAbsent(Property.INDEPENDENT);
                 if (independentType.isDelayed()) return independentType;
                 value = independentType.max(maxImmutable);
             } else {
@@ -545,11 +477,12 @@ public class ShallowMethodAnalyser extends MethodAnalyserImpl {
     }
 
     private void checkMethodIndependent() {
-        DV finalValue = methodAnalysis.getProperty(Property.INDEPENDENT);
+        DV finalValue = methodAnalysis.getPropertyFromMapDelayWhenAbsent(Property.INDEPENDENT);
         DV overloads = methodInfo.methodResolution.get().overrides().stream()
                 .filter(mi -> mi.methodInspection.get().isPubliclyAccessible())
-                .map(analyserContext::getMethodAnalysis)
-                .map(ma -> ma.getProperty(Property.INDEPENDENT))
+                .map(analyserContext::getMethodAnalysisNullWhenAbsent)
+                .map(ma -> ma == null ? MultiLevel.INDEPENDENT_DV
+                        : ma.getPropertyFromMapDelayWhenAbsent(Property.INDEPENDENT))
                 .reduce(DV.MAX_INT_DV, DV::min);
         if (overloads != DV.MAX_INT_DV && finalValue.lt(overloads)) {
             analyserResultBuilder.add(Message.newMessage(methodInfo.newLocation(),
@@ -562,18 +495,23 @@ public class ShallowMethodAnalyser extends MethodAnalyserImpl {
         DV returnValueIndependent = computeMethodIndependentReturnValue();
 
         // typeIndependent is set by hand in AnnotatedAPI files
-        DV typeIndependent = analyserContext.getTypeAnalysis(methodInfo.typeInfo).getPropertyFromMapNeverDelay(Property.INDEPENDENT);
+        DV typeIndependent = analyserContext.getTypeAnalysis(methodInfo.typeInfo)
+                .getPropertyFromMapNeverDelay(Property.INDEPENDENT);
         DV bestOfOverrides = bestOfOverrides(Property.INDEPENDENT);
         DV result = returnValueIndependent.max(bestOfOverrides).max(typeIndependent);
 
         if (MultiLevel.INDEPENDENT_HC_DV.equals(result) && methodInfo.methodInspection.get().isFactoryMethod()) {
             // at least one of the parameters must be independent HC!!
             boolean hcParam = parameterAnalyses.stream()
-                    .anyMatch(pa -> MultiLevel.INDEPENDENT_HC_DV.equals(pa.getProperty(Property.INDEPENDENT)));
+                    .anyMatch(pa -> MultiLevel.INDEPENDENT_HC_DV
+                            .equals(pa.getPropertyFromMapDelayWhenAbsent(Property.INDEPENDENT)));
             if (!hcParam) {
                 analyserResultBuilder.add(Message.newMessage(methodInfo.newLocation(),
                         Message.Label.FACTORY_METHOD_INDEPENDENT_HC));
             }
+        }
+        if(!methodInfo.methodInspection.get().isPubliclyAccessible() && result.isDelayed()) {
+            return MultiLevel.DEPENDENT_DV; //
         }
         return result;
     }
@@ -606,7 +544,7 @@ public class ShallowMethodAnalyser extends MethodAnalyserImpl {
         if (bestType.isPrimitiveExcludingVoid()) {
             return MultiLevel.INDEPENDENT_DV;
         }
-        DV immutable = methodAnalysis.getProperty(Property.IMMUTABLE);
+        DV immutable = methodAnalysis.getPropertyFromMapDelayWhenAbsent(Property.IMMUTABLE);
         if (immutable.isDelayed()) {
             return immutable.causesOfDelay();
         }
@@ -622,14 +560,14 @@ public class ShallowMethodAnalyser extends MethodAnalyserImpl {
         if (methodInfo.returnType().isPrimitiveExcludingVoid()) {
             return MultiLevel.EFFECTIVELY_NOT_NULL_DV;
         }
-        DV fluent = methodAnalysis.getProperty(Property.FLUENT);
+        DV fluent = methodAnalysis.getPropertyFromMapDelayWhenAbsent(Property.FLUENT);
         if (fluent.valueIsTrue()) return MultiLevel.EFFECTIVELY_NOT_NULL_DV;
         return MultiLevel.NULLABLE_DV.maxIgnoreDelay(bestOfOverrides(Property.NOT_NULL_EXPRESSION));
     }
 
     private DV bestOfOverrides(Property property) {
         DV bestOfOverrides = DV.MIN_INT_DV;
-        for (MethodAnalysis override : methodAnalysis.getOverrides(analyserContext)) {
+        for (MethodAnalysis override : methodAnalysis.getOverrides(analyserContext, false)) {
             DV overrideAsIs = override.getPropertyFromMapDelayWhenAbsent(property);
             if (bestOfOverrides == DV.MIN_INT_DV) {
                 bestOfOverrides = overrideAsIs;
@@ -645,8 +583,8 @@ public class ShallowMethodAnalyser extends MethodAnalyserImpl {
                 .filter(mi -> mi.analysisAccessible(analyserContext))
                 .map(mi -> {
                     ParameterInfo p = mi.methodInspection.get().getParameters().get(parameterInfo.index);
-                    ParameterAnalysis pa = analyserContext.getParameterAnalysis(p);
-                    return pa.getPropertyFromMapNeverDelay(property);
+                    ParameterAnalysis pa = analyserContext.getParameterAnalysisNullWhenAbsent(p);
+                    return pa == null ? property.falseDv : pa.getPropertyFromMapNeverDelay(property);
                 }).reduce(DV.MIN_INT_DV, DV::maxIgnoreDelay);
     }
 

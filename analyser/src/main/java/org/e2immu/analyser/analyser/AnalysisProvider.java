@@ -45,6 +45,10 @@ public interface AnalysisProvider {
     @NotNull
     MethodAnalysis getMethodAnalysis(MethodInfo methodInfo);
 
+    default MethodAnalysis getMethodAnalysisNullWhenAbsent(MethodInfo methodInfo) {
+        throw new UnsupportedOperationException();
+    }
+
     AnalysisProvider DEFAULT_PROVIDER = new AnalysisProvider() {
 
         @Override

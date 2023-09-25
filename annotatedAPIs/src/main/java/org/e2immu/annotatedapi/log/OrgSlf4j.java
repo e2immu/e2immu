@@ -83,4 +83,9 @@ public class OrgSlf4j {
         @NotModified
         org.slf4j.ILoggerFactory getILoggerFactory();
     }
+
+    @Container
+    interface Marker$ {
+        
+    }
 }

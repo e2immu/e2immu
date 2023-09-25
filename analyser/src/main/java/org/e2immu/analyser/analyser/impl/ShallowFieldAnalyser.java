@@ -47,7 +47,7 @@ public class ShallowFieldAnalyser extends FieldAnalyserImpl implements FieldAnal
     @Override
     public AnalyserResult analyse(SharedState sharedState) {
         assert !isUnreachable();
-        LOGGER.info("Analysing field {}", fqn);
+        LOGGER.debug("Analysing field {}", fqn);
         try {
             mainAnalyser();
             fieldAnalysis.internalAllDoneCheck();

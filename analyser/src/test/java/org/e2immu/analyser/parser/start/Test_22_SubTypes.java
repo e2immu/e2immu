@@ -124,7 +124,7 @@ public class Test_22_SubTypes extends CommonTestRunner {
 
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("NonStaticSubType2".equals(d.methodInfo().typeInfo.simpleName) && "toString".equals(d.methodInfo().name)) {
-                Set<MethodAnalysis> overrides = d.methodAnalysis().getOverrides(d.evaluationContext().getAnalyserContext());
+                Set<MethodAnalysis> overrides = d.methodAnalysis().getOverrides(d.evaluationContext().getAnalyserContext(), true);
                 assertEquals(1, overrides.size());
                 MethodAnalysis objectToString = overrides.stream().findFirst().orElseThrow();
                 assertEquals("Object", objectToString.getMethodInfo().typeInfo.simpleName);

@@ -92,6 +92,10 @@ public interface AnalyserContext extends AnalysisProvider, InspectionProvider {
         return parameterInfo.parameterAnalysis.get(parameterInfo.fullyQualifiedName);
     }
 
+    default ParameterAnalysis getParameterAnalysisNullWhenAbsent(ParameterInfo parameterInfo) {
+        return parameterInfo.parameterAnalysis.getOrDefaultNull();
+    }
+
     default TypeAnalysis getTypeAnalysis(TypeInfo typeInfo) {
         return typeInfo.typeAnalysis.get(typeInfo.fullyQualifiedName);
     }

@@ -395,6 +395,12 @@ public class TestCommonJavaUtil extends CommonAnnotatedAPI {
         assertEquals(MultiLevel.EFFECTIVELY_IMMUTABLE_HC_DV, p1.getProperty(Property.IMMUTABLE));
     }
 
+    @Test
+    public void testMap() {
+        TypeInfo typeInfo = typeContext.getFullyQualified(Map.class);
+        TypeAnalysis typeAnalysis = typeInfo.typeAnalysis.get();
+        assertEquals(MultiLevel.DEPENDENT_DV, typeAnalysis.getProperty(Property.INDEPENDENT));
+    }
 
     @Test
     public void testMapCopyOf() {

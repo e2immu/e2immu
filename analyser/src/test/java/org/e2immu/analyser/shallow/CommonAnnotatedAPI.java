@@ -32,6 +32,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.util.Comparator;
 import java.util.List;
 
 import static org.e2immu.analyser.parser.CommonTestRunner.DEFAULT_ANNOTATED_API_DIRS;
@@ -73,7 +74,8 @@ public abstract class CommonAnnotatedAPI {
                 .filter(m -> m.message().severity == Message.Severity.ERROR)
                 .toList();
         LOGGER.info("Have {} error messages", errors.size());
-        errors.forEach(e -> LOGGER.info("Error: " + e));
+        errors.stream().sorted(Comparator.comparing(Message::location))
+                .forEach(e -> LOGGER.info(e.toString()));
         // not stopping here if there's errors, TestAnnotatedAPIErrors will fail
     }
 

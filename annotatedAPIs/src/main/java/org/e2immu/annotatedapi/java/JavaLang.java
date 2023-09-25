@@ -506,6 +506,11 @@ class JavaLang {
         String toString(int i);
     }
 
+    @ImmutableContainer
+    interface Number$ {
+
+    }
+
 
     @ImmutableContainer
     interface Float$ {

@@ -33,6 +33,7 @@ import org.e2immu.analyser.resolver.TypeCycle;
 import org.e2immu.analyser.resolver.impl.ResolverImpl;
 import org.e2immu.analyser.util.Trie;
 import org.e2immu.analyser.visitor.TypeMapVisitor;
+import org.e2immu.annotatedapi.AnnotatedAPI;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -131,6 +132,8 @@ public class Parser {
                     configuration, importantClasses, typeMap.getE2ImmuAnnotationExpressions(),
                     true);
 
+            LOGGER.debug("AnnotatedAPI Type cycles:\n{}", sortedAnnotatedAPITypes.typeCycles().stream()
+                    .map(Object::toString).collect(Collectors.joining("\n")));
             for (TypeCycle typeCycle : sortedAnnotatedAPITypes.typeCycles()) {
                 runAnalyzer(annotatedAPIContext, typeCycle);
             }
@@ -163,6 +166,8 @@ public class Parser {
                                          boolean reportWarnings,
                                          boolean shallowResolver,
                                          boolean storeComments) {
+
+        TypeInfo annotatedApiType = input.globalTypeContext().getFullyQualified(AnnotatedAPI.class);
         ResolverImpl resolver = new ResolverImpl(anonymousTypeCounters, input.globalTypeContext(),
                 input.globalTypeContext().typeMap.getE2ImmuAnnotationExpressions(), shallowResolver,
                 storeComments);

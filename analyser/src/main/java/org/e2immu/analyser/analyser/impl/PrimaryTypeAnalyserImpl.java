@@ -228,7 +228,7 @@ public class PrimaryTypeAnalyserImpl implements PrimaryTypeAnalyser {
     }
 
     private static void dumpDelayHistogram(Map<WithInspectionAndAnalysis, AnalyserComponents.Info> delayHistogram) {
-        LOGGER.info("Delay histogram:\n{}",
+        LOGGER.debug("Delay histogram:\n{}",
                 delayHistogram.entrySet().stream().sorted((e1, e2) -> e2.getValue().getCnt() - e1.getValue().getCnt())
                         .limit(20)
                         .map(e -> e.getValue().getCnt() + ": " + (e.getKey() == null ? "?" : (e.getKey().niceClassName() + " " + e.getKey().fullyQualifiedName()) + ": " + e.getValue()))
@@ -263,7 +263,7 @@ public class PrimaryTypeAnalyserImpl implements PrimaryTypeAnalyser {
     public AnalyserResult analyse(SharedState sharedState) {
         analyserResultBuilder = new AnalyserResult.Builder();
         AnalysisStatus analysisStatus = analyserComponents.run(sharedState);
-        LOGGER.info("At end of PTA analysis, done {} of {} components, progress? {}",
+        LOGGER.debug("At end of PTA analysis, done {} of {} components, progress? {}",
                 analyserComponents.getStatuses().stream().filter(p -> p.getV().isDone()).count(),
                 analyserComponents.getStatuses().size(),
                 analysisStatus.isProgress());
@@ -367,9 +367,29 @@ public class PrimaryTypeAnalyserImpl implements PrimaryTypeAnalyser {
     }
 
     @Override
+    public TypeAnalysis getTypeAnalysisNullWhenAbsent(TypeInfo typeInfo) {
+        TypeAnalyser typeAnalyser = typeAnalysers.get(typeInfo);
+        return typeAnalyser != null ? typeAnalyser.getTypeAnalysis() : parent.getTypeAnalysisNullWhenAbsent(typeInfo);
+    }
+
+    @Override
     public MethodAnalysis getMethodAnalysis(MethodInfo methodInfo) {
         MethodAnalyser methodAnalyser = methodAnalysers.get(methodInfo);
         return methodAnalyser != null ? methodAnalyser.getMethodAnalysis() : parent.getMethodAnalysis(methodInfo);
+    }
+
+    @Override
+    public MethodAnalysis getMethodAnalysisNullWhenAbsent(MethodInfo methodInfo) {
+        MethodAnalyser methodAnalyser = methodAnalysers.get(methodInfo);
+        return methodAnalyser != null ? methodAnalyser.getMethodAnalysis()
+                : parent.getMethodAnalysisNullWhenAbsent(methodInfo);
+    }
+
+    @Override
+    public ParameterAnalysis getParameterAnalysisNullWhenAbsent(ParameterInfo parameterInfo) {
+        ParameterAnalyser parameterAnalyser = parameterAnalysers.get(parameterInfo);
+        return parameterAnalyser != null ? parameterAnalyser.getParameterAnalysis()
+                : parent.getParameterAnalysisNullWhenAbsent(parameterInfo);
     }
 
     @Override

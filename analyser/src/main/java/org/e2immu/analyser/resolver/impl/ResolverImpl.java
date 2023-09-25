@@ -16,6 +16,7 @@ package org.e2immu.analyser.resolver.impl;
 
 import com.github.javaparser.ast.expr.Expression;
 import com.github.javaparser.ast.stmt.BlockStmt;
+import org.e2immu.analyser.analyser.nonanalyserimpl.GlobalAnalyserContext;
 import org.e2immu.analyser.inspector.*;
 import org.e2immu.analyser.inspector.impl.ExpressionContextImpl;
 import org.e2immu.analyser.inspector.impl.FieldInspectionImpl;
@@ -27,7 +28,6 @@ import org.e2immu.analyser.model.statement.ExplicitConstructorInvocation;
 import org.e2immu.analyser.model.statement.ExpressionAsStatement;
 import org.e2immu.analyser.model.statement.LocalClassDeclaration;
 import org.e2immu.analyser.model.variable.FieldReference;
-import org.e2immu.analyser.model.variable.This;
 import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
 import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.parser.Message;
@@ -274,18 +274,18 @@ public class ResolverImpl implements Resolver {
 
         // remove myself and all my enclosing types, and stay within the set of inspectedTypes
         // only add primary types!
-        Set<TypeInfo> typeDependencies = shallowResolver ?
-                new HashSet<>(superTypesExcludingJavaLangObject(expressionContextOfType.typeContext(), typeInfo, null)
-                        .stream().map(TypeInfo::primaryType).toList()) :
-                typeInfo.typesReferenced().stream().map(Map.Entry::getKey)
-                        .map(TypeInfo::primaryType)
-                        .collect(Collectors.toCollection(HashSet::new));
+        Set<TypeInfo> typeDependencies = typeInfo.typesReferenced().stream().map(Map.Entry::getKey)
+                .map(TypeInfo::primaryType)
+                .collect(Collectors.toCollection(HashSet::new));
 
         typeAndAllSubTypes.forEach(typeDependencies::remove);
         typeDependencies.remove(typeInfo);
         typeDependencies.retainAll(stayWithin);
 
-        typeGraph.addNode(typeInfo, List.copyOf(typeDependencies));
+        GlobalAnalyserContext.HardCoded hardCoded = GlobalAnalyserContext.HARDCODED_TYPES.get(typeInfo.fullyQualifiedName);
+        List<TypeInfo> dependsOn = hardCoded != null && hardCoded.eraseDependencies ? List.of()
+                : List.copyOf(typeDependencies);
+        typeGraph.addNode(typeInfo, dependsOn);
         List<WithInspectionAndAnalysis> sorted = methodFieldSubTypeGraph.sorted(null, null,
                 Comparator.comparing(WithInspectionAndAnalysis::fullyQualifiedName));
         List<WithInspectionAndAnalysis> methodFieldSubTypeOrder = List.copyOf(sorted);

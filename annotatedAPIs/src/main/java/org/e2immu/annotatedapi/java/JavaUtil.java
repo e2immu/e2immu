@@ -802,6 +802,7 @@ public class JavaUtil extends AnnotatedAPI {
 
         @NotNull
         @Modified
+        @Independent(hc = true)
         V computeIfAbsent(@NotNull K key, @Independent(hc = true) @NotNull(content = true) Function<? super K, ? extends V> mappingFunction);
 
         default boolean containsKey$Value$Size(int i, Object key, boolean retVal) {

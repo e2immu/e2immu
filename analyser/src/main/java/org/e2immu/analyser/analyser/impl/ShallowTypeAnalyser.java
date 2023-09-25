@@ -12,7 +12,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
-import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -20,29 +19,10 @@ import java.util.stream.Stream;
 public class ShallowTypeAnalyser extends TypeAnalyserImpl {
     private static final Logger LOGGER = LoggerFactory.getLogger(ShallowTypeAnalyser.class);
 
-    private final Consumer<SharedState> analyzer;
-
     public ShallowTypeAnalyser(TypeInfo typeInfo,
                                TypeInfo primaryType,
                                AnalyserContext analyserContextInput) {
         super(typeInfo, primaryType, analyserContextInput, Analysis.AnalysisMode.CONTRACTED);
-
-        analyzer = switch (typeInfo.fullyQualifiedName) {
-            case "java.lang.Annotation",
-                    "java.lang.Enum",
-                    "java.lang.Object" -> this::hardCodedHc;
-            case "java.lang.Boolean",
-                    "java.lang.Byte",
-                    "java.lang.Character",
-                    "java.lang.Double",
-                    "java.lang.Float",
-                    "java.lang.Integer",
-                    "java.lang.Long",
-                    "java.lang.Short",
-                    "java.lang.String",
-                    "java.lang.Void" -> this::hardCoded;
-            default -> this::shallowAnalyzer;
-        };
     }
 
     @Override
@@ -75,6 +55,7 @@ public class ShallowTypeAnalyser extends TypeAnalyserImpl {
                                         + " in " + computed.explanation));
                     }
                 }
+                analyserResultBuilder.addMessages(computed.messages.stream());
             } // else: we're at the edge of the known/analysed types, we're not exploring further and rely on the value
         } catch (IllegalStateException ise) {
             LOGGER.error("Caught exception while validating independence of {}", typeInfo);
@@ -95,7 +76,7 @@ public class ShallowTypeAnalyser extends TypeAnalyserImpl {
     @Override
     public AnalyserResult analyse(SharedState sharedState) {
         try {
-            analyzer.accept(sharedState);
+            shallowAnalyzer();
             analyserResultBuilder.setAnalysisStatus(AnalysisStatus.DONE);
             return analyserResultBuilder.build();
         } catch (RuntimeException rte) {
@@ -104,24 +85,8 @@ public class ShallowTypeAnalyser extends TypeAnalyserImpl {
         }
     }
 
-    private void hardCodedHc(SharedState sharedState) {
-        LOGGER.info("Hardcoded analyser on {}", typeInfo.fullyQualifiedName);
-        typeAnalysis.setProperty(Property.INDEPENDENT, MultiLevel.INDEPENDENT_DV);
-        typeAnalysis.setProperty(Property.IMMUTABLE, MultiLevel.EFFECTIVELY_IMMUTABLE_HC_DV);
-        typeAnalysis.setProperty(Property.CONTAINER, MultiLevel.CONTAINER_DV);
-        typeAnalysis.setImmutableDeterminedByTypeParameters(false);
-    }
-
-    private void hardCoded(SharedState sharedState) {
-        LOGGER.info("Hardcoded analyser on {}", typeInfo.fullyQualifiedName);
-        typeAnalysis.setProperty(Property.INDEPENDENT, MultiLevel.INDEPENDENT_DV);
-        typeAnalysis.setProperty(Property.IMMUTABLE, MultiLevel.EFFECTIVELY_IMMUTABLE_DV);
-        typeAnalysis.setProperty(Property.CONTAINER, MultiLevel.CONTAINER_DV);
-        typeAnalysis.setImmutableDeterminedByTypeParameters(false);
-    }
-
-    private void shallowAnalyzer(SharedState sharedState) {
-        LOGGER.info("Shallow type analyser on {}", typeInfo.fullyQualifiedName);
+    private void shallowAnalyzer() {
+        LOGGER.debug("Shallow type analyser on {}", typeInfo.fullyQualifiedName);
         TypeInspection typeInspection = typeInfo.typeInspection.get();
         Analyser.AnalyserIdentification identification = typeInfo.isAbstract()
                 ? Analyser.AnalyserIdentification.ABSTRACT_TYPE
@@ -153,11 +118,8 @@ public class ShallowTypeAnalyser extends TypeAnalyserImpl {
         typeAnalysis.setHiddenContentTypes(hiddenContentTypes);
 
         ensureImmutableAndContainer();
-        Message message = simpleComputeIndependent(analyserContext, typeAnalysis,
-                m -> m.methodInspection.get().isPubliclyAccessible());
-        if (message != null) {
-            analyserResultBuilder.add(message);
-        }
+        analyserResultBuilder.addMessages(simpleComputeIndependent(analyserContext, typeAnalysis,
+                m -> m.methodInspection.get().isPubliclyAccessible()).stream());
         computeImmutableDeterminedByTypeParameters(typeInspection, typeAnalysis);
     }
 
@@ -189,39 +151,46 @@ public class ShallowTypeAnalyser extends TypeAnalyserImpl {
     if the super-type is @Dependent, we must have dependent
      */
 
-    private record ValueExplanation(DV value, String explanation) {
+    private record ValueExplanation(DV value, String explanation, List<Message> messages) {
     }
 
     private ValueExplanation computeIndependent(TypeInfo typeInfo, TypeAnalysis typeAnalysis) {
         DV immutable = typeAnalysis.getProperty(Property.IMMUTABLE);
         if (MultiLevel.isAtLeastEventuallyRecursivelyImmutable(immutable)) {
-            return new ValueExplanation(MultiLevel.INDEPENDENT_DV, "immutable");
+            return new ValueExplanation(MultiLevel.INDEPENDENT_DV, "immutable", List.of());
         }
         Stream<ValueExplanation> methodStream = typeInfo.typeInspection.get()
                 .methodsAndConstructors(TypeInspection.Methods.THIS_TYPE_ONLY)
                 .filter(m -> m.methodInspection.get().isPubliclyAccessible())
                 .map(m -> new ValueExplanation(analyserContext.getMethodAnalysis(m).getProperty(Property.INDEPENDENT),
-                        "Method " + m.fullyQualifiedName));
+                        "Method " + m.fullyQualifiedName, List.of()));
         Stream<ValueExplanation> parameterStream = typeInfo.typeInspection.get()
                 .methodsAndConstructors(TypeInspection.Methods.THIS_TYPE_ONLY)
                 .filter(m -> m.methodInspection.get().isPubliclyAccessible())
                 .flatMap(m -> analyserContext.getMethodAnalysis(m).getParameterAnalyses().stream())
                 .map(p -> new ValueExplanation(p.getProperty(Property.INDEPENDENT),
-                        "Parameter " + p.getParameterInfo().fullyQualifiedName));
+                        "Parameter " + p.getParameterInfo().fullyQualifiedName, List.of()));
         ValueExplanation myMethods =
                 Stream.concat(methodStream, parameterStream)
                         .min(Comparator.comparing(p -> p.value.value()))
-                        .orElse(new ValueExplanation(Property.INDEPENDENT.bestDv, "'no methods'"));
+                        .orElse(new ValueExplanation(Property.INDEPENDENT.bestDv, "'no methods'", List.of()));
 
         Stream<TypeInfo> superTypes = typeInfo.typeResolution.get().superTypesExcludingJavaLangObject()
                 .stream();
+        List<Message> messages = new ArrayList<>();
         ValueExplanation fromSuperTypes = superTypes
                 .filter(t -> t.typeInspection.get().isPublic())
-                .map(analyserContext::getTypeAnalysis)
-                .map(ta -> new ValueExplanation(ta.getProperty(Property.INDEPENDENT),
-                        "Type " + ta.getTypeInfo().fullyQualifiedName))
+                .map(t -> {
+                    TypeAnalysis ta = analyserContext.getTypeAnalysisNullWhenAbsent(t);
+                    if (ta == null) {
+                        messages.add(Message.newMessage(t.newLocation(), Message.Label.TYPE_ANALYSIS_NOT_AVAILABLE));
+                    }
+                    return ta;
+                })
+                .filter(Objects::nonNull)
+                .map(ta -> new ValueExplanation(ta.getProperty(Property.INDEPENDENT), "Type " + ta, messages))
                 .min(Comparator.comparing(p -> p.value.value()))
-                .orElse(new ValueExplanation(Property.INDEPENDENT.bestDv, "'no supertypes'"));
+                .orElse(new ValueExplanation(Property.INDEPENDENT.bestDv, "'no supertypes'", messages));
         return myMethods.value.le(fromSuperTypes.value) ? myMethods : fromSuperTypes;
     }
 
@@ -230,17 +199,18 @@ public class ShallowTypeAnalyser extends TypeAnalyserImpl {
      Because we have a chicken-and-egg problem (the independent value can be computed from the methods, but the
      parameters may require an independent value, it is better to assign a value when obviously possible.
      */
-    public static Message simpleComputeIndependent(AnalysisProvider analysisProvider,
-                                                   TypeAnalysisImpl.Builder builder,
-                                                   Predicate<MethodInfo> isAccessible) {
+    public static List<Message> simpleComputeIndependent(AnalysisProvider analysisProvider,
+                                                         TypeAnalysisImpl.Builder builder,
+                                                         Predicate<MethodInfo> isAccessible) {
         DV immutable = builder.getPropertyFromMapDelayWhenAbsent(Property.IMMUTABLE);
         DV inMap = builder.getPropertyFromMapDelayWhenAbsent(Property.INDEPENDENT);
         DV independent = MultiLevel.independentCorrespondingToImmutableLevelDv(MultiLevel.level(immutable));
+        List<Message> messages = new ArrayList<>();
         if (inMap.isDelayed()) {
             if (immutable.ge(MultiLevel.EFFECTIVELY_IMMUTABLE_HC_DV)) {
                 // minimal value; we'd have an inconsistency otherwise
                 builder.setProperty(Property.INDEPENDENT, independent);
-                return null;
+                return List.of();
             }
             boolean allMethodsOnlyPrimitives =
                     builder.getTypeInfo().typeInspection.get()
@@ -254,20 +224,27 @@ public class ShallowTypeAnalyser extends TypeAnalyserImpl {
                         .stream();
                 DV fromSuperTypes = superTypes
                         .filter(t -> t.typeInspection.get().isPublic())
-                        .map(analysisProvider::getTypeAnalysis)
+                        .map(t -> {
+                            TypeAnalysis ta = analysisProvider.getTypeAnalysisNullWhenAbsent(t);
+                            if (ta == null) {
+                                messages.add(Message.newMessage(t.newLocation(), Message.Label.TYPE_ANALYSIS_NOT_AVAILABLE));
+                            }
+                            return ta;
+                        })
+                        .filter(Objects::nonNull)
                         .map(ta -> ta.getProperty(Property.INDEPENDENT))
                         .reduce(MultiLevel.INDEPENDENT_DV, DV::min);
                 if (fromSuperTypes.isDone()) {
                     builder.setProperty(Property.INDEPENDENT, fromSuperTypes);
-                    return null;
+                    return List.of();
                 }
             }
             // fallback
             builder.setProperty(Property.INDEPENDENT, MultiLevel.DEPENDENT_DV);
         } else if (immutable.ge(MultiLevel.EFFECTIVELY_IMMUTABLE_HC_DV) && inMap.lt(independent)) {
-            return Message.newMessage(builder.typeInfo.newLocation(), Message.Label.INCONSISTENT_INDEPENDENCE_VALUE);
+            messages.add(Message.newMessage(builder.typeInfo.newLocation(), Message.Label.INCONSISTENT_INDEPENDENCE_VALUE));
         }
-        return null;
+        return messages;
     }
 
     @Override

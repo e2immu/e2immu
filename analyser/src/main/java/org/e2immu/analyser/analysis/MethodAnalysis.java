@@ -36,7 +36,7 @@ public interface MethodAnalysis extends Analysis {
      */
     Expression getSingleReturnValue();
 
-    default Set<MethodAnalysis> getOverrides(AnalysisProvider analysisProvider) {
+    default Set<MethodAnalysis> getOverrides(AnalysisProvider analysisProvider, boolean complainIfNotAnalyzed) {
         return Set.of();
     }
 
@@ -131,7 +131,7 @@ public interface MethodAnalysis extends Analysis {
     }
 
     default DV valueFromOverrides(AnalysisProvider analysisProvider, Property property) {
-        Set<MethodAnalysis> overrides = getOverrides(analysisProvider);
+        Set<MethodAnalysis> overrides = getOverrides(analysisProvider, true);
         return overrides.stream()
                 .map(ma -> ma.getPropertyFromMapDelayWhenAbsent(property))
                 .reduce(DV.MIN_INT_DV, DV::max);
