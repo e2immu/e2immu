@@ -57,4 +57,6 @@ public interface MethodAnalyser extends Analyser {
 
     @NotNull(content = true)
     List<ParameterAnalysis> getParameterAnalyses();
+
+    ParameterAnalyser parameterAnalyzer(int index);
 }

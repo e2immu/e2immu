@@ -56,7 +56,6 @@ public class PrimaryTypeAnalyserImpl implements PrimaryTypeAnalyser {
     private final Map<TypeInfo, TypeAnalyser> typeAnalysers;
     private final Map<MethodInfo, MethodAnalyser> methodAnalysers;
     private final Map<FieldInfo, FieldAnalyser> fieldAnalysers;
-    private final Map<ParameterInfo, ParameterAnalyser> parameterAnalysers;
     private AnalyserResult.Builder analyserResultBuilder;
     private final Primitives primitives;
     private final ImportantClasses importantClasses;
@@ -79,7 +78,6 @@ public class PrimaryTypeAnalyserImpl implements PrimaryTypeAnalyser {
         this.primaryTypes = analyserGenerator.getPrimaryTypes();
         this.methodAnalysers = analyserGenerator.getMethodAnalysers();
         this.fieldAnalysers = analyserGenerator.getFieldAnalysers();
-        this.parameterAnalysers = analyserGenerator.getParameterAnalysers();
         this.typeAnalysers = analyserGenerator.getTypeAnalysers();
 
         // all important fields of the interface have been set.
@@ -341,17 +339,22 @@ public class PrimaryTypeAnalyserImpl implements PrimaryTypeAnalyser {
 
     @Override
     public ParameterAnalyser getParameterAnalyser(ParameterInfo parameterInfo) {
-        ParameterAnalyser parameterAnalyser = parameterAnalysers.get(parameterInfo);
-        if (parameterAnalyser == null && parent != null) {
-            return parent.getParameterAnalyser(parameterInfo);
-        }
-        return parameterAnalyser;
+        MethodAnalyser methodAnalyser = methodAnalysers.get(parameterInfo.owner);
+        if (methodAnalyser != null) return methodAnalyser.parameterAnalyzer(parameterInfo.index);
+        return parent.getParameterAnalyser(parameterInfo);
     }
 
     @Override
     public ParameterAnalysis getParameterAnalysis(ParameterInfo parameterInfo) {
-        ParameterAnalyser pa = parameterAnalysers.get(parameterInfo);
-        return pa != null ? pa.getParameterAnalysis() : parent.getParameterAnalysis(parameterInfo);
+        return Objects.requireNonNull(getParameterAnalysisNullWhenAbsent(parameterInfo),
+                "Cannot find parameter analysis for " + parameterInfo);
+    }
+
+    @Override
+    public ParameterAnalysis getParameterAnalysisNullWhenAbsent(ParameterInfo parameterInfo) {
+        MethodAnalyser methodAnalyser = methodAnalysers.get(parameterInfo.owner);
+        if (methodAnalyser != null) return methodAnalyser.getParameterAnalyses().get(parameterInfo.index);
+        return parent.getParameterAnalysisNullWhenAbsent(parameterInfo);
     }
 
     @Override
@@ -383,13 +386,6 @@ public class PrimaryTypeAnalyserImpl implements PrimaryTypeAnalyser {
         MethodAnalyser methodAnalyser = methodAnalysers.get(methodInfo);
         return methodAnalyser != null ? methodAnalyser.getMethodAnalysis()
                 : parent.getMethodAnalysisNullWhenAbsent(methodInfo);
-    }
-
-    @Override
-    public ParameterAnalysis getParameterAnalysisNullWhenAbsent(ParameterInfo parameterInfo) {
-        ParameterAnalyser parameterAnalyser = parameterAnalysers.get(parameterInfo);
-        return parameterAnalyser != null ? parameterAnalyser.getParameterAnalysis()
-                : parent.getParameterAnalysisNullWhenAbsent(parameterInfo);
     }
 
     @Override

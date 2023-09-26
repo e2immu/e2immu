@@ -89,6 +89,12 @@ public abstract class MethodAnalyserImpl extends AbstractAnalyser implements Met
     }
 
     @Override
+    public ParameterAnalyser parameterAnalyzer(int index) {
+        assert index < parameterAnalysers.size();
+        return parameterAnalysers.get(index);
+    }
+
+    @Override
     public boolean isSAM() {
         return isSAM;
     }

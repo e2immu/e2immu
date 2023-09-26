@@ -35,7 +35,6 @@ public class GlobalAnalyserContext implements AnalyserContext {
     private final SetOnceMap<MethodInfo, MethodAnalysis> methodAnalyses;
     private final SetOnceMap<TypeInfo, TypeAnalysis> typeAnalyses;
     private final SetOnceMap<FieldInfo, FieldAnalysis> fieldAnalyses;
-    private final SetOnceMap<ParameterInfo, ParameterAnalysis> parameterAnalyses;
 
     private final Primitives primitives;
     private final boolean inAnnotatedAPIAnalysis;
@@ -53,7 +52,7 @@ public class GlobalAnalyserContext implements AnalyserContext {
                                  E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions,
                                  boolean inAnnotatedAPIAnalysis) {
         this(primitives, configuration, importantClasses, e2ImmuAnnotationExpressions, inAnnotatedAPIAnalysis,
-                new SetOnceMap<>(), new SetOnceMap<>(), new SetOnceMap<>(), new SetOnceMap<>());
+                new SetOnceMap<>(), new SetOnceMap<>(), new SetOnceMap<>());
     }
 
     private GlobalAnalyserContext(Primitives primitives,
@@ -63,8 +62,7 @@ public class GlobalAnalyserContext implements AnalyserContext {
                                   boolean inAnnotatedAPIAnalysis,
                                   SetOnceMap<TypeInfo, TypeAnalysis> typeAnalyses,
                                   SetOnceMap<MethodInfo, MethodAnalysis> methodAnalyses,
-                                  SetOnceMap<FieldInfo, FieldAnalysis> fieldAnalyses,
-                                  SetOnceMap<ParameterInfo, ParameterAnalysis> parameterAnalyses) {
+                                  SetOnceMap<FieldInfo, FieldAnalysis> fieldAnalyses) {
         this.primitives = primitives;
         this.configuration = configuration;
         this.importantClasses = importantClasses;
@@ -73,7 +71,6 @@ public class GlobalAnalyserContext implements AnalyserContext {
         this.typeAnalyses = typeAnalyses;
         this.methodAnalyses = methodAnalyses;
         this.fieldAnalyses = fieldAnalyses;
-        this.parameterAnalyses = parameterAnalyses;
 
         hardCodedTypes = createHardCodedTypeAnalysis();
         hardCodedMethods = createHardCodedMethodAnalysis();
@@ -515,8 +512,7 @@ public class GlobalAnalyserContext implements AnalyserContext {
 
     public GlobalAnalyserContext with(boolean inAnnotatedAPIAnalysis) {
         return new GlobalAnalyserContext(primitives, configuration, importantClasses,
-                e2ImmuAnnotationExpressions, inAnnotatedAPIAnalysis, typeAnalyses, methodAnalyses, fieldAnalyses,
-                parameterAnalyses);
+                e2ImmuAnnotationExpressions, inAnnotatedAPIAnalysis, typeAnalyses, methodAnalyses, fieldAnalyses);
     }
 
     @Override
@@ -546,12 +542,8 @@ public class GlobalAnalyserContext implements AnalyserContext {
 
     @Override
     public MethodAnalysis getMethodAnalysis(MethodInfo methodInfo) {
-        if (methodAnalyses.isSet(methodInfo)) return methodAnalyses.get(methodInfo);
-        MethodAnalysis methodAnalysis = hardCodedMethods.get(methodInfo.fullyQualifiedName);
-        if (methodAnalysis == null) {
-            throw new UnsupportedOperationException("Cannot find method analysis of " + methodInfo);
-        }
-        return methodAnalysis;
+        return Objects.requireNonNull(getMethodAnalysisNullWhenAbsent(methodInfo),
+                "Cannot find method analysis of " + methodInfo);
     }
 
     @Override
@@ -562,30 +554,22 @@ public class GlobalAnalyserContext implements AnalyserContext {
 
     @Override
     public ParameterAnalysis getParameterAnalysis(ParameterInfo parameterInfo) {
-        if (parameterAnalyses.isSet(parameterInfo)) return parameterAnalyses.get(parameterInfo);
-        ParameterAnalysis pa = hardCodedParameters.get(parameterInfo.fullyQualifiedName);
-        if (pa == null) {
-            throw new UnsupportedOperationException("Cannot find parameter analysis of " + parameterInfo);
-        }
-        return pa;
+        return Objects.requireNonNull(getParameterAnalysisNullWhenAbsent(parameterInfo),
+                "Cannot find parameter analysis of " + parameterInfo);
     }
 
     @Override
     public ParameterAnalysis getParameterAnalysisNullWhenAbsent(ParameterInfo parameterInfo) {
-        if (parameterAnalyses.isSet(parameterInfo)) return parameterAnalyses.get(parameterInfo);
+        if (methodAnalyses.isSet(parameterInfo.getMethod())) {
+            return methodAnalyses.get(parameterInfo.getMethod()).getParameterAnalyses().get(parameterInfo.index);
+        }
         return hardCodedParameters.get(parameterInfo.fullyQualifiedName);
     }
 
     @Override
     public TypeAnalysis getTypeAnalysis(TypeInfo typeInfo) {
-        if (typeAnalyses.isSet(typeInfo)) {
-            return typeAnalyses.get(typeInfo);
-        }
-        TypeAnalysis typeAnalysis = hardCodedTypes.get(typeInfo.fullyQualifiedName);
-        if (typeAnalysis == null) {
-            throw new UnsupportedOperationException("Cannot find type analysis of " + typeInfo);
-        }
-        return typeAnalysis;
+        return Objects.requireNonNull(getTypeAnalysisNullWhenAbsent(typeInfo),
+                "Cannot find type analysis of " + typeInfo);
     }
 
     @Override
@@ -613,8 +597,8 @@ public class GlobalAnalyserContext implements AnalyserContext {
             methodAnalyses.put(methodAnalysis.getMethodInfo(), methodAnalysis);
         } else if (analysis instanceof FieldAnalysis fieldAnalysis) {
             fieldAnalyses.put(fieldAnalysis.getFieldInfo(), fieldAnalysis);
-        } else if (analysis instanceof ParameterAnalysis parameterAnalysis) {
-            parameterAnalyses.put(parameterAnalysis.getParameterInfo(), parameterAnalysis);
-        } else throw new UnsupportedOperationException();
+        } else if (!(analysis instanceof ParameterAnalysis)) {
+            throw new UnsupportedOperationException();
+        }
     }
 }

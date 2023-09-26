@@ -35,7 +35,6 @@ public class LocalAnalyserContext implements AnalyserContext {
     private final SetOnceMap<MethodInfo, MethodAnalyser> methodAnalysers = new SetOnceMap<>();
     private final SetOnceMap<TypeInfo, TypeAnalyser> typeAnalysers = new SetOnceMap<>();
     private final SetOnceMap<FieldInfo, FieldAnalyser> fieldAnalysers = new SetOnceMap<>();
-    private final SetOnceMap<ParameterInfo, ParameterAnalyser> parameterAnalysers = new SetOnceMap<>();
 
     public LocalAnalyserContext(AnalyserContext parent) {
         this.parent = Objects.requireNonNull(parent);
@@ -94,18 +93,22 @@ public class LocalAnalyserContext implements AnalyserContext {
 
     @Override
     public ParameterAnalyser getParameterAnalyser(ParameterInfo parameterInfo) {
-        ParameterAnalyser ma = this.parameterAnalysers.getOrDefaultNull(parameterInfo);
-        if (ma == null) {
-            return parent.getParameterAnalyser(parameterInfo);
-        }
-        return ma;
+        MethodAnalyser methodAnalyser = methodAnalysers.getOrDefaultNull(parameterInfo.owner);
+        if (methodAnalyser != null) return methodAnalyser.parameterAnalyzer(parameterInfo.index);
+        return parent.getParameterAnalyser(parameterInfo);
     }
 
     @Override
     public ParameterAnalysis getParameterAnalysis(ParameterInfo parameterInfo) {
-        ParameterAnalyser pa = this.parameterAnalysers.getOrDefaultNull(parameterInfo);
-        if (pa != null) return pa.getParameterAnalysis();
-        return getMethodAnalysis(parameterInfo.owner).getParameterAnalyses().get(parameterInfo.index);
+        return Objects.requireNonNull(getParameterAnalysisNullWhenAbsent(parameterInfo),
+                "Cannot find parameter analysis for " + parameterInfo);
+    }
+
+    @Override
+    public ParameterAnalysis getParameterAnalysisNullWhenAbsent(ParameterInfo parameterInfo) {
+        MethodAnalyser methodAnalyser = methodAnalysers.getOrDefaultNull(parameterInfo.owner);
+        if (methodAnalyser != null) return methodAnalyser.getParameterAnalyses().get(parameterInfo.index);
+        return parent.getParameterAnalysisNullWhenAbsent(parameterInfo);
     }
 
     @Override
@@ -141,13 +144,6 @@ public class LocalAnalyserContext implements AnalyserContext {
     }
 
     @Override
-    public ParameterAnalysis getParameterAnalysisNullWhenAbsent(ParameterInfo parameterInfo) {
-        ParameterAnalyser parameterAnalyser = parameterAnalysers.get(parameterInfo);
-        return parameterAnalyser != null ? parameterAnalyser.getParameterAnalysis()
-                : parent.getParameterAnalysisNullWhenAbsent(parameterInfo);
-    }
-
-    @Override
     public Stream<FieldAnalyser> fieldAnalyserStream() {
         return Stream.concat(parent.fieldAnalyserStream(), this.fieldAnalysers.valueStream());
     }
@@ -172,9 +168,7 @@ public class LocalAnalyserContext implements AnalyserContext {
                 this.typeAnalysers.put(ta.getTypeInfo(), ta);
             } else if (analyser instanceof FieldAnalyser fa && !this.fieldAnalysers.isSet(fa.getFieldInfo())) {
                 this.fieldAnalysers.put(fa.getFieldInfo(), fa);
-            } else if (analyser instanceof ParameterAnalyser pa && !this.parameterAnalysers.isSet(pa.getParameterInfo())) {
-                this.parameterAnalysers.put(pa.getParameterInfo(), pa);
-            }
+            } else throw new UnsupportedOperationException();
         });
     }
 
@@ -182,6 +176,5 @@ public class LocalAnalyserContext implements AnalyserContext {
         methodAnalysers.putAll(previous.methodAnalysers);
         typeAnalysers.putAll(previous.typeAnalysers);
         fieldAnalysers.putAll(previous.fieldAnalysers);
-        parameterAnalysers.putAll(previous.parameterAnalysers);
     }
 }
