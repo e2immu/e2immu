@@ -92,13 +92,6 @@ public class LocalAnalyserContext implements AnalyserContext {
     }
 
     @Override
-    public ParameterAnalyser getParameterAnalyser(ParameterInfo parameterInfo) {
-        MethodAnalyser methodAnalyser = methodAnalysers.getOrDefaultNull(parameterInfo.owner);
-        if (methodAnalyser != null) return methodAnalyser.parameterAnalyzer(parameterInfo.index);
-        return parent.getParameterAnalyser(parameterInfo);
-    }
-
-    @Override
     public ParameterAnalysis getParameterAnalysis(ParameterInfo parameterInfo) {
         return Objects.requireNonNull(getParameterAnalysisNullWhenAbsent(parameterInfo),
                 "Cannot find parameter analysis for " + parameterInfo);

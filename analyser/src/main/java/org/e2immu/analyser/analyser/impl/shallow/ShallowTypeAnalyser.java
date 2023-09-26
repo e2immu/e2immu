@@ -266,7 +266,8 @@ public class ShallowTypeAnalyser extends TypeAnalyserImpl {
 
     @Override
     public Stream<MethodAnalyser> allMethodAnalysersIncludingSubTypes() {
-        throw new UnsupportedOperationException();
+        // used for computing isReadInMethod (field values); shallow types do not have actual methods
+        return Stream.of();
     }
 
     @Override

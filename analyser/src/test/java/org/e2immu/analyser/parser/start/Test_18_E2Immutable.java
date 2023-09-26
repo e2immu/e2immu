@@ -16,10 +16,11 @@ package org.e2immu.analyser.parser.start;
 
 import org.e2immu.analyser.analyser.DV;
 import org.e2immu.analyser.analyser.VariableInfo;
+import org.e2immu.analyser.analysis.MethodAnalysis;
+import org.e2immu.analyser.analysis.ParameterAnalysis;
 import org.e2immu.analyser.config.AnalyserConfiguration;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.model.*;
-import org.e2immu.analyser.model.expression.InlinedMethod;
 import org.e2immu.analyser.model.expression.MultiValue;
 import org.e2immu.analyser.model.expression.VariableExpression;
 import org.e2immu.analyser.model.variable.FieldReference;
@@ -29,6 +30,8 @@ import org.e2immu.analyser.visitor.*;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Set;
 
 import static org.e2immu.analyser.analyser.Property.*;
@@ -326,10 +329,28 @@ public class Test_18_E2Immutable extends CommonTestRunner {
                 .build());
     }
 
+    private void test(TypeMapVisitor.Data d, TypeInfo map) {
+        MethodInfo get = map.findUniqueMethod("get", 1);
+        MethodAnalysis getAnalysis = d.getMethodAnalysis(get);
+        assertEquals(MultiLevel.NULLABLE_DV, getAnalysis.getProperty(NOT_NULL_EXPRESSION));
+        ParameterInfo p0 = get.methodInspection.get().getParameters().get(0);
+        ParameterAnalysis p0a = d.getParameterAnalysis(p0);
+        assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, p0a.getProperty(NOT_NULL_PARAMETER));
+        ParameterAnalysis p0b = getAnalysis.getParameterAnalyses().get(0);
+        assertSame(p0a, p0b);
+    }
+
     @Test
     public void test_4() throws IOException {
-        testClass("E2Immutable_4", 0, 0, new DebugConfiguration.Builder()
+        TypeMapVisitor typeMapVisitor = d -> {
+            TypeInfo map = d.typeMap().get(Map.class);
+            test(d, map);
+            TypeInfo hashMap = d.typeMap().get(HashMap.class);
+            test(d, hashMap);
+        };
 
+        testClass("E2Immutable_4", 0, 0, new DebugConfiguration.Builder()
+                .addTypeMapVisitor(typeMapVisitor)
                 .build());
     }
 

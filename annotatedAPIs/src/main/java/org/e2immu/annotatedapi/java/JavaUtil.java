@@ -976,7 +976,7 @@ public class JavaUtil extends AnnotatedAPI {
             return org.e2immu.annotatedapi.AnnotatedAPI.isKnown(false);
         }
 
-        public HashMap$() {
+        HashMap$() {
         }
 
         // content is not known
@@ -984,8 +984,10 @@ public class JavaUtil extends AnnotatedAPI {
             return post == map.size();
         }
 
-        public HashMap$(@NotNull(content = true) @Independent(hc = true) Map<? extends K, ? extends V> map) {
+        HashMap$(@NotNull(content = true) @Independent(hc = true) Map<? extends K, ? extends V> map) {
         }
+
+        V get(@NotNull Object o){ return null; }
     }
 
 
@@ -1000,7 +1002,7 @@ public class JavaUtil extends AnnotatedAPI {
             return org.e2immu.annotatedapi.AnnotatedAPI.isKnown(false);
         }
 
-        public LinkedHashMap$() {
+        LinkedHashMap$() {
         }
 
         // content is not known
@@ -1008,8 +1010,10 @@ public class JavaUtil extends AnnotatedAPI {
             return post == map.size();
         }
 
-        public LinkedHashMap$(@NotNull(content = true) @Independent(hc = true) Map<? extends K, ? extends V> map) {
+        LinkedHashMap$(@NotNull(content = true) @Independent(hc = true) Map<? extends K, ? extends V> map) {
         }
+
+        V get(@NotNull Object o){ return null; }
     }
 
 
@@ -1043,6 +1047,8 @@ public class JavaUtil extends AnnotatedAPI {
         Map.Entry<K, V> firstEntry() {
             return null;
         }
+
+        V get(@NotNull Object o){ return null; }
     }
 
     interface AbstractCollection$<E> {

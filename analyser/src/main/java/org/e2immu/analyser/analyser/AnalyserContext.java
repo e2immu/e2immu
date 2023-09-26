@@ -76,10 +76,6 @@ public interface AnalyserContext extends AnalysisProvider, InspectionProvider {
         throw new UnsupportedOperationException();
     }
 
-    default ParameterAnalyser getParameterAnalyser(ParameterInfo parameterInfo) {
-        throw new UnsupportedOperationException();
-    }
-
     default AnalyserContext getParent() {
         return null;
     }

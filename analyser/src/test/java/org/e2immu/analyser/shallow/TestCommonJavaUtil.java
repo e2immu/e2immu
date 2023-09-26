@@ -527,6 +527,21 @@ public class TestCommonJavaUtil extends CommonAnnotatedAPI {
 
 
     @Test
+    public void testHashMapGet() {
+        TypeInfo hashMap = typeContext.getFullyQualified(HashMap.class);
+        TypeInfo map = typeContext.getFullyQualified(Map.class);
+
+        MethodInfo mapGet = map.findUniqueMethod("get", 1);
+        ParameterAnalysis p0MapGet = mapGet.parameterAnalysis(0);
+        assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, p0MapGet.getProperty(Property.NOT_NULL_PARAMETER));
+
+        MethodInfo hashMapGet = hashMap.findUniqueMethod("get", 1);
+        ParameterAnalysis p0HashMapGet = hashMapGet.parameterAnalysis(0);
+        assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, p0HashMapGet.getProperty(Property.NOT_NULL_PARAMETER));
+    }
+
+
+    @Test
     public void testObjectsRequireNonNull() {
         TypeInfo typeInfo = typeContext.getFullyQualified(Objects.class);
         MethodInfo methodInfo = typeInfo.findUniqueMethod("requireNonNull", 1);
