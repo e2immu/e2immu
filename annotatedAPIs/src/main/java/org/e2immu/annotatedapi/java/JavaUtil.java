@@ -987,6 +987,10 @@ public class JavaUtil extends AnnotatedAPI {
         HashMap$(@NotNull(content = true) @Independent(hc = true) Map<? extends K, ? extends V> map) {
         }
 
+        boolean containsKey(@NotNull @Independent Object k) { return true; };
+
+        @Modified
+        V put(@NotNull K k, @NotNull V v) { return null; }
         V get(@NotNull Object o){ return null; }
     }
 
@@ -1012,6 +1016,11 @@ public class JavaUtil extends AnnotatedAPI {
 
         LinkedHashMap$(@NotNull(content = true) @Independent(hc = true) Map<? extends K, ? extends V> map) {
         }
+
+        boolean containsKey(@NotNull @Independent Object k) { return true; };
+
+        @Modified
+        V put(@NotNull K k, @NotNull V v) { return null; }
 
         V get(@NotNull Object o){ return null; }
     }
@@ -1047,6 +1056,11 @@ public class JavaUtil extends AnnotatedAPI {
         Map.Entry<K, V> firstEntry() {
             return null;
         }
+
+        boolean containsKey(@NotNull @Independent Object k) { return true; };
+
+        @Modified
+        V put(@NotNull K k, @NotNull V v) { return null; }
 
         V get(@NotNull Object o){ return null; }
     }

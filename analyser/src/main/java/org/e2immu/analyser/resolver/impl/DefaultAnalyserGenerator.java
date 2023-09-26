@@ -140,26 +140,27 @@ public class DefaultAnalyserGenerator implements AnalyserGenerator {
         List<MethodAnalyser> methodAnalysersInOrder = new ArrayList<>(methodAnalysers.size());
         List<FieldAnalyser> fieldAnalysersInOrder = new ArrayList<>(fieldAnalysers.size());
         List<TypeAnalyser> typeAnalysersInOrder = new ArrayList<>(typeAnalysers.size());
+        List<TypeAnalyser> shallowTypeAnalysersInOrder = new ArrayList<>(typeAnalysers.size());
+
         allAnalysers.forEach(analyser -> {
             if (analyser instanceof MethodAnalyser ma) methodAnalysersInOrder.add(ma);
+            else if (analyser instanceof ShallowTypeAnalyser sta) shallowTypeAnalysersInOrder.add(sta);
             else if (analyser instanceof TypeAnalyser ta) typeAnalysersInOrder.add(ta);
             else if (analyser instanceof FieldAnalyser fa) fieldAnalysersInOrder.add(fa);
             else throw new UnsupportedOperationException();
         });
 
-        if (inAnnotatedAPI) {
-            typeAnalysersInOrder.sort(DefaultAnalyserGenerator::annotatedAPITypeComparator);
-            analysers = ListUtil.immutableConcat(typeAnalysersInOrder, methodAnalysersInOrder, fieldAnalysersInOrder);
-        } else {
-            boolean forceAlphabeticAnalysis = analyserContext.getConfiguration().analyserConfiguration()
-                    .forceAlphabeticAnalysisInPrimaryType();
-            if (forceAlphabeticAnalysis) {
-                methodAnalysersInOrder.sort(Comparator.comparing(ma -> ma.getMethodInfo().fullyQualifiedName));
-                typeAnalysersInOrder.sort(Comparator.comparing(ta -> ta.getTypeInfo().fullyQualifiedName));
-                fieldAnalysersInOrder.sort(Comparator.comparing(fa -> fa.getFieldInfo().fullyQualifiedName));
-            }
-            analysers = ListUtil.immutableConcat(methodAnalysersInOrder, fieldAnalysersInOrder, typeAnalysersInOrder);
+        shallowTypeAnalysersInOrder.sort(DefaultAnalyserGenerator::annotatedAPITypeComparator);
+        boolean forceAlphabeticAnalysis = analyserContext.getConfiguration().analyserConfiguration()
+                .forceAlphabeticAnalysisInPrimaryType();
+        if (forceAlphabeticAnalysis) {
+            methodAnalysersInOrder.sort(Comparator.comparing(ma -> ma.getMethodInfo().fullyQualifiedName));
+            typeAnalysersInOrder.sort(Comparator.comparing(ta -> ta.getTypeInfo().fullyQualifiedName));
+            fieldAnalysersInOrder.sort(Comparator.comparing(fa -> fa.getFieldInfo().fullyQualifiedName));
         }
+        analysers = ListUtil.immutableConcat(shallowTypeAnalysersInOrder, methodAnalysersInOrder,
+                fieldAnalysersInOrder, typeAnalysersInOrder);
+
         assert analysers.size() == new HashSet<>(analysers).size() : "There are be duplicates among the analysers?";
     }
 

@@ -72,6 +72,7 @@ public class TestCommonJavaUtil extends CommonAnnotatedAPI {
         ParameterAnalysis p0 = methodInfo.parameterAnalysis(0);
         assertEquals(MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL_DV, p0.getProperty(Property.NOT_NULL_PARAMETER));
         assertEquals(MultiLevel.INDEPENDENT_HC_DV, p0.getProperty(Property.INDEPENDENT));
+        assertEquals(DV.FALSE_DV, p0.getProperty(Property.MODIFIED_VARIABLE));
     }
 
     @Test
@@ -513,6 +514,17 @@ public class TestCommonJavaUtil extends CommonAnnotatedAPI {
         assertEquals(DV.FALSE_DV, p0.getProperty(Property.MODIFIED_VARIABLE));
     }
 
+
+    @Test
+    public void testHashSetAddAll() {
+        TypeInfo hashSet = typeContext.getFullyQualified(AbstractCollection.class);
+        MethodInfo addAllHashSet = hashSet.findUniqueMethod("addAll", 1);
+        assertEquals(DV.TRUE_DV, addAllHashSet.methodAnalysis.get().getProperty(Property.MODIFIED_METHOD));
+        ParameterAnalysis p0 = addAllHashSet.parameterAnalysis(0);
+        assertEquals(MultiLevel.INDEPENDENT_HC_DV, p0.getProperty(Property.INDEPENDENT));
+        assertEquals(DV.FALSE_DV, p0.getProperty(Property.MODIFIED_VARIABLE));
+        assertEquals(MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL_DV, p0.getProperty(Property.NOT_NULL_PARAMETER));
+    }
 
     @Test
     public void testHashMapConstructor1() {
