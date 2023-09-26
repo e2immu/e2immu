@@ -862,6 +862,7 @@ public class JavaUtil extends AnnotatedAPI {
          See e.g. Loops_18
          */
         @NotNull(content = true)
+        @Container
         Set<Map.Entry<K, V>> entrySet();
 
         default int keySet$Transfer$Size(int i) {
@@ -872,6 +873,7 @@ public class JavaUtil extends AnnotatedAPI {
         @Dependent!
          */
         @NotNull(content = true)
+        @Container
         Set<K> keySet();
 
         @NotModified

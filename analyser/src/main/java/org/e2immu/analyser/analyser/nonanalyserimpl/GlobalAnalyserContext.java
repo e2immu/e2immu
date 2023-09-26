@@ -78,7 +78,7 @@ public class GlobalAnalyserContext implements AnalyserContext {
     }
 
     public enum HardCoded {
-        IMMUTABLE(true), IMMUTABLE_HC(true),
+        IMMUTABLE(true), IMMUTABLE_HC(true), IMMUTABLE_HC_INDEPENDENT_HC(true),
         MUTABLE_NOT_CONTAINER_DO_NOT_ERASE(false),
         MUTABLE_CONTAINER_DO_NOT_ERASE(false),
         NO(false),
@@ -479,6 +479,12 @@ public class GlobalAnalyserContext implements AnalyserContext {
                     case IMMUTABLE_HC -> switch (property) {
                         case IMMUTABLE -> MultiLevel.EFFECTIVELY_IMMUTABLE_HC_DV;
                         case INDEPENDENT -> MultiLevel.INDEPENDENT_DV;
+                        case CONTAINER -> MultiLevel.CONTAINER_DV;
+                        default -> throw new UnsupportedOperationException();
+                    };
+                    case IMMUTABLE_HC_INDEPENDENT_HC -> switch (property) {
+                        case IMMUTABLE -> MultiLevel.EFFECTIVELY_IMMUTABLE_HC_DV;
+                        case INDEPENDENT -> MultiLevel.INDEPENDENT_HC_DV;
                         case CONTAINER -> MultiLevel.CONTAINER_DV;
                         default -> throw new UnsupportedOperationException();
                     };

@@ -184,6 +184,9 @@ public interface AnalysisProvider {
             return MultiLevel.EFFECTIVELY_IMMUTABLE_HC_DV;
         }
         TypeInfo bestType = parameterizedType.bestTypeInfo();
+        if (bestType.isPrimitiveExcludingVoid() || bestType.isVoid()) {
+            return MultiLevel.EFFECTIVELY_IMMUTABLE_DV;
+        }
         TypeAnalysis typeAnalysis = getTypeAnalysisNullWhenAbsent(bestType);
         if (typeAnalysis == null) {
             return typeAnalysisNotAvailable(bestType);

@@ -22,7 +22,7 @@ public class TestAnnotatedAPIErrors extends CommonAnnotatedAPI {
 
     @Test
     public void test() {
-        errors.forEach(System.out::println);
+        errors.stream().map(Object::toString).sorted().forEach(System.out::println);
         assertEquals(0, errors.size());
     }
 }

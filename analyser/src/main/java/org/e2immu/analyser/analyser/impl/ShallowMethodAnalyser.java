@@ -359,7 +359,7 @@ public class ShallowMethodAnalyser extends MethodAnalyserImpl {
      */
     private DV computeMethodContainer() {
         ParameterizedType returnType = methodInfo.returnType();
-        if (returnType.arrays > 0 || returnType.isPrimitiveExcludingVoid()) {
+        if (returnType.arrays > 0 || returnType.isPrimitiveExcludingVoid() || returnType.isVoid()) {
             return MultiLevel.CONTAINER_DV;
         }
         if (returnType == ParameterizedType.RETURN_TYPE_OF_CONSTRUCTOR)
