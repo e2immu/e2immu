@@ -59,7 +59,8 @@ public class TestJavaUtil {
         parser.run();
         typeContext = parser.getTypeContext();
         parser.getMessages().forEach(message -> LOGGER.info(message.toString()));
-        return parser.getMessages().collect(Collectors.toUnmodifiableSet());
+        parser.getAnnotatedAPIMessages().forEach(message -> LOGGER.info(message.toString()));
+        return parser.getAnnotatedAPIMessages().collect(Collectors.toUnmodifiableSet());
     }
 
     // test that there is an error on the type

@@ -280,7 +280,6 @@ public class PrimitivesImpl implements Primitives {
                     .build(null));
             primitiveByName.put(ti.simpleName, ti);
             TypeAnalysisImpl.Builder builder = new TypeAnalysisImpl.Builder(CONTRACTED, this, ti, null);
-            ti.typeAnalysis.set(builder);
             builder.setProperty(Property.CONTAINER, MultiLevel.CONTAINER_DV);
             builder.setProperty(Property.IMMUTABLE, MultiLevel.EFFECTIVELY_IMMUTABLE_DV);
             builder.setProperty(Property.INDEPENDENT, MultiLevel.INDEPENDENT_DV);
@@ -288,6 +287,7 @@ public class PrimitivesImpl implements Primitives {
             builder.freezeApprovedPreconditionsFinalFields(); // cannot change these anymore; will never be eventual
             builder.setHiddenContentTypes(SetOfTypes.EMPTY);
             builder.setImmutableDeterminedByTypeParameters(false);
+            ti.typeAnalysis.set(builder.build());
         }
 
         for (TypeInfo ti : List.of(stringTypeInfo, objectTypeInfo, classTypeInfo, annotationTypeTypeInfo,

@@ -15,7 +15,13 @@
 package org.e2immu.analyser.analyser.nonanalyserimpl;
 
 import org.e2immu.analyser.analyser.*;
+import org.e2immu.analyser.analyser.impl.ShallowFieldAnalyser;
+import org.e2immu.analyser.analyser.impl.ShallowMethodAnalyser;
+import org.e2immu.analyser.analyser.impl.ShallowTypeAnalyser;
+import org.e2immu.analyser.analyser.impl.util.BreakDelayLevel;
 import org.e2immu.analyser.analysis.*;
+import org.e2immu.analyser.analysis.impl.MethodAnalysisImpl;
+import org.e2immu.analyser.analysis.impl.ParameterAnalysisImpl;
 import org.e2immu.analyser.config.Configuration;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.variable.FieldReference;
@@ -25,6 +31,7 @@ import org.e2immu.analyser.parser.Messages;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.util.CommutableData;
 import org.e2immu.analyser.util.ParSeq;
+import org.e2immu.support.FlipSwitch;
 import org.e2immu.support.SetOnceMap;
 
 import java.util.*;
@@ -45,6 +52,8 @@ public class GlobalAnalyserContext implements AnalyserContext {
     private final Map<String, TypeAnalysis> hardCodedTypes;
     private final Map<String, MethodAnalysis> hardCodedMethods;
     private final Map<String, ParameterAnalysis> hardCodedParameters;
+
+    private final FlipSwitch onDemandMode = new FlipSwitch();
 
     public GlobalAnalyserContext(Primitives primitives,
                                  Configuration configuration,
@@ -77,13 +86,15 @@ public class GlobalAnalyserContext implements AnalyserContext {
         hardCodedParameters = createHardCodedParameterAnalysis();
     }
 
+    public void startOnDemandMode() {
+        onDemandMode.set();
+    }
+
     public enum HardCoded {
         IMMUTABLE(true), IMMUTABLE_HC(true), IMMUTABLE_HC_INDEPENDENT_HC(true),
         MUTABLE_NOT_CONTAINER_DO_NOT_ERASE(false),
         MUTABLE_CONTAINER_DO_NOT_ERASE(false),
-        NO(false),
-        NON_MODIFIED(false),
-        NOT_MODIFIED_PARAM(false);
+        NO(false);
 
         public final boolean eraseDependencies;
 
@@ -98,7 +109,7 @@ public class GlobalAnalyserContext implements AnalyserContext {
         put("java.lang.Object", HardCoded.IMMUTABLE_HC);
         put("java.io.Serializable", HardCoded.IMMUTABLE_HC);
         put("java.util.Comparator", HardCoded.IMMUTABLE_HC);
-        put("java.util.Optional", HardCoded.IMMUTABLE_HC);
+        put("java.util.Optional", HardCoded.IMMUTABLE_HC_INDEPENDENT_HC);
 
         put("java.lang.CharSequence", HardCoded.IMMUTABLE_HC);
         put("java.lang.Class", HardCoded.IMMUTABLE);
@@ -132,393 +143,400 @@ public class GlobalAnalyserContext implements AnalyserContext {
     public static Map<String, List<String>> PARAMETER_ANALYSES = Map.of("org.e2immu.annotatedapi.AnnotatedAPI.isKnown(boolean)",
             List.of("org.e2immu.annotatedapi.AnnotatedAPI.isKnown(boolean):0:test"));
 
-    public static Map<String, HardCoded> HARDCODED_METHODS = Collections.unmodifiableMap(new HashMap<>() {{
-        put("java.lang.CharSequence.length()", HardCoded.NON_MODIFIED);
-        put("org.e2immu.annotatedapi.AnnotatedAPI.isKnown(boolean)", HardCoded.NON_MODIFIED);
-        put("java.util.Collection.size()", HardCoded.NON_MODIFIED);
-        put("java.util.Map.size()", HardCoded.NON_MODIFIED);//companion of LinkedHashMap
-    }});
+    private static final Set<String> HARDCODED_METHODS = Set.of(
+            "java.lang.CharSequence.length()",
+            "org.e2immu.annotatedapi.AnnotatedAPI.isKnown(boolean)",
+            "java.util.Collection.size()",
+            "java.util.Map.size()");
 
     // occur in companions
-    public static Map<String, HardCoded> HARDCODED_PARAMETERS = Collections.unmodifiableMap(new HashMap<>() {{
-        put("org.e2immu.annotatedapi.AnnotatedAPI.isKnown(boolean):0:test", HardCoded.NOT_MODIFIED_PARAM);
-    }});
+    private static final Set<String> HARDCODED_PARAMETERS = Set.of("org.e2immu.annotatedapi.AnnotatedAPI.isKnown(boolean):0:test");
 
     private Map<String, TypeAnalysis> createHardCodedTypeAnalysis() {
         return HARDCODED_TYPES.entrySet().stream().collect(Collectors.toUnmodifiableMap(Map.Entry::getKey,
-                e -> hardCodedTypeAnalysis(e.getKey(), e.getValue())));
+                e -> new HardCodedTypeAnalysis(e.getKey(), e.getValue())));
     }
 
     private Map<String, MethodAnalysis> createHardCodedMethodAnalysis() {
-        return HARDCODED_METHODS.entrySet().stream().collect(Collectors.toUnmodifiableMap(Map.Entry::getKey,
-                e -> hardCodedMethodAnalysis(e.getKey(), e.getValue())));
+        return HARDCODED_METHODS.stream().collect(Collectors.toUnmodifiableMap(e -> e,
+                HardCodedMethodAnalysis::new));
     }
 
     private Map<String, ParameterAnalysis> createHardCodedParameterAnalysis() {
-        return HARDCODED_PARAMETERS.entrySet().stream().collect(Collectors.toUnmodifiableMap(Map.Entry::getKey,
-                e -> hardCodedParameterAnalysis(e.getKey(), e.getValue())));
+        return HARDCODED_PARAMETERS.stream().collect(Collectors.toUnmodifiableMap(e -> e,
+                HardCodedParameterAnalysis::new));
     }
 
-    private ParameterAnalysis hardCodedParameterAnalysis(String fullyQualifiedName, HardCoded hardCoded) {
-        return new ParameterAnalysis() {
-            @Override
-            public ParameterInfo getParameterInfo() {
-                throw new UnsupportedOperationException();
-            }
+    record HardCodedParameterAnalysis(String fullyQualifiedName) implements ParameterAnalysis {
 
-            @Override
-            public AnnotationExpression annotationGetOrDefaultNull(AnnotationExpression expression) {
-                throw new UnsupportedOperationException();
-            }
+        @Override
+        public ParameterInfo getParameterInfo() {
+            throw new UnsupportedOperationException();
+        }
 
-            @Override
-            public void internalAllDoneCheck() {
-                throw new UnsupportedOperationException();
-            }
+        @Override
+        public AnnotationExpression annotationGetOrDefaultNull(AnnotationExpression expression) {
+            throw new UnsupportedOperationException();
+        }
 
-            @Override
-            public void setPropertyDelayWhenNotFinal(Property property, CausesOfDelay causes) {
-                throw new UnsupportedOperationException();
-            }
+        @Override
+        public void internalAllDoneCheck() {
+            throw new UnsupportedOperationException();
+        }
 
-            @Override
-            public DV getProperty(Property property) {
-                return getPropertyFromMapNeverDelay(property);
-            }
+        @Override
+        public void setPropertyDelayWhenNotFinal(Property property, CausesOfDelay causes) {
+            throw new UnsupportedOperationException();
+        }
 
-            @Override
-            public DV getPropertyFromMapDelayWhenAbsent(Property property) {
-                return getPropertyFromMapNeverDelay(property);
-            }
+        @Override
+        public DV getProperty(Property property) {
+            return getPropertyFromMapNeverDelay(property);
+        }
 
-            @Override
-            public DV getPropertyFromMapNeverDelay(Property property) {
-                HardCoded hc = HARDCODED_PARAMETERS.get(fullyQualifiedName);
-                return switch (hc) {
-                    case NOT_MODIFIED_PARAM -> switch (property) {
-                        case MODIFIED_VARIABLE -> DV.FALSE_DV;
-                        case INDEPENDENT -> MultiLevel.INDEPENDENT_DV;
-                        case NOT_NULL_PARAMETER -> MultiLevel.EFFECTIVELY_NOT_NULL_DV;
-                        case CONTAINER_RESTRICTION -> MultiLevel.NOT_CONTAINER_DV;
-                        default -> throw new UnsupportedOperationException(fullyQualifiedName + ": " + property);
-                    };
-                    default -> throw new UnsupportedOperationException(fullyQualifiedName + ": " + property);
-                };
-            }
+        @Override
+        public DV getPropertyFromMapDelayWhenAbsent(Property property) {
+            return getPropertyFromMapNeverDelay(property);
+        }
 
-            @Override
-            public Location location(Stage stage) {
-                throw new UnsupportedOperationException();
-            }
+        @Override
+        public DV getPropertyFromMapNeverDelay(Property property) {
+            return switch (property) {
+                case MODIFIED_VARIABLE -> DV.FALSE_DV;
+                case INDEPENDENT -> MultiLevel.INDEPENDENT_DV;
+                case NOT_NULL_PARAMETER -> MultiLevel.EFFECTIVELY_NOT_NULL_DV;
+                case CONTAINER_RESTRICTION -> MultiLevel.NOT_CONTAINER_DV;
+                default -> throw new UnsupportedOperationException(fullyQualifiedName + ": " + property);
+            };
+        }
 
-            @Override
-            public Messages fromAnnotationsIntoProperties(Analyser.AnalyserIdentification analyserIdentification, boolean acceptVerifyAsContracted, Collection<AnnotationExpression> annotations, E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions) {
-                throw new UnsupportedOperationException();
-            }
-        };
+        @Override
+        public Location location(Stage stage) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public Messages fromAnnotationsIntoProperties(Analyser.AnalyserIdentification analyserIdentification,
+                                                      boolean acceptVerifyAsContracted,
+                                                      Collection<AnnotationExpression> annotations,
+                                                      E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions) {
+            throw new UnsupportedOperationException();
+        }
     }
 
-    private MethodAnalysis hardCodedMethodAnalysis(String fullyQualifiedName, HardCoded hardCoded) {
-        return new MethodAnalysis() {
-            @Override
-            public MethodInfo getMethodInfo() {
-                throw new UnsupportedOperationException();
-            }
+    class HardCodedMethodAnalysis implements MethodAnalysis {
+        private final String fullyQualifiedName;
 
-            @Override
-            public Expression getSingleReturnValue() {
-                throw new UnsupportedOperationException();
-            }
+        public HardCodedMethodAnalysis(String fullyQualifiedName) {
+            this.fullyQualifiedName = fullyQualifiedName;
+        }
 
-            @Override
-            public List<ParameterAnalysis> getParameterAnalyses() {
-                List<String> fqns = PARAMETER_ANALYSES.get(fullyQualifiedName);
-                for (String fqn : fqns) {
-                    ParameterAnalysis pa = hardCodedParameters.get(fqn);
-                    if (pa == null) throw new UnsupportedOperationException("Cannot find " + fqn);
-                }
-                return fqns.stream().map(hardCodedParameters::get).toList();
-            }
+        @Override
+        public MethodInfo getMethodInfo() {
+            throw new UnsupportedOperationException();
+        }
 
-            @Override
-            public Precondition getPreconditionForEventual() {
-                throw new UnsupportedOperationException();
-            }
+        @Override
+        public Expression getSingleReturnValue() {
+            throw new UnsupportedOperationException();
+        }
 
-            @Override
-            public Precondition getPrecondition() {
-                return Precondition.empty(primitives);
+        @Override
+        public List<ParameterAnalysis> getParameterAnalyses() {
+            List<String> fqns = PARAMETER_ANALYSES.get(fullyQualifiedName);
+            for (String fqn : fqns) {
+                ParameterAnalysis pa = hardCodedParameters.get(fqn);
+                if (pa == null) throw new UnsupportedOperationException("Cannot find " + fqn);
             }
+            return fqns.stream().map(hardCodedParameters::get).toList();
+        }
 
-            @Override
-            public Set<PostCondition> getPostConditions() {
-                throw new UnsupportedOperationException();
-            }
+        @Override
+        public Precondition getPreconditionForEventual() {
+            throw new UnsupportedOperationException();
+        }
 
-            @Override
-            public Set<String> indicesOfEscapesNotInPreOrPostConditions() {
-                throw new UnsupportedOperationException();
-            }
+        @Override
+        public Precondition getPrecondition() {
+            return Precondition.empty(primitives);
+        }
 
-            @Override
-            public CommutableData getCommutableData() {
-                throw new UnsupportedOperationException();
-            }
+        @Override
+        public Set<PostCondition> getPostConditions() {
+            throw new UnsupportedOperationException();
+        }
 
-            @Override
-            public CausesOfDelay eventualStatus() {
-                throw new UnsupportedOperationException();
-            }
+        @Override
+        public Set<String> indicesOfEscapesNotInPreOrPostConditions() {
+            throw new UnsupportedOperationException();
+        }
 
-            @Override
-            public CausesOfDelay preconditionStatus() {
-                throw new UnsupportedOperationException();
-            }
+        @Override
+        public CommutableData getCommutableData() {
+            throw new UnsupportedOperationException();
+        }
 
-            @Override
-            public ParSeq<ParameterInfo> getParallelGroups() {
-                return null;
-            }
+        @Override
+        public CausesOfDelay eventualStatus() {
+            throw new UnsupportedOperationException();
+        }
 
-            @Override
-            public List<Expression> sortAccordingToParallelGroupsAndNaturalOrder(List<Expression> parameterExpressions) {
-                throw new UnsupportedOperationException();
-            }
+        @Override
+        public CausesOfDelay preconditionStatus() {
+            throw new UnsupportedOperationException();
+        }
 
-            @Override
-            public void markFirstIteration() {
-                throw new UnsupportedOperationException();
-            }
+        @Override
+        public ParSeq<ParameterInfo> getParallelGroups() {
+            return null;
+        }
 
-            @Override
-            public boolean hasBeenAnalysedUpToIteration0() {
-                throw new UnsupportedOperationException();
-            }
+        @Override
+        public List<Expression> sortAccordingToParallelGroupsAndNaturalOrder(List<Expression> parameterExpressions) {
+            throw new UnsupportedOperationException();
+        }
 
-            @Override
-            public FieldInfo getSetField() {
-                throw new UnsupportedOperationException();
-            }
+        @Override
+        public void markFirstIteration() {
+            throw new UnsupportedOperationException();
+        }
 
-            @Override
-            public GetSetEquivalent getSetEquivalent() {
-                throw new UnsupportedOperationException();
-            }
+        @Override
+        public boolean hasBeenAnalysedUpToIteration0() {
+            throw new UnsupportedOperationException();
+        }
 
-            @Override
-            public AnnotationExpression annotationGetOrDefaultNull(AnnotationExpression expression) {
-                throw new UnsupportedOperationException();
-            }
+        @Override
+        public FieldInfo getSetField() {
+            throw new UnsupportedOperationException();
+        }
 
-            @Override
-            public void internalAllDoneCheck() {
-                throw new UnsupportedOperationException();
-            }
+        @Override
+        public GetSetEquivalent getSetEquivalent() {
+            throw new UnsupportedOperationException();
+        }
 
-            @Override
-            public void setPropertyDelayWhenNotFinal(Property property, CausesOfDelay causes) {
-                throw new UnsupportedOperationException();
-            }
+        @Override
+        public AnnotationExpression annotationGetOrDefaultNull(AnnotationExpression expression) {
+            throw new UnsupportedOperationException();
+        }
 
-            @Override
-            public DV getProperty(Property property) {
-                return getPropertyFromMapNeverDelay(property);
-            }
+        @Override
+        public void internalAllDoneCheck() {
+            throw new UnsupportedOperationException();
+        }
 
-            @Override
-            public DV getPropertyFromMapDelayWhenAbsent(Property property) {
-                return getPropertyFromMapNeverDelay(property);
-            }
+        @Override
+        public void setPropertyDelayWhenNotFinal(Property property, CausesOfDelay causes) {
+            throw new UnsupportedOperationException();
+        }
 
-            @Override
-            public DV getPropertyFromMapNeverDelay(Property property) {
-                HardCoded hc = HARDCODED_METHODS.get(fullyQualifiedName);
-                return switch (hc) {
-                    case NON_MODIFIED -> switch (property) {
-                        case FLUENT, IDENTITY, MODIFIED_METHOD, TEMP_MODIFIED_METHOD, MODIFIED_METHOD_ALT_TEMP,
-                                FINALIZER, CONSTANT, STATIC_SIDE_EFFECTS -> DV.FALSE_DV;
-                        case IGNORE_MODIFICATIONS -> MultiLevel.NOT_IGNORE_MODS_DV;
-                        case INDEPENDENT -> MultiLevel.INDEPENDENT_DV;
-                        case NOT_NULL_EXPRESSION -> MultiLevel.EFFECTIVELY_NOT_NULL_DV;
-                        default -> throw new UnsupportedOperationException(fullyQualifiedName + ": " + property);
-                    };
-                    default -> throw new UnsupportedOperationException(fullyQualifiedName + ": " + property);
-                };
-            }
+        @Override
+        public DV getProperty(Property property) {
+            return getPropertyFromMapNeverDelay(property);
+        }
 
-            @Override
-            public Location location(Stage stage) {
-                throw new UnsupportedOperationException();
-            }
+        @Override
+        public DV getPropertyFromMapDelayWhenAbsent(Property property) {
+            return getPropertyFromMapNeverDelay(property);
+        }
 
-            @Override
-            public Messages fromAnnotationsIntoProperties(Analyser.AnalyserIdentification analyserIdentification, boolean acceptVerifyAsContracted, Collection<AnnotationExpression> annotations, E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions) {
-                throw new UnsupportedOperationException();
-            }
-        };
+        @Override
+        public DV getPropertyFromMapNeverDelay(Property property) {
+            return switch (property) {
+                case FLUENT, IDENTITY, MODIFIED_METHOD, TEMP_MODIFIED_METHOD, MODIFIED_METHOD_ALT_TEMP,
+                        FINALIZER, CONSTANT, STATIC_SIDE_EFFECTS -> DV.FALSE_DV;
+                case IGNORE_MODIFICATIONS -> MultiLevel.NOT_IGNORE_MODS_DV;
+                case INDEPENDENT -> MultiLevel.INDEPENDENT_DV;
+                case NOT_NULL_EXPRESSION -> MultiLevel.EFFECTIVELY_NOT_NULL_DV;
+                default -> throw new UnsupportedOperationException(fullyQualifiedName + ": " + property);
+            };
+        }
+
+        @Override
+        public Location location(Stage stage) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public Messages fromAnnotationsIntoProperties(Analyser.AnalyserIdentification analyserIdentification,
+                                                      boolean acceptVerifyAsContracted,
+                                                      Collection<AnnotationExpression> annotations,
+                                                      E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions) {
+            throw new UnsupportedOperationException();
+        }
     }
 
-    private TypeAnalysis hardCodedTypeAnalysis(String fullyQualifiedName, HardCoded hardCoded) {
-        return new TypeAnalysis() {
+    private record HardCodedTypeAnalysis(String fullyQualifiedName, HardCoded hardCoded) implements TypeAnalysis {
 
-            @Override
-            public TypeInfo getTypeInfo() {
-                throw new UnsupportedOperationException();
-            }
 
-            @Override
-            public Map<FieldReference, Expression> getApprovedPreconditionsFinalFields() {
-                throw new UnsupportedOperationException();
-            }
+        @Override
+        public TypeInfo getTypeInfo() {
+            throw new UnsupportedOperationException();
+        }
 
-            @Override
-            public Map<FieldReference, Expression> getApprovedPreconditionsImmutable() {
-                throw new UnsupportedOperationException();
-            }
+        @Override
+        public Map<FieldReference, Expression> getApprovedPreconditionsFinalFields() {
+            return Map.of();
+        }
 
-            @Override
-            public boolean containsApprovedPreconditionsImmutable(FieldReference fieldReference) {
-                throw new UnsupportedOperationException();
-            }
+        @Override
+        public Map<FieldReference, Expression> getApprovedPreconditionsImmutable() {
+            return Map.of();
+        }
 
-            @Override
-            public boolean approvedPreconditionsImmutableIsEmpty() {
-                throw new UnsupportedOperationException();
-            }
+        @Override
+        public boolean containsApprovedPreconditionsImmutable(FieldReference fieldReference) {
+            throw new UnsupportedOperationException();
+        }
 
-            @Override
-            public Expression getApprovedPreconditions(boolean e2, FieldReference fieldInfo) {
-                throw new UnsupportedOperationException();
-            }
+        @Override
+        public boolean approvedPreconditionsImmutableIsEmpty() {
+            return true;
+        }
 
-            @Override
-            public CausesOfDelay approvedPreconditionsStatus(boolean e2, FieldReference fieldInfo) {
-                throw new UnsupportedOperationException();
-            }
+        @Override
+        public Expression getApprovedPreconditions(boolean e2, FieldReference fieldInfo) {
+            throw new UnsupportedOperationException();
+        }
 
-            @Override
-            public CausesOfDelay approvedPreconditionsStatus(boolean e2) {
-                throw new UnsupportedOperationException();
-            }
+        @Override
+        public CausesOfDelay approvedPreconditionsStatus(boolean e2, FieldReference fieldInfo) {
+            throw new UnsupportedOperationException();
+        }
 
-            @Override
-            public boolean approvedPreconditionsIsNotEmpty(boolean e2) {
-                throw new UnsupportedOperationException();
-            }
+        @Override
+        public CausesOfDelay approvedPreconditionsStatus(boolean e2) {
+            return CausesOfDelay.EMPTY;
+        }
 
-            @Override
-            public Set<FieldInfo> getEventuallyImmutableFields() {
-                throw new UnsupportedOperationException();
-            }
+        @Override
+        public boolean approvedPreconditionsIsNotEmpty(boolean e2) {
+            return false;
+        }
 
-            @Override
-            public Set<FieldInfo> getGuardedByEventuallyImmutableFields() {
-                throw new UnsupportedOperationException();
-            }
+        @Override
+        public Set<FieldInfo> getEventuallyImmutableFields() {
+            return Set.of();
+        }
 
-            @Override
-            public FieldInfo translateToVisibleField(FieldReference fieldReference) {
-                throw new UnsupportedOperationException();
-            }
+        @Override
+        public Set<FieldInfo> getGuardedByEventuallyImmutableFields() {
+            return Set.of();
+        }
 
-            @Override
-            public Map<String, MethodInfo> getAspects() {
-                throw new UnsupportedOperationException();
-            }
+        @Override
+        public FieldInfo translateToVisibleField(FieldReference fieldReference) {
+            throw new UnsupportedOperationException();
+        }
 
-            @Override
-            public DV immutableDeterminedByTypeParameters() {
-                return DV.fromBoolDv(hardCoded == HardCoded.IMMUTABLE_HC);
-            }
+        @Override
+        public Map<String, MethodInfo> getAspects() {
+            throw new UnsupportedOperationException();
+        }
 
-            @Override
-            public SetOfTypes getHiddenContentTypes() {
-                throw new UnsupportedOperationException();
-            }
+        @Override
+        public DV immutableDeterminedByTypeParameters() {
+            return DV.fromBoolDv(hardCoded == HardCoded.IMMUTABLE_HC);
+        }
 
-            @Override
-            public CausesOfDelay hiddenContentDelays() {
-                throw new UnsupportedOperationException();
-            }
+        @Override
+        public SetOfTypes getHiddenContentTypes() {
+            return SetOfTypes.EMPTY;
+        }
 
-            @Override
-            public AnnotationExpression annotationGetOrDefaultNull(AnnotationExpression expression) {
-                throw new UnsupportedOperationException();
-            }
+        @Override
+        public CausesOfDelay hiddenContentDelays() {
+            return CausesOfDelay.EMPTY;
+        }
 
-            @Override
-            public void internalAllDoneCheck() {
-                throw new UnsupportedOperationException();
-            }
+        @Override
+        public AnnotationExpression annotationGetOrDefaultNull(AnnotationExpression expression) {
+            throw new UnsupportedOperationException();
+        }
 
-            @Override
-            public void setPropertyDelayWhenNotFinal(Property property, CausesOfDelay causes) {
-                throw new UnsupportedOperationException();
-            }
+        @Override
+        public void internalAllDoneCheck() {
+            throw new UnsupportedOperationException();
+        }
 
-            @Override
-            public DV getProperty(Property property) {
-                return getPropertyFromMapNeverDelay(property);
-            }
+        @Override
+        public void setPropertyDelayWhenNotFinal(Property property, CausesOfDelay causes) {
+            throw new UnsupportedOperationException();
+        }
 
-            @Override
-            public DV getPropertyFromMapDelayWhenAbsent(Property property) {
-                return getPropertyFromMapNeverDelay(property);
-            }
+        @Override
+        public DV getProperty(Property property) {
+            return getPropertyFromMapNeverDelay(property);
+        }
 
-            @Override
-            public DV getPropertyFromMapNeverDelay(Property property) {
-                HardCoded hc = HARDCODED_TYPES.get(fullyQualifiedName);
-                return switch (hc) {
-                    case IMMUTABLE -> switch (property) {
-                        case IMMUTABLE -> MultiLevel.EFFECTIVELY_IMMUTABLE_DV;
-                        case INDEPENDENT -> MultiLevel.INDEPENDENT_DV;
-                        case CONTAINER -> MultiLevel.CONTAINER_DV;
-                        default -> throw new UnsupportedOperationException();
-                    };
-                    case IMMUTABLE_HC -> switch (property) {
-                        case IMMUTABLE -> MultiLevel.EFFECTIVELY_IMMUTABLE_HC_DV;
-                        case INDEPENDENT -> MultiLevel.INDEPENDENT_DV;
-                        case CONTAINER -> MultiLevel.CONTAINER_DV;
-                        default -> throw new UnsupportedOperationException();
-                    };
-                    case IMMUTABLE_HC_INDEPENDENT_HC -> switch (property) {
-                        case IMMUTABLE -> MultiLevel.EFFECTIVELY_IMMUTABLE_HC_DV;
-                        case INDEPENDENT -> MultiLevel.INDEPENDENT_HC_DV;
-                        case CONTAINER -> MultiLevel.CONTAINER_DV;
-                        default -> throw new UnsupportedOperationException();
-                    };
-                    case MUTABLE_NOT_CONTAINER_DO_NOT_ERASE -> switch (property) {
-                        case IMMUTABLE -> MultiLevel.MUTABLE_DV;
-                        case INDEPENDENT -> MultiLevel.DEPENDENT_DV;
-                        case CONTAINER -> MultiLevel.NOT_CONTAINER_DV;
-                        default -> throw new UnsupportedOperationException();
-                    };
-                    case MUTABLE_CONTAINER_DO_NOT_ERASE -> switch (property) {
-                        case IMMUTABLE -> MultiLevel.MUTABLE_DV;
-                        case INDEPENDENT -> MultiLevel.DEPENDENT_DV;
-                        case CONTAINER -> MultiLevel.CONTAINER_DV;
-                        default -> throw new UnsupportedOperationException();
-                    };
-                    default -> throw new UnsupportedOperationException();
+        @Override
+        public DV getPropertyFromMapDelayWhenAbsent(Property property) {
+            return getPropertyFromMapNeverDelay(property);
+        }
+
+        @Override
+        public DV getPropertyFromMapNeverDelay(Property property) {
+            HardCoded hc = HARDCODED_TYPES.get(fullyQualifiedName);
+            return switch (hc) {
+                case IMMUTABLE -> switch (property) {
+                    case IMMUTABLE -> MultiLevel.EFFECTIVELY_IMMUTABLE_DV;
+                    case INDEPENDENT -> MultiLevel.INDEPENDENT_DV;
+                    case CONTAINER -> MultiLevel.CONTAINER_DV;
+                    case EXTENSION_CLASS, UTILITY_CLASS, SINGLETON, FINALIZER -> DV.FALSE_DV;
+                    default -> throw new PropertyException(Analyser.AnalyserIdentification.TYPE, property);
                 };
-            }
+                case IMMUTABLE_HC -> switch (property) {
+                    case IMMUTABLE -> MultiLevel.EFFECTIVELY_IMMUTABLE_HC_DV;
+                    case INDEPENDENT -> MultiLevel.INDEPENDENT_DV;
+                    case CONTAINER -> MultiLevel.CONTAINER_DV;
+                    case EXTENSION_CLASS, UTILITY_CLASS, SINGLETON, FINALIZER -> DV.FALSE_DV;
+                    default -> throw new PropertyException(Analyser.AnalyserIdentification.TYPE, property);
+                };
+                case IMMUTABLE_HC_INDEPENDENT_HC -> switch (property) {
+                    case IMMUTABLE -> MultiLevel.EFFECTIVELY_IMMUTABLE_HC_DV;
+                    case INDEPENDENT -> MultiLevel.INDEPENDENT_HC_DV;
+                    case CONTAINER -> MultiLevel.CONTAINER_DV;
+                    case EXTENSION_CLASS, UTILITY_CLASS, SINGLETON, FINALIZER -> DV.FALSE_DV;
+                    default -> throw new PropertyException(Analyser.AnalyserIdentification.TYPE, property);
+                };
+                case MUTABLE_NOT_CONTAINER_DO_NOT_ERASE -> switch (property) {
+                    case IMMUTABLE -> MultiLevel.MUTABLE_DV;
+                    case INDEPENDENT -> MultiLevel.DEPENDENT_DV;
+                    case CONTAINER -> MultiLevel.NOT_CONTAINER_DV;
+                    case EXTENSION_CLASS, UTILITY_CLASS, SINGLETON, FINALIZER -> DV.FALSE_DV;
+                    default -> throw new PropertyException(Analyser.AnalyserIdentification.TYPE, property);
+                };
+                case MUTABLE_CONTAINER_DO_NOT_ERASE -> switch (property) {
+                    case IMMUTABLE -> MultiLevel.MUTABLE_DV;
+                    case INDEPENDENT -> MultiLevel.DEPENDENT_DV;
+                    case CONTAINER -> MultiLevel.CONTAINER_DV;
+                    case EXTENSION_CLASS, UTILITY_CLASS, SINGLETON, FINALIZER -> DV.FALSE_DV;
+                    default -> throw new PropertyException(Analyser.AnalyserIdentification.TYPE, property);
+                };
+                default -> throw new UnsupportedOperationException();
+            };
+        }
 
-            @Override
-            public Location location(Stage stage) {
-                throw new UnsupportedOperationException();
-            }
+        @Override
+        public Location location(Stage stage) {
+            throw new UnsupportedOperationException();
+        }
 
-            @Override
-            public Messages fromAnnotationsIntoProperties(Analyser.AnalyserIdentification analyserIdentification, boolean acceptVerifyAsContracted, Collection<AnnotationExpression> annotations, E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions) {
-                throw new UnsupportedOperationException();
-            }
-        };
+        @Override
+        public Messages fromAnnotationsIntoProperties(Analyser.AnalyserIdentification analyserIdentification,
+                                                      boolean acceptVerifyAsContracted,
+                                                      Collection<AnnotationExpression> annotations,
+                                                      E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions) {
+            throw new UnsupportedOperationException();
+        }
     }
 
     public GlobalAnalyserContext with(boolean inAnnotatedAPIAnalysis) {
-        return new GlobalAnalyserContext(primitives, configuration, importantClasses,
+        GlobalAnalyserContext context = new GlobalAnalyserContext(primitives, configuration, importantClasses,
                 e2ImmuAnnotationExpressions, inAnnotatedAPIAnalysis, typeAnalyses, methodAnalyses, fieldAnalyses);
+        context.onDemandMode.copy(this.onDemandMode);
+        return context;
     }
 
     @Override
@@ -554,8 +572,31 @@ public class GlobalAnalyserContext implements AnalyserContext {
 
     @Override
     public MethodAnalysis getMethodAnalysisNullWhenAbsent(MethodInfo methodInfo) {
+        if (methodInfo.methodAnalysis.isSet()) return methodInfo.methodAnalysis.get();
         if (methodAnalyses.isSet(methodInfo)) return methodAnalyses.get(methodInfo);
-        return hardCodedMethods.get(methodInfo.fullyQualifiedName);
+        MethodAnalysis ma = hardCodedMethods.get(methodInfo.fullyQualifiedName);
+        if (ma != null) return ma;
+        if (onDemandMode.isSet()) {
+            synchronized (methodAnalyses) {
+                LOGGER.debug("On-demand shallow method analysis of {}", methodInfo);
+                TypeAnalysis ownerTypeAnalysis = getTypeAnalysis(methodInfo.typeInfo);
+                MethodInspection methodInspection = getMethodInspection(methodInfo);
+                List<ParameterAnalysis> parameterAnalyses = methodInspection.getParameters().stream()
+                        .map(pi -> new ParameterAnalysisImpl.Builder(primitives, this, pi))
+                        .map(b -> (ParameterAnalysis) b)
+                        .toList();
+                MethodAnalysisImpl.Builder methodAnalysisBuilder = new MethodAnalysisImpl.Builder(Analysis.AnalysisMode.CONTRACTED,
+                        primitives, this, this, methodInfo, ownerTypeAnalysis, parameterAnalyses);
+                ShallowMethodAnalyser shallowMethodAnalyser = new ShallowMethodAnalyser(methodInfo,
+                        methodAnalysisBuilder, parameterAnalyses, this, false);
+                shallowMethodAnalyser.analyse(new Analyser.SharedState(0, BreakDelayLevel.NONE, null));
+                MethodAnalysis methodAnalysis = shallowMethodAnalyser.methodAnalysis.build();
+                methodInfo.setAnalysis(methodAnalysis);
+                methodAnalyses.put(methodInfo, methodAnalysis);
+                return methodAnalysis;
+            }
+        }
+        return null;
     }
 
     @Override
@@ -566,8 +607,12 @@ public class GlobalAnalyserContext implements AnalyserContext {
 
     @Override
     public ParameterAnalysis getParameterAnalysisNullWhenAbsent(ParameterInfo parameterInfo) {
-        if (methodAnalyses.isSet(parameterInfo.getMethod())) {
-            return methodAnalyses.get(parameterInfo.getMethod()).getParameterAnalyses().get(parameterInfo.index);
+        if (parameterInfo.parameterAnalysis.isSet()) {
+            return parameterInfo.parameterAnalysis.get();
+        }
+        MethodAnalysis methodAnalysis = getMethodAnalysisNullWhenAbsent(parameterInfo.getMethod());
+        if (methodAnalysis != null) {
+            return methodAnalysis.getParameterAnalyses().get(parameterInfo.index);
         }
         return hardCodedParameters.get(parameterInfo.fullyQualifiedName);
     }
@@ -580,15 +625,50 @@ public class GlobalAnalyserContext implements AnalyserContext {
 
     @Override
     public TypeAnalysis getTypeAnalysisNullWhenAbsent(TypeInfo typeInfo) {
-        if (typeAnalyses.isSet(typeInfo)) {
-            return typeAnalyses.getOrDefaultNull(typeInfo);
+        if (typeInfo.typeAnalysis.isSet()) {
+            return typeInfo.typeAnalysis.get();
         }
-        return hardCodedTypes.get(typeInfo.fullyQualifiedName);
+        if (typeAnalyses.isSet(typeInfo)) {
+            return typeAnalyses.get(typeInfo);
+        }
+        TypeAnalysis hardCoded = hardCodedTypes.get(typeInfo.fullyQualifiedName);
+        if (hardCoded != null) {
+            return hardCoded;
+        }
+        if (onDemandMode.isSet()) {
+            synchronized (typeAnalyses) {
+                LOGGER.debug("On-demand shallow type analysis of {}", typeInfo);
+                ShallowTypeAnalyser shallowTypeAnalyser = new ShallowTypeAnalyser(typeInfo, typeInfo.primaryType(),
+                        this);
+                shallowTypeAnalyser.analyse(new Analyser.SharedState(0, BreakDelayLevel.NONE, null));
+                TypeAnalysis typeAnalysis = shallowTypeAnalyser.typeAnalysis.build();
+                typeInfo.setAnalysis(typeAnalysis);
+                typeAnalyses.put(typeInfo, typeAnalysis);
+                return typeAnalysis;
+            }
+        }
+        return null;
     }
 
     @Override
     public FieldAnalysis getFieldAnalysis(FieldInfo fieldInfo) {
-        return fieldAnalyses.get(fieldInfo);
+        if (fieldInfo.fieldAnalysis.isSet()) return fieldInfo.fieldAnalysis.get();
+        FieldAnalysis fieldAnalysis = fieldAnalyses.getOrDefaultNull(fieldInfo);
+        if (fieldAnalysis != null) return fieldAnalysis;
+        if (onDemandMode.isSet()) {
+            synchronized (fieldAnalyses) {
+                LOGGER.debug("On-demand shallow field analysis of {}", fieldInfo);
+                TypeAnalysis ownerTypeAnalysis = getTypeAnalysis(fieldInfo.owner);
+                ShallowFieldAnalyser shallowFieldAnalyser = new ShallowFieldAnalyser(fieldInfo,
+                        fieldInfo.owner.primaryType(), ownerTypeAnalysis, this);
+                shallowFieldAnalyser.analyse(new Analyser.SharedState(0, BreakDelayLevel.NONE, null));
+                FieldAnalysis fa = shallowFieldAnalyser.getFieldAnalysis();
+                fieldInfo.setAnalysis(fa);
+                fieldAnalyses.put(fieldInfo, fa);
+                return fa;
+            }
+        }
+        throw new UnsupportedOperationException("Cannot find field analysis for " + fieldInfo);
     }
 
     @Override

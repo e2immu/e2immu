@@ -14,6 +14,7 @@
 
 package org.e2immu.analyser.shallow;
 
+import org.e2immu.analyser.analyser.AnalyserContext;
 import org.e2immu.analyser.analyser.DV;
 import org.e2immu.analyser.analyser.Property;
 import org.e2immu.analyser.analysis.MethodAnalysis;
@@ -48,6 +49,7 @@ public class TestAnnotatedXML {
     private static final Logger LOGGER = LoggerFactory.getLogger(TestAnnotatedXML.class);
 
     private static TypeContext typeContext;
+    private static AnalyserContext analyserContext;
 
     @BeforeAll
     public static void beforeClass() throws IOException {
@@ -62,8 +64,9 @@ public class TestAnnotatedXML {
         parser.preload("java.io"); // to compute properties on System.out; java.io.PrintStream
         parser.preload("java.util");
         parser.preload("java.util.stream");
-        parser.run();
+        Parser.RunResult rr = parser.run();
         typeContext = parser.getTypeContext();
+        analyserContext = rr.analyserContext();
         List<Message> messages = parser.getMessages().toList();
         for (Message message : messages) {
             LOGGER.info("Message: {}", message);
@@ -92,7 +95,7 @@ public class TestAnnotatedXML {
     @Test
     public void testString() {
         TypeInfo object = typeContext.getFullyQualified(String.class);
-        TypeAnalysis typeAnalysis = object.typeAnalysis.get();
+        TypeAnalysis typeAnalysis = analyserContext.getTypeAnalysis(object);
         assertEquals(MultiLevel.CONTAINER_DV, typeAnalysis.getProperty(Property.CONTAINER));
         assertEquals(MultiLevel.EFFECTIVELY_IMMUTABLE_DV, typeAnalysis.getProperty(Property.IMMUTABLE));
         assertEquals(MultiLevel.INDEPENDENT_DV, typeAnalysis.getProperty(Property.INDEPENDENT));
@@ -102,7 +105,7 @@ public class TestAnnotatedXML {
     @Test
     public void testObject() {
         TypeInfo object = typeContext.getFullyQualified(Object.class);
-        TypeAnalysis typeAnalysis = object.typeAnalysis.get();
+        TypeAnalysis typeAnalysis = analyserContext.getTypeAnalysis(object);
         assertEquals(MultiLevel.CONTAINER_DV, typeAnalysis.getProperty(Property.CONTAINER));
         assertEquals(MultiLevel.EFFECTIVELY_IMMUTABLE_HC_DV, typeAnalysis.getProperty(Property.IMMUTABLE));
         assertEquals(MultiLevel.INDEPENDENT_DV, typeAnalysis.getProperty(Property.INDEPENDENT));
@@ -112,7 +115,7 @@ public class TestAnnotatedXML {
     public void testObjectEquals() {
         TypeInfo object = typeContext.getFullyQualified(Object.class);
         MethodInfo equals = object.findUniqueMethod("equals", 1);
-        MethodAnalysis methodAnalysis = equals.methodAnalysis.get();
+        MethodAnalysis methodAnalysis = analyserContext.getMethodAnalysis(equals);
         assertEquals(DV.FALSE_DV, methodAnalysis.getProperty(Property.MODIFIED_METHOD));
         assertEquals(MultiLevel.INDEPENDENT_DV, methodAnalysis.getProperty(Property.INDEPENDENT));
     }
@@ -121,11 +124,11 @@ public class TestAnnotatedXML {
     @Test
     public void testOptional() {
         TypeInfo optional = typeContext.getFullyQualified(Optional.class);
-        TypeAnalysis typeAnalysis = optional.typeAnalysis.get();
-        assertEquals(MultiLevel.NOT_CONTAINER_DV, typeAnalysis.getProperty(Property.CONTAINER));
-        assertEquals(MultiLevel.MUTABLE_DV, typeAnalysis.getProperty(Property.IMMUTABLE));
-        assertEquals(MultiLevel.DEPENDENT_DV, typeAnalysis.getProperty(Property.INDEPENDENT));
-        assertEquals("T", typeAnalysis.getHiddenContentTypes().toString());
+        TypeAnalysis typeAnalysis = analyserContext.getTypeAnalysis(optional);
+        assertEquals(MultiLevel.CONTAINER_DV, typeAnalysis.getProperty(Property.CONTAINER));
+        assertEquals(MultiLevel.EFFECTIVELY_IMMUTABLE_HC_DV, typeAnalysis.getProperty(Property.IMMUTABLE));
+        assertEquals(MultiLevel.INDEPENDENT_HC_DV, typeAnalysis.getProperty(Property.INDEPENDENT));
+        assertEquals("", typeAnalysis.getHiddenContentTypes().toString());
     }
 
     // not hardcoded
@@ -133,7 +136,7 @@ public class TestAnnotatedXML {
     public void testOptionalEquals() {
         TypeInfo optional = typeContext.getFullyQualified(Optional.class);
         MethodInfo equals = optional.findUniqueMethod("equals", 1);
-        MethodAnalysis methodAnalysis = equals.methodAnalysis.get();
+        MethodAnalysis methodAnalysis = analyserContext.getMethodAnalysis(equals);
         assertEquals(DV.FALSE_DV, methodAnalysis.getProperty(Property.MODIFIED_METHOD));
         assertEquals(MultiLevel.INDEPENDENT_DV, methodAnalysis.getProperty(Property.INDEPENDENT));
     }
@@ -142,7 +145,7 @@ public class TestAnnotatedXML {
     @Test
     public void testFloat() {
         TypeInfo optional = typeContext.getFullyQualified(Float.class);
-        TypeAnalysis typeAnalysis = optional.typeAnalysis.get();
+        TypeAnalysis typeAnalysis = analyserContext.getTypeAnalysis(optional);
         assertEquals(MultiLevel.INDEPENDENT_DV, typeAnalysis.getProperty(Property.INDEPENDENT));
         assertEquals(MultiLevel.EFFECTIVELY_IMMUTABLE_DV, typeAnalysis.getProperty(Property.IMMUTABLE));
     }

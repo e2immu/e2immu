@@ -168,7 +168,7 @@ public class LocalAnalyserContext implements AnalyserContext {
                 this.typeAnalysers.put(ta.getTypeInfo(), ta);
             } else if (analyser instanceof FieldAnalyser fa && !this.fieldAnalysers.isSet(fa.getFieldInfo())) {
                 this.fieldAnalysers.put(fa.getFieldInfo(), fa);
-            } else throw new UnsupportedOperationException();
+            }
         });
     }
 

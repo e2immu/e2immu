@@ -50,6 +50,7 @@ public class Parser {
 
     public final Configuration configuration;
     private final Input input;
+    private final Messages annotatedAPIMessages = new Messages();
     private final Messages messages = new Messages();
     private final AnonymousTypeCounters anonymousTypeCounters = new AnonymousTypeCounters(); // anonymous class counter
 
@@ -76,7 +77,8 @@ public class Parser {
 
     public record RunResult(SortedTypes annotatedAPISortedTypes,
                             SortedTypes sourceSortedTypes,
-                            TypeMap typeMap) {
+                            TypeMap typeMap,
+                            AnalyserContext analyserContext) {
 
         public Set<TypeInfo> allPrimaryTypes() {
             return Stream.concat(annotatedAPISortedTypes.primaryTypeStream(), sourceSortedTypes.primaryTypeStream())
@@ -86,7 +88,7 @@ public class Parser {
         @SuppressWarnings("unused")
         public RunResult buildTypeMap() {
             if (typeMap instanceof TypeMapImpl.Builder builder) {
-                return new RunResult(annotatedAPISortedTypes, sourceSortedTypes, builder.build());
+                return new RunResult(annotatedAPISortedTypes, sourceSortedTypes, builder.build(), analyserContext);
             }
             return this;
         }
@@ -119,26 +121,29 @@ public class Parser {
 
         // finally, there is an analysis step
 
+        GlobalAnalyserContext annotatedAPIContext;
         if (configuration.skipAnalysis()) {
             // do not build yet, others may want to continue
             typeMap = input.globalTypeContext().typeMap;
+            annotatedAPIContext = null;
         } else {
             ImportantClassesImpl importantClasses = new ImportantClassesImpl(input.globalTypeContext());
 
             // creating the typeMap ensures that all inspections and resolutions are set.
             typeMap = input.globalTypeContext().typeMap.build();
-            GlobalAnalyserContext annotatedAPIContext = new GlobalAnalyserContext(input.globalTypeContext().getPrimitives(),
+            annotatedAPIContext = new GlobalAnalyserContext(input.globalTypeContext().getPrimitives(),
                     configuration, importantClasses, typeMap.getE2ImmuAnnotationExpressions(),
                     true);
 
             LOGGER.debug("AnnotatedAPI Type cycles:\n{}", sortedAnnotatedAPITypes.typeCycles().stream()
                     .map(Object::toString).collect(Collectors.joining("\n")));
             for (TypeCycle typeCycle : sortedAnnotatedAPITypes.typeCycles()) {
-                runAnalyzer(annotatedAPIContext, typeCycle);
+                runAnalyzer(annotatedAPIContext, typeCycle, true);
             }
             for (TypeMapVisitor typeMapVisitor : configuration.debugConfiguration().typeMapVisitors()) {
                 typeMapVisitor.visit(typeMap);
             }
+            annotatedAPIContext.startOnDemandMode();
 
             // the analyser context essentially stays the same: incremental analysis
             AnalyserContext sourceContext = annotatedAPIContext.with(false);
@@ -146,11 +151,11 @@ public class Parser {
                 if (LOGGER.isDebugEnabled()) {
                     LOGGER.debug("Analysing primary type cycle:\n{}", typeCycle);
                 }
-                runAnalyzer(sourceContext, typeCycle);
+                runAnalyzer(sourceContext, typeCycle, false);
             }
         }
 
-        return new RunResult(sortedAnnotatedAPITypes, resolvedSourceTypes, typeMap);
+        return new RunResult(sortedAnnotatedAPITypes, resolvedSourceTypes, typeMap, annotatedAPIContext);
     }
 
     public TypeMap.Builder inspectOnlyForTesting() {
@@ -190,8 +195,13 @@ public class Parser {
             expressionContexts.put(e.getKey(), ec);
         }
         SortedTypes sortedTypes = resolver.resolve(expressionContexts);
-        messages.addAll(resolver.getMessageStream()
-                .filter(m -> m.message().severity != Message.Severity.WARN || reportWarnings));
+        Stream<Message> messageStream = resolver.getMessageStream()
+                .filter(m -> m.message().severity != Message.Severity.WARN || reportWarnings);
+        if (shallowResolver) {
+            annotatedAPIMessages.addAll(messageStream);
+        } else {
+            messages.addAll(messageStream);
+        }
         return sortedTypes;
     }
 
@@ -251,7 +261,7 @@ public class Parser {
         }
     }
 
-    private void runAnalyzer(AnalyserContext analyserContext, TypeCycle typeCycle) {
+    private void runAnalyzer(AnalyserContext analyserContext, TypeCycle typeCycle, boolean annotatedAPI) {
         PrimaryTypeAnalyser primaryTypeAnalyser = new PrimaryTypeAnalyserImpl(analyserContext, typeCycle);
         try {
             primaryTypeAnalyser.analyse();
@@ -279,7 +289,11 @@ public class Parser {
                     primaryTypeAnalyser.getName());
             throw rte;
         }
-        messages.addAll(primaryTypeAnalyser.getMessageStream());
+        if (annotatedAPI) {
+            annotatedAPIMessages.addAll(primaryTypeAnalyser.getMessageStream());
+        } else {
+            messages.addAll(primaryTypeAnalyser.getMessageStream());
+        }
     }
 
     public record ComposerData(Collection<TypeInfo> primaryTypes, TypeMap typeMap) {
@@ -318,6 +332,10 @@ public class Parser {
 
     public Stream<Message> getMessages() {
         return messages.getMessageStream();
+    }
+
+    public Stream<Message> getAnnotatedAPIMessages() {
+        return annotatedAPIMessages.getMessageStream();
     }
 
     public int countMessages() {

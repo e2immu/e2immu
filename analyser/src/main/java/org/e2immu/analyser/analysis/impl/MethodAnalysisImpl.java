@@ -400,7 +400,7 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
         }
 
         @Override
-        public Analysis build() {
+        public MethodAnalysis build() {
             return new MethodAnalysisImpl(methodInfo,
                     firstStatement.getOrDefaultNull(),
                     getLastStatement(),

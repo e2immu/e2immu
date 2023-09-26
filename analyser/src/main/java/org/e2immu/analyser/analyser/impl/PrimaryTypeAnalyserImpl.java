@@ -203,13 +203,15 @@ public class PrimaryTypeAnalyserImpl implements PrimaryTypeAnalyser {
             }
         } while (iteration < MAX_ITERATION);
 
-        List<BreakDelayVisitor> visitors = configuration.debugConfiguration().breakDelayVisitors();
-        for (BreakDelayVisitor breakDelayVisitor : visitors) {
-            for (TypeInfo typeInfo : primaryTypes) {
-                String delaySequenceString = delaySequence
-                        .stream().map(b -> Character.toString(b.symbol))
-                        .collect(Collectors.joining());
-                breakDelayVisitor.visit(new BreakDelayVisitor.Data(iteration, delaySequenceString, typeInfo));
+        if(!inAnnotatedAPIAnalysis()) {
+            List<BreakDelayVisitor> visitors = configuration.debugConfiguration().breakDelayVisitors();
+            for (BreakDelayVisitor breakDelayVisitor : visitors) {
+                for (TypeInfo typeInfo : primaryTypes) {
+                    String delaySequenceString = delaySequence
+                            .stream().map(b -> Character.toString(b.symbol))
+                            .collect(Collectors.joining());
+                    breakDelayVisitor.visit(new BreakDelayVisitor.Data(iteration, delaySequenceString, typeInfo));
+                }
             }
         }
 
