@@ -12,10 +12,12 @@
  * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.e2immu.analyser.analyser.impl;
+package org.e2immu.analyser.analyser.impl.computing;
 
 import org.e2immu.analyser.analyser.Properties;
 import org.e2immu.analyser.analyser.*;
+import org.e2immu.analyser.analyser.impl.MethodAnalyserImpl;
+import org.e2immu.analyser.analyser.impl.shallow.CompanionAnalyser;
 import org.e2immu.analyser.analyser.impl.util.BreakDelayLevel;
 import org.e2immu.analyser.analyser.nonanalyserimpl.AbstractEvaluationContextImpl;
 import org.e2immu.analyser.analyser.nonanalyserimpl.LocalAnalyserContext;

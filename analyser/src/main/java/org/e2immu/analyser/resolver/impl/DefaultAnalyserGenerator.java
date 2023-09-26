@@ -16,6 +16,11 @@ package org.e2immu.analyser.resolver.impl;
 
 import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.analyser.impl.*;
+import org.e2immu.analyser.analyser.impl.aggregating.AggregatingTypeAnalyser;
+import org.e2immu.analyser.analyser.impl.computing.ComputingFieldAnalyser;
+import org.e2immu.analyser.analyser.impl.computing.ComputingTypeAnalyser;
+import org.e2immu.analyser.analyser.impl.shallow.ShallowFieldAnalyser;
+import org.e2immu.analyser.analyser.impl.shallow.ShallowTypeAnalyser;
 import org.e2immu.analyser.analysis.TypeAnalysis;
 import org.e2immu.analyser.analysis.impl.TypeAnalysisImpl;
 import org.e2immu.analyser.model.*;

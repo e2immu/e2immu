@@ -16,6 +16,7 @@ package org.e2immu.analyser.analyser.impl;
 
 import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.analyser.check.*;
+import org.e2immu.analyser.analyser.impl.shallow.CompanionAnalyser;
 import org.e2immu.analyser.analysis.Analysis;
 import org.e2immu.analyser.analysis.ParameterAnalysis;
 import org.e2immu.analyser.analysis.StatementAnalysis;
@@ -44,7 +45,7 @@ public abstract class MethodAnalyserImpl extends AbstractAnalyser implements Met
     public final Map<CompanionMethodName, CompanionAnalyser> companionAnalysers;
     public final Map<CompanionMethodName, CompanionAnalysis> companionAnalyses;
 
-    MethodAnalyserImpl(MethodInfo methodInfo,
+    protected MethodAnalyserImpl(MethodInfo methodInfo,
                        MethodAnalysisImpl.Builder methodAnalysis,
                        List<? extends ParameterAnalyser> parameterAnalysers,
                        List<ParameterAnalysis> parameterAnalyses,

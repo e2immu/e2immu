@@ -16,7 +16,7 @@
 package org.e2immu.analyser.parser.basics;
 
 import org.e2immu.analyser.analyser.*;
-import org.e2immu.analyser.analyser.impl.ComputingFieldAnalyser;
+import org.e2immu.analyser.analyser.impl.computing.ComputingFieldAnalyser;
 import org.e2immu.analyser.config.AnalyserConfiguration;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.model.*;

@@ -12,9 +12,10 @@
  * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.e2immu.analyser.analyser.impl;
+package org.e2immu.analyser.analyser.impl.aggregating;
 
 import org.e2immu.analyser.analyser.*;
+import org.e2immu.analyser.analyser.impl.MethodAnalyserImpl;
 import org.e2immu.analyser.analyser.statementanalyser.StatementAnalyserImpl;
 import org.e2immu.analyser.analyser.util.AnalyserResult;
 import org.e2immu.analyser.analysis.Analysis;
@@ -51,11 +52,11 @@ public class AggregatingMethodAnalyser extends MethodAnalyserImpl {
     private final SetOnce<List<MethodAnalysis>> implementingAnalyses = new SetOnce<>();
     private final AnalyserComponents<String, Integer> analyserComponents;
 
-    AggregatingMethodAnalyser(MethodInfo methodInfo,
-                              MethodAnalysisImpl.Builder methodAnalysis,
-                              List<? extends ParameterAnalyser> parameterAnalysers,
-                              List<ParameterAnalysis> parameterAnalyses,
-                              AnalyserContext analyserContextInput) {
+    public AggregatingMethodAnalyser(MethodInfo methodInfo,
+                                     MethodAnalysisImpl.Builder methodAnalysis,
+                                     List<? extends ParameterAnalyser> parameterAnalysers,
+                                     List<ParameterAnalysis> parameterAnalyses,
+                                     AnalyserContext analyserContextInput) {
         super(methodInfo, methodAnalysis, parameterAnalysers,
                 parameterAnalyses, Map.of(), false, analyserContextInput);
         assert methodAnalysis.analysisMode == Analysis.AnalysisMode.AGGREGATED;

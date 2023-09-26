@@ -181,10 +181,10 @@ public class ResolverImpl implements Resolver {
         return typeGraph.sorted(cycle -> {
                     List<TypeInfo> restrictedCycle = new LinkedList<>(cycle);
                     restrictedCycle.removeAll(inCycle);
-                  //  if (LOGGER.isDebugEnabled()) {
-                        LOGGER.info("Cycle of size {} cycle reduced to {}", cycle.size(), restrictedCycle.size());
-                        restrictedCycle.forEach(ti -> LOGGER.info("\t" + ti.fullyQualifiedName));
-                   // }
+                    if (LOGGER.isDebugEnabled()) {
+                        LOGGER.debug("Cycle of size {} cycle reduced to {}", cycle.size(), restrictedCycle.size());
+                        restrictedCycle.forEach(ti -> LOGGER.debug("\t" + ti.fullyQualifiedName));
+                    }
                     boolean addMessage = true;
                     Set<TypeInfo> cycleAsSet = restrictedCycle.stream().collect(Collectors.toUnmodifiableSet());
                     for (TypeInfo typeInfo : restrictedCycle) {

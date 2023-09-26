@@ -45,6 +45,7 @@ public record ComputeTypeImmutable(AnalyserContext analyserContext,
                                    TypeInfo typeInfo,
                                    TypeInspection typeInspection,
                                    TypeAnalysisImpl.Builder typeAnalysis,
+                                   TypeInfo parentType,
                                    TypeAnalysis parentTypeAnalysis,
                                    List<MethodAnalyser> myMethodAnalysers,
                                    List<MethodAnalyser> myConstructors,
@@ -199,7 +200,7 @@ public record ComputeTypeImmutable(AnalyserContext analyserContext,
     E2Immutable_15_1 is an example where there could be a delay cycle between a (non-static) anonymous type
      */
     private DV parentHasNoHiddenContent() {
-        CausesOfDelay delays = parentTypeAnalysis == null || !parentTypeAnalysis.getTypeInfo().isAbstract()
+        CausesOfDelay delays = parentTypeAnalysis == null || !parentType().isAbstract()
                 ? CausesOfDelay.EMPTY : parentTypeAnalysis.hiddenContentDelays();
         if (delays.isDelayed()) return delays;
         boolean b = parentTypeAnalysis == null || parentTypeAnalysis.getHiddenContentTypes().isEmpty();

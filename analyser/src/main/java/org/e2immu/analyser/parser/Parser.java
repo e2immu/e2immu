@@ -131,7 +131,7 @@ public class Parser {
 
             // creating the typeMap ensures that all inspections and resolutions are set.
             typeMap = input.globalTypeContext().typeMap.build();
-            annotatedAPIContext = new GlobalAnalyserContext(input.globalTypeContext().getPrimitives(),
+            annotatedAPIContext = new GlobalAnalyserContext(input.globalTypeContext(),
                     configuration, importantClasses, typeMap.getE2ImmuAnnotationExpressions(),
                     true);
 

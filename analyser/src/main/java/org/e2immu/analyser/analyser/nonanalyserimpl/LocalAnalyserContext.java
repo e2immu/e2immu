@@ -177,4 +177,10 @@ public class LocalAnalyserContext implements AnalyserContext {
         typeAnalysers.putAll(previous.typeAnalysers);
         fieldAnalysers.putAll(previous.fieldAnalysers);
     }
+
+    @Override
+    public TypeInspection getTypeInspection(TypeInfo typeInfo) {
+        if (typeInfo.typeInspection.isSet()) return typeInfo.typeInspection.get();
+        return parent.getTypeInspection(typeInfo);
+    }
 }

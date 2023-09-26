@@ -12,7 +12,7 @@
  * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.e2immu.analyser.analyser.impl;
+package org.e2immu.analyser.analyser.impl.computing;
 
 import org.e2immu.analyser.analyser.Properties;
 import org.e2immu.analyser.analyser.*;
@@ -24,6 +24,8 @@ import org.e2immu.analyser.analyser.delay.DelayFactory;
 import org.e2immu.analyser.analyser.delay.Inconclusive;
 import org.e2immu.analyser.analyser.delay.SimpleCause;
 import org.e2immu.analyser.analyser.delay.VariableCause;
+import org.e2immu.analyser.analyser.impl.FieldAnalyserImpl;
+import org.e2immu.analyser.analyser.impl.PrimaryTypeAnalyserImpl;
 import org.e2immu.analyser.analyser.impl.util.BreakDelayLevel;
 import org.e2immu.analyser.analyser.nonanalyserimpl.AbstractEvaluationContextImpl;
 import org.e2immu.analyser.analyser.nonanalyserimpl.LocalAnalyserContext;

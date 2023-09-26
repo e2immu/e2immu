@@ -12,11 +12,13 @@
  * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.e2immu.analyser.analyser.impl;
+package org.e2immu.analyser.analyser.impl.computing;
 
 import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.analyser.delay.Inconclusive;
 import org.e2immu.analyser.analyser.delay.NotDelayed;
+import org.e2immu.analyser.analyser.impl.TypeAnalyserImpl;
+import org.e2immu.analyser.analyser.impl.shallow.ShallowTypeAnalyser;
 import org.e2immu.analyser.analyser.impl.util.BreakDelayLevel;
 import org.e2immu.analyser.analyser.impl.util.ComputeTypeImmutable;
 import org.e2immu.analyser.analyser.nonanalyserimpl.AbstractEvaluationContextImpl;
@@ -31,7 +33,6 @@ import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.visitor.TypeAnalyserVisitor;
 import org.e2immu.annotation.NotModified;
-import org.e2immu.support.Either;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -214,14 +215,14 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
 
         ParameterizedType parentClass = typeInspection.parentClass();
         if (parentClass != null && !parentClass.isJavaLangObject()) {
-            TypeAnalyser typeAnalyser = analyserContext.getTypeAnalyser(parentClass.typeInfo);
-            parentTypeAnalysis = typeAnalyser != null ? typeAnalyser.getTypeAnalysis() : parentClass.typeInfo.typeAnalysis.get();
+            parentTypeAnalysis = analyserContext.getTypeAnalysis(parentClass.typeInfo);
         }
 
         // running this here may save an iteration
         analyseHiddenContentTypes();
 
         computeTypeImmutable = new ComputeTypeImmutable(analyserContext, typeInfo, typeInspection, typeAnalysis,
+                parentClass == null ? null : parentClass.typeInfo,
                 parentTypeAnalysis, myMethodAnalysers, myConstructors, myFieldAnalysers);
     }
 

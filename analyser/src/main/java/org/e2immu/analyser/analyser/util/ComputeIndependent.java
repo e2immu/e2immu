@@ -15,7 +15,9 @@
 package org.e2immu.analyser.analyser.util;
 
 import org.e2immu.analyser.analyser.*;
-import org.e2immu.analyser.analyser.impl.ComputingFieldAnalyser;
+import org.e2immu.analyser.analyser.impl.computing.ComputingFieldAnalyser;
+import org.e2immu.analyser.analyser.impl.computing.ComputedParameterAnalyser;
+import org.e2immu.analyser.analyser.impl.computing.ComputingMethodAnalyser;
 import org.e2immu.analyser.analysis.TypeAnalysis;
 import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.ParameterizedType;
@@ -53,10 +55,10 @@ public record ComputeIndependent(AnalyserContext analyserContext,
     /**
      * Variables of two types are linked to each other, at a given <code>linkLevel</code>.
      * <p>
-     * Case 1: {@link org.e2immu.analyser.analyser.impl.ComputedParameterAnalyser}
+     * Case 1: {@link ComputedParameterAnalyser}
      * The first type ('a') is the parameter's (formal) type, the second ('b') is a field.
      * <p>
-     * Case 2: {@link org.e2immu.analyser.analyser.impl.ComputingMethodAnalyser}
+     * Case 2: {@link ComputingMethodAnalyser}
      * The first type ('a') is the concrete return type, the second ('b') is a field
      * <p>
      * Case 3: {@link ComputingFieldAnalyser}

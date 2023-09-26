@@ -17,6 +17,7 @@ package org.e2immu.analyser.parser.start;
 
 import org.e2immu.analyser.analyser.DV;
 import org.e2immu.analyser.analyser.Property;
+import org.e2immu.analyser.analyser.impl.shallow.ShallowMethodAnalyser;
 import org.e2immu.analyser.analysis.MethodAnalysis;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.inspector.TypeContext;
@@ -25,7 +26,6 @@ import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.parser.CommonTestRunner;
 import org.e2immu.analyser.parser.start.testexample.Enum_0;
 import org.e2immu.analyser.visitor.*;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
@@ -97,7 +97,7 @@ public class Test_26_Enum_withAPI extends CommonTestRunner {
             // valueOf depends on predicate
             if ("name".equals(d.methodInfo().name)) {
                 // shallow method analyser, does not have an evaluation context; no code in name()
-                assertNull(d.evaluationContext());
+                assertTrue(d.evaluationContext() instanceof ShallowMethodAnalyser.LimitedEvaluationContext);
             }
 
             if ("test".equals(d.methodInfo().name)) {

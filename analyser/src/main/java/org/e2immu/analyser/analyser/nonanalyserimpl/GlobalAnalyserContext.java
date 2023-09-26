@@ -15,20 +15,18 @@
 package org.e2immu.analyser.analyser.nonanalyserimpl;
 
 import org.e2immu.analyser.analyser.*;
-import org.e2immu.analyser.analyser.impl.ShallowFieldAnalyser;
-import org.e2immu.analyser.analyser.impl.ShallowMethodAnalyser;
-import org.e2immu.analyser.analyser.impl.ShallowTypeAnalyser;
+import org.e2immu.analyser.analyser.impl.shallow.ShallowFieldAnalyser;
+import org.e2immu.analyser.analyser.impl.shallow.ShallowMethodAnalyser;
+import org.e2immu.analyser.analyser.impl.shallow.ShallowTypeAnalyser;
 import org.e2immu.analyser.analyser.impl.util.BreakDelayLevel;
 import org.e2immu.analyser.analysis.*;
 import org.e2immu.analyser.analysis.impl.MethodAnalysisImpl;
 import org.e2immu.analyser.analysis.impl.ParameterAnalysisImpl;
 import org.e2immu.analyser.config.Configuration;
+import org.e2immu.analyser.inspector.TypeContext;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.variable.FieldReference;
-import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
-import org.e2immu.analyser.parser.ImportantClasses;
-import org.e2immu.analyser.parser.Messages;
-import org.e2immu.analyser.parser.Primitives;
+import org.e2immu.analyser.parser.*;
 import org.e2immu.analyser.util.CommutableData;
 import org.e2immu.analyser.util.ParSeq;
 import org.e2immu.support.FlipSwitch;
@@ -53,18 +51,19 @@ public class GlobalAnalyserContext implements AnalyserContext {
     private final Map<String, MethodAnalysis> hardCodedMethods;
     private final Map<String, ParameterAnalysis> hardCodedParameters;
 
+    private final TypeContext typeContext;
     private final FlipSwitch onDemandMode = new FlipSwitch();
 
-    public GlobalAnalyserContext(Primitives primitives,
+    public GlobalAnalyserContext(TypeContext typeContext,
                                  Configuration configuration,
                                  ImportantClasses importantClasses,
                                  E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions,
                                  boolean inAnnotatedAPIAnalysis) {
-        this(primitives, configuration, importantClasses, e2ImmuAnnotationExpressions, inAnnotatedAPIAnalysis,
+        this(typeContext, configuration, importantClasses, e2ImmuAnnotationExpressions, inAnnotatedAPIAnalysis,
                 new SetOnceMap<>(), new SetOnceMap<>(), new SetOnceMap<>());
     }
 
-    private GlobalAnalyserContext(Primitives primitives,
+    private GlobalAnalyserContext(TypeContext typeContext,
                                   Configuration configuration,
                                   ImportantClasses importantClasses,
                                   E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions,
@@ -72,7 +71,8 @@ public class GlobalAnalyserContext implements AnalyserContext {
                                   SetOnceMap<TypeInfo, TypeAnalysis> typeAnalyses,
                                   SetOnceMap<MethodInfo, MethodAnalysis> methodAnalyses,
                                   SetOnceMap<FieldInfo, FieldAnalysis> fieldAnalyses) {
-        this.primitives = primitives;
+        this.primitives = typeContext.getPrimitives();
+        this.typeContext = typeContext;
         this.configuration = configuration;
         this.importantClasses = importantClasses;
         this.e2ImmuAnnotationExpressions = e2ImmuAnnotationExpressions;
@@ -535,7 +535,7 @@ public class GlobalAnalyserContext implements AnalyserContext {
     }
 
     public GlobalAnalyserContext with(boolean inAnnotatedAPIAnalysis) {
-        GlobalAnalyserContext context = new GlobalAnalyserContext(primitives, configuration, importantClasses,
+        GlobalAnalyserContext context = new GlobalAnalyserContext(typeContext, configuration, importantClasses,
                 e2ImmuAnnotationExpressions, inAnnotatedAPIAnalysis, typeAnalyses, methodAnalyses, fieldAnalyses);
         context.onDemandMode.copy(this.onDemandMode);
         return context;
@@ -688,5 +688,11 @@ public class GlobalAnalyserContext implements AnalyserContext {
         } else if (!(analysis instanceof ParameterAnalysis)) {
             throw new UnsupportedOperationException();
         }
+    }
+
+    @Override
+    public TypeInspection getTypeInspection(TypeInfo typeInfo) {
+        if (typeInfo.typeInspection.isSet()) return typeInfo.typeInspection.get();
+        return typeContext.getTypeInspection(typeInfo);
     }
 }

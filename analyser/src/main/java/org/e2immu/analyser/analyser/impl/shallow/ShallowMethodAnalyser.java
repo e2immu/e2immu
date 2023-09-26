@@ -12,9 +12,10 @@
  * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.e2immu.analyser.analyser.impl;
+package org.e2immu.analyser.analyser.impl.shallow;
 
 import org.e2immu.analyser.analyser.*;
+import org.e2immu.analyser.analyser.impl.MethodAnalyserImpl;
 import org.e2immu.analyser.analyser.impl.util.BreakDelayLevel;
 import org.e2immu.analyser.analyser.nonanalyserimpl.LocalAnalyserContext;
 import org.e2immu.analyser.analyser.statementanalyser.StatementAnalyserImpl;
@@ -41,8 +42,6 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-
-import static org.e2immu.analyser.analysis.Analysis.AnalysisMode.CONTRACTED;
 
 // field and types have been done already!
 public class ShallowMethodAnalyser extends MethodAnalyserImpl {
@@ -637,7 +636,7 @@ public class ShallowMethodAnalyser extends MethodAnalyserImpl {
         // nothing here
     }
 
-    class LimitedEvaluationContext implements  EvaluationContext {
+    public class LimitedEvaluationContext implements  EvaluationContext {
 
         @Override
         public int getDepth() {

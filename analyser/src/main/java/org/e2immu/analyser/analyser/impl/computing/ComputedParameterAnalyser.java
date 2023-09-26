@@ -12,12 +12,13 @@
  * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.e2immu.analyser.analyser.impl;
+package org.e2immu.analyser.analyser.impl.computing;
 
 import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.analyser.delay.DelayFactory;
 import org.e2immu.analyser.analyser.delay.SimpleCause;
 import org.e2immu.analyser.analyser.delay.VariableCause;
+import org.e2immu.analyser.analyser.impl.ParameterAnalyserImpl;
 import org.e2immu.analyser.analyser.util.AnalyserResult;
 import org.e2immu.analyser.analyser.util.ComputeIndependent;
 import org.e2immu.analyser.analysis.FieldAnalysis;
@@ -32,7 +33,6 @@ import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.ReturnVariable;
 import org.e2immu.analyser.model.variable.This;
 import org.e2immu.analyser.model.variable.Variable;
-import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.resolver.impl.ResolverImpl;
 import org.slf4j.Logger;

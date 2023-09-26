@@ -41,7 +41,7 @@ public abstract class ParameterAnalyserImpl extends AbstractAnalyser implements 
     public final ParameterInfo parameterInfo;
     public final ParameterAnalysisImpl.Builder parameterAnalysis;
 
-    ParameterAnalyserImpl(AnalyserContext analyserContext, ParameterInfo parameterInfo) {
+    protected ParameterAnalyserImpl(AnalyserContext analyserContext, ParameterInfo parameterInfo) {
         super("Parameter " + parameterInfo.fullyQualifiedName(), analyserContext);
         this.parameterInfo = parameterInfo;
         parameterAnalysis = new ParameterAnalysisImpl.Builder(analyserContext.getPrimitives(), analyserContext, parameterInfo);

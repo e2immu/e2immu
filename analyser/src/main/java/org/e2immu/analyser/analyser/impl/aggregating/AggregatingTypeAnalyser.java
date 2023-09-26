@@ -12,9 +12,10 @@
  * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.e2immu.analyser.analyser.impl;
+package org.e2immu.analyser.analyser.impl.aggregating;
 
 import org.e2immu.analyser.analyser.*;
+import org.e2immu.analyser.analyser.impl.TypeAnalyserImpl;
 import org.e2immu.analyser.analyser.util.AnalyserResult;
 import org.e2immu.analyser.analysis.Analysis;
 import org.e2immu.analyser.analysis.TypeAnalysis;

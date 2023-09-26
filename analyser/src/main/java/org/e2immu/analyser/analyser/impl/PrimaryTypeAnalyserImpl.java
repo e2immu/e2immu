@@ -203,7 +203,7 @@ public class PrimaryTypeAnalyserImpl implements PrimaryTypeAnalyser {
             }
         } while (iteration < MAX_ITERATION);
 
-        if(!inAnnotatedAPIAnalysis()) {
+        if (!inAnnotatedAPIAnalysis()) {
             List<BreakDelayVisitor> visitors = configuration.debugConfiguration().breakDelayVisitors();
             for (BreakDelayVisitor breakDelayVisitor : visitors) {
                 for (TypeInfo typeInfo : primaryTypes) {
@@ -423,5 +423,11 @@ public class PrimaryTypeAnalyserImpl implements PrimaryTypeAnalyser {
     @Override
     public boolean inAnnotatedAPIAnalysis() {
         return parent.inAnnotatedAPIAnalysis();
+    }
+
+    @Override
+    public TypeInspection getTypeInspection(TypeInfo typeInfo) {
+        if (typeInfo.typeInspection.isSet()) return typeInfo.typeInspection.get();
+        return parent.getTypeInspection(typeInfo);
     }
 }
