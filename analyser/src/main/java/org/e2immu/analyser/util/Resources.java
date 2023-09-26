@@ -20,9 +20,8 @@ import org.slf4j.LoggerFactory;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
-import java.net.JarURLConnection;
-import java.net.MalformedURLException;
-import java.net.URL;
+import java.io.InputStream;
+import java.net.*;
 import java.util.Enumeration;
 import java.util.LinkedList;
 import java.util.List;
@@ -46,9 +45,9 @@ public class Resources {
         }
     }
 
-    private final Trie<URL> data = new Trie<>();
+    private final Trie<URI> data = new Trie<>();
 
-    public void visit(String[] prefix, BiConsumer<String[], List<URL>> visitor) {
+    public void visit(String[] prefix, BiConsumer<String[], List<URI>> visitor) {
         data.visit(prefix, visitor);
     }
 
@@ -59,7 +58,7 @@ public class Resources {
         return expansions;
     }
 
-    public void expandPaths(String path, String extension, BiConsumer<String[], List<URL>> visitor) {
+    public void expandPaths(String path, String extension, BiConsumer<String[], List<URI>> visitor) {
         String[] prefix = path.split("\\.");
         data.visit(prefix, (s, list) -> {
             if (s.length > 0 && s[s.length - 1].endsWith(extension)) {
@@ -68,7 +67,7 @@ public class Resources {
         });
     }
 
-    public void expandLeaves(String path, String extension, BiConsumer<String[], List<URL>> visitor) {
+    public void expandLeaves(String path, String extension, BiConsumer<String[], List<URI>> visitor) {
         String[] prefix = path.split("\\.");
         data.visitLeaves(prefix, (s, list) -> {
             if (s.length > 0 && s[s.length - 1].endsWith(extension)) {
@@ -77,8 +76,8 @@ public class Resources {
         });
     }
 
-    public List<URL> expandURLs(String extension) {
-        List<URL> expansions = new LinkedList<>();
+    public List<URI> expandURLs(String extension) {
+        List<URI> expansions = new LinkedList<>();
         data.visit(new String[0], (s, list) -> {
             if (s[s.length - 1].endsWith(extension)) {
                 expansions.addAll(list);
@@ -96,14 +95,15 @@ public class Resources {
 
     public byte[] loadBytes(String path) {
         String[] prefix = path.split("/");
-        List<URL> urls = data.get(prefix);
+        List<URI> urls = data.get(prefix);
         if (urls != null) {
-            for (URL url : urls) {
-                try (ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream()) {
-                    url.openStream().transferTo(byteArrayOutputStream);
+            for (URI uri : urls) {
+                try (ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
+                     InputStream inputStream = uri.toURL().openStream()) {
+                    inputStream.transferTo(byteArrayOutputStream);
                     return byteArrayOutputStream.toByteArray();
                 } catch (IOException e) {
-                    throw new ResourceAccessException("URL = " + url + ", Cannot read? " + e.getMessage());
+                    throw new ResourceAccessException("URL = " + uri + ", Cannot read? " + e.getMessage());
                 }
             }
         }
@@ -151,11 +151,13 @@ public class Resources {
             LOGGER.debug("Adding {}", realName);
             String[] split = je.getRealName().split("/");
             try {
-                URL fullUrl = new URL(jarUrl, je.getRealName());
+                URI fullUrl = new URL(jarUrl, je.getRealName()).toURI();
                 data.add(split, fullUrl);
                 entries.incrementAndGet();
             } catch (MalformedURLException e) {
                 e.printStackTrace();
+            } catch (URISyntaxException e) {
+                throw new RuntimeException(e);
             }
         });
         if (errors.get() > 0) {
@@ -185,10 +187,12 @@ public class Resources {
                     String[] split = realName.split("/");
                     try {
                         URL fullUrl = new URL(jmodUrl, je.getRealName());
-                        data.add(split, fullUrl);
+                        data.add(split, fullUrl.toURI());
                         entries.incrementAndGet();
                     } catch (MalformedURLException e) {
                         e.printStackTrace();
+                    } catch (URISyntaxException e) {
+                        throw new RuntimeException(e);
                     }
                 });
         if (errors.get() > 0) {
@@ -226,10 +230,10 @@ public class Resources {
                     if (packageParts.length == 0 && name.endsWith(".annotated_api")) {
                         String[] partsFromFile = name.split("\\.");
                         LOGGER.debug("File {} in path from file {}", name, String.join("/", partsFromFile));
-                        data.add(partsFromFile, file.toURI().toURL());
+                        data.add(partsFromFile, file.toURI());
                     } else {
                         LOGGER.debug("File {} in path {}", name, String.join("/", packageParts));
-                        data.add(StringUtil.concat(packageParts, new String[]{name}), file.toURI().toURL());
+                        data.add(StringUtil.concat(packageParts, new String[]{name}), file.toURI());
                     }
                 }
             }
@@ -254,8 +258,8 @@ public class Resources {
                 parts[i] += "$" + splitDot[j];
             }
             parts[i] += extension;
-            List<URL> urls = data.get(parts);
-            if (urls != null) return String.join("/", parts);
+            List<URI> uris = data.get(parts);
+            if (uris != null) return String.join("/", parts);
         }
         LOGGER.debug("Cannot find {} with extension {} in classpath", fqn, extension);
         return null;

@@ -30,6 +30,8 @@ import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.IOException;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.net.URL;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -43,8 +45,8 @@ import static org.e2immu.analyser.inspector.InspectionState.TRIGGER_JAVA_PARSER;
 public record Input(Configuration configuration,
                     TypeContext globalTypeContext,
                     OnDemandInspection byteCodeInspector,
-                    Map<TypeInfo, URL> annotatedAPIs,
-                    Map<TypeInfo, URL> sourceURLs,
+                    Map<TypeInfo, URI> annotatedAPIs,
+                    Map<TypeInfo, URI> sourceURLs,
                     Trie<TypeInfo> sourceTypes,
                     Trie<TypeInfo> annotatedAPITypes,
                     Resources classPath) {
@@ -86,13 +88,13 @@ public record Input(Configuration configuration,
         Resources sourcePath = assemblePath(configuration, false, "Source path",
                 configuration.inputConfiguration().sources());
         Trie<TypeInfo> sourceTypes = new Trie<>();
-        Map<TypeInfo, URL> sourceURLs = computeSourceURLs(sourcePath, globalTypeContext,
+        Map<TypeInfo, URI> sourceURLs = computeSourceURLs(sourcePath, globalTypeContext,
                 configuration.inputConfiguration().restrictSourceToPackages(), sourceTypes, "source path");
 
         Resources annotatedAPIsPath = assemblePath(configuration, false, "Annotated APIs path",
                 configuration.annotatedAPIConfiguration().annotatedAPISourceDirs());
         Trie<TypeInfo> annotatedAPITypes = new Trie<>();
-        Map<TypeInfo, URL> annotatedAPIs = computeSourceURLs(annotatedAPIsPath, globalTypeContext,
+        Map<TypeInfo, URI> annotatedAPIs = computeSourceURLs(annotatedAPIsPath, globalTypeContext,
                 configuration.annotatedAPIConfiguration().readAnnotatedAPIPackages(),
                 annotatedAPITypes, "annotated API path");
 
@@ -111,12 +113,12 @@ public record Input(Configuration configuration,
         return createNext(configuration, classPath, globalTypeContext, byteCodeInspector);
     }
 
-    private static Map<TypeInfo, URL> computeSourceURLs(Resources sourcePath,
+    private static Map<TypeInfo, URI> computeSourceURLs(Resources sourcePath,
                                                         TypeContext globalTypeContext,
                                                         List<String> restrictions,
                                                         Trie<TypeInfo> trie,
                                                         String what) {
-        Map<TypeInfo, URL> sourceURLs = new HashMap<>();
+        Map<TypeInfo, URI> sourceURLs = new HashMap<>();
         AtomicInteger ignored = new AtomicInteger();
         sourcePath.visit(new String[0], (parts, list) -> {
             if (parts.length >= 1) {
@@ -128,7 +130,7 @@ public record Input(Configuration configuration,
                     if (acceptSource(packageName, typeName, restrictions)) {
                         TypeInfo typeInfo = new TypeInfo(packageName, typeName);
                         globalTypeContext.typeMap.add(typeInfo, TRIGGER_JAVA_PARSER);
-                        URL url = list.get(0);
+                        URI url = list.get(0);
                         sourceURLs.put(typeInfo, url);
                         parts[n] = typeName;
                         trie.add(parts, typeInfo);

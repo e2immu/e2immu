@@ -23,6 +23,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.StringWriter;
+import java.net.URI;
 import java.net.URL;
 import java.util.Arrays;
 import java.util.List;
@@ -61,19 +62,19 @@ public class TestResources {
     public void testSourceViaClassPath() throws IOException {
         Resources classPath = new Resources();
         classPath.addJarFromClassPath("org/e2immu/annotation");
-        List<URL> expansions = classPath.expandURLs(".java");
+        List<URI> expansions = classPath.expandURLs(".java");
         int counter = 0;
-        for (URL url : expansions) {
+        for (URI uri : expansions) {
             if (0 == counter++) {
                 // let's see if we can read the file
-                InputStreamReader isr = new InputStreamReader(url.openStream());
+                InputStreamReader isr = new InputStreamReader(uri.toURL().openStream());
                 StringWriter sw = new StringWriter(50_000);
                 isr.transferTo(sw);
                 String code = sw.toString();
                 assertTrue(code.contains("@Retention(RetentionPolicy.CLASS)"));
                 LOGGER.info("Successfully read source!");
             }
-            LOGGER.info("expand to {}", url);
+            LOGGER.info("expand to {}", uri);
         }
         assertTrue(20 < counter);
     }

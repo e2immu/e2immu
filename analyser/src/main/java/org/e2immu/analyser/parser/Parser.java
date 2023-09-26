@@ -19,7 +19,6 @@ import org.e2immu.analyser.analyser.AnalyserContext;
 import org.e2immu.analyser.analyser.PrimaryTypeAnalyser;
 import org.e2immu.analyser.analyser.impl.PrimaryTypeAnalyserImpl;
 import org.e2immu.analyser.analyser.nonanalyserimpl.GlobalAnalyserContext;
-import org.e2immu.analyser.analyser.nonanalyserimpl.LocalAnalyserContext;
 import org.e2immu.analyser.bytecode.OnDemandInspection;
 import org.e2immu.analyser.config.Configuration;
 import org.e2immu.analyser.inspector.*;
@@ -33,14 +32,13 @@ import org.e2immu.analyser.resolver.TypeCycle;
 import org.e2immu.analyser.resolver.impl.ResolverImpl;
 import org.e2immu.analyser.util.Trie;
 import org.e2immu.analyser.visitor.TypeMapVisitor;
-import org.e2immu.annotatedapi.AnnotatedAPI;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.StringWriter;
-import java.net.URL;
+import java.net.URI;
 import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -85,6 +83,7 @@ public class Parser {
                     .collect(Collectors.toSet());
         }
 
+        @SuppressWarnings("unused")
         public RunResult buildTypeMap() {
             if (typeMap instanceof TypeMapImpl.Builder builder) {
                 return new RunResult(annotatedAPISortedTypes, sourceSortedTypes, builder.build());
@@ -102,7 +101,7 @@ public class Parser {
         // other bytecode inspection will take place on-demand, in the background.
 
         // we start the inspection and resolution of AnnotatedAPIs (Java parser, but with $ classes)
-        Collection<URL> annotatedAPIs = input.annotatedAPIs().values();
+        Collection<URI> annotatedAPIs = input.annotatedAPIs().values();
         SortedTypes sortedAnnotatedAPITypes;
         if (annotatedAPIs.isEmpty()) {
             sortedAnnotatedAPITypes = SortedTypes.EMPTY;
@@ -161,13 +160,11 @@ public class Parser {
         return input.globalTypeContext().typeMap;
     }
 
-    public SortedTypes inspectAndResolve(Map<TypeInfo, URL> urls,
+    public SortedTypes inspectAndResolve(Map<TypeInfo, URI> urls,
                                          Trie<TypeInfo> typesForWildcardImport,
                                          boolean reportWarnings,
                                          boolean shallowResolver,
                                          boolean storeComments) {
-
-        TypeInfo annotatedApiType = input.globalTypeContext().getFullyQualified(AnnotatedAPI.class);
         ResolverImpl resolver = new ResolverImpl(anonymousTypeCounters, input.globalTypeContext(),
                 input.globalTypeContext().typeMap.getE2ImmuAnnotationExpressions(), shallowResolver,
                 storeComments);
@@ -200,11 +197,11 @@ public class Parser {
 
     private class InspectWithJavaParserImpl implements InspectWithJavaParser {
         private final Map<TypeInfo, TypeContext> typeContexts = new HashMap<>();
-        private final Map<TypeInfo, URL> urls;
+        private final Map<TypeInfo, URI> urls;
         private final Trie<TypeInfo> typesForWildcardImport;
         private final ResolverImpl resolver;
 
-        InspectWithJavaParserImpl(Map<TypeInfo, URL> urls, Trie<TypeInfo> typesForWildcardImport, ResolverImpl resolver) {
+        InspectWithJavaParserImpl(Map<TypeInfo, URI> urls, Trie<TypeInfo> typesForWildcardImport, ResolverImpl resolver) {
             this.urls = urls;
             this.resolver = resolver;
             this.typesForWildcardImport = typesForWildcardImport;
@@ -220,16 +217,16 @@ public class Parser {
             if (typeInspectionBuilder.getInspectionState() != TRIGGER_JAVA_PARSER) {
                 return; // already done, or started
             }
-            URL url = Objects.requireNonNull(urls.get(typeInfo),
+            URI uri = Objects.requireNonNull(urls.get(typeInfo),
                     "Cannot find URL for " + typeInfo.fullyQualifiedName + "; inspection state " + typeInspectionBuilder.getInspectionState() + "; in\n" +
                             urls.values().stream().map(Object::toString).collect(Collectors.joining("\n")) + "\n");
             try {
-                LOGGER.debug("Starting Java parser inspection of '{}'", url);
+                LOGGER.debug("Starting Java parser inspection of '{}'", uri);
                 typeInspectionBuilder.setInspectionState(STARTING_JAVA_PARSER);
 
                 TypeContext inspectionTypeContext = new TypeContext(getTypeContext());
 
-                InputStreamReader isr = new InputStreamReader(url.openStream(),
+                InputStreamReader isr = new InputStreamReader(uri.toURL().openStream(),
                         configuration.inputConfiguration().sourceEncoding());
                 StringWriter sw = new StringWriter();
                 isr.transferTo(sw);
@@ -237,7 +234,7 @@ public class Parser {
                 ParseAndInspect parseAndInspect = new ParseAndInspect(input.classPath(),
                         input.globalTypeContext().typeMap(), typesForWildcardImport, anonymousTypeCounters,
                         configuration.annotatedAPIConfiguration().disabled());
-                List<TypeInfo> primaryTypes = parseAndInspect.run(resolver, inspectionTypeContext, url.toString(), source);
+                List<TypeInfo> primaryTypes = parseAndInspect.run(resolver, inspectionTypeContext, uri.toString(), source);
                 primaryTypes.forEach(t -> typeContexts.put(t, inspectionTypeContext));
 
                 typeInspectionBuilder.setInspectionState(FINISHED_JAVA_PARSER);
@@ -245,10 +242,10 @@ public class Parser {
             } catch (NotFoundInClassPathException typeNotFoundException) {
                 throw typeNotFoundException;
             } catch (RuntimeException rte) {
-                LOGGER.error("Caught runtime exception parsing and inspecting URL '{}'", url);
+                LOGGER.error("Caught runtime exception parsing and inspecting URL '{}'", uri);
                 throw rte;
             } catch (IOException ioe) {
-                LOGGER.error("Stopping runnable because of an IOException parsing URL '{}'", url);
+                LOGGER.error("Stopping runnable because of an IOException parsing URL '{}'", uri);
                 throw new RuntimeException(ioe);
             }
         }

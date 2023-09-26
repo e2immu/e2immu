@@ -28,6 +28,7 @@ import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
 import java.io.IOException;
+import java.net.URI;
 import java.net.URL;
 import java.util.*;
 import java.util.regex.Matcher;
@@ -62,17 +63,18 @@ public class AnnotationXmlReader implements AnnotationStore {
         int countAnnotations = 0;
         if (configuration.isReadAnnotationXmlPackages()) {
             List<Pattern> restrictToPatterns = computeRestrictionPatterns(configuration.readAnnotationXmlPackages());
-            for (URL url : classPath.expandURLs(ANNOTATIONS_XML)) {
+            for (URI uri : classPath.expandURLs(ANNOTATIONS_XML)) {
                 try {
+                    URL url = uri.toURL();
                     if (accept(url, restrictToPatterns)) {
                         countAnnotations += parse(url, typeItemMap);
                     }
                 } catch (IOException io) {
-                    LOGGER.warn("Skipping {}: IOException {}", url, io.getMessage());
+                    LOGGER.warn("Skipping {}: IOException {}", uri, io.getMessage());
                 } catch (SAXException e) {
-                    LOGGER.warn("Skipping {}: SAXException {}", url, e.getMessage());
+                    LOGGER.warn("Skipping {}: SAXException {}", uri, e.getMessage());
                 } catch (ParserConfigurationException e) {
-                    LOGGER.warn("Skipping {}: Parser config exception {}", url, e.getMessage());
+                    LOGGER.warn("Skipping {}: Parser config exception {}", uri, e.getMessage());
                 }
             }
         }
