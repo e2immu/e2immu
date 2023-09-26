@@ -90,14 +90,14 @@ public class Test_16_Modification_10 extends CommonTestRunner {
             }
         };
 
-        TypeMapVisitor typeMapVisitor = typeMap -> {
-            TypeInfo set = typeMap.get(Set.class);
+        TypeMapVisitor typeMapVisitor = d -> {
+            TypeInfo set = d.typeMap().get(Set.class);
 
             MethodInfo addAll = set.findUniqueMethod("addAll", 1);
-            assertEquals(DV.TRUE_DV, addAll.methodAnalysis.get().getProperty(Property.MODIFIED_METHOD));
+            assertEquals(DV.TRUE_DV, d.getMethodAnalysis(addAll).getProperty(Property.MODIFIED_METHOD));
 
             ParameterInfo first = addAll.methodInspection.get().getParameters().get(0);
-            assertEquals(DV.FALSE_DV, first.parameterAnalysis.get().getProperty(Property.MODIFIED_VARIABLE));
+            assertEquals(DV.FALSE_DV, d.getParameterAnalysis(first).getProperty(Property.MODIFIED_VARIABLE));
 
         };
 

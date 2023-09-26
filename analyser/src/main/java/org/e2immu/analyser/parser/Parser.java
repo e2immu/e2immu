@@ -140,10 +140,11 @@ public class Parser {
             for (TypeCycle typeCycle : sortedAnnotatedAPITypes.typeCycles()) {
                 runAnalyzer(annotatedAPIContext, typeCycle, true);
             }
-            for (TypeMapVisitor typeMapVisitor : configuration.debugConfiguration().typeMapVisitors()) {
-                typeMapVisitor.visit(typeMap);
-            }
             annotatedAPIContext.startOnDemandMode();
+
+            for (TypeMapVisitor typeMapVisitor : configuration.debugConfiguration().typeMapVisitors()) {
+                typeMapVisitor.visit(new TypeMapVisitor.Data(typeMap, annotatedAPIContext));
+            }
 
             // the analyser context essentially stays the same: incremental analysis
             AnalyserContext sourceContext = annotatedAPIContext.with(false);

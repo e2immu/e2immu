@@ -38,15 +38,15 @@ public class Test_10_Identity extends CommonTestRunner {
         super(true);
     }
 
-    TypeMapVisitor typeMapVisitor = typeMap -> {
-        TypeInfo logger = typeMap.get(Logger.class);
+    TypeMapVisitor typeMapVisitor = d -> {
+        TypeInfo logger = d.typeMap().get(Logger.class);
         MethodInfo debug = logger.typeInspection.get().methodStream(TypeInspection.Methods.THIS_TYPE_ONLY)
                 .filter(m -> "org.slf4j.Logger.debug(String,Object...)".equals(m.fullyQualifiedName))
                 .findFirst().orElseThrow();
-        assertEquals(DV.FALSE_DV, debug.methodAnalysis.get().getProperty(Property.MODIFIED_METHOD));
+        assertEquals(DV.FALSE_DV, d.getMethodAnalysis(debug).getProperty(Property.MODIFIED_METHOD));
 
         MethodInfo debug1 = logger.findUniqueMethod("debug", 1);
-        assertEquals(DV.FALSE_DV, debug1.methodAnalysis.get().getProperty(Property.MODIFIED_METHOD));
+        assertEquals(DV.FALSE_DV, d.getMethodAnalysis(debug1).getProperty(Property.MODIFIED_METHOD));
         assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, debug1.methodInspection.get().getParameters().get(0)
                 .parameterAnalysis.get().getProperty(Property.NOT_NULL_PARAMETER));
     };
@@ -187,9 +187,9 @@ public class Test_10_Identity extends CommonTestRunner {
         };
 
         testClass("Identity_1", 0, 0, new DebugConfiguration.Builder()
-                   //     .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
-                  //      .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-                  //      .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                        //     .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                        //      .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                        //      .addStatementAnalyserVisitor(statementAnalyserVisitor)
                         .addTypeMapVisitor(typeMapVisitor)
                         .build(),
                 new AnalyserConfiguration.Builder().setSkipTransformations(true).build());
@@ -289,10 +289,10 @@ public class Test_10_Identity extends CommonTestRunner {
         };
 
         testClass("Identity_3", 0, 0, new DebugConfiguration.Builder()
-              //  .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
-              //  .addTypeMapVisitor(typeMapVisitor)
-              //  .addEvaluationResultVisitor(evaluationResultVisitor)
-              //  .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                //  .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                //  .addTypeMapVisitor(typeMapVisitor)
+                //  .addEvaluationResultVisitor(evaluationResultVisitor)
+                //  .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .build());
     }
 

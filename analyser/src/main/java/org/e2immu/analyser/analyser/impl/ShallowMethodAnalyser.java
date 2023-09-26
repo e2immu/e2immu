@@ -30,10 +30,7 @@ import org.e2immu.analyser.model.expression.*;
 import org.e2immu.analyser.model.impl.TranslationMapImpl;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.This;
-import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
-import org.e2immu.analyser.parser.InspectionProvider;
-import org.e2immu.analyser.parser.Message;
-import org.e2immu.analyser.parser.Messages;
+import org.e2immu.analyser.parser.*;
 import org.e2immu.analyser.visitor.MethodAnalyserVisitor;
 import org.e2immu.support.FlipSwitch;
 import org.slf4j.Logger;
@@ -52,17 +49,14 @@ public class ShallowMethodAnalyser extends MethodAnalyserImpl {
     private static final Logger LOGGER = LoggerFactory.getLogger(ShallowMethodAnalyser.class);
 
     private static final Set<String> EXCEPTIONS_TO_CONTAINER = Set.of("java.util.Collection.toArray(T[])");
-    private final boolean enableVisitors;
 
     private final FlipSwitch annotationsHaveBeenSet = new FlipSwitch();
 
     public ShallowMethodAnalyser(MethodInfo methodInfo,
                                  MethodAnalysisImpl.Builder methodAnalysis,
                                  List<ParameterAnalysis> parameterAnalyses,
-                                 AnalyserContext analyserContext,
-                                 boolean enableVisitors) {
+                                 AnalyserContext analyserContext) {
         super(methodInfo, methodAnalysis, List.of(), parameterAnalyses, Map.of(), false, analyserContext);
-        this.enableVisitors = enableVisitors;
     }
 
     @Override
@@ -187,13 +181,14 @@ public class ShallowMethodAnalyser extends MethodAnalyserImpl {
             methodAnalysis.setSingleReturnValue(srv);
         }
 
-        if (enableVisitors) {
+        if (!analyserContext.inAnnotatedAPIAnalysis()) {
             List<MethodAnalyserVisitor> visitors = analyserContext.getConfiguration()
                     .debugConfiguration().afterMethodAnalyserVisitors();
             if (!visitors.isEmpty()) {
+                LimitedEvaluationContext evaluationContext = new LimitedEvaluationContext();
                 for (MethodAnalyserVisitor methodAnalyserVisitor : visitors) {
                     methodAnalyserVisitor.visit(new MethodAnalyserVisitor.Data(iteration, BreakDelayLevel.NONE,
-                            null, methodInfo, methodAnalysis,
+                            evaluationContext, methodInfo, methodAnalysis,
                             parameterAnalyses, Map.of(),
                             this::getMessageStream));
                 }
@@ -640,5 +635,23 @@ public class ShallowMethodAnalyser extends MethodAnalyserImpl {
     @Override
     public void makeImmutable() {
         // nothing here
+    }
+
+    class LimitedEvaluationContext implements  EvaluationContext {
+
+        @Override
+        public int getDepth() {
+            return 0;
+        }
+
+        @Override
+        public Primitives getPrimitives() {
+            return analyserContext.getPrimitives();
+        }
+
+        @Override
+        public AnalyserContext getAnalyserContext() {
+            return analyserContext;
+        }
     }
 }

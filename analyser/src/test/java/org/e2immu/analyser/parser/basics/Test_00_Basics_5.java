@@ -48,8 +48,8 @@ public class Test_00_Basics_5 extends CommonTestRunner {
             }
         };
 
-        TypeMapVisitor typeMapVisitor = typeMap -> {
-            TypeInfo stream = typeMap.get(Stream.class);
+        TypeMapVisitor typeMapVisitor = d -> {
+            TypeInfo stream = d.typeMap().get(Stream.class);
             MethodInfo of = stream.findUniqueMethod("of", 1);
             assertFalse(of.methodInspection.get().isDefault());
         };

@@ -85,15 +85,15 @@ public class Test_03_CompanionMethods extends CommonTestRunner {
             }
         };
 
-        TypeMapVisitor typeMapVisitor = typeMap -> {
-            TypeInfo collection = typeMap.get(Collection.class);
+        TypeMapVisitor typeMapVisitor = d -> {
+            TypeInfo collection = d.typeMap().get(Collection.class);
             MethodInfo size = collection.findUniqueMethod("size", 0);
-            DV modified = size.methodAnalysis.get().getProperty(MODIFIED_METHOD);
+            DV modified = d.getMethodAnalysis(size).getProperty(MODIFIED_METHOD);
             assertEquals(DV.FALSE_DV, modified);
 
-            TypeInfo list = typeMap.get(List.class);
+            TypeInfo list = d.typeMap().get(List.class);
             MethodInfo listSize = list.findUniqueMethod("size", 0);
-            assertEquals(DV.FALSE_DV, listSize.methodAnalysis.get().getProperty(MODIFIED_METHOD));
+            assertEquals(DV.FALSE_DV, d.getMethodAnalysis(listSize).getProperty(MODIFIED_METHOD));
         };
 
         // two errors: two unused parameters
@@ -199,22 +199,22 @@ public class Test_03_CompanionMethods extends CommonTestRunner {
 
     @Test
     public void test3() throws IOException {
-        TypeMapVisitor typeMapVisitor = typeMap -> {
-            TypeInfo charSequence = typeMap.get(CharSequence.class);
+        TypeMapVisitor typeMapVisitor = d -> {
+            TypeInfo charSequence = d.typeMap().get(CharSequence.class);
             MethodInfo length = charSequence.findUniqueMethod("length", 0);
             assertTrue(length.methodAnalysis.isSet());
             assertEquals(Set.of(CompanionMethodName.Action.ASPECT, CompanionMethodName.Action.INVARIANT),
                     length.methodInspection.get().getCompanionMethods().keySet().stream().map(CompanionMethodName::action).collect(Collectors.toSet()));
 
-            TypeInfo intTypeInfo = typeMap.getPrimitives().intTypeInfo();
-            TypeInfo stringBuilder = typeMap.get(StringBuilder.class);
+            TypeInfo intTypeInfo = d.typeMap().getPrimitives().intTypeInfo();
+            TypeInfo stringBuilder = d.typeMap().get(StringBuilder.class);
             MethodInfo appendInt = stringBuilder.typeInspection.get().methods().stream().filter(methodInfo -> "append".equals(methodInfo.name) &&
                     intTypeInfo == methodInfo.methodInspection.get().getParameters().get(0).parameterizedType.typeInfo).findFirst().orElseThrow();
             MethodInfo appendIntCompanion = appendInt.methodInspection.get().getCompanionMethods().values().stream().findFirst().orElseThrow();
             ReturnStatement returnStatement = (ReturnStatement) appendIntCompanion.methodInspection.get().getMethodBody().structure.statements().get(0);
             assertEquals("return post==prev+Integer.toString(i).length();", returnStatement.minimalOutput());
 
-            TypeInfo string = typeMap.getPrimitives().stringTypeInfo();
+            TypeInfo string = d.typeMap().getPrimitives().stringTypeInfo();
             MethodInfo stringLength = string.findUniqueMethod("length", 0);
 
             if (returnStatement.expression instanceof BinaryOperator eq &&
@@ -223,7 +223,7 @@ public class Test_03_CompanionMethods extends CommonTestRunner {
                     lengthCall.object instanceof MethodCall toString &&
                     toString.object instanceof TypeExpression integer) {
                 // check we have the same Integer type
-                assertSame(integer.parameterizedType.typeInfo, typeMap.getPrimitives().integerTypeInfo());
+                assertSame(integer.parameterizedType.typeInfo, d.typeMap().getPrimitives().integerTypeInfo());
                 // check the length method
                 assertSame(lengthCall.methodInfo, stringLength);
             }
@@ -370,19 +370,19 @@ public class Test_03_CompanionMethods extends CommonTestRunner {
 
     @Test
     public void test7() throws IOException {
-        TypeMapVisitor typeMapVisitor = typeMap -> {
-            TypeInfo collection = typeMap.get(Collection.class);
+        TypeMapVisitor typeMapVisitor = d -> {
+            TypeInfo collection = d.typeMap().get(Collection.class);
             MethodInfo clear = collection.findUniqueMethod("clear", 0);
             CompanionAnalysis clearCompanion = clear.methodAnalysis.get().getCompanionAnalyses()
                     .get(new CompanionMethodName("clear", CompanionMethodName.Action.CLEAR, "Size"));
             assertNotNull(clearCompanion);
             assertEquals(DV.TRUE_DV, clear.methodAnalysis.get().getProperty(MODIFIED_METHOD));
 
-            TypeInfo set = typeMap.get(Set.class);
+            TypeInfo set = d.typeMap().get(Set.class);
             MethodInfo setClear = set.findUniqueMethod("clear", 0);
             assertEquals(DV.TRUE_DV, setClear.methodAnalysis.get().getProperty(MODIFIED_METHOD));
 
-            TypeInfo annotatedAPI = typeMap.get("org.e2immu.annotatedapi.AnnotatedAPI");
+            TypeInfo annotatedAPI = d.typeMap().get("org.e2immu.annotatedapi.AnnotatedAPI");
             assertNotNull(annotatedAPI);
             MethodInfo isKnown = annotatedAPI.findUniqueMethod("isKnown", 1);
             assertTrue(isKnown.methodInspection.get().isStatic());

@@ -18,6 +18,7 @@ import org.e2immu.analyser.analyser.AnalysisStatus;
 import org.e2immu.analyser.analyser.DV;
 import org.e2immu.analyser.analyser.Stage;
 import org.e2immu.analyser.analyser.VariableInfoContainer;
+import org.e2immu.analyser.analysis.FieldAnalysis;
 import org.e2immu.analyser.analysis.FlowData;
 import org.e2immu.analyser.analysis.MethodAnalysis;
 import org.e2immu.analyser.config.AnalyserConfiguration;
@@ -232,13 +233,14 @@ public class Test_14_Warnings extends CommonTestRunner {
             }
         };
 
-        TypeMapVisitor typeMapVisitor = typeMap -> {
-            TypeInfo system = typeMap.get(System.class);
+        TypeMapVisitor typeMapVisitor = d -> {
+            TypeInfo system = d.typeMap().get(System.class);
             FieldInfo out = system.getFieldByName("out", true);
-            assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, out.fieldAnalysis.get().getProperty(EXTERNAL_NOT_NULL));
-            assertEquals(MultiLevel.IGNORE_MODS_DV, out.fieldAnalysis.get().getProperty(EXTERNAL_IGNORE_MODIFICATIONS));
+            FieldAnalysis outAna = d.getFieldAnalysis(out);
+            assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, outAna.getProperty(EXTERNAL_NOT_NULL));
+            assertEquals(MultiLevel.IGNORE_MODS_DV, outAna.getProperty(EXTERNAL_IGNORE_MODIFICATIONS));
 
-            TypeInfo myself = typeMap.get(Warnings_1.class);
+            TypeInfo myself = d.typeMap().get(Warnings_1.class);
             MethodInfo constructor = myself.findConstructor(0);
             assertEquals(MethodResolution.CallStatus.PART_OF_CONSTRUCTION, constructor.methodResolution.get().callStatus());
             MethodInfo method1 = myself.findUniqueMethod("method1", 1);
@@ -349,13 +351,13 @@ public class Test_14_Warnings extends CommonTestRunner {
         final String NULLABLE_INSTANCE_TYPE_STRING = "nullable instance type String";
         final String NULLABLE_INSTANCE_TYPE_STRING_IDENTITY = "nullable instance type String/*@Identity*/";
 
-        TypeMapVisitor typeMapVisitor = typeMap -> {
-            TypeInfo stream = typeMap.get(Stream.class);
+        TypeMapVisitor typeMapVisitor = d -> {
+            TypeInfo stream = d.typeMap().get(Stream.class);
             assertNotNull(stream);
             MethodInfo of = stream.typeInspection.get().methods().stream().filter(m -> m.name.equals("of")).findAny().orElseThrow();
-            assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV,
-                    of.methodAnalysis.get().getProperty(NOT_NULL_EXPRESSION));
+            assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, d.getMethodAnalysis(of).getProperty(NOT_NULL_EXPRESSION));
         };
+
         final String T = "org.e2immu.analyser.parser.start.testexample.Warnings_5.ChildClass.t";
 
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {

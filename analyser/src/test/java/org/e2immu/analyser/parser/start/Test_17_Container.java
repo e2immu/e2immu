@@ -152,9 +152,9 @@ public class Test_17_Container extends CommonTestRunner {
                 assertDv(d.p(0), 2, MultiLevel.MUTABLE_DV, Property.EXTERNAL_IMMUTABLE);
             }
         };
-        TypeMapVisitor typeMapVisitor = typeMap -> {
-            TypeInfo set = typeMap.get(Set.class);
-            assertEquals(MultiLevel.MUTABLE_DV, set.typeAnalysis.get().getProperty(Property.IMMUTABLE));
+        TypeMapVisitor typeMapVisitor = d -> {
+            TypeInfo set = d.typeMap().get(Set.class);
+            assertEquals(MultiLevel.MUTABLE_DV, d.getTypeAnalysis(set).getProperty(Property.IMMUTABLE));
         };
 
         //WARN in Method org.e2immu.analyser.parser.start.testexample.Container_0.setS(java.util.Set<java.lang.String>,java.lang.String) (line 36, pos 9): Potential null pointer exception: Variable: s
@@ -321,12 +321,11 @@ public class Test_17_Container extends CommonTestRunner {
 
     @Test
     public void test_4() throws IOException {
-        TypeMapVisitor typeMapVisitor = typeMap -> {
-            TypeInfo set = typeMap.get(Set.class);
+        TypeMapVisitor typeMapVisitor = d -> {
+            TypeInfo set = d.typeMap().get(Set.class);
             MethodInfo addAll = set.findUniqueMethod("addAll", 1);
             ParameterInfo param0 = addAll.methodInspection.get().getParameters().get(0);
-            assertEquals(DV.FALSE_DV,
-                    param0.parameterAnalysis.get().getProperty(Property.MODIFIED_VARIABLE));
+            assertEquals(DV.FALSE_DV, d.getParameterAnalysis(param0).getProperty(Property.MODIFIED_VARIABLE));
         };
 
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
@@ -476,22 +475,22 @@ public class Test_17_Container extends CommonTestRunner {
         };
 
         testClass(CONTAINER_5, 0, 0, new DebugConfiguration.Builder()
-           //     .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
-           //     .addStatementAnalyserVisitor(statementAnalyserVisitor)
-           //     .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-           //     .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                //     .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+                //     .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                //     .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                //     .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .build());
     }
 
     @Test
     public void test_6() throws IOException {
 
-        TypeMapVisitor typeMapVisitor = typeMap -> {
-            TypeInfo stream = typeMap.get(Stream.class);
+        TypeMapVisitor typeMapVisitor = d -> {
+            TypeInfo stream = d.typeMap().get(Stream.class);
             MethodInfo sorted = stream.findUniqueMethod("sorted", 0);
-            MethodAnalysis sortedAnalysis = sorted.methodAnalysis.get();
+            MethodAnalysis sortedAnalysis = d.getMethodAnalysis(sorted);
             assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV,
-                    sorted.getAnalysis().getProperty(Property.NOT_NULL_EXPRESSION));
+                    sortedAnalysis.getProperty(Property.NOT_NULL_EXPRESSION));
 
             // The type is an @E2Container, so @NotModified is implied; but it need not actually be present!!
             assertEquals(DV.FALSE_DV, sortedAnalysis.getProperty(Property.MODIFIED_METHOD));

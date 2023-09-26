@@ -246,13 +246,13 @@ public class Test_Util_01_SMapList extends CommonTestRunner {
             }
         };
 
-        TypeMapVisitor typeMapVisitor = typeMap -> {
-            TypeInfo map = typeMap.get(Map.class);
+        TypeMapVisitor typeMapVisitor = d -> {
+            TypeInfo map = d.typeMap().get(Map.class);
             MethodInfo entrySet = map.findUniqueMethod("entrySet", 0);
             assertEquals(MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL_DV,
-                    entrySet.methodAnalysis.get().getProperty(Property.NOT_NULL_EXPRESSION));
+                    d.getMethodAnalysis(entrySet).getProperty(Property.NOT_NULL_EXPRESSION));
             MethodInfo copyOf = map.findUniqueMethod("copyOf", 1);
-            assertEquals(MultiLevel.EFFECTIVELY_IMMUTABLE_HC_DV, copyOf.methodAnalysis.get().getProperty(Property.IMMUTABLE));
+            assertEquals(MultiLevel.EFFECTIVELY_IMMUTABLE_HC_DV, d.getMethodAnalysis(copyOf).getProperty(Property.IMMUTABLE));
         };
 
         BreakDelayVisitor breakDelayVisitor = d -> assertEquals("----", d.delaySequence());

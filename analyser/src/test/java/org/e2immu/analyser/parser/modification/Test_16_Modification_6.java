@@ -123,11 +123,11 @@ public class Test_16_Modification_6 extends CommonTestRunner {
             }
         };
 
-        TypeMapVisitor typeMapVisitor = typeMap -> {
-            TypeInfo set = typeMap.get(Set.class);
+        TypeMapVisitor typeMapVisitor = d -> {
+            TypeInfo set = d.typeMap().get(Set.class);
             MethodInfo addAll = set.findUniqueMethod("addAll", 1);
             ParameterInfo p0 = addAll.methodInspection.get().getParameters().get(0);
-            assertEquals(MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL_DV, p0.parameterAnalysis.get()
+            assertEquals(MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL_DV, d.getParameterAnalysis(p0)
                     .getProperty(Property.NOT_NULL_PARAMETER));
         };
 

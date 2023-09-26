@@ -29,6 +29,7 @@ import org.e2immu.analyser.model.variable.ReturnVariable;
 import org.e2immu.analyser.model.variable.This;
 import org.e2immu.analyser.parser.CommonTestRunner;
 import org.e2immu.analyser.parser.Message;
+import org.e2immu.analyser.parser.TypeMap;
 import org.e2immu.analyser.parser.basics.testexample.Basics_6;
 import org.e2immu.analyser.visitor.*;
 import org.junit.jupiter.api.Test;
@@ -270,23 +271,24 @@ public class Test_00_Basics_6 extends CommonTestRunner {
             }
         };
 
-        TypeMapVisitor typeMapVisitor = typeMap -> {
+        TypeMapVisitor typeMapVisitor = d -> {
+            TypeMap typeMap = d.typeMap();
             TypeInfo system = typeMap.get(System.class);
             FieldInfo out = system.getFieldByName("out", true);
-            assertEquals(DV.TRUE_DV, out.fieldAnalysis.get().getProperty(FINAL));
+            assertEquals(DV.TRUE_DV, d.getFieldAnalysis(out).getProperty(FINAL));
             assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV,
-                    out.fieldAnalysis.get().getProperty(EXTERNAL_NOT_NULL));
+                    d.getFieldAnalysis(out).getProperty(EXTERNAL_NOT_NULL));
 
             TypeInfo string = typeMap.get(String.class);
             MethodInfo equals = string.findUniqueMethod("equals", 1);
-            assertEquals(DV.FALSE_DV, equals.methodAnalysis.get().getProperty(MODIFIED_METHOD));
+            assertEquals(DV.FALSE_DV, d.getMethodAnalysis(equals).getProperty(MODIFIED_METHOD));
 
             MethodInfo toLowerCase = string.findUniqueMethod("toLowerCase", 0);
             assertFalse(toLowerCase.methodResolution.get().allowsInterrupts());
 
             MethodInfo toUpperCase = string.findUniqueMethod("toUpperCase", 0);
             assertFalse(toLowerCase.methodResolution.get().allowsInterrupts());
-            assertEquals(DV.FALSE_DV, toUpperCase.methodAnalysis.get().getProperty(MODIFIED_METHOD));
+            assertEquals(DV.FALSE_DV, d.getMethodAnalysis(toUpperCase).getProperty(MODIFIED_METHOD));
 
             TypeInfo printStream = typeMap.get(PrintStream.class);
             MethodInfo println = printStream.findUniqueMethod("println", 0);

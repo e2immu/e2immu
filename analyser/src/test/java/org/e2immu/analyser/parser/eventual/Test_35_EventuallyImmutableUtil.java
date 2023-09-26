@@ -69,14 +69,14 @@ public class Test_35_EventuallyImmutableUtil extends CommonTestRunner {
             }
         };
 
-        TypeMapVisitor typeMapVisitor = typeMap -> {
-            TypeInfo flipSwitch = typeMap.get(FlipSwitch.class);
+        TypeMapVisitor typeMapVisitor = d -> {
+            TypeInfo flipSwitch = d.typeMap().get(FlipSwitch.class);
             MethodInfo isSet = flipSwitch.findUniqueMethod("isSet", 0);
-            assertSame(Analysis.AnalysisMode.CONTRACTED, isSet.methodAnalysis.get().analysisMode());
+            assertSame(Analysis.AnalysisMode.CONTRACTED, d.getMethodAnalysis(isSet).analysisMode());
             assertFalse(flipSwitch.typeResolution.get().hasOneKnownGeneratedImplementation());
             assertTrue(flipSwitch.typeResolution.get().circularDependencies().isEmpty());
             assertTrue(flipSwitch.typeResolution.get().superTypesExcludingJavaLangObject().isEmpty());
-            MethodAnalysis isSetAnalysis = isSet.methodAnalysis.get();
+            MethodAnalysis isSetAnalysis = d.getMethodAnalysis(isSet);
             assertEquals("@TestMark: [isSet]", isSetAnalysis.getEventual().toString());
         };
 
@@ -131,16 +131,16 @@ public class Test_35_EventuallyImmutableUtil extends CommonTestRunner {
             }
         };
 
-        TypeMapVisitor typeMapVisitor = typeMap -> {
-            TypeInfo setOnce = typeMap.get(SetOnce.class);
+        TypeMapVisitor typeMapVisitor = d -> {
+            TypeInfo setOnce = d.typeMap().get(SetOnce.class);
             MethodInfo set = setOnce.findUniqueMethod("set", 1);
-            assertSame(Analysis.AnalysisMode.CONTRACTED, set.methodAnalysis.get().analysisMode());
-            MethodAnalysis setAnalysis = set.methodAnalysis.get();
+            MethodAnalysis setAnalysis = d.getMethodAnalysis(set);
+            assertSame(Analysis.AnalysisMode.CONTRACTED, setAnalysis.analysisMode());
             assertEquals("@Mark: [t]", setAnalysis.getEventual().toString());
 
             MethodInfo get = setOnce.findUniqueMethod("get", 0);
-            assertSame(Analysis.AnalysisMode.CONTRACTED, get.methodAnalysis.get().analysisMode());
-            MethodAnalysis getAnalysis = get.methodAnalysis.get();
+            MethodAnalysis getAnalysis = d.getMethodAnalysis(get);
+            assertSame(Analysis.AnalysisMode.CONTRACTED, getAnalysis.analysisMode());
             assertEquals("@Only after: [t]", getAnalysis.getEventual().toString());
         };
 
@@ -315,10 +315,10 @@ public class Test_35_EventuallyImmutableUtil extends CommonTestRunner {
                 assertEquals(expected, d.typeAnalysis().getEventuallyImmutableFields().toString());
             }
         };
-        TypeMapVisitor typeMapVisitor = typeMap -> {
-            TypeInfo eventuallyFinal = typeMap.get(EventuallyFinal.class);
+        TypeMapVisitor typeMapVisitor = d -> {
+            TypeInfo eventuallyFinal = d.typeMap().get(EventuallyFinal.class);
             MethodInfo setVariable = eventuallyFinal.findUniqueMethod("setVariable", 1);
-            MethodAnalysis setVariableAnalysis = setVariable.methodAnalysis.get();
+            MethodAnalysis setVariableAnalysis = d.getMethodAnalysis(setVariable);
             assertEquals("@Only before: [isFinal]", setVariableAnalysis.getEventual().toString());
         };
         testClass("EventuallyImmutableUtil_12", 0, 0, new DebugConfiguration.Builder()

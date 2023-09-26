@@ -177,9 +177,9 @@ public class Test_66_VariableScope extends CommonTestRunner {
             }
         };
 
-        TypeMapVisitor typeMapVisitor = typeMap -> {
-            TypeInfo ioException = typeMap.get(IOException.class);
-            TypeAnalysis ioExceptionAnalysis = ioException.typeAnalysis.get();
+        TypeMapVisitor typeMapVisitor = d -> {
+            TypeInfo ioException = d.typeMap().get(IOException.class);
+            TypeAnalysis ioExceptionAnalysis = d.getTypeAnalysis(ioException);
             assertEquals(MultiLevel.MUTABLE_DV, ioExceptionAnalysis.getProperty(Property.IMMUTABLE));
         };
 
@@ -861,7 +861,7 @@ public class Test_66_VariableScope extends CommonTestRunner {
         BreakDelayVisitor breakDelayVisitor = d -> assertEquals("------", d.delaySequence());
 
         testClass("VariableScope_8_2", 1, 7, new DebugConfiguration.Builder()
-               .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
                 .addBreakDelayVisitor(breakDelayVisitor)

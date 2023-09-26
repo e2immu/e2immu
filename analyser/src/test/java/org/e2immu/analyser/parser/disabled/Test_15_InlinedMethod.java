@@ -41,8 +41,8 @@ public class Test_15_InlinedMethod extends CommonTestRunner {
 
     @Test
     public void test_0() throws IOException {
-        TypeMapVisitor typeMapVisitor = typeMap -> {
-            MethodInfo unaryMinusInt = typeMap.getPrimitives().unaryMinusOperatorInt();
+        TypeMapVisitor typeMapVisitor = d -> {
+            MethodInfo unaryMinusInt = d.typeMap().getPrimitives().unaryMinusOperatorInt();
             assertEquals("int.-(int)", unaryMinusInt.fullyQualifiedName());
         };
         testClass("InlinedMethod_0", 0, 0, new DebugConfiguration.Builder()

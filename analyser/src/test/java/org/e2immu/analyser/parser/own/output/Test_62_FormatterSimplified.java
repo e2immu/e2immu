@@ -526,10 +526,10 @@ public class Test_62_FormatterSimplified extends CommonTestRunner {
             }
         };
 
-        TypeMapVisitor typeMapVisitor = typeMap -> {
-            TypeInfo stack = typeMap.get(Stack.class);
+        TypeMapVisitor typeMapVisitor = d -> {
+            TypeInfo stack = d.typeMap().get(Stack.class);
             MethodInfo peek = stack.findUniqueMethod("peek", 0);
-            assertEquals(DV.FALSE_DV, peek.methodAnalysis.get().getProperty(Property.MODIFIED_METHOD));
+            assertEquals(DV.FALSE_DV, d.getMethodAnalysis(peek).getProperty(Property.MODIFIED_METHOD));
         };
 
         testClass("FormatterSimplified_9", 0, 2, new DebugConfiguration.Builder()

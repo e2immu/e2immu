@@ -151,14 +151,14 @@ public class Test_16_Modification_3 extends CommonTestRunner {
             }
         };
 
-        TypeMapVisitor typeMapVisitor = typeMap -> {
-            TypeInfo set = typeMap.get(Set.class);
+        TypeMapVisitor typeMapVisitor = d -> {
+            TypeInfo set = d.typeMap().get(Set.class);
             MethodInfo addInSet = set.findUniqueMethod("add", 1);
-            assertEquals(DV.TRUE_DV, addInSet.methodAnalysis.get().getProperty(Property.MODIFIED_METHOD));
+            assertEquals(DV.TRUE_DV, d.getMethodAnalysis(addInSet).getProperty(Property.MODIFIED_METHOD));
 
-            TypeInfo hashSet = typeMap.get(HashSet.class);
+            TypeInfo hashSet = d.typeMap().get(HashSet.class);
             MethodInfo addInHashSet = hashSet.findUniqueMethod("add", 1);
-            assertEquals(DV.TRUE_DV, addInHashSet.methodAnalysis.get().getProperty(Property.MODIFIED_METHOD));
+            assertEquals(DV.TRUE_DV, d.getMethodAnalysis(addInHashSet).getProperty(Property.MODIFIED_METHOD));
         };
 
         BreakDelayVisitor breakDelayVisitor = d -> assertEquals("---", d.delaySequence());

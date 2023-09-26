@@ -135,7 +135,7 @@ public class Test_26_Enum_withAPI extends CommonTestRunner {
             }
         };
 
-        BreakDelayVisitor breakDelayVisitor = d-> assertEquals("-----", d.delaySequence());
+        BreakDelayVisitor breakDelayVisitor = d -> assertEquals("-----", d.delaySequence());
 
         TypeContext typeContext = testClass("Enum_0", 0, 0, new DebugConfiguration.Builder()
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
@@ -155,10 +155,10 @@ public class Test_26_Enum_withAPI extends CommonTestRunner {
 
     @Test
     public void test1() throws IOException {
-        TypeMapVisitor typeMapVisitor = typeMap -> {
-            TypeInfo math = typeMap.get(Math.class);
+        TypeMapVisitor typeMapVisitor = d -> {
+            TypeInfo math = d.typeMap().get(Math.class);
             MethodInfo max = math.findUniqueMethod("max", 2);
-            assertEquals(DV.FALSE_DV, max.methodAnalysis.get().getProperty(Property.MODIFIED_METHOD));
+            assertEquals(DV.FALSE_DV, d.getMethodAnalysis(max).getProperty(Property.MODIFIED_METHOD));
         };
 
         testClass("Enum_1", 0, 0, new DebugConfiguration.Builder()
@@ -272,7 +272,7 @@ public class Test_26_Enum_withAPI extends CommonTestRunner {
                         String expected = d.iteration() == 0 ? "<new:Enum_11[]>" : "new Enum_11[Enum_11.GROUPS]";
                         assertEquals(expected, d.currentValue().toString());
                         // arrays are ALWAYS containers!
-                        assertDv(d,  MultiLevel.NOT_CONTAINER_DV, Property.CONTAINER); // myself
+                        assertDv(d, MultiLevel.NOT_CONTAINER_DV, Property.CONTAINER); // myself
                     }
                 }
             }

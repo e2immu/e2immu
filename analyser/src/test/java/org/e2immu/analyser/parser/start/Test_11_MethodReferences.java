@@ -16,6 +16,7 @@ package org.e2immu.analyser.parser.start;
 
 import org.e2immu.analyser.analyser.DV;
 import org.e2immu.analyser.analyser.Property;
+import org.e2immu.analyser.analysis.MethodAnalysis;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.model.MethodInfo;
 import org.e2immu.analyser.model.MultiLevel;
@@ -38,12 +39,13 @@ public class Test_11_MethodReferences extends CommonTestRunner {
 
     @Test
     public void test_0() throws IOException {
-        TypeMapVisitor typeMapVisitor = typeMap -> {
-            TypeInfo collection = typeMap.get(Collection.class);
+        TypeMapVisitor typeMapVisitor = d -> {
+            TypeInfo collection = d.typeMap().get(Collection.class);
             assertNotNull(collection);
             MethodInfo stream = collection.findUniqueMethod("stream", 0);
 
-            assertEquals(MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL_DV, stream.methodAnalysis.get().getProperty(Property.NOT_NULL_EXPRESSION));
+            MethodAnalysis methodAnalysis = d.getMethodAnalysis(stream);
+            assertEquals(MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL_DV, methodAnalysis.getProperty(Property.NOT_NULL_EXPRESSION));
         };
 
         testClass("MethodReferences_0", 0, 0, new DebugConfiguration.Builder()
@@ -59,12 +61,12 @@ public class Test_11_MethodReferences extends CommonTestRunner {
 
     @Test
     public void test_2() throws IOException {
-        TypeMapVisitor typeMapVisitor = typeMap -> {
-            TypeInfo map = typeMap.get(Map.class);
+        TypeMapVisitor typeMapVisitor = d -> {
+            TypeInfo map = d.typeMap().get(Map.class);
             MethodInfo put = map.findUniqueMethod("put", 2);
-            assertEquals(DV.TRUE_DV, put.methodAnalysis.get().getProperty(Property.MODIFIED_METHOD));
+            assertEquals(DV.TRUE_DV, d.getMethodAnalysis(put).getProperty(Property.MODIFIED_METHOD));
             MethodInfo forEach = map.findUniqueMethod("forEach", 1);
-            assertEquals(DV.FALSE_DV, forEach.methodAnalysis.get().getProperty(Property.MODIFIED_METHOD));
+            assertEquals(DV.FALSE_DV, d.getMethodAnalysis(forEach).getProperty(Property.MODIFIED_METHOD));
         };
 
         testClass("MethodReferences_2", 0, 0, new DebugConfiguration.Builder()

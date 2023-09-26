@@ -44,7 +44,7 @@ public class MethodAnalyserFactory {
                 allowComputed, inAnnotatedAPI);
 
         return switch (analysisMode) {
-            case CONTRACTED -> createShallowMethodAnalyser(methodInfo, typeAnalysis, analyserContextInput, true);
+            case CONTRACTED -> createShallowMethodAnalyser(methodInfo, typeAnalysis, analyserContextInput);
             case AGGREGATED -> {
                 assert !isSAM;
                 List<? extends ParameterAnalyser> parameterAnalysers = methodInspection.getParameters().stream()
@@ -85,8 +85,7 @@ public class MethodAnalyserFactory {
 
     public static ShallowMethodAnalyser createShallowMethodAnalyser(MethodInfo methodInfo,
                                                                     TypeAnalysis typeAnalysis,
-                                                                    AnalyserContext analyserContext,
-                                                                    boolean enableVisitors) {
+                                                                    AnalyserContext analyserContext) {
         MethodInspection methodInspection = methodInfo.methodInspection.get();
         List<ParameterAnalysis> parameterAnalyses = methodInspection.getParameters().stream()
                 .map(parameterInfo -> (ParameterAnalysis) new ParameterAnalysisImpl
@@ -96,7 +95,7 @@ public class MethodAnalyserFactory {
                 analyserContext.getPrimitives(), analyserContext, analyserContext,
                 methodInfo, typeAnalysis, parameterAnalyses);
         parameterAnalyses.forEach(pa -> ((ParameterAnalysisImpl.Builder) pa).setMethodAnalysis(methodAnalysis));
-        return new ShallowMethodAnalyser(methodInfo, methodAnalysis, parameterAnalyses, analyserContext, enableVisitors);
+        return new ShallowMethodAnalyser(methodInfo, methodAnalysis, parameterAnalyses, analyserContext);
     }
 
     private static Analysis.AnalysisMode computeAnalysisMode(MethodInspection methodInspection,

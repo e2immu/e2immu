@@ -55,10 +55,10 @@ public class Test_48_Store extends CommonTestRunner {
 
     @Test
     public void test_1() throws IOException {
-        TypeMapVisitor typeMapVisitor = typeMap -> {
-            TypeInfo mapEntry = typeMap.get(Map.Entry.class);
+        TypeMapVisitor typeMapVisitor = d -> {
+            TypeInfo mapEntry = d.typeMap().get(Map.Entry.class);
             MethodInfo getValue = mapEntry.findUniqueMethod("getValue", 0);
-            assertFalse(getValue.methodAnalysis.get().getProperty(Property.MODIFIED_METHOD).isDelayed());
+            assertFalse(d.getMethodAnalysis(getValue).getProperty(Property.MODIFIED_METHOD).isDelayed());
             assertTrue(getValue.methodInspection.get().isAbstract());
         };
 

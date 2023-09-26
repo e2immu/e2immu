@@ -62,21 +62,21 @@ public class Test_16_Modification_0 extends CommonTestRunner {
             }
         };
 
-        TypeMapVisitor typeMapVisitor = typeMap -> {
-            TypeInfo set = typeMap.get(Set.class);
+        TypeMapVisitor typeMapVisitor = d -> {
+            TypeInfo set = d.typeMap().get(Set.class);
             MethodInfo add = set.findUniqueMethod("add", 1);
-            assertEquals(DV.TRUE_DV, add.methodAnalysis.get().getProperty(Property.MODIFIED_METHOD));
+            assertEquals(DV.TRUE_DV, d.getMethodAnalysis(add).getProperty(Property.MODIFIED_METHOD));
 
             MethodInfo addAll = set.findUniqueMethod("addAll", 1);
-            assertEquals(DV.TRUE_DV, addAll.methodAnalysis.get().getProperty(Property.MODIFIED_METHOD));
+            assertEquals(DV.TRUE_DV, d.getMethodAnalysis(addAll).getProperty(Property.MODIFIED_METHOD));
             ParameterInfo first = addAll.methodInspection.get().getParameters().get(0);
-            assertEquals(DV.FALSE_DV, first.parameterAnalysis.get().getProperty(Property.MODIFIED_VARIABLE));
+            assertEquals(DV.FALSE_DV, d.getParameterAnalysis(first).getProperty(Property.MODIFIED_VARIABLE));
 
             MethodInfo size = set.findUniqueMethod("size", 0);
-            assertEquals(DV.FALSE_DV, size.methodAnalysis.get().getProperty(Property.MODIFIED_METHOD));
+            assertEquals(DV.FALSE_DV, d.getMethodAnalysis(size).getProperty(Property.MODIFIED_METHOD));
 
-            TypeInfo hashSet = typeMap.get(Set.class);
-            assertEquals(MultiLevel.CONTAINER_DV, hashSet.typeAnalysis.get().getProperty(Property.CONTAINER));
+            TypeInfo hashSet = d.typeMap().get(Set.class);
+            assertEquals(MultiLevel.CONTAINER_DV, d.getTypeAnalysis(hashSet).getProperty(Property.CONTAINER));
         };
 
         testClass("Modification_0", 0, 0, new DebugConfiguration.Builder()

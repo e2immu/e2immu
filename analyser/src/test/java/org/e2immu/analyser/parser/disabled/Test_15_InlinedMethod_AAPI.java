@@ -75,10 +75,10 @@ public class Test_15_InlinedMethod_AAPI extends CommonTestRunner {
             }
         };
 
-        TypeMapVisitor typeMapVisitor = typeMap -> {
-            TypeInfo random = typeMap.get(Random.class);
+        TypeMapVisitor typeMapVisitor = d -> {
+            TypeInfo random = d.typeMap().get(Random.class);
             MethodInfo nextInt = random.findUniqueMethod("nextInt", 0);
-            MethodAnalysis nextIntAnalysis = nextInt.methodAnalysis.get();
+            MethodAnalysis nextIntAnalysis = d.getMethodAnalysis(nextInt);
             assertEquals(DV.TRUE_DV, nextIntAnalysis.getProperty(Property.MODIFIED_METHOD));
         };
 
@@ -421,7 +421,7 @@ public class Test_15_InlinedMethod_AAPI extends CommonTestRunner {
         BreakDelayVisitor breakDelayVisitor = d -> assertEquals("----SF--SF--SFMT-", d.delaySequence());
 
         testClass("InlinedMethod_11", 1, 5, new DebugConfiguration.Builder()
-                   .addEvaluationResultVisitor(evaluationResultVisitor)
+                .addEvaluationResultVisitor(evaluationResultVisitor)
                 //   .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 //   .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)

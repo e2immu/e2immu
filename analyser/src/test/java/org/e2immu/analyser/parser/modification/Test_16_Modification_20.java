@@ -157,10 +157,10 @@ public class Test_16_Modification_20 extends CommonTestRunner {
             }
         };
 
-        TypeMapVisitor typeMapVisitor = typeMap -> {
-            TypeInfo set = typeMap.get(Set.class);
+        TypeMapVisitor typeMapVisitor = d -> {
+            TypeInfo set = d.typeMap().get(Set.class);
             MethodInfo equals = set.findUniqueMethod("equals", 1);
-            DV mm = equals.methodAnalysis.get().getProperty(Property.MODIFIED_METHOD);
+            DV mm = d.getMethodAnalysis(equals).getProperty(Property.MODIFIED_METHOD);
             assertEquals(DV.FALSE_DV, mm);
         };
 

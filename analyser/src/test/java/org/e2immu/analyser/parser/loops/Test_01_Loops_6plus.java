@@ -311,15 +311,15 @@ public class Test_01_Loops_6plus extends CommonTestRunner {
                 }
             }
         };
-        TypeMapVisitor typeMapVisitor = typeMap -> {
-            TypeInfo typeInfo = typeMap.get(LocalDateTime.class);
+        TypeMapVisitor typeMapVisitor = d -> {
+            TypeInfo typeInfo = d.typeMap().get(LocalDateTime.class);
             MethodInfo now = typeInfo.findUniqueMethod("now", 0);
             assertTrue(now.methodInspection.get().isStatic());
-            assertEquals(DV.FALSE_DV, now.methodAnalysis.get().getProperty(MODIFIED_METHOD));
-            TypeInfo chrono = typeMap.get(ChronoLocalDateTime.class);
+            assertEquals(DV.FALSE_DV, d.getMethodAnalysis(now).getProperty(MODIFIED_METHOD));
+            TypeInfo chrono = d.typeMap().get(ChronoLocalDateTime.class);
             MethodInfo toInstant = chrono.findUniqueMethod("toInstant", 1);
             assertFalse(toInstant.methodInspection.get().isStatic());
-            assertEquals(DV.FALSE_DV, toInstant.methodAnalysis.get().getProperty(MODIFIED_METHOD));
+            assertEquals(DV.FALSE_DV, d.getMethodAnalysis(toInstant).getProperty(MODIFIED_METHOD));
             ParameterAnalysis utc = toInstant.parameterAnalysis(0);
             assertEquals(DV.TRUE_DV, utc.getProperty(MODIFIED_VARIABLE));
         };
@@ -798,9 +798,9 @@ public class Test_01_Loops_6plus extends CommonTestRunner {
 
         // TODO See Loops_17, one warning too many
         testClass("Loops_19", 0, 4, new DebugConfiguration.Builder()
-              //  .addEvaluationResultVisitor(evaluationResultVisitor)
-               // .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-              //  .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                //  .addEvaluationResultVisitor(evaluationResultVisitor)
+                // .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                //  .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .addBreakDelayVisitor(breakDelayVisitor)
                 .build());
     }

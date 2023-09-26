@@ -98,11 +98,11 @@ public class Test_16_Modification_9 extends CommonTestRunner {
             }
         };
 
-        TypeMapVisitor typeMapVisitor = typeMap -> {
-            TypeInfo set = typeMap.get(Set.class);
+        TypeMapVisitor typeMapVisitor = d -> {
+            TypeInfo set = d.typeMap().get(Set.class);
             MethodInfo add = set.findUniqueMethod("add", 1);
             ParameterInfo p0Add = add.methodInspection.get().getParameters().get(0);
-            assertEquals(MultiLevel.INDEPENDENT_HC_DV, p0Add.parameterAnalysis.get()
+            assertEquals(MultiLevel.INDEPENDENT_HC_DV, d.getParameterAnalysis(p0Add)
                     .getProperty(Property.INDEPENDENT));
         };
 

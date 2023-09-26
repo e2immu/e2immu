@@ -18,6 +18,7 @@ import org.e2immu.analyser.analyser.DV;
 import org.e2immu.analyser.analyser.EvaluationResult;
 import org.e2immu.analyser.analyser.Stage;
 import org.e2immu.analyser.analyser.VariableInfo;
+import org.e2immu.analyser.analysis.MethodAnalysis;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.parser.CommonTestRunner;
@@ -108,16 +109,18 @@ public class Test_06_FinalNotNullChecks extends CommonTestRunner {
             }
         };
 
-        TypeMapVisitor typeMapVisitor = typeMap -> {
-            TypeInfo objects = typeMap.get(Objects.class);
-            MethodInfo requireNonNull = objects.typeInspection.get().methods().stream().filter(mi -> mi.name.equals("requireNonNull") &&
-                    1 == mi.methodInspection.get().getParameters().size()).findFirst().orElseThrow();
-            assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV,
-                    requireNonNull.methodAnalysis.get().getProperty(NOT_NULL_EXPRESSION));
-            assertEquals(DV.TRUE_DV, requireNonNull.methodAnalysis.get().getProperty(IDENTITY));
+        TypeMapVisitor typeMapVisitor = d -> {
+            TypeInfo objects = d.typeMap().get(Objects.class);
+            MethodInfo requireNonNull = objects.typeInspection.get().methods().stream()
+                    .filter(mi -> mi.name.equals("requireNonNull")
+                            && 1 == mi.methodInspection.get().getParameters().size())
+                    .findFirst().orElseThrow();
+            MethodAnalysis rnn = d.getMethodAnalysis(requireNonNull);
+            assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, rnn.getProperty(NOT_NULL_EXPRESSION));
+            assertEquals(DV.TRUE_DV, rnn.getProperty(IDENTITY));
             ParameterInfo parameterInfo = requireNonNull.methodInspection.get().getParameters().get(0);
             assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV,
-                    parameterInfo.parameterAnalysis.get().getProperty(NOT_NULL_PARAMETER));
+                    d.getParameterAnalysis(parameterInfo).getProperty(NOT_NULL_PARAMETER));
         };
 
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {

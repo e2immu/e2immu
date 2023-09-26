@@ -37,13 +37,13 @@ public class TestAnalyseTest {
     @Test
     public void test() throws IOException {
 
-        TypeMapVisitor typeMapVisitor = typeMap -> {
-            TypeInfo trie = typeMap.get(Trie.class);
+        TypeMapVisitor typeMapVisitor = d -> {
+            TypeInfo trie = d.typeMap().get(Trie.class);
             assertEquals(MultiLevel.EVENTUALLY_FINAL_FIELDS_DV, trie.typeAnalysis.get().getProperty(Property.IMMUTABLE));
 
             TypeInfo trieNode = trie.typeInspection.get().subTypes().stream()
                     .filter(st -> "TrieNode".equals(st.simpleName)).findFirst().orElseThrow();
-            assertEquals(MultiLevel.MUTABLE_DV, trieNode.typeAnalysis.get().getProperty(Property.IMMUTABLE));
+            assertEquals(MultiLevel.MUTABLE_DV, d.getTypeAnalysis(trieNode).getProperty(Property.IMMUTABLE));
         };
 
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {

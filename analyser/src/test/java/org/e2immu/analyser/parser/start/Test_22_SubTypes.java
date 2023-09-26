@@ -132,14 +132,14 @@ public class Test_22_SubTypes extends CommonTestRunner {
             }
         };
 
-        TypeMapVisitor typeMapVisitor = typeMap -> {
-            TypeInfo object = typeMap.get(Object.class);
+        TypeMapVisitor typeMapVisitor = d -> {
+            TypeInfo object = d.typeMap().get(Object.class);
             MethodInfo toString = object.findUniqueMethod("toString", 0);
-            assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV,
-                    toString.methodAnalysis.get().getProperty(Property.NOT_NULL_EXPRESSION));
-            assertEquals(DV.FALSE_DV, toString.methodAnalysis.get().getProperty(Property.MODIFIED_METHOD));
+            MethodAnalysis ma = d.getMethodAnalysis(toString);
+            assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, ma.getProperty(Property.NOT_NULL_EXPRESSION));
+            assertEquals(DV.FALSE_DV, ma.getProperty(Property.MODIFIED_METHOD));
 
-            TypeInfo nonStatic2 = typeMap.get("org.e2immu.analyser.parser.start.testexample.SubTypes_2.NonStaticSubType2");
+            TypeInfo nonStatic2 = d.typeMap().get("org.e2immu.analyser.parser.start.testexample.SubTypes_2.NonStaticSubType2");
             MethodInfo toString2 = nonStatic2.findUniqueMethod("toString", 0);
             Set<MethodInfo> overrides = toString2.methodResolution.get().overrides();
             assertEquals(1, overrides.size());
@@ -211,7 +211,7 @@ public class Test_22_SubTypes extends CommonTestRunner {
             }
         };
         testClass("SubTypes_5", 0, 0, new DebugConfiguration.Builder()
-               // .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                // .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .build());
     }
 
@@ -293,8 +293,8 @@ public class Test_22_SubTypes extends CommonTestRunner {
         };
 
         testClass("SubTypes_7", 0, 0, new DebugConfiguration.Builder()
-               // .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
-              //  .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
+                // .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+                //  .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
                 .build());
     }
 
@@ -346,9 +346,9 @@ public class Test_22_SubTypes extends CommonTestRunner {
             }
         };
         testClass("SubTypes_10", 0, 0, new DebugConfiguration.Builder()
-              //  .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-              //  .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
-              //  .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
+                //  .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                //  .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+                //  .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
                 .build());
     }
 

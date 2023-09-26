@@ -14,8 +14,33 @@
 
 package org.e2immu.analyser.visitor;
 
+import org.e2immu.analyser.analyser.AnalyserContext;
+import org.e2immu.analyser.analyser.EvaluationContext;
+import org.e2immu.analyser.analysis.FieldAnalysis;
+import org.e2immu.analyser.analysis.MethodAnalysis;
+import org.e2immu.analyser.analysis.ParameterAnalysis;
+import org.e2immu.analyser.analysis.TypeAnalysis;
+import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.parser.TypeMap;
 
 public interface TypeMapVisitor {
-    void visit(TypeMap typeMap);
+    void visit(Data data);
+
+    record Data(TypeMap typeMap, AnalyserContext analyserContext) {
+        public TypeAnalysis getTypeAnalysis(TypeInfo typeInfo) {
+            return analyserContext.getTypeAnalysis(typeInfo);
+        }
+
+        public FieldAnalysis getFieldAnalysis(FieldInfo fieldInfo) {
+            return analyserContext.getFieldAnalysis(fieldInfo);
+        }
+
+        public MethodAnalysis getMethodAnalysis(MethodInfo methodInfo) {
+            return analyserContext.getMethodAnalysis(methodInfo);
+        }
+
+        public ParameterAnalysis getParameterAnalysis(ParameterInfo parameterInfo) {
+            return analyserContext.getParameterAnalysis(parameterInfo);
+        }
+    }
 }

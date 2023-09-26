@@ -349,6 +349,8 @@ public class GlobalAnalyserContext implements AnalyserContext {
                 case IGNORE_MODIFICATIONS -> MultiLevel.NOT_IGNORE_MODS_DV;
                 case INDEPENDENT -> MultiLevel.INDEPENDENT_DV;
                 case NOT_NULL_EXPRESSION -> MultiLevel.EFFECTIVELY_NOT_NULL_DV;
+                case CONTAINER -> MultiLevel.CONTAINER_DV;
+                case IMMUTABLE -> MultiLevel.EFFECTIVELY_IMMUTABLE_DV;
                 default -> throw new UnsupportedOperationException(fullyQualifiedName + ": " + property);
             };
         }
@@ -588,7 +590,7 @@ public class GlobalAnalyserContext implements AnalyserContext {
                 MethodAnalysisImpl.Builder methodAnalysisBuilder = new MethodAnalysisImpl.Builder(Analysis.AnalysisMode.CONTRACTED,
                         primitives, this, this, methodInfo, ownerTypeAnalysis, parameterAnalyses);
                 ShallowMethodAnalyser shallowMethodAnalyser = new ShallowMethodAnalyser(methodInfo,
-                        methodAnalysisBuilder, parameterAnalyses, this, false);
+                        methodAnalysisBuilder, parameterAnalyses, this);
                 shallowMethodAnalyser.analyse(new Analyser.SharedState(0, BreakDelayLevel.NONE, null));
                 MethodAnalysis methodAnalysis = shallowMethodAnalyser.methodAnalysis.build();
                 methodInfo.setAnalysis(methodAnalysis);

@@ -50,9 +50,9 @@ public class TestAnnotationUploader {
 
     @Test
     public void test() throws IOException {
-        TypeMapVisitor typeMapVisitor = typeMap -> {
-            TypeInfo string = typeMap.get(String.class);
-            assertEquals(MultiLevel.CONTAINER_DV, string.typeAnalysis.get().getProperty(Property.CONTAINER));
+        TypeMapVisitor typeMapVisitor = d -> {
+            TypeInfo string = d.typeMap().get(String.class);
+            assertEquals(MultiLevel.CONTAINER_DV, d.getTypeAnalysis(string).getProperty(Property.CONTAINER));
         };
 
         Configuration configuration = new Configuration.Builder()

@@ -239,10 +239,10 @@ public class Test_Support_08_SetOnceMap extends CommonTestRunner {
             }
         };
 
-        TypeMapVisitor typeMapVisitor = typeMap -> {
-            TypeInfo map = typeMap.get(Map.class);
+        TypeMapVisitor typeMapVisitor = d -> {
+            TypeInfo map = d.typeMap().get(Map.class);
             MethodInfo put = map.findUniqueMethod("put", 2);
-            assertEquals(DV.TRUE_DV, put.methodAnalysis.get().getProperty(Property.MODIFIED_METHOD));
+            assertEquals(DV.TRUE_DV, d.getMethodAnalysis(put).getProperty(Property.MODIFIED_METHOD));
         };
 
 
@@ -269,12 +269,12 @@ public class Test_Support_08_SetOnceMap extends CommonTestRunner {
         // 1 potential null pointer warning accepted
         testSupportAndUtilClasses(List.of(SetOnceMap.class, Freezable.class), 0, 2,
                 new DebugConfiguration.Builder()
-                   //     .addTypeMapVisitor(typeMapVisitor)
-                   //     .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
-                   //     .addStatementAnalyserVisitor(statementAnalyserVisitor)
-                   //     .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-                    //    .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
-                    //    .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+                        .addTypeMapVisitor(typeMapVisitor)
+                        //     .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
+                        //     .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                        //     .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                        //    .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                        //    .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                         .addBreakDelayVisitor(breakDelayVisitor)
                         .build());
     }

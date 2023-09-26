@@ -37,10 +37,10 @@ public class Test_45_Project_AAPI extends CommonTestRunner {
 
     @Test
     public void test_0() throws IOException {
-        TypeMapVisitor typeMapVisitor = typeMap -> {
-            TypeInfo map = typeMap.get(Map.class);
+        TypeMapVisitor typeMapVisitor = d -> {
+            TypeInfo map = d.typeMap().get(Map.class);
             MethodInfo get = map.findUniqueMethod("get", 1);
-            assertEquals(MultiLevel.NULLABLE_DV, get.methodAnalysis.get().getProperty(Property.NOT_NULL_EXPRESSION));
+            assertEquals(MultiLevel.NULLABLE_DV, d.getMethodAnalysis(get).getProperty(Property.NOT_NULL_EXPRESSION));
         };
 
         testClass("Project_0", 2, 7, new DebugConfiguration.Builder()
@@ -60,8 +60,8 @@ public class Test_45_Project_AAPI extends CommonTestRunner {
     @Test
     public void test_2() throws IOException {
 
-        TypeMapVisitor typeMapVisitor = typeMap -> {
-            TypeAnalysis stringAnalysis = typeMap.getPrimitives().stringTypeInfo().typeAnalysis.get();
+        TypeMapVisitor typeMapVisitor = d -> {
+            TypeAnalysis stringAnalysis = d.getTypeAnalysis(d.typeMap().getPrimitives().stringTypeInfo());
             assertEquals(MultiLevel.EFFECTIVELY_IMMUTABLE_DV, stringAnalysis.getProperty(Property.IMMUTABLE));
         };
 
@@ -86,7 +86,7 @@ public class Test_45_Project_AAPI extends CommonTestRunner {
                 if ("entry".equals(d.variableName())) {
                     if ("0".equals(d.statementId())) {
                         // for(Map.Entry entry: ... .entrySet())
-                        assertDv(d,  MultiLevel.NULLABLE_DV, Property.CONTEXT_NOT_NULL);
+                        assertDv(d, MultiLevel.NULLABLE_DV, Property.CONTEXT_NOT_NULL);
                     }
                 }
             }

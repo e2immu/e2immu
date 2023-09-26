@@ -145,9 +145,9 @@ public class Test_52_Var extends CommonTestRunner {
                 }
             }
         };
-        TypeMapVisitor typeMapVisitor = typeMap -> {
-            TypeInfo typeInfo = typeMap.get(String.class);
-            DV imm = typeInfo.typeAnalysis.get().getProperty(Property.IMMUTABLE);
+        TypeMapVisitor typeMapVisitor = d -> {
+            TypeInfo typeInfo = d.typeMap().get(String.class);
+            DV imm = d.getTypeAnalysis(typeInfo).getProperty(Property.IMMUTABLE);
             assertEquals(MultiLevel.EFFECTIVELY_IMMUTABLE_DV, imm);
         };
 

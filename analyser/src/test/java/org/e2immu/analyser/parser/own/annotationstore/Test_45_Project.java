@@ -55,7 +55,8 @@ public class Test_45_Project extends CommonTestRunner {
                     String expected = switch (d.iteration()) {
                         case 0 -> "!<null-check>&&<m:isAfter>&&<m:isBefore>";
                         case 1, 2 -> "null!=<f:container.read>&&<m:isAfter>&&<m:isBefore>";
-                        default -> "(entry.getValue()).read.plusMillis(readWithinMillis).isAfter(now$2)&&null!=(entry.getValue()).read&&(entry.getValue()).read.isBefore((entry.getValue()).updated)";
+                        default ->
+                                "(entry.getValue()).read.plusMillis(readWithinMillis).isAfter(now$2)&&null!=(entry.getValue()).read&&(entry.getValue()).read.isBefore((entry.getValue()).updated)";
                     };
                     assertEquals(expected, d.evaluationResult().getExpression().toString());
                     EvaluationResult.ChangeData changeData = d.findValueChangeByToString("container.read");
@@ -113,7 +114,8 @@ public class Test_45_Project extends CommonTestRunner {
                     String expectedCondition = switch (d.iteration()) {
                         case 0 -> "!<null-check>&&<m:isAfter>&&<m:isBefore>";
                         case 1, 2 -> "null!=<f:container.read>&&<m:isAfter>&&<m:isBefore>";
-                        default -> "(entry.getValue()).read.plusMillis(readWithinMillis).isAfter(now$2)&&null!=(entry.getValue()).read&&(entry.getValue()).read.isBefore((entry.getValue()).updated)";
+                        default ->
+                                "(entry.getValue()).read.plusMillis(readWithinMillis).isAfter(now$2)&&null!=(entry.getValue()).read&&(entry.getValue()).read.isBefore((entry.getValue()).updated)";
                     };
                     assertEquals(expectedCondition, d.condition().toString());
                     assertEquals("true", d.state().toString());
@@ -121,17 +123,17 @@ public class Test_45_Project extends CommonTestRunner {
             }
         };
 
-        TypeMapVisitor typeMapVisitor = typeMap -> {
-            TypeInfo map = typeMap.get(Map.class);
+        TypeMapVisitor typeMapVisitor = d -> {
+            TypeInfo map = d.typeMap().get(Map.class);
             MethodInfo get = map.findUniqueMethod("get", 1);
-            assertEquals(MultiLevel.NULLABLE_DV, get.methodAnalysis.get().getProperty(Property.NOT_NULL_EXPRESSION));
+            assertEquals(MultiLevel.NULLABLE_DV, d.getMethodAnalysis(get).getProperty(Property.NOT_NULL_EXPRESSION));
 
             MethodInfo putInMap = map.findUniqueMethod("put", 2);
-            assertEquals(DV.FALSE_DV, putInMap.getAnalysis().getProperty(Property.MODIFIED_METHOD));
+            assertEquals(DV.FALSE_DV, d.getMethodAnalysis(putInMap).getProperty(Property.MODIFIED_METHOD));
 
-            TypeInfo hashMap = typeMap.get(HashMap.class);
+            TypeInfo hashMap = d.typeMap().get(HashMap.class);
             MethodInfo put = hashMap.findUniqueMethod("put", 2);
-            assertEquals(DV.FALSE_DV, put.getAnalysis().getProperty(Property.MODIFIED_METHOD));
+            assertEquals(DV.FALSE_DV, d.getMethodAnalysis(put).getProperty(Property.MODIFIED_METHOD));
         };
 
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
@@ -279,10 +281,10 @@ public class Test_45_Project extends CommonTestRunner {
                 d.delaySequence());
 
         testClass("Project_0", 1, DONT_CARE, new DebugConfiguration.Builder()
-                       // .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-                      //  .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
-                      //  .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
-                     //   .addBreakDelayVisitor(breakDelayVisitor)
+                        // .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                        //  .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+                        //  .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                        //   .addBreakDelayVisitor(breakDelayVisitor)
                         .build(),
                 new AnalyserConfiguration.Builder()
                         .setComputeContextPropertiesOverAllMethods(true)
@@ -307,7 +309,8 @@ public class Test_45_Project extends CommonTestRunner {
                     if ("1".equals(d.statementId())) {
                         String expected = switch (d.iteration()) {
                             case 0 -> "<null-check>?<new:Container>:<m:get>";
-                            case 1 -> "<null-check>?<new:Container>:<vp:Container:cm@Parameter_value;mom@Parameter_value>";
+                            case 1 ->
+                                    "<null-check>?<new:Container>:<vp:Container:cm@Parameter_value;mom@Parameter_value>";
                             default -> "null==kvStore.get(key)?new Container(value):kvStore.get(key)";
                         };
                         assertEquals(expected, d.currentValue().toString());
@@ -316,8 +319,8 @@ public class Test_45_Project extends CommonTestRunner {
                 }
             }
         };
-        TypeMapVisitor typeMapVisitor = typeMap -> {
-            TypeAnalysis stringAnalysis = typeMap.getPrimitives().stringTypeInfo().typeAnalysis.get();
+        TypeMapVisitor typeMapVisitor = d -> {
+            TypeAnalysis stringAnalysis = d.getTypeAnalysis(d.typeMap().getPrimitives().stringTypeInfo());
             assertEquals(MultiLevel.EFFECTIVELY_IMMUTABLE_DV, stringAnalysis.getProperty(Property.IMMUTABLE));
         };
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
@@ -342,11 +345,11 @@ public class Test_45_Project extends CommonTestRunner {
 
     @Test
     public void test_4() throws IOException {
-        TypeMapVisitor typeMapVisitor = typeMap -> {
-            TypeInfo map = typeMap.get(Map.class);
+        TypeMapVisitor typeMapVisitor = d -> {
+            TypeInfo map = d.typeMap().get(Map.class);
             MethodInfo get = map.findUniqueMethod("get", 1);
             ParameterInfo p0 = get.methodInspection.get().getParameters().get(0);
-            ParameterAnalysis p0a = p0.parameterAnalysis.get();
+            ParameterAnalysis p0a = d.getParameterAnalysis(p0);
             assertEquals(DV.TRUE_DV, p0a.getProperty(Property.IDENTITY)); // first property
 
             assertEquals(DV.FALSE_DV, p0a.getProperty(Property.MODIFIED_VARIABLE));

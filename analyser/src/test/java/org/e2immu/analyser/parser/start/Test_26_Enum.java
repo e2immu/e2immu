@@ -225,10 +225,10 @@ public class Test_26_Enum extends CommonTestRunner {
             }
         };
 
-        TypeMapVisitor typeMapVisitor = typeMap -> {
-            TypeInfo math = typeMap.get(Math.class);
+        TypeMapVisitor typeMapVisitor = d -> {
+            TypeInfo math = d.typeMap().get(Math.class);
             MethodInfo max = math.findUniqueMethod("max", 2);
-            assertEquals(DV.FALSE_DV, max.methodAnalysis.get().getProperty(Property.MODIFIED_METHOD));
+            assertEquals(DV.FALSE_DV, d.getMethodAnalysis(max).getProperty(Property.MODIFIED_METHOD));
         };
 
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {

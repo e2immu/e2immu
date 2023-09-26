@@ -82,27 +82,27 @@ public class Test_Util_06_DependencyGraph_AAPI extends CommonTestRunner {
                 assertEquals(PC, d.methodAnalysis().getPrecondition().toString());
             }
         };
-        TypeMapVisitor typeMapVisitor = typeMap -> {
-            TypeInfo freezable = typeMap.get(Freezable.class);
+        TypeMapVisitor typeMapVisitor = d -> {
+            TypeInfo freezable = d.typeMap().get(Freezable.class);
 
-            TypeAnalysis freezableAna = freezable.typeAnalysis.get();
+            TypeAnalysis freezableAna = d.getTypeAnalysis(freezable);
             assertEquals(MultiLevel.EVENTUALLY_IMMUTABLE_HC_DV, freezableAna.getProperty(Property.IMMUTABLE));
             assertEquals(MultiLevel.CONTAINER_DV, freezableAna.getProperty(Property.CONTAINER));
 
             MethodInfo freeze = freezable.findUniqueMethod("freeze", 0);
-            MethodAnalysis freezeAna = freeze.methodAnalysis.get();
+            MethodAnalysis freezeAna = d.getMethodAnalysis(freeze);
             assertEquals("@Mark: [frozen]", freezeAna.getEventual().toString());
             assertEquals(DV.TRUE_DV, freezeAna.getProperty(Property.MODIFIED_METHOD));
 
             MethodInfo isFrozen = freezable.findUniqueMethod("isFrozen", 0);
-            MethodAnalysis isFrozenAna = isFrozen.methodAnalysis.get();
+            MethodAnalysis isFrozenAna = d.getMethodAnalysis(isFrozen);
             assertEquals(DV.FALSE_DV, isFrozenAna.getProperty(Property.MODIFIED_METHOD));
             assertEquals("@TestMark: [frozen]", isFrozenAna.getEventual().toString());
             assertEquals("<return value>", isFrozenAna.getSingleReturnValue().toString());
 
             {
                 MethodInfo ensureNotFrozen = freezable.findUniqueMethod("ensureNotFrozen", 0);
-                MethodAnalysis ensureNotFrozenAna = ensureNotFrozen.methodAnalysis.get();
+                MethodAnalysis ensureNotFrozenAna = d.getMethodAnalysis(ensureNotFrozen);
                 assertEquals(DV.FALSE_DV, ensureNotFrozenAna.getProperty(Property.MODIFIED_METHOD));
                 MethodInfo companion = ensureNotFrozen.methodInspection.get().getCompanionMethods()
                         .get(CompanionMethodName.extract("ensureNotFrozen$Precondition"));
@@ -114,7 +114,7 @@ public class Test_Util_06_DependencyGraph_AAPI extends CommonTestRunner {
             }
             {
                 MethodInfo ensureFrozen = freezable.findUniqueMethod("ensureFrozen", 0);
-                MethodAnalysis ensureFrozenAna = ensureFrozen.methodAnalysis.get();
+                MethodAnalysis ensureFrozenAna = d.getMethodAnalysis(ensureFrozen);
                 assertEquals(DV.FALSE_DV, ensureFrozenAna.getProperty(Property.MODIFIED_METHOD));
                 MethodInfo companion2 = ensureFrozen.methodInspection.get().getCompanionMethods()
                         .get(CompanionMethodName.extract("ensureFrozen$Precondition"));

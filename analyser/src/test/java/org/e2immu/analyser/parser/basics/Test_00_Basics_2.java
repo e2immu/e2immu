@@ -190,18 +190,18 @@ public class Test_00_Basics_2 extends CommonTestRunner {
             }
         };
 
-        TypeMapVisitor typeMapVisitor = typeMap -> {
+        TypeMapVisitor typeMapVisitor = d -> {
             // check that the XML annotations have been read properly, and copied into the correct place
-            TypeInfo stringType = typeMap.getPrimitives().stringTypeInfo();
+            TypeInfo stringType = d.typeMap().getPrimitives().stringTypeInfo();
             assertEquals(MultiLevel.EFFECTIVELY_IMMUTABLE_DV, stringType.typeAnalysis.get().getProperty(IMMUTABLE));
 
-            TypeInfo collection = typeMap.get(Collection.class);
+            TypeInfo collection = d.typeMap().get(Collection.class);
             MethodInfo add = collection.findUniqueMethod("add", 1);
             ParameterInfo p0 = add.methodInspection.get().getParameters().get(0);
             assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV,
                     p0.parameterAnalysis.get().getProperty(NOT_NULL_PARAMETER));
-            assertEquals(DV.FALSE_DV, p0.parameterAnalysis.get().getProperty(MODIFIED_VARIABLE));
-            assertEquals(DV.TRUE_DV, add.methodAnalysis.get().getProperty(MODIFIED_METHOD));
+            assertEquals(DV.FALSE_DV, d.getParameterAnalysis(p0).getProperty(MODIFIED_VARIABLE));
+            assertEquals(DV.TRUE_DV, d.getMethodAnalysis(add).getProperty(MODIFIED_METHOD));
         };
 
         StatementAnalyserVisitor statementAnalyserVisitor = d -> {

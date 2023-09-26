@@ -71,20 +71,20 @@ public class Test_Util_03_StringUtil extends CommonTestRunner {
             }
         };
 
-        TypeMapVisitor typeMapVisitor = typeMap -> {
-            TypeInfo system = typeMap.get(System.class);
+        TypeMapVisitor typeMapVisitor = d -> {
+            TypeInfo system = d.typeMap().get(System.class);
             MethodInfo arrayCopy = system.findUniqueMethod("arraycopy", 5);
             List<ParameterInfo> parameters = arrayCopy.methodInspection.get().getParameters();
 
-            ParameterAnalysis p0 = parameters.get(0).parameterAnalysis.get();
+            ParameterAnalysis p0 = d.getParameterAnalysis(parameters.get(0));
             assertEquals(DV.FALSE_DV, p0.getProperty(Property.MODIFIED_VARIABLE));
 
-            ParameterAnalysis p2 = parameters.get(2).parameterAnalysis.get();
+            ParameterAnalysis p2 = d.getParameterAnalysis(parameters.get(2));
             assertEquals(DV.TRUE_DV, p2.getProperty(Property.MODIFIED_VARIABLE));
 
-            TypeInfo integer = typeMap.get(Integer.class);
+            TypeInfo integer = d.typeMap().get(Integer.class);
             MethodInfo toString = integer.findUniqueMethod("toString", 1);
-            assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, toString.methodAnalysis.get()
+            assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, d.getMethodAnalysis(toString)
                     .getProperty(Property.NOT_NULL_EXPRESSION));
         };
 

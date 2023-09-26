@@ -49,7 +49,7 @@ public class Test_57_Lambda extends CommonTestRunner {
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("collector".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof ReturnVariable) {
-                    assertDv(d,  MultiLevel.CONTAINER_DV, Property.CONTAINER);
+                    assertDv(d, MultiLevel.CONTAINER_DV, Property.CONTAINER);
                     assertDv(d, 1, MultiLevel.EFFECTIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
                 }
             }
@@ -73,10 +73,11 @@ public class Test_57_Lambda extends CommonTestRunner {
             }
         };
 
-        TypeMapVisitor typeMapVisitor = typeMap -> {
-            TypeInfo collector = typeMap.get(Collector.class);
-            assertEquals(MultiLevel.NOT_CONTAINER_DV, collector.typeAnalysis.get().getProperty(Property.CONTAINER));
+        TypeMapVisitor typeMapVisitor = d -> {
+            TypeInfo collector = d.typeMap().get(Collector.class);
+            assertEquals(MultiLevel.NOT_CONTAINER_DV, d.getTypeAnalysis(collector).getProperty(Property.CONTAINER));
         };
+
         testClass("Lambda_0", 0, 1, new DebugConfiguration.Builder()
                 .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)

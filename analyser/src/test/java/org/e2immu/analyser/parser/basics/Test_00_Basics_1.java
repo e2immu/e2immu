@@ -215,9 +215,9 @@ public class Test_00_Basics_1 extends CommonTestRunner {
         }
     };
 
-    TypeMapVisitor typeMapVisitor = typeMap -> {
-        TypeInfo set = typeMap.get(Set.class);
-        assertEquals(MUTABLE_DV, set.typeAnalysis.get().getProperty(IMMUTABLE));
+    TypeMapVisitor typeMapVisitor = d -> {
+        TypeInfo set = d.typeMap().get(Set.class);
+        assertEquals(MUTABLE_DV, d.getTypeAnalysis(set).getProperty(IMMUTABLE));
     };
 
     BreakDelayVisitor breakDelayVisitor = d -> assertEquals("---", d.delaySequence());

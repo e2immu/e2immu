@@ -43,11 +43,11 @@ public class Test_Support_06_AddOnceSet extends CommonTestRunner {
 
     @Test
     public void test() throws IOException {
-        TypeMapVisitor typeMapVisitor = typeMap -> {
-            TypeInfo map = typeMap.get(Map.class);
+        TypeMapVisitor typeMapVisitor = d -> {
+            TypeInfo map = d.typeMap().get(Map.class);
             MethodInfo keySet = map.findUniqueMethod("keySet", 0);
             assertEquals(MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL_DV,
-                    keySet.methodAnalysis.get().getProperty(Property.NOT_NULL_EXPRESSION));
+                    d.getMethodAnalysis(keySet).getProperty(Property.NOT_NULL_EXPRESSION));
         };
 
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
@@ -128,11 +128,11 @@ public class Test_Support_06_AddOnceSet extends CommonTestRunner {
 
         // IMPROVE the warning could go if we use companions with "contains"? (instead of the "true")
         testSupportAndUtilClasses(List.of(AddOnceSet.class, Freezable.class), 0, 1, new DebugConfiguration.Builder()
-              //  .addTypeMapVisitor(typeMapVisitor)
-              //  .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
-             //   .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
-             //   .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-              //  .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                //  .addTypeMapVisitor(typeMapVisitor)
+                //  .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
+                //   .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                //   .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                //  .addStatementAnalyserVisitor(statementAnalyserVisitor)
                 .addBreakDelayVisitor(breakDelayVisitor)
                 .build());
     }

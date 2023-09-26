@@ -478,11 +478,11 @@ public class Test_51_InstanceOf extends CommonTestRunner {
             }
         };
 
-        TypeMapVisitor typeMapVisitor = typeMap -> {
-            TypeInfo integer = typeMap.get(Integer.class);
-            assertEquals(MultiLevel.CONTAINER_DV, integer.typeAnalysis.get().getProperty(Property.CONTAINER));
-            TypeInfo boxedBool = typeMap.get(Boolean.class);
-            assertEquals(MultiLevel.CONTAINER_DV, boxedBool.typeAnalysis.get().getProperty(Property.CONTAINER));
+        TypeMapVisitor typeMapVisitor = d -> {
+            TypeInfo integer = d.typeMap().get(Integer.class);
+            assertEquals(MultiLevel.CONTAINER_DV, d.getTypeAnalysis(integer).getProperty(Property.CONTAINER));
+            TypeInfo boxedBool = d.typeMap().get(Boolean.class);
+            assertEquals(MultiLevel.CONTAINER_DV, d.getTypeAnalysis(boxedBool).getProperty(Property.CONTAINER));
         };
 
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {

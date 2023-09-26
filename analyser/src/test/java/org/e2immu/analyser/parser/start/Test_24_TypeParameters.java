@@ -34,18 +34,18 @@ public class Test_24_TypeParameters extends CommonTestRunner {
         super(true);
     }
 
-    TypeMapVisitor typeMapVisitor = typeMap -> {
-        TypeInfo collection = typeMap.get(Collection.class);
+    TypeMapVisitor typeMapVisitor = d -> {
+        TypeInfo collection = d.typeMap().get(Collection.class);
         assertNotNull(collection);
         MethodInfo stream = collection.typeInspection.get().methods().stream().filter(m -> m.name.equals("stream")).findAny().orElseThrow();
         assertEquals(MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL_DV,
-                stream.methodAnalysis.get().getProperty(Property.NOT_NULL_EXPRESSION));
+                d.getMethodAnalysis(stream).getProperty(Property.NOT_NULL_EXPRESSION));
     };
 
     @Test
     public void test_0() throws IOException {
         final String TYPE = "org.e2immu.analyser.parser.start.testexample.TypeParameters_0";
-        final String STRINGS = TYPE+".strings";
+        final String STRINGS = TYPE + ".strings";
 
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("TypeParameters_0".equals(d.methodInfo().name) && STRINGS.equals(d.variableName())) {

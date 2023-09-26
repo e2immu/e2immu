@@ -182,23 +182,23 @@ public class Test_Support_04_FirstThen extends CommonTestRunner {
             assertEquals(d.iteration() > 1, d.typeAnalysis().approvedPreconditionsStatus(false).isDone());
         };
 
-        TypeMapVisitor typeMapVisitor = typeMap -> {
-            TypeInfo objects = typeMap.get(Objects.class);
+        TypeMapVisitor typeMapVisitor = d -> {
+            TypeInfo objects = d.typeMap().get(Objects.class);
             MethodInfo hash = objects.typeInspection.get().methods().stream().filter(m -> m.name.equals("hash")).findFirst().orElseThrow();
             ParameterInfo objectsParam = hash.methodInspection.get().getParameters().get(0);
-            assertEquals(DV.FALSE_DV, objectsParam.parameterAnalysis.get().getProperty(Property.MODIFIED_VARIABLE));
+            assertEquals(DV.FALSE_DV, d.getParameterAnalysis(objectsParam).getProperty(Property.MODIFIED_VARIABLE));
         };
 
         BreakDelayVisitor breakDelayVisitor = d -> assertEquals("-----------", d.delaySequence());
 
         testSupportAndUtilClasses(List.of(FirstThen.class), 0, 0, new DebugConfiguration.Builder()
-          //      .addEvaluationResultVisitor(evaluationResultVisitor)
-           //     .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
-           //     .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
-           //     .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
-           //     .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-           //     .addStatementAnalyserVisitor(statementAnalyserVisitor)
-            //    .addTypeMapVisitor(typeMapVisitor)
+                //      .addEvaluationResultVisitor(evaluationResultVisitor)
+                //     .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                //     .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
+                //     .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+                //     .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                //     .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                .addTypeMapVisitor(typeMapVisitor)
                 .addBreakDelayVisitor(breakDelayVisitor)
                 .build());
     }
