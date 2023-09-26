@@ -494,6 +494,15 @@ public class TestCommonJavaUtil extends CommonAnnotatedAPI {
     }
 
     @Test
+    public void testSortedMapHeadMap() {
+        TypeInfo typeInfo = typeContext.getFullyQualified(SortedMap.class);
+        MethodInfo methodInfo = typeInfo.findUniqueMethod("headMap", 1);
+        MethodAnalysis methodAnalysis = methodInfo.methodAnalysis.get();
+        assertEquals(DV.FALSE_DV, methodAnalysis.getProperty(Property.MODIFIED_METHOD));
+        assertEquals(MultiLevel.DEPENDENT_DV, methodAnalysis.getProperty(Property.INDEPENDENT));
+    }
+
+    @Test
     public void testHashSetConstructor1() {
         TypeInfo typeInfo = typeContext.getFullyQualified(HashSet.class);
         TypeInfo collection = typeContext.getFullyQualified(Collection.class);

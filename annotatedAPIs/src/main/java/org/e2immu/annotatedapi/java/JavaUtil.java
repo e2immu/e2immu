@@ -596,6 +596,24 @@ public class JavaUtil extends AnnotatedAPI {
         }
     }
 
+    @Container
+    interface Queue$<E> {
+
+        E element();
+
+        E poll();
+
+        E peek();
+
+        @Modified
+        E remove();
+    }
+
+    @Container
+    interface Deque$<E> {
+
+        E getFirst();
+    }
 
     @Container
     static class LinkedList$<E> {
@@ -704,7 +722,9 @@ public class JavaUtil extends AnnotatedAPI {
          */
         int compare(@NotNull T o1, @NotNull T o2);
 
-        <U> java.util.Comparator<U> comparingInt(@NotNull ToIntFunction<? super U> keyExtractor);
+        <U> java.util.Comparator<U> comparingDouble(@NotNull @Independent(hc = true) ToDoubleFunction<? super U> keyExtractor);
+        <U> java.util.Comparator<U> comparingInt(@NotNull @Independent(hc = true) ToIntFunction<? super U> keyExtractor);
+        <U> java.util.Comparator<U> comparingLong(@NotNull @Independent(hc = true) ToLongFunction<? super U> keyExtractor);
 
         @ImmutableContainer
         <T extends Comparable<? super T>> Comparator<T> naturalOrder();
@@ -1039,13 +1059,24 @@ public class JavaUtil extends AnnotatedAPI {
     }
 
     @Container
-    interface SortedMap$ {
+    interface SortedMap$<K, V> {
+
+        SortedMap<K, V> headMap(K k);
+
+        SortedMap<K, V> subMap(K from, K to);
+
+        SortedMap<K, V> tailMap(K k);
 
     }
 
     @Container
-    interface NavigableMap$ {
+    interface NavigableMap$<K, V> {
 
+        NavigableMap<K, V> headMap(K k);
+
+        NavigableMap<K, V> subMap(K from, K to);
+
+        NavigableMap<K, V> tailMap(K k);
     }
 
     @Container

@@ -507,6 +507,7 @@ class JavaLang {
     }
 
     @ImmutableContainer
+    @Independent
     interface Number$ {
 
     }
@@ -674,7 +675,7 @@ class JavaLang {
     @Independent
     interface Readable$ {
         @Modified
-        int read(@NotNull CharBuffer cb);
+        int read(@NotNull @Modified CharBuffer cb);
     }
 
     @ImmutableContainer

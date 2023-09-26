@@ -111,6 +111,7 @@ public class JavaUtilStream {
         @NotNull
         DoubleStream sorted();
 
+        @Independent
         interface DoubleMapMultiConsumer {
             @Modified
             void accept(double d, DoubleConsumer dc);
@@ -130,6 +131,7 @@ public class JavaUtilStream {
         @NotNull
         LongStream sorted();
 
+        @Independent
         interface LongMapMultiConsumer {
             @Modified
             void accept(long l, LongConsumer lc);

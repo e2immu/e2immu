@@ -39,9 +39,7 @@ import org.e2immu.support.FlipSwitch;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
@@ -136,7 +134,7 @@ public class ShallowMethodAnalyser extends MethodAnalyserImpl {
             }
         });
 
-        if(!annotationsHaveBeenSet.isSet()) {
+        if (!annotationsHaveBeenSet.isSet()) {
             List<AnnotationExpression> annotations = methodInfo.methodInspection.get().getAnnotations();
             analyserResultBuilder.addMessages(methodAnalysis.fromAnnotationsIntoProperties(Analyser.AnalyserIdentification.METHOD,
                     true, annotations, e2));
@@ -218,7 +216,7 @@ public class ShallowMethodAnalyser extends MethodAnalyserImpl {
 
      */
     private void handlePrecondition(MethodInfo precondition) {
-        if(methodAnalysis.preconditionIsVariable()) {
+        if (methodAnalysis.preconditionIsVariable()) {
             LOGGER.debug("Handle precondition {}", precondition.fullyQualifiedName);
             Expression expression = precondition.extractSingleReturnExpression();
             Precondition.CompanionCause companionCause = new Precondition.CompanionCause(precondition);
@@ -445,7 +443,7 @@ public class ShallowMethodAnalyser extends MethodAnalyserImpl {
 
     private DV computeParameterImmutable(ParameterAnalysisImpl.Builder builder) {
         DV typeImmutable = analyserContext.typeImmutable(builder.getParameterInfo().parameterizedType);
-        return typeImmutable.isDelayed() ? MultiLevel.EFFECTIVELY_IMMUTABLE_DV: typeImmutable;
+        return typeImmutable.isDelayed() ? MultiLevel.EFFECTIVELY_IMMUTABLE_DV : typeImmutable;
     }
 
     private DV computeParameterIndependent(ParameterAnalysisImpl.Builder builder) {
@@ -480,9 +478,16 @@ public class ShallowMethodAnalyser extends MethodAnalyserImpl {
         DV finalValue = methodAnalysis.getPropertyFromMapDelayWhenAbsent(Property.INDEPENDENT);
         DV overloads = methodInfo.methodResolution.get().overrides().stream()
                 .filter(mi -> mi.methodInspection.get().isPubliclyAccessible())
-                .map(analyserContext::getMethodAnalysisNullWhenAbsent)
-                .map(ma -> ma == null ? MultiLevel.INDEPENDENT_DV
-                        : ma.getPropertyFromMapDelayWhenAbsent(Property.INDEPENDENT))
+                .map(mi -> {
+                    MethodAnalysis ma = analyserContext.getMethodAnalysisNullWhenAbsent(mi);
+                    if (ma == null) {
+                        analyserResultBuilder.add(Message.newMessage(mi.newLocation(),
+                                Message.Label.METHOD_ANALYSIS_NOT_AVAILABLE));
+                    }
+                    return ma;
+                })
+                .filter(Objects::nonNull)
+                .map(ma -> ma.getPropertyFromMapDelayWhenAbsent(Property.INDEPENDENT))
                 .reduce(DV.MAX_INT_DV, DV::min);
         if (overloads != DV.MAX_INT_DV && finalValue.lt(overloads)) {
             analyserResultBuilder.add(Message.newMessage(methodInfo.newLocation(),
@@ -500,7 +505,9 @@ public class ShallowMethodAnalyser extends MethodAnalyserImpl {
         DV bestOfOverrides = bestOfOverrides(Property.INDEPENDENT);
         DV result = returnValueIndependent.max(bestOfOverrides).max(typeIndependent);
 
-        if (MultiLevel.INDEPENDENT_HC_DV.equals(result) && methodInfo.methodInspection.get().isFactoryMethod()) {
+        if (MultiLevel.INDEPENDENT_HC_DV.equals(result)
+                && methodInspection.isPubliclyAccessible()
+                && methodInspection.isFactoryMethod()) {
             // at least one of the parameters must be independent HC!!
             boolean hcParam = parameterAnalyses.stream()
                     .anyMatch(pa -> MultiLevel.INDEPENDENT_HC_DV
@@ -510,7 +517,7 @@ public class ShallowMethodAnalyser extends MethodAnalyserImpl {
                         Message.Label.FACTORY_METHOD_INDEPENDENT_HC));
             }
         }
-        if(!methodInfo.methodInspection.get().isPubliclyAccessible() && result.isDelayed()) {
+        if (!methodInfo.methodInspection.get().isPubliclyAccessible() && result.isDelayed()) {
             return MultiLevel.DEPENDENT_DV; //
         }
         return result;
@@ -584,8 +591,15 @@ public class ShallowMethodAnalyser extends MethodAnalyserImpl {
                 .map(mi -> {
                     ParameterInfo p = mi.methodInspection.get().getParameters().get(parameterInfo.index);
                     ParameterAnalysis pa = analyserContext.getParameterAnalysisNullWhenAbsent(p);
-                    return pa == null ? property.falseDv : pa.getProperty(property);
-                }).reduce(DV.MIN_INT_DV, DV::max);
+                    if (pa == null) {
+                        analyserResultBuilder.add(Message.newMessage(mi.newLocation(),
+                                Message.Label.METHOD_ANALYSIS_NOT_AVAILABLE));
+                    }
+                    return pa;
+                })
+                .filter(Objects::nonNull)
+                .map(pa -> pa.getProperty(property))
+                .reduce(DV.MIN_INT_DV, DV::max);
     }
 
     @Override

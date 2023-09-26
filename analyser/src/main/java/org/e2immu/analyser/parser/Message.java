@@ -66,6 +66,7 @@ public record Message(Location location, Label message, String extra) {
         INLINE_CONDITION_EVALUATES_TO_CONSTANT,
         INTERRUPT_IN_LOOP,
         LOOP_ONCE(Severity.WARN),
+        METHOD_ANALYSIS_NOT_AVAILABLE(Severity.WARN),
         METHOD_HAS_LOWER_VALUE_FOR_INDEPENDENT,
         METHOD_SHOULD_BE_MARKED_STATIC,
         MODIFICATION_NOT_ALLOWED,
