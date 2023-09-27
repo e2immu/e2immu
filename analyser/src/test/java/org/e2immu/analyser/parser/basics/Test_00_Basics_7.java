@@ -15,8 +15,8 @@
 
 package org.e2immu.analyser.parser.basics;
 
+import org.e2immu.analyser.analyser.ChangeData;
 import org.e2immu.analyser.analyser.DV;
-import org.e2immu.analyser.analyser.EvaluationResult;
 import org.e2immu.analyser.analyser.Stage;
 import org.e2immu.analyser.analysis.impl.FieldAnalysisImpl;
 import org.e2immu.analyser.config.AnalyserConfiguration;
@@ -55,7 +55,7 @@ public class Test_00_Basics_7 extends CommonTestRunner {
 
         EvaluationResultVisitor evaluationResultVisitor = d -> {
             if ("increment".equals(d.methodInfo().name) && "3".equals(d.statementId())) {
-                EvaluationResult.ChangeData cd = d.findValueChange(I);
+                ChangeData cd = d.findValueChange(I);
                 assertFalse(cd.getProperty(CONTEXT_NOT_NULL).isDelayed());
             }
 

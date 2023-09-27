@@ -15,6 +15,7 @@
 package org.e2immu.analyser.model.expression;
 
 import org.e2immu.analyser.analyser.*;
+import org.e2immu.analyser.analyser.context.impl.EvaluationResultImpl;
 import org.e2immu.analyser.inspector.TypeContext;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.util.EvaluateInlineConditional;
@@ -219,7 +220,7 @@ public class InlineConditional extends BaseExpression implements Expression {
     public EvaluationResult evaluate(EvaluationResult context, ForwardEvaluationInfo forwardEvaluationInfo) {
         ForwardEvaluationInfo fwd = forwardEvaluationInfo.copy().notNullNotAssignment().build();
         EvaluationResult conditionResult = condition.evaluate(context, fwd);
-        EvaluationResult.Builder builder = new EvaluationResult.Builder(context).compose(conditionResult);
+        EvaluationResultImpl.Builder builder = new EvaluationResultImpl.Builder(context).compose(conditionResult);
 
         boolean resultIsBoolean = returnType().equals(context.getPrimitives().booleanParameterizedType());
 

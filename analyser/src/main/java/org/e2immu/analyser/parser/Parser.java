@@ -17,7 +17,7 @@ package org.e2immu.analyser.parser;
 import com.github.javaparser.ParseException;
 import org.e2immu.analyser.analyser.AnalyserContext;
 import org.e2immu.analyser.analyser.PrimaryTypeAnalyser;
-import org.e2immu.analyser.analyser.impl.PrimaryTypeAnalyserImpl;
+import org.e2immu.analyser.analyser.impl.primary.PrimaryTypeAnalyserImpl;
 import org.e2immu.analyser.analyser.nonanalyserimpl.GlobalAnalyserContext;
 import org.e2immu.analyser.bytecode.OnDemandInspection;
 import org.e2immu.analyser.config.Configuration;

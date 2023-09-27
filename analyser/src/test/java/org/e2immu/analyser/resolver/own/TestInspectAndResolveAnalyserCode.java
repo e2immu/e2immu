@@ -17,6 +17,7 @@ package org.e2immu.analyser.resolver.own;
 import org.e2immu.analyser.config.AnnotatedAPIConfiguration;
 import org.e2immu.analyser.config.Configuration;
 import org.e2immu.analyser.config.InputConfiguration;
+import org.e2immu.analyser.config.LogTarget;
 import org.e2immu.analyser.parser.CommonTestRunner;
 import org.e2immu.analyser.parser.Input;
 import org.e2immu.analyser.parser.Parser;
@@ -50,7 +51,7 @@ public class TestInspectAndResolveAnalyserCode {
                 .setSkipAnalysis(true)
                 .setInputConfiguration(inputConfiguration)
                 .setAnnotatedAPIConfiguration(annotatedAPIConfiguration)
-                .addDebugLogTargets("resolver")
+                .addDebugLogTargets(LogTarget.RESOLVER)
                 .build();
         configuration.initializeLoggers();
         Parser parser = new Parser(configuration);

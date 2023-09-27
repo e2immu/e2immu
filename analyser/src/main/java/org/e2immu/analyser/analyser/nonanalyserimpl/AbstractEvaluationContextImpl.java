@@ -15,6 +15,7 @@
 package org.e2immu.analyser.analyser.nonanalyserimpl;
 
 import org.e2immu.analyser.analyser.*;
+import org.e2immu.analyser.analyser.context.impl.EvaluationResultImpl;
 import org.e2immu.analyser.analyser.impl.util.BreakDelayLevel;
 import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.MultiLevel;
@@ -81,7 +82,7 @@ public abstract class AbstractEvaluationContextImpl implements EvaluationContext
     public DV isNotNull0(Expression value, boolean useEnnInsteadOfCnn, ForwardEvaluationInfo forwardEvaluationInfo) {
         if (forwardEvaluationInfo.isOnlySort()) return DV.FALSE_DV;
         Expression valueIsNull = new Equals(value.getIdentifier(), getPrimitives(), NullConstant.NULL_CONSTANT, value);
-        Expression inCm = conditionManager.evaluate(EvaluationResult.from(this), valueIsNull, true);
+        Expression inCm = conditionManager.evaluate(EvaluationResultImpl.from(this), valueIsNull, true);
         DV negated = inCm.isDelayed() ? inCm.causesOfDelay() : inCm.isBoolValueFalse() ? DV.TRUE_DV : DV.FALSE_DV;
         DV nne = getProperty(value, Property.NOT_NULL_EXPRESSION, true, true);
         DV nneToTF;
@@ -95,7 +96,7 @@ public abstract class AbstractEvaluationContextImpl implements EvaluationContext
 
     @Override
     public DV notNullAccordingToConditionManager(Expression expression) {
-        EvaluationResult context = EvaluationResult.from(this);
+        EvaluationResult context = EvaluationResultImpl.from(this);
         if (expression.returnType().isNotBooleanOrBoxedBoolean()) {
             // do not use the Condition manager to check for null in creation of isNull
             Expression isNull = Equals.equals(expression.getIdentifier(),
@@ -122,7 +123,7 @@ public abstract class AbstractEvaluationContextImpl implements EvaluationContext
                 : Stream.concat(Stream.of(variable), linkedVariables.variablesAssigned())
                 .collect(Collectors.toUnmodifiableSet());
 
-        EvaluationResult context = EvaluationResult.from(this);
+        EvaluationResult context = EvaluationResultImpl.from(this);
         Set<Variable> notNullVariablesInState = conditionManager.findIndividualNullInState(context, false);
         if (!Collections.disjoint(notNullVariablesInState, assignedVariables)) return DV.TRUE_DV;
 

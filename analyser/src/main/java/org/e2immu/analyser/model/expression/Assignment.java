@@ -17,6 +17,7 @@ package org.e2immu.analyser.model.expression;
 import com.github.javaparser.ast.expr.AssignExpr;
 import org.e2immu.analyser.analyser.Properties;
 import org.e2immu.analyser.analyser.*;
+import org.e2immu.analyser.analyser.context.impl.EvaluationResultImpl;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.util.ExpressionComparator;
 import org.e2immu.analyser.model.impl.BaseExpression;
@@ -308,7 +309,7 @@ public class Assignment extends BaseExpression implements Expression {
 
     @Override
     public EvaluationResult evaluate(EvaluationResult context, ForwardEvaluationInfo forwardEvaluationInfo) {
-        EvaluationResult.Builder builder = new EvaluationResult.Builder(context);
+        EvaluationResultImpl.Builder builder = new EvaluationResultImpl.Builder(context);
         if (forwardEvaluationInfo.isOnlySort()) {
             Expression evalTarget = target.evaluate(context, forwardEvaluationInfo).getExpression();
             Expression evalValue = value.evaluate(context, forwardEvaluationInfo).getExpression();
@@ -417,7 +418,7 @@ public class Assignment extends BaseExpression implements Expression {
                                       Expression valueResultValue,
                                       Variable newVariableTarget,
                                       Expression currentValueOfTarget,
-                                      EvaluationResult.Builder builder) {
+                                      EvaluationResultImpl.Builder builder) {
         IsVariableExpression ive2;
         if (currentValueOfTarget != null && (currentValueOfTarget.equals(valueResultValue) ||
                 ((ive2 = valueResultValue.asInstanceOf(IsVariableExpression.class)) != null)
@@ -438,7 +439,7 @@ public class Assignment extends BaseExpression implements Expression {
     public E2 handleBinaryOperator(EvaluationResult context,
                                    ForwardEvaluationInfo forwardEvaluationInfo,
                                    Variable newVariableTarget,
-                                   EvaluationResult.Builder builder) {
+                                   EvaluationResultImpl.Builder builder) {
 
         Expression resultOfExpression;
         BinaryOperator operation = new BinaryOperator(identifier,
@@ -460,7 +461,7 @@ public class Assignment extends BaseExpression implements Expression {
         return new E2(resultOfExpression, operationResult.value());
     }
 
-    private void markModified(EvaluationResult.Builder builder, EvaluationResult context, Variable at) {
+    private void markModified(EvaluationResultImpl.Builder builder, EvaluationResult context, Variable at) {
         // see if we need to raise an error (writing out to fields outside our class, etc.)
         if (at instanceof FieldReference fieldReference) {
 

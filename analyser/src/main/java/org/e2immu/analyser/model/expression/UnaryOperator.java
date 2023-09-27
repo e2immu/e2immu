@@ -16,6 +16,7 @@ package org.e2immu.analyser.model.expression;
 
 import com.github.javaparser.ast.expr.UnaryExpr;
 import org.e2immu.analyser.analyser.*;
+import org.e2immu.analyser.analyser.context.impl.EvaluationResultImpl;
 import org.e2immu.analyser.analyser.delay.DelayFactory;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.util.ExpressionComparator;
@@ -93,7 +94,7 @@ public class UnaryOperator extends BaseExpression implements Expression {
         ForwardEvaluationInfo fwd = forwardEvaluationInfo.copy().notNullNotAssignment().build();
         EvaluationResult evaluationResult = expression.evaluate(context, fwd);
         Expression value = computeValue(context, context.getPrimitives(), evaluationResult);
-        return new EvaluationResult.Builder(context)
+        return new EvaluationResultImpl.Builder(context)
                 .compose(evaluationResult)
                 .setExpression(value)
                 .build();

@@ -83,7 +83,7 @@ public interface MethodAnalysis extends Analysis {
     // ************** PRECONDITION
 
     /**
-     * @return delayed See org.e2immu.analyser.analyser.StateData#setPrecondition(org.e2immu.analyser.analyser.Precondition, boolean)
+     * @return delayed See org.e2immu.analyser.analysis.StateData#setPrecondition(org.e2immu.analyser.analyser.Precondition, boolean)
      * for a description of the conventions.
      */
     @NotNull

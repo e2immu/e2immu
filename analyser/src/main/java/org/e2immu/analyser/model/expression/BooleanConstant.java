@@ -16,6 +16,7 @@ package org.e2immu.analyser.model.expression;
 
 
 import org.e2immu.analyser.analyser.EvaluationResult;
+import org.e2immu.analyser.analyser.context.impl.EvaluationResultImpl;
 import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.Identifier;
 import org.e2immu.analyser.model.ParameterizedType;
@@ -60,7 +61,7 @@ public class BooleanConstant extends BaseExpression implements ConstantExpressio
 
     public static EvaluationResult of(boolean b, EvaluationResult context) {
         Primitives primitives = context.getPrimitives();
-        EvaluationResult.Builder builder = new EvaluationResult.Builder(context);
+        EvaluationResultImpl.Builder builder = new EvaluationResultImpl.Builder(context);
         return builder.setExpression(new BooleanConstant(primitives, b)).build();
     }
 

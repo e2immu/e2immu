@@ -15,6 +15,7 @@
 package org.e2immu.analyser.model.expression;
 
 import org.e2immu.analyser.analyser.*;
+import org.e2immu.analyser.analyser.context.impl.EvaluationResultImpl;
 import org.e2immu.analyser.analyser.delay.DelayFactory;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.util.ExpressionComparator;
@@ -208,7 +209,7 @@ public class DelayedVariableExpression extends BaseExpression implements IsVaria
     public EvaluationResult evaluate(EvaluationResult context, ForwardEvaluationInfo forwardEvaluationInfo) {
         // CONTEXT NOT NULL as soon as possible, also for delayed values...
 
-        EvaluationResult.Builder builder = new EvaluationResult.Builder(context);
+        EvaluationResultImpl.Builder builder = new EvaluationResultImpl.Builder(context);
 
         if (variable instanceof FieldReference fr) {
             // do not continue modification onto This: we want modifications on this only when there's a direct method call

@@ -14,10 +14,7 @@
 
 package org.e2immu.analyser.annotationxml;
 
-import org.e2immu.analyser.config.AnnotatedAPIConfiguration;
-import org.e2immu.analyser.config.AnnotationXmlConfiguration;
-import org.e2immu.analyser.config.Configuration;
-import org.e2immu.analyser.config.InputConfiguration;
+import org.e2immu.analyser.config.*;
 import org.e2immu.analyser.model.TypeInfo;
 import org.e2immu.analyser.parser.Input;
 import org.e2immu.analyser.parser.Parser;
@@ -61,7 +58,7 @@ public class TestAnnotationXmlWriter {
                 .addReadAnnotatedAPIPackages("java.")
                 .setWriteMode(AnnotatedAPIConfiguration.WriteMode.DO_NOT_WRITE);
         Configuration configuration = new Configuration.Builder()
-                .addDebugLogTargets("annotationxml")
+                .addDebugLogTargets(LogTarget.ANNOTATION_XML)
                 .setInputConfiguration(inputConfigurationBuilder.build())
                 .setAnnotationXmConfiguration(annotationXml.build())
                 .setAnnotatedAPIConfiguration(annotatedAPI.build())

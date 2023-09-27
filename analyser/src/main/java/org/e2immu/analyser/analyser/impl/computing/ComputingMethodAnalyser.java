@@ -16,15 +16,14 @@ package org.e2immu.analyser.analyser.impl.computing;
 
 import org.e2immu.analyser.analyser.Properties;
 import org.e2immu.analyser.analyser.*;
+import org.e2immu.analyser.analyser.context.impl.EvaluationResultImpl;
 import org.e2immu.analyser.analyser.impl.MethodAnalyserImpl;
 import org.e2immu.analyser.analyser.impl.shallow.CompanionAnalyser;
 import org.e2immu.analyser.analyser.impl.util.BreakDelayLevel;
 import org.e2immu.analyser.analyser.nonanalyserimpl.AbstractEvaluationContextImpl;
 import org.e2immu.analyser.analyser.nonanalyserimpl.LocalAnalyserContext;
 import org.e2immu.analyser.analyser.statementanalyser.StatementAnalyserImpl;
-import org.e2immu.analyser.analyser.util.AnalyserResult;
-import org.e2immu.analyser.analyser.util.ComputeIndependent;
-import org.e2immu.analyser.analyser.util.DetectEventual;
+import org.e2immu.analyser.analyser.util.*;
 import org.e2immu.analyser.analysis.*;
 import org.e2immu.analyser.analysis.impl.MethodAnalysisImpl;
 import org.e2immu.analyser.analysis.impl.TypeAnalysisImpl;
@@ -207,7 +206,7 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
 
         LOGGER.info("Analysing method {} it {}", methodInfo, iteration);
         EvaluationContext evaluationContext = new EvaluationContextImpl(iteration, sharedState.breakDelayLevel(),
-                ConditionManager.initialConditionManager(analyserContext.getPrimitives()), sharedState.closure());
+                ConditionManagerImpl.initialConditionManager(analyserContext.getPrimitives()), sharedState.closure());
         SharedState state = new SharedState(sharedState.breakDelayLevel(), evaluationContext);
 
         try {
@@ -336,7 +335,7 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
         }
 
         DetectEventual detectEventual = new DetectEventual(methodInfo, methodAnalysis, typeAnalysis, analyserContext);
-        MethodAnalysis.Eventual eventual = detectEventual.detect(EvaluationResult.from(sharedState.evaluationContext));
+        MethodAnalysis.Eventual eventual = detectEventual.detect(EvaluationResultImpl.from(sharedState.evaluationContext));
         if (eventual.causesOfDelay().isDelayed()) {
             methodAnalysis.setEventualDelay(eventual);
             return eventual.causesOfDelay();
@@ -455,7 +454,7 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
             return methodAnalysis.preconditionGet().causesOfDelay();
         }
         Precondition precondition = methodAnalysis.preconditionGet();
-        EvaluationResult context = EvaluationResult.from(sharedState.evaluationContext);
+        EvaluationResult context = EvaluationResultImpl.from(sharedState.evaluationContext);
 
         // situation of Lazy
         if (precondition.isEmpty()) {
@@ -1007,7 +1006,7 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
         } // else: already true, so no need to look at this
 
         if (contextModified.valueIsFalse()) {
-            DV maxModified = methodLevelData.copyModificationStatusFrom.keyStream()
+            DV maxModified = methodLevelData.copyModificationStatusFromKeyStream()
                     .map(mi -> mi.methodAnalysis.get().getProperty(Property.MODIFIED_METHOD))
                     .reduce(DV.MIN_INT_DV, DV::max);
             if (maxModified != DV.MIN_INT_DV) {
@@ -1198,10 +1197,8 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
                     methodInfo, analyserComponentsOfStatement.details());
             AnalysisStatus statusOfMethodLevelData = analyserComponentsOfStatement.getStatus(StatementAnalyserImpl.ANALYSE_METHOD_LEVEL_DATA);
             if (statusOfMethodLevelData.isDelayed()) {
-                AnalyserComponents<String, MethodLevelData.SharedState> analyserComponentsOfMethodLevelData =
-                        statement.getStatementAnalysis().methodLevelData().analyserComponents;
-                LOGGER.warn("Analyser components of method level data of last statement {} of {}:\n{}", statement.index(),
-                        methodInfo, analyserComponentsOfMethodLevelData.details());
+                statement.getStatementAnalysis().methodLevelData().warnAboutAnalyserComponents(statement.index(),
+                        methodInfo.fullyQualifiedName);
             }
         }
     }
@@ -1300,7 +1297,7 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
             if (value instanceof VariableExpression ve) {
                 return getProperty(ve.variable(), property);
             }
-            return value.getProperty(EvaluationResult.from(this), property, true);
+            return value.getProperty(EvaluationResultImpl.from(this), property, true);
         }
 
         // needed in re-evaluation of inlined method in DetectEventual, before calling analyseExpression

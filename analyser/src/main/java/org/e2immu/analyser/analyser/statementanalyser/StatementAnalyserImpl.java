@@ -15,12 +15,15 @@
 package org.e2immu.analyser.analyser.statementanalyser;
 
 import org.e2immu.analyser.analyser.*;
-import org.e2immu.analyser.analyser.impl.PrimaryTypeAnalyserImpl;
+import org.e2immu.analyser.analyser.context.impl.EvaluationResultImpl;
+import org.e2immu.analyser.analyser.delay.FlowDataConstants;
+import org.e2immu.analyser.analyser.impl.primary.PrimaryTypeAnalyserImpl;
 import org.e2immu.analyser.analyser.impl.util.BreakDelayLevel;
 import org.e2immu.analyser.analyser.nonanalyserimpl.LocalAnalyserContext;
+import org.e2immu.analyser.analyser.util.AnalyserComponents;
 import org.e2immu.analyser.analyser.util.AnalyserResult;
+import org.e2immu.analyser.analyser.util.ConditionManagerImpl;
 import org.e2immu.analyser.analyser.util.VariableAccessReport;
-import org.e2immu.analyser.analysis.FlowData;
 import org.e2immu.analyser.analysis.StatementAnalysis;
 import org.e2immu.analyser.analysis.impl.StatementAnalysisImpl;
 import org.e2immu.analyser.model.*;
@@ -231,7 +234,7 @@ public class StatementAnalyserImpl implements StatementAnalyser {
                         forwardAnalysisInfo.conditionManager(), closure,
                         delaySubsequentStatementBecauseOfECI, forwardAnalysisInfo.breakDelayLevel());
                 StatementAnalysis previousStatementAnalysis = previousStatement == null ? null : previousStatement.getStatementAnalysis();
-                EvaluationResult context = EvaluationResult.from(evaluationContext);
+                EvaluationResult context = EvaluationResultImpl.from(evaluationContext);
                 switchCondition = forwardAnalysisInfo.conditionInSwitchStatement(context, previousStatement, switchCondition,
                         statementAnalyser.statementAnalysis);
                 Set<Variable> switchConditionVariables = switchCondition.variableStream().collect(Collectors.toUnmodifiableSet());
@@ -461,7 +464,7 @@ public class StatementAnalyserImpl implements StatementAnalyser {
                     iteration, statementTime, localConditionManager, closure, delaySubsequentStatementBecauseOfECI,
                     forwardAnalysisInfo.breakDelayLevel());
             StatementAnalyserSharedState sharedState = new StatementAnalyserSharedState(evaluationContext,
-                    EvaluationResult.from(evaluationContext),
+                    EvaluationResultImpl.from(evaluationContext),
                     analyserResultBuilder, previous, forwardAnalysisInfo, localConditionManager);
             AnalysisStatus overallStatus = analyserComponents.run(sharedState);
 
@@ -589,7 +592,7 @@ public class StatementAnalyserImpl implements StatementAnalyser {
     private AnalysisStatus checkUnreachableStatement(StatementAnalyserSharedState sharedState) {
         // if the previous statement was not reachable, we won't reach this one either
         if (sharedState.previous() != null
-                && sharedState.previous().flowData().getGuaranteedToBeReachedInMethod().equals(FlowData.NEVER)) {
+                && sharedState.previous().flowData().getGuaranteedToBeReachedInMethod().equals(FlowDataConstants.NEVER)) {
             makeUnreachable();
             return DONE_ALL;
         }
@@ -681,7 +684,7 @@ public class StatementAnalyserImpl implements StatementAnalyser {
     public EvaluationContext newEvaluationContextForOutside() {
         return new SAEvaluationContext(statementAnalysis, myMethodAnalyser, this,
                 analyserContext, localAnalysers, 0, statementAnalysis.flowData().getInitialTime(),
-                ConditionManager.initialConditionManager(statementAnalysis.primitives()), null,
+                ConditionManagerImpl.initialConditionManager(statementAnalysis.primitives()), null,
                 false, BreakDelayLevel.NONE);
     }
 

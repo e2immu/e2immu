@@ -213,7 +213,7 @@ public interface StatementAnalysis extends Analysis,
                                                  EvaluationResult evaluationResult);
 
     void potentiallyRaiseErrorsOnNotNullInContext(AnalyserContext analyserContext,
-                                                  Map<Variable, EvaluationResult.ChangeData> changeDataMap);
+                                                  Map<Variable, ChangeData> changeDataMap);
 
     void potentiallyRaiseNullPointerWarningENN();
 
@@ -224,7 +224,7 @@ public interface StatementAnalysis extends Analysis,
 
     void ensureVariable(EvaluationContext evaluationContext,
                         Variable variable,
-                        EvaluationResult.ChangeData changeData,
+                        ChangeData changeData,
                         int newStatementTime);
 
     // return progress

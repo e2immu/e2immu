@@ -15,6 +15,7 @@
 package org.e2immu.analyser.model.expression;
 
 import org.e2immu.analyser.analyser.*;
+import org.e2immu.analyser.analyser.context.impl.EvaluationResultImpl;
 import org.e2immu.analyser.analyser.delay.DelayFactory;
 import org.e2immu.analyser.analyser.delay.VariableCause;
 import org.e2immu.analyser.analysis.FieldAnalysis;
@@ -255,7 +256,7 @@ public class VariableExpression extends BaseExpression implements IsVariableExpr
 
     @Override
     public EvaluationResult evaluate(EvaluationResult context, ForwardEvaluationInfo forwardEvaluationInfoIn) {
-        EvaluationResult.Builder builder = new EvaluationResult.Builder(context);
+        EvaluationResultImpl.Builder builder = new EvaluationResultImpl.Builder(context);
         if (forwardEvaluationInfoIn.isOnlySort()) {
             return builder.setExpression(this).build();
         }
@@ -412,7 +413,7 @@ public class VariableExpression extends BaseExpression implements IsVariableExpr
             }
             if (forwardEvaluationInfo.isEvaluatingFieldExpression()) {
                 // the field analyser does not know local variables, so no need for assignments
-                return new EvaluationResult.Builder(context).setExpression(fr.scope).build();
+                return new EvaluationResultImpl.Builder(context).setExpression(fr.scope).build();
             }
             assert fr.scopeVariable instanceof LocalVariableReference lvr
                     && lvr.variableNature() instanceof VariableNature.ScopeVariable;
@@ -444,7 +445,7 @@ public class VariableExpression extends BaseExpression implements IsVariableExpr
                                                     Variable variable,
                                                     boolean increaseCnn) {
         if (expression.isConstant()) {
-            return new EvaluationResult.Builder(context).setExpression(expression).build();
+            return new EvaluationResultImpl.Builder(context).setExpression(expression).build();
         }
         VariableExpression ve;
         if ((ve = expression.asInstanceOf(VariableExpression.class)) != null) {
@@ -458,7 +459,7 @@ public class VariableExpression extends BaseExpression implements IsVariableExpr
         VariableExpression scopeVE = new VariableExpression(expression.getIdentifier(), variable);
         Assignment assignment = new Assignment(context.getPrimitives(), scopeVE, expression);
         EvaluationResult er = assignment.evaluate(context, forward);
-        EvaluationResult.Builder builder = new EvaluationResult.Builder(context).compose(er);
+        EvaluationResultImpl.Builder builder = new EvaluationResultImpl.Builder(context).compose(er);
         // we have to set the not-null context for the array variable, because there is array access
         builder.variableOccursInNotNullContext(variable, expression, MultiLevel.EFFECTIVELY_NOT_NULL_DV, forwardEvaluationInfo);
         return builder.build();

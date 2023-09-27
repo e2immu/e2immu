@@ -15,10 +15,12 @@
 package org.e2immu.analyser.analyser.impl.shallow;
 
 import org.e2immu.analyser.analyser.*;
+import org.e2immu.analyser.analyser.context.impl.EvaluationResultImpl;
 import org.e2immu.analyser.analyser.delay.DelayFactory;
 import org.e2immu.analyser.analyser.delay.VariableCause;
 import org.e2immu.analyser.analyser.impl.util.BreakDelayLevel;
 import org.e2immu.analyser.analyser.nonanalyserimpl.AbstractEvaluationContextImpl;
+import org.e2immu.analyser.analyser.util.ConditionManagerImpl;
 import org.e2immu.analyser.analysis.TypeAnalysis;
 import org.e2immu.analyser.analysis.impl.CompanionAnalysisImpl;
 import org.e2immu.analyser.model.*;
@@ -92,9 +94,9 @@ public class CompanionAnalyser {
             ReturnStatement returnStatement = (ReturnStatement) companionMethod.methodInspection.get()
                     .getMethodBody().structure.statements().get(0);
             EvaluationContext evaluationContext = new EvaluationContextImpl(iteration,
-                    ConditionManager.initialConditionManager(analyserContext.getPrimitives()));
+                    ConditionManagerImpl.initialConditionManager(analyserContext.getPrimitives()));
             ForwardEvaluationInfo forward = new ForwardEvaluationInfo.Builder().setInCompanionExpression().build();
-            EvaluationResult context = EvaluationResult.from(evaluationContext);
+            EvaluationResult context = EvaluationResultImpl.from(evaluationContext);
             EvaluationResult evaluationResult = returnStatement.expression.evaluate(context, forward);
             if (evaluationResult.value().isDelayed()) {
                 CausesOfDelay delay = companionMethod.delay(CauseOfDelay.Cause.VALUE);
@@ -179,6 +181,11 @@ public class CompanionAnalyser {
         @Override
         public DV getPropertyFromPreviousOrInitial(Variable variable, Property property) {
             return property.falseDv; // but no delay, see Equals.checkParameter
+        }
+
+        @Override
+        public DV getProperty(Expression value, Property property, boolean duringEvaluation, boolean ignoreStateInConditionManager) {
+            return ConditionManagerImpl.commonGetProperty(this, value, property, duringEvaluation, ignoreStateInConditionManager);
         }
 
         @Override

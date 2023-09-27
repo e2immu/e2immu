@@ -17,6 +17,7 @@ package org.e2immu.analyser.analysis.range;
 import org.e2immu.analyser.analyser.EvaluationContext;
 import org.e2immu.analyser.analyser.EvaluationResult;
 import org.e2immu.analyser.analyser.Stage;
+import org.e2immu.analyser.analyser.context.impl.EvaluationResultImpl;
 import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.Identifier;
 import org.e2immu.analyser.model.expression.*;
@@ -57,7 +58,7 @@ public record NumericRange(int startIncl,
         if (variableExpression.getSuffix() instanceof VariableExpression.VariableInLoop) {
             Expression exitValue = exitValue(evaluationContext.getPrimitives(), variableExpression.variable());
             assert exitValue != null;
-            return Equals.equals(EvaluationResult.from(evaluationContext), variableExpression, exitValue);
+            return Equals.equals(EvaluationResultImpl.from(evaluationContext), variableExpression, exitValue);
         }
         return new BooleanConstant(evaluationContext.getPrimitives(), true);
     }
@@ -76,7 +77,7 @@ public record NumericRange(int startIncl,
 
     @Override
     public Expression conditions(EvaluationContext evaluationContext) {
-        EvaluationResult context = EvaluationResult.from(evaluationContext);
+        EvaluationResult context = EvaluationResultImpl.from(evaluationContext);
         Primitives primitives = context.getPrimitives();
         Identifier identifier = evaluationContext.getLocation(Stage.EVALUATION).identifier();
 

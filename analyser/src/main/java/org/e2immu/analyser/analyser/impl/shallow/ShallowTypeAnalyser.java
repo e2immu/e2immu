@@ -3,6 +3,7 @@ package org.e2immu.analyser.analyser.impl.shallow;
 import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.analyser.impl.TypeAnalyserImpl;
 import org.e2immu.analyser.analyser.impl.computing.ComputingTypeAnalyser;
+import org.e2immu.analyser.analyser.util.AnalyserComponents;
 import org.e2immu.analyser.analyser.util.AnalyserResult;
 import org.e2immu.analyser.analysis.Analysis;
 import org.e2immu.analyser.analysis.TypeAnalysis;

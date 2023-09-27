@@ -86,7 +86,7 @@ public class Test_63_TrieSimplified extends CommonTestRunner {
                         case 1, 2, 3 -> "null==<f:node.map>";
                         default -> "true";
                     };
-                    assertEquals(expected, d.statementAnalysis().stateData().valueOfExpression.get().toString());
+                    assertEquals(expected, d.statementAnalysis().stateData().valueOfExpressionGet().toString());
                 }
                 if ("1.0.1.1.0".equals(d.statementId())) {
                     String expected = switch (d.iteration()) {
@@ -239,7 +239,7 @@ public class Test_63_TrieSimplified extends CommonTestRunner {
                         case 0 -> "initial:this.root@Method_add_0-C";
                         case 1 -> "initial@Field_root";
                         case 2 -> "link@Field_root";
-                        default -> "FlowData.ALWAYS";
+                        default -> "FlowDataImpl.ALWAYS";
                     };
                     assertEquals(flowData, d.statementAnalysis().flowData().getGuaranteedToBeReachedInMethod().toString());
                 }

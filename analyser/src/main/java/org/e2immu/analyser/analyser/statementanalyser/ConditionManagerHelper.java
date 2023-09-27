@@ -18,6 +18,7 @@ import org.e2immu.analyser.analyser.CauseOfDelay;
 import org.e2immu.analyser.analyser.CausesOfDelay;
 import org.e2immu.analyser.analyser.ConditionManager;
 import org.e2immu.analyser.analyser.Precondition;
+import org.e2immu.analyser.analyser.util.ConditionManagerImpl;
 import org.e2immu.analyser.analysis.StatementAnalysis;
 import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.Identifier;
@@ -57,13 +58,13 @@ class ConditionManagerHelper {
         ConditionManager previousCm = previous.stateData().getConditionManagerForNextStatement();
         // can be null in case the statement is unreachable
         if (previousCm == null) {
-            return ConditionManager.impossibleConditionManager(primitives);
+            return ConditionManagerImpl.impossibleConditionManager(primitives);
         }
         if (previousCm.condition().equals(condition)) {
             return previousCm.withPrecondition(combinedPrecondition);
         }
         // swap condition for the one from forwardAnalysisInfo
-        return new ConditionManager(condition, conditionVariables, previousCm.state(),
+        return new ConditionManagerImpl(condition, conditionVariables, previousCm.state(),
                 previousCm.stateVariables(), combinedPrecondition, previousCm.ignore(), previousCm.parent());
     }
 }

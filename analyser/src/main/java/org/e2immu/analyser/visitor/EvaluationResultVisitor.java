@@ -14,6 +14,7 @@
 
 package org.e2immu.analyser.visitor;
 
+import org.e2immu.analyser.analyser.ChangeData;
 import org.e2immu.analyser.analyser.EvaluationResult;
 import org.e2immu.analyser.analyser.Property;
 import org.e2immu.analyser.analyser.delay.ProgressAndDelay;
@@ -49,12 +50,12 @@ public interface EvaluationResultVisitor {
             return evaluationResult().getExpressionChangeStream().anyMatch(e -> e.getKey().fullyQualifiedName().equals(variableName));
         }
 
-        public EvaluationResult.ChangeData findValueChange(String variableName) {
+        public ChangeData findValueChange(String variableName) {
             return evaluationResult().getExpressionChangeStream().filter(e -> e.getKey().fullyQualifiedName().equals(variableName))
                     .map(Map.Entry::getValue).findFirst().orElseThrow();
         }
 
-        public EvaluationResult.ChangeData findValueChangeByToString(String variableName) {
+        public ChangeData findValueChangeByToString(String variableName) {
             return evaluationResult().getExpressionChangeStream().filter(e -> e.getKey().toString().equals(variableName))
                     .map(Map.Entry::getValue)
                     .findFirst()
@@ -63,7 +64,7 @@ public interface EvaluationResultVisitor {
                                     e -> e.getKey().toString()).collect(Collectors.toUnmodifiableSet())));
         }
 
-        public EvaluationResult.ChangeData findValueChangeBySubString(String subString) {
+        public ChangeData findValueChangeBySubString(String subString) {
             return evaluationResult().getExpressionChangeStream().filter(e -> e.getKey().toString().contains(subString))
                     .map(Map.Entry::getValue)
                     .findFirst()

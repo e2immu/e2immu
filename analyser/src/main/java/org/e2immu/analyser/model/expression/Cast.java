@@ -15,6 +15,7 @@
 package org.e2immu.analyser.model.expression;
 
 import org.e2immu.analyser.analyser.*;
+import org.e2immu.analyser.analyser.context.impl.EvaluationResultImpl;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.util.ExpressionComparator;
 import org.e2immu.analyser.model.impl.BaseExpression;
@@ -82,12 +83,12 @@ public class Cast extends BaseExpression implements Expression {
         EvaluationResult er = expression.evaluate(context, forwardEvaluationInfo);
         if (forwardEvaluationInfo.isOnlySort()) {
             Cast newCast = new Cast(identifier, er.getExpression(), parameterizedType);
-            return new EvaluationResult.Builder(context).compose(er).setExpression(newCast).build();
+            return new EvaluationResultImpl.Builder(context).compose(er).setExpression(newCast).build();
         }
         if (parameterizedType.equals(er.getExpression().returnType())) return er;
         Expression result = PropertyWrapper.propertyWrapper(er.getExpression(), null, parameterizedType);
 
-        return new EvaluationResult.Builder(context).compose(er).setExpression(result).build();
+        return new EvaluationResultImpl.Builder(context).compose(er).setExpression(result).build();
     }
 
     @Override

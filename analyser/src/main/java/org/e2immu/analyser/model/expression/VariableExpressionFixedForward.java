@@ -15,6 +15,7 @@
 package org.e2immu.analyser.model.expression;
 
 import org.e2immu.analyser.analyser.*;
+import org.e2immu.analyser.analyser.context.impl.EvaluationResultImpl;
 import org.e2immu.analyser.analyser.delay.DelayFactory;
 import org.e2immu.analyser.analyser.delay.VariableCause;
 import org.e2immu.analyser.model.ParameterInfo;
@@ -44,7 +45,7 @@ public class VariableExpressionFixedForward extends VariableExpression {
     public EvaluationResult evaluate(EvaluationResult context, ForwardEvaluationInfo forwardEvaluationInfoIn) {
         EvaluationResult result = super.evaluate(context, forwardEvaluationInfoIn);
         if (context.evaluationContext().getIteration() == 0) {
-            EvaluationResult.Builder builder = new EvaluationResult.Builder(context);
+            EvaluationResultImpl.Builder builder = new EvaluationResultImpl.Builder(context);
             VariableCause cause = new VariableCause(variable(), context.evaluationContext().getLocation(Stage.EVALUATION),
                     CauseOfDelay.Cause.INITIAL_VALUE);
             CausesOfDelay causes = DelayFactory.createDelay(cause);

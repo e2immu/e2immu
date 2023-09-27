@@ -15,8 +15,8 @@
 
 package org.e2immu.analyser.parser.minor;
 
+import org.e2immu.analyser.analyser.ChangeData;
 import org.e2immu.analyser.analyser.DV;
-import org.e2immu.analyser.analyser.EvaluationResult;
 import org.e2immu.analyser.analyser.Property;
 import org.e2immu.analyser.config.AnalyserConfiguration;
 import org.e2immu.analyser.config.DebugConfiguration;
@@ -180,7 +180,7 @@ public class Test_34_ExplicitConstructorInvocation extends CommonTestRunner {
                 ParameterizedType typeOfParam1 = d.methodInfo().methodInspection.get().getParameters().get(1).parameterizedType;
                 assertNotNull(typeOfParam1.typeInfo);
                 if ("List".equals(typeOfParam1.typeInfo.simpleName) && numParams == 2) {
-                    EvaluationResult.ChangeData cd = d.findValueChangeByToString("primitives");
+                    ChangeData cd = d.findValueChangeByToString("primitives");
                     assertTrue(cd.markAssignment());
 
                     Expression value = cd.value();
@@ -535,7 +535,7 @@ public class Test_34_ExplicitConstructorInvocation extends CommonTestRunner {
         StatementAnalyserVisitor statementAnalyserVisitor = d -> {
             if ("BaseExpression".equals(d.methodInfo().name)) {
                 if ("0".equals(d.statementId())) {
-                    assertEquals("<eci>", d.statementAnalysis().stateData().valueOfExpression.get().toString());
+                    assertEquals("<eci>", d.statementAnalysis().stateData().valueOfExpressionGet().toString());
                 }
             }
         };

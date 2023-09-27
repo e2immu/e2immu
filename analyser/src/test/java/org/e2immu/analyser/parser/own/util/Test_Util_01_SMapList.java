@@ -17,7 +17,7 @@ package org.e2immu.analyser.parser.own.util;
 
 import org.e2immu.analyser.analyser.DV;
 import org.e2immu.analyser.analyser.Property;
-import org.e2immu.analyser.analysis.FlowData;
+import org.e2immu.analyser.analyser.delay.FlowDataConstants;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.model.MethodInfo;
 import org.e2immu.analyser.model.MultiLevel;
@@ -198,10 +198,10 @@ public class Test_Util_01_SMapList extends CommonTestRunner {
             }
             if ("addAll".equals(d.methodInfo().name)) {
                 if ("0".equals(d.statementId()) || "1".equals(d.statementId())) {
-                    assertEquals(FlowData.ALWAYS, d.statementAnalysis().flowData().getGuaranteedToBeReachedInMethod());
+                    assertEquals(FlowDataConstants.ALWAYS, d.statementAnalysis().flowData().getGuaranteedToBeReachedInMethod());
                 }
                 if ("1.0.0".equals(d.statementId()) || "1.0.1".equals(d.statementId())) {
-                    assertEquals(FlowData.CONDITIONALLY, d.statementAnalysis().flowData().getGuaranteedToBeReachedInMethod());
+                    assertEquals(FlowDataConstants.CONDITIONALLY, d.statementAnalysis().flowData().getGuaranteedToBeReachedInMethod());
                 }
                 if ("1.0.1.1.0".equals(d.statementId())) {
                     assertEquals("null!=destination.get(e.getKey())", d.condition().toString());

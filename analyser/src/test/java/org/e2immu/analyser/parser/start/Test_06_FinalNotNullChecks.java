@@ -18,6 +18,7 @@ import org.e2immu.analyser.analyser.DV;
 import org.e2immu.analyser.analyser.EvaluationResult;
 import org.e2immu.analyser.analyser.Stage;
 import org.e2immu.analyser.analyser.VariableInfo;
+import org.e2immu.analyser.analyser.context.impl.EvaluationResultImpl;
 import org.e2immu.analyser.analysis.MethodAnalysis;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.model.*;
@@ -139,7 +140,7 @@ public class Test_06_FinalNotNullChecks extends CommonTestRunner {
                 assertDv(d.p(0), 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, NOT_NULL_PARAMETER);
 
                 Expression inputValue = vi.getValue();
-                DV notNull = inputValue.getProperty(EvaluationResult.from(d.evaluationContext()), NOT_NULL_EXPRESSION, true);
+                DV notNull = inputValue.getProperty(EvaluationResultImpl.from(d.evaluationContext()), NOT_NULL_EXPRESSION, true);
                 assertEquals("param/*@NotNull*/", inputValue.toString());
                 assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, notNull);
             }

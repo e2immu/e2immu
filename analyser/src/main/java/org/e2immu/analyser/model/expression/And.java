@@ -15,6 +15,7 @@
 package org.e2immu.analyser.model.expression;
 
 import org.e2immu.analyser.analyser.*;
+import org.e2immu.analyser.analyser.context.impl.EvaluationResultImpl;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.util.*;
 import org.e2immu.analyser.model.variable.Variable;
@@ -736,7 +737,7 @@ public class And extends ExpressionCanBeTooComplex {
             context = context.child(result.value(), Set.copyOf(conditionVariables));
         }
         Expression[] clauses = clauseResults.stream().map(EvaluationResult::value).toArray(Expression[]::new);
-        return new EvaluationResult.Builder(context)
+        return new EvaluationResultImpl.Builder(context)
                 .compose(clauseResults)
                 .setExpression(And.and(evaluationResult, clauses))
                 .build();

@@ -15,6 +15,7 @@
 package org.e2immu.analyser.analyser.impl.computing;
 
 import org.e2immu.analyser.analyser.*;
+import org.e2immu.analyser.analyser.context.impl.EvaluationResultImpl;
 import org.e2immu.analyser.analyser.delay.Inconclusive;
 import org.e2immu.analyser.analyser.delay.NotDelayed;
 import org.e2immu.analyser.analyser.impl.TypeAnalyserImpl;
@@ -22,9 +23,7 @@ import org.e2immu.analyser.analyser.impl.shallow.ShallowTypeAnalyser;
 import org.e2immu.analyser.analyser.impl.util.BreakDelayLevel;
 import org.e2immu.analyser.analyser.impl.util.ComputeTypeImmutable;
 import org.e2immu.analyser.analyser.nonanalyserimpl.AbstractEvaluationContextImpl;
-import org.e2immu.analyser.analyser.util.AnalyserResult;
-import org.e2immu.analyser.analyser.util.AssignmentIncompatibleWithPrecondition;
-import org.e2immu.analyser.analyser.util.ComputeHiddenContentTypes;
+import org.e2immu.analyser.analyser.util.*;
 import org.e2immu.analyser.analysis.*;
 import org.e2immu.analyser.analysis.impl.TypeAnalysisImpl;
 import org.e2immu.analyser.model.*;
@@ -610,8 +609,8 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
     private HandlePrecondition handlePrecondition(MethodAnalyser methodAnalyser,
                                                   Precondition precondition,
                                                   int iteration) {
-        EvaluationResult context = EvaluationResult.from(new EvaluationContextImpl(iteration, BreakDelayLevel.NONE,
-                ConditionManager.initialConditionManager(analyserContext.getPrimitives()), null));
+        EvaluationResult context = EvaluationResultImpl.from(new EvaluationContextImpl(iteration, BreakDelayLevel.NONE,
+                ConditionManagerImpl.initialConditionManager(analyserContext.getPrimitives()), null));
         Filter filter = new Filter(context, Filter.FilterMode.ACCEPT);
         Filter.FilterResult<FieldReference> filterResult = filter.filter(precondition.expression(),
                 filter.individualFieldClause(analyserContext));
@@ -1191,6 +1190,11 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
                                         ConditionManager conditionManager,
                                         EvaluationContext closure) {
             super(closure == null ? 1 : closure.getDepth() + 1, iteration, breakDelayLevel, conditionManager, closure);
+        }
+
+        @Override
+        public DV getProperty(Expression value, Property property, boolean duringEvaluation, boolean ignoreStateInConditionManager) {
+            throw new UnsupportedOperationException();
         }
 
         @Override

@@ -21,6 +21,7 @@ import org.e2immu.analyser.analysis.MethodAnalysis;
 import org.e2immu.analyser.analysis.TypeAnalysis;
 import org.e2immu.analyser.config.Configuration;
 import org.e2immu.analyser.config.InputConfiguration;
+import org.e2immu.analyser.config.LogTarget;
 import org.e2immu.analyser.inspector.TypeContext;
 import org.e2immu.analyser.model.MethodInfo;
 import org.e2immu.analyser.model.MultiLevel;
@@ -57,7 +58,7 @@ public class TestAnnotatedXML {
                 .addClassPath(InputConfiguration.CLASSPATH_WITHOUT_ANNOTATED_APIS);
         Configuration configuration = new Configuration.Builder()
                 .setInputConfiguration(inputConfigurationBuilder.build())
-                .addDebugLogTargets("analyser")
+                .addDebugLogTargets(LogTarget.ANNOTATION_XML, LogTarget.SHALLOW_ANALYSERS)
                 .build();
         configuration.initializeLoggers();
         Parser parser = new Parser(configuration);

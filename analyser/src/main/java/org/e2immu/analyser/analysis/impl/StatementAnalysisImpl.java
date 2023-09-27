@@ -16,10 +16,13 @@ package org.e2immu.analyser.analysis.impl;
 
 import org.e2immu.analyser.analyser.Properties;
 import org.e2immu.analyser.analyser.*;
+import org.e2immu.analyser.analyser.context.impl.EvaluationResultImpl;
 import org.e2immu.analyser.analyser.delay.DelayFactory;
+import org.e2immu.analyser.analyser.delay.FlowDataConstants;
 import org.e2immu.analyser.analyser.delay.ProgressAndDelay;
 import org.e2immu.analyser.analyser.nonanalyserimpl.Merge;
 import org.e2immu.analyser.analyser.nonanalyserimpl.VariableInfoContainerImpl;
+import org.e2immu.analyser.analyser.util.ComputeLinkedVariables;
 import org.e2immu.analyser.analyser.util.VariableAccessReport;
 import org.e2immu.analyser.analysis.*;
 import org.e2immu.analyser.model.*;
@@ -71,7 +74,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
     // make sure to use putVariable to add a variable to this map; facilitates debugging
     private final SetOnceMap<String, VariableInfoContainer> variables = new SetOnceMap<>();
 
-    public final MethodLevelData methodLevelData = new MethodLevelData();
+    public final MethodLevelData methodLevelData = new MethodLevelDataImpl();
     public final StateData stateData;
     public final FlowData flowData;
     public final RangeData rangeData;
@@ -137,8 +140,8 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
         this.methodAnalysis = Objects.requireNonNull(methodAnalysis);
         localVariablesAssignedInThisLoop = statement instanceof LoopStatement ? new AddOnceSet<>() : null;
         Location location = new LocationImpl(methodAnalysis.getMethodInfo(), index + INITIAL, statement.getIdentifier());
-        stateData = new StateData(location, statement instanceof LoopStatement, primitives);
-        flowData = new FlowData(location);
+        stateData = new StateDataImpl(location, statement instanceof LoopStatement, primitives);
+        flowData = new FlowDataImpl(location);
         rangeData = statement instanceof LoopStatement ? new RangeDataImpl(location) : null;
     }
 
@@ -650,7 +653,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
         if (copyFrom != null) {
             explicitlyPropagateVariables(copyFrom, previous == null);
         }
-        EvaluationResult context = EvaluationResult.from(evaluationContext);
+        EvaluationResult context = EvaluationResultImpl.from(evaluationContext);
         rawVariableStream()
                 .map(Map.Entry::getValue)
                 .filter(VariableInfoContainer::isInitial)
@@ -1554,8 +1557,8 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
                     LinkedVariables linkedOfLoopVar = latestVariableInfo.getLinkedVariables();
                     // any --3--> link to a variable not local to the loop, we also point to the iterable as <--4-->
 
-                    EvaluationResult context = EvaluationResult.from(evaluationContext);
-                    LinkedVariables linkedVariables = stateData.valueOfExpression.get().linkedVariables(context);
+                    EvaluationResult context = EvaluationResultImpl.from(evaluationContext);
+                    LinkedVariables linkedVariables = stateData.valueOfExpressionGet().linkedVariables(context);
 
                     for (Map.Entry<Variable, DV> lve : linkedVariables) {
                         Variable iterableVar = lve.getKey();
@@ -1671,7 +1674,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
                     countAssignments++;
                     StatementAnalysis sa = navigateTo(assignmentIndex);
                     assert sa != null;
-                    if (!sa.flowData().getGuaranteedToBeReachedInCurrentBlock().equals(FlowData.ALWAYS)) return false;
+                    if (!sa.flowData().getGuaranteedToBeReachedInCurrentBlock().equals(FlowDataConstants.ALWAYS)) return false;
                     if (current.isRead()) {
                         if (current.getReadId().compareTo(current.getAssignmentIds().getLatestAssignment()) < 0) {
                             return false;
@@ -1757,7 +1760,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
                 Identifier identifier = evaluationContext.getLocation(INITIAL).identifier();
                 initializeLoopVariable(identifier, vic, variable, evaluationContext.getAnalyserContext());
             } else {
-                initializeLocalOrDependentVariable(vic, variable, EvaluationResult.from(evaluationContext));
+                initializeLocalOrDependentVariable(vic, variable, EvaluationResultImpl.from(evaluationContext));
             }
         } else {
             throw new UnsupportedOperationException("? initialize variable of type " + variable.getClass());
@@ -2192,7 +2195,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
 
     @Override
     public Expression notNullValuesAsExpression(EvaluationContext evaluationContext) {
-        EvaluationResult context = EvaluationResult.from(evaluationContext);
+        EvaluationResult context = EvaluationResultImpl.from(evaluationContext);
         return And.and(context, variableStream()
                 .filter(vi -> vi.variable() instanceof FieldReference
                         && vi.isAssigned()
@@ -2261,7 +2264,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
         InterruptsFlow bestAlways = flowData().bestAlwaysInterrupt();
         boolean escapes = bestAlways == InterruptsFlow.ESCAPE;
         if (escapes) {
-            return DV.fromBoolDv(flowData().getGuaranteedToBeReachedInCurrentBlock().equals(FlowData.ALWAYS));
+            return DV.fromBoolDv(flowData().getGuaranteedToBeReachedInCurrentBlock().equals(FlowDataConstants.ALWAYS));
         }
         return DV.FALSE_DV;
     }
@@ -2298,7 +2301,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
         } else {
             value = Instance.forLoopVariable(evaluatedIterable.getIdentifier(), loopVar, valueProperties);
         }
-        LinkedVariables linkedOfIterable = evaluatedIterable.linkedVariables(EvaluationResult.from(evaluationContext))
+        LinkedVariables linkedOfIterable = evaluatedIterable.linkedVariables(EvaluationResultImpl.from(evaluationContext))
                 .minimum(LinkedVariables.LINK_ASSIGNED);
         DV linkOfLoopVarInIterable = linkOfLoopVarInIterable(evaluationContext, parameterizedType,
                 evaluatedIterable.returnType());
@@ -2309,7 +2312,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
             DV immutableOfLoopVar = valueProperties.get(IMMUTABLE);
             linked = combineLinkOfLoopVarAndLinkedOfIterable(linkedOfIterable, linkOfLoopVarInIterable, immutableOfLoopVar);
         }
-        EvaluationResult.Builder builder = new EvaluationResult.Builder(evaluationResult);
+        EvaluationResultImpl.Builder builder = new EvaluationResultImpl.Builder(evaluationResult);
         builder.assignment(loopVar, value, linked);
         return builder.compose(evaluationResult).build();
     }
@@ -2371,7 +2374,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
      */
     @Override
     public void potentiallyRaiseErrorsOnNotNullInContext(AnalyserContext analyserContext,
-                                                         Map<Variable, EvaluationResult.ChangeData> changeDataMap) {
+                                                         Map<Variable, ChangeData> changeDataMap) {
         Set<Variable> alreadyRaised = new HashSet<>();
         changeDataMap.entrySet().stream()
                 .filter(e -> e.getValue().getProperty(IN_NOT_NULL_CONTEXT).ge(EFFECTIVELY_NOT_NULL_DV))
@@ -2379,7 +2382,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
                 .sorted(Comparator.comparing(e -> -e.getValue().getProperty(IN_NOT_NULL_CONTEXT).value()))
                 .forEach(e -> {
                     Variable variable = e.getKey();
-                    EvaluationResult.ChangeData changeData = e.getValue();
+                    ChangeData changeData = e.getValue();
                     DV inNotNullContext = changeData.getProperty(IN_NOT_NULL_CONTEXT);
 
                     VariableInfoContainer vic = findOrNull(variable);
@@ -2486,7 +2489,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
                         pc = new Precondition(translated, precondition.causes());
                     }
                     progress = stateData.setPrecondition(pc);
-                    EvaluationResult context = EvaluationResult.from(evaluationContext);
+                    EvaluationResult context = EvaluationResultImpl.from(evaluationContext);
                     Expression result = localConditionManager.evaluate(context, translated, false);
                     if (result.isBoolValueFalse()) {
                         ensure(Message.newMessage(location, Message.Label.INCOMPATIBLE_PRECONDITION));
@@ -2518,7 +2521,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
     @Override
     public void ensureVariable(EvaluationContext evaluationContext,
                                Variable variable,
-                               EvaluationResult.ChangeData changeData,
+                               ChangeData changeData,
                                int newStatementTime) {
         VariableInfoContainer vic;
         VariableNature vn;
@@ -2701,7 +2704,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
                 if (dv.arrayVariable() instanceof LocalVariableReference lvr && lvr.variableNature() instanceof VariableNature.ScopeVariable) {
                     // the idea is to evaluate the expression, but we have to be careful to avoid recursions
                     ForwardEvaluationInfo fwd = new ForwardEvaluationInfo.Builder().addEvaluating(dv).build();
-                    EvaluationResult er = dv.arrayExpression().evaluate(EvaluationResult.from(evaluationContext), fwd);
+                    EvaluationResult er = dv.arrayExpression().evaluate(EvaluationResultImpl.from(evaluationContext), fwd);
                     acceptArrayValue = arrayValue.equals(er.value());
                 } else if (dv.arrayVariable().equals(dependentVariable.arrayVariable())) {
                     acceptArrayValue = true;

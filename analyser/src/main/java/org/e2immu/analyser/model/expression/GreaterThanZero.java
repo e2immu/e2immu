@@ -15,6 +15,7 @@
 package org.e2immu.analyser.model.expression;
 
 import org.e2immu.analyser.analyser.*;
+import org.e2immu.analyser.analyser.context.impl.EvaluationResultImpl;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.util.ExpressionComparator;
 import org.e2immu.analyser.model.impl.BaseExpression;
@@ -362,7 +363,7 @@ public class GreaterThanZero extends BaseExpression implements Expression {
     public EvaluationResult evaluate(EvaluationResult context, ForwardEvaluationInfo forwardEvaluationInfo) {
         EvaluationResult er = expression.evaluate(context, forwardEvaluationInfo);
         Expression e = GreaterThanZero.compute(identifier, context, er.getExpression(), allowEquals);
-        return new EvaluationResult.Builder(context).compose(er).setExpression(e).build();
+        return new EvaluationResultImpl.Builder(context).compose(er).setExpression(e).build();
     }
 
     @Override

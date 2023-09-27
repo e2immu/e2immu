@@ -15,6 +15,7 @@
 package org.e2immu.analyser.model.expression;
 
 import org.e2immu.analyser.analyser.*;
+import org.e2immu.analyser.analyser.context.impl.EvaluationResultImpl;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.util.ExpressionComparator;
 import org.e2immu.analyser.model.impl.BaseExpression;
@@ -132,7 +133,7 @@ public class ArrayLength extends BaseExpression implements Expression {
     public EvaluationResult evaluate(EvaluationResult context, ForwardEvaluationInfo forwardEvaluationInfo) {
         ForwardEvaluationInfo fwd = forwardEvaluationInfo.copy().notNullNotAssignment().build();
         EvaluationResult result = scope.evaluate(context, fwd);
-        EvaluationResult.Builder builder = new EvaluationResult.Builder(context).compose(result);
+        EvaluationResultImpl.Builder builder = new EvaluationResultImpl.Builder(context).compose(result);
 
         if (result.value() instanceof ArrayInitializer arrayInitializer) {
             Expression size = new IntConstant(context.getPrimitives(), arrayInitializer.identifier,

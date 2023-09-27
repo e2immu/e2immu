@@ -16,6 +16,7 @@ package org.e2immu.analyser.model.expression;
 
 import org.e2immu.analyser.analyser.Properties;
 import org.e2immu.analyser.analyser.*;
+import org.e2immu.analyser.analyser.context.impl.EvaluationResultImpl;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.util.ExpressionComparator;
 import org.e2immu.analyser.model.impl.BaseExpression;
@@ -102,7 +103,7 @@ public final class PropertyWrapper extends BaseExpression implements Expression,
 
     private EvaluationResult reEvaluated(EvaluationResult evaluationContext, EvaluationResult reValue) {
         Expression newValue = reValue.value();
-        EvaluationResult.Builder builder = new EvaluationResult.Builder(evaluationContext).compose(reValue);
+        EvaluationResultImpl.Builder builder = new EvaluationResultImpl.Builder(evaluationContext).compose(reValue);
 
         // most importantly: we don't want any double wrappers with exactly the same info!
         if (newValue instanceof PropertyWrapper pw && Objects.equals(pw.castType, castType) &&

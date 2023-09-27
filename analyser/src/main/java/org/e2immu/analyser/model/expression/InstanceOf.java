@@ -15,6 +15,7 @@
 package org.e2immu.analyser.model.expression;
 
 import org.e2immu.analyser.analyser.*;
+import org.e2immu.analyser.analyser.context.impl.EvaluationResultImpl;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.util.ExpressionComparator;
 import org.e2immu.analyser.model.impl.BaseExpression;
@@ -148,7 +149,7 @@ public class InstanceOf extends BaseExpression implements Expression {
         // do not pass on the forward requirements on to expression! See e.g. InstanceOf_8
         ForwardEvaluationInfo fwd = forwardEvaluationInfo.copy().removeContextNotNull().removeContextContainer().build();
         EvaluationResult evaluationResult = expression.evaluate(context, fwd);
-        EvaluationResult.Builder builder = new EvaluationResult.Builder(context).compose(evaluationResult);
+        EvaluationResultImpl.Builder builder = new EvaluationResultImpl.Builder(context).compose(evaluationResult);
 
         if (forwardEvaluationInfo.isOnlySort()) {
             InstanceOf newInstanceOf = new InstanceOf(identifier, context.getPrimitives(), parameterizedType,

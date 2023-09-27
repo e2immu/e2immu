@@ -15,6 +15,7 @@
 package org.e2immu.analyser.model.expression.util;
 
 import org.e2immu.analyser.analyser.*;
+import org.e2immu.analyser.analyser.context.impl.EvaluationResultImpl;
 import org.e2immu.analyser.analyser.delay.DelayFactory;
 import org.e2immu.analyser.analyser.delay.SimpleCause;
 import org.e2immu.analyser.analysis.MethodAnalysis;
@@ -43,19 +44,19 @@ public class EvaluateParameters {
             Map.of(Property.CONTEXT_MODIFIED, DV.FALSE_DV,
                     Property.CONTEXT_NOT_NULL, MultiLevel.NULLABLE_DV);
 
-    public static Pair<EvaluationResult.Builder, List<Expression>> go(List<Expression> parameterExpressions,
-                                                                      EvaluationResult context,
-                                                                      ForwardEvaluationInfo forwardEvaluationInfo,
-                                                                      MethodInfo methodInfo,
-                                                                      boolean recursiveOrPartOfCallCycle,
-                                                                      Expression scopeObject,
-                                                                      boolean allowUpgradeCnnOfScope) {
+    public static Pair<EvaluationResultImpl.Builder, List<Expression>> go(List<Expression> parameterExpressions,
+                                                                          EvaluationResult context,
+                                                                          ForwardEvaluationInfo forwardEvaluationInfo,
+                                                                          MethodInfo methodInfo,
+                                                                          boolean recursiveOrPartOfCallCycle,
+                                                                          Expression scopeObject,
+                                                                          boolean allowUpgradeCnnOfScope) {
         int n = methodInfo == null ? 10 : methodInfo.methodInspection.get().getParameters().size();
         List<Expression> parameterValues = new ArrayList<>(n);
         int i = 0;
         DV minCnnOverParameters = MultiLevel.EFFECTIVELY_NOT_NULL_DV;
 
-        EvaluationResult.Builder builder = new EvaluationResult.Builder(context).compose(context);
+        EvaluationResultImpl.Builder builder = new EvaluationResultImpl.Builder(context).compose(context);
 
         if (!parameterExpressions.isEmpty()) {
             DV scopeIsContainer = scopeIsContainer(context, recursiveOrPartOfCallCycle, scopeObject);
@@ -112,7 +113,7 @@ public class EvaluateParameters {
                                             boolean recursiveOrPartOfCallCycle,
                                             List<Expression> parameterValues,
                                             int position,
-                                            EvaluationResult.Builder builder,
+                                            EvaluationResultImpl.Builder builder,
                                             Expression parameterExpression,
                                             DV scopeIsContainer,
                                             DV scopeIsIndependent) {
@@ -233,7 +234,7 @@ public class EvaluateParameters {
                                                                      Expression parameterValue,
                                                                      DV contextModified) {
 
-        EvaluationResult.Builder builder = new EvaluationResult.Builder(context);
+        EvaluationResultImpl.Builder builder = new EvaluationResultImpl.Builder(context);
         LinkedVariables lvExpression = parameterExpression.linkedVariables(context);
         LinkedVariables lvValue = parameterValue.linkedVariables(context);
         LinkedVariables linkedVariables = lvExpression.merge(lvValue);
@@ -264,7 +265,7 @@ public class EvaluateParameters {
                                                        Expression parameterExpression,
                                                        Expression parameterValue,
                                                        DV contextModified,
-                                                       EvaluationResult.Builder builder,
+                                                       EvaluationResultImpl.Builder builder,
                                                        LinkedVariables lvExpression,
                                                        Variable theVariable,
                                                        DV dvLink,

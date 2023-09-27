@@ -15,6 +15,7 @@
 package org.e2immu.analyser.model.expression;
 
 import org.e2immu.analyser.analyser.*;
+import org.e2immu.analyser.analyser.context.impl.EvaluationResultImpl;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.util.ExpressionComparator;
 import org.e2immu.analyser.model.impl.BaseExpression;
@@ -117,7 +118,7 @@ public final class DelayedWrappedExpression extends BaseExpression implements Ex
 
     @Override
     public EvaluationResult evaluate(EvaluationResult context, ForwardEvaluationInfo forwardEvaluationInfo) {
-        return new EvaluationResult.Builder(context).setExpression(this).build();
+        return new EvaluationResultImpl.Builder(context).setExpression(this).build();
     }
 
     @Override

@@ -14,10 +14,10 @@
 
 package org.e2immu.analyser.analyser.impl.aggregating;
 
-import org.e2immu.analyser.analyser.AnalyserComponents;
 import org.e2immu.analyser.analyser.AnalyserContext;
 import org.e2immu.analyser.analyser.FieldAnalyser;
 import org.e2immu.analyser.analyser.impl.ParameterAnalyserImpl;
+import org.e2immu.analyser.analyser.util.AnalyserComponents;
 import org.e2immu.analyser.analyser.util.AnalyserResult;
 import org.e2immu.analyser.model.ParameterInfo;
 

@@ -16,6 +16,7 @@ package org.e2immu.analyser.model.expression;
 
 import com.github.javaparser.ast.expr.BinaryExpr;
 import org.e2immu.analyser.analyser.*;
+import org.e2immu.analyser.analyser.context.impl.EvaluationResultImpl;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.util.ExpressionComparator;
 import org.e2immu.analyser.model.impl.BaseExpression;
@@ -152,17 +153,17 @@ public class BinaryOperator extends BaseExpression implements Expression {
         IMPORTANT: we want the changeData of "context" to be available to the rhs evaluation (See InstanceOf_13)
         Therefore we actively compose "context" into the context for rhs
          */
-        EvaluationResult leftResultContext = new EvaluationResult.Builder(context)
+        EvaluationResult leftResultContext = new EvaluationResultImpl.Builder(context)
                 .compose(context)
                 .compose(leftResult).build();
         EvaluationResult rightResult = rhs.evaluate(leftResultContext, forward);
-        EvaluationResult.Builder builder = new EvaluationResult.Builder(context).compose(leftResult, rightResult);
+        EvaluationResultImpl.Builder builder = new EvaluationResultImpl.Builder(context).compose(leftResult, rightResult);
         builder.setExpression(determineValueProtect(primitives, builder, leftResult, rightResult, context, forward));
         return builder.build();
     }
 
     private Expression determineValueProtect(Primitives primitives,
-                                             EvaluationResult.Builder builder,
+                                             EvaluationResultImpl.Builder builder,
                                              EvaluationResult left,
                                              EvaluationResult right,
                                              EvaluationResult context,
@@ -175,7 +176,7 @@ public class BinaryOperator extends BaseExpression implements Expression {
     }
 
     private Expression determineValue(Primitives primitives,
-                                      EvaluationResult.Builder builder,
+                                      EvaluationResultImpl.Builder builder,
                                       EvaluationResult left,
                                       EvaluationResult right,
                                       EvaluationResult context,
@@ -334,7 +335,7 @@ public class BinaryOperator extends BaseExpression implements Expression {
                                           ForwardEvaluationInfo forwardEvaluationInfo,
                                           boolean and) {
         ForwardEvaluationInfo forward = forwardEvaluationInfo.copy().notNullNotAssignment().build();
-        EvaluationResult.Builder builder = new EvaluationResult.Builder(context);
+        EvaluationResultImpl.Builder builder = new EvaluationResultImpl.Builder(context);
         Primitives primitives = context.getPrimitives();
 
         EvaluationResult l = lhs.evaluate(context, forward);

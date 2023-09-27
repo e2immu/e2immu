@@ -68,7 +68,7 @@ public class WeightedGraph extends Freezable {
      * and LINK_IN_HC_OF. There is important other rule: if we encounter a LINK_IN_HC_OF, then recursively,
      * we start accepting LINK_COMMON_HC as well. Concretely, maxWeight becomes LINK_COMMON_HC instead of LINK_IN_HC_OF.
      * <p>
-     * See {@link org.e2immu.analyser.analyser.ComputeLinkedVariables}, create()
+     * See {@link ComputeLinkedVariables}, create()
      * <p>
      * Whatever happens, we should never follow LINK_INDEPENDENT; in fact, it should never even be present.
      *

@@ -34,11 +34,14 @@ import org.e2immu.analyser.util.CommutableData;
 import org.e2immu.analyser.util.ParSeq;
 import org.e2immu.support.FlipSwitch;
 import org.e2immu.support.SetOnceMap;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.*;
 import java.util.stream.Collectors;
 
 public class GlobalAnalyserContext implements AnalyserContext {
+    private static final Logger LOGGER = LoggerFactory.getLogger(GlobalAnalyserContext.class);
 
     private final SetOnceMap<MethodInfo, MethodAnalysis> methodAnalyses;
     private final SetOnceMap<TypeInfo, TypeAnalysis> typeAnalyses;

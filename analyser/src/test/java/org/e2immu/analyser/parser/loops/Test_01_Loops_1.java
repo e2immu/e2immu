@@ -28,8 +28,8 @@ import org.junit.jupiter.api.Test;
 import java.io.IOException;
 
 import static org.e2immu.analyser.analyser.Property.NOT_NULL_EXPRESSION;
-import static org.e2immu.analyser.analysis.FlowData.ALWAYS;
-import static org.e2immu.analyser.analysis.FlowData.CONDITIONALLY;
+import static org.e2immu.analyser.analyser.delay.FlowDataConstants.ALWAYS;
+import static org.e2immu.analyser.analyser.delay.FlowDataConstants.CONDITIONALLY;
 import static org.junit.jupiter.api.Assertions.*;
 
 public class Test_01_Loops_1 extends CommonTestRunner {

@@ -17,6 +17,7 @@ package org.e2immu.analyser.resolver;
 import org.e2immu.analyser.config.Configuration;
 import org.e2immu.analyser.config.InputConfiguration;
 import org.e2immu.analyser.config.InspectorConfiguration;
+import org.e2immu.analyser.config.LogTarget;
 import org.e2immu.analyser.parser.CommonTestRunner;
 import org.e2immu.analyser.parser.Input;
 import org.e2immu.analyser.parser.Parser;
@@ -44,7 +45,7 @@ public abstract class CommonTest {
                 .setSkipAnalysis(true)
                 .setInputConfiguration(inputConfigurationBuilder.build())
                 .setInspectorConfiguration(new InspectorConfiguration.Builder().setStoreComments(true).build())
-                .addDebugLogTargets("resolver,analyser")
+                .addDebugLogTargets(LogTarget.RESOLVER,LogTarget.INSPECTOR)
                 .build();
         configuration.initializeLoggers();
         Parser parser = new Parser(configuration);

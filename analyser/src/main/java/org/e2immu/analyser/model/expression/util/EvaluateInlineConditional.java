@@ -17,6 +17,7 @@ package org.e2immu.analyser.model.expression.util;
 import org.e2immu.analyser.analyser.CausesOfDelay;
 import org.e2immu.analyser.analyser.DV;
 import org.e2immu.analyser.analyser.EvaluationResult;
+import org.e2immu.analyser.analyser.context.impl.EvaluationResultImpl;
 import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.Identifier;
 import org.e2immu.analyser.model.MethodInspection;
@@ -53,7 +54,7 @@ public class EvaluateInlineConditional {
                         ifTrue.getIdentifier(), ifFalse.getIdentifier()));
                 Expression delay = DelayedExpression.forSimplification(identifier, evaluationResult.value().returnType(),
                         evaluationResult.value(), causes);
-                return new EvaluationResult.Builder(evaluationContext).setExpression(delay).build();
+                return new EvaluationResultImpl.Builder(evaluationContext).setExpression(delay).build();
             }
         }
         return evaluationResult;
@@ -66,7 +67,7 @@ public class EvaluateInlineConditional {
                                            boolean complain,
                                            Variable myself,
                                            DV modifying) {
-        EvaluationResult.Builder builder = new EvaluationResult.Builder(evaluationResult);
+        EvaluationResultImpl.Builder builder = new EvaluationResultImpl.Builder(evaluationResult);
         if (condition instanceof BooleanConstant bc) {
             boolean first = bc.constant();
             if (complain) {

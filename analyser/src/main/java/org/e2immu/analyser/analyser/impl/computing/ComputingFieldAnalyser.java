@@ -20,18 +20,17 @@ import org.e2immu.analyser.analyser.check.CheckFinalNotModified;
 import org.e2immu.analyser.analyser.check.CheckImmutable;
 import org.e2immu.analyser.analyser.check.CheckIndependent;
 import org.e2immu.analyser.analyser.check.CheckNotNull;
+import org.e2immu.analyser.analyser.context.impl.EvaluationResultImpl;
 import org.e2immu.analyser.analyser.delay.DelayFactory;
 import org.e2immu.analyser.analyser.delay.Inconclusive;
 import org.e2immu.analyser.analyser.delay.SimpleCause;
 import org.e2immu.analyser.analyser.delay.VariableCause;
 import org.e2immu.analyser.analyser.impl.FieldAnalyserImpl;
-import org.e2immu.analyser.analyser.impl.PrimaryTypeAnalyserImpl;
+import org.e2immu.analyser.analyser.impl.primary.PrimaryTypeAnalyserImpl;
 import org.e2immu.analyser.analyser.impl.util.BreakDelayLevel;
 import org.e2immu.analyser.analyser.nonanalyserimpl.AbstractEvaluationContextImpl;
 import org.e2immu.analyser.analyser.nonanalyserimpl.LocalAnalyserContext;
-import org.e2immu.analyser.analyser.util.AnalyserResult;
-import org.e2immu.analyser.analyser.util.ComputeIndependent;
-import org.e2immu.analyser.analyser.util.VariableAccessReport;
+import org.e2immu.analyser.analyser.util.*;
 import org.e2immu.analyser.analysis.Analysis;
 import org.e2immu.analyser.analysis.FieldAnalysis;
 import org.e2immu.analyser.analysis.TypeAnalysis;
@@ -243,7 +242,7 @@ public class ComputingFieldAnalyser extends FieldAnalyserImpl implements FieldAn
                     .debugConfiguration().afterFieldAnalyserVisitors();
             if (!visitors.isEmpty()) {
                 EvaluationContext evaluationContext = new EvaluationContextImpl(iteration, sharedState.breakDelayLevel(),
-                        ConditionManager.initialConditionManager(analyserContext.getPrimitives()), sharedState.closure());
+                        ConditionManagerImpl.initialConditionManager(analyserContext.getPrimitives()), sharedState.closure());
                 for (FieldAnalyserVisitor fieldAnalyserVisitor : visitors) {
                     fieldAnalyserVisitor.visit(new FieldAnalyserVisitor.Data(iteration, evaluationContext,
                             fieldInfo, fieldAnalysis, this::getMessageStream, analyserComponents.getStatusesAsMap()));
@@ -296,8 +295,8 @@ public class ComputingFieldAnalyser extends FieldAnalyserImpl implements FieldAn
 
                 EvaluationContext evaluationContext = new EvaluationContextImpl(sharedState.iteration(),
                         sharedState.breakDelayLevel(),
-                        ConditionManager.initialConditionManager(analyserContext.getPrimitives()), sharedState.closure());
-                EvaluationResult evaluationResult = toEvaluate.evaluate(EvaluationResult.from(evaluationContext),
+                        ConditionManagerImpl.initialConditionManager(analyserContext.getPrimitives()), sharedState.closure());
+                EvaluationResult evaluationResult = toEvaluate.evaluate(EvaluationResultImpl.from(evaluationContext),
                         new ForwardEvaluationInfo.Builder().setEvaluatingFieldExpression().build());
                 Expression initialiserValue = evaluationResult.value();
                 fieldAnalysis.setInitialiserValue(initialiserValue);
@@ -1085,7 +1084,7 @@ public class ComputingFieldAnalyser extends FieldAnalyserImpl implements FieldAn
         if (haveInitialiser) {
             delays = fieldAnalysis.getInitializerValue().causesOfDelay();
             EvaluationContext ec = new EvaluationContextImpl(0, BreakDelayLevel.NONE,
-                    ConditionManager.initialConditionManager(analyserContext.getPrimitives()), null);
+                    ConditionManagerImpl.initialConditionManager(analyserContext.getPrimitives()), null);
             values.add(new ValueAndPropertyProxy() {
                 @Override
                 public Expression getValue() {
@@ -1385,7 +1384,7 @@ public class ComputingFieldAnalyser extends FieldAnalyserImpl implements FieldAn
             for (Expression parameter : constructorCall.getParameterExpressions()) {
                 if (!parameter.isConstant()) {
                     EvaluationContext evaluationContext = new EvaluationContextImpl(0, BreakDelayLevel.NONE, // IMPROVE
-                            ConditionManager.initialConditionManager(fieldAnalysis.primitives), null);
+                            ConditionManagerImpl.initialConditionManager(fieldAnalysis.primitives), null);
                     DV immutable = evaluationContext.getProperty(parameter, Property.IMMUTABLE, false, false);
                     if (immutable.isDelayed()) return immutable;
                     if (!MultiLevel.isEffectivelyNotNull(immutable)) return DV.FALSE_DV;
@@ -1735,7 +1734,7 @@ public class ComputingFieldAnalyser extends FieldAnalyserImpl implements FieldAn
                 throw new UnsupportedOperationException();
             }
             try {
-                return value.getProperty(EvaluationResult.from(this), property, true);
+                return value.getProperty(EvaluationResultImpl.from(this), property, true);
             } catch (RuntimeException re) {
                 LOGGER.error("Caught exception while evaluating expression '{}'", value);
                 throw re;

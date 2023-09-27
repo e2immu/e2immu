@@ -720,7 +720,7 @@ public class Test_51_InstanceOf extends CommonTestRunner {
     public void test_11() throws IOException {
         EvaluationResultVisitor evaluationResultVisitor = d -> {
             if ("0.0.1.0.0".equals(d.statementId())) {
-                EvaluationResult.ChangeData cd = d.findValueChangeBySubString("evaluationContext");
+                ChangeData cd = d.findValueChangeBySubString("evaluationContext");
                 String linked = switch (d.iteration()) {
                     case 0, 1, 2 -> "sum:-1,this.expression:-1,this:-1,v:-1";
                     case 3, 4, 5, 6, 7, 8 -> "v:-1";

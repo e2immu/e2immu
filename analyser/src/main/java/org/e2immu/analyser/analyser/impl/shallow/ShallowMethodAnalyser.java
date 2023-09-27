@@ -19,6 +19,7 @@ import org.e2immu.analyser.analyser.impl.MethodAnalyserImpl;
 import org.e2immu.analyser.analyser.impl.util.BreakDelayLevel;
 import org.e2immu.analyser.analyser.nonanalyserimpl.LocalAnalyserContext;
 import org.e2immu.analyser.analyser.statementanalyser.StatementAnalyserImpl;
+import org.e2immu.analyser.analyser.util.AnalyserComponents;
 import org.e2immu.analyser.analyser.util.AnalyserResult;
 import org.e2immu.analyser.analyser.util.VariableAccessReport;
 import org.e2immu.analyser.analysis.MethodAnalysis;
@@ -642,11 +643,16 @@ public class ShallowMethodAnalyser extends MethodAnalyserImpl {
         // nothing here
     }
 
-    public class LimitedEvaluationContext implements  EvaluationContext {
+    public class LimitedEvaluationContext implements EvaluationContext {
 
         @Override
         public int getDepth() {
             return 0;
+        }
+
+        @Override
+        public DV getProperty(Expression value, Property property, boolean duringEvaluation, boolean ignoreStateInConditionManager) {
+            throw new UnsupportedOperationException();
         }
 
         @Override

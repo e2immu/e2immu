@@ -17,10 +17,11 @@ package org.e2immu.analyser.analyser.nonanalyserimpl;
 // assignment in if and else block
 
 import org.e2immu.analyser.analyser.*;
+import org.e2immu.analyser.analyser.context.impl.EvaluationResultImpl;
 import org.e2immu.analyser.analyser.delay.DelayFactory;
 import org.e2immu.analyser.analyser.delay.ProgressAndDelay;
 import org.e2immu.analyser.analyser.delay.VariableCause;
-import org.e2immu.analyser.analysis.ConditionAndVariableInfo;
+import org.e2immu.analyser.analysis.impl.ConditionAndVariableInfo;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.*;
 import org.e2immu.analyser.model.expression.util.EvaluateInlineConditional;
@@ -290,7 +291,7 @@ public record MergeHelper(EvaluationContext evaluationContext,
                 .allMatch(cav -> specialEquals(reduced.get(0).variableInfo(), cav.variableInfo()));
         if (allReducedIdentical) return valueProperties(reduced.get(0).variableInfo());
 
-        EvaluationResult context = EvaluationResult.from(evaluationContext);
+        EvaluationResult context = EvaluationResultImpl.from(evaluationContext);
         if (reduced.size() == 1) {
             ConditionAndVariableInfo e = reduced.get(0);
             if (atLeastOneBlockExecuted) {
@@ -435,7 +436,7 @@ public record MergeHelper(EvaluationContext evaluationContext,
             if (vi.variable() instanceof ReturnVariable) {
                 if (stateOfParent.isBoolValueTrue()) return valueProperties(vi1);
                 if (vi.variable().parameterizedType().equals(evaluationContext.getPrimitives().booleanParameterizedType())) {
-                    EvaluationResult context = EvaluationResult.from(evaluationContext);
+                    EvaluationResult context = EvaluationResultImpl.from(evaluationContext);
                     return new Merge.ExpressionAndProperties(And.and(context, stateOfParent, vi1value),
                             EvaluationContext.PRIMITIVE_VALUE_PROPERTIES);
                 }
@@ -538,7 +539,7 @@ public record MergeHelper(EvaluationContext evaluationContext,
                 return valueProperties(ifFalse);
             }
         }
-        EvaluationResult context = EvaluationResult.from(evaluationContext);
+        EvaluationResult context = EvaluationResultImpl.from(evaluationContext);
         Expression safe;
         if (vi.variable() instanceof ReturnVariable rv) {
             MethodInfo methodInfo = evaluationContext.getCurrentMethod().getMethodInfo();

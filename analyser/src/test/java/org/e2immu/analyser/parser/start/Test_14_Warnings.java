@@ -18,8 +18,8 @@ import org.e2immu.analyser.analyser.AnalysisStatus;
 import org.e2immu.analyser.analyser.DV;
 import org.e2immu.analyser.analyser.Stage;
 import org.e2immu.analyser.analyser.VariableInfoContainer;
+import org.e2immu.analyser.analyser.delay.FlowDataConstants;
 import org.e2immu.analyser.analysis.FieldAnalysis;
-import org.e2immu.analyser.analysis.FlowData;
 import org.e2immu.analyser.analysis.MethodAnalysis;
 import org.e2immu.analyser.config.AnalyserConfiguration;
 import org.e2immu.analyser.config.DebugConfiguration;
@@ -129,7 +129,7 @@ public class Test_14_Warnings extends CommonTestRunner {
                     assertFalse(d.statementAnalysis().variableIsSet("loopVar")); // created in 1.0.0
                 }
                 if ("1.0.0".equals(d.statementId())) {
-                    assertDv(d, 0, FlowData.ALWAYS, d.statementAnalysis().flowData().getGuaranteedToBeReachedInMethod());
+                    assertDv(d, 0, FlowDataConstants.ALWAYS, d.statementAnalysis().flowData().getGuaranteedToBeReachedInMethod());
                 }
             }
             if ("checkForEach".equals(d.methodInfo().name) && "1".equals(d.statementId())) {

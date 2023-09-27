@@ -18,6 +18,7 @@ import org.e2immu.analyser.analyser.DV;
 import org.e2immu.analyser.analyser.EvaluationResult;
 import org.e2immu.analyser.analyser.ForwardEvaluationInfo;
 import org.e2immu.analyser.analyser.Property;
+import org.e2immu.analyser.analyser.context.impl.EvaluationResultImpl;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.util.ExpressionComparator;
 import org.e2immu.analyser.model.impl.BaseExpression;
@@ -60,7 +61,7 @@ public class NullConstant extends BaseExpression implements ConstantExpression<O
 
     @Override
     public EvaluationResult evaluate(EvaluationResult context, ForwardEvaluationInfo forwardEvaluationInfo) {
-        EvaluationResult.Builder builder = new EvaluationResult.Builder(context);
+        EvaluationResultImpl.Builder builder = new EvaluationResultImpl.Builder(context);
         DV max = forwardEvaluationInfo.getProperty(Property.NOT_NULL_EXPRESSION).max(
                 forwardEvaluationInfo.getProperty(Property.CONTEXT_NOT_NULL));
         if (max.gt(MultiLevel.NULLABLE_DV) && forwardEvaluationInfo.isComplainInlineConditional()) {

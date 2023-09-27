@@ -151,7 +151,7 @@ public class Test_AnalysisProvider extends CommonTestRunner {
                                 "!parameterizedType.parameters.isEmpty()&&this.isAtLeastE2Immutable(`dynamicValue.value`>=`this.getTypeAnalysisNullWhenAbsent(`parameterizedType.bestTypeInfo`).getProperty(AnalysisProvider_0.IMMUTABLE).value`?dynamicValue:this.getTypeAnalysisNullWhenAbsent(`parameterizedType.bestTypeInfo`).getProperty(AnalysisProvider_0.IMMUTABLE))";
                     };
                     assertEquals(expected,
-                            d.statementAnalysis().stateData().valueOfExpression.get().toString());
+                            d.statementAnalysis().stateData().valueOfExpressionGet().toString());
                 }
                 if ("8.0.1".equals(d.statementId())) {
                     String reached = switch (d.iteration()) {
@@ -173,7 +173,7 @@ public class Test_AnalysisProvider extends CommonTestRunner {
                         default ->
                                 "1==`this.getTypeAnalysisNullWhenAbsent(`parameterizedType.bestTypeInfo`).immutableCanBeIncreasedByTypeParameters().value`";
                     };
-                    assertEquals(expected, d.statementAnalysis().stateData().valueOfExpression.get().toString());
+                    assertEquals(expected, d.statementAnalysis().stateData().valueOfExpressionGet().toString());
                     String reached = d.iteration() < 5 ? "initial_flow_value@Method_defaultImmutable_8.0.2-C" : "CONDITIONALLY:1";
                     assertEquals(reached, d.statementAnalysis().flowData().getGuaranteedToBeReachedInMethod().toString());
                 }

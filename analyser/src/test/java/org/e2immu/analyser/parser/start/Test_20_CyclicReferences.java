@@ -203,7 +203,7 @@ public class Test_20_CyclicReferences extends CommonTestRunner {
         StatementAnalyserVisitor statementAnalyserVisitor = d -> {
             if ("methodE".equals(d.methodInfo().name)) {
                 if ("0.0.0".equals(d.statementId())) {
-                    Expression expression = d.statementAnalysis().stateData().valueOfExpression.get();
+                    Expression expression = d.statementAnalysis().stateData().valueOfExpressionGet();
                     assertEquals("instance type boolean", expression.toString());
                     if (expression instanceof Instance i) {
                         assertTrue(i.identifier instanceof Identifier.PositionalIdentifier);

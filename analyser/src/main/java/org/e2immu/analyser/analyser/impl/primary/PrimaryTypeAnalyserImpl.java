@@ -12,10 +12,11 @@
  * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.e2immu.analyser.analyser.impl;
+package org.e2immu.analyser.analyser.impl.primary;
 
 import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.analyser.impl.util.BreakDelayLevel;
+import org.e2immu.analyser.analyser.util.AnalyserComponents;
 import org.e2immu.analyser.analyser.util.AnalyserResult;
 import org.e2immu.analyser.analysis.*;
 import org.e2immu.analyser.config.Configuration;
@@ -32,6 +33,7 @@ import org.e2immu.analyser.visitor.BreakDelayVisitor;
 import org.e2immu.support.FlipSwitch;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.slf4j.Marker;
 
 import java.util.*;
 import java.util.function.Consumer;
@@ -63,6 +65,7 @@ public class PrimaryTypeAnalyserImpl implements PrimaryTypeAnalyser {
     private final AnalyserComponents<Analyser, SharedState> analyserComponents;
     private final FlipSwitch unreachable = new FlipSwitch();
     private final List<BreakDelayLevel> delaySequence = new LinkedList<>();
+    private final Marker marker;
 
     public PrimaryTypeAnalyserImpl(AnalyserContext parent, TypeCycle typeCycle) {
         this.parent = Objects.requireNonNull(parent);
@@ -104,7 +107,8 @@ public class PrimaryTypeAnalyserImpl implements PrimaryTypeAnalyser {
                 .setUpdateUponProgress(SharedState::removeAllowBreakDelay)
                 .setExecuteConditionally(this::executeConditionally)
                 .build();
-        LOGGER.trace("List of analysers: {}", analysers);
+        marker = inAnnotatedAPIAnalysis() ? Configuration.A_API : Configuration.SOURCE;
+        LOGGER.debug(marker, "List of analysers: {}", analysers);
     }
 
     private boolean executeConditionally(Analyser analyser, SharedState sharedState) {
@@ -164,7 +168,8 @@ public class PrimaryTypeAnalyserImpl implements PrimaryTypeAnalyser {
     public void analyse() {
         assert !isUnreachable();
         if (typeAnalysers.size() > 10) {
-            LOGGER.info("Starting to process {} types, {} methods, {} fields", typeAnalysers.size(), methodAnalysers.size(), fieldAnalysers.size());
+            LOGGER.debug("Starting to process {} types, {} methods, {} fields", typeAnalysers.size(),
+                    methodAnalysers.size(), fieldAnalysers.size());
         }
 
         int iteration = 0;
@@ -175,13 +180,8 @@ public class PrimaryTypeAnalyserImpl implements PrimaryTypeAnalyser {
         do {
             delaySequence.add(breakDelayLevel);
 
-            if (inAnnotatedAPIAnalysis()) {
-                LOGGER.debug("\n******\nStarting iteration {} (break? {}) of the primary type analyser on {}; sequence {}\n******",
-                        iteration, breakDelayLevel, name, delaySequence);
-            } else {
-                LOGGER.info("\n******\nStarting iteration {} (break? {}) of the primary type analyser on {}; sequence {}\n******",
-                        iteration, breakDelayLevel, name, delaySequence);
-            }
+            LOGGER.debug(marker, "\n******\nStarting iteration {} (break? {}) of the primary type analyser on {}; sequence {}\n******",
+                    iteration, breakDelayLevel, name, delaySequence);
             analyserComponents.resetDelayHistogram();
 
             SharedState sharedState = new SharedState(iteration, breakDelayLevel, null);
@@ -221,9 +221,7 @@ public class PrimaryTypeAnalyserImpl implements PrimaryTypeAnalyser {
 
         if (analysisStatus.isDelayed()) {
             logAnalysisStatuses(analyserComponents);
-            if (LOGGER.isDebugEnabled()) {
-                LOGGER.debug("Delays: {}", analysisStatus.causesOfDelay());
-            }
+            LOGGER.debug(marker, "Delays: {}", analysisStatus.causesOfDelay());
             if (analysisStatus.isProgress() && iteration == MAX_ITERATION) {
                 throw new NoProgressException("Looks like there is an infinite PROGRESS going on, pt " + name);
             }
@@ -231,8 +229,8 @@ public class PrimaryTypeAnalyserImpl implements PrimaryTypeAnalyser {
         }
     }
 
-    private static void dumpDelayHistogram(Map<InfoObject, AnalyserComponents.Info> delayHistogram) {
-        LOGGER.debug("Delay histogram:\n{}",
+    private void dumpDelayHistogram(Map<InfoObject, AnalyserComponents.Info> delayHistogram) {
+        LOGGER.debug(marker, "Delay histogram:\n{}",
                 delayHistogram.entrySet().stream().sorted((e1, e2) -> e2.getValue().getCnt() - e1.getValue().getCnt())
                         .limit(20)
                         .map(e -> e.getValue().getCnt() + ": " + (e.getKey() == null ? "?" : (e.getKey().niceClassName() + " " + e.getKey().fullyQualifiedName()) + ": " + e.getValue()))
@@ -267,7 +265,7 @@ public class PrimaryTypeAnalyserImpl implements PrimaryTypeAnalyser {
     public AnalyserResult analyse(SharedState sharedState) {
         analyserResultBuilder = new AnalyserResult.Builder();
         AnalysisStatus analysisStatus = analyserComponents.run(sharedState);
-        LOGGER.debug("At end of PTA analysis, done {} of {} components, progress? {}",
+        LOGGER.debug(marker, "At end of PTA analysis, done {} of {} components, progress? {}",
                 analyserComponents.getStatuses().stream().filter(p -> p.getV().isDone()).count(),
                 analyserComponents.getStatuses().size(),
                 analysisStatus.isProgress());

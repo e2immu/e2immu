@@ -30,8 +30,6 @@ import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.util.ListUtil;
 import org.e2immu.annotation.NotNull;
 import org.e2immu.support.Either;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.List;
 import java.util.Map;
@@ -45,7 +43,6 @@ import static org.e2immu.analyser.analyser.Property.*;
  * Defaults because of tests
  */
 public interface EvaluationContext {
-    Logger LOGGER = LoggerFactory.getLogger(EvaluationContext.class);
 
     default int limitOnComplexity() {
         return Expression.SOFT_LIMIT_ON_COMPLEXITY; // can be overridden for testing
@@ -165,35 +162,7 @@ public interface EvaluationContext {
      * @param duringEvaluation true when this method is called during the EVAL process. It then reads variable's properties from the
      *                         INIT side, rather than current. Current may be MERGE, which is definitely wrong during the EVAL process.
      */
-    default DV getProperty(Expression value, Property property,
-                           boolean duringEvaluation,
-                           boolean ignoreStateInConditionManager) {
-        if (value instanceof VariableExpression variableValue) {
-            Variable variable = variableValue.variable();
-            if (variable instanceof ParameterInfo parameterInfo) {
-                Property vp = property == NOT_NULL_EXPRESSION ? NOT_NULL_PARAMETER : property;
-                return getAnalyserContext().getParameterAnalysis(parameterInfo).getProperty(vp);
-            }
-            if (variable instanceof FieldReference fieldReference) {
-                Property vp = property == NOT_NULL_EXPRESSION ? EXTERNAL_NOT_NULL : property;
-                return getAnalyserContext().getFieldAnalysis(fieldReference.fieldInfo).getProperty(vp);
-            }
-            if (variable instanceof This thisVariable) {
-                return getAnalyserContext().getTypeAnalysis(thisVariable.typeInfo).getProperty(property);
-            }
-            if (variable instanceof PreAspectVariable pre) {
-                /*
-                pre-aspect variables must be nullable, because there can be no information, in which case "null" is injected.
-                the companion methods must take the null-value into account, see e.g. that of List.addAll, size aspect,
-                Modification_26. See also CompanionAnalyser.EvaluationContextImpl.getProperty().
-                 */
-                if (property == NOT_NULL_EXPRESSION) return MultiLevel.NULLABLE_DV;
-                return pre.valueForProperties().getProperty(EvaluationResult.from(this), property, true);
-            }
-            throw new UnsupportedOperationException("Variable value of type " + variable.getClass());
-        }
-        return value.getProperty(EvaluationResult.from(this), property, true); // will work in many cases
-    }
+    DV getProperty(Expression value, Property property, boolean duringEvaluation, boolean ignoreStateInConditionManager);
 
     /*
      assumes that currentValue has been queried before!

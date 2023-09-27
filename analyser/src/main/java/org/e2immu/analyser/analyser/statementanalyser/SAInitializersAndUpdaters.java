@@ -16,6 +16,7 @@ package org.e2immu.analyser.analyser.statementanalyser;
 
 import org.e2immu.analyser.analyser.Properties;
 import org.e2immu.analyser.analyser.*;
+import org.e2immu.analyser.analyser.context.impl.EvaluationResultImpl;
 import org.e2immu.analyser.analyser.delay.DelayFactory;
 import org.e2immu.analyser.analyser.delay.SimpleCause;
 import org.e2immu.analyser.analyser.nonanalyserimpl.VariableInfoContainerImpl;
@@ -186,8 +187,8 @@ record SAInitializersAndUpdaters(StatementAnalysis statementAnalysis) {
         MethodAnalysis methodAnalysis = analyserContext.getMethodAnalysis(eci.methodInfo);
         assert methodAnalysis != null : "Cannot find method analysis for " + eci.methodInfo.fullyQualifiedName;
 
-        EvaluationResult context = EvaluationResult.from(evaluationContext);
-        EvaluationResult.Builder builder = new EvaluationResult.Builder(context);
+        EvaluationResult context = EvaluationResultImpl.from(evaluationContext);
+        EvaluationResultImpl.Builder builder = new EvaluationResultImpl.Builder(context);
         TranslationMapImpl.Builder translationMapBuilder = new TranslationMapImpl.Builder();
         CauseOfDelay causeOfDelay = new SimpleCause(evaluationContext.getLocation(EVALUATION), CauseOfDelay.Cause.ECI);
 

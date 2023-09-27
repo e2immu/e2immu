@@ -29,7 +29,7 @@ import java.io.IOException;
 
 import static org.e2immu.analyser.analyser.Property.CONTEXT_NOT_NULL;
 import static org.e2immu.analyser.analyser.Property.NOT_NULL_EXPRESSION;
-import static org.e2immu.analyser.analysis.FlowData.ALWAYS;
+import static org.e2immu.analyser.analyser.delay.FlowDataConstants.ALWAYS;
 import static org.junit.jupiter.api.Assertions.*;
 
 /*

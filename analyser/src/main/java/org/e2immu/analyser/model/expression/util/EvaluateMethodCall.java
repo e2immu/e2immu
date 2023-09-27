@@ -16,6 +16,7 @@ package org.e2immu.analyser.model.expression.util;
 
 import org.e2immu.analyser.analyser.Properties;
 import org.e2immu.analyser.analyser.*;
+import org.e2immu.analyser.analyser.context.impl.EvaluationResultImpl;
 import org.e2immu.analyser.analyser.impl.util.BreakDelayLevel;
 import org.e2immu.analyser.analysis.MethodAnalysis;
 import org.e2immu.analyser.model.*;
@@ -66,7 +67,7 @@ public class EvaluateMethodCall {
                                         Expression modifiedInstance,
                                         boolean firstInCallCycle) {
 
-        EvaluationResult.Builder builder = new EvaluationResult.Builder(context);
+        EvaluationResultImpl.Builder builder = new EvaluationResultImpl.Builder(context);
 
         /*
         It is of high importance that any delay that we return, contains the most concrete possible return type.
@@ -277,7 +278,7 @@ public class EvaluateMethodCall {
     IMPORTANT: keep in sync with very similar method in MethodCall
     Make sure that all delayed exits go via this method!
      */
-    private EvaluationResult delay(EvaluationResult.Builder builder,
+    private EvaluationResult delay(EvaluationResultImpl.Builder builder,
                                    MethodInfo methodInfo,
                                    ParameterizedType concreteReturnType,
                                    Expression objectValue,
@@ -365,7 +366,7 @@ public class EvaluateMethodCall {
     private EvaluationResult computeEvaluationOfEquals(MethodInfo methodInfo,
                                                        ParameterizedType concreteReturnType,
                                                        Expression objectValue,
-                                                       EvaluationResult.Builder builder,
+                                                       EvaluationResultImpl.Builder builder,
                                                        List<Expression> parameters) {
         if ("equals".equals(methodInfo.name) && parameters.size() == 1) {
             Expression paramValue = parameters.get(0);
@@ -545,7 +546,7 @@ public class EvaluateMethodCall {
                                            MethodAnalysis methodAnalysis,
                                            Expression scope,
                                            Expression modifiedInstance,
-                                           EvaluationResult.Builder builder) {
+                                           EvaluationResultImpl.Builder builder) {
         DV fluent = methodAnalysis.getProperty(Property.FLUENT);
         if (fluent.isDelayed() && methodAnalysis.isNotContracted()) {
             return delay(builder, methodInfo, concreteReturnType, scope, fluent.causesOfDelay(),
@@ -570,7 +571,7 @@ public class EvaluateMethodCall {
                                              MethodAnalysis methodAnalysis,
                                              Expression objectValue,
                                              List<Expression> parameters,
-                                             EvaluationResult.Builder builder) {
+                                             EvaluationResultImpl.Builder builder) {
         DV identity = methodAnalysis.getProperty(Property.IDENTITY);
         if (identity.isDelayed() && methodAnalysis.isNotContracted()) {
             return delay(builder, methodInfo, concreteReturnType, objectValue, identity.causesOfDelay(),

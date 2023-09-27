@@ -24,8 +24,6 @@ import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.annotation.NotModified;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.Objects;
 
@@ -51,8 +49,6 @@ import static org.e2immu.analyser.analyser.AnalysisStatus.DONE;
  */
 
 public abstract class TypeAnalyserImpl extends AbstractAnalyser implements TypeAnalyser {
-    private static final Logger LOGGER = LoggerFactory.getLogger(TypeAnalyserImpl.class);
-
     public final TypeInfo primaryType;
     public final TypeInfo typeInfo;
     public final TypeInspection typeInspection;
@@ -115,9 +111,6 @@ public abstract class TypeAnalyserImpl extends AbstractAnalyser implements TypeA
 
         E2ImmuAnnotationExpressions e2 = analyserContext.getE2ImmuAnnotationExpressions();
 
-        // before we check, we copy the properties into annotations
-        LOGGER.debug("\n******\nAnnotation validation on type {}\n******", typeInfo.fullyQualifiedName);
-
         internalCheckImmutableIndependent(); // do not run when program is partial, some data may not be available
 
         check(typeInfo, e2.utilityClass);
@@ -168,7 +161,6 @@ public abstract class TypeAnalyserImpl extends AbstractAnalyser implements TypeA
 
         // those hidden content types that are type parameters
         boolean res = typeAnalysis.getHiddenContentTypes().types().stream().anyMatch(ParameterizedType::isTypeParameter);
-        LOGGER.debug("Immutable can be increased for {}? {}", typeInfo.fullyQualifiedName, res);
         typeAnalysis.setImmutableDeterminedByTypeParameters(res);
         return DONE;
     }

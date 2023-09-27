@@ -248,17 +248,17 @@ public class Test_00_Basics_3 extends CommonTestRunner {
                     assertEquals(0, time1);
                     assertEquals(1, time3);
                     assertEquals(2, time4); // merge
-                    assertEquals("0" + C, flowData.assignmentIdOfStatementTime.get(0));
-                    assertEquals("0" + E, flowData.assignmentIdOfStatementTime.get(1));
-                    assertEquals("0" + M, flowData.assignmentIdOfStatementTime.get(2));
+                    assertEquals("0" + C, flowData.assignmentIdOfStatementTimeGet(0));
+                    assertEquals("0" + E, flowData.assignmentIdOfStatementTimeGet(1));
+                    assertEquals("0" + M, flowData.assignmentIdOfStatementTimeGet(2));
                 }
                 if ("0.0.0".equals(d.statementId())) {
                     assertEquals(1, time1);
                     assertEquals(2, time3);
                     assertEquals(2, time4);
-                    assertEquals("0" + C, flowData.assignmentIdOfStatementTime.get(0));
-                    assertEquals("0" + E, flowData.assignmentIdOfStatementTime.get(1));
-                    assertEquals("0.0.0" + E, flowData.assignmentIdOfStatementTime.get(2));
+                    assertEquals("0" + C, flowData.assignmentIdOfStatementTimeGet(0));
+                    assertEquals("0" + E, flowData.assignmentIdOfStatementTimeGet(1));
+                    assertEquals("0.0.0" + E, flowData.assignmentIdOfStatementTimeGet(2));
                     assertEquals("true", d.state().toString());
                     assertEquals("input1.contains(\"a\")", d.condition().toString());
                     assertEquals("input1.contains(\"a\")", d.absoluteState().toString());
@@ -270,16 +270,16 @@ public class Test_00_Basics_3 extends CommonTestRunner {
                     assertEquals(2, time1);
                     assertEquals(2, time3);
                     assertEquals(2, time4);
-                    assertEquals("0" + C, flowData.assignmentIdOfStatementTime.get(0));
-                    assertEquals("0" + E, flowData.assignmentIdOfStatementTime.get(1));
-                    assertEquals("0.0.0" + E, flowData.assignmentIdOfStatementTime.get(2));
+                    assertEquals("0" + C, flowData.assignmentIdOfStatementTimeGet(0));
+                    assertEquals("0" + E, flowData.assignmentIdOfStatementTimeGet(1));
+                    assertEquals("0.0.0" + E, flowData.assignmentIdOfStatementTimeGet(2));
                 }
                 if ("0.1.0".equals(d.statementId())) { // second assignment
                     assertEquals(1, time1);
                     assertEquals(1, time3);
                     assertEquals(1, time4);
-                    assertEquals("0" + C, flowData.assignmentIdOfStatementTime.get(0));
-                    assertEquals("0" + E, flowData.assignmentIdOfStatementTime.get(1));
+                    assertEquals("0" + C, flowData.assignmentIdOfStatementTimeGet(0));
+                    assertEquals("0" + E, flowData.assignmentIdOfStatementTimeGet(1));
                     assertEquals("true", d.state().toString());
                     assertEquals("!input1.contains(\"a\")", d.condition().toString());
                     assertEquals("!input1.contains(\"a\")", d.absoluteState().toString());
@@ -288,9 +288,9 @@ public class Test_00_Basics_3 extends CommonTestRunner {
                     assertEquals(2, time1);
                     assertEquals(2, time3);
                     assertEquals(2, time4);
-                    assertEquals("0" + C, flowData.assignmentIdOfStatementTime.get(0));
-                    assertEquals("0" + E, flowData.assignmentIdOfStatementTime.get(1));
-                    assertEquals("0" + M, flowData.assignmentIdOfStatementTime.get(2));
+                    assertEquals("0" + C, flowData.assignmentIdOfStatementTimeGet(0));
+                    assertEquals("0" + E, flowData.assignmentIdOfStatementTimeGet(1));
+                    assertEquals("0" + M, flowData.assignmentIdOfStatementTimeGet(2));
                     if (d.iteration() >= 2) {
                         assertNotNull(d.haveError(Message.Label.ASSERT_EVALUATES_TO_CONSTANT_TRUE));
                     }

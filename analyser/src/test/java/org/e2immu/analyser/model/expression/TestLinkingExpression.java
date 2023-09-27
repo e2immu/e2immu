@@ -15,10 +15,12 @@
 package org.e2immu.analyser.model.expression;
 
 import org.e2immu.analyser.analyser.*;
+import org.e2immu.analyser.analyser.context.impl.EvaluationResultImpl;
 import org.e2immu.analyser.analysis.ParameterAnalysis;
 import org.e2immu.analyser.config.AnnotationXmlConfiguration;
 import org.e2immu.analyser.config.Configuration;
 import org.e2immu.analyser.config.InputConfiguration;
+import org.e2immu.analyser.config.LogTarget;
 import org.e2immu.analyser.inspector.TypeContext;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.impl.LocationImpl;
@@ -33,6 +35,7 @@ import org.junit.jupiter.api.Test;
 import java.io.IOException;
 import java.util.*;
 
+import static org.e2immu.analyser.analyser.util.ConditionManagerImpl.commonGetProperty;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -56,7 +59,7 @@ public class TestLinkingExpression {
         Configuration configuration = new Configuration.Builder()
                 .setInputConfiguration(inputConfigurationBuilder.build())
                 .setAnnotationXmConfiguration(annotationXmlConfiguration)
-                .addDebugLogTargets("analyser")
+                .addDebugLogTargets(LogTarget.ANALYSIS, LogTarget.MODEL)
                 .build();
         configuration.initializeLoggers();
         Parser parser = new Parser(configuration);
@@ -118,8 +121,13 @@ public class TestLinkingExpression {
             public TypeInfo getCurrentType() {
                 return getPrimitives().stringTypeInfo();
             }
+
+            @Override
+            public DV getProperty(Expression value, Property property, boolean duringEvaluation, boolean ignoreStateInConditionManager) {
+                return commonGetProperty(this, value, property, duringEvaluation, ignoreStateInConditionManager);
+            }
         };
-        context = EvaluationResult.from(ec);
+        context = EvaluationResultImpl.from(ec);
     }
 
     @Test
@@ -232,7 +240,7 @@ public class TestLinkingExpression {
         MethodCall methodCall = new MethodCall(Identifier.constant("addAll"),
                 new TypeExpression(Identifier.CONSTANT, collectionInteger, Diamond.NO), addAll, parameterValues);
         assertEquals("Collection.addAll(v,i,j)", methodCall.toString());
-        EvaluationResult.Builder builder = new EvaluationResult.Builder(context);
+        EvaluationResultImpl.Builder builder = new EvaluationResultImpl.Builder(context);
         methodCall.linksBetweenParameters(builder, context, methodCall.methodInfo, parameterValues,
                 // no prior additional links, not that any would be possible
                 List.of(LinkedVariables.of(Map.of(v, LinkedVariables.LINK_ASSIGNED)),
@@ -265,7 +273,7 @@ public class TestLinkingExpression {
                 new TypeExpression(Identifier.CONSTANT, collectionT, Diamond.NO), addAll, parameterValues);
         assertEquals("Collection.addAll(v,i,j)", methodCall.toString());
 
-        EvaluationResult.Builder builder = new EvaluationResult.Builder(context);
+        EvaluationResultImpl.Builder builder = new EvaluationResultImpl.Builder(context);
         methodCall.linksBetweenParameters(builder, context, methodCall.methodInfo, parameterValues,
                 // no prior additional links
                 List.of(LinkedVariables.of(Map.of(v, LinkedVariables.LINK_ASSIGNED)),

@@ -15,10 +15,7 @@
 
 package org.e2immu.analyser.parser.basics;
 
-import org.e2immu.analyser.analyser.DV;
-import org.e2immu.analyser.analyser.EvaluationResult;
-import org.e2immu.analyser.analyser.LinkedVariables;
-import org.e2immu.analyser.analyser.Stage;
+import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.inspector.TypeContext;
 import org.e2immu.analyser.model.*;
@@ -235,8 +232,8 @@ public class Test_00_Basics_6 extends CommonTestRunner {
                     } else fail();
                 }
                 if ("2".equals(d.statementId()) && d.iteration() > 0) {
-                    assertEquals("true", d.statementAnalysis().stateData().valueOfExpression.get().toString());
-                    assertTrue(d.statementAnalysis().stateData().valueOfExpression.isFinal());
+                    assertEquals("true", d.statementAnalysis().stateData().valueOfExpressionGet().toString());
+                    assertFalse(d.statementAnalysis().stateData().valueOfExpressionIsVariable());
                     assertNotNull(d.haveError(Message.Label.ASSERT_EVALUATES_TO_CONSTANT_TRUE));
                 }
             }
@@ -334,13 +331,13 @@ public class Test_00_Basics_6 extends CommonTestRunner {
 
                 String expectValue = d.iteration() == 0 ? "<m:equals>" : "true";
                 assertEquals(expectValue, d.evaluationResult().value().toString());
-                EvaluationResult.ChangeData changeDataV1 = d.findValueChange("v1");
+                ChangeData changeDataV1 = d.findValueChange("v1");
                 assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, changeDataV1.getProperty(CONTEXT_NOT_NULL));
                 assertEquals(d.iteration() > 0, d.haveValueChange(FIELD));
             }
             if ("test3".equals(d.methodInfo().name) && "1".equals(d.statementId())) {
                 if (d.iteration() == 0) {
-                    EvaluationResult.ChangeData cdField = d.findValueChange("v1");
+                    ChangeData cdField = d.findValueChange("v1");
                     assertEquals("initial:this.field@Method_test3_0-C", cdField.getProperty(CONTEXT_NOT_NULL).causesOfDelay().toString());
                 }
             }

@@ -15,6 +15,7 @@
 package org.e2immu.analyser.analyser.util;
 
 import org.e2immu.analyser.analyser.*;
+import org.e2immu.analyser.analyser.context.impl.EvaluationResultImpl;
 import org.e2immu.analyser.analysis.MethodAnalysis;
 import org.e2immu.analyser.analysis.StatementAnalysis;
 import org.e2immu.analyser.model.*;
@@ -63,7 +64,7 @@ public class AssignmentIncompatibleWithPrecondition {
                         StatementAnalyser statementAnalyser = methodAnalyser.findStatementAnalyser(index);
                         StatementAnalysis statementAnalysis = statementAnalyser.getStatementAnalysis();
                         EvaluationContext evaluationContext = statementAnalyser.newEvaluationContextForOutside();
-                        EvaluationResult context = EvaluationResult.from(evaluationContext);
+                        EvaluationResult context = EvaluationResultImpl.from(evaluationContext);
 
                         VariableExpression ve;
                         if (fieldInfo.type.isNumeric()) {
@@ -82,8 +83,8 @@ public class AssignmentIncompatibleWithPrecondition {
                                                     new VariableExpression(ve.identifier, variable))
                                             .build();
                                     Expression translated = state.translate(evaluationContext.getAnalyserContext(), translationMap);
-                                    EvaluationContext neutralEc = new ConditionManager.EvaluationContextImpl(analyserContext);
-                                    EvaluationResult neutralContext = EvaluationResult.from(neutralEc);
+                                    EvaluationContext neutralEc = new ConditionManagerImpl.EvaluationContextImpl(analyserContext);
+                                    EvaluationResult neutralContext = EvaluationResultImpl.from(neutralEc);
                                     ForwardEvaluationInfo fwd = new ForwardEvaluationInfo.Builder().doNotReevaluateVariableExpressionsDoNotComplain().build();
                                     Expression stateInTermsOfField = translated.evaluate(neutralContext, fwd).getExpression();
                                     return DV.fromBoolDv(!isCompatible(context, stateInTermsOfField, pcExpression));
@@ -156,7 +157,7 @@ public class AssignmentIncompatibleWithPrecondition {
                 .build();
         Expression translated = precondition.translate(evaluationContext.getAnalyserContext(), translationMap);
         ForwardEvaluationInfo fwd = new ForwardEvaluationInfo.Builder().doNotReevaluateVariableExpressionsDoNotComplain().build();
-        Expression reEvaluated = translated.evaluate(EvaluationResult.from(evaluationContext), fwd).getExpression();
+        Expression reEvaluated = translated.evaluate(EvaluationResultImpl.from(evaluationContext), fwd).getExpression();
         // false ~ incompatible with precondition
         if (reEvaluated.isBooleanConstant()) return reEvaluated.isBoolValueFalse();
         return null;

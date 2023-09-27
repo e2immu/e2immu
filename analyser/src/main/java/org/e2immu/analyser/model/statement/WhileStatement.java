@@ -15,7 +15,7 @@
 package org.e2immu.analyser.model.statement;
 
 import org.e2immu.analyser.analyser.ForwardEvaluationInfo;
-import org.e2immu.analyser.analysis.FlowData;
+import org.e2immu.analyser.analyser.delay.FlowDataConstants;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.output.Keyword;
 import org.e2immu.analyser.output.OutputBuilder;
@@ -35,9 +35,9 @@ public class WhileStatement extends LoopStatement {
         super(identifier, new Structure.Builder()
                 .setStatementExecution((v, ec) -> {
                     if (v.isDelayed()) return v.causesOfDelay();
-                    if (v.isBoolValueFalse()) return FlowData.NEVER;
-                    if (v.isBoolValueTrue()) return FlowData.ALWAYS;
-                    return FlowData.CONDITIONALLY;
+                    if (v.isBoolValueFalse()) return FlowDataConstants.NEVER;
+                    if (v.isBoolValueTrue()) return FlowDataConstants.ALWAYS;
+                    return FlowDataConstants.CONDITIONALLY;
                 })
                 .setForwardEvaluationInfo(ForwardEvaluationInfo.NOT_NULL)
                 .setExpression(expression)

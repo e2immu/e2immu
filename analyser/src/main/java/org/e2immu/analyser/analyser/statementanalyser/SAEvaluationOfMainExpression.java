@@ -15,9 +15,11 @@
 package org.e2immu.analyser.analyser.statementanalyser;
 
 import org.e2immu.analyser.analyser.*;
+import org.e2immu.analyser.analyser.context.impl.EvaluationResultImpl;
+import org.e2immu.analyser.analyser.delay.FlowDataConstants;
 import org.e2immu.analyser.analyser.delay.ProgressAndDelay;
 import org.e2immu.analyser.analyser.delay.ProgressWrapper;
-import org.e2immu.analyser.analysis.FlowData;
+import org.e2immu.analyser.analysis.StateData;
 import org.e2immu.analyser.analysis.StatementAnalysis;
 import org.e2immu.analyser.analysis.impl.StatementAnalysisImpl;
 import org.e2immu.analyser.analysis.range.Range;
@@ -41,7 +43,6 @@ import static org.e2immu.analyser.analyser.Property.CONTEXT_NOT_NULL;
 import static org.e2immu.analyser.analyser.Property.MARK_CLEAR_INCREMENTAL;
 import static org.e2immu.analyser.analyser.Stage.EVALUATION;
 import static org.e2immu.analyser.analyser.Stage.INITIAL;
-import static org.e2immu.analyser.util.EventuallyFinalExtension.setFinalAllowEquals;
 
 record SAEvaluationOfMainExpression(StatementAnalysis statementAnalysis,
                                     SAApply apply,
@@ -220,7 +221,7 @@ record SAEvaluationOfMainExpression(StatementAnalysis statementAnalysis,
     VariableScope_11
      */
     private EvaluationResult makeContext(EvaluationContext evaluationContext) {
-        EvaluationResult.Builder builder = new EvaluationResult.Builder(evaluationContext);
+        EvaluationResultImpl.Builder builder = new EvaluationResultImpl.Builder(evaluationContext);
 
         statementAnalysis.stateData().equalityAccordingToStateStream().forEach(e -> {
             IsVariableExpression ive = e.getKey();
@@ -254,8 +255,8 @@ record SAEvaluationOfMainExpression(StatementAnalysis statementAnalysis,
         // try-statement has no main expression, and it may not have initializers; break; continue; ...
         boolean progress = false;
         StateData stateData = statementAnalysis.stateData();
-        if (stateData.valueOfExpression.isVariable()) {
-            progress = setFinalAllowEquals(stateData.valueOfExpression, EmptyExpression.EMPTY_EXPRESSION);
+        if (stateData.valueOfExpressionIsVariable()) {
+            progress = stateData.writeValueOfExpression(EmptyExpression.EMPTY_EXPRESSION);
         }
         Primitives primitives = sharedState.context().getPrimitives();
         progress |= stateData.setPrecondition(Precondition.empty(primitives));
@@ -280,7 +281,7 @@ record SAEvaluationOfMainExpression(StatementAnalysis statementAnalysis,
                 statementAnalysis.ensure(Message.newMessage(statementAnalysis.location(EVALUATION), Message.Label.INTERRUPT_IN_LOOP));
             }
         } else if (statement() instanceof LocalClassDeclaration) {
-            EvaluationResult.Builder builder = new EvaluationResult.Builder(sharedState.context());
+            EvaluationResultImpl.Builder builder = new EvaluationResultImpl.Builder(sharedState.context());
             return apply.apply(sharedState, builder.build()).combinedStatus();
         }
         return ProgressWrapper.of(progress, causes);
@@ -330,10 +331,10 @@ record SAEvaluationOfMainExpression(StatementAnalysis statementAnalysis,
         if (!vi.getValue().isReturnValue() && !vi.getValue().isDelayed()) {
             // remove all return_value parts
             Expression newValue = vi.getValue().removeAllReturnValueParts(statementAnalysis.primitives());
-            EvaluationResult.Builder builder = new EvaluationResult.Builder(sharedState.context()).compose(result);
+            EvaluationResultImpl.Builder builder = new EvaluationResultImpl.Builder(sharedState.context()).compose(result);
             Assignment assignment = new Assignment(statementAnalysis.primitives(),
                     new VariableExpression(methodInfo().identifier, returnVariable), newValue);
-            EvaluationResult assRes = assignment.evaluate(EvaluationResult.from(sharedState.evaluationContext()),
+            EvaluationResult assRes = assignment.evaluate(EvaluationResultImpl.from(sharedState.evaluationContext()),
                     ForwardEvaluationInfo.DEFAULT);
             builder.compose(assRes);
             return builder.build();
@@ -346,7 +347,7 @@ record SAEvaluationOfMainExpression(StatementAnalysis statementAnalysis,
         Expression expression = evaluationResult.getExpression();
         Filter.FilterResult<ParameterInfo> result = SAHelper.moveConditionToParameter(context, expression);
         if (result != null) {
-            EvaluationResult.Builder builder = new EvaluationResult.Builder(context);
+            EvaluationResultImpl.Builder builder = new EvaluationResultImpl.Builder(context);
             boolean changes = false;
             for (Map.Entry<ParameterInfo, Expression> e : result.accepted().entrySet()) {
                 boolean isNotNull = e.getValue().equalsNotNull();
@@ -381,7 +382,7 @@ record SAEvaluationOfMainExpression(StatementAnalysis statementAnalysis,
                                                               Expression expression,
                                                               EvaluationResult result) {
         assert methodInfo().hasReturnValue();
-        EvaluationResult context = EvaluationResult.from(evaluationContext);
+        EvaluationResult context = EvaluationResultImpl.from(evaluationContext);
         Structure structure = statementAnalysis.statement().getStructure();
         ReturnVariable returnVariable = new ReturnVariable(methodInfo());
         VariableInfo prev = statementAnalysis.getVariable(returnVariable.fullyQualifiedName()).getPreviousOrInitial();
@@ -423,7 +424,7 @@ record SAEvaluationOfMainExpression(StatementAnalysis statementAnalysis,
         Assignment assignment = new Assignment(statementAnalysis.primitives(), ve, toEvaluate, hasAlreadyBeenEvaluated,
                 directAssignmentVariables);
         EvaluationResult evaluatedAssignment = assignment.evaluate(updatedContext, forwardEvaluationInfo);
-        return new EvaluationResult.Builder(context)
+        return new EvaluationResultImpl.Builder(context)
                 .compose(result)
                 .copyChangeData(evaluatedAssignment, returnVariable)
                 .setExpression(evaluatedAssignment.getExpression())
@@ -490,7 +491,7 @@ record SAEvaluationOfMainExpression(StatementAnalysis statementAnalysis,
                         statementAnalysis.ensure(msg);
                     }
                     // guaranteed to be reached in block is always "ALWAYS" because it is the first statement
-                    setExecutionOfSubBlock(firstStatement, isTrue ? FlowData.ALWAYS : FlowData.NEVER);
+                    setExecutionOfSubBlock(firstStatement, isTrue ? FlowDataConstants.ALWAYS : FlowDataConstants.NEVER);
                 });
                 if (blocks.size() == 2) {
                     blocks.get(1).ifPresent(firstStatement -> {
@@ -502,7 +503,7 @@ record SAEvaluationOfMainExpression(StatementAnalysis statementAnalysis,
                                     Message.Label.UNREACHABLE_STATEMENT);
                             statementAnalysis.ensure(msg);
                         }
-                        setExecutionOfSubBlock(firstStatement, isTrue ? FlowData.NEVER : FlowData.ALWAYS);
+                        setExecutionOfSubBlock(firstStatement, isTrue ? FlowDataConstants.NEVER : FlowDataConstants.ALWAYS);
                     });
                 }
             } else if (statementAnalysis.statement() instanceof AssertStatement) {
@@ -514,7 +515,7 @@ record SAEvaluationOfMainExpression(StatementAnalysis statementAnalysis,
                     Optional<StatementAnalysis> next = statementAnalysis.navigationData().next.get();
                     if (next.isPresent()) {
                         StatementAnalysis nextAnalysis = next.get();
-                        nextAnalysis.flowData().setGuaranteedToBeReached(FlowData.NEVER);
+                        nextAnalysis.flowData().setGuaranteedToBeReached(FlowDataConstants.NEVER);
                         Message msg = Message.newMessage(new LocationImpl(methodInfo(),
                                 nextAnalysis.index() + INITIAL,
                                 nextAnalysis.statement().getIdentifier()), Message.Label.UNREACHABLE_STATEMENT);
@@ -531,13 +532,14 @@ record SAEvaluationOfMainExpression(StatementAnalysis statementAnalysis,
     private void setExecutionOfSubBlock(StatementAnalysis firstStatement, DV execution) {
         DV mine = statementAnalysis.flowData().getGuaranteedToBeReachedInMethod();
         DV combined;
-        if (FlowData.ALWAYS.equals(mine)) combined = execution;
-        else if (FlowData.NEVER.equals(mine)) combined = FlowData.NEVER;
-        else if (FlowData.CONDITIONALLY.equals(mine)) combined = FlowData.CONDITIONALLY.min(execution);
+        if (FlowDataConstants.ALWAYS.equals(mine)) combined = execution;
+        else if (FlowDataConstants.NEVER.equals(mine)) combined = FlowDataConstants.NEVER;
+        else if (FlowDataConstants.CONDITIONALLY.equals(mine)) combined = FlowDataConstants.CONDITIONALLY.min(execution);
         else if (mine.isDelayed()) combined = mine.causesOfDelay().merge(execution.causesOfDelay());
         else throw new UnsupportedOperationException("Mine is " + mine);
 
-        if (!firstStatement.flowData().getGuaranteedToBeReachedInMethod().equals(FlowData.NEVER) || !combined.equals(FlowData.CONDITIONALLY)) {
+        if (!firstStatement.flowData().getGuaranteedToBeReachedInMethod().equals(FlowDataConstants.NEVER)
+                || !combined.equals(FlowDataConstants.CONDITIONALLY)) {
             firstStatement.flowData().setGuaranteedToBeReachedInMethod(combined);
         } // else: we'll keep NEVER
     }

@@ -21,6 +21,7 @@ import org.e2immu.analyser.analysis.TypeAnalysis;
 import org.e2immu.analyser.config.AnnotatedAPIConfiguration;
 import org.e2immu.analyser.config.Configuration;
 import org.e2immu.analyser.config.InputConfiguration;
+import org.e2immu.analyser.config.LogTarget;
 import org.e2immu.analyser.inspector.TypeContext;
 import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.parser.CommonTestRunner;
@@ -73,7 +74,7 @@ public abstract class CommonAnnotatedAPI {
         Configuration configuration = new Configuration.Builder()
                 .setInputConfiguration(inputConfigurationBuilder.build())
                 .setAnnotatedAPIConfiguration(annotatedAPIConfiguration.build())
-                .addDebugLogTargets("analyser")
+                .addDebugLogTargets(LogTarget.SHALLOW_ANALYSERS)
                 .build();
         configuration.initializeLoggers();
         Parser parser = new Parser(configuration);

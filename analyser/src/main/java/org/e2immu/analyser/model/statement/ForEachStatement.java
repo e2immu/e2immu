@@ -17,7 +17,7 @@ package org.e2immu.analyser.model.statement;
 import org.e2immu.analyser.analyser.DV;
 import org.e2immu.analyser.analyser.EvaluationResult;
 import org.e2immu.analyser.analyser.ForwardEvaluationInfo;
-import org.e2immu.analyser.analysis.FlowData;
+import org.e2immu.analyser.analyser.delay.FlowDataConstants;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.ArrayInitializer;
 import org.e2immu.analyser.model.expression.LocalVariableCreation;
@@ -53,9 +53,9 @@ public class ForEachStatement extends LoopStatement {
         if (expression.isDelayed()) return expression.causesOfDelay();
 
         if (expression instanceof ArrayInitializer arrayInitializer) {
-            return arrayInitializer.multiExpression.expressions().length == 0 ? FlowData.NEVER : FlowData.ALWAYS;
+            return arrayInitializer.multiExpression.expressions().length == 0 ? FlowDataConstants.NEVER : FlowDataConstants.ALWAYS;
         }
-        return FlowData.CONDITIONALLY; // we have no clue
+        return FlowDataConstants.CONDITIONALLY; // we have no clue
     }
 
     @Override

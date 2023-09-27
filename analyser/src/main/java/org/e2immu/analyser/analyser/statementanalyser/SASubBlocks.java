@@ -15,12 +15,11 @@
 package org.e2immu.analyser.analyser.statementanalyser;
 
 import org.e2immu.analyser.analyser.*;
-import org.e2immu.analyser.analyser.delay.DelayFactory;
-import org.e2immu.analyser.analyser.delay.ProgressAndDelay;
-import org.e2immu.analyser.analyser.delay.ProgressWrapper;
-import org.e2immu.analyser.analyser.delay.SimpleCause;
+import org.e2immu.analyser.analyser.context.impl.EvaluationResultImpl;
+import org.e2immu.analyser.analyser.delay.*;
 import org.e2immu.analyser.analyser.util.AnalyserResult;
-import org.e2immu.analyser.analysis.FlowData;
+import org.e2immu.analyser.analyser.util.ConditionManagerImpl;
+import org.e2immu.analyser.analysis.StateData;
 import org.e2immu.analyser.analysis.StatementAnalysis;
 import org.e2immu.analyser.analysis.impl.StatementAnalysisImpl;
 import org.e2immu.analyser.analysis.range.Range;
@@ -121,7 +120,7 @@ record SASubBlocks(StatementAnalysis statementAnalysis, StatementAnalyser statem
         Primitives primitives = sharedState.context().getPrimitives();
         DV escapeAlwaysExecuted = statementAnalysis.isEscapeAlwaysExecutedInCurrentBlock();
 
-        Expression expression = cm.precondition(EvaluationResult.from(sharedState.evaluationContext()));
+        Expression expression = cm.precondition(EvaluationResultImpl.from(sharedState.evaluationContext()));
         StateData stateData = statementAnalysis.stateData();
 
         CausesOfDelay delays = escapeAlwaysExecuted.causesOfDelay()
@@ -190,7 +189,7 @@ record SASubBlocks(StatementAnalysis statementAnalysis, StatementAnalyser statem
 
     private ConditionManagerAndStatus doAssertStatement(StatementAnalyserSharedState sharedState, ConditionManager cm) {
         StateData stateData = statementAnalysis.stateData();
-        Expression assertion = stateData.valueOfExpression.get();
+        Expression assertion = stateData.valueOfExpressionGet();
         Expression pcFromMethod = stateData.getPreconditionFromMethodCalls().expression();
         Expression combined = And.and(sharedState.context(), assertion, pcFromMethod);
         DV isPostCondition = isPostCondition(combined);
@@ -258,7 +257,7 @@ record SASubBlocks(StatementAnalysis statementAnalysis, StatementAnalyser statem
         if (!inPreOrPostCondition) {
             stateData.ensureEscapeNotInPreOrPostConditions();
         }
-        boolean expressionIsDelayed = stateData.valueOfExpression.isVariable();
+        boolean expressionIsDelayed = stateData.valueOfExpressionIsVariable();
         // NOTE that it is possible that assertion is not delayed, but the valueOfExpression is delayed
         // because of other delays in the apply method (see setValueOfExpression call in evaluationOfMainExpression)
         AnalysisStatus analysisStatus;
@@ -303,16 +302,16 @@ record SASubBlocks(StatementAnalysis statementAnalysis, StatementAnalyser statem
                                     LocalVariableCreation catchVariable) {
 
         public boolean escapesAlwaysButNotWithPrecondition() {
-            if (!execution.equals(FlowData.NEVER) && startOfBlock != null) {
+            if (!execution.equals(FlowDataConstants.NEVER) && startOfBlock != null) {
                 StatementAnalysis lastStatement = startOfBlock.lastStatement().getStatementAnalysis();
-                return lastStatement.flowData().interruptStatus().equals(FlowData.ALWAYS)
+                return lastStatement.flowData().interruptStatus().equals(FlowDataConstants.ALWAYS)
                         && !lastStatement.flowData().alwaysEscapesViaException();
             }
             return false;
         }
 
         public boolean escapesWithPrecondition() {
-            if (!execution.equals(FlowData.NEVER) && startOfBlock != null) {
+            if (!execution.equals(FlowDataConstants.NEVER) && startOfBlock != null) {
                 StatementAnalysis lastStatement = startOfBlock.lastStatement().getStatementAnalysis();
                 return lastStatement.flowData().alwaysEscapesViaException();
             }
@@ -320,15 +319,15 @@ record SASubBlocks(StatementAnalysis statementAnalysis, StatementAnalyser statem
         }
 
         public boolean escapesAlways() {
-            if (!execution.equals(FlowData.NEVER) && startOfBlock != null) {
+            if (!execution.equals(FlowDataConstants.NEVER) && startOfBlock != null) {
                 StatementAnalysis lastStatement = startOfBlock.lastStatement().getStatementAnalysis();
-                return lastStatement.flowData().interruptStatus().equals(FlowData.ALWAYS);
+                return lastStatement.flowData().interruptStatus().equals(FlowDataConstants.ALWAYS);
             }
             return false;
         }
 
         public boolean alwaysExecuted() {
-            return execution.equals(FlowData.ALWAYS) && startOfBlock != null;
+            return execution.equals(FlowDataConstants.ALWAYS) && startOfBlock != null;
         }
     }
 
@@ -341,15 +340,15 @@ record SASubBlocks(StatementAnalysis statementAnalysis, StatementAnalyser statem
         int blocksExecuted = 0;
         for (ExecutionOfBlock executionOfBlock : executions) {
             if (executionOfBlock.startOfBlock != null) {
-                if (!executionOfBlock.execution.equals(FlowData.NEVER)) {
+                if (!executionOfBlock.execution.equals(FlowDataConstants.NEVER)) {
                     ForwardAnalysisInfo forward;
                     if (statement() instanceof SwitchStatementOldStyle switchStatement) {
                         forward = new ForwardAnalysisInfo(executionOfBlock.execution,
                                 executionOfBlock.conditionManager, executionOfBlock.catchVariable,
                                 switchStatement.startingPointToLabels(sharedState.context(),
                                         executionOfBlock.startOfBlock.getStatementAnalysis()),
-                                statementAnalysis.stateData().valueOfExpression.get(),
-                                statementAnalysis.stateData().valueOfExpression.get().causesOfDelay(),
+                                statementAnalysis.stateData().valueOfExpressionGet(),
+                                statementAnalysis.stateData().valueOfExpressionGet().causesOfDelay(),
                                 evaluationContext.breakDelayLevel());
                     } else {
                         forward = new ForwardAnalysisInfo(executionOfBlock.execution,
@@ -529,7 +528,7 @@ record SASubBlocks(StatementAnalysis statementAnalysis, StatementAnalyser statem
         if (list.stream().anyMatch(ExecutionOfBlock::alwaysExecuted)) return true;
         // we have a default, and all conditions have code, and are possible
         return list.stream().anyMatch(e -> e.isDefault && e.startOfBlock != null) &&
-                list.stream().allMatch(e -> (e.execution.equals(FlowData.CONDITIONALLY) || e.execution.isDelayed())
+                list.stream().allMatch(e -> (e.execution.equals(FlowDataConstants.CONDITIONALLY) || e.execution.isDelayed())
                         && e.startOfBlock != null);
     }
 
@@ -565,7 +564,7 @@ record SASubBlocks(StatementAnalysis statementAnalysis, StatementAnalyser statem
     }
 
     private Map<Variable, DV> findNotNullVariablesInRejectMode(EvaluationResult evaluationContext, Expression condition) {
-        Set<Variable> set = ConditionManager.findIndividualNull(condition, evaluationContext, Filter.FilterMode.REJECT, true);
+        Set<Variable> set = ConditionManagerImpl.findIndividualNull(condition, evaluationContext, Filter.FilterMode.REJECT, true);
         if (condition.isDelayed()) {
             List<Variable> variables = statement().getStructure().expression().variables(DescendMode.NO);
             return variables.stream().distinct().collect(Collectors.toUnmodifiableMap(e -> e, e -> condition.causesOfDelay()));
@@ -667,7 +666,7 @@ record SASubBlocks(StatementAnalysis statementAnalysis, StatementAnalyser statem
     private List<ExecutionOfBlock> subBlocks_determineExecution(StatementAnalyserSharedState sharedState, List<Optional<StatementAnalyser>> startOfBlocks) {
         List<ExecutionOfBlock> executions = new ArrayList<>(startOfBlocks.size());
 
-        Expression value = statementAnalysis.stateData().valueOfExpression.get();
+        Expression value = statementAnalysis.stateData().valueOfExpressionGet();
         CausesOfDelay valueIsDelayed = statementAnalysis.stateData().valueOfExpressionIsDelayed();
         assert value.isDone() || valueIsDelayed.isDelayed(); // sanity check
         Structure structure = statement().getStructure();
@@ -697,25 +696,25 @@ record SASubBlocks(StatementAnalysis statementAnalysis, StatementAnalyser statem
             boolean isDefault;
             DV statementsExecution = subStatements.statementExecution().apply(value, sharedState.context());
             DV newExecution;
-            if (statementsExecution.equals(FlowData.DEFAULT_EXECUTION)) {
+            if (statementsExecution.equals(FlowDataConstants.DEFAULT_EXECUTION)) {
                 isDefault = true;
                 conditionForSubStatement = defaultCondition(sharedState.context(), executions);
                 conditionVariables = executions.stream().flatMap(e -> e.conditionVariables == null ? Stream.of() : e.conditionVariables.stream()).collect(Collectors.toUnmodifiableSet());
-                if (conditionForSubStatement.isBoolValueFalse()) newExecution = FlowData.NEVER;
-                else if (conditionForSubStatement.isBoolValueTrue()) newExecution = FlowData.ALWAYS;
+                if (conditionForSubStatement.isBoolValueFalse()) newExecution = FlowDataConstants.NEVER;
+                else if (conditionForSubStatement.isBoolValueTrue()) newExecution = FlowDataConstants.ALWAYS;
                 else if (conditionForSubStatement.isDelayed())
                     newExecution = conditionForSubStatement.causesOfDelay();
-                else newExecution = FlowData.CONDITIONALLY;
+                else newExecution = FlowDataConstants.CONDITIONALLY;
             } else {
                 if (statement() instanceof SwitchStatementNewStyle newStyle) {
                     SwitchEntry switchEntry = newStyle.switchEntries.get(count);
                     conditionForSubStatement = switchEntry.structure.expression();
                     conditionVariables = conditionForSubStatement.variableStream().collect(Collectors.toUnmodifiableSet());
-                } else if (statementsExecution.equals(FlowData.ALWAYS)) {
+                } else if (statementsExecution.equals(FlowDataConstants.ALWAYS)) {
                     conditionForSubStatement = new BooleanConstant(statementAnalysis.primitives(), true);
                     conditionVariables = Set.of();
                     assert conditionForSubStatement.isDone();
-                } else if (statementsExecution.equals(FlowData.NEVER)) {
+                } else if (statementsExecution.equals(FlowDataConstants.NEVER)) {
                     conditionForSubStatement = null; // will not be executed anyway
                     conditionVariables = null;
                 } else if (statement() instanceof TryStatement) { // catch
@@ -732,7 +731,7 @@ record SASubBlocks(StatementAnalysis statementAnalysis, StatementAnalyser statem
             }
             DV execution = statementAnalysis.flowData().execution(newExecution);
 
-            ConditionManager subCm = execution.equals(FlowData.NEVER) ? null :
+            ConditionManager subCm = execution.equals(FlowDataConstants.NEVER) ? null :
                     sharedState.localConditionManager().newAtStartOfNewBlockDoNotChangePrecondition(statementAnalysis.primitives(),
                             conditionForSubStatement, conditionVariables);
             Expression absoluteState = subCm == null ? null : subCm.absoluteState(sharedState.context());
@@ -755,7 +754,7 @@ record SASubBlocks(StatementAnalysis statementAnalysis, StatementAnalyser statem
         Expression absoluteState;
         ConditionManager cm;
         Set<Variable> conditionVariables;
-        if (firstBlockExecution.equals(FlowData.NEVER)) {
+        if (firstBlockExecution.equals(FlowDataConstants.NEVER)) {
             cm = null;
             condition = null;
             conditionVariables = null;

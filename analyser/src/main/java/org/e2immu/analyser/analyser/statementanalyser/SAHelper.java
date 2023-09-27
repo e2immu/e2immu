@@ -16,6 +16,7 @@ package org.e2immu.analyser.analyser.statementanalyser;
 
 import org.e2immu.analyser.analyser.Properties;
 import org.e2immu.analyser.analyser.*;
+import org.e2immu.analyser.analyser.util.AnalyserComponents;
 import org.e2immu.analyser.analyser.util.AnalyserResult;
 import org.e2immu.analyser.analyser.util.VariableAccessReport;
 import org.e2immu.analyser.analysis.FieldAnalysis;
@@ -52,7 +53,7 @@ record SAHelper(StatementAnalysis statementAnalysis) {
         return null;
     }
 
-    static Expression bestValue(EvaluationResult.ChangeData valueChangeData, VariableInfo vi1) {
+    static Expression bestValue(ChangeData valueChangeData, VariableInfo vi1) {
         if (valueChangeData != null && valueChangeData.value() != null) {
             return valueChangeData.value();
         }
@@ -308,14 +309,14 @@ record SAHelper(StatementAnalysis statementAnalysis) {
 
     public static EvaluationResult scopeVariablesForPatternVariables(EvaluationResult evaluationResult2, String index) {
         TranslationMapImpl.Builder builder = new TranslationMapImpl.Builder();
-        for (Map.Entry<Variable, EvaluationResult.ChangeData> e : evaluationResult2.changeData().entrySet()) {
+        for (Map.Entry<Variable, ChangeData> e : evaluationResult2.changeData().entrySet()) {
             if (evaluationResult2.evaluationContext().isPatternVariableCreatedAt(e.getKey(), index)) {
                 Variable pv = e.getKey();
 
                 // we have pattern variables, which should not exist in the next iteration. This is not a problem in itself, but it is
                 // where there are also fields that have these pattern variables in their scope. Because the value may have to live on,
                 // a scope variable will need creating for every pattern variable used in a scope
-                List<Map.Entry<Variable, EvaluationResult.ChangeData>> entriesOfFieldRefs =
+                List<Map.Entry<Variable, ChangeData>> entriesOfFieldRefs =
                         evaluationResult2.changeData().entrySet().stream()
                                 .filter(e1 -> e1.getKey() instanceof FieldReference fr && fr.hasAsScopeVariable(pv)).toList();
                 if (!entriesOfFieldRefs.isEmpty()) {
@@ -338,7 +339,7 @@ record SAHelper(StatementAnalysis statementAnalysis) {
                     builder.addVariableExpression(pv, scope);
 
                     // then, other field references
-                    for (Map.Entry<Variable, EvaluationResult.ChangeData> e2 : entriesOfFieldRefs) {
+                    for (Map.Entry<Variable, ChangeData> e2 : entriesOfFieldRefs) {
                         FieldReference fr = (FieldReference) e2.getKey();
                         assert fr.scopeVariable != null && fr.scopeVariable.equals(pv)
                                 : "other situations not yet implemented";

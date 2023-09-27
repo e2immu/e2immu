@@ -102,9 +102,7 @@ public abstract class CommonTestRunner extends VisitorTestSupport {
                 .setDebugConfiguration(debugConfiguration)
                 .setAnalyserConfiguration(analyserConfiguration)
                 .setAnnotatedAPIConfiguration(annotatedAPIConfiguration)
-                .addDebugLogTargets("analyser.impl.computing")
-                .addDebugLogTargets("analyser.nonanalyserimpl")
-                .addDebugLogTargets("analyser.statementanalyser")
+                .addDebugLogTargets(LogTarget.ANALYSIS, LogTarget.COMPUTING_ANALYSERS)
                 .setInputConfiguration(inputConfigurationBuilder.build())
                 .setInspectorConfiguration(new InspectorConfiguration.Builder().setStoreComments(true).build())
                 .build();
@@ -146,7 +144,7 @@ public abstract class CommonTestRunner extends VisitorTestSupport {
 
         Configuration configuration = new Configuration.Builder()
                 .setAnnotatedAPIConfiguration(annotatedAPIConfiguration)
-                .addDebugLogTargets("analyser")
+                .addDebugLogTargets(LogTarget.ANALYSIS, LogTarget.COMPUTING_ANALYSERS)
                 .setDebugConfiguration(debugConfiguration)
                 .setInputConfiguration(builder.build())
                 .setAnalyserConfiguration(analyserConfiguration)

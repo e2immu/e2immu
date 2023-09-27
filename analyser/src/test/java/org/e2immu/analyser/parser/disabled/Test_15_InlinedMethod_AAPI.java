@@ -14,8 +14,8 @@
 
 package org.e2immu.analyser.parser.disabled;
 
+import org.e2immu.analyser.analyser.ChangeData;
 import org.e2immu.analyser.analyser.DV;
-import org.e2immu.analyser.analyser.EvaluationResult;
 import org.e2immu.analyser.analyser.Property;
 import org.e2immu.analyser.analysis.MethodAnalysis;
 import org.e2immu.analyser.config.AnalyserConfiguration;
@@ -194,7 +194,7 @@ public class Test_15_InlinedMethod_AAPI extends CommonTestRunner {
                 if ("3".equals(d.statementId())) {
                     String expected = d.iteration() < 2 ? "1==<m:size>"
                             : "1==(`inspectionProvider.getMethodInspection(this).b`?List.of(new ParameterInfo(new ParameterizedType(\"i\"),0)):List.of()).size()";
-                    assertEquals(expected, d.statementAnalysis().stateData().valueOfExpression.get().toString());
+                    assertEquals(expected, d.statementAnalysis().stateData().valueOfExpressionGet().toString());
                 }
             }
         };
@@ -310,7 +310,7 @@ public class Test_15_InlinedMethod_AAPI extends CommonTestRunner {
                 assertEquals(expected, d.evaluationResult().value().toString());
                 assertEquals("", d.evaluationResult().causesOfDelay().toString());
 
-                EvaluationResult.ChangeData cd = d.findValueChangeByToString("this");
+                ChangeData cd = d.findValueChangeByToString("this");
                 assertEquals(DV.FALSE_DV, cd.getProperty(Property.CONTEXT_MODIFIED));
                 assertEquals("", cd.linkedVariables().toString());
             }

@@ -113,7 +113,7 @@ public class Test_Output_02_OutputBuilder extends CommonTestRunner {
             if ("apply".equals(d.methodInfo().name) && "$4".equals(d.methodInfo().typeInfo.simpleName)) {
                 if ("2.0.0".equals(d.statementId())) { // a.add(separator); add is fluent; the identity is there because "a" is the first parameter of apply
                     String expected = d.iteration() < 2 ? "<m:add>" : "a/*@NotNull*/";
-                    assertEquals(expected, d.statementAnalysis().stateData().valueOfExpression.get().toString());
+                    assertEquals(expected, d.statementAnalysis().stateData().valueOfExpressionGet().toString());
                 }
             }
         };

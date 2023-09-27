@@ -15,6 +15,7 @@
 package org.e2immu.analyser.model.expression;
 
 import org.e2immu.analyser.analyser.*;
+import org.e2immu.analyser.analyser.context.impl.EvaluationResultImpl;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.util.ExpressionComparator;
 import org.e2immu.analyser.model.expression.util.MultiExpression;
@@ -115,7 +116,7 @@ public class ArrayInitializer extends BaseExpression implements Expression {
                 .collect(Collectors.toList());
         List<Expression> values = results.stream().map(EvaluationResult::getExpression).collect(Collectors.toList());
 
-        EvaluationResult.Builder builder = new EvaluationResult.Builder(context).compose(results);
+        EvaluationResultImpl.Builder builder = new EvaluationResultImpl.Builder(context).compose(results);
         builder.setExpression(new ArrayInitializer(identifier, context.getAnalyserContext(), values, commonType));
 
         return builder.build();

@@ -14,10 +14,7 @@
 
 package org.e2immu.analyser.parser.start;
 
-import org.e2immu.analyser.analyser.DV;
-import org.e2immu.analyser.analyser.EvaluationResult;
-import org.e2immu.analyser.analyser.Stage;
-import org.e2immu.analyser.analyser.VariableInfo;
+import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.analysis.FlowData;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.model.MethodInfo;
@@ -34,8 +31,8 @@ import org.junit.jupiter.api.Test;
 import java.io.IOException;
 
 import static org.e2immu.analyser.analyser.Property.*;
-import static org.e2immu.analyser.analysis.FlowData.ALWAYS;
-import static org.e2immu.analyser.analysis.FlowData.NEVER;
+import static org.e2immu.analyser.analyser.delay.FlowDataConstants.ALWAYS;
+import static org.e2immu.analyser.analyser.delay.FlowDataConstants.NEVER;
 import static org.e2immu.analyser.parser.VisitorTestSupport.IterationInfo.*;
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -217,7 +214,7 @@ public class Test_05_Final extends CommonTestRunner {
                     // this.s5 == null
 
                     // first, show that THIS is read
-                    EvaluationResult.ChangeData changeData = d.findValueChange(THIS);
+                    ChangeData changeData = d.findValueChange(THIS);
                     assertEquals("[0]", changeData.readAtStatementTime().toString());
 
                     // null==s5 should become true because initially, s5 in the constructor IS null

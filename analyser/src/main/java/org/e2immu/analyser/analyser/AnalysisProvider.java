@@ -21,15 +21,12 @@ import org.e2immu.analyser.analysis.TypeAnalysis;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.annotation.NotNull;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.Map;
 
 import static org.e2immu.analyser.model.MultiLevel.Level.IMMUTABLE_HC;
 
 public interface AnalysisProvider {
-    Logger LOGGER = LoggerFactory.getLogger(AnalysisProvider.class);
 
     @NotNull
     FieldAnalysis getFieldAnalysis(FieldInfo fieldInfo);
@@ -73,12 +70,7 @@ public interface AnalysisProvider {
 
         @Override
         public MethodAnalysis getMethodAnalysis(MethodInfo methodInfo) {
-            try {
-                return methodInfo.methodAnalysis.get("Method analysis of " + methodInfo.fullyQualifiedName);
-            } catch (RuntimeException re) {
-                LOGGER.error("Caught exception trying to obtain default method analysis for " + methodInfo.fullyQualifiedName());
-                throw re;
-            }
+            return methodInfo.methodAnalysis.get("Method analysis of " + methodInfo.fullyQualifiedName);
         }
     };
 

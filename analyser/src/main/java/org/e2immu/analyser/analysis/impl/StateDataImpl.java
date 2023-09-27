@@ -12,8 +12,12 @@
  * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.e2immu.analyser.analyser;
+package org.e2immu.analyser.analysis.impl;
 
+import org.e2immu.analyser.analyser.*;
+import org.e2immu.analyser.analyser.context.impl.EvaluationResultImpl;
+import org.e2immu.analyser.analyser.util.ConditionManagerImpl;
+import org.e2immu.analyser.analysis.StateData;
 import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.Identifier;
 import org.e2immu.analyser.model.Location;
@@ -38,8 +42,8 @@ import java.util.stream.Stream;
 
 import static org.e2immu.analyser.util.EventuallyFinalExtension.setFinalAllowEquals;
 
-public class StateData {
-    private static final Logger LOGGER = LoggerFactory.getLogger(StateData.class);
+public class StateDataImpl implements StateData {
+    private static final Logger LOGGER = LoggerFactory.getLogger(StateDataImpl.class);
 
     private final EventuallyFinal<ConditionManager> conditionManagerForNextStatement = new EventuallyFinal<>();
     private final Map<IsVariableExpression, Expression> equalityAccordingToState = new HashMap<>();
@@ -56,10 +60,10 @@ public class StateData {
 
     private final EventuallyFinal<Expression> staticSideEffect = new EventuallyFinal<>();
 
-    public StateData(Location location, boolean isLoop, Primitives primitives) {
+    public StateDataImpl(Location location, boolean isLoop, Primitives primitives) {
         statesOfInterrupts = isLoop ? new SetOnceMap<>() : null;
         statesOfReturnInLoop = isLoop ? new SetOnceMap<>() : null;
-        conditionManagerForNextStatement.setVariable(ConditionManager.initialConditionManager(primitives));
+        conditionManagerForNextStatement.setVariable(ConditionManagerImpl.initialConditionManager(primitives));
         precondition.setVariable(Precondition.noInformationYet(location, primitives));
         postCondition.setVariable(PostCondition.NO_INFO_YET);
         staticSideEffect.setVariable(DelayedExpression.NO_STATIC_SIDE_EFFECT_INFO);
@@ -78,7 +82,7 @@ public class StateData {
 
     public void makeUnreachable(Primitives primitives) {
         if (conditionManagerForNextStatement.isVariable()) {
-            conditionManagerForNextStatement.setFinal(ConditionManager.impossibleConditionManager(primitives));
+            conditionManagerForNextStatement.setFinal(ConditionManagerImpl.impossibleConditionManager(primitives));
         }
         if (precondition.isVariable()) {
             precondition.setFinal(Precondition.empty(primitives));
@@ -110,7 +114,7 @@ public class StateData {
 
     public boolean setAbsoluteState(EvaluationContext evaluationContext) {
         ConditionManager conditionManager = evaluationContext.getConditionManager();
-        Expression absoluteState = conditionManager.absoluteState(EvaluationResult.from(evaluationContext));
+        Expression absoluteState = conditionManager.absoluteState(EvaluationResultImpl.from(evaluationContext));
         if (absoluteState.isDelayed()) {
             this.absoluteState.setVariable(absoluteState);
         } else if (this.absoluteState.isVariable()) {
@@ -385,5 +389,20 @@ public class StateData {
 
     public boolean staticSideEffectIsSet() {
         return staticSideEffect.isFinal();
+    }
+
+    @Override
+    public Expression valueOfExpressionGet() {
+        return valueOfExpression.get();
+    }
+
+    @Override
+    public boolean valueOfExpressionIsVariable() {
+        return valueOfExpression.isVariable();
+    }
+
+    @Override
+    public boolean writeValueOfExpression(Expression expression) {
+        return setFinalAllowEquals(valueOfExpression, expression);
     }
 }

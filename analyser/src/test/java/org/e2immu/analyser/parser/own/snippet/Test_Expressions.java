@@ -68,7 +68,7 @@ public class Test_Expressions extends CommonTestRunner {
             if ("recursivelyCollectTerms".equals(d.methodInfo().name)) {
                 if ("4".equals(d.statementId())) {
                     String expected = d.iteration() < 2 ? "<null-check>" : "expression instanceof MethodCall";
-                    assertEquals(expected, d.statementAnalysis().stateData().valueOfExpression.get().toString());
+                    assertEquals(expected, d.statementAnalysis().stateData().valueOfExpressionGet().toString());
                 }
                 if ("6".equals(d.statementId())) {
                     assertEquals(d.iteration() >= 77, d.statementAnalysis().stateData().conditionManagerForNextStatementStatus().isDone());

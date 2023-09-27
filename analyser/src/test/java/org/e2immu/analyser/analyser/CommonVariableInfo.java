@@ -14,6 +14,7 @@
 
 package org.e2immu.analyser.analyser;
 
+import org.e2immu.analyser.analyser.util.ConditionManagerImpl;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.BooleanConstant;
 import org.e2immu.analyser.model.expression.IntConstant;
@@ -24,6 +25,8 @@ import org.e2immu.analyser.model.variable.ReturnVariable;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.parser.impl.PrimitivesImpl;
+
+import static org.e2immu.analyser.analyser.util.ConditionManagerImpl.commonGetProperty;
 
 public abstract class CommonVariableInfo {
 
@@ -97,13 +100,18 @@ public abstract class CommonVariableInfo {
         }
 
         @Override
+        public DV getProperty(Expression value, Property property, boolean duringEvaluation, boolean ignoreStateInConditionManager) {
+            return commonGetProperty(this, value, property, duringEvaluation, ignoreStateInConditionManager);
+        }
+
+        @Override
         public Primitives getPrimitives() {
             return primitives;
         }
 
         @Override
         public ConditionManager getConditionManager() {
-            return ConditionManager.initialConditionManager(primitives);
+            return ConditionManagerImpl.initialConditionManager(primitives);
         }
     };
 

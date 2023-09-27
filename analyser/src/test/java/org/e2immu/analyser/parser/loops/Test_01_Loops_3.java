@@ -16,7 +16,7 @@ package org.e2immu.analyser.parser.loops;
 
 import org.e2immu.analyser.analyser.DV;
 import org.e2immu.analyser.analyser.VariableInfo;
-import org.e2immu.analyser.analysis.FlowData;
+import org.e2immu.analyser.analyser.delay.FlowDataConstants;
 import org.e2immu.analyser.analysis.StatementAnalysis;
 import org.e2immu.analyser.analysis.impl.StatementAnalysisImpl;
 import org.e2immu.analyser.config.DebugConfiguration;
@@ -80,7 +80,7 @@ public class Test_01_Loops_3 extends CommonTestRunner {
                                 .apply(new ArrayInitializer(Identifier.generate("test"),
                                         d.context().getAnalyserContext(),
                                         List.of(), ((StatementAnalysisImpl) d.statementAnalysis()).primitives.stringParameterizedType()), d.context());
-                        assertSame(FlowData.NEVER, exec);
+                        assertSame(FlowDataConstants.NEVER, exec);
 
                         StatementAnalysis firstInBlock = d.statementAnalysis().navigationData().blocks.get().get(0).orElseThrow();
                         assertEquals("1.0.0", firstInBlock.index());

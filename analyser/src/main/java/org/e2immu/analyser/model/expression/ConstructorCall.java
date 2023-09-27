@@ -15,6 +15,7 @@
 package org.e2immu.analyser.model.expression;
 
 import org.e2immu.analyser.analyser.*;
+import org.e2immu.analyser.analyser.context.impl.EvaluationResultImpl;
 import org.e2immu.analyser.analysis.FieldAnalysis;
 import org.e2immu.analyser.analysis.MethodAnalysis;
 import org.e2immu.analyser.analysis.TypeAnalysis;
@@ -168,6 +169,7 @@ public class ConstructorCall extends BaseExpression implements HasParameterExpre
                 arrayInitializer);
     }
 
+    @SuppressWarnings("unchecked")
     public static <T extends Expression> T ensureExpressionType(Expression expression, Class<T> clazz) {
         if (clazz.isAssignableFrom(expression.getClass())) return (T) expression;
         throw new UnsupportedOperationException();
@@ -459,7 +461,7 @@ public class ConstructorCall extends BaseExpression implements HasParameterExpre
         // arrayInitializer variant
 
         if (arrayInitializer != null) {
-            EvaluationResult.Builder builder = new EvaluationResult.Builder(context);
+            EvaluationResultImpl.Builder builder = new EvaluationResultImpl.Builder(context);
             List<EvaluationResult> results = arrayInitializer.multiExpression.stream()
                     .map(e -> e.evaluate(context, forwardEvaluationInfo))
                     .collect(Collectors.toList());
@@ -472,7 +474,7 @@ public class ConstructorCall extends BaseExpression implements HasParameterExpre
 
         // "normal"
 
-        Pair<EvaluationResult.Builder, List<Expression>> res = EvaluateParameters.go(parameterExpressions,
+        Pair<EvaluationResultImpl.Builder, List<Expression>> res = EvaluateParameters.go(parameterExpressions,
                 context, forwardEvaluationInfo, constructor, false, null,
                 false);
         CausesOfDelay parameterDelays = res.v.stream().map(Expression::causesOfDelay).reduce(CausesOfDelay.EMPTY, CausesOfDelay::merge);
@@ -531,11 +533,11 @@ public class ConstructorCall extends BaseExpression implements HasParameterExpre
         }
         Expression mc = new ConstructorCall(identifier, scope, constructor, parameterizedType, diamond, sortedParameters,
                 anonymousClass, evaluatedArrayInitializer);
-        return new EvaluationResult.Builder(context).setExpression(mc).build();
+        return new EvaluationResultImpl.Builder(context).setExpression(mc).build();
     }
 
     private EvaluationResult delayedConstructorCall(EvaluationResult context,
-                                                    EvaluationResult.Builder builder,
+                                                    EvaluationResultImpl.Builder builder,
                                                     CausesOfDelay causesOfDelay) {
         assert causesOfDelay.isDelayed();
         builder.setExpression(createDelayedValue(identifier, context, causesOfDelay));

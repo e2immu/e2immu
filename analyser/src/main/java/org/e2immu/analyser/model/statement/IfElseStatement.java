@@ -17,7 +17,7 @@ package org.e2immu.analyser.model.statement;
 import org.e2immu.analyser.analyser.DV;
 import org.e2immu.analyser.analyser.EvaluationResult;
 import org.e2immu.analyser.analyser.ForwardEvaluationInfo;
-import org.e2immu.analyser.analysis.FlowData;
+import org.e2immu.analyser.analyser.delay.FlowDataConstants;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.EmptyExpression;
 import org.e2immu.analyser.output.Keyword;
@@ -88,9 +88,9 @@ public class IfElseStatement extends StatementWithExpression {
 
     private static DV standardExecution(Expression v, EvaluationResult evaluationContext) {
         if (v.isDelayed()) return v.causesOfDelay();
-        if (v.isBoolValueTrue()) return FlowData.ALWAYS;
-        if (v.isBoolValueFalse()) return FlowData.NEVER;
-        return FlowData.CONDITIONALLY;
+        if (v.isBoolValueTrue()) return FlowDataConstants.ALWAYS;
+        if (v.isBoolValueFalse()) return FlowDataConstants.NEVER;
+        return FlowDataConstants.CONDITIONALLY;
     }
 
     @Override

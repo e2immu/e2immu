@@ -14,10 +14,7 @@
 
 package org.e2immu.annotatedapi.test;
 
-import org.e2immu.analyser.config.AnnotationXmlConfiguration;
-import org.e2immu.analyser.config.Configuration;
-import org.e2immu.analyser.config.InputConfiguration;
-import org.e2immu.analyser.config.UploadConfiguration;
+import org.e2immu.analyser.config.*;
 import org.e2immu.analyser.output.Formatter;
 import org.e2immu.analyser.output.FormattingOptions;
 import org.e2immu.analyser.output.OutputBuilder;
@@ -53,7 +50,7 @@ public abstract class CommonTestRunner {
                 .setAnnotationXmConfiguration(axc)
                 .setUploadConfiguration(new UploadConfiguration.Builder()
                         .setUpload(true).build())
-                .addDebugLogTargets("analyser,config,inspector")
+                .addDebugLogTargets(LogTarget.ANNOTATED_API, LogTarget.INSPECTOR)
                 .build();
 
         configuration.initializeLoggers();

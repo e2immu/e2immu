@@ -16,7 +16,9 @@ package org.e2immu.analyser.analyser.statementanalyser;
 
 import org.e2immu.analyser.analyser.Properties;
 import org.e2immu.analyser.analyser.*;
+import org.e2immu.analyser.analyser.context.impl.EvaluationResultImpl;
 import org.e2immu.analyser.analyser.delay.*;
+import org.e2immu.analyser.analyser.util.ComputeLinkedVariables;
 import org.e2immu.analyser.analysis.StatementAnalysis;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.*;
@@ -81,7 +83,7 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
         // given that we may create an array and its access (see e.g. Loops_21)
         // IMPORTANT: we're using the fact that x[i] comes after x in the alphabetic ordering!!!
 
-        List<Map.Entry<Variable, EvaluationResult.ChangeData>> sortedEntries =
+        List<Map.Entry<Variable, ChangeData>> sortedEntries =
                 new ArrayList<>(evaluationResult.changeData().entrySet());
         sortedEntries.sort((e1, e2) -> {
             // return variables at the end
@@ -120,12 +122,12 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
         Map<Variable, DelayAndLinked> setEvalValueToDelayed = new HashMap<>();
         boolean delayNotEvaluated = evaluationResult.causesOfDelay().containsCauseOfDelay(CauseOfDelay.Cause.CONSTRUCTOR_TO_INSTANCE);
 
-        for (Map.Entry<Variable, EvaluationResult.ChangeData> entry : sortedEntries) {
+        for (Map.Entry<Variable, ChangeData> entry : sortedEntries) {
             Variable variable = entry.getKey();
             existingVariablesNotVisited.remove(variable);
             variablesDefinedOutsideLoop.remove(variable);
             variablesWithoutEvaluation.remove(variable);
-            EvaluationResult.ChangeData changeData = entry.getValue();
+            ChangeData changeData = entry.getValue();
 
             // we're now guaranteed to find the variable
             VariableInfoContainer vic = statementAnalysis.getVariable(variable.fullyQualifiedName());
@@ -179,7 +181,7 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
             }
         }
 
-        boolean noAssignments = evaluationResult.changeData().values().stream().noneMatch(EvaluationResult.ChangeData::markAssignment);
+        boolean noAssignments = evaluationResult.changeData().values().stream().noneMatch(ChangeData::markAssignment);
         ProgressAndDelay delayStatus = new ProgressAndDelay(progress, cumulativeDelay);
         ApplyStatusAndEnnStatus applyStatusAndEnnStatus = contextProperties(sharedState, evaluationResult,
                 delayStatus, analyserContext, groupPropertyValues, noAssignments, extraLv);
@@ -289,7 +291,7 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
                                          GroupPropertyValues groupPropertyValues,
                                          VariableCause optBreakInitDelay,
                                          Variable variable,
-                                         EvaluationResult.ChangeData changeData,
+                                         ChangeData changeData,
                                          VariableInfoContainer vic,
                                          VariableInfo vi,
                                          VariableInfo vi1) {
@@ -344,7 +346,7 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
     private boolean changeValueWithoutAssignment(StatementAnalyserSharedState sharedState,
                                                  GroupPropertyValues groupPropertyValues,
                                                  Variable variable,
-                                                 EvaluationResult.ChangeData changeData,
+                                                 ChangeData changeData,
                                                  VariableInfoContainer vic,
                                                  VariableInfo vi1) {
         // a modifying method caused an updated instance value. IMPORTANT: the value properties do not change.
@@ -373,7 +375,7 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
     private boolean markAssignment(StatementAnalyserSharedState sharedState,
                                    GroupPropertyValues groupPropertyValues,
                                    Variable variable,
-                                   EvaluationResult.ChangeData changeData,
+                                   ChangeData changeData,
                                    VariableInfoContainer vic,
                                    VariableInfo vi,
                                    VariableInfo vi1) {
@@ -430,7 +432,7 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
                                                                               Variable variable,
                                                                               VariableInfoContainer vic,
                                                                               VariableInfo vi,
-                                                                              EvaluationResult.ChangeData changeData,
+                                                                              ChangeData changeData,
                                                                               GroupPropertyValues groupPropertyValues) {
         if (vic.variableNature() instanceof VariableNature.VariableDefinedOutsideLoop outside
                 && outside.statementIndex().equals(index())) {
@@ -469,7 +471,7 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
                                       Variable variable,
                                       VariableInfoContainer vic,
                                       VariableInfo vi,
-                                      EvaluationResult.ChangeData changeData,
+                                      ChangeData changeData,
                                       GroupPropertyValues groupPropertyValues,
                                       VariableInfo merge) {
     /*
@@ -523,7 +525,7 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
                                                    Variable variable,
                                                    VariableInfoContainer vic,
                                                    VariableInfo vi,
-                                                   EvaluationResult.ChangeData changeData,
+                                                   ChangeData changeData,
                                                    Properties valuePropertiesIn,
                                                    GroupPropertyValues groupPropertyValues,
                                                    CausesOfDelay causes) {
@@ -545,7 +547,7 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
     private LoopResult changeValueToInstanceInLoop(StatementAnalyserSharedState sharedState,
                                                    Variable variable,
                                                    VariableInfoContainer vic,
-                                                   EvaluationResult.ChangeData changeData,
+                                                   ChangeData changeData,
                                                    Properties valuePropertiesIn,
                                                    GroupPropertyValues groupPropertyValues) {
         Properties valueProperties;
@@ -595,14 +597,14 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
         }
         if (!valueToWriteIsDelayed && causes.isDelayed()) {
             return valueToWrite.createDelayedValue(valueToWrite.getIdentifier(),
-                    EvaluationResult.from(sharedState.evaluationContext()), causes);
+                    EvaluationResultImpl.from(sharedState.evaluationContext()), causes);
         }
         return valueToWrite;
     }
 
     private boolean detectBreakDelayInAssignment(Variable variable,
                                                  VariableInfoContainer vic,
-                                                 EvaluationResult.ChangeData changeData,
+                                                 ChangeData changeData,
                                                  Expression valueToWrite,
                                                  Expression valueToWritePossiblyDelayed,
                                                  Properties combined,
@@ -690,7 +692,7 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
     private EvaluationResult variablesReadOrModifiedInSubAnalysers(EvaluationResult evaluationResultIn,
                                                                    EvaluationResult context) {
         if (statementAnalysis.havePropertiesFromSubAnalysers()) {
-            EvaluationResult.Builder builder = new EvaluationResult.Builder(context);
+            EvaluationResultImpl.Builder builder = new EvaluationResultImpl.Builder(context);
             builder.compose(evaluationResultIn);
             statementAnalysis.propertiesFromSubAnalysers().forEach(e -> {
                 Variable variable = e.getKey();
@@ -736,7 +738,7 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
         Function<Variable, LinkedVariables> linkedVariablesFromChangeData = v -> {
             LinkedVariables extra = extraLv.get(v);
             if (extra != null) return extra;
-            EvaluationResult.ChangeData changeData = evaluationResult.changeData().get(v);
+            ChangeData changeData = evaluationResult.changeData().get(v);
             return changeData == null ? LinkedVariables.EMPTY : changeData.linkedVariables();
         };
 
@@ -887,7 +889,7 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
             MethodAnalyser methodAnalyser,
             VariableInfo vi1,
             VariableInfoContainer vic,
-            EvaluationResult.ChangeData changeData,
+            ChangeData changeData,
             ConditionManager conditionManager,
             EvaluationResult context) {
         if (vi1.isAssigned() && !vi1.isRead() && changeData.markAssignment() &&
@@ -969,7 +971,7 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
                 Identifier generate = Identifier.generate("inline condition var def outside loop");
                 InlineConditional inlineConditional = new InlineConditional(generate,
                         evaluationContext.getAnalyserContext(), state, value, valueOfVariablePreAssignment);
-                return inlineConditional.optimise(EvaluationResult.from(evaluationContext.dropConditionManager()), variable);
+                return inlineConditional.optimise(EvaluationResultImpl.from(evaluationContext.dropConditionManager()), variable);
             }
         }
         return value;

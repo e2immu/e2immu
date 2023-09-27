@@ -16,7 +16,7 @@ package org.e2immu.analyser.parser.own.output;
 
 import org.e2immu.analyser.analyser.DV;
 import org.e2immu.analyser.analyser.Property;
-import org.e2immu.analyser.analysis.FlowData;
+import org.e2immu.analyser.analyser.delay.FlowDataConstants;
 import org.e2immu.analyser.analysis.MethodAnalysis;
 import org.e2immu.analyser.analysis.ParameterAnalysis;
 import org.e2immu.analyser.config.DebugConfiguration;
@@ -328,7 +328,7 @@ public class Test_62_FormatterSimplified extends CommonTestRunner {
                     if (d.iteration() < 2) {
                         assertTrue(exec.isDelayed());
                     } else {
-                        assertEquals(FlowData.ALWAYS, exec);
+                        assertEquals(FlowDataConstants.ALWAYS, exec);
                     }
                 }
             }

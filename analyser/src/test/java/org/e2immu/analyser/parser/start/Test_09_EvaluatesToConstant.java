@@ -54,7 +54,7 @@ public class Test_09_EvaluatesToConstant extends CommonTestRunner {
             if ("1.0.0".equals(d.statementId())) {
                 String expected = d.iteration() == 0 ? "<m:contains>" : "param.contains(\"a\")";
                 assertEquals(expected, d.absoluteState().toString());
-                Expression value = d.statementAnalysis().stateData().valueOfExpression.get();
+                Expression value = d.statementAnalysis().stateData().valueOfExpressionGet();
                 assertEquals("EvaluatesToConstant.someMethod(\"xzy\")", value.toString());
             }
             if ("1.0.1".equals(d.statementAnalysis().index())) {

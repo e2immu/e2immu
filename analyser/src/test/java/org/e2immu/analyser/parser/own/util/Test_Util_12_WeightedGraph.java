@@ -17,8 +17,8 @@ package org.e2immu.analyser.parser.own.util;
 
 import org.e2immu.analyser.analyser.DV;
 import org.e2immu.analyser.analyser.Property;
+import org.e2immu.analyser.analyser.delay.FlowDataConstants;
 import org.e2immu.analyser.analyser.util.WeightedGraph;
-import org.e2immu.analyser.analysis.FlowData;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.parser.CommonTestRunner;
 import org.e2immu.analyser.visitor.MethodAnalyserVisitor;
@@ -51,7 +51,7 @@ public class Test_Util_12_WeightedGraph extends CommonTestRunner {
                 }
                 if ("3".equals(d.statementId())) {
                     DV guaranteedToBeReachedInMethod = d.statementAnalysis().flowData().getGuaranteedToBeReachedInMethod();
-                    assertEquals(FlowData.ALWAYS, guaranteedToBeReachedInMethod);
+                    assertEquals(FlowDataConstants.ALWAYS, guaranteedToBeReachedInMethod);
 
                 }
             }

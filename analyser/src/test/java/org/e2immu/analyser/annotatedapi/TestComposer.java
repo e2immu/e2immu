@@ -14,10 +14,7 @@
 
 package org.e2immu.analyser.annotatedapi;
 
-import org.e2immu.analyser.config.AnnotatedAPIConfiguration;
-import org.e2immu.analyser.config.Configuration;
-import org.e2immu.analyser.config.InputConfiguration;
-import org.e2immu.analyser.config.UploadConfiguration;
+import org.e2immu.analyser.config.*;
 import org.e2immu.analyser.model.TypeInfo;
 import org.e2immu.analyser.output.Formatter;
 import org.e2immu.analyser.output.FormattingOptions;
@@ -57,7 +54,7 @@ public class TestComposer {
                 .setAnnotatedAPIConfiguration(annotatedAPIConfiguration)
                 .setUploadConfiguration(new UploadConfiguration.Builder()
                         .setUpload(true).build())
-                .addDebugLogTargets("config,inspector,analyser")
+                .addDebugLogTargets(LogTarget.INSPECTOR, LogTarget.ANALYSIS)
                 .build();
 
         configuration.initializeLoggers();

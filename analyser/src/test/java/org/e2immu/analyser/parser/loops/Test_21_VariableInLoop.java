@@ -199,7 +199,7 @@ public class Test_21_VariableInLoop extends CommonTestRunner {
                     assertEquals(d.iteration() == 0 ? 4 : 2, d.evaluationResult().changeData().size());
                     String expected = d.iteration() == 0 ? "<m:get>" : "data.get(path.split(\"/\"))";
                     assertEquals(expected, d.evaluationResult().value().toString());
-                    EvaluationResult.ChangeData cd = d.findValueChange("urls");
+                    ChangeData cd = d.findValueChange("urls");
                     assertFalse(cd.properties().containsKey(Property.IN_NOT_NULL_CONTEXT));
                 }
             }

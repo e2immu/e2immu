@@ -14,8 +14,9 @@
 
 package org.e2immu.analyser.analyser;
 
+import org.e2immu.analyser.analyser.delay.FlowDataConstants;
 import org.e2immu.analyser.analyser.impl.util.BreakDelayLevel;
-import org.e2immu.analyser.analysis.FlowData;
+import org.e2immu.analyser.analyser.util.ConditionManagerImpl;
 import org.e2immu.analyser.analysis.StatementAnalysis;
 import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.Identifier;
@@ -41,7 +42,7 @@ public record ForwardAnalysisInfo(DV execution,
     }
 
     public static ForwardAnalysisInfo startOfMethod(Primitives primitives, BreakDelayLevel breakDelayLevel) {
-        return new ForwardAnalysisInfo(FlowData.ALWAYS, ConditionManager.initialConditionManager(primitives),
+        return new ForwardAnalysisInfo(FlowDataConstants.ALWAYS, ConditionManagerImpl.initialConditionManager(primitives),
                 null, null, null, CausesOfDelay.EMPTY, breakDelayLevel);
     }
 

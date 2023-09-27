@@ -24,6 +24,7 @@ import org.e2immu.analyser.analysis.ParameterAnalysis;
 import org.e2immu.analyser.analysis.TypeAnalysis;
 import org.e2immu.analyser.config.Configuration;
 import org.e2immu.analyser.config.InputConfiguration;
+import org.e2immu.analyser.config.LogTarget;
 import org.e2immu.analyser.inspector.TypeContext;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.impl.LocationImpl;
@@ -57,7 +58,7 @@ public class TestDefaultAnnotations {
                 .addClassPath("jmods/java.base.jmod");
         Configuration configuration = new Configuration.Builder()
                 .setInputConfiguration(inputConfigurationBuilder.build())
-                .addDebugLogTargets("analyser")
+                .addDebugLogTargets(LogTarget.ANNOTATED_API, LogTarget.ANNOTATION_XML, LogTarget.SHALLOW_ANALYSERS)
                 .build();
         configuration.initializeLoggers();
         Parser parser = new Parser(configuration);

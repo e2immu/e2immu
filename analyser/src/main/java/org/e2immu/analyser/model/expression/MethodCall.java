@@ -16,6 +16,7 @@ package org.e2immu.analyser.model.expression;
 
 import org.e2immu.analyser.analyser.Properties;
 import org.e2immu.analyser.analyser.*;
+import org.e2immu.analyser.analyser.context.impl.EvaluationResultImpl;
 import org.e2immu.analyser.analyser.delay.DelayFactory;
 import org.e2immu.analyser.analyser.delay.SimpleCause;
 import org.e2immu.analyser.analyser.util.ComputeIndependent;
@@ -290,7 +291,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
 
     @Override
     public EvaluationResult evaluate(EvaluationResult context, ForwardEvaluationInfo forwardEvaluationInfo) {
-        EvaluationResult.Builder builder = new EvaluationResult.Builder(context);
+        EvaluationResultImpl.Builder builder = new EvaluationResultImpl.Builder(context);
         if (forwardEvaluationInfo.isOnlySort()) {
             return evaluateComponents(context, forwardEvaluationInfo);
         }
@@ -360,7 +361,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
                 builder.contextNotNullIsNotNullable(ive.variable());
 
         // process parameters
-        Pair<EvaluationResult.Builder, List<Expression>> res = EvaluateParameters.go(parameterExpressions,
+        Pair<EvaluationResultImpl.Builder, List<Expression>> res = EvaluateParameters.go(parameterExpressions,
                 objectResult, forwardEvaluationInfo, concreteMethod,
                 firstInCallCycle, objectValue, allowUpgradeCnnOfScope);
         List<Expression> parameterValues = res.v;
@@ -489,7 +490,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         }
         Expression mc = new MethodCall(identifier, objectIsImplicit, objectEval.getExpression(), methodInfo,
                 returnType(), sortedParameters);
-        return new EvaluationResult.Builder(context).setExpression(mc).build();
+        return new EvaluationResultImpl.Builder(context).setExpression(mc).build();
     }
 
     private LinkedVariables linkedVariablesOfObject(EvaluationResult context, Expression objectValue) {
@@ -550,7 +551,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
     }
 
     private CausesOfDelay incrementStatementTime(MethodAnalysis methodAnalysis,
-                                                 EvaluationResult.Builder builder,
+                                                 EvaluationResultImpl.Builder builder,
                                                  DV modified) {
         boolean increment;
         switch (methodAnalysis.analysisMode()) {
@@ -583,7 +584,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
     /*
     not computed, only contracted!
      */
-    public void linksBetweenParameters(EvaluationResult.Builder builder,
+    public void linksBetweenParameters(EvaluationResultImpl.Builder builder,
                                        EvaluationResult context,
                                        MethodInfo concreteMethod,
                                        List<Expression> parameterValues,
@@ -640,7 +641,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
     target = ts, index 0, not varargs, linked 4=common_hc to generator, index 1;
     target ts is modified; values are new String[4] and generator, linked variables are this.ts:2 and generator:2
      */
-    private void tryLinkBetweenParameters(EvaluationResult.Builder builder,
+    private void tryLinkBetweenParameters(EvaluationResultImpl.Builder builder,
                                           EvaluationResult context,
                                           Variable target,
                                           int targetIndex,
@@ -704,7 +705,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         }
     }
 
-    private void linksBetweenParametersVarArgs(EvaluationResult.Builder builder,
+    private void linksBetweenParametersVarArgs(EvaluationResultImpl.Builder builder,
                                                int targetIndex,
                                                boolean targetIsVarArgs,
                                                DV level,
@@ -721,7 +722,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         }
     }
 
-    private void linksBetweenParameters(EvaluationResult.Builder builder,
+    private void linksBetweenParameters(EvaluationResultImpl.Builder builder,
                                         IsVariableExpression source,
                                         int targetIndex,
                                         DV level,
@@ -736,7 +737,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
 
     // we raise an error IF a finalizer method is called on a parameter, or on a field inside a finalizer method
     private CausesOfDelay checkFinalizer(EvaluationResult context,
-                                         EvaluationResult.Builder builder,
+                                         EvaluationResultImpl.Builder builder,
                                          MethodAnalysis methodAnalysis,
                                          Expression objectValue) {
         if (methodAnalysis.getProperty(Property.FINALIZER).valueIsTrue()) {
@@ -763,7 +764,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
     }
 
     private boolean raiseErrorForFinalizer(EvaluationResult context,
-                                           EvaluationResult.Builder builder, Variable variable) {
+                                           EvaluationResultImpl.Builder builder, Variable variable) {
         if (variable instanceof FieldReference && (context.getCurrentMethod() == null ||
                 !context.getCurrentMethod().getMethodAnalysis().getProperty(Property.FINALIZER).valueIsTrue())) {
             // ensure that the current method has been marked @Finalizer
@@ -830,7 +831,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
 
     static ModReturn checkCompanionMethodsModifying(
             Identifier identifier,
-            EvaluationResult.Builder builder,
+            EvaluationResultImpl.Builder builder,
             EvaluationResult context,
             MethodInfo methodInfo,
             Expression object,
@@ -953,7 +954,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
     }
 
     private static Expression computeNewState(EvaluationResult context,
-                                              EvaluationResult.Builder builder,
+                                              EvaluationResultImpl.Builder builder,
                                               MethodInfo methodInfo,
                                               Expression objectValue,
                                               List<Expression> parameterValues) {
@@ -1140,7 +1141,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         return MultiLevel.EFFECTIVELY_NOT_NULL_DV;
     }
 
-    private void checkCommonErrors(EvaluationResult.Builder builder,
+    private void checkCommonErrors(EvaluationResultImpl.Builder builder,
                                    EvaluationResult context,
                                    MethodInfo concreteMethod,
                                    Expression objectValue) {
@@ -1170,7 +1171,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
     }
 
     private void complianceWithForwardRequirements(EvaluationResult context,
-                                                   EvaluationResult.Builder builder,
+                                                   EvaluationResultImpl.Builder builder,
                                                    MethodAnalysis methodAnalysis,
                                                    MethodInspection methodInspection,
                                                    ForwardEvaluationInfo forwardEvaluationInfo) {

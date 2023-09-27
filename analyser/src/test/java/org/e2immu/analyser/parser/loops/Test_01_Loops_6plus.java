@@ -18,7 +18,7 @@ import org.e2immu.analyser.analyser.ConditionManager;
 import org.e2immu.analyser.analyser.DV;
 import org.e2immu.analyser.analyser.Stage;
 import org.e2immu.analyser.analyser.VariableInfo;
-import org.e2immu.analyser.analysis.FlowData;
+import org.e2immu.analyser.analyser.delay.FlowDataConstants;
 import org.e2immu.analyser.analysis.ParameterAnalysis;
 import org.e2immu.analyser.analysis.impl.StatementAnalysisImpl;
 import org.e2immu.analyser.config.AnalyserConfiguration;
@@ -39,8 +39,8 @@ import java.time.chrono.ChronoLocalDateTime;
 import java.util.stream.Collectors;
 
 import static org.e2immu.analyser.analyser.Property.*;
-import static org.e2immu.analyser.analysis.FlowData.ALWAYS;
-import static org.e2immu.analyser.analysis.FlowData.CONDITIONALLY;
+import static org.e2immu.analyser.analyser.delay.FlowDataConstants.ALWAYS;
+import static org.e2immu.analyser.analyser.delay.FlowDataConstants.CONDITIONALLY;
 import static org.e2immu.analyser.parser.VisitorTestSupport.IterationInfo.it;
 import static org.e2immu.analyser.parser.VisitorTestSupport.IterationInfo.it0;
 import static org.junit.jupiter.api.Assertions.*;
@@ -141,13 +141,13 @@ public class Test_01_Loops_6plus extends CommonTestRunner {
                     String expect = "{break=ALWAYS:2}"; // ALWAYS=value 2, see FlowData
                     assertEquals(expect, d.statementAnalysis().flowData().getInterruptsFlow().toString());
                     if (d.iteration() == 0) {
-                        assertFalse(d.statementAnalysis().flowData().blockExecution.isSet());
+                        assertTrue(d.statementAnalysis().flowData().blockExecutionIsFirst());
                     } else {
-                        assertSame(CONDITIONALLY, d.statementAnalysis().flowData().blockExecution.get());
+                        assertSame(CONDITIONALLY, d.statementAnalysis().flowData().blockExecutionGet());
                     }
                 }
                 if ("1.0.3".equals(d.statementId())) {
-                    assertDv(d, 1, FlowData.NEVER, d.statementAnalysis().flowData().getGuaranteedToBeReachedInMethod());
+                    assertDv(d, 1, FlowDataConstants.NEVER, d.statementAnalysis().flowData().getGuaranteedToBeReachedInMethod());
                 }
             }
         };

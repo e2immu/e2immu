@@ -2,6 +2,7 @@ package org.e2immu.analyser.model.value;
 
 import org.e2immu.analyser.analyser.ConditionManager;
 import org.e2immu.analyser.analyser.PostCondition;
+import org.e2immu.analyser.analyser.util.ConditionManagerImpl;
 import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.Identifier;
 import org.e2immu.analyser.model.expression.DelayedExpression;
@@ -16,7 +17,7 @@ public class TestConditionManager extends CommonAbstractValue {
 
     @Test
     public void test1() {
-        ConditionManager cm = ConditionManager.initialConditionManager(PRIMITIVES);
+        ConditionManager cm = ConditionManagerImpl.initialConditionManager(PRIMITIVES);
         Expression sNotNull = negate(equals(NullConstant.NULL_CONSTANT, s));
         ConditionManager cm1 = cm.withCondition(context, sNotNull, Set.of(vs));
         assertEquals("CM{condition=null!=s;parent=CM{}}", cm1.toString());
@@ -36,7 +37,7 @@ public class TestConditionManager extends CommonAbstractValue {
 
     @Test
     public void test2() {
-        ConditionManager cm = ConditionManager.initialConditionManager(PRIMITIVES);
+        ConditionManager cm = ConditionManagerImpl.initialConditionManager(PRIMITIVES);
         Expression sNotNull = negate(equals(NullConstant.NULL_CONSTANT, s));
         Expression de = DelayedExpression.forNullCheck(Identifier.CONSTANT, PRIMITIVES, sNotNull,
                 PostCondition.NO_INFO_YET.causesOfDelay());

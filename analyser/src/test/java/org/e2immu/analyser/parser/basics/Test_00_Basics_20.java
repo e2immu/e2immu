@@ -15,8 +15,8 @@
 
 package org.e2immu.analyser.parser.basics;
 
+import org.e2immu.analyser.analyser.ChangeData;
 import org.e2immu.analyser.analyser.DV;
-import org.e2immu.analyser.analyser.EvaluationResult;
 import org.e2immu.analyser.config.AnalyserConfiguration;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.model.MultiLevel;
@@ -50,25 +50,25 @@ public class Test_00_Basics_20 extends CommonTestRunner {
 
     EvaluationResultVisitor evaluationResultVisitor = d -> {
         if ("getFirstC1".equals(d.methodInfo().name)) {
-            EvaluationResult.ChangeData cd = d.findValueChangeByToString("list");
+            ChangeData cd = d.findValueChangeByToString("list");
             assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, cd.getProperty(CONTEXT_NOT_NULL));
 
-            EvaluationResult.ChangeData cdFirst = d.findValueChangeByToString("getFirstC1");
+            ChangeData cdFirst = d.findValueChangeByToString("getFirstC1");
             String expectedLv = d.iteration() == 0 ? LIST_THIS_DELAY : LIST_3_THIS_3;
             assertEquals(expectedLv, cdFirst.linkedVariables().toString());
         }
         if ("test1".equals(d.methodInfo().name) && "4".equals(d.statementId())) {
-            EvaluationResult.ChangeData ci = d.findValueChangeByToString("ci");
+            ChangeData ci = d.findValueChangeByToString("ci");
             String expectedLv = d.iteration() <= 1 ? "list:-1" : "list:2";
             assertEquals(expectedLv, ci.linkedVariables().toString());
         }
         if ("getListC2".equals(d.methodInfo().name)) {
-            EvaluationResult.ChangeData cd = d.findValueChangeByToString("getListC2");
+            ChangeData cd = d.findValueChangeByToString("getListC2");
             String expected = d.iteration() == 0 ? LIST_THIS_DELAY : LIST_4_THIS_4;
             assertEquals(expected, cd.linkedVariables().toString());
         }
         if ("test2".equals(d.methodInfo().name) && "4".equals(d.statementId())) {
-            EvaluationResult.ChangeData ci = d.findValueChangeByToString("ci");
+            ChangeData ci = d.findValueChangeByToString("ci");
             String expectedLv = d.iteration() <= 1 ? "list:-1" : "list:4";
             assertEquals(expectedLv, ci.linkedVariables().toString());
         }

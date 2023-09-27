@@ -15,13 +15,18 @@
 package org.e2immu.analyser.config;
 
 import ch.qos.logback.classic.Level;
+import ch.qos.logback.classic.Logger;
 import org.e2immu.annotation.Container;
 import org.e2immu.annotation.Fluent;
 import org.slf4j.LoggerFactory;
+import org.slf4j.Marker;
+import org.slf4j.MarkerFactory;
 
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  * Basic use:
@@ -30,7 +35,7 @@ import java.util.Set;
  * Upload activated, not writing XML, not writing annotation API files
  */
 public record Configuration(InputConfiguration inputConfiguration,
-                            Set<String> logTargets,
+                            Set<LogTarget> logTargets,
                             boolean quiet,
                             boolean ignoreErrors,
                             boolean skipAnalysis,
@@ -42,11 +47,12 @@ public record Configuration(InputConfiguration inputConfiguration,
                             DebugConfiguration debugConfiguration) {
 
     public static final String EQUALS = "org.e2immu.analyser.EQUALS";
+    public static final String MAIN_PACKAGE = "org.e2immu.analyser";
 
     @Override
     public String toString() {
         return "Configuration:" +
-                "\n    logTargets: " + String.join(", ", logTargets) +
+                "\n    logTargets: " + logTargets.stream().map(Object::toString).collect(Collectors.joining(",")) +
                 "\n    quiet: " + quiet +
                 "\n    ignoreErrors: " + ignoreErrors +
                 "\n" +
@@ -87,19 +93,59 @@ public record Configuration(InputConfiguration inputConfiguration,
                 analyserConfiguration, inspectorConfiguration, debugConfiguration);
     }
 
+    public static final Marker A_API = MarkerFactory.getMarker("a_api");
+    public static final Marker SOURCE = MarkerFactory.getMarker("source");
+
     public void initializeLoggers() {
-        ch.qos.logback.classic.Logger overall = (ch.qos.logback.classic.Logger)
-                LoggerFactory.getLogger("org.e2immu.analyser");
-        if (quiet) {
-            overall.setLevel(Level.ERROR);
-        } else {
-            overall.setLevel(Level.INFO);
-            for (String prefix : logTargets) {
+        ((Logger) LoggerFactory.getLogger(org.slf4j.Logger.ROOT_LOGGER_NAME)).setLevel(Level.ERROR);
+   /*     boolean multipleRunners = detectMultipleRunners();
+        if (multipleRunners) {
+            System.err.println("Detected multiple runners, switching off logging system");
+        }
+        Logger overall = (Logger) LoggerFactory.getLogger(MAIN_PACKAGE);
+        Level overallLevel = quiet || multipleRunners ? Level.ERROR : Level.INFO;
+        Level detailedLevel = quiet || multipleRunners ? Level.ERROR : Level.DEBUG;
+        overall.setLevel(overallLevel);
+        for (LogTarget logTarget : LogTarget.values()) {
+            Level level = logTargets.contains(logTarget) ? detailedLevel : overallLevel;
+            for (String prefix : logTarget.prefixes()) {
                 ch.qos.logback.classic.Logger logger = (ch.qos.logback.classic.Logger)
-                        LoggerFactory.getLogger("org.e2immu.analyser." + prefix);
-                logger.setLevel(Level.DEBUG);
+                        LoggerFactory.getLogger(MAIN_PACKAGE + "." + prefix);
+                logger.setLevel(level);
             }
         }
+        // filter out debug statements in PrimaryTypeAnalyserImpl in the shallow/a-api phase
+        if (logTargets.contains(LogTarget.COMPUTING_ANALYSERS)) {
+            overall.getLoggerContext().addTurboFilter(new TurboFilter() {
+                @Override
+                public FilterReply decide(Marker marker, Logger logger, Level level, String format, Object[] params, Throwable t) {
+                    return A_API.equals(marker) ? FilterReply.DENY : FilterReply.ACCEPT;
+                }
+            });
+        }*/
+    }
+
+    /*
+     We'd rather not log anything than have the wrong loggers on DEBUG. So if we see that a wrong
+     logger is already activated, we must conclude we're running multiple tests (with different logging
+     requirements) at the same time. If so, we'll switch off. As soon as all currently running loggers
+     are switched off, the next one can have its normal logging again.
+     */
+    private boolean detectMultipleRunners() {
+        Level overallLevel = quiet ? Level.ERROR : Level.INFO;
+        Level detailedLevel = quiet ? Level.ERROR : Level.DEBUG;
+        for (LogTarget logTarget : LogTarget.values()) {
+            Level level = logTargets.contains(logTarget) ? detailedLevel : overallLevel;
+            for (String prefix : logTarget.prefixes()) {
+                ch.qos.logback.classic.Logger logger = (ch.qos.logback.classic.Logger)
+                        LoggerFactory.getLogger(MAIN_PACKAGE + "." + prefix);
+                Level effectiveLevel = logger.getEffectiveLevel();
+                if (!effectiveLevel.isGreaterOrEqual(level)) {
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 
     @Container
@@ -107,7 +153,7 @@ public record Configuration(InputConfiguration inputConfiguration,
         private boolean quiet;
         private boolean ignoreErrors;
         private boolean skipAnalysis;
-        private final Set<String> logTargets = new HashSet<>();
+        private final Set<LogTarget> logTargets = new HashSet<>();
 
         private InputConfiguration inputConfiguration;
         private UploadConfiguration uploadConfiguration;
@@ -197,9 +243,20 @@ public record Configuration(InputConfiguration inputConfiguration,
         public Builder addDebugLogTargets(String debugLogTargets) {
             for (String s : debugLogTargets.split(",")) {
                 if (s != null && !s.trim().isEmpty()) {
-                    logTargets.add(s);
+                    try {
+                        LogTarget logTarget = LogTarget.valueOf(s.toUpperCase());
+                        logTargets.add(logTarget);
+                    } catch (IllegalArgumentException iae) {
+                        System.err.println("Log target " + s + " unknown, ignored");
+                    }
                 }
             }
+            return this;
+        }
+
+        @Fluent
+        public Builder addDebugLogTargets(LogTarget... debugLogTargets) {
+            logTargets.addAll(Arrays.asList(debugLogTargets));
             return this;
         }
     }

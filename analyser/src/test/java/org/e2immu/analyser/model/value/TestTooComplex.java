@@ -15,6 +15,7 @@
 package org.e2immu.analyser.model.value;
 
 import org.e2immu.analyser.analyser.EvaluationResult;
+import org.e2immu.analyser.analyser.context.impl.EvaluationResultImpl;
 import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.expression.And;
 import org.e2immu.analyser.model.expression.MultiExpressions;
@@ -26,7 +27,7 @@ import static org.junit.jupiter.api.Assertions.fail;
 
 public class TestTooComplex extends CommonAbstractValue {
 
-    EvaluationResult context = EvaluationResult.from(new EvaluationContextImpl() {
+    EvaluationResult context = EvaluationResultImpl.from(new EvaluationContextImpl() {
         @Override
         public int limitOnComplexity() {
             return 10;

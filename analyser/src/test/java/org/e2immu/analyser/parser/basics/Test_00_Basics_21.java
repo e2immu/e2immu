@@ -16,8 +16,8 @@
 package org.e2immu.analyser.parser.basics;
 
 
+import org.e2immu.analyser.analyser.ChangeData;
 import org.e2immu.analyser.analyser.DV;
-import org.e2immu.analyser.analyser.EvaluationResult;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.ParameterInfo;
@@ -54,7 +54,7 @@ public class Test_00_Basics_21 extends CommonTestRunner {
                         default -> "other.isSet()";
                     };
                     assertEquals(expectValue, d.evaluationResult().value().toString());
-                    EvaluationResult.ChangeData cd = d.findValueChangeBySubString("other");
+                    ChangeData cd = d.findValueChangeBySubString("other");
                     assertEquals("", cd.linkedVariables().toString());
 
                     assertEquals(d.iteration() <= 1, d.evaluationResult().causesOfDelay().isDelayed());
@@ -66,11 +66,11 @@ public class Test_00_Basics_21 extends CommonTestRunner {
                     };
 
                     assertEquals(expectValue, d.evaluationResult().value().toString());
-                    EvaluationResult.ChangeData cd = d.findValueChangeBySubString("other");
+                    ChangeData cd = d.findValueChangeBySubString("other");
                     String linked = d.iteration() < 2 ? "this:-1" : "this:4";
                     assertEquals(linked, cd.linkedVariables().toString());
 
-                    EvaluationResult.ChangeData cdThis = d.findValueChangeByToString("this");
+                    ChangeData cdThis = d.findValueChangeByToString("this");
                     String linkedReverse = d.iteration() < 2 ? "other:-1" : "other:4";
                     assertEquals(linkedReverse, cdThis.linkedVariables().toString());
 
@@ -163,7 +163,7 @@ public class Test_00_Basics_21 extends CommonTestRunner {
                 assertEquals("Precondition[expression=true, causes=[]]",
                         d.statementAnalysis().stateData().getPrecondition().toString());
                 String expected = d.iteration() < 2 ? "!<null-check>" : "null!=t$0";
-                assertEquals(expected, d.statementAnalysis().stateData().valueOfExpression.get().toString());
+                assertEquals(expected, d.statementAnalysis().stateData().valueOfExpressionGet().toString());
             }
         };
 

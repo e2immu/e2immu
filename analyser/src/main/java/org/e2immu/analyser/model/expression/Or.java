@@ -15,6 +15,7 @@
 package org.e2immu.analyser.model.expression;
 
 import org.e2immu.analyser.analyser.*;
+import org.e2immu.analyser.analyser.context.impl.EvaluationResultImpl;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.util.AndOrSorter;
 import org.e2immu.analyser.model.expression.util.ExpressionComparator;
@@ -288,7 +289,7 @@ public final class Or extends ExpressionCanBeTooComplex {
         Expression[] clauses = Arrays.stream(clauseResults).map(EvaluationResult::value).toArray(Expression[]::new);
         Identifier id = Identifier.joined("or", Arrays.stream(clauses).map(Expression::getIdentifier).toList());
         Expression or = new Or(id, primitives).append(context, false, clauses);
-        return new EvaluationResult.Builder(context).compose(clauseResults).setExpression(or).build();
+        return new EvaluationResultImpl.Builder(context).compose(clauseResults).setExpression(or).build();
     }
 
     @Override

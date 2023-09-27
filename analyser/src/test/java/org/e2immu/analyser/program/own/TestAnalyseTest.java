@@ -116,7 +116,7 @@ public class TestAnalyseTest {
                 .setAnnotatedAPIConfiguration(annotatedAPIConfiguration)
                 .setAnalyserConfiguration(analyserConfiguration)
                 .setDebugConfiguration(debugConfiguration)
-                .addDebugLogTargets("analyser")//.addDebugLogTargets("resolver").addDebugLogTargets("bytecode")
+                .addDebugLogTargets(LogTarget.ANALYSIS, LogTarget.COMPUTING_ANALYSERS)
                 .build();
         configuration.initializeLoggers();
         Parser parser = new Parser(configuration);

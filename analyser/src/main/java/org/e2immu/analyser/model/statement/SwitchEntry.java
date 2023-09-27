@@ -17,7 +17,7 @@ package org.e2immu.analyser.model.statement;
 import org.e2immu.analyser.analyser.DV;
 import org.e2immu.analyser.analyser.EvaluationResult;
 import org.e2immu.analyser.analyser.ForwardEvaluationInfo;
-import org.e2immu.analyser.analysis.FlowData;
+import org.e2immu.analyser.analyser.delay.FlowDataConstants;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.BinaryOperator;
 import org.e2immu.analyser.model.expression.EmptyExpression;
@@ -102,13 +102,13 @@ public abstract class SwitchEntry extends StatementWithStructure {
     public static DV statementExecution(List<Expression> labels,
                                         Expression value,
                                         EvaluationResult context) {
-        if (labels.isEmpty()) return FlowData.DEFAULT_EXECUTION;
+        if (labels.isEmpty()) return FlowDataConstants.DEFAULT_EXECUTION;
         for (Expression label : labels) {
             EvaluationResult result = label.evaluate(context, ForwardEvaluationInfo.DEFAULT);
-            if (result.value().equals(value)) return FlowData.ALWAYS;
+            if (result.value().equals(value)) return FlowDataConstants.ALWAYS;
         }
-        if (value.isConstant()) return FlowData.NEVER;
-        return FlowData.CONDITIONALLY;
+        if (value.isConstant()) return FlowDataConstants.NEVER;
+        return FlowDataConstants.CONDITIONALLY;
     }
 
     public abstract int getComplexity();

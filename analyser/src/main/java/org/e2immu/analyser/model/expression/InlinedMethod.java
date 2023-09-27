@@ -15,7 +15,9 @@
 package org.e2immu.analyser.model.expression;
 
 import org.e2immu.analyser.analyser.*;
+import org.e2immu.analyser.analyser.context.impl.EvaluationResultImpl;
 import org.e2immu.analyser.analyser.nonanalyserimpl.AbstractEvaluationContextImpl;
+import org.e2immu.analyser.analyser.util.ConditionManagerImpl;
 import org.e2immu.analyser.analysis.FieldAnalysis;
 import org.e2immu.analyser.analysis.MethodAnalysis;
 import org.e2immu.analyser.analysis.ParameterAnalysis;
@@ -153,7 +155,7 @@ public class InlinedMethod extends BaseExpression implements Expression {
                 .anyMatch(ve -> ve.variable() instanceof ParameterInfo pi && pi.owner == methodInfo);
         if (!allParametersCovered && haveParameters) {
             // do not evaluate further
-            return new EvaluationResult.Builder(context).setExpression(this).build();
+            return new EvaluationResultImpl.Builder(context).setExpression(this).build();
         }
 
         EvaluationContext closure = new EvaluationContextImpl(context.evaluationContext());
@@ -539,7 +541,7 @@ public class InlinedMethod extends BaseExpression implements Expression {
 
         @Override
         public EvaluationContext dropConditionManager() {
-            ConditionManager cm = ConditionManager.initialConditionManager(getPrimitives());
+            ConditionManager cm = ConditionManagerImpl.initialConditionManager(getPrimitives());
             return new EvaluationContextImpl(this, cm);
         }
 

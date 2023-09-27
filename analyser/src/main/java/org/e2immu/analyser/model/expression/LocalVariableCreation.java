@@ -16,6 +16,7 @@ package org.e2immu.analyser.model.expression;
 
 import org.e2immu.analyser.analyser.EvaluationResult;
 import org.e2immu.analyser.analyser.ForwardEvaluationInfo;
+import org.e2immu.analyser.analyser.context.impl.EvaluationResultImpl;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.util.ExpressionComparator;
 import org.e2immu.analyser.model.expression.util.TranslationCollectors;
@@ -267,24 +268,24 @@ public class LocalVariableCreation extends BaseExpression implements Expression 
                     .toList();
             LocalVariableCreation lvc = new LocalVariableCreation(identifier, lvrIdentifier, first,
                     evaluatedDeclarations, isVar);
-            return new EvaluationResult.Builder(context).setExpression(lvc).build();
+            return new EvaluationResultImpl.Builder(context).setExpression(lvc).build();
         }
 
 
         EvaluationResult result;
         if (localVariableReference.assignmentExpression.isEmpty()) {
-            result = new EvaluationResult.Builder(context).setExpression(localVariableReference.assignmentExpression).build();
+            result = new EvaluationResultImpl.Builder(context).setExpression(localVariableReference.assignmentExpression).build();
         } else {
             Assignment assignment = new Assignment(context.getPrimitives(),
                     new VariableExpression(lvrIdentifier, localVariableReference),
                     localVariableReference.assignmentExpression);
             result = assignment.evaluate(context, forwardEvaluationInfo);
         }
-        EvaluationResult.Builder builder = new EvaluationResult.Builder(context).compose(result);
+        EvaluationResultImpl.Builder builder = new EvaluationResultImpl.Builder(context).compose(result);
         for (Declaration declaration : moreDeclarations) {
             EvaluationResult assigned;
             if (declaration.localVariableReference.assignmentExpression.isEmpty()) {
-                assigned = new EvaluationResult.Builder(context)
+                assigned = new EvaluationResultImpl.Builder(context)
                         .setExpression(declaration.localVariableReference.assignmentExpression)
                         .build();
             } else {

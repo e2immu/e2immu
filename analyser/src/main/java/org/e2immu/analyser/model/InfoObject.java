@@ -9,8 +9,7 @@ public interface InfoObject {
 
     TypeInfo getTypeInfo();
 
-    TypeInfo primaryType();
-
+    // specifically used in StatementAnalyserImpl
     MethodInfo getMethodInfo();
 
     String name();

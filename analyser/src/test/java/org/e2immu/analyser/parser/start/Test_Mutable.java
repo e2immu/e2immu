@@ -38,11 +38,11 @@ public class Test_Mutable extends CommonTestRunner {
                     assertEquals(1, d.evaluationResult().statementTime());
                 }
                 if ("0".equals(d.statementId())) {
-                    EvaluationResult.ChangeData cd = d.findValueChangeBySubString("set");
+                    ChangeData cd = d.findValueChangeBySubString("set");
                     assertEquals(0, cd.modificationTimeIncrement());
                 }
                 if ("1".equals(d.statementId())) {
-                    EvaluationResult.ChangeData cd = d.findValueChangeBySubString("set");
+                    ChangeData cd = d.findValueChangeBySubString("set");
                     int expected = d.iteration() == 0 ? 0 : 1;
                     assertEquals(expected, cd.modificationTimeIncrement());
                 }

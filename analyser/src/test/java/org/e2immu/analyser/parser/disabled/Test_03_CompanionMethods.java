@@ -69,7 +69,7 @@ public class Test_03_CompanionMethods extends CommonTestRunner {
 
         EvaluationResultVisitor evaluationResultVisitor = d -> {
             if ("test".equals(d.methodInfo().name) && "0".equals(d.statementId())) {
-                EvaluationResult.ChangeData valueChangeData = d.evaluationResult().getExpressionChangeStream()
+                ChangeData valueChangeData = d.evaluationResult().getExpressionChangeStream()
                         .filter(e -> "list".equals(e.getKey().fullyQualifiedName())).map(Map.Entry::getValue).findFirst().orElseThrow();
                 assertEquals(NEW_LIST_SIZE, valueChangeData.value().toString());
             }
@@ -120,13 +120,13 @@ public class Test_03_CompanionMethods extends CommonTestRunner {
         EvaluationResultVisitor evaluationResultVisitor = d -> {
             if ("test".equals(d.methodInfo().name) && "1".equals(d.statementId())) {
                 assertTrue(d.haveValueChange("list")); // because of a modification
-                EvaluationResult.ChangeData cd = d.findValueChange("list");
+                ChangeData cd = d.findValueChange("list");
                 assertEquals(INSTANCE_SIZE_1_CONTAINS, cd.value().toString());
                 assertEquals("", cd.linkedVariables().toString());
             }
             if ("test".equals(d.methodInfo().name) && "2".equals(d.statementId())) {
                 assertTrue(d.haveValueChange("b"));
-                EvaluationResult.ChangeData valueChangeData = d.findValueChange("b");
+                ChangeData valueChangeData = d.findValueChange("b");
                 assertEquals("true", valueChangeData.value().toString());
             }
             if ("test".equals(d.methodInfo().name) && "4".equals(d.statementId())) {

@@ -16,6 +16,7 @@ package org.e2immu.analyser.model.expression;
 
 import org.e2immu.analyser.analyser.CausesOfDelay;
 import org.e2immu.analyser.analyser.EvaluationResult;
+import org.e2immu.analyser.analyser.context.impl.EvaluationResultImpl;
 import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.Identifier;
 import org.e2immu.analyser.model.expression.util.ExpressionComparator;
@@ -30,7 +31,7 @@ public class Divide extends BinaryOperator {
 
     public static EvaluationResult divide(Identifier identifier,
                                           EvaluationResult evaluationContext, Expression l, Expression r) {
-        EvaluationResult.Builder builder = new EvaluationResult.Builder(evaluationContext);
+        EvaluationResultImpl.Builder builder = new EvaluationResultImpl.Builder(evaluationContext);
 
         if (l instanceof Numeric ln && ln.doubleValue() == 0) return builder.setExpression(l).build();
         if (r instanceof Numeric rn && rn.doubleValue() == 0) {

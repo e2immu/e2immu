@@ -15,10 +15,12 @@
 package org.e2immu.analyser.analyser.statementanalyser;
 
 import org.e2immu.analyser.analyser.*;
+import org.e2immu.analyser.analyser.context.impl.EvaluationResultImpl;
 import org.e2immu.analyser.analyser.delay.VariableCause;
 import org.e2immu.analyser.analyser.impl.util.BreakDelayLevel;
 import org.e2immu.analyser.analyser.nonanalyserimpl.AbstractEvaluationContextImpl;
 import org.e2immu.analyser.analyser.nonanalyserimpl.VariableInfoImpl;
+import org.e2immu.analyser.analyser.util.ConditionManagerImpl;
 import org.e2immu.analyser.analysis.FieldAnalysis;
 import org.e2immu.analyser.analysis.StatementAnalysis;
 import org.e2immu.analyser.analysis.impl.StatementAnalysisImpl;
@@ -108,7 +110,7 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
         // part 1 of the work: all evaluations will get to read the new value
         // part 2 is at the start of SAApply, where the value will be assigned
         if (base) {
-            Expression absoluteState = conditionManager.absoluteState(EvaluationResult.from(this));
+            Expression absoluteState = conditionManager.absoluteState(EvaluationResultImpl.from(this));
             List<LhsRhs> equalities = LhsRhs.extractEqualities(absoluteState);
             for (LhsRhs lhsRhs : equalities) {
                 IsVariableExpression ive = lhsRhs.rhs().asInstanceOf(IsVariableExpression.class);
@@ -207,7 +209,7 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
 
     @Override
     public EvaluationContext dropConditionManager() {
-        ConditionManager cm = ConditionManager.initialConditionManager(getPrimitives());
+        ConditionManager cm = ConditionManagerImpl.initialConditionManager(getPrimitives());
         return new SAEvaluationContext(statementAnalysis,
                 myMethodAnalyser, statementAnalyser, analyserContext, localAnalysers,
                 iteration,
@@ -326,7 +328,7 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
 
         // this one is more difficult to vectorize
         Properties properties = Properties.writable();
-        EvaluationResult context = EvaluationResult.from(this);
+        EvaluationResult context = EvaluationResultImpl.from(this);
         for (Property property : toCompute) {
             DV dv;
             if (NOT_NULL_EXPRESSION == property) {
@@ -377,7 +379,7 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
         // redirect to Value.getProperty()
         // this is the only usage of this method; all other evaluation of a Value in an evaluation context
         // must go via the current method
-        return value.getProperty(EvaluationResult.from(this), property, true);
+        return value.getProperty(EvaluationResultImpl.from(this), property, true);
     }
 
     private DV nneForValue(Expression value, boolean ignoreStateInConditionManager) {
@@ -387,11 +389,11 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
                     iteration, currentStatementTime, conditionManager.withoutState(getPrimitives()), closure,
                     false, false,
                     preventAbsoluteStateComputation, delayStatementBecauseOfECI, breakDelayLevel);
-            EvaluationResult context = EvaluationResult.from(customEc);
+            EvaluationResult context = EvaluationResultImpl.from(customEc);
             return value.getProperty(context, NOT_NULL_EXPRESSION, true);
         }
 
-        EvaluationResult context = EvaluationResult.from(this);
+        EvaluationResult context = EvaluationResultImpl.from(this);
         DV directNN = value.getProperty(context, NOT_NULL_EXPRESSION, true);
         if (directNN.equals(NULLABLE_DV)) {
             Expression valueIsNull = Equals.equals(Identifier.generate("nne equals"),
@@ -896,9 +898,9 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
         VariableExpression.Suffix suffix;
         Variable variable = variableInfo.variable();
         Expression evaluatedScopeValue = scopeValue != null
-                ? conditionManager.evaluateNonBoolean(EvaluationResult.from(this), scopeValue) : null;
+                ? conditionManager.evaluateNonBoolean(EvaluationResultImpl.from(this), scopeValue) : null;
         Expression evaluatedIndexValue = indexValue != null
-                ? conditionManager.evaluateNonBoolean(EvaluationResult.from(this), indexValue) : null;
+                ? conditionManager.evaluateNonBoolean(EvaluationResultImpl.from(this), indexValue) : null;
         if (variable instanceof FieldReference fieldReference) {
             if (evaluatedScopeValue != null) {
                 if (evaluatedScopeValue.isDelayed()) {
@@ -914,7 +916,7 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
                     return DelayedVariableExpression.forField(fieldReference, currentStatementTime, causesOfDelay);
                 }
                 // given record X(int k){}, we know that new X(3).k === 3
-                Expression shortCut = VariableExpression.tryShortCut(EvaluationResult.from(this), evaluatedScopeValue, fieldReference);
+                Expression shortCut = VariableExpression.tryShortCut(EvaluationResultImpl.from(this), evaluatedScopeValue, fieldReference);
                 if (shortCut != null) {
                     return shortCut;
                 }

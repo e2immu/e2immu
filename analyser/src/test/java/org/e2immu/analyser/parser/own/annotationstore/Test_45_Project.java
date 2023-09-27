@@ -14,8 +14,8 @@
 
 package org.e2immu.analyser.parser.own.annotationstore;
 
+import org.e2immu.analyser.analyser.ChangeData;
 import org.e2immu.analyser.analyser.DV;
-import org.e2immu.analyser.analyser.EvaluationResult;
 import org.e2immu.analyser.analyser.Property;
 import org.e2immu.analyser.analysis.ParameterAnalysis;
 import org.e2immu.analyser.analysis.TypeAnalysis;
@@ -59,7 +59,7 @@ public class Test_45_Project extends CommonTestRunner {
                                 "(entry.getValue()).read.plusMillis(readWithinMillis).isAfter(now$2)&&null!=(entry.getValue()).read&&(entry.getValue()).read.isBefore((entry.getValue()).updated)";
                     };
                     assertEquals(expected, d.evaluationResult().getExpression().toString());
-                    EvaluationResult.ChangeData changeData = d.findValueChangeByToString("container.read");
+                    ChangeData changeData = d.findValueChangeByToString("container.read");
                     assertEquals(d.iteration() <= 2, changeData.getProperty(Property.CONTEXT_NOT_NULL).isDelayed());
                 }
                 if ("2.0.1.0.1.0.0".equals(d.statementId())) {

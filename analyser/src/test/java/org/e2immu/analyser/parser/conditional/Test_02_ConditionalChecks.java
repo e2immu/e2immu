@@ -18,7 +18,7 @@ import org.e2immu.analyser.analyser.DV;
 import org.e2immu.analyser.analyser.InterruptsFlow;
 import org.e2immu.analyser.analyser.LinkedVariables;
 import org.e2immu.analyser.analyser.VariableInfo;
-import org.e2immu.analyser.analysis.FlowData;
+import org.e2immu.analyser.analyser.delay.FlowDataConstants;
 import org.e2immu.analyser.config.AnalyserConfiguration;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.model.MultiLevel;
@@ -59,59 +59,59 @@ public class Test_02_ConditionalChecks extends CommonTestRunner {
                     assertEquals("a&&b", d.condition().toString());
                     assertEquals("true", d.state().toString());
                     assertEquals("a&&b", d.absoluteState().toString());
-                    assertEquals(FlowData.ALWAYS, inBlock);
-                    assertEquals(FlowData.CONDITIONALLY, inMethod);
+                    assertEquals(FlowDataConstants.ALWAYS, inBlock);
+                    assertEquals(FlowDataConstants.CONDITIONALLY, inMethod);
                     Map<InterruptsFlow, DV> interruptsFlow = d.statementAnalysis().flowData().getInterruptsFlow();
-                    assertEquals(Map.of(InterruptsFlow.RETURN, FlowData.ALWAYS), interruptsFlow);
+                    assertEquals(Map.of(InterruptsFlow.RETURN, FlowDataConstants.ALWAYS), interruptsFlow);
                 }
                 if ("0".equals(d.statementId())) {
                     assertEquals("true", d.condition().toString());
                     assertEquals("!a||!b", d.state().toString());
-                    assertEquals(FlowData.ALWAYS, inBlock);
-                    assertEquals(FlowData.ALWAYS, inMethod);
+                    assertEquals(FlowDataConstants.ALWAYS, inBlock);
+                    assertEquals(FlowDataConstants.ALWAYS, inMethod);
                     Map<InterruptsFlow, DV> interruptsFlow = d.statementAnalysis().flowData().getInterruptsFlow();
-                    assertEquals(Map.of(InterruptsFlow.RETURN, FlowData.CONDITIONALLY), interruptsFlow);
+                    assertEquals(Map.of(InterruptsFlow.RETURN, FlowDataConstants.CONDITIONALLY), interruptsFlow);
                     assertTrue(d.statementAnalysis().methodLevelData().combinedPreconditionGet().isEmpty());
                 }
                 if ("1.0.0".equals(d.statementId())) {
                     assertEquals("!a&&!b", d.condition().toString());
                     assertEquals("true", d.state().toString());
                     assertEquals("!a&&!b", d.absoluteState().toString());
-                    assertEquals(FlowData.ALWAYS, inBlock);
-                    assertEquals(FlowData.CONDITIONALLY, inMethod);
+                    assertEquals(FlowDataConstants.ALWAYS, inBlock);
+                    assertEquals(FlowDataConstants.CONDITIONALLY, inMethod);
                 }
                 if ("1".equals(d.statementId())) {
                     assertEquals("(a||b)&&(!a||!b)", d.state().toString());
-                    assertEquals(FlowData.CONDITIONALLY, inBlock);
-                    assertEquals(FlowData.CONDITIONALLY, inMethod);
+                    assertEquals(FlowDataConstants.CONDITIONALLY, inBlock);
+                    assertEquals(FlowDataConstants.CONDITIONALLY, inMethod);
                     assertTrue(d.statementAnalysis().methodLevelData().combinedPreconditionGet().isEmpty());
                 }
                 if ("2".equals(d.statementId())) {
-                    assertEquals("a&&!b", d.statementAnalysis().stateData().valueOfExpression.get().toString());
+                    assertEquals("a&&!b", d.statementAnalysis().stateData().valueOfExpressionGet().toString());
                     assertEquals("!a&&b", d.state().toString());
-                    assertEquals(FlowData.CONDITIONALLY, inBlock);
-                    assertEquals(FlowData.CONDITIONALLY, inMethod);
+                    assertEquals(FlowDataConstants.CONDITIONALLY, inBlock);
+                    assertEquals(FlowDataConstants.CONDITIONALLY, inMethod);
                 }
                 // constant condition
                 if ("3".equals(d.statementId())) {
-                    assertEquals("true", d.statementAnalysis().stateData().valueOfExpression.get().toString());
+                    assertEquals("true", d.statementAnalysis().stateData().valueOfExpressionGet().toString());
                     assertEquals("false", d.state().toString()); // after the statement...
                     assertNotNull(d.haveError(Message.Label.CONDITION_EVALUATES_TO_CONSTANT));
-                    assertEquals(FlowData.CONDITIONALLY, inBlock);
-                    assertEquals(FlowData.CONDITIONALLY, inMethod);
+                    assertEquals(FlowDataConstants.CONDITIONALLY, inBlock);
+                    assertEquals(FlowDataConstants.CONDITIONALLY, inMethod);
                     assertTrue(d.statementAnalysis().methodLevelData().combinedPreconditionGet().isEmpty());
                 }
                 // unreachable statement
                 if ("4".equals(d.statementId())) {
-                    assertEquals(FlowData.NEVER, inBlock);
-                    assertEquals(FlowData.NEVER, inMethod);
+                    assertEquals(FlowDataConstants.NEVER, inBlock);
+                    assertEquals(FlowDataConstants.NEVER, inMethod);
                     assertNotNull(d.haveError(Message.Label.UNREACHABLE_STATEMENT));
                     // the next one is true because of makeUnreachable() code
                     assertTrue(d.statementAnalysis().methodLevelData().combinedPreconditionIsFinal());
                 }
                 if ("5".equals(d.statementId())) {
-                    assertEquals(FlowData.NEVER, inBlock);
-                    assertEquals(FlowData.NEVER, inMethod);
+                    assertEquals(FlowDataConstants.NEVER, inBlock);
+                    assertEquals(FlowDataConstants.NEVER, inMethod);
                     assertNull(d.haveError(Message.Label.UNREACHABLE_STATEMENT));
                     VariableInfo ret = d.getReturnAsVariable();
                     assertNull(ret);

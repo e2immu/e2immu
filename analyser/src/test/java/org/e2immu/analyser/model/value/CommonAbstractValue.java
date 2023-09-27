@@ -15,10 +15,13 @@
 package org.e2immu.analyser.model.value;
 
 import org.e2immu.analyser.analyser.*;
+import org.e2immu.analyser.analyser.context.impl.EvaluationResultImpl;
 import org.e2immu.analyser.analyser.delay.DelayFactory;
 import org.e2immu.analyser.analyser.delay.SimpleCause;
 import org.e2immu.analyser.analyser.impl.util.BreakDelayLevel;
 import org.e2immu.analyser.analyser.nonanalyserimpl.AbstractEvaluationContextImpl;
+import org.e2immu.analyser.analyser.ConditionManager;
+import org.e2immu.analyser.analyser.util.ConditionManagerImpl;
 import org.e2immu.analyser.analysis.Analysis;
 import org.e2immu.analyser.analysis.impl.ParameterAnalysisImpl;
 import org.e2immu.analyser.analysis.impl.TypeAnalysisImpl;
@@ -91,7 +94,7 @@ public abstract class CommonAbstractValue {
 
         TRUE = new BooleanConstant(PRIMITIVES, true);
         FALSE = new BooleanConstant(PRIMITIVES, false);
-        context = EvaluationResult.from(new EvaluationContextImpl());
+        context = EvaluationResultImpl.from(new EvaluationContextImpl());
         va = createVariable("a");
         vb = createVariable("b");
         vc = createVariable("c");
@@ -276,7 +279,7 @@ public abstract class CommonAbstractValue {
 
         EvaluationContextImpl() {
             super(1, 0, BreakDelayLevel.NONE,
-                    ConditionManager.initialConditionManager(PRIMITIVES), null);
+                    ConditionManagerImpl.initialConditionManager(PRIMITIVES), null);
         }
 
         @Override

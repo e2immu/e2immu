@@ -334,7 +334,7 @@ public class Test_63_DGSimplified extends CommonTestRunner {
             if ("reverse".equals(d.methodInfo().name)) {
                 if ("1.0.0".equals(d.statementId())) {
                     String expected = d.iteration() < 21 ? "<m:addNode>" : "<no return value>";
-                    assertEquals(expected, d.statementAnalysis().stateData().valueOfExpression.get().toString());
+                    assertEquals(expected, d.statementAnalysis().stateData().valueOfExpressionGet().toString());
                 }
             }
         };
@@ -533,7 +533,7 @@ public class Test_63_DGSimplified extends CommonTestRunner {
                     String value = d.iteration() == 0 ? "!<null-check>"
                             : d.iteration() < 28 ? "null!=<f:node.dependsOn>"
                             : "null!=(nodeMap.get(t)).dependsOn$2";
-                    assertEquals(value, d.statementAnalysis().stateData().valueOfExpression.get().toString());
+                    assertEquals(value, d.statementAnalysis().stateData().valueOfExpressionGet().toString());
                 }
             }
             if ("sorted".equals(d.methodInfo().name)) {

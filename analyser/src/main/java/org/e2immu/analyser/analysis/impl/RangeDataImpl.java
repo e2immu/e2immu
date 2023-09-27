@@ -15,6 +15,7 @@
 package org.e2immu.analyser.analysis.impl;
 
 import org.e2immu.analyser.analyser.*;
+import org.e2immu.analyser.analyser.context.impl.EvaluationResultImpl;
 import org.e2immu.analyser.analyser.delay.DelayFactory;
 import org.e2immu.analyser.analyser.delay.SimpleCause;
 import org.e2immu.analyser.analyser.delay.VariableCause;
@@ -326,7 +327,7 @@ public class RangeDataImpl implements RangeData {
             int start = init.getValue();
             int increment = update.getValue();
             if (condition instanceof GreaterThanZero gt0) {
-                GreaterThanZero.XB xb = gt0.extract(EvaluationResult.from(evaluationContext));
+                GreaterThanZero.XB xb = gt0.extract(EvaluationResultImpl.from(evaluationContext));
                 if (loopVar.equals(xb.x())) {
                     int endExcl = (int) (xb.b() + (increment < 0 ? -1 : 1));
                     if (xb.lessThan() && start < endExcl && increment > 0 || !xb.lessThan() && start > endExcl && increment < 0) {

@@ -15,6 +15,7 @@
 package org.e2immu.analyser.model.expression;
 
 import org.e2immu.analyser.analyser.*;
+import org.e2immu.analyser.analyser.context.impl.EvaluationResultImpl;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.util.ExpressionComparator;
 import org.e2immu.analyser.model.expression.util.TranslationCollectors;
@@ -75,8 +76,8 @@ public class CommaExpression extends BaseExpression implements Expression {
      */
     @Override
     public EvaluationResult evaluate(EvaluationResult context, ForwardEvaluationInfo forwardEvaluationInfo) {
-        EvaluationResult.Builder builder = new EvaluationResult.Builder(context);
-        EvaluationResult.Builder builderForIncrementalResult = new EvaluationResult.Builder(context);
+        EvaluationResultImpl.Builder builder = new EvaluationResultImpl.Builder(context);
+        EvaluationResultImpl.Builder builderForIncrementalResult = new EvaluationResultImpl.Builder(context);
         int count = 0;
         for (Expression expression : expressions) {
             ForwardEvaluationInfo fwd = count == expressions.size() - 1 ? forwardEvaluationInfo : ForwardEvaluationInfo.DEFAULT;
@@ -89,7 +90,7 @@ public class CommaExpression extends BaseExpression implements Expression {
             builder.composeStore(result);
 
             if (clearIncremental) {
-                builderForIncrementalResult = new EvaluationResult.Builder(context);
+                builderForIncrementalResult = new EvaluationResultImpl.Builder(context);
             } else {
                 builderForIncrementalResult.compose(result);
             }
