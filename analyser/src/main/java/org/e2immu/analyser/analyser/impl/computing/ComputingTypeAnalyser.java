@@ -15,7 +15,7 @@
 package org.e2immu.analyser.analyser.impl.computing;
 
 import org.e2immu.analyser.analyser.*;
-import org.e2immu.analyser.analyser.context.impl.EvaluationResultImpl;
+import org.e2immu.analyser.analyser.impl.context.EvaluationResultImpl;
 import org.e2immu.analyser.analyser.delay.Inconclusive;
 import org.e2immu.analyser.analyser.delay.NotDelayed;
 import org.e2immu.analyser.analyser.impl.TypeAnalyserImpl;
@@ -260,7 +260,11 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
     }
 
     private AnalysisStatus findAspects() {
-        return findAspects(typeAnalysis, typeInfo);
+        AnalysisStatus analysisStatus = findAspects(typeAnalysis, typeInfo);
+        LOGGER.debug("Found aspects {}", typeAnalysis.aspects.stream()
+                .map(e -> e.getKey() + ": " + e.getValue().fullyQualifiedName)
+                .collect(Collectors.joining(", ")));
+        return analysisStatus;
     }
 
     public static AnalysisStatus findAspects(TypeAnalysisImpl.Builder typeAnalysis, TypeInfo typeInfo) {
@@ -302,8 +306,6 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
                     }
                 }
             }
-            LOGGER.debug("Found aspects {} in {}, {}", typeAnalysis.aspects.keyStream()
-                    .collect(Collectors.joining(",")), typeAnalysis, mainMethod);
         }
     }
 

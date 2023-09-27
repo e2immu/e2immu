@@ -15,6 +15,7 @@
 package org.e2immu.analyser.annotationxml;
 
 import org.e2immu.analyser.config.*;
+import org.e2immu.analyser.log.LogTarget;
 import org.e2immu.analyser.model.TypeInfo;
 import org.e2immu.analyser.parser.Input;
 import org.e2immu.analyser.parser.Parser;

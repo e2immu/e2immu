@@ -17,10 +17,12 @@ package org.e2immu.analyser.analyser.util;
 import org.e2immu.analyser.analyser.AnalysisStatus;
 import org.e2immu.analyser.analyser.CauseOfDelay;
 import org.e2immu.analyser.analyser.CausesOfDelay;
+import org.e2immu.analyser.log.LogTarget;
 import org.e2immu.analyser.model.InfoObject;
 import org.e2immu.analyser.util.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.slf4j.Marker;
 
 import java.util.*;
 import java.util.function.BiPredicate;
@@ -66,11 +68,13 @@ public class AnalyserComponents<T, S> {
     private final Map<InfoObject, Info> delayHistogram;
     private final Function<S, S> updateUponProgress;
     private final BiPredicate<T, S> executeConditionally;
+    private final Marker marker;
 
     private AnalyserComponents(boolean limitCausesOfDelay,
                                LinkedHashMap<T, AnalysisResultSupplier<S>> suppliers,
                                Function<S, S> updateUponProgress,
-                               BiPredicate<T, S> executeConditionally) {
+                               BiPredicate<T, S> executeConditionally,
+                               Marker marker) {
         this.suppliers = suppliers;
         state = new AnalysisStatus[suppliers.size()];
         Arrays.fill(state, AnalysisStatus.NOT_YET_EXECUTED);
@@ -82,6 +86,7 @@ public class AnalyserComponents<T, S> {
         }
         this.updateUponProgress = updateUponProgress;
         this.executeConditionally = executeConditionally;
+        this.marker = marker;
     }
 
     public AnalysisStatus getStatus(String t) {
@@ -97,7 +102,7 @@ public class AnalyserComponents<T, S> {
         private boolean limitCausesOfDelay;
         private Function<S, S> updateUponProgress;
         private BiPredicate<T, S> executeConditionally;
-
+        private Marker marker = LogTarget.SOURCE;
 
         public Builder<T, S> setLimitCausesOfDelay(boolean limitCausesOfDelay) {
             this.limitCausesOfDelay = limitCausesOfDelay;
@@ -119,8 +124,14 @@ public class AnalyserComponents<T, S> {
             return this;
         }
 
+        public Builder<T, S> setMarker(Marker marker) {
+            this.marker = marker;
+            return this;
+        }
+
         public AnalyserComponents<T, S> build() {
-            return new AnalyserComponents<>(limitCausesOfDelay, suppliers, updateUponProgress, executeConditionally);
+            return new AnalyserComponents<>(limitCausesOfDelay, suppliers, updateUponProgress, executeConditionally,
+                    marker);
         }
     }
 
@@ -149,7 +160,7 @@ public class AnalyserComponents<T, S> {
                     assert afterExec != NOT_YET_EXECUTED;
                     if (afterExec == DONE || afterExec == DONE_ALL || afterExec.isProgress()) {
                         if (!progress) {
-                            LOGGER.debug("First progress in {}", entry.getKey());
+                            LOGGER.debug(marker, "First progress in {}", entry.getKey());
                         }
                         progress = true;
                         if (updateUponProgress != null) {

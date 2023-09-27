@@ -15,7 +15,7 @@
 package org.e2immu.analyser.analyser.statementanalyser;
 
 import org.e2immu.analyser.analyser.*;
-import org.e2immu.analyser.analyser.context.impl.EvaluationResultImpl;
+import org.e2immu.analyser.analyser.impl.context.EvaluationResultImpl;
 import org.e2immu.analyser.analyser.delay.FlowDataConstants;
 import org.e2immu.analyser.analyser.impl.primary.PrimaryTypeAnalyserImpl;
 import org.e2immu.analyser.analyser.impl.util.BreakDelayLevel;

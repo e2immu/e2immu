@@ -20,7 +20,7 @@ import org.e2immu.analyser.analyser.check.CheckFinalNotModified;
 import org.e2immu.analyser.analyser.check.CheckImmutable;
 import org.e2immu.analyser.analyser.check.CheckIndependent;
 import org.e2immu.analyser.analyser.check.CheckNotNull;
-import org.e2immu.analyser.analyser.context.impl.EvaluationResultImpl;
+import org.e2immu.analyser.analyser.impl.context.EvaluationResultImpl;
 import org.e2immu.analyser.analyser.delay.DelayFactory;
 import org.e2immu.analyser.analyser.delay.Inconclusive;
 import org.e2immu.analyser.analyser.delay.SimpleCause;

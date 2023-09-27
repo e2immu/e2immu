@@ -21,6 +21,7 @@ import org.e2immu.analyser.analyser.util.AnalyserResult;
 import org.e2immu.analyser.analysis.*;
 import org.e2immu.analyser.config.Configuration;
 import org.e2immu.analyser.inspector.impl.MethodInspectionImpl;
+import org.e2immu.analyser.log.LogTarget;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
 import org.e2immu.analyser.parser.ImportantClasses;
@@ -101,14 +102,15 @@ public class PrimaryTypeAnalyserImpl implements PrimaryTypeAnalyser {
 
             builder.add(analyser, supplier);
         }
+        marker = inAnnotatedAPIAnalysis() ? LogTarget.A_API : LogTarget.SOURCE;
         // In larger contexts, removing the allowBreakDelay immediately may be excessively slow
         // maybe we should do that per PrimaryType, keeping a map?
         analyserComponents = builder
                 .setUpdateUponProgress(SharedState::removeAllowBreakDelay)
                 .setExecuteConditionally(this::executeConditionally)
+                .setMarker(marker)
                 .build();
-        marker = inAnnotatedAPIAnalysis() ? Configuration.A_API : Configuration.SOURCE;
-        LOGGER.debug(marker, "List of analysers: {}", analysers);
+        LOGGER.trace(marker, "List of analysers: {}", analysers);
     }
 
     private boolean executeConditionally(Analyser analyser, SharedState sharedState) {

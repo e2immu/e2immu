@@ -15,10 +15,9 @@
 package org.e2immu.analyser.parser.start;
 
 import org.e2immu.analyser.analyser.DV;
-import org.e2immu.analyser.analyser.EvaluationResult;
 import org.e2immu.analyser.analyser.Stage;
 import org.e2immu.analyser.analyser.VariableInfo;
-import org.e2immu.analyser.analyser.context.impl.EvaluationResultImpl;
+import org.e2immu.analyser.analyser.impl.context.EvaluationResultImpl;
 import org.e2immu.analyser.analysis.MethodAnalysis;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.model.*;

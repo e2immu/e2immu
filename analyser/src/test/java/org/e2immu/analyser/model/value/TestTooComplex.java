@@ -15,7 +15,7 @@
 package org.e2immu.analyser.model.value;
 
 import org.e2immu.analyser.analyser.EvaluationResult;
-import org.e2immu.analyser.analyser.context.impl.EvaluationResultImpl;
+import org.e2immu.analyser.analyser.impl.context.EvaluationResultImpl;
 import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.expression.And;
 import org.e2immu.analyser.model.expression.MultiExpressions;

@@ -16,7 +16,7 @@ package org.e2immu.analyser.resolver;
 
 import org.e2immu.analyser.config.Configuration;
 import org.e2immu.analyser.config.InputConfiguration;
-import org.e2immu.analyser.config.LogTarget;
+import org.e2immu.analyser.log.LogTarget;
 import org.e2immu.analyser.inspector.MethodTypeParameterMap;
 import org.e2immu.analyser.model.IsAssignableFrom;
 import org.e2immu.analyser.model.MethodInfo;

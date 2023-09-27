@@ -81,7 +81,7 @@ public class ShallowTypeAnalyser extends TypeAnalyserImpl {
     public AnalyserResult analyse(SharedState sharedState) {
         try {
             shallowAnalyzer();
-            if(!analyserContext.inAnnotatedAPIAnalysis()) {
+            if (!analyserContext.inAnnotatedAPIAnalysis()) {
                 for (TypeAnalyserVisitor typeAnalyserVisitor : analyserContext.getConfiguration()
                         .debugConfiguration().afterTypePropertyComputations()) {
                     typeAnalyserVisitor.visit(new TypeAnalyserVisitor.Data(0, sharedState.breakDelayLevel(),
@@ -113,6 +113,9 @@ public class ShallowTypeAnalyser extends TypeAnalyserImpl {
                 analyserContext.getE2ImmuAnnotationExpressions()));
 
         ComputingTypeAnalyser.findAspects(typeAnalysis, typeInfo);
+        LOGGER.debug("Found aspects {}",
+                typeAnalysis.aspects.stream().map(e -> e.getKey()+": "+e.getValue().fullyQualifiedName)
+                        .collect(Collectors.joining(", ")));
         typeAnalysis.freezeApprovedPreconditionsFinalFields();
         typeAnalysis.freezeApprovedPreconditionsImmutable();
 

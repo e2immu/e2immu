@@ -15,6 +15,7 @@
 package org.e2immu.annotatedapi.test;
 
 import org.e2immu.analyser.config.*;
+import org.e2immu.analyser.log.LogTarget;
 import org.e2immu.analyser.output.Formatter;
 import org.e2immu.analyser.output.FormattingOptions;
 import org.e2immu.analyser.output.OutputBuilder;

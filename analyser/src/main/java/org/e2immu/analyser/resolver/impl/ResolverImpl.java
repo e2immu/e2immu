@@ -198,7 +198,7 @@ public class ResolverImpl implements Resolver {
                     }
                     inCycle.addAll(restrictedCycle);
                 },
-                typeInfo -> LOGGER.info("Adding {}", typeInfo.fullyQualifiedName),
+                typeInfo -> LOGGER.debug("Adding {}", typeInfo.fullyQualifiedName),
                 Comparator.comparing(typeInfo -> typeInfo.fullyQualifiedName));
     }
 

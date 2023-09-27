@@ -16,6 +16,7 @@ package org.e2immu.analyser.bytecode.asm;
 
 import org.e2immu.analyser.annotationxml.AnnotationXmlReader;
 import org.e2immu.analyser.bytecode.ByteCodeInspector;
+import org.e2immu.analyser.config.Configuration;
 import org.e2immu.analyser.inspector.TypeContext;
 import org.e2immu.analyser.inspector.impl.TypeInspectionImpl;
 import org.e2immu.analyser.model.*;
@@ -41,6 +42,9 @@ public class TestParseGenerics {
 
     @BeforeAll
     public static void beforeClass() throws IOException {
+        Configuration configuration = new Configuration.Builder().build();
+        configuration.initializeLoggers();
+
         Resources resources = new Resources();
         resources.addJmod(new URL("jar:file:" + System.getProperty("java.home") + "/jmods/java.base.jmod!/"));
         Resources annotationResources = new Resources();

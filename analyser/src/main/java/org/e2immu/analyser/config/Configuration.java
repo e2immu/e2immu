@@ -14,13 +14,10 @@
 
 package org.e2immu.analyser.config;
 
-import ch.qos.logback.classic.Level;
-import ch.qos.logback.classic.Logger;
+import org.e2immu.analyser.log.InitLoggers;
+import org.e2immu.analyser.log.LogTarget;
 import org.e2immu.annotation.Container;
 import org.e2immu.annotation.Fluent;
-import org.slf4j.LoggerFactory;
-import org.slf4j.Marker;
-import org.slf4j.MarkerFactory;
 
 import java.util.Arrays;
 import java.util.HashSet;
@@ -47,7 +44,6 @@ public record Configuration(InputConfiguration inputConfiguration,
                             DebugConfiguration debugConfiguration) {
 
     public static final String EQUALS = "org.e2immu.analyser.EQUALS";
-    public static final String MAIN_PACKAGE = "org.e2immu.analyser";
 
     @Override
     public String toString() {
@@ -93,59 +89,8 @@ public record Configuration(InputConfiguration inputConfiguration,
                 analyserConfiguration, inspectorConfiguration, debugConfiguration);
     }
 
-    public static final Marker A_API = MarkerFactory.getMarker("a_api");
-    public static final Marker SOURCE = MarkerFactory.getMarker("source");
-
     public void initializeLoggers() {
-        ((Logger) LoggerFactory.getLogger(org.slf4j.Logger.ROOT_LOGGER_NAME)).setLevel(Level.ERROR);
-   /*     boolean multipleRunners = detectMultipleRunners();
-        if (multipleRunners) {
-            System.err.println("Detected multiple runners, switching off logging system");
-        }
-        Logger overall = (Logger) LoggerFactory.getLogger(MAIN_PACKAGE);
-        Level overallLevel = quiet || multipleRunners ? Level.ERROR : Level.INFO;
-        Level detailedLevel = quiet || multipleRunners ? Level.ERROR : Level.DEBUG;
-        overall.setLevel(overallLevel);
-        for (LogTarget logTarget : LogTarget.values()) {
-            Level level = logTargets.contains(logTarget) ? detailedLevel : overallLevel;
-            for (String prefix : logTarget.prefixes()) {
-                ch.qos.logback.classic.Logger logger = (ch.qos.logback.classic.Logger)
-                        LoggerFactory.getLogger(MAIN_PACKAGE + "." + prefix);
-                logger.setLevel(level);
-            }
-        }
-        // filter out debug statements in PrimaryTypeAnalyserImpl in the shallow/a-api phase
-        if (logTargets.contains(LogTarget.COMPUTING_ANALYSERS)) {
-            overall.getLoggerContext().addTurboFilter(new TurboFilter() {
-                @Override
-                public FilterReply decide(Marker marker, Logger logger, Level level, String format, Object[] params, Throwable t) {
-                    return A_API.equals(marker) ? FilterReply.DENY : FilterReply.ACCEPT;
-                }
-            });
-        }*/
-    }
-
-    /*
-     We'd rather not log anything than have the wrong loggers on DEBUG. So if we see that a wrong
-     logger is already activated, we must conclude we're running multiple tests (with different logging
-     requirements) at the same time. If so, we'll switch off. As soon as all currently running loggers
-     are switched off, the next one can have its normal logging again.
-     */
-    private boolean detectMultipleRunners() {
-        Level overallLevel = quiet ? Level.ERROR : Level.INFO;
-        Level detailedLevel = quiet ? Level.ERROR : Level.DEBUG;
-        for (LogTarget logTarget : LogTarget.values()) {
-            Level level = logTargets.contains(logTarget) ? detailedLevel : overallLevel;
-            for (String prefix : logTarget.prefixes()) {
-                ch.qos.logback.classic.Logger logger = (ch.qos.logback.classic.Logger)
-                        LoggerFactory.getLogger(MAIN_PACKAGE + "." + prefix);
-                Level effectiveLevel = logger.getEffectiveLevel();
-                if (!effectiveLevel.isGreaterOrEqual(level)) {
-                    return true;
-                }
-            }
-        }
-        return false;
+        InitLoggers.go(logTargets, quiet);
     }
 
     @Container

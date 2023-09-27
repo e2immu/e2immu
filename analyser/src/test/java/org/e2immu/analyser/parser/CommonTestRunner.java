@@ -17,6 +17,7 @@ package org.e2immu.analyser.parser;
 
 import org.e2immu.analyser.config.*;
 import org.e2immu.analyser.inspector.TypeContext;
+import org.e2immu.analyser.log.LogTarget;
 import org.e2immu.analyser.model.impl.LocationImpl;
 import org.e2immu.analyser.output.Formatter;
 import org.e2immu.analyser.output.FormattingOptions;

@@ -16,6 +16,7 @@ package org.e2immu.analyser.program.own;
 
 import org.e2immu.analyser.analyser.Property;
 import org.e2immu.analyser.config.*;
+import org.e2immu.analyser.log.LogTarget;
 import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.TypeInfo;
 import org.e2immu.analyser.parser.CommonTestRunner;

@@ -17,7 +17,7 @@ package org.e2immu.analyser.analyser.nonanalyserimpl;
 // assignment in if and else block
 
 import org.e2immu.analyser.analyser.*;
-import org.e2immu.analyser.analyser.context.impl.EvaluationResultImpl;
+import org.e2immu.analyser.analyser.impl.context.EvaluationResultImpl;
 import org.e2immu.analyser.analyser.delay.DelayFactory;
 import org.e2immu.analyser.analyser.delay.ProgressAndDelay;
 import org.e2immu.analyser.analyser.delay.VariableCause;
