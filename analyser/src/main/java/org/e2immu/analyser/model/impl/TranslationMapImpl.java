@@ -183,12 +183,6 @@ public class TranslationMapImpl implements TranslationMap {
         return localVariables.getOrDefault(localVariable, localVariable).translate(this);
     }
 
-    @SuppressWarnings("unchecked")
-    public static <T extends Expression> T ensureExpressionType(Expression expression, Class<T> clazz) {
-        if (clazz.isAssignableFrom(expression.getClass())) return (T) expression;
-        throw new UnsupportedOperationException();
-    }
-
     @Override
     public boolean isEmpty() {
         return statements.isEmpty() && expressions.isEmpty() && methods.isEmpty() &&

@@ -1,6 +1,5 @@
 package org.e2immu.analyser.model.value;
 
-import org.e2immu.analyser.analyser.ForwardEvaluationInfo;
 import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.expression.Product;
 import org.e2immu.analyser.model.expression.VariableExpression;

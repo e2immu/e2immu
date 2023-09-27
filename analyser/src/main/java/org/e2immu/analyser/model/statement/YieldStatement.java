@@ -17,7 +17,10 @@ package org.e2immu.analyser.model.statement;
 import org.e2immu.analyser.analyser.ForwardEvaluationInfo;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.EmptyExpression;
-import org.e2immu.analyser.output.*;
+import org.e2immu.analyser.output.Keyword;
+import org.e2immu.analyser.output.OutputBuilder;
+import org.e2immu.analyser.output.Space;
+import org.e2immu.analyser.output.Symbol;
 import org.e2immu.analyser.parser.InspectionProvider;
 
 import java.util.List;

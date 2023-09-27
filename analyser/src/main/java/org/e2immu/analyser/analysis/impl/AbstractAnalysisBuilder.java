@@ -20,7 +20,10 @@ import org.e2immu.analyser.analyser.util.GenerateAnnotationsImmutableAndContaine
 import org.e2immu.analyser.analyser.util.GenerateAnnotationsIndependent;
 import org.e2immu.analyser.analysis.Analysis;
 import org.e2immu.analyser.analysis.TypeAnalysis;
-import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.model.AnnotationExpression;
+import org.e2immu.analyser.model.MultiLevel;
+import org.e2immu.analyser.model.Qualification;
+import org.e2immu.analyser.model.TypeInfo;
 import org.e2immu.analyser.model.impl.AnnotationExpressionImpl;
 import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
 import org.e2immu.analyser.parser.Messages;

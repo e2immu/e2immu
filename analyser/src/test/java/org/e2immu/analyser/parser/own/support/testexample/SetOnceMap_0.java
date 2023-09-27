@@ -1,6 +1,9 @@
 package org.e2immu.analyser.parser.own.support.testexample;
 
-import org.e2immu.annotation.*;
+import org.e2immu.annotation.ImmutableContainer;
+import org.e2immu.annotation.Independent;
+import org.e2immu.annotation.NotModified;
+import org.e2immu.annotation.NotNull;
 import org.e2immu.support.Freezable;
 
 import java.util.HashMap;

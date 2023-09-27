@@ -24,7 +24,10 @@ import org.e2immu.analyser.model.statement.SwitchEntry;
 import org.e2immu.analyser.model.statement.ThrowStatement;
 import org.e2immu.analyser.model.statement.YieldStatement;
 import org.e2immu.analyser.model.variable.Variable;
-import org.e2immu.analyser.output.*;
+import org.e2immu.analyser.output.Guide;
+import org.e2immu.analyser.output.Keyword;
+import org.e2immu.analyser.output.OutputBuilder;
+import org.e2immu.analyser.output.Symbol;
 import org.e2immu.analyser.parser.InspectionProvider;
 
 import java.util.*;

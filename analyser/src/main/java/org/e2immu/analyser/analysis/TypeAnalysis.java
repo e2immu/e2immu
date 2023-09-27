@@ -15,7 +15,10 @@
 package org.e2immu.analyser.analysis;
 
 import org.e2immu.analyser.analyser.*;
-import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.model.Expression;
+import org.e2immu.analyser.model.FieldInfo;
+import org.e2immu.analyser.model.MethodInfo;
+import org.e2immu.analyser.model.TypeInfo;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.annotation.NotNull;
 

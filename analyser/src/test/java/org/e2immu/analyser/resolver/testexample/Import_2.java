@@ -14,8 +14,9 @@
 
 package org.e2immu.analyser.resolver.testexample;
 
-import static org.e2immu.analyser.resolver.testexample.importhelper.RMultiLevel.*;
 import org.e2immu.analyser.resolver.testexample.importhelper.RLevel;
+
+import static org.e2immu.analyser.resolver.testexample.importhelper.RMultiLevel.Effective;
 
 public class Import_2 {
 

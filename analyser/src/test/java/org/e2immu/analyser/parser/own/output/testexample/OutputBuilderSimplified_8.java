@@ -15,8 +15,11 @@
 package org.e2immu.analyser.parser.own.output.testexample;
 
 
-import java.util.*;
-import java.util.function.*;
+import java.util.Set;
+import java.util.function.BiConsumer;
+import java.util.function.BinaryOperator;
+import java.util.function.Function;
+import java.util.function.Supplier;
 import java.util.stream.Collector;
 
 // bug in @Identity on joining()

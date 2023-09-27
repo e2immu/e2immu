@@ -23,7 +23,9 @@ import org.e2immu.analyser.model.variable.LocalVariableReference;
 import org.e2immu.analyser.model.variable.ReturnVariable;
 import org.e2immu.analyser.model.variable.This;
 import org.e2immu.analyser.parser.Primitives;
-import org.e2immu.support.*;
+import org.e2immu.support.EventuallyFinal;
+import org.e2immu.support.SetOnce;
+import org.e2immu.support.SetOnceMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

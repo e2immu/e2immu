@@ -14,7 +14,9 @@
 
 package org.e2immu.analyser.shallow.testexample;
 
-import org.e2immu.annotation.*;
+import org.e2immu.annotation.Container;
+import org.e2immu.annotation.Modified;
+import org.e2immu.annotation.NotNull;
 
 // should raise an error: @Modified versus @Container
 

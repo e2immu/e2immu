@@ -37,7 +37,9 @@ import java.util.*;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
-public final class TypeInfo implements NamedType, WithInspectionAndAnalysis, Comparable<TypeInfo> {
+public final class TypeInfo implements NamedType,
+        InfoObject,
+        WithInspectionAndAnalysis, Comparable<TypeInfo> {
 
     public static final String JAVA_LANG_OBJECT = "java.lang.Object";
     public static final String IS_FACT_FQN = "org.e2immu.annotatedapi.AnnotatedAPI.isFact(boolean)";
@@ -774,6 +776,11 @@ public final class TypeInfo implements NamedType, WithInspectionAndAnalysis, Com
     @Override
     public Location newLocation() {
         return new LocationImpl(this);
+    }
+
+    @Override
+    public MethodInfo getMethodInfo() {
+        return null;
     }
 
     @Override

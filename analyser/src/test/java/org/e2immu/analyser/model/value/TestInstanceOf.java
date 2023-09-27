@@ -18,7 +18,6 @@ import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.Identifier;
 import org.e2immu.analyser.model.ParameterizedType;
 import org.e2immu.analyser.model.expression.InstanceOf;
-import org.e2immu.analyser.model.expression.Negation;
 import org.e2immu.analyser.model.expression.NullConstant;
 import org.junit.jupiter.api.Test;
 

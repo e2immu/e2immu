@@ -21,7 +21,6 @@ import org.e2immu.analyser.model.ParameterizedType;
 import org.e2immu.analyser.model.TypeInfo;
 
 import java.util.List;
-import java.util.Set;
 
 public interface Primitives extends PrimitivesWithoutParameterizedType {
     String JAVA_LANG = "java.lang";

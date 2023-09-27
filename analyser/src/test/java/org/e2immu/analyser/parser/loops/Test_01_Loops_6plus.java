@@ -31,7 +31,6 @@ import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.model.variable.VariableNature;
 import org.e2immu.analyser.parser.CommonTestRunner;
 import org.e2immu.analyser.visitor.*;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
@@ -42,7 +41,8 @@ import java.util.stream.Collectors;
 import static org.e2immu.analyser.analyser.Property.*;
 import static org.e2immu.analyser.analysis.FlowData.ALWAYS;
 import static org.e2immu.analyser.analysis.FlowData.CONDITIONALLY;
-import static org.e2immu.analyser.parser.VisitorTestSupport.IterationInfo.*;
+import static org.e2immu.analyser.parser.VisitorTestSupport.IterationInfo.it;
+import static org.e2immu.analyser.parser.VisitorTestSupport.IterationInfo.it0;
 import static org.junit.jupiter.api.Assertions.*;
 
 public class Test_01_Loops_6plus extends CommonTestRunner {

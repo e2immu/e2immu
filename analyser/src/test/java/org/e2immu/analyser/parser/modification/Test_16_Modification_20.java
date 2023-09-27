@@ -31,7 +31,7 @@ import org.junit.jupiter.api.Test;
 import java.io.IOException;
 import java.util.Set;
 
-import static org.e2immu.analyser.parser.VisitorTestSupport.IterationInfo.*;
+import static org.e2immu.analyser.parser.VisitorTestSupport.IterationInfo.it;
 import static org.junit.jupiter.api.Assertions.*;
 
 // detailed explanation in Test_16_Modification_19; note the 2 differences compared to that test.

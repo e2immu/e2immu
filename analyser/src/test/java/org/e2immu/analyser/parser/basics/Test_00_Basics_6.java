@@ -22,7 +22,6 @@ import org.e2immu.analyser.analyser.Stage;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.inspector.TypeContext;
 import org.e2immu.analyser.model.*;
-import org.e2immu.analyser.model.expression.InlinedMethod;
 import org.e2immu.analyser.model.expression.UnknownExpression;
 import org.e2immu.analyser.model.expression.VariableExpression;
 import org.e2immu.analyser.model.variable.ReturnVariable;

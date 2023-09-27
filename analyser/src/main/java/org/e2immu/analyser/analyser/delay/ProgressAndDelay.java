@@ -16,7 +16,6 @@ package org.e2immu.analyser.analyser.delay;
 
 import org.e2immu.analyser.analyser.AnalysisStatus;
 import org.e2immu.analyser.analyser.CausesOfDelay;
-import org.e2immu.analyser.analyser.Properties;
 
 // used for situations where progress can be true while causes is done.
 public record ProgressAndDelay(boolean progress, CausesOfDelay causes) {

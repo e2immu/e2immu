@@ -1,9 +1,7 @@
 package org.e2immu.analyser.util;
 
-import org.e2immu.analyser.model.MethodInfo;
-
-import java.util.*;
-import java.util.function.Function;
+import java.util.Comparator;
+import java.util.List;
 
 /**
  * An interface describing a collection of parallel (unsorted) and sequential (sorted) sets of items.

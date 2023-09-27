@@ -16,9 +16,7 @@ package org.e2immu.analyser.resolver.testexample;
 
 import org.e2immu.analyser.resolver.testexample.importhelper.RLevel;
 
-// in case this line gets removed by automatic import improvement (it is essential to the test)
-// import static org.e2immu.analyser.resolver.testexample.importhelper.MultiLevel.*;
-import static org.e2immu.analyser.resolver.testexample.importhelper.RMultiLevel.Effective.*;
+import static org.e2immu.analyser.resolver.testexample.importhelper.RMultiLevel.Effective.E1;
 
 public class Import_1 {
 

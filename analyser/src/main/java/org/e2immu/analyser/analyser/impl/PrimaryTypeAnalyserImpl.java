@@ -231,7 +231,7 @@ public class PrimaryTypeAnalyserImpl implements PrimaryTypeAnalyser {
         }
     }
 
-    private static void dumpDelayHistogram(Map<WithInspectionAndAnalysis, AnalyserComponents.Info> delayHistogram) {
+    private static void dumpDelayHistogram(Map<InfoObject, AnalyserComponents.Info> delayHistogram) {
         LOGGER.debug("Delay histogram:\n{}",
                 delayHistogram.entrySet().stream().sorted((e1, e2) -> e2.getValue().getCnt() - e1.getValue().getCnt())
                         .limit(20)

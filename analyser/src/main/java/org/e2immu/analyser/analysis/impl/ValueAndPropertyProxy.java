@@ -19,7 +19,6 @@ import org.e2immu.analyser.analyser.LinkedVariables;
 import org.e2immu.analyser.analyser.Properties;
 import org.e2immu.analyser.analyser.Property;
 import org.e2immu.analyser.model.Expression;
-import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.ParameterInfo;
 import org.e2immu.analyser.model.expression.util.ExpressionComparator;
 import org.e2immu.annotation.NotNull;

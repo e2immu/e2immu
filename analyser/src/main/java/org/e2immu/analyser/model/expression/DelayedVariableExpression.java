@@ -19,7 +19,9 @@ import org.e2immu.analyser.analyser.delay.DelayFactory;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.util.ExpressionComparator;
 import org.e2immu.analyser.model.impl.BaseExpression;
-import org.e2immu.analyser.model.variable.*;
+import org.e2immu.analyser.model.variable.DependentVariable;
+import org.e2immu.analyser.model.variable.FieldReference;
+import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.Text;
 import org.e2immu.analyser.parser.InspectionProvider;
@@ -28,7 +30,6 @@ import org.e2immu.support.Either;
 
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Set;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;

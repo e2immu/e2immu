@@ -14,7 +14,10 @@
 
 package org.e2immu.analyser.parser.start.testexample;
 
-import org.e2immu.annotation.*;
+import org.e2immu.annotation.Container;
+import org.e2immu.annotation.FinalFields;
+import org.e2immu.annotation.Independent;
+import org.e2immu.annotation.NotModified;
 
 import java.util.HashMap;
 import java.util.Map;

@@ -18,12 +18,9 @@ package org.e2immu.analyser.parser.basics;
 import org.e2immu.analyser.config.AnalyserConfiguration;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.parser.CommonTestRunner;
-import org.e2immu.analyser.visitor.EvaluationResultVisitor;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class Test_00_Basics_27 extends CommonTestRunner {
 

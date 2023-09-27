@@ -14,7 +14,10 @@
 
 package org.e2immu.analyser.shallow.testexample;
 
-import org.e2immu.annotation.*;
+import org.e2immu.annotation.Container;
+import org.e2immu.annotation.Independent;
+import org.e2immu.annotation.Modified;
+import org.e2immu.annotation.NotNull;
 
 public class JavaUtil_1 {
 

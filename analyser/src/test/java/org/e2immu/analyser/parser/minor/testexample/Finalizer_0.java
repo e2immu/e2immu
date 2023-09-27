@@ -15,9 +15,9 @@
 package org.e2immu.analyser.parser.minor.testexample;
 
 import org.e2immu.annotation.FinalFields;
-import org.e2immu.annotation.rare.Finalizer;
 import org.e2immu.annotation.Fluent;
 import org.e2immu.annotation.Modified;
+import org.e2immu.annotation.rare.Finalizer;
 
 @FinalFields(absent = true) // because of the error+testLinking method, would have been @Container otherwise
 public class Finalizer_0 {

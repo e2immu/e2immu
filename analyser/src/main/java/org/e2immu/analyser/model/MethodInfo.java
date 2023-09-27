@@ -36,7 +36,7 @@ import org.e2immu.support.SetOnceMap;
 import java.util.*;
 import java.util.stream.Collectors;
 
-public class MethodInfo implements WithInspectionAndAnalysis {
+public class MethodInfo implements InfoObject, WithInspectionAndAnalysis {
     public static final String UNARY_MINUS_OPERATOR_INT = "int.-(int)";
     public static final int COMPLEXITY_METHOD_WITHOUT_CODE = 10;
 
@@ -316,6 +316,11 @@ public class MethodInfo implements WithInspectionAndAnalysis {
     @Override
     public String niceClassName() {
         return "Method";
+    }
+
+    @Override
+    public MethodInfo getMethodInfo() {
+        return this;
     }
 
     // helper for tests

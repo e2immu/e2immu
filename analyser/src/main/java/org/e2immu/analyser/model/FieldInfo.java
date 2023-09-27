@@ -32,7 +32,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Stream;
 
-public class FieldInfo implements WithInspectionAndAnalysis {
+public class FieldInfo implements InfoObject, WithInspectionAndAnalysis {
     private final Identifier identifier;
     public final ParameterizedType type;
     public final String name;
@@ -241,6 +241,11 @@ public class FieldInfo implements WithInspectionAndAnalysis {
     @Override
     public Location newLocation() {
         return new LocationImpl(this);
+    }
+
+    @Override
+    public MethodInfo getMethodInfo() {
+        return null;
     }
 
     @Override

@@ -169,9 +169,6 @@ public interface WithInspectionAndAnalysis {
     }
 
     @NotNull
-    String niceClassName();
-
-    @NotNull
     Location newLocation();
 
     @NotNull

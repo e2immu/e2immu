@@ -17,11 +17,10 @@ package org.e2immu.analyser.parser.basics;
 
 import org.e2immu.analyser.analyser.DV;
 import org.e2immu.analyser.analyser.Stage;
+import org.e2immu.analyser.analysis.ParameterAnalysis;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.model.MultiLevel;
-import org.e2immu.analyser.analysis.ParameterAnalysis;
 import org.e2immu.analyser.model.ParameterInfo;
-import org.e2immu.analyser.model.expression.InlinedMethod;
 import org.e2immu.analyser.model.variable.ReturnVariable;
 import org.e2immu.analyser.parser.CommonTestRunner;
 import org.e2immu.analyser.visitor.EvaluationResultVisitor;
@@ -33,7 +32,6 @@ import java.io.IOException;
 
 import static org.e2immu.analyser.analyser.Property.*;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class Test_00_Basics_9 extends CommonTestRunner {
 

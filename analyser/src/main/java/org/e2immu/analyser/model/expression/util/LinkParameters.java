@@ -25,7 +25,6 @@ import org.e2immu.analyser.model.expression.*;
 import org.e2immu.analyser.model.impl.TranslationMapImpl;
 import org.e2immu.analyser.model.variable.This;
 import org.e2immu.analyser.model.variable.Variable;
-import org.e2immu.analyser.parser.InspectionProvider;
 
 import java.util.ArrayList;
 import java.util.HashMap;

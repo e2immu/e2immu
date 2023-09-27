@@ -14,7 +14,7 @@
 
 package org.e2immu.analyser.analyser;
 
-import org.e2immu.analyser.model.WithInspectionAndAnalysis;
+import org.e2immu.analyser.model.InfoObject;
 import org.e2immu.analyser.util.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -60,7 +60,7 @@ public class AnalyserComponents<T, S> {
     private final LinkedHashMap<T, AnalysisResultSupplier<S>> suppliers;
     private final AnalysisStatus[] state;
     private final boolean limitCausesOfDelay;
-    private final Map<WithInspectionAndAnalysis, Info> delayHistogram;
+    private final Map<InfoObject, Info> delayHistogram;
     private final Function<S, S> updateUponProgress;
     private final BiPredicate<T, S> executeConditionally;
 
@@ -204,7 +204,7 @@ public class AnalyserComponents<T, S> {
         return res;
     }
 
-    public Map<WithInspectionAndAnalysis, Info> getDelayHistogram() {
+    public Map<InfoObject, Info> getDelayHistogram() {
         return delayHistogram;
     }
 }

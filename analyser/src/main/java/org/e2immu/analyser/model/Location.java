@@ -35,7 +35,7 @@ public interface Location extends Comparable<Location> {
         }
 
         @Override
-        public WithInspectionAndAnalysis getInfo() {
+        public InfoObject getInfo() {
             return null;
         }
 
@@ -61,7 +61,7 @@ public interface Location extends Comparable<Location> {
         return toDelayString();
     }
 
-    WithInspectionAndAnalysis getInfo();
+    InfoObject getInfo();
 
     // if a location in a statement analyser, return the index + level; otherwise, return null
     String statementIdentifierOrNull();

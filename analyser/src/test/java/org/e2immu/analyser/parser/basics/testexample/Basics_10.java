@@ -14,7 +14,10 @@
 
 package org.e2immu.analyser.parser.basics.testexample;
 
-import org.e2immu.annotation.*;
+import org.e2immu.annotation.Final;
+import org.e2immu.annotation.ImmutableContainer;
+import org.e2immu.annotation.NotModified;
+import org.e2immu.annotation.NotNull;
 
 /*
 tests the contract=true on the parameter annotation (also in Enum_ tests)

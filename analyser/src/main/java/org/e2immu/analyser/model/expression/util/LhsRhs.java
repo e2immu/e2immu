@@ -15,7 +15,10 @@
 package org.e2immu.analyser.model.expression.util;
 
 import org.e2immu.analyser.model.Expression;
-import org.e2immu.analyser.model.expression.*;
+import org.e2immu.analyser.model.expression.And;
+import org.e2immu.analyser.model.expression.DelayedExpression;
+import org.e2immu.analyser.model.expression.Equals;
+import org.e2immu.analyser.model.expression.MethodCall;
 
 import java.util.List;
 

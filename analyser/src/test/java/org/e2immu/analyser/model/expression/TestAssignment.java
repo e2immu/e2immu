@@ -23,8 +23,6 @@ import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.parser.impl.PrimitivesImpl;
 import org.junit.jupiter.api.Test;
 
-import java.util.List;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class TestAssignment {

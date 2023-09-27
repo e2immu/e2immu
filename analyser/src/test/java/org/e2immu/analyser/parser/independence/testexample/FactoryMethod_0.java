@@ -21,7 +21,6 @@ import org.e2immu.annotation.Modified;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Stream;
 
 @ImmutableContainer(hc = true)
 public class FactoryMethod_0<T> {

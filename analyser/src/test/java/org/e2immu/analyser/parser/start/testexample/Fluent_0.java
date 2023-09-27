@@ -17,8 +17,6 @@ package org.e2immu.analyser.parser.start.testexample;
 import org.e2immu.analyser.parser.start.testexample.a.IFluent_0;
 import org.e2immu.annotation.*;
 
-import java.util.Objects;
-
 @ImmutableContainer
 public class Fluent_0 implements IFluent_0 {
 

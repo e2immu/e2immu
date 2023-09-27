@@ -1,6 +1,5 @@
 package org.e2immu.analyser.parser.conditional.testexample;
 
-import org.e2immu.annotation.Independent;
 import org.e2immu.annotation.NotNull;
 
 import java.util.ArrayList;

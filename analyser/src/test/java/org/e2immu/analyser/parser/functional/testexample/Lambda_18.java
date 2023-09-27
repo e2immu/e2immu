@@ -1,8 +1,5 @@
 package org.e2immu.analyser.parser.functional.testexample;
 
-import java.util.List;
-import java.util.stream.Stream;
-
 public class Lambda_18 {
 
     public static void method1() {

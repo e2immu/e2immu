@@ -743,7 +743,7 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
         });
         TranslationMap translationMap = builder.build();
         Expression translated = precondition.translate(getAnalyserContext(), translationMap);
-        List<Variable> variables = translated.variables(Element.DescendMode.NO);
+        List<Variable> variables = translated.variables(DescendMode.NO);
         if (variables.stream().allMatch(v -> v instanceof ParameterInfo
                 || v instanceof This
                 || v instanceof FieldReference)) {

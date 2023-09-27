@@ -19,13 +19,11 @@ import com.github.javaparser.ast.Node;
 import org.e2immu.analyser.model.expression.BooleanConstant;
 import org.e2immu.analyser.model.expression.EmptyExpression;
 import org.e2immu.analyser.model.expression.IntConstant;
-import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.annotation.FinalFields;
 import org.e2immu.annotation.ImmutableContainer;
 import org.e2immu.annotation.Independent;
 import org.e2immu.annotation.NotNull;
 import org.e2immu.annotation.rare.IgnoreModifications;
-import org.e2immu.annotation.rare.StaticSideEffects;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

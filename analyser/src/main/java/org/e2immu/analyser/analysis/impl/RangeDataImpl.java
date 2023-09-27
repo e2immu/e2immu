@@ -30,7 +30,6 @@ import org.e2immu.analyser.model.Statement;
 import org.e2immu.analyser.model.expression.*;
 import org.e2immu.analyser.model.statement.ForEachStatement;
 import org.e2immu.analyser.model.statement.ForStatement;
-import org.e2immu.analyser.model.variable.LocalVariableReference;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.support.EventuallyFinal;

@@ -28,7 +28,6 @@ import org.e2immu.annotation.NotNull;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Predicate;
-import java.util.stream.Collectors;
 
 public class Block extends StatementWithStructure {
     public final String label;

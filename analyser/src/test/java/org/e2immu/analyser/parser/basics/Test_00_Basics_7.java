@@ -35,8 +35,6 @@ import java.io.IOException;
 
 import static org.e2immu.analyser.analyser.Property.*;
 import static org.e2immu.analyser.model.MultiLevel.MUTABLE_DV;
-import static org.e2immu.analyser.parser.VisitorTestSupport.IterationInfo.it;
-import static org.e2immu.analyser.parser.VisitorTestSupport.IterationInfo.it0;
 import static org.junit.jupiter.api.Assertions.*;
 
 public class Test_00_Basics_7 extends CommonTestRunner {

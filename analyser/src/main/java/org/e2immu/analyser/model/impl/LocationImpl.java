@@ -16,23 +16,23 @@ package org.e2immu.analyser.model.impl;
 
 import org.e2immu.analyser.analyser.Stage;
 import org.e2immu.analyser.model.Identifier;
+import org.e2immu.analyser.model.InfoObject;
 import org.e2immu.analyser.model.Location;
-import org.e2immu.analyser.model.WithInspectionAndAnalysis;
 
 import java.util.Objects;
 
 public class LocationImpl implements Location {
-    public final WithInspectionAndAnalysis info;
+    public final InfoObject info;
     public final String statementIdentifier;
     public final Identifier identifier;
     // cached, speed-up because every CauseOfDelay has a location, and merging of causes of delay is big business
     private final int hashCode;
 
-    public LocationImpl(WithInspectionAndAnalysis info) {
+    public LocationImpl(InfoObject info) {
         this(info, null, info.getIdentifier());
     }
 
-    public LocationImpl(WithInspectionAndAnalysis info, Identifier identifier) {
+    public LocationImpl(InfoObject info, Identifier identifier) {
         this(info, null, identifier);
     }
 
@@ -41,7 +41,7 @@ public class LocationImpl implements Location {
      * @param statementIdentifier within a method, index + level (or simply index, if no other info available)
      * @param identifier          association with the source code
      */
-    public LocationImpl(WithInspectionAndAnalysis info, String statementIdentifier, Identifier identifier) {
+    public LocationImpl(InfoObject info, String statementIdentifier, Identifier identifier) {
         this.info = Objects.requireNonNull(info);
         this.statementIdentifier = statementIdentifier;
         this.identifier = Objects.requireNonNull(identifier);
@@ -129,7 +129,7 @@ public class LocationImpl implements Location {
     }
 
     @Override
-    public WithInspectionAndAnalysis getInfo() {
+    public InfoObject getInfo() {
         return info;
     }
 

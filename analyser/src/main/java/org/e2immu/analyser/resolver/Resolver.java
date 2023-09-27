@@ -22,7 +22,6 @@ import org.e2immu.analyser.parser.Message;
 import org.e2immu.annotation.Modified;
 import org.e2immu.annotation.NotNull;
 
-
 import java.util.Map;
 import java.util.stream.Stream;
 

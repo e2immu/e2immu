@@ -15,8 +15,6 @@
 package org.e2immu.analyser.model.value;
 
 import org.e2immu.analyser.model.Expression;
-import org.e2immu.analyser.model.expression.Product;
-import org.e2immu.analyser.model.expression.Sum;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;

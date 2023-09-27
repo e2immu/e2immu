@@ -18,7 +18,6 @@ package org.e2immu.analyser.resolver;
 import org.e2immu.analyser.model.TypeInfo;
 import org.e2immu.analyser.parser.TypeMap;
 import org.e2immu.analyser.resolver.testexample.*;
-import org.e2immu.analyser.resolver.testexample.a.TypeWithStaticSubType;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;

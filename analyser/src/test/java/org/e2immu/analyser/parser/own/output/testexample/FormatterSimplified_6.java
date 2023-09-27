@@ -14,7 +14,6 @@
 
 package org.e2immu.analyser.parser.own.output.testexample;
 
-import org.e2immu.annotation.NotNull;
 import org.e2immu.annotation.Nullable;
 
 import java.util.List;

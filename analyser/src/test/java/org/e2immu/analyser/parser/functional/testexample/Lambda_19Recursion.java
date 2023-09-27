@@ -1,6 +1,5 @@
 package org.e2immu.analyser.parser.functional.testexample;
 
-import java.util.ArrayList;
 import java.util.List;
 
 public class Lambda_19Recursion {

@@ -22,12 +22,9 @@ import org.e2immu.analyser.inspector.ParameterizedTypeFactory;
 import org.e2immu.analyser.inspector.TypeContext;
 import org.e2immu.analyser.inspector.VariableContext;
 import org.e2immu.analyser.model.*;
-import org.e2immu.analyser.model.expression.EmptyExpression;
 import org.e2immu.analyser.model.expression.LocalVariableCreation;
 import org.e2immu.analyser.model.statement.Block;
 import org.e2immu.analyser.model.statement.ForEachStatement;
-
-import java.util.List;
 
 public class ParseForEachStmt {
 

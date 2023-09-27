@@ -14,12 +14,6 @@
 
 package org.e2immu.analyser.model.value;
 
-import org.e2immu.analyser.model.Expression;
-import org.e2immu.analyser.model.expression.EmptyExpression;
-import org.e2immu.analyser.model.expression.SwitchExpression;
-
-import java.util.*;
-
 public class TestSwitchValue extends CommonAbstractValue {
 /*
     @Test

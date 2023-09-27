@@ -17,12 +17,12 @@ package org.e2immu.analyser.model.statement;
 import org.e2immu.analyser.analyser.EvaluationResult;
 import org.e2immu.analyser.analyser.ForwardEvaluationInfo;
 import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.model.expression.ConstructorCall;
 import org.e2immu.analyser.model.expression.EmptyExpression;
 import org.e2immu.analyser.model.expression.LocalVariableCreation;
 import org.e2immu.analyser.model.expression.Precedence;
 import org.e2immu.analyser.model.expression.util.ExpressionComparator;
 import org.e2immu.analyser.model.impl.BaseExpression;
-import org.e2immu.analyser.model.impl.TranslationMapImpl;
 import org.e2immu.analyser.output.*;
 import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.util.ListUtil;
@@ -138,7 +138,7 @@ public class TryStatement extends StatementWithStructure {
         List<Statement> translatedBlock = structure.block().translate(inspectionProvider, translationMap);
         List<Pair<CatchParameter, Block>> translatedCatchClauses = catchClauses.stream()
                 .map(p -> new Pair<>(
-                        TranslationMapImpl.ensureExpressionType(p.k.translate(inspectionProvider, translationMap), CatchParameter.class),
+                        ConstructorCall.ensureExpressionType(p.k.translate(inspectionProvider, translationMap), CatchParameter.class),
                         ensureBlock(p.v.identifier, p.v.translate(inspectionProvider, translationMap))))
                 .collect(Collectors.toList());
         List<Statement> translatedFinally = finallyBlock.translate(inspectionProvider, translationMap);

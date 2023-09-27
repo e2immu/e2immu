@@ -27,7 +27,6 @@ import org.e2immu.analyser.model.expression.VariableExpression;
 import org.e2immu.analyser.model.impl.TranslationMapImpl;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.This;
-import org.e2immu.analyser.parser.InspectionProvider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

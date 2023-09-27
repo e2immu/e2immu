@@ -20,7 +20,9 @@ package org.e2immu.analyser.parser.conditional.testexample;
 
 import org.e2immu.annotation.ImmutableContainer;
 
-import java.util.*;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 public class NotNull_4_1<T> {
 

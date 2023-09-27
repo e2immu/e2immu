@@ -34,7 +34,6 @@ import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.conditional.testexample.Precondition_4;
 import org.e2immu.analyser.parser.conditional.testexample.Precondition_6;
 import org.e2immu.analyser.visitor.*;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;

@@ -19,7 +19,6 @@ import org.e2immu.analyser.analyser.DV;
 import org.e2immu.analyser.analyser.Property;
 import org.e2immu.analyser.analyser.Stage;
 import org.e2immu.analyser.analyser.VariableInfo;
-import org.e2immu.analyser.analysis.impl.FieldAnalysisImpl;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.variable.FieldReference;
@@ -33,7 +32,6 @@ import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
-import static org.e2immu.analyser.parser.VisitorTestSupport.IterationInfo.it;
 import static org.junit.jupiter.api.Assertions.*;
 
 public class Test_Support_04_FirstThen extends CommonTestRunner {

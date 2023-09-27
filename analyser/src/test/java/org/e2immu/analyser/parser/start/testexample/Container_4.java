@@ -14,7 +14,10 @@
 
 package org.e2immu.analyser.parser.start.testexample;
 
-import org.e2immu.annotation.*;
+import org.e2immu.annotation.Container;
+import org.e2immu.annotation.Modified;
+import org.e2immu.annotation.NotModified;
+import org.e2immu.annotation.NotNull;
 
 import java.util.Objects;
 import java.util.Set;

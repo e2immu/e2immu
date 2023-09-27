@@ -39,7 +39,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static org.e2immu.analyser.analyser.Property.*;
+import static org.e2immu.analyser.analyser.Property.NOT_NULL_EXPRESSION;
 import static org.e2immu.analyser.analyser.Stage.MERGE;
 import static org.e2immu.analyser.analyser.VariableInfo.MERGE_WITHOUT_VALUE_PROPERTIES;
 

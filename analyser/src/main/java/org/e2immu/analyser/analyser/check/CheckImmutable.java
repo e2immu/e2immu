@@ -17,10 +17,8 @@ package org.e2immu.analyser.analyser.check;
 import org.e2immu.analyser.analyser.Property;
 import org.e2immu.analyser.analysis.Analysis;
 import org.e2immu.analyser.model.AnnotationExpression;
-import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.FieldInfo;
 import org.e2immu.analyser.model.WithInspectionAndAnalysis;
-import org.e2immu.analyser.model.expression.StringConstant;
 import org.e2immu.analyser.parser.Message;
 
 import java.util.ArrayList;

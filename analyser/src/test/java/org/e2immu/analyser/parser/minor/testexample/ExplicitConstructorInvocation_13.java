@@ -15,7 +15,6 @@
 package org.e2immu.analyser.parser.minor.testexample;
 
 
-import java.util.List;
 import java.util.Objects;
 
 public class ExplicitConstructorInvocation_13 {

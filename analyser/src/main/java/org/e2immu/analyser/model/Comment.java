@@ -1,7 +1,5 @@
 package org.e2immu.analyser.model;
 
-import com.github.javaparser.ast.Node;
-import com.github.javaparser.ast.body.TypeDeclaration;
 import org.e2immu.analyser.output.OutputBuilder;
 
 /*

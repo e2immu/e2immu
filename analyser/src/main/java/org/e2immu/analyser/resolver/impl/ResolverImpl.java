@@ -1108,9 +1108,9 @@ public class ResolverImpl implements Resolver {
 
         // my parent's fields
         Stream<FieldInfo> parentStream;
-        boolean isJLO = typeInfo.isJavaLangObject();
-        if (!isJLO) {
-            assert typeInspection.parentClass() != null && typeInspection.parentClass().typeInfo != null;
+        boolean haveNonTrivialParent = typeInspection.parentClass() != null
+                && !typeInspection.parentClass().typeInfo.isJavaLangObject();
+        if (haveNonTrivialParent) {
             parentStream = accessibleFieldsStream(inspectionProvider, typeInspection.parentClass().typeInfo,
                     startingPoint, startingPointPackageName, staticFieldsOnly, includeEnclosing);
         } else parentStream = Stream.empty();
@@ -1146,6 +1146,7 @@ public class ResolverImpl implements Resolver {
         if (staticFieldsOnly && !inspection.isStatic()) return false;
         return inspection.isPublic() ||
                 inSamePackage && !inspection.isPrivate() ||
-                !inSamePackage && inspection.isProtected();
+                !inSamePackage && inspection.isProtected() ||
+                inspection.isPackagePrivate();
     }
 }

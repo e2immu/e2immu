@@ -17,12 +17,14 @@ package org.e2immu.analyser.resolver;
 
 import org.e2immu.analyser.model.TypeInfo;
 import org.e2immu.analyser.parser.TypeMap;
-import org.e2immu.analyser.resolver.testexample.*;
+import org.e2immu.analyser.resolver.testexample.ExplicitConstructorInvocation_0;
+import org.e2immu.analyser.resolver.testexample.ExplicitConstructorInvocation_1;
+import org.e2immu.analyser.resolver.testexample.ExplicitConstructorInvocation_2;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 
 public class TestExplicitConstructorInvocation extends CommonTest {

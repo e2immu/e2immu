@@ -15,15 +15,16 @@
 package org.e2immu.analyser.model.expression;
 
 import org.e2immu.analyser.analyser.*;
-import org.e2immu.analyser.analyser.Properties;
 import org.e2immu.analyser.analysis.FieldAnalysis;
 import org.e2immu.analyser.analysis.MethodAnalysis;
 import org.e2immu.analyser.analysis.TypeAnalysis;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.util.*;
 import org.e2immu.analyser.model.impl.BaseExpression;
-import org.e2immu.analyser.model.impl.TranslationMapImpl;
-import org.e2immu.analyser.output.*;
+import org.e2immu.analyser.output.Keyword;
+import org.e2immu.analyser.output.OutputBuilder;
+import org.e2immu.analyser.output.Space;
+import org.e2immu.analyser.output.Symbol;
 import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.Primitives;
@@ -33,7 +34,10 @@ import org.e2immu.analyser.util.UpgradableBooleanMap;
 import org.e2immu.analyser.util.UpgradableIntMap;
 import org.e2immu.annotation.NotNull;
 
-import java.util.*;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -164,6 +168,11 @@ public class ConstructorCall extends BaseExpression implements HasParameterExpre
                 arrayInitializer);
     }
 
+    public static <T extends Expression> T ensureExpressionType(Expression expression, Class<T> clazz) {
+        if (clazz.isAssignableFrom(expression.getClass())) return (T) expression;
+        throw new UnsupportedOperationException();
+    }
+
     @Override
     public Expression translate(InspectionProvider inspectionProvider, TranslationMap translationMap) {
         Expression translated = translationMap.translateExpression(this);
@@ -177,7 +186,7 @@ public class ConstructorCall extends BaseExpression implements HasParameterExpre
                 .filter(e -> !e.isEmpty())
                 .collect(TranslationCollectors.toList(parameterExpressions));
         ArrayInitializer translatedInitializer = arrayInitializer == null ? null :
-                TranslationMapImpl.ensureExpressionType(
+                ensureExpressionType(
                         arrayInitializer.translate(inspectionProvider, translationMap), ArrayInitializer.class);
         if (translatedScope == scope
                 && translatedType == this.parameterizedType

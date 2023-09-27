@@ -17,8 +17,6 @@ package org.e2immu.analyser.model;
 import com.github.javaparser.ast.Modifier;
 import org.e2immu.analyser.output.Keyword;
 
-import java.util.Set;
-
 public enum LocalVariableModifier {
     FINAL(Keyword.FINAL);
 

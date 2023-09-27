@@ -17,7 +17,6 @@ package org.e2immu.analyser.parser.modification;
 import org.e2immu.analyser.analyser.DV;
 import org.e2immu.analyser.analyser.Property;
 import org.e2immu.analyser.config.DebugConfiguration;
-import org.e2immu.analyser.model.expression.InlinedMethod;
 import org.e2immu.analyser.parser.CommonTestRunner;
 import org.e2immu.analyser.visitor.EvaluationResultVisitor;
 import org.e2immu.analyser.visitor.FieldAnalyserVisitor;
@@ -28,7 +27,6 @@ import org.junit.jupiter.api.Test;
 import java.io.IOException;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class Test_16_Modification_2 extends CommonTestRunner {
 

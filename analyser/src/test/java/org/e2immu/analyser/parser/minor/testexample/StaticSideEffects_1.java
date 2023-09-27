@@ -14,7 +14,10 @@
 
 package org.e2immu.analyser.parser.minor.testexample;
 
-import org.e2immu.annotation.*;
+import org.e2immu.annotation.Container;
+import org.e2immu.annotation.Final;
+import org.e2immu.annotation.Modified;
+import org.e2immu.annotation.Nullable;
 import org.e2immu.annotation.rare.StaticSideEffects;
 
 import java.util.concurrent.atomic.AtomicInteger;

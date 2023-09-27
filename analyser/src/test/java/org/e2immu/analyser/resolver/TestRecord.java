@@ -15,9 +15,9 @@
 package org.e2immu.analyser.resolver;
 
 
-import org.e2immu.analyser.resolver.testexample.*;
+import org.e2immu.analyser.resolver.testexample.Record_0;
+import org.e2immu.analyser.resolver.testexample.Record_1;
 import org.junit.jupiter.api.Test;
-
 
 import java.io.IOException;
 

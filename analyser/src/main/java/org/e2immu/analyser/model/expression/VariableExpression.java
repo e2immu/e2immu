@@ -15,7 +15,6 @@
 package org.e2immu.analyser.model.expression;
 
 import org.e2immu.analyser.analyser.*;
-import org.e2immu.analyser.analyser.Properties;
 import org.e2immu.analyser.analyser.delay.DelayFactory;
 import org.e2immu.analyser.analyser.delay.VariableCause;
 import org.e2immu.analyser.analysis.FieldAnalysis;
@@ -32,7 +31,10 @@ import org.e2immu.analyser.util.ListUtil;
 import org.e2immu.analyser.util.UpgradableBooleanMap;
 import org.e2immu.support.Either;
 
-import java.util.*;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
 

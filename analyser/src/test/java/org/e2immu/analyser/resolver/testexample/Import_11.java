@@ -14,11 +14,11 @@
 
 package org.e2immu.analyser.resolver.testexample;
 
-import static org.e2immu.analyser.resolver.testexample.a.ImplementsIterable.*;
-
 import java.util.Map;
 import java.util.TreeMap;
 import java.util.function.BiConsumer;
+
+import static org.e2immu.analyser.resolver.testexample.a.ImplementsIterable.INT;
 
 public class Import_11 {
     interface Variable {

@@ -14,7 +14,10 @@
 
 package org.e2immu.analyser.parser.conditional;
 
-import org.e2immu.analyser.analyser.*;
+import org.e2immu.analyser.analyser.DV;
+import org.e2immu.analyser.analyser.InterruptsFlow;
+import org.e2immu.analyser.analyser.LinkedVariables;
+import org.e2immu.analyser.analyser.VariableInfo;
 import org.e2immu.analyser.analysis.FlowData;
 import org.e2immu.analyser.config.AnalyserConfiguration;
 import org.e2immu.analyser.config.DebugConfiguration;

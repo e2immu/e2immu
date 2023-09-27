@@ -14,8 +14,6 @@
 
 package org.e2immu.analyser.parser.minor.testexample;
 
-import org.e2immu.annotation.Container;
-
 import java.util.List;
 import java.util.Random;
 

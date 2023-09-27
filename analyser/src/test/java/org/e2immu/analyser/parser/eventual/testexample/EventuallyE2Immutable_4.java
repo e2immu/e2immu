@@ -14,7 +14,8 @@
 
 package org.e2immu.analyser.parser.eventual.testexample;
 
-import org.e2immu.annotation.*;
+import org.e2immu.annotation.Immutable;
+import org.e2immu.annotation.Modified;
 import org.e2immu.annotation.eventual.Mark;
 import org.e2immu.annotation.eventual.Only;
 

@@ -41,7 +41,8 @@ import java.util.function.BiPredicate;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-import static org.e2immu.analyser.analyser.LinkedVariables.*;
+import static org.e2immu.analyser.analyser.LinkedVariables.LINK_DEPENDENT;
+import static org.e2immu.analyser.analyser.LinkedVariables.LINK_STATICALLY_ASSIGNED;
 import static org.e2immu.analyser.analyser.Stage.EVALUATION;
 
 /*

@@ -19,7 +19,6 @@ import org.e2immu.analyser.analysis.MethodAnalysis;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.Filter;
 import org.e2immu.analyser.model.expression.InlinedMethod;
-import org.e2immu.analyser.model.variable.Variable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

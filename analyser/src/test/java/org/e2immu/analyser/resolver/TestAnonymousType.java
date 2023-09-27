@@ -15,7 +15,10 @@
 package org.e2immu.analyser.resolver;
 
 
-import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.model.DescendMode;
+import org.e2immu.analyser.model.MethodInfo;
+import org.e2immu.analyser.model.Statement;
+import org.e2immu.analyser.model.TypeInfo;
 import org.e2immu.analyser.model.expression.ConstructorCall;
 import org.e2immu.analyser.model.expression.LocalVariableCreation;
 import org.e2immu.analyser.model.statement.Block;
@@ -25,7 +28,6 @@ import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.parser.TypeMap;
 import org.e2immu.analyser.resolver.testexample.AnonymousType_0;
-import org.e2immu.analyser.resolver.testexample.SubType_0;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
@@ -54,7 +56,7 @@ public class TestAnonymousType extends CommonTest {
             MethodInfo test = dollarTwo.findUniqueMethod("test", 1);
             Statement t0 = test.methodInspection.get().getMethodBody().getStructure().getStatements().get(0);
             if (t0 instanceof ReturnStatement rs) {
-                List<Variable> vars = rs.variables(Element.DescendMode.NO);
+                List<Variable> vars = rs.variables(DescendMode.NO);
                 Variable field = vars.stream().filter(v -> v instanceof FieldReference).findFirst().orElse(null);
                 // we should NOT be referring to 'mask' as a field
                 assertNull(field, "Have " + field);

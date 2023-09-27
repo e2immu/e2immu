@@ -16,23 +16,17 @@
 package org.e2immu.analyser.parser.basics;
 
 import org.e2immu.analyser.analyser.DV;
-import org.e2immu.analyser.analyser.EvaluationResult;
-import org.e2immu.analyser.analyser.LinkedVariables;
 import org.e2immu.analyser.analyser.Stage;
 import org.e2immu.analyser.config.DebugConfiguration;
-import org.e2immu.analyser.inspector.TypeContext;
-import org.e2immu.analyser.model.*;
-import org.e2immu.analyser.model.expression.InlinedMethod;
+import org.e2immu.analyser.model.FieldInfo;
+import org.e2immu.analyser.model.MethodInfo;
+import org.e2immu.analyser.model.MultiLevel;
+import org.e2immu.analyser.model.TypeInfo;
 import org.e2immu.analyser.model.expression.PropertyWrapper;
 import org.e2immu.analyser.model.expression.UnknownExpression;
-import org.e2immu.analyser.model.expression.VariableExpression;
-import org.e2immu.analyser.model.variable.FieldReference;
-import org.e2immu.analyser.model.variable.ReturnVariable;
-import org.e2immu.analyser.model.variable.This;
 import org.e2immu.analyser.parser.CommonTestRunner;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.TypeMap;
-import org.e2immu.analyser.parser.basics.testexample.Basics_6;
 import org.e2immu.analyser.visitor.*;
 import org.junit.jupiter.api.Test;
 
@@ -40,7 +34,6 @@ import java.io.IOException;
 import java.io.PrintStream;
 
 import static org.e2immu.analyser.analyser.Property.*;
-import static org.e2immu.analyser.model.MultiLevel.MUTABLE_DV;
 import static org.junit.jupiter.api.Assertions.*;
 
 public class Test_00_Basics_6_1 extends CommonTestRunner {

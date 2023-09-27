@@ -16,27 +16,16 @@ package org.e2immu.analyser.parser.start;
 
 import org.e2immu.analyser.analyser.DV;
 import org.e2immu.analyser.analyser.Property;
-import org.e2immu.analyser.analysis.ParameterAnalysis;
 import org.e2immu.analyser.config.DebugConfiguration;
-import org.e2immu.analyser.model.Expression;
-import org.e2immu.analyser.model.MultiLevel;
-import org.e2immu.analyser.model.ParameterInfo;
-import org.e2immu.analyser.model.expression.ConstantExpression;
-import org.e2immu.analyser.model.expression.Instance;
-import org.e2immu.analyser.model.expression.StringConcat;
-import org.e2immu.analyser.model.expression.StringConstant;
-import org.e2immu.analyser.model.variable.ReturnVariable;
 import org.e2immu.analyser.parser.CommonTestRunner;
-import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.visitor.MethodAnalyserVisitor;
-import org.e2immu.analyser.visitor.StatementAnalyserVariableVisitor;
 import org.e2immu.analyser.visitor.StatementAnalyserVisitor;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class Test_23_TryStatement_AAPI extends CommonTestRunner {
 

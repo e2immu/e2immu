@@ -15,7 +15,6 @@
 
 package org.e2immu.analyser.parser.own.support;
 
-import org.e2immu.analyser.analyser.DV;
 import org.e2immu.analyser.analyser.Property;
 import org.e2immu.analyser.analyser.VariableInfo;
 import org.e2immu.analyser.config.DebugConfiguration;

@@ -15,15 +15,10 @@
 package org.e2immu.analyser.resolver;
 
 
-import org.e2immu.analyser.model.TypeInfo;
-import org.e2immu.analyser.parser.TypeMap;
 import org.e2immu.analyser.resolver.testexample.SwitchExpression_0;
-import org.e2immu.analyser.resolver.testexample.Varargs_0;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
-
-import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 
 public class TestSwitchExpression extends CommonTest {

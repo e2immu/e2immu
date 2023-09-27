@@ -3,7 +3,9 @@ package org.e2immu.analyser.parser.start;
 import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.model.ParameterInfo;
-import org.e2immu.analyser.model.expression.*;
+import org.e2immu.analyser.model.expression.InlineConditional;
+import org.e2immu.analyser.model.expression.MethodCall;
+import org.e2immu.analyser.model.expression.Negation;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.ReturnVariable;
 import org.e2immu.analyser.parser.CommonTestRunner;
@@ -16,7 +18,8 @@ import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.fail;
 
 public class Test_Mutable extends CommonTestRunner {
 

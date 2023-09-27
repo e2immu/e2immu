@@ -14,7 +14,6 @@
 
 package org.e2immu.analyser.model;
 
-import org.e2immu.analyser.analyser.AnalysisProvider;
 import org.e2immu.analyser.analyser.SetOfTypes;
 import org.e2immu.analyser.inspector.InspectionState;
 import org.e2immu.analyser.parser.InspectionProvider;

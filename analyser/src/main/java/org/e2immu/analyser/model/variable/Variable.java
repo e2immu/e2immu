@@ -16,7 +16,10 @@ package org.e2immu.analyser.model.variable;
 
 import org.e2immu.analyser.analyser.CausesOfDelay;
 import org.e2immu.analyser.analyser.VariableInfoContainer;
-import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.model.Element;
+import org.e2immu.analyser.model.ParameterizedType;
+import org.e2immu.analyser.model.Qualification;
+import org.e2immu.analyser.model.TypeInfo;
 import org.e2immu.analyser.model.expression.DelayedVariableExpression;
 import org.e2immu.analyser.model.expression.util.OneVariable;
 import org.e2immu.analyser.output.OutputBuilder;

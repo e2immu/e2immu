@@ -15,12 +15,8 @@
 package org.e2immu.analyser.resolver;
 
 import org.e2immu.analyser.analyser.AnalyserContext;
-import org.e2immu.analyser.analyser.MethodAnalyser;
-import org.e2immu.analyser.config.Configuration;
-import org.e2immu.analyser.model.MethodInfo;
 import org.e2immu.analyser.model.TypeInfo;
 
-import java.util.Map;
 import java.util.stream.Stream;
 
 /**

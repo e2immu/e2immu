@@ -28,7 +28,8 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.util.List;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 
 public abstract class CommonTestRunner extends VisitorTestSupport {
     private static final Logger LOGGER = LoggerFactory.getLogger(CommonTestRunner.class);

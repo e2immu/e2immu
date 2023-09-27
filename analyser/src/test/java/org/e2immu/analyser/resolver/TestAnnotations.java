@@ -15,24 +15,18 @@
 package org.e2immu.analyser.resolver;
 
 
-import org.e2immu.analyser.annotationxml.model.Annotation;
-import org.e2immu.analyser.model.*;
-import org.e2immu.analyser.model.expression.ConstructorCall;
-import org.e2immu.analyser.model.expression.LocalVariableCreation;
-import org.e2immu.analyser.model.statement.Block;
-import org.e2immu.analyser.model.statement.ExpressionAsStatement;
-import org.e2immu.analyser.model.statement.ReturnStatement;
-import org.e2immu.analyser.model.variable.FieldReference;
-import org.e2immu.analyser.model.variable.Variable;
+import org.e2immu.analyser.model.AnnotationExpression;
+import org.e2immu.analyser.model.MethodInfo;
+import org.e2immu.analyser.model.TypeInfo;
 import org.e2immu.analyser.parser.TypeMap;
 import org.e2immu.analyser.resolver.testexample.Annotations_0;
-import org.e2immu.analyser.resolver.testexample.AnonymousType_0;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.util.List;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 
 public class TestAnnotations extends CommonTest {

@@ -18,7 +18,6 @@ import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.analyser.delay.DelayFactory;
 import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.Identifier;
-import org.e2immu.analyser.model.LocalVariable;
 import org.e2immu.analyser.model.ParameterizedType;
 import org.e2immu.analyser.model.expression.*;
 import org.e2immu.analyser.model.expression.util.EvaluateInlineConditional;

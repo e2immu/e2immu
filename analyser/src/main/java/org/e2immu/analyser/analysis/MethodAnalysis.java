@@ -20,7 +20,6 @@ import org.e2immu.analyser.util.CommutableData;
 import org.e2immu.analyser.util.ParSeq;
 import org.e2immu.annotation.NotNull;
 
-import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;

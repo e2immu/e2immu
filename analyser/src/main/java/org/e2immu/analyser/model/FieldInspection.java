@@ -17,7 +17,6 @@ package org.e2immu.analyser.model;
 import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.annotation.Fluent;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;

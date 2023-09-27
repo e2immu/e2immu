@@ -15,12 +15,14 @@
 package org.e2immu.analyser.visitor;
 
 import org.e2immu.analyser.analyser.AnalyserContext;
-import org.e2immu.analyser.analyser.EvaluationContext;
 import org.e2immu.analyser.analysis.FieldAnalysis;
 import org.e2immu.analyser.analysis.MethodAnalysis;
 import org.e2immu.analyser.analysis.ParameterAnalysis;
 import org.e2immu.analyser.analysis.TypeAnalysis;
-import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.model.FieldInfo;
+import org.e2immu.analyser.model.MethodInfo;
+import org.e2immu.analyser.model.ParameterInfo;
+import org.e2immu.analyser.model.TypeInfo;
 import org.e2immu.analyser.parser.TypeMap;
 
 public interface TypeMapVisitor {

@@ -14,16 +14,13 @@
 
 package org.e2immu.analyser.analyser.check;
 
-import org.e2immu.analyser.analysis.FieldAnalysis;
 import org.e2immu.analyser.analysis.MethodAnalysis;
 import org.e2immu.analyser.model.AnnotationExpression;
-import org.e2immu.analyser.model.FieldInfo;
 import org.e2immu.analyser.model.MethodInfo;
 import org.e2immu.analyser.parser.Message;
 
 import java.util.function.Function;
 
-import static org.e2immu.analyser.parser.E2ImmuAnnotationExpressions.AFTER;
 import static org.e2immu.analyser.parser.E2ImmuAnnotationExpressions.CONSTRUCTION;
 
 public class CheckModified {

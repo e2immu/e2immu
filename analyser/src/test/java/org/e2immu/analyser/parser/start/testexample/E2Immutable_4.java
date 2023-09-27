@@ -14,7 +14,7 @@
 
 package org.e2immu.analyser.parser.start.testexample;
 
-import org.e2immu.annotation.*;
+import org.e2immu.annotation.ImmutableContainer;
 
 import java.util.HashMap;
 import java.util.Map;

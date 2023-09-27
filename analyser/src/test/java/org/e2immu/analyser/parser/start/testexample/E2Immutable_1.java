@@ -14,7 +14,10 @@
 
 package org.e2immu.analyser.parser.start.testexample;
 
-import org.e2immu.annotation.*;
+import org.e2immu.annotation.Final;
+import org.e2immu.annotation.ImmutableContainer;
+import org.e2immu.annotation.NotNull;
+import org.e2immu.annotation.Nullable;
 
 @ImmutableContainer
 public class E2Immutable_1 {

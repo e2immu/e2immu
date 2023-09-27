@@ -887,7 +887,8 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
     }
 
     public Stream<Message> localMessageStream() {
-        return messages.stream().filter(m -> ((LocationImpl) m.location()).info.getMethod() == methodAnalysis.getMethodInfo());
+        return messages.stream().filter(m -> m.location().getInfo().getMethodInfo()
+                == methodAnalysis.getMethodInfo());
     }
 
     @Override

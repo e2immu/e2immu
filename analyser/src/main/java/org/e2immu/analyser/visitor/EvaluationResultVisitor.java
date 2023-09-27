@@ -14,8 +14,6 @@
 
 package org.e2immu.analyser.visitor;
 
-import org.e2immu.analyser.analyser.AnalysisStatus;
-import org.e2immu.analyser.analyser.CausesOfDelay;
 import org.e2immu.analyser.analyser.EvaluationResult;
 import org.e2immu.analyser.analyser.Property;
 import org.e2immu.analyser.analyser.delay.ProgressAndDelay;

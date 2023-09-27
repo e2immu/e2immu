@@ -16,16 +16,23 @@
 package org.e2immu.analyser.parser.basics;
 
 import org.e2immu.analyser.config.DebugConfiguration;
-import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.model.MethodInfo;
+import org.e2immu.analyser.model.MultiLevel;
+import org.e2immu.analyser.model.ParameterInfo;
+import org.e2immu.analyser.model.TypeInfo;
 import org.e2immu.analyser.parser.CommonTestRunner;
-import org.e2immu.analyser.visitor.*;
+import org.e2immu.analyser.visitor.MethodAnalyserVisitor;
+import org.e2immu.analyser.visitor.StatementAnalyserVariableVisitor;
+import org.e2immu.analyser.visitor.StatementAnalyserVisitor;
+import org.e2immu.analyser.visitor.TypeMapVisitor;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.util.stream.Stream;
 
-import static org.e2immu.analyser.analyser.Property.*;
-import static org.junit.jupiter.api.Assertions.*;
+import static org.e2immu.analyser.analyser.Property.EXTERNAL_NOT_NULL;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 
 public class Test_00_Basics_5 extends CommonTestRunner {
     public Test_00_Basics_5() {

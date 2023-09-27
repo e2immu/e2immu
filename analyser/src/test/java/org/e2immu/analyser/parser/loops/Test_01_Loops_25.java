@@ -15,18 +15,10 @@
 package org.e2immu.analyser.parser.loops;
 
 import org.e2immu.analyser.config.DebugConfiguration;
-import org.e2immu.analyser.model.variable.ReturnVariable;
-import org.e2immu.analyser.model.variable.VariableNature;
 import org.e2immu.analyser.parser.CommonTestRunner;
-import org.e2immu.analyser.parser.Message;
-import org.e2immu.analyser.visitor.EvaluationResultVisitor;
-import org.e2immu.analyser.visitor.StatementAnalyserVariableVisitor;
-import org.e2immu.analyser.visitor.StatementAnalyserVisitor;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
-
-import static org.junit.jupiter.api.Assertions.*;
 
 public class Test_01_Loops_25 extends CommonTestRunner {
 

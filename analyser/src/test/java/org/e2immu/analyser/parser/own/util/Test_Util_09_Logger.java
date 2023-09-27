@@ -17,8 +17,8 @@ package org.e2immu.analyser.parser.own.util;
 
 import org.e2immu.analyser.analyser.DV;
 import org.e2immu.analyser.analyser.Property;
-import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.analysis.ParameterAnalysis;
+import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.parser.CommonTestRunner;
 import org.e2immu.analyser.parser.own.util.testexample.Logger;

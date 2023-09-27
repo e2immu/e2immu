@@ -15,11 +15,13 @@
 package org.e2immu.analyser.resolver.testexample;
 
 // IMPORTANT: keep this import static...* statement!
+
 import org.e2immu.analyser.resolver.testexample.importhelper.RMultiLevel;
 
 import java.util.Set;
 
-import static org.e2immu.analyser.resolver.testexample.importhelper.RMultiLevel.Effective.*;
+import static org.e2immu.analyser.resolver.testexample.importhelper.RMultiLevel.Effective.E1;
+import static org.e2immu.analyser.resolver.testexample.importhelper.RMultiLevel.Effective.E2;
 
 public class Import_10 {
 

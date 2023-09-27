@@ -20,7 +20,10 @@ import org.e2immu.analyser.inspector.AbstractInspectionBuilder;
 import org.e2immu.analyser.inspector.AnnotationInspector;
 import org.e2immu.analyser.inspector.ExpressionContext;
 import org.e2immu.analyser.model.*;
-import org.e2immu.annotation.*;
+import org.e2immu.annotation.Container;
+import org.e2immu.annotation.Fluent;
+import org.e2immu.annotation.NotModified;
+import org.e2immu.annotation.NotNull;
 
 import java.util.List;
 

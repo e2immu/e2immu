@@ -17,7 +17,10 @@ package org.e2immu.analyser.model.value;
 import org.e2immu.analyser.analyser.EvaluationResult;
 import org.e2immu.analyser.analyser.ForwardEvaluationInfo;
 import org.e2immu.analyser.model.Expression;
-import org.e2immu.analyser.model.expression.*;
+import org.e2immu.analyser.model.expression.Assignment;
+import org.e2immu.analyser.model.expression.GreaterThanZero;
+import org.e2immu.analyser.model.expression.InlineConditional;
+import org.e2immu.analyser.model.expression.NullConstant;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;

@@ -31,7 +31,8 @@ import org.slf4j.LoggerFactory;
 import java.util.*;
 import java.util.stream.Collectors;
 
-import static org.e2immu.analyser.analyser.Property.*;
+import static org.e2immu.analyser.analyser.Property.CONSTANT;
+import static org.e2immu.analyser.analyser.Property.NOT_NULL_EXPRESSION;
 
 public abstract class MethodAnalyserImpl extends AbstractAnalyser implements MethodAnalyser {
     private static final Logger LOGGER = LoggerFactory.getLogger(MethodAnalyserImpl.class);

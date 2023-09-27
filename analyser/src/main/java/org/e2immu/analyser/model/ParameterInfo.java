@@ -38,7 +38,7 @@ import java.util.Set;
  */
 @Container
 //@ContextClass(after="this.analyse()")
-public class ParameterInfo implements Variable, WithInspectionAndAnalysis {
+public class ParameterInfo implements Variable, InfoObject, WithInspectionAndAnalysis {
     public final Identifier identifier;
     public final ParameterizedType parameterizedType;
     public final String name;
@@ -270,6 +270,11 @@ public class ParameterInfo implements Variable, WithInspectionAndAnalysis {
 
     @Override
     public MethodInfo getMethod() {
+        return owner;
+    }
+
+    @Override
+    public MethodInfo getMethodInfo() {
         return owner;
     }
 

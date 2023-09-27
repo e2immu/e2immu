@@ -567,7 +567,7 @@ record SASubBlocks(StatementAnalysis statementAnalysis, StatementAnalyser statem
     private Map<Variable, DV> findNotNullVariablesInRejectMode(EvaluationResult evaluationContext, Expression condition) {
         Set<Variable> set = ConditionManager.findIndividualNull(condition, evaluationContext, Filter.FilterMode.REJECT, true);
         if (condition.isDelayed()) {
-            List<Variable> variables = statement().getStructure().expression().variables(Element.DescendMode.NO);
+            List<Variable> variables = statement().getStructure().expression().variables(DescendMode.NO);
             return variables.stream().distinct().collect(Collectors.toUnmodifiableMap(e -> e, e -> condition.causesOfDelay()));
         }
         return set.stream().collect(Collectors.toUnmodifiableMap(e -> e, e -> MultiLevel.EFFECTIVELY_NOT_NULL_DV));
@@ -795,7 +795,7 @@ record SASubBlocks(StatementAnalysis statementAnalysis, StatementAnalyser statem
                 if (s.statementExecution() == StatementExecution.CONDITIONALLY) {
                     Identifier identifier = tryStatement.catchClauses.get(cnt++).k.identifier;
                     booleanVars.add(Instance.forUnspecifiedCatchCondition(context.getPrimitives(), identifier));
-                    conditionVariables.addAll(s.expression().variables(Element.DescendMode.NO));
+                    conditionVariables.addAll(s.expression().variables(DescendMode.NO));
                 }
             }
             Expression condition = And.and(context, booleanVars.stream()

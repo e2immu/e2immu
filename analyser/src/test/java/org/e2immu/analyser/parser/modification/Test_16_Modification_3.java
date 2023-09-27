@@ -35,7 +35,6 @@ import java.util.Map;
 import java.util.Set;
 
 import static org.e2immu.analyser.parser.VisitorTestSupport.IterationInfo.it;
-import static org.e2immu.analyser.parser.VisitorTestSupport.IterationInfo.it0;
 import static org.junit.jupiter.api.Assertions.*;
 
 public class Test_16_Modification_3 extends CommonTestRunner {

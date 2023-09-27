@@ -15,7 +15,7 @@
 package org.e2immu.analyser.resolver.testexample;
 
 
-import static java.util.Locale.*;
+import static java.util.Locale.CANADA;
 
 public class InspectionGaps_5 {
 

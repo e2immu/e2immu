@@ -1,7 +1,7 @@
 package org.e2immu.analyser.model.expression.util;
 
 import org.e2immu.analyser.analyser.EvaluationResult;
-import org.e2immu.analyser.model.Element;
+import org.e2immu.analyser.model.DescendMode;
 import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.expression.*;
 import org.e2immu.analyser.model.variable.Variable;
@@ -82,7 +82,7 @@ public class AndOrSorter {
         } else {
             base = expression;
         }
-        List<Variable> vars = base.variables(Element.DescendMode.NO);
+        List<Variable> vars = base.variables(DescendMode.NO);
         if (vars.size() == 1) {
             return new VariableExpression(expression.getIdentifier(), vars.get(0));
         }

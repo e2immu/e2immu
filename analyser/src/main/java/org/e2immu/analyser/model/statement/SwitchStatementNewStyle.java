@@ -16,7 +16,10 @@ package org.e2immu.analyser.model.statement;
 
 import org.e2immu.analyser.analyser.ForwardEvaluationInfo;
 import org.e2immu.analyser.model.*;
-import org.e2immu.analyser.output.*;
+import org.e2immu.analyser.output.Guide;
+import org.e2immu.analyser.output.Keyword;
+import org.e2immu.analyser.output.OutputBuilder;
+import org.e2immu.analyser.output.Symbol;
 import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.util.ListUtil;
 

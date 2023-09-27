@@ -14,7 +14,10 @@
 
 package org.e2immu.analyser.parser.minor.testexample;
 
-import org.e2immu.annotation.*;
+import org.e2immu.annotation.Container;
+import org.e2immu.annotation.Immutable;
+import org.e2immu.annotation.Modified;
+import org.e2immu.annotation.NotModified;
 import org.e2immu.annotation.rare.IgnoreModifications;
 
 import java.util.function.Consumer;

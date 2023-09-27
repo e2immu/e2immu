@@ -16,9 +16,6 @@ package org.e2immu.analyser.parser.basics.testexample;
 
 import org.e2immu.annotation.Final;
 
-import java.util.ArrayList;
-import java.util.List;
-
 /*
 variant on Basics_6 which changes a variable field in an expression, rather than
 across expressions

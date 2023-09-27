@@ -14,10 +14,11 @@
 
 package org.e2immu.analyser.resolver.testexample;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.stream.Stream;
 
-import static org.e2immu.analyser.resolver.testexample.importhelper.RMultiLevel.Effective.*;
+import static org.e2immu.analyser.resolver.testexample.importhelper.RMultiLevel.Effective.E1;
 
 public class FieldAccess_1 {
 

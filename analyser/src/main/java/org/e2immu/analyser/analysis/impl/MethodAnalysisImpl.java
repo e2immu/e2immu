@@ -16,7 +16,10 @@ package org.e2immu.analyser.analysis.impl;
 
 import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.analyser.util.CreatePreconditionCompanion;
-import org.e2immu.analyser.analysis.*;
+import org.e2immu.analyser.analysis.MethodAnalysis;
+import org.e2immu.analyser.analysis.ParameterAnalysis;
+import org.e2immu.analyser.analysis.StatementAnalysis;
+import org.e2immu.analyser.analysis.TypeAnalysis;
 import org.e2immu.analyser.inspector.impl.FieldInspectionImpl;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.*;
@@ -29,7 +32,10 @@ import org.e2immu.analyser.util.ParSeq;
 import org.e2immu.analyser.util.ParameterParallelGroup;
 import org.e2immu.annotation.Modified;
 import org.e2immu.annotation.NotModified;
-import org.e2immu.support.*;
+import org.e2immu.support.EventuallyFinal;
+import org.e2immu.support.FlipSwitch;
+import org.e2immu.support.SetOnce;
+import org.e2immu.support.SetOnceMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

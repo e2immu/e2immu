@@ -25,7 +25,6 @@ import org.e2immu.analyser.model.ParameterInfo;
 import org.e2immu.analyser.parser.CommonTestRunner;
 import org.e2immu.analyser.util.ListUtil;
 import org.e2immu.analyser.visitor.*;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;

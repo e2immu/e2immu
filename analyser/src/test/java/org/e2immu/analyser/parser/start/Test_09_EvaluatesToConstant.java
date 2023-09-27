@@ -20,7 +20,6 @@ import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.ParameterInfo;
-import org.e2immu.analyser.model.expression.StringConstant;
 import org.e2immu.analyser.model.expression.UnknownExpression;
 import org.e2immu.analyser.model.variable.ReturnVariable;
 import org.e2immu.analyser.parser.CommonTestRunner;

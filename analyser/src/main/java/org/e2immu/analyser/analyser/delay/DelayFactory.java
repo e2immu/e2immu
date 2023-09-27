@@ -16,8 +16,8 @@ package org.e2immu.analyser.analyser.delay;
 
 import org.e2immu.analyser.analyser.CauseOfDelay;
 import org.e2immu.analyser.analyser.CausesOfDelay;
+import org.e2immu.analyser.model.InfoObject;
 import org.e2immu.analyser.model.Location;
-import org.e2immu.analyser.model.WithInspectionAndAnalysis;
 
 import java.util.HashMap;
 import java.util.Set;
@@ -41,7 +41,7 @@ public class DelayFactory {
         return new SingleDelay(new SimpleCause(location, cause));
     }
 
-    public static CausesOfDelay createDelay(WithInspectionAndAnalysis withInspectionAndAnalysis, CauseOfDelay.Cause cause) {
-        return new SingleDelay(new SimpleCause(withInspectionAndAnalysis.newLocation(), cause));
+    public static CausesOfDelay createDelay(InfoObject infoObject, CauseOfDelay.Cause cause) {
+        return new SingleDelay(new SimpleCause(infoObject.newLocation(), cause));
     }
 }

@@ -18,9 +18,6 @@ import org.e2immu.analyser.analyser.DV;
 import org.e2immu.analyser.analyser.Property;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.model.ParameterInfo;
-import org.e2immu.analyser.model.Statement;
-import org.e2immu.analyser.model.expression.MethodCall;
-import org.e2immu.analyser.model.statement.ExpressionAsStatement;
 import org.e2immu.analyser.parser.CommonTestRunner;
 import org.e2immu.analyser.visitor.MethodAnalyserVisitor;
 import org.e2immu.analyser.visitor.StatementAnalyserVariableVisitor;
@@ -29,7 +26,6 @@ import org.junit.jupiter.api.Test;
 import java.io.IOException;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.fail;
 
 /*
 Map.keySet() is dependent as a method, so a modification in map.keySet() should result in a modification in map

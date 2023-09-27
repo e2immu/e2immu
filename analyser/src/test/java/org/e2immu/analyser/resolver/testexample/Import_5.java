@@ -14,7 +14,8 @@
 
 package org.e2immu.analyser.resolver.testexample;
 
-import org.e2immu.analyser.resolver.testexample.importhelper.*;
+import org.e2immu.analyser.resolver.testexample.importhelper.RErasureExpression;
+import org.e2immu.analyser.resolver.testexample.importhelper.RExpression;
 
 import java.util.Map;
 

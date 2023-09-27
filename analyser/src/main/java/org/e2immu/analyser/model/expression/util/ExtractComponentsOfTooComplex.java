@@ -18,15 +18,12 @@ import org.e2immu.analyser.analyser.CausesOfDelay;
 import org.e2immu.analyser.model.Element;
 import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.expression.*;
-import org.e2immu.analyser.model.variable.DependentVariable;
-import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.This;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.parser.InspectionProvider;
 
 import java.util.HashSet;
 import java.util.Set;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Predicate;
 

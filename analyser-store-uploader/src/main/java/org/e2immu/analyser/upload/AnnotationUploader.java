@@ -74,15 +74,15 @@ public class AnnotationUploader {
 
         messageStream.filter(message -> message.message().severity == Message.Severity.ERROR)
                 .filter(message -> ((LocationImpl) message.location()).statementIdentifier == null) // only type, field, method errors
-                .forEach(message -> SMapList.add(map, fqn(((LocationImpl) message.location()).info),
-                        "error" + suffix(((LocationImpl) message.location()).info)));
+                .forEach(message -> SMapList.add(map, fqn(message.location().getInfo()),
+                        "error" + suffix(message.location().getInfo())));
 
         LOGGER.debug("Writing {} annotations", map.size());
         return map.entrySet().stream()
                 .collect(Collectors.toMap(Map.Entry::getKey, e -> String.join(",", e.getValue())));
     }
 
-    private static String fqn(WithInspectionAndAnalysis info) {
+    private static String fqn(InfoObject info) {
         if (info instanceof TypeInfo t) return t.fullyQualifiedName;
         if (info instanceof FieldInfo f) return f.owner.fullyQualifiedName + ":" + f.name;
         if (info instanceof ParameterInfo p) return p.owner.fullyQualifiedName + "#" + p.index;
@@ -90,7 +90,7 @@ public class AnnotationUploader {
         throw new UnsupportedOperationException("Have " + info.getClass());
     }
 
-    private static String suffix(WithInspectionAndAnalysis info) {
+    private static String suffix(InfoObject info) {
         if (info instanceof TypeInfo) return TYPE_SUFFIX;
         if (info instanceof FieldInfo) return FIELD_SUFFIX;
         if (info instanceof ParameterInfo) return PARAMETER_SUFFIX;
