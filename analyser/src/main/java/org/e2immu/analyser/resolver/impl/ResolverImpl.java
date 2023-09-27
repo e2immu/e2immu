@@ -16,7 +16,6 @@ package org.e2immu.analyser.resolver.impl;
 
 import com.github.javaparser.ast.expr.Expression;
 import com.github.javaparser.ast.stmt.BlockStmt;
-import org.e2immu.analyser.analyser.nonanalyserimpl.GlobalAnalyserContext;
 import org.e2immu.analyser.analyser.util.TypeGraph;
 import org.e2immu.analyser.inspector.*;
 import org.e2immu.analyser.inspector.impl.ExpressionContextImpl;
@@ -281,7 +280,7 @@ public class ResolverImpl implements Resolver {
                         && !typeAndAllSubTypes.contains(e.getKey()))
                 .collect(Collectors.toUnmodifiableMap(Map.Entry::getKey, Map.Entry::getValue));
 
-        GlobalAnalyserContext.HardCoded hardCoded = GlobalAnalyserContext.HARDCODED_TYPES.get(typeInfo.fullyQualifiedName);
+        TypeInfo.HardCoded hardCoded = TypeInfo.HARDCODED_TYPES.get(typeInfo.fullyQualifiedName);
         Map<TypeInfo, Integer> dependsOn = hardCoded != null && hardCoded.eraseDependencies ? Map.of()
                 : Map.copyOf(typeDependencies);
         typeGraph.addNode(typeInfo, dependsOn);

@@ -16,7 +16,6 @@ package org.e2immu.analyser.analyser.impl;
 
 import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.analyser.impl.util.BreakDelayLevel;
-import org.e2immu.analyser.analyser.nonanalyserimpl.GlobalAnalyserContext;
 import org.e2immu.analyser.analyser.util.AnalyserResult;
 import org.e2immu.analyser.analysis.*;
 import org.e2immu.analyser.config.Configuration;
@@ -176,8 +175,13 @@ public class PrimaryTypeAnalyserImpl implements PrimaryTypeAnalyser {
         do {
             delaySequence.add(breakDelayLevel);
 
-            LOGGER.debug("\n******\nStarting iteration {} (break? {}) of the primary type analyser on {}; sequence {}\n******",
-                    iteration, breakDelayLevel, name, delaySequence);
+            if (inAnnotatedAPIAnalysis()) {
+                LOGGER.debug("\n******\nStarting iteration {} (break? {}) of the primary type analyser on {}; sequence {}\n******",
+                        iteration, breakDelayLevel, name, delaySequence);
+            } else {
+                LOGGER.info("\n******\nStarting iteration {} (break? {}) of the primary type analyser on {}; sequence {}\n******",
+                        iteration, breakDelayLevel, name, delaySequence);
+            }
             analyserComponents.resetDelayHistogram();
 
             SharedState sharedState = new SharedState(iteration, breakDelayLevel, null);
@@ -274,8 +278,8 @@ public class PrimaryTypeAnalyserImpl implements PrimaryTypeAnalyser {
     @Override
     public void write() {
         analysers.forEach(Analyser::write);
-        if (parent instanceof GlobalAnalyserContext globalAnalyserContext) {
-            analysers.forEach(a -> globalAnalyserContext.write(a.getAnalysis()));
+        if (parent.isWrite()) {
+            analysers.forEach(a -> parent.write(a.getAnalysis()));
         }
     }
 

@@ -10,6 +10,7 @@ import org.e2immu.analyser.analysis.impl.TypeAnalysisImpl;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.parser.Input;
 import org.e2immu.analyser.parser.Message;
+import org.e2immu.analyser.visitor.TypeAnalyserVisitor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -79,6 +80,18 @@ public class ShallowTypeAnalyser extends TypeAnalyserImpl {
     public AnalyserResult analyse(SharedState sharedState) {
         try {
             shallowAnalyzer();
+            if(!analyserContext.inAnnotatedAPIAnalysis()) {
+                for (TypeAnalyserVisitor typeAnalyserVisitor : analyserContext.getConfiguration()
+                        .debugConfiguration().afterTypePropertyComputations()) {
+                    typeAnalyserVisitor.visit(new TypeAnalyserVisitor.Data(0, sharedState.breakDelayLevel(),
+                            analyserContext.getPrimitives(),
+                            typeInfo,
+                            analyserContext.getTypeInspection(typeInfo),
+                            typeAnalysis,
+                            Map.of(),
+                            analyserContext));
+                }
+            }
             analyserResultBuilder.setAnalysisStatus(AnalysisStatus.DONE);
             return analyserResultBuilder.build();
         } catch (RuntimeException rte) {

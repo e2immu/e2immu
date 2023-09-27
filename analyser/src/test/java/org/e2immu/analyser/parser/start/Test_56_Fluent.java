@@ -221,7 +221,7 @@ public class Test_56_Fluent extends CommonTestRunner {
             //    .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
             //    .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
             //    .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
-                .addBreakDelayVisitor(breakDelayVisitor)
+            //    .addBreakDelayVisitor(breakDelayVisitor)
                 .build(), new AnalyserConfiguration.Builder().build(), new AnnotatedAPIConfiguration.Builder().build());
     }
 

@@ -14,10 +14,7 @@
 
 package org.e2immu.analyser.analyser;
 
-import org.e2immu.analyser.analysis.FieldAnalysis;
-import org.e2immu.analyser.analysis.MethodAnalysis;
-import org.e2immu.analyser.analysis.ParameterAnalysis;
-import org.e2immu.analyser.analysis.TypeAnalysis;
+import org.e2immu.analyser.analysis.*;
 import org.e2immu.analyser.config.Configuration;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
@@ -119,4 +116,8 @@ public interface AnalyserContext extends AnalysisProvider, InspectionProvider {
     default MethodInspection getMethodInspection(MethodInfo methodInfo) {
         return methodInfo.methodInspection.get(methodInfo.fullyQualifiedName);
     }
+
+   default   boolean isWrite() { return false; }
+
+   default void write(Analysis analysis) { throw new UnsupportedOperationException(); }
 }

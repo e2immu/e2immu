@@ -90,56 +90,6 @@ public class GlobalAnalyserContext implements AnalyserContext {
         onDemandMode.set();
     }
 
-    public enum HardCoded {
-        IMMUTABLE(true), IMMUTABLE_HC(true), IMMUTABLE_HC_INDEPENDENT_HC(true),
-        MUTABLE_NOT_CONTAINER_DO_NOT_ERASE(false),
-        MUTABLE_CONTAINER_DO_NOT_ERASE(false),
-        NO(false);
-
-        public final boolean eraseDependencies;
-
-        HardCoded(boolean eraseDependencies) {
-            this.eraseDependencies = eraseDependencies;
-        }
-    }
-
-    public static Map<String, HardCoded> HARDCODED_TYPES = Collections.unmodifiableMap(new HashMap<>() {{
-        put("java.lang.Annotation", HardCoded.IMMUTABLE_HC);
-        put("java.lang.Enum", HardCoded.IMMUTABLE_HC);
-        put("java.lang.Object", HardCoded.IMMUTABLE_HC);
-        put("java.io.Serializable", HardCoded.IMMUTABLE_HC);
-        put("java.util.Comparator", HardCoded.IMMUTABLE_HC);
-        put("java.util.Optional", HardCoded.IMMUTABLE_HC_INDEPENDENT_HC);
-
-        put("java.lang.CharSequence", HardCoded.IMMUTABLE_HC);
-        put("java.lang.Class", HardCoded.IMMUTABLE);
-        put("java.lang.Module", HardCoded.IMMUTABLE);
-        put("java.lang.Package", HardCoded.IMMUTABLE);
-        put("java.lang.constant.Constable", HardCoded.IMMUTABLE_HC);
-        put("java.lang.constant.ConstantDesc", HardCoded.IMMUTABLE_HC);
-
-        put("java.util.Map", HardCoded.MUTABLE_CONTAINER_DO_NOT_ERASE); // ClassValue
-        put("java.util.AbstractMap", HardCoded.MUTABLE_CONTAINER_DO_NOT_ERASE); // ClassValue
-        put("java.util.WeakHashMap", HardCoded.MUTABLE_CONTAINER_DO_NOT_ERASE); // ClassValue
-        put("java.lang.ref.WeakReference", HardCoded.MUTABLE_CONTAINER_DO_NOT_ERASE); // ClassValue
-        put("java.util.Collection", HardCoded.MUTABLE_CONTAINER_DO_NOT_ERASE); //  companion
-        put("java.lang.Throwable", HardCoded.MUTABLE_NOT_CONTAINER_DO_NOT_ERASE);
-
-        put("org.e2immu.annotatedapi.AnnotatedAPI", HardCoded.IMMUTABLE_HC);
-
-        // primitives, boxed
-        put("java.lang.Boolean", HardCoded.IMMUTABLE);
-        put("java.lang.Byte", HardCoded.IMMUTABLE);
-        put("java.lang.Character", HardCoded.IMMUTABLE);
-        put("java.lang.Double", HardCoded.IMMUTABLE);
-        put("java.lang.Float", HardCoded.IMMUTABLE);
-        put("java.lang.Integer", HardCoded.IMMUTABLE);
-        put("java.lang.Long", HardCoded.IMMUTABLE);
-        put("java.lang.Short", HardCoded.IMMUTABLE);
-        put("java.lang.String", HardCoded.IMMUTABLE);
-        put("java.lang.Void", HardCoded.IMMUTABLE);
-    }});
-
     public static Map<String, List<String>> PARAMETER_ANALYSES = Map.of("org.e2immu.annotatedapi.AnnotatedAPI.isKnown(boolean)",
             List.of("org.e2immu.annotatedapi.AnnotatedAPI.isKnown(boolean):0:test"));
 
@@ -153,7 +103,7 @@ public class GlobalAnalyserContext implements AnalyserContext {
     private static final Set<String> HARDCODED_PARAMETERS = Set.of("org.e2immu.annotatedapi.AnnotatedAPI.isKnown(boolean):0:test");
 
     private Map<String, TypeAnalysis> createHardCodedTypeAnalysis() {
-        return HARDCODED_TYPES.entrySet().stream().collect(Collectors.toUnmodifiableMap(Map.Entry::getKey,
+        return TypeInfo.HARDCODED_TYPES.entrySet().stream().collect(Collectors.toUnmodifiableMap(Map.Entry::getKey,
                 e -> new HardCodedTypeAnalysis(e.getKey(), e.getValue())));
     }
 
@@ -369,7 +319,7 @@ public class GlobalAnalyserContext implements AnalyserContext {
         }
     }
 
-    private record HardCodedTypeAnalysis(String fullyQualifiedName, HardCoded hardCoded) implements TypeAnalysis {
+    private record HardCodedTypeAnalysis(String fullyQualifiedName, TypeInfo.HardCoded hardCoded) implements TypeAnalysis {
 
 
         @Override
@@ -439,7 +389,7 @@ public class GlobalAnalyserContext implements AnalyserContext {
 
         @Override
         public DV immutableDeterminedByTypeParameters() {
-            return DV.fromBoolDv(hardCoded == HardCoded.IMMUTABLE_HC);
+            return DV.fromBoolDv(hardCoded == TypeInfo.HardCoded.IMMUTABLE_HC);
         }
 
         @Override
@@ -479,7 +429,7 @@ public class GlobalAnalyserContext implements AnalyserContext {
 
         @Override
         public DV getPropertyFromMapNeverDelay(Property property) {
-            HardCoded hc = HARDCODED_TYPES.get(fullyQualifiedName);
+            TypeInfo.HardCoded hc = TypeInfo.HARDCODED_TYPES.get(fullyQualifiedName);
             return switch (hc) {
                 case IMMUTABLE -> switch (property) {
                     case IMMUTABLE -> MultiLevel.EFFECTIVELY_IMMUTABLE_DV;
@@ -678,6 +628,12 @@ public class GlobalAnalyserContext implements AnalyserContext {
         throw new UnsupportedOperationException();
     }
 
+    @Override
+    public boolean isWrite() {
+        return true;
+    }
+
+    @Override
     public void write(Analysis analysis) {
         if (analysis instanceof TypeAnalysis typeAnalysis) {
             typeAnalyses.put(typeAnalysis.getTypeInfo(), typeAnalysis);
