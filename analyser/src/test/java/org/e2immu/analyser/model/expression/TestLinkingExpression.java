@@ -42,6 +42,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 public class TestLinkingExpression {
 
     protected static TypeContext typeContext;
+    protected static AnalyserContext analyserContext;
     private static EvaluationResult context;
 
     // NO annotated APIs, but an XML file
@@ -64,8 +65,9 @@ public class TestLinkingExpression {
         configuration.initializeLoggers();
         Parser parser = new Parser(configuration);
         parser.preload("java.util");
-        parser.run();
+        Parser.RunResult rr = parser.run();
         typeContext = parser.getTypeContext();
+        analyserContext = rr.analyserContext();
         EvaluationContext ec = new EvaluationContext() {
             @Override
             public Primitives getPrimitives() {
@@ -74,17 +76,7 @@ public class TestLinkingExpression {
 
             @Override
             public AnalyserContext getAnalyserContext() {
-                return new AnalyserContext() {
-                    @Override
-                    public Primitives getPrimitives() {
-                        return typeContext.getPrimitives();
-                    }
-
-                    @Override
-                    public ParameterAnalysis getParameterAnalysis(ParameterInfo parameterInfo) {
-                        return AnalysisProvider.DEFAULT_PROVIDER.getParameterAnalysis(parameterInfo);
-                    }
-                };
+                return analyserContext;
             }
 
             @Override
@@ -164,7 +156,8 @@ public class TestLinkingExpression {
         // new ArrayList<>(v).get(0)
         //TypeInfo list = typeContext.getFullyQualified(List.class);
         MethodInfo listGet = arrayList.findUniqueMethod("get", 1);
-        assertEquals(MultiLevel.INDEPENDENT_HC_DV, listGet.methodAnalysis.get().getProperty(Property.INDEPENDENT));
+        assertEquals(MultiLevel.INDEPENDENT_HC_DV, analyserContext.getMethodAnalysis(listGet)
+                .getProperty(Property.INDEPENDENT));
 
         MethodCall get0 = new MethodCall(Identifier.constant("mc"), newObject, listGet,
                 List.of(newInt(0)));
@@ -174,7 +167,8 @@ public class TestLinkingExpression {
 
         // new ArrayList<>(v).subList(1, 2)
         MethodInfo listSubList = arrayList.findUniqueMethod("subList", 2);
-        assertEquals(MultiLevel.DEPENDENT_DV, listSubList.methodAnalysis.get().getProperty(Property.INDEPENDENT));
+        assertEquals(MultiLevel.DEPENDENT_DV, analyserContext.getMethodAnalysis(listSubList)
+                .getProperty(Property.INDEPENDENT));
         MethodCall subList12 = new MethodCall(Identifier.constant("mc"), newObject, listSubList,
                 List.of(newInt(1), newInt(2)));
 
@@ -196,7 +190,7 @@ public class TestLinkingExpression {
         TypeInfo arrayList = typeContext.getFullyQualified(ArrayList.class);
         // see XML file
         MethodInfo addIndex = arrayList.findUniqueMethod("add", 2);
-        assertEquals(DV.TRUE_DV, addIndex.methodAnalysis.get().getProperty(Property.MODIFIED_METHOD));
+        assertEquals(DV.TRUE_DV, analyserContext.getMethodAnalysis(addIndex).getProperty(Property.MODIFIED_METHOD));
 
         ParameterAnalysis p1 = addIndex.parameterAnalysis(1);
         assertEquals(MultiLevel.INDEPENDENT_HC_DV, p1.getProperty(Property.INDEPENDENT));

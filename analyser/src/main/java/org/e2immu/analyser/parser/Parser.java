@@ -78,6 +78,7 @@ public class Parser {
     public record RunResult(SortedTypes annotatedAPISortedTypes,
                             SortedTypes sourceSortedTypes,
                             TypeMap typeMap,
+                            TypeContext typeContext,
                             AnalyserContext analyserContext) {
 
         public Set<TypeInfo> allPrimaryTypes() {
@@ -88,11 +89,18 @@ public class Parser {
         @SuppressWarnings("unused")
         public RunResult buildTypeMap() {
             if (typeMap instanceof TypeMapImpl.Builder builder) {
-                return new RunResult(annotatedAPISortedTypes, sourceSortedTypes, builder.build(), analyserContext);
+                return new RunResult(annotatedAPISortedTypes, sourceSortedTypes, builder.build(),
+                        typeContext, analyserContext);
             }
             return this;
         }
 
+        public RunResult writeAnalysis() {
+            if(analyserContext instanceof GlobalAnalyserContext globalAnalyserContext) {
+                globalAnalyserContext.writeAll();
+            }
+            return this;
+        }
     }
 
     public RunResult run() {
@@ -121,42 +129,41 @@ public class Parser {
 
         // finally, there is an analysis step
 
-        GlobalAnalyserContext annotatedAPIContext;
+        GlobalAnalyserContext globalAnalyserContext;
         if (configuration.skipAnalysis()) {
             // do not build yet, others may want to continue
             typeMap = input.globalTypeContext().typeMap;
-            annotatedAPIContext = null;
+            globalAnalyserContext = null;
         } else {
             ImportantClassesImpl importantClasses = new ImportantClassesImpl(input.globalTypeContext());
 
             // creating the typeMap ensures that all inspections and resolutions are set.
             typeMap = input.globalTypeContext().typeMap.build();
-            annotatedAPIContext = new GlobalAnalyserContext(input.globalTypeContext(),
-                    configuration, importantClasses, typeMap.getE2ImmuAnnotationExpressions(),
-                    true);
+            globalAnalyserContext = new GlobalAnalyserContext(input.globalTypeContext(),
+                    configuration, importantClasses, typeMap.getE2ImmuAnnotationExpressions());
 
             LOGGER.debug("AnnotatedAPI Type cycles:\n{}", sortedAnnotatedAPITypes.typeCycles().stream()
                     .map(Object::toString).collect(Collectors.joining("\n")));
             for (TypeCycle typeCycle : sortedAnnotatedAPITypes.typeCycles()) {
-                runAnalyzer(annotatedAPIContext, typeCycle, true);
+                runAnalyzer(globalAnalyserContext, typeCycle, true);
             }
-            annotatedAPIContext.startOnDemandMode();
+            globalAnalyserContext.startOnDemandMode();
+            globalAnalyserContext.endOfAnnotatedAPIAnalysis();
 
             for (TypeMapVisitor typeMapVisitor : configuration.debugConfiguration().typeMapVisitors()) {
-                typeMapVisitor.visit(new TypeMapVisitor.Data(typeMap, annotatedAPIContext));
+                typeMapVisitor.visit(new TypeMapVisitor.Data(typeMap, globalAnalyserContext));
             }
 
-            // the analyser context essentially stays the same: incremental analysis
-            AnalyserContext sourceContext = annotatedAPIContext.with(false);
             for (TypeCycle typeCycle : resolvedSourceTypes.typeCycles()) {
                 if (LOGGER.isDebugEnabled()) {
                     LOGGER.debug("Analysing primary type cycle:\n{}", typeCycle);
                 }
-                runAnalyzer(sourceContext, typeCycle, false);
+                runAnalyzer(globalAnalyserContext, typeCycle, false);
             }
         }
 
-        return new RunResult(sortedAnnotatedAPITypes, resolvedSourceTypes, typeMap, annotatedAPIContext);
+        return new RunResult(sortedAnnotatedAPITypes, resolvedSourceTypes, typeMap,
+                input.globalTypeContext(), globalAnalyserContext);
     }
 
     public TypeMap.Builder inspectOnlyForTesting() {
@@ -235,7 +242,7 @@ public class Parser {
                 LOGGER.debug("Starting Java parser inspection of '{}'", uri);
                 typeInspectionBuilder.setInspectionState(STARTING_JAVA_PARSER);
 
-                TypeContext inspectionTypeContext = new TypeContext(getTypeContext());
+                TypeContext inspectionTypeContext = new TypeContext(input.globalTypeContext());
 
                 InputStreamReader isr = new InputStreamReader(uri.toURL().openStream(),
                         configuration.inputConfiguration().sourceEncoding());

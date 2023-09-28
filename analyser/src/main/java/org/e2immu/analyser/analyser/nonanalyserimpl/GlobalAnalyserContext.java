@@ -48,7 +48,6 @@ public class GlobalAnalyserContext implements AnalyserContext {
     private final SetOnceMap<FieldInfo, FieldAnalysis> fieldAnalyses;
 
     private final Primitives primitives;
-    private final boolean inAnnotatedAPIAnalysis;
     private final Configuration configuration;
     private final ImportantClasses importantClasses;
     private final E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions;
@@ -60,12 +59,13 @@ public class GlobalAnalyserContext implements AnalyserContext {
     private final TypeContext typeContext;
     private final FlipSwitch onDemandMode = new FlipSwitch();
 
+    private final FlipSwitch setEndOfAnnotatedAPIAnalysis = new FlipSwitch();
+
     public GlobalAnalyserContext(TypeContext typeContext,
                                  Configuration configuration,
                                  ImportantClasses importantClasses,
-                                 E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions,
-                                 boolean inAnnotatedAPIAnalysis) {
-        this(typeContext, configuration, importantClasses, e2ImmuAnnotationExpressions, inAnnotatedAPIAnalysis,
+                                 E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions) {
+        this(typeContext, configuration, importantClasses, e2ImmuAnnotationExpressions,
                 new SetOnceMap<>(), new SetOnceMap<>(), new SetOnceMap<>());
     }
 
@@ -73,7 +73,6 @@ public class GlobalAnalyserContext implements AnalyserContext {
                                   Configuration configuration,
                                   ImportantClasses importantClasses,
                                   E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions,
-                                  boolean inAnnotatedAPIAnalysis,
                                   SetOnceMap<TypeInfo, TypeAnalysis> typeAnalyses,
                                   SetOnceMap<MethodInfo, MethodAnalysis> methodAnalyses,
                                   SetOnceMap<FieldInfo, FieldAnalysis> fieldAnalyses) {
@@ -82,7 +81,6 @@ public class GlobalAnalyserContext implements AnalyserContext {
         this.configuration = configuration;
         this.importantClasses = importantClasses;
         this.e2ImmuAnnotationExpressions = e2ImmuAnnotationExpressions;
-        this.inAnnotatedAPIAnalysis = inAnnotatedAPIAnalysis;
         this.typeAnalyses = typeAnalyses;
         this.methodAnalyses = methodAnalyses;
         this.fieldAnalyses = fieldAnalyses;
@@ -94,6 +92,10 @@ public class GlobalAnalyserContext implements AnalyserContext {
 
     public void startOnDemandMode() {
         onDemandMode.set();
+    }
+
+    public void endOfAnnotatedAPIAnalysis() {
+        setEndOfAnnotatedAPIAnalysis.set();
     }
 
     public static Map<String, List<String>> PARAMETER_ANALYSES = Map.of("org.e2immu.annotatedapi.AnnotatedAPI.isKnown(boolean)",
@@ -325,7 +327,8 @@ public class GlobalAnalyserContext implements AnalyserContext {
         }
     }
 
-    private record HardCodedTypeAnalysis(String fullyQualifiedName, TypeInfo.HardCoded hardCoded) implements TypeAnalysis {
+    private record HardCodedTypeAnalysis(String fullyQualifiedName,
+                                         TypeInfo.HardCoded hardCoded) implements TypeAnalysis {
 
 
         @Override
@@ -490,13 +493,6 @@ public class GlobalAnalyserContext implements AnalyserContext {
         }
     }
 
-    public GlobalAnalyserContext with(boolean inAnnotatedAPIAnalysis) {
-        GlobalAnalyserContext context = new GlobalAnalyserContext(typeContext, configuration, importantClasses,
-                e2ImmuAnnotationExpressions, inAnnotatedAPIAnalysis, typeAnalyses, methodAnalyses, fieldAnalyses);
-        context.onDemandMode.copy(this.onDemandMode);
-        return context;
-    }
-
     @Override
     public ImportantClasses importantClasses() {
         return importantClasses;
@@ -514,7 +510,7 @@ public class GlobalAnalyserContext implements AnalyserContext {
 
     @Override
     public boolean inAnnotatedAPIAnalysis() {
-        return inAnnotatedAPIAnalysis;
+        return !setEndOfAnnotatedAPIAnalysis.isSet();
     }
 
     @Override
@@ -650,6 +646,18 @@ public class GlobalAnalyserContext implements AnalyserContext {
         } else if (!(analysis instanceof ParameterAnalysis)) {
             throw new UnsupportedOperationException();
         }
+    }
+
+    public void writeAll() {
+        typeAnalyses.stream().forEach(e -> {
+            if(!e.getKey().typeAnalysis.isSet()) e.getKey().setAnalysis(e.getValue());
+        });
+        methodAnalyses.stream().forEach(e -> {
+            if(!e.getKey().methodAnalysis.isSet()) e.getKey().setAnalysis(e.getValue());
+        });
+        fieldAnalyses.stream().forEach(e -> {
+            if(!e.getKey().fieldAnalysis.isSet()) e.getKey().setAnalysis(e.getValue());
+        });
     }
 
     @Override
