@@ -39,7 +39,8 @@ public class TypeGraph {
 
     public List<TypeInfo> sorted(Consumer<List<TypeInfo>> cycleConsumer,
                                  Consumer<TypeInfo> independentConsumer,
-                                 Comparator<TypeInfo> comparing) {
+                                 Comparator<TypeInfo> comparing,
+                                 boolean breakCycle) {
         for (Dependencies dependencies : nodeMap.values()) {
             for (Map.Entry<TypeInfo, Integer> dep : dependencies.weights.entrySet()) {
                 Dependencies d = nodeMap.get(dep.getKey());
@@ -52,10 +53,9 @@ public class TypeGraph {
         Map<TypeInfo, Dependencies> toDo = new LinkedHashMap<>(nodeMap.size());
         nodeMap.entrySet().stream().sorted(Comparator.comparing(e -> -e.getValue().sumIncoming)).forEach(
                 e -> toDo.put(e.getKey(), e.getValue()));
-        Set<TypeInfo> done = new HashSet<>();
         List<TypeInfo> result = new ArrayList<>(nodeMap.size());
         while (!toDo.isEmpty()) {
-            List<TypeInfo> keys = new LinkedList<>();
+            List<TypeInfo> doneInThisIteration = new LinkedList<>();
             for (Map.Entry<TypeInfo, Dependencies> entry : toDo.entrySet()) {
                 Dependencies dependencies = entry.getValue();
                 boolean safe;
@@ -63,30 +63,29 @@ public class TypeGraph {
                     safe = true;
                 } else {
                     Map<TypeInfo, Integer> copy = new HashMap<>(dependencies.weights);
-                    copy.keySet().removeAll(done);
+                    result.forEach(copy.keySet()::remove);
                     copy.remove(entry.getKey());
                     safe = copy.isEmpty();
                 }
                 if (safe) {
-                    keys.add(entry.getKey());
-                    done.add(entry.getKey());
+                    doneInThisIteration.add(entry.getKey());
                     if (independentConsumer != null) independentConsumer.accept(entry.getKey());
                 }
             }
             // there are no types without dependencies at the moment -- we must have a cycle
-            if (keys.isEmpty()) {
+            if (doneInThisIteration.isEmpty()) {
                 assert toDo.size() > 1 : "The last one should always be safe";
                 int first = toDo.entrySet().stream().findFirst().orElseThrow().getValue().sumIncoming;
                 List<TypeInfo> sortedCycle = toDo.entrySet().stream()
-                        .takeWhile(e -> e.getValue().sumIncoming == first)
+                        .takeWhile(e -> e.getValue().sumIncoming == first || !breakCycle)
                         .map(Map.Entry::getKey)
                         .sorted(comparing).toList();
                 if (cycleConsumer != null) cycleConsumer.accept(sortedCycle);
                 sortedCycle.forEach(toDo.keySet()::remove);
                 result.addAll(sortedCycle);
             } else {
-                keys.forEach(toDo.keySet()::remove);
-                result.addAll(keys);
+                doneInThisIteration.forEach(toDo.keySet()::remove);
+                result.addAll(doneInThisIteration);
             }
         }
         return result;

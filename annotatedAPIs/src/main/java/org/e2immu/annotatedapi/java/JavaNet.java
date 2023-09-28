@@ -23,6 +23,7 @@ import org.e2immu.annotation.type.UtilityClass;
 
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.net.URI;
 import java.net.URL;
 import java.net.URLConnection;
 import java.net.URLStreamHandlerFactory;
@@ -48,6 +49,9 @@ public class JavaNet {
          */
         @StaticSideEffects
         void setURLStreamHandlerFactory(URLStreamHandlerFactory fac);
+
+        @NotNull
+        URI toURI();
     }
 
     /*
