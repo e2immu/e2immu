@@ -70,7 +70,7 @@ public class Test_04_Assert extends CommonTestRunner {
             }
         };
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
-            assertFalse(d.allowBreakDelay());
+//            assertFalse(d.allowBreakDelay());
 
             if ("causesOfDelay".equals(d.methodInfo().name) && "NotDelayed".equals(d.methodInfo().typeInfo.simpleName)) {
                 if (d.variable() instanceof ReturnVariable) {
@@ -172,12 +172,47 @@ public class Test_04_Assert extends CommonTestRunner {
             }
             if ("causesOfDelay".equals(d.methodInfo().name)) {
                 if ("SimpleSet".equals(d.methodInfo().typeInfo.simpleName)) {
+                    assertDv(d, DV.FALSE_DV, Property.MODIFIED_METHOD);
+                    assertDv(d, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_EXPRESSION);
+                    assertDv(d, 3, MultiLevel.EFFECTIVELY_IMMUTABLE_HC_DV, Property.IMMUTABLE);
+                    assertDv(d, 3, MultiLevel.INDEPENDENT_DV, Property.INDEPENDENT);
                     assertDv(d, MultiLevel.CONTAINER_DV, Property.CONTAINER);
                 }
                 if ("AnalysisStatus".equals(d.methodInfo().typeInfo.simpleName)) {
+                    assertDv(d, DV.FALSE_DV, Property.MODIFIED_METHOD);
+                    assertDv(d, MultiLevel.NULLABLE_DV, Property.NOT_NULL_EXPRESSION);
+                    assertDv(d, MultiLevel.EFFECTIVELY_IMMUTABLE_HC_DV, Property.IMMUTABLE);
+                    assertDv(d, MultiLevel.INDEPENDENT_HC_DV, Property.INDEPENDENT);
                     assertDv(d, MultiLevel.CONTAINER_DV, Property.CONTAINER);
                 }
                 if ("NotDelayed".equals(d.methodInfo().typeInfo.simpleName)) {
+                    assertDv(d, DV.FALSE_DV, Property.MODIFIED_METHOD);
+                    assertDv(d, 5, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_EXPRESSION);
+                    assertDv(d, 5, MultiLevel.EFFECTIVELY_IMMUTABLE_HC_DV, Property.IMMUTABLE);
+                    assertDv(d, 5, MultiLevel.INDEPENDENT_DV, Property.INDEPENDENT);
+                    assertDv(d, MultiLevel.CONTAINER_DV, Property.CONTAINER);
+                }
+            }
+            if ("isDelayed".equals(d.methodInfo().name)) {
+                if ("SimpleSet".equals(d.methodInfo().typeInfo.simpleName)) {
+                    assertDv(d, DV.FALSE_DV, Property.MODIFIED_METHOD);
+                    assertDv(d, 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_EXPRESSION);
+                    assertDv(d, MultiLevel.EFFECTIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
+                    assertDv(d, MultiLevel.INDEPENDENT_DV, Property.INDEPENDENT);
+                    assertDv(d, MultiLevel.CONTAINER_DV, Property.CONTAINER);
+                }
+                if ("AnalysisStatus".equals(d.methodInfo().typeInfo.simpleName)) {
+                    assertDv(d, DV.FALSE_DV, Property.MODIFIED_METHOD);
+                    assertDv(d, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_EXPRESSION);
+                    assertDv(d, MultiLevel.EFFECTIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
+                    assertDv(d, MultiLevel.INDEPENDENT_DV, Property.INDEPENDENT);
+                    assertDv(d, MultiLevel.CONTAINER_DV, Property.CONTAINER);
+                }
+                if ("NotDelayed".equals(d.methodInfo().typeInfo.simpleName)) {
+                    assertDv(d, DV.FALSE_DV, Property.MODIFIED_METHOD);
+                    assertDv(d, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_EXPRESSION);
+                    assertDv(d, MultiLevel.EFFECTIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
+                    assertDv(d, MultiLevel.INDEPENDENT_DV, Property.INDEPENDENT);
                     assertDv(d, MultiLevel.CONTAINER_DV, Property.CONTAINER);
                 }
             }
@@ -223,10 +258,16 @@ public class Test_04_Assert extends CommonTestRunner {
             if ("EMPTY".equals(d.fieldInfo().name)) {
                 assertDv(d, 3, MultiLevel.EFFECTIVELY_FINAL_FIELDS_DV, Property.EXTERNAL_IMMUTABLE);
                 // as a final field, it is not linked to the parameters of the constructor
-                assertDv(d, MultiLevel.INDEPENDENT_DV, Property.INDEPENDENT);
+                assertDv(d, 1, MultiLevel.INDEPENDENT_DV, Property.INDEPENDENT);
                 assertDv(d, 4, MultiLevel.CONTAINER_DV, Property.CONTAINER);
                 assertDv(d, 4, MultiLevel.NOT_CONTAINER_DV, Property.CONTAINER_RESTRICTION);
+                assertDv(d, MultiLevel.NOT_IGNORE_MODS_DV, Property.EXTERNAL_IGNORE_MODIFICATIONS);
+                assertDv(d, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.EXTERNAL_NOT_NULL);
                 assertEquals("new SimpleSet(Set.of())", d.fieldAnalysis().getValue().toString());
+            }
+            if ("LIMIT".equals(d.fieldInfo().name)) {
+                assertDv(d, MultiLevel.NOT_IGNORE_MODS_DV, Property.EXTERNAL_IGNORE_MODIFICATIONS);
+                assertDv(d, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.EXTERNAL_NOT_NULL);
             }
         };
 

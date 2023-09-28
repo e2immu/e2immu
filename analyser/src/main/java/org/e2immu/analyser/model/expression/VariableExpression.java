@@ -30,6 +30,7 @@ import org.e2immu.analyser.output.Text;
 import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.util.ListUtil;
 import org.e2immu.analyser.util.UpgradableBooleanMap;
+import org.e2immu.analyser.util.UpgradableIntMap;
 import org.e2immu.support.Either;
 
 import java.util.List;
@@ -537,6 +538,11 @@ public class VariableExpression extends BaseExpression implements IsVariableExpr
     @Override
     public UpgradableBooleanMap<TypeInfo> typesReferenced() {
         return variable.typesReferenced(false);
+    }
+
+    @Override
+    public UpgradableIntMap<TypeInfo> typesReferenced2(int weight) {
+        return variable.typesReferenced2(weight);
     }
 
     @Override

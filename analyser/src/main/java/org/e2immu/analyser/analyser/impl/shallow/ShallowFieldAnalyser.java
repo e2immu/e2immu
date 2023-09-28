@@ -16,14 +16,17 @@ package org.e2immu.analyser.analyser.impl.shallow;
 
 import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.analyser.impl.FieldAnalyserImpl;
+import org.e2immu.analyser.analyser.impl.computing.ComputingFieldAnalyser;
 import org.e2immu.analyser.analyser.util.AnalyserComponents;
 import org.e2immu.analyser.analyser.util.AnalyserResult;
+import org.e2immu.analyser.analyser.util.ConditionManagerImpl;
 import org.e2immu.analyser.analysis.Analysis;
 import org.e2immu.analyser.analysis.TypeAnalysis;
 import org.e2immu.analyser.analysis.impl.ValueAndPropertyProxy;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.Instance;
 import org.e2immu.analyser.parser.Message;
+import org.e2immu.analyser.visitor.FieldAnalyserVisitor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -51,6 +54,16 @@ public class ShallowFieldAnalyser extends FieldAnalyserImpl implements FieldAnal
         LOGGER.debug("Analysing field {}", fqn);
         try {
             mainAnalyser();
+            if (!analyserContext.inAnnotatedAPIAnalysis()) {
+                List<FieldAnalyserVisitor> visitors = analyserContext.getConfiguration()
+                        .debugConfiguration().afterFieldAnalyserVisitors();
+                if (!visitors.isEmpty()) {
+                    for (FieldAnalyserVisitor fieldAnalyserVisitor : visitors) {
+                        fieldAnalyserVisitor.visit(new FieldAnalyserVisitor.Data(0, null,
+                                fieldInfo, fieldAnalysis, this::getMessageStream, Map.of()));
+                    }
+                }
+            }
             fieldAnalysis.internalAllDoneCheck();
             analyserResultBuilder.setAnalysisStatus(AnalysisStatus.DONE);
             return analyserResultBuilder.build();
@@ -127,7 +140,9 @@ public class ShallowFieldAnalyser extends FieldAnalyserImpl implements FieldAnal
         DV annotatedIndependent = fieldAnalysis.getPropertyFromMapDelayWhenAbsent(Property.INDEPENDENT);
         DV formallyIndependent = analyserContext.typeIndependent(fieldInfo.type);
         DV independent = MultiLevel.DEPENDENT_DV.maxIgnoreDelay(annotatedIndependent.maxIgnoreDelay(formallyIndependent));
-        DV ignoreMods = fieldAnalysis.getPropertyFromMapNeverDelay(Property.IGNORE_MODIFICATIONS);
+        DV markedIgnoreMods = fieldAnalysis.getPropertyFromMapDelayWhenAbsent(Property.EXTERNAL_IGNORE_MODIFICATIONS);
+        DV ignoreMods = markedIgnoreMods.isDelayed() ? MultiLevel.NOT_IGNORE_MODS_DV: markedIgnoreMods;
+        fieldAnalysis.setProperty(Property.EXTERNAL_IGNORE_MODIFICATIONS, ignoreMods);
 
         Properties properties = Properties.of(Map.of(Property.NOT_NULL_EXPRESSION, notNull,
                 Property.IMMUTABLE, immutable, Property.INDEPENDENT, independent, Property.CONTAINER, typeIsContainer,

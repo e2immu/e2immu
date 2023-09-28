@@ -24,6 +24,7 @@ import org.e2immu.analyser.model.expression.DelayedVariableExpression;
 import org.e2immu.analyser.model.expression.util.OneVariable;
 import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.util.UpgradableBooleanMap;
+import org.e2immu.analyser.util.UpgradableIntMap;
 import org.e2immu.annotation.ImmutableContainer;
 import org.e2immu.annotation.NotNull;
 
@@ -75,6 +76,10 @@ public interface Variable extends OneVariable, Comparable<Variable> {
 
     default UpgradableBooleanMap<TypeInfo> typesReferenced(boolean explicit) {
         return parameterizedType().typesReferenced(explicit);
+    }
+
+    default UpgradableIntMap<TypeInfo> typesReferenced2(int weight) {
+        return parameterizedType().typesReferenced2(weight);
     }
 
     default boolean isLocal() {

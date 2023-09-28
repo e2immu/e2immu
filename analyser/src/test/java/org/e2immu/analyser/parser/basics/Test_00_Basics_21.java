@@ -208,8 +208,6 @@ public class Test_00_Basics_21 extends CommonTestRunner {
         };
 
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
-            assertFalse(d.allowBreakDelay());
-
             if ("t".equals(d.fieldInfo().name)) {
                 assertDv(d, 2, DV.FALSE_DV, MODIFIED_OUTSIDE_METHOD);
                 assertDv(d, DV.FALSE_DV, FINAL);

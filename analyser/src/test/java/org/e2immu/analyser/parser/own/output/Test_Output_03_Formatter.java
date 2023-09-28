@@ -237,6 +237,9 @@ public class Test_Output_03_Formatter extends CommonTestRunner {
             if ("NewLineDouble".equals(d.typeInfo().simpleName)) {
                 assertDv(d, MultiLevel.EFFECTIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
             }
+            if("Forward".equals(d.typeInfo().simpleName)) {
+                assertFalse(d.typeInfo().typeAnalysis.isSet());
+            }
         };
 
         BreakDelayVisitor breakDelayVisitor = d -> {
@@ -252,10 +255,10 @@ public class Test_Output_03_Formatter extends CommonTestRunner {
                 0, 28, new DebugConfiguration.Builder()
                         //     .addEvaluationResultVisitor(evaluationResultVisitor)
                         //    .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-                  //      .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
-                   //     .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
-                   //     .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
-                   //     .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                        //      .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                        //     .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+                        .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
+                        //     .addStatementAnalyserVisitor(statementAnalyserVisitor)
                         .addBreakDelayVisitor(breakDelayVisitor)
                         .build(),
                 new AnalyserConfiguration.Builder().setComputeFieldAnalyserAcrossAllMethods(true).build());

@@ -23,6 +23,7 @@ import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.ThisName;
 import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.util.UpgradableBooleanMap;
+import org.e2immu.analyser.util.UpgradableIntMap;
 
 import java.util.Objects;
 
@@ -132,6 +133,11 @@ public class This implements Variable {
             return UpgradableBooleanMap.of(explicitlyWriteType, true, typeInfo, false);
         }
         return UpgradableBooleanMap.of(typeInfo, explicitlyWriteType == typeInfo);
+    }
+
+    @Override
+    public UpgradableIntMap<TypeInfo> typesReferenced2(int weight) {
+        return UpgradableIntMap.of();
     }
 
     @Override

@@ -75,6 +75,7 @@ public class TypeGraph {
             }
             // there are no types without dependencies at the moment -- we must have a cycle
             if (keys.isEmpty()) {
+                assert toDo.size() > 1 : "The last one should always be safe";
                 int first = toDo.entrySet().stream().findFirst().orElseThrow().getValue().sumIncoming;
                 List<TypeInfo> sortedCycle = toDo.entrySet().stream()
                         .takeWhile(e -> e.getValue().sumIncoming == first)

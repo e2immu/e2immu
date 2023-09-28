@@ -631,12 +631,12 @@ public class GlobalAnalyserContext implements AnalyserContext {
     }
 
     @Override
-    public boolean isWrite() {
+    public boolean isStore() {
         return true;
     }
 
     @Override
-    public void write(Analysis analysis) {
+    public void store(Analysis analysis) {
         if (analysis instanceof TypeAnalysis typeAnalysis) {
             typeAnalyses.put(typeAnalysis.getTypeInfo(), typeAnalysis);
         } else if (analysis instanceof MethodAnalysis methodAnalysis) {

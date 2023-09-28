@@ -285,7 +285,7 @@ public class TestCommonJavaLang extends CommonAnnotatedAPI {
         assertEquals(MultiLevel.NOT_CONTAINER_DV, fieldAnalysis.getProperty(Property.CONTAINER_RESTRICTION));
         Expression value = fieldAnalysis.getValue();
         assertTrue(value.isDone());
-        assertEquals("instance type PrintStream", value.toString());
+        assertEquals("instance type PrintStream/*@IgnoreMods*/", value.toString());
     }
 
     @Test

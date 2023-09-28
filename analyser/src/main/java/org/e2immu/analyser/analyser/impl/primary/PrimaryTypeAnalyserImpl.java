@@ -278,8 +278,8 @@ public class PrimaryTypeAnalyserImpl implements PrimaryTypeAnalyser {
     @Override
     public void write() {
         analysers.forEach(Analyser::write);
-        if (parent.isWrite()) {
-            analysers.forEach(a -> parent.write(a.getAnalysis()));
+        if (parent.isStore()) {
+            analysers.forEach(a -> parent.store(a.getAnalysis()));
         }
     }
 

@@ -25,6 +25,7 @@ import org.e2immu.analyser.output.Symbol;
 import org.e2immu.analyser.output.ThisName;
 import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.util.UpgradableBooleanMap;
+import org.e2immu.analyser.util.UpgradableIntMap;
 import org.e2immu.annotation.NotNull;
 import org.e2immu.annotation.Nullable;
 
@@ -213,9 +214,17 @@ public class FieldReference extends VariableWithConcreteReturnType {
     @Override
     public UpgradableBooleanMap<TypeInfo> typesReferenced(boolean explicit) {
         if (scope != null && !scopeIsThis()) {
-            return UpgradableBooleanMap.of(scope.typesReferenced(), parameterizedType().typesReferenced(explicit));
+            return UpgradableBooleanMap.of(scope.typesReferenced(), parameterizedType.typesReferenced(explicit));
         }
-        return parameterizedType().typesReferenced(explicit);
+        return parameterizedType.typesReferenced(explicit);
+    }
+
+    @Override
+    public UpgradableIntMap<TypeInfo> typesReferenced2(int weight) {
+        if (scope != null && !scopeIsThis()) {
+            return UpgradableIntMap.of(scope.typesReferenced2(weight), parameterizedType.typesReferenced2(weight));
+        }
+        return parameterizedType.typesReferenced2(weight);
     }
 
     // this.x

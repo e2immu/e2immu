@@ -24,6 +24,7 @@ import org.e2immu.analyser.model.expression.LocalVariableCreation;
 import org.e2immu.analyser.output.*;
 import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.util.UpgradableBooleanMap;
+import org.e2immu.analyser.util.UpgradableIntMap;
 
 import java.util.List;
 import java.util.Objects;
@@ -113,6 +114,12 @@ public class ForEachStatement extends LoopStatement {
                 structure.initialisers().get(0).returnType().typesReferenced(true));
     }
 
+    @Override
+    public UpgradableIntMap<TypeInfo> typesReferenced2(int weight) {
+        return UpgradableIntMap.of(expression.typesReferenced2(weight),
+                structure.block().typesReferenced2(weight),
+                structure.initialisers().get(0).returnType().typesReferenced2(weight));
+    }
 
     @Override
     public OutputBuilder output(Qualification qualification, LimitedStatementAnalysis statementAnalysis) {

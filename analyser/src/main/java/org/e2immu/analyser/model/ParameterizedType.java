@@ -759,9 +759,11 @@ public class ParameterizedType {
 
     public UpgradableIntMap<TypeInfo> typesReferenced2(int weight) {
         return UpgradableIntMap.of(
-                parameters.stream().flatMap(pt -> pt.typesReferenced2(weight).stream()).collect(UpgradableIntMap.collector()),
+                parameters.stream()
+                        .flatMap(pt -> pt.typesReferenced2(weight).stream())
+                        .collect(UpgradableIntMap.collector()),
                 isType() && !typeInfo.isPrimitiveExcludingVoid()
-                        ? UpgradableIntMap.of(typeInfo, weight)
+                        ? UpgradableIntMap.of(typeInfo.primaryType(), weight)
                         : UpgradableIntMap.of());
     }
 

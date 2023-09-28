@@ -117,7 +117,7 @@ public interface AnalyserContext extends AnalysisProvider, InspectionProvider {
         return methodInfo.methodInspection.get(methodInfo.fullyQualifiedName);
     }
 
-   default   boolean isWrite() { return false; }
+   default   boolean isStore() { return false; }
 
-   default void write(Analysis analysis) { throw new UnsupportedOperationException(); }
+   default void store(Analysis analysis) { throw new UnsupportedOperationException(); }
 }

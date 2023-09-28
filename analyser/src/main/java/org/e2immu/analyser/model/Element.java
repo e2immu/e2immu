@@ -67,27 +67,33 @@ public interface Element {
         return List.copyOf(result);
     }
 
-    // types referenced (used for imports, uploading annotations, dependency tree between types)
+    // types referenced (used for imports, uploading annotations)
     // the boolean distinguishes between an explicit mention (used for import) and an implicit one.
     @NotNull
     default UpgradableBooleanMap<TypeInfo> typesReferenced() {
-        return subElements().stream().flatMap(e -> e.typesReferenced().stream()).collect(UpgradableBooleanMap.collector());
+        return subElements().stream()
+                .flatMap(e -> e.typesReferenced().stream())
+                .collect(UpgradableBooleanMap.collector());
     }
 
+    // used for the dependency tree between types
     @NotNull
     default UpgradableIntMap<TypeInfo> typesReferenced2(int weight) {
-        return subElements().stream().flatMap(e -> e.typesReferenced2(weight).stream()).collect(UpgradableIntMap.collector());
+        return subElements().stream()
+                .flatMap(e -> e.typesReferenced2(weight).stream())
+                .collect(UpgradableIntMap.collector());
     }
 
     @Deprecated
     default List<Variable> variables(boolean b) {
-        return b ? variables(DescendMode.YES): variables(DescendMode.NO);
+        return b ? variables(DescendMode.YES) : variables(DescendMode.NO);
     }
 
     default List<Variable> variables() {
         // the e2immu default is to descend, but to exclude This
         return variables(DescendMode.YES);
     }
+
     // can be made more efficient in implementations
     default Stream<Variable> variableStream() {
         return variables(DescendMode.YES).stream();

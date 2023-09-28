@@ -278,6 +278,11 @@ public class ResolverImpl implements Resolver {
                 .filter(e -> e.getKey() != typeInfo
                         && stayWithin.contains(e.getKey())
                         && !typeAndAllSubTypes.contains(e.getKey()))
+                .peek(e -> {
+                    if(e.getKey().primaryType() != e.getKey()) {
+                        throw new UnsupportedOperationException("Not a primary type! "+e.getKey());
+                    }
+                })
                 .collect(Collectors.toUnmodifiableMap(Map.Entry::getKey, Map.Entry::getValue));
 
         TypeInfo.HardCoded hardCoded = TypeInfo.HARDCODED_TYPES.get(typeInfo.fullyQualifiedName);

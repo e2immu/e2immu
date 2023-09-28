@@ -26,6 +26,7 @@ import org.e2immu.analyser.model.impl.BaseExpression;
 import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.util.UpgradableBooleanMap;
+import org.e2immu.analyser.util.UpgradableIntMap;
 
 import java.util.Objects;
 import java.util.function.Predicate;
@@ -81,6 +82,11 @@ public class TypeExpression extends BaseExpression implements Expression {
     @Override
     public UpgradableBooleanMap<TypeInfo> typesReferenced() {
         return parameterizedType.typesReferenced(true);
+    }
+
+    @Override
+    public UpgradableIntMap<TypeInfo> typesReferenced2(int weight) {
+        return parameterizedType.typesReferenced2(weight);
     }
 
     @Override

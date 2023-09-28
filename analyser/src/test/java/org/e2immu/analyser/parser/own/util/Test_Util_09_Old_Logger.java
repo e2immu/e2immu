@@ -21,7 +21,7 @@ import org.e2immu.analyser.analysis.ParameterAnalysis;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.parser.CommonTestRunner;
-import org.e2immu.analyser.parser.own.util.testexample.Logger;
+import org.e2immu.analyser.parser.own.util.testexample.OldLogger;
 import org.e2immu.analyser.visitor.MethodAnalyserVisitor;
 import org.junit.jupiter.api.Test;
 
@@ -30,9 +30,9 @@ import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-public class Test_Util_09_Logger extends CommonTestRunner {
+public class Test_Util_09_Old_Logger extends CommonTestRunner {
 
-    public Test_Util_09_Logger() {
+    public Test_Util_09_Old_Logger() {
         super(true);
     }
 
@@ -48,7 +48,7 @@ public class Test_Util_09_Logger extends CommonTestRunner {
             }
         };
 
-        testSupportAndUtilClasses(List.of(Logger.class), 0, 0, new DebugConfiguration.Builder()
+        testSupportAndUtilClasses(List.of(OldLogger.class), 0, 0, new DebugConfiguration.Builder()
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .build());
     }

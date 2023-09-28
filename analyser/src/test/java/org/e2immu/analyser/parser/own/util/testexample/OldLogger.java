@@ -27,7 +27,7 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 @Container
-public class Logger {
+public class OldLogger {
 
     public static final String ACTIVATE_THE_LOG_SYSTEM = "You must activate the log system";
 
@@ -36,6 +36,7 @@ public class Logger {
     private static Set<LogTarget> logTargets;
 
     @Container
+    @Independent
     public interface LogMethod {
         @NotModified
         void log(LogTarget logTarget, String message, Object... objects);
@@ -186,7 +187,7 @@ public class Logger {
         TYPE_ANALYSER,
     }
 
-    private Logger() {
+    private OldLogger() {
     }
 
 
@@ -212,7 +213,7 @@ public class Logger {
         for (LogTarget logTarget : logTargetSet) {
             loggerContext.getLogger(logTarget.toString()).setLevel(Level.DEBUG);
         }
-        activate(Logger::logViaLogBackClassic, logTargetSet);
+        activate(OldLogger::logViaLogBackClassic, logTargetSet);
     }
 
     private static void logViaLogBackClassic(LogTarget logTarget, String s, Object[] objects) {
