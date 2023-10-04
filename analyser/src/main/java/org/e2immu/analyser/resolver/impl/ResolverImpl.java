@@ -280,8 +280,8 @@ public class ResolverImpl implements Resolver {
                         && stayWithin.contains(e.getKey())
                         && !typeAndAllSubTypes.contains(e.getKey()))
                 .peek(e -> {
-                    if(e.getKey().primaryType() != e.getKey()) {
-                        throw new UnsupportedOperationException("Not a primary type! "+e.getKey());
+                    if (e.getKey().primaryType() != e.getKey()) {
+                        throw new UnsupportedOperationException("Not a primary type! " + e.getKey());
                     }
                 })
                 .collect(Collectors.toUnmodifiableMap(Map.Entry::getKey, Map.Entry::getValue));
@@ -1059,13 +1059,13 @@ public class ResolverImpl implements Resolver {
                 .filter(ti -> acceptSubType(inspectionProvider, ti, inSameCompilationUnit, inSamePackage));
         Stream<TypeInfo> parentStream;
         boolean isJLO = typeInfo.isJavaLangObject();
-        if (!isJLO) {
-            assert typeInspection.parentClass() != null && typeInspection.parentClass().typeInfo != null :
-                    "Type " + typeInfo + " has parentClass " + typeInspection.parentClass();
-
+        if (!isJLO && typeInspection.parentClass() != null) {
             parentStream = accessibleBySimpleNameTypeInfoStream(inspectionProvider,
                     typeInspection.parentClass().typeInfo, startingPoint, startingPointPackageName, visited);
-        } else parentStream = Stream.empty();
+        } else {
+            // NOTE as of Java 21: java.lang.Compiler has no parent class
+            parentStream = Stream.empty();
+        }
 
         Stream<TypeInfo> joint = Stream.concat(Stream.concat(mySelf, localStream), parentStream);
         for (ParameterizedType interfaceType : typeInspection.interfacesImplemented()) {

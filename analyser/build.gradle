@@ -44,7 +44,7 @@ dependencies {
     implementation 'com.github.javaparser:javaparser-core:3.25.3'
 
     // LGPL or Apache License 2.0
-    implementation 'org.ow2.asm:asm:9.4'                  // 3-clause BSD permissive license
+    implementation 'org.ow2.asm:asm:9.5'                  // 3-clause BSD permissive license
 
     // TEST
     testImplementation 'org.junit.jupiter:junit-jupiter-api:5.9.3'                    // EPL v2.0

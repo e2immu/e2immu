@@ -589,9 +589,6 @@ public final class TypeInfo implements NamedType,
         UpgradableIntMap<TypeInfo> fromParent = inspection.parentClass() == null ? UpgradableIntMap.of()
                 : inspection.parentClass().typesReferenced2(PARENT_WEIGHT);
 
-        UpgradableIntMap<TypeInfo> enclosingType = packageNameOrEnclosingType.isRight() && !isStatic() && !isInterface() ?
-                UpgradableIntMap.of(packageNameOrEnclosingType.getRight(), ENCLOSING_WEIGHT) : UpgradableIntMap.of();
-
         UpgradableIntMap<TypeInfo> fromInterfaces = inspection.interfacesImplemented().stream()
                 .flatMap(i -> i.typesReferenced2(INTERFACE_WEIGHT).stream())
                 .collect(UpgradableIntMap.collector());
@@ -605,7 +602,6 @@ public final class TypeInfo implements NamedType,
 
         return UpgradableIntMap.of(
                 fromParent,
-                enclosingType,
                 fromInterfaces,
                 inspectedAnnotations,
                 analysedAnnotations,
@@ -619,7 +615,6 @@ public final class TypeInfo implements NamedType,
 
                 // types from subTypes
                 inspection.subTypes().stream().flatMap(a -> a.typesReferenced2().stream()).collect(UpgradableIntMap.collector())
-
         );
     }
 
@@ -705,7 +700,8 @@ public final class TypeInfo implements NamedType,
     public List<FieldInfo> visibleFields(InspectionProvider inspectionProvider) {
         TypeInspection inspection = inspectionProvider.getTypeInspection(this);
         List<FieldInfo> locally = inspection.fields();
-        List<FieldInfo> fromParent = this.isJavaLangObject() ? List.of() :
+        // NOTE as of Java 21: java.lang.Compiler has no parent class
+        List<FieldInfo> fromParent = this.isJavaLangObject() || inspection.parentClass() == null ? List.of() :
                 inspection.parentClass().typeInfo.visibleFields(inspectionProvider);
         List<FieldInfo> fromInterfaces = inspection.interfacesImplemented().stream()
                 .flatMap(i -> i.typeInfo.visibleFields(inspectionProvider).stream()).toList();

@@ -101,7 +101,6 @@ public class ShallowMethodAnalyser extends MethodAnalyserImpl {
                     } else {
                         LOGGER.debug("Delaying analysis of {} in {} because {}", cmn, methodInfo.fullyQualifiedName(),
                                 analysisStatus.causesOfDelay());
-                        //   assert !analysisStatus.isDelayed();
                         combined = combined.combine(analysisStatus);
                     }
                 }
@@ -173,7 +172,6 @@ public class ShallowMethodAnalyser extends MethodAnalyserImpl {
                     () -> bestOfOverridesOrWorstValue(Property.STATIC_SIDE_EFFECTS));
             causes = c1.merge(c2).merge(c3).merge(c4).merge(c5).merge(c6);
         }
-        //assert !causes.isDelayed() : "Have delays in " + methodInfo.fullyQualifiedName + ": " + causes;
 
         CompanionMethodName pre = new CompanionMethodName(methodInfo.name, CompanionMethodName.Action.PRECONDITION, null);
         MethodInfo precondition = methodInspection.getCompanionMethods().get(pre);
@@ -321,9 +319,7 @@ public class ShallowMethodAnalyser extends MethodAnalyserImpl {
         DV inMap = methodAnalysis.getProperty(property);
         if (inMap.isDelayed()) {
             DV computed = computer.get();
-            //   if (computed.isDone()) {
             methodAnalysis.setProperty(property, computed);
-            //    }
             return computed.causesOfDelay();
         }
         return CausesOfDelay.EMPTY;
@@ -444,7 +440,8 @@ public class ShallowMethodAnalyser extends MethodAnalyserImpl {
 
     private DV computeParameterImmutable(ParameterAnalysisImpl.Builder builder) {
         DV typeImmutable = analyserContext.typeImmutable(builder.getParameterInfo().parameterizedType);
-        return typeImmutable.isDelayed() ? MultiLevel.EFFECTIVELY_IMMUTABLE_DV : typeImmutable;
+        return typeImmutable.isDelayed() && analyserContext.inAnnotatedAPIAnalysis()
+                ? MultiLevel.EFFECTIVELY_IMMUTABLE_DV : typeImmutable;
     }
 
     private DV computeParameterIndependent(ParameterAnalysisImpl.Builder builder) {
@@ -518,8 +515,10 @@ public class ShallowMethodAnalyser extends MethodAnalyserImpl {
                         Message.Label.FACTORY_METHOD_INDEPENDENT_HC));
             }
         }
-        if (!methodInfo.methodInspection.get().isPubliclyAccessible() && result.isDelayed()) {
-            return MultiLevel.DEPENDENT_DV; //
+        if (result.isDelayed()
+                && !methodInspection.isPubliclyAccessible()
+                && analyserContext.inAnnotatedAPIAnalysis()) {
+            return MultiLevel.DEPENDENT_DV;
         }
         return result;
     }

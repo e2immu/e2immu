@@ -114,7 +114,7 @@ public class ShallowTypeAnalyser extends TypeAnalyserImpl {
 
         ComputingTypeAnalyser.findAspects(typeAnalysis, typeInfo);
         LOGGER.debug("Found aspects {}",
-                typeAnalysis.aspects.stream().map(e -> e.getKey()+": "+e.getValue().fullyQualifiedName)
+                typeAnalysis.aspects.stream().map(e -> e.getKey() + ": " + e.getValue().fullyQualifiedName)
                         .collect(Collectors.joining(", ")));
         typeAnalysis.freezeApprovedPreconditionsFinalFields();
         typeAnalysis.freezeApprovedPreconditionsImmutable();
@@ -137,9 +137,16 @@ public class ShallowTypeAnalyser extends TypeAnalyserImpl {
         typeAnalysis.setHiddenContentTypes(hiddenContentTypes);
 
         ensureImmutableAndContainer();
-        analyserResultBuilder.addMessages(simpleComputeIndependent(analyserContext, typeAnalysis,
-                m -> m.methodInspection.get().isPubliclyAccessible()).stream());
+        List<Message> messages = simpleComputeIndependent(analyserContext, typeAnalysis, this::isAccessible);
+        analyserResultBuilder.addMessages(messages.stream());
         computeImmutableDeterminedByTypeParameters(typeInspection, typeAnalysis);
+    }
+
+    private boolean isAccessible(MethodInfo methodInfo) {
+        MethodInspection methodInspection = analyserContext.getMethodInspection(methodInfo);
+        return analyserContext.inAnnotatedAPIAnalysis()
+                ? methodInspection.isPubliclyAccessible(analyserContext)
+                : !methodInspection.isPrivate();
     }
 
     private void ensureImmutableAndContainer() {

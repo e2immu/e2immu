@@ -279,7 +279,12 @@ public class Test_16_Modification extends CommonTestRunner {
             if ("ErrorRegistry".equals(d.typeInfo().simpleName)) {
                 assertTrue(d.typeAnalysis().getHiddenContentTypes().isEmpty());
                 assertDv(d, MultiLevel.DEPENDENT_DV, Property.INDEPENDENT);
-
+            }
+            if ("ErrorMessage".equals(d.typeInfo().simpleName)) {
+                assertTrue(d.typeAnalysis().getHiddenContentTypes().isEmpty());
+                assertDv(d, 1, MultiLevel.CONTAINER_DV, Property.CONTAINER);
+                assertDv(d, 1, MultiLevel.MUTABLE_DV, Property.IMMUTABLE);
+                assertDv(d, MultiLevel.INDEPENDENT_DV, Property.INDEPENDENT);
             }
         };
 

@@ -245,7 +245,7 @@ public record AnnotationExpressionImpl(TypeInfo typeInfo,
 
     @Override
     public UpgradableIntMap<TypeInfo> typesReferenced2(int weight) {
-        return UpgradableIntMap.of(typeInfo, weight);
+        return UpgradableIntMap.of(typeInfo.primaryType(), weight);
     }
 
     private static final Set<String> FQN_ALWAYS_CONTRACT = Set.of(Finalizer.class.getCanonicalName(),
