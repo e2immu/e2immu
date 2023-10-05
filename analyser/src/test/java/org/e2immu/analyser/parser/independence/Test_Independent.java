@@ -79,7 +79,7 @@ public class Test_Independent extends CommonTestRunner {
                     assertDv(d, MultiLevel.EFFECTIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
                 }
                 if ("AnalyserContextImpl".equals(d.methodInfo().typeInfo.simpleName)) {
-                    assertDv(d, 2, MultiLevel.DEPENDENT_DV, Property.INDEPENDENT);
+                    assertDv(d, 1, MultiLevel.DEPENDENT_DV, Property.INDEPENDENT);
                     assertDv(d, 1, MultiLevel.MUTABLE_DV, Property.IMMUTABLE);
                 }
             }
@@ -116,8 +116,8 @@ public class Test_Independent extends CommonTestRunner {
                 assertDv(d, MultiLevel.MUTABLE_DV, Property.IMMUTABLE);
             }
             if ("AnalyserContextImpl".equals(d.typeInfo().simpleName)) {
-                assertHc(d, 1, "");
-                assertDv(d, 2, MultiLevel.EFFECTIVELY_FINAL_FIELDS_DV, Property.IMMUTABLE);
+                assertHc(d, 0, "");
+                assertDv(d, 1, MultiLevel.EFFECTIVELY_FINAL_FIELDS_DV, Property.IMMUTABLE);
             }
         };
 

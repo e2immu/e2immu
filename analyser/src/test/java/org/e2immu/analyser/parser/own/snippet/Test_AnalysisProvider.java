@@ -199,7 +199,7 @@ public class Test_AnalysisProvider extends CommonTestRunner {
                 assertEquals(expected, d.fieldAnalysis().getValue().toString());
 
                 assertDv(d, 2, MultiLevel.EFFECTIVELY_IMMUTABLE_DV, Property.EXTERNAL_IMMUTABLE);
-                assertDv(d, 2, MultiLevel.INDEPENDENT_DV, Property.INDEPENDENT);
+                assertDv(d, 1, MultiLevel.INDEPENDENT_DV, Property.INDEPENDENT);
                 assertDv(d, 4, MultiLevel.CONTAINER_DV, Property.CONTAINER);
                 assertDv(d, 0, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.EXTERNAL_NOT_NULL);
                 assertDv(d, 0, MultiLevel.NOT_IGNORE_MODS_DV, Property.EXTERNAL_IGNORE_MODIFICATIONS);

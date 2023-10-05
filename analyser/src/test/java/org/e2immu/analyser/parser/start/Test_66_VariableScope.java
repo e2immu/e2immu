@@ -608,7 +608,7 @@ public class Test_66_VariableScope extends CommonTestRunner {
                         assertDv(d, 1, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
                     }
                     if ("3".equals(d.statementId())) {
-                        assertDv(d, 2, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
+                        assertDv(d, 1, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
                         String expected = d.iteration() < 3
                                 ? "<new:OutputBuilder>"
                                 : "new OutputBuilder(new LinkedList<>())";
@@ -624,7 +624,7 @@ public class Test_66_VariableScope extends CommonTestRunner {
                 if (d.variable() instanceof FieldReference fr && "object".equals(fr.fieldInfo.name)) {
                     assertEquals("this", fr.scope.toString());
                     if ("2".equals(d.statementId())) {
-                        assertDv(d, 2, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                        assertDv(d, 1, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     }
                 }
                 if ("methodCall".equals(d.variableName())) {
@@ -633,7 +633,7 @@ public class Test_66_VariableScope extends CommonTestRunner {
                         // evaluation
                         assertFalse(d.variableInfoContainer().hasMerge());
                         assertTrue(d.variableInfoContainer().hasEvaluation());
-                        assertCurrentValue(d, 2, "object/*(MethodCall)*/");
+                        assertCurrentValue(d, 1, "object/*(MethodCall)*/");
                     }
                     assertNotEquals("2", d.statementId());
                     assertNotEquals("3", d.statementId());
@@ -644,7 +644,7 @@ public class Test_66_VariableScope extends CommonTestRunner {
                     }
                     if ("2.0.0.0.1".equals(d.statementId())) {
                         // recursive method call, parameter is not modified by default
-                        String linked = d.iteration() < 2
+                        String linked = d.iteration() == 0
                                 ? "guideGenerator:0,methodCall:-1,outputBuilder:-1,qualification:-1,this.object:-1,this:-1"
                                 : "guideGenerator:0";
                         assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
@@ -652,8 +652,8 @@ public class Test_66_VariableScope extends CommonTestRunner {
                     }
                     if ("2.0.0.0.2".equals(d.statementId())) {
                         assertLinked(d,
-                                it(0, 1, "guideGenerator:0,methodCall:-1,outputBuilder:-1,qualification:-1,this.object:-1,this:-1"),
-                                it(2, 2, "guideGenerator:0,outputBuilder:-1"),
+                                it0("guideGenerator:0,methodCall:-1,outputBuilder:-1,qualification:-1,this.object:-1,this:-1"),
+                                it(1, 2, "guideGenerator:0,outputBuilder:-1"),
                                 it(3, "guideGenerator:0,outputBuilder:4"));
                         assertDv(d, 3, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     }
@@ -664,7 +664,7 @@ public class Test_66_VariableScope extends CommonTestRunner {
                     }
                     if ("2.0.0.0.1".equals(d.statementId())) {
                         // recursive method call, parameter is not modified by default
-                        String linked = d.iteration() < 2
+                        String linked = d.iteration() == 0
                                 ? "gg:0,methodCall:-1,outputBuilder:-1,qualification:-1,this.object:-1,this:-1"
                                 : "gg:0";
                         assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
@@ -672,8 +672,8 @@ public class Test_66_VariableScope extends CommonTestRunner {
                     }
                     if ("2.0.0.0.2".equals(d.statementId())) {
                         assertLinked(d,
-                                it(0, 1, "gg:0,methodCall:-1,outputBuilder:-1,qualification:-1,this.object:-1,this:-1"),
-                                it(2, 2, "gg:0,outputBuilder:-1"),
+                                it0("gg:0,methodCall:-1,outputBuilder:-1,qualification:-1,this.object:-1,this:-1"),
+                                it(1, 2, "gg:0,outputBuilder:-1"),
                                 it(3, "gg:0,outputBuilder:4"));
                         assertDv(d, 3, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     }
@@ -727,7 +727,7 @@ public class Test_66_VariableScope extends CommonTestRunner {
                 assertDv(d, 3, DV.FALSE_DV, Property.MODIFIED_METHOD);
             }
             if ("output2".equals(d.methodInfo().name)) {
-                assertDv(d, 2, DV.FALSE_DV, Property.MODIFIED_METHOD);
+                assertDv(d, 1, DV.FALSE_DV, Property.MODIFIED_METHOD);
                 String expected = d.iteration() < 3 ? "<m:output2>"
                         : "new OutputBuilder(new LinkedList<>())";
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
@@ -771,7 +771,7 @@ public class Test_66_VariableScope extends CommonTestRunner {
                         assertEquals(expected, d.currentValue().toString());
                     }
                     if ("3".equals(d.statementId())) {
-                        assertDv(d, 2, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
+                        assertDv(d, 1, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
                         assertCurrentValue(d, 3, value);
                     }
                 }
@@ -783,7 +783,7 @@ public class Test_66_VariableScope extends CommonTestRunner {
                 if (d.variable() instanceof FieldReference fr && "object".equals(fr.fieldInfo.name)) {
                     assertEquals("this", fr.scope.toString());
                     if ("2".equals(d.statementId())) {
-                        assertDv(d, 2, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                        assertDv(d, 1, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     }
                 }
             }
@@ -791,7 +791,7 @@ public class Test_66_VariableScope extends CommonTestRunner {
 
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("output2".equals(d.methodInfo().name)) {
-                assertDv(d, 2, DV.FALSE_DV, Property.MODIFIED_METHOD);
+                assertDv(d, 1, DV.FALSE_DV, Property.MODIFIED_METHOD);
                 String expected = d.iteration() < 3 ? "<m:output2>"
                         : "new OutputBuilder(new LinkedList<>())";
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
@@ -823,9 +823,11 @@ public class Test_66_VariableScope extends CommonTestRunner {
             if ("output2".equals(d.methodInfo().name)) {
                 if ("gg".equals(d.variableName())) {
                     if ("2.0.0.0.1".equals(d.statementId())) {
-                        String expected = d.iteration() < 3
-                                ? "<c:boolean>?<vp:GuideGenerator:container@Interface_GuideGenerator>:guideGenerator"
-                                : "null==guideGenerator?GuideGenerator.defaultGuideGenerator():guideGenerator";
+                        String expected = switch (d.iteration()) {
+                            case 0 -> "<c:boolean>?GuideGenerator.defaultGuideGenerator():guideGenerator";
+                            case 1, 2 -> "<mod:OutputElement>";
+                            default -> "null==guideGenerator?GuideGenerator.defaultGuideGenerator():guideGenerator";
+                        };
                         assertEquals(expected, d.currentValue().toString());
                         assertLinked(d,
                                 it0("guideGenerator:0,methodCall:-1,outputBuilder:-1,qualification:-1,this.object:-1,this:-1"),
@@ -840,14 +842,14 @@ public class Test_66_VariableScope extends CommonTestRunner {
                 }
                 if (d.variable() instanceof ParameterInfo pi && "guideGenerator".equals(pi.name)) {
                     if ("2.0.0.0.1".equals(d.statementId())) {
-                        assertCurrentValue(d, 1, "nullable instance type GuideGenerator");
+                        assertCurrentValue(d, 3, "nullable instance type GuideGenerator");
                     }
                 }
             }
         };
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("output2".equals(d.methodInfo().name)) {
-                assertDv(d, 2, DV.FALSE_DV, Property.MODIFIED_METHOD);
+                assertDv(d, 1, DV.FALSE_DV, Property.MODIFIED_METHOD);
                 String expected = d.iteration() < 3 ? "<m:output2>"
                         : "new OutputBuilder(new LinkedList<>())";
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());

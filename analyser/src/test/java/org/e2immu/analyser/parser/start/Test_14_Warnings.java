@@ -497,7 +497,7 @@ public class Test_14_Warnings extends CommonTestRunner {
                     assertDv(d, MultiLevel.CONTAINER_DV, CONTAINER);
                     assertDv(d, DV.TRUE_DV, MODIFIED_METHOD); // default value for @Container, void method
                     assertDv(d.p(0), DV.FALSE_DV, MODIFIED_VARIABLE);
-                    assertDv(d.p(0), 1, MultiLevel.DEPENDENT_DV, INDEPENDENT); // default for modifying methods
+                    assertDv(d.p(0), MultiLevel.DEPENDENT_DV, INDEPENDENT); // default for modifying methods
                 }
 
                 if ("IsNotAContainer".equals(d.methodInfo().typeInfo.simpleName)) {

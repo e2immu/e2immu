@@ -15,6 +15,7 @@
 package org.e2immu.analyser.parser.independence.testexample;
 
 import org.e2immu.annotation.ImmutableContainer;
+import org.e2immu.annotation.Independent;
 import org.e2immu.support.SetOnce;
 
 import java.util.Map;
@@ -22,6 +23,7 @@ import java.util.Map;
 mimics code in MethodAnalyserVisitor, try to catch a bug brought by TestAnalyseTest
  */
 
+@Independent
 public interface Independent1_7 {
 
     @ImmutableContainer(after = "data,name", hc = true)

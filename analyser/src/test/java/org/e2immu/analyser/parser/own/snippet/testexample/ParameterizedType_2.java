@@ -15,6 +15,7 @@
 package org.e2immu.analyser.parser.own.snippet.testexample;
 
 import org.e2immu.annotation.ImmutableContainer;
+import org.e2immu.annotation.Independent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -102,6 +103,7 @@ public class ParameterizedType_2 {
     }
 
     @ImmutableContainer
+    @Independent
     public interface FindType {
         TypeInfo find(String fqn, String path);
     }

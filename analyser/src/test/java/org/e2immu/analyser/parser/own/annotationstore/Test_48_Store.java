@@ -155,7 +155,7 @@ public class Test_48_Store extends CommonTestRunner {
 
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("Project_0".equals(d.typeInfo().simpleName)) {
-                assertHc(d, 1, "");
+                assertHc(d, 0, "");
                 assertDv(d, 3, MultiLevel.EFFECTIVELY_FINAL_FIELDS_DV, Property.IMMUTABLE);
             }
             if ("Store_3".equals(d.typeInfo().simpleName)) {

@@ -489,9 +489,9 @@ public class Test_ParameterizedType extends CommonTestRunner {
 
         testClass("ParameterizedType_2", 2, DONT_CARE,
                 new DebugConfiguration.Builder()
-                   //     .addEvaluationResultVisitor(evaluationResultVisitor)
-                   //     .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-                   //     .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                        //     .addEvaluationResultVisitor(evaluationResultVisitor)
+                        //     .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                        //     .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                         .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                         .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
                         .addBreakDelayVisitor(breakDelayVisitor)
@@ -504,16 +504,21 @@ public class Test_ParameterizedType extends CommonTestRunner {
             if ("ParameterizedType_2".equals(d.typeInfo().simpleName)) {
                 assertDv(d, MultiLevel.EFFECTIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
             }
+            if ("ParameterizedType".equals(d.typeInfo().simpleName)) {
+                assertDv(d, 20,MultiLevel.EFFECTIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
+            }
             if ("IterativeParsing".equals(d.typeInfo().simpleName)) {
-                assertDv(d, 200, MultiLevel.MUTABLE_DV, Property.IMMUTABLE);
+                assertDv(d, 21, MultiLevel.EFFECTIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
             }
             if ("Result".equals(d.typeInfo().simpleName)) {
-                assertDv(d, 16, MultiLevel.EFFECTIVELY_IMMUTABLE_HC_DV, Property.IMMUTABLE);
+                assertDv(d, 21, MultiLevel.EFFECTIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
             }
         };
+        BreakDelayVisitor breakDelayVisitor = d -> assertEquals("------S--S-S-SF-SF-SF------", d.delaySequence());
         testClass("ParameterizedType_2", 1, DONT_CARE,
                 new DebugConfiguration.Builder()
-                        //     .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
+                        .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
+                        .addBreakDelayVisitor(breakDelayVisitor)
                         .build(),
                 new AnalyserConfiguration.Builder().setComputeFieldAnalyserAcrossAllMethods(true).build());
     }
@@ -553,7 +558,7 @@ public class Test_ParameterizedType extends CommonTestRunner {
                 if ("typeInfo".equals(d.variableName())) {
                     if ("3".equals(d.statementId())) {
                         String expected = switch (d.iteration()) {
-                            case 0 -> "<m:find>";
+                            case 0 -> "<vp:TypeInfo:container@Record_TypeInfo>";
                             case 1 -> "<vp:TypeInfo:cm@Parameter_fqn;mom@Parameter_fqn>";
                             default ->
                                     "findType.find((new StringBuilder()).toString().replaceAll(\"[/$]\",\".\"),(new StringBuilder()).toString())";

@@ -24,7 +24,7 @@ import java.util.stream.Stream;
 
 // variant on _3, mod is now on list
 @FinalFields
-@Container(absent = true)
+@Container
 public class InstanceOf_3_2 {
 
     @NotModified
@@ -32,7 +32,7 @@ public class InstanceOf_3_2 {
 
     @Nullable
     @NotModified
-    public String add(@Nullable @Modified Collection<String> collection) {
+    public String add(@Nullable @NotModified Collection<String> collection) {
         // because we execute without A API, addAll's parameter is @Nullable @Modified; the method itself is @NotModified
         if (collection instanceof List<String> list) {
             base.addAll(list);

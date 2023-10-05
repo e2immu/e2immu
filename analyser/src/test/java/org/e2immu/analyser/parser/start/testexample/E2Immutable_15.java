@@ -17,6 +17,7 @@ package org.e2immu.analyser.parser.start.testexample;
 import org.e2immu.annotation.ImmutableContainer;
 import org.e2immu.annotation.Independent;
 
+@Independent
 public interface E2Immutable_15 {
 
     @ImmutableContainer

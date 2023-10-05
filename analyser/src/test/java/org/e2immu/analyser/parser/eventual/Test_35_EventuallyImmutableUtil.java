@@ -52,16 +52,8 @@ public class Test_35_EventuallyImmutableUtil extends CommonTestRunner {
     public void test_0_1() throws IOException {
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("isSet".equals(d.methodInfo().name)) {
-                String expect = d.iteration() == 0 ? "<m:isSet>" : "/*inline isSet*/isSet$0";
-                assertEquals(expect, d.methodAnalysis().getSingleReturnValue().toString());
-                if (d.iteration() > 0) {
-                    if (d.methodAnalysis().getSingleReturnValue() instanceof InlinedMethod inlinedMethod) {
-                        assertEquals("isSet$0", inlinedMethod.expression().toString());
-                        if (inlinedMethod.expression() instanceof VariableExpression variableExpression) {
-                            assertEquals("isSet", variableExpression.variable().simpleName());
-                        } else fail();
-                    } else fail();
-                }
+                assertEquals("<return value>", d.methodAnalysis().getSingleReturnValue().toString());
+                assertEquals(0, d.iteration());
             }
             if ("isReady".equals(d.methodInfo().name)) {
                 String expect = d.iteration() == 0 ? "<m:isReady>" : "flipSwitch.isSet()";

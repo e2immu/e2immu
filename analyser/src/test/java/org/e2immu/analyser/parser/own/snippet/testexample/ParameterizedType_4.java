@@ -14,6 +14,8 @@
 
 package org.e2immu.analyser.parser.own.snippet.testexample;
 
+import org.e2immu.annotation.Independent;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -46,6 +48,7 @@ public class ParameterizedType_4 {
         }
     }
 
+    @Independent
     public interface FindType {
         TypeInfo find(String fqn, String path);
     }

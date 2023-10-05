@@ -15,6 +15,7 @@
 package org.e2immu.analyser.parser.start.testexample;
 
 import org.e2immu.annotation.ImmutableContainer;
+import org.e2immu.annotation.Independent;
 import org.e2immu.annotation.NotModified;
 import org.e2immu.annotation.NotNull;
 
@@ -24,6 +25,7 @@ import java.util.Map;
 /*
 Test to catch a @Container going from 0 to 1 error in intelliJ highlighter
  */
+@Independent // this annotation is needed because the Shallow Type Analyser processes the interface
 public interface Container_6 {
 
     String XYZ = "xyz";

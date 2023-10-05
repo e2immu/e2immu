@@ -341,7 +341,7 @@ public class Test_62_FormatterSimplified extends CommonTestRunner {
             }
         };
 
-        BreakDelayVisitor breakDelayVisitor = d -> assertEquals("------", d.delaySequence());
+        BreakDelayVisitor breakDelayVisitor = d -> assertEquals("-----", d.delaySequence());
 
         // guide becomes ENN, which is harsh, but for now we'll keep it as is
         testClass("FormatterSimplified_6", 0, 3, new DebugConfiguration.Builder()
@@ -513,7 +513,12 @@ public class Test_62_FormatterSimplified extends CommonTestRunner {
                 assertEquals(MultiLevel.EFFECTIVELY_IMMUTABLE_HC_DV, d.typeAnalysis().getProperty(Property.IMMUTABLE));
                 MethodInfo index = d.typeInfo().findUniqueMethod("index", 0);
                 MethodAnalysis indexAnalysis = d.analysisProvider().getMethodAnalysis(index);
-                assertEquals(DV.FALSE_DV, indexAnalysis.getProperty(Property.MODIFIED_METHOD));
+                DV mm = indexAnalysis.getProperty(Property.MODIFIED_METHOD);
+                if (d.iteration() == 0) {
+                    assertTrue(mm.isDelayed());
+                } else {
+                    assertEquals(DV.FALSE_DV, mm);
+                }
             }
             if ("ForwardInfo".equals(d.typeInfo().simpleName)) {
                 assertDv(d, 1, MultiLevel.EFFECTIVELY_IMMUTABLE_HC_DV, Property.IMMUTABLE);

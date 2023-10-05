@@ -201,7 +201,7 @@ public class Test_Output_02_OutputBuilder extends CommonTestRunner {
             }
         };
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
-            if ("minimal".equals(d.methodInfo().name)) {
+            if ("minimal".equals(d.methodInfo().name) && "TypeName".equals(d.methodInfo().typeInfo.simpleName)) {
                 String expected = d.iteration() <= 4 ? "<m:minimal>"
                         : "switch(required){Required.SIMPLE->simpleName;Required.FQN->fullyQualifiedName;Required.QUALIFIED_FROM_PRIMARY_TYPE->fromPrimaryTypeDownwards;}";
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());

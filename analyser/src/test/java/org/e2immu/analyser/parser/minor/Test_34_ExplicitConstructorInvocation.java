@@ -553,7 +553,7 @@ public class Test_34_ExplicitConstructorInvocation extends CommonTestRunner {
                 assertDv(d.p(0), 2, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
             }
             if ("BinaryOperator".equals(d.methodInfo().name)) {
-                assertDv(d.p(0), 5, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
+                assertDv(d.p(0), 4, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
             }
             if ("BitwiseAnd".equals(d.methodInfo().name)) {
                 assertDv(d.p(0), 2, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
@@ -613,7 +613,7 @@ public class Test_34_ExplicitConstructorInvocation extends CommonTestRunner {
             }
             if ("X3_BinaryOperator".equals(d.methodInfo().name)) {
                 String delay = switch (d.iteration()) {
-                    case 0, 1, 2 -> "cm@Parameter_identifier3;mom@Parameter_identifier3";
+                    case 0, 1 -> "cm@Parameter_identifier3;mom@Parameter_identifier3";
                     default -> "cm@Parameter_identifier3";
                 };
                 assertDv(d.p(0), delay, 3, DV.FALSE_DV, Property.MODIFIED_VARIABLE); //4

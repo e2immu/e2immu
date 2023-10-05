@@ -23,7 +23,7 @@ import java.util.Set;
 import java.util.stream.Stream;
 
 @FinalFields
-@Container(absent = true) // not a container, see "add"'s parameter; getBase is dependent
+@Container
 public class InstanceOf_3 {
 
     @NotModified
@@ -31,7 +31,7 @@ public class InstanceOf_3 {
 
     @Nullable
     @NotModified
-    public String add(@Nullable @Modified Collection<String> collection) {
+    public String add(@Nullable @NotModified Collection<String> collection) {
         // because we execute without A API, addAll's parameter is @Nullable @Modified; the method itself is @NotModified
         base.addAll(collection);
         if (collection instanceof List<String> list) {

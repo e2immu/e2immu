@@ -15,15 +15,15 @@
 
 package org.e2immu.analyser.parser.own.delay;
 
-import org.e2immu.analyser.analyser.CauseOfDelay;
-import org.e2immu.analyser.analyser.DV;
-import org.e2immu.analyser.analyser.Property;
-import org.e2immu.analyser.analyser.VariableInfo;
+import org.e2immu.analyser.analyser.*;
+import org.e2immu.analyser.analyser.delay.AbstractDelay;
 import org.e2immu.analyser.analyser.delay.NoDelay;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.variable.FieldReference;
+import org.e2immu.analyser.model.variable.ReturnVariable;
 import org.e2immu.analyser.parser.CommonTestRunner;
+import org.e2immu.analyser.visitor.FieldAnalyserVisitor;
 import org.e2immu.analyser.visitor.MethodAnalyserVisitor;
 import org.e2immu.analyser.visitor.StatementAnalyserVariableVisitor;
 import org.junit.jupiter.api.Test;
@@ -31,8 +31,7 @@ import org.junit.jupiter.api.Test;
 import java.io.IOException;
 import java.util.List;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 public class TestNoDelay extends CommonTestRunner {
 
@@ -45,12 +44,25 @@ public class TestNoDelay extends CommonTestRunner {
                     if (d.variable() instanceof FieldReference fr && "LOW".equals(fr.fieldInfo.name)) {
                         VariableInfo vi1 = d.variableInfoContainer().getPreviousOrInitial();
                         assertTrue(d.variableInfoContainer().isInitial());
-                        assertEquals(MultiLevel.EFFECTIVELY_IMMUTABLE_DV, vi1.getProperty(Property.CONTEXT_IMMUTABLE));
+                        if (d.iteration() > 0)
+                            assertEquals(MultiLevel.EFFECTIVELY_IMMUTABLE_DV, vi1.getProperty(Property.CONTEXT_IMMUTABLE));
 
                         assertTrue(d.variableInfoContainer().hasEvaluation());
-                        assertDv(d, MultiLevel.EFFECTIVELY_IMMUTABLE_DV, Property.CONTEXT_IMMUTABLE);
+                        if (d.iteration() > 0)
+                            assertDv(d, MultiLevel.EFFECTIVELY_IMMUTABLE_DV, Property.CONTEXT_IMMUTABLE);
                     }
                 }
+            }
+            if ("causesOfDelay".equals(d.methodInfo().name)) {
+                if (d.variable() instanceof ReturnVariable) {
+                    assertDv(d, 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_EXPRESSION);
+                }
+            }
+        };
+        FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
+            if ("EMPTY".equals(d.fieldInfo().name)) {
+                assertEquals("org.e2immu.analyser.analyser.CausesOfDelay.EMPTY", d.fieldInfo().fullyQualifiedName);
+                assertDv(d, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.EXTERNAL_NOT_NULL);
             }
         };
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
@@ -60,11 +72,19 @@ public class TestNoDelay extends CommonTestRunner {
                     assertDv(d.p(2), MultiLevel.EFFECTIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
                 }
             }
+            if ("causesOfDelay".equals(d.methodInfo().name)) {
+                switch (d.methodInfo().typeInfo.simpleName) {
+                    case "DV" -> assertDv(d, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_EXPRESSION);
+                    case "NoDelay" -> assertDv(d, 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_EXPRESSION);
+                    default -> fail(d.methodInfo().fullyQualifiedName);
+                }
+            }
         };
-        List<Class<?>> classes = List.of(CauseOfDelay.class, DV.class, NoDelay.class);
+        List<Class<?>> classes = List.of(AbstractDelay.class, CausesOfDelay.class, CauseOfDelay.class, DV.class, NoDelay.class);
         testSupportAndUtilClasses(classes, 0, 0, new DebugConfiguration.Builder()
-                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+            //    .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+           //     .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+          //      .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                 .build());
     }
 

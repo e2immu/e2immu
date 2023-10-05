@@ -57,12 +57,13 @@ public class Test_25_FieldReference extends CommonTestRunner {
                     assertTrue(d.statementId().startsWith("0.0"), "Seen in " + d.statementId());
                 }
                 if (d.variable() instanceof FieldReference fr && "changeData".equals(fr.fieldInfo.name)) {
-                    assertCurrentValue(d, 2, "nullable instance type Map<String,ChangeData>");
                     if ("0.0.0".equals(d.statementId())) {
                         assertDv(d, MultiLevel.NOT_CONTAINER_DV, Property.CONTEXT_CONTAINER);
+                        assertCurrentValue(d, 1, "nullable instance type Map<String,ChangeData>");
                     }
                     if ("0".equals(d.statementId())) {
-                        assertDv(d, 1, MultiLevel.NOT_CONTAINER_DV, Property.CONTEXT_CONTAINER);
+                        assertDv(d, 2, MultiLevel.NOT_CONTAINER_DV, Property.CONTEXT_CONTAINER);
+                        assertCurrentValue(d, 2, "nullable instance type Map<String,ChangeData>");
                     }
                 }
             }
@@ -80,7 +81,7 @@ public class Test_25_FieldReference extends CommonTestRunner {
                 // returns an immutable map. but we don't. HOWEVER, because there are no Annotated APIs, there is no info
                 // about hidden content, and therefore the algorithm says the factory method is immutable
                 assertDv(d, MultiLevel.MUTABLE_DV, Property.EXTERNAL_IMMUTABLE);
-                assertDv(d, 1, MultiLevel.NOT_CONTAINER_DV, Property.CONTAINER_RESTRICTION);
+                assertDv(d, 2, MultiLevel.NOT_CONTAINER_DV, Property.CONTAINER_RESTRICTION);
                 assertDv(d, 2, DV.FALSE_DV, Property.MODIFIED_OUTSIDE_METHOD);
             }
         };
@@ -107,7 +108,7 @@ public class Test_25_FieldReference extends CommonTestRunner {
             }
             if ("FieldReference_1".equals(d.typeInfo().simpleName)) {
                 assertDv(d, MultiLevel.CONTAINER_DV, Property.CONTAINER);
-                assertHc(d, 1, "");
+                assertHc(d, 0, "");
             }
         };
         // potential null pointer exceptions

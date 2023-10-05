@@ -77,10 +77,6 @@ public class ShallowMethodAnalyser extends MethodAnalyserImpl {
 
     @Override
     public AnalyserResult analyse(SharedState sharedState) {
-        return internalAnalyse(sharedState);
-    }
-
-    private AnalyserResult internalAnalyse(SharedState sharedState) {
         LOGGER.debug("Shallow method analyser {}", methodInfo.fullyQualifiedName);
         try {
             AnalysisStatus combined = AnalysisStatus.DONE;

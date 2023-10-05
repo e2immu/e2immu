@@ -14,15 +14,8 @@
 
 package org.e2immu.analyser.parser.start.testexample;
 
-import org.e2immu.annotation.ImmutableContainer;
-import org.e2immu.annotation.Independent;
+public interface E2Immutable_15_2 {
 
-@ImmutableContainer
-@Independent
-public interface E2Immutable_15_1 {
-
-    @ImmutableContainer
-    @Independent
     interface Suffix {
     }
 
@@ -36,11 +29,15 @@ public interface E2Immutable_15_1 {
     /*
     situation 8
      */
-    record VariableDefinedOutsideLoop(E2Immutable_15_1 previousVariableNature,
-                                      String statementIndex) implements E2Immutable_15_1 {
+    record VariableDefinedOutsideLoop(E2Immutable_15_2 previousVariableNature,
+                                      String statementIndex) implements E2Immutable_15_2 {
         @Override
         public Suffix suffix() {
             return new Suffix() {
+                @Override
+                public String toString() {
+                    return previousVariableNature.toString();
+                }
             };
         }
     }
