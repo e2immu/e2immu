@@ -53,7 +53,7 @@ public interface ParameterAnalysis extends Analysis {
         // some absolutely trivial cases
         boolean varArgs = parameterInfo.parameterInspection.get().isVarArgs();
         DV propertyFromType = ImplicitProperties.fromType(parameterInfo.parameterizedType, property, varArgs);
-        if (propertyFromType != DV.MIN_INT_DV) return propertyFromType;
+        if (!propertyFromType.isInitialDelay()) return propertyFromType;
 
         switch (property) {
             case CONTAINER_RESTRICTION:

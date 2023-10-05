@@ -15,6 +15,7 @@
 package org.e2immu.analyser.analysis;
 
 import org.e2immu.analyser.analyser.*;
+import org.e2immu.analyser.analyser.delay.DelayFactory;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.util.CommutableData;
 import org.e2immu.analyser.util.ParSeq;
@@ -133,7 +134,7 @@ public interface MethodAnalysis extends Analysis {
         Set<MethodAnalysis> overrides = getOverrides(analysisProvider, true);
         return overrides.stream()
                 .map(ma -> ma.getPropertyFromMapDelayWhenAbsent(property))
-                .reduce(DV.MIN_INT_DV, DV::max);
+                .reduce(DelayFactory.initialDelay(), DV::max);
     }
 
     default boolean eventualIsSet() {

@@ -15,6 +15,7 @@
 package org.e2immu.analyser.analyser.impl.aggregating;
 
 import org.e2immu.analyser.analyser.*;
+import org.e2immu.analyser.analyser.delay.DelayFactory;
 import org.e2immu.analyser.analyser.impl.MethodAnalyserImpl;
 import org.e2immu.analyser.analyser.statementanalyser.StatementAnalyserImpl;
 import org.e2immu.analyser.analyser.util.AnalyserComponents;
@@ -66,10 +67,10 @@ public class AggregatingMethodAnalyser extends MethodAnalyserImpl {
         methodAnalysis.ensureIsNotEventualUnlessOtherwiseAnnotated();
 
         AnalyserComponents.Builder<String, Integer> builder = new AnalyserComponents.Builder<String, Integer>()
-                .add(MODIFIED, iteration -> this.aggregate(Property.MODIFIED_METHOD, DV::max, DV.MIN_INT_DV))
+                .add(MODIFIED, iteration -> this.aggregate(Property.MODIFIED_METHOD, DV::max, DelayFactory.initialDelay()))
                 .add(IMMUTABLE, iteration -> this.aggregate(Property.IMMUTABLE, DV::min, DV.MAX_INT_DV))
                 .add(INDEPENDENT, iteration -> this.aggregate(Property.INDEPENDENT, DV::min, DV.MAX_INT_DV))
-                .add(FLUENT, iteration -> this.aggregate(Property.FLUENT, DV::max, DV.MIN_INT_DV))
+                .add(FLUENT, iteration -> this.aggregate(Property.FLUENT, DV::max, DelayFactory.initialDelay()))
                 .add(SSE, iteration -> this.aggregate(Property.STATIC_SIDE_EFFECTS, DV::max, Property.STATIC_SIDE_EFFECTS.falseDv))
                 .add(IDENTITY, iteration -> this.aggregate(Property.IDENTITY, DV::min, DV.MAX_INT_DV))
                 .add(IGNORE_MODS, iteration -> this.aggregate(Property.IGNORE_MODIFICATIONS, DV::min, DV.MAX_INT_DV))

@@ -31,10 +31,6 @@ Delay-able Value
 public interface DV extends Comparable<DV> {
 
     DV MAX_INT_DV = new NoDelay(Integer.MAX_VALUE, "max_int");
-
-    // special value; see explanation at max()
-    DV MIN_INT_DV = DelayFactory.createDelay(Location.NOT_YET_SET, CauseOfDelay.Cause.MIN_INT);
-
     DV FALSE_DV = new NoDelay(0, "false");
     DV TRUE_DV = new NoDelay(1, "true");
 
@@ -50,6 +46,8 @@ public interface DV extends Comparable<DV> {
     boolean isDelayed();
 
     boolean isDone();
+
+    boolean isInitialDelay();
 
     @NotNull
     DV min(DV other);

@@ -420,7 +420,7 @@ public class ComputingFieldAnalyser extends FieldAnalyserImpl implements FieldAn
         if (fieldAnalysis.valuesStatus().isDelayed()) {
             return delayContainer(fieldAnalysis.valuesStatus(), "waiting for values", formal, allowBreak);
         }
-        DV safeMinimum = DV.MIN_INT_DV; // so we know if a safe minimum was reached
+        DV safeMinimum = DelayFactory.initialDelay(); // so we know if a safe minimum was reached
         boolean otherValues = false;
         for (ValueAndPropertyProxy proxy : fieldAnalysis.getValues()) {
             DV safeDv = safeContainer(proxy);
@@ -430,7 +430,7 @@ public class ComputingFieldAnalyser extends FieldAnalyserImpl implements FieldAn
                 otherValues = true;
             }
         }
-        if (safeMinimum.isDelayed() && safeMinimum != DV.MIN_INT_DV) {
+        if (safeMinimum.isDelayed() && !safeMinimum.isInitialDelay()) {
             return delayContainer(safeMinimum.causesOfDelay(), "waiting for container on values", formal, allowBreak);
         }
         if (safeMinimum.equals(MultiLevel.CONTAINER_DV) || safeMinimum.equals(MultiLevel.NOT_CONTAINER_DV) && !otherValues) {
@@ -1239,7 +1239,8 @@ public class ComputingFieldAnalyser extends FieldAnalyserImpl implements FieldAn
             return valuesStatus; //DELAY EXIT POINT
         }
         List<ValueAndPropertyProxy> values = fieldAnalysis.getValues();
-        DV res = values.stream().map(proxy -> proxy.getProperty(IGNORE_MODIFICATIONS)).reduce(DV.MIN_INT_DV, DV::max);
+        DV res = values.stream().map(proxy -> proxy.getProperty(IGNORE_MODIFICATIONS))
+                .reduce(DelayFactory.initialDelay(), DV::max);
         DV finalValue = res.equals(MultiLevel.IGNORE_MODS_DV) ? res : MultiLevel.NOT_IGNORE_MODS_DV;
         fieldAnalysis.setProperty(EXTERNAL_IGNORE_MODIFICATIONS, finalValue);
         LOGGER.debug("Set @IgnoreModifications to {} for field {}", finalValue, fqn);

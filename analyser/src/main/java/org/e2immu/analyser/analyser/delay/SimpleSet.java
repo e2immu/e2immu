@@ -148,4 +148,9 @@ class SimpleSet extends AbstractDelay {
     public CausesOfDelay translate(InspectionProvider inspectionProvider, TranslationMap translationMap) {
         return DelayFactory.createDelay(causesStream().map(c -> c.translate(inspectionProvider, translationMap)).collect(Collectors.toUnmodifiableSet()));
     }
+
+    @Override
+    public boolean isInitialDelay() {
+        return false;
+    }
 }

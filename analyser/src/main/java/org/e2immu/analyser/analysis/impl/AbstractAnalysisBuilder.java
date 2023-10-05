@@ -202,7 +202,7 @@ abstract class AbstractAnalysisBuilder implements Analysis {
         Messages messages = new Messages();
         DV notNull = null;
         boolean container = false;
-        DV independent = DV.MIN_INT_DV;
+        DV independent = DelayFactory.initialDelay();
         DV linkLevel = null;
         int[] linkHcParameters = null;
 
@@ -331,7 +331,7 @@ abstract class AbstractAnalysisBuilder implements Analysis {
                 }
             }
         }
-        if (independent != DV.MIN_INT_DV) {
+        if (!independent.isInitialDelay()) {
             setProperty(Property.INDEPENDENT, independent);
         }
         if (container) {

@@ -1674,7 +1674,8 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
                     countAssignments++;
                     StatementAnalysis sa = navigateTo(assignmentIndex);
                     assert sa != null;
-                    if (!sa.flowData().getGuaranteedToBeReachedInCurrentBlock().equals(FlowDataConstants.ALWAYS)) return false;
+                    if (!sa.flowData().getGuaranteedToBeReachedInCurrentBlock().equals(FlowDataConstants.ALWAYS))
+                        return false;
                     if (current.isRead()) {
                         if (current.getReadId().compareTo(current.getAssignmentIds().getLatestAssignment()) < 0) {
                             return false;
@@ -2203,7 +2204,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
                 .map(vi -> {
                     if (vi.variable() instanceof FieldReference fieldReference) {
                         if (vi.getValue().isInstanceOf(NullConstant.class)) {
-                            return new Pair<>(vi, DV.MIN_INT_DV);
+                            return new Pair<>(vi, DelayFactory.initialDelay());
                         }
                         VariableExpression ve = new VariableExpression(vi.getIdentifier(), fieldReference);
                         DV notNull = evaluationContext.getProperty(ve, NOT_NULL_EXPRESSION, false,
@@ -2212,7 +2213,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
                     }
                     return null;
                 })
-                .filter(e -> e != null && (e.v == DV.MIN_INT_DV || e.v.ge(MultiLevel.EFFECTIVELY_NOT_NULL_DV)))
+                .filter(e -> e != null && (e.v.isInitialDelay() || e.v.ge(MultiLevel.EFFECTIVELY_NOT_NULL_DV)))
                 .map(e -> {
                     VariableExpression ve = new VariableExpression(e.k.getIdentifier(), e.k.variable());
                     Expression equals = Equals.equals(context, ve, NullConstant.NULL_CONSTANT);

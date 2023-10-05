@@ -78,8 +78,8 @@ public abstract class AbstractDelay implements CausesOfDelay {
 
     @Override
     public DV min(DV other) {
-        if (this == MIN_INT_DV) return other;
-        if (other == MIN_INT_DV) return this;
+        if (this.isInitialDelay()) return other;
+        if (other.isInitialDelay()) return this;
         if (other.isDelayed()) {
             return merge(other.causesOfDelay());
         }
@@ -89,8 +89,8 @@ public abstract class AbstractDelay implements CausesOfDelay {
 
     @Override
     public DV minIgnoreNotInvolved(DV other) {
-        if (this == MIN_INT_DV) return other;
-        if (other == MIN_INT_DV) return this;
+        if (this.isInitialDelay()) return other;
+        if (other.isInitialDelay()) return this;
         if (other.isDelayed()) {
             return merge(other.causesOfDelay());
         }
@@ -100,8 +100,8 @@ public abstract class AbstractDelay implements CausesOfDelay {
 
     @Override
     public DV max(DV other) {
-        if (this == MIN_INT_DV) return other;
-        if (other == MIN_INT_DV) return this;
+        if (this.isInitialDelay()) return other;
+        if (other.isInitialDelay()) return this;
         if (other.isDelayed()) {
             return merge(other.causesOfDelay());
         }

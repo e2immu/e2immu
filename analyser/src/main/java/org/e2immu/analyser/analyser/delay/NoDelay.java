@@ -48,8 +48,8 @@ public class NoDelay implements DV {
 
     @Override
     public DV min(DV other) {
-        if (this == MIN_INT_DV) return other;
-        if (other == MIN_INT_DV) return this;
+        if (this.isInitialDelay()) return other;
+        if (other.isInitialDelay()) return this;
         if (other.value() > value) return this;
         // if other is a delay, its value is less than ours!
         return other;
@@ -57,8 +57,8 @@ public class NoDelay implements DV {
 
     @Override
     public DV minIgnoreNotInvolved(DV other) {
-        if (this == MIN_INT_DV) return other;
-        if (other == MIN_INT_DV) return this;
+        if (this.isInitialDelay()) return other;
+        if (other.isInitialDelay()) return this;
 
         // make sure that FALSE wins from NOT_INVOLVED
         if (other.value() == 0 && value > 0) {
@@ -81,8 +81,8 @@ public class NoDelay implements DV {
 
     @Override
     public DV max(DV other) {
-        if (this == MIN_INT_DV) return other;
-        if (other == MIN_INT_DV) return this;
+        if (this.isInitialDelay()) return other;
+        if (other.isInitialDelay()) return this;
         if (other.value() >= value || other.isDelayed()) return other;
         return this;
     }
@@ -131,5 +131,10 @@ public class NoDelay implements DV {
     @Override
     public int hashCode() {
         return Objects.hash(value);
+    }
+
+    @Override
+    public boolean isInitialDelay() {
+        return false;
     }
 }

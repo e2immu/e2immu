@@ -15,6 +15,7 @@
 package org.e2immu.analyser.parser.minor;
 
 import org.e2immu.analyser.analyser.*;
+import org.e2immu.analyser.analyser.delay.DelayFactory;
 import org.e2immu.analyser.config.AnalyserConfiguration;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.model.MultiLevel;
@@ -1203,7 +1204,7 @@ public class Test_51_InstanceOf extends CommonTestRunner {
                     assertEquals(6L, d.statementAnalysis().propertiesFromSubAnalysers().count());
                     DV reduced = d.statementAnalysis().propertiesFromSubAnalysers()
                             .map(e -> e.getValue().get(Property.CONTEXT_MODIFIED))
-                            .reduce(DV.MIN_INT_DV, DV::max);
+                            .reduce(DelayFactory.initialDelay(), DV::max);
                     assertEquals(d.iteration() <= 2, reduced.isDelayed());
                 }
             }

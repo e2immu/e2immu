@@ -15,6 +15,7 @@
 package org.e2immu.analyser.analyser.impl.shallow;
 
 import org.e2immu.analyser.analyser.*;
+import org.e2immu.analyser.analyser.delay.DelayFactory;
 import org.e2immu.analyser.analyser.impl.MethodAnalyserImpl;
 import org.e2immu.analyser.analyser.impl.util.BreakDelayLevel;
 import org.e2immu.analyser.analyser.nonanalyserimpl.LocalAnalyserContext;
@@ -360,7 +361,8 @@ public class ShallowMethodAnalyser extends MethodAnalyserImpl {
 
         // check formal return type
         TypeAnalysis typeAnalysis = analyserContext.getTypeAnalysisNullWhenAbsent(bestType);
-        DV fromReturnType = typeAnalysis == null ? DV.MIN_INT_DV : typeAnalysis.getPropertyFromMapNeverDelay(Property.CONTAINER);
+        DV fromReturnType = typeAnalysis == null ? DelayFactory.initialDelay()
+                : typeAnalysis.getPropertyFromMapNeverDelay(Property.CONTAINER);
         DV bestOfOverrides = bestOfOverrides(Property.CONTAINER);
         DV formal = MultiLevel.NOT_CONTAINER_DV.maxIgnoreDelay(bestOfOverrides.maxIgnoreDelay(fromReturnType));
         if (MultiLevel.CONTAINER_DV.equals(formal)) return MultiLevel.CONTAINER_DV;
@@ -464,7 +466,7 @@ public class ShallowMethodAnalyser extends MethodAnalyserImpl {
             }
         }
         DV override = bestOfParameterOverrides(builder.getParameterInfo(), Property.INDEPENDENT);
-        if (override == DV.MIN_INT_DV) return value;
+        if (override.isInitialDelay()) return value;
         return override.maxIgnoreDelay(value);
     }
 
@@ -569,10 +571,10 @@ public class ShallowMethodAnalyser extends MethodAnalyserImpl {
     }
 
     private DV bestOfOverrides(Property property) {
-        DV bestOfOverrides = DV.MIN_INT_DV;
+        DV bestOfOverrides = DelayFactory.initialDelay();
         for (MethodAnalysis override : methodAnalysis.getOverrides(analyserContext, false)) {
             DV overrideAsIs = override.getPropertyFromMapDelayWhenAbsent(property);
-            if (bestOfOverrides == DV.MIN_INT_DV) {
+            if (bestOfOverrides.isInitialDelay()) {
                 bestOfOverrides = overrideAsIs;
             } else {
                 bestOfOverrides = bestOfOverrides.maxIgnoreDelay(overrideAsIs);
@@ -595,7 +597,7 @@ public class ShallowMethodAnalyser extends MethodAnalyserImpl {
                 })
                 .filter(Objects::nonNull)
                 .map(pa -> pa.getProperty(property))
-                .reduce(DV.MIN_INT_DV, DV::max);
+                .reduce(DelayFactory.initialDelay(), DV::max);
     }
 
     @Override

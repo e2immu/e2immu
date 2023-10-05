@@ -14,15 +14,23 @@
 
 package org.e2immu.analyser.analyser.delay;
 
+import org.e2immu.analyser.analyser.AnalysisStatus;
 import org.e2immu.analyser.analyser.CauseOfDelay;
 import org.e2immu.analyser.analyser.CausesOfDelay;
+import org.e2immu.analyser.analyser.DV;
 import org.e2immu.analyser.model.InfoObject;
 import org.e2immu.analyser.model.Location;
+import org.e2immu.analyser.model.TranslationMap;
+import org.e2immu.analyser.model.variable.Variable;
+import org.e2immu.analyser.parser.InspectionProvider;
 
 import java.util.HashMap;
 import java.util.Set;
+import java.util.stream.Stream;
 
 public class DelayFactory {
+
+    private static final InitialDelay INITIAL_DELAY = new InitialDelay();
 
     public static CausesOfDelay createDelay(CauseOfDelay cause) {
         return new SingleDelay(cause);
@@ -43,5 +51,49 @@ public class DelayFactory {
 
     public static CausesOfDelay createDelay(InfoObject infoObject, CauseOfDelay.Cause cause) {
         return new SingleDelay(new SimpleCause(infoObject.newLocation(), cause));
+    }
+
+    public static CausesOfDelay initialDelay() {
+        return INITIAL_DELAY;
+    }
+
+    private static final CauseOfDelay INITIAL_CAUSE = new SimpleCause(Location.NOT_YET_SET, CauseOfDelay.Cause.MIN_INT);
+
+    private static class InitialDelay extends AbstractDelay {
+
+        @Override
+        public int numberOfDelays() {
+            return 1;
+        }
+
+        @Override
+        public boolean contains(Variable variable) {
+            return false;
+        }
+
+        @Override
+        public CausesOfDelay merge(CausesOfDelay other) {
+            return other;
+        }
+
+        @Override
+        public Stream<CauseOfDelay> causesStream() {
+            return Stream.of(INITIAL_CAUSE);
+        }
+
+        @Override
+        public CausesOfDelay removeAll(Set<CauseOfDelay> breaks) {
+            return this;
+        }
+
+        @Override
+        public CausesOfDelay translate(InspectionProvider inspectionProvider, TranslationMap translationMap) {
+            return this;
+        }
+
+        @Override
+        public boolean isInitialDelay() {
+            return true;
+        }
     }
 }

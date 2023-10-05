@@ -336,11 +336,11 @@ public record MergeHelper(EvaluationContext evaluationContext,
 
         // no clue, but try to do something with @NotNull
         DV worstNotNull = reduced.stream().map(cav -> cav.variableInfo().getProperty(NOT_NULL_EXPRESSION))
-                .reduce(DV.MIN_INT_DV, DV::min);
+                .reduce(DelayFactory.initialDelay(), DV::min);
         DV worstNotNullIncludingCurrent = atLeastOneBlockExecuted ? worstNotNull :
                 worstNotNull.min(evaluationContext.getProperty(currentValue, NOT_NULL_EXPRESSION, false, true));
         ParameterizedType pt = variable.parameterizedType();
-        DV nne = worstNotNullIncludingCurrent == DV.MIN_INT_DV ? MultiLevel.NULLABLE_DV : worstNotNullIncludingCurrent;
+        DV nne = worstNotNullIncludingCurrent.isInitialDelay() ? MultiLevel.NULLABLE_DV : worstNotNullIncludingCurrent;
         Properties valueProperties = evaluationContext.getAnalyserContext().defaultValueProperties(pt, nne);
         return addValueProperties(noConclusion(valueProperties));
     }
@@ -527,7 +527,7 @@ public record MergeHelper(EvaluationContext evaluationContext,
             if (conditionsMetForBreakingInitialisationDelay(ifTrue)) {
                 return valuePropertiesWrapToBreakFieldInitDelay(ifFalse);
             }
-            if(ifTrue.variable() instanceof ParameterInfo && !condition.isDelayed()) {
+            if (ifTrue.variable() instanceof ParameterInfo && !condition.isDelayed()) {
                 return valueProperties(ifTrue);
             }
         }
@@ -535,7 +535,7 @@ public record MergeHelper(EvaluationContext evaluationContext,
             if (conditionsMetForBreakingInitialisationDelay(ifFalse)) {
                 return valuePropertiesWrapToBreakFieldInitDelay(ifTrue);
             }
-            if(ifFalse.variable() instanceof ParameterInfo && !condition.isDelayed()) {
+            if (ifFalse.variable() instanceof ParameterInfo && !condition.isDelayed()) {
                 return valueProperties(ifFalse);
             }
         }

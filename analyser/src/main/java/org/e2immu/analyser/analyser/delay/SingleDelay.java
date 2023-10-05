@@ -64,7 +64,7 @@ public class SingleDelay extends AbstractDelay {
 
     @Override
     public CausesOfDelay merge(CausesOfDelay other) {
-        if (other.isDone()) return this;
+        if (other.isDone() || other.isInitialDelay()) return this;
         if (maxPriority() < other.maxPriority()) {
             //LOGGER.debug("Dropping {} in favour of {}", this, other);
             return other;
@@ -109,7 +109,12 @@ public class SingleDelay extends AbstractDelay {
     @Override
     public CausesOfDelay translate(InspectionProvider inspectionProvider, TranslationMap translationMap) {
         CauseOfDelay translated = cause.translate(inspectionProvider, translationMap);
-        if(translated != cause) return new SingleDelay(translated);
+        if (translated != cause) return new SingleDelay(translated);
         return this;
+    }
+
+    @Override
+    public boolean isInitialDelay() {
+        return false;
     }
 }

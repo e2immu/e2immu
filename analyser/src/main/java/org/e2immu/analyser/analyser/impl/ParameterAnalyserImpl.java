@@ -20,6 +20,7 @@ import org.e2immu.analyser.analyser.ParameterAnalyser;
 import org.e2immu.analyser.analyser.Property;
 import org.e2immu.analyser.analyser.check.CheckIndependent;
 import org.e2immu.analyser.analyser.check.CheckNotNull;
+import org.e2immu.analyser.analyser.delay.DelayFactory;
 import org.e2immu.analyser.analysis.Analysis;
 import org.e2immu.analyser.analysis.ParameterAnalysis;
 import org.e2immu.analyser.analysis.impl.ParameterAnalysisImpl;
@@ -135,7 +136,7 @@ public abstract class ParameterAnalyserImpl extends AbstractAnalyser implements 
                 .filter(pi -> !filter || !(property == INDEPENDENT || property == IMMUTABLE) || !pi.parameterizedType.isUnboundTypeParameter())
                 .map(pi -> analyserContext.getParameterAnalysis(pi).getParameterProperty(analyserContext,
                         pi, property))
-                .reduce(DV.MIN_INT_DV, DV::max);
+                .reduce(DelayFactory.initialDelay(), DV::max);
     }
 
     private void check(AnnotationExpression annotationKey) {

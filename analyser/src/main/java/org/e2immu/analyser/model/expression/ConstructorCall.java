@@ -15,6 +15,7 @@
 package org.e2immu.analyser.model.expression;
 
 import org.e2immu.analyser.analyser.*;
+import org.e2immu.analyser.analyser.delay.DelayFactory;
 import org.e2immu.analyser.analyser.impl.context.EvaluationResultImpl;
 import org.e2immu.analyser.analysis.FieldAnalysis;
 import org.e2immu.analyser.analysis.MethodAnalysis;
@@ -580,7 +581,7 @@ public class ConstructorCall extends BaseExpression implements HasParameterExpre
                 List<FieldInfo> fields = constructor.typeInfo.typeInspection.get().fields();
                 DV fieldsFinal = fields.stream()
                         .map(fieldInfo -> context.getAnalyserContext().getFieldAnalysis(fieldInfo).getProperty(Property.FINAL))
-                        .reduce(DV.MIN_INT_DV, DV::min);
+                        .reduce(DelayFactory.initialDelay(), DV::min);
                 if (fieldsFinal.isDelayed()) {
                     // we must be in iteration 0, and the type has not been analysed yet...
                     String delayName = constructor.typeInfo.simpleName;

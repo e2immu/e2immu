@@ -124,7 +124,7 @@ public class LinkedVariables implements Comparable<LinkedVariables>, Iterable<Ma
 
         HashMap<Variable, DV> map = new HashMap<>(variables);
         other.variables.forEach((v, i) -> {
-            DV newValue = minimum == DV.MIN_INT_DV ? i : i.max(minimum);
+            DV newValue = minimum .isInitialDelay() ? i : i.max(minimum);
             DV inMap = map.get(v);
             if (inMap == null) {
                 map.put(v, newValue);
@@ -139,7 +139,7 @@ public class LinkedVariables implements Comparable<LinkedVariables>, Iterable<Ma
     }
 
     public LinkedVariables merge(LinkedVariables other) {
-        return merge(other, DV.MIN_INT_DV); // no effect
+        return merge(other, DelayFactory.initialDelay()); // no effect
     }
 
     public boolean isEmpty() {

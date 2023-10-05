@@ -16,6 +16,7 @@ package org.e2immu.analyser.analyser.impl.computing;
 
 import org.e2immu.analyser.analyser.Properties;
 import org.e2immu.analyser.analyser.*;
+import org.e2immu.analyser.analyser.delay.DelayFactory;
 import org.e2immu.analyser.analyser.impl.context.EvaluationResultImpl;
 import org.e2immu.analyser.analyser.impl.MethodAnalyserImpl;
 import org.e2immu.analyser.analyser.impl.shallow.CompanionAnalyser;
@@ -1008,8 +1009,8 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
         if (contextModified.valueIsFalse()) {
             DV maxModified = methodLevelData.copyModificationStatusFromKeyStream()
                     .map(mi -> mi.methodAnalysis.get().getProperty(Property.MODIFIED_METHOD))
-                    .reduce(DV.MIN_INT_DV, DV::max);
-            if (maxModified != DV.MIN_INT_DV) {
+                    .reduce(DelayFactory.initialDelay(), DV::max);
+            if (!maxModified.isInitialDelay()) {
                 if (maxModified.isDelayed()) {
                     if (sharedState.breakDelayLevel.acceptMethodOverride()) {
                         methodAnalysis.setProperty(MODIFIED_METHOD, MODIFIED_METHOD.falseDv);

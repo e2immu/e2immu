@@ -341,7 +341,7 @@ public class ComputeLinkedVariables {
                     } else {
                         return property.falseDv;
                     }
-                }).reduce(DV.MIN_INT_DV, DV::max);
+                }).reduce(DelayFactory.initialDelay(), DV::max);
                 if (best.equals(property.bestDv)) {
                     summary = best;
                     clusterComplain = false;
@@ -750,8 +750,8 @@ public class ComputeLinkedVariables {
                 DV inPropertyMap = potentiallyBreakContextModifiedDelay(variable, propertyMap.get(variable));
                 Map<Variable, DV> map = weightedGraph.links(variable, LinkedVariables.LINK_IS_HC_OF, true);
 
-                DV max = map.values().stream().reduce(DV.MIN_INT_DV, DV::max);
-                CausesOfDelay clusterDelay = max == DV.MIN_INT_DV ? CausesOfDelay.EMPTY : max.causesOfDelay();
+                DV max = map.values().stream().reduce(DelayFactory.initialDelay(), DV::max);
+                CausesOfDelay clusterDelay = max.isInitialDelay() ? CausesOfDelay.EMPTY : max.causesOfDelay();
                 CausesOfDelay notYetSet = this.linkingNotYetSet.contains(variable) ? LinkedVariables.NOT_YET_SET_DELAY
                         : CausesOfDelay.EMPTY;
                 CausesOfDelay delays = clusterDelay.merge(extraDelayIn).merge(notYetSet);

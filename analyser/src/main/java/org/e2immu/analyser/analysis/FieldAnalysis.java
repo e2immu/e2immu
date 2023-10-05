@@ -59,7 +59,7 @@ public interface FieldAnalysis extends Analysis {
                                 TypeInfo bestType,
                                 Property property) {
         DV propertyFromType = ImplicitProperties.fromType(fieldInfo.type, property, false);
-        if (propertyFromType != DV.MIN_INT_DV) return propertyFromType;
+        if (!propertyFromType.isInitialDelay()) return propertyFromType;
 
         switch (property) {
             case IMMUTABLE:

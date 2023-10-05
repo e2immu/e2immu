@@ -14,6 +14,7 @@
 
 package org.e2immu.analyser.analyser;
 
+import org.e2immu.analyser.analyser.delay.DelayFactory;
 import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.ParameterizedType;
 
@@ -23,7 +24,7 @@ public class ImplicitProperties {
         return switch (property) {
             case IMMUTABLE -> MultiLevel.EFFECTIVELY_FINAL_FIELDS_DV;
             case CONTAINER -> MultiLevel.CONTAINER_DV;
-            default -> DV.MIN_INT_DV;
+            default -> DelayFactory.initialDelay();
         };
     }
 
@@ -33,8 +34,9 @@ public class ImplicitProperties {
             case IMMUTABLE -> MultiLevel.EFFECTIVELY_IMMUTABLE_DV;
             case CONTAINER -> MultiLevel.CONTAINER_DV;
             case INDEPENDENT -> MultiLevel.INDEPENDENT_DV;
-            case NOT_NULL_EXPRESSION, NOT_NULL_PARAMETER -> MultiLevel.EFFECTIVELY_NOT_NULL_DV; // NOT: EXTERNAL_NOT_NULL!
-            default -> DV.MIN_INT_DV;
+            case NOT_NULL_EXPRESSION, NOT_NULL_PARAMETER ->
+                    MultiLevel.EFFECTIVELY_NOT_NULL_DV; // NOT: EXTERNAL_NOT_NULL!
+            default -> DelayFactory.initialDelay();
         };
     }
 
@@ -46,11 +48,11 @@ public class ImplicitProperties {
         // non-recursion
         if (parameterizedType.arrays > 0) {
             DV arrayPropertyValue = arrayProperties(property);
-            if (arrayPropertyValue != DV.MIN_INT_DV) return arrayPropertyValue;
+            if (!arrayPropertyValue.isInitialDelay()) return arrayPropertyValue;
         }
         if (parameterizedType.isPrimitiveExcludingVoid()) {
             return primitiveProperties(property);
         }
-        return DV.MIN_INT_DV;
+        return DelayFactory.initialDelay();
     }
 }

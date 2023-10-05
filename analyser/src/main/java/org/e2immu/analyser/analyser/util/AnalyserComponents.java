@@ -17,6 +17,7 @@ package org.e2immu.analyser.analyser.util;
 import org.e2immu.analyser.analyser.AnalysisStatus;
 import org.e2immu.analyser.analyser.CauseOfDelay;
 import org.e2immu.analyser.analyser.CausesOfDelay;
+import org.e2immu.analyser.analyser.delay.DelayFactory;
 import org.e2immu.analyser.log.LogTarget;
 import org.e2immu.analyser.model.InfoObject;
 import org.e2immu.analyser.util.Pair;
@@ -185,7 +186,7 @@ public class AnalyserComponents<T, S> {
                 } else {
                     // we're skipping analysers which are delayed, so we can't have a DONE...
                     if (combined.isDone()) {
-                        combined = AnalysisStatus.of(CausesOfDelay.MIN_INT_DV);
+                        combined = AnalysisStatus.of(DelayFactory.initialDelay());
                     }
                 }
             }

@@ -88,13 +88,13 @@ public interface CausesOfDelay extends DV, AnalysisStatus {
 
         @Override
         public DV min(DV other) {
-            if (other == MIN_INT_DV) return this;
+            if (other.isInitialDelay()) return this;
             return other;
         }
 
         @Override
         public DV max(DV other) {
-            if (other == MIN_INT_DV) return this;
+            if (other .isInitialDelay()) return this;
             return other;
         }
 
@@ -110,7 +110,7 @@ public interface CausesOfDelay extends DV, AnalysisStatus {
 
         @Override
         public DV minIgnoreNotInvolved(DV other) {
-            if (other == MIN_INT_DV) return this;
+            if (other .isInitialDelay()) return this;
             return other;
         }
 
@@ -122,6 +122,11 @@ public interface CausesOfDelay extends DV, AnalysisStatus {
         @Override
         public CausesOfDelay translate(InspectionProvider inspectionProvider, TranslationMap translationMap) {
             return this;
+        }
+
+        @Override
+        public boolean isInitialDelay() {
+            return false;
         }
     };
 }
