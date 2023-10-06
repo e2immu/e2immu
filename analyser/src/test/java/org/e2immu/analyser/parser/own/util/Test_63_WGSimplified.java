@@ -265,7 +265,9 @@ public class Test_63_WGSimplified extends CommonTestRunner {
                 }
             }
         };
-        testClass("WGSimplified_3", 0, 0, new DebugConfiguration.Builder()
+
+        // unused variables, potential null pointer exceptions
+        testClass("WGSimplified_3", 2, 4, new DebugConfiguration.Builder()
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .build(), new AnalyserConfiguration.Builder().setComputeFieldAnalyserAcrossAllMethods(true).build());
     }

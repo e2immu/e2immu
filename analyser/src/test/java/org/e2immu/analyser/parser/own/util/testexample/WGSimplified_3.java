@@ -104,7 +104,7 @@ public class WGSimplified_3 {
         return result;
     }
 
-    @Modified
+    //@Modified
     private void recursivelyComputeLinks(@NotNull Variable v,
                                          @NotNull Map<Variable, DV> distanceToStartingPoint,
                                          DV maxValueIncl,

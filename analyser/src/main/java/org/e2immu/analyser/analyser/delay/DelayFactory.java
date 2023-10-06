@@ -14,10 +14,8 @@
 
 package org.e2immu.analyser.analyser.delay;
 
-import org.e2immu.analyser.analyser.AnalysisStatus;
 import org.e2immu.analyser.analyser.CauseOfDelay;
 import org.e2immu.analyser.analyser.CausesOfDelay;
-import org.e2immu.analyser.analyser.DV;
 import org.e2immu.analyser.model.InfoObject;
 import org.e2immu.analyser.model.Location;
 import org.e2immu.analyser.model.TranslationMap;

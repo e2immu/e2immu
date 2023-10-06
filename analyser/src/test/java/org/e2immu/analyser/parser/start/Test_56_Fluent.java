@@ -217,11 +217,11 @@ public class Test_56_Fluent extends CommonTestRunner {
 
 
         testClass(List.of("a.IFluent_0", "Fluent_0"), 0, 1, new DebugConfiguration.Builder()
-            //    .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-            //    .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
-            //    .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
-            //    .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
-            //    .addBreakDelayVisitor(breakDelayVisitor)
+                //    .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                //    .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                //    .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
+                //    .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+                //    .addBreakDelayVisitor(breakDelayVisitor)
                 .build(), new AnalyserConfiguration.Builder().build(), new AnnotatedAPIConfiguration.Builder().build());
     }
 
@@ -239,7 +239,7 @@ public class Test_56_Fluent extends CommonTestRunner {
             }
             if ("identity".equals(d.methodInfo().name)) {
                 assertEquals(DV.FALSE_DV, d.methodAnalysis().getProperty(Property.MODIFIED_METHOD));
-                assertDv(d, 16, DV.TRUE_DV, Property.IDENTITY);
+                assertDv(d, DV.TRUE_DV, Property.IDENTITY);
             }
             if ("value".equals(d.methodInfo().name) && "Fluent_1".equals(d.methodInfo().typeInfo.simpleName)) {
                 assertEquals(DV.FALSE_DV, d.methodAnalysis().getProperty(Property.MODIFIED_METHOD));
@@ -271,7 +271,7 @@ public class Test_56_Fluent extends CommonTestRunner {
                 }
                 if ("2".equals(d.statementId())) {
                     // STEP 2 parameter 'instance'
-                    assertEquals(d.iteration() >= 7, d.statementAnalysis().methodLevelData().linksHaveBeenEstablished());
+                    assertEquals(d.iteration() >= 5, d.statementAnalysis().methodLevelData().linksHaveBeenEstablished());
                 }
             }
         };
@@ -285,7 +285,7 @@ public class Test_56_Fluent extends CommonTestRunner {
                         assertTrue(d.variableInfo().getLinkedVariables().isEmpty());
                     }
                     if ("2".equals(d.statementId())) {
-                        assertDv(d, 7, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                        assertDv(d, 5, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     }
                 }
             }
@@ -298,7 +298,7 @@ public class Test_56_Fluent extends CommonTestRunner {
                 assertTrue(d.typeAnalysis().getHiddenContentTypes().isEmpty());
 
                 assertTrue(d.typeInfo().typeResolution.get().hasOneKnownGeneratedImplementation());
-                assertDv(d, 1, MultiLevel.EFFECTIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
+                assertDv(d, MultiLevel.MUTABLE_DV, Property.IMMUTABLE);
             }
             if ("Fluent_1".equals(d.typeInfo().simpleName)) {
                 assertDv(d, 1, MultiLevel.EFFECTIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
@@ -308,15 +308,15 @@ public class Test_56_Fluent extends CommonTestRunner {
             }
         };
 
-        BreakDelayVisitor breakDelayVisitor = d -> assertEquals("-----S---S--S---SFM-SFM-", d.delaySequence());
+        BreakDelayVisitor breakDelayVisitor = d -> assertEquals("-----S---S--S---SFM-SFM--SFMT--", d.delaySequence());
 
         TypeContext typeContext = testClass(List.of("a.IFluent_1", "Fluent_1"),
                 List.of("jmods/java.compiler.jmod"),
                 0, 1, new DebugConfiguration.Builder()
-                 //       .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
-                 //       .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
-                 //       .addStatementAnalyserVisitor(statementAnalyserVisitor)
-                 //       .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                        .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                        .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
+                        .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                        .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                         .addBreakDelayVisitor(breakDelayVisitor)
                         .build(), new AnalyserConfiguration.Builder().build(),
                 new AnnotatedAPIConfiguration.Builder().build());
@@ -336,7 +336,7 @@ public class Test_56_Fluent extends CommonTestRunner {
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("IFluent_2".equals(d.typeInfo().simpleName)) {
                 assertTrue(d.typeInfo().typeResolution.get().hasOneKnownGeneratedImplementation());
-                assertSame(Analysis.AnalysisMode.AGGREGATED, d.typeAnalysis().analysisMode());
+                assertSame(Analysis.AnalysisMode.CONTRACTED, d.typeAnalysis().analysisMode());
             }
         };
 

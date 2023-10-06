@@ -174,8 +174,8 @@ public class Test_04_Assert extends CommonTestRunner {
                 if ("SimpleSet".equals(d.methodInfo().typeInfo.simpleName)) {
                     assertDv(d, DV.FALSE_DV, Property.MODIFIED_METHOD);
                     assertDv(d, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_EXPRESSION);
-                    assertDv(d, 3, MultiLevel.EFFECTIVELY_IMMUTABLE_HC_DV, Property.IMMUTABLE);
-                    assertDv(d, 3, MultiLevel.INDEPENDENT_DV, Property.INDEPENDENT);
+                    assertDv(d, MultiLevel.EFFECTIVELY_IMMUTABLE_HC_DV, Property.IMMUTABLE);
+                    assertDv(d, 1, MultiLevel.INDEPENDENT_DV, Property.INDEPENDENT);
                     assertDv(d, MultiLevel.CONTAINER_DV, Property.CONTAINER);
                 }
                 if ("AnalysisStatus".equals(d.methodInfo().typeInfo.simpleName)) {
@@ -221,7 +221,7 @@ public class Test_04_Assert extends CommonTestRunner {
                 assertDv(d, DV.TRUE_DV, Property.FLUENT);
                 assertDv(d, DV.FALSE_DV, Property.MODIFIED_METHOD);
                 // returns self, so independent
-                assertDv(d, 3, MultiLevel.INDEPENDENT_DV, Property.INDEPENDENT);
+                assertDv(d, 1, MultiLevel.INDEPENDENT_DV, Property.INDEPENDENT);
             }
         };
 

@@ -16,12 +16,10 @@ package org.e2immu.analyser.parser.start.testexample.a;
 
 import org.e2immu.analyser.parser.start.testexample.Fluent_2;
 import org.e2immu.annotation.ImmutableContainer;
+import org.e2immu.annotation.Independent;
 import org.e2immu.annotation.NotModified;
-/*
-variant on IFluent_1, going through the normal analysers rather
-than the shallow analysers, because there is code.
- */
-@ImmutableContainer // will be computed, and verified!!
+
+@Independent
 public interface IFluent_2 {
     @NotModified //will be computed, and verified!!
     int value();

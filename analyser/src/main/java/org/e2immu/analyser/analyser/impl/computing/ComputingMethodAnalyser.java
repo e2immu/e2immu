@@ -826,7 +826,9 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
         VariableInfo variableInfo = getReturnAsVariable();
 
         DV dynamic = variableInfo.getProperty(IMMUTABLE);
-    //    DV dynamicExt = variableInfo.getProperty(EXTERNAL_IMMUTABLE);
+        // NOTE: we ignore variableInfo.getProperty(EXTERNAL_IMMUTABLE); this causes unnecessary delays and is
+        // conceptually unnecessary
+
         // important! there is no such thing as a context immutable property on the return variable
         // we must take it from a variable
         DV dynamicCtx;

@@ -18,10 +18,13 @@ import org.e2immu.analyser.config.AnalyserConfiguration;
 import org.e2immu.analyser.config.AnnotatedAPIConfiguration;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.parser.CommonTestRunner;
+import org.e2immu.analyser.visitor.BreakDelayVisitor;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.util.List;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class Test_56_Fluent_AAPI extends CommonTestRunner {
     public Test_56_Fluent_AAPI() {
@@ -30,7 +33,9 @@ public class Test_56_Fluent_AAPI extends CommonTestRunner {
 
     @Test
     public void test_0() throws IOException {
+        BreakDelayVisitor breakDelayVisitor = d -> assertEquals("-----S---S--S---SFM-SFM--SFMT--", d.delaySequence());
         testClass(List.of("a.IFluent_0", "Fluent_0"), 0, 1, new DebugConfiguration.Builder()
+                        .addBreakDelayVisitor(breakDelayVisitor)
                         .build(), new AnalyserConfiguration.Builder().build(),
                 new AnnotatedAPIConfiguration.Builder()
                         .addAnnotatedAPISourceDirs(DEFAULT_ANNOTATED_API_DIRS)

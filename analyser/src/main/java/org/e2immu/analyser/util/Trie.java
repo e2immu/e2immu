@@ -22,7 +22,7 @@ import java.util.*;
 import java.util.function.BiConsumer;
 
 /*
-to make this class @E2Container, we have to secure the get() methods
+to make this class @ImmutableContainer, we have to secure the get() methods
 and the visitor by exposing copied lists, rather than the ones belonging to the fields.
  */
 @FinalFields(after = "frozen")
