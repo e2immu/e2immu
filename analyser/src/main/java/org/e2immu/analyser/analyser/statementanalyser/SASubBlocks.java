@@ -21,6 +21,7 @@ import org.e2immu.analyser.analyser.util.AnalyserResult;
 import org.e2immu.analyser.analyser.util.ConditionManagerImpl;
 import org.e2immu.analyser.analysis.StateData;
 import org.e2immu.analyser.analysis.StatementAnalysis;
+import org.e2immu.analyser.analysis.impl.MergeVariables;
 import org.e2immu.analyser.analysis.impl.StatementAnalysisImpl;
 import org.e2immu.analyser.analysis.range.Range;
 import org.e2immu.analyser.model.*;
@@ -375,12 +376,13 @@ record SASubBlocks(StatementAnalysis statementAnalysis, StatementAnalyser statem
             }
         }
         boolean keepCurrentLocalConditionManager = true;
+        MergeVariables mergeVariables = new MergeVariables(statementAnalysis);
 
         if (blocksExecuted > 0) {
             boolean atLeastOneBlockExecuted = atLeastOneBlockExecuted(executions);
 
             // note that isEscapeAlwaysExecuted cannot be delayed (otherwise, it wasn't ALWAYS?)
-            List<StatementAnalysisImpl.ConditionAndLastStatement> lastStatements;
+            List<MergeVariables.ConditionAndLastStatement> lastStatements;
             int maxTime;
             if (statement() instanceof SwitchStatementOldStyle switchStatementOldStyle) {
                 lastStatements = composeLastStatements(sharedState.context(), switchStatementOldStyle, executions.get(0).startOfBlock);
@@ -392,7 +394,7 @@ record SASubBlocks(StatementAnalysis statementAnalysis, StatementAnalyser statem
                         .map(ex -> {
                             StatementAnalyser lastStatement = ex.startOfBlock.lastStatement();
                             StatementAnalysis lastAnalysis = lastStatement.getStatementAnalysis();
-                            return new StatementAnalysisImpl.ConditionAndLastStatement(ex.condition,
+                            return new MergeVariables.ConditionAndLastStatement(ex.condition,
                                     ex.absoluteState,
                                     ex.startOfBlock.index(),
                                     lastStatement,
@@ -407,7 +409,7 @@ record SASubBlocks(StatementAnalysis statementAnalysis, StatementAnalyser statem
                  */
                 int increment = atLeastOneBlockExecuted ? 0 : 1;
                 maxTime = lastStatements.stream()
-                        .map(StatementAnalysisImpl.ConditionAndLastStatement::lastStatement)
+                        .map(MergeVariables.ConditionAndLastStatement::lastStatement)
                         .mapToInt(sa -> sa.getStatementAnalysis().flowData().getTimeAfterSubBlocks())
                         .max().orElse(statementAnalysis.flowData().getTimeAfterEvaluation()) + increment;
             }
@@ -425,7 +427,7 @@ record SASubBlocks(StatementAnalysis statementAnalysis, StatementAnalyser statem
             Map<Variable, DV> setCnnVariables = addToContextNotNullAfterStatement(sharedState.context(), executions);
 
             // need timeAfterSubBlocks set already
-            StatementAnalysisImpl.MergeResult result = ((StatementAnalysisImpl) statementAnalysis).mergeVariablesFromSubBlocks(evaluationContext,
+            MergeVariables.MergeResult result = mergeVariables.mergeVariablesFromSubBlocks(evaluationContext,
                     sharedState.localConditionManager().state(), addToStateAfterStatement, lastStatements, atLeastOneBlockExecuted,
                     maxTimeWithEscape, setCnnVariables);
             analysisStatus = analysisStatus.combine(result.analysisStatus());
@@ -434,7 +436,7 @@ record SASubBlocks(StatementAnalysis statementAnalysis, StatementAnalyser statem
 
             Expression translatedAddToState = result.translatedAddToStateAfterMerge();
             if (!translatedAddToState.isBoolValueTrue()) {
-                // FIXME: the statement below is very likely wrong
+                // check: is the following statement correct?
                 Set<Variable> stateVariables = translatedAddToState.variableStream().collect(Collectors.toUnmodifiableSet());
                 ConditionManager newLocalConditionManager = sharedState.localConditionManager()
                         .newForNextStatementDoNotChangePrecondition(sharedState.context(), translatedAddToState,
@@ -448,7 +450,7 @@ record SASubBlocks(StatementAnalysis statementAnalysis, StatementAnalyser statem
             if (statementAnalysis.flowData().timeAfterSubBlocksNotYetSet()) {
                 statementAnalysis.flowData().setTimeAfterSubBlocks(maxTime, index());
             }
-            StatementAnalysisImpl.MergeResult result = ((StatementAnalysisImpl) statementAnalysis)
+            MergeVariables.MergeResult result = mergeVariables
                     .mergeVariablesFromSubBlocks(evaluationContext, sharedState.localConditionManager().state(),
                             null, List.of(), false, maxTime, Map.of());
             analysisStatus = analysisStatus.combine(result.analysisStatus());
@@ -481,7 +483,7 @@ record SASubBlocks(StatementAnalysis statementAnalysis, StatementAnalyser statem
     This method does the splitting in different groups of statements.
      */
 
-    private List<StatementAnalysisImpl.ConditionAndLastStatement> composeLastStatements(
+    private List<MergeVariables.ConditionAndLastStatement> composeLastStatements(
             EvaluationResult evaluationContext,
             SwitchStatementOldStyle switchStatementOldStyle,
             StatementAnalyser startOfBlock) {
@@ -493,7 +495,7 @@ record SASubBlocks(StatementAnalysis statementAnalysis, StatementAnalyser statem
 
             // TODO not verified
             boolean alwaysEscapesOrReturns = statementAnalysis.isReturnOrEscapeAlwaysExecutedInCurrentBlock(false).valueIsTrue();
-            return new StatementAnalysisImpl.ConditionAndLastStatement(e.getValue(),
+            return new MergeVariables.ConditionAndLastStatement(e.getValue(),
                     e.getValue(), // TODO not verified (absolute state == condition)
                     e.getKey(), lastStatement,
                     lastStatement.getStatementAnalysis().flowData().getGuaranteedToBeReachedInCurrentBlock(),

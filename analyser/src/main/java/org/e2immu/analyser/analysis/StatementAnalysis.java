@@ -114,6 +114,9 @@ public interface StatementAnalysis extends Analysis,
     @NotNull(content = true)
     Stream<Map.Entry<String, VariableInfoContainer>> variableEntryStream(Stage level);
 
+    @NotNull(content = true)
+    Stream<VariableInfoContainer> variableInfoContainerStream();
+
     Expression notNullValuesAsExpression(EvaluationContext evaluationContext);
 
     @NotNull
