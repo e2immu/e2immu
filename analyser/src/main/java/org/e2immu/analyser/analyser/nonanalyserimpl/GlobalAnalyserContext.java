@@ -61,6 +61,8 @@ public class GlobalAnalyserContext implements AnalyserContext {
 
     private final FlipSwitch setEndOfAnnotatedAPIAnalysis = new FlipSwitch();
 
+    private final List<String> onDemandHistory = new ArrayList<>();
+
     public GlobalAnalyserContext(TypeContext typeContext,
                                  Configuration configuration,
                                  ImportantClasses importantClasses,
@@ -533,6 +535,8 @@ public class GlobalAnalyserContext implements AnalyserContext {
         if (onDemandMode.isSet()) {
             synchronized (methodAnalyses) {
                 LOGGER.debug("On-demand shallow method analysis of {}", methodInfo);
+                onDemandHistory.add(methodInfo.fullyQualifiedName);
+
                 TypeAnalysis ownerTypeAnalysis = getTypeAnalysis(methodInfo.typeInfo);
                 MethodInspection methodInspection = getMethodInspection(methodInfo);
                 List<ParameterAnalysis> parameterAnalyses = methodInspection.getParameters().stream()
@@ -592,6 +596,8 @@ public class GlobalAnalyserContext implements AnalyserContext {
         if (onDemandMode.isSet()) {
             synchronized (typeAnalyses) {
                 LOGGER.debug("On-demand shallow type analysis of {}", typeInfo);
+                onDemandHistory.add(typeInfo.fullyQualifiedName);
+
                 ShallowTypeAnalyser shallowTypeAnalyser = new ShallowTypeAnalyser(typeInfo, typeInfo.primaryType(),
                         this);
                 shallowTypeAnalyser.analyse(new Analyser.SharedState(0, BreakDelayLevel.NONE, null));
@@ -612,6 +618,8 @@ public class GlobalAnalyserContext implements AnalyserContext {
         if (onDemandMode.isSet()) {
             synchronized (fieldAnalyses) {
                 LOGGER.debug("On-demand shallow field analysis of {}", fieldInfo);
+                onDemandHistory.add(fieldInfo.fullyQualifiedName);
+
                 TypeAnalysis ownerTypeAnalysis = getTypeAnalysis(fieldInfo.owner);
                 ShallowFieldAnalyser shallowFieldAnalyser = new ShallowFieldAnalyser(fieldInfo,
                         fieldInfo.owner.primaryType(), ownerTypeAnalysis, this);
@@ -637,26 +645,31 @@ public class GlobalAnalyserContext implements AnalyserContext {
 
     @Override
     public void store(Analysis analysis) {
-        if (analysis instanceof TypeAnalysis typeAnalysis) {
-            typeAnalyses.put(typeAnalysis.getTypeInfo(), typeAnalysis);
-        } else if (analysis instanceof MethodAnalysis methodAnalysis) {
-            methodAnalyses.put(methodAnalysis.getMethodInfo(), methodAnalysis);
-        } else if (analysis instanceof FieldAnalysis fieldAnalysis) {
-            fieldAnalyses.put(fieldAnalysis.getFieldInfo(), fieldAnalysis);
-        } else if (!(analysis instanceof ParameterAnalysis)) {
-            throw new UnsupportedOperationException();
+        try {
+            if (analysis instanceof TypeAnalysis typeAnalysis) {
+                typeAnalyses.put(typeAnalysis.getTypeInfo(), typeAnalysis);
+            } else if (analysis instanceof MethodAnalysis methodAnalysis) {
+                methodAnalyses.put(methodAnalysis.getMethodInfo(), methodAnalysis);
+            } else if (analysis instanceof FieldAnalysis fieldAnalysis) {
+                fieldAnalyses.put(fieldAnalysis.getFieldInfo(), fieldAnalysis);
+            } else if (!(analysis instanceof ParameterAnalysis)) {
+                throw new UnsupportedOperationException();
+            }
+        } catch (IllegalStateException ise) {
+            LOGGER.error("On-demand history:\n{}", String.join("\n", onDemandHistory));
+            throw ise;
         }
     }
 
     public void writeAll() {
         typeAnalyses.stream().forEach(e -> {
-            if(!e.getKey().typeAnalysis.isSet()) e.getKey().setAnalysis(e.getValue());
+            if (!e.getKey().typeAnalysis.isSet()) e.getKey().setAnalysis(e.getValue());
         });
         methodAnalyses.stream().forEach(e -> {
-            if(!e.getKey().methodAnalysis.isSet()) e.getKey().setAnalysis(e.getValue());
+            if (!e.getKey().methodAnalysis.isSet()) e.getKey().setAnalysis(e.getValue());
         });
         fieldAnalyses.stream().forEach(e -> {
-            if(!e.getKey().fieldAnalysis.isSet()) e.getKey().setAnalysis(e.getValue());
+            if (!e.getKey().fieldAnalysis.isSet()) e.getKey().setAnalysis(e.getValue());
         });
     }
 

@@ -18,11 +18,13 @@ import org.e2immu.analyser.analyser.delay.AbstractDelay;
 import org.e2immu.analyser.model.TranslationMap;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.parser.InspectionProvider;
+import org.e2immu.annotation.ImmutableContainer;
 import org.e2immu.annotation.NotNull;
 
 import java.util.Set;
 import java.util.stream.Stream;
 
+@ImmutableContainer
 public interface CausesOfDelay extends DV, AnalysisStatus {
 
     boolean contains(Variable variable);
@@ -63,6 +65,7 @@ public interface CausesOfDelay extends DV, AnalysisStatus {
 
         @Override
         public CausesOfDelay merge(CausesOfDelay other) {
+            assert other != null;
             return other;
         }
 
@@ -94,7 +97,7 @@ public interface CausesOfDelay extends DV, AnalysisStatus {
 
         @Override
         public DV max(DV other) {
-            if (other .isInitialDelay()) return this;
+            if (other.isInitialDelay()) return this;
             return other;
         }
 
@@ -110,7 +113,7 @@ public interface CausesOfDelay extends DV, AnalysisStatus {
 
         @Override
         public DV minIgnoreNotInvolved(DV other) {
-            if (other .isInitialDelay()) return this;
+            if (other.isInitialDelay()) return this;
             return other;
         }
 

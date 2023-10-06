@@ -18,6 +18,10 @@ import org.e2immu.analyser.analyser.AnalysisStatus;
 import org.e2immu.analyser.analyser.CausesOfDelay;
 
 public record NotDelayed(int pos, String name) implements AnalysisStatus {
+    public NotDelayed {
+        assert name != null;
+    }
+
     @Override
     public boolean isDelayed() {
         return false;

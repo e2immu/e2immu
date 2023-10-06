@@ -66,10 +66,10 @@ public class ComputeHiddenContentTypes {
         }
         /* and now choose the algorithm:
 
-        - when shallow or interface, go over the types of the publicly accessible methods.
+        - when shallow and not abstract, go over the types of the publicly accessible methods = STOPGAP measure
         - otherwise, go over the types of the fields.
          */
-        if (currentType.isInterface() || typeInfo.shallowAnalysis()) {
+        if (typeInfo.shallowAnalysis() && !typeInspection.isInterface()) {
             for (MethodInfo methodInfo : typeInspection.methods()) {
                 MethodInspection methodInspection = analyserContext.getMethodInspection(methodInfo);
                 if (methodInspection.isPubliclyAccessible()) {
@@ -82,9 +82,7 @@ public class ComputeHiddenContentTypes {
             }
         } else {
             for (FieldInfo fieldInfo : typeInspection.fields()) {
-                if (fieldInfo.type.typeInfo != currentType) {
-                    addType(fieldInfo.type, currentType);
-                } // fields of my own type can be ignored, but what to do with downstream types?
+                addType(fieldInfo.type, currentType);
             }
         }
     }
@@ -92,7 +90,8 @@ public class ComputeHiddenContentTypes {
     private void addType(ParameterizedType typeWithArray, TypeInfo currentType) {
         ParameterizedType type = typeWithArray.copyWithoutArrays();
         TypeInfo bestType = type.bestTypeInfo();
-        if (bestType == null) return; // do not add type parameters! the relevant ones have been added already
+        if (bestType == null || bestType == currentType)
+            return; // do not add type parameters! the relevant ones have been added already
 
         DV immutable = analyserContext.typeImmutable(type);
         if (MultiLevel.isAtLeastEventuallyRecursivelyImmutable(immutable)) {

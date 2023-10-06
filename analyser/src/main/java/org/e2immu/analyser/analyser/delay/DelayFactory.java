@@ -73,6 +73,7 @@ public class DelayFactory {
 
         @Override
         public CausesOfDelay merge(CausesOfDelay other) {
+            assert other != null;
             return other;
         }
 

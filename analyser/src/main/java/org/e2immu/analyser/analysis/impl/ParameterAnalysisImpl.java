@@ -15,6 +15,7 @@
 package org.e2immu.analyser.analysis.impl;
 
 import org.e2immu.analyser.analyser.*;
+import org.e2immu.analyser.analyser.delay.DelayFactory;
 import org.e2immu.analyser.analysis.Analysis;
 import org.e2immu.analyser.analysis.ParameterAnalysis;
 import org.e2immu.analyser.model.*;
@@ -104,6 +105,7 @@ public class ParameterAnalysisImpl extends AnalysisImpl implements ParameterAnal
             this.parameterInfo = parameterInfo;
             this.location = parameterInfo.newLocation();
             this.analysisProvider = analysisProvider;
+            causesOfAssignedToFieldDelays.setVariable(DelayFactory.initialDelay());
         }
 
         public void setMethodAnalysis(MethodAnalysisImpl.Builder methodAnalysis) {

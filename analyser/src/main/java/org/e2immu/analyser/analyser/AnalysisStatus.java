@@ -15,9 +15,12 @@
 package org.e2immu.analyser.analyser;
 
 import org.e2immu.analyser.analyser.delay.NotDelayed;
+import org.e2immu.annotation.ImmutableContainer;
+import org.e2immu.annotation.NotNull;
 
 import java.util.function.Function;
 
+@ImmutableContainer
 public interface AnalysisStatus {
     int LIMIT = 10;
 
@@ -37,6 +40,7 @@ public interface AnalysisStatus {
 
     boolean isDone();
 
+    @NotNull
     CausesOfDelay causesOfDelay();
 
     AnalysisStatus addProgress(boolean progress);

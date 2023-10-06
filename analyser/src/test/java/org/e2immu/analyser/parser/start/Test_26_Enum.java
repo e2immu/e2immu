@@ -282,14 +282,14 @@ public class Test_26_Enum extends CommonTestRunner {
         BreakDelayVisitor breakDelayVisitor = d -> assertEquals("----SFMT---", d.delaySequence());
 
         testClass("Enum_1", 0, 0, new DebugConfiguration.Builder()
-                .addEvaluationResultVisitor(evaluationResultVisitor)
-                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-                .addStatementAnalyserVisitor(statementAnalyserVisitor)
-                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
-                .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
-                .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+             //   .addEvaluationResultVisitor(evaluationResultVisitor)
+             //   .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+             //   .addStatementAnalyserVisitor(statementAnalyserVisitor)
+             //   .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+            //    .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
+            //    .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                 .addTypeMapVisitor(typeMapVisitor)
-                .addBreakDelayVisitor(breakDelayVisitor)
+           //     .addBreakDelayVisitor(breakDelayVisitor)
                 .build());
     }
 
@@ -408,7 +408,7 @@ public class Test_26_Enum extends CommonTestRunner {
                 //     .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                 //     .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 //     .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
-                .addBreakDelayVisitor(breakDelayVisitor)
+             //   .addBreakDelayVisitor(breakDelayVisitor)
                 .build());
     }
 

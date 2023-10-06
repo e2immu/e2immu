@@ -15,11 +15,11 @@
 
 package org.e2immu.analyser.parser.own.util;
 
-import org.e2immu.analyser.analyser.DV;
-import org.e2immu.analyser.analyser.Property;
-import org.e2immu.analyser.analyser.delay.FlowDataConstants;
+import org.e2immu.analyser.analyser.*;
+import org.e2immu.analyser.analyser.delay.*;
 import org.e2immu.analyser.analyser.util.WeightedGraph;
 import org.e2immu.analyser.config.DebugConfiguration;
+import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.parser.CommonTestRunner;
 import org.e2immu.analyser.visitor.MethodAnalyserVisitor;
 import org.e2immu.analyser.visitor.StatementAnalyserVisitor;
@@ -66,7 +66,14 @@ public class Test_Util_12_WeightedGraph extends CommonTestRunner {
                 assertDv(d, 2, DV.FALSE_DV, Property.MODIFIED_METHOD);
             }
         };
-        testSupportAndUtilClasses(List.of(WeightedGraph.class), 0, 0, new DebugConfiguration.Builder()
+        testSupportAndUtilClasses(List.of(WeightedGraph.class,
+
+                // group 1: all related to DV
+                AbstractDelay.class, CausesOfDelay.class, CauseOfDelay.class, DV.class,
+                NoDelay.class, NotDelayed.class, ProgressWrapper.class, AnalysisStatus.class,
+
+                // group 2: related to Variable
+                VariableCause.class, Variable.class), 0, 0, new DebugConfiguration.Builder()
                 .addStatementAnalyserVisitor(statementAnalyserVisitor)
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .build());

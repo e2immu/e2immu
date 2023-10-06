@@ -14,11 +14,10 @@
 
 package org.e2immu.analyser.analyser;
 
-import org.e2immu.analyser.analyser.delay.DelayFactory;
 import org.e2immu.analyser.analyser.delay.NoDelay;
 import org.e2immu.analyser.analyser.delay.VariableCause;
-import org.e2immu.analyser.model.Location;
-import org.e2immu.annotation.Container;
+import org.e2immu.annotation.ImmutableContainer;
+import org.e2immu.annotation.Independent;
 import org.e2immu.annotation.NotNull;
 
 import java.util.Optional;
@@ -27,7 +26,8 @@ import java.util.function.Predicate;
 /*
 Delay-able Value
  */
-@Container
+@ImmutableContainer
+@Independent
 public interface DV extends Comparable<DV> {
 
     DV MAX_INT_DV = new NoDelay(Integer.MAX_VALUE, "max_int");

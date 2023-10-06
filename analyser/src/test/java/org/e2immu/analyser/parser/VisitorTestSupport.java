@@ -46,6 +46,11 @@ public abstract class VisitorTestSupport {
         assertEquals(expect, value);
     }
 
+    public void assertDv(CommonVisitorData d, DV expect, Property property, String message) {
+        DV value = d.getProperty(property);
+        assertEquals(expect, value, message);
+    }
+
     public void assertDvInitial(StatementAnalyserVariableVisitor.Data d, String delayed, int delayedBeforeIteration, DV expect, Property property) {
         DV value = d.variableInfoContainer().getPreviousOrInitial().getProperty(property);
         if (d.iteration() < delayedBeforeIteration) {
