@@ -128,7 +128,7 @@ public class Test_Util_06_DependencyGraph_AAPI extends CommonTestRunner {
             }
         };
 
-        BreakDelayVisitor breakDelayVisitor = d -> assertEquals("----------S--S--S--S--S-SF-SF-SFMT---", d.delaySequence());
+        BreakDelayVisitor breakDelayVisitor = d -> assertEquals("----------S--S--S--S--S--S-SF-SF-SFMT---", d.delaySequence());
 
         testSupportAndUtilClasses(List.of(DependencyGraph.class), 7, DONT_CARE,
                 new DebugConfiguration.Builder()
