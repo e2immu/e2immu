@@ -1,13 +1,14 @@
-package org.e2immu.analyser.analysis.impl;
+package org.e2immu.analyser.analyser.statementanalyser;
 
-import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.analyser.Properties;
+import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.analyser.delay.FlowDataConstants;
 import org.e2immu.analyser.analyser.delay.ProgressAndDelay;
 import org.e2immu.analyser.analyser.impl.context.EvaluationResultImpl;
 import org.e2immu.analyser.analyser.nonanalyserimpl.Merge;
 import org.e2immu.analyser.analyser.util.ComputeLinkedVariables;
 import org.e2immu.analyser.analysis.StatementAnalysis;
+import org.e2immu.analyser.analysis.impl.ConditionAndVariableInfo;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.*;
 import org.e2immu.analyser.model.impl.TranslationMapImpl;
@@ -31,7 +32,7 @@ import static org.e2immu.analyser.analyser.Property.*;
 import static org.e2immu.analyser.analyser.Stage.EVALUATION;
 import static org.e2immu.analyser.analyser.Stage.MERGE;
 
-public class MergeVariables {
+class MergeVariables {
     private static final Logger LOGGER = LoggerFactory.getLogger(MergeVariables.class);
 
     private final StatementAnalysis statementAnalysis;
@@ -39,7 +40,7 @@ public class MergeVariables {
     private final Statement statement;
 
 
-    public MergeVariables(StatementAnalysis statementAnalysis) {
+    MergeVariables(StatementAnalysis statementAnalysis) {
         this.statementAnalysis = statementAnalysis;
         this.index = statementAnalysis.index();
         this.statement = statementAnalysis.statement();
@@ -57,7 +58,7 @@ public class MergeVariables {
                                 TranslationMapImpl.Builder bestValueForToRemove,
                                 Map<Variable, Variable> renames,
                                 TranslationMapImpl.Builder translationMap) {
-        public PrepareMerge(EvaluationContext evaluationContext) {
+        PrepareMerge(EvaluationContext evaluationContext) {
             this(evaluationContext, new LinkedList<>(), new LinkedList<>(), new HashSet<>(), new TranslationMapImpl.Builder(),
                     new HashMap<>(), new TranslationMapImpl.Builder());
         }
@@ -236,7 +237,7 @@ public class MergeVariables {
         });
     }
 
-    public record ConditionAndLastStatement(Expression condition,
+    record ConditionAndLastStatement(Expression condition,
                                             Expression absoluteState,
                                             String firstStatementIndexForOldStyleSwitch,
                                             StatementAnalyser lastStatement,
@@ -245,7 +246,7 @@ public class MergeVariables {
                                             boolean alwaysEscapesOrReturns) {
     }
 
-    public record MergeResult(ProgressAndDelay analysisStatus, Expression translatedAddToStateAfterMerge) {
+    record MergeResult(ProgressAndDelay analysisStatus, Expression translatedAddToStateAfterMerge) {
     }
 
     /**
@@ -257,7 +258,7 @@ public class MergeVariables {
      * @param statementTime           the statement time of subBlocks
      * @param setCnnVariables         variables that should receive CNN >= ENN because of escape in sub-block
      */
-    public MergeResult mergeVariablesFromSubBlocks(EvaluationContext evaluationContext,
+    MergeResult mergeVariablesFromSubBlocks(EvaluationContext evaluationContext,
                                                    Expression stateOfConditionManagerBeforeExecution,
                                                    Expression addToStateAfterMerge,
                                                    List<ConditionAndLastStatement> lastStatements,

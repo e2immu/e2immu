@@ -15,10 +15,10 @@
 package org.e2immu.analyser.analyser.impl.computing;
 
 import org.e2immu.analyser.analyser.*;
-import org.e2immu.analyser.analyser.impl.context.EvaluationResultImpl;
 import org.e2immu.analyser.analyser.delay.Inconclusive;
 import org.e2immu.analyser.analyser.delay.NotDelayed;
 import org.e2immu.analyser.analyser.impl.TypeAnalyserImpl;
+import org.e2immu.analyser.analyser.impl.context.EvaluationResultImpl;
 import org.e2immu.analyser.analyser.impl.shallow.ShallowTypeAnalyser;
 import org.e2immu.analyser.analyser.impl.util.BreakDelayLevel;
 import org.e2immu.analyser.analyser.impl.util.ComputeTypeImmutable;

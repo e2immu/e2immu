@@ -17,7 +17,6 @@ package org.e2immu.analyser.util;
 import org.e2immu.annotation.FinalFields;
 import org.e2immu.annotation.Modified;
 import org.e2immu.annotation.NotModified;
-import org.e2immu.annotation.rare.IgnoreModifications;
 import org.e2immu.support.Freezable;
 
 import java.util.*;

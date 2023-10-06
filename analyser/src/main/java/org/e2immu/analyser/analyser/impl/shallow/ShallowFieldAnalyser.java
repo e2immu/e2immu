@@ -16,10 +16,8 @@ package org.e2immu.analyser.analyser.impl.shallow;
 
 import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.analyser.impl.FieldAnalyserImpl;
-import org.e2immu.analyser.analyser.impl.computing.ComputingFieldAnalyser;
 import org.e2immu.analyser.analyser.util.AnalyserComponents;
 import org.e2immu.analyser.analyser.util.AnalyserResult;
-import org.e2immu.analyser.analyser.util.ConditionManagerImpl;
 import org.e2immu.analyser.analysis.Analysis;
 import org.e2immu.analyser.analysis.TypeAnalysis;
 import org.e2immu.analyser.analysis.impl.ValueAndPropertyProxy;

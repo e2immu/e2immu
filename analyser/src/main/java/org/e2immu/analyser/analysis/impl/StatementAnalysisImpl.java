@@ -16,19 +16,15 @@ package org.e2immu.analyser.analysis.impl;
 
 import org.e2immu.analyser.analyser.Properties;
 import org.e2immu.analyser.analyser.*;
-import org.e2immu.analyser.analyser.impl.context.EvaluationResultImpl;
 import org.e2immu.analyser.analyser.delay.DelayFactory;
 import org.e2immu.analyser.analyser.delay.FlowDataConstants;
-import org.e2immu.analyser.analyser.delay.ProgressAndDelay;
-import org.e2immu.analyser.analyser.nonanalyserimpl.Merge;
+import org.e2immu.analyser.analyser.impl.context.EvaluationResultImpl;
 import org.e2immu.analyser.analyser.nonanalyserimpl.VariableInfoContainerImpl;
-import org.e2immu.analyser.analyser.util.ComputeLinkedVariables;
 import org.e2immu.analyser.analyser.util.VariableAccessReport;
 import org.e2immu.analyser.analysis.*;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.*;
 import org.e2immu.analyser.model.impl.LocationImpl;
-import org.e2immu.analyser.model.impl.TranslationMapImpl;
 import org.e2immu.analyser.model.statement.*;
 import org.e2immu.analyser.model.variable.*;
 import org.e2immu.analyser.output.OutputBuilder;
@@ -47,14 +43,12 @@ import org.slf4j.LoggerFactory;
 
 import java.util.*;
 import java.util.function.BiFunction;
-import java.util.function.Function;
-import java.util.function.Predicate;
 import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 import static org.e2immu.analyser.analyser.Property.*;
-import static org.e2immu.analyser.analyser.Stage.*;
+import static org.e2immu.analyser.analyser.Stage.EVALUATION;
+import static org.e2immu.analyser.analyser.Stage.INITIAL;
 import static org.e2immu.analyser.model.MultiLevel.*;
 import static org.e2immu.analyser.util.StringUtil.pad;
 
@@ -1048,7 +1042,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
             }
             Properties valueProperties = context.evaluationContext().getValueProperties(arrayValue);
             DV lvIndependent = LinkedVariables.fromIndependentToLinkedVariableLevel(independent,
-                    // FIXME EMPTY is not going to cut it
+                    // CHECK that EMPTY is correct
                     dv.parameterizedType, SetOfTypes.EMPTY);
             if (lvIndependent.equals(LinkedVariables.LINK_INDEPENDENT)) {
                 linkedVariables = vic.initialLinkedVariables();

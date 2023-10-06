@@ -15,30 +15,11 @@
 package org.e2immu.analyser.analysis;
 
 import org.e2immu.analyser.analyser.*;
-import org.e2immu.analyser.analyser.util.AnalyserComponents;
-import org.e2immu.analyser.analyser.util.AnalyserResult;
-import org.e2immu.analyser.model.AnnotationExpression;
-import org.e2immu.analyser.model.Expression;
-import org.e2immu.analyser.model.Identifier;
 import org.e2immu.analyser.model.MethodInfo;
-import org.e2immu.analyser.model.variable.LocalVariableReference;
-import org.e2immu.analyser.model.variable.ReturnVariable;
-import org.e2immu.analyser.model.variable.This;
 import org.e2immu.analyser.parser.Primitives;
-import org.e2immu.support.EventuallyFinal;
-import org.e2immu.support.SetOnce;
-import org.e2immu.support.SetOnceMap;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
-import java.util.List;
-import java.util.Objects;
 import java.util.Set;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
-
-import static org.e2immu.analyser.analyser.AnalysisStatus.DONE;
-import static org.e2immu.analyser.util.EventuallyFinalExtension.setFinalAllowEquals;
 
 /**
  * IMPORTANT:
