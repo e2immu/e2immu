@@ -42,6 +42,7 @@ public class EvaluateParameters {
     private static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger(EvaluateParameters.class);
     private static final Map<Property, DV> RECURSIVE_CALL =
             Map.of(Property.CONTEXT_MODIFIED, DV.FALSE_DV,
+                    Property.CONTEXT_CONTAINER, MultiLevel.NOT_CONTAINER_DV,
                     Property.CONTEXT_NOT_NULL, MultiLevel.NULLABLE_DV);
 
     public static Pair<EvaluationResultImpl.Builder, List<Expression>> go(List<Expression> parameterExpressions,
@@ -149,8 +150,12 @@ public class EvaluateParameters {
                 LOGGER.error("Failed to obtain parameter analysis of {}", parameterInfo.fullyQualifiedName());
                 throw e;
             }
-            computeContextContainer(methodInfo, recursiveOrPartOfCallCycle, map);
-            computeContextModified(methodInfo, recursiveOrPartOfCallCycle, map, scopeIsContainer);
+            if (map.get(Property.CONTEXT_CONTAINER).isDelayed() && recursiveOrPartOfCallCycle) {
+                map.put(Property.CONTEXT_CONTAINER, MultiLevel.NOT_CONTAINER_DV);
+            }
+            if  (recursiveOrPartOfCallCycle || scopeIsContainer.equals(MultiLevel.CONTAINER_DV)) {
+                map.put(Property.CONTEXT_MODIFIED, DV.FALSE_DV);
+            }
 
             contextNotNull = map.getOrDefault(Property.CONTEXT_NOT_NULL, null);
             if (recursiveOrPartOfCallCycle) {
@@ -340,37 +345,6 @@ public class EvaluateParameters {
         }
         if (variable instanceof This || variable instanceof ReturnVariable) return true;
         return evaluationContext.isPresent(variable);
-    }
-
-    private static void computeContextContainer(MethodInfo methodInfo,
-                                                boolean recursiveOrPartOfCallCycle,
-                                                Map<Property, DV> map) {
-        if (recursiveOrPartOfCallCycle) {
-            map.put(Property.CONTEXT_CONTAINER, MultiLevel.NOT_CONTAINER_DV);
-        } else {
-            DV contextContainer = map.getOrDefault(Property.CONTEXT_CONTAINER, null);
-            if (contextContainer == null) {
-                CausesOfDelay delay = methodInfo.delay(CauseOfDelay.Cause.CONTEXT_CONTAINER);
-                map.put(Property.CONTEXT_CONTAINER, delay);
-            }
-        }
-    }
-
-    private static void computeContextModified(MethodInfo methodInfo,
-                                               boolean recursiveOrPartOfCallCycle,
-                                               Map<Property, DV> map,
-                                               DV scopeIsContainer) {
-        if (recursiveOrPartOfCallCycle || scopeIsContainer.equals(MultiLevel.CONTAINER_DV)) {
-            map.put(Property.CONTEXT_MODIFIED, DV.FALSE_DV);
-        } else if (scopeIsContainer.isDelayed()) {
-            map.merge(Property.CONTEXT_MODIFIED, scopeIsContainer, DV::maxIgnoreDelay);
-        } else {
-            DV contextModified = map.getOrDefault(Property.CONTEXT_MODIFIED, null);
-            if (contextModified == null) {
-                CausesOfDelay delay = methodInfo.delay(CauseOfDelay.Cause.CONTEXT_MODIFIED);
-                map.put(Property.CONTEXT_MODIFIED, delay);
-            }
-        }
     }
 
     private static ParameterInfo getParameterInfo(MethodInfo methodInfo, int position) {

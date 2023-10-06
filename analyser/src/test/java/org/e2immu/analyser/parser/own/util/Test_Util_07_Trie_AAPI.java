@@ -23,8 +23,7 @@ import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.parser.CommonTestRunner;
 import org.e2immu.analyser.util.Trie;
-import org.e2immu.analyser.visitor.MethodAnalyserVisitor;
-import org.e2immu.analyser.visitor.TypeMapVisitor;
+import org.e2immu.analyser.visitor.*;
 import org.e2immu.support.Freezable;
 import org.junit.jupiter.api.Test;
 
@@ -43,6 +42,48 @@ public class Test_Util_07_Trie_AAPI extends CommonTestRunner {
     @Test
     public void test() throws IOException {
 
+        StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+            if ("recursivelyVisit".equals(d.methodInfo().name)) {
+                if (d.variable() instanceof ParameterInfo pi && "node".equals(pi.name)) {
+                    if ("0.0.0".equals(d.statementId())) {
+                        assertDv(d, 1, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
+                    }
+                }
+            }
+            if ("accept".equals(d.methodInfo().name) && "visitLeaves".equals(d.enclosingMethod().name)) {
+                if (d.variable() instanceof ParameterInfo pi && "n".equals(pi.name)) {
+                    if ("0.0.0".equals(d.statementId())) {
+                        assertDv(d, 1, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
+                    }
+                }
+            }
+        };
+        StatementAnalyserVisitor statementAnalyserVisitor = d -> {
+            if ("visitLeaves".equals(d.methodInfo().name)) {
+                if ("2.0.0".equals(d.statementId())) {
+                    String properties = switch (d.iteration()) {
+                        case 0 ->
+                                "map={context-modified=link@NOT_YET_SET, context-not-null=link@NOT_YET_SET}, node={context-modified=link@NOT_YET_SET, context-not-null=link@NOT_YET_SET}, strings={context-modified=link@NOT_YET_SET, context-not-null=link@NOT_YET_SET}, this={context-modified=link@NOT_YET_SET}, visitor={context-modified=constructor-to-instance@Method_accept_0.0.0-E;initial:n.map@Method_accept_0-C;initial:n@Method_accept_0-E;initial:s@Method_accept_0.0.0-E;link@NOT_YET_SET, context-not-null=initial:n.map@Method_accept_0-C;link@NOT_YET_SET, read=true:1}";
+                        case 1 ->
+                                "map={context-modified=initial@Field_root;link:strings@Method_goTo_0:M;link:this.root@Method_goTo_2:M, context-not-null=initial@Field_root;link:strings@Method_goTo_0:M;link:this.root@Method_goTo_2:M}, node={context-modified=initial@Field_root;link:strings@Method_goTo_0:M;link:this.root@Method_goTo_2:M, context-not-null=initial@Field_root;link:strings@Method_goTo_0:M;link:this.root@Method_goTo_2:M}, strings={context-modified=initial@Field_root;link:strings@Method_goTo_0:M;link:this.root@Method_goTo_2:M, context-not-null=initial@Field_root;link:strings@Method_goTo_0:M;link:this.root@Method_goTo_2:M}, this={context-modified=initial@Field_root;link:strings@Method_goTo_0:M;link:this.root@Method_goTo_2:M}, visitor={context-modified=initial@Field_root;link:strings@Method_goTo_0:M;link:this.root@Method_goTo_2:M, context-not-null=initial@Field_root;link:strings@Method_goTo_0:M;link:this.root@Method_goTo_2:M, read=true:1}";
+                        case 2 ->
+                                "map={context-modified=link:strings@Method_goTo_0:M, context-not-null=link:strings@Method_goTo_0:M}, node={context-modified=link:strings@Method_goTo_0:M, context-not-null=link:strings@Method_goTo_0:M}, strings={context-modified=link:strings@Method_goTo_0:M, context-not-null=link:strings@Method_goTo_0:M}, this={context-modified=link:strings@Method_goTo_0:M}, visitor={context-modified=link:strings@Method_goTo_0:M, context-not-null=link:strings@Method_goTo_0:M, read=true:1}";
+                        default ->
+                                "map={context-modified=false:0, context-not-null=nullable:1}, node={context-modified=false:0, context-not-null=nullable:1}, strings={context-modified=false:0, context-not-null=nullable:1}, this={context-modified=false:0}, visitor={context-modified=true:1, context-not-null=not_null:5, read=true:1}";
+                    };
+                    assertEquals(properties, d.statementAnalysis().propertiesFromSubAnalysersSortedToString());
+                }
+            }
+            if ("recursivelyVisit".equals(d.methodInfo().name)) {
+                if ("1.0.0".equals(d.statementId())) {
+                    // IMPROVE incorrectly, strings is not modified: recursive method in lambda
+                    // (see code in StatementAnalyserImpl.transferFromClosureToResult)
+                    assertEquals("strings={read=true:1}, visitor={read=true:1}",
+                            d.statementAnalysis().propertiesFromSubAnalysersSortedToString());
+                }
+            }
+        };
+
         TypeMapVisitor typeMapVisitor = d -> {
             TypeInfo freezable = d.typeMap().get(Freezable.class);
 
@@ -54,7 +95,8 @@ public class Test_Util_07_Trie_AAPI extends CommonTestRunner {
             assertNotNull(companion);
             assertEquals("Precondition[expression=!this.isFrozen(), causes=[companionMethod:ensureNotFrozen$Precondition]]",
                     ensureNotFrozenAna.getPrecondition().toString());
-            assertEquals("Precondition[expression=!frozen, causes=[companionMethod:ensureNotFrozen$Precondition]]",
+            // via shallow analyser rather than computed analyser
+            assertEquals("Precondition[expression=[frozen], causes=[]]",
                     ensureNotFrozenAna.getPreconditionForEventual().toString());
             assertEquals("@Only before: [frozen]", ensureNotFrozenAna.getEventual().toString());
         };
@@ -62,7 +104,7 @@ public class Test_Util_07_Trie_AAPI extends CommonTestRunner {
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("add".equals(d.methodInfo().name)) {
                 assertDv(d, 1, DV.TRUE_DV, Property.MODIFIED_METHOD);
-                assertDv(d.p(1), 2, MultiLevel.INDEPENDENT_HC_DV, Property.INDEPENDENT);
+                assertDv(d.p(1), 3, MultiLevel.INDEPENDENT_HC_DV, Property.INDEPENDENT);
 
                 String pc = "Precondition[expression=!this.isFrozen(), causes=[companionMethod:ensureNotFrozen$Precondition]]";
                 assertEquals(pc, d.methodAnalysis().getPrecondition().toString());
@@ -74,7 +116,8 @@ public class Test_Util_07_Trie_AAPI extends CommonTestRunner {
                     case 0 -> "[DelayedEventual:initial@Class_Trie]";
                     case 1 -> "[DelayedEventual:final@Field_root]";
                     case 2 -> "[DelayedEventual:immutable@Class_TrieNode]";
-                    case 3 -> "[DelayedEventual:cm@Parameter_strings;link:strings@Method_goTo_0:M]";
+                    case 3 ->
+                            "[DelayedEventual:de:node@Method_get_1-E;de:node@Method_isStrictPrefix_1-E;de:node@Method_visit_2-E;initial:node@Method_goTo_1.0.0-C;initial:strings[i]@Method_goTo_1.0.1-C;initial:this.root@Method_goTo_0-C;link:strings@Method_goTo_0:M;link:this.root@Method_goTo_2:M]";
                     default -> "@Only before: [frozen]";
                 };
                 assertEquals(eventual, d.methodAnalysis().getEventual().toString());
@@ -84,12 +127,25 @@ public class Test_Util_07_Trie_AAPI extends CommonTestRunner {
                     assertEquals("@Only(before=\"frozen\")", ae.toString());
                 }
             }
+
+            if ("recursivelyVisit".equals(d.methodInfo().name)) {
+                assertDv(d.p(2), MultiLevel.NOT_IGNORE_MODS_DV, Property.IGNORE_MODIFICATIONS);
+            }
+            // on a non-private method, IGNORE_MODS is implicit
+            if ("visit".equals(d.methodInfo().name)) {
+                assertDv(d.p(1), MultiLevel.IGNORE_MODS_DV, Property.IGNORE_MODIFICATIONS);
+            }
         };
+
+        BreakDelayVisitor breakDelayVisitor = d -> assertEquals("------", d.delaySequence());
 
         testSupportAndUtilClasses(List.of(Trie.class), 0, 0,
                 new DebugConfiguration.Builder()
+                        .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                        .addStatementAnalyserVisitor(statementAnalyserVisitor)
                         .addTypeMapVisitor(typeMapVisitor)
-                        //    .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                        .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                        .addBreakDelayVisitor(breakDelayVisitor)
                         .build(),
                 new AnalyserConfiguration.Builder().setComputeFieldAnalyserAcrossAllMethods(true).build());
     }

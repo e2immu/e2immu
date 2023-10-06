@@ -27,6 +27,7 @@ import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.TypeInfo;
 import org.e2immu.analyser.parser.CommonTestRunner;
 import org.e2immu.analyser.util.DependencyGraph;
+import org.e2immu.analyser.visitor.BreakDelayVisitor;
 import org.e2immu.analyser.visitor.MethodAnalyserVisitor;
 import org.e2immu.analyser.visitor.StatementAnalyserVisitor;
 import org.e2immu.analyser.visitor.TypeMapVisitor;
@@ -108,7 +109,7 @@ public class Test_Util_06_DependencyGraph_AAPI extends CommonTestRunner {
                         .get(CompanionMethodName.extract("ensureNotFrozen$Precondition"));
                 assertNotNull(companion);
                 assertEquals(PC, ensureNotFrozenAna.getPrecondition().toString());
-                assertEquals("Precondition[expression=!frozen, causes=[companionMethod:ensureNotFrozen$Precondition]]",
+                assertEquals("Precondition[expression=[frozen], causes=[]]",
                         ensureNotFrozenAna.getPreconditionForEventual().toString());
                 assertEquals("@Only before: [frozen]", ensureNotFrozenAna.getEventual().toString());
             }
@@ -121,17 +122,20 @@ public class Test_Util_06_DependencyGraph_AAPI extends CommonTestRunner {
                 assertNotNull(companion2);
                 assertEquals("Precondition[expression=this.isFrozen(), causes=[companionMethod:ensureFrozen$Precondition]]",
                         ensureFrozenAna.getPrecondition().toString());
-                assertEquals("Precondition[expression=frozen, causes=[companionMethod:ensureFrozen$Precondition]]",
+                assertEquals("Precondition[expression=[frozen], causes=[]]",
                         ensureFrozenAna.getPreconditionForEventual().toString());
                 assertEquals("@Only after: [frozen]", ensureFrozenAna.getEventual().toString());
             }
         };
+
+        BreakDelayVisitor breakDelayVisitor = d -> assertEquals("----------S--S--S--S--S-SF-SF-SFMT---", d.delaySequence());
 
         testSupportAndUtilClasses(List.of(DependencyGraph.class), 7, DONT_CARE,
                 new DebugConfiguration.Builder()
                         .addTypeMapVisitor(typeMapVisitor)
                         .addStatementAnalyserVisitor(statementAnalyserVisitor)
                         .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                        .addBreakDelayVisitor(breakDelayVisitor)
                         .build(),
                 new AnalyserConfiguration.Builder().setComputeFieldAnalyserAcrossAllMethods(true).build());
     }

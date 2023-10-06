@@ -16,6 +16,8 @@ package org.e2immu.analyser.util;
 
 import org.e2immu.annotation.FinalFields;
 import org.e2immu.annotation.Modified;
+import org.e2immu.annotation.NotModified;
+import org.e2immu.annotation.rare.IgnoreModifications;
 import org.e2immu.support.Freezable;
 
 import java.util.*;
@@ -37,10 +39,12 @@ public class Trie<T> extends Freezable {
         Map<String, TrieNode<T>> map;
     }
 
+    @NotModified
     private TrieNode<T> goTo(String[] strings) {
         return goTo(strings, strings.length);
     }
 
+    @NotModified
     private TrieNode<T> goTo(String[] strings, int upToPosition) {
         TrieNode<T> node = root;
         for (int i = 0; i < upToPosition; i++) {
@@ -66,6 +70,7 @@ public class Trie<T> extends Freezable {
         return node == null ? null : node.data == null ? List.of() : node.data;
     }
 
+    @NotModified
     public void visitLeaves(String[] strings, BiConsumer<String[], List<T>> visitor) {
         TrieNode<T> node = goTo(strings);
         if (node == null) return;
@@ -78,13 +83,14 @@ public class Trie<T> extends Freezable {
         }
     }
 
+    @Modified
     public void visit(String[] strings, BiConsumer<String[], List<T>> visitor) {
         TrieNode<T> node = goTo(strings);
         if (node == null) return;
         recursivelyVisit(node, new Stack<>(), visitor);
     }
 
-    private static <T> void recursivelyVisit(TrieNode<T> node,
+    private static <T> void recursivelyVisit(@Modified TrieNode<T> node,
                                              Stack<String> strings,
                                              BiConsumer<String[], List<T>> visitor) {
         if (node.data != null) {
