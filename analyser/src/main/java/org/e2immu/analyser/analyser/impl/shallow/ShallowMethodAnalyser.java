@@ -597,6 +597,9 @@ public class ShallowMethodAnalyser extends MethodAnalyserImpl {
                 })
                 .filter(Objects::nonNull)
                 .map(pa -> pa.getProperty(property))
+                .peek(dv -> {
+                    assert !dv.isInitialDelay();
+                })
                 .reduce(DelayFactory.initialDelay(), DV::max);
     }
 

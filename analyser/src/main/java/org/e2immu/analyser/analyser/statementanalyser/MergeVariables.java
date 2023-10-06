@@ -310,6 +310,9 @@ class MergeVariables {
 
             } // else: See e.g. Loops_3: block not executed
         }
+        /*
+        Recurse: yes, if the value has self references; no, to keep the new scope variable system alive
+         */
         TranslationMap instances = outOfScopeBuilder.setRecurseIntoScopeVariables(true).build();
         for (Map.Entry<Variable, Expression> entry : afterFiltering.entrySet()) {
             Expression expression = entry.getValue();
@@ -325,6 +328,8 @@ class MergeVariables {
         // new field references, each with new scope variables that also don't go out of scope anymore.
         // the same applies to dependent variables
         Set<LocalVariableReference> newScopeVariables = prepareMerge.computeRenames();
+        CausesOfDelay delay = CausesOfDelay.EMPTY;
+
         for (LocalVariableReference lvr : newScopeVariables) {
             VariableInfoContainer newScopeVar;
             if (!statementAnalysis.variableIsSet(lvr.fullyQualifiedName())) {
@@ -347,12 +352,12 @@ class MergeVariables {
             }
             newScopeVar.setValue(scopeValue, null, propertiesOfLvr, MERGE);
             groupPropertyValues.setDefaultsForScopeVariable(lvr);
+            delay = delay.merge(scopeValue.causesOfDelay());
         }
         TranslationMap translationMap = prepareMerge.translationMap.build();
 
         Set<Variable> variablesWhereMergeOverwrites = new HashSet<>();
 
-        CausesOfDelay delay = CausesOfDelay.EMPTY;
         boolean progress = false;
         Map<Variable, Integer> modificationTimes = new HashMap<>();
 

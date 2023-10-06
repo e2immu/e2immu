@@ -20,7 +20,6 @@ import org.e2immu.analyser.model.Element;
 import org.e2immu.analyser.model.ParameterizedType;
 import org.e2immu.analyser.model.Qualification;
 import org.e2immu.analyser.model.TypeInfo;
-import org.e2immu.analyser.model.expression.DelayedVariableExpression;
 import org.e2immu.analyser.model.expression.util.OneVariable;
 import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.util.UpgradableBooleanMap;
@@ -96,18 +95,11 @@ public interface Variable extends OneVariable, Comparable<Variable> {
         return null;
     }
 
-    default String nameInLinkedAnnotation() {
-        return simpleName();
-    }
-
     default VariableNature variableNature() {
         return VariableNature.METHOD_WIDE;
     }
 
     default int statementTime() {
-        if (variable() instanceof FieldReference fr && fr.scope instanceof DelayedVariableExpression dve) {
-            return dve.statementTime;
-        }
         return VariableInfoContainer.IGNORE_STATEMENT_TIME;
     }
 

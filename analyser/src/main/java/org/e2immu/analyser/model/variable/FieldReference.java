@@ -15,7 +15,9 @@
 package org.e2immu.analyser.model.variable;
 
 import org.e2immu.analyser.analyser.CausesOfDelay;
+import org.e2immu.analyser.analyser.VariableInfoContainer;
 import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.model.expression.DelayedVariableExpression;
 import org.e2immu.analyser.model.expression.IsVariableExpression;
 import org.e2immu.analyser.model.expression.TypeExpression;
 import org.e2immu.analyser.model.expression.VariableExpression;
@@ -178,11 +180,6 @@ public class FieldReference extends VariableWithConcreteReturnType {
     }
 
     @Override
-    public String nameInLinkedAnnotation() {
-        return fieldInfo.owner.simpleName + "." + fieldInfo.name;
-    }
-
-    @Override
     public String fullyQualifiedName() {
         return fullyQualifiedName;
     }
@@ -294,5 +291,13 @@ public class FieldReference extends VariableWithConcreteReturnType {
             return Stream.concat(Stream.of(this), scopeVariable.variableStream());
         }
         return Stream.of(this);
+    }
+
+    @Override
+    public int statementTime() {
+        if (scope instanceof DelayedVariableExpression dve) {
+            return dve.statementTime;
+        }
+        return VariableInfoContainer.IGNORE_STATEMENT_TIME;
     }
 }

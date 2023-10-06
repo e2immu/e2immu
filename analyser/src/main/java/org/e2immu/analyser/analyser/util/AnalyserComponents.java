@@ -196,7 +196,11 @@ public class AnalyserComponents<T, S> {
 
     public String details() {
         StringBuilder sb = new StringBuilder();
-        getStatuses().forEach(p -> sb.append(p.k).append(": ").append(p.v).append("\n"));
+        getStatuses().forEach(p -> {
+            sb.append(p.v.isDelayed() ? "DELAYED " : "DONE ").append(p.k);
+            if (p.v.isDelayed()) sb.append(": ").append(p.v);
+            sb.append("\n");
+        });
         return sb.toString();
     }
 

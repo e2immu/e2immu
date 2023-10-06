@@ -195,6 +195,30 @@ public class TestCommonJavaLang extends CommonAnnotatedAPI {
     }
 
     @Test
+    public void testEnumCompareTo() {
+        TypeInfo typeInfo = typeContext.getFullyQualified(Enum.class);
+        assertEquals("[Type java.lang.constant.Constable, Type Comparable<E>, Type java.io.Serializable]",
+                typeInfo.typeInspection.get().interfacesImplemented().toString());
+        TypeAnalysis typeAnalysis = typeInfo.typeAnalysis.get();
+        testImmutableContainerType(typeAnalysis, true);
+
+        MethodInfo compareTo = typeInfo.findUniqueMethod("compareTo", 1);
+        assertEquals("java.lang.Enum.compareTo(E extends Enum<E>)", compareTo.toString());
+        MethodAnalysis methodAnalysis = compareTo.methodAnalysis.get();
+
+        assertEquals(DV.FALSE_DV, methodAnalysis.getProperty(Property.FLUENT));
+        assertEquals(MultiLevel.INDEPENDENT_DV, methodAnalysis.getProperty(Property.INDEPENDENT));
+        assertEquals(DV.FALSE_DV, methodAnalysis.getProperty(Property.MODIFIED_METHOD));
+        assertEquals(MultiLevel.EFFECTIVELY_IMMUTABLE_DV, methodAnalysis.getProperty(Property.IMMUTABLE));
+
+        ParameterAnalysis p0 = compareTo.parameterAnalysis(0);
+        assertEquals(MultiLevel.INDEPENDENT_DV, p0.getProperty(Property.INDEPENDENT));
+        assertEquals(MultiLevel.EFFECTIVELY_IMMUTABLE_HC_DV, p0.getProperty(Property.IMMUTABLE));
+        assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, p0.getProperty(Property.NOT_NULL_PARAMETER));
+        assertEquals(DV.FALSE_DV, p0.getProperty(Property.MODIFIED_VARIABLE));
+    }
+
+        @Test
     public void testSerializable() {
         TypeInfo typeInfo = typeContext.getFullyQualified(Serializable.class);
         TypeAnalysis typeAnalysis = typeInfo.typeAnalysis.get();

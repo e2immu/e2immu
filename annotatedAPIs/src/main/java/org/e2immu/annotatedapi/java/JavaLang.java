@@ -93,8 +93,9 @@ class JavaLang {
      */
     @ImmutableContainer
     @Independent
-    interface Enum$ {
+    interface Enum$<X extends Enum<X>> {
 
+        int compareTo(@NotNull X x);
     }
 
     @ImmutableContainer
