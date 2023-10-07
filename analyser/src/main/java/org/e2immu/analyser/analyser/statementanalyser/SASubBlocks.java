@@ -374,7 +374,7 @@ record SASubBlocks(StatementAnalysis statementAnalysis, StatementAnalyser statem
             }
         }
         boolean keepCurrentLocalConditionManager = true;
-        MergeVariables mergeVariables = new MergeVariables(statementAnalysis);
+        MergeVariables mergeVariables = new MergeVariables(evaluationContext, statementAnalysis);
 
         if (blocksExecuted > 0) {
             boolean atLeastOneBlockExecuted = atLeastOneBlockExecuted(executions);
@@ -425,9 +425,9 @@ record SASubBlocks(StatementAnalysis statementAnalysis, StatementAnalyser statem
             Map<Variable, DV> setCnnVariables = addToContextNotNullAfterStatement(sharedState.context(), executions);
 
             // need timeAfterSubBlocks set already
-            MergeVariables.MergeResult result = mergeVariables.mergeVariablesFromSubBlocks(evaluationContext,
-                    sharedState.localConditionManager().state(), addToStateAfterStatement, lastStatements, atLeastOneBlockExecuted,
-                    maxTimeWithEscape, setCnnVariables);
+            MergeVariables.MergeResult result = mergeVariables.mergeVariablesFromSubBlocks
+                    (sharedState.localConditionManager().state(), addToStateAfterStatement,
+                            lastStatements, atLeastOneBlockExecuted, maxTimeWithEscape, setCnnVariables);
             analysisStatus = analysisStatus.combine(result.analysisStatus());
 
             // compute the escape situation of the sub-blocks
@@ -449,7 +449,7 @@ record SASubBlocks(StatementAnalysis statementAnalysis, StatementAnalyser statem
                 statementAnalysis.flowData().setTimeAfterSubBlocks(maxTime, index());
             }
             MergeVariables.MergeResult result = mergeVariables
-                    .mergeVariablesFromSubBlocks(evaluationContext, sharedState.localConditionManager().state(),
+                    .mergeVariablesFromSubBlocks(sharedState.localConditionManager().state(),
                             null, List.of(), false, maxTime, Map.of());
             analysisStatus = analysisStatus.combine(result.analysisStatus());
         }
