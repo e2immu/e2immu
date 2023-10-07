@@ -27,6 +27,8 @@ import static org.e2immu.analyser.analyser.Stage.EVALUATION;
 
 public class PrepareMergeVariables {
 
+    // input fields
+
     private final EvaluationContext evaluationContext;
     private final StatementAnalysis statementAnalysis;
     private final String index;
@@ -38,22 +40,27 @@ public class PrepareMergeVariables {
         index = statementAnalysis.index();
     }
 
+    // work variables
+
+    private final List<VariableInfoContainer> toMerge = new ArrayList<>();
+    private final List<VariableInfoContainer> toIgnore = new ArrayList<>();
+    private final TranslationMapImpl.Builder translationMap = new TranslationMapImpl.Builder();
+    private final TranslationMapImpl.Builder bestValueForToRemove = new TranslationMapImpl.Builder();
+    private final Set<Variable> toRemove = new HashSet<>();
+    private final Map<Variable, Variable> renames = new HashMap<>();
+
     /**
      * @param toMerge  variables which will go through the merge process, they will get a -M VariableInfo
      * @param toIgnore variables to be ignored by the merge process, they will not get a -M VariableInfo
      * @param toRemove references to these variables (in value, in scope of field ref) will be replaced by Instance objects
      */
-    record Data(EvaluationContext evaluationContext,
-                List<VariableInfoContainer> toMerge,
+    record Data(List<VariableInfoContainer> toMerge,
                 List<VariableInfoContainer> toIgnore,
                 Set<Variable> toRemove,
-                TranslationMapImpl.Builder bestValueForToRemove,
                 Map<Variable, Variable> renames,
-                TranslationMapImpl.Builder translationMap) {
-        Data(EvaluationContext evaluationContext) {
-            this(evaluationContext, new LinkedList<>(), new LinkedList<>(), new HashSet<>(), new TranslationMapImpl.Builder(),
-                    new HashMap<>(), new TranslationMapImpl.Builder());
-        }
+                Set<LocalVariableReference> newScopeVariables,
+                TranslationMap translationMap) {
+
 
         // we go over the list of variables to merge, and try to find if we need to rename them because
         // some scope has to be removed (field reference x.y where x cannot exist anymore).
@@ -61,70 +68,13 @@ public class PrepareMergeVariables {
         // at the same time, when BOTH are present in the toMerge (in a subsequent iteration)
         // we remove the non-renamed
         // return new scope variables to be created and assigned
-        Set<LocalVariableReference> computeRenames() {
-            TranslationMap renameMap = bestValueForToRemove.build();
-            Set<LocalVariableReference> newScopeVariables = new HashSet<>();
-            toMerge.removeIf(vic -> prepareRenameDecideToRemove(vic, renameMap, newScopeVariables));
-            toIgnore.removeIf(vic -> prepareRenameDecideToRemove(vic, renameMap, newScopeVariables));
-            return newScopeVariables;
-        }
 
-        private boolean prepareRenameDecideToRemove(VariableInfoContainer vic,
-                                                    TranslationMap renameMap,
-                                                    Set<LocalVariableReference> newScopeVariables) {
-            Variable variable = vic.current().variable();
-            RenameVariableResult rvr = renameVariable(variable, renameMap);
-            if (rvr != null) {
-                newScopeVariables.addAll(rvr.newScopeVariables);
-                renames.put(variable, rvr.variable);
-                translationMap.addVariableExpression(variable, rvr.variableExpression);
-                translationMap.put(variable, rvr.variable);
-                return false;
-            }
-            // scope variables that are created here, are filled in using renames
-            return variable.hasScopeVariableCreatedAt(evaluationContext.statementIndex());
-        }
-
-        private record RenameVariableResult(Variable variable,
-                                            VariableExpression variableExpression,
-                                            List<LocalVariableReference> newScopeVariables) {
-        }
-
-        // serious example for this method is VariableScope_10; VS_6 shows that field references need to remain:
-        // otherwise, we cannot see their assignment easily.
-        private RenameVariableResult renameVariable(Variable variable, TranslationMap translationMap) {
-            if (variable instanceof FieldReference fr) {
-                Expression newScope = fr.scope.translate(evaluationContext.getAnalyserContext(), translationMap);
-                if (newScope != fr.scope) {
-                    assert fr.scopeVariable != null;
-                    String name = "scope-" + fr.scopeVariable.simpleName() + ":" + evaluationContext.statementIndex();
-                    // if statement index is 2, then 2~ is after 2.x.x, but before 3
-                    VariableNature vn = new VariableNature.ScopeVariable(evaluationContext.statementIndex());
-                    LocalVariable lv = new LocalVariable(Set.of(LocalVariableModifier.FINAL), name,
-                            fr.scope.returnType(), List.of(), fr.getOwningType(), vn);
-                    LocalVariableReference scopeVariable = new LocalVariableReference(lv, newScope);
-                    Expression scope = new VariableExpression(fr.scope.getIdentifier(), scopeVariable);
-                    FieldReference newFr = new FieldReference(evaluationContext.getAnalyserContext(), fr.fieldInfo,
-                            scope, scopeVariable, fr.getOwningType());
-                    VariableExpression ve = new VariableExpression(fr.scope.getIdentifier(), newFr,
-                            VariableExpression.NO_SUFFIX, scope, null);
-                    return new RenameVariableResult(newFr, ve, List.of(scopeVariable));
-                }
-                if (fr.scopeVariable instanceof FieldReference) {
-                    RenameVariableResult rvr = renameVariable(fr.scopeVariable, translationMap);
-                    if (rvr != null) {
-                        throw new UnsupportedOperationException("Implement!");
-                    }
-                }
-            }
-            return null;
-        }
     }
 
     // as a general remark: This and ReturnVariable variables are always merged, never removed
-    private Data mergeActions(List<MergeVariables.ConditionAndLastStatement> lastStatements,
+    private void mergeActions(List<MergeVariables.ConditionAndLastStatement> lastStatements,
                               Set<Variable> mergeEvenIfNotInSubBlocks) {
-        Data pm = new Data(evaluationContext);
+
         // some variables will be picked up in the sub-blocks, others in the current block, others in both
         // we want to deal with them only once, though.
         Set<Variable> seen = new HashSet<>();
@@ -143,7 +93,7 @@ public class PrepareMergeVariables {
         Stream<VariableInfoContainer> fromSubBlocks = lastStatements.stream()
                 .flatMap(st -> st.lastStatement().getStatementAnalysis().rawVariableStream().map(Map.Entry::getValue))
                 .filter(vic -> vic.hasBeenAccessedInThisBlock(index));
-        mergeAction(pm, seen, fromSubBlocks, vn -> vn.removeInSubBlockMerge(index), v -> true, useVic);
+        mergeAction(seen, fromSubBlocks, vn -> vn.removeInSubBlockMerge(index), v -> true, useVic);
 
         // second group: those that exist at the block level, and were not present in any of the sub-blocks
         // (because of the "seen" map variables from the sub-blocks are ignored)
@@ -157,19 +107,76 @@ public class PrepareMergeVariables {
         // if recognized: remove (into remove+ignore), otherwise ignore
 
         Set<Variable> alsoMergeStaticallyAssigned = new HashSet<>(mergeEvenIfNotInSubBlocks);
-        Set<Variable> staticallyLinked = pm.toMerge.stream()
+        Set<Variable> staticallyLinked = toMerge.stream()
                 .flatMap(vic -> vic.best(EVALUATION).getLinkedVariables().staticallyAssignedStream())
                 .collect(Collectors.toUnmodifiableSet());
         alsoMergeStaticallyAssigned.addAll(staticallyLinked);
 
         Stream<VariableInfoContainer> atTopLevel = statementAnalysis.rawVariableStream().map(Map.Entry::getValue);
-        mergeAction(pm, seen, atTopLevel, vn -> vn.removeInMerge(index),
+        mergeAction(seen, atTopLevel, vn -> vn.removeInMerge(index),
                 alsoMergeStaticallyAssigned::contains, null);
-        return pm;
     }
 
-    private void mergeAction(Data data,
-                             Set<Variable> seen,
+    Set<LocalVariableReference> newScopeVariables() {
+        TranslationMap renameMap = bestValueForToRemove.build();
+        Set<LocalVariableReference> newScopeVariables = new HashSet<>();
+        toMerge.removeIf(vic -> prepareRenameDecideToRemove(vic, renameMap, newScopeVariables));
+        toIgnore.removeIf(vic -> prepareRenameDecideToRemove(vic, renameMap, newScopeVariables));
+        return Set.copyOf(newScopeVariables);
+    }
+
+    private boolean prepareRenameDecideToRemove(VariableInfoContainer vic,
+                                                TranslationMap renameMap,
+                                                Set<LocalVariableReference> newScopeVariables) {
+        Variable variable = vic.current().variable();
+        RenameVariableResult rvr = renameVariable(variable, renameMap);
+        if (rvr != null) {
+            newScopeVariables.addAll(rvr.newScopeVariables);
+            renames.put(variable, rvr.variable);
+            translationMap.addVariableExpression(variable, rvr.variableExpression);
+            translationMap.put(variable, rvr.variable);
+            return false;
+        }
+        // scope variables that are created here, are filled in using renames
+        return variable.hasScopeVariableCreatedAt(evaluationContext.statementIndex());
+    }
+
+    private record RenameVariableResult(Variable variable,
+                                        VariableExpression variableExpression,
+                                        List<LocalVariableReference> newScopeVariables) {
+    }
+
+    // serious example for this method is VariableScope_10; VS_6 shows that field references need to remain:
+    // otherwise, we cannot see their assignment easily.
+    private RenameVariableResult renameVariable(Variable variable, TranslationMap translationMap) {
+        if (variable instanceof FieldReference fr) {
+            Expression newScope = fr.scope.translate(evaluationContext.getAnalyserContext(), translationMap);
+            if (newScope != fr.scope) {
+                assert fr.scopeVariable != null;
+                String name = "scope-" + fr.scopeVariable.simpleName() + ":" + evaluationContext.statementIndex();
+                // if statement index is 2, then 2~ is after 2.x.x, but before 3
+                VariableNature vn = new VariableNature.ScopeVariable(evaluationContext.statementIndex());
+                LocalVariable lv = new LocalVariable(Set.of(LocalVariableModifier.FINAL), name,
+                        fr.scope.returnType(), List.of(), fr.getOwningType(), vn);
+                LocalVariableReference scopeVariable = new LocalVariableReference(lv, newScope);
+                Expression scope = new VariableExpression(fr.scope.getIdentifier(), scopeVariable);
+                FieldReference newFr = new FieldReference(evaluationContext.getAnalyserContext(), fr.fieldInfo,
+                        scope, scopeVariable, fr.getOwningType());
+                VariableExpression ve = new VariableExpression(fr.scope.getIdentifier(), newFr,
+                        VariableExpression.NO_SUFFIX, scope, null);
+                return new RenameVariableResult(newFr, ve, List.of(scopeVariable));
+            }
+            if (fr.scopeVariable instanceof FieldReference) {
+                RenameVariableResult rvr = renameVariable(fr.scopeVariable, translationMap);
+                if (rvr != null) {
+                    throw new UnsupportedOperationException("Implement!");
+                }
+            }
+        }
+        return null;
+    }
+
+    private void mergeAction(Set<Variable> seen,
                              Stream<VariableInfoContainer> stream,
                              Predicate<VariableNature> remove,
                              Predicate<Variable> mergeWhenNotRemove,
@@ -183,9 +190,9 @@ public class PrepareMergeVariables {
             if (seen.add(variable)) {
                 if (remove.test(vic.variableNature())) {
                     if (vicToAdd != null) {
-                        data.toIgnore.add(vicToAdd);
+                        toIgnore.add(vicToAdd);
                     }
-                    data.toRemove.add(variable);
+                    toRemove.add(variable);
                 } else {
                     if (mergeWhenNotRemove.test(variable)) {
                         VariableInfoContainer vicMerge = vicToAdd == null ? vic : vicToAdd;
@@ -204,9 +211,9 @@ public class PrepareMergeVariables {
                                 && !vic.getPreviousOrInitial().getValue().isDelayed()) {
                             vicToAdd.copyInitialFrom(vic.getPreviousOrInitial());
                         }
-                        data.toMerge.add(vicMerge);
+                        toMerge.add(vicMerge);
                     } else if (vicToAdd != null) {
-                        data.toIgnore.add(vicToAdd);
+                        toIgnore.add(vicToAdd);
                     }
                     /* The following code fragment replaces the variable expressions with loop suffix by a delayed or instance value.
                     For now, it seems not necessary to do this (see e.g. TrieSimplified_5)
@@ -243,11 +250,11 @@ public class PrepareMergeVariables {
             List<ConditionAndVariableInfo>> filterSub,
             List<MergeVariables.ConditionAndLastStatement> lastStatements,
             Set<Variable> mergeEvenIfNotInSubBlock) {
-        Data data = mergeActions(lastStatements, mergeEvenIfNotInSubBlock);
+        mergeActions(lastStatements, mergeEvenIfNotInSubBlock);
         // 2 more steps: fill in PrepareMerge.bestValueForToRemove, then compute renames
         TranslationMapImpl.Builder outOfScopeBuilder = new TranslationMapImpl.Builder();
         Map<Variable, Expression> afterFiltering = new HashMap<>();
-        for (Variable toRemove : data.toRemove) {
+        for (Variable toRemove : toRemove) {
 
             List<ConditionAndVariableInfo> toMerge = filterSub.apply(toRemove);
             if (!toMerge.isEmpty()) { // a try statement can have more than one, it's only the first we're interested
@@ -290,10 +297,12 @@ public class PrepareMergeVariables {
             Expression expression = entry.getValue();
             Variable toRemove = entry.getKey();
             Expression bestValue = expression.translate(evaluationContext.getAnalyserContext(), instances);
-            data.bestValueForToRemove.addVariableExpression(toRemove, bestValue);
-            data.translationMap.addVariableExpression(toRemove, bestValue);
-            data.translationMap.put(expression, bestValue);
+            bestValueForToRemove.addVariableExpression(toRemove, bestValue);
+            translationMap.addVariableExpression(toRemove, bestValue);
+            translationMap.put(expression, bestValue);
         }
-        return data;
+        Set<LocalVariableReference> newScopeVariables = newScopeVariables();
+        return new Data(List.copyOf(toMerge), List.copyOf(toIgnore), Set.copyOf(toRemove), Map.copyOf(renames),
+                newScopeVariables, translationMap.build());
     }
 }

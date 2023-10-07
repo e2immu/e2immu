@@ -54,14 +54,13 @@ class MergeVariables {
         // fields never go out of scope, but their scope variables may. "computeRenames" will create
         // new field references, each with new scope variables that also don't go out of scope anymore.
         // the same applies to dependent variables
-        Set<LocalVariableReference> newScopeVariables = prepData.computeRenames();
+        Set<LocalVariableReference> newScopeVariables = prepData.newScopeVariables();
         NewScopeVariables nsv = ensureNewScopeVariables(newScopeVariables);
 
-        TranslationMap translationMap = prepData.translationMap().build();
         ProgressAndDelay soFar = new ProgressAndDelay(false, nsv.causes);
         MergeValueOfSingleVariable merge = new MergeValueOfSingleVariable(evaluationContext, statementTime,
                 atLeastOneBlockExecuted, lastStatements, statementAnalysis, stateOfConditionManagerBeforeExecution,
-                translationMap);
+                prepData.translationMap());
         Function<Variable, Variable> rename = v -> prepData.renames().getOrDefault(v, v);
 
         for (VariableInfoContainer vic : prepData.toMerge()) {
@@ -90,13 +89,13 @@ class MergeVariables {
                 newScopeVariables, prepData.renames(),
                 prepData.toRemove(),
                 prepData.toIgnore(),
-                setCnnVariables, translationMap,
+                setCnnVariables, prepData.translationMap(),
                 conditionCauses);
 
         ProgressAndDelay status = mergeStatus.combine(soFar);
 
         Expression translatedAddToState = addToStateAfterMerge == null ? null :
-                addToStateAfterMerge.translate(evaluationContext.getAnalyserContext(), translationMap);
+                addToStateAfterMerge.translate(evaluationContext.getAnalyserContext(), prepData.translationMap());
         return new MergeResult(status, translatedAddToState);
     }
 
