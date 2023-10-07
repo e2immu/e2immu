@@ -145,4 +145,11 @@ public class GroupPropertyValues {
             }
         }
     }
+
+    public void addAll(GroupPropertyValues groupPropertyValues) {
+        for (Map.Entry<Property, Map<Variable, DV>> e : map.entrySet()) {
+            Map<Variable, DV> other = groupPropertyValues.getMap(e.getKey());
+            e.getValue().putAll(other);
+        }
+    }
 }

@@ -14,7 +14,6 @@ import org.e2immu.analyser.model.statement.LoopStatement;
 import org.e2immu.analyser.model.statement.TryStatement;
 import org.e2immu.analyser.model.variable.*;
 import org.e2immu.analyser.parser.Message;
-import org.e2immu.annotation.Modified;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -38,7 +37,6 @@ class MergeValueOfSingleVariable {
     private final boolean atLeastOneBlockExecuted;
     private final Expression stateOfConditionManagerBeforeExecution;
     private final TranslationMap translationMap;
-    private final GroupPropertyValues groupPropertyValues;
 
     MergeValueOfSingleVariable(EvaluationContext evaluationContext,
                                int statementTime,
@@ -46,7 +44,6 @@ class MergeValueOfSingleVariable {
                                List<MergeVariables.ConditionAndLastStatement> lastStatements,
                                StatementAnalysis statementAnalysis,
                                Expression stateOfConditionManagerBeforeExecution,
-                               @Modified GroupPropertyValues groupPropertyValues,
                                TranslationMap translationMap) {
         this.evaluationContext = evaluationContext;
         this.statementTime = statementTime;
@@ -54,7 +51,6 @@ class MergeValueOfSingleVariable {
         this.index = statementAnalysis.index();
         this.statement = statementAnalysis.statement();
         this.atLeastOneBlockExecuted = atLeastOneBlockExecuted;
-        this.groupPropertyValues = groupPropertyValues;
         this.translationMap = translationMap;
         this.stateOfConditionManagerBeforeExecution = stateOfConditionManagerBeforeExecution;
         this.lastStatements = lastStatements;
@@ -63,13 +59,11 @@ class MergeValueOfSingleVariable {
     private final Map<Variable, Integer> modificationTimes = new HashMap<>();
     private final Map<Variable, LinkedVariables> linkedVariablesMap = new HashMap<>();
     private final Set<Variable> variablesWhereMergeOverwrites = new HashSet<>();
+    private final GroupPropertyValues groupPropertyValues = new GroupPropertyValues();
 
-    record Result(boolean progress, CausesOfDelay delay) {
-    }
-
-    public Result go(VariableInfoContainer vic,
-                     Function<Variable, Variable> renameFunction,
-                     Function<Variable, List<ConditionAndVariableInfo>> filterSubBlocks) {
+    public ProgressAndDelay go(VariableInfoContainer vic,
+                               Function<Variable, Variable> renameFunction,
+                               Function<Variable, List<ConditionAndVariableInfo>> filterSubBlocks) {
         VariableInfo current = vic.current();
         Variable variable = current.variable();
         assert !variable.hasScopeVariableCreatedAt(index) : "should have been removed";
@@ -168,7 +162,7 @@ class MergeValueOfSingleVariable {
             linkedVariablesMap.put(renamed, destination.best(MERGE).getLinkedVariables());
         } // else: see e.g. Lambda_19Merge; for now no reason to do anything more
 
-        return new Result(progress, delay);
+        return new ProgressAndDelay(progress, delay);
     }
 
     public Set<Variable> getVariablesWhereMergeOverwrites() {
@@ -181,6 +175,10 @@ class MergeValueOfSingleVariable {
 
     public Map<Variable, LinkedVariables> getLinkedVariablesMap() {
         return linkedVariablesMap;
+    }
+
+    public GroupPropertyValues getGroupPropertyValues() {
+        return groupPropertyValues;
     }
 
     /**
