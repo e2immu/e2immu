@@ -1,11 +1,8 @@
 package org.e2immu.analyser.analyser.statementanalyser;
 
-import org.e2immu.analyser.analyser.Properties;
 import org.e2immu.analyser.analyser.*;
-import org.e2immu.analyser.analyser.delay.FlowDataConstants;
 import org.e2immu.analyser.analyser.delay.ProgressAndDelay;
 import org.e2immu.analyser.analyser.impl.context.EvaluationResultImpl;
-import org.e2immu.analyser.analyser.nonanalyserimpl.Merge;
 import org.e2immu.analyser.analyser.util.ComputeLinkedVariables;
 import org.e2immu.analyser.analysis.StatementAnalysis;
 import org.e2immu.analyser.analysis.impl.ConditionAndVariableInfo;
@@ -13,11 +10,8 @@ import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.*;
 import org.e2immu.analyser.model.impl.TranslationMapImpl;
 import org.e2immu.analyser.model.statement.ForEachStatement;
-import org.e2immu.analyser.model.statement.LoopStatement;
 import org.e2immu.analyser.model.statement.SwitchStatementOldStyle;
-import org.e2immu.analyser.model.statement.TryStatement;
 import org.e2immu.analyser.model.variable.*;
-import org.e2immu.analyser.parser.Message;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -25,7 +19,6 @@ import java.util.*;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 import static org.e2immu.analyser.analyser.Property.*;
@@ -238,12 +231,12 @@ class MergeVariables {
     }
 
     record ConditionAndLastStatement(Expression condition,
-                                            Expression absoluteState,
-                                            String firstStatementIndexForOldStyleSwitch,
-                                            StatementAnalyser lastStatement,
-                                            DV executionOfLastStatement,
-                                            boolean alwaysEscapes,
-                                            boolean alwaysEscapesOrReturns) {
+                                     Expression absoluteState,
+                                     String firstStatementIndexForOldStyleSwitch,
+                                     StatementAnalyser lastStatement,
+                                     DV executionOfLastStatement,
+                                     boolean alwaysEscapes,
+                                     boolean alwaysEscapesOrReturns) {
     }
 
     record MergeResult(ProgressAndDelay analysisStatus, Expression translatedAddToStateAfterMerge) {
@@ -259,25 +252,20 @@ class MergeVariables {
      * @param setCnnVariables         variables that should receive CNN >= ENN because of escape in sub-block
      */
     MergeResult mergeVariablesFromSubBlocks(EvaluationContext evaluationContext,
-                                                   Expression stateOfConditionManagerBeforeExecution,
-                                                   Expression addToStateAfterMerge,
-                                                   List<ConditionAndLastStatement> lastStatements,
-                                                   boolean atLeastOneBlockExecuted,
-                                                   int statementTime,
-                                                   Map<Variable, DV> setCnnVariables) {
-
-        // we need to make a synthesis of the variable state of fields, local copies, etc.
-        // some blocks are guaranteed to be executed, others are only executed conditionally.
-        GroupPropertyValues groupPropertyValues = new GroupPropertyValues();
+                                            Expression stateOfConditionManagerBeforeExecution,
+                                            Expression addToStateAfterMerge,
+                                            List<ConditionAndLastStatement> lastStatements,
+                                            boolean atLeastOneBlockExecuted,
+                                            int statementTime,
+                                            Map<Variable, DV> setCnnVariables) {
 
         PrepareMerge prepareMerge = mergeActions(evaluationContext, lastStatements, setCnnVariables.keySet());
         // 2 more steps: fill in PrepareMerge.bestValueForToRemove, then compute renames
         TranslationMapImpl.Builder outOfScopeBuilder = new TranslationMapImpl.Builder();
         Map<Variable, Expression> afterFiltering = new HashMap<>();
         for (Variable toRemove : prepareMerge.toRemove) {
-            boolean inSwitchStatementOldStyle = statement instanceof SwitchStatementOldStyle;
-            List<ConditionAndVariableInfo> toMerge = filterSubBlocks(evaluationContext, lastStatements, toRemove,
-                    inSwitchStatementOldStyle);
+
+            List<ConditionAndVariableInfo> toMerge = filterSubBlocks(evaluationContext, lastStatements, toRemove);
             if (!toMerge.isEmpty()) { // a try statement can have more than one, it's only the first we're interested
                 // and finally, copy the result into prepareMerge
                 VariableInfo best = toMerge.get(0).variableInfo();
@@ -323,12 +311,12 @@ class MergeVariables {
             prepareMerge.translationMap.put(expression, bestValue);
         }
 
-        Map<Variable, LinkedVariables> linkedVariablesMap = new HashMap<>();
         // fields never go out of scope, but their scope variables may. "computeRenames" will create
         // new field references, each with new scope variables that also don't go out of scope anymore.
         // the same applies to dependent variables
         Set<LocalVariableReference> newScopeVariables = prepareMerge.computeRenames();
         CausesOfDelay delay = CausesOfDelay.EMPTY;
+        GroupPropertyValues groupPropertyValues = new GroupPropertyValues();
 
         for (LocalVariableReference lvr : newScopeVariables) {
             VariableInfoContainer newScopeVar;
@@ -356,109 +344,17 @@ class MergeVariables {
         }
         TranslationMap translationMap = prepareMerge.translationMap.build();
 
-        Set<Variable> variablesWhereMergeOverwrites = new HashSet<>();
-
         boolean progress = false;
-        Map<Variable, Integer> modificationTimes = new HashMap<>();
-
+        MergeValueOfSingleVariable merge = new MergeValueOfSingleVariable(evaluationContext, statementTime,
+                atLeastOneBlockExecuted, lastStatements, statementAnalysis, stateOfConditionManagerBeforeExecution,
+                groupPropertyValues, translationMap);
+        Function<Variable, Variable> rename = v -> prepareMerge.renames.getOrDefault(v, v);
+        Function<Variable, List<ConditionAndVariableInfo>> filterSub = v ->
+                filterSubBlocks(evaluationContext, lastStatements, v);
         for (VariableInfoContainer vic : prepareMerge.toMerge) {
-            VariableInfo current = vic.current();
-            Variable variable = current.variable();
-            assert !variable.hasScopeVariableCreatedAt(index) : "should have been removed";
-            Variable renamed = prepareMerge.renames.getOrDefault(variable, variable);
-
-            VariableInfoContainer destination;
-            if (!statementAnalysis.variableIsSet(renamed.fullyQualifiedName())) {
-                VariableNature variableNature;
-                if (renamed instanceof FieldReference fr) {
-                    if (fr.scope.isDelayed()) {
-                        variableNature = new VariableNature.DelayedScope();
-                    } else {
-                        variableNature = vic.variableNature();
-                    }
-                } else {
-                    variableNature = vic.variableNature();
-                }
-                destination = statementAnalysis.createVariable(evaluationContext, renamed, statementTime, variableNature);
-            } else if (variable == renamed) {
-                destination = vic;
-            } else {
-                destination = statementAnalysis.getVariable(renamed.fullyQualifiedName());
-            }
-            if (destination.variableNature() instanceof VariableNature.DelayedScope ds) {
-                ds.setIteration(evaluationContext.getIteration());
-            }
-            boolean inSwitchStatementOldStyle = statement instanceof SwitchStatementOldStyle;
-
-            Merge.ExpressionAndProperties overwriteValue = overwrite(evaluationContext, variable);
-            assert overwriteValue == null || renamed == variable : "Overwrites do not go together with renames?";
-
-            // use "variable" here rather than "renamed", this deals with data in the sub-blocks
-            boolean localAtLeastOneBlock;
-            List<ConditionAndVariableInfo> toMerge = filterSubBlocks(evaluationContext, lastStatements, variable,
-                    inSwitchStatementOldStyle);
-            if (variable instanceof ReturnVariable) {
-                int sum = lastStatements.stream().mapToInt(cav -> cav.alwaysEscapes() ? 1 : 0).sum();
-                localAtLeastOneBlock = atLeastOneBlockExecuted && lastStatements.size() == toMerge.size() + sum;
-            } else if (variable instanceof DependentVariable dv
-                    && dv.statementIndex.startsWith(index + ".")) {
-                localAtLeastOneBlock = true; // the dependent variable was dynamically created inside one of the blocks
-            } else {
-                // in a Try statement, the blocks are successive rather than exclusive
-                int sum = lastStatements.stream().mapToInt(cav -> cav.alwaysEscapesOrReturns() ? 1 : 0).sum();
-                localAtLeastOneBlock = atLeastOneBlockExecuted && (statement instanceof TryStatement ||
-                        lastStatements.size() == toMerge.size() + sum);
-            }
-            if (toMerge.size() > 0) {
-                try {
-                    CausesOfDelay executionDelay = toMerge.stream().map(cavi -> cavi.executionOfLastStatement().causesOfDelay())
-                            .reduce(CausesOfDelay.EMPTY, CausesOfDelay::merge);
-                    Merge merge = new Merge(evaluationContext, destination, executionDelay);
-
-                    // the main merge operation
-                    ProgressAndDelay pad = merge.merge(stateOfConditionManagerBeforeExecution, overwriteValue,
-                            localAtLeastOneBlock, toMerge, groupPropertyValues, translationMap);
-                    delay = delay.merge(pad.causes());
-                    progress |= pad.progress();
-
-                    Stream<LinkedVariables> toMergeLvStream = toMerge.stream().map(cav -> cav.variableInfo().getLinkedVariables());
-                    Stream<LinkedVariables> lvStream;
-                    if (localAtLeastOneBlock) {
-                        lvStream = toMergeLvStream;
-                    } else {
-                        LinkedVariables previousLv = vic.best(EVALUATION).getLinkedVariables();
-                        lvStream = Stream.concat(Stream.of(previousLv), toMergeLvStream);
-                    }
-                    LinkedVariables linkedVariables = lvStream
-                            .map(lv -> lv.translate(evaluationContext.getAnalyserContext(), translationMap))
-                            .reduce(LinkedVariables.EMPTY, LinkedVariables::merge);
-                    if (executionDelay.isDelayed()) {
-                        linkedVariablesMap.put(renamed, linkedVariables.changeNonStaticallyAssignedToDelay(executionDelay));
-                    } else {
-                        linkedVariablesMap.put(renamed, linkedVariables);
-                    }
-                    if (localAtLeastOneBlock) variablesWhereMergeOverwrites.add(renamed);
-
-                    if (localAtLeastOneBlock &&
-                            checkForOverwritingPreviousAssignment(variable, current, vic.variableNature(), toMerge)) {
-                        assert variable == renamed : "Overwriting previous assignments doesn't go together with renames";
-                        statementAnalysis.ensure(Message.newMessage(statementAnalysis.location(MERGE),
-                                Message.Label.OVERWRITING_PREVIOUS_ASSIGNMENT, variable.simpleName()));
-                    }
-                    IntStream modificationTimeOfSubs = toMerge.stream().mapToInt(cav -> cav.variableInfo().getModificationTimeOrNegative());
-                    int maxMod = modificationTimeOfSubs.reduce(0, (t1, t2) -> t1 < 0 || t2 < 0 ? -1 : Math.max(t1, t2));
-                    modificationTimes.put(variable, maxMod);
-                } catch (Throwable throwable) {
-                    LOGGER.warn("Caught exception while merging variable {} (rename to {}} in {}, {}", variable, renamed,
-                            statementAnalysis.methodAnalysis().getMethodInfo().fullyQualifiedName, index);
-                    throw throwable;
-                }
-            } else if (destination.hasMerge()) {
-                assert evaluationContext.getIteration() > 0; // or it wouldn't have had a merge
-                // in previous iterations there was data for us, but now there isn't; copy from I/E into M
-                progress |= destination.copyFromEvalIntoMerge(groupPropertyValues);
-                linkedVariablesMap.put(renamed, destination.best(MERGE).getLinkedVariables());
-            } // else: see e.g. Lambda_19Merge; for now no reason to do anything more
+            MergeValueOfSingleVariable.Result r = merge.go(vic, rename, filterSub);
+            progress |= r.progress();
+            delay = delay.merge(r.delay());
         }
 
         statementAnalysis.rawVariableStream().forEach(e -> {
@@ -471,9 +367,11 @@ class MergeVariables {
         CausesOfDelay conditionCauses = lastStatements.stream().map(cav -> cav.condition.causesOfDelay())
                 .reduce(CausesOfDelay.EMPTY, CausesOfDelay::merge);
         ProgressAndDelay soFar = new ProgressAndDelay(progress, delay);
-        ProgressAndDelay mergeStatus = linkingAndGroupProperties(evaluationContext, groupPropertyValues, linkedVariablesMap,
-                modificationTimes, statementTime,
-                variablesWhereMergeOverwrites, newScopeVariables, prepareMerge, setCnnVariables, translationMap,
+        ProgressAndDelay mergeStatus = linkingAndGroupProperties(evaluationContext, groupPropertyValues,
+                merge.getLinkedVariablesMap(),
+                merge.getModificationTimes(), statementTime,
+                merge.getVariablesWhereMergeOverwrites(),
+                newScopeVariables, prepareMerge, setCnnVariables, translationMap,
                 conditionCauses, soFar).addProgress(progress);
 
         Expression translatedAddToState = addToStateAfterMerge == null ? null :
@@ -490,26 +388,12 @@ class MergeVariables {
         return false;
     }
 
-    /**
-     * In some rare situations we do not want to merge, but to write a specific value.
-     * This is the case when the exit value of a loop is known; see Range_3
-     */
-    private Merge.ExpressionAndProperties overwrite(EvaluationContext evaluationContext, Variable variable) {
-        if (statement instanceof LoopStatement) {
-            Expression exit = statementAnalysis.rangeData().getRange().exitValue(statementAnalysis.primitives(), variable);
-            if (exit != null && statementAnalysis.stateData().noExitViaReturnOrBreak()) {
-                Properties properties = evaluationContext.getValueProperties(exit);
-                return new Merge.ExpressionAndProperties(exit, properties);
-            }
-        }
-        return null;
-    }
 
     private List<ConditionAndVariableInfo> filterSubBlocks(EvaluationContext evaluationContext,
                                                            List<ConditionAndLastStatement> lastStatements,
-                                                           Variable variable,
-                                                           boolean inSwitchStatementOldStyle) {
+                                                           Variable variable) {
         String fqn = variable.fullyQualifiedName();
+        boolean inSwitchStatementOldStyle = statement instanceof SwitchStatementOldStyle;
         return lastStatements.stream()
                 .filter(e2 -> e2.lastStatement().getStatementAnalysis().variableIsSet(fqn))
                 .map(e2 -> {
@@ -780,60 +664,4 @@ class MergeVariables {
         }
     }
 
-    private boolean checkForOverwritingPreviousAssignment(Variable variable,
-                                                          VariableInfo initial,
-                                                          VariableNature variableNature,
-                                                          List<ConditionAndVariableInfo> toMerge) {
-        String fqn = variable.fullyQualifiedName();
-        if (!(variable instanceof LocalVariableReference)) return false;
-        if (variableNature instanceof VariableNature.LoopVariable ||
-                variableNature instanceof VariableNature.Pattern) return false;
-        if (initial.notReadAfterAssignment(index)) {
-            // so now we know it is a local variable, it has been assigned to outside the sub-blocks, but not yet read
-            int countAssignments = 0;
-            for (ConditionAndVariableInfo cav : toMerge) {
-                VariableInfoContainer localVic = cav.lastStatement().getVariableOrDefaultNull(fqn);
-                if (localVic != null) {
-                    VariableInfo current = localVic.current();
-                    if (!current.isAssigned()) {
-                        if (!current.isRead()) continue;
-                        return false;
-                    }
-                    String assignmentIndex = current.getAssignmentIds().getLatestAssignmentIndex();
-                    if (assignmentIndex.compareTo(index) < 0) continue;
-                    String earliestAssignmentIndex = current.getAssignmentIds().getEarliestAssignmentIndex();
-                    if (earliestAssignmentIndex.compareTo(index) < 0) {
-                        // some branch is still relying on the earlier value
-                        return false;
-                    }
-
-                    countAssignments++;
-                    StatementAnalysis sa = statementAnalysis.navigateTo(assignmentIndex);
-                    assert sa != null;
-                    if (!sa.flowData().getGuaranteedToBeReachedInCurrentBlock().equals(FlowDataConstants.ALWAYS))
-                        return false;
-                    if (current.isRead()) {
-                        if (current.getReadId().compareTo(current.getAssignmentIds().getLatestAssignment()) < 0) {
-                            return false;
-                        }
-                        // so there is reading AFTER... but
-                        // we'll need to double-check that there was no reading before the assignment!
-                        // secondly, we want to ensure that the assignment takes place unconditionally in the block
-
-                        VariableInfoContainer atAssignment = sa.getVariable(fqn);
-                        VariableInfo vi1 = atAssignment.current();
-                        assert vi1.isAssigned();
-                        // <= here instead of <; solves e.g. i+=1 (i = i + 1, read first, then assigned, same stmt)
-                        if (vi1.isRead() && vi1.getReadId().compareTo(vi1.getAssignmentIds().getLatestAssignment()) <= 0) {
-                            return false;
-                        }
-
-                        // else: assignment was before this merge... no bother; any reading will be after or not our problem
-                    }
-                }
-            }
-            return countAssignments > 0; // if not assigned, not read... just ignore
-        }
-        return false;
-    }
 }
