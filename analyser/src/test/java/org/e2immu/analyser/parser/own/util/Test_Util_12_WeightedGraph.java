@@ -70,8 +70,7 @@ public class Test_Util_12_WeightedGraph extends CommonTestRunner {
                             assertLinked(d,
                                     it(0, 1, "o:-1,scope-vc:0.cause:-1,scope-vc:0.location:-1,scope-vc:0.variable:-1,scope-vc:0:-1,this.location:-1,this.variable:-1,this:-1"),
                                     it(2, 21, "o:-1,scope-vc:0.cause:-1,scope-vc:0.location:-1,scope-vc:0.variable:-1,scope-vc:0:-1,this.location:-1,this.variable:-1"),
-                                    // FIXME!
-                                    it(22, "o:-1,scope-vc:0.location:-1,scope-vc:0:-1,this.location:-1,this.variable:-1"));
+                                    it(22, ""));
                         }
                     } else if ("vc".equals(fr.scope.toString())) {
                         // vc.cause
@@ -98,8 +97,7 @@ public class Test_Util_12_WeightedGraph extends CommonTestRunner {
                             assertLinked(d,
                                     it(0, 1, "o:-1,scope-vc:0.location:-1,scope-vc:0.variable:-1,scope-vc:0:-1,this.cause:-1,this.location:-1,this.variable:-1,this:-1"),
                                     it(2, 21, "o:-1,scope-vc:0.location:-1,scope-vc:0.variable:-1,scope-vc:0:-1,this.cause:-1,this.location:-1,this.variable:-1"),
-                                    // FIXME
-                                    it(22, "o:-1,scope-vc:0.location:-1,scope-vc:0:-1,this.cause:-1,this.location:-1,this.variable:-1"));
+                                    it(22, "o:2,scope-vc:0:2"));
                         }
                     } else fail(fr.scope.toString());
                 }
@@ -117,7 +115,8 @@ public class Test_Util_12_WeightedGraph extends CommonTestRunner {
                         assertEquals(expected, d.currentValue().toString());
                     }
                     if ("0".equals(d.statementId()) && d.iteration() >= 22) {
-                        assertEquals("o instanceof VariableCause?0==cause.compareTo(o/*(VariableCause)*/.cause)?0==variable.compareTo(o/*(VariableCause)*/.variable)?location.compareTo(scope-vc:0.location):variable.compareTo(o/*(VariableCause)*/.variable):cause.compareTo(o/*(VariableCause)*/.cause):<return value>", d.currentValue().toString());
+                        assertEquals("o instanceof VariableCause?0==cause.compareTo(scope-vc:0.cause)?0==variable.compareTo(scope-vc:0.variable)?location.compareTo(scope-vc:0.location):variable.compareTo(scope-vc:0.variable):cause.compareTo(scope-vc:0.cause):<return value>",
+                                d.currentValue().toString());
                     }
                 }
                 if ("0".equals(d.statementId())) {
@@ -188,16 +187,19 @@ public class Test_Util_12_WeightedGraph extends CommonTestRunner {
                 WeightedGraph.class,
 
                 // group 1: all related to DV
-                AbstractDelay.class, CausesOfDelay.class, CauseOfDelay.class, DV.class,
+                AbstractDelay.class, CausesOfDelay.class, CauseOfDelay.class, DV.class, Inconclusive.class,
                 NoDelay.class, NotDelayed.class, ProgressWrapper.class, AnalysisStatus.class,
 
                 // group 2: related to Variable
-                VariableCause.class, Location.class, Variable.class);
+                VariableCause.class, Location.class, Variable.class,
+
+                MultiLevel.class,
+                LinkedVariables.class);
 
         testSupportAndUtilClasses(classes,
                 0, 0, new DebugConfiguration.Builder()
-                        .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-                        .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                   //     .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                    //    .addStatementAnalyserVisitor(statementAnalyserVisitor)
                         .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                         .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                         .build());

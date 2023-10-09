@@ -65,8 +65,7 @@ class PrepareMergeVariables {
             List<MergeVariables.ConditionAndLastStatement> lastStatements,
             Set<Variable> mergeEvenIfNotInSubBlock) {
         part1ComputeToMergeToIgnoreToRemove(lastStatements, mergeEvenIfNotInSubBlock);
-        TranslationMap renameMap = part2ComputeTranslationsForToRemove(filterSub);
-        part3ComputeRenamesAndNewScopeVariables(renameMap);
+        part2ComputeTranslationsForToRemove(filterSub);
         return new Data(List.copyOf(toMerge), List.copyOf(toIgnore), Set.copyOf(toRemove), Map.copyOf(renames),
                 Set.copyOf(newScopeVariables), translationMapBuilder.build());
     }
@@ -172,61 +171,69 @@ class PrepareMergeVariables {
     /*
     PART 2
     Compute the translations for toRemove variables.
+    Integrated into this is the computation of renames for scope variables.
      */
 
-    private TranslationMap part2ComputeTranslationsForToRemove(Function<Variable, List<ConditionAndVariableInfo>> filterSub) {
-        TranslationMapImpl.Builder outOfScopeBuilder = new TranslationMapImpl.Builder();
+    private void part2ComputeTranslationsForToRemove(Function<Variable, List<ConditionAndVariableInfo>> filterSub) {
+        Map<Variable, Expression> outOfScopeValues = new HashMap<>();
         Map<Variable, Expression> afterFiltering = new HashMap<>();
         for (Variable toRemove : toRemove) {
-
+            // a try statement can have more than one, it's only the first we're interested
             List<ConditionAndVariableInfo> toMerge = filterSub.apply(toRemove);
-            if (!toMerge.isEmpty()) { // a try statement can have more than one, it's only the first we're interested
-                // and finally, copy the result into prepareMerge
+            if (!toMerge.isEmpty()) {
                 VariableInfo best = toMerge.get(0).variableInfo();
-                Identifier identifier = best.getIdentifier();
-                Expression outOfScopeValue;
-                org.e2immu.analyser.analyser.Properties bestProperties = best.valueProperties();
-                if (best.getValue().isDelayed() || bestProperties.delays().isDelayed()) {
-                    CausesOfDelay causes = best.getValue().causesOfDelay().merge(bestProperties.delays().causesOfDelay());
-                    outOfScopeValue = DelayedExpression.forOutOfScope(identifier, toRemove.simpleName(),
-                            toRemove.parameterizedType(),
-                            best.getValue(),
-                            causes);
-                    afterFiltering.put(toRemove, outOfScopeValue);
-                } else {
-                    // at the moment, there may be references to other variables to be removed inside the best.getValue()
-                    // they will be replaced soon in applyTranslations()
-                    // on the other hand, we will already avoid self-references!
-                    // NOTE: Instance is based on identifier and type
-
-                    outOfScopeValue = Instance.forMerge(identifier, best.variable().parameterizedType(), bestProperties);
-                    // the following rule works fine for VS_10, but may be too limited
-                    // TODO should we loop over all VDOL's, add them to the translation map?
-                    if (isVariableInLoopDefinedOutside(best.getValue())) {
-                        afterFiltering.put(toRemove, outOfScopeValue);
-                    } else {
-                        afterFiltering.put(toRemove, best.getValue());
-                    }
-                }
-                outOfScopeBuilder.addVariableExpression(best.variable(), outOfScopeValue);
-
+                computeOutOfScope(outOfScopeValues, afterFiltering, toRemove, best);
             } // else: See e.g. Loops_3: block not executed
         }
-        /*
-        Recurse: yes, if the value has self references; no, to keep the new scope variable system alive
-         */
+
+        TranslationMapImpl.Builder outOfScopeBuilder = new TranslationMapImpl.Builder();
+        outOfScopeValues.forEach(outOfScopeBuilder::addVariableExpression);
         TranslationMap instances = outOfScopeBuilder.setRecurseIntoScopeVariables(true).build();
-        TranslationMapImpl.Builder bestValueForToRemove = new TranslationMapImpl.Builder();
+
+        toMerge.forEach(vic -> computeRename(vic, instances, outOfScopeBuilder));
+        toIgnore.forEach(vic -> computeRename(vic, instances, outOfScopeBuilder));
+        TranslationMap instances2 = outOfScopeBuilder.build();
 
         for (Map.Entry<Variable, Expression> entry : afterFiltering.entrySet()) {
             Expression expression = entry.getValue();
             Variable toRemove = entry.getKey();
-            Expression bestValue = expression.translate(evaluationContext.getAnalyserContext(), instances);
-            bestValueForToRemove.addVariableExpression(toRemove, bestValue);
+            Expression bestValue = expression.translate(evaluationContext.getAnalyserContext(), instances2);
             translationMapBuilder.addVariableExpression(toRemove, bestValue);
             translationMapBuilder.put(expression, bestValue);
         }
-        return bestValueForToRemove.build();
+    }
+
+    private void computeOutOfScope(Map<Variable, Expression> outOfScopeValues,
+                                   Map<Variable, Expression> afterFiltering,
+                                   Variable toRemove,
+                                   VariableInfo best) {
+        Identifier identifier = best.getIdentifier();
+        Expression outOfScopeValue;
+        org.e2immu.analyser.analyser.Properties bestProperties = best.valueProperties();
+        if (best.getValue().isDelayed() || bestProperties.delays().isDelayed()) {
+            CausesOfDelay causes = best.getValue().causesOfDelay().merge(bestProperties.delays().causesOfDelay());
+            outOfScopeValue = DelayedExpression.forOutOfScope(identifier, toRemove.simpleName(),
+                    toRemove.parameterizedType(),
+                    best.getValue(),
+                    causes);
+            afterFiltering.put(toRemove, outOfScopeValue);
+        } else {
+            // at the moment, there may be references to other variables to be removed inside the best.getValue()
+            // they will be replaced soon in applyTranslations()
+            // on the other hand, we will already avoid self-references!
+            // NOTE: Instance is based on identifier and type
+
+            outOfScopeValue = Instance.forMerge(identifier, best.variable().parameterizedType(), bestProperties);
+            // the following rule works fine for VS_10, but may be too limited
+            // TODO should we loop over all VDOL's, add them to the translation map?
+            if (isVariableInLoopDefinedOutside(best.getValue())) {
+                afterFiltering.put(toRemove, outOfScopeValue);
+            } else {
+                afterFiltering.put(toRemove, best.getValue());
+            }
+        }
+        assert best.variable() == toRemove;
+        outOfScopeValues.put(toRemove, outOfScopeValue);
     }
 
     private boolean isVariableInLoopDefinedOutside(Expression value) {
@@ -254,31 +261,45 @@ class PrepareMergeVariables {
     at the same time, when BOTH are present in the toMerge (in a subsequent iteration)
     we remove the non-renamed
     return new scope variables to be created and assigned
+
+     If a field reference has a scope variable that goes out of scope, replace this scope
+     variable with a newly created variable, and add the field reference to the translation map.
+
+     The decision is based on the fact that the 'renameMap' translates the scope
+     into an instance value. This instance value will be the value of this newly created scope variable.
      */
-
-    private void part3ComputeRenamesAndNewScopeVariables(TranslationMap renameMap) {
-        toMerge.forEach(vic -> computeRename(vic, renameMap));
-        toIgnore.forEach(vic -> computeRename(vic, renameMap));
-    }
-
-    private void computeRename(VariableInfoContainer vic, TranslationMap renameMap) {
+    private void computeRename(VariableInfoContainer vic, TranslationMap renameMap,
+                               TranslationMapImpl.Builder outOfScopeBuilder) {
         Variable variable = vic.current().variable();
         RenameVariableResult rvr = renameVariable(variable, renameMap);
         if (rvr != null) {
+            /*
+            variable 'vc.location', where 'vc' is going out of scope
+             -> field ref and variable expression 'scope-vc:0.location', new scope variable 'scope-vc:0'
+             (from Test_Util_12_WeightedGraph)
+             */
             newScopeVariables.add(rvr.newScopeVariable);
             renames.put(variable, rvr.fieldReference);
             translationMapBuilder.addVariableExpression(variable, rvr.variableExpression);
             translationMapBuilder.put(variable, rvr.fieldReference);
+            outOfScopeBuilder.put(variable, rvr.fieldReference);
+            outOfScopeBuilder.addVariableExpression(variable, rvr.variableExpression);
+            outOfScopeBuilder.put(rvr.oldScopeVariable, rvr.newScopeVariable);
+            VariableExpression newVe = new VariableExpression(rvr.fieldReference.scope.getIdentifier(), rvr.newScopeVariable);
+            outOfScopeBuilder.addVariableExpression(rvr.oldScopeVariable, newVe);
         }
     }
 
     private record RenameVariableResult(FieldReference fieldReference,
                                         VariableExpression variableExpression,
-                                        LocalVariableReference newScopeVariable) {
+                                        LocalVariableReference newScopeVariable,
+                                        Variable oldScopeVariable) {
     }
 
-    // serious example for this method is VariableScope_10; VS_6 shows that field references need to remain:
-    // otherwise, we cannot see their assignment easily.
+    /*
+     serious example for this method is VariableScope_10; VS_6 shows that field references need to remain:
+     otherwise, we cannot see their assignment easily.
+     */
     private RenameVariableResult renameVariable(Variable variable, TranslationMap translationMap) {
         if (variable instanceof FieldReference fr) {
             Expression newScope = fr.scope.translate(evaluationContext.getAnalyserContext(), translationMap);
@@ -295,7 +316,7 @@ class PrepareMergeVariables {
                         scope, scopeVariable, fr.getOwningType());
                 VariableExpression ve = new VariableExpression(fr.scope.getIdentifier(), newFr,
                         VariableExpression.NO_SUFFIX, scope, null);
-                return new RenameVariableResult(newFr, ve, scopeVariable);
+                return new RenameVariableResult(newFr, ve, scopeVariable, fr.scopeVariable);
             }
             if (fr.scopeVariable instanceof FieldReference) {
                 RenameVariableResult rvr = renameVariable(fr.scopeVariable, translationMap);

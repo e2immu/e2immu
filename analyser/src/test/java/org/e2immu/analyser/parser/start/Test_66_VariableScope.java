@@ -1104,7 +1104,7 @@ public class Test_66_VariableScope extends CommonTestRunner {
                     if ("1".equals(d.statementId())) {
                         String expected = d.iteration() <= 1
                                 ? "y instanceof X&&<dv:scope-x:0.i>==<m:length>?<m:length>:0"
-                                : "y instanceof X&&s.length()==y/*(X)*/.i$1?s.length():0";
+                                : "y instanceof X&&s.length()==scope-x:0.i$1?s.length():0";
                         assertEquals(expected, d.currentValue().toString());
                     }
                 }
@@ -1149,7 +1149,7 @@ public class Test_66_VariableScope extends CommonTestRunner {
                     } else fail();
                     assertFalse(d.statementId().startsWith("0."), "in " + d.statementId());
                     if ("0".equals(d.statementId())) {
-                        String expected = d.iteration() <= 1 ? "<oos:x>" : "y/*(X)*/";
+                        String expected = d.iteration() <= 1 ? "<oos:x>" : "instance type X/*@Identity*/";
                         assertEquals(expected, d.currentValue().toString());
                     }
                     assertDv(d, 2, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
