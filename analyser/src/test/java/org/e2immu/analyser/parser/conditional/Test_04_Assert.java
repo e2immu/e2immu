@@ -118,8 +118,8 @@ public class Test_04_Assert extends CommonTestRunner {
                         // however, the previous linking is taken into account, and only the linking to "other"
                         // remains to be solved.
                         String linked = switch (d.iteration()) {
-                            // case 0 -> "CausesOfDelay.LIMIT:-1,limit:-1,merge:-1,other:-1,this:0";
-                            case 0, 1 -> "merge:-1,other:-1,this:0";
+                            case 0 -> "CausesOfDelay.LIMIT:-1,limit:-1,merge:-1,other:-1,this:0";
+                            case 1 -> "merge:-1,other:-1,this:0";
                             default -> "merge:4,this:0";
                         };
                         assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
@@ -128,8 +128,8 @@ public class Test_04_Assert extends CommonTestRunner {
                 if ("merge".equals(d.variableName())) {
                     if ("4".equals(d.statementId())) {
                         String linked = switch (d.iteration()) {
-                            //       case 0 -> "CausesOfDelay.LIMIT:-1,limit:-1,other:-1,this:0";
-                            case 0, 1 -> "other:-1,this:0";
+                            case 0 -> "CausesOfDelay.LIMIT:-1,limit:-1,other:-1,this:0";
+                            case 1 -> "other:-1,this:0";
                             default -> "this:0";
                         };
                         assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
@@ -148,8 +148,8 @@ public class Test_04_Assert extends CommonTestRunner {
                                 : "this";
                         assertEquals(value, d.currentValue().toString());
                         String linked = switch (d.iteration()) {
-                            //case 0 -> "CausesOfDelay.LIMIT:-1,limit:-1,other:-1,this:0";
-                            case 0, 1 -> "other:-1,this:0";
+                            case 0 -> "CausesOfDelay.LIMIT:-1,limit:-1,other:-1,this:0";
+                            case 1 -> "other:-1,this:0";
                             default -> "this:0";
                         };
                         assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
@@ -218,7 +218,7 @@ public class Test_04_Assert extends CommonTestRunner {
             }
             if ("merge".equals(d.methodInfo().name)) {
                 assertEquals("SimpleSet", d.methodInfo().typeInfo.simpleName);
-                assertDv(d, DV.TRUE_DV, Property.FLUENT);
+                assertDv(d, 1, DV.TRUE_DV, Property.FLUENT);
                 assertDv(d, DV.FALSE_DV, Property.MODIFIED_METHOD);
                 // returns self, so independent
                 assertDv(d, 1, MultiLevel.INDEPENDENT_DV, Property.INDEPENDENT);

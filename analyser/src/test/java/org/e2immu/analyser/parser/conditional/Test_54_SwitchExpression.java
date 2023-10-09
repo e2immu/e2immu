@@ -112,14 +112,15 @@ public class Test_54_SwitchExpression extends CommonTestRunner {
             }
             if ("method".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof ReturnVariable) {
-                    String expected = d.iteration() < 2 ? "<m:apply>" : "(instance type $1).apply(c)";
+                    String expected = d.iteration() < 3 ? "<m:apply>"
+                            : "c==`Choice.ONE`?\"a\":c==`Choice.TWO`?b+\"\":c==`Choice.THREE`?b?\"It's \"+c:\"or \"+c:<return value>";
                     assertEquals(expected, d.currentValue().toString());
                 }
                 if (d.variable() instanceof FieldReference fr && "out".equals(fr.fieldInfo.name)) {
                     fail();
                 }
                 if (d.variable() instanceof ParameterInfo pi && "b".equals(pi.name)) {
-                    //  assertTrue(d.variableInfoContainer().isReadInThisStatement());
+                    assertTrue(d.variableInfoContainer().isReadInThisStatement());
                 }
             }
         };
@@ -136,7 +137,8 @@ public class Test_54_SwitchExpression extends CommonTestRunner {
                             "b={context-modified=initial:Choice.ONE@Method_apply_0-C;initial:Choice.THREE@Method_apply_2-C;initial:Choice.TWO@Method_apply_1-C;initial:selector$1@Method_apply_0-E;link@NOT_YET_SET, context-not-null=initial:Choice.ONE@Method_apply_0-C;initial:Choice.THREE@Method_apply_2-C;initial:Choice.TWO@Method_apply_1-C;initial:selector$1@Method_apply_0-E, read=true:1}, c={context-modified=initial:Choice.ONE@Method_apply_0-C;initial:Choice.THREE@Method_apply_2-C;initial:Choice.TWO@Method_apply_1-C;initial:selector$1@Method_apply_0-E, context-not-null=initial:Choice.ONE@Method_apply_0-C;initial:Choice.THREE@Method_apply_2-C;initial:Choice.TWO@Method_apply_1-C;initial:selector$1@Method_apply_0-E}, this={context-modified=initial:Choice.ONE@Method_apply_0-C;initial:Choice.THREE@Method_apply_2-C;initial:Choice.TWO@Method_apply_1-C;initial:selector$1@Method_apply_0-E}";
                     case 1 ->
                             "b={context-modified=initial:Choice.ONE@Method_apply_0-C;initial:Choice.TWO@Method_apply_1-C;initial:selector$1@Method_apply_0-E, context-not-null=initial:Choice.ONE@Method_apply_0-C;initial:Choice.TWO@Method_apply_1-C;initial:selector$1@Method_apply_0-E, read=true:1}, c={context-modified=initial:Choice.ONE@Method_apply_0-C;initial:Choice.TWO@Method_apply_1-C;initial:selector$1@Method_apply_0-E, context-not-null=initial:Choice.ONE@Method_apply_0-C;initial:Choice.TWO@Method_apply_1-C;initial:selector$1@Method_apply_0-E}, this={context-modified=initial:Choice.ONE@Method_apply_0-C;initial:Choice.TWO@Method_apply_1-C;initial:selector$1@Method_apply_0-E}";
-                    default -> "b={context-modified=false:0, context-not-null=not_null:5, read=true:1}, c={context-modified=false:0, context-not-null=nullable:1}, this={context-modified=false:0}";
+                    default ->
+                            "b={context-modified=false:0, context-not-null=not_null:5, read=true:1}, c={context-modified=false:0, context-not-null=nullable:1}, this={context-modified=false:0}";
                 };
                 assertEquals(expected,
                         d.statementAnalysis().propertiesFromSubAnalysersSortedToString());

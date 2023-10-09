@@ -13,7 +13,7 @@
  * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.e2immu.analyser.parser.disabled;
+package org.e2immu.analyser.parser.start;
 
 import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.analysis.MethodAnalysis;
@@ -44,7 +44,6 @@ import java.util.stream.Collectors;
 import static org.e2immu.analyser.analyser.Property.*;
 import static org.junit.jupiter.api.Assertions.*;
 
-@Disabled("since 20230911, focus on stability first")
 public class Test_03_CompanionMethods extends CommonTestRunner {
 
     public Test_03_CompanionMethods() {

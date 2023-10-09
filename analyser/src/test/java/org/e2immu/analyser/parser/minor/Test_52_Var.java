@@ -96,7 +96,7 @@ public class Test_52_Var extends CommonTestRunner {
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("apply".equals(d.methodInfo().name) && "$1".equals(d.methodInfo().typeInfo.simpleName)) {
                 if (d.iteration() > 0) {
-                    assertEquals("x.repeat(i)", d.methodAnalysis().getSingleReturnValue().toString());
+                    assertEquals("/*inline apply*/x.repeat(i)", d.methodAnalysis().getSingleReturnValue().toString());
                 }
                 // @NotNull on parameter of apply
                 assertDv(d.p(0), 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_PARAMETER);
@@ -121,7 +121,7 @@ public class Test_52_Var extends CommonTestRunner {
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("sw".equals(d.variableName())) {
                 if ("0.0.0".equals(d.statementId())) {
-                    assertEquals("new StringWriter()", d.currentValue().toString());
+                    assertEquals("instance type StringWriter", d.currentValue().toString());
                     assertTrue(d.variableInfoContainer().variableNature() instanceof VariableNature.TryResource);
                 } else if ("0".equals(d.statementId())) {
                     assertEquals("new StringWriter()", d.variableInfoContainer()
@@ -133,7 +133,7 @@ public class Test_52_Var extends CommonTestRunner {
             }
             if (d.variable() instanceof ReturnVariable) {
                 if ("0.0.0".equals(d.statementId())) {
-                    assertEquals("(new StringWriter()/*@NotNull*/).toString()", d.currentValue().toString());
+                    assertEquals("(instance type StringWriter/*{L sw:0}*/).toString()", d.currentValue().toString());
                     // explicit as result of the method, rather than governed by the type
                     assertEquals(MultiLevel.EFFECTIVELY_IMMUTABLE_DV, d.getProperty(Property.IMMUTABLE));
                 }

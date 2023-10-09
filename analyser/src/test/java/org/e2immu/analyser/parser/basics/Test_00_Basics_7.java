@@ -115,7 +115,7 @@ public class Test_00_Basics_7 extends CommonTestRunner {
                     if ("1".equals(d.statementId())) {
                         assertDv(d, MultiLevel.EFFECTIVELY_NOT_NULL_DV, CONTEXT_NOT_NULL);
                     }
-                    assertDv(d, 1, MultiLevel.EFFECTIVELY_IMMUTABLE_DV, EXTERNAL_IMMUTABLE);
+                    assertDv(d, 2, MultiLevel.EFFECTIVELY_IMMUTABLE_DV, EXTERNAL_IMMUTABLE);
                 }
 
                 if (d.variable() instanceof FieldReference fr && "out".equals(fr.fieldInfo.name)) {
@@ -182,7 +182,7 @@ public class Test_00_Basics_7 extends CommonTestRunner {
                 if ("j".equals(d.variableName())) {
                     String expect = switch (d.iteration()) {
                         case 0 -> "<f:i>";
-                        case 1 -> "<vp:i:[11 delays]>";
+                        case 1 -> "<vp:i:[15 delays]>";
                         default -> "i";
                     };
                     if ("1.0.0".equals(d.statementId())) {
@@ -203,7 +203,7 @@ public class Test_00_Basics_7 extends CommonTestRunner {
                     if ("0".equals(d.statementId())) {
                         String expect0_100 = switch (d.iteration()) {
                             case 0 -> "<f:i>";
-                            case 1 -> "<vp:i:[11 delays]>";
+                            case 1 -> "<vp:i:[15 delays]>";
                             default -> "instance type int";
                         };
                         assertEquals(expect0_100, d.currentValue().toString());
@@ -317,7 +317,7 @@ public class Test_00_Basics_7 extends CommonTestRunner {
                 assertEquals("<variable value>", d.fieldAnalysis().getValue().toString());
                 assertEquals(DV.FALSE_DV, d.fieldAnalysis().getProperty(FINAL));
                 assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, d.fieldAnalysis().getProperty(EXTERNAL_NOT_NULL));
-                String sortedValues = d.iteration() == 0 ? "[11 delays]"
+                String sortedValues = d.iteration() == 0 ? "[15 delays]"
                         : "(b?p:0)<10?1+(b?p:0):b?p:0,instance type int,instance type int,instance type int";
                 assertEquals(sortedValues, ((FieldAnalysisImpl.Builder) (d.fieldAnalysis())).sortedValuesString());
                 assertDv(d, 1, MultiLevel.NOT_IGNORE_MODS_DV, EXTERNAL_IGNORE_MODIFICATIONS);

@@ -27,8 +27,7 @@ import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 
-import static org.e2immu.analyser.parser.VisitorTestSupport.IterationInfo.it;
-import static org.e2immu.analyser.parser.VisitorTestSupport.IterationInfo.it0;
+import static org.e2immu.analyser.parser.VisitorTestSupport.IterationInfo.*;
 import static org.junit.jupiter.api.Assertions.*;
 
 public class Test_04_NotNull_AAPI extends CommonTestRunner {
@@ -51,15 +50,14 @@ public class Test_04_NotNull_AAPI extends CommonTestRunner {
             if ("add".equals(d.methodInfo().name)) {
                 if ("node".equals(d.variableName())) {
                     if ("2".equals(d.statementId())) {
-                        String linked = switch (d.iteration()) {
-                            case 0 -> "node.map:-1,strings:-1,this.root:0,this:-1";
-                            default -> "node.map:3,this.root:0,this:3";
-                        };
+                        String linked = d.iteration() == 0
+                                ? "System.out:-1,data:-1,node.map:-1,strings:-1,this.root:0,this:-1"
+                                : "node.map:3,this.root:0,this:3";
                         assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
                     }
                     if ("3".equals(d.statementId())) {
                         String linked = switch (d.iteration()) {
-                            case 0 -> "data:-1,node.data:-1,node.map:-1,strings:-1,this.root:0,this:-1";
+                            case 0 -> "System.out:-1,data:-1,node.data:-1,node.map:-1,strings:-1,this.root:0,this:-1";
                             case 1 -> "data:-1,node.data:-1,node.map:-1,this.root:0,this:-1";
                             default -> "node.data:4,node.map:3,this.root:0,this:3";
                         };
@@ -70,15 +68,14 @@ public class Test_04_NotNull_AAPI extends CommonTestRunner {
                     assertNotNull(fr.scopeVariable);
                     if ("node".equals(fr.scopeVariable.simpleName())) {
                         if ("2".equals(d.statementId())) {
-                            String linked = switch (d.iteration()) {
-                                case 0 -> "node:-1,strings:-1,this.root:-1,this:-1";
-                                default -> "node:2,this.root:2,this:3";
-                            };
+                            String linked = d.iteration() == 0
+                                    ? "System.out:-1,data:-1,node:-1,strings:-1,this.root:-1,this:-1"
+                                    : "node:2,this.root:2,this:3";
                             assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
                         }
                         if ("3".equals(d.statementId())) {
                             String linked = switch (d.iteration()) {
-                                case 0 -> "data:-1,node.data:-1,node:-1,strings:-1,this.root:-1,this:-1";
+                                case 0 -> "System.out:-1,data:-1,node.data:-1,node:-1,strings:-1,this.root:-1,this:-1";
                                 case 1 -> "data:-1,node.data:-1,node:-1,this.root:-1,this:-1";
                                 default -> "node.data:4,node:2,this.root:2,this:3";
                             };
@@ -93,18 +90,16 @@ public class Test_04_NotNull_AAPI extends CommonTestRunner {
                             fail();
                         }
                         if ("2.0.0".equals(d.statementId())) {
-                            assertEquals("new LinkedList<>()", d.currentValue().toString());
+                            assertEquals("new LinkedList<>()/*0==this.size()*/", d.currentValue().toString());
                         }
                         if ("2".equals(d.statementId())) {
                             VariableInfo eval = d.variableInfoContainer().best(Stage.EVALUATION);
                             String evalValue = d.iteration() < 2 ? "<f:node.data>" : "nullable instance type List<T>";
                             assertEquals(evalValue, eval.getValue().toString());
 
-                            String expected = switch (d.iteration()) {
-                                case 0 -> "<null-check>?new LinkedList<>():<f:node.data>";
-                                default ->
-                                        "null==nullable instance type List<T>?new LinkedList<>():nullable instance type List<T>";
-                            };
+                            String expected = d.iteration() == 0
+                                    ? "<null-check>?new LinkedList<>()/*0==this.size()*/:<f:node.data>"
+                                    : "null==nullable instance type List<T>?new LinkedList<>()/*0==this.size()*/:nullable instance type List<T>";
                             assertEquals(expected, d.currentValue().toString());
                             assertEquals("Type java.util.List<T>", d.currentValue().returnType().toString());
                         }
@@ -190,29 +185,29 @@ public class Test_04_NotNull_AAPI extends CommonTestRunner {
                 if ("newTrieNode".equals(d.variableName())) {
                     if ("1.0.1.0.3".equals(d.statementId())) {
                         assertLinked(d,
-                                it0("node.map:-1,node:-1,this.root:-1,this:-1"),
+                                it0("System.out:-1,data:-1,node.map:-1,node:-1,s:-1,strings:-1,this.root:-1,this:-1"),
                                 it(1, "node.map:3,node:3,this.root:3,this:3"));
                         assertDv(d, 1, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     }
                     if ("1.0.1.1.1.0.1".equals(d.statementId())) {
                         assertEquals(0, d.iteration());
-                        String linked = "node.map:-1,node:-1,s:-1,this.root:-1,this:-1";
+                        String linked = "data:-1,node.map:-1,node:-1,s:-1,this.root:-1,this:-1";
                         assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
                     }
                     if ("1.0.1.1.1".equals(d.statementId())) {
                         assertEquals(0, d.iteration());
-                        String linked = "node.map:-1,node:-1,s:-1,this.root:-1,this:-1";
+                        String linked = "data:-1,node.map:-1,node:-1,s:-1,this.root:-1,this:-1";
                         assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
                     }
                     if ("1.0.1".equals(d.statementId())) {
                         assertDv(d, 1, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                         assertLinked(d,
-                                it0("node.map:-1,node:-1,s:-1,this.root:-1,this:-1"),
+                                it0("System.out:-1,data:-1,node.map:-1,node:-1,s:-1,strings:-1,this.root:-1,this:-1"),
                                 it(1, "node.map:3,node:3,this.root:3,this:3"));
                     }
                     if ("1.0.2".equals(d.statementId())) {
                         assertLinked(d,
-                                it0("node.map:-1,node:0,s:-1,this.root:-1,this:-1"),
+                                it0("System.out:-1,data:-1,node.map:-1,node:0,s:-1,strings:-1,this.root:-1,this:-1"),
                                 it(1, "node.map:3,node:0,this.root:3,this:3"));
                         assertDv(d, 1, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
                     }
@@ -227,12 +222,12 @@ public class Test_04_NotNull_AAPI extends CommonTestRunner {
                     if ("1.0.1".equals(d.statementId())) {
                         assertDv(d, 1, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
                         assertLinked(d,
-                                it0("newTrieNode:-1,node.map:-1,s:-1,this.root:0,this:-1"),
+                                it0("System.out:-1,data:-1,newTrieNode:-1,node.map:-1,s:-1,strings:-1,this.root:0,this:-1"),
                                 it(1, "node.map:4,this.root:0,this:3"));
                     }
                     if ("1.0.2".equals(d.statementId())) {
                         assertLinked(d,
-                                it0("newTrieNode:0,node.map:-1,s:-1,this.root:-1,this:-1"),
+                                it0("System.out:-1,data:-1,newTrieNode:0,node.map:-1,s:-1,strings:-1,this.root:-1,this:-1"),
                                 it(1, "newTrieNode:0,node.map:3,this.root:3,this:3"));
                         assertDv(d, 1, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
                     }
@@ -355,7 +350,9 @@ public class Test_04_NotNull_AAPI extends CommonTestRunner {
         EvaluationResultVisitor evaluationResultVisitor = d -> {
             if ("method3".equals(d.methodInfo().name)) {
                 if ("2".equals(d.statementId())) {
-                    String expected = "null==NotNull_6.compute(in)?null:\"Not null: \"+NotNull_6.compute(in)+\" == \"+NotNull_6.compute(in)";
+                    String expected = d.iteration() == 0
+                            ? "<null-check>?null:\"Not null: \"+<m:compute>+\" == \"+<m:compute>"
+                            : "null==in?null:\"Not null: \"+(null==in?null:in.toUpperCase())+\" == \"+(null==in?null:in.toUpperCase())";
                     assertEquals(expected, d.evaluationResult().getExpression().toString());
                 }
             }
@@ -364,7 +361,9 @@ public class Test_04_NotNull_AAPI extends CommonTestRunner {
             if ("method2".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof ReturnVariable) {
                     if ("1".equals(d.statementId())) {
-                        String expected = "null==NotNull_6.compute(in)?null:\"Not null: \"+NotNull_6.compute(in)+\" == \"+NotNull_6.compute(in)";
+                        String expected = d.iteration() == 0
+                                ? "<null-check>?null:\"Not null: \"+<m:compute>+\" == \"+<m:compute>" :
+                                "null==in?null:\"Not null: \"+in.toUpperCase()+\" == \"+in.toUpperCase()";
                         assertEquals(expected, d.currentValue().toString());
                     }
                 }
@@ -373,26 +372,29 @@ public class Test_04_NotNull_AAPI extends CommonTestRunner {
         StatementAnalyserVisitor statementAnalyserVisitor = d -> {
             if ("method2".equals(d.methodInfo().name)) {
                 if ("1".equals(d.statementId())) {
-                    assertEquals("null!=NotNull_6.compute(in)",
-                            d.statementAnalysis().stateData().getAbsoluteState().toString());
+                    String expected = d.iteration() == 0 ? "!<null-check>" : "null!=in";
+                    assertEquals(expected, d.statementAnalysis().stateData().getAbsoluteState().toString());
                 }
             }
         };
 
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("compute".equals(d.methodInfo().name)) {
-                String expected = "null==in?null:in.toUpperCase()";
+                String expected = d.iteration() == 0 ? "<m:compute>" : "/*inline compute*/null==in?null:in.toUpperCase()";
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
             }
             if ("method".equals(d.methodInfo().name)) {
-                assertEquals("null==NotNull_6.compute(s)", d.methodAnalysis().getSingleReturnValue().toString());
+                String expected = d.iteration() < 2 ? "<m:method>" : "/*inline method*/null==s";
+                assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
             }
             if ("method2".equals(d.methodInfo().name)) {
-                String expected = "null==NotNull_6.compute(in)?null:\"Not null: \"+NotNull_6.compute(in)+\" == \"+NotNull_6.compute(in)";
+                String expected = d.iteration() < 2 ? "<m:method2>"
+                        : "/*inline method2*/null==in?null:\"Not null: \"+in.toUpperCase()+\" == \"+in.toUpperCase()";
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
             }
             if ("method3".equals(d.methodInfo().name)) {
-                String expected = "null==NotNull_6.compute(in)?null:\"Not null: \"+NotNull_6.compute(in)+\" == \"+NotNull_6.compute(in)";
+                String expected = d.iteration() < 2 ? "<m:method3>"
+                        : "/*inline method3*/null==in?null:\"Not null: \"+(null==in?null:in.toUpperCase())+\" == \"+(null==in?null:in.toUpperCase())";
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
             }
         };

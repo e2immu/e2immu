@@ -65,14 +65,14 @@ public class Test_00_Basics_9 extends CommonTestRunner {
                 assertEquals(DV.FALSE_DV, d.methodAnalysis().getProperty(MODIFIED_METHOD));
                 assertEquals(1, d.methodAnalysis().getLastStatement().statementTime(Stage.MERGE));
 
-                assertEquals("Basics_9.isFact(containsE)?containsE:!Basics_9.isKnown(true)&&size>=1&&retVal",
+                assertEquals("/*inline setContainsValueHelper*/Basics_9.isFact(containsE)?containsE:!Basics_9.isKnown(true)&&size>=1&&retVal",
                         d.methodAnalysis().getSingleReturnValue().toString());
             }
             if ("test1".equals(d.methodInfo().name)) {
                 assertDv(d, 0, DV.FALSE_DV, MODIFIED_METHOD);
                 assertEquals(1, d.methodAnalysis().getLastStatement().statementTime(Stage.MERGE));
 
-                assertEquals("Basics_9.setContainsValueHelper(1,contains,isEmpty)",
+                assertEquals("/*inline test1*/Basics_9.isFact(contains)?contains:!Basics_9.isKnown(true)&&isEmpty",
                         d.methodAnalysis().getSingleReturnValue().toString());
 
                 ParameterAnalysis contains = d.parameterAnalyses().get(0);
@@ -89,7 +89,7 @@ public class Test_00_Basics_9 extends CommonTestRunner {
                     assertEquals("", d.variableInfo().getLinkedVariables().toString());
                 }
                 if (d.variable() instanceof ReturnVariable) {
-                    assertEquals("", d.variableInfo().getLinkedVariables().toString());
+                    assertEquals("contains:1", d.variableInfo().getLinkedVariables().toString());
                 }
             }
         };

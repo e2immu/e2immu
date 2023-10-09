@@ -201,7 +201,7 @@ public class Test_04_NotNull extends CommonTestRunner {
     public void test_7() throws IOException {
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("method".equals(d.methodInfo().name)) {
-                assertDv(d, DV.TRUE_DV, Property.IDENTITY);
+                assertDv(d, 1, DV.TRUE_DV, Property.IDENTITY);
                 assertEquals("[]", d.methodAnalysis().indicesOfEscapesNotInPreOrPostConditions().toString());
                 assertEquals("Precondition[expression=true, causes=[]]",
                         d.methodAnalysis().getPrecondition().toString());

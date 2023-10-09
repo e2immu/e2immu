@@ -48,27 +48,27 @@ public class Test_00_Basics_22 extends CommonTestRunner {
                     } else fail();
                     assertTrue(d.statementId().startsWith("1.0.0"));
                     if ("1.0.0.0.0".equals(d.statementId()) || "1.0.0.0.1".equals(d.statementId())) {
-                        assertEquals("new ByteArrayOutputStream()", d.currentValue().toString());
+                        assertEquals("instance type ByteArrayOutputStream", d.currentValue().toString());
                     }
                 }
                 if (d.variable() instanceof ReturnVariable) {
                     // return statement
                     if ("1.0.0.0.1".equals(d.statementId())) {
-                        assertEquals("(new ByteArrayOutputStream()).toByteArray()", d.currentValue().toString());
+                        assertEquals("byteArrayOutputStream.toByteArray()", d.currentValue().toString());
                         // dependent! see annotated APIs && test in TestCommonJavaIO.testByteArrayOutputStreamToByteArray()
                         assertEquals("byteArrayOutputStream:2", d.variableInfo().getLinkedVariables().toString());
                     }
 
                     // try statement
                     if ("1.0.0".equals(d.statementId())) {
-                        String expect = "(new ByteArrayOutputStream()).toByteArray()";
+                        String expect = "(instance type ByteArrayOutputStream).toByteArray()";
                         assertEquals(expect, d.currentValue().toString());
                         assertTrue(d.variableInfo().getLinkedVariables().isEmpty());
                     }
 
                     // for-loop: here, byteArrayOutputStream does not exist!
                     if ("1".equals(d.statementId())) {
-                        String expect = "path.split(\"/\").length>=1?(new ByteArrayOutputStream()).toByteArray():<return value>";
+                        String expect = "path.split(\"/\").length>=1?(instance type ByteArrayOutputStream).toByteArray():<return value>";
                         assertEquals(expect, d.currentValue().toString());
                         assertTrue(d.variableInfo().getLinkedVariables().isEmpty());
                     }

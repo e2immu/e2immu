@@ -47,7 +47,7 @@ public class Test_64_StaticBlock extends CommonTestRunner {
     public void test_0() throws IOException {
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
             if ("map".equals(d.fieldInfo().name)) {
-                assertDv(d, MultiLevel.NOT_IGNORE_MODS_DV, Property.EXTERNAL_IGNORE_MODIFICATIONS);
+                assertDv(d, 1, MultiLevel.NOT_IGNORE_MODS_DV, Property.EXTERNAL_IGNORE_MODIFICATIONS);
             }
         };
 
@@ -64,11 +64,13 @@ public class Test_64_StaticBlock extends CommonTestRunner {
                 assertEquals("StaticBlock_1", d.methodInfo().typeInfo.simpleName);
                 if (d.variable() instanceof FieldReference fr && "map".equals(fr.fieldInfo.name)) {
                     if ("0".equals(d.statementId())) {
-                        assertEquals("new HashMap<>()", d.currentValue().toString());
+                        assertEquals("new HashMap<>()/*AnnotatedAPI.isKnown(true)&&0==this.size()*/",
+                                d.currentValue().toString());
                         assertTrue(d.variableInfoContainer().hasEvaluation());
                     }
                     if ("1".equals(d.statementId())) {
-                        assertEquals("new HashMap<>()", d.currentValue().toString());
+                        String expected = "instance type HashMap<String,String>";
+                        assertEquals(expected, d.currentValue().toString());
                     }
                 }
             }
@@ -86,7 +88,8 @@ public class Test_64_StaticBlock extends CommonTestRunner {
 
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
             if ("map".equals(d.fieldInfo().name)) {
-                assertEquals("instance type HashMap<String,String>", d.fieldAnalysis().getValue().toString());
+                String expected = d.iteration() == 0 ? "<f:map>" : "instance type HashMap<String,String>";
+                assertEquals(expected, d.fieldAnalysis().getValue().toString());
             }
         };
         testClass("StaticBlock_1", 0, 0, new DebugConfiguration.Builder()

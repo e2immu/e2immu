@@ -61,9 +61,9 @@ public class Test_00_Basics_7_3 extends CommonTestRunner {
                         };
                         assertEquals(expect, d.currentValue().toString());
                         String causes = switch (d.iteration()) {
-                            case 0 -> "initial:System.out@Method_increment3_0-C;initial:this.i@Method_increment3_0-C;initial@Field_i";
+                            case 0 -> "constructor-to-instance@Method_increment3_0-E;initial:System.out@Method_increment3_0-C;initial:this.i@Method_increment3_0-C;initial@Field_i";
                             // Important that break_init_delay:this.i@Method_increment3_0 has been filtered out, in 1.0.2 and 1.0.3
-                            case 1 -> "initial:System.out@Method_increment3_0-C;initial:this.i@Method_increment3_0-C;initial@Field_i;values:this.i@Field_i";
+                            case 1 -> "constructor-to-instance@Method_increment3_0-E;initial:System.out@Method_increment3_0-C;initial:this.i@Method_increment3_0-C;initial@Field_i;values:this.i@Field_i";
                             default -> "";
                         };
                         assertEquals(causes, d.currentValue().causesOfDelay().toString());

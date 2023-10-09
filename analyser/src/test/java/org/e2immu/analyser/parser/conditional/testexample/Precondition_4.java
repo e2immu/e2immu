@@ -24,7 +24,7 @@ Near-copy of CompanionMethods-6
 */
 public class Precondition_4 {
 
-    @ImmutableContainer
+    @ImmutableContainer("true")
     static boolean test(Set<String> strings) {
         assert !strings.contains("a");
 

@@ -178,7 +178,7 @@ public class Test_01_Loops_6plus extends CommonTestRunner {
                 }
                 if ("set".equals(d.variableName())) {
                     if ("0".equals(d.statementId())) {
-                        assertEquals("new HashSet<>()", d.currentValue().toString());
+                        assertEquals("new HashSet<>()/*AnnotatedAPI.isKnown(true)&&0==this.size()*/", d.currentValue().toString());
                         assertDv(d, MultiLevel.EFFECTIVELY_NOT_NULL_DV, NOT_NULL_EXPRESSION);
                     }
                     if ("1.0.0".equals(d.statementId())) {
@@ -188,8 +188,8 @@ public class Test_01_Loops_6plus extends CommonTestRunner {
                     }
                     if ("2".equals(d.statementId())) {
                         String expected = d.iteration() <= 1
-                                ? "list.isEmpty()?new HashSet<>():<vl:set>"
-                                : "list.isEmpty()?new HashSet<>():instance type Set<String>";
+                                ? "list.isEmpty()?new HashSet<>()/*AnnotatedAPI.isKnown(true)&&0==this.size()*/:<vl:set>"
+                                : "list.isEmpty()?new HashSet<>()/*AnnotatedAPI.isKnown(true)&&0==this.size()*/:instance type Set<String>";
                         assertEquals(expected, d.currentValue().toString());
                         assertDv(d, 2, MultiLevel.EFFECTIVELY_NOT_NULL_DV, NOT_NULL_EXPRESSION);
                     }
@@ -271,15 +271,16 @@ public class Test_01_Loops_6plus extends CommonTestRunner {
                     if ("3.0.1.0.1.0.0".equals(d.statementId())) {
                         // important: because we're in a loop, we're not just adding one element; therefore,
                         // we cannot keep count, and erase all state
-                        String expect = d.iteration() < 4 ? "<vl:result>" : "instance type Map<String,String>";
+                        String expect = d.iteration() < 2 ? "<vl:result>" : "instance type Map<String,String>";
                         assertEquals(expect, d.currentValue().toString());
                     }
                     if ("4".equals(d.statementId())) {
-                        assertDv(d, 4, MultiLevel.EFFECTIVELY_NOT_NULL_DV, CONTEXT_NOT_NULL);
-                        assertEquals("", d.variableInfo().getLinkedVariables().toString());
+                        assertDv(d, 5, MultiLevel.EFFECTIVELY_NOT_NULL_DV, CONTEXT_NOT_NULL);
+                        String linked = d.iteration() == 0 ? "ZoneOffset.UTC:-1,map:-1,now:-1,queried:-1" : "";
+                        assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
                     }
                     if ("5".equals(d.statementId())) {
-                        assertDv(d, 4, MultiLevel.EFFECTIVELY_NOT_NULL_DV, CONTEXT_NOT_NULL);
+                        assertDv(d, 5, MultiLevel.EFFECTIVELY_NOT_NULL_DV, CONTEXT_NOT_NULL);
                     }
                 }
                 if (d.variable() instanceof ReturnVariable) {
@@ -289,15 +290,17 @@ public class Test_01_Loops_6plus extends CommonTestRunner {
                     }
                     if ("5".equals(d.statementId())) {
                         String expectValue = switch (d.iteration()) {
-                            case 0, 1 -> "map.entrySet().isEmpty()?new HashMap<>():<vl:result>";
-                            case 2, 3 ->
-                                    "map.entrySet().isEmpty()?new HashMap<>():queried.contains((instance type Entry<String,String>).getKey())||<m:compareTo><1?instance type Map<String,String>:<vl:result>";
-                            default -> "map.entrySet().isEmpty()?new HashMap<>():instance type Map<String,String>";
+                            case 0, 1 ->
+                                    "map.entrySet().isEmpty()?new HashMap<>()/*AnnotatedAPI.isKnown(true)&&0==this.size()*/:<vl:result>";
+                            default ->
+                                    "map.entrySet().isEmpty()?new HashMap<>()/*AnnotatedAPI.isKnown(true)&&0==this.size()*/:instance type Map<String,String>";
                         };
                         assertEquals(expectValue, d.currentValue().toString());
-                        assertEquals("result:0", d.variableInfo().getLinkedVariables().toString());
+                        String linked = d.iteration() == 0 ? "ZoneOffset.UTC:-1,map:-1,now:-1,queried:-1,result:0"
+                                : "result:0";
+                        assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
                         assertDv(d, MultiLevel.NULLABLE_DV, CONTEXT_NOT_NULL);
-                        assertDv(d, 4, MultiLevel.EFFECTIVELY_NOT_NULL_DV, NOT_NULL_EXPRESSION);
+                        assertDv(d, 2, MultiLevel.EFFECTIVELY_NOT_NULL_DV, NOT_NULL_EXPRESSION);
                     }
                 }
             }
@@ -324,11 +327,14 @@ public class Test_01_Loops_6plus extends CommonTestRunner {
             assertEquals(DV.TRUE_DV, utc.getProperty(MODIFIED_VARIABLE));
         };
 
+        BreakDelayVisitor breakDelayVisitor = d -> assertEquals("-----S", d.delaySequence());
+
         // potential null pointer exception: both "now" and the result of the "now()" call
         testClass("Loops_11", 0, 2, new DebugConfiguration.Builder()
                 .addStatementAnalyserVisitor(statementAnalyserVisitor)
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .addTypeMapVisitor(typeMapVisitor)
+                .addBreakDelayVisitor(breakDelayVisitor)
                 .build());
     }
 
@@ -648,10 +654,12 @@ public class Test_01_Loops_6plus extends CommonTestRunner {
                 if ("result".equals(d.variableName())) {
                     if ("1".equals(d.statementId())) {
                         String expected = switch (d.iteration()) {
-                            case 0 -> "<loopIsNotEmptyCondition>?<vl:result>:new HashMap<>()";
-                            case 1 -> "kvStore$0.entrySet().isEmpty()?new HashMap<>():<vl:result>";
+                            case 0 ->
+                                    "<loopIsNotEmptyCondition>?<vl:result>:new HashMap<>()/*AnnotatedAPI.isKnown(true)&&0==this.size()*/";
+                            case 1 ->
+                                    "kvStore$0.entrySet().isEmpty()?new HashMap<>()/*AnnotatedAPI.isKnown(true)&&0==this.size()*/:<vl:result>";
                             default ->
-                                    "kvStore$0.entrySet().isEmpty()?new HashMap<>():instance type Map<String,String>";
+                                    "kvStore$0.entrySet().isEmpty()?new HashMap<>()/*AnnotatedAPI.isKnown(true)&&0==this.size()*/:instance type Map<String,String>";
                         };
                         assertEquals(expected, d.currentValue().toString());
                         if (d.iteration() >= 2) {
@@ -691,7 +699,8 @@ public class Test_01_Loops_6plus extends CommonTestRunner {
                                 it(1, "entry:2,this:3"));
 
                         assertTrue(d.variableInfoContainer().hasMerge());
-                        assertLinked(d, it0("scope-container:1.0.1:-1,this:-1"), it(1, "this:3"));
+                        assertLinked(d, it0("queried:-1,scope-container:1.0.1:-1,this:-1"),
+                                it(1, "this:3"));
                     }
                 }
             }

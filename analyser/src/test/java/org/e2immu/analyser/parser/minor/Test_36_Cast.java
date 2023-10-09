@@ -79,7 +79,7 @@ public class Test_36_Cast extends CommonTestRunner {
                     assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
                 }
                 if (d.variable() instanceof FieldReference fr && "t".equals(fr.fieldInfo.name)) {
-                    String expectValue = d.iteration() < 2 ? "<f:t>" : "instance type T";
+                    String expectValue = d.iteration() == 0 ? "<f:t>" : "instance type T";
                     assertEquals(expectValue, d.currentValue().toString());
                     assertDv(d, 1, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
                 }

@@ -480,28 +480,27 @@ public class ConstructorCall extends BaseExpression implements HasParameterExpre
                 false);
         CausesOfDelay parameterDelays = res.v.stream().map(Expression::causesOfDelay).reduce(CausesOfDelay.EMPTY, CausesOfDelay::merge);
         if (parameterDelays.isDelayed()) {
-            return delayedConstructorCall(context, res.k, parameterDelays); // FIXME
+            return delayedConstructorCall(context, res.k, parameterDelays);
         }
 
         // check state changes of companion methods
-     /*   Expression instance;
+        Expression instance;
         if (constructor != null) {
             MethodCall.ModReturn modReturn = MethodCall.checkCompanionMethodsModifying(identifier, res.k, context,
                     constructor, null, this, res.v, this, DV.TRUE_DV);
             if (modReturn == null) {
                 instance = this;
             } else if (modReturn.expression() != null) {
-                Properties properties = context.evaluationContext().getValueProperties(modReturn.expression());
                 instance = modReturn.expression().isDelayed()
-                        ? createDelayedValue(identifier, context, properties, modReturn.expression().causesOfDelay())
+                        ? createDelayedValue(identifier, context, modReturn.expression().causesOfDelay())
                         : modReturn.expression();
             } else {
-                instance = createDelayedValue(identifier, context, (Properties) null, modReturn.causes());
+                instance = createDelayedValue(identifier, context, modReturn.causes());
             }
         } else {
             instance = this;
-        }*/
-        res.k.setExpression(this);
+        }
+        res.k.setExpression(instance);
 
         if (constructor != null &&
                 (!constructor.methodResolution.isSet() || constructor.methodResolution.get().allowsInterrupts())) {
@@ -510,7 +509,7 @@ public class ConstructorCall extends BaseExpression implements HasParameterExpre
 
         // links from object into the parameters  new List(x), which may render x --3--> new object
         // but that's not a variable... how do we solve that? with a reverse link, that gets translated in assignment?
-        // FIXME implement!!
+        // IMPROVE implement!!
 
         DV cImm = forwardEvaluationInfo.getProperty(Property.CONTEXT_IMMUTABLE);
         if (MultiLevel.isAfterThrowWhenNotEventual(cImm)) {

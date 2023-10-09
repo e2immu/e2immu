@@ -22,6 +22,7 @@ import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.ParameterInfo;
 import org.e2immu.analyser.model.expression.ConstructorCall;
+import org.e2immu.analyser.model.expression.PropertyWrapper;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.ReturnVariable;
 import org.e2immu.analyser.parser.CommonTestRunner;
@@ -173,11 +174,16 @@ public class Test_00_Basics_20 extends CommonTestRunner {
 
             if ("test1".equals(d.methodInfo().name)) {
                 if ("i".equals(d.variableName())) {
-                    String expected = d.iteration() <= 1 ? "<new:I>" : "new I()";
+                    if("0".equals(d.statementId())) {
+                        String expected = d.iteration() <= 1 ? "<new:I>" : "new I()";
+                        assertEquals(expected, d.currentValue().toString());
+                    }
                     if ("1".equals(d.statementId())) {
+                        String expected = d.iteration() <= 1 ? "<new:I>" : "instance type I";
                         assertEquals(expected, d.currentValue().toString());
                     }
                     if ("2".equals(d.statementId())) {
+                        String expected = d.iteration() <= 1 ? "<new:I>" : "instance type I";
                         assertEquals(expected, d.currentValue().toString());
                     }
                     if ("3".equals(d.statementId())) {
@@ -188,13 +194,15 @@ public class Test_00_Basics_20 extends CommonTestRunner {
                 }
                 if ("list".equals(d.variableName())) {
                     if ("2".equals(d.statementId())) {
-                        String expectValue = "new ArrayList<>()";
+                        String expectValue = "new ArrayList<>()/*0==this.size()*/";
                         assertEquals(expectValue, d.currentValue().toString());
-                        assertTrue(d.currentValue() instanceof ConstructorCall);
+                        assertTrue(d.currentValue() instanceof PropertyWrapper pw
+                                && pw.expression() instanceof ConstructorCall);
                         assertEquals(MultiLevel.CONTAINER_DV, d.getProperty(CONTAINER));
                     }
                     if ("3".equals(d.statementId())) {
-                        String expectValue = d.iteration() <= 1 ? "<v:list>" : "new ArrayList<>()";
+                        String expectValue = d.iteration() <= 1 ? "<v:list>"
+                                : "instance type ArrayList<I>/*1==this.size()&&this.contains(i)*/";
                         assertEquals(expectValue, d.currentValue().toString());
 
                         // while class "I" is independent, it is also mutable. It is the latter property that is relevant

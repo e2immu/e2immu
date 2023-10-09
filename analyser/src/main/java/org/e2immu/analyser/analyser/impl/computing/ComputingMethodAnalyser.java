@@ -629,11 +629,34 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
 
         boolean isConstant = value.isConstant() || valueIsConstantField;
 
-        methodAnalysis.setSingleReturnValue(value);
+        Expression valueWithInline;
+        if (!value.isConstant()) {
+            DV suitable = methodIsSuitableForInlining();
+            if (suitable.isDelayed()) {
+                return suitable.causesOfDelay();
+            }
+
+            if (suitable.valueIsTrue()) {
+                /*
+                 As a general rule, we make non-modifying methods inline-able, even if they contain references to variable
+                 fields and local loop variables. It'll depend on where they are expanded
+                 whether the result is something sensible or not.
+                 */
+                assert value.isDone();
+                valueWithInline = createInlinedMethod(value);
+                if (valueWithInline.isDelayed()) {
+                    return delayedSrv(concreteReturnType, value, value.causesOfDelay(), true);
+                }
+            } else {
+                valueWithInline = value;
+            }
+        } else {
+            valueWithInline = value;
+        }
+
+        methodAnalysis.setSingleReturnValue(valueWithInline);
         methodAnalysis.setProperty(Property.CONSTANT, DV.fromBoolDv(isConstant));
-
         LOGGER.debug("Mark method {} as @Constant? {}", methodInfo, isConstant);
-
 
         if (setFluent(value)) {
             computeSetter(true);
@@ -652,6 +675,26 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
         }
 
         return DONE;
+    }
+
+    private DV methodIsSuitableForInlining() {
+        StatementAnalysis last = methodAnalysis.getLastStatement();
+        boolean refersToField = last.variableStream()
+                .anyMatch(vi -> vi.variable() instanceof FieldReference fr && fr.scopeIsRecursivelyThis());
+        if (refersToField) return DV.FALSE_DV;
+
+        DV modifiesInstance = methodAnalysis.getProperty(MODIFIED_METHOD_ALT_TEMP);
+        DV modifiesParameters = methodAnalysis.parameterAnalyses.stream()
+                .map(pa -> pa.getProperty(MODIFIED_VARIABLE))
+                .reduce(DV.FALSE_DV, DV::max);
+        DV modified = modifiesInstance.max(modifiesParameters);
+
+        if (modified.isDelayed()) {
+            LOGGER.debug("Delaying return value of {}, waiting for MODIFIED (we may try to inline!)", methodInfo);
+            return modified;
+        }
+
+        return modified.valueIsFalse() ? DV.TRUE_DV : DV.FALSE_DV;
     }
 
     private AnalysisStatus delayedOrUnreachableMethodResult(SharedState sharedState,

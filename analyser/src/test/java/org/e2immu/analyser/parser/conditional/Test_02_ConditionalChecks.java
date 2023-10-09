@@ -165,7 +165,7 @@ public class Test_02_ConditionalChecks extends CommonTestRunner {
                 assertEquals("3", d.methodAnalysis().getLastStatement().index());
                 assertTrue(d.methodAnalysis().getPrecondition().isEmpty());
                 assertEquals(DV.FALSE_DV, d.methodAnalysis().getProperty(MODIFIED_METHOD));
-                assertEquals(RETURN_1_VALUE, d.methodAnalysis().getSingleReturnValue().toString());
+                assertEquals("/*inline method1*/" + RETURN_1_VALUE, d.methodAnalysis().getSingleReturnValue().toString());
             }
         };
 
@@ -464,7 +464,7 @@ public class Test_02_ConditionalChecks extends CommonTestRunner {
                                     "<vp:o:cm@Parameter_o;cm@Parameter_s;initial:this.s@Method_method5_3-C;link:o@Method_method5_3:M;link:this.s@Method_method5_3:M;mom@Parameter_s>/*(ConditionalChecks_4B)*/";
                             default -> "o/*(ConditionalChecks_4B)*/";
                         };
-                  //      assertEquals(value, d.currentValue().toString());
+                        //      assertEquals(value, d.currentValue().toString());
 //                        assertDv(d, MultiLevel.EFFECTIVELY_NOT_NULL_DV, NOT_NULL_EXPRESSION);
                     }
                 }
@@ -483,9 +483,9 @@ public class Test_02_ConditionalChecks extends CommonTestRunner {
         BreakDelayVisitor breakDelayVisitor = d -> assertEquals("---SF---", d.delaySequence());
 
         testClass("ConditionalChecks_4B", 0, 1, new DebugConfiguration.Builder()
-              //  .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-              //  .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
-              //  .addBreakDelayVisitor(breakDelayVisitor)
+                //  .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                //  .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+                //  .addBreakDelayVisitor(breakDelayVisitor)
                 .build(), new AnalyserConfiguration.Builder().setSkipTransformations(true).build());
     }
 

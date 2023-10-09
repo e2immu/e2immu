@@ -63,7 +63,7 @@ public class Test_65_ConditionalInitialization extends CommonTestRunner {
                 if (d.iteration() == 0) {
                     assertTrue(d.fieldAnalysis().valuesDelayed().isDelayed());
                 } else {
-                    String expected = "Set.of(\"a\",\"b\"),new HashSet<>()";
+                    String expected = "Set.of(\"a\",\"b\"),new HashSet<>()/*AnnotatedAPI.isKnown(true)&&0==this.size()*/";
                     assertEquals(expected, ((FieldAnalysisImpl.Builder) d.fieldAnalysis()).sortedValuesString());
                 }
                 assertEquals(DV.FALSE_DV, d.fieldAnalysis().getProperty(Property.FINAL));
@@ -106,7 +106,7 @@ public class Test_65_ConditionalInitialization extends CommonTestRunner {
                     }
                     if ("0".equals(d.statementId())) {
                         String expected = d.iteration() == 0 ? "b?Set.of(\"a\",\"b\"):<f:set>"
-                                : "b?Set.of(\"a\",\"b\"):new HashSet<>()";
+                                : "b?Set.of(\"a\",\"b\"):new HashSet<>()/*AnnotatedAPI.isKnown(true)&&0==this.size()*/";
                         assertEquals(expected, d.currentValue().toString());
                         assertDv(d, 1, MultiLevel.MUTABLE_DV, Property.IMMUTABLE);
                     }
@@ -133,8 +133,8 @@ public class Test_65_ConditionalInitialization extends CommonTestRunner {
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
             if ("set".equals(d.fieldInfo().name)) {
                 String expected = d.iteration() == 0
-                        ? "initial:System.out@Method_ConditionalInitialization_1_0.1.0-C;initial:this.set@Method_ConditionalInitialization_1_0.1.0-C;initial@Field_set;values:this.set@Field_set"
-                        : "b?Set.of(\"a\",\"b\"):new HashSet<>(),c?setParam:null,new HashSet<>()";
+                        ? "constructor-to-instance@Method_ConditionalInitialization_1_0.1.0-E;initial:System.out@Method_ConditionalInitialization_1_0.1.0-C;initial:this.set@Method_ConditionalInitialization_1_0.1.0-C;initial@Field_set;values:this.set@Field_set"
+                        : "b?Set.of(\"a\",\"b\"):new HashSet<>()/*AnnotatedAPI.isKnown(true)&&0==this.size()*/,c?setParam:null,new HashSet<>()/*AnnotatedAPI.isKnown(true)&&0==this.size()*/";
                 assertEquals(expected, ((FieldAnalysisImpl.Builder) d.fieldAnalysis()).sortedValuesString());
                 assertEquals(d.iteration() == 0, d.fieldAnalysis().valuesDelayed().isDelayed());
 
@@ -187,7 +187,7 @@ public class Test_65_ConditionalInitialization extends CommonTestRunner {
     public void test_3() throws IOException {
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
             if ("set".equals(d.fieldInfo().name)) {
-                String expect = "new HashSet<>(),null";
+                String expect = "new HashSet<>()/*AnnotatedAPI.isKnown(true)&&0==this.size()*/,null";
                 assertEquals(expect, ((FieldAnalysisImpl.Builder) d.fieldAnalysis()).sortedValuesString());
 
                 assertEquals(MultiLevel.NULLABLE_DV, d.fieldAnalysis().getProperty(Property.EXTERNAL_NOT_NULL));
