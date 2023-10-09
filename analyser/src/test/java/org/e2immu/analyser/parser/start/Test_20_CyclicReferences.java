@@ -104,13 +104,13 @@ public class Test_20_CyclicReferences extends CommonTestRunner {
             if ("methodA".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof ReturnVariable) {
                     if ("0.0.0".equals(d.statementId())) {
-                        String expectValue = d.iteration() == 0 ? "<m:methodB>" : "CyclicReferences_2.methodB(\"b\")";
+                        String expectValue = d.iteration() < 2 ? "<m:methodB>" : "true";
                         assertEquals(expectValue, d.currentValue().toString());
                     }
                     if ("1".equals(d.statementId())) {
-                        String expectValue = d.iteration() == 0
+                        String expectValue = d.iteration() < 2
                                 ? "\"b\".equals(paramA)?<m:methodB>:\"a\".equals(paramA)"
-                                : "\"b\".equals(paramA)?CyclicReferences_2.methodB(\"b\"):\"a\".equals(paramA)";
+                                : "\"a\".equals(paramA)||\"b\".equals(paramA)";
                         assertEquals(expectValue, d.currentValue().toString());
                     }
                 }
@@ -121,7 +121,8 @@ public class Test_20_CyclicReferences extends CommonTestRunner {
             if ("methodB".equals(d.methodInfo().name)) {
                 assertTrue(methodResolution.methodsOfOwnClassReached().contains(d.methodInfo()));
                 assertFalse(methodResolution.ignoreMeBecauseOfPartOfCallCycle());
-                String expected = "\"a\".equals(paramB)?CyclicReferences_2.methodA(\"a\"):\"b\".equals(paramB)";
+                String expected = d.iteration() == 0 ? "<m:methodB>"
+                        : "/*inline methodB*/\"a\".equals(paramB)?CyclicReferences_2.methodA(\"a\"):\"b\".equals(paramB)";
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
             }
             if ("methodA".equals(d.methodInfo().name)) {
@@ -191,9 +192,9 @@ public class Test_20_CyclicReferences extends CommonTestRunner {
         BreakDelayVisitor breakDelayVisitor = d -> assertEquals("------", d.delaySequence());
 
         testClass("CyclicReferences_3", 0, 0, new DebugConfiguration.Builder()
-          //      .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-          //      .addEvaluationResultVisitor(evaluationResultVisitor)
-          //      .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                //      .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                //      .addEvaluationResultVisitor(evaluationResultVisitor)
+                //      .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .addBreakDelayVisitor(breakDelayVisitor)
                 .build());
     }
@@ -204,10 +205,13 @@ public class Test_20_CyclicReferences extends CommonTestRunner {
             if ("methodE".equals(d.methodInfo().name)) {
                 if ("0.0.0".equals(d.statementId())) {
                     Expression expression = d.statementAnalysis().stateData().valueOfExpressionGet();
-                    assertEquals("instance type boolean", expression.toString());
-                    if (expression instanceof Instance i) {
-                        assertTrue(i.identifier instanceof Identifier.PositionalIdentifier);
-                    } else fail();
+                    String expected = d.iteration() == 0 ? "<m:methodF>" : "instance type boolean";
+                    assertEquals(expected, expression.toString());
+                    if (d.iteration() > 0) {
+                        if (expression instanceof Instance i) {
+                            assertTrue(i.identifier instanceof Identifier.PositionalIdentifier);
+                        } else fail();
+                    }
                 }
             }
         };

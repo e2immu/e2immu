@@ -208,7 +208,7 @@ public class Test_18_E2Immutable extends CommonTestRunner {
             if ("E2Immutable_2".equals(d.methodInfo().name)) {
                 assertTrue(d.methodInfo().isConstructor);
                 if (d.variable() instanceof FieldReference fr && "set3".equals(fr.fieldInfo.name)) {
-                    assertEquals("new HashSet<>(set3Param)", d.currentValue().toString());
+                    assertEquals("new HashSet<>(set3Param)/*this.size()==set3Param.size()*/", d.currentValue().toString());
                     assertEquals("set3Param:4", d.variableInfo().getLinkedVariables().toString());
                 }
             }
@@ -368,7 +368,7 @@ public class Test_18_E2Immutable extends CommonTestRunner {
             if ("E2Immutable_5".equals(d.methodInfo().name)) {
                 assertTrue(d.methodInfo().isConstructor);
                 if (d.variable() instanceof FieldReference fr && "map5".equals(fr.fieldInfo.name)) {
-                    assertEquals("new HashMap<>(map5Param)", d.currentValue().toString());
+                    assertEquals("new HashMap<>(map5Param)/*this.size()==map5Param.size()*/", d.currentValue().toString());
                     assertEquals("map5Param:4", d.variableInfo().getLinkedVariables().toString());
                 }
             }
@@ -408,14 +408,14 @@ public class Test_18_E2Immutable extends CommonTestRunner {
                 if ("incremented".equals(d.variableName())) {
                     if ("0".equals(d.statementId())) {
                         String expectValue = d.iteration() == 0 ? "<new:HashMap<String,SimpleContainer>>"
-                                : "new HashMap<>(map7)";
+                                : "new HashMap<>(map7)/*this.size()==map7.size()*/";
                         assertEquals(expectValue, d.currentValue().toString());
                         String expectLinked = d.iteration() == 0 ? "this.map7:-1,this:-1" : "this.map7:4,this:4";
                         assertEquals(expectLinked, d.variableInfo().getLinkedVariables().toString());
                     }
                     if ("1".equals(d.statementId())) {
                         String expectValue = d.iteration() == 0 ? "<new:HashMap<String,SimpleContainer>>"
-                                : "new HashMap<>(map7)";
+                                : "new HashMap<>(map7)/*this.size()==map7.size()*/";
                         assertEquals(expectValue, d.currentValue().toString());
                     }
                 }

@@ -17,6 +17,7 @@ package org.e2immu.analyser.parser.start;
 import org.e2immu.analyser.analyser.DV;
 import org.e2immu.analyser.analyser.Property;
 import org.e2immu.analyser.analysis.MethodAnalysis;
+import org.e2immu.analyser.analysis.ParameterAnalysis;
 import org.e2immu.analyser.config.AnalyserConfiguration;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.model.MethodInfo;
@@ -35,6 +36,7 @@ import java.util.Set;
 import java.util.stream.Stream;
 
 import static org.e2immu.analyser.parser.VisitorTestSupport.IterationInfo.it;
+import static org.e2immu.analyser.parser.VisitorTestSupport.IterationInfo.it0;
 import static org.junit.jupiter.api.Assertions.*;
 
 public class Test_17_Container extends CommonTestRunner {
@@ -80,9 +82,10 @@ public class Test_17_Container extends CommonTestRunner {
                         assertEquals("0-E", d.variableInfo().getReadId());
                         assertFalse(d.variableInfoContainer().isReadInThisStatement());
 
-                        String expected = "nullable instance type Set<String>/*@Identity*/";
+                        String expected = d.iteration() == 0 ? "<p:p>"
+                                : "nullable instance type Set<String>/*@Identity*//*this.size()>=1&&this.contains(toAdd)*/";
                         assertEquals(expected, d.currentValue().toString());
-                        assertDv(d, 0, MultiLevel.NULLABLE_DV, Property.NOT_NULL_EXPRESSION);
+                        assertDv(d, 1, MultiLevel.NULLABLE_DV, Property.NOT_NULL_EXPRESSION);
                         assertDv(d, 2, MultiLevel.NULLABLE_DV, Property.EXTERNAL_NOT_NULL);
                         assertDv(d, 2, MultiLevel.MUTABLE_DV, Property.EXTERNAL_IMMUTABLE);
                     }
@@ -138,7 +141,7 @@ public class Test_17_Container extends CommonTestRunner {
                 assertEquals(DV.FALSE_DV, d.fieldAnalysis().getProperty(Property.FINAL));
                 assertEquals("p:0", d.fieldAnalysis().getLinkedVariables().toString());
 
-                final String DELAYED = "initial:this.s@Method_setS_1-C;values:this.s@Field_s";
+                final String DELAYED = "constructor-to-instance@Method_setS_1-E;initial:this.s@Method_setS_1-C;values:this.s@Field_s";
 
                 assertDv(d, DELAYED, 1, MultiLevel.NULLABLE_DV, Property.EXTERNAL_NOT_NULL);
                 assertDv(d, DELAYED, 1, MultiLevel.MUTABLE_DV, Property.EXTERNAL_IMMUTABLE);
@@ -500,10 +503,52 @@ public class Test_17_Container extends CommonTestRunner {
                 .build());
     }
 
-
     @Test
     public void test_7() throws IOException {
         testClass("Container_7", 0, 0, new DebugConfiguration.Builder()
+                .build());
+    }
+
+
+    @Test
+    public void test_8() throws IOException {
+        testClass("Container_8", 0, 0, new DebugConfiguration.Builder()
+                .build());
+    }
+
+
+    @Test
+    public void test_9() throws IOException {
+        StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+            if ("add".equals(d.methodInfo().name) && "ItemsImpl".equals(d.methodInfo().typeInfo.simpleName)) {
+                if (d.variable() instanceof FieldReference fr && "items".equals(fr.fieldInfo.name)) {
+                    assertLinked(d, it0("item:-1,this:-1"), it(1, "item:2"));
+                }
+            }
+        };
+        MethodAnalyserVisitor methodAnalyserVisitor = d -> {
+            if ("add".equals(d.methodInfo().name) && "ItemsImpl".equals(d.methodInfo().typeInfo.simpleName)) {
+                ParameterAnalysis pa = d.methodAnalysis().getParameterAnalyses().get(0);
+                //     if (d.iteration() == 0) {
+                //        assertFalse(pa.assignedToFieldIsFrozen());
+                //     } else {
+                // FIXME this is wrong?? linking has gone wrong for some reason
+                assertEquals("{item:2}", pa.getAssignedToField().toString());
+                //     }
+            }
+        };
+        FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
+            if ("items".equals(d.fieldInfo().name)) {
+                assertEquals("instance type ArrayList<Item>", d.fieldAnalysis().getValue().toString());
+                assertLinked(d, d.fieldAnalysis().getLinkedVariables(),
+                        it0("item:-1,item:-1,this:-1"),
+                        it(1, "item:2"));
+            }
+        };
+        testClass("Container_9", 0, 0, new DebugConfiguration.Builder()
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                 .build());
     }
 }

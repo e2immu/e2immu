@@ -340,15 +340,16 @@ public class Test_07_DependentVariables extends CommonTestRunner {
                         assertEquals(expected, d.currentValue().toString());
                     }
                     if ("0.0.2.0.2".equals(d.statementId())) {
-                        assertEquals("true", d.currentValue().toString());
+                        String expected = d.iteration() == 0 ? "<v:added>" : "true";
+                        assertEquals(expected, d.currentValue().toString());
                     }
                     if ("0.0.2".equals(d.statementId())) {
-                        String expected = d.iteration() == 0 ? "<dv:bs[0]>||<dv:bs[1]>" : "bs[0]||bs[1]";
+                        String expected = d.iteration() == 0 ? "<dv:bs[1]>?<v:added>:<dv:bs[0]>" : "bs[0]||bs[1]";
                         assertEquals(expected, d.currentValue().toString());
                     }
                     if ("0.0.3".equals(d.statementId())) {
                         String expected = d.iteration() == 0
-                                ? "<dv:bs[0]>||<dv:bs[1]>||<dv:bs[2]>"
+                                ? "<dv:bs[1]>||<dv:bs[2]>?<v:added>:<dv:bs[0]>"
                                 : "bs[0]||bs[1]||bs[2]";
                         assertEquals(expected, d.currentValue().toString());
                     }
@@ -447,10 +448,12 @@ public class Test_07_DependentVariables extends CommonTestRunner {
                         assertEquals("a", d.currentValue().toString());
                     }
                     if ("0.0.2".equals(d.statementId())) {
-                        assertEquals("a||b", d.currentValue().toString());
+                        String expected = d.iteration() == 0 ? "b?<v:added>:a" : "a||b";
+                        assertEquals(expected, d.currentValue().toString());
                     }
                     if ("0.0.3".equals(d.statementId())) {
-                        assertEquals("a||b||c", d.currentValue().toString());
+                        String expected = d.iteration() == 0 ? "b||c?<v:added>:a" : "a||b||c";
+                        assertEquals(expected, d.currentValue().toString());
                     }
                 }
             }

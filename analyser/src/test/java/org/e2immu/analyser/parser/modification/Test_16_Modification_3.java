@@ -106,7 +106,8 @@ public class Test_16_Modification_3 extends CommonTestRunner {
                     }
                 }
                 if (d.variable() instanceof FieldReference fr && "set3".equals(fr.fieldInfo.name)) {
-                    assertEquals("org.e2immu.analyser.parser.modification.testexample.Modification_3.set3", d.variableName());
+                    assertEquals("org.e2immu.analyser.parser.modification.testexample.Modification_3.set3",
+                            d.variableName());
                     if ("0".equals(d.statementId())) {
                         assertLinked(d, it(0, "local3:0,this:3"));
                         String expectValue = d.iteration() == 0 ? SET3_DELAYED : INSTANCE_TYPE_HASH_SET;
@@ -115,7 +116,8 @@ public class Test_16_Modification_3 extends CommonTestRunner {
                     if ("1".equals(d.statementId())) {
                         assertTrue(d.variableInfo().isRead());
                         assertLinked(d, it(0, "local3:0,this:3"));
-                        String expectValue = d.iteration() == 0 ? SET3_DELAYED : "instance type HashSet<String>";
+                        String expectValue = d.iteration() == 0 ? SET3_DELAYED
+                                : "instance type HashSet<String>/*this.size()>=1&&this.contains(v)*/";
                         assertEquals(expectValue, d.variableInfo().getValue().toString());
                         assertDv(d, 1, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
                     }

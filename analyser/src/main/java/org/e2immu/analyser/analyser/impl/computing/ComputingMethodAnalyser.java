@@ -631,7 +631,7 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
 
         Expression valueWithInline;
         if (!value.isConstant()) {
-            DV suitable = methodIsSuitableForInlining();
+            DV suitable = methodIsSuitableForInlining(value);
             if (suitable.isDelayed()) {
                 return suitable.causesOfDelay();
             }
@@ -677,7 +677,8 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
         return DONE;
     }
 
-    private DV methodIsSuitableForInlining() {
+    private DV methodIsSuitableForInlining(Expression value) {
+        if (value instanceof Instance) return DV.FALSE_DV; // not interesting
         StatementAnalysis last = methodAnalysis.getLastStatement();
         boolean refersToField = last.variableStream()
                 .anyMatch(vi -> vi.variable() instanceof FieldReference fr && fr.scopeIsRecursivelyThis());

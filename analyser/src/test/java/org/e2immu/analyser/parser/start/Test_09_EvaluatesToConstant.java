@@ -227,7 +227,8 @@ public class Test_09_EvaluatesToConstant extends CommonTestRunner {
     MethodAnalyserVisitor methodAnalyserVisitor = d -> {
         if ("someMethod".equals(d.methodInfo().name)) {
             assertEquals(DV.FALSE_DV, d.methodAnalysis().getProperty(Property.MODIFIED_METHOD));
-            assertEquals("null==a?\"x\":a", d.methodAnalysis().getSingleReturnValue().toString());
+            String expected = d.iteration() == 0 ? "<m:someMethod>" : "/*inline someMethod*/null==a?\"x\":a";
+            assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
 
             assertDv(d, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_EXPRESSION);
             assertDv(d.p(0), 1, MultiLevel.NULLABLE_DV, Property.NOT_NULL_PARAMETER);
@@ -241,11 +242,11 @@ public class Test_09_EvaluatesToConstant extends CommonTestRunner {
      */
     @Test
     public void test() throws IOException {
-        testClass("EvaluatesToConstant", 5, 0, new DebugConfiguration.Builder()
-                      //  .addStatementAnalyserVisitor(statementAnalyserVisitor)
-                      //  .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-                       // .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
-                      //  .addEvaluationResultVisitor(evaluationResultVisitor)
+        testClass("EvaluatesToConstant", 4, 0, new DebugConfiguration.Builder()
+                        //  .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                        //  .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                        //  .addEvaluationResultVisitor(evaluationResultVisitor)
+                        .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                         .build(),
                 new AnalyserConfiguration.Builder().setSkipTransformations(true).build());
     }

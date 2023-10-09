@@ -109,7 +109,10 @@ public class MethodAnalyserFactory {
                                                              TypeResolution typeResolution,
                                                              boolean allowComputed,
                                                              boolean inAnnotatedAPI) {
-        if (inAnnotatedAPI) return Analysis.AnalysisMode.CONTRACTED;
+        boolean helper = "JavaUtil".equals(methodInspection.getMethodInfo().typeInfo.simpleName);
+        if (inAnnotatedAPI && !helper) {
+            return Analysis.AnalysisMode.CONTRACTED;
+        }
         boolean isAbstract = (typeInspection.isInterface() || typeInspection.isAnnotation()) &&
                 !methodInspection.isDefault() && !methodInspection.isStatic() ||
                 methodInspection.isAbstract();

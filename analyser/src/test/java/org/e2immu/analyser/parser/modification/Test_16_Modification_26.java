@@ -83,7 +83,7 @@ public class Test_16_Modification_26 extends CommonTestRunner {
                     }
                     if ("1.0.1.1.0".equals(d.statementId())) { // else block
                         VariableInfo eval = d.variableInfoContainer().best(Stage.EVALUATION);
-                        assertEquals("destination.get(e.getKey())",
+                        assertEquals("instance type List<B>/*e.getValue().size()==this.size()*/",
                                 eval.getValue().toString());
                         assertEquals("destination:3,e:4,src:4", eval.getLinkedVariables().toString());
                         assertEquals(DV.TRUE_DV, eval.getProperty(Property.CONTEXT_MODIFIED));
