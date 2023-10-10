@@ -708,7 +708,7 @@ public class Test_37_EventuallyE2Immutable extends CommonTestRunner {
                 .build());
     }
 
-    @Disabled("How to fix this, without inlining?")
+    @Disabled("How to fix this, without inlining fields? As of 202310, we don't inline fields at all")
     @Test
     public void test_11() throws IOException {
         EvaluationResultVisitor evaluationResultVisitor = d -> {

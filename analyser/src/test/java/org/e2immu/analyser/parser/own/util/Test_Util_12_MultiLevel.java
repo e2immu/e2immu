@@ -44,20 +44,12 @@ public class Test_Util_12_MultiLevel extends CommonTestRunner {
         super(true);
     }
 
-    /*
-    tests an unused Enum element inside a normal class
-     */
     @Test
     public void test_1() throws IOException {
         List<Class<?>> classes = List.of(MultiLevel.class);
 
-        testSupportAndUtilClasses(classes,
-                0, 0, new DebugConfiguration.Builder()
-                        //     .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-                        //    .addStatementAnalyserVisitor(statementAnalyserVisitor)
-                        //      .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
-                        //     .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
-                        .build());
+        testSupportAndUtilClasses(classes, 0, 0, new DebugConfiguration.Builder()
+                .build());
     }
 
     @Test
@@ -68,7 +60,11 @@ public class Test_Util_12_MultiLevel extends CommonTestRunner {
 
                 MultiLevel.class);
 
-        testSupportAndUtilClasses(classes, 0, 0, new DebugConfiguration.Builder().build());
+        /*
+        4 warnings: circular type dependency, and 3x condition in assert is always true.
+        I'm OK with these warnings.
+         */
+        testSupportAndUtilClasses(classes, 0, 4, new DebugConfiguration.Builder().build());
     }
 
 }

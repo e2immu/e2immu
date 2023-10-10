@@ -134,7 +134,7 @@ public class TestNoDelay extends CommonTestRunner {
 
         List<Class<?>> classes = List.of(AbstractDelay.class, CausesOfDelay.class, CauseOfDelay.class, DV.class,
                 NoDelay.class, NotDelayed.class, ProgressWrapper.class, AnalysisStatus.class);
-        testSupportAndUtilClasses(classes, 0, 5, new DebugConfiguration.Builder()
+        testSupportAndUtilClasses(classes, 0, 4, new DebugConfiguration.Builder()
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)

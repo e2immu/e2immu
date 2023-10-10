@@ -120,7 +120,6 @@ public abstract class AbstractDelay implements CausesOfDelay {
     public AnalysisStatus combine(AnalysisStatus other) {
         if (other instanceof NotDelayed) return this;
         assert other.isDelayed();
-        assert isDelayed();
         return merge(other.causesOfDelay()).addProgress(other.isProgress());
     }
 

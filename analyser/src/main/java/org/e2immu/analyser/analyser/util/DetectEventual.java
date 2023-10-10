@@ -194,6 +194,15 @@ public record DetectEventual(MethodInfo methodInfo,
                 LOGGER.debug("Waiting for @TestMark, need single return value of {}", methodInfo.distinguishingName());
                 return MethodAnalysis.delayedEventual(srv.causesOfDelay());
             }
+            if (srv instanceof InlinedMethod inlinedMethod) {
+                MethodAnalysis.Eventual eventual = detectTestMark(inlinedMethod.expression());
+                if (eventual.causesOfDelay().isDelayed()) {
+                    return MethodAnalysis.delayedEventual(eventual.causesOfDelay());
+                }
+                if (eventual != MethodAnalysis.NOT_EVENTUAL) {
+                    return eventual;
+                }
+            }
             MethodAnalysis.Eventual eventual = detectTestMark(srv);
             if (eventual.causesOfDelay().isDelayed()) {
                 return MethodAnalysis.delayedEventual(eventual.causesOfDelay());
