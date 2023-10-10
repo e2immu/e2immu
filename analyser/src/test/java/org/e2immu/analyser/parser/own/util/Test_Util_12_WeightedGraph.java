@@ -171,10 +171,10 @@ public class Test_Util_12_WeightedGraph extends CommonTestRunner {
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
             if ("VariableCause".equals(d.fieldInfo().owner.simpleName)) {
                 if ("cause".equals(d.fieldInfo().name)) {
-                    assertDv(d, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.EXTERNAL_NOT_NULL);
+                    assertDv(d, 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.EXTERNAL_NOT_NULL);
                 }
                 if ("location".equals(d.fieldInfo().name)) {
-                    assertDv(d, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.EXTERNAL_NOT_NULL);
+                    assertDv(d, 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.EXTERNAL_NOT_NULL);
                 }
                 if ("variable".equals(d.fieldInfo().name)) {
                     assertDv(d, 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.EXTERNAL_NOT_NULL);

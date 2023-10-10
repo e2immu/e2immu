@@ -60,7 +60,7 @@ public class TestNoDelay extends CommonTestRunner {
                     assertDv(d, MultiLevel.NOT_INVOLVED_DV, Property.EXTERNAL_IMMUTABLE);
                 }
                 if (d.variable() instanceof This) {
-                    assertDv(d, 8, MultiLevel.EFFECTIVELY_IMMUTABLE_DV, Property.EXTERNAL_IMMUTABLE);
+                    assertDv(d, 14, MultiLevel.EFFECTIVELY_IMMUTABLE_DV, Property.EXTERNAL_IMMUTABLE);
                 }
             }
         };
@@ -79,7 +79,7 @@ public class TestNoDelay extends CommonTestRunner {
                 assertDv(d, MultiLevel.CONTAINER_DV, Property.CONTAINER);
                 assertDv(d, MultiLevel.INDEPENDENT_DV, Property.INDEPENDENT);
                 assertDv(d, MultiLevel.NOT_IGNORE_MODS_DV, Property.EXTERNAL_IGNORE_MODIFICATIONS);
-                assertDv(d, MultiLevel.EFFECTIVELY_IMMUTABLE_DV, Property.EXTERNAL_IMMUTABLE);
+                assertDv(d, 1, MultiLevel.EFFECTIVELY_IMMUTABLE_DV, Property.EXTERNAL_IMMUTABLE);
             }
         };
 
@@ -95,16 +95,19 @@ public class TestNoDelay extends CommonTestRunner {
                     case "DV", "AnalysisStatus", "AbstractDelay" ->
                             assertDv(d, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_EXPRESSION,
                                     d.methodInfo().fullyQualifiedName);
-                    case "NoDelay", "NotDelayed", "ProgressWrapper" ->
+                    case "NoDelay" -> assertDv(d, 2, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_EXPRESSION);
+                    case "NotDelayed" ->
+                            assertDv(d, 2, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_EXPRESSION);
+                    case "ProgressWrapper" ->
                             assertDv(d, 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_EXPRESSION);
-
                     default -> fail(d.methodInfo().fullyQualifiedName);
                 }
             }
             if (MIN_IN_CAUSES_OF_DELAY.equals(d.methodInfo().fullyQualifiedName)) {
-                assertEquals("other.isInitialDelay()?this:other", d.methodAnalysis().getSingleReturnValue()
+                String expected = d.iteration() == 0 ? "<m:max>" : "/*inline max*/other.isInitialDelay()?this:other";
+                assertEquals(expected, d.methodAnalysis().getSingleReturnValue()
                         .toString());
-                assertDv(d, MultiLevel.EFFECTIVELY_IMMUTABLE_HC_DV, Property.IMMUTABLE);
+                assertDv(d, 1, MultiLevel.EFFECTIVELY_IMMUTABLE_HC_DV, Property.IMMUTABLE);
             }
         };
 
@@ -112,11 +115,11 @@ public class TestNoDelay extends CommonTestRunner {
             if ("$1".equals(d.typeInfo().simpleName) &&  // the anonymous class of EMPTY
                     "CausesOfDelay".equals(d.typeInfo().packageNameOrEnclosingType.getRight().simpleName)) {
                 assertHc(d, 0, "");
-                assertDv(d, 7, MultiLevel.EFFECTIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
+                assertDv(d, 13, MultiLevel.EFFECTIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
             }
             if ("AbstractDelay".equals(d.typeInfo().simpleName)) {
                 assertHc(d, 0, "");
-                assertDv(d, 6, MultiLevel.EFFECTIVELY_IMMUTABLE_HC_DV, Property.IMMUTABLE);
+                assertDv(d, 12, MultiLevel.EFFECTIVELY_IMMUTABLE_HC_DV, Property.IMMUTABLE);
             }
             if ("CausesOfDelay".equals(d.typeInfo().simpleName)) {
                 assertHc(d, 0, "");

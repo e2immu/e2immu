@@ -74,7 +74,7 @@ public class Test_Output_03_FormatterForward extends CommonTestRunner {
                 }
                 if ("8.0.4.0.0".equals(d.statementId())) {
                     String expected = d.iteration() < 2 ? "<m:combine>" :
-                            "Forward.combine(list.get(pos$8) instanceof Symbol?Forward.combine(lastOneWasSpace$8,list.get(pos$8)/*(Symbol)*/.left().elementarySpace(options)):nullable instance type ElementarySpace,list.get(pos$8)/*(Space)*/.elementarySpace(options))";
+                            "nullable instance type ElementarySpace==`ElementarySpace.NONE`||nullable instance type ElementarySpace==`ElementarySpace.ONE`?nullable instance type ElementarySpace:list.get(pos$8)/*(Space)*/.elementarySpace(options)";
                     assertEquals(expected, d.evaluationResult().value().toString());
                 }
             }
