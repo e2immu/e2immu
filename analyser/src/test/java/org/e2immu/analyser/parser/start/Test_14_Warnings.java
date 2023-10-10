@@ -544,7 +544,36 @@ public class Test_14_Warnings extends CommonTestRunner {
         // assigning a variable to itself
         // method2: nothing (we'll allow this, transform our way out of this bad programming)
         // method3: overwriting previous assignment
+        StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+            if ("method4".equals(d.methodInfo().name)) {
+                if (d.variable() instanceof ParameterInfo pi && "i".equals(pi.name)) {
+                    if ("1.0.0".equals(d.statementId()) || "1.0.1".equals(d.statementId())) {
+                        String expected = d.iteration() == 0 ? "<p:i>" : "instance type int/*@Identity*/";
+                        assertEquals(expected, d.currentValue().toString());
+                    }
+                }
+                if ("j".equals(d.variableName())) {
+                    if ("1.0.0".equals(d.statementId())) {
+                        String expected = d.iteration() == 0 ? "<v:j>" : "0";
+                        assertEquals(expected, d.currentValue().toString());
+                    }
+                    if ("1.0.1".equals(d.statementId())) {
+                        assertEquals("3", d.currentValue().toString());
+                    }
+                }
+            }
+        };
+        StatementAnalyserVisitor statementAnalyserVisitor = d -> {
+            if ("method4".equals(d.methodInfo().name)) {
+                if ("1.0.0".equals(d.statementId()) || "1.0.1".equals(d.statementId())) {
+                    assertEquals("[i=3]",
+                            d.statementAnalysis().stateData().equalityAccordingToStateStream().toList().toString());
+                }
+            }
+        };
         testClass("Warnings_10", 2, 0, new DebugConfiguration.Builder()
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addStatementAnalyserVisitor(statementAnalyserVisitor)
                 .build());
     }
 

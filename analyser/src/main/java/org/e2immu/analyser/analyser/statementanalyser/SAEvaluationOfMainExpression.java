@@ -230,22 +230,8 @@ record SAEvaluationOfMainExpression(StatementAnalysis statementAnalysis,
             if (!(ive instanceof VariableExpression ve)
                     || !(ve.getSuffix() instanceof VariableExpression.VariableField vf)
                     || vf.statementTime() == statementAnalysis.statementTime(EVALUATION)) {
-
-                Expression currentValue = evaluationContext.currentValue(ive.variable());
-                Expression expression;
-                // IMPROVE this is more or less hard coded to solve Identity_2, code should be generalised
-                if (currentValue instanceof Instance instance && instance.valueProperties()
-                        .getOrDefault(Property.IDENTITY, DV.FALSE_DV).valueIsTrue()) {
-                    expression = PropertyWrapper.propertyWrapper(e.getValue(), Map.of(Property.IDENTITY, DV.TRUE_DV));
-                } else if (currentValue instanceof PropertyWrapper pw) {
-                    expression = pw;
-                } else {
-                    // we give priority to the value that's in the state; see e.g. CyclicReferences_2
-                    expression = e.getValue();
-                }
-                builder.modifyingMethodAccess(ive.variable(), expression, null);
+                builder.modifyingMethodAccess(ive.variable(), e.getValue(), null);
             }
-
         });
 
         return builder.build();
