@@ -112,8 +112,7 @@ public class Test_54_SwitchExpression extends CommonTestRunner {
             }
             if ("method".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof ReturnVariable) {
-                    String expected = d.iteration() < 3 ? "<m:apply>"
-                            : "c==`Choice.ONE`?\"a\":c==`Choice.TWO`?b+\"\":c==`Choice.THREE`?b?\"It's \"+c:\"or \"+c:<return value>";
+                    String expected = d.iteration() < 2 ? "<m:apply>" : "(instance type $1).apply(c)";
                     assertEquals(expected, d.currentValue().toString());
                 }
                 if (d.variable() instanceof FieldReference fr && "out".equals(fr.fieldInfo.name)) {
@@ -146,7 +145,10 @@ public class Test_54_SwitchExpression extends CommonTestRunner {
         };
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("apply".equals(d.methodInfo().name) && "$1".equals(d.methodInfo().typeInfo.simpleName)) {
-
+                // 202310: not inlined, because it contains fields
+                String expected = d.iteration() < 2 ? "<m:apply>"
+                        : "selector$1==Choice.ONE?\"a\":selector$1==Choice.TWO?b+\"\":selector$1==Choice.THREE?b?\"It's \"+selector$1:\"or \"+selector$1:<return value>";
+                assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
                 assertDv(d.p(0), 1, MultiLevel.EFFECTIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
                 assertDv(d.p(0), 1, MultiLevel.INDEPENDENT_DV, Property.INDEPENDENT);
             }

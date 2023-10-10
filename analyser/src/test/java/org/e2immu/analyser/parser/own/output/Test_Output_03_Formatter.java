@@ -244,7 +244,7 @@ public class Test_Output_03_Formatter extends CommonTestRunner {
 
         BreakDelayVisitor breakDelayVisitor = d -> {
             if ("Formatter".equals(d.typeInfo().simpleName)) {
-                assertEquals("-------S--", d.delaySequence());
+                assertEquals("------S--", d.delaySequence());
             }
         };
 
@@ -252,7 +252,7 @@ public class Test_Output_03_Formatter extends CommonTestRunner {
                         Forward.class, Lookahead.class, CurrentExceeds.class, ForwardInfo.class, GuideOnStack.class,
                         ElementarySpace.class, OutputElement.class, FormattingOptions.class,
                         TypeName.class, Qualifier.class, Guide.class, Symbol.class, Space.class, Split.class),
-                0, 26, new DebugConfiguration.Builder()
+                0, 27, new DebugConfiguration.Builder()
                         //     .addEvaluationResultVisitor(evaluationResultVisitor)
                         //    .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                         //      .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)

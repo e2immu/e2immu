@@ -127,6 +127,7 @@ public abstract class BaseExpression extends ElementImpl implements Expression {
 
     @Override
     public int compareTo(Expression v) {
+        if(this == v || equals(v)) return 0;
         return ExpressionComparator.SINGLETON.compare(this, v);
     }
 

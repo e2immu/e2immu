@@ -179,6 +179,7 @@ public class ExpressionComparator implements Comparator<Expression> {
             LOGGER.error("Comparison at order {}", v1.order());
             LOGGER.error("Expression 1: '{}' of {}", v1, v1.getClass());
             LOGGER.error("Expression 2: '{}' of {}", v2, v2.getClass());
+            LOGGER.error("v1.equals(v2): {}", v1.equals(v2));
             throw new UnsupportedOperationException();
         }
     }

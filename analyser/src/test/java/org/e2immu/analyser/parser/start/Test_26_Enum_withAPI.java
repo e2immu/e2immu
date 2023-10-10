@@ -105,25 +105,25 @@ public class Test_26_Enum_withAPI extends CommonTestRunner {
                 assertFalse(d.methodInfo().methodResolution.get().overrides().isEmpty());
                 assertEquals(DV.FALSE_DV, d.methodAnalysis().getProperty(Property.MODIFIED_METHOD));
 
-                String expected = d.iteration() == 0 ? "<m:test>" : "/*inline test*/(instance type String).equals(name)";
+                String expected = "(instance type String).equals(name)";
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
             }
             if ("valueOf".equals(d.methodInfo().name)) {
                 assertDv(d, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_EXPRESSION);
                 assertDv(d, DV.FALSE_DV, Property.MODIFIED_METHOD);
                 String expect = d.iteration() < 4 ? "<m:valueOf>"
-                        : "/*inline valueOf*/Arrays.stream({`Enum_0.ONE`,`Enum_0.TWO`,`Enum_0.THREE`}).filter(/*inline test*/(instance type String).equals(name)).findFirst().orElseThrow()";
+                        : "Arrays.stream(Enum_0.values()).filter(instance type $1).findFirst().orElseThrow()";
                 assertEquals(expect, d.methodAnalysis().getSingleReturnValue().toString());
                 mustSeeIteration(d, 4);
 
             }
             if ("values".equals(d.methodInfo().name)) {
-                String expect = d.iteration() < 4 ? "<m:values>" : "/*inline values*/{Enum_0.ONE,Enum_0.TWO,Enum_0.THREE}";
+                String expect = d.iteration() < 4 ? "<m:values>" : "{Enum_0.ONE,Enum_0.TWO,Enum_0.THREE}";
                 assertEquals(expect, d.methodAnalysis().getSingleReturnValue().toString());
                 assertEquals(DV.FALSE_DV, d.methodAnalysis().getProperty(Property.MODIFIED_METHOD));
             }
             if ("isThree".equals(d.methodInfo().name)) {
-                String expect = d.iteration() < 4 ? "<m:isThree>" : "/*inline isThree*/Enum_0.THREE==this";
+                String expect = d.iteration() < 4 ? "<m:isThree>" : "Enum_0.THREE==this";
                 assertEquals(expect, d.methodAnalysis().getSingleReturnValue().toString());
                 mustSeeIteration(d, 4);
             }
@@ -228,8 +228,7 @@ public class Test_26_Enum_withAPI extends CommonTestRunner {
     public void test6() throws IOException {
         EvaluationResultVisitor evaluationResultVisitor = d -> {
             if ("returnTwo".equals(d.methodInfo().name)) {
-                String expected = d.iteration() < 4 ? "<m:valueOf>"
-                        : "Arrays.stream({`Enum_6.ONE`,`Enum_6.TWO`,`Enum_6.THREE`}).filter((instance type String).equals(\"TWO\")).findFirst().orElseThrow()";
+                String expected = d.iteration() < 4 ? "<m:valueOf>" : "Enum_6.valueOf(\"TWO\")";
                 Expression value = d.evaluationResult().value();
                 assertEquals(expected, value.toString());
                 if (d.iteration() >= 4) {
@@ -243,8 +242,7 @@ public class Test_26_Enum_withAPI extends CommonTestRunner {
             assertFalse(d.allowBreakDelay());
 
             if ("returnTwo".equals(d.methodInfo().name)) {
-                String expected = d.iteration() < 4 ? "<m:returnTwo>"
-                        : "/*inline returnTwo*/Arrays.stream({`Enum_6.ONE`,`Enum_6.TWO`,`Enum_6.THREE`}).filter((instance type String).equals(\"TWO\")).findFirst().orElseThrow()";
+                String expected = d.iteration() < 4 ? "<m:returnTwo>" : "/*inline returnTwo*/Enum_6.valueOf(\"TWO\")";
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
                 // important: even if valueOf() is immutable_hc, we must fill in the concrete type, which is mutable!
                 assertDv(d, 4, MultiLevel.MUTABLE_DV, Property.IMMUTABLE);

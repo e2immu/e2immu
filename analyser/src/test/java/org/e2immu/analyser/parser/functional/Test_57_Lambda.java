@@ -176,13 +176,8 @@ public class Test_57_Lambda extends CommonTestRunner {
                 }
                 if ("f".equals(d.variableName())) {
                     if ("1".equals(d.statementId())) {
-                        String expected = d.iteration() == 0 ? "<s:$1>" : "/*inline get*/x.k";
+                        String expected = d.iteration() == 0 ? "<s:$1>" : "instance type $1";
                         assertEquals(expected, d.currentValue().toString());
-                        if (d.iteration() > 0) {
-                            if (d.currentValue() instanceof InlinedMethod inlinedMethod) {
-                                assertEquals("/*inline get*/x.k", inlinedMethod.toString());
-                            } else fail("Class " + d.currentValue().getClass());
-                        }
                     }
                 }
             }
@@ -444,7 +439,8 @@ public class Test_57_Lambda extends CommonTestRunner {
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
             }
             if ("method".equals(d.methodInfo().name)) {
-                String expected = d.iteration() < 3 ? "<m:method>" : "/*inline method*/inner.supplier().get()*inner.i$0";
+                // 202310 not inlined, contains fields
+                String expected = d.iteration() < 2 ? "<m:method>" : "inner.supplier().get()*inner.i$0";
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
             }
         };

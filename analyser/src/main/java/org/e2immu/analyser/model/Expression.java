@@ -35,6 +35,7 @@ import java.util.Set;
 public interface Expression extends Element, Comparable<Expression> {
     int HARD_LIMIT_ON_COMPLEXITY = 5000;
     int SOFT_LIMIT_ON_COMPLEXITY = 500;
+    int CONSTRUCTOR_CALL_EXPANSION_LIMIT = 20;
     int COMPLEXITY_LIMIT_OF_INLINED_METHOD = 1000;
 
     int getComplexity();
@@ -323,14 +324,14 @@ public interface Expression extends Element, Comparable<Expression> {
         return null;
     }
 
-   default Double numericValue() {
+    default Double numericValue() {
         return null;
-   }
+    }
 
-   /*
-   helps to avoid a gigantic dependency cycle, started in ExpressionComparator
-    */
-   default Expression conditionOfInlineConditional() {
+    /*
+    helps to avoid a gigantic dependency cycle, started in ExpressionComparator
+     */
+    default Expression conditionOfInlineConditional() {
         return null;
-   }
+    }
 }

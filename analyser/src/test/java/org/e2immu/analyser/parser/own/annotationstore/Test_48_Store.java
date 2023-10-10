@@ -117,7 +117,7 @@ public class Test_48_Store extends CommonTestRunner {
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("handleMultiSet".equals(d.methodInfo().name)) {
                 if ("project".equals(d.variableName())) {
-                    String expectValue = d.iteration() == 0 ? "<m:getOrCreate>" : "this.getOrCreate()";// "new Project_0(\"x\")";
+                    String expectValue = d.iteration() == 0 ? "<m:getOrCreate>" : "new Project_0(\"x\")";
                     assertEquals(expectValue, d.currentValue().toString());
 
                     // it 1: Store_3 is still immutable delayed
@@ -136,9 +136,10 @@ public class Test_48_Store extends CommonTestRunner {
                 assertDv(d, 1, DV.FALSE_DV, Property.MODIFIED_METHOD);
 
                 // independent because non-modifying (no Annotated API)
-                assertDv(d, MultiLevel.INDEPENDENT_DV, Property.INDEPENDENT);
+                assertDv(d, 1, MultiLevel.INDEPENDENT_DV, Property.INDEPENDENT);
 
-                assertEquals("new Project_0(\"x\")", d.methodAnalysis().getSingleReturnValue().toString());
+                String expected = d.iteration() == 0 ? "<m:getOrCreate>" : "/*inline getOrCreate*/new Project_0(\"x\")";
+                assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
             }
             if ("handleMultiSet".equals(d.methodInfo().name)) {
                 assertDv(d, 1, DV.FALSE_DV, Property.MODIFIED_METHOD);

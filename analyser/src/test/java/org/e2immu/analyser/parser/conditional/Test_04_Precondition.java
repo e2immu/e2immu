@@ -597,10 +597,10 @@ public class Test_04_Precondition extends CommonTestRunner {
             if ("method".equals(d.methodInfo().name)) {
                 if ("npe".equals(d.variableName())) {
                     if ("5.0.0".equals(d.statementId())) {
-                        String expected = d.iteration() < 3 ? "<s:NullPointerException>"
-                                : "(instance type boolean?new TryCatchHelper<>(null,instance type Exception):new TryCatchHelper<>(`supplier`.get(),null)).exception()/*(NullPointerException)*/";
+                        String expected = d.iteration() < 2 ? "<s:NullPointerException>"
+                                : "Precondition_10.tryCatch(/*inline get*/in.toUpperCase()).exception()/*(NullPointerException)*/";
                         assertEquals(expected, d.currentValue().toString());
-                        assertDv(d, 3, MultiLevel.EFFECTIVELY_NOT_NULL_DV, NOT_NULL_EXPRESSION);
+                        assertDv(d, 2, MultiLevel.EFFECTIVELY_NOT_NULL_DV, NOT_NULL_EXPRESSION);
                     }
                 }
                 if ("supplier".equals(d.variableName())) {
@@ -614,13 +614,13 @@ public class Test_04_Precondition extends CommonTestRunner {
         };
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("method".equals(d.methodInfo().name)) {
-                String expected = d.iteration() < 3 ? "Precondition[expression=<null-check>, causes=[escape, escape]]"
-                        : "Precondition[expression=true, causes=[]]";
+                String expected = d.iteration() < 2 ? "Precondition[expression=<null-check>, causes=[escape, escape]]"
+                        : "Precondition[expression=null==Precondition_10.tryCatch(/*inline get*/in.toUpperCase()).exception(), causes=[escape, escape]]";
                 assertEquals(expected,
                         d.methodAnalysis().getPrecondition().toString());
             }
         };
-        BreakDelayVisitor breakDelayVisitor = d -> assertEquals("-----", d.delaySequence());
+        BreakDelayVisitor breakDelayVisitor = d -> assertEquals("----", d.delaySequence());
 
         testClass("Precondition_10", 0, 0,
                 new DebugConfiguration.Builder()

@@ -199,8 +199,7 @@ public class Test_63_DGSimplified extends CommonTestRunner {
                 assertEquals(pce, d.methodAnalysis().getPreconditionForEventual().toString());
             }
             if ("comparator".equals(d.methodInfo().name)) {
-                String expected = d.iteration() < 27 ? "<m:comparator>"
-                        : "/*inline comparator*//*inline compare*/(e1.getValue()).dependsOn$0.size()==(e2.getValue()).dependsOn$0.size()?null==backupComparator?0:backupComparator.compare(e1.getKey(),e2.getKey()):(e1.getValue()).dependsOn$0.size()-(e2.getValue()).dependsOn$0.size()";
+                String expected = d.iteration() < 27 ? "<m:comparator>" : "instance type $3";
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
                 assertDv(d, 26, DV.FALSE_DV, Property.MODIFIED_METHOD);
             }

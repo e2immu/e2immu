@@ -84,8 +84,7 @@ public class Test_15_InlinedMethod extends CommonTestRunner {
     public void test_4() throws IOException {
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("sum".equals(d.methodInfo().name)) {
-                // IMPORTANT: current implementation (202310) does not accept fields
-                String expected = d.iteration() == 0 ? "<m:sum>" : "4+j";
+                String expected = d.iteration() == 0 ? "<m:sum>" : "/*inline sum*/4+j";
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
             }
         };

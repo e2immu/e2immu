@@ -242,7 +242,7 @@ public class Test_Util_01_SMapList extends CommonTestRunner {
 
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("SMapList".equals(d.typeInfo().simpleName)) {
-                assertDv(d, 3, MultiLevel.EFFECTIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
+                assertDv(d, 2, MultiLevel.EFFECTIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
             }
         };
 
@@ -255,7 +255,7 @@ public class Test_Util_01_SMapList extends CommonTestRunner {
             assertEquals(MultiLevel.EFFECTIVELY_IMMUTABLE_HC_DV, d.getMethodAnalysis(copyOf).getProperty(Property.IMMUTABLE));
         };
 
-        BreakDelayVisitor breakDelayVisitor = d -> assertEquals("-----", d.delaySequence());
+        BreakDelayVisitor breakDelayVisitor = d -> assertEquals("----", d.delaySequence());
 
         testSupportAndUtilClasses(List.of(SMapList.class), 0, 0, new DebugConfiguration.Builder()
                 //    .addEvaluationResultVisitor(evaluationResultVisitor)

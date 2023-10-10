@@ -228,7 +228,7 @@ public class Test_Independent1 extends CommonTestRunner {
         BreakDelayVisitor breakDelayVisitor = d -> assertEquals("------", d.delaySequence());
 
         testClass("Independent1_4", 0, 0, new DebugConfiguration.Builder()
-            //    .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                //    .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .addBreakDelayVisitor(breakDelayVisitor)
                 .build());
     }
@@ -254,7 +254,7 @@ public class Test_Independent1 extends CommonTestRunner {
             }
         };
         testClass("Independent1_4_1", 0, 0, new DebugConfiguration.Builder()
-             //   .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                //   .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .build());
     }
 
@@ -310,7 +310,7 @@ public class Test_Independent1 extends CommonTestRunner {
             }
             if ("apply".equals(d.methodInfo().name)) {
                 assertEquals("$1", d.methodInfo().typeInfo.simpleName);
-                String expected = d.iteration() <= 1 ? "<m:apply>" : "generator.get()";
+                String expected = d.iteration() < 2 ? "<m:apply>" : "/*inline apply*/generator.get()";
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
                 List<Variable> vars = d.methodAnalysis().getSingleReturnValue().variables();
                 assertEquals("[org.e2immu.analyser.parser.independence.testexample.Independent1_5.ImmutableArrayOfTransparentOnes.ImmutableArrayOfTransparentOnes(org.e2immu.analyser.parser.independence.testexample.Independent1_5.One<Integer>[],java.util.function.Supplier<org.e2immu.analyser.parser.independence.testexample.Independent1_5.One<Integer>>):1:generator]", vars.toString());
@@ -415,10 +415,10 @@ public class Test_Independent1 extends CommonTestRunner {
         BreakDelayVisitor breakDelayVisitor = d -> assertEquals("-------", d.delaySequence());
 
         testClass("Independent1_6", 0, 0, new DebugConfiguration.Builder()
-              //  .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-              //  .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
-              //  .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
-              //  .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+                //  .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                //  .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                //  .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
+                //  .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                 .addBreakDelayVisitor(breakDelayVisitor)
                 .build());
     }
@@ -629,11 +629,11 @@ public class Test_Independent1 extends CommonTestRunner {
         BreakDelayVisitor breakDelayVisitor = d -> assertEquals("-----S--S-SF----", d.delaySequence());
 
         testClass("Independent1_9", 0, 0, new DebugConfiguration.Builder()
-           //     .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-           //     .addStatementAnalyserVisitor(statementAnalyserVisitor)
-           //     .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
-           //     .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
-           //     .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
+                //     .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                //     .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                //     .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                //     .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+                //     .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
                 .addBreakDelayVisitor(breakDelayVisitor)
                 .build());
     }
@@ -665,11 +665,11 @@ public class Test_Independent1 extends CommonTestRunner {
         };
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("of".equals(d.methodInfo().name)) {
-                String expected = d.iteration() < 12 ? "<m:of>"
-                        : "/*inline of*/null==maps||maps.length<1?new Independent1_9_1<>():instance type Independent1_9_1<T>";
+                String expected = d.iteration() < 10 ? "<m:of>"
+                        : "null==maps||maps.length<1?new Independent1_9_1<>():instance type Independent1_9_1<T>";
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
                 assertDv(d, MultiLevel.INDEPENDENT_HC_DV, Property.INDEPENDENT);
-                assertDv(d, 12, MultiLevel.EFFECTIVELY_IMMUTABLE_HC_DV, Property.IMMUTABLE);
+                assertDv(d, 11, MultiLevel.EFFECTIVELY_IMMUTABLE_HC_DV, Property.IMMUTABLE);
                 assertDv(d.p(0), 12, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                 assertDv(d.p(0), 12, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
             }
@@ -764,7 +764,8 @@ public class Test_Independent1 extends CommonTestRunner {
         EvaluationResultVisitor evaluationResultVisitor = d -> {
             if ("stream2".equals(d.methodInfo().name)) {
                 if ("2".equals(d.statementId())) {
-                    String expected = d.iteration() < 2 ? "<m:map>" : "map.entrySet().stream().map(instance type $2)";
+                    String expected = d.iteration() < 2 ? "<m:map>"
+                            : "map.entrySet().stream().map(/*inline apply*/new Entry<>(e.getKey(),e.getValue()))";
                     assertEquals(expected, d.evaluationResult().getExpression().toString());
                 }
             }

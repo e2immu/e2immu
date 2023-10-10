@@ -155,7 +155,7 @@ public class Test_FactoryMethod extends CommonTestRunner {
 
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("add".equals(d.methodInfo().name)) {
-                assertDv(d, DV.TRUE_DV, Property.FLUENT);
+                assertDv(d, 2, DV.TRUE_DV, Property.FLUENT);
                 assertDv(d, 1, DV.TRUE_DV, Property.MODIFIED_METHOD);
                 assertDv(d.p(0), 2, MultiLevel.INDEPENDENT_HC_DV, Property.INDEPENDENT);
                 assertDv(d.p(0), 2, DV.FALSE_DV, Property.MODIFIED_VARIABLE);

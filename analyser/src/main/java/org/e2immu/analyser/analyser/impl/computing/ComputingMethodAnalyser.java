@@ -43,9 +43,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Predicate;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static org.e2immu.analyser.analyser.AnalysisStatus.DONE;
@@ -678,11 +680,20 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
     }
 
     private DV methodIsSuitableForInlining(Expression value) {
-        if (value instanceof Instance) return DV.FALSE_DV; // not interesting
-        StatementAnalysis last = methodAnalysis.getLastStatement();
-        boolean refersToField = last.variableStream()
-                .anyMatch(vi -> vi.variable() instanceof FieldReference fr && fr.scopeIsRecursivelyThis());
-        if (refersToField) return DV.FALSE_DV;
+        AtomicBoolean notInteresting = new AtomicBoolean();
+        value.visit(e -> {
+            if (e instanceof Instance || e instanceof MultiExpressions) notInteresting.set(true);
+        });
+        if (notInteresting.get()) return DV.FALSE_DV;
+        Set<Variable> variables = value.variableStream().collect(Collectors.toUnmodifiableSet());
+        VariableInfo field = methodAnalysis.getLastStatement().variableStream()
+                .filter(vi -> variables.contains(vi.variable()))
+                .filter(vi -> vi.variable() instanceof FieldReference)
+                .findFirst().orElse(null);
+        if (field != null) {
+            LOGGER.debug("Method {} is not suitable for inlining: field {} present", methodInfo, field.variable());
+            return DV.FALSE_DV;
+        }
 
         DV modifiesInstance = methodAnalysis.getProperty(MODIFIED_METHOD_ALT_TEMP);
         DV modifiesParameters = methodAnalysis.parameterAnalyses.stream()

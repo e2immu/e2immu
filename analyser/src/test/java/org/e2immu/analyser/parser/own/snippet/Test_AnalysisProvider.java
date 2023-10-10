@@ -183,7 +183,7 @@ public class Test_AnalysisProvider extends CommonTestRunner {
             if ("containsCauseOfDelay".equals(d.methodInfo().name)) {
                 String expected = d.iteration() < 2
                         ? "Precondition[expression=<precondition>, causes=[escape]]"
-                        : "Precondition[expression=AnalysisProvider_0.highPriority(cause), causes=[escape]]";
+                        : "Precondition[expression=1==cause.getPriority(), causes=[escape]]";
                 assertEquals(expected, d.methodAnalysis().getPrecondition().toString());
             }
         };
@@ -193,8 +193,8 @@ public class Test_AnalysisProvider extends CommonTestRunner {
             }
             if ("EFFECTIVELY_E1IMMUTABLE_DV".equals(d.fieldInfo().name)) {
                 assertEquals(d.iteration() > 0, d.fieldAnalysis().getLinkedVariables().isDone());
-                assertDv(d, 20, DV.FALSE_DV, Property.MODIFIED_OUTSIDE_METHOD);
-                assertDv(d, 20, MultiLevel.NOT_CONTAINER_DV, Property.CONTAINER_RESTRICTION);
+                assertDv(d, 19, DV.FALSE_DV, Property.MODIFIED_OUTSIDE_METHOD);
+                assertDv(d, 19, MultiLevel.NOT_CONTAINER_DV, Property.CONTAINER_RESTRICTION);
                 String expected = d.iteration() < 2 ? "<f:EFFECTIVELY_E1IMMUTABLE_DV>" : "new DV(5,List.of(new Cause(0)))";
                 assertEquals(expected, d.fieldAnalysis().getValue().toString());
 
@@ -206,13 +206,13 @@ public class Test_AnalysisProvider extends CommonTestRunner {
             }
         };
 
-        BreakDelayVisitor breakDelayVisitor = d -> assertEquals("---------S-S--SF-SF----", d.delaySequence());
+        BreakDelayVisitor breakDelayVisitor = d -> assertEquals("--------S-S--SF-SF----", d.delaySequence());
 
         testClass("AnalysisProvider_0", 0, 5,
                 new DebugConfiguration.Builder()
                         //   .addStatementAnalyserVisitor(statementAnalyserVisitor)
-                        //  .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                         //     .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                        .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                         .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                         .addBreakDelayVisitor(breakDelayVisitor)
                         .build(),
@@ -534,8 +534,7 @@ public class Test_AnalysisProvider extends CommonTestRunner {
                 assertTrue(methodResolution.partOfCallCycle());
                 assertTrue(methodResolution.ignoreMeBecauseOfPartOfCallCycle()); // this one "breaks" the call cycle
 
-                String expected = d.iteration() < 7 ? "<m:apply>"
-                        : "/*inline apply*/this.sumImmutableLevels(`a0.parameters`.stream().map(instance type $2).reduce(`AnalysisProvider_3.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV`,DV::min))";
+                String expected = d.iteration() < 7 ? "<m:apply>" : "/*inline apply*/this.b(pt,1)";
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
             }
         };
@@ -601,7 +600,7 @@ public class Test_AnalysisProvider extends CommonTestRunner {
                 assertEquals(callCycle, methodResolution
                         .methodsOfOwnClassReached().stream().map(MethodInfo::name).sorted().collect(Collectors.joining(",")));
 
-                String expected = d.iteration() < 4 ? "<m:b>"
+                String expected = d.iteration() < 3 ? "<m:b>"
                         : "this.sumImmutableLevels(n<10?this.a(b0):AnalysisProvider_4.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV)";
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
             }

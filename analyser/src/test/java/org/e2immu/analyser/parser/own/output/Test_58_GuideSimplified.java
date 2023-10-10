@@ -81,8 +81,7 @@ public class Test_58_GuideSimplified extends CommonTestRunner {
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("values".equals(d.methodInfo().name)) {
                 assertEquals("Position", d.methodInfo().typeInfo.simpleName);
-                String expected = d.iteration() < 2 ? "<m:values>"
-                        : "/*inline values*/{Position.START,Position.MID,Position.END}";
+                String expected = d.iteration() < 2 ? "<m:values>" : "{Position.START,Position.MID,Position.END}";
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
             }
             if ("GuideSimplified_3".equals(d.methodInfo().name)) {
@@ -223,7 +222,7 @@ public class Test_58_GuideSimplified extends CommonTestRunner {
 
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("trace".equals(d.methodInfo().name)) {
-                String expect = d.iteration() <= 1 ? "<m:trace>" : "/*inline trace*/" + TRACE_RETURN;
+                String expect = d.iteration() <= 1 ? "<m:trace>" : TRACE_RETURN;
                 assertEquals(expect, d.methodAnalysis().getSingleReturnValue().toString());
             }
             if ("position".equals(d.methodInfo().name)) {
