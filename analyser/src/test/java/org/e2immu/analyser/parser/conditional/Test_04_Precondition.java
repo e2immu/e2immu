@@ -598,9 +598,16 @@ public class Test_04_Precondition extends CommonTestRunner {
                 if ("npe".equals(d.variableName())) {
                     if ("5.0.0".equals(d.statementId())) {
                         String expected = d.iteration() < 2 ? "<s:NullPointerException>"
-                                : "Precondition_10.tryCatch(supplier).exception()/*(NullPointerException)*/";
+                                : "(instance type boolean?new TryCatchHelper<>(null,instance type Exception):new TryCatchHelper<>(`supplier`.get(),null)).exception()/*(NullPointerException)*/";
                         assertEquals(expected, d.currentValue().toString());
                         assertDv(d, 2, MultiLevel.EFFECTIVELY_NOT_NULL_DV, NOT_NULL_EXPRESSION);
+                    }
+                }
+                if ("supplier".equals(d.variableName())) {
+                    if ("0".equals(d.statementId())) {
+                        String expected = d.iteration() == 0 ? "<m:get>" : "/*inline get*/in.toUpperCase()";
+                        assertEquals(expected, d.currentValue().toString());
+                        assertDv(d, 1, MultiLevel.CONTAINER_DV, CONTAINER);
                     }
                 }
             }

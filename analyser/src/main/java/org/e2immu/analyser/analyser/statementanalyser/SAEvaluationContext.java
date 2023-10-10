@@ -334,7 +334,8 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
             if (NOT_NULL_EXPRESSION == property) {
                 dv = nneForValue(value, ignoreStateInConditionManager);
             } else if ((CONTAINER == property || IMMUTABLE == property || INDEPENDENT == property)
-                    && isMyself(value.returnType())) {
+                    && isMyself(value.returnType())
+                    && !(value instanceof DelayedExpression de && de.getDoneOriginal() instanceof Lambda)) {
                 // NOTE: IDENTITY of self-types is not really a problem, therefore we enumerate the properties rather than
                 // taking all value properties (except NNE)
                 // See e.g. ConditionalChecks_4B (cast in equals())

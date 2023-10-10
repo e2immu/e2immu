@@ -148,7 +148,7 @@ public class Test_61_OutputBuilderSimplified extends CommonTestRunner {
                                 "Statement " + d.statementId() + " it " + d.iteration());
                     }
                     if ("2.0.0".equals(d.statementId())) {
-                        String expected = d.iteration() < 2 ? "<p:a>"
+                        String expected = d.iteration() == 0 ? "<p:a>"
                                 : "nullable instance type OutputBuilderSimplified_3/*@Identity*/";
                         assertEquals(expected, d.currentValue().toString(),
                                 "Statement " + d.statementId() + " it " + d.iteration());

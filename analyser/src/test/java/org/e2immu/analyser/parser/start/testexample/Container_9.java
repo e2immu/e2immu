@@ -43,12 +43,11 @@ public class Container_9 {
         void add(Item item);
 
         @Modified
-        void clearMessages();
+        void modifying();
 
-        @Modified
-        void addMyOwn();
     }
 
+    @Container (absent = true)
     static class ItemsImpl implements Items {
         private final List<Item> items = new ArrayList<>();
 
@@ -60,16 +59,52 @@ public class Container_9 {
 
         @Modified
         @Override
-        public void clearMessages() {
-            this.items.get(0).setMessage("Clear!"); // should fail!!
+        public void modifying() {
+            this.items.get(0).setMessage("Clear!"); //
+        }
+    }
+
+    // should raise an error: violating @Container in Items
+    @Container(absent = true)
+    static class ItemsImpl2 implements Items {
+        private final List<Item> items = new ArrayList<>();
+
+        @Modified
+        @Override
+        public void add(Item item) {
+            this.items.add(item);
         }
 
-        @Override
         @Modified
-        public void addMyOwn() {
+        @Override
+        public void modifying() {
             Item item = new ItemImpl(10);
             item.setMessage("msg");
             this.items.add(item);
+        }
+
+        public List<Item> getItems() {
+            return items;
+        }
+    }
+
+    @Container
+    static class ItemsImpl3 implements Items {
+        private final List<Item> items = new ArrayList<>();
+
+        @Modified
+        @Override
+        public void add(Item item) {
+            this.items.add(item);
+        }
+
+        @Override
+        public void modifying() {
+            items.clear(); // no link with an item
+        }
+
+        public List<Item> getItems() {
+            return items;
         }
     }
 }

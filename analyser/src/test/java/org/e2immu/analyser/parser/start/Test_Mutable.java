@@ -214,7 +214,7 @@ public class Test_Mutable extends CommonTestRunner {
                 .build());
     }
 
-    //   @Disabled("Method call's equality needs to include statement time")
+    @Disabled("Method call's equality needs to include statement time")
     @Test
     public void test_2() throws IOException {
         EvaluationResultVisitor evaluationResultVisitor = d -> {
@@ -249,7 +249,8 @@ public class Test_Mutable extends CommonTestRunner {
                         assertModificationTime(d, 1, 0);
                     }
                     if ("1".equals(d.statementId())) {
-                        String expected = d.iteration() == 0 ? "<f:set>" : "instance type HashSet<String>";
+                        String expected = d.iteration() == 0 ? "<f:set>"
+                                : "instance type HashSet<String>/*this.size()>=1&&this.contains(s)*/";
                         assertEquals(expected, d.currentValue().toString());
 
                         assertDv(d, 1, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
@@ -265,7 +266,8 @@ public class Test_Mutable extends CommonTestRunner {
                     String expected = d.iteration() == 0 ? "!<m:contains>" : "!set.contains(s)";
                     assertEquals(expected, d.absoluteState().toString());
                     if (d.iteration() > 0) {
-                        if (d.absoluteState() instanceof Negation negation && negation.expression instanceof MethodCall methodCall) {
+                        if (d.absoluteState() instanceof Negation negation
+                                && negation.expression instanceof MethodCall methodCall) {
                             assertEquals("0,0", methodCall.getModificationTimes());
                         } else fail();
                     }

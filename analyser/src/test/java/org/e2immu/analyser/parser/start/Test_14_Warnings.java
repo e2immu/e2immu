@@ -147,7 +147,8 @@ public class Test_14_Warnings extends CommonTestRunner {
                     if ("1.0.0".equals(d.statementId())) {
                         // so that we know that integers.iterator() has been called
                         assertEquals("1" + E, d.variableInfo().getReadId());
-                        assertEquals("", d.variableInfo().getLinkedVariables().toString());
+                        String linked = d.iteration() == 0 ? "loopVar:-1" : "";
+                        assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
                     }
                 }
                 if ("loopVar".equals(d.variableName())) {
@@ -425,8 +426,9 @@ public class Test_14_Warnings extends CommonTestRunner {
                 assertDv(d.p(0), 1, MultiLevel.NULLABLE_DV, NOT_NULL_PARAMETER);
 
                 // method
-                assertEquals("this", d.methodAnalysis().getSingleReturnValue().toString());
-                assertDv(d, DV.TRUE_DV, FLUENT);
+                String expected = d.iteration() == 0 ? "<m:methodMustNotBeStatic3>" : "/*inline methodMustNotBeStatic3*/this";
+                assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
+                assertDv(d, 1, DV.TRUE_DV, FLUENT);
                 assertDv(d, MultiLevel.EFFECTIVELY_NOT_NULL_DV, NOT_NULL_EXPRESSION);
                 assertDv(d, DV.FALSE_DV, MODIFIED_METHOD);
             }
@@ -436,10 +438,11 @@ public class Test_14_Warnings extends CommonTestRunner {
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
             }
             if ("methodMustNotBeStatic5".equals(d.methodInfo().name)) {
-                assertEquals("this", d.methodAnalysis().getSingleReturnValue().toString());
+                String expected = d.iteration() < 2 ? "<m:methodMustNotBeStatic5>" : "/*inline methodMustNotBeStatic5*/this";
+                assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
 
-                assertDv(d, DV.FALSE_DV, MODIFIED_METHOD);
-                assertDv(d, DV.TRUE_DV, FLUENT);
+                assertDv(d, 1, DV.FALSE_DV, MODIFIED_METHOD);
+                assertDv(d, 2, DV.TRUE_DV, FLUENT);
             }
         };
 

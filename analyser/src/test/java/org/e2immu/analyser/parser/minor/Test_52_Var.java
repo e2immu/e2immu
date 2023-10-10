@@ -88,7 +88,7 @@ public class Test_52_Var extends CommonTestRunner {
         EvaluationResultVisitor evaluationResultVisitor = d -> {
             if ("test".equals(d.methodInfo().name)) {
                 if ("0".equals(d.statementId())) {
-                    String expected = d.iteration() == 0 ? "<m:apply>" : "Var_4.repeater(3).apply(\"y\")";
+                    String expected = d.iteration() == 0 ? "<m:apply>" : "\"y\".repeat(3)";
                     assertEquals(expected, d.evaluationResult().value().toString());
                 }
             }

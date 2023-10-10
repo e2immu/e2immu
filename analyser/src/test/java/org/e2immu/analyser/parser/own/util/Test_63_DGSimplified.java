@@ -199,7 +199,8 @@ public class Test_63_DGSimplified extends CommonTestRunner {
                 assertEquals(pce, d.methodAnalysis().getPreconditionForEventual().toString());
             }
             if ("comparator".equals(d.methodInfo().name)) {
-                String expected = d.iteration() < 27 ? "<m:comparator>" : "instance type $3";
+                String expected = d.iteration() < 27 ? "<m:comparator>"
+                        : "/*inline comparator*//*inline compare*/(e1.getValue()).dependsOn$0.size()==(e2.getValue()).dependsOn$0.size()?null==backupComparator?0:backupComparator.compare(e1.getKey(),e2.getKey()):(e1.getValue()).dependsOn$0.size()-(e2.getValue()).dependsOn$0.size()";
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
                 assertDv(d, 26, DV.FALSE_DV, Property.MODIFIED_METHOD);
             }
@@ -552,11 +553,11 @@ public class Test_63_DGSimplified extends CommonTestRunner {
 
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("removeAsManyAsPossible".equals(d.methodInfo().name)) {
-                assertDv(d.p(0), 32, DV.TRUE_DV, Property.MODIFIED_VARIABLE);
+                assertDv(d.p(0), 28, DV.TRUE_DV, Property.MODIFIED_VARIABLE);
             }
         };
 
-        BreakDelayVisitor breakDelayVisitor = d -> assertEquals("----S--S--S--S-S-S-SF-SFM-SFMT------S--S-SF--SFMT---", d.delaySequence());
+        BreakDelayVisitor breakDelayVisitor = d -> assertEquals("----S--S--S--S-S-S-SF-SFMT------S--S-SF--SFMT---", d.delaySequence());
 
         testClass("DGSimplified_4", 1, 3, new DebugConfiguration.Builder()
                 //   .addEvaluationResultVisitor(evaluationResultVisitor)
@@ -601,7 +602,7 @@ public class Test_63_DGSimplified extends CommonTestRunner {
                         assertTrue(d.variableInfoContainer().hasMerge());
                         String merge = d.iteration() < 5
                                 ? "<vl:result>"
-                                : "(toDo$4.0.1.entrySet().isEmpty()?new LinkedList<>():instance type List<T>).isEmpty()?instance type List<SortResult<T>>:instance type List<SortResult<T>>";
+                                : "(toDo$4.0.1.entrySet().isEmpty()?new LinkedList<>()/*0==this.size()*/:instance type List<T>).isEmpty()?instance type List<SortResult<T>>:instance type List<SortResult<T>>";
                         assertEquals(merge, d.currentValue().toString());
                     }
                 }

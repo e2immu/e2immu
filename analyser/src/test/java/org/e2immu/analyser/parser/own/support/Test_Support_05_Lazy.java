@@ -79,12 +79,12 @@ public class Test_Support_05_Lazy extends CommonTestRunner {
                         case 0 -> "<f:t>";
                         case 1 -> "<f*:t>";
                         case 2 ->
-                                "<null-check>?<m:requireNonNull>:<vp:t:break_init_delay:this.t@Method_get_2-C;ext_not_null@Field_supplier;initial:this.t@Method_get_0-C;values:this.t@Field_t>";
+                                "<null-check>?<m:requireNonNull>:<vp:t:break_init_delay:this.t@Method_get_2-C;constructor-to-instance@Method_get_1-E;ext_not_null@Field_supplier;initial:this.t@Method_get_0-C;values:this.t@Field_t>";
                         case 3, 4 ->
-                                "<null-check>?<m:requireNonNull>:<vp:t:break_init_delay:this.t@Method_get_0-C;ext_not_null@Field_supplier;initial:this.supplier@Method_get_1-C;initial:this.t@Method_get_0-C;values:this.t@Field_t>";
+                                "<null-check>?<m:requireNonNull>:<vp:t:break_init_delay:this.t@Method_get_0-C;constructor-to-instance@Method_get_1-E;ext_not_null@Field_supplier;initial:this.supplier@Method_get_1-C;initial:this.t@Method_get_0-C;values:this.t@Field_t>";
                         case 5 -> "<wrapped:t>";
                         case 6 ->
-                                "<null-check>?<s:T>:<vp:t:break_init_delay:this.t@Method_get_0-C;ext_not_null@Field_supplier;initial:this.supplier@Method_get_1-C;initial:this.t@Method_get_0-C;values:this.t@Field_t>";
+                                "<null-check>?<s:T>:<vp:t:break_init_delay:this.t@Method_get_0-C;constructor-to-instance@Method_get_1-E;ext_not_null@Field_supplier;initial:this.supplier@Method_get_1-C;initial:this.t@Method_get_0-C;values:this.t@Field_t>";
                         default -> "supplier.get()/*@NotNull*/";
                     };
                     assertEquals(value, d.currentValue().toString());
@@ -158,11 +158,11 @@ public class Test_Support_05_Lazy extends CommonTestRunner {
             assertEquals(DV.FALSE_DV, d.fieldAnalysis().getProperty(Property.FINAL));
             assertEquals("<variable value>", d.fieldAnalysis().getValue().toString());
             String expected = switch (d.iteration()) {
-                case 0 -> "initial:this.supplier@Method_get_1-C;initial:this.t@Method_get_2-C;values:this.t@Field_t";
+                case 0 -> "constructor-to-instance@Method_get_1-E;initial:this.supplier@Method_get_1-C;initial:this.t@Method_get_2-C;values:this.t@Field_t";
                 case 1 ->
-                        "break_init_delay:this.t@Method_get_2-C;ext_not_null@Field_supplier;initial:this.t@Method_get_0-C;values:this.t@Field_t";
+                        "break_init_delay:this.t@Method_get_2-C;constructor-to-instance@Method_get_1-E;ext_not_null@Field_supplier;initial:this.t@Method_get_0-C;values:this.t@Field_t";
                 case 2, 3, 4 ->
-                        "break_init_delay:this.t@Method_get_0-C;ext_not_null@Field_supplier;initial:this.supplier@Method_get_1-C;initial:this.t@Method_get_0-C;values:this.t@Field_t";
+                        "break_init_delay:this.t@Method_get_0-C;constructor-to-instance@Method_get_1-E;ext_not_null@Field_supplier;initial:this.supplier@Method_get_1-C;initial:this.t@Method_get_0-C;values:this.t@Field_t";
                 default -> "null,supplier.get()/*@NotNull*/";
             };
             assertEquals(expected, ((FieldAnalysisImpl.Builder) d.fieldAnalysis()).sortedValuesString());

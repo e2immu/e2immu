@@ -418,7 +418,7 @@ public class Test_Support_02_SetOnce extends CommonTestRunner {
             if ("getOrDefault".equals(d.methodInfo().name)) {
                 assertDv(d, 4, DV.FALSE_DV, Property.MODIFIED_METHOD);
 
-                String expected = d.iteration() < 4 ? "<m:getOrDefault>" : "this.isSet()?this.get():alternative/*@NotNull*/";
+                String expected = d.iteration() < 4 ? "<m:getOrDefault>" : "/*inline getOrDefault*/this.isSet()?this.get():alternative/*@NotNull*/";
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
 
                 // because not @Final, we get NOT_INVOLVED
@@ -429,7 +429,7 @@ public class Test_Support_02_SetOnce extends CommonTestRunner {
             if ("getOrDefaultNull".equals(d.methodInfo().name)) {
 
                 // this should simply be t?
-                String expected = d.iteration() < 4 ? "<m:getOrDefaultNull>" : "this.isSet()?this.get():null";
+                String expected = d.iteration() < 4 ? "<m:getOrDefaultNull>" : "/*inline getOrDefaultNull*/this.isSet()?this.get():null";
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
 
                 assertDv(d, 4, MultiLevel.NULLABLE_DV, NOT_NULL_EXPRESSION);

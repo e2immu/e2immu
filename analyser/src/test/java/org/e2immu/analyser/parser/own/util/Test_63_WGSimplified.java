@@ -195,7 +195,7 @@ public class Test_63_WGSimplified extends CommonTestRunner {
                         assertDv(d, 2, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     }
                     if ("0.0.2.1.2.0.1".equals(d.statementId())) {
-                        assertDv(d, 2, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                        assertDv(d, 3, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     }
                 }
             }
@@ -210,18 +210,18 @@ public class Test_63_WGSimplified extends CommonTestRunner {
             if ("accept".equals(d.methodInfo().name) && "$1".equals(d.methodInfo().typeInfo.simpleName)) {
                 if ("0.0.0".equals(d.statementId())) {
                     String state = d.iteration() == 0
-                            ? "(d.isDelayed()||d.isDone())&&(d.isDelayed()||d.le(maxValueIncl)||<null-check>)&&(d.isDone()||followDelayed)&&(d.le(maxValueIncl)||<null-check>||followDelayed)"
-                            : "(d.isDelayed()||d.isDone())&&(d.isDelayed()||d.le(maxValueIncl)||null==maxValueIncl)&&(d.isDone()||followDelayed)&&(d.le(maxValueIncl)||null==maxValueIncl||followDelayed)";
+                            ? "(d.isDelayed()||d.le(maxValueIncl)||<null-check>)&&(!d.isDelayed()||followDelayed)&&(d.le(maxValueIncl)||<null-check>||followDelayed)"
+                            : "(d.isDelayed()||d.le(maxValueIncl)||null==maxValueIncl)&&(!d.isDelayed()||followDelayed)&&(d.le(maxValueIncl)||null==maxValueIncl||followDelayed)";
                     assertEquals(state, d.localConditionManager().absoluteState(d.context()).toString());
                 }
                 if ("0.0.2.0.0".equals(d.statementId())) {
                     String state = switch (d.iteration()) {
                         case 0 ->
-                                "<null-check>&&(d.isDelayed()||d.isDone())&&(d.isDelayed()||d.le(maxValueIncl)||<null-check>)&&(d.isDone()||followDelayed)&&(d.le(maxValueIncl)||<null-check>||followDelayed)";
+                                "<null-check>&&(d.isDelayed()||d.le(maxValueIncl)||<null-check>)&&(!d.isDelayed()||followDelayed)&&(d.le(maxValueIncl)||<null-check>||followDelayed)";
                         case 1 ->
-                                "<null-check>&&(d.isDelayed()||d.isDone())&&(d.isDelayed()||d.le(maxValueIncl)||null==maxValueIncl)&&(d.isDone()||followDelayed)&&(d.le(maxValueIncl)||null==maxValueIncl||followDelayed)";
+                                "<null-check>&&(d.isDelayed()||d.le(maxValueIncl)||null==maxValueIncl)&&(!d.isDelayed()||followDelayed)&&(d.le(maxValueIncl)||null==maxValueIncl||followDelayed)";
                         default ->
-                                "null==distanceToStartingPoint.get(n)&&(d.isDelayed()||d.isDone())&&(d.isDelayed()||d.le(maxValueIncl)||null==maxValueIncl)&&(d.isDone()||followDelayed)&&(d.le(maxValueIncl)||null==maxValueIncl||followDelayed)";
+                                "null==distanceToStartingPoint.get(n)&&(d.isDelayed()||d.le(maxValueIncl)||null==maxValueIncl)&&(!d.isDelayed()||followDelayed)&&(d.le(maxValueIncl)||null==maxValueIncl||followDelayed)";
                     };
                     assertEquals(state, d.localConditionManager().absoluteState(d.context()).toString());
                 }

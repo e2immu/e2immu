@@ -22,6 +22,7 @@ import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.TypeInfo;
 import org.e2immu.analyser.model.expression.ConstructorCall;
+import org.e2immu.analyser.model.expression.InlinedMethod;
 import org.e2immu.analyser.model.expression.Instance;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.ReturnVariable;
@@ -56,7 +57,7 @@ public class Test_57_Lambda extends CommonTestRunner {
             if ("collector".equals(d.methodInfo().name)) {
                 if (d.iteration() >= 2) {
                     Expression srv = d.methodAnalysis().getSingleReturnValue();
-                    if (srv instanceof ConstructorCall cc) {
+                    if (srv instanceof InlinedMethod im && im.expression() instanceof ConstructorCall cc) {
                         assertEquals("$1", cc.anonymousClass().simpleName);
                     } else fail("Got " + srv.getClass());
                 }
@@ -91,7 +92,7 @@ public class Test_57_Lambda extends CommonTestRunner {
                 if ("list".equals(d.variableName())) {
                     if ("0".equals(d.statementId())) {
                         String expected = d.iteration() == 0 ? "<m:computeIfAbsent>"
-                                : "map.computeIfAbsent(k,instance type $1)";
+                                : "map.computeIfAbsent(k,/*inline apply*/new LinkedList<>())";
                         assertEquals(expected, d.currentValue().toString());
                         // !! no annotated APIs !!
                         assertDv(d, 1, MultiLevel.NULLABLE_DV, Property.NOT_NULL_EXPRESSION);
@@ -175,11 +176,11 @@ public class Test_57_Lambda extends CommonTestRunner {
                 }
                 if ("f".equals(d.variableName())) {
                     if ("1".equals(d.statementId())) {
-                        String expected = d.iteration() == 0 ? "<s:$1>" : "instance type $1";
+                        String expected = d.iteration() == 0 ? "<s:$1>" : "/*inline get*/x.k";
                         assertEquals(expected, d.currentValue().toString());
                         if (d.iteration() > 0) {
-                            if (d.currentValue() instanceof Instance instance) {
-                                assertEquals("Type org.e2immu.analyser.parser.functional.testexample.Lambda_3.$1", instance.parameterizedType().toString());
+                            if (d.currentValue() instanceof InlinedMethod inlinedMethod) {
+                                assertEquals("/*inline get*/x.k", inlinedMethod.toString());
                             } else fail("Class " + d.currentValue().getClass());
                         }
                     }
@@ -353,12 +354,12 @@ public class Test_57_Lambda extends CommonTestRunner {
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("method".equals(d.methodInfo().name)) {
                 Expression e = d.methodAnalysis().getSingleReturnValue();
-                String expected = d.iteration() == 0 ? "<m:method>" : "instance type $1";
+                String expected = d.iteration() == 0 ? "<m:method>" : "/*inline method*//*inline apply*/a*a+b*-b+a*b+a*-b";
                 assertEquals(expected, e.toString());
             }
             if ("direct".equals(d.methodInfo().name)) {
                 Expression e = d.methodAnalysis().getSingleReturnValue();
-                assertEquals("a*a+b*-b+a*b+a*-b", e.toString());
+                assertEquals("/*inline direct*/a*a+b*-b+a*b+a*-b", e.toString());
             }
         };
         testClass("Lambda_5", 0, 0, new DebugConfiguration.Builder()
@@ -443,7 +444,7 @@ public class Test_57_Lambda extends CommonTestRunner {
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
             }
             if ("method".equals(d.methodInfo().name)) {
-                String expected = d.iteration() < 2 ? "<m:method>" : "inner.supplier().get()*inner.i$0";
+                String expected = d.iteration() < 3 ? "<m:method>" : "/*inline method*/inner.supplier().get()*inner.i$0";
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
             }
         };

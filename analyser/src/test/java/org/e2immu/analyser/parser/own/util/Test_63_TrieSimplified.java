@@ -57,9 +57,9 @@ public class Test_63_TrieSimplified extends CommonTestRunner {
                         }
                         if ("1.0.1".equals(d.statementId())) {
                             String expected = switch (d.iteration()) {
-                                case 0 -> "<null-check>?new HashMap<>():<f:node.map>";
-                                case 1, 2, 3 -> "null==<f:node.map>?new HashMap<>():<f:node.map>";
-                                default -> "new HashMap<>()";
+                                case 0 -> "<null-check>?new HashMap<>()/*AnnotatedAPI.isKnown(true)&&0==this.size()*/:<f:node.map>";
+                                case 1, 2, 3 -> "null==<f:node.map>?new HashMap<>()/*AnnotatedAPI.isKnown(true)&&0==this.size()*/:<f:node.map>";
+                                default -> "new HashMap<>()/*AnnotatedAPI.isKnown(true)&&0==this.size()*/";
                             };
                             assertEquals(expected, d.currentValue().toString());
                             String linked = d.iteration() < 4
@@ -506,8 +506,8 @@ public class Test_63_TrieSimplified extends CommonTestRunner {
             int n = d.methodInfo().methodInspection.get().getParameters().size();
             if ("goTo".equals(d.methodInfo().name) && n == 1) {
                 assertDv(d, 2, DV.FALSE_DV, Property.MODIFIED_METHOD);
-                String expected = d.iteration() < 2 ? "<m:goTo>"
-                        : "this.goTo(strings,strings.length)";
+                String expected = d.iteration() < 3 ? "<m:goTo>"
+                        : "/*inline goTo*/this.goTo(strings,strings.length)";
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
             }
             if ("goTo".equals(d.methodInfo().name) && n == 2) {

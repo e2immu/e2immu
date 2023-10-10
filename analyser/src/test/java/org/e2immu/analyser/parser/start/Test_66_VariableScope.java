@@ -274,7 +274,7 @@ public class Test_66_VariableScope extends CommonTestRunner {
                         assertEquals("", d.evaluationResult().causesOfDelay().toString());
                     }
                     String expected = d.iteration() <= 2 ? "<m:addTypeReturnImport>"
-                            : "(new QualificationImpl()).addTypeReturnImport(typeInfo)";
+                            : "typeInfo.packageName().startsWith(\"org\")";
                     assertEquals(expected, d.evaluationResult().value().toString());
                 }
             }
@@ -394,7 +394,7 @@ public class Test_66_VariableScope extends CommonTestRunner {
                     assertNotEquals("1", d.statementId());
                     if ("1.0.0".equals(d.statementId())) {
                         String expected = d.iteration() <= 2 ? "<m:addTypeReturnImport>"
-                                : "(new QualificationImpl()).addTypeReturnImport(typeInfo)";
+                                : "typeInfo.packageName().startsWith(\"org\")";
                         assertEquals(expected, d.currentValue().toString());
                     }
                 }
@@ -491,7 +491,7 @@ public class Test_66_VariableScope extends CommonTestRunner {
                         String expected = switch (d.iteration()) {
                             case 0 -> "<f:perPackage.allowStar>&&<m:addTypeReturnImport>";
                             case 1, 2 -> "instance type boolean&&<m:addTypeReturnImport>";
-                            default -> "instance type boolean&&(new QualificationImpl()).addTypeReturnImport(typeInfo)";
+                            default -> "instance type boolean&&typeInfo.packageName().startsWith(\"org\")";
                         };
                         assertEquals(expected, d.currentValue().toString());
                     }
@@ -506,7 +506,7 @@ public class Test_66_VariableScope extends CommonTestRunner {
                                 case 1, 2 ->
                                         "!myPackage.equals(typeInfo.packageName())&&null!=typeInfo.packageName()?instance type boolean&&<m:addTypeReturnImport>:instance type boolean";
                                 default ->
-                                        "!myPackage.equals(typeInfo.packageName())&&null!=typeInfo.packageName()?instance type boolean&&(new QualificationImpl()).addTypeReturnImport(typeInfo):instance type boolean";
+                                        "!myPackage.equals(typeInfo.packageName())&&null!=typeInfo.packageName()?instance type boolean&&typeInfo.packageName().startsWith(\"org\"):instance type boolean";
                             };
                             assertEquals(expected, d.currentValue().toString());
                         } else {
@@ -516,7 +516,7 @@ public class Test_66_VariableScope extends CommonTestRunner {
                 }
                 if ("doImport".equals(d.variableName())) {
                     String expected = d.iteration() <= 2 ? "<m:addTypeReturnImport>"
-                            : "(new QualificationImpl()).addTypeReturnImport(typeInfo)";
+                            : "typeInfo.packageName().startsWith(\"org\")";
                     assertEquals(expected, d.currentValue().toString());
                 }
             }
@@ -566,7 +566,7 @@ public class Test_66_VariableScope extends CommonTestRunner {
                     if ("m".equals(fr.scope.toString())) {
                         if ("3".equals(d.statementId())) {
                             String expected = d.iteration() == 0 ? "<f:m.messages>"
-                                    : "instance type Set<Message>";
+                                    : "instance type Set<Message>/*this.size()>=other.messages.size()*/";
                             assertEquals(expected, d.currentValue().toString());
                         }
                     }
@@ -599,7 +599,7 @@ public class Test_66_VariableScope extends CommonTestRunner {
 
             if ("output2".equals(d.methodInfo().name)) {
                 if ("outputBuilder".equals(d.variableName())) {
-                    String expected2 = d.iteration() < 3 ? "<new:OutputBuilder>" : "new OutputBuilder(new LinkedList<>())";
+                    String expected2 = d.iteration() < 3 ? "<new:OutputBuilder>" : "instance type OutputBuilder";
                     if ("2.0.0.0.1".equals(d.statementId())) {
                         assertEquals(expected2, d.currentValue().toString());
                     }
@@ -611,13 +611,13 @@ public class Test_66_VariableScope extends CommonTestRunner {
                         assertDv(d, 1, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
                         String expected = d.iteration() < 3
                                 ? "<new:OutputBuilder>"
-                                : "new OutputBuilder(new LinkedList<>())";
+                                : "null==object||!(object instanceof MethodCall)?new OutputBuilder(new LinkedList<>()):instance type OutputBuilder";
                         assertEquals(expected, d.currentValue().toString());
                     }
                 }
                 if (d.variable() instanceof ReturnVariable) {
                     if ("3".equals(d.statementId())) {
-                        String value = "new OutputBuilder(new LinkedList<>())";
+                        String value = "null==object||!(object instanceof MethodCall)?new OutputBuilder(new LinkedList<>()):instance type OutputBuilder";
                         assertCurrentValue(d, 3, value);
                     }
                 }
@@ -729,7 +729,7 @@ public class Test_66_VariableScope extends CommonTestRunner {
             if ("output2".equals(d.methodInfo().name)) {
                 assertDv(d, 1, DV.FALSE_DV, Property.MODIFIED_METHOD);
                 String expected = d.iteration() < 3 ? "<m:output2>"
-                        : "new OutputBuilder(new LinkedList<>())";
+                        : "null==object||!(object instanceof MethodCall)?new OutputBuilder(new LinkedList<>()):instance type OutputBuilder";
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
 
                 assertDv(d.p(0), 4, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
@@ -764,10 +764,10 @@ public class Test_66_VariableScope extends CommonTestRunner {
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
 
             if ("output2".equals(d.methodInfo().name)) {
-                String value = "new OutputBuilder(new LinkedList<>())";
+                String value = "null==object||!(object instanceof MethodCall)?new OutputBuilder(new LinkedList<>()):instance type OutputBuilder";
                 if ("outputBuilder".equals(d.variableName())) {
                     if ("2.0.0.0.1".equals(d.statementId())) {
-                        String expected = d.iteration() < 3 ? "<new:OutputBuilder>" : "new OutputBuilder(new LinkedList<>())";
+                        String expected = d.iteration() < 3 ? "<new:OutputBuilder>" : "instance type OutputBuilder";
                         assertEquals(expected, d.currentValue().toString());
                     }
                     if ("3".equals(d.statementId())) {
@@ -793,7 +793,7 @@ public class Test_66_VariableScope extends CommonTestRunner {
             if ("output2".equals(d.methodInfo().name)) {
                 assertDv(d, 1, DV.FALSE_DV, Property.MODIFIED_METHOD);
                 String expected = d.iteration() < 3 ? "<m:output2>"
-                        : "new OutputBuilder(new LinkedList<>())";
+                        : "null==object||!(object instanceof MethodCall)?new OutputBuilder(new LinkedList<>()):instance type OutputBuilder";
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
                 assertDv(d.p(0), 4, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
                 assertDv(d.p(1), 4, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
@@ -824,9 +824,9 @@ public class Test_66_VariableScope extends CommonTestRunner {
                 if ("gg".equals(d.variableName())) {
                     if ("2.0.0.0.1".equals(d.statementId())) {
                         String expected = switch (d.iteration()) {
-                            case 0 -> "<c:boolean>?GuideGenerator.defaultGuideGenerator():guideGenerator";
+                            case 0 -> "<c:boolean>?new GuideGenerator(){public OutputElement start(){return null;}public OutputElement end(){return null;}public OutputElement mid(){return null;}}:guideGenerator";
                             case 1, 2 -> "<mod:OutputElement>";
-                            default -> "null==guideGenerator?GuideGenerator.defaultGuideGenerator():guideGenerator";
+                            default -> "null==guideGenerator?new GuideGenerator(){public OutputElement start(){return null;}public OutputElement end(){return null;}public OutputElement mid(){return null;}}:guideGenerator";
                         };
                         assertEquals(expected, d.currentValue().toString());
                         assertLinked(d,
@@ -837,7 +837,7 @@ public class Test_66_VariableScope extends CommonTestRunner {
                 }
                 if ("outputBuilder".equals(d.variableName())) {
                     if ("2.0.0.0.1".equals(d.statementId())) {
-                        assertCurrentValue(d, 3, "new OutputBuilder(new LinkedList<>())");
+                        assertCurrentValue(d, 3, "instance type OutputBuilder");
                     }
                 }
                 if (d.variable() instanceof ParameterInfo pi && "guideGenerator".equals(pi.name)) {
@@ -851,7 +851,7 @@ public class Test_66_VariableScope extends CommonTestRunner {
             if ("output2".equals(d.methodInfo().name)) {
                 assertDv(d, 1, DV.FALSE_DV, Property.MODIFIED_METHOD);
                 String expected = d.iteration() < 3 ? "<m:output2>"
-                        : "new OutputBuilder(new LinkedList<>())";
+                        : "null==object||!(object instanceof MethodCall)?new OutputBuilder(new LinkedList<>()):instance type OutputBuilder";
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
                 assertDv(d.p(0), 1, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
                 assertDv(d.p(1), 4, DV.TRUE_DV, Property.MODIFIED_VARIABLE);

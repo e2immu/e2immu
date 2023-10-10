@@ -166,7 +166,7 @@ public class Test_Util_05_ListUtil extends CommonTestRunner {
                         assertDv(d, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.CONTEXT_NOT_NULL);
                     }
                     if ("2".equals(d.statementId())) {
-                        assertDv(d, 2, MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL_DV, Property.CONTEXT_NOT_NULL);
+                        assertDv(d, 3, MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL_DV, Property.CONTEXT_NOT_NULL);
                     }
                 }
             }
@@ -181,8 +181,8 @@ public class Test_Util_05_ListUtil extends CommonTestRunner {
 
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("concatImmutable".equals(d.methodInfo().name)) {
-                assertDv(d.p(0), 3, MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL_DV, Property.CONTEXT_NOT_NULL);
-                assertDv(d.p(0), 3, MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL_DV, Property.NOT_NULL_PARAMETER);
+                assertDv(d.p(0), 4, MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL_DV, Property.CONTEXT_NOT_NULL);
+                assertDv(d.p(0), 4, MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL_DV, Property.NOT_NULL_PARAMETER);
             }
             if ("compare".equals(d.methodInfo().name)) {
                 assertDv(d.p(0), 7, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
@@ -190,7 +190,7 @@ public class Test_Util_05_ListUtil extends CommonTestRunner {
             }
         };
 
-        BreakDelayVisitor breakDelayVisitor = d -> assertEquals("------S--S-", d.delaySequence());
+        BreakDelayVisitor breakDelayVisitor = d -> assertEquals("------S--S--", d.delaySequence());
         testSupportAndUtilClasses(List.of(ListUtil.class), 1, 1, new DebugConfiguration.Builder()
                 .addEvaluationResultVisitor(evaluationResultVisitor)
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)

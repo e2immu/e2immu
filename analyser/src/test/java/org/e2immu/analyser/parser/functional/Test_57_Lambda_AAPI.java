@@ -133,7 +133,7 @@ public class Test_57_Lambda_AAPI extends CommonTestRunner {
             if ("same1".equals(d.methodInfo().name)) {
                 String expected = d.iteration() == 0
                         ? "<m:toArray>"
-                        : "list.stream().filter(instance type $1).toArray(instance type $2)";
+                        : "list.stream().filter(/*inline test*/mask.startsWith(s)).toArray(/*inline apply*/new String[n])";
                 Expression expression = d.evaluationResult().getExpression();
                 assertEquals(expected, expression.toString());
             }
@@ -151,14 +151,14 @@ public class Test_57_Lambda_AAPI extends CommonTestRunner {
                     if ("0".equals(d.statementId())) {
                         assertLinked(d, it(0, ""));
                     } else if ("1".equals(d.statementId())) {
-                        assertLinked(d, it(0, 1, "input:-1"), it(2, ""));
+                        assertLinked(d, it(0, 1, "input:-1"), it(2, "input:4"));
                     } else fail();
                 }
                 if (d.variable() instanceof ParameterInfo pi && "input".equals(pi.name)) {
                     if ("0".equals(d.statementId())) {
                         assertLinked(d, it(0, ""));
                     } else if ("1".equals(d.statementId())) {
-                        assertLinked(d, it(0, 1, "f:-1"), it(2, ""));
+                        assertLinked(d, it(0, 1, "f:-1"), it(2, "f:4"));
                     } else fail();
                 }
             }

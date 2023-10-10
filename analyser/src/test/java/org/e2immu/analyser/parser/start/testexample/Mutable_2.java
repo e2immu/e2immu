@@ -16,8 +16,6 @@ public class Mutable_2 {
          core of the test: the return value "set.contains(s)?s.length():-1"
          should not evaluate to s.length() because of the value for set:
          "instance type HashSet<String> *this.contains(s)&&this.size()>=1*"
-
-         20230912: test not that relevant, companions disabled
          */
         return -1;
     }

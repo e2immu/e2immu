@@ -63,7 +63,7 @@ public class Test_Util_08_Resources extends CommonTestRunner {
 
                     assertEquals(expected, d.evaluationResult().value().toString());
                     String delays = d.iteration() == 0
-                            ? "initial:dirRelativeToBase@Method_recursivelyAddFiles_1.0.2-E"
+                            ? "initial:dirRelativeToBase@Method_recursivelyAddFiles_1.0.2-E;srv@Method_accept"
                             : "";
                     assertEquals(delays, d.evaluationResult().causesOfDelay().toString());
                 }
