@@ -26,7 +26,7 @@ public class InlinedMethod_4 {
         return i + j;
     }
 
-    @ImmutableContainer("9")
+    @ImmutableContainer
     public int expand1() {
         return sum(5);
     }

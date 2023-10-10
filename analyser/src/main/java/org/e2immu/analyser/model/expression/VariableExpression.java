@@ -580,15 +580,24 @@ public class VariableExpression extends BaseExpression implements IsVariableExpr
         int i = 0;
         List<ParameterAnalysis> parameterAnalyses = context.evaluationContext()
                 .getParameterAnalyses(constructorCall.constructor()).toList();
+        CausesOfDelay causes = CausesOfDelay.EMPTY;
         for (ParameterAnalysis parameterAnalysis : parameterAnalyses) {
-            Map<FieldInfo, DV> assigned = parameterAnalysis.getAssignedToField();
-            if (assigned != null) {
-                DV assignedOrLinked = assigned.get(fieldInfo);
-                if (assignedOrLinked != null && LinkedVariables.isAssigned(assignedOrLinked)) {
-                    return constructorCall.getParameterExpressions().get(i);
+            if (!parameterAnalysis.isAssignedToFieldDelaysResolved()) {
+                causes = causes.merge(parameterAnalysis.assignedToFieldDelays());
+            } else {
+                Map<FieldInfo, DV> assigned = parameterAnalysis.getAssignedToField();
+                if (assigned != null) {
+                    DV assignedOrLinked = assigned.get(fieldInfo);
+                    if (assignedOrLinked != null && LinkedVariables.isAssigned(assignedOrLinked)) {
+                        return constructorCall.getParameterExpressions().get(i);
+                    }
                 }
             }
             i++;
+        }
+        if (causes.isDelayed()) {
+            // worth waiting
+            return DelayedVariableExpression.forField(new FieldReference(context.getAnalyserContext(), fieldInfo), 0, causes);
         }
         return null;
     }

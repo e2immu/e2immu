@@ -27,6 +27,7 @@ public class InlinedMethod_5 {
         i = p;
     }
 
+    // IMPORTANT: current implementation (202310) does not accept fields
     public int sum(int j) {
         return i + j;
     }
@@ -35,13 +36,13 @@ public class InlinedMethod_5 {
         return sum(5);
     }
 
-    @ImmutableContainer("11")
+    @ImmutableContainer
     public static int expand1() {
         InlinedMethod_5 i5 = new InlinedMethod_5(6);
         return i5.sum5();
     }
 
-    @ImmutableContainer("7")
+    @ImmutableContainer
     public static int expand2() {
         InlinedMethod_5 i5 = new InlinedMethod_5(5);
         return i5.sum(2);

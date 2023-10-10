@@ -29,7 +29,7 @@ public class InlinedMethod_2 {
         return i + r;
     }
 
-    @ImmutableContainer("2")
+    @ImmutableContainer
     public int difference31() {
         return plus(3) - plus(1);
     }

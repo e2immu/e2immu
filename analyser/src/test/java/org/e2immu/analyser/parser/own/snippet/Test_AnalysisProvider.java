@@ -195,7 +195,7 @@ public class Test_AnalysisProvider extends CommonTestRunner {
                 assertEquals(d.iteration() > 0, d.fieldAnalysis().getLinkedVariables().isDone());
                 assertDv(d, 20, DV.FALSE_DV, Property.MODIFIED_OUTSIDE_METHOD);
                 assertDv(d, 20, MultiLevel.NOT_CONTAINER_DV, Property.CONTAINER_RESTRICTION);
-                String expected = d.iteration() < 2 ? "<f:EFFECTIVELY_E1IMMUTABLE_DV>" : "new DV(5,List.of(Cause.C1))";
+                String expected = d.iteration() < 2 ? "<f:EFFECTIVELY_E1IMMUTABLE_DV>" : "new DV(5,List.of(new Cause(0)))";
                 assertEquals(expected, d.fieldAnalysis().getValue().toString());
 
                 assertDv(d, 2, MultiLevel.EFFECTIVELY_IMMUTABLE_DV, Property.EXTERNAL_IMMUTABLE);

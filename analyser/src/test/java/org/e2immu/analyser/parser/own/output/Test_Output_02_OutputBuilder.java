@@ -73,8 +73,8 @@ public class Test_Output_02_OutputBuilder extends CommonTestRunner {
                         assertFalse(d.variableInfoContainer().hasEvaluation());
 
                         String expected = d.iteration() == 0
-                                ? "!<m:notStart>||<m:isEmpty>?instance type Space/*new Space(ElementarySpace.NONE,ElementarySpace.NONE,Split.NEVER)*/:<f:NONE>"
-                                : "instance type Space/*new Space(ElementarySpace.NONE,ElementarySpace.NONE,Split.NEVER)*/";
+                                ? "!<m:notStart>||<m:isEmpty>?instance type Space/*new Space(new ElementarySpace(\"\"),new ElementarySpace(\"\"),instance type Split)*/:<f:NONE>"
+                                : "instance type Space/*new Space(new ElementarySpace(\"\"),new ElementarySpace(\"\"),instance type Split)*/";
                         assertEquals(expected, d.currentValue().toString());
                         assertLinked(d, it0("a:-1,b:-1,end:-1,guideGenerator:-1,separator:-1,start:-1,this.countMid:-1"),
                                 it(1, ""));
@@ -85,13 +85,13 @@ public class Test_Output_02_OutputBuilder extends CommonTestRunner {
                     }
                     if ("0.0.0.0.0".equals(d.statementId())) {
                         String expected = d.iteration() == 0 ? "<f:NONE>"
-                                : "instance type Space/*new Space(ElementarySpace.NONE,ElementarySpace.NONE,Split.NEVER)*/";
+                                : "instance type Space/*new Space(new ElementarySpace(\"\"),new ElementarySpace(\"\"),instance type Split)*/";
                         assertEquals(expected, d.currentValue().toString());
                         assertEquals("", d.variableInfo().getLinkedVariables().toString());
                     }
                     if ("0.0.0.0.2".equals(d.statementId())) {
                         String expected = d.iteration() == 0 ? "<f:NONE>"
-                                : "instance type Space/*new Space(ElementarySpace.NONE,ElementarySpace.NONE,Split.NEVER)*/";
+                                : "instance type Space/*new Space(new ElementarySpace(\"\"),new ElementarySpace(\"\"),instance type Split)*/";
                         assertEquals(expected, d.currentValue().toString());
                         assertLinked(d, it0("a:-1,b:-1,end:-1,guideGenerator:-1,separator:-1,start:-1"),
                                 it(1, ""));

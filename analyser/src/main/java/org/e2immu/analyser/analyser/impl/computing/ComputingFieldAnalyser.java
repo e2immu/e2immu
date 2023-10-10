@@ -1275,17 +1275,27 @@ public class ComputingFieldAnalyser extends FieldAnalyserImpl implements FieldAn
         }
         List<ValueAndPropertyProxy> values = fieldAnalysis.getValues();
 
-
         // compute and set the combined value
         Expression effectivelyFinalValue;
 
+        EvaluationContext ec = new EvaluationContextImpl(0, BreakDelayLevel.NONE,
+                ConditionManagerImpl.initialConditionManager(analyserContext.getPrimitives()), null);
+        EvaluationResultImpl er = EvaluationResultImpl.from(ec);
+        ForwardEvaluationInfo.Builder fwdBuilder = new ForwardEvaluationInfo.Builder();
+        if (fieldInfo.type.isPrimitiveExcludingVoid()) {
+            fwdBuilder.setCnnNotNull();
+        }
+        ForwardEvaluationInfo fwd = fwdBuilder.build();
+
         // suppose there are 2 constructors, and the field gets exactly the same value...
-        List<Expression> expressions = values.stream().map(ValueAndPropertyProxy::getValue).toList();
+        List<Expression> expressions = values.stream().map(ValueAndPropertyProxy::getValue)
+                .map(e -> e.evaluate(er, fwd).value())
+                .toList();
         Set<Expression> set = new HashSet<>(expressions);
 
         if (set.size() == 1) {
             ValueAndPropertyProxy proxy = values.get(0);
-            Expression expression = proxy.getValue();
+            Expression expression = expressions.get(0);
             ConstructorCall constructorCall;
             if ((constructorCall = expression.asInstanceOf(ConstructorCall.class)) != null && constructorCall.constructor() != null) {
                 // now the state of the new object may survive if there are no modifying methods called,
@@ -1366,10 +1376,7 @@ public class ComputingFieldAnalyser extends FieldAnalyserImpl implements FieldAn
             LOGGER.debug("Delaying @Constant because of recursively constant computation on value {} of {}", fqn, value);
             return recursivelyConstant.causesOfDelay(); //DELAY EXIT POINT
         }
-
-        if (recursivelyConstant.valueIsTrue()) {
-            // FIXME
-        }
+        LOGGER.debug("Set @Constant to {}, value {}", recursivelyConstant, value);
         fieldAnalysis.setProperty(Property.CONSTANT, recursivelyConstant);
         return DONE;
     }
@@ -1557,7 +1564,7 @@ public class ComputingFieldAnalyser extends FieldAnalyserImpl implements FieldAn
             return variableInfoList.stream()
                     .filter(VariableInfo::isRead)
                     .map(vi -> vi.getProperty(Property.CONTEXT_MODIFIED).causesOfDelay());
-            // FIXME should we filter on those that do not depend on the field's immutability?
+            // CHECK should we filter on those that do not depend on the field's immutability?
         }).reduce(CausesOfDelay.EMPTY, CausesOfDelay::merge);
         // IMPORTANT: use reduce, do not use filter(isDelayed).findFirst(), because mom delay has to pass (e.g. Modified_19)
 
@@ -1765,7 +1772,9 @@ public class ComputingFieldAnalyser extends FieldAnalyserImpl implements FieldAn
                                        Expression indexValue,
                                        Identifier identifier,
                                        ForwardEvaluationInfo forwardEvaluationInfo) {
-            if (variable instanceof FieldReference) {
+            if (variable instanceof FieldReference fr) {
+                Expression e = VariableExpression.tryShortCut(EvaluationResultImpl.from(this), scopeValue, fr);
+                if (e != null) return e;
                 return ComputingFieldAnalyser.this.getVariableValue(variable);
             }
             if (variable instanceof This) {
@@ -1776,8 +1785,10 @@ public class ComputingFieldAnalyser extends FieldAnalyserImpl implements FieldAn
                  the parameter must belong to the closure somewhere (otherwise you can't have parameters in field expressions,
                  see test SubTypes_5
                  */
-                assert closure != null;
-                return closure.currentValue(variable, scopeValue, indexValue, identifier, forwardEvaluationInfo);
+                if (closure != null) {
+                    return closure.currentValue(variable, scopeValue, indexValue, identifier, forwardEvaluationInfo);
+                }
+                return new VariableExpression(Identifier.CONSTANT, variable);
             }
 
             throw new UnsupportedOperationException("Variable of " + variable.getClass() + " not implemented here");

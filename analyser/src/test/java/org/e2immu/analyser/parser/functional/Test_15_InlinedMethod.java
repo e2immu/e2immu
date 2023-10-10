@@ -12,7 +12,7 @@
  * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.e2immu.analyser.parser.start;
+package org.e2immu.analyser.parser.functional;
 
 import org.e2immu.analyser.config.AnalyserConfiguration;
 import org.e2immu.analyser.config.AnnotatedAPIConfiguration;
@@ -33,7 +33,6 @@ import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-@Disabled("since 20230911, focus on stability first")
 public class Test_15_InlinedMethod extends CommonTestRunner {
     public Test_15_InlinedMethod() {
         super(false);
@@ -63,14 +62,14 @@ public class Test_15_InlinedMethod extends CommonTestRunner {
     @Test
     public void test_2() throws IOException {
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
-            if ("plus".equals(d.methodInfo().name) && d.iteration() > 0) {
-                if (d.methodAnalysis().getSingleReturnValue() instanceof InlinedMethod inlinedMethod) {
-                    assertEquals("/*inline plus*/i+r", inlinedMethod.toString());
-                    assertEquals("i, r, this", inlinedMethod.variablesOfExpressionSorted());
-                } else fail();
+            if ("plus".equals(d.methodInfo().name)) {
+                // IMPORTANT: current implementation (202310) does not accept fields
+                String expected = d.iteration() == 0 ? "<m:plus>" : "i+r";
+                assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
             }
             if ("difference31".equals(d.methodInfo().name) && d.iteration() > 1) {
-                assertEquals("2", d.methodAnalysis().getSingleReturnValue().toString());
+                assertEquals("/*inline difference31*/-this.plus(1)+this.plus(3)",
+                        d.methodAnalysis().getSingleReturnValue().toString());
             }
             if ("difference11".equals(d.methodInfo().name) && d.iteration() > 1) {
                 assertEquals("0", d.methodAnalysis().getSingleReturnValue().toString());
@@ -83,7 +82,15 @@ public class Test_15_InlinedMethod extends CommonTestRunner {
 
     @Test
     public void test_4() throws IOException {
+        MethodAnalyserVisitor methodAnalyserVisitor = d -> {
+            if ("sum".equals(d.methodInfo().name)) {
+                // IMPORTANT: current implementation (202310) does not accept fields
+                String expected = d.iteration() == 0 ? "<m:sum>" : "4+j";
+                assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
+            }
+        };
         testClass("InlinedMethod_4", 0, 0, new DebugConfiguration.Builder()
+                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .build());
     }
 
@@ -92,7 +99,7 @@ public class Test_15_InlinedMethod extends CommonTestRunner {
         EvaluationResultVisitor evaluationResultVisitor = d -> {
             if ("expand1".equals(d.methodInfo().name)) {
                 if ("1".equals(d.statementId())) {
-                    String expected = d.iteration() <= 1 ? "<m:sum5>" : "5+`i`"; // FIXME should be 11, but can be solved later
+                    String expected = d.iteration() == 0 ? "<m:sum5>" : "(new InlinedMethod_5(6)).sum(5)";
                     assertEquals(expected, d.evaluationResult().value().toString());
                 }
             }
@@ -101,7 +108,7 @@ public class Test_15_InlinedMethod extends CommonTestRunner {
             if ("expand3".equals(d.methodInfo().name)) {
                 if ("il5".equals(d.variableName())) {
                     if ("0".equals(d.statementId())) {
-                        String expect = d.iteration() <= 1 ? "<new:InlinedMethod_5>" : "new InlinedMethod_5(a)";
+                        String expect = "new InlinedMethod_5(a)";
                         assertEquals(expect, d.currentValue().toString());
                         if (d.iteration() > 1) {
                             if (d.currentValue() instanceof ConstructorCall newObject) {
@@ -114,35 +121,20 @@ public class Test_15_InlinedMethod extends CommonTestRunner {
         };
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("sum".equals(d.methodInfo().name)) {
-                String expect = d.iteration() == 0 ? "<m:sum>" : "/*inline sum*/i+j";
+                // IMPORTANT: current implementation (202310) does not accept fields
+                String expect = d.iteration() == 0 ? "<m:sum>" : "i+j";
                 assertEquals(expect, d.methodAnalysis().getSingleReturnValue().toString());
-                if (d.iteration() > 0) {
-                    if (d.methodAnalysis().getSingleReturnValue() instanceof InlinedMethod inlinedMethod) {
-                        assertEquals("i, j, this", inlinedMethod.variablesOfExpressionSorted());
-                    } else fail();
-                }
             }
             if ("sum5".equals(d.methodInfo().name)) {
-                String expect = d.iteration() == 0 ? "<m:sum5>" : "/*inline sum5*/5+`i`";
+                String expect = d.iteration() == 0 ? "<m:sum5>" : "/*inline sum5*/this.sum(5)";
                 assertEquals(expect, d.methodAnalysis().getSingleReturnValue().toString());
-                if (d.iteration() > 1) {
-                    if (d.methodAnalysis().getSingleReturnValue() instanceof InlinedMethod inlinedMethod) {
-                        assertEquals("", inlinedMethod.variablesOfExpressionSorted());
-                    } else fail();
-                }
             }
             if ("expand3".equals(d.methodInfo().name)) {
-                String expect = d.iteration() <= 1 ? "<m:expand3>" : "/*inline expand3*/a+b";
+                String expect = d.iteration() == 0 ? "<m:expand3>" : "/*inline expand3*/(new InlinedMethod_5(a)).sum(b)";
                 assertEquals(expect, d.methodAnalysis().getSingleReturnValue().toString());
-                if (d.iteration() > 1) {
-                    if (d.methodAnalysis().getSingleReturnValue() instanceof InlinedMethod inlinedMethod) {
-                        assertEquals("a, b", inlinedMethod.variablesOfExpressionSorted());
-                    } else fail();
-                }
             }
         };
-        // FIXME error: the @Constant for the 11
-        testClass("InlinedMethod_5", 1, 0, new DebugConfiguration.Builder()
+        testClass("InlinedMethod_5", 0, 0, new DebugConfiguration.Builder()
                 .addEvaluationResultVisitor(evaluationResultVisitor)
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
@@ -153,16 +145,12 @@ public class Test_15_InlinedMethod extends CommonTestRunner {
     public void test_6() throws IOException {
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("sum".equals(d.methodInfo().name)) {
-                String expect = d.iteration() == 0 ? "<m:sum>" : "/*inline sum*/i$0+j";
+                // IMPORTANT: current implementation (202310) does not accept fields
+                String expect = d.iteration() == 0 ? "<m:sum>" : "i$0+j";
                 assertEquals(expect, d.methodAnalysis().getSingleReturnValue().toString());
-                if (d.iteration() > 0) {
-                    if (d.methodAnalysis().getSingleReturnValue() instanceof InlinedMethod inlinedMethod) {
-                        assertTrue(inlinedMethod.containsVariableFields());
-                    } else fail();
-                }
             }
             if ("expandSum".equals(d.methodInfo().name)) {
-                String expect = d.iteration() == 0 ? "<m:expandSum>" : "/*inline expandSum*/3*k+k*`i`";
+                String expect = d.iteration() == 0 ? "<m:expandSum>" : "/*inline expandSum*/this.sum(3)*k";
                 assertEquals(expect, d.methodAnalysis().getSingleReturnValue().toString());
             }
 
@@ -172,10 +160,10 @@ public class Test_15_InlinedMethod extends CommonTestRunner {
                     assertEquals(expected, d.methodAnalysis().getSingleReturnValue().causesOfDelay().toString());
                 } else if (d.methodAnalysis().getSingleReturnValue() instanceof InlinedMethod inlinedMethod) {
                     assertFalse(inlinedMethod.containsVariableFields());
-                    assertEquals("`variableField.i`", inlinedMethod.expression().toString());
+                    assertEquals("variableField.getI()", inlinedMethod.expression().toString());
                 } else fail();
 
-                String expect = d.iteration() <= 1 ? "<m:expand>" : "/*inline expand*/`variableField.i`";
+                String expect = d.iteration() <= 1 ? "<m:expand>" : "/*inline expand*/variableField.getI()";
                 assertEquals(expect, d.methodAnalysis().getSingleReturnValue().toString());
             }
         };
@@ -189,7 +177,7 @@ public class Test_15_InlinedMethod extends CommonTestRunner {
     public void test_7() throws IOException {
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("expand".equals(d.methodInfo().name) && d.iteration() >= 2) {
-                assertEquals("/*inline expand*/`variableField.i`",
+                assertEquals("/*inline expand*/variableField.getI()",
                         d.methodAnalysis().getSingleReturnValue().toString());
             }
             if ("doNotExpand".equals(d.methodInfo().name) && d.iteration() > 0) {

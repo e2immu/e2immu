@@ -105,6 +105,10 @@ public class ConstructorCall extends BaseExpression implements HasParameterExpre
                 null, null);
     }
 
+    public ConstructorCall withParameterExpressions(List<Expression> newExpressions) {
+        return new ConstructorCall(identifier, scope, constructor, parameterizedType, diamond, newExpressions,
+                anonymousClass, arrayInitializer);
+    }
 
     public Expression removeConstructor(Properties valueProperties, Primitives primitives) {
         assert arrayInitializer == null;
@@ -486,10 +490,12 @@ public class ConstructorCall extends BaseExpression implements HasParameterExpre
         // check state changes of companion methods
         Expression instance;
         if (constructor != null) {
+            int sumComplexity = res.v.stream().mapToInt(Expression::getComplexity).sum();
+            ConstructorCall withEvalParam = sumComplexity >= 20 ? this : withParameterExpressions(res.v);
             MethodCall.ModReturn modReturn = MethodCall.checkCompanionMethodsModifying(identifier, res.k, context,
-                    constructor, null, this, res.v, this, DV.TRUE_DV);
+                    constructor, null, withEvalParam, res.v, this, DV.TRUE_DV);
             if (modReturn == null) {
-                instance = this;
+                instance = withEvalParam;
             } else if (modReturn.expression() != null) {
                 instance = modReturn.expression().isDelayed()
                         ? createDelayedValue(identifier, context, modReturn.expression().causesOfDelay())

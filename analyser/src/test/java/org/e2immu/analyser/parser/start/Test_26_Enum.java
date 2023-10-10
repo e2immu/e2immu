@@ -283,14 +283,14 @@ public class Test_26_Enum extends CommonTestRunner {
         BreakDelayVisitor breakDelayVisitor = d -> assertEquals("----SFMT---", d.delaySequence());
 
         testClass("Enum_1", 0, 0, new DebugConfiguration.Builder()
-             //   .addEvaluationResultVisitor(evaluationResultVisitor)
-             //   .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-             //   .addStatementAnalyserVisitor(statementAnalyserVisitor)
-             //   .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
-            //    .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
-            //    .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+                //   .addEvaluationResultVisitor(evaluationResultVisitor)
+                //   .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                //   .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                //   .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                //    .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
+                //    .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                 .addTypeMapVisitor(typeMapVisitor)
-           //     .addBreakDelayVisitor(breakDelayVisitor)
+                //     .addBreakDelayVisitor(breakDelayVisitor)
                 .build());
     }
 
@@ -409,7 +409,7 @@ public class Test_26_Enum extends CommonTestRunner {
                 //     .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                 //     .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 //     .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
-             //   .addBreakDelayVisitor(breakDelayVisitor)
+                //   .addBreakDelayVisitor(breakDelayVisitor)
                 .build());
     }
 
@@ -586,6 +586,33 @@ public class Test_26_Enum extends CommonTestRunner {
     public void test10() throws IOException {
         // container, nothing immutable about it!
         testClass("Enum_10", 0, 0, new DebugConfiguration.Builder()
+                .build());
+    }
+
+    @Test
+    public void test12() throws IOException {
+        FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
+            if ("ABSENT".equals(d.fieldInfo().name)) {
+                assertEquals("new Level(-1)", d.fieldAnalysis().getValue().toString());
+                assertEquals(DV.TRUE_DV, d.fieldAnalysis().getProperty(Property.CONSTANT));
+            }
+            if ("MUTABLE".equals(d.fieldInfo().name)) {
+                assertEquals("new Level(-3)", d.fieldAnalysis().getValue().toString());
+                assertEquals(DV.TRUE_DV, d.fieldAnalysis().getProperty(Property.CONSTANT));
+            }
+            if ("BASE".equals(d.fieldInfo().name)) {
+                String expected = d.iteration() == 0 ? "<f:BASE>" : "new Level(0)";
+                assertEquals(expected, d.fieldAnalysis().getValue().toString());
+                assertDv(d, 1, DV.TRUE_DV, Property.CONSTANT);
+            }
+            if ("IMMUTABLE_HC".equals(d.fieldInfo().name)) {
+                String expected = d.iteration() == 0 ? "<f:IMMUTABLE_HC>" : "new Level(-3)";
+                assertEquals(expected, d.fieldAnalysis().getValue().toString());
+                assertDv(d, 1, DV.TRUE_DV, Property.CONSTANT);
+            }
+        };
+        testClass("Enum_12", 0, 0, new DebugConfiguration.Builder()
+                .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                 .build());
     }
 }

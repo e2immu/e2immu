@@ -443,7 +443,7 @@ public class Test_51_InstanceOf extends CommonTestRunner {
                         assertEquals(expected, d.currentValue().toString());
                     }
                     if ("1.0.0".equals(d.statementId())) {
-                        String expected = d.iteration() == 0 ? "<new:BooleanConstant>" : "new BooleanConstant(bool)";
+                        String expected = d.iteration() == 0 ? "<new:BooleanConstant>" : "new BooleanConstant(object/*(Boolean)*/)";
                         assertEquals(expected, d.currentValue().toString());
                     }
                 }
