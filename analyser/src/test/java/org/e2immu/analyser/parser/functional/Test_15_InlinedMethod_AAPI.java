@@ -452,11 +452,35 @@ public class Test_15_InlinedMethod_AAPI extends CommonTestRunner {
             if ("collector".equals(d.methodInfo().name)) {
                 assertEquals("0", d.statementId());
                 if (d.variable() instanceof ReturnVariable) {
-                    String expected = d.iteration() <= 2 ? "<new:Collector<Entry<T,Boolean>,UpgradableBooleanMap<T>,UpgradableBooleanMap<T>>>"
+                    String expected = d.iteration() < 4 ? "<new:Collector<Entry<T,Boolean>,UpgradableBooleanMap<T>,UpgradableBooleanMap<T>>>"
                             : "new Collector<>(){public Supplier<UpgradableBooleanMap<T>> supplier(){return UpgradableBooleanMap::new;}public BiConsumer<UpgradableBooleanMap<T>,Entry<T,Boolean>> accumulator(){return (map,e)->{... debugging ...};}public BinaryOperator<UpgradableBooleanMap<T>> combiner(){return UpgradableBooleanMap::putAll;}public Function<UpgradableBooleanMap<T>,UpgradableBooleanMap<T>> finisher(){return t->Objects.requireNonNull(t);}public Set<Characteristics> characteristics(){return Set.of(Characteristics.CONCURRENT,Characteristics.IDENTITY_FINISH,Characteristics.UNORDERED);}}";
                     assertEquals(expected, d.currentValue().toString());
-                    assertDv(d, 3, MultiLevel.NOT_CONTAINER_DV, Property.CONTAINER);
+                    assertDv(d, MultiLevel.CONTAINER_DV, Property.CONTAINER);
                 }
+            }
+        };
+
+        MethodAnalyserVisitor methodAnalyserVisitor = d -> {
+            if ("typesReferenced".equals(d.methodInfo().name) && "Expression".equals(d.methodInfo().typeInfo.simpleName)) {
+                assertFalse(d.methodInfo().hasImplementations());
+                String expected = d.iteration() < 4 ? "<m:typesReferenced>"
+                        : "List.of().stream().flatMap(instance type $1).collect(new Collector<>(){public Supplier<UpgradableBooleanMap<T>> supplier(){return UpgradableBooleanMap::new;}public BiConsumer<UpgradableBooleanMap<T>,Entry<T,Boolean>> accumulator(){return (map,e)->{... debugging ...};}public BinaryOperator<UpgradableBooleanMap<T>> combiner(){return UpgradableBooleanMap::putAll;}public Function<UpgradableBooleanMap<T>,UpgradableBooleanMap<T>> finisher(){return t->Objects.requireNonNull(t);}public Set<Characteristics> characteristics(){return Set.of(Characteristics.CONCURRENT,Characteristics.IDENTITY_FINISH,Characteristics.UNORDERED);}})";
+                assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
+            }
+            if ("supplier".equals(d.methodInfo().name)) {
+                assertEquals("$3", d.methodInfo().typeInfo.simpleName);
+                assertEquals("/*inline supplier*/UpgradableBooleanMap::new", d.methodAnalysis().getSingleReturnValue().toString());
+                assertDv(d, MultiLevel.CONTAINER_DV, Property.CONTAINER);
+            }
+            if ("stream".equals(d.methodInfo().name)) {
+                assertDv(d, 1, MultiLevel.DEPENDENT_DV, Property.INDEPENDENT);
+                assertDv(d, 1, MultiLevel.MUTABLE_DV, Property.IMMUTABLE);
+            }
+        };
+
+        FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
+            if ("map".equals(d.fieldInfo().name)) {
+                assertDv(d, 1, DV.TRUE_DV, Property.MODIFIED_OUTSIDE_METHOD);
             }
         };
 
@@ -467,26 +491,6 @@ public class Test_15_InlinedMethod_AAPI extends CommonTestRunner {
             if ("$3".equals(d.typeInfo().simpleName)) {
                 assertEquals("UpgradableBooleanMap", d.typeInfo().packageNameOrEnclosingType.getRight().simpleName);
                 assertFalse(d.typeInspection().isStatic());
-                assertDv(d, MultiLevel.NOT_CONTAINER_DV, Property.CONTAINER);
-            }
-        };
-
-        MethodAnalyserVisitor methodAnalyserVisitor = d -> {
-            if ("typesReferenced".equals(d.methodInfo().name) && "Expression".equals(d.methodInfo().typeInfo.simpleName)) {
-                assertFalse(d.methodInfo().hasImplementations());
-
-                if (d.iteration() >= 3) {
-                    if (d.methodAnalysis().getSingleReturnValue() instanceof InlinedMethod inlinedMethod) {
-                        assertEquals("List.of().stream().flatMap(instance type $1).collect(new Collector<>(){public Supplier<UpgradableBooleanMap<T>> supplier(){return UpgradableBooleanMap::new;}public BiConsumer<UpgradableBooleanMap<T>,Entry<T,Boolean>> accumulator(){return (map,e)->{... debugging ...};}public BinaryOperator<UpgradableBooleanMap<T>> combiner(){return UpgradableBooleanMap::putAll;}public Function<UpgradableBooleanMap<T>,UpgradableBooleanMap<T>> finisher(){return t->Objects.requireNonNull(t);}public Set<Characteristics> characteristics(){return Set.of(Characteristics.CONCURRENT,Characteristics.IDENTITY_FINISH,Characteristics.UNORDERED);}})",
-                                inlinedMethod.expression().toString());
-                        // no "this", because subElements is inlined!
-                        assertEquals("", inlinedMethod.variablesOfExpressionSorted());
-                    } else fail();
-                }
-            }
-            if ("supplier".equals(d.methodInfo().name)) {
-                assertEquals("$3", d.methodInfo().typeInfo.simpleName);
-                assertEquals("/*inline supplier*/UpgradableBooleanMap::new", d.methodAnalysis().getSingleReturnValue().toString());
                 assertDv(d, MultiLevel.CONTAINER_DV, Property.CONTAINER);
             }
         };
@@ -494,9 +498,10 @@ public class Test_15_InlinedMethod_AAPI extends CommonTestRunner {
         BreakDelayVisitor breakDelayVisitor = d -> assertEquals("-------S--SF-SF--SF---", d.delaySequence());
 
         testClass("InlinedMethod_13", 0, 0, new DebugConfiguration.Builder()
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                 .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
-                //   .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
-                //      .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .addBreakDelayVisitor(breakDelayVisitor)
                 .build(), new AnalyserConfiguration.Builder()
                 .setComputeContextPropertiesOverAllMethods(true) // solves all the potential null pointer warnings!

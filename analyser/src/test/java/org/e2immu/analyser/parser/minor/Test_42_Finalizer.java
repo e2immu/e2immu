@@ -30,6 +30,8 @@ import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 
+import static org.e2immu.analyser.parser.VisitorTestSupport.IterationInfo.it;
+import static org.e2immu.analyser.parser.VisitorTestSupport.IterationInfo.it0;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class Test_42_Finalizer extends CommonTestRunner {
@@ -77,9 +79,9 @@ public class Test_42_Finalizer extends CommonTestRunner {
         };
 
         testClass("Finalizer_0", 1, 0, new DebugConfiguration.Builder()
-         //       .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
-          //      .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-           //     .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                //       .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
+                //      .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                //     .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .build());
     }
 
@@ -112,4 +114,38 @@ public class Test_42_Finalizer extends CommonTestRunner {
                 .build());
     }
     // TODO Finalizer_3
+
+
+    @Test
+    public void test_4() throws IOException {
+        StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+            if ("method2b".equals(d.methodInfo().name)) {
+                if ("stream".equals(d.variableName())) {
+                    if ("0".equals(d.statementId())) {
+                        assertLinked(d, it(0, "list:4"));
+                    }
+                }
+            }
+            if ("method3b".equals(d.methodInfo().name)) {
+                if ("stream".equals(d.variableName())) {
+                    if ("0".equals(d.statementId())) {
+                        assertLinked(d, it(0, "list:4"));
+                        // CHECK MUTABLE "has not yet been applied"
+                    }
+                }
+            }
+        };
+
+        TypeAnalyserVisitor typeAnalyserVisitor = d -> {
+            if ("I".equals(d.typeInfo().simpleName)) {
+                assertDv(d, 1, MultiLevel.EFFECTIVELY_FINAL_FIELDS_DV, Property.IMMUTABLE);
+                assertDv(d, 1, MultiLevel.DEPENDENT_DV, Property.INDEPENDENT);
+            }
+        };
+
+        testClass("Finalizer_4", 1, 0, new DebugConfiguration.Builder()
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
+                .build());
+    }
 }
