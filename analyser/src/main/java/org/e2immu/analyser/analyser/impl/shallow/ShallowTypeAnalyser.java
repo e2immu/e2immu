@@ -229,7 +229,7 @@ public class ShallowTypeAnalyser extends TypeAnalyserImpl {
     /*
      In some situations, the INDEPENDENT value is easy to compute.
      Because we have a chicken-and-egg problem (the independent value can be computed from the methods, but the
-     parameters may require an independent value, it is better to assign a value when obviously possible.
+     parameters may require an independent value), it is better to assign a value when obviously possible.
      */
     public static List<Message> simpleComputeIndependent(AnalysisProvider analysisProvider,
                                                          TypeAnalysisImpl.Builder builder,

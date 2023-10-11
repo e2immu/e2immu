@@ -903,7 +903,7 @@ public class Test_51_InstanceOf extends CommonTestRunner {
             switch (d.typeInfo().simpleName) {
                 case "$1" -> {
                     assertDv(d, MultiLevel.EFFECTIVELY_IMMUTABLE_DV, Property.PARTIAL_IMMUTABLE);
-                    assertDv(d, MultiLevel.CONTAINER_DV, Property.PARTIAL_CONTAINER);
+                //    assertDv(d, MultiLevel.CONTAINER_DV, Property.PARTIAL_CONTAINER);
                     // means: we have to wait until we know the property of the enclosing type
                     assertDv(d, MultiLevel.CONTAINER_DV, Property.CONTAINER);
                 }

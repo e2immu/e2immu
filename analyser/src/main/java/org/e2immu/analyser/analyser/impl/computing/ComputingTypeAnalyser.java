@@ -726,12 +726,8 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
         if (typeInfo.typePropertiesAreContracted()) {
             // make sure this is the same value as in AnnotatedAPIAnalyser.ensureImmutableAndContainerInShallowTypeAnalysis
             typeAnalysis.setProperty(CONTAINER, MultiLevel.NOT_CONTAINER_DV);
-            typeAnalysis.setPropertyIfAbsentOrDelayed(PARTIAL_CONTAINER, MultiLevel.NOT_CONTAINER_DV);
             return DONE;
         }
-
-        Property ALT_CONTAINER;
-        AnalysisStatus ALT_DONE;
 
         /*
         parent must have the same property: because there are/may be accessible methods in the parent that
@@ -741,19 +737,14 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
         not from outside, on the child object.
          */
         MaxValueStatus parent = parentMustHaveTheSameProperty(CONTAINER);
-        if (MARKER != parent.status) {
+        if (IGNORE_PARENT != parent.status) {
             if (parent.status.isDelayed()) {
-                ALT_CONTAINER = Property.PARTIAL_CONTAINER;
-                ALT_DONE = AnalysisStatus.of(parent.status.causesOfDelay());
+                typeAnalysis.setProperty(CONTAINER, parent.status.causesOfDelay());
             } else {
-                DV current = typeAnalysis.getProperty(CONTAINER);
-                assert current.isDone();
-                typeAnalysis.setPropertyIfAbsentOrDelayed(PARTIAL_CONTAINER, current);
-                return parent.status;
+                // parent is not a container... so we can't be a container neither
+                typeAnalysis.setProperty(CONTAINER, MultiLevel.NOT_CONTAINER_DV);
+                return DONE;
             }
-        } else {
-            ALT_CONTAINER = CONTAINER;
-            ALT_DONE = DONE;
         }
 
         CausesOfDelay allCauses = CausesOfDelay.EMPTY;
@@ -782,7 +773,6 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
                         LOGGER.debug("{} is not a @Container: the content of {} is modified in {}",
                                 typeInfo, parameterInfo, methodAnalyser);
                         typeAnalysis.setProperty(CONTAINER, MultiLevel.NOT_CONTAINER_DV);
-                        typeAnalysis.setPropertyIfAbsentOrDelayed(PARTIAL_CONTAINER, MultiLevel.NOT_CONTAINER_DV);
                         return DONE;
                     }
                 }
@@ -792,24 +782,17 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
             if (sharedState.breakDelayLevel().acceptType()) {
                 LOGGER.debug("Breaking delay in @Container on type {}", typeInfo);
                 typeAnalysis.setProperty(CONTAINER, MultiLevel.NOT_CONTAINER_INCONCLUSIVE);
-                typeAnalysis.setPropertyIfAbsentOrDelayed(PARTIAL_CONTAINER, MultiLevel.NOT_CONTAINER_INCONCLUSIVE);
                 return DONE;
             }
             CausesOfDelay marker = typeInfo.delay(CauseOfDelay.Cause.CONTAINER);
             CausesOfDelay merge = allCauses.causesOfDelay().merge(marker);
             typeAnalysis.setProperty(CONTAINER, merge);
-            if (ALT_CONTAINER != CONTAINER) {
-                typeAnalysis.setProperty(ALT_CONTAINER, merge);
-            }
             LOGGER.debug("Delaying container {}, delays: {}", typeInfo, merge);
             return AnalysisStatus.of(merge);
         }
-        typeAnalysis.setProperty(ALT_CONTAINER, MultiLevel.CONTAINER_DV);
-        LOGGER.debug("Mark {} as {}", typeInfo.fullyQualifiedName, ALT_CONTAINER);
-        if (ALT_CONTAINER == CONTAINER) {
-            typeAnalysis.setPropertyIfAbsentOrDelayed(PARTIAL_CONTAINER, MultiLevel.CONTAINER_DV);
-        }
-        return ALT_DONE;
+        typeAnalysis.setProperty(CONTAINER, MultiLevel.CONTAINER_DV);
+        LOGGER.debug("Mark {} as @Container", typeInfo.fullyQualifiedName);
+        return DONE;
     }
 
     /**
@@ -837,7 +820,7 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
         }
 
         MaxValueStatus parentOrEnclosing = parentMustHaveTheSameProperty(Property.INDEPENDENT);
-        if (MARKER != parentOrEnclosing.status) return parentOrEnclosing.status;
+        if (IGNORE_PARENT != parentOrEnclosing.status) return parentOrEnclosing.status;
 
         boolean inconclusive = false;
         DV valueFromFields = myFieldAnalysers.stream()
@@ -991,10 +974,10 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
     private record MaxValueStatus(DV maxValue, AnalysisStatus status) {
     }
 
-    private static final AnalysisStatus MARKER = new NotDelayed(4, "MARKER"); // temporary marker
+    private static final AnalysisStatus IGNORE_PARENT = new NotDelayed(4, "MARKER"); // temporary marker
 
     private MaxValueStatus parentMustHaveTheSameProperty(Property property) {
-        if (parentTypeAnalysis == null) return new MaxValueStatus(property.bestDv, MARKER);
+        if (parentTypeAnalysis == null) return new MaxValueStatus(property.bestDv, IGNORE_PARENT);
         DV propertyValue = parentTypeAnalysis.getProperty(property);
         if (propertyValue.isDelayed()) {
             LOGGER.debug("Waiting with {} on {}, parent or enclosing class's status not yet known", property, typeInfo);
@@ -1006,7 +989,7 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
             typeAnalysis.setProperty(property, property.falseDv);
             return new MaxValueStatus(property.falseDv, DONE);
         }
-        return new MaxValueStatus(propertyValue, MARKER);
+        return new MaxValueStatus(propertyValue, IGNORE_PARENT);
     }
 
 

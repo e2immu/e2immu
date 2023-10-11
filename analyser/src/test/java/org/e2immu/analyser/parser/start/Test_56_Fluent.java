@@ -308,7 +308,7 @@ public class Test_56_Fluent extends CommonTestRunner {
             }
         };
 
-        BreakDelayVisitor breakDelayVisitor = d -> assertEquals("-----S---S--S---SFM-SFM--SFMT--", d.delaySequence());
+        BreakDelayVisitor breakDelayVisitor = d -> assertEquals("-----S--S--S---SFM-SFM--SFMT--", d.delaySequence());
 
         TypeContext typeContext = testClass(List.of("a.IFluent_1", "Fluent_1"),
                 List.of("jmods/java.compiler.jmod"),

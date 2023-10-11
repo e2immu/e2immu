@@ -95,7 +95,7 @@ public interface TypeAnalysis extends Analysis {
                 assert !getTypeInfo().shallowAnalysis() || dv.isDone() : "Shallow analysis must have set a value for " + property + " in " + getTypeInfo();
                 return dv;
             }
-            case PARTIAL_IMMUTABLE, PARTIAL_CONTAINER -> {
+            case PARTIAL_IMMUTABLE -> {
                 boolean doNotDelay = getTypeInfo().shallowAnalysis();
                 return doNotDelay ? getPropertyFromMapNeverDelay(property)
                         : getPropertyFromMapDelayWhenAbsent(property);

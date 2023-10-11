@@ -524,7 +524,7 @@ public class TypeAnalysisImpl extends AnalysisImpl implements TypeAnalysis {
         }
 
         private static final Set<Property> ACCEPTED = Set.of(Property.IMMUTABLE, Property.PARTIAL_IMMUTABLE,
-                Property.CONTAINER, Property.PARTIAL_CONTAINER, Property.FINALIZER,
+                Property.CONTAINER, Property.FINALIZER,
                 Property.INDEPENDENT, Property.EXTENSION_CLASS, Property.UTILITY_CLASS, Property.SINGLETON,
                 Property.MODIFIED_METHOD, Property.STATIC_SIDE_EFFECTS);
 
