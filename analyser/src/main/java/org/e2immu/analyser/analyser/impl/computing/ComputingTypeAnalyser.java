@@ -77,6 +77,8 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
     public static final String ANALYSE_INDEPENDENT = "analyseIndependent";
     public static final String ANALYSE_IMMUTABLE = "analyseEffectivelyEventuallyImmutable";
     public static final String ANALYSE_FIELDS_GUARDED_FOR_CONTAINER_PROPERTY = "analyseFieldsGuardedForContainer";
+    public static final String ANALYSE_FIELDS_GUARDED_FOR_INHERITED_CONTAINER_PROPERTY
+            = "analyseFieldsGuardedForInheritedContainer";
     public static final String ANALYSE_CONTAINER = "analyseContainer";
     public static final String ANALYSE_UTILITY_CLASS = "analyseUtilityClass";
     public static final String ANALYSE_SINGLETON = "analyseSingleton";
@@ -112,6 +114,8 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
         }
         builder.add(ANALYSE_IMMUTABLE, this::analyseImmutable)
                 .add(ANALYSE_INDEPENDENT, this::analyseIndependent)
+                .add(ANALYSE_FIELDS_GUARDED_FOR_INHERITED_CONTAINER_PROPERTY,
+                        this::analyseFieldsGuardedForInheritedContainerProperty)
                 .add(ANALYSE_FIELDS_GUARDED_FOR_CONTAINER_PROPERTY, this::analyseFieldsGuardedForContainerProperty)
                 .add(ANALYSE_CONTAINER, this::analyseContainer);
         if (!typeInfo.isInterface()) {
@@ -640,28 +644,19 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
         CausesOfDelay causes = CausesOfDelay.EMPTY;
         Set<FieldInfo> fields = new HashSet<>();
 
-        // step 1: all accessible fields of the parent class
-        // step 2: collect types of args of @Container interfaces
-        Set<ParameterizedType> fieldsTypesToGuard = new HashSet<>();
-
-        // step 3: local implementation, to help determine if we are @Container or not
-        for (FieldAnalyser fieldAnalyser : myFieldAnalysers) {
-            FieldInfo fieldInfo = fieldAnalyser.getFieldInfo();
-            if (fieldsTypesToGuard.contains(fieldInfo.type)) {
-                fields.add(fieldInfo);
+        for (FieldInfo fieldInfo : typeAnalysis.visibleFields()) {
+            FieldAnalysis fieldAnalysis = analyserContext.getFieldAnalysis(fieldInfo);
+            LinkedVariables linkedVariables = fieldAnalysis.getLinkedVariables();
+            if (linkedVariables.isDelayed()) {
+                causes = causes.merge(linkedVariables.causesOfDelay());
             } else {
-                FieldAnalysis fieldAnalysis = fieldAnalyser.getFieldAnalysis();
-                LinkedVariables linkedVariables = fieldAnalysis.getLinkedVariables();
-                if (linkedVariables.isDelayed()) {
-                    causes = causes.merge(linkedVariables.causesOfDelay());
-                } else {
-                    boolean linked = linkedVariables.variables().entrySet().stream()
-                            .filter(e -> LinkedVariables.LINK_IS_HC_OF.equals(e.getValue()) || LinkedVariables.LINK_COMMON_HC.equals(e.getValue()))
-                            .anyMatch(e -> e.getKey() instanceof ParameterInfo pi
-                                    && !analyserContext.getMethodInspection(pi.getMethod()).isPrivate());
-                    if (linked) {
-                        fields.add(fieldInfo);
-                    }
+                boolean linked = linkedVariables.variables().entrySet().stream()
+                        .filter(e -> LinkedVariables.LINK_IS_HC_OF.equals(e.getValue())
+                                || LinkedVariables.LINK_COMMON_HC.equals(e.getValue()))
+                        .anyMatch(e -> e.getKey() instanceof ParameterInfo pi
+                                && !analyserContext.getMethodInspection(pi.getMethod()).isPrivate());
+                if (linked) {
+                    fields.add(fieldInfo);
                 }
             }
         }
@@ -673,6 +668,53 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
         typeAnalysis.setGuardedForContainerProperty(Set.copyOf(fields));
         LOGGER.debug("Set fields guarded for container property to {}",
                 typeAnalysis.fieldsGuardedForContainerPropertyString());
+        return DONE;
+    }
+
+    private AnalysisStatus analyseFieldsGuardedForInheritedContainerProperty(SharedState sharedState) {
+        assert typeAnalysis.guardedForInheritedContainerPropertyDelays().isDelayed();
+
+        CausesOfDelay causes = CausesOfDelay.EMPTY;
+        Set<FieldInfo> fields = new HashSet<>();
+
+        Set<MethodInfo> methodsToLinkToFields = new HashSet<>();
+        for (TypeInfo parent : typeInfo.typeResolution.get().superTypesExcludingJavaLangObject()) {
+            TypeAnalysis parentAnalysis = analyserContext.getTypeAnalysis(parent);
+            DV container = parentAnalysis.getProperty(CONTAINER);
+            if (MultiLevel.CONTAINER_DV.equals(container)) {
+                // add ALL non-private methods: they're all part of the contract
+                TypeInspection parentInspection = analyserContext.getTypeInspection(parent);
+                parentInspection.methodStream(TypeInspection.Methods.THIS_TYPE_ONLY)
+                        .filter(mi -> !analyserContext.getMethodInspection(mi).isPrivate())
+                        .forEach(methodsToLinkToFields::add);
+            }
+        }
+        for (FieldInfo fieldInfo : typeAnalysis.visibleFields()) {
+            FieldAnalysis fieldAnalysis = analyserContext.getFieldAnalysis(fieldInfo);
+            LinkedVariables linkedVariables = fieldAnalysis.getLinkedVariables();
+            if (linkedVariables.isDelayed()) {
+                causes = causes.merge(linkedVariables.causesOfDelay());
+            } else {
+                boolean linked = linkedVariables.variables().entrySet().stream()
+                        .filter(e -> LinkedVariables.LINK_IS_HC_OF.equals(e.getValue())
+                                || LinkedVariables.LINK_COMMON_HC.equals(e.getValue()))
+                        .anyMatch(e -> e.getKey() instanceof ParameterInfo pi
+                                && !Collections.disjoint(methodsToLinkToFields,
+                                pi.getMethodInfo().methodResolution.get().overrides()));
+                if (linked) {
+                    fields.add(fieldInfo);
+                }
+            }
+        }
+
+        if (causes.isDelayed()) {
+            typeAnalysis.setGuardedForInheritedContainerPropertyDelay(causes);
+            LOGGER.debug("Delaying fields guarded for inherited container property, fields' linked variables are delayed");
+            return causes;
+        }
+        typeAnalysis.setGuardedForInheritedContainerProperty(Set.copyOf(fields));
+        LOGGER.debug("Set fields guarded for inherited container property to {}",
+                typeAnalysis.fieldsGuardedForInheritedContainerPropertyString());
         return DONE;
     }
 

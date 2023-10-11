@@ -162,7 +162,7 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
                 .add(EVENTUAL_PREP_WORK, this::eventualPrepWork)
                 .add(ANNOTATE_EVENTUAL, this::annotateEventual)
                 .add(COMPUTE_INDEPENDENT, this::analyseIndependent)
-                .add(DETECT_ILLEGAL_MODIFICATION_IN_CONTAINER, this::detectIllegalModificationInContainer);
+                .add(DETECT_ILLEGAL_MODIFICATION_IN_CONTAINER, this::detectIllegalModificationInInheritedContainer);
 
         analyserComponents = builder.setLimitCausesOfDelay(true).build();
     }
@@ -1312,31 +1312,17 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
         return property;
     }
 
-    private AnalysisStatus detectIllegalModificationInContainer(SharedState sharedState) {
+    private AnalysisStatus detectIllegalModificationInInheritedContainer(SharedState sharedState) {
         StatementAnalysis statementAnalysis = getMethodAnalysis().getLastStatement();
         if (statementAnalysis == null) return DONE;
 
-        DV containerOverride = methodInfo.methodResolution.get().overrides().stream()
-                .map(mi -> {
-                    TypeAnalysis ta = analyserContext.getTypeAnalysis(mi.typeInfo);
-                    return ta.getProperty(CONTAINER);
-                })
-                .reduce(MultiLevel.NOT_CONTAINER_DV, DV::max);
-        if (MultiLevel.NOT_CONTAINER_DV.equals(containerOverride)) {
-            LOGGER.debug("Not raising an error for illegal modification in @Container, not an override");
-            return DONE; // we're not overriding a @Container method, so we're free to act
-        }
-        if (containerOverride.isDelayed()) {
-            LOGGER.debug("Delaying detection of illegal modification in @Container, waiting for @Container of override: {}",
-                    containerOverride);
-            return containerOverride.causesOfDelay();
-        }
-        CausesOfDelay typeDelays = typeAnalysis.guardedForContainerPropertyDelays();
+        CausesOfDelay typeDelays = typeAnalysis.guardedForInheritedContainerPropertyDelays();
         if (typeDelays.isDelayed()) {
-            LOGGER.debug("Delaying detection of illegal modification in @Container, type delays {}", typeDelays);
+            LOGGER.debug("Delaying detection of illegal modification in @Container," +
+                    " delays in computing the fields to be guarded, on this method's type: {}", typeDelays);
             return typeDelays;
         }
-        Set<FieldInfo> fieldsToBeGuarded = typeAnalysis.guardedForContainerProperty();
+        Set<FieldInfo> fieldsToBeGuarded = typeAnalysis.guardedForInheritedContainerProperty();
         if (fieldsToBeGuarded.isEmpty()) {
             return DONE;
         }

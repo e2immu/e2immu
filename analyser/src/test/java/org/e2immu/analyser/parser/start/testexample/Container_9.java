@@ -126,4 +126,76 @@ public class Container_9 {
             return items;
         }
     }
+
+    // correct implementation, but not a container
+    @Container(absent = true)
+    static class Items5 implements Items {
+        private final List<Item> items = new ArrayList<>();
+        private final List<Item> second = new ArrayList<>();
+
+        @Modified
+        @Override
+        public void add(Item item5) {
+            this.items.add(item5);
+        }
+
+        @Override
+        public void modifying() {
+            items.clear(); // no link with an item
+        }
+
+        public List<Item> getItems() {
+            return items;
+        }
+
+        // not container!
+        public void countMessage(@Modified Item item) {
+            item.setMessage(second.size() + " items");
+        }
+
+        public void addToSecond(Item item) {
+            second.add(item);
+        }
+    }
+
+    // not inheriting
+    @Container
+    static class Items6 {
+        private final List<Item> items = new ArrayList<>();
+
+        @Modified
+        public void add(Item item6) {
+            this.items.add(item6);
+        }
+
+        @Modified
+        public void modifying() {
+            items.clear(); // no link with an item
+        }
+
+        public List<Item> getItems() {
+            return items;
+        }
+    }
+
+    @Container(absent = true)
+    static class Items7 {
+        private final List<Item> items = new ArrayList<>();
+
+        @Modified
+        public void add(Item item7) {
+            this.items.add(item7);
+        }
+
+        // fails container restriction, but does not raise error
+        @Modified
+        public void modifying() {
+            Item item = items.get(0);
+            item.setMessage(items.size() + " items");
+        }
+
+        public List<Item> getItems() {
+            return items;
+        }
+    }
 }

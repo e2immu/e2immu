@@ -48,6 +48,7 @@ public class TypeAnalysisImpl extends AnalysisImpl implements TypeAnalysis {
     private final Set<FieldInfo> visibleFields;
     private final boolean immutableDeterminedByTypeParameters;
     private final Set<FieldInfo> guardedForContainerProperty;
+    private final Set<FieldInfo> guardedForInheritedContainerProperty;
 
     private TypeAnalysisImpl(TypeInfo typeInfo,
                              Map<Property, DV> properties,
@@ -60,7 +61,8 @@ public class TypeAnalysisImpl extends AnalysisImpl implements TypeAnalysis {
                              Map<String, MethodInfo> aspects,
                              Set<FieldInfo> visibleFields,
                              boolean immutableDeterminedByTypeParameters,
-                             Set<FieldInfo> guardedForContainerProperty) {
+                             Set<FieldInfo> guardedForContainerProperty,
+                             Set<FieldInfo> guardedForInheritedContainerProperty) {
         super(properties, annotations);
         this.typeInfo = typeInfo;
         this.approvedPreconditionsE1 = approvedPreconditionsE1;
@@ -72,6 +74,7 @@ public class TypeAnalysisImpl extends AnalysisImpl implements TypeAnalysis {
         this.visibleFields = visibleFields;
         this.immutableDeterminedByTypeParameters = immutableDeterminedByTypeParameters;
         this.guardedForContainerProperty = guardedForContainerProperty;
+        this.guardedForInheritedContainerProperty = guardedForInheritedContainerProperty;
     }
 
     @Override
@@ -179,6 +182,21 @@ public class TypeAnalysisImpl extends AnalysisImpl implements TypeAnalysis {
         return CausesOfDelay.EMPTY;
     }
 
+    @Override
+    public Set<FieldInfo> guardedForInheritedContainerProperty() {
+        return guardedForInheritedContainerProperty;
+    }
+
+    @Override
+    public CausesOfDelay guardedForInheritedContainerPropertyDelays() {
+        return CausesOfDelay.EMPTY;
+    }
+
+    @Override
+    public Set<FieldInfo> visibleFields() {
+        return visibleFields;
+    }
+
     public static class CycleInfo {
         public final AddOnceSet<MethodInfo> nonModified = new AddOnceSet<>();
         public final FlipSwitch modified = new FlipSwitch();
@@ -218,6 +236,7 @@ public class TypeAnalysisImpl extends AnalysisImpl implements TypeAnalysis {
 
         private final VariableFirstThen<CausesOfDelay, Boolean> immutableDeterminedByTypeParameters;
         private final VariableFirstThen<CausesOfDelay, Set<FieldInfo>> guardedForContainerProperty;
+        private final VariableFirstThen<CausesOfDelay, Set<FieldInfo>> guardedForInheritedContainerProperty;
 
         private CausesOfDelay approvedPreconditionsE1Delays;
         private CausesOfDelay approvedPreconditionsE2Delays;
@@ -235,9 +254,15 @@ public class TypeAnalysisImpl extends AnalysisImpl implements TypeAnalysis {
             return typeInfo.delay(CauseOfDelay.Cause.INITIAL_VALUE);
         }
 
+
+        @Override
+        public Set<FieldInfo> visibleFields() {
+            return visibleFields;
+        }
+
         /*
-        analyser context can be null for Primitives, ShallowTypeAnalyser
-         */
+                analyser context can be null for Primitives, ShallowTypeAnalyser
+                 */
         public Builder(AnalysisMode analysisMode, Primitives primitives, TypeInfo typeInfo, AnalyserContext analyserContext) {
             super(primitives, typeInfo.simpleName);
             this.typeInfo = typeInfo;
@@ -249,6 +274,7 @@ public class TypeAnalysisImpl extends AnalysisImpl implements TypeAnalysis {
             approvedPreconditionsE2Delays = initialDelay;
             approvedPreconditionsE1Delays = initialDelay;
             guardedForContainerProperty = new VariableFirstThen<>(initialDelay);
+            guardedForInheritedContainerProperty = new VariableFirstThen<>(initialDelay);
         }
 
         @Override
@@ -485,7 +511,8 @@ public class TypeAnalysisImpl extends AnalysisImpl implements TypeAnalysis {
                     getAspects(),
                     visibleFields,
                     immutableDeterminedByTypeParameters.getOrDefault(false),
-                    guardedForContainerProperty());
+                    guardedForContainerProperty(),
+                    guardedForInheritedContainerProperty());
         }
 
         public void setApprovedPreconditionsE1Delays(CausesOfDelay causes) {
@@ -551,6 +578,25 @@ public class TypeAnalysisImpl extends AnalysisImpl implements TypeAnalysis {
         @Override
         public Set<FieldInfo> guardedForContainerProperty() {
             return guardedForContainerProperty.getOrDefault(Set.of());
+        }
+
+        public void setGuardedForInheritedContainerPropertyDelay(CausesOfDelay causes) {
+            guardedForInheritedContainerProperty.setFirst(causes);
+        }
+
+        public void setGuardedForInheritedContainerProperty(Set<FieldInfo> fields) {
+            guardedForInheritedContainerProperty.set(fields);
+        }
+
+
+        @Override
+        public CausesOfDelay guardedForInheritedContainerPropertyDelays() {
+            return guardedForInheritedContainerProperty.getFirstOrDefault(CausesOfDelay.EMPTY);
+        }
+
+        @Override
+        public Set<FieldInfo> guardedForInheritedContainerProperty() {
+            return guardedForInheritedContainerProperty.getOrDefault(Set.of());
         }
     }
 }

@@ -154,22 +154,42 @@ public interface TypeAnalysis extends Analysis {
 
     CausesOfDelay guardedForContainerPropertyDelays();
 
+    CausesOfDelay guardedForInheritedContainerPropertyDelays();
+
     /**
      * Fields whose content must not be changed if the type is to hold a @Container property.
-     * They are computed in preparation of the @Container computation, and also used by the CMA
-     * to guard implementations of methods which must be @Container according to the contract.
+     * They are computed in preparation of the @Container computation.
      * <p>
      * Their computation is based on the reverse links of variables pointing into fields; see e.g. Container_9.
-     * All fields of the parent are added; and for every @Container interface implemented, all fields
-     * of the types of the parameters of these methods are added.
+     * All fields of the parent are added.
      *
-     * @return those fields in a set
+     * @return those fields, in a set
      */
     @NotNull(content = true)
     Set<FieldInfo> guardedForContainerProperty();
+
+    /**
+     * Fields whose content must not be changed to comply with a @Container contract imposed by a parent or interface.
+     * They are computed in preparation of ComputingMethodAnalyser's detectIllegalModificationInContainer method.
+     * The computation is identical to guardedForContainerProperty, but it ranges over a restricted set of methods,
+     * and, as a consequence, may finish earlier.
+     *
+     * @return those fields, in a set
+     */
+    @NotNull(content = true)
+    Set<FieldInfo> guardedForInheritedContainerProperty();
 
     // for debugging purposes:
     default String fieldsGuardedForContainerPropertyString() {
         return guardedForContainerProperty().stream().map(FieldInfo::name).sorted().collect(Collectors.joining(","));
     }
+
+    default String fieldsGuardedForInheritedContainerPropertyString() {
+        return guardedForInheritedContainerProperty().stream().map(FieldInfo::name).sorted().collect(Collectors.joining(","));
+    }
+
+    /*
+    a cache for typeInfo.visibleFields()
+     */
+    Set<FieldInfo> visibleFields();
 }

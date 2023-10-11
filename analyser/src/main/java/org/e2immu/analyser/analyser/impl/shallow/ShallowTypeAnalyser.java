@@ -145,6 +145,7 @@ public class ShallowTypeAnalyser extends TypeAnalyserImpl {
 
     private void setFieldsGuardedByContainer() {
         typeAnalysis.setGuardedForContainerProperty(Set.of());
+        typeAnalysis.setGuardedForInheritedContainerProperty(Set.of());
     }
 
     private boolean isAccessible(MethodInfo methodInfo) {

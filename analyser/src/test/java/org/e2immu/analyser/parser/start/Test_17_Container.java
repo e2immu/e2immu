@@ -531,6 +531,7 @@ public class Test_17_Container extends CommonTestRunner {
                 }
             }
         };
+
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("modifying".equals(d.methodInfo().name)) {
                 String owner = d.methodInfo().typeInfo.simpleName;
@@ -544,6 +545,12 @@ public class Test_17_Container extends CommonTestRunner {
                     assertEquals(d.iteration() >= 2,
                             null != d.haveError(Message.Label.ILLEGAL_MODIFICATION_IN_CONTAINER));
                 } else if ("Items4".equals(owner)) {
+                    assertNull(d.haveError(Message.Label.ILLEGAL_MODIFICATION_IN_CONTAINER));
+                } else if ("Items5".equals(owner)) {
+                    assertNull(d.haveError(Message.Label.ILLEGAL_MODIFICATION_IN_CONTAINER));
+                } else if ("Items6".equals(owner)) {
+                    assertNull(d.haveError(Message.Label.ILLEGAL_MODIFICATION_IN_CONTAINER));
+                } else if ("Items7".equals(owner)) {
                     assertNull(d.haveError(Message.Label.ILLEGAL_MODIFICATION_IN_CONTAINER));
                 } else if ("Items".equals(owner)) {
                     // interface method
@@ -573,28 +580,56 @@ public class Test_17_Container extends CommonTestRunner {
                     assertLinked(d, d.fieldAnalysis().getLinkedVariables(),
                             it0("item4:-1,this:-1"),
                             it(1, "item4:3"));
+                } else if ("Items5".equals(owner)) {
+                    assertLinked(d, d.fieldAnalysis().getLinkedVariables(),
+                            it0("item5:-1,this:-1"),
+                            it(1, "item5:3"));
+                } else if ("Items6".equals(owner)) {
+                    assertLinked(d, d.fieldAnalysis().getLinkedVariables(),
+                            it0("item6:-1,this:-1"),
+                            it(1, "item6:3"));
+                } else if ("Items7".equals(owner)) {
+                    assertLinked(d, d.fieldAnalysis().getLinkedVariables(),
+                            it0("item7:-1,item:-1,this:-1"),
+                            it(1, "item7:3,item:3"));
                 } else fail(d.fieldInfo().fullyQualifiedName);
             }
         };
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
-            if (d.typeInfo().simpleName.startsWith("Items")) {
-                String fields = d.iteration() == 0 ? "" : "items";
-                assertEquals(fields, d.typeAnalysis().fieldsGuardedForContainerPropertyString(), "In " + d.typeInfo());
-            }
+            String fields = d.iteration() == 0 ? "" : "items";
             if ("Items1".equals(d.typeInfo().simpleName)) {
                 assertDv(d, 1, MultiLevel.EFFECTIVELY_FINAL_FIELDS_DV, Property.IMMUTABLE);
                 assertDv(d, 2, MultiLevel.DEPENDENT_DV, Property.INDEPENDENT);
                 // FIXME assertDv(d, 2, MultiLevel.NOT_CONTAINER_DV, Property.CONTAINER);
+                assertEquals(fields, d.typeAnalysis().fieldsGuardedForContainerPropertyString());
             }
             if ("Items2".equals(d.typeInfo().simpleName)) {
-
+                assertEquals(fields, d.typeAnalysis().fieldsGuardedForContainerPropertyString());
             }
             if ("Items3".equals(d.typeInfo().simpleName)) {
-
+                assertEquals(fields, d.typeAnalysis().fieldsGuardedForContainerPropertyString());
             }
             if ("Items4".equals(d.typeInfo().simpleName)) {
-                assertDv(d, 2, MultiLevel.CONTAINER_DV, Property.CONTAINER);
+                assertEquals(fields, d.typeAnalysis().fieldsGuardedForContainerPropertyString());
+                assertEquals(fields, d.typeAnalysis().fieldsGuardedForInheritedContainerPropertyString());
 
+                assertDv(d, 2, MultiLevel.CONTAINER_DV, Property.CONTAINER);
+            }
+            if ("Items5".equals(d.typeInfo().simpleName)) {
+                String allFields = d.iteration() == 0 ? "" : "items,second";
+                assertEquals(allFields, d.typeAnalysis().fieldsGuardedForContainerPropertyString());
+                assertEquals(fields, d.typeAnalysis().fieldsGuardedForInheritedContainerPropertyString());
+                assertDv(d, 1, MultiLevel.NOT_CONTAINER_DV, Property.CONTAINER);
+            }
+            if ("Items6".equals(d.typeInfo().simpleName)) {
+                assertEquals(fields, d.typeAnalysis().fieldsGuardedForContainerPropertyString());
+                assertEquals("", d.typeAnalysis().fieldsGuardedForInheritedContainerPropertyString());
+                assertDv(d, 2, MultiLevel.CONTAINER_DV, Property.CONTAINER);
+            }
+            if ("Items7".equals(d.typeInfo().simpleName)) {
+                assertEquals(fields, d.typeAnalysis().fieldsGuardedForContainerPropertyString());
+                assertEquals("", d.typeAnalysis().fieldsGuardedForInheritedContainerPropertyString());
+                assertDv(d, 2, MultiLevel.NOT_CONTAINER_DV, Property.CONTAINER);
             }
         };
 
