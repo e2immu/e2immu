@@ -151,4 +151,25 @@ public interface TypeAnalysis extends Analysis {
 
     @NotNull
     CausesOfDelay hiddenContentDelays();
+
+    CausesOfDelay guardedForContainerPropertyDelays();
+
+    /**
+     * Fields whose content must not be changed if the type is to hold a @Container property.
+     * They are computed in preparation of the @Container computation, and also used by the CMA
+     * to guard implementations of methods which must be @Container according to the contract.
+     * <p>
+     * Their computation is based on the reverse links of variables pointing into fields; see e.g. Container_9.
+     * All fields of the parent are added; and for every @Container interface implemented, all fields
+     * of the types of the parameters of these methods are added.
+     *
+     * @return those fields in a set
+     */
+    @NotNull(content = true)
+    Set<FieldInfo> guardedForContainerProperty();
+
+    // for debugging purposes:
+    default String fieldsGuardedForContainerPropertyString() {
+        return guardedForContainerProperty().stream().map(FieldInfo::name).sorted().collect(Collectors.joining(","));
+    }
 }

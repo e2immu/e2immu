@@ -76,6 +76,7 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
     public static final String COMPUTE_APPROVED_PRECONDITIONS_IMMUTABLE = "computeApprovedPreconditionsImmutable";
     public static final String ANALYSE_INDEPENDENT = "analyseIndependent";
     public static final String ANALYSE_IMMUTABLE = "analyseEffectivelyEventuallyImmutable";
+    public static final String ANALYSE_FIELDS_GUARDED_FOR_CONTAINER_PROPERTY = "analyseFieldsGuardedForContainer";
     public static final String ANALYSE_CONTAINER = "analyseContainer";
     public static final String ANALYSE_UTILITY_CLASS = "analyseUtilityClass";
     public static final String ANALYSE_SINGLETON = "analyseSingleton";
@@ -111,6 +112,7 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
         }
         builder.add(ANALYSE_IMMUTABLE, this::analyseImmutable)
                 .add(ANALYSE_INDEPENDENT, this::analyseIndependent)
+                .add(ANALYSE_FIELDS_GUARDED_FOR_CONTAINER_PROPERTY, this::analyseFieldsGuardedForContainerProperty)
                 .add(ANALYSE_CONTAINER, this::analyseContainer);
         if (!typeInfo.isInterface()) {
             builder.add(ANALYSE_UTILITY_CLASS, iteration -> analyseUtilityClass())
@@ -630,6 +632,48 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
             }
         }
         return new HandlePrecondition(fieldToConditions, causesOfDelay);
+    }
+
+    private AnalysisStatus analyseFieldsGuardedForContainerProperty(SharedState sharedState) {
+        assert typeAnalysis.guardedForContainerPropertyDelays().isDelayed();
+
+        CausesOfDelay causes = CausesOfDelay.EMPTY;
+        Set<FieldInfo> fields = new HashSet<>();
+
+        // step 1: all accessible fields of the parent class
+        // step 2: collect types of args of @Container interfaces
+        Set<ParameterizedType> fieldsTypesToGuard = new HashSet<>();
+
+        // step 3: local implementation, to help determine if we are @Container or not
+        for (FieldAnalyser fieldAnalyser : myFieldAnalysers) {
+            FieldInfo fieldInfo = fieldAnalyser.getFieldInfo();
+            if (fieldsTypesToGuard.contains(fieldInfo.type)) {
+                fields.add(fieldInfo);
+            } else {
+                FieldAnalysis fieldAnalysis = fieldAnalyser.getFieldAnalysis();
+                LinkedVariables linkedVariables = fieldAnalysis.getLinkedVariables();
+                if (linkedVariables.isDelayed()) {
+                    causes = causes.merge(linkedVariables.causesOfDelay());
+                } else {
+                    boolean linked = linkedVariables.variables().entrySet().stream()
+                            .filter(e -> LinkedVariables.LINK_IS_HC_OF.equals(e.getValue()) || LinkedVariables.LINK_COMMON_HC.equals(e.getValue()))
+                            .anyMatch(e -> e.getKey() instanceof ParameterInfo pi
+                                    && !analyserContext.getMethodInspection(pi.getMethod()).isPrivate());
+                    if (linked) {
+                        fields.add(fieldInfo);
+                    }
+                }
+            }
+        }
+        if (causes.isDelayed()) {
+            typeAnalysis.setGuardedForContainerPropertyDelay(causes);
+            LOGGER.debug("Delaying fields guarded for container property, fields' linked variables are delayed");
+            return causes;
+        }
+        typeAnalysis.setGuardedForContainerProperty(Set.copyOf(fields));
+        LOGGER.debug("Set fields guarded for container property to {}",
+                typeAnalysis.fieldsGuardedForContainerPropertyString());
+        return DONE;
     }
 
     private AnalysisStatus analyseContainer(SharedState sharedState) {

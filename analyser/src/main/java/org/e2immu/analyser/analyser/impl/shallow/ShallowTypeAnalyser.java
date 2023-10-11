@@ -137,9 +137,14 @@ public class ShallowTypeAnalyser extends TypeAnalyserImpl {
         typeAnalysis.setHiddenContentTypes(hiddenContentTypes);
 
         ensureImmutableAndContainer();
+        setFieldsGuardedByContainer();
         List<Message> messages = simpleComputeIndependent(analyserContext, typeAnalysis, this::isAccessible);
         analyserResultBuilder.addMessages(messages.stream());
         computeImmutableDeterminedByTypeParameters(typeInspection, typeAnalysis);
+    }
+
+    private void setFieldsGuardedByContainer() {
+        typeAnalysis.setGuardedForContainerProperty(Set.of());
     }
 
     private boolean isAccessible(MethodInfo methodInfo) {

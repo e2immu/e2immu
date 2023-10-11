@@ -34,6 +34,7 @@ import org.e2immu.analyser.model.statement.Block;
 import org.e2immu.analyser.model.statement.ExpressionAsStatement;
 import org.e2immu.analyser.model.statement.ReturnStatement;
 import org.e2immu.analyser.model.variable.FieldReference;
+import org.e2immu.analyser.model.variable.ReturnVariable;
 import org.e2immu.analyser.model.variable.This;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.parser.Message;
@@ -69,6 +70,8 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
     public static final String COMPUTE_INDEPENDENT = "methodIsIndependent";
     public static final String SET_POST_CONDITION = "setPostCondition";
     public static final String COMPUTE_SSE = "computeStaticSideEffects";
+
+    public static final String DETECT_ILLEGAL_MODIFICATION_IN_CONTAINER = "detectIllegalModificationInContainer";
 
     private final TypeAnalysis typeAnalysis;
     public final StatementAnalyserImpl firstStatementAnalyser;
@@ -158,7 +161,8 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
                 .add(DETECT_MISSING_STATIC_MODIFIER, (iteration) -> methodInfo.isConstructor ? DONE : detectMissingStaticModifier())
                 .add(EVENTUAL_PREP_WORK, this::eventualPrepWork)
                 .add(ANNOTATE_EVENTUAL, this::annotateEventual)
-                .add(COMPUTE_INDEPENDENT, this::analyseIndependent);
+                .add(COMPUTE_INDEPENDENT, this::analyseIndependent)
+                .add(DETECT_ILLEGAL_MODIFICATION_IN_CONTAINER, this::detectIllegalModificationInContainer);
 
         analyserComponents = builder.setLimitCausesOfDelay(true).build();
     }
@@ -1306,6 +1310,71 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
         if (property == CONTAINER) return CONTAINER_RESTRICTION;
         if (property == IGNORE_MODIFICATIONS) return EXTERNAL_IGNORE_MODIFICATIONS;
         return property;
+    }
+
+    private AnalysisStatus detectIllegalModificationInContainer(SharedState sharedState) {
+        StatementAnalysis statementAnalysis = getMethodAnalysis().getLastStatement();
+        if (statementAnalysis == null) return DONE;
+
+        DV containerOverride = methodInfo.methodResolution.get().overrides().stream()
+                .map(mi -> {
+                    TypeAnalysis ta = analyserContext.getTypeAnalysis(mi.typeInfo);
+                    return ta.getProperty(CONTAINER);
+                })
+                .reduce(MultiLevel.NOT_CONTAINER_DV, DV::max);
+        if (MultiLevel.NOT_CONTAINER_DV.equals(containerOverride)) {
+            LOGGER.debug("Not raising an error for illegal modification in @Container, not an override");
+            return DONE; // we're not overriding a @Container method, so we're free to act
+        }
+        if (containerOverride.isDelayed()) {
+            LOGGER.debug("Delaying detection of illegal modification in @Container, waiting for @Container of override: {}",
+                    containerOverride);
+            return containerOverride.causesOfDelay();
+        }
+        CausesOfDelay typeDelays = typeAnalysis.guardedForContainerPropertyDelays();
+        if (typeDelays.isDelayed()) {
+            LOGGER.debug("Delaying detection of illegal modification in @Container, type delays {}", typeDelays);
+            return typeDelays;
+        }
+        Set<FieldInfo> fieldsToBeGuarded = typeAnalysis.guardedForContainerProperty();
+        if (fieldsToBeGuarded.isEmpty()) {
+            return DONE;
+        }
+        /*
+        Compute modifications to any variable linked to any of the fields to be guarded
+         */
+        List<VariableInfo> variables = statementAnalysis.variableStream()
+                .filter(vi -> !(vi.variable() instanceof This) && !(vi.variable() instanceof ReturnVariable)
+                        // we exclude the parameters of the method, because they'll get a different error (See Modification_16)
+                        && !(vi.variable() instanceof ParameterInfo pi && pi.getMethodInfo() == methodInfo)
+                        // this is about content, not about modifications to the fields themselves
+                        && !(vi.variable() instanceof FieldReference fr && fieldsToBeGuarded.contains(fr.fieldInfo)))
+                .toList();
+
+        CausesOfDelay delays = variables.stream().map(vi ->
+                        vi.getProperty(CONTEXT_MODIFIED).causesOfDelay().merge(vi.getLinkedVariables().causesOfDelay()))
+                .reduce(CausesOfDelay.EMPTY, CausesOfDelay::merge);
+        if (delays.isDelayed()) {
+            LOGGER.debug("Delaying detection of illegal modification in @Container: {}", delays);
+            return delays;
+        }
+        DV modified = variables.stream()
+                .filter(vi -> linkedToAnyOfTheFields(vi.getLinkedVariables(), fieldsToBeGuarded))
+                .map(vi -> vi.getProperty(CONTEXT_MODIFIED))
+                .reduce(DelayFactory.initialDelay(), DV::max);
+        if (modified.valueIsTrue()) {
+            Message m = Message.newMessage(methodInfo.newLocation(), Message.Label.ILLEGAL_MODIFICATION_IN_CONTAINER);
+            analyserResultBuilder.add(m);
+        } else {
+            assert modified.isInitialDelay() || modified.valueIsFalse();
+        }
+        return DONE;
+    }
+
+    private boolean linkedToAnyOfTheFields(LinkedVariables linkedVariables, Set<FieldInfo> fieldsToBeGuarded) {
+        return linkedVariables.stream()
+                .filter(e -> e.getKey() instanceof FieldReference fr && fieldsToBeGuarded.contains(fr.fieldInfo))
+                .anyMatch(e -> LinkedVariables.LINK_COMMON_HC.equals(e.getValue()) || LinkedVariables.LINK_IS_HC_OF.equals(e.getValue()));
     }
 
     private class EvaluationContextImpl extends AbstractEvaluationContextImpl implements EvaluationContext {

@@ -33,6 +33,7 @@ import org.e2immu.analyser.analyser.nonanalyserimpl.LocalAnalyserContext;
 import org.e2immu.analyser.analyser.util.*;
 import org.e2immu.analyser.analysis.Analysis;
 import org.e2immu.analyser.analysis.FieldAnalysis;
+import org.e2immu.analyser.analysis.StatementAnalysis;
 import org.e2immu.analyser.analysis.TypeAnalysis;
 import org.e2immu.analyser.analysis.impl.ValueAndPropertyProxy;
 import org.e2immu.analyser.model.*;
@@ -1456,7 +1457,21 @@ public class ComputingFieldAnalyser extends FieldAnalyserImpl implements FieldAn
                         && !(e.getKey() instanceof FieldReference fr && fr.fieldInfo == fieldInfo)) // especially local variable copies of the field itself
                 .collect(Collectors.toUnmodifiableMap(Map.Entry::getKey, Map.Entry::getValue, DV::max));
 
+        FieldReference me = new FieldReference(analyserContext, fieldInfo);
+        Map<Variable, DV> reversePointingToMe = allMethodsAndConstructors(true)
+                .map(m -> m.getMethodAnalysis().getLastStatement())
+                .filter(Objects::nonNull)
+                .flatMap(StatementAnalysis::variableStream)
+                .filter(VariableInfo::linkedVariablesIsSet)
+                .filter(vi -> LinkedVariables.LINK_IS_HC_OF.equals(vi.getLinkedVariables().value(me)))
+                .map(VariableInfo::variable)
+                .distinct()
+                .collect(Collectors.toUnmodifiableMap(e -> e, e -> LinkedVariables.LINK_IS_HC_OF));
+
         LinkedVariables linkedVariables = LinkedVariables.of(map);
+        if(!reversePointingToMe.isEmpty()) {
+            linkedVariables = linkedVariables.merge(LinkedVariables.of(reversePointingToMe));
+        }
         fieldAnalysis.setLinkedVariables(linkedVariables);
         LOGGER.debug("FA: Set links of {} to [{}], ignored CM? {}", fqn, linkedVariables, ignoreContextModified);
         return DONE;

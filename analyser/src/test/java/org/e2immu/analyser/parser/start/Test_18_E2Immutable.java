@@ -360,7 +360,7 @@ public class Test_18_E2Immutable extends CommonTestRunner {
             if ("map5".equals(d.fieldInfo().name)) {
                 assertLinked(d, d.fieldAnalysis().getLinkedVariables(),
                         it0("input:-1,map5Param:-1"),
-                        it(1, "map5Param:4"));
+                        it(1, "map5Param:4,return get5:3"));
             }
         };
 

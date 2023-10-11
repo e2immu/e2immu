@@ -330,6 +330,7 @@ public class Test_E2ImmutableComposition extends CommonTestRunner {
             }
             if ("NonEmptyImmutableList".equals(clazz)) {
                 assertHc(d, 0, "T");
+                assertDv(d, MultiLevel.CONTAINER_DV, Property.CONTAINER);
             }
             if ("NonEmptyList".equals(clazz)) {
                 assertHc(d, 0, "T");
@@ -358,13 +359,13 @@ public class Test_E2ImmutableComposition extends CommonTestRunner {
                 assertHc(d, 0, "HasSize");
             }
             if ("ImmutableArrayOfTransparentOnes".equals(clazz)) {
-                assertHc(d, 2, "");
+                assertHc(d, 1, "");
             }
             if ("EncapsulatedExposedArrayOfHasSize".equals(clazz)) {
-                assertHc(d, 2, "HasSize");
+                assertHc(d, 1, "HasSize");
             }
             if ("EncapsulatedImmutableArrayOfHasSize".equals(clazz)) {
-                assertHc(d, 2, "HasSize");
+                assertHc(d, 1, "HasSize");
             }
         };
 
@@ -382,7 +383,7 @@ public class Test_E2ImmutableComposition extends CommonTestRunner {
                 //.addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
              //   .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
              //   .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-              //  .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
+                .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
                 .build());
     }
 

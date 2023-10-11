@@ -419,6 +419,16 @@ public class GlobalAnalyserContext implements AnalyserContext {
         }
 
         @Override
+        public CausesOfDelay guardedForContainerPropertyDelays() {
+            return CausesOfDelay.EMPTY;
+        }
+
+        @Override
+        public Set<FieldInfo> guardedForContainerProperty() {
+            return Set.of();
+        }
+
+        @Override
         public AnnotationExpression annotationGetOrDefaultNull(AnnotationExpression expression) {
             throw new UnsupportedOperationException();
         }

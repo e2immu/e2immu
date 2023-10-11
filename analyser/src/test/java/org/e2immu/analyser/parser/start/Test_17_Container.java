@@ -524,7 +524,7 @@ public class Test_17_Container extends CommonTestRunner {
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("add".equals(d.methodInfo().name) && "ItemsImpl".equals(d.methodInfo().typeInfo.simpleName)) {
                 if (d.variable() instanceof FieldReference fr && "items".equals(fr.fieldInfo.name)) {
-                    assertLinked(d, it0("item:-1,this:-1"), it(1, ""));
+                    assertLinked(d, it0("item1:-1,this:-1"), it(1, ""));
                 }
                 if (d.variable() instanceof ParameterInfo pi && "item".equals(pi.name)) {
                     assertLinked(d, it0("this.items:-1,this:-1"), it(1, "this.items:3,this:3"));
@@ -532,34 +532,72 @@ public class Test_17_Container extends CommonTestRunner {
             }
         };
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
-            if ("add".equals(d.methodInfo().name) && "ItemsImpl".equals(d.methodInfo().typeInfo.simpleName)) {
-                ParameterAnalysis pa = d.methodAnalysis().getParameterAnalyses().get(0);
-                assertEquals("{}", pa.getAssignedToField().toString());
-                // TODO linking info
+            if ("modifying".equals(d.methodInfo().name)) {
+                String owner = d.methodInfo().typeInfo.simpleName;
+                if ("Items1".equals(owner)) {
+                    // FIXME should raise an error when Modified_30 runs green
+                    assertNull(d.haveError(Message.Label.ILLEGAL_MODIFICATION_IN_CONTAINER));
+                } else if ("Items2".equals(owner)) {
+                    assertEquals(d.iteration() >= 2,
+                            null != d.haveError(Message.Label.ILLEGAL_MODIFICATION_IN_CONTAINER));
+                } else if ("Items3".equals(owner)) {
+                    assertEquals(d.iteration() >= 2,
+                            null != d.haveError(Message.Label.ILLEGAL_MODIFICATION_IN_CONTAINER));
+                } else if ("Items4".equals(owner)) {
+                    assertNull(d.haveError(Message.Label.ILLEGAL_MODIFICATION_IN_CONTAINER));
+                } else if ("Items".equals(owner)) {
+                    // interface method
+                    assertDv(d, DV.TRUE_DV, Property.MODIFIED_METHOD);
+                } else {
+                    fail(d.methodInfo().fullyQualifiedName);
+                }
             }
         };
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
-            if ("items".equals(d.fieldInfo().name) && "ItemsImpl".equals(d.fieldInfo().owner.simpleName)) {
+            if ("items".equals(d.fieldInfo().name)) {
                 assertEquals("instance type ArrayList<Item>", d.fieldAnalysis().getValue().toString());
-                assertLinked(d, d.fieldAnalysis().getLinkedVariables(),
-                        it0("item:-1,this:-1"),
-                        it(1, ""));
+                String owner = d.fieldInfo().owner.simpleName;
+                if ("Items1".equals(owner)) {
+                    assertLinked(d, d.fieldAnalysis().getLinkedVariables(),
+                            it0("item1:-1,this:-1"),
+                            it(1, "item1:3"));
+                } else if ("Items2".equals(owner)) {
+                    assertLinked(d, d.fieldAnalysis().getLinkedVariables(),
+                            it0("item2:-1,item:-1,this:-1"),
+                            it(1, "item2:3,item:3"));
+                } else if ("Items3".equals(owner)) {
+                    assertLinked(d, d.fieldAnalysis().getLinkedVariables(),
+                            it0("item3:-1,local:-1,this:-1"),
+                            it(1, "item3:3,local:3"));
+                } else if ("Items4".equals(owner)) {
+                    assertLinked(d, d.fieldAnalysis().getLinkedVariables(),
+                            it0("item4:-1,this:-1"),
+                            it(1, "item4:3"));
+                } else fail(d.fieldInfo().fullyQualifiedName);
             }
         };
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
-            if ("ItemsImpl".equals(d.typeInfo().simpleName)) {
+            if (d.typeInfo().simpleName.startsWith("Items")) {
+                String fields = d.iteration() == 0 ? "" : "items";
+                assertEquals(fields, d.typeAnalysis().fieldsGuardedForContainerPropertyString(), "In " + d.typeInfo());
+            }
+            if ("Items1".equals(d.typeInfo().simpleName)) {
                 assertDv(d, 1, MultiLevel.EFFECTIVELY_FINAL_FIELDS_DV, Property.IMMUTABLE);
                 assertDv(d, 2, MultiLevel.DEPENDENT_DV, Property.INDEPENDENT);
-                // FIXME here's the problem
-       //         assertDv(d, 2, MultiLevel.NOT_CONTAINER_DV, Property.CONTAINER);
+                // FIXME assertDv(d, 2, MultiLevel.NOT_CONTAINER_DV, Property.CONTAINER);
             }
-            if ("ItemsImpl2".equals(d.typeInfo().simpleName)) {
-                assertDv(d, 1, MultiLevel.NOT_CONTAINER_DV, Property.CONTAINER);
+            if ("Items2".equals(d.typeInfo().simpleName)) {
+
             }
-            if ("ItemsImpl3".equals(d.typeInfo().simpleName)) {
+            if ("Items3".equals(d.typeInfo().simpleName)) {
+
+            }
+            if ("Items4".equals(d.typeInfo().simpleName)) {
                 assertDv(d, 2, MultiLevel.CONTAINER_DV, Property.CONTAINER);
+
             }
         };
+
         // two errors: violating @Container contract in ItemsImpl, ItemsImpl2
         testClass("Container_9", 1, 0, new DebugConfiguration.Builder()
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)

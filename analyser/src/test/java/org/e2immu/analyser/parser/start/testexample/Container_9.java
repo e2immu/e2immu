@@ -47,40 +47,58 @@ public class Container_9 {
 
     }
 
-    @Container (absent = true)
-    static class ItemsImpl implements Items {
+    @Container(absent = true)
+    static class Items1 implements Items {
         private final List<Item> items = new ArrayList<>();
 
         @Modified
         @Override
-        public void add(Item item) {
-            this.items.add(item);
+        public void add(Item item1) {
+            this.items.add(item1);
         }
 
         @Modified
         @Override
         public void modifying() {
-            this.items.get(0).setMessage("Clear!"); //
+            this.items.get(0).setMessage("Clear!");
         }
     }
 
-    // should raise an error: violating @Container in Items
-    @Container(absent = true)
-    static class ItemsImpl2 implements Items {
+    static class Items2 implements Items {
         private final List<Item> items = new ArrayList<>();
 
         @Modified
         @Override
-        public void add(Item item) {
-            this.items.add(item);
+        public void add(Item item2) {
+            this.items.add(item2);
         }
 
+        // must cause an error!
         @Modified
         @Override
         public void modifying() {
-            Item item = new ItemImpl(10);
-            item.setMessage("msg");
-            this.items.add(item);
+            Item item = this.items.get(0);
+            item.setMessage("Clear!"); // see also Modification_30
+        }
+    }
+
+    @Container(absent = true)
+    static class Items3 implements Items {
+        private final List<Item> items = new ArrayList<>();
+
+        @Modified
+        @Override
+        public void add(Item item3) {
+            this.items.add(item3);
+        }
+
+        // must cause an error, even if 'local' cannot come from the outside
+        @Modified
+        @Override
+        public void modifying() {
+            Item local = new ItemImpl(10);
+            local.setMessage("msg");
+            this.items.add(local);
         }
 
         public List<Item> getItems() {
@@ -88,14 +106,15 @@ public class Container_9 {
         }
     }
 
+    // correct implementation
     @Container
-    static class ItemsImpl3 implements Items {
+    static class Items4 implements Items {
         private final List<Item> items = new ArrayList<>();
 
         @Modified
         @Override
-        public void add(Item item) {
-            this.items.add(item);
+        public void add(Item item4) {
+            this.items.add(item4);
         }
 
         @Override
