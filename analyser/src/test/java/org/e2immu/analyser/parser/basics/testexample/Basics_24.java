@@ -14,30 +14,38 @@
 
 package org.e2immu.analyser.parser.basics.testexample;
 
+import org.e2immu.annotation.Container;
+import org.e2immu.annotation.ImmutableContainer;
+import org.e2immu.annotation.Independent;
 import org.e2immu.annotation.NotNull;
 
 import java.util.Map;
 
-public record Basics_24(Map<Integer, String> map) {
+public record Basics_24(Map<Integer, Y> map) {
 
     public Basics_24 {
         assert map != null;
     }
 
-   private static class X {
-        private String s;
+    @Independent
+    @ImmutableContainer
+    interface Y {
+    }
 
-        public X(String s) {
+    private static class X {
+        private Y s;
+
+        public X(Y s) {
             this.s = s;
         }
     }
 
     @NotNull
-    public String method(int pos, String a) {
+    public Y method(int pos, Y a, Y y) {
         X x = new X(a);
         x.s = map.getOrDefault(pos, a);
         if (x.s == null) {
-            x.s = "b";
+            x.s = y;
         }
         return x.s;
     }

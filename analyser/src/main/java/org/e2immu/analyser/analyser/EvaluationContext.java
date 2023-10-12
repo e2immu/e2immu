@@ -257,19 +257,6 @@ public interface EvaluationContext {
                 IGNORE_MODIFICATIONS, IGNORE_MODIFICATIONS.falseDv));
     }
 
-    default Properties defaultValuePropertiesAllowMyself(ParameterizedType formalType, DV nne) {
-        AnalyserContext analyserContext = getAnalyserContext();
-        DV immutable = isMyself(formalType).toFalse(IMMUTABLE) ? MultiLevel.MUTABLE_DV
-                : analyserContext.typeImmutable(formalType);
-        return Properties.ofWritable(Map.of(
-                IMMUTABLE, immutable,
-                INDEPENDENT, analyserContext.typeIndependent(formalType),
-                NOT_NULL_EXPRESSION, nne,
-                CONTAINER, analyserContext.typeContainer(formalType),
-                IDENTITY, IDENTITY.falseDv,
-                IGNORE_MODIFICATIONS, IGNORE_MODIFICATIONS.falseDv));
-    }
-
     default boolean disableEvaluationOfMethodCallsUsingCompanionMethods() {
         return getAnalyserContext().inAnnotatedAPIAnalysis();
     }

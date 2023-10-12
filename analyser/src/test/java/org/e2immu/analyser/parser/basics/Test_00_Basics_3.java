@@ -310,7 +310,7 @@ public class Test_00_Basics_3 extends CommonTestRunner {
                 assertEquals(DV.FALSE_DV, d.fieldAnalysis().getProperty(FINAL));
                 assertDv(d, DV.FALSE_DV, MODIFIED_OUTSIDE_METHOD);
                 assertEquals("<variable value>", d.fieldAnalysis().getValue().toString());
-                assertEquals("input2:0", d.fieldAnalysis().getLinkedVariables().toString());
+                assertEquals("", d.fieldAnalysis().getLinkedVariables().toString());
             }
         };
 

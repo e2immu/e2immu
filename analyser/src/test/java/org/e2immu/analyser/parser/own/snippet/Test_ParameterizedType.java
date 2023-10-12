@@ -505,16 +505,16 @@ public class Test_ParameterizedType extends CommonTestRunner {
                 assertDv(d, MultiLevel.EFFECTIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
             }
             if ("ParameterizedType".equals(d.typeInfo().simpleName)) {
-                assertDv(d, 22, MultiLevel.EFFECTIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
+                assertDv(d, 20, MultiLevel.EFFECTIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
             }
             if ("IterativeParsing".equals(d.typeInfo().simpleName)) {
-                assertDv(d, 23, MultiLevel.EFFECTIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
+                assertDv(d, 21, MultiLevel.EFFECTIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
             }
             if ("Result".equals(d.typeInfo().simpleName)) {
-                assertDv(d, 23, MultiLevel.EFFECTIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
+                assertDv(d, 21, MultiLevel.EFFECTIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
             }
         };
-        BreakDelayVisitor breakDelayVisitor = d -> assertEquals("-----S--S-S----SF-SF-SF--------", d.delaySequence());
+        BreakDelayVisitor breakDelayVisitor = d -> assertEquals("------S--S-S-SF-SF-SF------", d.delaySequence());
         testClass("ParameterizedType_2", 1, DONT_CARE,
                 new DebugConfiguration.Builder()
                         .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)

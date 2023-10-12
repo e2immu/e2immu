@@ -205,7 +205,7 @@ public class Test_Util_02_UpgradableBooleanMap extends CommonTestRunner {
 
         StatementAnalyserVisitor statementAnalyserVisitor = d -> {
             if ("accept".equals(d.methodInfo().name) && "$2".equals(d.methodInfo().typeInfo.simpleName)) {
-                assertEquals(d.iteration() >= 25,
+                assertEquals(d.iteration() >= 22,
                         d.statementAnalysis().methodLevelData().linksHaveNotYetBeenEstablished().isDone());
             }
         };
@@ -215,42 +215,42 @@ public class Test_Util_02_UpgradableBooleanMap extends CommonTestRunner {
             if ("of".equals(d.methodInfo().name) && n == 2) {
                 assertTrue(d.methodInfo().methodInspection.get().isFactoryMethod());
                 // because only directional from parameter to result, not the other way around
-                assertDv(d, 24, MultiLevel.INDEPENDENT_DV, Property.INDEPENDENT);
+                assertDv(d, 22, MultiLevel.INDEPENDENT_DV, Property.INDEPENDENT);
 
                 assertDv(d, DV.FALSE_DV, Property.MODIFIED_METHOD);
-                assertDv(d.p(0), 25, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
-                assertDv(d.p(0), 25, MultiLevel.INDEPENDENT_HC_DV, Property.INDEPENDENT);
+                assertDv(d.p(0), 22, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                assertDv(d.p(0), 22, MultiLevel.INDEPENDENT_HC_DV, Property.INDEPENDENT);
             }
             if ("of".equals(d.methodInfo().name) && n == 1) {
-                String expected = d.iteration() < 27 ? "<m:of>"
+                String expected = d.iteration() < 21 ? "<m:of>"
                         : "null==maps||maps.length<1?new UpgradableBooleanMap<>():instance type UpgradableBooleanMap<T>";
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
-                assertDv(d, 27, MultiLevel.INDEPENDENT_HC_DV, Property.INDEPENDENT);
+                assertDv(d, 22, MultiLevel.INDEPENDENT_HC_DV, Property.INDEPENDENT);
 
                 // IMPROVE should be HC, but code is not there yet in ComputedParameterAnalyser
-                assertDv(d.p(0), 28, MultiLevel.INDEPENDENT_DV, Property.INDEPENDENT);
+                assertDv(d.p(0), 23, MultiLevel.INDEPENDENT_DV, Property.INDEPENDENT);
             }
             if ("put".equals(d.methodInfo().name)) {
                 assertTrue(d.methodInfo().inConstruction());
-                assertDv(d, 23, DV.TRUE_DV, Property.MODIFIED_METHOD);
-                assertDv(d.p(0), 24, DV.FALSE_DV, Property.MODIFIED_VARIABLE); // caused by map, ENN
+                assertDv(d, 20, DV.TRUE_DV, Property.MODIFIED_METHOD);
+                assertDv(d.p(0), 21, DV.FALSE_DV, Property.MODIFIED_VARIABLE); // caused by map, ENN
                 assertDv(d.p(1), DV.FALSE_DV, Property.MODIFIED_VARIABLE);
             }
             if ("stream".equals(d.methodInfo().name)) {
                 assertFalse(d.methodInfo().inConstruction());
                 assertDv(d, 2, DV.FALSE_DV, Property.MODIFIED_METHOD);
-                assertDv(d, 23, MultiLevel.INDEPENDENT_HC_DV, Property.INDEPENDENT);
+                assertDv(d, 20, MultiLevel.INDEPENDENT_HC_DV, Property.INDEPENDENT);
             }
             if ("putAll".equals(d.methodInfo().name)) {
                 assertTrue(d.methodInfo().inConstruction());
                 assertEquals("accept,apply,put,stream", d.methodInfo().methodResolution.get().methodsOfOwnClassReached()
                         .stream().map(m -> m.name).sorted().collect(Collectors.joining(",")));
-                assertDv(d, 24, DV.TRUE_DV, Property.MODIFIED_METHOD);
+                assertDv(d, 21, DV.TRUE_DV, Property.MODIFIED_METHOD);
             }
 
             // uses putAll as a method reference
             if ("accumulator".equals(d.methodInfo().name)) {
-                assertDv(d, 25, DV.FALSE_DV, Property.MODIFIED_METHOD);
+                assertDv(d, 22, DV.FALSE_DV, Property.MODIFIED_METHOD);
             }
             if ("supplier".equals(d.methodInfo().name)) {
                 assertDv(d, DV.FALSE_DV, Property.MODIFIED_METHOD);
@@ -268,7 +268,7 @@ public class Test_Util_02_UpgradableBooleanMap extends CommonTestRunner {
                 assertEquals(DV.FALSE_DV, d.methodAnalysis().getProperty(Property.MODIFIED_METHOD));
             }
             if ("accept".equals(d.methodInfo().name) && "putAll".equals(d.enclosingMethod().name)) {
-                assertDv(d, 23, DV.TRUE_DV, Property.MODIFIED_METHOD);
+                assertDv(d, 20, DV.TRUE_DV, Property.MODIFIED_METHOD);
             }
             if ("finisher".equals(d.methodInfo().name) && "collector".equals(d.enclosingMethod().name)) {
                 assertDv(d, MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL_DV, Property.NOT_NULL_EXPRESSION);
@@ -279,25 +279,25 @@ public class Test_Util_02_UpgradableBooleanMap extends CommonTestRunner {
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
             if ("map".equals(d.fieldInfo().name)) {
                 assertEquals("instance type HashMap<T,Boolean>", d.fieldAnalysis().getValue().toString());
-                assertDv(d, 20, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.EXTERNAL_NOT_NULL);
+                assertDv(d, 19, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.EXTERNAL_NOT_NULL);
                 assertDv(d, MultiLevel.NOT_IGNORE_MODS_DV, Property.EXTERNAL_IGNORE_MODIFICATIONS);
 
                 // only link is from t --3--> map, which is not included (at this point)
-                String linked = d.iteration() < 20 ? "t:-1,t:-1,this:-1" : "";
+                String linked = d.iteration() < 19 ? "t:-1,t:-1" : "";
                 assertEquals(linked, d.fieldAnalysis().getLinkedVariables().toString());
                 // NOT modified outside method, because the put/putAll are part of construction!!!
-                assertDv(d, 20, DV.FALSE_DV, Property.MODIFIED_OUTSIDE_METHOD);
+                assertDv(d, 19, DV.FALSE_DV, Property.MODIFIED_OUTSIDE_METHOD);
 
                 // consequence of linking: no direct assignment, no outgoing links
-                assertDv(d, 20, MultiLevel.INDEPENDENT_DV, Property.INDEPENDENT);
+                assertDv(d, 19, MultiLevel.INDEPENDENT_DV, Property.INDEPENDENT);
             }
         };
 
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("UpgradableBooleanMap".equals(d.typeInfo().simpleName)) {
                 assertEquals("T", d.typeAnalysis().getHiddenContentTypes().toString());
-                assertDv(d, 21, MultiLevel.EFFECTIVELY_IMMUTABLE_HC_DV, Property.IMMUTABLE);
-                assertDv(d, 23, MultiLevel.CONTAINER_DV, Property.CONTAINER);
+                assertDv(d, 20, MultiLevel.EFFECTIVELY_IMMUTABLE_HC_DV, Property.IMMUTABLE);
+                assertDv(d, 22, MultiLevel.CONTAINER_DV, Property.CONTAINER);
                 assertDv(d, 23, MultiLevel.INDEPENDENT_HC_DV, Property.INDEPENDENT);
             }
 
@@ -323,16 +323,16 @@ public class Test_Util_02_UpgradableBooleanMap extends CommonTestRunner {
             }
         };
 
-        BreakDelayVisitor breakDelayVisitor = d -> assertEquals("----S--S--S--S--S-SF------",
+        BreakDelayVisitor breakDelayVisitor = d -> assertEquals("----S--S--S--S--S-SF-----",
                 d.delaySequence());
 
         testSupportAndUtilClasses(List.of(UpgradableBooleanMap.class),
                 0, 0, new DebugConfiguration.Builder()
-                        //   .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                        .addStatementAnalyserVisitor(statementAnalyserVisitor)
                         //    .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-                        //     .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
-                    //    .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
-                    //    .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
+                        .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                        .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+                        .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
                         .addBreakDelayVisitor(breakDelayVisitor)
                         .build());
     }

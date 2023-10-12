@@ -102,19 +102,19 @@ public class Test_33_ExternalNotNull extends CommonTestRunner {
             int n = d.methodInfo().methodInspection.get().getParameters().size();
             if ("ExternalNotNull_0".equals(d.methodInfo().name) && n == 2) {
                 assertDv(d.p(0), 2, MultiLevel.EFFECTIVELY_NOT_NULL_DV, EXTERNAL_NOT_NULL);
-                assertDv(d.p(1), 2, MultiLevel.EFFECTIVELY_NOT_NULL_DV, EXTERNAL_NOT_NULL);
+                assertDv(d.p(1), 2, MultiLevel.NOT_INVOLVED_DV, EXTERNAL_NOT_NULL);
             }
             if ("ExternalNotNull_0".equals(d.methodInfo().name) && n == 4) {
                 assertDv(d.p(0), 2, MultiLevel.EFFECTIVELY_NOT_NULL_DV, EXTERNAL_NOT_NULL);
-                assertDv(d.p(1), 2, MultiLevel.NULLABLE_DV, EXTERNAL_NOT_NULL);
-                assertDv(d.p(2), 2, MultiLevel.EFFECTIVELY_NOT_NULL_DV, EXTERNAL_NOT_NULL);
+                assertDv(d.p(1), 2, MultiLevel.NOT_INVOLVED_DV, EXTERNAL_NOT_NULL);
+                assertDv(d.p(2), 2, MultiLevel.NOT_INVOLVED_DV, EXTERNAL_NOT_NULL);
                 assertDv(d.p(3), 2, MultiLevel.NULLABLE_DV, EXTERNAL_NOT_NULL);
             }
             if ("setQ".equals(d.methodInfo().name)) {
-                assertDv(d.p(0), 2, MultiLevel.NULLABLE_DV, EXTERNAL_NOT_NULL);
+                assertDv(d.p(0), 1, MultiLevel.NOT_INVOLVED_DV, EXTERNAL_NOT_NULL);
             }
             if ("setR".equals(d.methodInfo().name)) {
-                assertDv(d.p(0), 2, MultiLevel.EFFECTIVELY_NOT_NULL_DV, EXTERNAL_NOT_NULL);
+                assertDv(d.p(0), 1, MultiLevel.NOT_INVOLVED_DV, EXTERNAL_NOT_NULL);
             }
         };
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
@@ -126,8 +126,7 @@ public class Test_33_ExternalNotNull extends CommonTestRunner {
                 assertEquals(DV.TRUE_DV, effFinal);
                 String expected = d.iteration() == 0 ? "<f:o>" : "[null,\"hello\"]";
                 assertEquals(expected, d.fieldAnalysis().getValue().toString());
-                String linked = d.iteration() == 0 ? "System.out:-1,p2:-1,q2:-1,r2:-1,s2:-1,this.p:-1,this.q:-1,this.r:-1,this.s:-1" : "";
-                assertEquals(linked, d.fieldAnalysis().getLinkedVariables().toString());
+                assertEquals("", d.fieldAnalysis().getLinkedVariables().toString());
                 if (d.iteration() > 0) {
                     assertFalse(fai.valuesAreLinkedToParameters(LinkedVariables.LINK_ASSIGNED));
                 }
@@ -137,8 +136,7 @@ public class Test_33_ExternalNotNull extends CommonTestRunner {
                 assertEquals(DV.TRUE_DV, effFinal);
                 String expected = d.iteration() == 0 ? "<f:p>" : "[p1,p2]";
                 assertEquals(expected, d.fieldAnalysis().getValue().toString());
-                String linked = d.iteration() == 0 ? "System.out:-1,p1:-1,p2:-1,q2:-1,r2:-1,s2:-1,this.o:-1,this.q:-1,this.r:-1,this.s:-1" : "p1:0,p2:0";
-                assertEquals(linked, d.fieldAnalysis().getLinkedVariables().toString());
+                assertEquals("", d.fieldAnalysis().getLinkedVariables().toString());
                 if (d.iteration() > 0) {
                     assertTrue(fai.valuesAreLinkedToParameters(LinkedVariables.LINK_ASSIGNED));
                 }
@@ -146,10 +144,7 @@ public class Test_33_ExternalNotNull extends CommonTestRunner {
             if ("q".equals(d.fieldInfo().name)) {
                 assertDv(d, 1, MultiLevel.NULLABLE_DV, EXTERNAL_NOT_NULL);
                 assertEquals(DV.FALSE_DV, effFinal);
-                String linked = d.iteration() == 0
-                        ? "System.out:-1,p2:-1,q2:-1,qs:-1,r2:-1,s2:-1,this.o:-1,this.p:-1,this.r:-1,this.s:-1"
-                        : "q2:0,qs:0";
-                assertEquals(linked, d.fieldAnalysis().getLinkedVariables().toString());
+                assertEquals("", d.fieldAnalysis().getLinkedVariables().toString());
                 // also value null
                 if (d.iteration() > 0) {
                     assertFalse(fai.valuesAreLinkedToParameters(LinkedVariables.LINK_ASSIGNED));
@@ -158,10 +153,7 @@ public class Test_33_ExternalNotNull extends CommonTestRunner {
             if ("r".equals(d.fieldInfo().name)) {
                 assertDv(d, 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, EXTERNAL_NOT_NULL);
                 assertEquals(DV.FALSE_DV, effFinal);
-                String linked = d.iteration() == 0
-                        ? "System.out:-1,p2:-1,q2:-1,r1:-1,r2:-1,rs:-1,s2:-1,this.o:-1,this.p:-1,this.q:-1,this.s:-1"
-                        : "r1:1,r2:1,rs:1";
-                assertEquals(linked, d.fieldAnalysis().getLinkedVariables().toString());
+                assertEquals("", d.fieldAnalysis().getLinkedVariables().toString());
             }
         };
         testClass("ExternalNotNull_0", 0, 4, new DebugConfiguration.Builder()

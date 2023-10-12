@@ -1409,7 +1409,12 @@ public class ComputingFieldAnalyser extends FieldAnalyserImpl implements FieldAn
 
     private AnalysisStatus analyseLinked(SharedState sharedState) {
         assert fieldAnalysis.linkedVariables.isVariable();
-
+        DV immutable = analyserContext.typeImmutable(fieldInfo.type);
+        if (MultiLevel.EFFECTIVELY_IMMUTABLE_DV.equals(immutable)) {
+            // Shortcut. Solves no serious linking delay issues, simply avoids them on certain types.
+            fieldAnalysis.setLinkedVariables(LinkedVariables.EMPTY);
+            return DONE;
+        }
         boolean ignoreContextModified = sharedState.breakDelayLevel().acceptField();
         // we ONLY look at the linked variables of fields that have been assigned to, or have been modified
 

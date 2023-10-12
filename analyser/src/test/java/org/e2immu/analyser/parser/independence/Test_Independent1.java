@@ -521,6 +521,7 @@ public class Test_Independent1 extends CommonTestRunner {
                 if (d.variable() instanceof ParameterInfo pi && "other".equals(pi.name)) {
                     String linked = d.iteration() < 13 ? "this:-1" : "this:4";
                     assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
+                    assertDv(d, 13, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                 }
             }
             if ("put".equals(d.methodInfo().name)) {
@@ -568,17 +569,36 @@ public class Test_Independent1 extends CommonTestRunner {
             }
             if ("of".equals(d.methodInfo().name)) {
                 if ("result".equals(d.variableName())) {
+                    if ("0".equals(d.statementId())) {
+                        assertEquals("new Independent1_9<>()", d.currentValue().toString());
+                        assertDv(d, MultiLevel.NOT_CONTAINER_DV, Property.CONTAINER);
+                    }
                     if ("1.0.0.0.0".equals(d.statementId())) {
-                        assertLinked(d, it(0, 13, "map:-1,maps:-1"), it(14, "map:4,maps:4"));
+                        assertLinked(d, it(0, BIG, "map:-1,maps:-1"), it(BIG, "map:4,maps:4"));
                     }
                     if ("2".equals(d.statementId())) {
-                        assertLinked(d, it(0, 13, "maps:-1"), it(14, "maps:4"));
+                        assertLinked(d, it(0, BIG, "maps:-1"), it(BIG, "maps:4"));
                     }
                 }
                 if (d.variable() instanceof ReturnVariable) {
                     if ("2".equals(d.statementId())) {
-                        String linked = d.iteration() < 14 ? "maps:-1,result:0" : "maps:4,result:0";
+                        String linked = d.iteration() < BIG ? "maps:-1,result:0" : "maps:4,result:0";
                         assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
+                    }
+                }
+                if (d.variable() instanceof ParameterInfo pi && "maps".equals(pi.name)) {
+                    if ("1.0.0.0.0".equals(d.statementId())) {
+                        assertDv(d, BIG, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                    }
+                    if ("1.0.0".equals(d.statementId())) {
+                        assertDv(d, BIG, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                    }
+                }
+                if ("map".equals(d.variableName())) {
+                    if ("1.0.0.0.0".equals(d.statementId())) {
+                        assertEquals("<vl:map>", d.currentValue().toString());
+                        // putAll's parameter is CM=FALSE in iteration 14
+                        assertDv(d, 14, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     }
                 }
             }
@@ -589,11 +609,13 @@ public class Test_Independent1 extends CommonTestRunner {
                 assertEquals("0", d.statementId());
                 String properties = switch (d.iteration()) {
                     case 0 ->
-                            "other={context-modified=assign_to_field@Parameter_t, context-not-null=nullable:1}, this={context-modified=initial:this.map@Method_put_0-C;initial@Field_map, read=true:1}";
-                    case 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11 ->
-                            "other={context-modified=link:t@Method_put_0:M;link:this.map@Method_put_0:M, context-not-null=nullable:1}, this={context-modified=ext_not_null@Field_map;initial:this.map@Method_put_0-C;initial@Field_map;link:t@Method_put_0:M;link:this.map@Method_put_0:M, read=true:1}";
+                            "other={context-modified=link@NOT_YET_SET, context-not-null=assign_to_field@Parameter_t}, this={context-modified=constructor-to-instance@Method_accept_0-E;initial:this.map@Method_put_0-C;initial@Field_map, read=true:1}";
+                    case 1, 2, 3, 4, 9, 6, 7 ->
+                            "other={context-modified=link:t@Method_put_0:M;link:this.map@Method_put_0:M, context-not-null=link:t@Method_put_0:M;link:this.map@Method_put_0:M}, this={context-modified=constructor-to-instance@Method_accept_0-E;ext_not_null@Field_map;initial:this.map@Method_put_0-C;initial@Field_map;link:t@Method_put_0:M;link:this.map@Method_put_0:M, read=true:1}";
+                    case 5, 10, 11, 8 ->
+                            "other={context-modified=link:t@Method_put_0:M;link:this.map@Method_put_0:M, context-not-null=link:t@Method_put_0:M;link:this.map@Method_put_0:M}, this={context-modified=ext_not_null@Field_map;initial:this.map@Method_put_0-C;initial@Field_map;link:t@Method_put_0:M;link:this.map@Method_put_0:M, read=true:1}";
                     case 12 ->
-                            "other={context-modified=link:t@Method_put_0:M;link:this.map@Method_put_0:M, context-not-null=nullable:1}, this={context-modified=link:t@Method_put_0:M;link:this.map@Method_put_0:M, read=true:1}";
+                            "other={context-modified=link:t@Method_put_0:M;link:this.map@Method_put_0:M, context-not-null=link:t@Method_put_0:M;link:this.map@Method_put_0:M}, this={context-modified=link:t@Method_put_0:M;link:this.map@Method_put_0:M, read=true:1}";
                     default ->
                             "other={context-modified=false:0, context-not-null=nullable:1}, this={context-modified=true:1, read=true:1}";
                 };
@@ -603,7 +625,8 @@ public class Test_Independent1 extends CommonTestRunner {
 
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("stream".equals(d.methodInfo().name)) {
-                String expected = d.iteration() < 12 ? "<m:stream>" : "map.entrySet().stream().map(instance type $1)";
+                String expected = d.iteration() < 12 ? "<m:stream>"
+                        : "map.entrySet().stream().map(/*inline apply*/new ImmutableEntry<>(e.getKey(),e.getValue()))";
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
                 assertDv(d, 12, MultiLevel.INDEPENDENT_HC_DV, Property.INDEPENDENT);
                 if (d.iteration() >= 12) {
@@ -616,21 +639,20 @@ public class Test_Independent1 extends CommonTestRunner {
                 assertDv(d, BIG, MultiLevel.INDEPENDENT_HC_DV, Property.INDEPENDENT);
             }
             if ("putAll".equals(d.methodInfo().name)) {
+                assertEquals("<no return value>", d.methodAnalysis().getSingleReturnValue().toString());
+                assertDv(d, 13, DV.TRUE_DV, Property.MODIFIED_METHOD);
                 assertDv(d.p(0), 14, MultiLevel.EFFECTIVELY_IMMUTABLE_HC_DV, Property.IMMUTABLE);
                 assertDv(d.p(0), 14, MultiLevel.INDEPENDENT_HC_DV, Property.INDEPENDENT);
+                assertDv(d.p(0), 14, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
             }
             if ("put".equals(d.methodInfo().name)) {
-                // FIXME at iteration 13, while accept's parameter is independent in iteration 5. this is seriously weird
+                // CHECK at iteration 13, while accept's parameter is independent in iteration 5. this is seriously weird
                 assertDv(d.p(0), 13, MultiLevel.INDEPENDENT_HC_DV, Property.INDEPENDENT);
                 assertDv(d.p(0), 13, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
             }
             if ("of".equals(d.methodInfo().name)) {
-                /*
-                 IMPROVE this should be _HC, but there is no code yet in ComputedParameterAnalyser to look at the method
-                 return value rather than at the fields.  A complication will be that variables do not link to the return
-                 value currently.
-                 */
-                assertDv(d, 14, MultiLevel.INDEPENDENT_HC_DV, Property.INDEPENDENT);
+                // FIXME
+                assertDv(d, BIG, MultiLevel.INDEPENDENT_HC_DV, Property.INDEPENDENT);
             }
             if ("accept".equals(d.methodInfo().name)) {
                 assertEquals("$2", d.methodInfo().typeInfo.simpleName);
@@ -649,17 +671,18 @@ public class Test_Independent1 extends CommonTestRunner {
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("Independent1_9".equals(d.typeInfo().simpleName)) {
                 assertDv(d, 12, MultiLevel.EFFECTIVELY_IMMUTABLE_HC_DV, Property.IMMUTABLE);
+                assertDv(d, 14, MultiLevel.CONTAINER_DV, Property.CONTAINER);
             }
         };
 
         BreakDelayVisitor breakDelayVisitor = d -> assertEquals("-----S--S-SF----", d.delaySequence());
 
         testClass("Independent1_9", 0, 0, new DebugConfiguration.Builder()
-                //     .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-                //     .addStatementAnalyserVisitor(statementAnalyserVisitor)
-                //     .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
-                //     .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
-                //     .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
+             //   .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+             //   .addStatementAnalyserVisitor(statementAnalyserVisitor)
+             //   .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+                .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
                 .addBreakDelayVisitor(breakDelayVisitor)
                 .build());
     }
@@ -735,7 +758,7 @@ public class Test_Independent1 extends CommonTestRunner {
                 //    .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 //    .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
                 .addBreakDelayVisitor(breakDelayVisitor)
-                .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+                // .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                 .build());
     }
 

@@ -1011,14 +1011,14 @@ public class Test_66_VariableScope extends CommonTestRunner {
             if ("method".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof ReturnVariable) {
                     if ("0.0.0".equals(d.statementId())) {
-                        String expected = d.iteration() < 2 ? "s.length()==<f:x.i>?s.length():<return value>"
+                        String expected = d.iteration() == 0 ? "s.length()==<f:x.i>?s.length():<return value>"
                                 : "s.length()==x.i?s.length():<return value>";
                         assertEquals(expected, d.currentValue().toString());
                         String linked = d.iteration() == 0 ? "x.i:0,x:-1,xs:-1" : "x.i:0,x:2";
                         assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
                     }
                     if ("0".equals(d.statementId())) {
-                        String expected = d.iteration() < 2
+                        String expected = d.iteration() == 0
                                 ? "xs.isEmpty()||s.length()!=<dv:scope-x:0.i>?<return value>:s.length()"
                                 : "xs.isEmpty()||s.length()!=scope-x:0.i?<return value>:s.length()";
                         assertEquals(expected, d.currentValue().toString());
@@ -1026,11 +1026,11 @@ public class Test_66_VariableScope extends CommonTestRunner {
                         assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
                     }
                     if ("1".equals(d.statementId())) {
-                        String expected = d.iteration() < 2
+                        String expected = d.iteration() == 0
                                 ? "<m:isEmpty>||<dv:scope-x:0.i>!=<m:length>?0:<m:length>"
                                 : "xs.isEmpty()||s.length()!=scope-x:0.i?0:s.length()";
                         assertEquals(expected, d.currentValue().toString());
-                        String linked = d.iteration() < 2
+                        String linked = d.iteration() == 0
                                 ? "s:-1,scope-x:0.i:0,scope-x:0:-1,xs:-1"
                                 : "scope-x:0.i:0,scope-x:0:2";
                         assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
@@ -1039,13 +1039,12 @@ public class Test_66_VariableScope extends CommonTestRunner {
                 if (d.variable() instanceof FieldReference fr && "i".equals(fr.fieldInfo.name)) {
                     if ("x".equals(fr.scope.toString())) {
                         if ("0.0.0.0.0".equals(d.statementId())) {
-                            String expected = d.iteration() < 2 ? "<f:x.i>" : "instance type int";
+                            String expected = d.iteration() == 0 ? "<f:x.i>" : "instance type int";
                             assertEquals(expected, d.currentValue().toString());
                         }
                         if ("0.0.0".equals(d.statementId())) {
                             String expected = switch (d.iteration()) {
                                 case 0 -> "<f:x.i>";
-                                case 1 -> "s.length()==instance type int?<f:x.i>:instance type int";
                                 default -> "instance type int";
                             };
                             assertEquals(expected, d.currentValue().toString());
@@ -1059,8 +1058,6 @@ public class Test_66_VariableScope extends CommonTestRunner {
                         if ("0".equals(d.statementId())) {
                             String expected = switch (d.iteration()) {
                                 case 0 -> "xs.isEmpty()?<f:scope-x:0.i>:<dv:scope-x:0.i>";
-                                case 1 ->
-                                        "xs.isEmpty()||s.length()!=instance type int?instance type int:<dv:scope-x:0.i>";
                                 default -> "instance type int";
                             };
                             assertEquals(expected, d.currentValue().toString());
@@ -1072,14 +1069,14 @@ public class Test_66_VariableScope extends CommonTestRunner {
         StatementAnalyserVisitor statementAnalyserVisitor = d -> {
             if ("method".equals(d.methodInfo().name)) {
                 if ("0".equals(d.statementId())) {
-                    String expected = d.iteration() < 2
+                    String expected = d.iteration() == 0
                             ? "CM{state=xs.isEmpty()||s.length()!=<dv:scope-x:0.i>;parent=CM{}}"
                             : "CM{state=xs.isEmpty()||s.length()!=scope-x:0.i;parent=CM{}}";
                     assertEquals(expected, d.statementAnalysis().stateData().getConditionManagerForNextStatement().toString());
                 }
             }
         };
-        BreakDelayVisitor breakDelayVisitor = d -> assertEquals("----", d.delaySequence());
+        BreakDelayVisitor breakDelayVisitor = d -> assertEquals("---", d.delaySequence());
         testClass("VariableScope_11", 0, 0, new DebugConfiguration.Builder()
                         .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                         .addStatementAnalyserVisitor(statementAnalyserVisitor)
@@ -1304,7 +1301,7 @@ public class Test_66_VariableScope extends CommonTestRunner {
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("X".equals(d.typeInfo().simpleName)) {
                 assertDv(d, 1, MultiLevel.MUTABLE_DV, Property.IMMUTABLE);
-                assertDv(d, 1, MultiLevel.CONTAINER_DV, Property.CONTAINER);
+                assertDv(d, MultiLevel.CONTAINER_DV, Property.CONTAINER);
             }
         };
 

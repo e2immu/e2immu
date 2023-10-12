@@ -73,7 +73,7 @@ public class Test_00_Basics_2 extends CommonTestRunner {
             if ("string".equals(d.fieldInfo().name)) {
                 assertEquals(DV.FALSE_DV, d.fieldAnalysis().getProperty(FINAL));
                 assertEquals(MultiLevel.NULLABLE_DV, d.fieldAnalysis().getProperty(EXTERNAL_NOT_NULL));
-                assertEquals("string:0", d.fieldAnalysis().getLinkedVariables().toString());
+                assertEquals("", d.fieldAnalysis().getLinkedVariables().toString());
             }
         };
 

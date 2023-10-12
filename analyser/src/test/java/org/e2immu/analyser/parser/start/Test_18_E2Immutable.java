@@ -65,10 +65,10 @@ public class Test_18_E2Immutable extends CommonTestRunner {
 
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
             if ("level1".equals(d.fieldInfo().name)) {
-                assertEquals("level1Param:0", d.fieldAnalysis().getLinkedVariables().toString());
+                assertEquals("", d.fieldAnalysis().getLinkedVariables().toString());
             }
             if ("value1".equals(d.fieldInfo().name)) {
-                assertEquals("value:0", d.fieldAnalysis().getLinkedVariables().toString());
+                assertEquals("", d.fieldAnalysis().getLinkedVariables().toString());
             }
         };
 
@@ -143,14 +143,14 @@ public class Test_18_E2Immutable extends CommonTestRunner {
                         assertEquals("nullable instance type E2Immutable_1/*@Identity*/",
                                 d.currentValue().toString());
                         assertDv(d, MultiLevel.MUTABLE_DV, IMMUTABLE);
-                        assertDv(d, 3, MultiLevel.EFFECTIVELY_IMMUTABLE_DV, EXTERNAL_IMMUTABLE);
+                        assertDv(d, 2, MultiLevel.EFFECTIVELY_IMMUTABLE_DV, EXTERNAL_IMMUTABLE);
                     }
                     if ("1".equals(d.statementId())) {
                         String expected = d.iteration() == 0 ? "<p:parent2Param>" :
                                 "nullable instance type E2Immutable_1/*@Identity*/";
                         assertEquals(expected, d.currentValue().toString());
                         assertDv(d, 1, MultiLevel.MUTABLE_DV, IMMUTABLE);
-                        assertDv(d, 3, MultiLevel.EFFECTIVELY_IMMUTABLE_DV, EXTERNAL_IMMUTABLE);
+                        assertDv(d, 2, MultiLevel.EFFECTIVELY_IMMUTABLE_DV, EXTERNAL_IMMUTABLE);
                     }
                 }
             }

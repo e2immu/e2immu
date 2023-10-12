@@ -1519,7 +1519,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
         ParameterizedType parameterizedType = loopVar.parameterizedType();
 
         DV nne = notNullOfLoopVariable(evaluationContext, evaluatedIterable, someValueWasDelayed);
-        Properties valueProperties = evaluationContext.defaultValuePropertiesAllowMyself(parameterizedType, nne);
+        Properties valueProperties = evaluationContext.defaultValueProperties(parameterizedType, nne);
 
         CausesOfDelay delayed = valueProperties.delays();
         Expression value;

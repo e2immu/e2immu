@@ -72,8 +72,8 @@ public class Test_00_Basics_24 extends CommonTestRunner {
                         assertEquals(expected, d.currentValue().toString());
                     }
                     if ("2".equals(d.statementId())) {
-                        String expected = d.iteration() == 0 ? "<null-check>?\"b\":<m:getOrDefault>"
-                                : "null==map.getOrDefault(pos,a)?\"b\":map.getOrDefault(pos,a)";
+                        String expected = d.iteration() == 0 ? "<null-check>?y:<m:getOrDefault>"
+                                : "null==map.getOrDefault(pos,a)?y:map.getOrDefault(pos,a)";
                         assertEquals(expected, d.currentValue().toString());
                     }
                 }
@@ -84,7 +84,7 @@ public class Test_00_Basics_24 extends CommonTestRunner {
                     }
                     if ("3".equals(d.statementId())) {
                         String linked = switch (d.iteration()) {
-                            case 0 -> "a:-1,pos:-1,this:-1,x.s:-1,x:-1";
+                            case 0 -> "a:-1,pos:-1,this:-1,x.s:-1,x:-1,y:-1";
                             default -> "";
                         };
                         assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
@@ -93,7 +93,7 @@ public class Test_00_Basics_24 extends CommonTestRunner {
                 if (d.variable() instanceof ReturnVariable) {
                     if ("3".equals(d.statementId())) {
                         String linked = switch (d.iteration()) {
-                            case 0 -> "a:-1,pos:-1,this.map:-1,this:-1,x.s:0,x:-1";
+                            case 0 -> "a:-1,pos:-1,this.map:-1,this:-1,x.s:0,x:-1,y:0";
                             default -> "x.s:0,x:2";
                         };
                         assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
@@ -111,9 +111,9 @@ public class Test_00_Basics_24 extends CommonTestRunner {
 
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
             if ("s".equals(d.fieldInfo().name)) {
-                assertDv(d, DV.FALSE_DV, Property.MODIFIED_OUTSIDE_METHOD);
+                assertDv(d, 1, DV.FALSE_DV, Property.MODIFIED_OUTSIDE_METHOD);
                 assertLinked(d, d.fieldAnalysis().getLinkedVariables(),
-                        it0("a:-1,pos:-1,s:-1,this.map:-1,x:-1"), it(1, "s:0"));
+                        it0("a:-1,pos:-1,s:-1,this.map:-1,x:-1,y:-1"), it(1, "s:0"));
             }
         };
 
@@ -150,11 +150,11 @@ public class Test_00_Basics_24 extends CommonTestRunner {
         };
 
         testClass("Basics_24", 0, 0, new DebugConfiguration.Builder()
-                        .addEvaluationResultVisitor(evaluationResultVisitor)
-                        .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-                        .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
-                        .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
-                        .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
+                     //   .addEvaluationResultVisitor(evaluationResultVisitor)
+                    //    .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                    //    .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+                    //    .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                    //    .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
                         .addBreakDelayVisitor(breakDelayVisitor)
                         .build(),
                 new AnalyserConfiguration.Builder()

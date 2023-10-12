@@ -59,9 +59,7 @@ public class Test_22_SubTypes extends CommonTestRunner {
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
             if ("key".equals(d.fieldInfo().name) && SUBTYPE_CONSTRUCTOR.equals(d.fieldInfo().owner.simpleName)) {
                 assertEquals(DV.TRUE_DV, d.fieldAnalysis().getProperty(Property.FINAL));
-                assertLinked(d, d.fieldAnalysis().getLinkedVariables(),
-                        it0("key:-1,this.value:-1"),
-                        it(1, "key:0"));
+                assertTrue(d.fieldAnalysis().getLinkedVariables().isEmpty());
             }
         };
 

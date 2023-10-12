@@ -167,7 +167,7 @@ public class Test_58_GuideSimplified extends CommonTestRunner {
                 assertEquals(MultiLevel.EFFECTIVELY_IMMUTABLE_DV,
                         d.fieldAnalysis().getProperty(Property.EXTERNAL_IMMUTABLE));
                 assertDv(d, DV.FALSE_DV, Property.MODIFIED_OUTSIDE_METHOD);
-                assertEquals("msg:0", d.fieldAnalysis().getLinkedVariables().toString());
+                assertEquals("", d.fieldAnalysis().getLinkedVariables().toString());
             }
 
             if ("START".equals(d.fieldInfo().name)) {
