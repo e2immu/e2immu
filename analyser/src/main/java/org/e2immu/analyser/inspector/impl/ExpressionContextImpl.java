@@ -52,7 +52,8 @@ public record ExpressionContextImpl(ExpressionContext.ResolverRecursion resolver
                                     TypeInfo primaryType,
                                     TypeContext typeContext,
                                     VariableContext variableContext,
-                                    AnonymousTypeCounters anonymousTypeCounters) implements ExpressionContext {
+                                    AnonymousTypeCounters anonymousTypeCounters,
+                                    FieldAccessStore fieldAccessStore) implements ExpressionContext {
     private static final Logger LOGGER = LoggerFactory.getLogger(ExpressionContextImpl.class);
 
     public static ExpressionContext forInspectionOfPrimaryType(
@@ -67,7 +68,8 @@ public record ExpressionContextImpl(ExpressionContext.ResolverRecursion resolver
                 null, typeInfo,
                 Objects.requireNonNull(typeContext),
                 VariableContext.initialVariableContext(null, new HashMap<>()),
-                Objects.requireNonNull(anonymousTypeCounters));
+                Objects.requireNonNull(anonymousTypeCounters),
+                new FieldAccessStore());
     }
 
     public static ExpressionContext forTypeBodyParsing(
@@ -83,7 +85,8 @@ public record ExpressionContextImpl(ExpressionContext.ResolverRecursion resolver
                 Objects.requireNonNull(primaryType),
                 Objects.requireNonNull(expressionContextOfType.typeContext()),
                 VariableContext.initialVariableContext(expressionContextOfType.variableContext(), staticallyImportedFields),
-                Objects.requireNonNull(expressionContextOfType.anonymousTypeCounters()));
+                Objects.requireNonNull(expressionContextOfType.anonymousTypeCounters()),
+                expressionContextOfType.fieldAccessStore());
     }
 
     @Override
@@ -91,7 +94,8 @@ public record ExpressionContextImpl(ExpressionContext.ResolverRecursion resolver
         LOGGER.debug("Creating a new variable context for method {}", methodInfo.fullyQualifiedName);
         return new ExpressionContextImpl(resolver, enclosingType, null,
                 methodInfo, null, typeOfEnclosingSwitchExpression,
-                primaryType, typeContext, VariableContext.dependentVariableContext(variableContext), anonymousTypeCounters);
+                primaryType, typeContext, VariableContext.dependentVariableContext(variableContext), anonymousTypeCounters,
+                fieldAccessStore);
     }
 
     @Override
@@ -101,7 +105,8 @@ public record ExpressionContextImpl(ExpressionContext.ResolverRecursion resolver
                 enclosingMethod,
                 enclosingField, typeOfEnclosingSwitchExpression,
                 primaryType, typeContext, VariableContext.dependentVariableContext(variableContext),
-                anonymousTypeCounters);
+                anonymousTypeCounters,
+                fieldAccessStore);
     }
 
     @Override
@@ -110,7 +115,7 @@ public record ExpressionContextImpl(ExpressionContext.ResolverRecursion resolver
         return new ExpressionContextImpl(resolver, enclosingType, uninspectedEnclosingType, enclosingMethod,
                 enclosingField,
                 typeOfEnclosingSwitchExpression,
-                primaryType, typeContext, newVariableContext, anonymousTypeCounters);
+                primaryType, typeContext, newVariableContext, anonymousTypeCounters, fieldAccessStore);
     }
 
     @Override
@@ -122,7 +127,7 @@ public record ExpressionContextImpl(ExpressionContext.ResolverRecursion resolver
                 null,
                 null, typeOfEnclosingSwitchExpression,
                 primaryType, typeContext, variableContext,
-                anonymousTypeCounters);
+                anonymousTypeCounters, fieldAccessStore);
     }
 
     @Override
@@ -130,7 +135,7 @@ public record ExpressionContextImpl(ExpressionContext.ResolverRecursion resolver
         LOGGER.debug("Creating a new type context for lambda, sub-type {}", subType.fullyQualifiedName);
         return new ExpressionContextImpl(resolver, enclosingType, subType, null,
                 null, null, primaryType,
-                typeContext, variableContext, anonymousTypeCounters);
+                typeContext, variableContext, anonymousTypeCounters, fieldAccessStore);
     }
 
     @Override
@@ -138,7 +143,7 @@ public record ExpressionContextImpl(ExpressionContext.ResolverRecursion resolver
         LOGGER.debug("Creating a new type context for subtype {}", subType.simpleName);
         return new ExpressionContextImpl(resolver, subType, null,
                 null, null, null, primaryType,
-                new TypeContext(typeContext), variableContext, anonymousTypeCounters);
+                new TypeContext(typeContext), variableContext, anonymousTypeCounters, fieldAccessStore);
     }
 
     @Override
@@ -146,7 +151,7 @@ public record ExpressionContextImpl(ExpressionContext.ResolverRecursion resolver
         LOGGER.debug("Creating a new type context for {}", reason);
         return new ExpressionContextImpl(resolver, enclosingType, uninspectedEnclosingType, enclosingMethod,
                 enclosingField, typeOfEnclosingSwitchExpression, primaryType,
-                new TypeContext(typeContext), variableContext, anonymousTypeCounters);
+                new TypeContext(typeContext), variableContext, anonymousTypeCounters, fieldAccessStore);
     }
 
     @Override
@@ -154,7 +159,7 @@ public record ExpressionContextImpl(ExpressionContext.ResolverRecursion resolver
         LOGGER.debug("Creating a new type context for initialiser of field {}", fieldInfo.fullyQualifiedName());
         return new ExpressionContextImpl(resolver, enclosingType, null, null,
                 fieldInfo, null, primaryType,
-                new TypeContext(typeContext), variableContext, anonymousTypeCounters);
+                new TypeContext(typeContext), variableContext, anonymousTypeCounters, fieldAccessStore);
     }
 
     /*
@@ -824,8 +829,7 @@ public record ExpressionContextImpl(ExpressionContext.ResolverRecursion resolver
                     scope = new TypeExpression(identifier, scopeType, Diamond.NO);
                 }
                 String nameAsString = cit.getNameAsString();
-                return ParseFieldAccessExpr.createFieldAccess(typeContext, scope, nameAsString,
-                        identifier, enclosingType);
+                return ParseFieldAccessExpr.createFieldAccess(this, scope, nameAsString, identifier);
             }
             // there is a real possibility that the type expression is NOT a type but a local field...
             // therefore, we check the variable context first

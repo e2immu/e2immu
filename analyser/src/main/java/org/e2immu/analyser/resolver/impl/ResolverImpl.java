@@ -19,6 +19,7 @@ import com.github.javaparser.ast.stmt.BlockStmt;
 import org.e2immu.analyser.analyser.util.TypeGraph;
 import org.e2immu.analyser.inspector.*;
 import org.e2immu.analyser.inspector.impl.ExpressionContextImpl;
+import org.e2immu.analyser.inspector.impl.FieldAccessStore;
 import org.e2immu.analyser.inspector.impl.FieldInspectionImpl;
 import org.e2immu.analyser.inspector.impl.MethodInspectionImpl;
 import org.e2immu.analyser.model.*;
@@ -56,7 +57,7 @@ The Resolver is recursive with respect to types defined in statements: anonymous
 lambdas, and classes defined in methods.
 These result in a "new" SortedType object that is stored in the local type's TypeResolution object.
 
-Sub-types defined in the primary type go along with methods and fields.
+Subtypes defined in the primary type go along with methods and fields.
  */
 public class ResolverImpl implements Resolver {
     private static final Logger LOGGER = LoggerFactory.getLogger(ResolverImpl.class);
@@ -155,7 +156,7 @@ public class ResolverImpl implements Resolver {
         if (parent == null) methodResolution();
 
         List<TypeInfo> sorted = sortWarnForCircularDependencies(typeGraph, resolutionBuilders);
-        return computeTypeResolution(sorted, resolutionBuilders);
+        return computeTypeResolution(sorted, resolutionBuilders, inspectedTypes);
     }
 
     private List<TypeInfo> typeAndAllSubTypes(TypeInfo typeInfo) {
@@ -204,7 +205,8 @@ public class ResolverImpl implements Resolver {
     }
 
     private SortedTypes computeTypeResolution(List<TypeInfo> sorted,
-                                              Map<TypeInfo, TypeResolution.Builder> resolutionBuilders) {
+                                              Map<TypeInfo, TypeResolution.Builder> resolutionBuilders,
+                                              Map<TypeInfo, ExpressionContext> inspectedTypes) {
         /*
         The code that computes supertypes and counts implementations runs over all known types and subtypes,
         out of the standard sorting order, exactly because of circular dependencies.
@@ -214,10 +216,22 @@ public class ResolverImpl implements Resolver {
                 addSubtypeResolutionBuilders(inspectionProvider, typeInfo, builder, allBuilders));
 
         allBuilders.forEach((typeInfo, builder) -> computeSuperTypes(inspectionProvider, typeInfo, builder, allBuilders));
+        allBuilders.forEach((typeInfo, builder) -> computeFieldAccess(inspectionProvider, typeInfo, builder,
+                parent != null ? inspectedTypes.get(typeInfo): inspectedTypes.get(typeInfo.primaryType())));
         allBuilders.forEach((typeInfo, builder) -> typeInfo.typeResolution.set(builder.build()));
 
         List<TypeCycle> typeCycles = groupByCycles(sorted.stream().map(typeInfo -> typeInfo.typeResolution.get().sortedType()).toList());
         return new SortedTypes(typeCycles);
+    }
+
+    private void computeFieldAccess(InspectionProvider inspectionProvider,
+                                    TypeInfo typeInfo,
+                                    TypeResolution.Builder builder,
+                                    ExpressionContext expressionContext) {
+        FieldAccessStore fieldAccessStore = expressionContext.fieldAccessStore();
+        TypeInspection typeInspection = inspectionProvider.getTypeInspection(typeInfo);
+        boolean accessed = fieldAccessStore.fieldsOfTypeAreAccessedOutsideTypeInsidePrimaryType(typeInfo, typeInspection);
+        builder.setFieldsAccessedInRestOfPrimaryType(accessed);
     }
 
 

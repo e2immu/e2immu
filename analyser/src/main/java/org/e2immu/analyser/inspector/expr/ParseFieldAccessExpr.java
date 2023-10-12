@@ -51,21 +51,19 @@ public class ParseFieldAccessExpr {
             return new TypeExpression(identifier, objectType, Diamond.NO);
         }
 
-        return createFieldAccess(expressionContext.typeContext(), object, name, identifier,
-                expressionContext.enclosingType());
+        return createFieldAccess(expressionContext, object, name, identifier);
     }
 
-    public static Expression createFieldAccess(InspectionProvider inspectionProvider,
+    public static Expression createFieldAccess(ExpressionContext expressionContext,
                                                Expression object,
                                                String name,
-                                               Identifier identifier,
-                                               TypeInfo enclosingType) {
+                                               Identifier identifier) {
         ParameterizedType objectType = object.returnType();
         if (objectType.arrays > 0 && "length".equals(name)) {
-            return new ArrayLength(identifier, inspectionProvider.getPrimitives(), object);
+            return new ArrayLength(identifier, expressionContext.typeContext().getPrimitives(), object);
         }
         if (objectType.typeInfo != null) {
-            Expression res = findFieldOrSubType(identifier, objectType.typeInfo, object, name, inspectionProvider, enclosingType);
+            Expression res = findFieldOrSubType(identifier, objectType.typeInfo, object, name, expressionContext);
             if (res == null) {
                 throw new UnsupportedOperationException("Unknown field or subtype " + name + " in type "
                         + objectType.typeInfo.fullyQualifiedName + " at " + identifier);
@@ -79,27 +77,30 @@ public class ParseFieldAccessExpr {
                                                  TypeInfo typeInfo,
                                                  Expression object,
                                                  String name,
-                                                 InspectionProvider inspectionProvider,
-                                                 TypeInfo enclosingType) {
-        Optional<FieldInfo> oFieldInfo = ResolverImpl.accessibleFieldsStream(inspectionProvider, typeInfo,
+                                                 ExpressionContext expressionContext) {
+        Optional<FieldInfo> oFieldInfo = ResolverImpl.accessibleFieldsStream(expressionContext.typeContext(), typeInfo,
                         typeInfo.primaryType())
                 .filter(f -> name.equals(f.name)).findFirst();
         if (oFieldInfo.isPresent()) {
-            return new VariableExpression(identifier, new FieldReference(inspectionProvider, oFieldInfo.get(), object, enclosingType));
+            TypeInfo enclosingType = expressionContext.enclosingType();
+            expressionContext.fieldAccessStore().add(oFieldInfo.get(), enclosingType);
+            return new VariableExpression(identifier, new FieldReference(expressionContext.typeContext(),
+                    oFieldInfo.get(), object, enclosingType));
         }
-        TypeInspection objectTypeInspection = inspectionProvider.getTypeInspection(typeInfo);
-        Optional<TypeInfo> oSubType = objectTypeInspection.subTypes().stream().filter(s -> name.equals(s.name())).findFirst();
+        TypeInspection objectTypeInspection = expressionContext.typeContext().getTypeInspection(typeInfo);
+        Optional<TypeInfo> oSubType = objectTypeInspection.subTypes().stream()
+                .filter(s -> name.equals(s.name())).findFirst();
         if (oSubType.isPresent()) {
-            return new TypeExpression(identifier, oSubType.get().asParameterizedType(inspectionProvider), Diamond.NO);
+            return new TypeExpression(identifier, oSubType.get().asParameterizedType(expressionContext.typeContext()),
+                    Diamond.NO);
         }
         ParameterizedType parent = objectTypeInspection.parentClass();
         if (parent != null && !parent.isJavaLangObject()) {
-            Expression res = findFieldOrSubType(identifier, parent.typeInfo, object, name, inspectionProvider, enclosingType);
+            Expression res = findFieldOrSubType(identifier, parent.typeInfo, object, name, expressionContext);
             if (res != null) return res;
         }
         for (ParameterizedType interfaceImplemented : objectTypeInspection.interfacesImplemented()) {
-            Expression res = findFieldOrSubType(identifier, interfaceImplemented.typeInfo, object, name,
-                    inspectionProvider, enclosingType);
+            Expression res = findFieldOrSubType(identifier, interfaceImplemented.typeInfo, object, name, expressionContext);
             if (res != null) return res;
         }
         return null;

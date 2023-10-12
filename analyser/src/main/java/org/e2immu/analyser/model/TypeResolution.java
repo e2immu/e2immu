@@ -26,12 +26,21 @@ of "normal" subtypes -- only the former require a new EvaluationContext closure.
 
 This recursion results in a SortedType object which will be used to create a PrimaryTypeAnalyser
 in the statement analyser.
-SortedType is only not-null for sub-types defined in statements; it is kept null for primary types.
+SortedType is only not-null for subtypes defined in statements; it is kept null for primary types.
+
+We compute fieldsAccessedInRestOfPrimaryType to improve the quality of @Container computations in the analyser.
+One of the main problems with analysing subtypes is that their fields, even if private, are accessible outside the
+subtype. This introduces many delays as subtypes have to wait for other types to be analysed.
+If a type's fields are not accessed outside the primary type, things become a lot easier.
+See e.g. Basics_24, where the fields are accessed outside the primary type, and E2InContext_0, where that is not the
+case. Without this boolean, E2InContext would not be able to produce a correct @Container value on the method.
+See IsMyself, TypeInfo.isMyself, EvaluationContext.valueProperties, etc.
  */
 public record TypeResolution(SortedType sortedType,
                              Set<TypeInfo> circularDependencies,
                              Set<TypeInfo> superTypesExcludingJavaLangObject,
-                             TypeInfo generatedImplementation) {
+                             TypeInfo generatedImplementation,
+                             boolean fieldsAccessedInRestOfPrimaryType) {
 
     public static class Builder {
         private SortedType sortedType;
@@ -40,6 +49,7 @@ public record TypeResolution(SortedType sortedType,
         private int countImplementations;
         private int countGeneratedImplementations;
         private TypeInfo implementingType; // valid value only when counts == 1
+        private boolean fieldsAccessedInRestOfPrimaryType;
 
         public void incrementImplementations(TypeInfo typeInfo, boolean generated) {
             countImplementations++;
@@ -67,11 +77,16 @@ public record TypeResolution(SortedType sortedType,
             return this;
         }
 
+        public void setFieldsAccessedInRestOfPrimaryType(boolean fieldsAccessedInRestOfPrimaryType) {
+            this.fieldsAccessedInRestOfPrimaryType = fieldsAccessedInRestOfPrimaryType;
+        }
+
         public TypeResolution build() {
             return new TypeResolution(sortedType, // can be null
                     circularDependencies == null ? Set.of() : Set.copyOf(circularDependencies),
                     Set.copyOf(superTypesExcludingJavaLangObject),
-                    hasOneKnownGeneratedImplementation() ? Objects.requireNonNull(implementingType) : null);
+                    hasOneKnownGeneratedImplementation() ? Objects.requireNonNull(implementingType) : null,
+                    fieldsAccessedInRestOfPrimaryType);
         }
 
         public SortedType getSortedType() {

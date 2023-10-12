@@ -16,6 +16,7 @@ package org.e2immu.analyser.inspector;
 
 import com.github.javaparser.ast.stmt.BlockStmt;
 import com.github.javaparser.ast.stmt.Statement;
+import org.e2immu.analyser.inspector.impl.FieldAccessStore;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.statement.Block;
 import org.e2immu.analyser.model.statement.SwitchEntry;
@@ -99,4 +100,9 @@ public interface ExpressionContext {
     AnonymousTypeCounters anonymousTypeCounters();
 
     ResolverRecursion resolver();
+
+    /*
+    used to improve @Container computation, to mark types which are "effectively" safe in the PTA.
+     */
+    FieldAccessStore fieldAccessStore();
 }
