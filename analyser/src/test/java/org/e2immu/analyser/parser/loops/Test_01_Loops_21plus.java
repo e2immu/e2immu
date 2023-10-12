@@ -417,8 +417,8 @@ public class Test_01_Loops_21plus extends CommonTestRunner {
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
             if ("xes".equals(d.fieldInfo().name)) {
                 assertLinked(d, d.fieldAnalysis().getLinkedVariables(),
-                        it(0, 0, "System.out:-1,all:-1,this:-1,xesIn:-1"),
-                        it(1, 4, "all:-1,this:-1,xesIn:-1"),
+                        it(0, 0, "System.out:-1,all:-1,xesIn:-1"),
+                        it(1, 4, "all:-1,xesIn:-1"),
                         it(5, "xesIn:0"));
                 assertEquals("xesIn", d.fieldAnalysis().getValue().toString());
                 assertDv(d, 4, MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL_DV, Property.EXTERNAL_NOT_NULL);

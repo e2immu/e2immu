@@ -851,7 +851,8 @@ public class ComputingFieldAnalyser extends FieldAnalyserImpl implements FieldAn
             return worstOverValues.causesOfDelay(); //DELAY EXIT POINT
         }
 
-        if (MultiLevel.MUTABLE_DV.equals(worstOverValues) && fieldInfo.owner.isMyself(fieldInfo.type, analyserContext)) {
+        if (MultiLevel.MUTABLE_DV.equals(worstOverValues)
+                && fieldInfo.owner.isMyself(fieldInfo.type, analyserContext).toFalse(IMMUTABLE)) {
             if (staticallyImmutable.isDelayed()) {
                 LOGGER.debug("Delaying @Immutable on {}, self-type, waiting for immutable of type", fieldInfo);
             } else {
@@ -1438,8 +1439,9 @@ public class ComputingFieldAnalyser extends FieldAnalyserImpl implements FieldAn
                         .flatMap(m -> m.getFieldAsVariableStream(fieldInfo))
                         .filter(vi -> vi.isAssigned() || !ignoreContextModified && !vi.getProperty(CONTEXT_MODIFIED).valueIsFalse())
                         //.peek(vi -> LOGGER.debug("      -- {}", vi.getLinkedVariables()))
-                        .flatMap(vi -> vi.getLinkedVariables().variables().keySet().stream()).
-                        collect(Collectors.toUnmodifiableSet());
+                        .flatMap(vi -> vi.getLinkedVariables().variables().keySet().stream())
+                        .filter(v -> !(v instanceof This))
+                        .collect(Collectors.toUnmodifiableSet());
                 LinkedVariables lv = LinkedVariables.of(vars.stream().collect(Collectors.toUnmodifiableMap(v -> v, v -> linkDelay)));
                 if (lv.isEmpty()) lv = LinkedVariables.NOT_YET_SET;
                 fieldAnalysis.setLinkedVariables(lv);
@@ -1454,6 +1456,7 @@ public class ComputingFieldAnalyser extends FieldAnalyserImpl implements FieldAn
                 .flatMap(vi -> vi.getLinkedVariables().variables().entrySet().stream())
                 .filter(e -> !(e.getKey() instanceof LocalVariableReference)
                         && !(e.getKey() instanceof ReturnVariable)
+                        && !(e.getKey() instanceof This)
                         && !(e.getKey() instanceof FieldReference fr && fr.fieldInfo == fieldInfo)) // especially local variable copies of the field itself
                 .collect(Collectors.toUnmodifiableMap(Map.Entry::getKey, Map.Entry::getValue, DV::max));
 
@@ -1468,9 +1471,11 @@ public class ComputingFieldAnalyser extends FieldAnalyserImpl implements FieldAn
                 .distinct()
                 .collect(Collectors.toUnmodifiableMap(e -> e, e -> LinkedVariables.LINK_IS_HC_OF));
 
-        LinkedVariables linkedVariables = LinkedVariables.of(map);
-        if(!reversePointingToMe.isEmpty()) {
-            linkedVariables = linkedVariables.merge(LinkedVariables.of(reversePointingToMe));
+        LinkedVariables linkedVariables;
+        if (!reversePointingToMe.isEmpty()) {
+            linkedVariables = LinkedVariables.of(map).merge(LinkedVariables.of(reversePointingToMe));
+        } else {
+            linkedVariables = LinkedVariables.of(map);
         }
         fieldAnalysis.setLinkedVariables(linkedVariables);
         LOGGER.debug("FA: Set links of {} to [{}], ignored CM? {}", fqn, linkedVariables, ignoreContextModified);

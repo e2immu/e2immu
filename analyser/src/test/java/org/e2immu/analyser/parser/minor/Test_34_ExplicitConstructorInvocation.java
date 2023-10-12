@@ -599,7 +599,7 @@ public class Test_34_ExplicitConstructorInvocation extends CommonTestRunner {
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("X4_BitwiseAnd".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof FieldReference fr && "AND".equals(fr.fieldInfo.name)) {
-                    String expected = d.iteration() < 4 ? "<f:AND>" : "instance type Precedence/*new Precedence()*/";
+                    String expected = d.iteration() < 6 ? "<f:AND>" : "instance type Precedence/*new Precedence()*/";
                     assertEquals(expected, d.currentValue().toString());
                     if (d.iteration() == 0) {
                         if (d.currentValue() instanceof DelayedVariableExpression dve) {
@@ -646,13 +646,16 @@ public class Test_34_ExplicitConstructorInvocation extends CommonTestRunner {
                 assertDv(d, 4, MultiLevel.EFFECTIVELY_FINAL_FIELDS_DV, Property.IMMUTABLE);
             }
             if ("X4_BitwiseAnd".equals(d.typeInfo().simpleName)) {
-                assertDv(d, 5, MultiLevel.EFFECTIVELY_FINAL_FIELDS_DV, Property.IMMUTABLE);
+                assertDv(d, 7, MultiLevel.EFFECTIVELY_FINAL_FIELDS_DV, Property.IMMUTABLE);
             }
         };
+        BreakDelayVisitor breakDelayVisitor = d -> assertEquals("---------", d.delaySequence());
+
         testClass("ExplicitConstructorInvocation_12", 0, 1, new DebugConfiguration.Builder()
                         .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                         .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                         .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
+                        .addBreakDelayVisitor(breakDelayVisitor)
                         .build(),
                 new AnalyserConfiguration.Builder()
                         .setComputeFieldAnalyserAcrossAllMethods(true)
@@ -764,7 +767,7 @@ public class Test_34_ExplicitConstructorInvocation extends CommonTestRunner {
         };
 
         BreakDelayVisitor breakDelayVisitor = d -> {
-            assertEquals("--------SF--SF--SF--SF--SF--SF--SF--SF---SFMT--", d.delaySequence());
+            assertEquals("--------SF--SF--SF--SF--SF--SF--SF--SF--SFMT--", d.delaySequence());
         };
 
         testClass("ExplicitConstructorInvocation_13", 0, 1, new DebugConfiguration.Builder()

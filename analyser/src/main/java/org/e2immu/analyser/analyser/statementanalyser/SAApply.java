@@ -485,7 +485,7 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
 
      IMPORTANT this part should not clash with the code that deals with the value AFTER the loop, which sits
      in SASubBlocks.conditionManagerForFirstBlock.
-     ?? Problem is that that one uses -E as the basis for the "previous value", messing up the value afterwards
+     ?? Problem is that that one uses -E as the basis for the "previous value", messing up the value afterward
 
      (also interfering is the erasure of companion info during the evaluation of a modifying method (MethodCall))
      See Loops_8
@@ -554,8 +554,7 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
         if (valuePropertiesIn != null) {
             valueProperties = valuePropertiesIn;
         } else {
-            valueProperties = sharedState.evaluationContext().getAnalyserContext()
-                    .defaultValueProperties(variable.parameterizedType());
+            valueProperties = sharedState.evaluationContext().defaultValueProperties(variable.parameterizedType());
         }
         CausesOfDelay causes = valueProperties.delays();
         Expression value;

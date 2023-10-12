@@ -21,10 +21,7 @@ import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.parser.CommonTestRunner;
-import org.e2immu.analyser.visitor.FieldAnalyserVisitor;
-import org.e2immu.analyser.visitor.MethodAnalyserVisitor;
-import org.e2immu.analyser.visitor.StatementAnalyserVariableVisitor;
-import org.e2immu.analyser.visitor.TypeAnalyserVisitor;
+import org.e2immu.analyser.visitor.*;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
@@ -111,12 +108,15 @@ public class Test_25_FieldReference extends CommonTestRunner {
                 assertHc(d, 0, "");
             }
         };
+        BreakDelayVisitor breakDelayVisitor = d -> assertEquals("-----", d.delaySequence());
+
         // potential null pointer exceptions
         testClass("FieldReference_1", 0, 3, new DebugConfiguration.Builder()
-                .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
-                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-                .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
-                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+            //    .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+            //    .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+            //    .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
+           //     .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                .addBreakDelayVisitor(breakDelayVisitor)
                 .build());
     }
 

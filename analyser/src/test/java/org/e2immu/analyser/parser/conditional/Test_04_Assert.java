@@ -79,7 +79,8 @@ public class Test_04_Assert extends CommonTestRunner {
                 }
                 if (d.variable() instanceof FieldReference fr && "EMPTY".equals(fr.fieldInfo.name)) {
                     assertCurrentValue(d, 5, "instance type SimpleSet/*new SimpleSet(Set.of())*/");
-                    assertDv(d, 5, MultiLevel.CONTAINER_DV, Property.CONTAINER);
+                    // NOT_CONTAINER because of isMyself
+                    assertDv(d, 5, MultiLevel.NOT_CONTAINER_DV, Property.CONTAINER);
                 }
             }
             if ("combine".equals(d.methodInfo().name)) {

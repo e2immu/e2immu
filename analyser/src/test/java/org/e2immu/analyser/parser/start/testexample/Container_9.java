@@ -57,9 +57,11 @@ public class Container_9 {
             this.items.add(item1);
         }
 
+        // must cause an error!
         @Modified
         @Override
         public void modifying() {
+            // see also Modification_30
             this.items.get(0).setMessage("Clear!");
         }
     }
@@ -73,7 +75,7 @@ public class Container_9 {
             this.items.add(item2);
         }
 
-        // must cause an error!
+        // must cause an error: modifying content of items
         @Modified
         @Override
         public void modifying() {

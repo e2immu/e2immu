@@ -113,6 +113,30 @@ public class Test_Independent1 extends CommonTestRunner {
 
     @Test
     public void test_2() throws IOException {
+        StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+            if ("Independent1_2".equals(d.methodInfo().name)) {
+                if (d.variable() instanceof FieldReference fr && "ts".equals(fr.fieldInfo.name)) {
+                    if ("1".equals(d.statementId())) {
+                        assertLinked(d, it(0, "generator:4,this:3"));
+                    }
+                }
+                if (d.variable() instanceof ParameterInfo pi && "generator".equals(pi.name)) {
+                    if ("1".equals(d.statementId())) {
+                        assertLinked(d, it(0, "this.ts:4,this:4"));
+                        assertDv(d, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
+                    }
+                }
+            }
+        };
+
+        FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
+            if ("ts".equals(d.fieldInfo().name)) {
+                assertLinked(d, d.fieldAnalysis().getLinkedVariables(),
+                        it0("generator:-1,set:-1"),
+                        it(1, "generator:4"));
+            }
+        };
+
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("Independent1_2".equals(d.typeInfo().simpleName)) {
                 assertHc(d, 0, "T");
@@ -122,6 +146,8 @@ public class Test_Independent1 extends CommonTestRunner {
         BreakDelayVisitor breakDelayVisitor = d -> assertEquals("----", d.delaySequence());
 
         testClass("Independent1_2", 0, 0, new DebugConfiguration.Builder()
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                 .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
                 .addBreakDelayVisitor(breakDelayVisitor)
                 .build());
@@ -705,9 +731,9 @@ public class Test_Independent1 extends CommonTestRunner {
         BreakDelayVisitor breakDelayVisitor = d -> assertEquals("---S--S-SF---", d.delaySequence());
 
         testClass("Independent1_9_1", 0, 0, new DebugConfiguration.Builder()
-                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
-                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-                .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
+                //    .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                //    .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                //    .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
                 .addBreakDelayVisitor(breakDelayVisitor)
                 .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                 .build());

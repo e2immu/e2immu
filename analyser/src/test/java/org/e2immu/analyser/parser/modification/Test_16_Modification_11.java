@@ -99,15 +99,15 @@ public class Test_16_Modification_11 extends CommonTestRunner {
                     }
                     if ("2".equals(d.statementId())) {
                         String expectLinked = switch (d.iteration()) {
-                            case 0, 1, 2 -> "c.set:-1,localD.set:-1,localD:-1,this.s2:-1,this:-1";
+                            case 0, 1 -> "c.set:-1,localD.set:-1,localD:-1,this.s2:-1,this:-1";
                             default -> "this.s2:2,this:3";
                         };
                         assertEquals(expectLinked, d.variableInfo().getLinkedVariables().toString());
-                        assertDv(d, 3, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.CONTEXT_NOT_NULL);
+                        assertDv(d, 2, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.CONTEXT_NOT_NULL);
                     }
                 }
                 if (d.variable() instanceof ReturnVariable && "2".equals(d.statementId())) {
-                    String expectValue = d.iteration() < 3 ? "<m:addAll>"
+                    String expectValue = d.iteration() < 2 ? "<m:addAll>"
                             : "Modification_11.addAll(s2,Set.of(\"a\",\"b\",\"c\"))";
                     assertEquals(expectValue, d.currentValue().toString());
                 }
@@ -137,8 +137,8 @@ public class Test_16_Modification_11 extends CommonTestRunner {
             }
             if ("example1".equals(d.methodInfo().name)) {
                 if ("2".equals(d.statementId())) {
-                    mustSeeIteration(d, 3);
-                    assertEquals(d.iteration() >= 3,
+                    mustSeeIteration(d, 2);
+                    assertEquals(d.iteration() >= 2,
                             d.statementAnalysis().methodLevelData().linksHaveBeenEstablished());
                 }
             }

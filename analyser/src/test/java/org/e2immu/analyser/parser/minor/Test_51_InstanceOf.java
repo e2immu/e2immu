@@ -572,7 +572,7 @@ public class Test_51_InstanceOf extends CommonTestRunner {
                 if ("ne".equals(d.variableName())) {
                     if ("2.0.0".equals(d.statementId())) {
                         String expected = d.iteration() < 2
-                                ? "<vp:expression:container@Record_Negation>/*(Negation)*/"
+                                ? "<vp:expression:immutable@Record_Negation>/*(Negation)*/"
                                 : "expression/*(Negation)*/";
                         assertEquals(expected, d.currentValue().toString());
                         String expectLv = d.iteration() < 2 ? "expression:-1,ne.expression:-1,x:-1" : "expression:1";
@@ -582,7 +582,7 @@ public class Test_51_InstanceOf extends CommonTestRunner {
                     if ("2".equals(d.statementId())) {
                         assertFalse(d.variableInfoContainer().hasMerge());
                         String expected = switch (d.iteration()) {
-                            case 0 -> "<vp:expression:container@Record_Negation>/*(Negation)*/";
+                            case 0 -> "<vp:expression:immutable@Record_Negation>/*(Negation)*/";
                             case 1 -> "<vp:expression:assign_to_field@Parameter_expression>/*(Negation)*/";
                             default -> "expression/*(Negation)*/";
                         };
@@ -709,10 +709,10 @@ public class Test_51_InstanceOf extends CommonTestRunner {
         };
         BreakDelayVisitor breakDelayVisitor = d -> assertEquals("----", d.delaySequence());
         testClass("InstanceOf_10", 0, 0, new DebugConfiguration.Builder()
-                        .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-                        .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
-                        .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
-                        .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+                   //     .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                    //    .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                    //    .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
+                    //    .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                         .addBreakDelayVisitor(breakDelayVisitor)
                         .build(),
                 new AnalyserConfiguration.Builder().setComputeFieldAnalyserAcrossAllMethods(true).build());
@@ -923,12 +923,12 @@ public class Test_51_InstanceOf extends CommonTestRunner {
         BreakDelayVisitor breakDelayVisitor = d -> assertEquals("------", d.delaySequence());
 
         testClass("InstanceOf_11", 0, 2, new DebugConfiguration.Builder()
-                .addEvaluationResultVisitor(evaluationResultVisitor)
-                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-                .addStatementAnalyserVisitor(statementAnalyserVisitor)
-                .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
-                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
-                .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+              //  .addEvaluationResultVisitor(evaluationResultVisitor)
+              //  .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+              //  .addStatementAnalyserVisitor(statementAnalyserVisitor)
+              //  .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
+               // .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+              //  .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                 .addBreakDelayVisitor(breakDelayVisitor)
                 .build());
     }

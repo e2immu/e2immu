@@ -19,6 +19,8 @@ import org.e2immu.analyser.analyser.DV;
 import org.e2immu.analyser.analyser.Property;
 import org.e2immu.analyser.config.AnalyserConfiguration;
 import org.e2immu.analyser.config.DebugConfiguration;
+import org.e2immu.analyser.model.MultiLevel;
+import org.e2immu.analyser.model.ParameterInfo;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.ReturnVariable;
 import org.e2immu.analyser.parser.CommonTestRunner;
@@ -27,8 +29,9 @@ import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.e2immu.analyser.parser.VisitorTestSupport.IterationInfo.it;
+import static org.e2immu.analyser.parser.VisitorTestSupport.IterationInfo.it0;
+import static org.junit.jupiter.api.Assertions.*;
 
 public class Test_00_Basics_24 extends CommonTestRunner {
 
@@ -97,24 +100,48 @@ public class Test_00_Basics_24 extends CommonTestRunner {
                     }
                 }
             }
+            if ("X".equals(d.methodInfo().name)) {
+                assertEquals("0", d.statementId());
+                if (d.variable() instanceof ParameterInfo pi && "s".equals(pi.name)) {
+                    assertDv(d, 2, MultiLevel.NOT_CONTAINER_DV, Property.CONTAINER_RESTRICTION);
+                    assertDv(d, 2, MultiLevel.NULLABLE_DV, Property.EXTERNAL_NOT_NULL);
+                }
+            }
         };
 
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
             if ("s".equals(d.fieldInfo().name)) {
-                assertDv(d,  DV.FALSE_DV, Property.MODIFIED_OUTSIDE_METHOD);
-                String linked = switch (d.iteration()) {
-                    case 0 -> "a:-1,pos:-1,s:-1,this.map:-1,this:-1,x:-1";
-                    default -> "s:0";
-                };
-                assertEquals(linked, d.fieldAnalysis().getLinkedVariables().toString());
+                assertDv(d, DV.FALSE_DV, Property.MODIFIED_OUTSIDE_METHOD);
+                assertLinked(d, d.fieldAnalysis().getLinkedVariables(),
+                        it0("a:-1,pos:-1,s:-1,this.map:-1,x:-1"), it(1, "s:0"));
             }
         };
+
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("X".equals(d.methodInfo().name)) {
                 assertTrue(d.methodInfo().isConstructor);
                 assertEquals(d.iteration() == 3, d.allowBreakDelay());
                 String delay = d.iteration() == 0 ? "cm@Parameter_s;mom@Parameter_s" : "mom@Parameter_s";
                 assertDv(d.p(0), delay, 2, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
+                assertDv(d.p(0), 2, MultiLevel.NOT_CONTAINER_DV, Property.CONTAINER_RESTRICTION);
+                assertDv(d.p(0), 2, MultiLevel.NULLABLE_DV, Property.EXTERNAL_NOT_NULL);
+            }
+        };
+
+        TypeAnalyserVisitor typeAnalyserVisitor = d -> {
+            if ("X".equals(d.typeInfo().simpleName)) {
+                assertTrue(d.typeInfo().typeResolution.get().fieldsAccessedInRestOfPrimaryType());
+
+                assertEquals(d.iteration() > 0, d.typeAnalysis().guardedForContainerPropertyDelays().isDone());
+                assertEquals(d.iteration() > 0, d.typeAnalysis().guardedForInheritedContainerPropertyDelays().isDone());
+                assertDv(d, 1, MultiLevel.CONTAINER_DV, Property.CONTAINER);
+            }
+            if ("Basics_24".equals(d.typeInfo().simpleName)) {
+                assertFalse(d.typeInfo().typeResolution.get().fieldsAccessedInRestOfPrimaryType());
+
+                assertEquals(d.iteration() > 0, d.typeAnalysis().guardedForContainerPropertyDelays().isDone());
+                assertEquals(d.iteration() > 0, d.typeAnalysis().guardedForInheritedContainerPropertyDelays().isDone());
+                assertDv(d, 3, MultiLevel.CONTAINER_DV, Property.CONTAINER);
             }
         };
 
@@ -123,10 +150,11 @@ public class Test_00_Basics_24 extends CommonTestRunner {
         };
 
         testClass("Basics_24", 0, 0, new DebugConfiguration.Builder()
-                     //   .addEvaluationResultVisitor(evaluationResultVisitor)
-                     //   .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-                    //    .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
-                    //    .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                        .addEvaluationResultVisitor(evaluationResultVisitor)
+                        .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                        .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+                        .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                        .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
                         .addBreakDelayVisitor(breakDelayVisitor)
                         .build(),
                 new AnalyserConfiguration.Builder()

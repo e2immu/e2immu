@@ -284,26 +284,4 @@ public interface AnalysisProvider {
             default -> throw new UnsupportedOperationException("property: " + property);
         };
     }
-
-    default Properties defaultValueProperties(ParameterizedType parameterizedType) {
-        return defaultValueProperties(parameterizedType, false);
-    }
-
-    default Properties defaultValueProperties(ParameterizedType parameterizedType, boolean writable) {
-        return EvaluationContext.VALUE_PROPERTIES.stream()
-                .collect(Properties.collect(p -> defaultValueProperty(p, parameterizedType), writable));
-    }
-
-    default Properties defaultValueProperties(ParameterizedType parameterizedType,
-                                              DV valueForNotNullExpression) {
-        return defaultValueProperties(parameterizedType, valueForNotNullExpression, false);
-    }
-
-    default Properties defaultValueProperties(ParameterizedType parameterizedType,
-                                              DV valueForNotNullExpression,
-                                              boolean writable) {
-        return EvaluationContext.VALUE_PROPERTIES.stream()
-                .collect(Properties.collect(p -> p == Property.NOT_NULL_EXPRESSION ? valueForNotNullExpression :
-                        defaultValueProperty(p, parameterizedType), writable));
-    }
 }

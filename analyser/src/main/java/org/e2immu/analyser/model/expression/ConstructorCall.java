@@ -279,7 +279,7 @@ public class ConstructorCall extends BaseExpression implements HasParameterExpre
     }
 
     private DV containerValue(ParameterizedType pt, EvaluationResult context) {
-        if (context.getCurrentType().isMyself(returnType(), context.getAnalyserContext())) {
+        if (context.getCurrentType().isMyself(returnType(), context.getAnalyserContext()).toFalse(Property.CONTAINER)) {
             return parameterizedType.arrays > 0 ? MultiLevel.CONTAINER_DV : MultiLevel.NOT_CONTAINER_DV;
             // ALWAYS, regardless of the actual value
         }
@@ -305,7 +305,8 @@ public class ConstructorCall extends BaseExpression implements HasParameterExpre
     }
 
     private DV independentValue(ParameterizedType pt, EvaluationResult context) {
-        if (constructor != null && constructor.typeInfo.isMyself(context.getCurrentType(), context.getAnalyserContext())) {
+        if (constructor != null && constructor.typeInfo.isMyself(context.getCurrentType(), context.getAnalyserContext())
+                .toFalse(Property.INDEPENDENT)) {
             return MultiLevel.DEPENDENT_DV;
         }
         if (anonymousClass != null) {
@@ -320,7 +321,8 @@ public class ConstructorCall extends BaseExpression implements HasParameterExpre
     }
 
     private DV immutableValue(ParameterizedType pt, EvaluationResult context) {
-        if (constructor != null && constructor.typeInfo.isMyself(context.getCurrentType(), context.getAnalyserContext())) {
+        if (constructor != null && constructor.typeInfo.isMyself(context.getCurrentType(), context.getAnalyserContext())
+                .toFalse(Property.IMMUTABLE)) {
             return MultiLevel.MUTABLE_DV;
         }
         DV dv = context.getAnalyserContext().typeImmutable(pt);

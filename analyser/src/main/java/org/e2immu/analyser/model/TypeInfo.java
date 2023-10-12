@@ -17,6 +17,7 @@ package org.e2immu.analyser.model;
 import org.e2immu.analyser.analyser.AnalyserContext;
 import org.e2immu.analyser.analyser.CauseOfDelay;
 import org.e2immu.analyser.analyser.CausesOfDelay;
+import org.e2immu.analyser.analyser.IsMyself;
 import org.e2immu.analyser.analyser.delay.DelayFactory;
 import org.e2immu.analyser.analysis.Analysis;
 import org.e2immu.analyser.analysis.TypeAnalysis;
@@ -794,23 +795,33 @@ public final class TypeInfo implements NamedType,
         return isInterface() && (typeInspection.get().isSealed() || typeResolution.get().hasOneKnownGeneratedImplementation());
     }
 
-    public boolean isMyself(ParameterizedType type, InspectionProvider inspectionProvider) {
+    public IsMyself isMyself(ParameterizedType type, InspectionProvider inspectionProvider) {
         TypeInfo bestType = type.bestTypeInfo(inspectionProvider);
         return isMyself(bestType, inspectionProvider);
     }
 
-    public boolean isMyself(TypeInfo bestType, InspectionProvider inspectionProvider) {
-        if (equals(bestType)) return true;
-        TypeInfo primaryVariable = bestType == null ? null : bestType.primaryType();
+    public IsMyself isMyself(TypeInfo bestType, InspectionProvider inspectionProvider) {
+        if (bestType == null) return IsMyself.NO;
+        if (equals(bestType)) return IsMyself.YES;
+        TypeInfo primaryVariable = bestType.primaryType();
         TypeInfo primaryMyself = primaryType();
         if (primaryMyself.equals(primaryVariable)) {
+            TypeInspection primaryVariableInspection = inspectionProvider.getTypeInspection(primaryVariable);
+            if (primaryVariableInspection.isInterface()) return IsMyself.NO;
+
             // in the same compilation unit, analysed at the same time
-            return bestType.parentalHierarchyContains(this, inspectionProvider) ||
+            boolean inHierarchy = bestType.parentalHierarchyContains(this, inspectionProvider) ||
                     parentalHierarchyContains(bestType, inspectionProvider) ||
                     bestType.nonStaticallyEnclosingTypesContains(this, inspectionProvider) ||
                     nonStaticallyEnclosingTypesContains(bestType, inspectionProvider);
+            if (inHierarchy) return IsMyself.YES;
+            // must be symmetrical: see e.g. Basics_24
+            if (typeResolution.get().fieldsAccessedInRestOfPrimaryType()
+                    || bestType.typeResolution.get().fieldsAccessedInRestOfPrimaryType()) {
+                return IsMyself.PTA;
+            }
         }
-        return false;
+        return IsMyself.NO;
     }
 
 

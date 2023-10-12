@@ -458,8 +458,7 @@ public class Test_26_Enum extends CommonTestRunner {
             if ("returnTwo".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof ReturnVariable) {
                     // the result of the hard-coded method call valueOf
-                    String expect = d.iteration() == 0 ? "<valueOf:Enum_5>" : "instance type Enum_5";
-                    assertEquals(expect, d.currentValue().toString());
+                    assertEquals("instance type Enum_5", d.currentValue().toString());
                     assertDv(d, MultiLevel.MUTABLE_DV, Property.IMMUTABLE); // myself
                 }
             }

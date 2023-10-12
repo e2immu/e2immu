@@ -41,9 +41,9 @@ public class Test_04_NotNull_AAPI extends CommonTestRunner {
             if ("isStrictPrefix".equals(d.methodInfo().name)) {
                 if ("node".equals(d.variableName())) {
                     if ("0".equals(d.statementId())) {
-                        String expected = d.iteration() < 2 ? "<m:goTo>" : "this.goTo(prefix,prefix.length)";
+                        String expected = d.iteration() < 4 ? "<m:goTo>" : "this.goTo(prefix,prefix.length)";
                         assertEquals(expected, d.currentValue().toString());
-                        assertDv(d, 2, MultiLevel.NULLABLE_DV, Property.NOT_NULL_EXPRESSION);
+                        assertDv(d, 4, MultiLevel.NULLABLE_DV, Property.NOT_NULL_EXPRESSION);
                     }
                 }
             }
@@ -58,7 +58,7 @@ public class Test_04_NotNull_AAPI extends CommonTestRunner {
                     if ("3".equals(d.statementId())) {
                         String linked = switch (d.iteration()) {
                             case 0 -> "System.out:-1,data:-1,node.data:-1,node.map:-1,strings:-1,this.root:0,this:-1";
-                            case 1 -> "data:-1,node.data:-1,node.map:-1,this.root:0,this:-1";
+                            case 1, 2, 3 -> "data:-1,node.data:-1,node.map:-1,this.root:0,this:-1";
                             default -> "node.data:4,node.map:3,this.root:0,this:3";
                         };
                         assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
@@ -76,7 +76,7 @@ public class Test_04_NotNull_AAPI extends CommonTestRunner {
                         if ("3".equals(d.statementId())) {
                             String linked = switch (d.iteration()) {
                                 case 0 -> "System.out:-1,data:-1,node.data:-1,node:-1,strings:-1,this.root:-1,this:-1";
-                                case 1 -> "data:-1,node.data:-1,node:-1,this.root:-1,this:-1";
+                                case 1, 2, 3 -> "data:-1,node.data:-1,node:-1,this.root:-1,this:-1";
                                 default -> "node.data:4,node:2,this.root:2,this:3";
                             };
                             assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
@@ -94,7 +94,7 @@ public class Test_04_NotNull_AAPI extends CommonTestRunner {
                         }
                         if ("2".equals(d.statementId())) {
                             VariableInfo eval = d.variableInfoContainer().best(Stage.EVALUATION);
-                            String evalValue = d.iteration() < 2 ? "<f:node.data>" : "nullable instance type List<T>";
+                            String evalValue = d.iteration() < 4 ? "<f:node.data>" : "nullable instance type List<T>";
                             assertEquals(evalValue, eval.getValue().toString());
 
                             String expected = d.iteration() == 0
@@ -154,21 +154,21 @@ public class Test_04_NotNull_AAPI extends CommonTestRunner {
 
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("goTo".equals(d.methodInfo().name)) {
-                String expected = d.iteration() < 2 ? "<m:goTo>"
+                String expected = d.iteration() < 4 ? "<m:goTo>"
                         : "-1-(instance type int)+upToPosition>=0&&(null==(null==node$1.map$0?node$1:node$1.map$0.get(nullable instance type String)).map$1.get(nullable instance type String)||null==(null==node$1.map$0?node$1:node$1.map$0.get(nullable instance type String)).map$1)?null:-1-(instance type int)+upToPosition>=0?null==node$1.map$0?node$1:node$1.map$0.get(nullable instance type String):root";
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
-                assertDv(d, 2, MultiLevel.NULLABLE_DV, Property.NOT_NULL_EXPRESSION);
+                assertDv(d, 4, MultiLevel.NULLABLE_DV, Property.NOT_NULL_EXPRESSION);
             }
         };
 
         BreakDelayVisitor breakDelayVisitor = d -> {
-            assertEquals("-----", d.delaySequence());
+            assertEquals("-------", d.delaySequence());
         };
 
         testClass("NotNull_3", 0, 0, new DebugConfiguration.Builder()
-                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .addBreakDelayVisitor(breakDelayVisitor)
                 .build(), new AnalyserConfiguration.Builder()
                 .setComputeFieldAnalyserAcrossAllMethods(true)

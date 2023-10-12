@@ -49,7 +49,7 @@ public class Test_16_Modification_20 extends CommonTestRunner {
             if ("C1".equals(d.methodInfo().name)) {
                 assertTrue(d.methodInfo().isConstructor);
                 if (d.variable() instanceof FieldReference fr && "set".equals(fr.fieldInfo.name)) {
-                    assertFalse(d.context().evaluationContext().isMyself(d.variable()));
+                    assertFalse(d.context().evaluationContext().isMyself(d.variable()).toFalse(Property.IMMUTABLE));
 
                     assertEquals("setC", d.currentValue().toString());
                     assertEquals("setC:0", d.variableInfo().getLinkedVariables().toString());
@@ -135,7 +135,7 @@ public class Test_16_Modification_20 extends CommonTestRunner {
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
             if ("set".equals(d.fieldInfo().name)) {
                 assertLinked(d, d.fieldAnalysis().getLinkedVariables(),
-                        it(0, 5, "c.set:-1,c:-1,localD.set:-1,localD:-1,setC:-1,this.s2:-1,this:-1"),
+                        it(0, 5, "c.set:-1,c:-1,localD.set:-1,localD:-1,setC:-1,this.s2:-1"),
                         it(6, "setC:0"));
                 if (d.iteration() == 6) assertTrue(d.allowBreakDelay());
 
@@ -151,9 +151,9 @@ public class Test_16_Modification_20 extends CommonTestRunner {
                 assertEquals(DV.TRUE_DV, d.fieldAnalysis().getProperty(Property.FINAL));
                 assertEquals("instance type HashSet<String>", d.fieldAnalysis().getValue().toString());
 
-                assertEquals(d.iteration() >= 8,
+                assertEquals(d.iteration() >= 7,
                         ((FieldAnalysisImpl.Builder) d.fieldAnalysis()).allLinksHaveBeenEstablished().isDone());
-                assertDv(d, 8, DV.FALSE_DV, Property.MODIFIED_OUTSIDE_METHOD);
+                assertDv(d, 7, DV.FALSE_DV, Property.MODIFIED_OUTSIDE_METHOD);
             }
         };
 
@@ -174,7 +174,7 @@ public class Test_16_Modification_20 extends CommonTestRunner {
             }
         };
 
-        BreakDelayVisitor breakDelayVisitor = d -> assertEquals("---S-SF---", d.delaySequence());
+        BreakDelayVisitor breakDelayVisitor = d -> assertEquals("---S-SF--", d.delaySequence());
 
         //WARN in Method org.e2immu.analyser.parser.modification.testexample.Modification_20.example1() (line 43, pos 9): Potential null pointer exception: Variable: set
         testClass("Modification_20", 0, 1, new DebugConfiguration.Builder()

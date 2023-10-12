@@ -82,7 +82,7 @@ record SAHelper(StatementAnalysis statementAnalysis) {
             case EXTERNAL_IGNORE_MODIFICATIONS -> prev.minIgnoreNotInvolved(change);
             case CONTAINER_RESTRICTION, EXTERNAL_IMMUTABLE, EXTERNAL_NOT_NULL, CONTEXT_IMMUTABLE -> prev.max(change);
             case CONTEXT_MODIFIED -> VariableInfo.MAX_CM.apply(prev, change);
-            case CONTEXT_CONTAINER -> evaluationContext.isMyselfExcludeThis(variable)
+            case CONTEXT_CONTAINER -> evaluationContext.isMyselfExcludeThis(variable).toFalse(k)
                     ? MultiLevel.NOT_CONTAINER_DV
                     : VariableInfo.MAX_CC.apply(prev, change);
             case CONTEXT_NOT_NULL ->

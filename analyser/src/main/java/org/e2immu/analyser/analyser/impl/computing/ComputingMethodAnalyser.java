@@ -1357,10 +1357,11 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
         return DONE;
     }
 
+    // make sure that the code here is compatible with CTA.analyseContainer
     private boolean linkedToAnyOfTheFields(LinkedVariables linkedVariables, Set<FieldInfo> fieldsToBeGuarded) {
         return linkedVariables.stream()
                 .filter(e -> e.getKey() instanceof FieldReference fr && fieldsToBeGuarded.contains(fr.fieldInfo))
-                .anyMatch(e -> LinkedVariables.LINK_COMMON_HC.equals(e.getValue()) || LinkedVariables.LINK_IS_HC_OF.equals(e.getValue()));
+                .anyMatch(e -> LinkedVariables.LINK_IS_HC_OF.equals(e.getValue()));
     }
 
     private class EvaluationContextImpl extends AbstractEvaluationContextImpl implements EvaluationContext {

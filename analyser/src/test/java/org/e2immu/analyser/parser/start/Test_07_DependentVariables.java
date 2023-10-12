@@ -206,7 +206,7 @@ public class Test_07_DependentVariables extends CommonTestRunner {
 
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
             if ("xs".equals(d.fieldInfo().name)) {
-                String expected = d.iteration() == 0 ? "p:-1,this:-1,xs[index]:-1" : "p:4,this:3";
+                String expected = d.iteration() == 0 ? "p:-1,xs[index]:-1" : "p:4";
                 assertEquals(expected, d.fieldAnalysis().getLinkedVariables().toString());
                 assertEquals("instance type X[]", d.fieldAnalysis().getValue().toString());
                 assertDv(d, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.EXTERNAL_NOT_NULL);
@@ -275,9 +275,9 @@ public class Test_07_DependentVariables extends CommonTestRunner {
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
             if ("xs".equals(d.fieldInfo().name)) {
                 assertLinked(d, d.fieldAnalysis().getLinkedVariables(),
-                        it0("this:-1,xs:-1,xs[index]:-1,xs[index]:-1"),
-                        it1("this:-1,xs:-1,xs[index]:-1"),
-                        it(2, "this:3,xs:4"));
+                        it0("xs:-1,xs[index]:-1,xs[index]:-1"),
+                        it1("xs:-1,xs[index]:-1"),
+                        it(2, "xs:4"));
             }
         };
 

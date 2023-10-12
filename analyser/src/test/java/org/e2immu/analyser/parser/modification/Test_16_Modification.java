@@ -257,7 +257,7 @@ public class Test_16_Modification extends CommonTestRunner {
                     assertDv(d.p(0), 2, MultiLevel.DEPENDENT_DV, Property.INDEPENDENT);
                 }
                 if ("FaultyImplementation".equals(d.methodInfo().typeInfo.simpleName)) {
-                    assertDv(d.p(0), 3, MultiLevel.CONTAINER_DV, Property.CONTAINER);
+                    assertDv(d.p(0), 2, MultiLevel.CONTAINER_DV, Property.CONTAINER);
                     assertDv(d.p(0), 3, MultiLevel.DEPENDENT_DV, Property.INDEPENDENT);
                 }
             }

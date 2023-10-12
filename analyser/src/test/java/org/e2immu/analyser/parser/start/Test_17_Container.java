@@ -566,31 +566,31 @@ public class Test_17_Container extends CommonTestRunner {
                 String owner = d.fieldInfo().owner.simpleName;
                 if ("Items1".equals(owner)) {
                     assertLinked(d, d.fieldAnalysis().getLinkedVariables(),
-                            it0("item1:-1,this:-1"),
+                            it0("item1:-1"),
                             it(1, "item1:3"));
                 } else if ("Items2".equals(owner)) {
                     assertLinked(d, d.fieldAnalysis().getLinkedVariables(),
-                            it0("item2:-1,item:-1,this:-1"),
+                            it0("item2:-1,item:-1"),
                             it(1, "item2:3,item:3"));
                 } else if ("Items3".equals(owner)) {
                     assertLinked(d, d.fieldAnalysis().getLinkedVariables(),
-                            it0("item3:-1,local:-1,this:-1"),
+                            it0("item3:-1,local:-1"),
                             it(1, "item3:3,local:3"));
                 } else if ("Items4".equals(owner)) {
                     assertLinked(d, d.fieldAnalysis().getLinkedVariables(),
-                            it0("item4:-1,this:-1"),
+                            it0("item4:-1"),
                             it(1, "item4:3"));
                 } else if ("Items5".equals(owner)) {
                     assertLinked(d, d.fieldAnalysis().getLinkedVariables(),
-                            it0("item5:-1,this:-1"),
+                            it0("item5:-1"),
                             it(1, "item5:3"));
                 } else if ("Items6".equals(owner)) {
                     assertLinked(d, d.fieldAnalysis().getLinkedVariables(),
-                            it0("item6:-1,this:-1"),
+                            it0("item6:-1"),
                             it(1, "item6:3"));
                 } else if ("Items7".equals(owner)) {
                     assertLinked(d, d.fieldAnalysis().getLinkedVariables(),
-                            it0("item7:-1,item:-1,this:-1"),
+                            it0("item7:-1,item:-1"),
                             it(1, "item7:3,item:3"));
                 } else fail(d.fieldInfo().fullyQualifiedName);
             }

@@ -15,6 +15,7 @@
 package org.e2immu.analyser.analyser.impl.computing;
 
 import org.e2immu.analyser.analyser.*;
+import org.e2immu.analyser.analyser.delay.DelayFactory;
 import org.e2immu.analyser.analyser.delay.Inconclusive;
 import org.e2immu.analyser.analyser.delay.NotDelayed;
 import org.e2immu.analyser.analyser.impl.TypeAnalyserImpl;
@@ -29,6 +30,8 @@ import org.e2immu.analyser.analysis.impl.TypeAnalysisImpl;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.*;
 import org.e2immu.analyser.model.variable.FieldReference;
+import org.e2immu.analyser.model.variable.ReturnVariable;
+import org.e2immu.analyser.model.variable.This;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.visitor.TypeAnalyserVisitor;
 import org.e2immu.annotation.NotModified;
@@ -37,6 +40,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -779,20 +783,68 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
             }
         }
         if (allCauses.isDelayed()) {
-            if (sharedState.breakDelayLevel().acceptType()) {
-                LOGGER.debug("Breaking delay in @Container on type {}", typeInfo);
-                typeAnalysis.setProperty(CONTAINER, MultiLevel.NOT_CONTAINER_INCONCLUSIVE);
-                return DONE;
+            return breakContainerDelay(sharedState, allCauses, "modification of parameters");
+        }
+
+        CausesOfDelay fieldGuards = typeAnalysis.guardedForContainerPropertyDelays();
+        if (fieldGuards.isDelayed()) {
+            return breakContainerDelay(sharedState, fieldGuards, "guards");
+        }
+        CausesOfDelay delays = CausesOfDelay.EMPTY;
+        Set<FieldInfo> fields = typeAnalysis.guardedForContainerProperty();
+        for (MethodAnalyser methodAnalyser : myMethodAndConstructorAnalysersExcludingSAMs) {
+            StatementAnalysis last = methodAnalyser.getMethodAnalysis().getLastStatement();
+            if (last != null) {
+                AtomicReference<CausesOfDelay> causes = new AtomicReference<>(CausesOfDelay.EMPTY);
+                boolean modified = last.variableStream()
+                        .filter(vi -> !(vi.variable() instanceof This) && !(vi.variable() instanceof ReturnVariable))
+                        .anyMatch(vi -> {
+                            LinkedVariables lv = vi.getLinkedVariables();
+                            if (lv.isDone()) {
+                                /*
+                                 make sure that the code here is compatible with CMA.linkedToAnyOfTheFields.
+                                 COMMON_HC should not be included here, see e.g. Independent1_2.
+                                */
+                                DV cm = lv.stream()
+                                        .filter(e -> e.getKey() instanceof FieldReference fr
+                                                && fr.scopeIsRecursivelyThis() && fields.contains(fr.fieldInfo)
+                                                && LinkedVariables.LINK_IS_HC_OF.equals(e.getValue()))
+                                        .map(e -> vi.getProperty(CONTEXT_MODIFIED))
+                                        .reduce(DelayFactory.initialDelay(), DV::max);
+                                return cm.valueIsTrue();
+                            } else {
+                                causes.set(causes.get().merge(lv.causesOfDelay()));
+                            }
+                            return false;
+                        });
+                delays = delays.merge(causes.get());
+                if (modified) {
+                    LOGGER.debug("{} is not a @Container: the content linked to fields is modified in {}",
+                            typeInfo, methodAnalyser);
+                    typeAnalysis.setProperty(CONTAINER, MultiLevel.NOT_CONTAINER_DV);
+                    return DONE;
+                }
             }
-            CausesOfDelay marker = typeInfo.delay(CauseOfDelay.Cause.CONTAINER);
-            CausesOfDelay merge = allCauses.causesOfDelay().merge(marker);
-            typeAnalysis.setProperty(CONTAINER, merge);
-            LOGGER.debug("Delaying container {}, delays: {}", typeInfo, merge);
-            return AnalysisStatus.of(merge);
+        }
+        if (delays.isDelayed()) {
+            return breakContainerDelay(sharedState, delays, "context modified on guard fields");
         }
         typeAnalysis.setProperty(CONTAINER, MultiLevel.CONTAINER_DV);
         LOGGER.debug("Mark {} as @Container", typeInfo.fullyQualifiedName);
         return DONE;
+    }
+
+    private AnalysisStatus breakContainerDelay(SharedState sharedState, CausesOfDelay allCauses, String msg) {
+        if (sharedState.breakDelayLevel().acceptType()) {
+            LOGGER.debug("Breaking delay in @Container ({}) on type {}", msg, typeInfo);
+            typeAnalysis.setProperty(CONTAINER, MultiLevel.NOT_CONTAINER_INCONCLUSIVE);
+            return DONE;
+        }
+        CausesOfDelay marker = typeInfo.delay(CauseOfDelay.Cause.CONTAINER);
+        CausesOfDelay merge = allCauses.causesOfDelay().merge(marker);
+        typeAnalysis.setProperty(CONTAINER, merge);
+        LOGGER.debug("Delaying container {}, delays: {}", typeInfo, merge);
+        return AnalysisStatus.of(merge);
     }
 
     /**
@@ -825,14 +877,14 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
         boolean inconclusive = false;
         DV valueFromFields = myFieldAnalysers.stream()
                 .filter(fa -> !fa.getFieldInfo().fieldInspection.get().isPrivate())
-                .filter(fa -> !typeInfo.isMyself(fa.getFieldInfo().type, analyserContext))
+                .filter(fa -> !typeInfo.isMyself(fa.getFieldInfo().type, analyserContext).toFalse(INDEPENDENT))
                 .map(fa -> independenceOfField(fa.getFieldAnalysis()))
                 .reduce(MultiLevel.INDEPENDENT_DV, DV::min);
         if (valueFromFields.isDelayed()) {
             if (sharedState.breakDelayLevel().acceptType()) {
                 valueFromFields = myFieldAnalysers.stream()
                         .filter(fa -> !fa.getFieldInfo().fieldInspection.get().isPrivate())
-                        .filter(fa -> !typeInfo.isMyself(fa.getFieldInfo().type, analyserContext))
+                        .filter(fa -> !typeInfo.isMyself(fa.getFieldInfo().type, analyserContext).toFalse(INDEPENDENT))
                         .map(fa -> independenceOfField(fa.getFieldAnalysis()))
                         .filter(DV::isDone)
                         .reduce(MultiLevel.INDEPENDENT_DV, DV::min);

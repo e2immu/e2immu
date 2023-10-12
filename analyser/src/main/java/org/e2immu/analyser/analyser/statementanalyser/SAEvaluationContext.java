@@ -333,8 +333,7 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
             DV dv;
             if (NOT_NULL_EXPRESSION == property) {
                 dv = nneForValue(value, ignoreStateInConditionManager);
-            } else if ((CONTAINER == property || IMMUTABLE == property || INDEPENDENT == property)
-                    && isMyself(value.returnType())
+            } else if (isMyself(value.returnType()).toFalse(property)
                     && !(value instanceof DelayedExpression de && de.getDoneOriginal() instanceof Lambda)) {
                 // NOTE: IDENTITY of self-types is not really a problem, therefore we enumerate the properties rather than
                 // taking all value properties (except NNE)
@@ -697,7 +696,7 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
             Properties valueProperties;
             if (bestValue.isInstanceOf(NullConstant.class) || bestValue.isInstanceOf(UnknownExpression.class)
                     || bestValue.isDelayed()) {
-                valueProperties = analyserContext.defaultValueProperties(variable.parameterizedType());
+                valueProperties = defaultValueProperties(variable.parameterizedType());
             } else {
                 valueProperties = getValueProperties(bestValue);
             }

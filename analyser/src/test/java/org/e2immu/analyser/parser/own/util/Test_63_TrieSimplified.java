@@ -57,8 +57,10 @@ public class Test_63_TrieSimplified extends CommonTestRunner {
                         }
                         if ("1.0.1".equals(d.statementId())) {
                             String expected = switch (d.iteration()) {
-                                case 0 -> "<null-check>?new HashMap<>()/*AnnotatedAPI.isKnown(true)&&0==this.size()*/:<f:node.map>";
-                                case 1, 2, 3 -> "null==<f:node.map>?new HashMap<>()/*AnnotatedAPI.isKnown(true)&&0==this.size()*/:<f:node.map>";
+                                case 0 ->
+                                        "<null-check>?new HashMap<>()/*AnnotatedAPI.isKnown(true)&&0==this.size()*/:<f:node.map>";
+                                case 1, 2, 3 ->
+                                        "null==<f:node.map>?new HashMap<>()/*AnnotatedAPI.isKnown(true)&&0==this.size()*/:<f:node.map>";
                                 default -> "new HashMap<>()/*AnnotatedAPI.isKnown(true)&&0==this.size()*/";
                             };
                             assertEquals(expected, d.currentValue().toString());
@@ -1014,18 +1016,16 @@ public class Test_63_TrieSimplified extends CommonTestRunner {
                     assertEquals("new HashMap<>()/*AnnotatedAPI.isKnown(true)&&0==this.size()*/",
                             d.evaluationResult().value().toString());
                     String expected = switch (d.iteration()) {
-                        case 0 -> "initial:node@Method_add_1.0.1.0.0-C";
+                        case 0 -> "initial:node@Method_add_1.0.1-C";
                         default -> "";
                     };
                     assertEquals(expected, d.evaluationResult().causesOfDelay().toString());
                 }
                 if ("1.0.1.0.2".equals(d.statementId())) {
-                    String value = d.iteration() < 2 ? "<m:put>" : "nullable instance type TrieNode<T>";
+                    String value = d.iteration() == 0 ? "<m:put>" : "nullable instance type TrieNode<T>";
                     assertEquals(value, d.evaluationResult().value().toString());
                     String expected = switch (d.iteration()) {
                         case 0 -> "constructor-to-instance@Method_add_1.0.1.0.2-E;initial:node@Method_add_1.0.1.0.2-C";
-                        case 1 ->
-                                "constructor-to-instance@Method_add_1.0.1.0.2-E;initial:node@Method_add_1.0.1-C;link@Field_map";
                         default -> "";
                     };
                     assertEquals(expected, d.evaluationResult().causesOfDelay().toString());
@@ -1037,9 +1037,9 @@ public class Test_63_TrieSimplified extends CommonTestRunner {
                         case 0 ->
                                 "constructor-to-instance@Method_add_1.0.1.0.2-E;initial:node@Method_add_1.0.1-C;initial:s@Method_add_1.0.1.1.0-E;initial:this.root@Method_add_0-C";
                         case 1 ->
-                                "constructor-to-instance@Method_add_1.0.1.0.2-E;initial:node@Method_add_1.0.1-C;initial:s@Method_add_1.0.1.1.0-E;initial:this.root@Method_add_0-C;initial@Field_root;link@Field_map";
-                        case 2 ->
-                                "constructor-to-instance@Method_add_1.0.1.0.2-E;initial:node@Method_add_1.0.1-C;initial:s@Method_add_1.0.1.1.0-E;initial:this.root@Method_add_0-C;initial@Field_root;link@Field_map;link@Field_root";
+                                "constructor-to-instance@Method_add_1.0.1.0.2-E;initial:node@Method_add_1.0.1-C;initial:s@Method_add_1.0.1.1.0-E;initial:this.root@Method_add_0-C;initial@Field_root";
+                        case 2, 3 ->
+                                "constructor-to-instance@Method_add_1.0.1.0.2-E;initial:node@Method_add_1.0.1-C;initial:s@Method_add_1.0.1.1.0-E;initial:this.root@Method_add_0-C;initial@Field_root;link@Field_data;link@Field_map";
                         default -> "";
                     };
                     assertEquals(expectedDelay, d.evaluationResult().causesOfDelay().toString());
@@ -1047,7 +1047,7 @@ public class Test_63_TrieSimplified extends CommonTestRunner {
                 if ("2".equals(d.statementId())) {
                     String value = switch (d.iteration()) {
                         case 0 -> "<null-check>";
-                        case 1, 2 -> "null==<f:node.data>";
+                        case 1, 2, 3 -> "null==<f:node.data>";
                         // TODO isn't this too complicated?
                         default ->
                                 "null==(strings.length>=1?null==node$1.map$0?new TrieNode<>():null==node$1.map$0.get(nullable instance type String)?new TrieNode<>():node$1.map$0.get(nullable instance type String):root).data$3";
@@ -1078,9 +1078,9 @@ public class Test_63_TrieSimplified extends CommonTestRunner {
 
                 assertDv(d, MultiLevel.MUTABLE_DV, Property.EXTERNAL_IMMUTABLE);
                 assertLinked(d, d.fieldAnalysis().getLinkedVariables(),
-                        it0("data:-1,node.data:-1,node:-1,strings:-1,this.root:-1,this:-1"),
-                        it1("data:-1,node.data:-1,node:-1,this.root:-1,this:-1"),
-                        it(2, "node.data:4,this.root:2,this:3"));
+                        it0("data:-1,node.data:-1,node:-1,strings:-1,this.root:-1"),
+                        it1("data:-1,node.data:-1,node:-1,this.root:-1"),
+                        it(2, ""));
                 String expected = d.iteration() < 2 ? "link@Field_map" : "";
                 assertEquals(expected, ((FieldAnalysisImpl.Builder) d.fieldAnalysis()).allLinksHaveBeenEstablished().toString());
             }
@@ -1102,11 +1102,11 @@ public class Test_63_TrieSimplified extends CommonTestRunner {
             }
         };
 
-        BreakDelayVisitor breakDelayVisitor = d -> assertEquals("-----", d.delaySequence());
+        BreakDelayVisitor breakDelayVisitor = d -> assertEquals("------", d.delaySequence());
 
         testClass("TrieSimplified_5", 0, 0, new DebugConfiguration.Builder()
-                        //      .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-                        //     .addEvaluationResultVisitor(evaluationResultVisitor)
+                        //.addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                        .addEvaluationResultVisitor(evaluationResultVisitor)
                         .addStatementAnalyserVisitor(statementAnalyserVisitor)
                         .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                         .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)

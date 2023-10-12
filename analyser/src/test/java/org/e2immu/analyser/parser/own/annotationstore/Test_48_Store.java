@@ -157,7 +157,7 @@ public class Test_48_Store extends CommonTestRunner {
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("Project_0".equals(d.typeInfo().simpleName)) {
                 assertHc(d, 0, "");
-                assertDv(d, 3, MultiLevel.EFFECTIVELY_FINAL_FIELDS_DV, Property.IMMUTABLE);
+                assertDv(d, 2, MultiLevel.EFFECTIVELY_FINAL_FIELDS_DV, Property.IMMUTABLE);
             }
             if ("Store_3".equals(d.typeInfo().simpleName)) {
                 assertHc(d, 0, "");
@@ -168,7 +168,7 @@ public class Test_48_Store extends CommonTestRunner {
 
         BreakDelayVisitor breakDelayVisitor = d -> {
             String s = switch (d.typeInfo().simpleName) {
-                case "Project_0" -> "------";
+                case "Project_0" -> "-----";
                 case "Store_3" -> "---";
                 default -> fail(d.typeInfo().simpleName);
             };

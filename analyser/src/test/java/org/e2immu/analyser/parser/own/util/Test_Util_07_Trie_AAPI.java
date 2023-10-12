@@ -65,9 +65,11 @@ public class Test_Util_07_Trie_AAPI extends CommonTestRunner {
                         case 0 ->
                                 "map={context-modified=link@NOT_YET_SET, context-not-null=link@NOT_YET_SET}, node={context-modified=link@NOT_YET_SET, context-not-null=link@NOT_YET_SET}, strings={context-modified=link@NOT_YET_SET, context-not-null=link@NOT_YET_SET}, this={context-modified=link@NOT_YET_SET}, visitor={context-modified=constructor-to-instance@Method_accept_0.0.0-E;initial:n.map@Method_accept_0-C;initial:n@Method_accept_0-E;initial:s@Method_accept_0.0.0-E;link@NOT_YET_SET, context-not-null=initial:n.map@Method_accept_0-C;link@NOT_YET_SET, read=true:1}";
                         case 1 ->
-                                "map={context-modified=constructor-to-instance@Method_visitLeaves_0-E;initial@Field_root;link:strings@Method_goTo_0:M;link:this.root@Method_goTo_2:M, context-not-null=constructor-to-instance@Method_visitLeaves_0-E;initial@Field_root;link:strings@Method_goTo_0:M;link:this.root@Method_goTo_2:M}, node={context-modified=constructor-to-instance@Method_visitLeaves_0-E;initial@Field_root;link:strings@Method_goTo_0:M;link:this.root@Method_goTo_2:M, context-not-null=constructor-to-instance@Method_visitLeaves_0-E;initial@Field_root;link:strings@Method_goTo_0:M;link:this.root@Method_goTo_2:M}, strings={context-modified=constructor-to-instance@Method_visitLeaves_0-E;initial@Field_root;link:strings@Method_goTo_0:M;link:this.root@Method_goTo_2:M, context-not-null=constructor-to-instance@Method_visitLeaves_0-E;initial@Field_root;link:strings@Method_goTo_0:M;link:this.root@Method_goTo_2:M}, this={context-modified=constructor-to-instance@Method_visitLeaves_0-E;initial@Field_root;link:strings@Method_goTo_0:M;link:this.root@Method_goTo_2:M}, visitor={context-modified=constructor-to-instance@Method_visitLeaves_0-E;initial@Field_root;link:strings@Method_goTo_0:M;link:this.root@Method_goTo_2:M, context-not-null=constructor-to-instance@Method_visitLeaves_0-E;initial@Field_root;link:strings@Method_goTo_0:M;link:this.root@Method_goTo_2:M, read=true:1}";
+                                "map={context-modified=constructor-to-instance@Method_visitLeaves_0-E;initial@Field_root;link:strings@Method_goTo_0:M;link:this.root@Method_goTo_2:M;link@Field_data;link@Field_map, context-not-null=constructor-to-instance@Method_visitLeaves_0-E;initial@Field_root;link:strings@Method_goTo_0:M;link:this.root@Method_goTo_2:M;link@Field_data;link@Field_map}, node={context-modified=constructor-to-instance@Method_visitLeaves_0-E;initial@Field_root;link:strings@Method_goTo_0:M;link:this.root@Method_goTo_2:M;link@Field_data;link@Field_map, context-not-null=constructor-to-instance@Method_visitLeaves_0-E;initial@Field_root;link:strings@Method_goTo_0:M;link:this.root@Method_goTo_2:M;link@Field_data;link@Field_map}, strings={context-modified=constructor-to-instance@Method_visitLeaves_0-E;initial@Field_root;link:strings@Method_goTo_0:M;link:this.root@Method_goTo_2:M;link@Field_data;link@Field_map, context-not-null=constructor-to-instance@Method_visitLeaves_0-E;initial@Field_root;link:strings@Method_goTo_0:M;link:this.root@Method_goTo_2:M;link@Field_data;link@Field_map}, this={context-modified=constructor-to-instance@Method_visitLeaves_0-E;initial@Field_root;link:strings@Method_goTo_0:M;link:this.root@Method_goTo_2:M;link@Field_data;link@Field_map}, visitor={context-modified=constructor-to-instance@Method_visitLeaves_0-E;initial@Field_root;link:strings@Method_goTo_0:M;link:this.root@Method_goTo_2:M;link@Field_data;link@Field_map, context-not-null=constructor-to-instance@Method_visitLeaves_0-E;initial@Field_root;link:strings@Method_goTo_0:M;link:this.root@Method_goTo_2:M;link@Field_data;link@Field_map, read=true:1}";
                         case 2 ->
-                                "map={context-modified=link:strings@Method_goTo_0:M;link:this.root@Method_goTo_2:M;srv@Method_goTo, context-not-null=link:strings@Method_goTo_0:M;link:this.root@Method_goTo_2:M;srv@Method_goTo}, node={context-modified=link:strings@Method_goTo_0:M;link:this.root@Method_goTo_2:M;srv@Method_goTo, context-not-null=link:strings@Method_goTo_0:M;link:this.root@Method_goTo_2:M;srv@Method_goTo}, strings={context-modified=link:strings@Method_goTo_0:M;link:this.root@Method_goTo_2:M;srv@Method_goTo, context-not-null=link:strings@Method_goTo_0:M;link:this.root@Method_goTo_2:M;srv@Method_goTo}, this={context-modified=link:strings@Method_goTo_0:M;link:this.root@Method_goTo_2:M;srv@Method_goTo}, visitor={context-modified=link:strings@Method_goTo_0:M;link:this.root@Method_goTo_2:M;srv@Method_goTo, context-not-null=link:strings@Method_goTo_0:M;link:this.root@Method_goTo_2:M;srv@Method_goTo, read=true:1}";
+                                "map={context-modified=constructor-to-instance@Method_visitLeaves_0-E;link:strings@Method_goTo_0:M;link@Field_data;link@Field_map;srv@Method_goTo, context-not-null=constructor-to-instance@Method_visitLeaves_0-E;link:strings@Method_goTo_0:M;link@Field_data;link@Field_map;srv@Method_goTo}, node={context-modified=constructor-to-instance@Method_visitLeaves_0-E;link:strings@Method_goTo_0:M;link@Field_data;link@Field_map;srv@Method_goTo, context-not-null=constructor-to-instance@Method_visitLeaves_0-E;link:strings@Method_goTo_0:M;link@Field_data;link@Field_map;srv@Method_goTo}, strings={context-modified=constructor-to-instance@Method_visitLeaves_0-E;link:strings@Method_goTo_0:M;link@Field_data;link@Field_map;srv@Method_goTo, context-not-null=constructor-to-instance@Method_visitLeaves_0-E;link:strings@Method_goTo_0:M;link@Field_data;link@Field_map;srv@Method_goTo}, this={context-modified=constructor-to-instance@Method_visitLeaves_0-E;link:strings@Method_goTo_0:M;link@Field_data;link@Field_map;srv@Method_goTo}, visitor={context-modified=constructor-to-instance@Method_visitLeaves_0-E;link:strings@Method_goTo_0:M;link@Field_data;link@Field_map;srv@Method_goTo, context-not-null=constructor-to-instance@Method_visitLeaves_0-E;link:strings@Method_goTo_0:M;link@Field_data;link@Field_map;srv@Method_goTo, read=true:1}";
+                        case 3 ->
+                                "map={context-modified=link@Field_data;link@Field_map;srv@Method_goTo, context-not-null=link@Field_data;link@Field_map;srv@Method_goTo}, node={context-modified=link@Field_data;link@Field_map;srv@Method_goTo, context-not-null=link@Field_data;link@Field_map;srv@Method_goTo}, strings={context-modified=link@Field_data;link@Field_map;srv@Method_goTo, context-not-null=link@Field_data;link@Field_map;srv@Method_goTo}, this={context-modified=link@Field_data;link@Field_map;srv@Method_goTo}, visitor={context-modified=link@Field_data;link@Field_map;srv@Method_goTo, context-not-null=link@Field_data;link@Field_map;srv@Method_goTo, read=true:1}";
                         default ->
                                 "map={context-modified=false:0, context-not-null=nullable:1}, node={context-modified=false:0, context-not-null=nullable:1}, strings={context-modified=false:0, context-not-null=nullable:1}, this={context-modified=false:0}, visitor={context-modified=true:1, context-not-null=not_null:5, read=true:1}";
                     };
@@ -104,7 +106,7 @@ public class Test_Util_07_Trie_AAPI extends CommonTestRunner {
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("add".equals(d.methodInfo().name)) {
                 assertDv(d, 1, DV.TRUE_DV, Property.MODIFIED_METHOD);
-                assertDv(d.p(1), 3, MultiLevel.INDEPENDENT_HC_DV, Property.INDEPENDENT);
+                assertDv(d.p(1), 4, MultiLevel.INDEPENDENT_HC_DV, Property.INDEPENDENT);
 
                 String pc = "Precondition[expression=!this.isFrozen(), causes=[companionMethod:ensureNotFrozen$Precondition]]";
                 assertEquals(pc, d.methodAnalysis().getPrecondition().toString());
@@ -116,11 +118,12 @@ public class Test_Util_07_Trie_AAPI extends CommonTestRunner {
                     case 0 -> "[DelayedEventual:initial@Class_Trie]";
                     case 1 -> "[DelayedEventual:final@Field_root]";
                     case 2 -> "[DelayedEventual:immutable@Class_TrieNode]";
-                    case 3 -> "[DelayedEventual:[12 delays]]";
+                    case 3 -> "[DelayedEventual:[16 delays]]";
+                    case 4 -> "[DelayedEventual:[14 delays]]";
                     default -> "@Only before: [frozen]";
                 };
                 assertEquals(eventual, d.methodAnalysis().getEventual().toString());
-                if (d.iteration() >= 4) {
+                if (d.iteration() >= 5) {
                     AnnotationExpression only = d.evaluationContext().getAnalyserContext().getE2ImmuAnnotationExpressions().only;
                     AnnotationExpression ae = d.methodAnalysis().annotationGetOrDefaultNull(only);
                     assertEquals("@Only(before=\"frozen\")", ae.toString());
@@ -136,7 +139,7 @@ public class Test_Util_07_Trie_AAPI extends CommonTestRunner {
             }
         };
 
-        BreakDelayVisitor breakDelayVisitor = d -> assertEquals("------", d.delaySequence());
+        BreakDelayVisitor breakDelayVisitor = d -> assertEquals("-------", d.delaySequence());
 
         testSupportAndUtilClasses(List.of(Trie.class), 0, 0,
                 new DebugConfiguration.Builder()

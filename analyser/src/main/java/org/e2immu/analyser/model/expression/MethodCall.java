@@ -937,11 +937,11 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         }
         if (createInstanceBasedOn != null) {
             ParameterizedType returnType = createInstanceBasedOn.returnType();
-            Properties valueProperties = context.getAnalyserContext().defaultValueProperties(returnType,
+            Properties valueProperties = context.evaluationContext().defaultValueProperties(returnType,
                     MultiLevel.EFFECTIVELY_NOT_NULL_DV);
             CausesOfDelay causesOfDelay = valueProperties.delays();
             if (causesOfDelay.isDelayed()) {
-                if (context.evaluationContext().isMyself(returnType)) {
+                if (context.evaluationContext().isMyself(returnType).toFalse(Property.IMMUTABLE)) {
                     valueProperties = context.evaluationContext().valuePropertiesOfFormalType(returnType, MultiLevel.EFFECTIVELY_NOT_NULL_DV);
                 } else {
                     return DelayedExpression.forMethod(identifier, methodInfo, objectValue.returnType(),
@@ -1232,6 +1232,8 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         // return the formal value
         DV formal = methodAnalysis.getProperty(property);
         if (property.propertyType == Property.PropertyType.VALUE) {
+            IsMyself isMyself = context.evaluationContext().isMyself(concreteReturnType);
+            if (isMyself.toFalse(property)) return property.falseDv;
 
             boolean internalCycle = methodInfo.methodResolution.get().ignoreMeBecauseOfPartOfCallCycle();
 
@@ -1320,7 +1322,8 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         }
         ParameterizedType returnTypeOfObject = object.returnType();
         DV immutableOfObject = context.getAnalyserContext().typeImmutable(returnTypeOfObject);
-        if (!context.evaluationContext().isMyself(returnTypeOfObject) && immutableOfObject.isDelayed()) {
+        if (!context.evaluationContext().isMyself(returnTypeOfObject).toFalse(Property.IMMUTABLE)
+                && immutableOfObject.isDelayed()) {
             return linkedVariablesOfObject.changeToDelay(immutableOfObject);
         }
         if (MultiLevel.isAtLeastEventuallyRecursivelyImmutable(immutableOfObject)) {

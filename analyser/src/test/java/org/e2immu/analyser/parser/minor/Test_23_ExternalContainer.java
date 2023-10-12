@@ -124,8 +124,8 @@ public class Test_23_ExternalContainer extends CommonTestRunner {
                 assertDv(d, DV.FALSE_DV, Property.MODIFIED_OUTSIDE_METHOD);
                 assertDv(d, MultiLevel.EFFECTIVELY_IMMUTABLE_HC_DV, Property.EXTERNAL_IMMUTABLE);
                 assertLinked(d, d.fieldAnalysis().getLinkedVariables(),
-                        it0("consumer:-1,this.myContainer:-1,this:-1"),
-                        it(1, 3, "consumer:-1,this:-1"), it(4, "consumer:0"));
+                        it0("consumer:-1,this.myContainer:-1"),
+                        it(1, 3, "consumer:-1"), it(4, "consumer:0"));
             }
             if ("iField".equals(d.fieldInfo().name)) {
                 // value TRUE but annotation will not be visible

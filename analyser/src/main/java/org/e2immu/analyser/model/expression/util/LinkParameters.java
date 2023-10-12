@@ -255,7 +255,7 @@ public class LinkParameters {
          Lambda (in delayed form) and then an InlinedMethod. The return type of the inlined method is different from
          the functional interface method's owner.
          */
-        boolean myself = context.evaluationContext().isMyself(formalObjectType);
+        boolean myself = context.evaluationContext().isMyself(formalObjectType).toFalse(Property.IMMUTABLE);
         DV immutableType = myself ? MultiLevel.MUTABLE_DV : context.getAnalyserContext().typeImmutable(formalObjectType);
         Map<ParameterInfo, LinkedVariables> result = new HashMap<>();
         int i = 0;

@@ -781,7 +781,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
         Expression initialValue;
         FieldAnalysis fieldAnalysis = evaluationContext.getAnalyserContext().getFieldAnalysis(fieldReference.fieldInfo);
 
-        boolean myself = evaluationContext.isMyself(fieldReference);
+        boolean myself = evaluationContext.isMyself(fieldReference).toFalse(IMMUTABLE);
         if (!myself && evaluationContext.inConstruction()) {
             DV immutable = map.getOrDefault(EXTERNAL_IMMUTABLE, MUTABLE_DV);
             DV ctx = contextImmutable(vic, evaluationContext, fieldAnalysis, immutable);
@@ -981,7 +981,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
             if (variableNature instanceof VariableNature.LoopVariable && !(statement instanceof ForEachStatement)
                     || variableNature instanceof VariableNature.ScopeVariable) {
                 Identifier identifier = evaluationContext.getLocation(INITIAL).identifier();
-                initializeLoopVariable(identifier, vic, variable, evaluationContext.getAnalyserContext());
+                initializeLoopVariable(identifier, vic, variable, evaluationContext);
             } else {
                 initializeLocalOrDependentVariable(vic, variable, EvaluationResultImpl.from(evaluationContext));
             }
@@ -994,14 +994,14 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
     private void initializeLoopVariable(Identifier identifier,
                                         VariableInfoContainer vic,
                                         Variable variable,
-                                        AnalyserContext analyserContext) {
+                                        EvaluationContext evaluationContext) {
         // but, because we don't evaluate the assignment, we need to assign some value to the loop variable
         // otherwise we'll get delays
         // especially in the case of forEach, the lvc.expression is empty (e.g., 'String s') anyway
         // an assignment may be difficult.
         // we should not worry about them
         ParameterizedType parameterizedType = variable.parameterizedType();
-        Properties valueProperties = analyserContext.defaultValueProperties(parameterizedType, true);
+        Properties valueProperties = evaluationContext.defaultValueProperties(parameterizedType, true);
         valueProperties.replaceDelaysByMinimalValue();
         Instance instance = Instance.forLoopVariable(identifier, variable, valueProperties);
         Properties properties = Properties.of(Map.of(
@@ -1065,7 +1065,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
      */
     private static DV determineIndependentOfArrayBase(EvaluationResult context, Expression value) {
         ParameterizedType arrayBaseType = value.returnType().copyWithoutArrays();
-        if (context.evaluationContext().isMyself(arrayBaseType))
+        if (context.evaluationContext().isMyself(arrayBaseType).toFalse(INDEPENDENT))
             return MultiLevel.NOT_INVOLVED_DV; // BREAK INFINITE LOOP
         // IMPORTANT: currentType == null, we've done the hidden content check already
         DV immutable = context.getAnalyserContext().typeImmutable(arrayBaseType);
@@ -1128,7 +1128,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
                 fieldReference, flowData.getInitialTime());
 
         Properties combined;
-        boolean myself = evaluationContext.isMyself(fieldReference);
+        boolean myself = evaluationContext.isMyself(fieldReference).toFalse(IMMUTABLE);
         boolean wroteExtIgnMod;
         if (myself && !fieldReference.fieldInfo.fieldInspection.get().isStatic()) {
             // captures self-referencing instance fields (but not static fields, as in Enum_)
@@ -1778,7 +1778,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
                 ? initial.getReadId() : id;
 
         vic.ensureEvaluation(location(EVALUATION), assignmentIds, readId, changeData.readAtStatementTime());
-        if (evaluationContext.isMyself(variable)) {
+        if (evaluationContext.isMyself(variable).toFalse(CONTAINER)) {
             vic.setProperty(CONTEXT_CONTAINER, MultiLevel.NOT_CONTAINER_DV, EVALUATION);
         }
     }

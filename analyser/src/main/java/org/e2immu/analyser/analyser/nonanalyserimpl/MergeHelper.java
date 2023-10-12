@@ -341,7 +341,7 @@ public record MergeHelper(EvaluationContext evaluationContext,
                 worstNotNull.min(evaluationContext.getProperty(currentValue, NOT_NULL_EXPRESSION, false, true));
         ParameterizedType pt = variable.parameterizedType();
         DV nne = worstNotNullIncludingCurrent.isInitialDelay() ? MultiLevel.NULLABLE_DV : worstNotNullIncludingCurrent;
-        Properties valueProperties = evaluationContext.getAnalyserContext().defaultValueProperties(pt, nne);
+        Properties valueProperties = evaluationContext.defaultValueProperties(pt, nne);
         return addValueProperties(noConclusion(valueProperties));
     }
 

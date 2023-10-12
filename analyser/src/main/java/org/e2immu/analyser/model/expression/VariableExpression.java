@@ -294,8 +294,7 @@ public class VariableExpression extends BaseExpression implements IsVariableExpr
                     && !(computedScope.isInstanceOf(IsVariableExpression.class))
                     && !forwardEvaluationInfo.isAssignmentTarget()) {
                 // methodCall()[index] as a value rather than the target of an assignment
-                Properties properties = context.evaluationContext().getAnalyserContext()
-                        .defaultValueProperties(dv.parameterizedType);
+                Properties properties = context.evaluationContext().defaultValueProperties(dv.parameterizedType);
                 CausesOfDelay delays = properties.delays();
                 LinkedVariables lv = scopeResult.linkedVariables(lvr);
                 assert lv != null : "We have recently evaluated the arrayVariable";

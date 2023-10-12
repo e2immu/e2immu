@@ -54,20 +54,20 @@ public class Test_45_Project extends CommonTestRunner {
                 if ("2.0.1.0.1".equals(d.statementId())) {
                     String expected = switch (d.iteration()) {
                         case 0 -> "!<null-check>&&<m:isAfter>&&<m:isBefore>";
-                        case 1, 2 -> "null!=<f:container.read>&&<m:isAfter>&&<m:isBefore>";
+                        case 1 -> "null!=<f:container.read>&&<m:isAfter>&&<m:isBefore>";
                         default ->
                                 "(entry.getValue()).read.plusMillis(readWithinMillis).isAfter(now$2)&&null!=(entry.getValue()).read&&(entry.getValue()).read.isBefore((entry.getValue()).updated)";
                     };
                     assertEquals(expected, d.evaluationResult().getExpression().toString());
                     ChangeData changeData = d.findValueChangeByToString("container.read");
-                    assertEquals(d.iteration() <= 2, changeData.getProperty(Property.CONTEXT_NOT_NULL).isDelayed());
+                    assertEquals(d.iteration() < 2, changeData.getProperty(Property.CONTEXT_NOT_NULL).isDelayed());
                 }
                 if ("2.0.1.0.1.0.0".equals(d.statementId())) {
-                    String expected = d.iteration() <= 3 ? "<m:put>" : "result$2.put(entry.getKey(),(entry.getValue()).value)";
+                    String expected = d.iteration() < 3 ? "<m:put>" : "result$2.put(entry.getKey(),(entry.getValue()).value)";
                     assertEquals(expected, d.evaluationResult().getExpression().toString());
                 }
                 if ("3".equals(d.statementId())) {
-                    String expected = d.iteration() <= 3 ? "<m:debug>" : "<no return value>";
+                    String expected = d.iteration() < 3 ? "<m:debug>" : "<no return value>";
                     assertEquals(expected, d.evaluationResult().getExpression().toString());
                 }
             }
@@ -77,15 +77,15 @@ public class Test_45_Project extends CommonTestRunner {
             if ("set".equals(d.methodInfo().name)) {
                 if ((CONTAINER + ".value#prev").equals(d.variable().fullyQualifiedName())) {
                     if ("2".equals(d.statementId())) {
-                        assertDv(d, 3, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.CONTEXT_NOT_NULL);
-                        assertDv(d, 3, MultiLevel.NULLABLE_DV, Property.NOT_NULL_EXPRESSION);
+                        assertDv(d, 2, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.CONTEXT_NOT_NULL);
+                        assertDv(d, 2, MultiLevel.NULLABLE_DV, Property.NOT_NULL_EXPRESSION);
                     }
                 }
                 if (d.variable() instanceof ReturnVariable && "3".equals(d.statementId())) {
-                    String expectValue = d.iteration() <= 2 ? "<null-check>?null:<f:prev.value>"
+                    String expectValue = d.iteration() < 2 ? "<null-check>?null:<f:prev.value>"
                             : "null==kvStore.get(key)?null:(kvStore.get(key)).value";
                     assertEquals(expectValue, d.currentValue().toString());
-                    assertDv(d, 3, MultiLevel.NULLABLE_DV, Property.NOT_NULL_EXPRESSION);
+                    assertDv(d, 2, MultiLevel.NULLABLE_DV, Property.NOT_NULL_EXPRESSION);
                 }
             }
             if (d.variable() instanceof FieldReference fr && "read".equals(fr.fieldInfo.name)) {
@@ -96,11 +96,11 @@ public class Test_45_Project extends CommonTestRunner {
             if ("recentlyReadAndUpdatedAfterwards".equals(d.methodInfo().name)) {
                 if ("result".equals(d.variableName())) {
                     if ("2.0.1.0.1.0.0".equals(d.statementId())) {
-                        String expected = d.iteration() <= 3 ? "<vl:result>" : "new HashMap<>()";
+                        String expected = d.iteration() < 3 ? "<vl:result>" : "new HashMap<>()";
                         assertEquals(expected, d.currentValue().toString());
                     }
                     if ("2.0.1.0.1".equals(d.statementId())) {
-                        String expected = d.iteration() <= 3 ? "<vl:result>" : "new HashMap<>()";
+                        String expected = d.iteration() < 3 ? "<vl:result>" : "new HashMap<>()";
                         assertEquals(expected, d.currentValue().toString());
                     }
 
@@ -113,7 +113,7 @@ public class Test_45_Project extends CommonTestRunner {
                 if ("2.0.1.0.1.0.0".equals(d.statementId())) {
                     String expectedCondition = switch (d.iteration()) {
                         case 0 -> "!<null-check>&&<m:isAfter>&&<m:isBefore>";
-                        case 1, 2 -> "null!=<f:container.read>&&<m:isAfter>&&<m:isBefore>";
+                        case 1 -> "null!=<f:container.read>&&<m:isAfter>&&<m:isBefore>";
                         default ->
                                 "(entry.getValue()).read.plusMillis(readWithinMillis).isAfter(now$2)&&null!=(entry.getValue()).read&&(entry.getValue()).read.isBefore((entry.getValue()).updated)";
                     };
@@ -309,12 +309,10 @@ public class Test_45_Project extends CommonTestRunner {
                     if ("1".equals(d.statementId())) {
                         String expected = switch (d.iteration()) {
                             case 0 -> "<null-check>?<new:Container>:<m:get>";
-                            case 1 ->
-                                    "<null-check>?<new:Container>:<vp:Container:cm@Parameter_value;mom@Parameter_value>";
                             default -> "null==kvStore.get(key)?new Container(value):kvStore.get(key)";
                         };
                         assertEquals(expected, d.currentValue().toString());
-                        assertDv(d, 2, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_EXPRESSION);
+                        assertDv(d, 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_EXPRESSION);
                     }
                 }
             }

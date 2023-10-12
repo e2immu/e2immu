@@ -259,7 +259,7 @@ public interface EvaluationContext {
 
     default Properties defaultValuePropertiesAllowMyself(ParameterizedType formalType, DV nne) {
         AnalyserContext analyserContext = getAnalyserContext();
-        DV immutable = isMyself(formalType) ? MultiLevel.MUTABLE_DV
+        DV immutable = isMyself(formalType).toFalse(IMMUTABLE) ? MultiLevel.MUTABLE_DV
                 : analyserContext.typeImmutable(formalType);
         return Properties.ofWritable(Map.of(
                 IMMUTABLE, immutable,
@@ -350,19 +350,19 @@ public interface EvaluationContext {
     /*
     should we compute context immutable? not if we're a variable of the type itself
      */
-    default boolean isMyself(Variable variable) {
-        if (variable instanceof This) return true;
-        if (variable instanceof FieldReference fr && fr.isStatic) return false;
+    default IsMyself isMyself(Variable variable) {
+        if (variable instanceof This) return IsMyself.YES;
+        if (variable instanceof FieldReference fr && fr.isStatic) return IsMyself.NO;
         return isMyself(variable.parameterizedType());
     }
 
-    default boolean isMyselfExcludeThis(Variable variable) {
-        if (variable instanceof This) return false;
-        if (variable instanceof FieldReference fr && fr.isStatic) return false;
+    default IsMyself isMyselfExcludeThis(Variable variable) {
+        if (variable instanceof This) return IsMyself.NO;
+        if (variable instanceof FieldReference fr && fr.isStatic) return IsMyself.NO;
         return isMyself(variable.parameterizedType());
     }
 
-    default boolean isMyself(ParameterizedType type) {
+    default IsMyself isMyself(ParameterizedType type) {
         return getCurrentType().isMyself(type, getAnalyserContext());
     }
 
@@ -558,4 +558,23 @@ public interface EvaluationContext {
     }
 
     int getDepth();
+
+    default Properties defaultValueProperties(ParameterizedType parameterizedType, DV valueForNotNullExpression) {
+        IsMyself isMyself = isMyself(parameterizedType);
+        return EvaluationContext.VALUE_PROPERTIES.stream()
+                .collect(Properties.collect(p -> p == Property.NOT_NULL_EXPRESSION ? valueForNotNullExpression
+                        : isMyself.toFalse(p) ? p.falseDv
+                        : getAnalyserContext().defaultValueProperty(p, parameterizedType), false));
+    }
+
+    default Properties defaultValueProperties(ParameterizedType parameterizedType) {
+        return defaultValueProperties(parameterizedType, false);
+    }
+
+    default Properties defaultValueProperties(ParameterizedType parameterizedType, boolean writable) {
+        IsMyself isMyself = isMyself(parameterizedType);
+        return EvaluationContext.VALUE_PROPERTIES.stream()
+                .collect(Properties.collect(p -> isMyself.toFalse(p) ? p.falseDv
+                        : getAnalyserContext().defaultValueProperty(p, parameterizedType), writable));
+    }
 }
