@@ -104,52 +104,18 @@ record SAEvaluationOfMainExpression(StatementAnalysis statementAnalysis,
         // Too dangerous to use CommaExpression.comma, because it filters out constants etc.!
         Expression toEvaluate = toEvaluate(expressionsFromInitAndUpdate);
         EvaluationResult context = makeContext(sharedState.evaluationContext());
-
-
+        
         LOGGER.info("Eval it {} main {} in {}", sharedState.evaluationContext().getIteration(), index(), methodInfo().fullyQualifiedName);
-        ForwardEvaluationInfo forwardEvaluationInfo;
-        if (statement instanceof ReturnStatement) {
-            // code identical to snippet in Assignment.evaluate, to prepare for value evaluation
-            ForwardEvaluationInfo.Builder fwdBuilder = new ForwardEvaluationInfo.Builder(structure.forwardEvaluationInfo())
-                    .setAssignmentTarget(new ReturnVariable(methodInfo()));
-            if (methodInfo().returnType().isPrimitiveExcludingVoid()) {
-                fwdBuilder.setCnnNotNull();
-            }
-            forwardEvaluationInfo = fwdBuilder.build();
-        } else {
-            forwardEvaluationInfo = structure.forwardEvaluationInfo();
-        }
+        ForwardEvaluationInfo forwardEvaluationInfo = prepareForward(statement, structure);
+
         // here is a good breakpoint location, e.g. "4.0.1".equals(index())
         EvaluationResult result = toEvaluate.evaluate(context, forwardEvaluationInfo);
-
-        if (statement instanceof ReturnStatement) {
-            result = createAndEvaluateReturnStatement(sharedState.evaluationContext(), toEvaluate, result);
-        } else if (statement instanceof LoopStatement) {
-            Range range = statementAnalysis.rangeData().getRange();
-            if (range.isDelayed()) {
-                statementAnalysis.rangeData().computeRange(statementAnalysis, result);
-                statementAnalysis.ensureMessages(statementAnalysis.rangeData().messages());
-            }
-        } else if (statement instanceof ThrowStatement) {
-            if (methodInfo().hasReturnValue()) {
-                result = modifyReturnValueRemoveConditionBasedOnState(sharedState, result);
-            } else if (statementAnalysis.parent() == null) {
-                /*
-                 void method or constructor; top-level, so we don't reach SASubBlocks.assert/throws.
-                 This can never be a pre- or post-condition, as it ALWAYS stops the method
-                 */
-                statementAnalysis.stateData().ensureEscapeNotInPreOrPostConditions();
-            }
-        } else if (statement instanceof AssertStatement) {
-            result = handleNotNullClausesInAssertStatement(sharedState.context(), result);
-        } else if (statement instanceof ExplicitConstructorInvocation) {
-            result = result.filterChangeData(v -> !(v instanceof LocalVariableReference));
-        }
+        EvaluationResult result2 = updateResultInCertainCases(statement, sharedState, toEvaluate, result);
 
         if (statementAnalysis.flowData().timeAfterExecutionNotYetSet()) {
-            statementAnalysis.flowData().setTimeAfterEvaluation(result.statementTime(), index());
+            statementAnalysis.flowData().setTimeAfterEvaluation(result2.statementTime(), index());
         }
-        ApplyStatusAndEnnStatus applyResult = apply.apply(sharedState, result);
+        ApplyStatusAndEnnStatus applyResult = apply.apply(sharedState, result2);
 
         // post-process
 
@@ -161,47 +127,9 @@ record SAEvaluationOfMainExpression(StatementAnalysis statementAnalysis,
                     index(), methodInfo().fullyQualifiedName, ennStatus);
         }
 
-        Expression value = result.value();
-        assert value != null; // EmptyExpression in case there really is no value
+        Post post = postProcess(statement, sharedState, result2.value());
 
-        CausesOfDelay stateForLoop = CausesOfDelay.EMPTY;
-        if (value.isDone() && (statement instanceof IfElseStatement ||
-                statement instanceof AssertStatement)) {
-            value = eval_IfElse_Assert(sharedState, value);
-            if (value.isDelayed()) {
-                // for example, an if(...) inside a loop, when the loop's range is being computed
-                stateForLoop = value.causesOfDelay();
-            }
-        } else if (value.isDone() && statement instanceof HasSwitchLabels switchStatement) {
-            eval_Switch(sharedState, value, switchStatement);
-        } else if (statement instanceof ReturnStatement) {
-            stateForLoop = addLoopReturnStatesToState(sharedState);
-            Expression condition = sharedState.localConditionManager().condition();
-            StatementAnalysisImpl.FindLoopResult correspondingLoop = statementAnalysis.findLoopByLabel(null);
-            if (correspondingLoop != null &&
-                    correspondingLoop.statementAnalysis().rangeData().getRange().generateErrorOnInterrupt(condition)) {
-                statementAnalysis.ensure(Message.newMessage(statementAnalysis.location(EVALUATION), Message.Label.INTERRUPT_IN_LOOP));
-            }
-        } else if (statement() instanceof ThrowStatement) {
-            value = noReturnValue();
-            // but, see also code above that changes the return variable's value; See SwitchExpression_4
-        }
-
-        // the value can be delayed even if it is "true", for example (Basics_3)
-        // see Precondition_3 for an example where different values arise, because preconditions kick in
-        if (statement() instanceof ExplicitConstructorInvocation) {
-            value = UnknownExpression.forExplicitConstructorInvocation();
-        }
-
-        // this statement can never be fully correct, but it seems to do the job for now... preconditions may arrive late
-        // and my cause delays in the evaluation after a number of iterations
-        if (value.isDone() && statement() instanceof IfElseStatement && sharedState.localConditionManager().isDelayed()) {
-            value = DelayedExpression.forState(sharedState.localConditionManager().getIdentifier(),
-                    value.returnType(),
-                    sharedState.localConditionManager().multiExpression(),
-                    sharedState.localConditionManager().causesOfDelay());
-        }
-        statementAnalysis.stateData().setValueOfExpression(value);
+        statementAnalysis.stateData().setValueOfExpression(post.expression);
         CausesOfDelay sseDelay;
         if (statementAnalysis.stateData().staticSideEffectIsSet()) {
             sseDelay = CausesOfDelay.EMPTY;
@@ -212,8 +140,123 @@ record SAEvaluationOfMainExpression(StatementAnalysis statementAnalysis,
             statementAnalysis.stateData().setStaticSideEffect(staticSideEffect);
             sseDelay = staticSideEffect.causesOfDelay();
         }
-        ProgressAndDelay endResult = ennStatus.combine(statusPost).merge(stateForLoop).merge(sseDelay);
+        ProgressAndDelay endResult = ennStatus.combine(statusPost).merge(post.causes).merge(sseDelay);
         return endResult.toAnalysisStatus();
+    }
+
+    private ForwardEvaluationInfo prepareForward(Statement statement, Structure structure) {
+        if (statement instanceof ReturnStatement) {
+            // code identical to snippet in Assignment.evaluate, to prepare for value evaluation
+            ForwardEvaluationInfo.Builder fwdBuilder = new ForwardEvaluationInfo.Builder(structure.forwardEvaluationInfo())
+                    .setAssignmentTarget(new ReturnVariable(methodInfo()));
+            if (methodInfo().returnType().isPrimitiveExcludingVoid()) {
+                fwdBuilder.setCnnNotNull();
+            }
+            return fwdBuilder.build();
+        }
+        return structure.forwardEvaluationInfo();
+    }
+
+    private EvaluationResult updateResultInCertainCases(Statement statement,
+                                                        StatementAnalyserSharedState sharedState,
+                                                        Expression toEvaluate,
+                                                        EvaluationResult result) {
+        if (statement instanceof ReturnStatement) {
+            return createAndEvaluateReturnStatement(sharedState.evaluationContext(), toEvaluate, result);
+        }
+
+        if (statement instanceof LoopStatement) {
+            Range range = statementAnalysis.rangeData().getRange();
+            if (range.isDelayed()) {
+                statementAnalysis.rangeData().computeRange(statementAnalysis, result);
+                statementAnalysis.ensureMessages(statementAnalysis.rangeData().messages());
+            }
+            return result;
+
+        }
+        if (statement instanceof ThrowStatement) {
+            if (methodInfo().hasReturnValue()) {
+                return modifyReturnValueRemoveConditionBasedOnState(sharedState, result);
+            }
+            if (statementAnalysis.parent() == null) {
+                /*
+                 void method or constructor; top-level, so we don't reach SASubBlocks.assert/throws.
+                 This can never be a pre- or post-condition, as it ALWAYS stops the method
+                 */
+                statementAnalysis.stateData().ensureEscapeNotInPreOrPostConditions();
+            }
+            return result;
+        }
+
+        if (statement instanceof AssertStatement) {
+            return handleNotNullClausesInAssertStatement(sharedState.context(), result);
+        }
+
+        if (statement instanceof ExplicitConstructorInvocation) {
+            return result.filterChangeData(v -> !(v instanceof LocalVariableReference));
+        }
+        return result;
+    }
+
+
+    private record Post(Expression expression, CausesOfDelay causes) {
+    }
+
+    private Post postProcess(Statement statement, StatementAnalyserSharedState sharedState, Expression value) {
+        assert value != null; // EmptyExpression in case there really is no value
+
+        if (statement instanceof IfElseStatement || statement instanceof AssertStatement) {
+            if (value.isDone()) {
+                Expression newValue = eval_IfElse_Assert(sharedState, value);
+                if (newValue.isDelayed()) {
+                    // for example, an if(...) inside a loop, when the loop's range is being computed
+                    return new Post(newValue, newValue.causesOfDelay());
+                }
+                if (statement() instanceof IfElseStatement && sharedState.localConditionManager().isDelayed()) {
+                    Expression de = DelayedExpression.forState(sharedState.localConditionManager().getIdentifier(),
+                            newValue.returnType(),
+                            sharedState.localConditionManager().multiExpression(),
+                            sharedState.localConditionManager().causesOfDelay());
+                    return new Post(de, CausesOfDelay.EMPTY);
+                }
+                return new Post(newValue, CausesOfDelay.EMPTY);
+            }
+            return new Post(value, CausesOfDelay.EMPTY);
+        }
+
+        if (statement instanceof HasSwitchLabels switchStatement && value.isDone()) {
+            eval_Switch(sharedState, value, switchStatement);
+            return new Post(value, CausesOfDelay.EMPTY);
+        }
+
+        if (statement instanceof ReturnStatement) {
+            CausesOfDelay stateForLoop = addLoopReturnStatesToState(sharedState);
+            Expression condition = sharedState.localConditionManager().condition();
+            StatementAnalysisImpl.FindLoopResult correspondingLoop = statementAnalysis.findLoopByLabel(null);
+            if (correspondingLoop != null &&
+                    correspondingLoop.statementAnalysis().rangeData().getRange().generateErrorOnInterrupt(condition)) {
+                statementAnalysis.ensure(Message.newMessage(statementAnalysis.location(EVALUATION), Message.Label.INTERRUPT_IN_LOOP));
+            }
+            return new Post(value, stateForLoop);
+        }
+
+        if (statement() instanceof ThrowStatement) {
+            // but, see also code above that changes the return variable's value; See SwitchExpression_4
+            Expression noReturn = noReturnValue();
+            return new Post(noReturn, CausesOfDelay.EMPTY);
+        }
+
+        // the value can be delayed even if it is "true", for example (Basics_3)
+        // see Precondition_3 for an example where different values arise, because preconditions kick in
+        if (statement() instanceof ExplicitConstructorInvocation) {
+            Expression unknown = UnknownExpression.forExplicitConstructorInvocation();
+            return new Post(unknown, CausesOfDelay.EMPTY);
+        }
+
+        // this statement can never be fully correct, but it seems to do the job for now... preconditions may arrive late
+        // and my cause delays in the evaluation after a number of iterations
+
+        return new Post(value, CausesOfDelay.EMPTY);
     }
 
     /*
@@ -520,7 +563,8 @@ record SAEvaluationOfMainExpression(StatementAnalysis statementAnalysis,
         DV combined;
         if (FlowDataConstants.ALWAYS.equals(mine)) combined = execution;
         else if (FlowDataConstants.NEVER.equals(mine)) combined = FlowDataConstants.NEVER;
-        else if (FlowDataConstants.CONDITIONALLY.equals(mine)) combined = FlowDataConstants.CONDITIONALLY.min(execution);
+        else if (FlowDataConstants.CONDITIONALLY.equals(mine))
+            combined = FlowDataConstants.CONDITIONALLY.min(execution);
         else if (mine.isDelayed()) combined = mine.causesOfDelay().merge(execution.causesOfDelay());
         else throw new UnsupportedOperationException("Mine is " + mine);
 
