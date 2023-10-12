@@ -14,18 +14,20 @@
 
 package org.e2immu.analyser.parser.basics.testexample;
 
+import org.e2immu.annotation.ImmutableContainer;
 import org.e2immu.annotation.NotNull;
 
 import java.util.Map;
 
-public record Basics_24(Map<Integer, Y> map) {
+// variant, with Y a class rather than an interface
+public record Basics_24_1(Map<Integer, Y> map) {
 
-    public Basics_24 {
+    public Basics_24_1 {
         assert map != null;
     }
 
-    // can never be recursively immutable
-    interface Y {
+    @ImmutableContainer
+    static class Y {
     }
 
     private static class X {
@@ -36,7 +38,6 @@ public record Basics_24(Map<Integer, Y> map) {
         }
     }
 
-    @NotNull
     public Y method(int pos, Y a, Y y) {
         X x = new X(a);
         x.s = map.getOrDefault(pos, a);

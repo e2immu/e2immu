@@ -254,16 +254,7 @@ public class ComputedParameterAnalyser extends ParameterAnalyserImpl {
             VariableInfo viParam = lastStatement.findOrNull(parameterInfo, Stage.MERGE);
             if (viParam != null) {
                 if (!viParam.linkedVariablesIsSet()) {
-                    /*
-                    Looks like a good idea, but Independent1_9 shows that any param break should come AFTER a field break
-
-                    if (sharedState.breakDelayLevel().acceptParameter() && viParam.getLinkedVariables().causesOfDelay()
-                            .containsCauseOfDelay(CauseOfDelay.Cause.LINKING)) {
-                        LOGGER.debug("Breaking parameter delay in independent, parameter {}", parameterInfo.fullyQualifiedName);
-                        parameterAnalysis.setProperty(INDEPENDENT, INDEPENDENT_DV);
-                        return DONE;
-                    }*/
-                    LOGGER.debug("Delay independent in parameter {}, waiting for linked1variables in statement {}",
+                    LOGGER.debug("Delay independent in parameter {}, waiting for linked variables in statement {}",
                             parameterInfo.fullyQualifiedName(), lastStatement.index());
                     delay = DelayFactory.createDelay(new VariableCause(parameterInfo, lastStatement.location(Stage.MERGE),
                             CauseOfDelay.Cause.LINKING));
@@ -301,7 +292,7 @@ public class ComputedParameterAnalyser extends ParameterAnalyserImpl {
                         parameterAnalysis.setProperty(INDEPENDENT, INDEPENDENT_DV);
                         return DONE;
                     }*/
-                    LOGGER.debug("Delay independent in parameter {}, waiting for linked1variables in statement {}",
+                    LOGGER.debug("Delay independent in parameter {}, waiting for linked variables in statement {}",
                             parameterInfo.fullyQualifiedName(), lastStatement.index());
                     delay = delay.merge(DelayFactory.createDelay(new VariableCause(vi.variable(), lastStatement.location(Stage.MERGE),
                             CauseOfDelay.Cause.LINKING)));

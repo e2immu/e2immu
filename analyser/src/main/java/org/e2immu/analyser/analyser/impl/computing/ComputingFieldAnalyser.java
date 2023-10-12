@@ -794,11 +794,7 @@ public class ComputingFieldAnalyser extends FieldAnalyserImpl implements FieldAn
         if (fieldAnalysis.getProperty(Property.EXTERNAL_IMMUTABLE).isDone()) return DONE;
 
         DV isFinal = fieldAnalysis.getProperty(Property.FINAL);
-        if (isFinal.isDelayed()) {
-            LOGGER.debug("Delaying @Immutable on {} until we know about @Final", fqn);
-            fieldAnalysis.setProperty(Property.EXTERNAL_IMMUTABLE, isFinal);
-            return isFinal.causesOfDelay(); //DELAY EXIT POINT
-        }
+        assert isFinal.isDone();
         if (isFinal.valueIsFalse() && fieldCanBeWrittenFromOutsideThisPrimaryType) {
             LOGGER.debug("Field {} cannot be immutable: it is not @Final," +
                     " and it can be assigned to from outside this primary type", fqn);
@@ -813,7 +809,7 @@ public class ComputingFieldAnalyser extends FieldAnalyserImpl implements FieldAn
             return staticallyImmutable.causesOfDelay(); //DELAY EXIT POINT
         }
         if (staticallyImmutable.equals(MultiLevel.EFFECTIVELY_IMMUTABLE_DV)) {
-            LOGGER.debug("Field {} is statically @ERImmutable", fqn);
+            LOGGER.debug("Field {} is statically recursively @Immutable", fqn);
             fieldAnalysis.setProperty(Property.EXTERNAL_IMMUTABLE, staticallyImmutable);
             return DONE; // cannot be improved
         }

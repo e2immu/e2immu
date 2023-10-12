@@ -765,16 +765,18 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
 
     private boolean raiseErrorForFinalizer(EvaluationResult context,
                                            EvaluationResultImpl.Builder builder, Variable variable) {
-        if (variable instanceof FieldReference && (context.getCurrentMethod() == null ||
-                !context.getCurrentMethod().getMethodAnalysis().getProperty(Property.FINALIZER).valueIsTrue())) {
-            // ensure that the current method has been marked @Finalizer
-            builder.raiseError(getIdentifier(), Message.Label.FINALIZER_METHOD_CALLED_ON_FIELD_NOT_IN_FINALIZER);
-            return true;
-        }
-        if (variable instanceof ParameterInfo) {
-            builder.raiseError(getIdentifier(), Message.Label.FINALIZER_METHOD_CALLED_ON_PARAMETER);
-            return true;
-        }
+        if(variable.parameterizedType().bestTypeInfo().equals(methodInfo.typeInfo)) {
+            if (variable instanceof FieldReference && (context.getCurrentMethod() == null ||
+                    !context.getCurrentMethod().getMethodAnalysis().getProperty(Property.FINALIZER).valueIsTrue())) {
+                // ensure that the current method has been marked @Finalizer
+                builder.raiseError(getIdentifier(), Message.Label.FINALIZER_METHOD_CALLED_ON_FIELD_NOT_IN_FINALIZER);
+                return true;
+            }
+            if (variable instanceof ParameterInfo) {
+                builder.raiseError(getIdentifier(), Message.Label.FINALIZER_METHOD_CALLED_ON_PARAMETER);
+                return true;
+            }
+        } // else: e.g. InlinedMethod_AAPI_13, Finalizer_4; contrast with Finalizer_0
         return false;
     }
 

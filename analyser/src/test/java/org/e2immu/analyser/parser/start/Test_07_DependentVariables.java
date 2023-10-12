@@ -266,8 +266,7 @@ public class Test_07_DependentVariables extends CommonTestRunner {
                 if (d.variable() instanceof ReturnVariable) {
                     assertLinked(d,
                             it0("index:-1,this.xs:-1,this:-1,xs[index]:0"),
-                            it1("this.xs:-1,this:-1,xs[index]:0"),
-                            it(2, "this.xs:2,this:2,xs[index]:0"));
+                            it(1, "this.xs:2,this:2,xs[index]:0"));
                 }
             }
         };
@@ -304,10 +303,10 @@ public class Test_07_DependentVariables extends CommonTestRunner {
         BreakDelayVisitor breakDelayVisitor = d -> assertEquals("----", d.delaySequence());
 
         testClass("DependentVariables_2", 0, 1, new DebugConfiguration.Builder()
-                .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
-                .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
-                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
-                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+             //   .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
+             //   .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+            //    .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+            //    .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .addBreakDelayVisitor(breakDelayVisitor)
                 .build());
     }

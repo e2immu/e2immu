@@ -1262,11 +1262,14 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
         AnalyserContext analyserContext = evaluationContext.getAnalyserContext();
         FieldAnalysis fieldAnalysis = analyserContext.getFieldAnalysis(fieldInfo);
         Properties result = sharedContext(AnalysisProvider.defaultNotNull(fieldInfo.type));
+        IsMyself isMyself = evaluationContext.isMyself(fieldInfo.type);
 
         for (Property vp : FROM_FIELD_ANALYSER_TO_PROPERTIES) {
             DV value;
             if (vp == EXTERNAL_IGNORE_MODIFICATIONS && evaluationContext.inConstruction()) {
                 value = EXTERNAL_IGNORE_MODIFICATIONS.valueWhenAbsent();
+            } else if(isMyself.toFalse(vp)) {
+                value = vp.falseDv;
             } else {
                 value = fieldAnalysis.getFieldProperty(analyserContext, fieldInfo, fieldInfo.type.bestTypeInfo(), vp);
             }

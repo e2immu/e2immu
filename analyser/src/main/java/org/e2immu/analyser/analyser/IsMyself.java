@@ -13,4 +13,12 @@ public enum IsMyself {
             default -> false;
         };
     }
+
+    public boolean toFalseFromField(Property property) {
+        return switch (property) {
+            case CONTAINER -> this == PTA || this == YES;
+            case INDEPENDENT, EXTERNAL_IMMUTABLE -> this == YES;
+            default -> false;
+        };
+    }
 }
