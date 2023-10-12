@@ -27,8 +27,7 @@ import org.e2immu.analyser.analyser.util.VariableAccessReport;
 import org.e2immu.analyser.analysis.StatementAnalysis;
 import org.e2immu.analyser.analysis.impl.StatementAnalysisImpl;
 import org.e2immu.analyser.model.*;
-import org.e2immu.analyser.model.expression.BooleanConstant;
-import org.e2immu.analyser.model.expression.DelayedExpression;
+import org.e2immu.analyser.model.expression.*;
 import org.e2immu.analyser.model.statement.*;
 import org.e2immu.analyser.model.variable.This;
 import org.e2immu.analyser.model.variable.Variable;
@@ -128,8 +127,9 @@ public class StatementAnalyserImpl implements StatementAnalyser {
         }
         StatementAnalyserImpl first = null;
         StatementAnalyserImpl previous = null;
-        for (Statement statement : statements) {
-            String padded = pad(statementIndex, statements.size());
+        List<Statement> simplifiedStatements = simplifyStatements(myMethodAnalyser, statements);
+        for (Statement statement : simplifiedStatements) {
+            String padded = pad(statementIndex, simplifiedStatements.size());
             String iPlusSt = adjustedIndices.isEmpty() ? padded : adjustedIndices + "." + padded;
             StatementAnalyserImpl statementAnalyser = new StatementAnalyserImpl(analyserContext, myMethodAnalyser, statement, parent, iPlusSt, inSyncBlock);
             if (previous != null) {
@@ -187,6 +187,11 @@ public class StatementAnalyserImpl implements StatementAnalyser {
         }
         return first;
 
+    }
+
+    private static List<Statement> simplifyStatements(MethodAnalyser methodAnalyser, List<Statement> statements) {
+        StatementSimplifier statementSimplifier = methodAnalyser.getStatementSimplifier();
+        return statements.stream().flatMap(statementSimplifier::simplify).toList();
     }
 
     @Override
@@ -251,11 +256,11 @@ public class StatementAnalyserImpl implements StatementAnalyser {
                 statementAnalyser = (StatementAnalyserImpl) statementAnalyser.navigationDataNextGet().orElse(null);
 
                 //if (result.analysisStatus().isProgress() && forwardAnalysisInfo.breakDelayLevel().acceptStatement()) {
-                    // LOGGER.debug("**** Removing allow break delay for subsequent statements ****");
-                    // uncomment the following statement if you want to break only delays at one statement,
-                    // instead of in the whole method
-                    // Expressions_0 will suffer a lot of you do that (currently at 50+ iterations)
-                    //forwardAnalysisInfo = forwardAnalysisInfo.removeAllowBreakDelay();
+                // LOGGER.debug("**** Removing allow break delay for subsequent statements ****");
+                // uncomment the following statement if you want to break only delays at one statement,
+                // instead of in the whole method
+                // Expressions_0 will suffer a lot of you do that (currently at 50+ iterations)
+                //forwardAnalysisInfo = forwardAnalysisInfo.removeAllowBreakDelay();
                 //}
             } while (statementAnalyser != null);
             return builder.build();

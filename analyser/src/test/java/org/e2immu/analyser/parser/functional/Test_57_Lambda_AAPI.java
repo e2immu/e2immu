@@ -286,7 +286,8 @@ public class Test_57_Lambda_AAPI extends CommonTestRunner {
 
         StatementAnalyserVisitor statementAnalyserVisitor = d -> {
             if ("recursive".equals(d.methodInfo().name)) {
-                if ("1".equals(d.statementId())) {
+                // IMPORTANT: 2 instead of 1 because a statement has been inserted by the StatementSimplifier
+                if ("2".equals(d.statementId())) {
                     /*
                      NOTE: firstCallInCycle == true, so there won't be any CM/CNN info coming from the lambda.
                      See StatementAnalyzerImpl.transferFromClosureToResult.
@@ -357,7 +358,8 @@ public class Test_57_Lambda_AAPI extends CommonTestRunner {
     public void test_19_Merge() throws IOException {
         StatementAnalyserVisitor statementAnalyserVisitor = d -> {
             if ("recursive".equals(d.methodInfo().name)) {
-                if ("1.0.0".equals(d.statementId())) {
+                // IMPORTANT: 2.0.0 because a statement has been inserted by the StatementSimplifier
+                if ("2.0.0".equals(d.statementId())) {
                     assertEquals("k={read=true:1}, this={read=true:1}",
                             d.statementAnalysis().propertiesFromSubAnalysersSortedToString());
                 }

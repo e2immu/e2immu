@@ -31,20 +31,19 @@ public class Test_27_ExternalImmutable extends CommonTestRunner {
         super(true);
     }
 
-    StatementAnalyserVisitor statementAnalyserVisitor = d -> {
-        if (d.iteration() > 1) {
-            if ("modifySetCreated".equals(d.methodInfo().name)) {
-                assertNotNull(d.haveError(Message.Label.CALLING_MODIFYING_METHOD_ON_IMMUTABLE_OBJECT));
-            }
-            if ("modifySet1".equals(d.methodInfo().name)) {
-                assertNotNull(d.haveError(Message.Label.CALLING_MODIFYING_METHOD_ON_IMMUTABLE_OBJECT));
-            }
-        }
-    };
-
-
     @Test
     public void test_0() throws IOException {
+        StatementAnalyserVisitor statementAnalyserVisitor = d -> {
+            if (d.iteration() > 1) {
+                if ("modifySetCreated".equals(d.methodInfo().name) && "1".equals(d.statementId())) {
+                    assertNotNull(d.haveError(Message.Label.CALLING_MODIFYING_METHOD_ON_IMMUTABLE_OBJECT));
+                }
+                if ("modifySet1".equals(d.methodInfo().name)) {
+                    assertNotNull(d.haveError(Message.Label.CALLING_MODIFYING_METHOD_ON_IMMUTABLE_OBJECT));
+                }
+            }
+        };
+
         testClass("ExternalImmutable_0", 2, 0, new DebugConfiguration.Builder()
                 .addStatementAnalyserVisitor(statementAnalyserVisitor)
                 .build());

@@ -18,6 +18,7 @@ import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.analyser.delay.DelayFactory;
 import org.e2immu.analyser.analyser.impl.MethodAnalyserImpl;
 import org.e2immu.analyser.analyser.statementanalyser.StatementAnalyserImpl;
+import org.e2immu.analyser.analyser.statementanalyser.StatementSimplifier;
 import org.e2immu.analyser.analyser.util.AnalyserComponents;
 import org.e2immu.analyser.analyser.util.AnalyserResult;
 import org.e2immu.analyser.analysis.Analysis;
@@ -185,5 +186,10 @@ public class AggregatingMethodAnalyser extends MethodAnalyserImpl {
     @Override
     public AnalyserComponents<String, ?> getAnalyserComponents() {
         return analyserComponents;
+    }
+
+    @Override
+    public StatementSimplifier getStatementSimplifier() {
+        throw new UnsupportedOperationException();
     }
 }

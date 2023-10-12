@@ -536,8 +536,8 @@ public class Test_17_Container extends CommonTestRunner {
             if ("modifying".equals(d.methodInfo().name)) {
                 String owner = d.methodInfo().typeInfo.simpleName;
                 if ("Items1".equals(owner)) {
-                    // FIXME should raise an error when Modified_30 runs green
-                    assertNull(d.haveError(Message.Label.ILLEGAL_MODIFICATION_IN_CONTAINER));
+                    assertEquals(d.iteration() >= 2,
+                            null != d.haveError(Message.Label.ILLEGAL_MODIFICATION_IN_CONTAINER));
                 } else if ("Items2".equals(owner)) {
                     assertEquals(d.iteration() >= 2,
                             null != d.haveError(Message.Label.ILLEGAL_MODIFICATION_IN_CONTAINER));
@@ -566,8 +566,8 @@ public class Test_17_Container extends CommonTestRunner {
                 String owner = d.fieldInfo().owner.simpleName;
                 if ("Items1".equals(owner)) {
                     assertLinked(d, d.fieldAnalysis().getLinkedVariables(),
-                            it0("item1:-1"),
-                            it(1, "item1:3"));
+                            it0("intermediate$0:-1,item1:-1"),
+                            it(1, "intermediate$0:3,item1:3"));
                 } else if ("Items2".equals(owner)) {
                     assertLinked(d, d.fieldAnalysis().getLinkedVariables(),
                             it0("item2:-1,item:-1"),
@@ -600,7 +600,7 @@ public class Test_17_Container extends CommonTestRunner {
             if ("Items1".equals(d.typeInfo().simpleName)) {
                 assertDv(d, 1, MultiLevel.EFFECTIVELY_FINAL_FIELDS_DV, Property.IMMUTABLE);
                 assertDv(d, 2, MultiLevel.DEPENDENT_DV, Property.INDEPENDENT);
-                // FIXME assertDv(d, 2, MultiLevel.NOT_CONTAINER_DV, Property.CONTAINER);
+                assertDv(d, 2, MultiLevel.NOT_CONTAINER_DV, Property.CONTAINER);
                 assertEquals(fields, d.typeAnalysis().fieldsGuardedForContainerPropertyString());
             }
             if ("Items2".equals(d.typeInfo().simpleName)) {
@@ -633,8 +633,8 @@ public class Test_17_Container extends CommonTestRunner {
             }
         };
 
-        // two errors: violating @Container contract in ItemsImpl, ItemsImpl2
-        testClass("Container_9", 1, 0, new DebugConfiguration.Builder()
+        // three errors: violating @Container contract in Items1, Items2, Items3
+        testClass("Container_9", 3, 0, new DebugConfiguration.Builder()
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)

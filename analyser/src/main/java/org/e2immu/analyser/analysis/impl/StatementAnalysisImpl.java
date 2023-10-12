@@ -1036,7 +1036,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
             CausesOfDelay causesOfDelay = independent.causesOfDelay().merge(lvArrayBase.causesOfDelay());
             Expression arrayValue;
             if (causesOfDelay.isDelayed()) {
-                arrayValue = DelayedVariableExpression.forVariable(dv, flowData.getTimeAfterEvaluation(), causesOfDelay);
+                arrayValue = DelayedVariableExpression.forVariable(dv, context.statementTime(), causesOfDelay);
             } else {
                 arrayValue = Instance.genericArrayAccess(Identifier.generate("dep var"), context, arrayBase, dv);
             }

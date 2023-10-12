@@ -61,7 +61,8 @@ public class Test_16_Modification_24 extends CommonTestRunner {
                         assertEquals("new HashMap<>(in)/*this.size()==in.size()*/", d.currentValue().toString());
                     }
                     // now comes a method call modifying the keySet, which is dependent on middle
-                    if ("1".equals(d.statementId())) {
+                    // IMPORTANT: 2 because the statement simplifier has introduced an intermediate variable.
+                    if ("2".equals(d.statementId())) {
                         assertEquals("instance type HashMap<String,Integer>", d.currentValue().toString());
                     }
                 }

@@ -678,9 +678,9 @@ public class Test_Independent1 extends CommonTestRunner {
         BreakDelayVisitor breakDelayVisitor = d -> assertEquals("-----S--S-SF----", d.delaySequence());
 
         testClass("Independent1_9", 0, 0, new DebugConfiguration.Builder()
-             //   .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-             //   .addStatementAnalyserVisitor(statementAnalyserVisitor)
-             //   .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                //   .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                //   .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                //   .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                 .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
                 .addBreakDelayVisitor(breakDelayVisitor)
@@ -773,32 +773,42 @@ public class Test_Independent1 extends CommonTestRunner {
     @Test
     public void test_11() throws IOException {
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+            // IMPORTANT! the StatementSimplifier inserts an additional statement, assigning to intermediate$0 the
+            // object of .forEach(); so the key statement is at 1 instead of 0
             if ("addAllLambda".equals(d.methodInfo().name)) {
-                if (d.variable() instanceof ParameterInfo pi && "other".equals(pi.name)) {
-                    assertLinked(d,
-                            it0("other.list:-1,this.list:-1,this:-1"),
-                            it(1, "other.list:4,this.list:4,this:4"));
+                if ("1".equals(d.statementId())) {
+                    if (d.variable() instanceof ParameterInfo pi && "other".equals(pi.name)) {
+                        assertLinked(d,
+                                it0("intermediate$0:-1,other.list:-1,this.list:-1,this:-1"),
+                                it(1, "intermediate$0:4,other.list:4,this.list:4,this:4"));
+                    }
                 }
             }
             if ("addAllCC".equals(d.methodInfo().name)) {
-                if (d.variable() instanceof ParameterInfo pi && "other".equals(pi.name)) {
-                    assertLinked(d,
-                            it0("other.list:-1,this.list:-1,this:-1"),
-                            it(1, "other.list:4,this.list:4,this:4"));
+                if ("1".equals(d.statementId())) {
+                    if (d.variable() instanceof ParameterInfo pi && "other".equals(pi.name)) {
+                        assertLinked(d,
+                                it0("intermediate$0:-1,other.list:-1,this.list:-1,this:-1"),
+                                it(1, "intermediate$0:4,other.list:4,this.list:4,this:4"));
+                    }
                 }
             }
             if ("addAllMR".equals(d.methodInfo().name)) {
-                if (d.variable() instanceof ParameterInfo pi && "other".equals(pi.name)) {
-                    assertLinked(d,
-                            it0("other.list:-1,this.list:-1,this:-1"),
-                            it(1, "other.list:4,this.list:4,this:4"));
+                if ("1".equals(d.statementId())) {
+                    if (d.variable() instanceof ParameterInfo pi && "other".equals(pi.name)) {
+                        assertLinked(d,
+                                it0("intermediate$0:-1,other.list:-1,this.list:-1,this:-1"),
+                                it(1, "intermediate$0:4,other.list:4,this.list:4,this:4"));
+                    }
                 }
             }
             if ("addAllMR2".equals(d.methodInfo().name)) {
-                if (d.variable() instanceof ParameterInfo pi && "other".equals(pi.name)) {
-                    assertLinked(d,
-                            it0("other.list:-1,this.list:-1,this:-1"),
-                            it(1, "other.list:4,this.list:4,this:4"));
+                if ("1".equals(d.statementId())) {
+                    if (d.variable() instanceof ParameterInfo pi && "other".equals(pi.name)) {
+                        assertLinked(d,
+                                it0("intermediate$0:-1,other.list:-1,this.list:-1,this:-1"),
+                                it(1, "intermediate$0:4,other.list:4,this.list:4,this:4"));
+                    }
                 }
             }
         };

@@ -24,6 +24,7 @@ import org.e2immu.analyser.analyser.impl.util.BreakDelayLevel;
 import org.e2immu.analyser.analyser.nonanalyserimpl.AbstractEvaluationContextImpl;
 import org.e2immu.analyser.analyser.nonanalyserimpl.LocalAnalyserContext;
 import org.e2immu.analyser.analyser.statementanalyser.StatementAnalyserImpl;
+import org.e2immu.analyser.analyser.statementanalyser.StatementSimplifier;
 import org.e2immu.analyser.analyser.util.*;
 import org.e2immu.analyser.analysis.*;
 import org.e2immu.analyser.analysis.impl.MethodAnalysisImpl;
@@ -80,6 +81,7 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
 
     private Map<FieldInfo, FieldAnalyser> myFieldAnalysers;
 
+    private final StatementSimplifier statementSimplifier = new StatementSimplifier();
     /*
     Note that MethodLevelData is not part of the shared state, as the "lastStatement", where it resides,
     is only computed in the first step of the analyser components.
@@ -165,6 +167,11 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
                 .add(DETECT_ILLEGAL_MODIFICATION_IN_CONTAINER, this::detectIllegalModificationInInheritedContainer);
 
         analyserComponents = builder.setLimitCausesOfDelay(true).build();
+    }
+
+    @Override
+    public StatementSimplifier getStatementSimplifier() {
+        return statementSimplifier;
     }
 
     @Override

@@ -788,6 +788,10 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         return new MethodCall(identifier, objectIsImplicit, object, methodInfo, returnType(), parameterExpressions, modificationTimes);
     }
 
+    public MethodCall withObject(Expression newObject) {
+        return new MethodCall(identifier, false, newObject, methodInfo, returnType(), parameterExpressions, modificationTimes);
+    }
+    
     /*
     next => after the call; required => before the call.
     @Mark goes from BEFORE to AFTER

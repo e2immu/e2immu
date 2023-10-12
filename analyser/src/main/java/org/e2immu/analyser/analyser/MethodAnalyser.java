@@ -14,6 +14,7 @@
 
 package org.e2immu.analyser.analyser;
 
+import org.e2immu.analyser.analyser.statementanalyser.StatementSimplifier;
 import org.e2immu.analyser.analysis.MethodAnalysis;
 import org.e2immu.analyser.analysis.ParameterAnalysis;
 import org.e2immu.analyser.model.FieldInfo;
@@ -59,4 +60,6 @@ public interface MethodAnalyser extends Analyser {
     List<ParameterAnalysis> getParameterAnalyses();
 
     ParameterAnalyser parameterAnalyzer(int index);
+
+    StatementSimplifier getStatementSimplifier();
 }

@@ -393,7 +393,7 @@ public class Test_22_SubTypes extends CommonTestRunner {
     @Test
     public void test_12() throws IOException {
         // TODO: remove the null-pointer warning next to the null pointer error!
-        testClass("SubTypes_12", 1, 2,
+        testClass("SubTypes_12", 1, 3,
                 new DebugConfiguration.Builder().build(),
                 new AnalyserConfiguration.Builder().setForceAlphabeticAnalysisInPrimaryType(true).build());
     }

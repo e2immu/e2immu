@@ -42,11 +42,22 @@ public class Test_16_Modification_30 extends CommonTestRunner {
 
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("modifying".equals(d.methodInfo().name)) {
-                assertEquals("0", d.statementId());
+                if ("intermediate$0".equals(d.variableName())) {
+                    if ("0".equals(d.statementId())) {
 
+                        String expected = d.iteration() == 0 ? "<m:get>" : "items.get(0)";
+                        assertEquals(expected, d.currentValue().toString());
+                        assertLinked(d, it0("this.items:-1,this:-1"), it(1, "this.items:3,this:4"));
+                    }
+                    if ("1".equals(d.statementId())) {
+                        assertDv(d, 1, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
+                    }
+                }
                 if (d.variable() instanceof FieldReference fr && "items".equals(fr.fieldInfo.name)) {
-                    //FIXME assertLinked(d, it0("item:-1,this:-1"), it(1, ""));
-                    //FIXME assertDv(d, 1, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
+                    if ("1".equals(d.statementId())) {
+                        assertLinked(d, it0("intermediate$0:-1,this:-1"), it(1, ""));
+                        assertDv(d, 1, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
+                    }
                 }
             }
             if ("modifying2".equals(d.methodInfo().name)) {
@@ -66,8 +77,16 @@ public class Test_16_Modification_30 extends CommonTestRunner {
                 }
             }
         };
+
+        MethodAnalyserVisitor methodAnalyserVisitor = d -> {
+            if ("modifying".equals(d.methodInfo().name)) {
+                assertDv(d, 1, DV.TRUE_DV, Property.MODIFIED_METHOD);
+            }
+        };
+
         testClass("Modification_30", 0, 0, new DebugConfiguration.Builder()
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .build());
     }
 

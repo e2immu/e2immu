@@ -16,6 +16,7 @@ package org.e2immu.analyser.parser.independence.testexample;
 
 import org.e2immu.annotation.ImmutableContainer;
 import org.e2immu.annotation.Independent;
+import org.e2immu.annotation.NotNull;
 
 import java.util.stream.Stream;
 
@@ -30,6 +31,7 @@ public class Independent_3 {
     interface HasSwitchLabels {
         // stream is mutable, but independent
         @Independent(hc = true)
+        @NotNull
         Stream<Expression> labels();
     }
 

@@ -420,10 +420,11 @@ public class Test_18_E2Immutable extends CommonTestRunner {
                     }
                 }
                 if (d.variable() instanceof ReturnVariable) {
-                    if ("2".equals(d.statementId())) {
+                    // IMPORTANT the statement simplifier has introduced an intermediate variable; statement 2 -> 3
+                    if ("3".equals(d.statementId())) {
                         String expectLinked = d.iteration() == 0
-                                ? "incremented:0,this.map7:-1,this:-1"
-                                : "incremented:0,this.map7:4,this:4";
+                                ? "incremented:0,intermediate$0:-1,this.map7:-1,this:-1"
+                                : "incremented:0,intermediate$0:2,this.map7:4,this:4";
                         assertEquals(expectLinked, d.variableInfo().getLinkedVariables().toString());
                     }
                 }
