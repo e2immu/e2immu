@@ -15,7 +15,6 @@
 package org.e2immu.analyser.analysis;
 
 import org.e2immu.analyser.analyser.*;
-import org.e2immu.analyser.analyser.delay.DelayFactory;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.util.CommutableData;
 import org.e2immu.analyser.util.ParSeq;
@@ -130,12 +129,10 @@ public interface MethodAnalysis extends Analysis {
         return mm;
     }
 
-    default DV valueFromOverrides(AnalysisProvider analysisProvider, Property property) {
-        Set<MethodAnalysis> overrides = getOverrides(analysisProvider, true);
-        return overrides.stream()
-                .map(ma -> ma.getPropertyFromMapDelayWhenAbsent(property))
-                .reduce(DelayFactory.initialDelay(), DV::max);
-    }
+    /*
+     not a default implementation, because we want no dependency on DelayFactory; hence, 2 implementations and a static
+     */
+    DV valueFromOverrides(AnalysisProvider analysisProvider, Property property);
 
     default boolean eventualIsSet() {
         return true;
@@ -233,6 +230,8 @@ public interface MethodAnalysis extends Analysis {
 
     FieldInfo getSetField();
 
-    record GetSetEquivalent(MethodInfo methodInfo, Set<ParameterInfo> convertToGetSet) {}
+    record GetSetEquivalent(MethodInfo methodInfo, Set<ParameterInfo> convertToGetSet) {
+    }
+
     GetSetEquivalent getSetEquivalent();
 }

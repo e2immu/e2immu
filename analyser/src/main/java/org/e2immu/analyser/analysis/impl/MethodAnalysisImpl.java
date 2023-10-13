@@ -15,6 +15,7 @@
 package org.e2immu.analyser.analysis.impl;
 
 import org.e2immu.analyser.analyser.*;
+import org.e2immu.analyser.analyser.delay.DelayFactory;
 import org.e2immu.analyser.analyser.util.CreatePreconditionCompanion;
 import org.e2immu.analyser.analysis.MethodAnalysis;
 import org.e2immu.analyser.analysis.ParameterAnalysis;
@@ -237,6 +238,18 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
         return parallelGroups.sortParallels(parameterExpressions, Comparator.naturalOrder());
     }
 
+    @Override
+    public DV valueFromOverrides(AnalysisProvider analysisProvider, Property property) {
+        return valueFromOverrides(this, analysisProvider, property);
+    }
+
+    public static DV valueFromOverrides(MethodAnalysis methodAnalysis, AnalysisProvider analysisProvider, Property property) {
+        Set<MethodAnalysis> overrides = methodAnalysis.getOverrides(analysisProvider, true);
+        return overrides.stream()
+                .map(ma -> ma.getPropertyFromMapDelayWhenAbsent(property))
+                .reduce(DelayFactory.initialDelay(), DV::max);
+    }
+
     public static class Builder extends AbstractAnalysisBuilder implements MethodAnalysis {
         private final FlipSwitch firstIteration = new FlipSwitch();
         public final ParameterizedType returnType;
@@ -326,6 +339,11 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
 
         public void setPostConditionDelays(CausesOfDelay postConditionDelays) {
             this.postConditionDelays = postConditionDelays;
+        }
+
+        @Override
+        public DV valueFromOverrides(AnalysisProvider analysisProvider, Property property) {
+            return MethodAnalysisImpl.valueFromOverrides(this, analysisProvider, property);
         }
 
         @Override

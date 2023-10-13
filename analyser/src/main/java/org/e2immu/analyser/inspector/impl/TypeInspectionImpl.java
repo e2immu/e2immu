@@ -25,6 +25,7 @@ import org.e2immu.analyser.parser.Input;
 import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.parser.TypeMap;
+import org.e2immu.analyser.resolver.ShallowMethodResolver;
 import org.e2immu.annotation.Container;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -182,6 +183,52 @@ public class TypeInspectionImpl extends InspectionImpl implements TypeInspection
             case INTERFACE -> true;
             case CLASS -> !modifiers.contains(TypeModifier.FINAL) && !modifiers.contains(TypeModifier.SEALED);
         };
+    }
+
+    @Override
+    public boolean computeIsFunctionalInterface(InspectionProvider inspectionProvider) {
+        return computeIsFunctionalInterface(inspectionProvider, this, new HashSet<>(), new HashMap<>()) == 1;
+    }
+
+    private static int computeIsFunctionalInterface(InspectionProvider inspectionProvider,
+                                                    TypeInspection typeInspection,
+                                                    Set<MethodInspection> overridden,
+                                                    Map<NamedType, ParameterizedType> translationMap) {
+        int sum = 0;
+        for (MethodInfo methodInfo : typeInspection.methods()) {
+            MethodInspection inspection = inspectionProvider.getMethodInspection(methodInfo);
+            boolean nonStaticNonDefault = !inspection.isPrivate() && !inspection.isStatic() && !inspection.isDefault() && !inspection.isOverloadOfJLOMethod();
+            if (nonStaticNonDefault) {
+                if (overridden.stream().noneMatch(override -> isOverrideOf(inspectionProvider, inspection, override, translationMap))) {
+                    sum++;
+                    overridden.add(inspection);
+                }
+            } else if (inspection.isDefault()) {
+                // can cancel out a method in one of the super types
+                overridden.add(inspection);
+            }
+        }
+        // overridden needs to cancel out all of them, individually!
+        if (sum <= 1) {
+            for (ParameterizedType superInterface : typeInspection.interfacesImplemented()) {
+                TypeInspection typeInspectionOfSuperType = inspectionProvider.getTypeInspection(superInterface.typeInfo);
+                Map<NamedType, ParameterizedType> map = ShallowMethodResolver.mapOfSuperType(superInterface,
+                        inspectionProvider);
+                Map<NamedType, ParameterizedType> superMap = new HashMap<>(translationMap);
+                superMap.putAll(map);
+                sum += computeIsFunctionalInterface(inspectionProvider, typeInspectionOfSuperType, overridden, superMap);
+            }
+        }
+        return sum;
+    }
+
+    private static boolean isOverrideOf(InspectionProvider inspectionProvider,
+                                        MethodInspection inSubType,
+                                        MethodInspection inSuperType,
+                                        Map<NamedType, ParameterizedType> map) {
+        if (!inSubType.getMethodInfo().name.equals(inSuperType.getMethodInfo().name)) return false;
+        return ShallowMethodResolver.sameParameters(inspectionProvider, inSubType.getParameters(),
+                inSuperType.getParameters(), map);
     }
 
     @Container(builds = TypeInspectionImpl.class)
@@ -442,6 +489,12 @@ public class TypeInspectionImpl extends InspectionImpl implements TypeInspection
         @Override
         public List<ParameterizedType> interfacesImplemented() {
             return List.copyOf(interfacesImplemented);
+        }
+
+        @Override
+        public boolean computeIsFunctionalInterface(InspectionProvider inspectionProvider) {
+            return TypeInspectionImpl.computeIsFunctionalInterface(inspectionProvider,
+                    this, new HashSet<>(), new HashMap<>()) == 1;
         }
 
         /*

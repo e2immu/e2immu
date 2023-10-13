@@ -635,11 +635,18 @@ public class VariableExpression extends BaseExpression implements IsVariableExpr
             return Either.right(Set.of(variable));
         }
         ParameterizedType typeParameterOfIterable = myType.typeInfo == null ? null
-                : myType.typeInfo.typeParameterOfIterable(analyserContext, myType); // String, because Set<String> <- Iterable<String>
+                : typeParameterOfIterable(analyserContext, myType); // String, because Set<String> <- Iterable<String>
         if (typeParameterOfIterable != null && typeParameterOfIterable.isAssignableFrom(analyserContext, parameterizedType)) {
             return Either.right(Set.of(variable));
         }
         return EvaluationContext.NO_LOOP_SOURCE_VARIABLES;
+    }
+    
+    private static ParameterizedType typeParameterOfIterable(AnalyserContext analyserContext,
+                                                             ParameterizedType concreteType) {
+        ParameterizedType iterablePt = analyserContext.importantClasses().iterable();
+        ParameterizedType concreteIterable = concreteType.concreteSuperType(analyserContext, iterablePt);
+        return concreteIterable == null ? null : concreteIterable.parameters.get(0);
     }
 
     @Override

@@ -19,7 +19,6 @@ import org.e2immu.analyser.analyser.CausesOfDelay;
 import org.e2immu.analyser.analyser.delay.DelayFactory;
 import org.e2immu.analyser.analysis.Analysis;
 import org.e2immu.analyser.analysis.FieldAnalysis;
-import org.e2immu.analyser.model.expression.EmptyExpression;
 import org.e2immu.analyser.model.impl.LocationImpl;
 import org.e2immu.analyser.output.*;
 import org.e2immu.analyser.util.UpgradableBooleanMap;
@@ -164,7 +163,7 @@ public class FieldInfo implements InfoObject, WithInspectionAndAnalysis {
                 .add(new Text(name));
         if (!asParameter && fieldInspection.isSet() && fieldInspection.get().fieldInitialiserIsSet()) {
             Expression expression = fieldInspection.get().getFieldInitialiser().initialiser();
-            if (expression != EmptyExpression.EMPTY_EXPRESSION) {
+            if (!expression.isEmpty()) {
                 outputBuilder.add(Symbol.assignment("=")).add(expression.output(qualification));
             }
         }

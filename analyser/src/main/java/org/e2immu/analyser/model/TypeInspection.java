@@ -18,7 +18,6 @@ import org.e2immu.analyser.analyser.SetOfTypes;
 import org.e2immu.analyser.inspector.InspectionState;
 import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.parser.Primitives;
-import org.e2immu.analyser.resolver.ShallowMethodResolver;
 import org.e2immu.analyser.util.ListUtil;
 import org.e2immu.annotation.Fluent;
 import org.e2immu.annotation.NotNull;
@@ -169,52 +168,11 @@ public interface TypeInspection extends Inspection {
      * @param inspectionProvider to be able to inspect super-types
      * @return true when a functional interface
      */
-    default boolean computeIsFunctionalInterface(InspectionProvider inspectionProvider) {
-        return computeIsFunctionalInterface(inspectionProvider, this, new HashSet<>(), new HashMap<>()) == 1;
-    }
-
-    private static int computeIsFunctionalInterface(InspectionProvider inspectionProvider,
-                                                    TypeInspection typeInspection,
-                                                    Set<MethodInspection> overridden,
-                                                    Map<NamedType, ParameterizedType> translationMap) {
-        int sum = 0;
-        for (MethodInfo methodInfo : typeInspection.methods()) {
-            MethodInspection inspection = inspectionProvider.getMethodInspection(methodInfo);
-            boolean nonStaticNonDefault = !inspection.isPrivate() && !inspection.isStatic() && !inspection.isDefault() && !inspection.isOverloadOfJLOMethod();
-            if (nonStaticNonDefault) {
-                if (overridden.stream().noneMatch(override -> isOverrideOf(inspectionProvider, inspection, override, translationMap))) {
-                    sum++;
-                    overridden.add(inspection);
-                }
-            } else if (inspection.isDefault()) {
-                // can cancel out a method in one of the super types
-                overridden.add(inspection);
-            }
-        }
-        // overridden needs to cancel out all of them, individually!
-        if (sum <= 1) {
-            for (ParameterizedType superInterface : typeInspection.interfacesImplemented()) {
-                TypeInspection typeInspectionOfSuperType = inspectionProvider.getTypeInspection(superInterface.typeInfo);
-                Map<NamedType, ParameterizedType> map = ShallowMethodResolver.mapOfSuperType(superInterface, inspectionProvider);
-                Map<NamedType, ParameterizedType> superMap = new HashMap<>(translationMap);
-                superMap.putAll(map);
-                sum += computeIsFunctionalInterface(inspectionProvider, typeInspectionOfSuperType, overridden, superMap);
-            }
-        }
-        return sum;
-    }
-
-    private static boolean isOverrideOf(InspectionProvider inspectionProvider,
-                                        MethodInspection inSubType,
-                                        MethodInspection inSuperType,
-                                        Map<NamedType, ParameterizedType> map) {
-        if (!inSubType.getMethodInfo().name.equals(inSuperType.getMethodInfo().name)) return false;
-        return ShallowMethodResolver.sameParameters(inspectionProvider, inSubType.getParameters(), inSuperType.getParameters(), map);
-    }
+    boolean computeIsFunctionalInterface(InspectionProvider inspectionProvider);
 
     default boolean isStatic() {
         if (typeInfo().packageNameOrEnclosingType.isLeft()) return true; // independent type
-        return typeNature() != TypeNature.CLASS || modifiers().contains(TypeModifier.STATIC); // static sub type
+        return typeNature() != TypeNature.CLASS || modifiers().contains(TypeModifier.STATIC); // static subtype
     }
 
     default boolean isInterface() {
@@ -237,6 +195,7 @@ public interface TypeInspection extends Inspection {
         return !permittedWhenSealed().isEmpty();
     }
 
+    @SuppressWarnings("unused")
     default Set<ParameterizedType> typesOfFieldsMethodsConstructors(InspectionProvider inspectionProvider) {
         // this type
         Set<ParameterizedType> typesOfFields = fields().stream()
