@@ -1268,7 +1268,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
             DV value;
             if (vp == EXTERNAL_IGNORE_MODIFICATIONS && evaluationContext.inConstruction()) {
                 value = EXTERNAL_IGNORE_MODIFICATIONS.valueWhenAbsent();
-            } else if(isMyself.toFalse(vp)) {
+            } else if (isMyself.toFalse(vp)) {
                 value = vp.falseDv;
             } else {
                 value = fieldAnalysis.getFieldProperty(analyserContext, fieldInfo, fieldInfo.type.bestTypeInfo(), vp);
@@ -1420,7 +1420,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
 
     @Override
     public Stream<VariableInfoContainer> variableInfoContainerStream() {
-        return  variables.valueStream();
+        return variables.valueStream();
     }
 
 
@@ -1846,14 +1846,18 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
             if (haveMapForVariable) {
                 Properties p = propertiesFromSubAnalysers.computeIfAbsent(variable, v -> Properties.writable());
                 try {
+                    /* the reason we do not want to complain upon overwriting,
+                       is that some analysers are DONE, and therefore don't provide a variable access report
+                       anymore. Modified may then become FALSE instead of TRUE, see e.g. OutputBuilderSimplified_13
+                     */
                     if (read != null) {
-                        p.put(READ, read);
+                        p.put(READ, read, false);
                     }
                     if (modified != null) {
-                        p.put(CONTEXT_MODIFIED, modified);
+                        p.put(CONTEXT_MODIFIED, modified, false);
                     }
                     if (notNull != null) {
-                        p.put(CONTEXT_NOT_NULL, notNull);
+                        p.put(CONTEXT_NOT_NULL, notNull, false);
                     }
                 } catch (IllegalArgumentException ise) {
                     LOGGER.error("Caught property change violation for variable {}", variable);

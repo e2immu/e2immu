@@ -15,6 +15,7 @@
 package org.e2immu.analyser.parser.own.output;
 
 import org.e2immu.analyser.analyser.DV;
+import org.e2immu.analyser.analyser.Properties;
 import org.e2immu.analyser.analyser.Property;
 import org.e2immu.analyser.analyser.VariableInfo;
 import org.e2immu.analyser.analysis.ParameterAnalysis;
@@ -31,6 +32,8 @@ import org.e2immu.analyser.visitor.*;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -451,9 +454,9 @@ public class Test_61_OutputBuilderSimplified extends CommonTestRunner {
         BreakDelayVisitor breakDelayVisitor = d -> assertEquals(0, d.breaks());
 
         testClass("OutputBuilderSimplified_7", 0, 0, new DebugConfiguration.Builder()
-           //     .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
-           //     .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
-           //     .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                //     .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
+                //     .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                //     .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .addBreakDelayVisitor(breakDelayVisitor)
                 .build(), new AnalyserConfiguration.Builder().setForceAlphabeticAnalysisInPrimaryType(false).build());
     }
@@ -668,10 +671,10 @@ public class Test_61_OutputBuilderSimplified extends CommonTestRunner {
         BreakDelayVisitor breakDelayVisitor = d -> assertEquals(0, d.breaks());
 
         testClass("OutputBuilderSimplified_12", 0, 0, new DebugConfiguration.Builder()
-             ///   .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-             //   .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
-             //   .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
-             //   .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
+                ///   .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                //   .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                //   .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+                //   .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
                 .addBreakDelayVisitor(breakDelayVisitor)
                 .build(), new AnalyserConfiguration.Builder().setForceAlphabeticAnalysisInPrimaryType(false).build());
     }
@@ -696,11 +699,14 @@ public class Test_61_OutputBuilderSimplified extends CommonTestRunner {
                         assertEquals(eval2Linked, eval2.getLinkedVariables().toString());
 
                         String linked = switch (d.iteration()) {
-                            case 0 -> "NOT_YET_SET";
+                            case 0 -> "Space.NONE:-1,a.list:-1,a:-1,b.list:-1,b:-1,end:-1,notStart:-1,start:-1";
                             case 1 -> "a:-1";
                             default -> "a:2"; // !!
                         };
                         assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
+                        assertDv(d, 2, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
+                    }
+                    if("0".equals(d.statementId())) {
                         assertDv(d, 2, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
                     }
                 }
@@ -722,6 +728,9 @@ public class Test_61_OutputBuilderSimplified extends CommonTestRunner {
                         assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
                         assertDv(d, 2, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
                     }
+                    if("4".equals(d.statementId())) {
+                        assertDv(d, 2, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
+                    }
                 }
             }
             if ("add".equals(d.methodInfo().name)) {
@@ -732,6 +741,25 @@ public class Test_61_OutputBuilderSimplified extends CommonTestRunner {
                         assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
                     }
                 }
+            }
+        };
+
+        StatementAnalyserVisitor statementAnalyserVisitor = d -> {
+            if ("joining".equals(d.methodInfo().name)) {
+                assertEquals("0", d.statementId());
+                String expected = switch (d.iteration()) {
+                    case 0 ->
+                            "context-modified=constructor-to-instance@Method_apply_2.0.0-E;initial:Space.NONE@Method_apply_1-C;initial:end@Method_apply_3-E;initial:t@Method_apply_2.0.0-E;link@NOT_YET_SET;srv@Method_apply, context-not-null=[22 delays], read=true:1";
+                    case 1 ->
+                            "context-modified=constructor-to-instance@Method_apply_4-E;initial:Space.NONE@Method_apply_1-C;initial@Field_NONE;link:outputElements@Method_add_1:M;link:this.list@Method_add_1:M;srv@Method_apply, context-not-null=[11 delays], read=true:1";
+                    case 2  -> "context-modified=true:1, context-not-null=srv@Method_apply, read=true:1";
+                    default -> "context-modified=true:1, context-not-null=nullable:1, read=true:1";
+                };
+                assertEquals(expected, d.statementAnalysis()
+                        .propertiesFromSubAnalysers().filter(e -> e.getKey() instanceof ParameterInfo pi && "separator".equals(pi.name))
+                        .map(Map.Entry::getValue)
+                        .map(Properties::sortedToString)
+                        .findFirst().orElseThrow());
             }
         };
 
@@ -752,9 +780,10 @@ public class Test_61_OutputBuilderSimplified extends CommonTestRunner {
             }
         };
         testClass("OutputBuilderSimplified_13", 0, 0, new DebugConfiguration.Builder()
-                //    .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-                //    .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
-                //    .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
                 .build(), new AnalyserConfiguration.Builder().setForceAlphabeticAnalysisInPrimaryType(true).build());
     }
 }

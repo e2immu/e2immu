@@ -1,6 +1,7 @@
 package org.e2immu.analyser.parser.own.util.testexample;
 
 
+import org.e2immu.annotation.ImmutableContainer;
 import org.e2immu.annotation.Modified;
 import org.e2immu.annotation.NotModified;
 import org.e2immu.annotation.NotNull;
@@ -16,9 +17,12 @@ public class WGSimplified_1 {
     public interface Variable extends Comparable<Variable> {
     }
 
+    @ImmutableContainer
     interface DV {
+        @NotNull
         DV min(DV other);
 
+        @NotNull
         DV max(DV other);
 
         boolean le(DV other);
@@ -32,6 +36,7 @@ public class WGSimplified_1 {
         }
     }
 
+    @ImmutableContainer
     record DVI(int k) implements DV {
         @Override
         public DV min(DV other) {

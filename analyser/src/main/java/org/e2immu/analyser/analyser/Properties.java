@@ -74,8 +74,12 @@ public class Properties implements Comparable<Properties> {
         return this;
     }
 
-    // return progress
     public boolean put(Property property, DV dv) {
+        return put(property, dv, true);
+    }
+
+    // return progress
+    public boolean put(Property property, DV dv, boolean complain) {
         Objects.requireNonNull(dv);
         Objects.requireNonNull(property);
         DV inMap = map.get(property);
@@ -83,7 +87,7 @@ public class Properties implements Comparable<Properties> {
             map.put(property, dv);
             return dv.isDone();
         }
-        if (!inMap.equals(dv)) {
+        if (complain && !inMap.equals(dv)) {
             throw new IllegalArgumentException("Changing value of " + property + " from " + inMap + " to " + dv);
         }
         return false;

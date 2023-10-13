@@ -16,6 +16,8 @@ package org.e2immu.analyser.analyser.util;
 
 import org.e2immu.analyser.analyser.DV;
 import org.e2immu.analyser.analyser.LinkedVariables;
+import org.e2immu.analyser.model.variable.ReturnVariable;
+import org.e2immu.analyser.model.variable.This;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.annotation.*;
 import org.e2immu.annotation.eventual.Only;
@@ -125,6 +127,7 @@ public class WeightedGraph extends Freezable {
     }
 
     private static DV min(DV d1, DV d2) {
+        // ignore delays when statically assigned
         if (d1.equals(LINK_STATICALLY_ASSIGNED) || d2.equals(LINK_STATICALLY_ASSIGNED)) {
             return LINK_STATICALLY_ASSIGNED;
         }
@@ -175,7 +178,11 @@ public class WeightedGraph extends Freezable {
             assert !LinkedVariables.LINK_INDEPENDENT.equals(linkLevel);
 
             node.dependsOn.merge(e.getKey(), linkLevel, merger);
-            if (bidirectional) {
+            if (bidirectional || LinkedVariables.LINK_STATICALLY_ASSIGNED.equals(linkLevel)
+                    && !(e.getKey() instanceof This)
+                    && !(v instanceof This)
+                    && !(e.getKey() instanceof ReturnVariable)
+                    && !(v instanceof ReturnVariable)) {
                 Node n = getOrCreate(e.getKey());
                 if (n.dependsOn == null) n.dependsOn = new TreeMap<>();
                 n.dependsOn.merge(v, linkLevel, merger);

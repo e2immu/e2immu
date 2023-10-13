@@ -166,11 +166,72 @@ public class Test_63_WGSimplified extends CommonTestRunner {
     }
 
     /*
-    very similar code, but with a redundant check, and a "this is not good" exception
+    The two errors here are indeed a logical problem in the example (e2immu) code. The current version of WeightedGraph
+    does not have this problem anymore :-)
      */
     @Test
     public void test_1() throws IOException {
-        testClass("WGSimplified_1", 0, 0, new DebugConfiguration.Builder()
+        StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+            if ("recursivelyComputeLinks".equals(d.methodInfo().name)) {
+                if ("node".equals(d.variableName())) {
+                    if ("2".equals(d.statementId())) {
+                        assertDv(d, 2, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                    }
+                    if ("3.0.0".equals(d.statementId())) {
+                        assertDv(d, 2, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                    }
+                }
+                if (d.variable() instanceof FieldReference fr && "dependsOn".equals(fr.fieldInfo.name)
+                        && fr.scopeVariable != null
+                        && "node".equals(fr.scopeVariable.toString())) {
+                    if ("3.0.0".equals(d.statementId())) {
+                        assertDv(d, 2, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                    }
+                }
+                if (d.variable() instanceof FieldReference fr && "nodeMap".equals(fr.fieldInfo.name)) {
+                    if ("3".equals(d.statementId())) {
+                        assertDv(d, 2, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                    }
+                }
+                if (d.variable() instanceof This) {
+                    if ("3".equals(d.statementId())) {
+                        assertDv(d, 2, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                    }
+                }
+            }
+            if ("accept".equals(d.methodInfo().name) && "$1".equals(d.methodInfo().typeInfo.simpleName)) {
+                if (d.variable() instanceof FieldReference fr && "nodeMap".equals(fr.fieldInfo.name)) {
+                    if ("0".equals(d.statementId())) {
+                        assertDv(d, 1, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                    }
+                }
+                if (d.variable() instanceof FieldReference fr && "LINK_COMMON_HC".equals(fr.fieldInfo.name)) {
+                    if ("0.0.2.0.0.0.2".equals(d.statementId())) {
+                        assertDv(d, 2, MultiLevel.EFFECTIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
+                        assertDv(d, 2, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                    }
+                }
+                if (d.variable() instanceof This) {
+                    if ("0".equals(d.statementId())) {
+                        assertDv(d, 3, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                    }
+                }
+            }
+        };
+
+        MethodAnalyserVisitor methodAnalyserVisitor = d -> {
+            if ("recursivelyComputeLinks".equals(d.methodInfo().name)) {
+                assertDv(d, 2, DV.FALSE_DV, Property.TEMP_MODIFIED_METHOD);
+            }
+            if ("accept".equals(d.methodInfo().name) && "recursivelyComputeLinks".equals(d.enclosingMethod().name)) {
+                assertEquals("$1", d.methodInfo().typeInfo.simpleName);
+                assertDv(d, 3, DV.FALSE_DV, Property.MODIFIED_METHOD);
+            }
+        };
+
+        testClass("WGSimplified_1", 2, 1, new DebugConfiguration.Builder()
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .build(), new AnalyserConfiguration.Builder().setComputeFieldAnalyserAcrossAllMethods(true).build());
     }
 
@@ -201,8 +262,8 @@ public class Test_63_WGSimplified extends CommonTestRunner {
             }
         };
         StatementAnalyserVisitor statementAnalyserVisitor = d -> {
-            if("recursivelyComputeLinks".equals(d.methodInfo().name)) {
-                if("3.0.0".equals(d.statementId())) {
+            if ("recursivelyComputeLinks".equals(d.methodInfo().name)) {
+                if ("3.0.0".equals(d.statementId())) {
                     // there are no properties, because the lambda is the first in the call chain... this is painful
                     //assertEquals("", d.statementAnalysis().propertiesFromSubAnalysersSortedToString());
                 }
