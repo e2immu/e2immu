@@ -49,7 +49,7 @@ public class Test_ModificationInLambda extends CommonTestRunner {
                         assertDv(d, 1, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
                     } else fail("Have " + thisVar.typeInfo.fullyQualifiedName);
                 }
-                if (d.variable() instanceof FieldReference fr && "set".equals(fr.fieldInfo.name)) {
+                if (d.variable() instanceof FieldReference fr && "set".equals(fr.fieldInfo().name)) {
                     assertDv(d, 1, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
                 }
             }

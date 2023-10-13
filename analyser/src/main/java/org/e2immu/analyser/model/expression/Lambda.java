@@ -374,8 +374,8 @@ public class Lambda extends BaseExpression implements Expression {
         Called by DelayedExpression, original.variables(...) for the delayed version of the lambda.
          */
         return block.variableStream()
-                .filter(v -> v instanceof FieldReference fr && fr.scopeVariable instanceof This)
-                .map(v -> ((FieldReference) v).scopeVariable)
+                .filter(v -> v instanceof FieldReference fr && fr.scopeVariable() instanceof This)
+                .map(v -> ((FieldReference) v).scopeVariable())
                 .toList();
     }
 }

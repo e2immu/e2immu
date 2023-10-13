@@ -568,7 +568,7 @@ public class Test_01_Loops_6plus extends CommonTestRunner {
                         assertDv(d, 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, CONTEXT_NOT_NULL);
                     }
                 }
-                if (d.variable() instanceof FieldReference fr && "map".equals(fr.fieldInfo.name)) {
+                if (d.variable() instanceof FieldReference fr && "map".equals(fr.fieldInfo().name)) {
                     if ("1".equals(d.statementId())) {
                         assertTrue(d.variableInfoContainer().hasEvaluation());
                         VariableInfo eval = d.variableInfoContainer().best(Stage.EVALUATION);
@@ -591,7 +591,7 @@ public class Test_01_Loops_6plus extends CommonTestRunner {
 
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("method".equals(d.methodInfo().name)) {
-                if (d.variable() instanceof FieldReference fr && "map".equals(fr.fieldInfo.name)) {
+                if (d.variable() instanceof FieldReference fr && "map".equals(fr.fieldInfo().name)) {
                     if ("1".equals(d.statementId())) {
                         assertTrue(d.variableInfoContainer().hasEvaluation());
                         VariableInfo eval = d.variableInfoContainer().best(Stage.EVALUATION);
@@ -682,7 +682,7 @@ public class Test_01_Loops_6plus extends CommonTestRunner {
                                 it(1, "this.kvStore:2,this:3"));
                     }
                 }
-                if (d.variable() instanceof FieldReference fr && "kvStore".equals(fr.fieldInfo.name)) {
+                if (d.variable() instanceof FieldReference fr && "kvStore".equals(fr.fieldInfo().name)) {
                     if ("1.0.0".equals(d.statementId())) {
                         assertTrue(d.variableInfoContainer().hasEvaluation());
                         assertFalse(d.variableInfoContainer().hasMerge());
@@ -784,14 +784,14 @@ public class Test_01_Loops_6plus extends CommonTestRunner {
                         assertDv(d, 2, MultiLevel.EFFECTIVELY_NOT_NULL_DV, NOT_NULL_EXPRESSION);
                     }
                 }
-                if (d.variable() instanceof FieldReference fr && "read".equals(fr.fieldInfo.name)) {
+                if (d.variable() instanceof FieldReference fr && "read".equals(fr.fieldInfo().name)) {
                     if ("1.0.1.0.1".equals(d.statementId())) {
-                        assertNotNull(fr.scopeVariable);
-                        assertEquals("container", fr.scopeVariable.simpleName());
+                        assertNotNull(fr.scopeVariable());
+                        assertEquals("container", fr.scopeVariable().simpleName());
                         String expected = d.iteration() < 2 ? "<f:container.read>" : "nullable instance type Date";
                         assertEquals(expected, d.currentValue().toString());
 
-                        assertEquals("container", fr.scope.toString());
+                        assertEquals("container", fr.scope().toString());
                     }
                 }
             }

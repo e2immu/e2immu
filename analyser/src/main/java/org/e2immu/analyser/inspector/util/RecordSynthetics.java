@@ -22,6 +22,7 @@ import org.e2immu.analyser.model.expression.VariableExpression;
 import org.e2immu.analyser.model.statement.Block;
 import org.e2immu.analyser.model.statement.ReturnStatement;
 import org.e2immu.analyser.model.variable.FieldReference;
+import org.e2immu.analyser.model.variable.impl.FieldReferenceImpl;
 import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
 
 import java.util.List;
@@ -76,7 +77,7 @@ public class RecordSynthetics {
 
     // return this.field;
     private static Block getterCodeBlock(ExpressionContext expressionContext, FieldInfo fieldInfo) {
-        FieldReference fieldReference = new FieldReference(expressionContext.typeContext(), fieldInfo);
+        FieldReference fieldReference = new FieldReferenceImpl(expressionContext.typeContext(), fieldInfo);
         var returnStatement = new ReturnStatement(Identifier.generate("accessor return"),
                 new VariableExpression(fieldInfo.getIdentifier(), fieldReference));
         return new Block.BlockBuilder(Identifier.generate("accessor block")).addStatement(returnStatement).build();

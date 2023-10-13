@@ -23,7 +23,7 @@ import org.e2immu.analyser.analyser.impl.context.EvaluationResultImpl;
 import org.e2immu.analyser.analyser.impl.shallow.ShallowTypeAnalyser;
 import org.e2immu.analyser.analyser.impl.util.BreakDelayLevel;
 import org.e2immu.analyser.analyser.impl.util.ComputeTypeImmutable;
-import org.e2immu.analyser.analyser.nonanalyserimpl.AbstractEvaluationContextImpl;
+import org.e2immu.analyser.analyser.nonanalyserimpl.CommonEvaluationContext;
 import org.e2immu.analyser.analyser.util.*;
 import org.e2immu.analyser.analysis.*;
 import org.e2immu.analyser.analysis.impl.TypeAnalysisImpl;
@@ -32,6 +32,7 @@ import org.e2immu.analyser.model.expression.*;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.ReturnVariable;
 import org.e2immu.analyser.model.variable.This;
+import org.e2immu.analyser.model.variable.impl.FieldReferenceImpl;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.visitor.TypeAnalyserVisitor;
 import org.e2immu.annotation.NotModified;
@@ -387,7 +388,7 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
                                         tempApproved.put(fieldToCondition.fieldReference, fieldToCondition.condition) : null;
                         if (inMap != null && !inMap.equals(fieldToCondition.condition) && !inMap.equals(fieldToCondition.negatedCondition)) {
                             analyserResultBuilder.add(Message.newMessage
-                                    (fieldToCondition.fieldReference.fieldInfo.newLocation(),
+                                    (fieldToCondition.fieldReference.fieldInfo().newLocation(),
                                             Message.Label.DUPLICATE_MARK_CONDITION, "Field: " + fieldToCondition.fieldReference));
                         }
                         methodsForApprovedField.merge(fieldToCondition.fieldReference, Set.of(methodAnalyser.getMethodInfo()),
@@ -529,7 +530,7 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
                                     !tempApproved.containsKey(fieldToCondition.fieldReference) ?
                                             tempApproved.put(fieldToCondition.fieldReference, fieldToCondition.condition) : null;
                             if (inMap != null && !inMap.equals(fieldToCondition.condition) && !inMap.equals(fieldToCondition.negatedCondition)) {
-                                analyserResultBuilder.add(Message.newMessage(fieldToCondition.fieldReference.fieldInfo.newLocation(),
+                                analyserResultBuilder.add(Message.newMessage(fieldToCondition.fieldReference.fieldInfo().newLocation(),
                                         Message.Label.DUPLICATE_MARK_CONDITION, fieldToCondition.fieldReference.fullyQualifiedName()));
                             }
                             methodsForApprovedField.merge(fieldToCondition.fieldReference, Set.of(methodAnalyser.getMethodInfo()),
@@ -562,7 +563,7 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
                                                               Map<FieldReference, Set<MethodInfo>> methodsForApprovedField) {
         for (FieldAnalyser fieldAnalyser : myFieldAnalysers) {
             FieldInfo fieldInfo = fieldAnalyser.getFieldInfo();
-            FieldReference fieldReference = new FieldReference(analyserContext, fieldInfo);
+            FieldReference fieldReference = new FieldReferenceImpl(analyserContext, fieldInfo);
             if (fieldInfo.fieldInspection.get().isPrivate() && !tempApproved.containsKey(fieldReference)) {
                 Set<MethodInfo> methodsAssigned;
                 DV finalDv = fieldAnalyser.getFieldAnalysis().getProperty(Property.FINAL);
@@ -584,7 +585,7 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
                     if (guard.isPresent()) {
                         typeAnalysis.addGuardedByEventuallyImmutableField(fieldInfo);
                         LOGGER.debug("Field {} joins the preconditions of guarding field {} in type {}", fieldInfo,
-                                guard.get().fieldInfo, typeInfo);
+                                guard.get().fieldInfo(), typeInfo);
                     }
                 }
             }
@@ -807,7 +808,7 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
                                 */
                                 DV cm = lv.stream()
                                         .filter(e -> e.getKey() instanceof FieldReference fr
-                                                && fr.scopeIsRecursivelyThis() && fields.contains(fr.fieldInfo)
+                                                && fr.scopeIsRecursivelyThis() && fields.contains(fr.fieldInfo())
                                                 && LinkedVariables.LINK_IS_HC_OF.equals(e.getValue()))
                                         .map(e -> vi.getProperty(CONTEXT_MODIFIED))
                                         .reduce(DelayFactory.initialDelay(), DV::max);
@@ -1098,9 +1099,9 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
             VariableExpression ve;
             if (!precondition.isEmpty() && (ve = variableExpressionOrNegated(precondition.expression())) != null
                     && ve.variable() instanceof FieldReference fr
-                    && fr.fieldInfo.fieldInspection.get().isStatic()
-                    && fr.fieldInfo.fieldInspection.get().isPrivate()
-                    && fr.fieldInfo.type.isBoolean()) {
+                    && fr.fieldInfo().fieldInspection.get().isStatic()
+                    && fr.fieldInfo().fieldInspection.get().isPrivate()
+                    && fr.fieldInfo().type.isBoolean()) {
                 // one thing that's left is that there is an assignment in the constructor, and no assignment anywhere else
                 boolean wantAssignmentToTrue = precondition.expression() instanceof Negation;
                 String fieldFqn = ve.variable().fullyQualifiedName();
@@ -1306,7 +1307,7 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
         return typeAnalysis.ignorePrivateConstructorsForFieldValues.get();
     }
 
-    class EvaluationContextImpl extends AbstractEvaluationContextImpl implements EvaluationContext {
+    class EvaluationContextImpl extends CommonEvaluationContext implements EvaluationContext {
 
         protected EvaluationContextImpl(int iteration,
                                         BreakDelayLevel breakDelayLevel,

@@ -48,7 +48,7 @@ public class Test_16_Modification_20 extends CommonTestRunner {
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("C1".equals(d.methodInfo().name)) {
                 assertTrue(d.methodInfo().isConstructor);
-                if (d.variable() instanceof FieldReference fr && "set".equals(fr.fieldInfo.name)) {
+                if (d.variable() instanceof FieldReference fr && "set".equals(fr.fieldInfo().name)) {
                     assertFalse(d.context().evaluationContext().isMyself(d.variable()).toFalse(Property.IMMUTABLE));
 
                     assertEquals("setC", d.currentValue().toString());
@@ -68,7 +68,7 @@ public class Test_16_Modification_20 extends CommonTestRunner {
                         assertDv(d, expectedDelay, 4, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     }
                 }
-                if (d.variable() instanceof FieldReference fr && "s2".equals(fr.fieldInfo.name)) {
+                if (d.variable() instanceof FieldReference fr && "s2".equals(fr.fieldInfo().name)) {
                     if ("0".equals(d.statementId())) {
                         assertDv(d, 4, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                         assertDv(d, 1, MultiLevel.NULLABLE_DV, Property.CONTEXT_NOT_NULL);
@@ -91,8 +91,8 @@ public class Test_16_Modification_20 extends CommonTestRunner {
                     }
                 }
 
-                if (d.variable() instanceof FieldReference fr && "set".equals(fr.fieldInfo.name)) {
-                    if ("c".equals(fr.scope.toString())) {
+                if (d.variable() instanceof FieldReference fr && "set".equals(fr.fieldInfo().name)) {
+                    if ("c".equals(fr.scope().toString())) {
                         if ("0".equals(d.statementId())) {
                             assertDv(d, 3, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
 

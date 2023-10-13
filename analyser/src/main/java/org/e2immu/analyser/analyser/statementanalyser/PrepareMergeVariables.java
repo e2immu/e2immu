@@ -16,6 +16,7 @@ import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.LocalVariableReference;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.model.variable.VariableNature;
+import org.e2immu.analyser.model.variable.impl.FieldReferenceImpl;
 
 import java.util.*;
 import java.util.function.Function;
@@ -285,7 +286,8 @@ class PrepareMergeVariables {
             outOfScopeBuilder.put(variable, rvr.fieldReference);
             outOfScopeBuilder.addVariableExpression(variable, rvr.variableExpression);
             outOfScopeBuilder.put(rvr.oldScopeVariable, rvr.newScopeVariable);
-            VariableExpression newVe = new VariableExpression(rvr.fieldReference.scope.getIdentifier(), rvr.newScopeVariable);
+            VariableExpression newVe = new VariableExpression(rvr.fieldReference.scope().getIdentifier(),
+                    rvr.newScopeVariable);
             outOfScopeBuilder.addVariableExpression(rvr.oldScopeVariable, newVe);
         }
     }
@@ -302,24 +304,24 @@ class PrepareMergeVariables {
      */
     private RenameVariableResult renameVariable(Variable variable, TranslationMap translationMap) {
         if (variable instanceof FieldReference fr) {
-            Expression newScope = fr.scope.translate(evaluationContext.getAnalyserContext(), translationMap);
-            if (newScope != fr.scope) {
-                assert fr.scopeVariable != null;
-                String name = "scope-" + fr.scopeVariable.simpleName() + ":" + evaluationContext.statementIndex();
+            Expression newScope = fr.scope().translate(evaluationContext.getAnalyserContext(), translationMap);
+            if (newScope != fr.scope()) {
+                assert fr.scopeVariable() != null;
+                String name = "scope-" + fr.scopeVariable().simpleName() + ":" + evaluationContext.statementIndex();
                 // if statement index is 2, then 2~ is after 2.x.x, but before 3
                 VariableNature vn = new VariableNature.ScopeVariable(evaluationContext.statementIndex());
                 LocalVariable lv = new LocalVariable(Set.of(LocalVariableModifier.FINAL), name,
-                        fr.scope.returnType(), List.of(), fr.getOwningType(), vn);
+                        fr.scope().returnType(), List.of(), fr.getOwningType(), vn);
                 LocalVariableReference scopeVariable = new LocalVariableReference(lv, newScope);
-                Expression scope = new VariableExpression(fr.scope.getIdentifier(), scopeVariable);
-                FieldReference newFr = new FieldReference(evaluationContext.getAnalyserContext(), fr.fieldInfo,
+                Expression scope = new VariableExpression(fr.scope().getIdentifier(), scopeVariable);
+                FieldReference newFr = new FieldReferenceImpl(evaluationContext.getAnalyserContext(), fr.fieldInfo(),
                         scope, scopeVariable, fr.getOwningType());
-                VariableExpression ve = new VariableExpression(fr.scope.getIdentifier(), newFr,
+                VariableExpression ve = new VariableExpression(fr.scope().getIdentifier(), newFr,
                         VariableExpression.NO_SUFFIX, scope, null);
-                return new RenameVariableResult(newFr, ve, scopeVariable, fr.scopeVariable);
+                return new RenameVariableResult(newFr, ve, scopeVariable, fr.scopeVariable());
             }
-            if (fr.scopeVariable instanceof FieldReference) {
-                RenameVariableResult rvr = renameVariable(fr.scopeVariable, translationMap);
+            if (fr.scopeVariable() instanceof FieldReference) {
+                RenameVariableResult rvr = renameVariable(fr.scopeVariable(), translationMap);
                 if (rvr != null) {
                     throw new UnsupportedOperationException("Implement!");
                 }

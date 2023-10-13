@@ -88,7 +88,7 @@ public class Test_45_Project extends CommonTestRunner {
                     assertDv(d, 2, MultiLevel.NULLABLE_DV, Property.NOT_NULL_EXPRESSION);
                 }
             }
-            if (d.variable() instanceof FieldReference fr && "read".equals(fr.fieldInfo.name)) {
+            if (d.variable() instanceof FieldReference fr && "read".equals(fr.fieldInfo().name)) {
                 if ("2.0.0".equals(d.statementId())) {
                     assertDv(d, 2, MultiLevel.NULLABLE_DV, Property.CONTEXT_NOT_NULL);
                 }
@@ -163,28 +163,28 @@ public class Test_45_Project extends CommonTestRunner {
     public void test_0bis() throws IOException {
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("set".equals(d.methodInfo().name)) {
-                if (d.variable() instanceof FieldReference fr && "read".equals(fr.fieldInfo.name)) {
-                    assert "prev".equals(fr.scope.toString());
+                if (d.variable() instanceof FieldReference fr && "read".equals(fr.fieldInfo().name)) {
+                    assert "prev".equals(fr.scope().toString());
                     if ("2.0.1".equals(d.statementId())) {
                         assertDv(d, 35, MultiLevel.NULLABLE_DV, Property.CONTEXT_NOT_NULL);
                     }
                 }
             }
             if ("get".equals(d.methodInfo().name)) {
-                if (d.variable() instanceof FieldReference fr && "read".equals(fr.fieldInfo.name)) {
-                    assert "container".equals(fr.scope.toString());
+                if (d.variable() instanceof FieldReference fr && "read".equals(fr.fieldInfo().name)) {
+                    assert "container".equals(fr.scope().toString());
                     assertDv(d, MultiLevel.NULLABLE_DV, Property.CONTEXT_NOT_NULL);
                 }
             }
             if ("recentlyReadAndUpdatedAfterwards".equals(d.methodInfo().name)) {
-                if (d.variable() instanceof FieldReference fr && "read".equals(fr.fieldInfo.name)) {
-                    if ("container".equals(fr.scope.toString())) {
+                if (d.variable() instanceof FieldReference fr && "read".equals(fr.fieldInfo().name)) {
+                    if ("container".equals(fr.scope().toString())) {
                         if ("2.0.1.0.1.0.0".equals(d.statementId())) {
                             assertDv(d, 35, MultiLevel.NULLABLE_DV, Property.CONTEXT_NOT_NULL);
                         }
-                    } else if ("scope-container:2.0.1".equals(fr.scope.toString())) {
+                    } else if ("scope-container:2.0.1".equals(fr.scope().toString())) {
                         assertDv(d, 35, MultiLevel.NULLABLE_DV, Property.CONTEXT_NOT_NULL);
-                    } else fail("Have " + fr.scope);
+                    } else fail("Have " + fr.scope());
                 }
             }
             if ("Container".equals(d.methodInfo().name)) {
@@ -194,7 +194,7 @@ public class Test_45_Project extends CommonTestRunner {
                         assertDv(d, 35, MultiLevel.NULLABLE_DV, Property.EXTERNAL_NOT_NULL);
                     }
                 }
-                if (d.variable() instanceof FieldReference fr && "read".equals(fr.fieldInfo.name)) {
+                if (d.variable() instanceof FieldReference fr && "read".equals(fr.fieldInfo().name)) {
                     if ("1".equals(d.statementId())) {
                         assertDv(d, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                         assertDv(d, 35, MultiLevel.NULLABLE_DV, Property.EXTERNAL_NOT_NULL);
@@ -206,7 +206,7 @@ public class Test_45_Project extends CommonTestRunner {
                         assertDv(d, 25, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.EXTERNAL_NOT_NULL);
                     }
                 }
-                if (d.variable() instanceof FieldReference fr && "value".equals(fr.fieldInfo.name)) {
+                if (d.variable() instanceof FieldReference fr && "value".equals(fr.fieldInfo().name)) {
                     if ("1".equals(d.statementId())) {
                         assertDv(d, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                         assertDv(d, 25, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.EXTERNAL_NOT_NULL);
@@ -214,9 +214,9 @@ public class Test_45_Project extends CommonTestRunner {
                 }
             }
             if ("visit".equals(d.methodInfo().name)) {
-                if (d.variable() instanceof FieldReference fr && "value".equals(fr.fieldInfo.name)) {
-                    if ("scope-scope-111:28:0".equals(fr.scope.toString())) {
-                        assertNotNull(fr.scopeVariable);
+                if (d.variable() instanceof FieldReference fr && "value".equals(fr.fieldInfo().name)) {
+                    if ("scope-scope-111:28:0".equals(fr.scope().toString())) {
+                        assertNotNull(fr.scopeVariable());
                         if ("0".equals(d.statementId())) {
                             // as a result of breaking a delay
                             assertDv(d, 25, DV.FALSE_DV, Property.CONTEXT_MODIFIED);

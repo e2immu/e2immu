@@ -97,7 +97,7 @@ public class Test_00_Basics_2 extends CommonTestRunner {
                     // cannot be content linked to string, because string is recursively immutable
                     assertLinked(d, it(0, "this:4"));
                 }
-                if (d.variable() instanceof FieldReference fr && "string".equals(fr.fieldInfo.name)) {
+                if (d.variable() instanceof FieldReference fr && "string".equals(fr.fieldInfo().name)) {
                     assertEquals(STRING_FIELD, d.variableName());
 
                     assertCurrentValue(d, 1,
@@ -120,7 +120,7 @@ public class Test_00_Basics_2 extends CommonTestRunner {
                 if (d.variable() instanceof This) {
                     assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, d.getProperty(NOT_NULL_EXPRESSION));
                 }
-                if (d.variable() instanceof FieldReference fr && "string".equals(fr.fieldInfo.name)) {
+                if (d.variable() instanceof FieldReference fr && "string".equals(fr.fieldInfo().name)) {
                     assertTrue(d.variableInfo().isRead());
                     String expectValue = d.iteration() == 0 ? "<f:string>" : "nullable instance type String";
                     assertEquals(expectValue, d.currentValue().toString());

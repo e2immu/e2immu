@@ -37,14 +37,14 @@ public class Test_60_StaticSideEffects extends CommonTestRunner {
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             int n = d.methodInfo().methodInspection.get().getParameters().size();
             if (d.methodInfo().isConstructor && n == 1) {
-                if (d.variable() instanceof FieldReference fr && "generator".equals(fr.fieldInfo.name)) {
+                if (d.variable() instanceof FieldReference fr && "generator".equals(fr.fieldInfo().name)) {
                     assertDv(d, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.CONTEXT_NOT_NULL);
                     assertDv(d, 1, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     assertCurrentValue(d, 1, "instance type AtomicInteger");
                 }
             }
             if (d.methodInfo().isConstructor && n == 0) {
-                if (d.variable() instanceof FieldReference fr && "generator".equals(fr.fieldInfo.name)) {
+                if (d.variable() instanceof FieldReference fr && "generator".equals(fr.fieldInfo().name)) {
                     assertDv(d, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.CONTEXT_NOT_NULL);
                     assertDv(d, 1, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     assertCurrentValue(d, 1, "instance type AtomicInteger");

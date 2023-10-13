@@ -40,7 +40,7 @@ public class Test_65_ConditionalInitialization extends CommonTestRunner {
     public void test_0() throws IOException {
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("ConditionalInitialization_0".equals(d.methodInfo().name)) {
-                if (d.variable() instanceof FieldReference fr && "set".equals(fr.fieldInfo.name)) {
+                if (d.variable() instanceof FieldReference fr && "set".equals(fr.fieldInfo().name)) {
                     if ("0.0.0".equals(d.statementId())) {
                         assertEquals("Set.of(\"a\",\"b\")", d.currentValue().toString());
                     }
@@ -99,7 +99,7 @@ public class Test_65_ConditionalInitialization extends CommonTestRunner {
     public void test_1() throws IOException {
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("ConditionalInitialization_1".equals(d.methodInfo().name)) {
-                if (d.variable() instanceof FieldReference fr && "set".equals(fr.fieldInfo.name)) {
+                if (d.variable() instanceof FieldReference fr && "set".equals(fr.fieldInfo().name)) {
                     if ("0.0.0".equals(d.statementId())) {
                         assertEquals("Set.of(\"a\",\"b\")", d.currentValue().toString());
                         assertDv(d, MultiLevel.EFFECTIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
@@ -113,7 +113,7 @@ public class Test_65_ConditionalInitialization extends CommonTestRunner {
                 }
             }
             if ("setSet".equals(d.methodInfo().name)) {
-                if (d.variable() instanceof FieldReference fr && "set".equals(fr.fieldInfo.name)) {
+                if (d.variable() instanceof FieldReference fr && "set".equals(fr.fieldInfo().name)) {
                     if ("0.0.0".equals(d.statementId())) {
                         assertEquals("setParam", d.currentValue().toString());
                         assertDv(d, MultiLevel.MUTABLE_DV, Property.IMMUTABLE);
@@ -218,7 +218,7 @@ public class Test_65_ConditionalInitialization extends CommonTestRunner {
     public void test_4bis() throws IOException {
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("ConditionalInitialization_4".equals(d.methodInfo().name)) {
-                if (d.variable() instanceof FieldReference fr && "i".equals(fr.fieldInfo.name)) {
+                if (d.variable() instanceof FieldReference fr && "i".equals(fr.fieldInfo().name)) {
                     if ("0.0.0".equals(d.statementId())) {
                         String expected = switch (d.iteration()) {
                             case 0 -> "1+<f:i>";

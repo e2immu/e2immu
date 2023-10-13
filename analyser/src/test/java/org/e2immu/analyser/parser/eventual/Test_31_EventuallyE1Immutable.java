@@ -61,7 +61,7 @@ public class Test_31_EventuallyE1Immutable extends CommonTestRunner {
 
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("setString".equals(d.methodInfo().name) || "setString2".equals(d.methodInfo().name)) {
-                if ("2".equals(d.statementId()) && d.variable() instanceof FieldReference fr && "string".equals(fr.fieldInfo.name)) {
+                if ("2".equals(d.statementId()) && d.variable() instanceof FieldReference fr && "string".equals(fr.fieldInfo().name)) {
                     assertNotEquals(MultiLevel.NULLABLE_DV, d.getProperty(Property.NOT_NULL_EXPRESSION));
                 }
             }
@@ -77,7 +77,7 @@ public class Test_31_EventuallyE1Immutable extends CommonTestRunner {
                         assertDv(d, 2, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.CONTEXT_NOT_NULL);
                     }
                 }
-                if (d.variable() instanceof FieldReference fr && "string".equals(fr.fieldInfo.name)) {
+                if (d.variable() instanceof FieldReference fr && "string".equals(fr.fieldInfo().name)) {
                     String expected = switch (d.iteration()) {
                         case 0 -> "initial@Field_string";
                         case 1 -> "bid_merge@Method_setString_0:M";
@@ -255,9 +255,9 @@ public class Test_31_EventuallyE1Immutable extends CommonTestRunner {
                         assertEquals("instance type int/*@Identity*/", d.currentValue().toString());
                     }
                 }
-                if (d.variable() instanceof FieldReference fr && "j".equals(fr.fieldInfo.name)) {
-                    assertNotNull(fr.scopeVariable);
-                    assertEquals("this", fr.scopeVariable.simpleName());
+                if (d.variable() instanceof FieldReference fr && "j".equals(fr.fieldInfo().name)) {
+                    assertNotNull(fr.scopeVariable());
+                    assertEquals("this", fr.scopeVariable().simpleName());
                     if ("1".equals(d.statementId())) {
                         String expected = switch (d.iteration()) {
                             case 0 -> "<f:j>";

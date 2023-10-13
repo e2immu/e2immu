@@ -69,12 +69,12 @@ public class Test_Support_00_Either extends CommonTestRunner {
                 }
             }
             if ("Either".equals(d.methodInfo().name)) {
-                if (d.variable() instanceof FieldReference fr && fr.fieldInfo.name.equals("left")) {
+                if (d.variable() instanceof FieldReference fr && fr.fieldInfo().name.equals("left")) {
                     assertEquals(MultiLevel.NULLABLE_DV, d.getProperty(Property.CONTEXT_NOT_NULL));
                     assertEquals("a", d.currentValue().toString());
                     assertEquals(MultiLevel.NULLABLE_DV, d.getProperty(Property.NOT_NULL_EXPRESSION));
                 }
-                if (d.variable() instanceof FieldReference fr && fr.fieldInfo.name.equals("right")) {
+                if (d.variable() instanceof FieldReference fr && fr.fieldInfo().name.equals("right")) {
                     assertEquals(MultiLevel.NULLABLE_DV, d.getProperty(Property.CONTEXT_NOT_NULL));
                     assertEquals("b", d.currentValue().toString());
                     assertEquals(MultiLevel.NULLABLE_DV, d.getProperty(Property.NOT_NULL_EXPRESSION));

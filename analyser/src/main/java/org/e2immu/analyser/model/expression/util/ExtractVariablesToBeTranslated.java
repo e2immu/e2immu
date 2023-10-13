@@ -90,9 +90,9 @@ public class ExtractVariablesToBeTranslated implements Predicate<Element> {
         if (v instanceof FieldReference fr) {
             boolean contains = isVariableField.test(fr);
             if (contains) containsVariableFields.set(true);
-            if (fr.scope instanceof VariableExpression ve) {
+            if (fr.scope() instanceof VariableExpression ve) {
                 add(ve.variable(), ve);
-            } else if (addDelayedVariableExpressions && fr.scope instanceof DelayedVariableExpression dve) {
+            } else if (addDelayedVariableExpressions && fr.scope() instanceof DelayedVariableExpression dve) {
                 // FIXME is DVE allowed as scope?
                 add(dve.variable, dve);
             }

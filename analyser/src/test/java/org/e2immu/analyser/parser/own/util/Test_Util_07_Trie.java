@@ -117,8 +117,8 @@ public class Test_Util_07_Trie extends CommonTestRunner {
                         assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
                     }
                 }
-                if (d.variable() instanceof FieldReference fr && "data".equals(fr.fieldInfo.name)) {
-                    if ("node".equals(fr.scope.toString())) {
+                if (d.variable() instanceof FieldReference fr && "data".equals(fr.fieldInfo().name)) {
+                    if ("node".equals(fr.scope().toString())) {
                         if ("4".equals(d.statementId())) {
                             assertDv(d, 2, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
                             String lvs = switch (d.iteration()) {
@@ -129,11 +129,11 @@ public class Test_Util_07_Trie extends CommonTestRunner {
                             assertEquals(lvs, d.variableInfo().getLinkedVariables().toString());
                         }
                     } else {
-                        fail("Have scope " + fr.scope);
+                        fail("Have scope " + fr.scope());
                     }
                 }
-                if (d.variable() instanceof FieldReference fr && "map".equals(fr.fieldInfo.name)) {
-                    if ("node".equals(fr.scope.toString())) {
+                if (d.variable() instanceof FieldReference fr && "map".equals(fr.fieldInfo().name)) {
+                    if ("node".equals(fr.scope().toString())) {
                         if ("2.0.1.1.0".equals(d.statementId())) {
                             String expected = d.iteration() < 2 ? "<f:node.map>" : "nullable instance type Map<String,TrieNode<T>>";
                             assertEquals(expected, d.currentValue().toString());
@@ -144,10 +144,10 @@ public class Test_Util_07_Trie extends CommonTestRunner {
                             assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
                         }
                     } else {
-                        fail("Have scope " + fr.scope);
+                        fail("Have scope " + fr.scope());
                     }
                 }
-                if (d.variable() instanceof FieldReference fr && "root".equals(fr.fieldInfo.name)) {
+                if (d.variable() instanceof FieldReference fr && "root".equals(fr.fieldInfo().name)) {
                     if ("4".equals(d.statementId())) {
                         assertDv(d, 2, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
                     }
@@ -216,8 +216,8 @@ public class Test_Util_07_Trie extends CommonTestRunner {
                         assertDv(d, MultiLevel.NULLABLE_DV, Property.CONTEXT_NOT_NULL);
                     }
                 }
-                if (d.variable() instanceof FieldReference fr && "data".equals(fr.fieldInfo.name)) {
-                    assertEquals("node", fr.scope.toString());
+                if (d.variable() instanceof FieldReference fr && "data".equals(fr.fieldInfo().name)) {
+                    assertEquals("node", fr.scope().toString());
                     assertCurrentValue(d, 4, "nullable instance type List<T>");
                 }
             }

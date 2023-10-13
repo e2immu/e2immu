@@ -64,9 +64,9 @@ public class Test_04_NotNull_AAPI extends CommonTestRunner {
                         assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
                     }
                 }
-                if (d.variable() instanceof FieldReference fr && "map".equals(fr.fieldInfo.name)) {
-                    assertNotNull(fr.scopeVariable);
-                    if ("node".equals(fr.scopeVariable.simpleName())) {
+                if (d.variable() instanceof FieldReference fr && "map".equals(fr.fieldInfo().name)) {
+                    assertNotNull(fr.scopeVariable());
+                    if ("node".equals(fr.scopeVariable().simpleName())) {
                         if ("2".equals(d.statementId())) {
                             String linked = d.iteration() == 0
                                     ? "System.out:-1,data:-1,node:-1,strings:-1,this.root:-1,this:-1"
@@ -83,9 +83,9 @@ public class Test_04_NotNull_AAPI extends CommonTestRunner {
                         }
                     }
                 }
-                if (d.variable() instanceof FieldReference fr && "data".equals(fr.fieldInfo.name)) {
-                    assertNotNull(fr.scopeVariable);
-                    if ("node".equals(fr.scopeVariable.simpleName())) {
+                if (d.variable() instanceof FieldReference fr && "data".equals(fr.fieldInfo().name)) {
+                    assertNotNull(fr.scopeVariable());
+                    if ("node".equals(fr.scopeVariable().simpleName())) {
                         if ("1".equals(d.statementId())) {
                             fail();
                         }
@@ -299,7 +299,7 @@ public class Test_04_NotNull_AAPI extends CommonTestRunner {
                 }
             }
             if ("goTo".equals(d.methodInfo().name)) {
-                if (d.variable() instanceof FieldReference fr && "root".equals(fr.fieldInfo.name)) {
+                if (d.variable() instanceof FieldReference fr && "root".equals(fr.fieldInfo().name)) {
                     assertTrue(fr.scopeIsThis());
                     assertDv(d, 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.EXTERNAL_NOT_NULL);
                 }

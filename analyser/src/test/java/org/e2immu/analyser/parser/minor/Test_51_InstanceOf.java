@@ -71,7 +71,7 @@ public class Test_51_InstanceOf extends CommonTestRunner {
     public void test_1() throws IOException {
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("InstanceOf_1".equals(d.methodInfo().name) && "0".equals(d.statementId())) {
-                if (d.variable() instanceof FieldReference fr && "number".equals(fr.fieldInfo.name)) {
+                if (d.variable() instanceof FieldReference fr && "number".equals(fr.fieldInfo().name)) {
                     assertEquals("in instanceof Number?in/*(Number)*/:3.14", d.currentValue().toString());
                     assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, d.getProperty(Property.NOT_NULL_EXPRESSION));
                 }
@@ -534,8 +534,8 @@ public class Test_51_InstanceOf extends CommonTestRunner {
                         assertEquals("nullable instance type Expression/*@Identity*/", d.currentValue().toString());
                     }
                 }
-                if (d.variable() instanceof FieldReference fr && "expression".equals(fr.fieldInfo.name)) {
-                    if ("ne".equals(fr.scope.toString())) {
+                if (d.variable() instanceof FieldReference fr && "expression".equals(fr.fieldInfo().name)) {
+                    if ("ne".equals(fr.scope().toString())) {
                         if ("2.0.0".equals(d.statementId())) {
                             assertDv(d, 2, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                             assertDv(d, MultiLevel.NULLABLE_DV, Property.CONTEXT_NOT_NULL);
@@ -547,7 +547,7 @@ public class Test_51_InstanceOf extends CommonTestRunner {
                             fail("ne.expression should not exist here!");
                         }
                     }
-                    if ("<out of scope:ne:2>".equals(fr.scope.toString())) {
+                    if ("<out of scope:ne:2>".equals(fr.scope().toString())) {
                         if ("2".equals(d.statementId())) {
                             String expected = switch (d.iteration()) {
                                 case 0 -> "<f:expression>";
@@ -560,7 +560,7 @@ public class Test_51_InstanceOf extends CommonTestRunner {
                             assertDv(d, 2, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                         }
                     }
-                    if ("expression/*(Negation)*/".equals(fr.scope.toString())) {
+                    if ("expression/*(Negation)*/".equals(fr.scope().toString())) {
                         assertTrue(d.iteration() >= 2);
                         if ("2".equals(d.statementId())) {
                             assertEquals("nullable instance type Expression", d.currentValue().toString());
@@ -664,8 +664,8 @@ public class Test_51_InstanceOf extends CommonTestRunner {
     public void test_10_2() throws IOException {
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("method".equals(d.methodInfo().name)) {
-                if (d.variable() instanceof FieldReference fr && "expression".equals(fr.fieldInfo.name)) {
-                    if ("ne".equals(fr.scope.toString())) {
+                if (d.variable() instanceof FieldReference fr && "expression".equals(fr.fieldInfo().name)) {
+                    if ("ne".equals(fr.scope().toString())) {
                         if ("2.0.0".equals(d.statementId())) {
                             assertDv(d, 2, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                         }
@@ -781,7 +781,7 @@ public class Test_51_InstanceOf extends CommonTestRunner {
                         assertDv(d, 3, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     }
                 }
-                if (d.variable() instanceof FieldReference fr && "expression".equals(fr.fieldInfo.name) && fr.scopeIsThis()) {
+                if (d.variable() instanceof FieldReference fr && "expression".equals(fr.fieldInfo().name) && fr.scopeIsThis()) {
                     if ("0.0.1.0.4.0.0".equals(d.statementId())) {
                         assertLinked(d,
                                 it0("b:-1,d:-1,evaluationContext:-1,lessThan:-1,ne1.expression:-1,ne1:-1,sum:-1,this:-1,v:-1,x:-1"),
@@ -1089,8 +1089,8 @@ public class Test_51_InstanceOf extends CommonTestRunner {
                         assertDv(d, 1, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
                     }
                 }
-                if (d.variable() instanceof FieldReference fr && "operator".equals(fr.fieldInfo.name)) {
-                    if ("scope-unaryOperator:1".equals(fr.scope.toString())) {
+                if (d.variable() instanceof FieldReference fr && "operator".equals(fr.fieldInfo().name)) {
+                    if ("scope-unaryOperator:1".equals(fr.scope().toString())) {
                         assertTrue(d.statementId().compareTo("1") >= 0); // exists in 1, 2, and further
                         if ("1".equals(d.statementId())) {
                             assertFalse(d.variableInfoContainer().hasEvaluation());
@@ -1102,7 +1102,7 @@ public class Test_51_InstanceOf extends CommonTestRunner {
                         if ("3".equals(d.statementId())) {
                             assertDv(d, MultiLevel.NULLABLE_DV, Property.CONTEXT_NOT_NULL);
                         }
-                    } else if ("unaryOperator".equals(fr.scope.toString())) {
+                    } else if ("unaryOperator".equals(fr.scope().toString())) {
                         if ("0".equals(d.statementId())) {
                             assertEquals("", d.variableInfo().getLinkedVariables().toString());
                         }
@@ -1125,8 +1125,8 @@ public class Test_51_InstanceOf extends CommonTestRunner {
                     assertDv(d, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     String linked = d.iteration() == 0 ? "NOT_YET_SET" : "";
                     assertEquals(linked, lvs);
-                } else if (d.variable() instanceof FieldReference fr && "operator".equals(fr.fieldInfo.name)) {
-                    assertEquals("unaryOperator", fr.scope.toString());
+                } else if (d.variable() instanceof FieldReference fr && "operator".equals(fr.fieldInfo().name)) {
+                    assertEquals("unaryOperator", fr.scope().toString());
                     String value = switch (d.iteration()) {
                         case 0 -> "<f:unaryOperator.operator>";
                         default -> "nullable instance type Operator";
@@ -1137,8 +1137,8 @@ public class Test_51_InstanceOf extends CommonTestRunner {
 
                     String linked = d.iteration() == 0 ? "NOT_YET_SET" : "expression:2,unaryOperator:2";
                     assertEquals(linked, lvs);
-                } else if (d.variable() instanceof FieldReference fr && "en".equals(fr.fieldInfo.name)) {
-                    assertEquals("scope-negation:0", fr.scope.toString());
+                } else if (d.variable() instanceof FieldReference fr && "en".equals(fr.fieldInfo().name)) {
+                    assertEquals("scope-negation:0", fr.scope().toString());
                     String value = switch (d.iteration()) {
                         case 0 -> "<f:scope-negation:0.en>";
                         default -> "nullable instance type Expression";
@@ -1178,9 +1178,9 @@ public class Test_51_InstanceOf extends CommonTestRunner {
                         default -> "expression:1";
                     };
                     assertEquals(expected, lvs);
-                } else if (d.variable() instanceof FieldReference fr && "positive".equals(fr.fieldInfo.name)) {
-                    assertNotNull(fr.scopeVariable);
-                    assertEquals("iop", fr.scopeVariable.simpleName());
+                } else if (d.variable() instanceof FieldReference fr && "positive".equals(fr.fieldInfo().name)) {
+                    assertNotNull(fr.scopeVariable());
+                    assertEquals("iop", fr.scopeVariable().simpleName());
                     assertDv(d, 3, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     String expected = d.iteration() < 3 ? "iop.instanceOf:-1,iop:-1" : "iop:2";
                     assertEquals(expected, lvs);
@@ -1188,9 +1188,9 @@ public class Test_51_InstanceOf extends CommonTestRunner {
                 } else if (d.variable() instanceof ParameterInfo pi && "iop".equals(pi.name)) {
                     assertDv(d, 3, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
 
-                } else if (d.variable() instanceof FieldReference fr && "instanceOf".equals(fr.fieldInfo.name)) {
-                    assertNotNull(fr.scopeVariable);
-                    assertEquals("iop", fr.scopeVariable.simpleName());
+                } else if (d.variable() instanceof FieldReference fr && "instanceOf".equals(fr.fieldInfo().name)) {
+                    assertNotNull(fr.scopeVariable());
+                    assertEquals("iop", fr.scopeVariable().simpleName());
                     assertDv(d, 3, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                 } else if (d.variable() instanceof ReturnVariable) {
                     assertDv(d, MultiLevel.NULLABLE_DV, Property.CONTEXT_NOT_NULL);

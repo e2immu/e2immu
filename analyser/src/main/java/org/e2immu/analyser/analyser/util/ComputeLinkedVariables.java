@@ -233,10 +233,10 @@ public class ComputeLinkedVariables {
     }
 
     private static LinkedVariables linkToScope(FieldReference fr) {
-        Set<Variable> variables = fr.scope.variablesWithoutCondition().stream()
+        Set<Variable> variables = fr.scope().variablesWithoutCondition().stream()
                 .filter(v -> !(v instanceof This))
                 .collect(Collectors.toUnmodifiableSet());
-        DV link = fr.scope.isDelayed() ? fr.scope.causesOfDelay() : LinkedVariables.LINK_DEPENDENT;
+        DV link = fr.scope().isDelayed() ? fr.scope().causesOfDelay() : LinkedVariables.LINK_DEPENDENT;
         Map<Variable, DV> map = variables.stream().collect(Collectors.toUnmodifiableMap(v -> v, v -> link));
         return LinkedVariables.of(map);
     }

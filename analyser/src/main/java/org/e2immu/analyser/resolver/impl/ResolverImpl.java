@@ -29,6 +29,7 @@ import org.e2immu.analyser.model.statement.ExplicitConstructorInvocation;
 import org.e2immu.analyser.model.statement.ExpressionAsStatement;
 import org.e2immu.analyser.model.statement.LocalClassDeclaration;
 import org.e2immu.analyser.model.variable.FieldReference;
+import org.e2immu.analyser.model.variable.impl.FieldReferenceImpl;
 import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
 import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.parser.Message;
@@ -347,7 +348,7 @@ public class ResolverImpl implements Resolver {
             // See e.g. AnonymousType_0
             accessibleFieldsStream(typeContext, typeInfo, primaryType, primaryType.packageName(),
                     false, false).forEach(fieldInfo ->
-                    expressionContextForBody.variableContext().add(new FieldReference(typeContext, fieldInfo)));
+                    expressionContextForBody.variableContext().add(new FieldReferenceImpl(typeContext, fieldInfo)));
 
             // recursion, do subtypes first (no recursion at resolver level!)
             typeInspection.subTypes().forEach(subType -> {
@@ -628,7 +629,7 @@ public class ResolverImpl implements Resolver {
             for (FieldInfo fieldInfo : typeInspection.fields()) {
                 FieldInspection fieldInspection = inspectionProvider.getFieldInspection(fieldInfo);
                 if (!fieldInspection.isStatic()) {
-                    FieldReference fieldReference = new FieldReference(inspectionProvider, fieldInfo);
+                    FieldReference fieldReference = new FieldReferenceImpl(inspectionProvider, fieldInfo);
                     VariableExpression target = new VariableExpression(fieldInfo.getIdentifier(), fieldReference);
                     ParameterInfo parameterInfo = methodInspection.getParameters().get(i++);
                     VariableExpression parameter = new VariableExpression(parameterInfo.identifier, parameterInfo);
@@ -662,8 +663,8 @@ public class ResolverImpl implements Resolver {
                 if (e instanceof org.e2immu.analyser.model.Expression ex &&
                         (ve = ex.asInstanceOf(VariableExpression.class)) != null) {
                     if (ve.variable() instanceof FieldReference fieldReference &&
-                            fieldReference.fieldInfo.owner.isEnclosedInStopAtLambdaOrAnonymous(topType)) {
-                        methodsAndFields.add(fieldReference.fieldInfo);
+                            fieldReference.fieldInfo().owner.isEnclosedInStopAtLambdaOrAnonymous(topType)) {
+                        methodsAndFields.add(fieldReference.fieldInfo());
                     }
                     methodInfo = null;
                 } else if ((methodCall = e.asInstanceOf(MethodCall.class)) != null) {

@@ -102,7 +102,7 @@ public class Test_42_Finalizer extends CommonTestRunner {
     public void test_2() throws IOException {
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("done".equals(d.methodInfo().name)) {
-                if (d.variable() instanceof FieldReference fr && "eventuallyFinal".equals(fr.fieldInfo.name)) {
+                if (d.variable() instanceof FieldReference fr && "eventuallyFinal".equals(fr.fieldInfo().name)) {
                     if ("0".equals(d.statementId()) || "1".equals(d.statementId())) {
                         assertDv(d, 1, MultiLevel.EVENTUALLY_IMMUTABLE_BEFORE_MARK_DV, Property.CONTEXT_IMMUTABLE);
                     }

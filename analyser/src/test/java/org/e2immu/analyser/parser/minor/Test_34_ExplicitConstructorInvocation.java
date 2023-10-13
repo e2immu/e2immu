@@ -74,7 +74,7 @@ public class Test_34_ExplicitConstructorInvocation extends CommonTestRunner {
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("ExplicitConstructorInvocation_4".equals(d.methodInfo().name)
                     && d.methodInfo().methodInspection.get().getParameters().size() == 1) {
-                if (d.variable() instanceof FieldReference fr && "index".equals(fr.fieldInfo.name)) {
+                if (d.variable() instanceof FieldReference fr && "index".equals(fr.fieldInfo().name)) {
                     String expected = d.iteration() == 0 ? "<f:generator>" : "ExplicitConstructorInvocation_4.generator";
                     if ("0".equals(d.statementId())) {
                         assertEquals(expected, d.currentValue().toString());
@@ -98,7 +98,7 @@ public class Test_34_ExplicitConstructorInvocation extends CommonTestRunner {
             List<ParameterInfo> parameters = d.methodInfo().methodInspection.get().getParameters();
             if (d.methodInfo().isConstructor && parameters.size() == 1
                     && "ExplicitConstructorInvocation_5".equals(parameters.get(0).parameterizedType.typeInfo.simpleName)) {
-                if (d.variable() instanceof FieldReference fr && "parent".equals(fr.fieldInfo.name)) {
+                if (d.variable() instanceof FieldReference fr && "parent".equals(fr.fieldInfo().name)) {
                     String linked = switch (d.iteration()) {
                         case 0 ->
                                 "parent1.packageName:-1,parent1.typeMap:-1,parent1:-1,this.packageName:-1,this.typeMap:-1,this:-1";
@@ -143,7 +143,7 @@ public class Test_34_ExplicitConstructorInvocation extends CommonTestRunner {
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if (d.methodInfo().isConstructor && d.methodInfo().methodInspection.get().getParameters().size() == 2
                     && "ExplicitConstructorInvocation_6".equals(d.methodInfo().methodInspection.get().getParameters().get(0).parameterizedType.typeInfo.simpleName)) {
-                if (d.variable() instanceof FieldReference fr && "fullyQualifiedName".equals(fr.fieldInfo.name)) {
+                if (d.variable() instanceof FieldReference fr && "fullyQualifiedName".equals(fr.fieldInfo().name)) {
                     if (fr.scopeIsThis()) {
                         if ("0".equals(d.statementId())) {
                             String expected = switch (d.iteration()) {
@@ -204,7 +204,7 @@ public class Test_34_ExplicitConstructorInvocation extends CommonTestRunner {
                 assertNotNull(typeOfParam1.typeInfo);
                 if ("Primitives".equals(typeOfParam1.typeInfo.simpleName) && numParams == 2) {
                     assertEquals("0", d.statementId());
-                    if (d.variable() instanceof FieldReference fr && "primitives".equals(fr.fieldInfo.name)) {
+                    if (d.variable() instanceof FieldReference fr && "primitives".equals(fr.fieldInfo().name)) {
                         String expected = switch (d.iteration()) {
                             case 0 -> "<eci>";
                             case 1 -> "<m:requireNonNull>";
@@ -218,7 +218,7 @@ public class Test_34_ExplicitConstructorInvocation extends CommonTestRunner {
                         };
                         assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
                     }
-                    if (d.variable() instanceof FieldReference fr && "complexity".equals(fr.fieldInfo.name)) {
+                    if (d.variable() instanceof FieldReference fr && "complexity".equals(fr.fieldInfo().name)) {
                         String expected = switch (d.iteration()) {
                             case 0 -> "<eci>";
                             case 1 ->
@@ -236,7 +236,7 @@ public class Test_34_ExplicitConstructorInvocation extends CommonTestRunner {
                     }
                 } else if ("List".equals(typeOfParam1.typeInfo.simpleName) && numParams == 2) {
                     assertEquals("0", d.statementId());
-                    if (d.variable() instanceof FieldReference fr && "primitives".equals(fr.fieldInfo.name)) {
+                    if (d.variable() instanceof FieldReference fr && "primitives".equals(fr.fieldInfo().name)) {
                         String expected = d.iteration() < 2 ? "<m:requireNonNull>" : "primitives1/*@NotNull*/";
 
                         assertEquals(expected, d.currentValue().toString());
@@ -247,7 +247,7 @@ public class Test_34_ExplicitConstructorInvocation extends CommonTestRunner {
                         };
                         assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
                     }
-                    if (d.variable() instanceof FieldReference fr && "complexity".equals(fr.fieldInfo.name)) {
+                    if (d.variable() instanceof FieldReference fr && "complexity".equals(fr.fieldInfo().name)) {
                         String expected = d.iteration() == 0
                                 ? "expressions.stream().mapToInt(Expression::getComplexity).sum()+<f:COMPLEXITY>+<simplification>"
                                 : "3+expressions.stream().mapToInt(Expression::getComplexity).sum()";
@@ -259,8 +259,8 @@ public class Test_34_ExplicitConstructorInvocation extends CommonTestRunner {
                     }
                 } else {
                     assertEquals(3, numParams);
-                    if (d.variable() instanceof FieldReference fr && "primitives".equals(fr.fieldInfo.name)) {
-                        assertEquals("this", fr.scope.toString());
+                    if (d.variable() instanceof FieldReference fr && "primitives".equals(fr.fieldInfo().name)) {
+                        assertEquals("this", fr.scope().toString());
                         if ("0".equals(d.statementId())) {
                             String expected = d.iteration() == 0 ? "<s:Primitives>" : "primitives2/*@NotNull*/";
                             assertEquals(expected, d.currentValue().toString());
@@ -309,7 +309,7 @@ public class Test_34_ExplicitConstructorInvocation extends CommonTestRunner {
                 }
             }
             if (d.methodInfo().isConstructor && parameters.size() == 3) {
-                if (d.variable() instanceof FieldReference fr && "primitives".equals(fr.fieldInfo.name)) {
+                if (d.variable() instanceof FieldReference fr && "primitives".equals(fr.fieldInfo().name)) {
                     if ("1".equals(d.statementId())) {
                         String expected = d.iteration() == 0 ? "<m:requireNonNull>" : "primitives2/*@NotNull*/";
                         assertEquals(expected, d.currentValue().toString());
@@ -320,7 +320,7 @@ public class Test_34_ExplicitConstructorInvocation extends CommonTestRunner {
                         assertEquals(expected, d.currentValue().toString());
                     }
                 }
-                if (d.variable() instanceof FieldReference fr && "expressions".equals(fr.fieldInfo.name)) {
+                if (d.variable() instanceof FieldReference fr && "expressions".equals(fr.fieldInfo().name)) {
                     if ("2".equals(d.statementId())) {
                         String expected = d.iteration() == 0 ? "<m:requireNonNull>" : "expressions";
                         assertEquals(expected, d.currentValue().toString());
@@ -389,11 +389,11 @@ public class Test_34_ExplicitConstructorInvocation extends CommonTestRunner {
             int n = d.methodInfo().methodInspection.get().getParameters().size();
             if ("C".equals(d.methodInfo().name) && n == 0) {
                 assertEquals("0", d.statementId()); // ECI!
-                if (d.variable() instanceof FieldReference fr && "E2".equals(fr.fieldInfo.name)) {
+                if (d.variable() instanceof FieldReference fr && "E2".equals(fr.fieldInfo().name)) {
                     String linked = d.iteration() <= 2 ? "this.state:-1" : "this.state:1";
                     assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
                 }
-                if (d.variable() instanceof FieldReference fr && "condition".equals(fr.fieldInfo.name)) {
+                if (d.variable() instanceof FieldReference fr && "condition".equals(fr.fieldInfo().name)) {
                     String linked = d.iteration() <= 2 ? "UnknownExpression.E1:-1" : "UnknownExpression.E1:1";
                     assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
                     String expected = switch (d.iteration()) {
@@ -405,7 +405,7 @@ public class Test_34_ExplicitConstructorInvocation extends CommonTestRunner {
                     };
                     assertEquals(expected, d.currentValue().toString());
                 }
-                if (d.variable() instanceof FieldReference fr && "state".equals(fr.fieldInfo.name)) {
+                if (d.variable() instanceof FieldReference fr && "state".equals(fr.fieldInfo().name)) {
                     String linked = d.iteration() <= 2 ? "UnknownExpression.E2:-1" : "UnknownExpression.E2:1";
                     assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
                     String expected = switch (d.iteration()) {
@@ -419,7 +419,7 @@ public class Test_34_ExplicitConstructorInvocation extends CommonTestRunner {
                 }
             }
             if ("C".equals(d.methodInfo().name) && n == 4) {
-                if (d.variable() instanceof FieldReference fr && "E2".equals(fr.fieldInfo.name)) {
+                if (d.variable() instanceof FieldReference fr && "E2".equals(fr.fieldInfo().name)) {
                     fail("should not exist here");
                 }
                 if (d.variable() instanceof ParameterInfo pi && "condition".equals(pi.name)) {
@@ -436,14 +436,14 @@ public class Test_34_ExplicitConstructorInvocation extends CommonTestRunner {
                         assertEquals(expected, d.currentValue().toString());
                     }
                 }
-                if (d.variable() instanceof FieldReference fr && "condition".equals(fr.fieldInfo.name)) {
+                if (d.variable() instanceof FieldReference fr && "condition".equals(fr.fieldInfo().name)) {
                     if ("3".equals(d.statementId())) {
                         assertEquals("condition:0", d.variableInfo().getLinkedVariables().toString());
                         String value = d.iteration() == 0 ? "<s:Expression>" : "condition";
                         assertEquals(value, d.currentValue().toString());
                     }
                 }
-                if (d.variable() instanceof FieldReference fr && "state".equals(fr.fieldInfo.name)) {
+                if (d.variable() instanceof FieldReference fr && "state".equals(fr.fieldInfo().name)) {
                     if ("4".equals(d.statementId())) {
                         assertEquals("state:0", d.variableInfo().getLinkedVariables().toString());
                         String state = d.iteration() == 0 ? "<s:Expression>" : "state";
@@ -453,15 +453,15 @@ public class Test_34_ExplicitConstructorInvocation extends CommonTestRunner {
             }
             if ("absolute".equals(d.methodInfo().name)) {
                 assertEquals("0", d.statementId());
-                if (d.variable() instanceof FieldReference fr && "parent".equals(fr.fieldInfo.name)) {
+                if (d.variable() instanceof FieldReference fr && "parent".equals(fr.fieldInfo().name)) {
                     assertTrue(fr.scopeIsThis());
                     assertCurrentValue(d, 4, "nullable instance type C");
                     String linked = d.iteration() < 4 ? "parent.condition:-1,this:-1" : "";
                     assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
                     assertDv(d, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
                 }
-                if (d.variable() instanceof FieldReference fr && "condition".equals(fr.fieldInfo.name)) {
-                    if ("parent".equals(fr.scope.toString())) {
+                if (d.variable() instanceof FieldReference fr && "condition".equals(fr.fieldInfo().name)) {
+                    if ("parent".equals(fr.scope().toString())) {
                         assertCurrentValue(d, 4, "instance type Expression");
                         String linked = d.iteration() < 4 ? "this.parent:-1,this:-1" : "this.parent:2";
                         assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
@@ -470,7 +470,7 @@ public class Test_34_ExplicitConstructorInvocation extends CommonTestRunner {
                         assertCurrentValue(d, 4, "instance type Expression");
                         assertEquals("", d.variableInfo().getLinkedVariables().toString());
                         assertDv(d, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
-                    } else fail("Found " + fr.scope);
+                    } else fail("Found " + fr.scope());
                 }
             }
         };
@@ -546,7 +546,7 @@ public class Test_34_ExplicitConstructorInvocation extends CommonTestRunner {
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("BaseExpression".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof FieldReference fr) {
-                    assertTrue(Set.of("complexity", "identifier").contains(fr.fieldInfo.name));
+                    assertTrue(Set.of("complexity", "identifier").contains(fr.fieldInfo().name));
                 }
             }
         };
@@ -598,7 +598,7 @@ public class Test_34_ExplicitConstructorInvocation extends CommonTestRunner {
     public void test_12() throws IOException {
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("X4_BitwiseAnd".equals(d.methodInfo().name)) {
-                if (d.variable() instanceof FieldReference fr && "AND".equals(fr.fieldInfo.name)) {
+                if (d.variable() instanceof FieldReference fr && "AND".equals(fr.fieldInfo().name)) {
                     String expected = d.iteration() < 4 ? "<f:AND>" : "instance type Precedence/*new Precedence()*/";
                     assertEquals(expected, d.currentValue().toString());
                     if (d.iteration() == 0) {
@@ -671,8 +671,8 @@ public class Test_34_ExplicitConstructorInvocation extends CommonTestRunner {
             if ("X3_BinaryOperator".equals(d.methodInfo().name)) {
                 assertTrue(d.methodInfo().isConstructor);
                 assertEquals("0", d.statementId());
-                if (d.variable() instanceof FieldReference fr && "identifier".equals(fr.fieldInfo.name)) {
-                    assertEquals("this", fr.scope.toString());
+                if (d.variable() instanceof FieldReference fr && "identifier".equals(fr.fieldInfo().name)) {
+                    assertEquals("this", fr.scope().toString());
                     String expected = d.iteration() == 0 ? "<eci>" : "identifier3";
                     assertEquals(expected, d.currentValue().toString());
                 }
@@ -721,7 +721,7 @@ public class Test_34_ExplicitConstructorInvocation extends CommonTestRunner {
                 if (d.variable() instanceof ParameterInfo pi && "identifier".equals(pi.name)) {
                     assertDv(d, 1, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                 }
-                if (d.variable() instanceof FieldReference fr && "variableTarget".equals(fr.fieldInfo.name)) {
+                if (d.variable() instanceof FieldReference fr && "variableTarget".equals(fr.fieldInfo().name)) {
                     assertTrue(d.statementId().compareTo("7") >= 0);
                     String expected = d.iteration() == 0 ? "<p:variableTarget>"
                             : "variableTarget";
@@ -729,7 +729,7 @@ public class Test_34_ExplicitConstructorInvocation extends CommonTestRunner {
                 }
             }
             if (d.methodInfo().isConstructor && 4 == n) {
-                if (d.variable() instanceof FieldReference fr && "value".equals(fr.fieldInfo.name)) {
+                if (d.variable() instanceof FieldReference fr && "value".equals(fr.fieldInfo().name)) {
                     String expected = d.iteration() == 0 ? "<eci>" : "value/*@NotNull*/";
                     assertEquals(expected, d.currentValue().toString());
                     String linked = switch (d.iteration()) {

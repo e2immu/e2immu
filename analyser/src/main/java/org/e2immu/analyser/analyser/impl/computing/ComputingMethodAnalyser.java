@@ -21,7 +21,7 @@ import org.e2immu.analyser.analyser.impl.MethodAnalyserImpl;
 import org.e2immu.analyser.analyser.impl.context.EvaluationResultImpl;
 import org.e2immu.analyser.analyser.impl.shallow.CompanionAnalyser;
 import org.e2immu.analyser.analyser.impl.util.BreakDelayLevel;
-import org.e2immu.analyser.analyser.nonanalyserimpl.AbstractEvaluationContextImpl;
+import org.e2immu.analyser.analyser.nonanalyserimpl.CommonEvaluationContext;
 import org.e2immu.analyser.analyser.nonanalyserimpl.LocalAnalyserContext;
 import org.e2immu.analyser.analyser.statementanalyser.StatementAnalyserImpl;
 import org.e2immu.analyser.analyser.statementanalyser.StatementSimplifier;
@@ -38,6 +38,7 @@ import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.ReturnVariable;
 import org.e2immu.analyser.model.variable.This;
 import org.e2immu.analyser.model.variable.Variable;
+import org.e2immu.analyser.model.variable.impl.FieldReferenceImpl;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.visitor.MethodAnalyserVisitor;
@@ -516,7 +517,7 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
         Precondition combinedPrecondition = Precondition.empty(methodAnalysis.primitives);
         for (FieldAnalyser fieldAnalyser : myFieldAnalysers.values()) {
             if (fieldAnalyser.getFieldAnalysis().getProperty(Property.FINAL).valueIsFalse()) {
-                FieldReference fr = new FieldReference(analyserContext, fieldAnalyser.getFieldInfo());
+                FieldReference fr = new FieldReferenceImpl(analyserContext, fieldAnalyser.getFieldInfo());
                 StatementAnalysis beforeAssignment = statementBeforeAssignment(fr);
                 if (beforeAssignment != null) {
                     ConditionManager cm = beforeAssignment.stateData().getConditionManagerForNextStatement();
@@ -594,7 +595,7 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
             FieldReference getter = isGetter();
             if (getter != null) {
                 assert value.isDelayed() || value instanceof VariableExpression ve && ve.variable().equals(getter);
-                methodAnalysis.setGetSetField(getter.fieldInfo);
+                methodAnalysis.setGetSetField(getter.fieldInfo());
             }
             // TODO in the same PrimaryType, switch to field. Outside, switch to getter
         }
@@ -630,7 +631,7 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
         if (value instanceof InlinedMethod inlined
                 && (ve = inlined.expression().asInstanceOf(VariableExpression.class)) != null
                 && ve.variable() instanceof FieldReference fieldReference) {
-            FieldAnalysis fieldAnalysis = analyserContext.getFieldAnalysis(fieldReference.fieldInfo);
+            FieldAnalysis fieldAnalysis = analyserContext.getFieldAnalysis(fieldReference.fieldInfo());
             DV constantField = fieldAnalysis.getProperty(Property.CONSTANT);
             if (constantField.isDelayed()) {
                 LOGGER.debug("Delaying return value of {}, waiting for effectively final value's @Constant designation",
@@ -794,7 +795,7 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
                     if (assignment.variableTarget instanceof FieldReference fr && fr.scopeIsThis()
                             && assignment.value instanceof VariableExpression ve
                             && pi.equals(ve.variable())) {
-                        methodAnalysis.setGetSetField(fr.fieldInfo);
+                        methodAnalysis.setGetSetField(fr.fieldInfo());
                     }
                 }
             }
@@ -1016,7 +1017,7 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
 
         DV scopeDelays = methodAnalysis.getLastStatement().variableStream()
                 .filter(vi -> vi.variable() instanceof FieldReference fr
-                        && fieldInMyTypeHierarchy(fr.fieldInfo, methodInfo.typeInfo))
+                        && fieldInMyTypeHierarchy(fr.fieldInfo(), methodInfo.typeInfo))
                 .map(vi -> connectedToMyTypeHierarchy((FieldReference) vi.variable()))
                 .reduce(CausesOfDelay.EMPTY, DV::max);
         if (scopeDelays.isDelayed()) {
@@ -1031,7 +1032,7 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
 
         List<VariableInfo> relevantVariableInfos = methodAnalysis.getLastStatement().variableStream()
                 .filter(vi -> vi.variable() instanceof FieldReference fr
-                        && fieldInMyTypeHierarchy(fr.fieldInfo, methodInfo.typeInfo)
+                        && fieldInMyTypeHierarchy(fr.fieldInfo(), methodInfo.typeInfo)
                         && connectedToMyTypeHierarchy(fr).valueIsTrue())
                 .toList();
         // first step, check (my) field assignments
@@ -1106,16 +1107,16 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
     static DV connectedToMyTypeHierarchy(FieldReference fr) {
         if (fr.scopeIsThis()) return DV.TRUE_DV;
         IsVariableExpression ive;
-        if ((ive = fr.scope.asInstanceOf(IsVariableExpression.class)) != null) {
+        if ((ive = fr.scope().asInstanceOf(IsVariableExpression.class)) != null) {
             if (ive.variable() instanceof FieldReference fr2) {
                 return connectedToMyTypeHierarchy(fr2);
             }
         }
-        if (fr.scope instanceof TypeExpression te) {
+        if (fr.scope() instanceof TypeExpression te) {
             TypeInfo typeInfo = te.parameterizedType.bestTypeInfo();
-            return DV.fromBoolDv(typeInfo != null && typeInfo.primaryType() == fr.fieldInfo.owner.primaryType());
+            return DV.fromBoolDv(typeInfo != null && typeInfo.primaryType() == fr.fieldInfo().owner.primaryType());
         }
-        //fr.scope.isDelayed() ? fr.scope.causesOfDelay() :
+        //fr.scope().isDelayed() ? fr.scope().causesOfDelay() :
         return DV.FALSE_DV;
     }
 
@@ -1341,7 +1342,7 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
                         // we exclude the parameters of the method, because they'll get a different error (See Modification_16)
                         && !(vi.variable() instanceof ParameterInfo pi && pi.getMethodInfo() == methodInfo)
                         // this is about content, not about modifications to the fields themselves
-                        && !(vi.variable() instanceof FieldReference fr && fieldsToBeGuarded.contains(fr.fieldInfo)))
+                        && !(vi.variable() instanceof FieldReference fr && fieldsToBeGuarded.contains(fr.fieldInfo())))
                 .toList();
 
         CausesOfDelay delays = variables.stream().map(vi ->
@@ -1367,11 +1368,11 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
     // make sure that the code here is compatible with CTA.analyseContainer
     private boolean linkedToAnyOfTheFields(LinkedVariables linkedVariables, Set<FieldInfo> fieldsToBeGuarded) {
         return linkedVariables.stream()
-                .filter(e -> e.getKey() instanceof FieldReference fr && fieldsToBeGuarded.contains(fr.fieldInfo))
+                .filter(e -> e.getKey() instanceof FieldReference fr && fieldsToBeGuarded.contains(fr.fieldInfo()))
                 .anyMatch(e -> LinkedVariables.LINK_IS_HC_OF.equals(e.getValue()));
     }
 
-    private class EvaluationContextImpl extends AbstractEvaluationContextImpl implements EvaluationContext {
+    private class EvaluationContextImpl extends CommonEvaluationContext implements EvaluationContext {
 
         protected EvaluationContextImpl(int iteration,
                                         BreakDelayLevel breakDelayLevel,
@@ -1396,7 +1397,7 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
         public DV getProperty(Variable variable, Property property) {
             if (variable instanceof FieldReference fieldReference) {
                 Property vp = external(property);
-                return getAnalyserContext().getFieldAnalysis(fieldReference.fieldInfo).getProperty(vp);
+                return getAnalyserContext().getFieldAnalysis(fieldReference.fieldInfo()).getProperty(vp);
             }
             if (variable instanceof ParameterInfo parameterInfo) {
                 Property vp = property == Property.NOT_NULL_EXPRESSION

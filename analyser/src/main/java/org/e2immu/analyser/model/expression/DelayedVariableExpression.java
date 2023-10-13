@@ -23,6 +23,7 @@ import org.e2immu.analyser.model.impl.BaseExpression;
 import org.e2immu.analyser.model.variable.DependentVariable;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.Variable;
+import org.e2immu.analyser.model.variable.impl.FieldReferenceImpl;
 import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.Text;
 import org.e2immu.analyser.parser.InspectionProvider;
@@ -86,8 +87,8 @@ public class DelayedVariableExpression extends BaseExpression implements IsVaria
     }
 
     private static String fieldString(FieldReference fieldReference) {
-        String scopeString = fieldReference.isDefaultScope || fieldReference.isStatic ? "" : fieldReference.scope.minimalOutput() + ".";
-        return scopeString + fieldReference.fieldInfo.name;
+        String scopeString = fieldReference.isDefaultScope() || fieldReference.isStatic() ? "" : fieldReference.scope().minimalOutput() + ".";
+        return scopeString + fieldReference.fieldInfo().name;
     }
 
     public static Expression forVariable(Variable variable, int statementTime, CausesOfDelay causesOfDelay) {
@@ -216,7 +217,7 @@ public class DelayedVariableExpression extends BaseExpression implements IsVaria
             ForwardEvaluationInfo forward = fr.scopeIsThis()
                     ? forwardEvaluationInfo.copy().notNullNotAssignment().build()
                     : forwardEvaluationInfo.copy().ensureModificationSetNotNull().build();
-            EvaluationResult scopeResult = fr.scope.evaluate(context, forward);
+            EvaluationResult scopeResult = fr.scope().evaluate(context, forward);
             builder.compose(scopeResult);
         }
 
@@ -252,9 +253,10 @@ public class DelayedVariableExpression extends BaseExpression implements IsVaria
         // unlike in merge, in the case of ExplicitConstructorInvocation, we cannot predict which fields need their scope translating
         if (translationMap.recurseIntoScopeVariables()) {
             if (variable instanceof FieldReference fr) {
-                Expression translated = fr.scope.translate(inspectionProvider, translationMap);
-                if (translated != fr.scope) {
-                    FieldReference newFr = new FieldReference(inspectionProvider, fr.fieldInfo, translated, fr.getOwningType());
+                Expression translated = fr.scope().translate(inspectionProvider, translationMap);
+                if (translated != fr.scope()) {
+                    FieldReference newFr = new FieldReferenceImpl(inspectionProvider, fr.fieldInfo(), translated,
+                            fr.getOwningType());
                     return DelayedVariableExpression.forField(newFr, statementTime, causesOfDelay);
                 }
             } else if (variable instanceof DependentVariable dv) {
@@ -284,7 +286,7 @@ public class DelayedVariableExpression extends BaseExpression implements IsVaria
     public List<Variable> variables(DescendMode descendIntoFieldReferences) {
         if (descendIntoFieldReferences != DescendMode.NO) {
             if (variable instanceof FieldReference fr) {
-                return ListUtil.concatImmutable(List.of(variable), fr.scope.variables(descendIntoFieldReferences));
+                return ListUtil.concatImmutable(List.of(variable), fr.scope().variables(descendIntoFieldReferences));
             }
             if (variable instanceof DependentVariable dv) {
                 return Stream.concat(Stream.concat(Stream.of(variable),
@@ -298,7 +300,7 @@ public class DelayedVariableExpression extends BaseExpression implements IsVaria
     @Override
     public List<Variable> variablesWithoutCondition() {
         if (variable instanceof FieldReference fr && !fr.scopeIsThis()) {
-            return ListUtil.concatImmutable(fr.scope.variablesWithoutCondition(), List.of(variable));
+            return ListUtil.concatImmutable(fr.scope().variablesWithoutCondition(), List.of(variable));
         }
         return List.of(variable);
     }

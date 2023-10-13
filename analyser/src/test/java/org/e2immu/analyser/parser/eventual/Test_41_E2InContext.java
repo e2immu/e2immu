@@ -112,7 +112,7 @@ public class Test_41_E2InContext extends CommonTestRunner {
 
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("getEventually".equals(d.methodInfo().name)) {
-                if (d.variable() instanceof FieldReference fr && "eventually".equals(fr.fieldInfo.name)) {
+                if (d.variable() instanceof FieldReference fr && "eventually".equals(fr.fieldInfo().name)) {
                     assertDv(d, 4, MultiLevel.EVENTUALLY_IMMUTABLE_DV, Property.EXTERNAL_IMMUTABLE);
                     String expectValue = d.iteration() <= 3 ? "<f:eventually>" : "instance type Eventually<String>";
                     assertEquals(expectValue, d.currentValue().toString());
@@ -154,8 +154,8 @@ public class Test_41_E2InContext extends CommonTestRunner {
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("E2InContext_2".equals(d.methodInfo().name)) {
                 assert "0".equals(d.statementId());
-                if (d.variable() instanceof FieldReference fr && "eventually".equals(fr.fieldInfo.name)) {
-                    assertEquals("this", fr.scope.toString());
+                if (d.variable() instanceof FieldReference fr && "eventually".equals(fr.fieldInfo().name)) {
+                    assertEquals("this", fr.scope().toString());
                     assertDv(d, 3, MultiLevel.EVENTUALLY_IMMUTABLE_BEFORE_MARK_DV, Property.IMMUTABLE);
                     // from iteration 3, set is @Mark
                     String delay = switch (d.iteration()) {

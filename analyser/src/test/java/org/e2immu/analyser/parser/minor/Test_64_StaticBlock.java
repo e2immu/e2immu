@@ -62,7 +62,7 @@ public class Test_64_StaticBlock extends CommonTestRunner {
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("$staticBlock$0".equals(d.methodInfo().name)) {
                 assertEquals("StaticBlock_1", d.methodInfo().typeInfo.simpleName);
-                if (d.variable() instanceof FieldReference fr && "map".equals(fr.fieldInfo.name)) {
+                if (d.variable() instanceof FieldReference fr && "map".equals(fr.fieldInfo().name)) {
                     if ("0".equals(d.statementId())) {
                         assertEquals("new HashMap<>()/*AnnotatedAPI.isKnown(true)&&0==this.size()*/",
                                 d.currentValue().toString());

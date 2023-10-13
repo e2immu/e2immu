@@ -67,7 +67,7 @@ public class Test_00_Basics_15plus extends CommonTestRunner {
 
             // the assignment this.string = string causes a delay of one iteration (as it is a field)
             if ("Basics_17".equals(d.methodInfo().name)) {
-                if (d.variable() instanceof FieldReference fr && "string".equals(fr.fieldInfo.name)) {
+                if (d.variable() instanceof FieldReference fr && "string".equals(fr.fieldInfo().name)) {
                     if ("1".equals(d.statementId())) {
                         assertDv(d, 0, MultiLevel.EFFECTIVELY_NOT_NULL_DV, CONTEXT_NOT_NULL);
                     }
@@ -128,7 +128,7 @@ public class Test_00_Basics_15plus extends CommonTestRunner {
                         assertEquals(MultiLevel.NOT_CONTAINER_DV, d.getProperty(CONTAINER));
                     }
                 }
-                if (d.variable() instanceof FieldReference fr && "a".equals(fr.fieldInfo.name)) {
+                if (d.variable() instanceof FieldReference fr && "a".equals(fr.fieldInfo().name)) {
                     assertEquals("a", d.currentValue().toString());
                     assertDv(d, MultiLevel.EFFECTIVELY_NOT_NULL_DV, NOT_NULL_EXPRESSION);
                 }

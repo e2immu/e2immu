@@ -93,7 +93,7 @@ public class Test_18_E2Immutable extends CommonTestRunner {
                 not been determined yet. We wrap (see FieldReference_3) the null because we cannot write delayed value
                 properties on a non-delayed value (null).
                  */
-                if (d.variable() instanceof FieldReference fr && "parent2".equals(fr.fieldInfo.name) && fr.scopeIsThis()) {
+                if (d.variable() instanceof FieldReference fr && "parent2".equals(fr.fieldInfo().name) && fr.scopeIsThis()) {
                     String expected = d.iteration() < 3 ? "<wrapped:parent2>" : "null";
                     assertEquals(expected, d.currentValue().toString());
                     mustSeeIteration(d, 3);
@@ -105,8 +105,8 @@ public class Test_18_E2Immutable extends CommonTestRunner {
                 assertTrue(d.methodInfo().isConstructor);
 
                 // parent2Param.level2
-                if (d.variable() instanceof FieldReference fr && "level2".equals(fr.fieldInfo.name) &&
-                        fr.scope instanceof VariableExpression ve && "parent2Param".equals(ve.variable().simpleName())) {
+                if (d.variable() instanceof FieldReference fr && "level2".equals(fr.fieldInfo().name) &&
+                        fr.scope() instanceof VariableExpression ve && "parent2Param".equals(ve.variable().simpleName())) {
                     assertNotEquals("0", d.statementId());
                     if ("1".equals(d.statementId())) {
                         String expectValue = d.iteration() <= 1 ? "<f:parent2Param.level2>" : "instance type int";
@@ -115,7 +115,7 @@ public class Test_18_E2Immutable extends CommonTestRunner {
                 }
 
                 // this.level2
-                if (d.variable() instanceof FieldReference fr && "level2".equals(fr.fieldInfo.name) && fr.scopeIsThis()) {
+                if (d.variable() instanceof FieldReference fr && "level2".equals(fr.fieldInfo().name) && fr.scopeIsThis()) {
                     if ("1".equals(d.statementId())) {
                         /*
                          we never know in the first iteration...
@@ -133,7 +133,7 @@ public class Test_18_E2Immutable extends CommonTestRunner {
                 }
 
                 // this.parent2
-                if (d.variable() instanceof FieldReference fr && "parent2".equals(fr.fieldInfo.name) && fr.scopeIsThis()) {
+                if (d.variable() instanceof FieldReference fr && "parent2".equals(fr.fieldInfo().name) && fr.scopeIsThis()) {
                     assertEquals("parent2Param", d.currentValue().toString());
                 }
 
@@ -207,7 +207,7 @@ public class Test_18_E2Immutable extends CommonTestRunner {
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("E2Immutable_2".equals(d.methodInfo().name)) {
                 assertTrue(d.methodInfo().isConstructor);
-                if (d.variable() instanceof FieldReference fr && "set3".equals(fr.fieldInfo.name)) {
+                if (d.variable() instanceof FieldReference fr && "set3".equals(fr.fieldInfo().name)) {
                     assertEquals("new HashSet<>(set3Param)/*this.size()==set3Param.size()*/", d.currentValue().toString());
                     assertEquals("set3Param:4", d.variableInfo().getLinkedVariables().toString());
                 }
@@ -232,7 +232,7 @@ public class Test_18_E2Immutable extends CommonTestRunner {
 
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("E2Immutable_3".equals(d.methodInfo().name) && d.variable() instanceof FieldReference fieldReference &&
-                    "strings4".equals(fieldReference.fieldInfo.name)) {
+                    "strings4".equals(fieldReference.fieldInfo().name)) {
                 assertEquals("Set.copyOf(input4)", d.currentValue().toString());
                 assertDv(d, MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL_DV, NOT_NULL_EXPRESSION);
                 // Set<String>, E2 -> ER
@@ -242,7 +242,7 @@ public class Test_18_E2Immutable extends CommonTestRunner {
             }
 
             if ("getStrings4".equals(d.methodInfo().name) && d.variable() instanceof FieldReference fr &&
-                    "strings4".equals(fr.fieldInfo.name)) {
+                    "strings4".equals(fr.fieldInfo().name)) {
                 assertDv(d, 1, MultiLevel.EFFECTIVELY_IMMUTABLE_DV, EXTERNAL_IMMUTABLE);
                 assertEquals("", d.variableInfo().getLinkedVariables().toString());
             }
@@ -254,7 +254,7 @@ public class Test_18_E2Immutable extends CommonTestRunner {
                 if (d.variable() instanceof ParameterInfo pi && "input4".equals(pi.name) && "0".equals(d.statementId())) {
                     assertEquals("this.strings4:4,this:4", d.variableInfo().getLinkedVariables().toString());
                 }
-                if (d.variable() instanceof FieldReference fr && "strings4".equals(fr.fieldInfo.name) && "0".equals(d.statementId())) {
+                if (d.variable() instanceof FieldReference fr && "strings4".equals(fr.fieldInfo().name) && "0".equals(d.statementId())) {
                     assertTrue(fr.scopeIsThis());
                     assertEquals("input4:4,this:4", d.variableInfo().getLinkedVariables().toString());
                 }
@@ -367,7 +367,7 @@ public class Test_18_E2Immutable extends CommonTestRunner {
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("E2Immutable_5".equals(d.methodInfo().name)) {
                 assertTrue(d.methodInfo().isConstructor);
-                if (d.variable() instanceof FieldReference fr && "map5".equals(fr.fieldInfo.name)) {
+                if (d.variable() instanceof FieldReference fr && "map5".equals(fr.fieldInfo().name)) {
                     assertEquals("new HashMap<>(map5Param)/*this.size()==map5Param.size()*/", d.currentValue().toString());
                     assertEquals("map5Param:4", d.variableInfo().getLinkedVariables().toString());
                 }
@@ -502,7 +502,7 @@ public class Test_18_E2Immutable extends CommonTestRunner {
                 if ("0".equals(d.statementId())) {
                     assertEquals(d.iteration() >= 4, d.allowBreakDelay());
                 }
-                if (d.variable() instanceof FieldReference fieldReference && "sub".equals(fieldReference.fieldInfo.name)) {
+                if (d.variable() instanceof FieldReference fr && "sub".equals(fr.fieldInfo().name)) {
                     String expectValue = d.iteration() <= 1 ? "<f:sub>" : "instance type Sub/*new Sub()*/";
                     assertEquals(expectValue, d.currentValue().toString());
                     assertEquals("", d.variableInfo().getLinkedVariables().toString());

@@ -206,7 +206,7 @@ public class Test_26_Enum_withAPI extends CommonTestRunner {
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("returnTwo".equals(d.methodInfo().name)) {
                 assertFalse(d.variableName().contains("name"));
-                if (d.variable() instanceof FieldReference fr && "TWO".equals(fr.fieldInfo.name)) {
+                if (d.variable() instanceof FieldReference fr && "TWO".equals(fr.fieldInfo().name)) {
                     assertDv(d, 1, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                 }
             }

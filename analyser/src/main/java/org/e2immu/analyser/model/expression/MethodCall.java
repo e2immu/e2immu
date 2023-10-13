@@ -1193,7 +1193,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
                     boolean cnnTravelsToFields = context.getAnalyserContext().getConfiguration().analyserConfiguration().computeContextPropertiesOverAllMethods();
                     boolean scopeIsFunctionalInterfaceLinkedToParameter = !objectVars.isEmpty() && objectVars.stream()
                             .allMatch(v -> v.parameterizedType().isFunctionalInterface() && (v instanceof ParameterInfo ||
-                                    cnnTravelsToFields && v instanceof FieldReference fr && fr.fieldInfo.owner.primaryType() == context.getCurrentType()));
+                                    cnnTravelsToFields && v instanceof FieldReference fr && fr.fieldInfo().owner.primaryType() == context.getCurrentType()));
                     if (!isNotNull && !builder.isNotNull(this).valueIsTrue() && !scopeIsFunctionalInterfaceLinkedToParameter) {
                         builder.raiseError(getIdentifier(), Message.Label.POTENTIAL_NULL_POINTER_EXCEPTION,
                                 "Result of method call " + methodInfo.fullyQualifiedName());

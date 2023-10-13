@@ -53,7 +53,7 @@ public class Test_00_Basics_4 extends CommonTestRunner {
                 }
             }
             if ("getI".equals(d.methodInfo().name)) {
-                if (d.variable() instanceof FieldReference fr && "i".equals(fr.fieldInfo.name)) {
+                if (d.variable() instanceof FieldReference fr && "i".equals(fr.fieldInfo().name)) {
                     assertDv(d, 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, EXTERNAL_NOT_NULL);
                 }
                 if (d.variable() instanceof ReturnVariable) {

@@ -76,7 +76,7 @@ public class QualificationImpl implements Qualification {
     @Override
     public boolean qualifierRequired(Variable variable) {
         if (variable instanceof FieldReference fieldReference) {
-            if (unqualifiedFields.contains(fieldReference.fieldInfo)) return false;
+            if (unqualifiedFields.contains(fieldReference.fieldInfo())) return false;
             return parent == null || parent.qualifierRequired(variable);
         }
         if (variable instanceof This thisVar) {

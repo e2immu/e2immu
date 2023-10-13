@@ -44,7 +44,7 @@ public class Test_23_ExternalContainer extends CommonTestRunner {
             assertFalse(d.allowBreakDelay());
 
             if ("print".equals(d.methodInfo().name)) {
-                if (d.variable() instanceof FieldReference fr && "iField".equals(fr.fieldInfo.name)) {
+                if (d.variable() instanceof FieldReference fr && "iField".equals(fr.fieldInfo().name)) {
                     if ("0".equals(d.statementId())) {
                         // link in_hc_of instead of dependent, even if iField is formally mutable, locally not modified
                         String linked = d.iteration() < 3 ? "in:-1,this:-1" : "in:3,this:4";
@@ -58,13 +58,13 @@ public class Test_23_ExternalContainer extends CommonTestRunner {
                 }
             }
             if ("go".equals(d.methodInfo().name)) {
-                if (d.variable() instanceof FieldReference fr && "myNonContainer".equals(fr.fieldInfo.name)) {
+                if (d.variable() instanceof FieldReference fr && "myNonContainer".equals(fr.fieldInfo().name)) {
                     if ("2".equals(d.statementId())) {
                         assertDv(d, 3, MultiLevel.NOT_CONTAINER_DV, Property.CONTAINER_RESTRICTION);
                         assertDv(d, MultiLevel.CONTAINER_DV, Property.CONTEXT_CONTAINER);
                     }
                 }
-                if (d.variable() instanceof FieldReference fr && "myContainerLinkedToParameter".equals(fr.fieldInfo.name)) {
+                if (d.variable() instanceof FieldReference fr && "myContainerLinkedToParameter".equals(fr.fieldInfo().name)) {
                     if ("0.0.0".equals(d.statementId())) {
                         assertDv(d, 4, MultiLevel.CONTAINER_DV, Property.CONTAINER);
                         assertDv(d, 1, MultiLevel.CONTAINER_DV, Property.CONTAINER_RESTRICTION);
@@ -163,7 +163,7 @@ public class Test_23_ExternalContainer extends CommonTestRunner {
     public void test_1() throws IOException {
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("print".equals(d.methodInfo().name)) {
-                if (d.variable() instanceof FieldReference fr && "iField".equals(fr.fieldInfo.name)) {
+                if (d.variable() instanceof FieldReference fr && "iField".equals(fr.fieldInfo().name)) {
                     if ("0".equals(d.statementId())) {
                         assertDv(d, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
                         assertDv(d, MultiLevel.NOT_CONTAINER_DV, Property.CONTEXT_CONTAINER);
@@ -177,17 +177,17 @@ public class Test_23_ExternalContainer extends CommonTestRunner {
                 if ("0".equals(d.statementId())) {
                     assertEquals(d.iteration() == 7, d.allowBreakDelay());
                 }
-                if (d.variable() instanceof FieldReference fr && "myNonContainer".equals(fr.fieldInfo.name)) {
+                if (d.variable() instanceof FieldReference fr && "myNonContainer".equals(fr.fieldInfo().name)) {
                     if ("2".equals(d.statementId())) {
                         assertDv(d, MultiLevel.NOT_CONTAINER_DV, Property.CONTEXT_CONTAINER);
                     }
                 }
-                if (d.variable() instanceof FieldReference fr && "myContainerLinkedToParameter".equals(fr.fieldInfo.name)) {
+                if (d.variable() instanceof FieldReference fr && "myContainerLinkedToParameter".equals(fr.fieldInfo().name)) {
                     if ("2".equals(d.statementId())) {
                         assertDv(d, 7, MultiLevel.NOT_CONTAINER_DV, Property.CONTEXT_CONTAINER);
                     }
                 }
-                if (d.variable() instanceof FieldReference fr && "myContainer".equals(fr.fieldInfo.name)) {
+                if (d.variable() instanceof FieldReference fr && "myContainer".equals(fr.fieldInfo().name)) {
                     if ("1".equals(d.statementId())) {
                         assertDv(d, MultiLevel.NOT_CONTAINER_DV, Property.CONTEXT_CONTAINER);
                     }

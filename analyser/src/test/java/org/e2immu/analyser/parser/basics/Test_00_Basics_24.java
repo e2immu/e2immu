@@ -66,7 +66,7 @@ public class Test_00_Basics_24 extends CommonTestRunner {
                         assertEquals("instance type X", d.currentValue().toString());
                     }
                 }
-                if (d.variable() instanceof FieldReference fr && "s".equals(fr.fieldInfo.name)) {
+                if (d.variable() instanceof FieldReference fr && "s".equals(fr.fieldInfo().name)) {
                     if ("1".equals(d.statementId())) {
                         String expected = d.iteration() == 0 ? "<m:getOrDefault>" : "map.getOrDefault(pos,a)";
                         assertEquals(expected, d.currentValue().toString());
@@ -77,7 +77,7 @@ public class Test_00_Basics_24 extends CommonTestRunner {
                         assertEquals(expected, d.currentValue().toString());
                     }
                 }
-                if (d.variable() instanceof FieldReference fr && "map".equals(fr.fieldInfo.name)) {
+                if (d.variable() instanceof FieldReference fr && "map".equals(fr.fieldInfo().name)) {
                     if (d.statementId().compareTo("1") >= 0) {
                         String expected = d.iteration() == 0 ? "<f:map>" : "instance type Map<Integer,String>";
                         assertEquals(expected, d.currentValue().toString());

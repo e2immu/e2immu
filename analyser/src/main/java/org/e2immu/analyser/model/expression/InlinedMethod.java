@@ -16,7 +16,7 @@ package org.e2immu.analyser.model.expression;
 
 import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.analyser.impl.context.EvaluationResultImpl;
-import org.e2immu.analyser.analyser.nonanalyserimpl.AbstractEvaluationContextImpl;
+import org.e2immu.analyser.analyser.nonanalyserimpl.CommonEvaluationContext;
 import org.e2immu.analyser.analyser.util.ConditionManagerImpl;
 import org.e2immu.analyser.analysis.FieldAnalysis;
 import org.e2immu.analyser.analysis.MethodAnalysis;
@@ -29,6 +29,7 @@ import org.e2immu.analyser.model.impl.TranslationMapImpl;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.This;
 import org.e2immu.analyser.model.variable.Variable;
+import org.e2immu.analyser.model.variable.impl.FieldReferenceImpl;
 import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.Text;
 import org.e2immu.analyser.parser.InspectionProvider;
@@ -112,7 +113,7 @@ public class InlinedMethod extends BaseExpression implements Expression {
 
     private static Predicate<FieldReference> containsVariableFields(AnalyserContext analyserContext) {
         return fr -> {
-            FieldAnalysis fieldAnalysis = analyserContext.getFieldAnalysis(fr.fieldInfo);
+            FieldAnalysis fieldAnalysis = analyserContext.getFieldAnalysis(fr.fieldInfo());
             DV effectivelyFinal = fieldAnalysis.getProperty(Property.FINAL);
             return effectivelyFinal.valueIsFalse();
         };
@@ -320,7 +321,7 @@ public class InlinedMethod extends BaseExpression implements Expression {
             // maybe the final field is linked to a parameter, and we have a value for that parameter?
 
             FieldAnalysis fieldAnalysis = evaluationResult.getAnalyserContext()
-                    .getFieldAnalysis(fieldReference.fieldInfo);
+                    .getFieldAnalysis(fieldReference.fieldInfo());
             DV effectivelyFinal = fieldAnalysis.getProperty(Property.FINAL);
             Variable modifiedVariable = replaceScope(parameters, scope, typeOfTranslation, evaluationResult,
                     identifierOfMethodCall, variable, inspectionProvider, linkedVariables, fieldReference);
@@ -336,7 +337,7 @@ public class InlinedMethod extends BaseExpression implements Expression {
                 if (constructorCall != null && constructorCall.constructor() != null) {
                     // only now we can start to take a look at the parameters
                     int index = indexOfParameterLinkedToFinalField(evaluationResult, constructorCall.constructor(),
-                            fieldReference.fieldInfo);
+                            fieldReference.fieldInfo());
                     if (index >= 0) {
                         Expression ccValue = constructorCall.getParameterExpressions().get(index);
                         // see Enum_4 as a nice example
@@ -350,7 +351,7 @@ public class InlinedMethod extends BaseExpression implements Expression {
                 }
 
                 // we use the identifier of the field itself here: every time this field is expanded, it gets the same identifier
-                return expandedVariable(evaluationResult, fieldReference.fieldInfo.getIdentifier(), effectivelyFinal,
+                return expandedVariable(evaluationResult, fieldReference.fieldInfo().getIdentifier(), effectivelyFinal,
                         modifiedVariable, linkedVariables);
             }
             return expandedVariable(evaluationResult, identifierOfMethodCall, effectivelyFinal, modifiedVariable,
@@ -371,10 +372,10 @@ public class InlinedMethod extends BaseExpression implements Expression {
                                   LinkedVariables linkedVariables,
                                   FieldReference fieldReference) {
         Variable modifiedVariable;
-        if (fieldReference.scope instanceof VariableExpression ve) {
+        if (fieldReference.scope() instanceof VariableExpression ve) {
             Expression replacedScope = replace(ve, parameters, scope, typeOfTranslation, evaluationResult,
                     identifierOfMethodCall, linkedVariables);
-            modifiedVariable = new FieldReference(inspectionProvider, fieldReference.fieldInfo, replacedScope,
+            modifiedVariable = new FieldReferenceImpl(inspectionProvider, fieldReference.fieldInfo(), replacedScope,
                     fieldReference.getOwningType());
         } else {
             modifiedVariable = variable;
@@ -419,13 +420,13 @@ public class InlinedMethod extends BaseExpression implements Expression {
 
         Properties valueProperties;
         if (variable instanceof FieldReference fr) {
-            FieldAnalysis fieldAnalysis = context.getAnalyserContext().getFieldAnalysis(fr.fieldInfo);
+            FieldAnalysis fieldAnalysis = context.getAnalyserContext().getFieldAnalysis(fr.fieldInfo());
              /*
              parameterizedType = HasSize[], field type = type parameter T
              taking all the value properties from the field will not be good.
              See e.g. E2ImmutableComposition_0.EncapsulatedExposedArrayOfHasSize
              */
-            if (fr.fieldInfo.type.equals(parameterizedType)) {
+            if (fr.fieldInfo().type.equals(parameterizedType)) {
                 valueProperties = fieldAnalysis.getValueProperties();
             } else {
                 valueProperties = Properties.of(Map.of(
@@ -488,7 +489,7 @@ public class InlinedMethod extends BaseExpression implements Expression {
         return methodInfo;
     }
 
-    private class EvaluationContextImpl extends AbstractEvaluationContextImpl {
+    private class EvaluationContextImpl extends CommonEvaluationContext {
         private final EvaluationContext evaluationContext;
 
         protected EvaluationContextImpl(EvaluationContext evaluationContext) {

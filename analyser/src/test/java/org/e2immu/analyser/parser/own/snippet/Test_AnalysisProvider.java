@@ -49,7 +49,7 @@ public class Test_AnalysisProvider extends CommonTestRunner {
     public void test_0() throws IOException {
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("defaultImmutable".equals(d.methodInfo().name)) {
-                if (d.variable() instanceof FieldReference fr && "EFFECTIVELY_E1IMMUTABLE_DV".equals(fr.fieldInfo.name)) {
+                if (d.variable() instanceof FieldReference fr && "EFFECTIVELY_E1IMMUTABLE_DV".equals(fr.fieldInfo().name)) {
                     if ("1".equals(d.statementId())) {
                         assertDv(d, 1, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     }
@@ -470,7 +470,7 @@ public class Test_AnalysisProvider extends CommonTestRunner {
                         assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
                         assertDv(d, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     }
-                } else if (d.variable() instanceof FieldReference fr && "EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV".equals(fr.fieldInfo.name)) {
+                } else if (d.variable() instanceof FieldReference fr && "EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV".equals(fr.fieldInfo().name)) {
                     if ("0".equals(d.statementId())) {
                         assertEquals("", d.variableInfo().getLinkedVariables().toString());
                         assertDv(d, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
@@ -480,7 +480,7 @@ public class Test_AnalysisProvider extends CommonTestRunner {
                         assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
                         assertDv(d, 3, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     }
-                } else if (d.variable() instanceof FieldReference fr && "parameters".equals(fr.fieldInfo.name)) {
+                } else if (d.variable() instanceof FieldReference fr && "parameters".equals(fr.fieldInfo().name)) {
                     if ("1".equals(d.statementId())) {
                         String linked = d.iteration() < 3
                                 ? "AnalysisProvider_3.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV:-1,b0:-1,paramValue:-1"

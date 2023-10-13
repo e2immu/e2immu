@@ -73,7 +73,7 @@ class MergeValueOfSingleVariable {
         if (!statementAnalysis.variableIsSet(renamed.fullyQualifiedName())) {
             VariableNature variableNature;
             if (renamed instanceof FieldReference fr) {
-                if (fr.scope.isDelayed()) {
+                if (fr.scope().isDelayed()) {
                     variableNature = new VariableNature.DelayedScope();
                 } else {
                     variableNature = vic.variableNature();

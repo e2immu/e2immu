@@ -41,7 +41,7 @@ public class Test_16_Modification_11 extends CommonTestRunner {
     public void test11() throws IOException {
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("C1".equals(d.methodInfo().name)) {
-                if (d.variable() instanceof FieldReference fr && "set".equals(fr.fieldInfo.name)) {
+                if (d.variable() instanceof FieldReference fr && "set".equals(fr.fieldInfo().name)) {
                     assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, d.getProperty(Property.NOT_NULL_EXPRESSION));
                     // not a direct assignment!
                     assertEquals("setC:1", d.variableInfo().getLinkedVariables().toString());
@@ -54,7 +54,7 @@ public class Test_16_Modification_11 extends CommonTestRunner {
             }
 
             if ("getSet".equals(d.methodInfo().name)) {
-                if (d.variable() instanceof FieldReference fr && "set".equals(fr.fieldInfo.name)) {
+                if (d.variable() instanceof FieldReference fr && "set".equals(fr.fieldInfo().name)) {
                     assertEquals(MultiLevel.NULLABLE_DV, d.getProperty(Property.CONTEXT_NOT_NULL));
                     String expectValue = d.iteration() == 0 ? "<f:set>" : "instance type Set<String>";
                     assertEquals(expectValue, d.currentValue().toString());
@@ -62,7 +62,7 @@ public class Test_16_Modification_11 extends CommonTestRunner {
             }
 
             if ("add".equals(d.methodInfo().name) && "C1".equals(d.methodInfo().typeInfo.simpleName)) {
-                if (d.variable() instanceof FieldReference fr && "set".equals(fr.fieldInfo.name)) {
+                if (d.variable() instanceof FieldReference fr && "set".equals(fr.fieldInfo().name)) {
                     String expectValue = d.iteration() == 0 ? "<f:set>"
                             : "instance type Set<String>/*this.size()>=1&&this.contains(string)*/";
                     assertEquals(expectValue, d.currentValue().toString());
@@ -78,7 +78,7 @@ public class Test_16_Modification_11 extends CommonTestRunner {
 
 
             if ("example1".equals(d.methodInfo().name)) {
-                if (d.variable() instanceof FieldReference fr && "s2".equals(fr.fieldInfo.name)) {
+                if (d.variable() instanceof FieldReference fr && "s2".equals(fr.fieldInfo().name)) {
                     if ("0".equals(d.statementId())) {
                         assertDv(d, 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.CONTEXT_NOT_NULL);
                         String expected = switch (d.iteration()) {
@@ -122,7 +122,7 @@ public class Test_16_Modification_11 extends CommonTestRunner {
                 }
             }
             if ("Modification_11".equals(d.methodInfo().name)) {
-                if (d.variable() instanceof FieldReference fr && "s2".equals(fr.fieldInfo.name)) {
+                if (d.variable() instanceof FieldReference fr && "s2".equals(fr.fieldInfo().name)) {
                     if ("1".equals(d.statementId())) {
                         String expectValue = d.iteration() == 0 ? "<m:getSet>" : "(new C1(set2)).getSet()";
                         assertEquals(expectValue, d.currentValue().toString());

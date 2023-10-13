@@ -103,8 +103,8 @@ public class Test_54_SwitchExpression extends CommonTestRunner {
                         assertDv(d, 2, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.CONTEXT_NOT_NULL);
                     }
                 }
-                if (d.variable() instanceof FieldReference fr && "out".equals(fr.fieldInfo.name)) {
-                    assertEquals("System", fr.scope.toString());
+                if (d.variable() instanceof FieldReference fr && "out".equals(fr.fieldInfo().name)) {
+                    assertEquals("System", fr.scope().toString());
                     assertEquals("", d.variableInfo().getLinkedVariables().toString());
 
                     assertDv(d, 2, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.CONTEXT_NOT_NULL);
@@ -115,7 +115,7 @@ public class Test_54_SwitchExpression extends CommonTestRunner {
                     String expected = d.iteration() < 2 ? "<m:apply>" : "(instance type $1).apply(c)";
                     assertEquals(expected, d.currentValue().toString());
                 }
-                if (d.variable() instanceof FieldReference fr && "out".equals(fr.fieldInfo.name)) {
+                if (d.variable() instanceof FieldReference fr && "out".equals(fr.fieldInfo().name)) {
                     fail();
                 }
                 if (d.variable() instanceof ParameterInfo pi && "b".equals(pi.name)) {

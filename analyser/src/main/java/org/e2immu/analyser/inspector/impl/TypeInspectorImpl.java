@@ -30,6 +30,7 @@ import org.e2immu.analyser.model.impl.CommentFactory;
 import org.e2immu.analyser.model.impl.TypeParameterImpl;
 import org.e2immu.analyser.model.statement.Block;
 import org.e2immu.analyser.model.variable.FieldReference;
+import org.e2immu.analyser.model.variable.impl.FieldReferenceImpl;
 import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.parser.TypeMap;
 import org.slf4j.Logger;
@@ -586,7 +587,7 @@ public class TypeInspectorImpl implements TypeInspector {
         } else if (inMap instanceof FieldInspectionImpl.Builder fib) fieldInspectionBuilder = fib;
         else throw new UnsupportedOperationException();
 
-        expressionContext.variableContext().add(new FieldReference(typeContext, fieldInfo));
+        expressionContext.variableContext().add(new FieldReferenceImpl(typeContext, fieldInfo));
         fieldInspectionBuilder.setComment(comment);
         fieldInspectionBuilder.addAnnotations(annotations);
         if (fullInspection) {

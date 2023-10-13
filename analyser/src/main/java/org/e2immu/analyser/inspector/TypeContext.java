@@ -17,6 +17,7 @@ package org.e2immu.analyser.inspector;
 import org.e2immu.analyser.inspector.expr.Scope;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.variable.FieldReference;
+import org.e2immu.analyser.model.variable.impl.FieldReferenceImpl;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.parser.TypeAndInspectionProvider;
 import org.e2immu.analyser.parser.TypeMap;
@@ -215,13 +216,13 @@ public class TypeContext implements TypeAndInspectionProvider {
                     .filter(fieldInfo -> getFieldInspection(fieldInfo).isStatic())
                     .filter(f -> f.name.equals(memberName))
                     .findFirst()
-                    .ifPresent(fieldInfo -> map.put(memberName, new FieldReference(this, fieldInfo)));
+                    .ifPresent(fieldInfo -> map.put(memberName, new FieldReferenceImpl(this, fieldInfo)));
         }
         for (TypeInfo typeInfo : importStaticAsterisk) {
             TypeInspection typeInspection = getTypeInspection(typeInfo);
             typeInspection.fields().stream()
                     .filter(fieldInfo -> getFieldInspection(fieldInfo).isStatic())
-                    .forEach(fieldInfo -> map.put(fieldInfo.name, new FieldReference(this, fieldInfo)));
+                    .forEach(fieldInfo -> map.put(fieldInfo.name, new FieldReferenceImpl(this, fieldInfo)));
         }
         return map;
     }

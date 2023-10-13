@@ -175,8 +175,8 @@ public class Test_62_FormatterSimplified extends CommonTestRunner {
                     // symbol should not exist outside 8.0.3
                     assertTrue(d.statementId().compareTo("8.0.4") < 0);
                 }
-                if (d.variable() instanceof FieldReference fr && "NICE".equals(fr.fieldInfo.name)) {
-                    assertEquals("ElementarySpace", fr.scope.returnType().typeInfo.simpleName);
+                if (d.variable() instanceof FieldReference fr && "NICE".equals(fr.fieldInfo().name)) {
+                    assertEquals("ElementarySpace", fr.scope().returnType().typeInfo.simpleName);
                 }
                 if (d.variable() instanceof ReturnVariable) {
                     if ("9".equals(d.statementId())) {
@@ -424,34 +424,34 @@ public class Test_62_FormatterSimplified extends CommonTestRunner {
                     String expect = d.iteration() < 3 ? "<s:boolean>" : "list.get(forwardInfo.pos) instanceof Guide";
                     assertEquals(expect, d.currentValue().toString());
                 }
-                if (d.variable() instanceof FieldReference fr && "pos".equals(fr.fieldInfo.name)) {
-                    assertEquals("forwardInfo", fr.scope.toString());
+                if (d.variable() instanceof FieldReference fr && "pos".equals(fr.fieldInfo().name)) {
+                    assertEquals("forwardInfo", fr.scope().toString());
                     String expect = d.iteration() < 3 ? "<f:forwardInfo.pos>" : "instance type int";
                     assertEquals(expect, d.currentValue().toString());
                 }
-                if (d.variable() instanceof FieldReference fr && "guide".equals(fr.fieldInfo.name)) {
+                if (d.variable() instanceof FieldReference fr && "guide".equals(fr.fieldInfo().name)) {
                     String expect = d.iteration() < 3 ? "<f:fwdInfo.guide>" : "nullable instance type Guide";
                     assertEquals(expect, d.currentValue().toString());
-                    if ("fwdInfo".equals(fr.scope.toString())) {
+                    if ("fwdInfo".equals(fr.scope().toString())) {
                         if ("0".equals(d.statementId())) {
                             fail();
                         }
                         if ("1".equals(d.statementId())) {
                             assertDv(d, 3, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                         }
-                    } else if ("(new Stack<GuideOnStack>()/*0==this.size()*/).peek().forwardInfo".equals(fr.scope.toString())) {
+                    } else if ("(new Stack<GuideOnStack>()/*0==this.size()*/).peek().forwardInfo".equals(fr.scope().toString())) {
                         assertDv(d, 1, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     } else fail();
                 }
-                if (d.variable() instanceof FieldReference fr && "forwardInfo".equals(fr.fieldInfo.name)) {
-                    if ("(new Stack<GuideOnStack>()).peek()".equals(fr.scope.toString())) {
+                if (d.variable() instanceof FieldReference fr && "forwardInfo".equals(fr.fieldInfo().name)) {
+                    if ("(new Stack<GuideOnStack>()).peek()".equals(fr.scope().toString())) {
                         String expect = d.iteration() < 3
                                 ? "<f:(new Stack<GuideOnStack>()).peek().forwardInfo>"
                                 : "nullable instance type ForwardInfo";
                         assertEquals(expect, d.currentValue().toString());
-                    } else if ("(new Stack<GuideOnStack>()/*0==this.size()*/).peek()".equals(fr.scope.toString())) {
+                    } else if ("(new Stack<GuideOnStack>()/*0==this.size()*/).peek()".equals(fr.scope().toString())) {
                         assertEquals("nullable instance type ForwardInfo", d.currentValue().toString());
-                    } else fail("Scope is " + fr.scope);
+                    } else fail("Scope is " + fr.scope());
                 }
             }
         };

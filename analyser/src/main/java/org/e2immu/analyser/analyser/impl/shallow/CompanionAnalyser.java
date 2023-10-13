@@ -19,7 +19,7 @@ import org.e2immu.analyser.analyser.delay.DelayFactory;
 import org.e2immu.analyser.analyser.delay.VariableCause;
 import org.e2immu.analyser.analyser.impl.context.EvaluationResultImpl;
 import org.e2immu.analyser.analyser.impl.util.BreakDelayLevel;
-import org.e2immu.analyser.analyser.nonanalyserimpl.AbstractEvaluationContextImpl;
+import org.e2immu.analyser.analyser.nonanalyserimpl.CommonEvaluationContext;
 import org.e2immu.analyser.analyser.util.ConditionManagerImpl;
 import org.e2immu.analyser.analysis.TypeAnalysis;
 import org.e2immu.analyser.analysis.impl.CompanionAnalysisImpl;
@@ -162,7 +162,7 @@ public class CompanionAnalyser {
         }
     }
 
-    private class EvaluationContextImpl extends AbstractEvaluationContextImpl {
+    private class EvaluationContextImpl extends CommonEvaluationContext {
 
         protected EvaluationContextImpl(int iteration, ConditionManager conditionManager) {
             super(1, iteration, BreakDelayLevel.NONE, conditionManager, null);

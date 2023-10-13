@@ -93,7 +93,7 @@ public class Test_Util_08_Resources extends CommonTestRunner {
             if ("addJmod".equals(d.methodInfo().name)) {
                 if ("4".equals(d.statementId())) {
                     Optional<Map.Entry<Variable, Properties>> entry = d.statementAnalysis().propertiesFromSubAnalysers()
-                            .filter(v -> v instanceof FieldReference fr && "LOGGER".equals(fr.fieldInfo.name))
+                            .filter(v -> v instanceof FieldReference fr && "LOGGER".equals(fr.fieldInfo().name))
                             .findFirst();
                     assertFalse(entry.isPresent());
                 }
@@ -110,7 +110,7 @@ public class Test_Util_08_Resources extends CommonTestRunner {
                 }
             }
             if ("recursivelyAddFiles".equals(d.methodInfo().name)) {
-                if (d.variable() instanceof FieldReference fr && "data".equals(fr.fieldInfo.name)) {
+                if (d.variable() instanceof FieldReference fr && "data".equals(fr.fieldInfo().name)) {
                     if ("1".equals(d.statementId())) {
                         assertDv(d, 1, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
                     }
@@ -166,7 +166,7 @@ public class Test_Util_08_Resources extends CommonTestRunner {
                 }
             }
             if ("addJmod".equals(d.methodInfo().name)) {
-                if (d.variable() instanceof FieldReference fr && "LOGGER".equals(fr.fieldInfo.name)) {
+                if (d.variable() instanceof FieldReference fr && "LOGGER".equals(fr.fieldInfo().name)) {
                     fail("Variable should not move from anonymous type to enclosing type");
                 }
             }

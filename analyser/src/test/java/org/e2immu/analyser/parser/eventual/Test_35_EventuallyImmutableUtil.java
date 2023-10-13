@@ -103,7 +103,7 @@ public class Test_35_EventuallyImmutableUtil extends CommonTestRunner {
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("set2".equals(d.methodInfo().name)) {
                 assertEquals("0", d.statementId());
-                if (d.variable() instanceof FieldReference fr && "value".equals(fr.fieldInfo.name)) {
+                if (d.variable() instanceof FieldReference fr && "value".equals(fr.fieldInfo().name)) {
                     assertTrue(fr.scopeIsThis());
                     assertDv(d, 1, MultiLevel.EVENTUALLY_IMMUTABLE_AFTER_MARK_DV, Property.CONTEXT_IMMUTABLE);
                 }
@@ -250,13 +250,13 @@ public class Test_35_EventuallyImmutableUtil extends CommonTestRunner {
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("set".equals(d.methodInfo().name)) {
                 assertEquals("0", d.statementId());
-                if (d.variable() instanceof FieldReference fr && "eventuallyFinal".equals(fr.fieldInfo.name)) {
+                if (d.variable() instanceof FieldReference fr && "eventuallyFinal".equals(fr.fieldInfo().name)) {
                     assertDv(d, 1, MultiLevel.EVENTUALLY_IMMUTABLE_BEFORE_MARK_DV, Property.CONTEXT_IMMUTABLE);
                 }
             }
             if ("done".equals(d.methodInfo().name)) {
                 assertEquals("0", d.statementId());
-                if (d.variable() instanceof FieldReference fr && "eventuallyFinal".equals(fr.fieldInfo.name)) {
+                if (d.variable() instanceof FieldReference fr && "eventuallyFinal".equals(fr.fieldInfo().name)) {
                     assertDv(d, 1, MultiLevel.EVENTUALLY_IMMUTABLE_AFTER_MARK_DV, Property.CONTEXT_IMMUTABLE);
                 }
             }
@@ -352,7 +352,7 @@ public class Test_35_EventuallyImmutableUtil extends CommonTestRunner {
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("EventuallyImmutableUtil_15".equals(d.methodInfo().name)) {
                 assertEquals("0", d.statementId());
-                if (d.variable() instanceof FieldReference fr && "eventuallyFinal".equals(fr.fieldInfo.name)) {
+                if (d.variable() instanceof FieldReference fr && "eventuallyFinal".equals(fr.fieldInfo().name)) {
                     assertEquals("ev/*@NotNull*/", d.currentValue().toString());
                     if (d.currentValue() instanceof PropertyWrapper pw) {
                         assertFalse(pw.properties().containsKey(Property.IMMUTABLE));

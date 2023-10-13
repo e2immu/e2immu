@@ -468,31 +468,31 @@ public class Assignment extends BaseExpression implements Expression {
             // check illegal assignment into nested type
             if (complainAboutAssignmentOutsideType &&
                     checkIllAdvisedAssignment(fieldReference, context.getCurrentType(),
-                            context.getAnalyserContext().getFieldInspection(fieldReference.fieldInfo).isStatic())) {
-                builder.addErrorAssigningToFieldOutsideType(fieldReference.fieldInfo);
+                            context.getAnalyserContext().getFieldInspection(fieldReference.fieldInfo()).isStatic())) {
+                builder.addErrorAssigningToFieldOutsideType(fieldReference.fieldInfo());
             }
 
-            if (fieldReference.scopeVariable != null && !fieldReference.scopeIsThis()) {
+            if (fieldReference.scopeVariable() != null && !fieldReference.scopeIsThis()) {
                 // set the variable's value to instance, much like calling a modifying method
                 // see Basics_24 as a fine example
                 // note: this one will overwrite the value of the scope, even if it is currently delayed
-                ParameterizedType returnType = fieldReference.scopeVariable.parameterizedType();
+                ParameterizedType returnType = fieldReference.scopeVariable().parameterizedType();
                 Properties valueProperties = context.evaluationContext().defaultValueProperties(returnType,
                         MultiLevel.EFFECTIVELY_NOT_NULL_DV);
                 CausesOfDelay causesOfDelay = valueProperties.delays();
                 Expression instance;
                 if (causesOfDelay.isDelayed()) {
                     instance = DelayedExpression.forDelayedValueProperties(identifier, returnType,
-                            fieldReference.scope, causesOfDelay, Properties.EMPTY);
+                            fieldReference.scope(), causesOfDelay, Properties.EMPTY);
                 } else {
                     instance = Instance.forGetInstance(identifier, returnType, valueProperties);
                 }
-                LinkedVariables lvs = fieldReference.scope.linkedVariables(context);
-                builder.modifyingMethodAccess(fieldReference.scopeVariable, instance, lvs);
+                LinkedVariables lvs = fieldReference.scope().linkedVariables(context);
+                builder.modifyingMethodAccess(fieldReference.scopeVariable(), instance, lvs);
 
                 // IMPROVE: recursion also in markModified --  but what about the code above?
                 // recurse!
-                markModified(builder, context, fieldReference.scopeVariable);
+                markModified(builder, context, fieldReference.scopeVariable());
             }
         } else if (at instanceof ParameterInfo parameterInfo) {
             builder.addParameterShouldNotBeAssignedTo(parameterInfo);
@@ -556,12 +556,12 @@ public class Assignment extends BaseExpression implements Expression {
     }
 
     private static boolean checkIllAdvisedAssignment(FieldReference fieldReference, TypeInfo currentType, boolean isStatic) {
-        TypeInfo owner = fieldReference.fieldInfo.owner;
+        TypeInfo owner = fieldReference.fieldInfo().owner;
         if (owner.primaryType() != currentType.primaryType()) return true; // outside primary type
         if (owner == currentType) { // in the same type
             // so if x is a local variable of the current type, we can do this.field =, but not x.field = !
             if (isStatic) {
-                return !(fieldReference.scope instanceof TypeExpression);
+                return !(fieldReference.scope() instanceof TypeExpression);
             }
             return !fieldReference.scopeIsThis();
         }

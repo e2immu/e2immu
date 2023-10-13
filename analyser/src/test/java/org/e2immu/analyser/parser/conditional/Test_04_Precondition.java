@@ -232,7 +232,7 @@ public class Test_04_Precondition extends CommonTestRunner {
                         assertEquals(expected, d.currentValue().toString());
                     }
                 }
-                if (d.variable() instanceof FieldReference fieldReference && "i".equals(fieldReference.fieldInfo.name)) {
+                if (d.variable() instanceof FieldReference fr && "i".equals(fr.fieldInfo().name)) {
                     if ("1".equals(d.statementId())) {
                         String expected = switch (d.iteration()) {
                             case 0 -> "<s:int>";
@@ -299,7 +299,7 @@ public class Test_04_Precondition extends CommonTestRunner {
 
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("setInteger".equals(d.methodInfo().name)) {
-                if (d.variable() instanceof FieldReference fr && "integer".equals(fr.fieldInfo.name)) {
+                if (d.variable() instanceof FieldReference fr && "integer".equals(fr.fieldInfo().name)) {
                     assertEquals(INTEGER, d.variableName());
                     if ("0.0.1.0.0".equals(d.statementId())) {
                         assertTrue(d.variableInfo().isRead());
@@ -509,7 +509,7 @@ public class Test_04_Precondition extends CommonTestRunner {
     public void test_7() throws IOException {
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("pop".equals(d.methodInfo().name)) {
-                if (d.variable() instanceof FieldReference fr && "stack".equals(fr.fieldInfo.name)) {
+                if (d.variable() instanceof FieldReference fr && "stack".equals(fr.fieldInfo().name)) {
                     assertDv(d, 1, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
                 }
             }

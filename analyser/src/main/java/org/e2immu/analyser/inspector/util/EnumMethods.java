@@ -23,6 +23,7 @@ import org.e2immu.analyser.model.expression.*;
 import org.e2immu.analyser.model.statement.Block;
 import org.e2immu.analyser.model.statement.ReturnStatement;
 import org.e2immu.analyser.model.variable.FieldReference;
+import org.e2immu.analyser.model.variable.impl.FieldReferenceImpl;
 import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
 import org.e2immu.analyser.resolver.impl.SortedType;
 
@@ -86,7 +87,7 @@ public class EnumMethods {
         var arrayInitializer = new ArrayInitializer(Identifier.generate("enum array init"), typeContext,
                 enumFields.stream().map(fieldInfo -> (Expression)
                                 new VariableExpression(fieldInfo.getIdentifier(),
-                                        new FieldReference(typeContext, fieldInfo)))
+                                        new FieldReferenceImpl(typeContext, fieldInfo)))
                         .toList(),
                 enumType.asParameterizedType(typeContext));
         var valuesReturnType = new ParameterizedType(enumType, 1);

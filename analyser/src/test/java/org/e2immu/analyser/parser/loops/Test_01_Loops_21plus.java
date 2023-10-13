@@ -387,7 +387,7 @@ public class Test_01_Loops_21plus extends CommonTestRunner {
     public void test_23_1() throws IOException {
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("method".equals(d.methodInfo().name)) {
-                if (d.variable() instanceof FieldReference fr && "xes".equals(fr.fieldInfo.name)) {
+                if (d.variable() instanceof FieldReference fr && "xes".equals(fr.fieldInfo().name)) {
                     if ("4".equals(d.statementId())) {
                         assertDv(d, 4, MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL_DV, Property.CONTEXT_NOT_NULL);
                     }
@@ -447,7 +447,7 @@ public class Test_01_Loops_21plus extends CommonTestRunner {
     public void test_24() throws IOException {
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("method".equals(d.methodInfo().name)) {
-                if (d.variable() instanceof FieldReference fr && "map".equals(fr.fieldInfo.name)) {
+                if (d.variable() instanceof FieldReference fr && "map".equals(fr.fieldInfo().name)) {
                     if ("1".equals(d.statementId())) {
                         assertTrue(d.variableInfoContainer().hasEvaluation());
                         VariableInfo eval = d.variableInfoContainer().best(Stage.EVALUATION);

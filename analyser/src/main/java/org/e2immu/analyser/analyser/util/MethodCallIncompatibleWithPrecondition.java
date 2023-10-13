@@ -27,6 +27,7 @@ import org.e2immu.analyser.model.expression.VariableExpression;
 import org.e2immu.analyser.model.impl.TranslationMapImpl;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.This;
+import org.e2immu.analyser.model.variable.impl.FieldReferenceImpl;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -51,7 +52,7 @@ public class MethodCallIncompatibleWithPrecondition {
 
         // IMPROVE add stateData.conditionManagerForNextStatement.state to this
         for (FieldInfo fieldInfo : fields) {
-            FieldReference fieldReference = new FieldReference(context.getAnalyserContext(), fieldInfo);
+            FieldReference fieldReference = new FieldReferenceImpl(context.getAnalyserContext(), fieldInfo);
             VariableInfo variableInfo = statementAnalysis.findOrNull(fieldReference, Stage.MERGE);
             if (variableInfo == null) {
                 LOGGER.debug("While field {} is visible, it is not present in last statement of {};" +

@@ -208,8 +208,8 @@ public class TypeAnalysisImpl extends AnalysisImpl implements TypeAnalysis {
     }
 
     static FieldInfo translateToVisibleField(Set<FieldInfo> visibleFields, FieldReference fieldReference) {
-        if (visibleFields.contains(fieldReference.fieldInfo)) return fieldReference.fieldInfo;
-        if (fieldReference.scope instanceof VariableExpression ve && ve.variable() instanceof FieldReference fr) {
+        if (visibleFields.contains(fieldReference.fieldInfo())) return fieldReference.fieldInfo();
+        if (fieldReference.scope() instanceof VariableExpression ve && ve.variable() instanceof FieldReference fr) {
             return translateToVisibleField(visibleFields, fr);
         }
         return null; // not one of ours, i
@@ -334,9 +334,9 @@ public class TypeAnalysisImpl extends AnalysisImpl implements TypeAnalysis {
         public CausesOfDelay approvedPreconditionsStatus(boolean e2, FieldReference fieldReference) {
             assert fieldReference != null;
             return e2 ? (approvedPreconditionsE2.isSet(fieldReference) ? CausesOfDelay.EMPTY :
-                    fieldReference.fieldInfo.delay(CauseOfDelay.Cause.APPROVED_PRECONDITIONS)) :
+                    fieldReference.fieldInfo().delay(CauseOfDelay.Cause.APPROVED_PRECONDITIONS)) :
                     (approvedPreconditionsE1.isSet(fieldReference) ? CausesOfDelay.EMPTY :
-                            fieldReference.fieldInfo.delay(CauseOfDelay.Cause.APPROVED_PRECONDITIONS));
+                            fieldReference.fieldInfo().delay(CauseOfDelay.Cause.APPROVED_PRECONDITIONS));
         }
 
         @Override
@@ -536,8 +536,9 @@ public class TypeAnalysisImpl extends AnalysisImpl implements TypeAnalysis {
 
         public Set<FieldInfo> nonFinalFieldsNotApprovedOrGuarded(List<FieldReference> nonFinalFields) {
             return nonFinalFields.stream()
-                    .filter(fr -> !approvedPreconditionsE1.isSet(fr) && !guardedByEventuallyImmutableFields.contains(fr.fieldInfo))
-                    .map(fr -> fr.fieldInfo)
+                    .filter(fr -> !approvedPreconditionsE1.isSet(fr)
+                            && !guardedByEventuallyImmutableFields.contains(fr.fieldInfo()))
+                    .map(FieldReference::fieldInfo)
                     .collect(Collectors.toUnmodifiableSet());
         }
 

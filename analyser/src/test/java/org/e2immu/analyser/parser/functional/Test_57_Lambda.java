@@ -123,7 +123,7 @@ public class Test_57_Lambda extends CommonTestRunner {
                         }
                     }
                 }
-                if (d.variable() instanceof FieldReference fr && "i".equals(fr.fieldInfo.name)) {
+                if (d.variable() instanceof FieldReference fr && "i".equals(fr.fieldInfo().name)) {
                     assertTrue(fr.scopeIsThis());
                     if ("0".equals(d.statementId())) {
                         assertEquals("", d.variableInfo().getLinkedVariables().toString());
@@ -182,8 +182,8 @@ public class Test_57_Lambda extends CommonTestRunner {
                 }
             }
             if ("get".equals(d.methodInfo().name)) {
-                if (d.variable() instanceof FieldReference fr && "k".equals(fr.fieldInfo.name)) {
-                    if ("x".equals(fr.scope.toString())) {
+                if (d.variable() instanceof FieldReference fr && "k".equals(fr.fieldInfo().name)) {
+                    if ("x".equals(fr.scope().toString())) {
                         String expected = d.iteration() == 0 ? "<f:x.k>" : "instance type int";
                         assertEquals(expected, d.currentValue().toString());
                         String linked = d.iteration() == 0 ? "NOT_YET_SET" : "scope-36:37:4,x:2";
@@ -191,9 +191,9 @@ public class Test_57_Lambda extends CommonTestRunner {
 
                         assertEquals("0", d.statementId());
                         assertDv(d, 1, MultiLevel.NOT_CONTAINER_DV, Property.CONTEXT_CONTAINER);
-                    } else if (fr.scope instanceof ConstructorCall) {
+                    } else if (fr.scope() instanceof ConstructorCall) {
                         assertEquals("", d.variableInfo().getLinkedVariables().toString());
-                    } else fail("? " + fr.scope);
+                    } else fail("? " + fr.scope());
                 }
                 if (d.variable() instanceof ReturnVariable) {
                     String expected = d.iteration() == 0 ? "<cc-exp:X>" : "x.k";
@@ -249,8 +249,8 @@ public class Test_57_Lambda extends CommonTestRunner {
                         assertEquals(expectLv, d.variableInfo().getLinkedVariables().toString());
                     }
                 }
-                if (d.variable() instanceof FieldReference fr && "k".equals(fr.fieldInfo.name)) {
-                    if ("x".equals(fr.scope.toString())) {
+                if (d.variable() instanceof FieldReference fr && "k".equals(fr.fieldInfo().name)) {
+                    if ("x".equals(fr.scope().toString())) {
                         if ("1".equals(d.statementId())) {
                             assertEquals("x:2", d.variableInfo().getLinkedVariables().toString());
                         }
@@ -261,8 +261,8 @@ public class Test_57_Lambda extends CommonTestRunner {
                 }
             }
             if ("get".equals(d.methodInfo().name)) {
-                if (d.variable() instanceof FieldReference fr && "k".equals(fr.fieldInfo.name)) {
-                    if (fr.scope instanceof ConstructorCall) {
+                if (d.variable() instanceof FieldReference fr && "k".equals(fr.fieldInfo().name)) {
+                    if (fr.scope() instanceof ConstructorCall) {
                         if ("0".equals(d.statementId())) {
                             String linked = d.iteration() == 0
                                     ? "l:0,scope-37:21:-1,x.k:-1,x:-1"
@@ -273,7 +273,7 @@ public class Test_57_Lambda extends CommonTestRunner {
                             String expected = d.iteration() == 0 ? "<f:new X(x.k).k>" : "instance type int";
                             assertEquals(expected, d.currentValue().toString());
                         }
-                    } else if ("x".equals(fr.scope.toString())) {
+                    } else if ("x".equals(fr.scope().toString())) {
                         if ("0".equals(d.statementId())) {
                             String linked = d.iteration() == 0
                                     ? "NOT_YET_SET"
@@ -284,7 +284,7 @@ public class Test_57_Lambda extends CommonTestRunner {
                             String linked = d.iteration() == 0 ? "NOT_YET_SET" : "l:1,new X(x.k).k:1,scope-37:21:3,x:2";
                             assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
                         }
-                    } else fail("Scope " + fr.scope);
+                    } else fail("Scope " + fr.scope());
                 }
                 if ("l".equals(d.variableName())) {
                     String expected = d.iteration() == 0 ? "<cc-exp:X>" : "x.k";
@@ -366,7 +366,7 @@ public class Test_57_Lambda extends CommonTestRunner {
     public void test_6() throws IOException {
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("applyMethod".equals(d.methodInfo().name)) {
-                if (d.variable() instanceof FieldReference fr && "i".equals(fr.fieldInfo.name)) {
+                if (d.variable() instanceof FieldReference fr && "i".equals(fr.fieldInfo().name)) {
                     assertDv(d, 2, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                 }
             }
@@ -478,7 +478,7 @@ public class Test_57_Lambda extends CommonTestRunner {
     public void test_13() throws IOException {
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("assigning".equals(d.methodInfo().name)) {
-                if (d.variable() instanceof FieldReference fr && "i".equals(fr.fieldInfo.name)) {
+                if (d.variable() instanceof FieldReference fr && "i".equals(fr.fieldInfo().name)) {
                     if ("0".equals(d.statementId())) {
                         String expected = d.iteration() == 0 ? "<f:ii.i>" : "instance type int";
                         assertEquals(expected, d.currentValue().toString());

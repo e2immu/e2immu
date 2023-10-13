@@ -94,7 +94,7 @@ public class Test_Support_08_SetOnceMap extends CommonTestRunner {
                 }
             }
             if ("put".equals(d.methodInfo().name)) {
-                if (d.variable() instanceof FieldReference fr && "map".equals(fr.fieldInfo.name)) {
+                if (d.variable() instanceof FieldReference fr && "map".equals(fr.fieldInfo().name)) {
                     if ("4".equals(d.statementId())) {
                         String expectValue = d.iteration() == 0 ? "<f:map>" : "instance type HashMap<K,V>";
                         assertEquals(expectValue, d.currentValue().toString());
@@ -139,7 +139,7 @@ public class Test_Support_08_SetOnceMap extends CommonTestRunner {
                 }
             }
             if ("isSet".equals(d.methodInfo().name)) {
-                if (d.variable() instanceof FieldReference fr && "map".equals(fr.fieldInfo.name)) {
+                if (d.variable() instanceof FieldReference fr && "map".equals(fr.fieldInfo().name)) {
                     assertDv(d, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                 }
             }
@@ -158,11 +158,11 @@ public class Test_Support_08_SetOnceMap extends CommonTestRunner {
                         assertEquals("", d.variableInfo().getLinkedVariables().toString());
                     }
                 }
-                if (d.variable() instanceof FieldReference fr && "map".equals(fr.fieldInfo.name)
-                        && fr.scopeVariable != null
-                        && "setOnceMap".equals(fr.scopeVariable.simpleName())) {
+                if (d.variable() instanceof FieldReference fr && "map".equals(fr.fieldInfo().name)
+                        && fr.scopeVariable() != null
+                        && "setOnceMap".equals(fr.scopeVariable().simpleName())) {
                     assertEquals("1", d.statementId());
-                    assertNotNull(fr.scopeVariable);
+                    assertNotNull(fr.scopeVariable());
                     String linked = d.iteration() < 2
                             ? "setOnceMap:-1,this.map:-1,this:-1"
                             : "setOnceMap:2,this.map:4,this:4";

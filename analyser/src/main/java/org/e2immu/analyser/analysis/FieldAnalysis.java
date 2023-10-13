@@ -115,12 +115,12 @@ public interface FieldAnalysis extends Analysis {
             return DelayedVariableExpression.forDelayedValueProperties(fieldReference, statementTime, delay);
         }
         ParameterizedType mostSpecific;
-        if (value.returnType().typeInfo != null && value.returnType().typeInfo.equals(fieldReference.fieldInfo.type.typeInfo)) {
+        if (value.returnType().typeInfo != null && value.returnType().typeInfo.equals(fieldReference.fieldInfo().type.typeInfo)) {
             // same typeInfo, but maybe different type parameters; see e.g. NotNull_AAPI_3
-            mostSpecific = fieldReference.parameterizedType;
+            mostSpecific = fieldReference.parameterizedType();
         } else {
             // instance type List<...> in fieldReference vs instance type ArrayList<...> in value; see e.g. Basics_20
-            mostSpecific = fieldReference.parameterizedType.mostSpecific(InspectionProvider.DEFAULT,
+            mostSpecific = fieldReference.parameterizedType().mostSpecific(InspectionProvider.DEFAULT,
                     primaryType, value.returnType());
         }
         Instance instance = Instance.forField(getFieldInfo(), mostSpecific, properties);

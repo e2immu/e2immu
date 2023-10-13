@@ -73,7 +73,7 @@ public class VariableCause implements CauseOfDelay {
 
     @Override
     public boolean variableIsField(FieldInfo fieldInfo) {
-        return variable instanceof FieldReference fr && fr.fieldInfo == fieldInfo;
+        return variable instanceof FieldReference fr && fr.fieldInfo() == fieldInfo;
     }
 
     @Override

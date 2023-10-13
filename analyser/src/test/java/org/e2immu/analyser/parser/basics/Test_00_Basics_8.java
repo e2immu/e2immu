@@ -159,7 +159,7 @@ public class Test_00_Basics_8 extends CommonTestRunner {
                     }
                     assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, d.getProperty(CONTEXT_NOT_NULL));
                 }
-                if (d.variable() instanceof FieldReference fr && "i".equals(fr.fieldInfo.name)) {
+                if (d.variable() instanceof FieldReference fr && "i".equals(fr.fieldInfo().name)) {
                     if ("4.0.0.0.1".equals(d.statementId())) {
                         String linked = d.iteration() == 0 ? "System.out:-1,j0:-1,j:-1,k:-1,q:-1,this:-1" : "";
                         assertEquals(linked, d.variableInfo().getLinkedVariables().toString());

@@ -250,7 +250,7 @@ public record MergeHelper(EvaluationContext evaluationContext,
 
     private Merge.ExpressionAndProperties valuePropertiesWrapToBreakFieldInitDelay(VariableInfo vi) {
         CausesOfDelay causes = DelayFactory.createDelay(evaluationContext.getLocation(MERGE), CauseOfDelay.Cause.VALUES);
-        Map<Property, DV> delayedProperties = EvaluationContext.delayedValueProperties(causes);
+        Map<Property, DV> delayedProperties = AbstractEvaluationContextImpl.delayedValueProperties(causes);
         Expression value = new DelayedWrappedExpression(Identifier.generate("dwe break init value props"),
                 vi.variable(),
                 vi.getValue(), vi.valueProperties(), vi.getLinkedVariables(), causes);
@@ -541,7 +541,7 @@ public record MergeHelper(EvaluationContext evaluationContext,
         }
         EvaluationResult context = EvaluationResultImpl.from(evaluationContext);
         Expression safe;
-        if (vi.variable() instanceof ReturnVariable rv) {
+        if (vi.variable() instanceof ReturnVariable) {
             MethodInfo methodInfo = evaluationContext.getCurrentMethod().getMethodInfo();
             ReturnVariable returnVariable = new ReturnVariable(methodInfo);
             Expression returnExpression = UnknownExpression.forReturnVariable(methodInfo.identifier, returnVariable.returnType);
@@ -562,7 +562,7 @@ public record MergeHelper(EvaluationContext evaluationContext,
         if (condition.isDelayed() && safe.isDelayed()) {
             CausesOfDelay delay = DelayFactory.createDelay(new VariableCause(vi.variable(),
                     evaluationContext.getLocation(MERGE), CauseOfDelay.Cause.CONDITION));
-            Properties delayed = Properties.ofWritable(EvaluationContext.delayedValueProperties(delay));
+            Properties delayed = Properties.ofWritable(AbstractEvaluationContextImpl.delayedValueProperties(delay));
             return new Merge.ExpressionAndProperties(safe, delayed);
         }
         /*

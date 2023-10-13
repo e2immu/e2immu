@@ -90,7 +90,7 @@ public class Test_Support_04_FirstThen extends CommonTestRunner {
                 }
             }
             if ("set".equals(d.methodInfo().name)) {
-                if (d.variable() instanceof FieldReference fr && "first".equals(fr.fieldInfo.name)) {
+                if (d.variable() instanceof FieldReference fr && "first".equals(fr.fieldInfo().name)) {
                     if ("1".equals(d.statementId())) {
                         assertCurrentValue(d, 2, "null");
                     }

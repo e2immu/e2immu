@@ -16,6 +16,7 @@ package org.e2immu.analyser.analyser.util;
 
 import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.analyser.impl.context.EvaluationResultImpl;
+import org.e2immu.analyser.analyser.nonanalyserimpl.AbstractEvaluationContextImpl;
 import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.Identifier;
 import org.e2immu.analyser.model.MultiLevel;
@@ -230,7 +231,7 @@ public record ConditionManagerImpl(Expression condition,
         if (parent == null) {
             return state;
         }
-        Expression parentAbsolute = ((ConditionManagerImpl)parent)
+        Expression parentAbsolute = ((ConditionManagerImpl) parent)
                 .absoluteState(context, doingNullCheck, cumulativeIgnore);
         Expression cleanCondition = expressionWithoutVariables(context, condition, cumulativeIgnore);
         expressions = new Expression[]{cleanCondition, state, parentAbsolute};
@@ -514,7 +515,13 @@ public record ConditionManagerImpl(Expression condition,
         return MultiExpressions.from(getIdentifier(), variables());
     }
 
-    public record EvaluationContextImpl(AnalyserContext analyserContext) implements EvaluationContext {
+    public static class EvaluationContextImpl extends AbstractEvaluationContextImpl {
+
+        private final AnalyserContext analyserContext;
+
+        public EvaluationContextImpl(AnalyserContext analyserContext) {
+            this.analyserContext = analyserContext;
+        }
 
         @Override
         public int getDepth() {
@@ -560,7 +567,7 @@ public record ConditionManagerImpl(Expression condition,
             }
             if (variable instanceof FieldReference fieldReference) {
                 Property vp = property == NOT_NULL_EXPRESSION ? EXTERNAL_NOT_NULL : property;
-                return evaluationContext.getAnalyserContext().getFieldAnalysis(fieldReference.fieldInfo).getProperty(vp);
+                return evaluationContext.getAnalyserContext().getFieldAnalysis(fieldReference.fieldInfo()).getProperty(vp);
             }
             if (variable instanceof This thisVariable) {
                 return evaluationContext.getAnalyserContext().getTypeAnalysis(thisVariable.typeInfo).getProperty(property);

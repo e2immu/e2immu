@@ -60,13 +60,13 @@ public class Test_Support_05_Lazy extends CommonTestRunner {
                     assertDv(d, MultiLevel.IGNORE_MODS_DV, Property.IGNORE_MODIFICATIONS);
                 }
             }
-            if (d.variable() instanceof FieldReference fr && "supplier".equals(fr.fieldInfo.name)) {
+            if (d.variable() instanceof FieldReference fr && "supplier".equals(fr.fieldInfo().name)) {
                 assertEquals("1", d.statementId());
                 assertDv(d, MultiLevel.IGNORE_MODS_DV, Property.IGNORE_MODIFICATIONS);
             }
         }
         if ("get".equals(d.methodInfo().name)) {
-            if (d.variable() instanceof FieldReference s && "supplier".equals(s.fieldInfo.name)) {
+            if (d.variable() instanceof FieldReference s && "supplier".equals(s.fieldInfo().name)) {
                 assertFalse(d.variableInfo().isAssigned());
                 assertDv(d, 7, MultiLevel.IGNORE_MODS_DV, Property.IGNORE_MODIFICATIONS);
             }
@@ -92,14 +92,14 @@ public class Test_Support_05_Lazy extends CommonTestRunner {
                     assertDv(d, 7, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_EXPRESSION);
                 }
             }
-            if (d.variable() instanceof FieldReference t && "supplier".equals(t.fieldInfo.name)) {
+            if (d.variable() instanceof FieldReference t && "supplier".equals(t.fieldInfo().name)) {
                 assertCurrentValue(d, 7, "instance type Supplier<T>/*@IgnoreMods*/");
                 assertDv(d, 7, MultiLevel.EFFECTIVELY_IMMUTABLE_HC_DV, Property.IMMUTABLE);
             }
 
-            if (d.variable() instanceof FieldReference t && "t".equals(t.fieldInfo.name)) {
-                assertEquals("this", t.scopeVariable.simpleName());
-                assertEquals("this", t.scope.toString());
+            if (d.variable() instanceof FieldReference t && "t".equals(t.fieldInfo().name)) {
+                assertEquals("this", t.scopeVariable().simpleName());
+                assertEquals("this", t.scope().toString());
 
                 if ("0.0.0".equals(d.statementId())) {
                     assertCurrentValue(d, 7, "nullable instance type T");

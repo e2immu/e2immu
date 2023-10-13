@@ -47,7 +47,7 @@ public class Test_16_Modification_5 extends CommonTestRunner {
                 assertEquals(DV.FALSE_DV, d.getProperty(Property.CONTEXT_MODIFIED));
             }
             if ("Modification_5".equals(d.methodInfo().name)
-                    && d.variable() instanceof FieldReference fr && "set5".equals(fr.fieldInfo.name)
+                    && d.variable() instanceof FieldReference fr && "set5".equals(fr.fieldInfo().name)
                     && "0".equals(d.statementId())) {
                 String expectValue = "new HashSet<>(in5)/*this.size()==in5.size()*/";
                 assertEquals(expectValue, d.currentValue().toString());

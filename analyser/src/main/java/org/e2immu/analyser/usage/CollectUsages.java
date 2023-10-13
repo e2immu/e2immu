@@ -114,8 +114,8 @@ public record CollectUsages(List<String> packagePrefixes, Set<String> packagesAc
                 result.add(cc.constructor().typeInfo);
             } else if ((ve = e.asInstanceOf(VariableExpression.class)) != null) {
                 if (ve.variable() instanceof FieldReference fr) {
-                    collect(result, fr.fieldInfo);
-                    collect(result, fr.scope);
+                    collect(result, fr.fieldInfo());
+                    collect(result, fr.scope());
                 }
                 collect(result, ve.variable().parameterizedType());
             } else if (e instanceof TypeExpression te) {

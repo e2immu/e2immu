@@ -23,6 +23,7 @@ import org.e2immu.analyser.model.expression.util.MultiExpression;
 import org.e2immu.analyser.model.impl.TranslationMapImpl;
 import org.e2immu.analyser.model.statement.*;
 import org.e2immu.analyser.model.variable.FieldReference;
+import org.e2immu.analyser.model.variable.impl.FieldReferenceImpl;
 import org.e2immu.analyser.parser.InspectionProvider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -68,7 +69,7 @@ public class ParseSwitchExpr {
             TypeInspection enumInspection = expressionContext.typeContext().getTypeInspection(enumType);
             enumInspection.fields()
                     .forEach(fieldInfo -> expressionContext.variableContext().add(
-                            new FieldReference(expressionContext.typeContext(), fieldInfo)));
+                            new FieldReferenceImpl(expressionContext.typeContext(), fieldInfo)));
         }
     }
 

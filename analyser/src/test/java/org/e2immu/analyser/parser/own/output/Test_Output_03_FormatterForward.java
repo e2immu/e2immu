@@ -66,8 +66,8 @@ public class Test_Output_03_FormatterForward extends CommonTestRunner {
                     if (d.iteration() >= 2) {
                         assertEquals(5, d.evaluationResult().changeData().size());
                         String scopes = d.evaluationResult().changeData().keySet().stream()
-                                .filter(v -> v instanceof FieldReference fr && "split".equals(fr.fieldInfo.name))
-                                .map(v -> ((FieldReference) v).scope.toString())
+                                .filter(v -> v instanceof FieldReference fr && "split".equals(fr.fieldInfo().name))
+                                .map(v -> ((FieldReference) v).scope().toString())
                                 .sorted().collect(Collectors.joining(", "));
                         assertEquals("scope-scope-54:25:8.0.3, scope-scope-58:37:8.0.3", scopes);
                     }
@@ -112,18 +112,18 @@ public class Test_Output_03_FormatterForward extends CommonTestRunner {
                     assertEquals(v, d.currentValue().toString());
                 }
             }
-            if (d.variable() instanceof FieldReference fr && "split".equals(fr.fieldInfo.name)) {
+            if (d.variable() instanceof FieldReference fr && "split".equals(fr.fieldInfo().name)) {
                 if ("8.0.4".equals(d.statementId())) {
                     assertTrue(Set.of("scope-scope-54:25:8.0.3", "scope-space:8.0.4", "scope-scope-58:37:8.0.3")
-                                    .contains(fr.scope.toString()),
-                            "Scope " + fr.scope + "; should definitely not be symbol.left() or symbol.right()");
+                                    .contains(fr.scope().toString()),
+                            "Scope " + fr.scope() + "; should definitely not be symbol.left() or symbol.right()");
                 }
                 if ("8.0.4.1.0.1.0.0.07".equals(d.statementId())) {
-                    if ("list.get(pos$8)/*(Symbol)*/.left()".equals(fr.scope.toString())) {
+                    if ("list.get(pos$8)/*(Symbol)*/.left()".equals(fr.scope().toString())) {
                         String expected = d.iteration() == 0 ? "<instanceOf:Symbol>?<f:symbol.left().split>:nullable instance type Split"
                                 : "nullable instance type Split";
                         assertEquals(expected, d.currentValue().toString());
-                    } else if ("list.get(pos$8)/*(Symbol)*/.right()".equals(fr.scope.toString())) {
+                    } else if ("list.get(pos$8)/*(Symbol)*/.right()".equals(fr.scope().toString())) {
                         String expected = d.iteration() == 0 ? "<instanceOf:Symbol>?<f:symbol.right().split>:nullable instance type Split"
                                 : "nullable instance type Split";
                         assertEquals(expected, d.currentValue().toString());

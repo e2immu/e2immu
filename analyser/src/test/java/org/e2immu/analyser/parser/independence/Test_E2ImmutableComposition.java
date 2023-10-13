@@ -56,7 +56,7 @@ public class Test_E2ImmutableComposition extends CommonTestRunner {
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             String clazz = d.methodInfo().typeInfo.simpleName;
             if ("visit".equals(d.methodInfo().name) && "One".equals(clazz)) {
-                if (d.variable() instanceof FieldReference fr && "t".equals(fr.fieldInfo.name)) {
+                if (d.variable() instanceof FieldReference fr && "t".equals(fr.fieldInfo().name)) {
                     assertDv(d, 1, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                 }
             }
@@ -81,7 +81,7 @@ public class Test_E2ImmutableComposition extends CommonTestRunner {
                         assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
                     }
                 }
-                if (d.variable() instanceof FieldReference fr && "one".equals(fr.fieldInfo.name)) {
+                if (d.variable() instanceof FieldReference fr && "one".equals(fr.fieldInfo().name)) {
                     if ("0".equals(d.statementId())) {
                         String linked = d.iteration() < 4 ? "consumer:-1,this:-1" : "consumer:4,this:4";
                         assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
@@ -99,7 +99,7 @@ public class Test_E2ImmutableComposition extends CommonTestRunner {
                 if (d.variable() instanceof ParameterInfo pi && "consumer".equals(pi.name)) {
                     assertEquals("this:4", d.variableInfo().getLinkedVariables().toString());
                 }
-                if (d.variable() instanceof FieldReference fr && "elements".equals(fr.fieldInfo.name)) {
+                if (d.variable() instanceof FieldReference fr && "elements".equals(fr.fieldInfo().name)) {
                     assertTrue(fr.scopeIsThis());
                     assertLinked(d,
                             it0("consumer:-1,this:-1"),
@@ -119,10 +119,10 @@ public class Test_E2ImmutableComposition extends CommonTestRunner {
                 }
             }
             if ("size".equals(d.methodInfo().name) && "EncapsulatedImmutableArrayOfHasSize".equals(clazz)) {
-                if (d.variable() instanceof FieldReference fr && "one".equals(fr.fieldInfo.name)) {
+                if (d.variable() instanceof FieldReference fr && "one".equals(fr.fieldInfo().name)) {
                     assertTrue(fr.scopeIsThis());
                     assertEquals("Type org.e2immu.analyser.parser.independence.testexample.E2ImmutableComposition_0.ImmutableOne<org.e2immu.analyser.parser.independence.testexample.E2ImmutableComposition_0.HasSize[]>",
-                            fr.parameterizedType.toString());
+                            fr.parameterizedType().toString());
                 }
                 if ("first".equals(d.variableName())) {
                     if ("0".equals(d.statementId())) {
@@ -134,7 +134,7 @@ public class Test_E2ImmutableComposition extends CommonTestRunner {
             }
             if ("first".equals(d.methodInfo().name) && "One".equals(d.methodInfo().typeInfo.simpleName)) {
                 assertEquals("0", d.statementId());
-                if (d.variable() instanceof FieldReference fr && "t".equals(fr.fieldInfo.name)) {
+                if (d.variable() instanceof FieldReference fr && "t".equals(fr.fieldInfo().name)) {
                     assertTrue(fr.scopeIsThis());
                     assertEquals("", d.variableInfo().getLinkedVariables().toString());
                 }
@@ -144,7 +144,7 @@ public class Test_E2ImmutableComposition extends CommonTestRunner {
             }
             if ("first".equals(d.methodInfo().name) && "OneWithOne".equals(d.methodInfo().typeInfo.simpleName)) {
                 assertEquals("0", d.statementId());
-                if (d.variable() instanceof FieldReference fr && "one".equals(fr.fieldInfo.name)) {
+                if (d.variable() instanceof FieldReference fr && "one".equals(fr.fieldInfo().name)) {
                     assertTrue(fr.scopeIsThis());
                     String linked = d.iteration() < 4 ? "this:-1" : "";
                     assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
@@ -158,7 +158,7 @@ public class Test_E2ImmutableComposition extends CommonTestRunner {
             }
             if ("first".equals(d.methodInfo().name) && "EncapsulatedExposedArrayOfHasSize".equals(d.methodInfo().typeInfo.simpleName)) {
                 assertEquals("0", d.statementId());
-                if (d.variable() instanceof FieldReference fr && "one".equals(fr.fieldInfo.name)) {
+                if (d.variable() instanceof FieldReference fr && "one".equals(fr.fieldInfo().name)) {
                     assertTrue(fr.scopeIsThis());
                     String linked = d.iteration() < 4 ? "av-480:20:-1,this:-1" : "";
                     assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
@@ -235,7 +235,7 @@ public class Test_E2ImmutableComposition extends CommonTestRunner {
             }
             if ("set".equals(d.methodInfo().name) && "EncapsulatedAssignableArrayOfHasSize".equals(clazz)) {
                 assertEquals("0", d.statementId());
-                if (d.variable() instanceof FieldReference fr && "one".equals(fr.fieldInfo.name)) {
+                if (d.variable() instanceof FieldReference fr && "one".equals(fr.fieldInfo().name)) {
                     // link to this because of expanded variable `one.t`
                     String linked = d.iteration() < 4 ? "av-527:13:-1,this:-1" : "";
                     assertEquals(linked, d.variableInfo().getLinkedVariables().toString());

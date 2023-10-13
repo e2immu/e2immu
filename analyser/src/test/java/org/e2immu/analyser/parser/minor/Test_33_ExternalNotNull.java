@@ -44,13 +44,13 @@ public class Test_33_ExternalNotNull extends CommonTestRunner {
     public void test_0() throws IOException {
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("upperCaseO".equals(d.methodInfo().name)) {
-                if (d.variable() instanceof FieldReference fr && "o".equals(fr.fieldInfo.name)) {
+                if (d.variable() instanceof FieldReference fr && "o".equals(fr.fieldInfo().name)) {
                     assertDv(d, DV.TRUE_DV, CNN_TRAVELS_TO_PRECONDITION);
                     assertDv(d, MultiLevel.EFFECTIVELY_NOT_NULL_DV, CONTEXT_NOT_NULL);
                 }
             }
             if ("upperCaseR".equals(d.methodInfo().name)) {
-                if (d.variable() instanceof FieldReference fr && "r".equals(fr.fieldInfo.name)) {
+                if (d.variable() instanceof FieldReference fr && "r".equals(fr.fieldInfo().name)) {
                     String expectValue = d.iteration() < 2 ? "<f:r>" : "instance type String";
                     assertEquals(expectValue, d.currentValue().toString());
                     assertDv(d, 2, MultiLevel.EFFECTIVELY_NOT_NULL_DV, NOT_NULL_EXPRESSION);
@@ -58,7 +58,7 @@ public class Test_33_ExternalNotNull extends CommonTestRunner {
                 }
             }
             if ("upperCaseP".equals(d.methodInfo().name)) {
-                if (d.variable() instanceof FieldReference fr && "p".equals(fr.fieldInfo.name)) {
+                if (d.variable() instanceof FieldReference fr && "p".equals(fr.fieldInfo().name)) {
                     String expectValue = d.iteration() < 2 ? "<f:p>" : "instance type String";
                     assertEquals(expectValue, d.currentValue().toString());
                     assertDv(d, MultiLevel.EFFECTIVELY_NOT_NULL_DV, CONTEXT_NOT_NULL);
@@ -210,7 +210,7 @@ public class Test_33_ExternalNotNull extends CommonTestRunner {
                         assertDv(d, 0, MultiLevel.NULLABLE_DV, CONTEXT_NOT_NULL);
                     }
                 }
-                if (d.variable() instanceof FieldReference fr && "p".equals(fr.fieldInfo.name) && "5".equals(d.statementId())) {
+                if (d.variable() instanceof FieldReference fr && "p".equals(fr.fieldInfo().name) && "5".equals(d.statementId())) {
                     assertDv(d, 2, MultiLevel.EFFECTIVELY_NOT_NULL_DV, EXTERNAL_NOT_NULL);
                     assertDv(d, 0, MultiLevel.NULLABLE_DV, CONTEXT_NOT_NULL);
                 }

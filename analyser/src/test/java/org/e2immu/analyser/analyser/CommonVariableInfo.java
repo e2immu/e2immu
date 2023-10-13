@@ -14,6 +14,7 @@
 
 package org.e2immu.analyser.analyser;
 
+import org.e2immu.analyser.analyser.nonanalyserimpl.AbstractEvaluationContextImpl;
 import org.e2immu.analyser.analyser.util.ConditionManagerImpl;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.BooleanConstant;
@@ -63,7 +64,7 @@ public abstract class CommonVariableInfo {
 
     protected final AnalyserContext analyserContext = () -> primitives;
 
-    protected final EvaluationContext minimalEvaluationContext = new EvaluationContext() {
+    protected final EvaluationContext minimalEvaluationContext = new AbstractEvaluationContextImpl() {
 
         @Override
         public int getDepth() {

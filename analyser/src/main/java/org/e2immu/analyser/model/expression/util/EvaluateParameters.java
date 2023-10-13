@@ -338,10 +338,10 @@ public class EvaluateParameters {
         // IMPROVE the restriction on "static" feels a little ad-hoc
         // it fixes AnalysisProvider_0, _1
         if (variable instanceof FieldReference fr) {
-            if (fr.fieldInfo.fieldInspection.get().isStatic()) {
+            if (fr.fieldInfo().fieldInspection.get().isStatic()) {
                 return false;
             }
-            return fr.scope.variableStream().allMatch(v -> variableIsRecursivelyPresentOrField(evaluationContext, v));
+            return fr.scope().variableStream().allMatch(v -> variableIsRecursivelyPresentOrField(evaluationContext, v));
         }
         if (variable instanceof This || variable instanceof ReturnVariable) return true;
         return evaluationContext.isPresent(variable);

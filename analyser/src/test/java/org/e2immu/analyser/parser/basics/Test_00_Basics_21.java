@@ -134,10 +134,10 @@ public class Test_00_Basics_21 extends CommonTestRunner {
                 }
             }
             if ("set".equals(d.methodInfo().name)) {
-                if (d.variable() instanceof FieldReference fr && "t".equals(fr.fieldInfo.name)) {
-                    assertEquals("this", fr.scope.toString());
-                    assertNotNull(fr.scopeVariable);
-                    assertEquals("this", fr.scopeVariable.toString());
+                if (d.variable() instanceof FieldReference fr && "t".equals(fr.fieldInfo().name)) {
+                    assertEquals("this", fr.scope().toString());
+                    assertNotNull(fr.scopeVariable());
+                    assertEquals("this", fr.scopeVariable().toString());
                     if ("1.0.1".equals(d.statementId())) {
                         assertDv(d, DV.FALSE_DV, CONTEXT_MODIFIED);
                         assertEquals("1.0.1-E", d.variableInfo().getAssignmentIds().getLatestAssignment());

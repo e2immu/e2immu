@@ -113,8 +113,8 @@ public class Test_63_DGSimplified extends CommonTestRunner {
                 }
             }
             if ("accept".equals(d.methodInfo().name) && "$4".equals(d.methodInfo().typeInfo.simpleName)) {
-                if (d.variable() instanceof FieldReference fr && "nodeMap".equals(fr.fieldInfo.name)) {
-                    if ("copy".equals(fr.scope.toString())) {
+                if (d.variable() instanceof FieldReference fr && "nodeMap".equals(fr.fieldInfo().name)) {
+                    if ("copy".equals(fr.scope().toString())) {
                         if ("0.0.1".equals(d.statementId())) {
                             assertDv(d, 1, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
                             assertLinked(d, it(0, 26, "accept:-1,copy:-1,newDependsOn:-1,node.dependsOn:-1,node:-1,t:-1"),
@@ -124,7 +124,7 @@ public class Test_63_DGSimplified extends CommonTestRunner {
                         if ("0".equals(d.statementId())) {
                             assertDv(d, 1, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
                         }
-                    } else fail("Scope " + fr.scope);
+                    } else fail("Scope " + fr.scope());
                 }
                 if ("copy".equals(d.variableName())) {
                     if ("0".equals(d.statementId())) {
@@ -244,13 +244,13 @@ public class Test_63_DGSimplified extends CommonTestRunner {
         };
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("recursivelyComputeDependencies".equals(d.methodInfo().name)) {
-                if (d.variable() instanceof FieldReference fr && "nodeMap".equals(fr.fieldInfo.name)) {
+                if (d.variable() instanceof FieldReference fr && "nodeMap".equals(fr.fieldInfo().name)) {
                     if ("3".equals(d.statementId())) {
                         assertDv(d, 29, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     }
                 }
-                if (d.variable() instanceof FieldReference fr && "dependsOn".equals(fr.fieldInfo.name)) {
-                    if ("node".equals(fr.scope.toString())) {
+                if (d.variable() instanceof FieldReference fr && "dependsOn".equals(fr.fieldInfo().name)) {
+                    if ("node".equals(fr.scope().toString())) {
                         if ("3".equals(d.statementId())) {
                             assertCurrentValue(d, 29, "nullable instance type List<T>");
                         }
@@ -258,7 +258,7 @@ public class Test_63_DGSimplified extends CommonTestRunner {
                             String expected = d.iteration() < 29 ? "<f:node.dependsOn>" : "nullable instance type List<T>";
                             assertEquals(expected, d.currentValue().toString());
                         }
-                    } else if ("nodeMap.get(t)".equals(fr.scope.toString())) {
+                    } else if ("nodeMap.get(t)".equals(fr.scope().toString())) {
                         if ("3".equals(d.statementId())) {
                             String expected = switch (d.iteration()) {
                                 case 0, 1 -> "<f:nodeMap.get(t).dependsOn>";
@@ -266,7 +266,7 @@ public class Test_63_DGSimplified extends CommonTestRunner {
                             };
                             assertEquals(expected, d.currentValue().toString());
                         }
-                    } else fail("Scope " + fr.scope);
+                    } else fail("Scope " + fr.scope());
                 }
                 if (d.variable() instanceof ParameterInfo pi && "result".equals(pi.name)) {
                     if ("3.0.0".equals(d.statementId())) {
@@ -393,7 +393,7 @@ public class Test_63_DGSimplified extends CommonTestRunner {
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("reverse".equals(d.methodInfo().name)) {
 
-                if (d.variable() instanceof FieldReference fr && "nodeMap".equals(fr.fieldInfo.name)) {
+                if (d.variable() instanceof FieldReference fr && "nodeMap".equals(fr.fieldInfo().name)) {
                     assertTrue(fr.scopeIsThis());
                     if ("0.0.0".equals(d.statementId())) {
                         assertCurrentValue(d, 9, "instance type HashMap<T,Node<T>>");
@@ -416,11 +416,11 @@ public class Test_63_DGSimplified extends CommonTestRunner {
                         }
                     }
                 }
-                if (d.variable() instanceof FieldReference fr && "dependsOn".equals(fr.fieldInfo.name)) {
+                if (d.variable() instanceof FieldReference fr && "dependsOn".equals(fr.fieldInfo().name)) {
                     if ("0.0.1".equals(d.statementId())) {
-                        assertNotNull(fr.scopeVariable);
-                        assertEquals("node", fr.scopeVariable.toString());
-                        assertEquals("node", fr.scope.toString());
+                        assertNotNull(fr.scopeVariable());
+                        assertEquals("node", fr.scopeVariable().toString());
+                        assertEquals("node", fr.scope().toString());
 
                         assertTrue(d.variableInfoContainer().isInitial());
                         VariableInfo initial = d.variableInfoContainer().getPreviousOrInitial();
@@ -491,9 +491,9 @@ public class Test_63_DGSimplified extends CommonTestRunner {
 
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("reverse".equals(d.methodInfo().name)) {
-                if (d.variable() instanceof FieldReference fr && "dependsOn".equals(fr.fieldInfo.name)) {
+                if (d.variable() instanceof FieldReference fr && "dependsOn".equals(fr.fieldInfo().name)) {
                     if ("1.0.2".equals(d.statementId())) {
-                        assertEquals("node", fr.scope.toString());
+                        assertEquals("node", fr.scope().toString());
                         assertCurrentValue(d, 28, "nullable instance type List<T>");
                     }
                 }

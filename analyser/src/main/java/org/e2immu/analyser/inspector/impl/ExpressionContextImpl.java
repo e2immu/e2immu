@@ -30,6 +30,7 @@ import org.e2immu.analyser.model.impl.CommentFactory;
 import org.e2immu.analyser.model.statement.SwitchEntry;
 import org.e2immu.analyser.model.statement.*;
 import org.e2immu.analyser.model.variable.*;
+import org.e2immu.analyser.model.variable.impl.FieldReferenceImpl;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.util.Pair;
 import org.e2immu.analyser.util.StringUtil;
@@ -289,7 +290,7 @@ public record ExpressionContextImpl(ExpressionContext.ResolverRecursion resolver
             TypeInspection enumInspection = typeContext.getTypeInspection(enumType);
             newExpressionContext = newVariableContext("switch-statement");
             enumInspection.fields().forEach(fieldInfo -> newExpressionContext.variableContext
-                    .add(new FieldReference(typeContext, fieldInfo)));
+                    .add(new FieldReferenceImpl(typeContext, fieldInfo)));
         } else {
             newExpressionContext = this;
         }

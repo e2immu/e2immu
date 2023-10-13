@@ -169,7 +169,7 @@ public class Test_61_OutputBuilderSimplified extends CommonTestRunner {
                         assertEquals(expectValue, d.currentValue().toString());
                     }
                 }
-                if (d.variable() instanceof FieldReference fr && "list".equals(fr.fieldInfo.name)) {
+                if (d.variable() instanceof FieldReference fr && "list".equals(fr.fieldInfo().name)) {
                     if ("a.list".equals(d.variable().toString())) {
                         if ("0".equals(d.statementId())) {
                             assertTrue(d.iteration() > 0);
@@ -347,9 +347,9 @@ public class Test_61_OutputBuilderSimplified extends CommonTestRunner {
                     assertDv(d, 4, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                 } else if (d.variable() instanceof This) {
                     assertDv(d, 4, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
-                } else if (d.variable() instanceof FieldReference fr && "list".equals(fr.fieldInfo.name)) {
+                } else if (d.variable() instanceof FieldReference fr && "list".equals(fr.fieldInfo().name)) {
                     fail("list does not occur without in a scope known to the top-level method");
-                } else if (d.variable() instanceof FieldReference fr && "NONE".equals(fr.fieldInfo.name)) {
+                } else if (d.variable() instanceof FieldReference fr && "NONE".equals(fr.fieldInfo().name)) {
                     fail("Variable NONE should not have been transferred");
                 } else if (d.variable() instanceof ParameterInfo pi && "a".equals(pi.name)) {
                     fail("Variable should not have been transferred");
@@ -557,9 +557,9 @@ public class Test_61_OutputBuilderSimplified extends CommonTestRunner {
                     assertDv(d, 4, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                 } else if (d.variable() instanceof This) {
                     assertDv(d, 4, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
-                } else if (d.variable() instanceof FieldReference fr && "list".equals(fr.fieldInfo.name)) {
+                } else if (d.variable() instanceof FieldReference fr && "list".equals(fr.fieldInfo().name)) {
                     fail("list does not occur without in a scope known to the top-level method");
-                } else if (d.variable() instanceof FieldReference fr && "NONE".equals(fr.fieldInfo.name)) {
+                } else if (d.variable() instanceof FieldReference fr && "NONE".equals(fr.fieldInfo().name)) {
                     fail("Variable NONE should not have been transferred");
                 } else if (d.variable() instanceof ParameterInfo pi && "a".equals(pi.name)) {
                     fail("Variable should not have been transferred");

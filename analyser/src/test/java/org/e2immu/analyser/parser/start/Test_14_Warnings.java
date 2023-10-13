@@ -312,7 +312,7 @@ public class Test_14_Warnings extends CommonTestRunner {
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("Warnings_4".equals(d.methodInfo().name)) {
                 assertEquals("0", d.statementId());
-                if (d.variable() instanceof FieldReference fr && "set".equals(fr.fieldInfo.name)) {
+                if (d.variable() instanceof FieldReference fr && "set".equals(fr.fieldInfo().name)) {
                     assertEquals("Set.copyOf(input)", d.currentValue().toString());
                     assertEquals("Type java.util.Set<String>", d.currentValue().returnType().toString());
                     assertDv(d, MultiLevel.EFFECTIVELY_IMMUTABLE_DV, IMMUTABLE);
@@ -365,7 +365,7 @@ public class Test_14_Warnings extends CommonTestRunner {
             assertFalse(d.allowBreakDelay());
 
             if ("methodMustNotBeStatic2".equals(d.methodInfo().name)) {
-                if (d.variable() instanceof FieldReference fr && "s".equals(fr.fieldInfo.name)) {
+                if (d.variable() instanceof FieldReference fr && "s".equals(fr.fieldInfo().name)) {
                     String expectValue = d.iteration() == 0 ? "<f:s>" : NULLABLE_INSTANCE_TYPE_STRING;
                     assertEquals(expectValue, d.currentValue().toString());
                 }

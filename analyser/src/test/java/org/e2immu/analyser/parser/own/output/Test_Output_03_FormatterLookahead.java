@@ -43,9 +43,9 @@ public class Test_Output_03_FormatterLookahead extends CommonTestRunner {
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("apply".equals(d.methodInfo().name)) {
                 assertEquals("$1", d.methodInfo().typeInfo.simpleName);
-                if (d.variable() instanceof FieldReference fr && "forwardInfo".equals(fr.fieldInfo.name)) {
+                if (d.variable() instanceof FieldReference fr && "forwardInfo".equals(fr.fieldInfo().name)) {
                     if ("0.0.1.0.0".equals(d.statementId())) {
-                        assertEquals("startOfGuides.get(0)", fr.scope.toString());
+                        assertEquals("startOfGuides.get(0)", fr.scope().toString());
 
                         String expected = d.iteration() == 0 ? "<f:startOfGuides.get(0).forwardInfo>" : "instance type ForwardInfo";
                         assertEquals(expected, d.currentValue().toString());

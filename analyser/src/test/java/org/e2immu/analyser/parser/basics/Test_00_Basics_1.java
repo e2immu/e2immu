@@ -65,7 +65,7 @@ public class Test_00_Basics_1 extends CommonTestRunner {
                     assertDv(d, 1, NULLABLE_DV, EXTERNAL_NOT_NULL);
                 }
             }
-            if (d.variable() instanceof FieldReference fr && "f1".equals(fr.fieldInfo.name)) {
+            if (d.variable() instanceof FieldReference fr && "f1".equals(fr.fieldInfo().name)) {
                 assertEquals(FIELD1, d.variableName());
                 if ("1".equals(d.statementId())) {
                     assertTrue(d.variableInfo().isAssigned());
@@ -129,7 +129,7 @@ public class Test_00_Basics_1 extends CommonTestRunner {
             }
         }
         if ("contains".equals(d.methodInfo().name)) {
-            if (d.variable() instanceof FieldReference fr && "f1".equals(fr.fieldInfo.name)) {
+            if (d.variable() instanceof FieldReference fr && "f1".equals(fr.fieldInfo().name)) {
                 assertEquals("0", d.statementId());
                 String expected = d.iteration() == 0 ? "<f:f1>" : "nullable instance type Set<String>";
                 assertEquals(expected, d.currentValue().toString());
@@ -140,7 +140,7 @@ public class Test_00_Basics_1 extends CommonTestRunner {
             }
         }
         if ("getF1".equals(d.methodInfo().name)) {
-            if (d.variable() instanceof FieldReference fr && "f1".equals(fr.fieldInfo.name)) {
+            if (d.variable() instanceof FieldReference fr && "f1".equals(fr.fieldInfo().name)) {
                 assertEquals(FIELD1, d.variableName());
                 assertTrue(d.variableInfo().isRead());
 

@@ -34,6 +34,7 @@ import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.LocalVariableReference;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.model.variable.VariableNature;
+import org.e2immu.analyser.model.variable.impl.FieldReferenceImpl;
 
 import java.util.*;
 
@@ -272,7 +273,7 @@ record SAInitializersAndUpdaters(StatementAnalysis statementAnalysis) {
                                 start = de.getDoneOriginal();
                             }
                         }
-                        FieldReference fr = new FieldReference(analyserContext, fieldInfo);
+                        FieldReference fr = new FieldReferenceImpl(analyserContext, fieldInfo);
                         Expression translated1 = start.translate(analyserContext, translationMap);
                         Expression translated = evaluationContext.getIteration() > 0
                                 ? replaceUnknownFields(evaluationContext, translated1) : translated1;
@@ -296,7 +297,7 @@ record SAInitializersAndUpdaters(StatementAnalysis statementAnalysis) {
                     }
                 }
                 if (!assigned && weMustWait) {
-                    FieldReference fr = new FieldReference(analyserContext, fieldInfo);
+                    FieldReference fr = new FieldReferenceImpl(analyserContext, fieldInfo);
                     Expression end = DelayedExpression.forECI(fieldInfo.getIdentifier(), eciVariables(),
                             DelayFactory.createDelay(causeOfDelay));
                     Identifier assignmentIdentifier = Identifier.joined("eci",

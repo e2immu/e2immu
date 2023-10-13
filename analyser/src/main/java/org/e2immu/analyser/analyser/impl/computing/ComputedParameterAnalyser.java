@@ -34,6 +34,7 @@ import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.ReturnVariable;
 import org.e2immu.analyser.model.variable.This;
 import org.e2immu.analyser.model.variable.Variable;
+import org.e2immu.analyser.model.variable.impl.FieldReferenceImpl;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.resolver.impl.ResolverImpl;
 import org.slf4j.Logger;
@@ -514,7 +515,7 @@ public class ComputedParameterAnalyser extends ParameterAnalyserImpl {
                 && map.values().stream().allMatch(LinkedVariables::isAssigned)) {
             DV immutable = analyserContext.typeImmutable(parameterInfo.parameterizedType);
             Map<Variable, DV> map2 = map.entrySet().stream().collect(Collectors
-                    .toUnmodifiableMap(e -> new FieldReference(analyserContext, e.getKey()), Map.Entry::getValue));
+                    .toUnmodifiableMap(e -> new FieldReferenceImpl(analyserContext, e.getKey()), Map.Entry::getValue));
             DV independent = independentFromFields(immutable, map2);
             parameterAnalysis.setProperty(INDEPENDENT, independent);
             if (independent.isDelayed()) {
@@ -643,7 +644,7 @@ public class ComputedParameterAnalyser extends ParameterAnalyserImpl {
     }
 
     private boolean isAssignedIn(StatementAnalysis lastStatementAnalysis, FieldInfo fieldInfo) {
-        VariableInfo vi = lastStatementAnalysis.findOrNull(new FieldReference(analyserContext, fieldInfo),
+        VariableInfo vi = lastStatementAnalysis.findOrNull(new FieldReferenceImpl(analyserContext, fieldInfo),
                 Stage.MERGE);
         return vi != null && vi.isAssigned();
     }

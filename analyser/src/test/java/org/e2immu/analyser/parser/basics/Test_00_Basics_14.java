@@ -52,7 +52,7 @@ public class Test_00_Basics_14 extends CommonTestRunner {
             DV cnn = d.getProperty(CONTEXT_NOT_NULL);
             DV enn = d.getProperty(EXTERNAL_NOT_NULL);
             if ("setT".equals(d.methodInfo().name)) {
-                if (d.variable() instanceof FieldReference fr && "t".equals(fr.fieldInfo.name)) {
+                if (d.variable() instanceof FieldReference fr && "t".equals(fr.fieldInfo().name)) {
                     if ("0.0.0".equals(d.statementId()) || "0".equals(d.statementId()) || "1".equals(d.statementId())) {
                         assertDv(d, 2, MultiLevel.NULLABLE_DV, CONTEXT_NOT_NULL);
                         assertDv(d, MultiLevel.MUTABLE_DV, CONTEXT_IMMUTABLE);
@@ -79,7 +79,7 @@ public class Test_00_Basics_14 extends CommonTestRunner {
                 }
             }
             if ("getT".equals(d.methodInfo().name)) {
-                if (d.variable() instanceof FieldReference t && t.fieldInfo.name.equals("t")) {
+                if (d.variable() instanceof FieldReference t && t.fieldInfo().name.equals("t")) {
                     if ("0".equals(d.statementId())) {
                         VariableInfo initial = d.variableInfoContainer().getPreviousOrInitial();
                         assertEquals(MultiLevel.NULLABLE_DV, initial.getProperty(CONTEXT_NOT_NULL));

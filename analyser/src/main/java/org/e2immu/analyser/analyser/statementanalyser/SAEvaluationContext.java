@@ -18,7 +18,7 @@ import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.analyser.delay.VariableCause;
 import org.e2immu.analyser.analyser.impl.context.EvaluationResultImpl;
 import org.e2immu.analyser.analyser.impl.util.BreakDelayLevel;
-import org.e2immu.analyser.analyser.nonanalyserimpl.AbstractEvaluationContextImpl;
+import org.e2immu.analyser.analyser.nonanalyserimpl.CommonEvaluationContext;
 import org.e2immu.analyser.analyser.nonanalyserimpl.VariableInfoImpl;
 import org.e2immu.analyser.analyser.util.ConditionManagerImpl;
 import org.e2immu.analyser.analysis.FieldAnalysis;
@@ -48,7 +48,7 @@ import static org.e2immu.analyser.analyser.Stage.INITIAL;
 import static org.e2immu.analyser.model.MultiLevel.NOT_INVOLVED_DV;
 import static org.e2immu.analyser.model.MultiLevel.NULLABLE_DV;
 
-class SAEvaluationContext extends AbstractEvaluationContextImpl {
+class SAEvaluationContext extends CommonEvaluationContext {
     private static final Logger LOGGER = LoggerFactory.getLogger(SAEvaluationContext.class);
 
     private final boolean disableEvaluationOfMethodCallsUsingCompanionMethods;
@@ -499,7 +499,7 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
         VariableInfo vi = vic.getPreviousOrInitial();
         if (isNotAssignmentTarget) {
             if (variable instanceof FieldReference fr) {
-                FieldAnalysis fieldAnalysis = getAnalyserContext().getFieldAnalysis(fr.fieldInfo);
+                FieldAnalysis fieldAnalysis = getAnalyserContext().getFieldAnalysis(fr.fieldInfo());
                 if (situationForVariableFieldReference(fr)) {
                     // is it a variable field, or a final field? if we don't know, return an empty VI
                     // in constructors, and sync blocks, this does not hold
@@ -681,7 +681,7 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
         if (vic.variableNature() instanceof VariableNature.VariableDefinedOutsideLoop) {
             VariableExpression.Suffix suffix = vic.variableNature().suffix();
             Expression sv = variable instanceof FieldReference fr
-                    ? fr.scope
+                    ? fr.scope()
                     : variable instanceof DependentVariable dv ? dv.arrayExpression() : null;
             Expression iv = variable instanceof DependentVariable dv ? dv.indexExpression() : null;
             VariableExpression veSuffix = new VariableExpression(bestValue.getIdentifier(), variable, suffix, sv, iv);
@@ -908,7 +908,7 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
                     // see e.g. Modification_20, where c.set === s2
                     // we prepare the shortCutDelay in ConstructorCall.evaluate()
                     Expression shortCutDelay = evaluatedScopeValue instanceof DelayedExpression de
-                            ? de.shortCutDelay(fieldReference.fieldInfo) : null;
+                            ? de.shortCutDelay(fieldReference.fieldInfo()) : null;
                     if (shortCutDelay != null) {
                         return shortCutDelay;
                     }
@@ -921,7 +921,7 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
                     return shortCut;
                 }
             }
-            FieldAnalysis fieldAnalysis = getAnalyserContext().getFieldAnalysis(fieldReference.fieldInfo);
+            FieldAnalysis fieldAnalysis = getAnalyserContext().getFieldAnalysis(fieldReference.fieldInfo());
             DV finalDV = fieldAnalysis.getProperty(Property.FINAL);
             if (finalDV.valueIsFalse() && situationForVariableFieldReference(fieldReference)) {
                 String assignmentId = variableInfo.getAssignmentIds().getLatestAssignmentNullWhenEmpty();
@@ -979,6 +979,6 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
                 return e.loopSourceVariables(getAnalyserContext(), variable.parameterizedType());
             }
         }
-        return NO_LOOP_SOURCE_VARIABLES;
+        return EvaluationContext.NO_LOOP_SOURCE_VARIABLES;
     }
 }

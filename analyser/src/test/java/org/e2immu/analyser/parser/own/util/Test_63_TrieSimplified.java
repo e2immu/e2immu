@@ -49,9 +49,9 @@ public class Test_63_TrieSimplified extends CommonTestRunner {
     public void test_0() throws IOException {
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("add".equals(d.methodInfo().name)) {
-                if (d.variable() instanceof FieldReference fr && "map".equals(fr.fieldInfo.name)) {
-                    if ("node".equals(fr.scope.toString())) {
-                        assertNotNull(fr.scopeVariable);
+                if (d.variable() instanceof FieldReference fr && "map".equals(fr.fieldInfo().name)) {
+                    if ("node".equals(fr.scope().toString())) {
+                        assertNotNull(fr.scopeVariable());
                         if ("1.0.0".equals(d.statementId())) {
                             fail("Does not exist here");
                         }
@@ -211,7 +211,7 @@ public class Test_63_TrieSimplified extends CommonTestRunner {
                         assertDv(d, 3, MultiLevel.EFFECTIVELY_IMMUTABLE_HC_DV, Property.EXTERNAL_IMMUTABLE);
                     }
                 }
-                if (d.variable() instanceof FieldReference fr && "root".equals(fr.fieldInfo.name)) {
+                if (d.variable() instanceof FieldReference fr && "root".equals(fr.fieldInfo().name)) {
                     if ("1".equals(d.statementId())) {
                         // IMPORTANT! branch 0.1 is blocked, and map is never modified
                         assertDv(d, 2, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
@@ -389,8 +389,8 @@ public class Test_63_TrieSimplified extends CommonTestRunner {
 
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("goTo".equals(d.methodInfo().name)) {
-                if (d.variable() instanceof FieldReference fieldReference && "map".equals(fieldReference.fieldInfo.name)) {
-                    assertEquals("node", fieldReference.scope.toString());
+                if (d.variable() instanceof FieldReference fr && "map".equals(fr.fieldInfo().name)) {
+                    assertEquals("node", fr.scope().toString());
                     if ("1.0.0.0.0".equals(d.statementId())) {
                         assertDv(d, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     }
@@ -419,7 +419,7 @@ public class Test_63_TrieSimplified extends CommonTestRunner {
                         if (d.iteration() >= 1) assertTrue(d.currentValue() instanceof NullConstant);
                     }
                 }
-                if (d.variable() instanceof FieldReference fieldReference && "root".equals(fieldReference.fieldInfo.name)) {
+                if (d.variable() instanceof FieldReference fr && "root".equals(fr.fieldInfo().name)) {
                     if ("0".equals(d.statementId())) {
                         String expectValue = d.iteration() <= 1 ? "<f:root>" : "instance type TrieNode<T>/*new TrieNode<>()*/";
                         assertEquals(expectValue, d.currentValue().toString());
@@ -560,7 +560,7 @@ public class Test_63_TrieSimplified extends CommonTestRunner {
         };
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("add".equals(d.methodInfo().name)) {
-                if (d.variable() instanceof FieldReference fr && "root".equals(fr.fieldInfo.name)) {
+                if (d.variable() instanceof FieldReference fr && "root".equals(fr.fieldInfo().name)) {
                     String expect = d.iteration() < 3 ? "<f:root>" : "instance type TrieNode<T>/*new TrieNode<>()*/";
                     assertEquals(expect, d.currentValue().toString());
 
@@ -863,8 +863,8 @@ public class Test_63_TrieSimplified extends CommonTestRunner {
                 if ("node$1".equals(d.variableName())) {
                     fail(); // this does not exist! only VE's have $1
                 }
-                if (d.variable() instanceof FieldReference fr && "data".equals(fr.fieldInfo.name)) {
-                    if ("node".equals(fr.scope.toString())) {
+                if (d.variable() instanceof FieldReference fr && "data".equals(fr.fieldInfo().name)) {
+                    if ("node".equals(fr.scope().toString())) {
                         if ("2.0.0".equals(d.statementId())) {
                             assertEquals("new LinkedList<>()/*0==this.size()*/", d.currentValue().toString());
                             assertDv(d, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_EXPRESSION);
@@ -873,10 +873,10 @@ public class Test_63_TrieSimplified extends CommonTestRunner {
                             assertCurrentValue(d, 3, "null==nullable instance type List<T>?new LinkedList<>()/*0==this.size()*/:nullable instance type List<T>");
                             assertDv(d, 3, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_EXPRESSION); // FIXME this is wrong
                         }
-                    } else fail("Have scope " + fr.scope + " in iteration " + d.iteration() + ", " + d.statementId());
+                    } else fail("Have scope " + fr.scope() + " in iteration " + d.iteration() + ", " + d.statementId());
                 }
-                if (d.variable() instanceof FieldReference fr && "map".equals(fr.fieldInfo.name)) {
-                    if (fr.scopeVariable != null && "node".equals(fr.scopeVariable.simpleName())) {
+                if (d.variable() instanceof FieldReference fr && "map".equals(fr.fieldInfo().name)) {
+                    if (fr.scopeVariable() != null && "node".equals(fr.scopeVariable().simpleName())) {
                         String linked101 = switch (d.iteration()) {
                             case 0 -> "data:-1,newTrieNode:-1,node:-1,s:-1,this.root:-1";
                             case 1 -> "newTrieNode:-1,node:-1,s:-1,this.root:-1";
@@ -959,7 +959,7 @@ public class Test_63_TrieSimplified extends CommonTestRunner {
                             assertEquals(expected, d.variableInfo().getLinkedVariables().causesOfDelay().toString());
                         }
                     } else
-                        fail("Have scope variable " + fr.scopeVariable + " in iteration " + d.iteration() + ", "
+                        fail("Have scope variable " + fr.scopeVariable() + " in iteration " + d.iteration() + ", "
                                 + d.statementId());
                 }
                 if (d.variable() instanceof ReturnVariable) {
@@ -967,7 +967,7 @@ public class Test_63_TrieSimplified extends CommonTestRunner {
                         assertDv(d, MultiLevel.NULLABLE_DV, Property.CONTEXT_NOT_NULL); // by definition
                     }
                 }
-                if (d.variable() instanceof FieldReference fr && "root".equals(fr.fieldInfo.name)) {
+                if (d.variable() instanceof FieldReference fr && "root".equals(fr.fieldInfo().name)) {
                     if ("0".equals(d.statementId())) {
                         assertEquals("node:0", d.variableInfo().getLinkedVariables().toString());
                     }

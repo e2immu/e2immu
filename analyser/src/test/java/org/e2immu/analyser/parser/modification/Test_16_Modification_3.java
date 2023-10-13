@@ -105,7 +105,7 @@ public class Test_16_Modification_3 extends CommonTestRunner {
                         assertLinked(d, it(0, "this.set3:0,this:3"));
                     }
                 }
-                if (d.variable() instanceof FieldReference fr && "set3".equals(fr.fieldInfo.name)) {
+                if (d.variable() instanceof FieldReference fr && "set3".equals(fr.fieldInfo().name)) {
                     assertEquals("org.e2immu.analyser.parser.modification.testexample.Modification_3.set3",
                             d.variableName());
                     if ("0".equals(d.statementId())) {

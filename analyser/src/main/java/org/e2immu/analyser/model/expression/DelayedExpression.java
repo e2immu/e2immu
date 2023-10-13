@@ -24,6 +24,7 @@ import org.e2immu.analyser.model.expression.util.ExpressionComparator;
 import org.e2immu.analyser.model.impl.BaseExpression;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.Variable;
+import org.e2immu.analyser.model.variable.impl.FieldReferenceImpl;
 import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.Text;
 import org.e2immu.analyser.parser.InspectionProvider;
@@ -434,8 +435,8 @@ public final class DelayedExpression extends BaseExpression implements Expressio
     public Map<Variable, Expression> shortCutVariables(TypeInfo currentType, Expression scope) {
         if (shortCutMap == null) return Map.of();
         return shortCutMap.entrySet().stream()
-                .collect(Collectors.toUnmodifiableMap(e -> new FieldReference(InspectionProvider.DEFAULT, e.getKey(),
-                                scope, currentType),
+                .collect(Collectors.toUnmodifiableMap(e ->
+                                new FieldReferenceImpl(InspectionProvider.DEFAULT, e.getKey(), scope, currentType),
                         Map.Entry::getValue));
     }
 

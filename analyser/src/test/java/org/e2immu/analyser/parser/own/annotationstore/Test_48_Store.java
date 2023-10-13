@@ -190,7 +190,7 @@ public class Test_48_Store extends CommonTestRunner {
 
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("flexible".equals(d.methodInfo().name)) {
-                if (d.variable() instanceof FieldReference fr && "LOGGER".equals(fr.fieldInfo.name)) {
+                if (d.variable() instanceof FieldReference fr && "LOGGER".equals(fr.fieldInfo().name)) {
                     // OK in 0, 1.0.0, 1.1.0, problem in 1
                     String expectValue = d.iteration() == 0 ? "<f:LOGGER>" : "nullable instance type Logger";
                     assertEquals(expectValue, d.currentValue().toString(), "At statement " + d.statementId());

@@ -53,7 +53,7 @@ public class Test_16_Modification_30 extends CommonTestRunner {
                         assertDv(d, 1, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
                     }
                 }
-                if (d.variable() instanceof FieldReference fr && "items".equals(fr.fieldInfo.name)) {
+                if (d.variable() instanceof FieldReference fr && "items".equals(fr.fieldInfo().name)) {
                     if ("1".equals(d.statementId())) {
                         assertLinked(d, it0("intermediate$0:-1,this:-1"), it(1, ""));
                         assertDv(d, 1, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
@@ -69,7 +69,7 @@ public class Test_16_Modification_30 extends CommonTestRunner {
                         assertDv(d, 1, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
                     }
                 }
-                if (d.variable() instanceof FieldReference fr && "items".equals(fr.fieldInfo.name)) {
+                if (d.variable() instanceof FieldReference fr && "items".equals(fr.fieldInfo().name)) {
                     if ("1".equals(d.statementId())) {
                         assertLinked(d, it0("item:-1,this:-1"), it(1, ""));
                         assertDv(d, 1, DV.TRUE_DV, Property.CONTEXT_MODIFIED);

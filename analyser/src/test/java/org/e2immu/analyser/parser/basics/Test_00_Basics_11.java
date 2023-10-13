@@ -83,7 +83,7 @@ public class Test_00_Basics_11 extends CommonTestRunner {
                         assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, cnn);
                     }
                 }
-                if (d.variable() instanceof FieldReference fr && "out".equals(fr.fieldInfo.name)) {
+                if (d.variable() instanceof FieldReference fr && "out".equals(fr.fieldInfo().name)) {
                     assertTrue(d.statementId().compareTo("2") >= 0);
                     String expectValue = d.iteration() == 0 ? "<f:out>" : "nullable instance type PrintStream";
                     assertEquals(expectValue, d.currentValue().toString());

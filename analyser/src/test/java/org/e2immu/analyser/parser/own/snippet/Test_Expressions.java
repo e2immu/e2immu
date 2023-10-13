@@ -101,36 +101,36 @@ public class Test_Expressions extends CommonTestRunner {
                         assertDv(d, 1, DV.TRUE_DV, CONTEXT_MODIFIED);
                     }
                 }
-                if (d.variable() instanceof FieldReference fr && "lhs".equals(fr.fieldInfo.name)) {
-                    assertNotNull(fr.scopeVariable);
-                    if ("scope-product:2".equals(fr.scopeVariable.toString())) {
+                if (d.variable() instanceof FieldReference fr && "lhs".equals(fr.fieldInfo().name)) {
+                    assertNotNull(fr.scopeVariable());
+                    if ("scope-product:2".equals(fr.scopeVariable().toString())) {
                         if ("6".equals(d.statementId())) {
                             assertDv(d, MultiLevel.NULLABLE_DV, CONTEXT_NOT_NULL);
                         }
                         if ("7".equals(d.statementId())) {
                             assertDv(d, MultiLevel.NULLABLE_DV, CONTEXT_NOT_NULL);
                         }
-                    } else if ("sum".equals(fr.scopeVariable.toString())) {
+                    } else if ("sum".equals(fr.scopeVariable().toString())) {
                         if ("0.0.0".equals(d.statementId())) {
                             assertDv(d, 0, MultiLevel.NULLABLE_DV, CONTEXT_NOT_NULL);
                         }
                         if ("0.0.1".equals(d.statementId())) {
                             assertDv(d, 0, MultiLevel.NULLABLE_DV, CONTEXT_NOT_NULL);
                         }
-                    } else if ("scope-sum:0".equals(fr.scopeVariable.toString())) {
+                    } else if ("scope-sum:0".equals(fr.scopeVariable().toString())) {
                         // FIXME !!
                         assertDv(d, 69, MultiLevel.NULLABLE_DV, CONTEXT_NOT_NULL);
-                    } else if ("product".equals(fr.scopeVariable.toString())) {
+                    } else if ("product".equals(fr.scopeVariable().toString())) {
                         assertDv(d, MultiLevel.NULLABLE_DV, CONTEXT_NOT_NULL);
-                    } else fail("Have " + fr.scopeVariable);
+                    } else fail("Have " + fr.scopeVariable());
                 }
                 if (d.variable() instanceof ReturnVariable) {
                     if ("7".equals(d.statementId())) {
                         assertCurrentValue(d, 77, "expression instanceof Negation?Expressions_0.recursivelyCollectTerms(expression/*(Negation)*/.expression,new ArrayList<>()/*0==this.size()*/):(Expressions_0.recursivelyCollectTerms(expression/*(Sum)*/.lhs,terms)||expression instanceof ConstantExpression<?>||expression instanceof MethodCall)&&(Expressions_0.recursivelyCollectTerms(expression/*(Sum)*/.rhs,terms)||expression instanceof ConstantExpression<?>||expression instanceof MethodCall)&&(expression instanceof ConstantExpression<?>||expression instanceof MethodCall||expression instanceof Sum)");
                     }
                 }
-                if (d.variable() instanceof FieldReference fr && "rhs".equals(fr.fieldInfo.name)) {
-                    if ("product".equals(fr.scope.toString())) {
+                if (d.variable() instanceof FieldReference fr && "rhs".equals(fr.fieldInfo().name)) {
+                    if ("product".equals(fr.scope().toString())) {
                         if ("2".equals(d.statementId())) {
                             String linked = switch (d.iteration()) {
                                 case 0 -> "ce:-1,expression:-1,oneVariableRhs:-1,product.lhs:-1,product:-1";
@@ -159,7 +159,7 @@ public class Test_Expressions extends CommonTestRunner {
                 }
             }
             if ("accept1".equals(d.methodInfo().name)) {
-                if (d.variable() instanceof FieldReference fr && "perComponent".equals(fr.fieldInfo.name)) {
+                if (d.variable() instanceof FieldReference fr && "perComponent".equals(fr.fieldInfo().name)) {
                     if ("0.0.1.0.0".equals(d.statementId())) {
                         assertDv(d, BIG, DV.FALSE_DV, CONTEXT_MODIFIED);
                     }

@@ -97,15 +97,16 @@ public record Merge(EvaluationContext evaluationContext,
             if (selfReference) {
                 LOGGER.debug("Detected self-reference in merge helper on variable field {}", fieldReference);
                 Expression instance;
-                Expression fromAnalysis = evaluationContext.getAnalyserContext().getFieldAnalysis(fieldReference.fieldInfo)
+                Expression fromAnalysis = evaluationContext.getAnalyserContext()
+                        .getFieldAnalysis(fieldReference.fieldInfo())
                         .getValueForStatementAnalyser(evaluationContext.getCurrentType().primaryType(),
                                 fieldReference, evaluationContext.getFinalStatementTime());
                 Properties properties;
                 if (fromAnalysis.isDelayed()) {
                     instance = ConstantExpression.nullValue(evaluationContext.getAnalyserContext().getPrimitives(),
                             fromAnalysis.getIdentifier(),
-                            fieldReference.fieldInfo.type.bestTypeInfo());
-                    properties = evaluationContext.valuePropertiesOfNullConstant(fieldReference.parameterizedType);
+                            fieldReference.fieldInfo().type.bestTypeInfo());
+                    properties = evaluationContext.valuePropertiesOfNullConstant(fieldReference.parameterizedType());
                 } else {
                     instance = fromAnalysis;
                     properties = evaluationContext.getValueProperties(instance);
@@ -115,7 +116,8 @@ public record Merge(EvaluationContext evaluationContext,
 
                 Expression wrapped = new DelayedWrappedExpression(Identifier.generate("wrapped in merge"),
                         vii.variable(), instance, properties, vii.getLinkedVariables(),
-                        DelayFactory.createDelay(evaluationContext.getLocation(MERGE), CauseOfDelay.Cause.BREAK_INIT_DELAY_IN_MERGE));
+                        DelayFactory.createDelay(evaluationContext.getLocation(MERGE),
+                                CauseOfDelay.Cause.BREAK_INIT_DELAY_IN_MERGE));
                 vii.setValue(wrapped);
             }
         }

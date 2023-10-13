@@ -52,7 +52,7 @@ public class AssignmentIncompatibleWithPrecondition {
         Set<Variable> variables = new HashSet<>(precondition.expression().variables());
         for (Variable variable : variables) {
             if (variable instanceof FieldReference fieldReference) {
-                FieldInfo fieldInfo = fieldReference.fieldInfo;
+                FieldInfo fieldInfo = fieldReference.fieldInfo();
                 for (VariableInfo variableInfo : methodAnalyser.getMethodAnalysis().getFieldAsVariable(fieldInfo)) {
                     boolean assigned = variableInfo.isAssigned();
                     if (assigned) {

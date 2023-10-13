@@ -16,6 +16,7 @@ package org.e2immu.analyser.model.expression;
 
 import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.analyser.impl.context.EvaluationResultImpl;
+import org.e2immu.analyser.analyser.nonanalyserimpl.AbstractEvaluationContextImpl;
 import org.e2immu.analyser.analysis.ParameterAnalysis;
 import org.e2immu.analyser.config.AnnotationXmlConfiguration;
 import org.e2immu.analyser.config.Configuration;
@@ -68,7 +69,7 @@ public class TestLinkingExpression {
         Parser.RunResult rr = parser.run();
         typeContext = parser.getTypeContext();
         analyserContext = rr.analyserContext();
-        EvaluationContext ec = new EvaluationContext() {
+        EvaluationContext ec = new AbstractEvaluationContextImpl() {
             @Override
             public Primitives getPrimitives() {
                 return typeContext.getPrimitives();

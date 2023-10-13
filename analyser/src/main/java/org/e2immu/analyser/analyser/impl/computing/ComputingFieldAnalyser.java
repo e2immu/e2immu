@@ -28,7 +28,7 @@ import org.e2immu.analyser.analyser.impl.FieldAnalyserImpl;
 import org.e2immu.analyser.analyser.impl.context.EvaluationResultImpl;
 import org.e2immu.analyser.analyser.impl.primary.PrimaryTypeAnalyserImpl;
 import org.e2immu.analyser.analyser.impl.util.BreakDelayLevel;
-import org.e2immu.analyser.analyser.nonanalyserimpl.AbstractEvaluationContextImpl;
+import org.e2immu.analyser.analyser.nonanalyserimpl.CommonEvaluationContext;
 import org.e2immu.analyser.analyser.nonanalyserimpl.LocalAnalyserContext;
 import org.e2immu.analyser.analyser.util.*;
 import org.e2immu.analyser.analysis.Analysis;
@@ -41,6 +41,7 @@ import org.e2immu.analyser.model.expression.*;
 import org.e2immu.analyser.model.expression.util.MultiExpression;
 import org.e2immu.analyser.model.impl.LocationImpl;
 import org.e2immu.analyser.model.variable.*;
+import org.e2immu.analyser.model.variable.impl.FieldReferenceImpl;
 import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.resolver.impl.ListOfSortedTypes;
@@ -327,8 +328,8 @@ public class ComputingFieldAnalyser extends FieldAnalyserImpl implements FieldAn
             if (closure.isPresent(variable)) {
                 builder.addVariableRead(variable);
             }
-            if (variable instanceof FieldReference fr && fr.fieldInfo.owner !=
-                    fieldInfo.owner && fr.fieldInfo.owner.primaryType().equals(primaryType)) {
+            if (variable instanceof FieldReference fr && fr.fieldInfo().owner !=
+                    fieldInfo.owner && fr.fieldInfo().owner.primaryType().equals(primaryType)) {
                 builder.addVariableRead(fr);
             }
         }
@@ -936,7 +937,7 @@ public class ComputingFieldAnalyser extends FieldAnalyserImpl implements FieldAn
             LOGGER.debug("Exposure computation on {} delayed by links: {}", fqn, delayLinkedVariables);
             return delayLinkedVariables;
         }
-        FieldReference me = new FieldReference(analyserContext, fieldInfo);
+        FieldReference me = new FieldReferenceImpl(analyserContext, fieldInfo);
         boolean linkedToMe = filterForExposure(myMethodsAndConstructors.stream())
                 .anyMatch(ma -> {
                     if (ma.getMethodInfo().hasReturnValue()) {
@@ -1000,14 +1001,14 @@ public class ComputingFieldAnalyser extends FieldAnalyserImpl implements FieldAn
 
                     boolean viIsDelayed;
                     if (expressionWithoutLocalVars instanceof DelayedVariableExpression dve && dve.variable instanceof FieldReference fr &&
-                            methodInfo.isConstructor && fr.fieldInfo.owner == methodInfo.typeInfo && !fr.isDefaultScope && !fr.isStatic) {
+                            methodInfo.isConstructor && fr.fieldInfo().owner == methodInfo.typeInfo && !fr.isDefaultScope() && !fr.isStatic()) {
                         // ExplicitConstructorInvocation_5, but be careful with the restrictions, e.g. ExternalNotNull_1 for the scope,
                         // as well as ExplicitConstructorInvocation_4
                         // captures: this.field = someParameterOfMySelf.field;
                         added = false; // we'll skip this!
                     } else {
                         if (causesOfDelay.containsCauseOfDelay(CauseOfDelay.Cause.BREAK_INIT_DELAY,
-                                c -> c instanceof VariableCause vc && vc.variable() instanceof FieldReference fr && fr.fieldInfo == fieldInfo)) {
+                                c -> c instanceof VariableCause vc && vc.variable() instanceof FieldReference fr && fr.fieldInfo() == fieldInfo)) {
                             // this is not hard condition because in Lazy it takes 2 iterations for the delay to be actually broken
                             LOGGER.debug("Break init delay needs resolving for field {} in method {}", fieldInfo.name,
                                     methodInfo.name);
@@ -1195,7 +1196,7 @@ public class ComputingFieldAnalyser extends FieldAnalyserImpl implements FieldAn
         }
         if (delays.isDelayed()) {
             // inject a cause of delay that we can intercept in the next iteration
-            FieldReference fr = new FieldReference(analyserContext, fieldInfo);
+            FieldReference fr = new FieldReferenceImpl(analyserContext, fieldInfo);
             VariableCause vc = new VariableCause(fr, new LocationImpl(fieldInfo), CauseOfDelay.Cause.VALUES);
             delays = delays.merge(DelayFactory.createDelay(vc));
         }
@@ -1267,7 +1268,7 @@ public class ComputingFieldAnalyser extends FieldAnalyserImpl implements FieldAn
         CausesOfDelay valuesStatus = fieldAnalysis.valuesStatus();
         if (valuesStatus.isDelayed()) {
             LOGGER.debug("Delaying final value, have no values yet for field " + fqn);
-            fieldAnalysis.setValue(DelayedVariableExpression.forField(new FieldReference(analyserContext, fieldInfo),
+            fieldAnalysis.setValue(DelayedVariableExpression.forField(new FieldReferenceImpl(analyserContext, fieldInfo),
                     0, fieldAnalysis.valuesStatus()));
             return valuesStatus; //DELAY EXIT POINT
         }
@@ -1458,10 +1459,10 @@ public class ComputingFieldAnalyser extends FieldAnalyserImpl implements FieldAn
                 .filter(e -> !(e.getKey() instanceof LocalVariableReference)
                         && !(e.getKey() instanceof ReturnVariable)
                         && !(e.getKey() instanceof This)
-                        && !(e.getKey() instanceof FieldReference fr && fr.fieldInfo == fieldInfo)) // especially local variable copies of the field itself
+                        && !(e.getKey() instanceof FieldReference fr && fr.fieldInfo() == fieldInfo)) // especially local variable copies of the field itself
                 .collect(Collectors.toUnmodifiableMap(Map.Entry::getKey, Map.Entry::getValue, DV::max));
 
-        FieldReference me = new FieldReference(analyserContext, fieldInfo);
+        FieldReference me = new FieldReferenceImpl(analyserContext, fieldInfo);
         Map<Variable, DV> reversePointingToMe = allMethodsAndConstructors(true)
                 .map(m -> m.getMethodAnalysis().getLastStatement())
                 .filter(Objects::nonNull)
@@ -1656,7 +1657,7 @@ public class ComputingFieldAnalyser extends FieldAnalyserImpl implements FieldAn
 
     private Expression getVariableValue(Variable variable) {
         FieldReference fieldReference = (FieldReference) variable;
-        FieldAnalysis fieldAnalysis = analyserContext.getFieldAnalysis(fieldReference.fieldInfo);
+        FieldAnalysis fieldAnalysis = analyserContext.getFieldAnalysis(fieldReference.fieldInfo());
         DV effectivelyFinal = fieldAnalysis.getProperty(Property.FINAL);
         if (effectivelyFinal.isDelayed()) {
             return DelayedVariableExpression.forField(fieldReference, VariableInfoContainer.IGNORE_STATEMENT_TIME,
@@ -1702,7 +1703,7 @@ public class ComputingFieldAnalyser extends FieldAnalyserImpl implements FieldAn
                                 : Message.Label.ANNOTATION_ABSENT, annotationKey.typeInfo().simpleName)));
     }
 
-    private class EvaluationContextImpl extends AbstractEvaluationContextImpl {
+    private class EvaluationContextImpl extends CommonEvaluationContext {
 
         private EvaluationContextImpl(int iteration,
                                       BreakDelayLevel breakDelayLevel,
@@ -1774,7 +1775,7 @@ public class ComputingFieldAnalyser extends FieldAnalyserImpl implements FieldAn
         public DV getProperty(Variable variable, Property property) {
             if (variable instanceof FieldReference fieldReference) {
                 Property vp = ComputingMethodAnalyser.external(property);
-                return getAnalyserContext().getFieldAnalysis(fieldReference.fieldInfo).getProperty(vp);
+                return getAnalyserContext().getFieldAnalysis(fieldReference.fieldInfo()).getProperty(vp);
             }
             if (variable instanceof This thisVariable) {
                 return getAnalyserContext().getTypeAnalysis(thisVariable.typeInfo).getProperty(property);

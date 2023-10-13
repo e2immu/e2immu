@@ -202,7 +202,7 @@ public class Filter {
             } else if (value instanceof GreaterThanZero gt0) {
                 Expression expression = gt0.expression();
                 List<Variable> vars = expression.variables().stream().filter(v -> !(v instanceof This)).toList();
-                if (vars.size() == 1 && vars.get(0) instanceof FieldReference fr && acceptScope(fr.scope)) {
+                if (vars.size() == 1 && vars.get(0) instanceof FieldReference fr && acceptScope(fr.scope())) {
                     return new FilterResult<FieldReference>(Map.of(fr, gt0), defaultRest);
                 }
             } else if (value.returnType().isBoolean()) {
@@ -243,7 +243,7 @@ public class Filter {
         TranslationMapImpl.Builder builder = new TranslationMapImpl.Builder();
         if ((ve = v.asInstanceOf(VariableExpression.class)) != null
                 && ve.variable() instanceof FieldReference fr
-                && acceptScope(fr.scope)) {
+                && acceptScope(fr.scope())) {
             if (acceptAndRemapLocalCopy) {
                 builder.put(ve, new VariableExpression(ve.identifier, ve.variable()));
             }
@@ -255,7 +255,8 @@ public class Filter {
     // we do not allow parameters or local variables
     private static boolean acceptScope(Expression scopeExpression) {
         if (scopeExpression instanceof VariableExpression scope) {
-            return scope.variable() instanceof This || (scope.variable() instanceof FieldReference fr && acceptScope(fr.scope));
+            return scope.variable() instanceof This || (scope.variable() instanceof FieldReference fr
+                    && acceptScope(fr.scope()));
         }
         return false;
     }
@@ -276,7 +277,7 @@ public class Filter {
         }
         if (v instanceof IsVariableExpression variableValue) {
             if (variableValue.variable() instanceof FieldReference fieldReference &&
-                    acceptScope(fieldReference.scope)) {
+                    acceptScope(fieldReference.scope())) {
                 if (acceptAndRemapLocalCopy && variableValue instanceof VariableExpression ve) {
                     TranslationMap tm = new TranslationMapImpl.Builder()
                             .put(v, new VariableExpression(ve.identifier, ve.variable())).build();

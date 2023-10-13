@@ -77,7 +77,7 @@ public class Test_04_Assert extends CommonTestRunner {
                     assertEquals("SimpleSet.EMPTY:0", d.variableInfo().getLinkedVariables().toString());
                     assertDv(d, 5, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.EXTERNAL_NOT_NULL);
                 }
-                if (d.variable() instanceof FieldReference fr && "EMPTY".equals(fr.fieldInfo.name)) {
+                if (d.variable() instanceof FieldReference fr && "EMPTY".equals(fr.fieldInfo().name)) {
                     assertCurrentValue(d, 5, "instance type SimpleSet/*new SimpleSet(Set.of())*/");
                     // NOT_CONTAINER because of isMyself
                     assertDv(d, 5, MultiLevel.NOT_CONTAINER_DV, Property.CONTAINER);

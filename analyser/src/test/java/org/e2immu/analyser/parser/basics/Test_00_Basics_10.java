@@ -40,12 +40,12 @@ public class Test_00_Basics_10 extends CommonTestRunner {
     public void test_10() throws IOException {
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("Basics_10".equals(d.methodInfo().name)) {
-                if (d.variable() instanceof FieldReference fr && "string".equals(fr.fieldInfo.name)) {
+                if (d.variable() instanceof FieldReference fr && "string".equals(fr.fieldInfo().name)) {
                     assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, d.getProperty(NOT_NULL_EXPRESSION));
                 }
             }
             if ("getString".equals(d.methodInfo().name)) {
-                if (d.variable() instanceof FieldReference fr && "string".equals(fr.fieldInfo.name)) {
+                if (d.variable() instanceof FieldReference fr && "string".equals(fr.fieldInfo().name)) {
                     assertDv(d, 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, EXTERNAL_NOT_NULL);
                     assertDv(d, 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, NOT_NULL_EXPRESSION);
 

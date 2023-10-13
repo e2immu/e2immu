@@ -118,7 +118,7 @@ public class Test_00_Basics_7 extends CommonTestRunner {
                     assertDv(d, 1, MultiLevel.EFFECTIVELY_IMMUTABLE_DV, EXTERNAL_IMMUTABLE);
                 }
 
-                if (d.variable() instanceof FieldReference fr && "out".equals(fr.fieldInfo.name)) {
+                if (d.variable() instanceof FieldReference fr && "out".equals(fr.fieldInfo().name)) {
                     assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, d.getProperty(CONTEXT_NOT_NULL));
                     if ("0.0.1".equals(d.statementId())) {
                         String expect = d.iteration() == 0 ? "<f:out>" : INSTANCE_TYPE_PRINT_STREAM;
@@ -134,7 +134,7 @@ public class Test_00_Basics_7 extends CommonTestRunner {
                     }
                 }
 
-                if (d.variable() instanceof FieldReference fr && "i".equals(fr.fieldInfo.name)) {
+                if (d.variable() instanceof FieldReference fr && "i".equals(fr.fieldInfo().name)) {
                     if ("0.0.0".equals(d.statementId())) {
                         assertEquals("p", d.currentValue().toString());
                     }

@@ -128,10 +128,10 @@ public class TestConstructor extends CommonTest {
             if (eas.expression instanceof MethodCall mc) {
                 if (mc.object instanceof VariableExpression ve) {
                     if (ve.variable() instanceof FieldReference fr) {
-                        assertEquals("new Pair<>(\"3\",3)", fr.scope.toString());
+                        assertEquals("new Pair<>(\"3\",3)", fr.scope().toString());
                         // important: test that the 2nd type parameter is Integer rather than int
                         assertEquals("org.e2immu.analyser.resolver.testexample.Constructor_8.Pair<String,Integer>",
-                                fr.scope.returnType().detailedString(typeMap));
+                                fr.scope().returnType().detailedString(typeMap));
                     }
                 } else fail();
             } else fail();

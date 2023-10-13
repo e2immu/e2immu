@@ -30,6 +30,7 @@ import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.LocalVariableReference;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.model.variable.VariableNature;
+import org.e2immu.analyser.model.variable.impl.FieldReferenceImpl;
 import org.e2immu.analyser.visitor.StatementAnalyserVariableVisitor;
 import org.e2immu.analyser.visitor.StatementAnalyserVisitor;
 import org.slf4j.Logger;
@@ -217,12 +218,12 @@ record SAHelper(StatementAnalysis statementAnalysis) {
                 CausesOfDelay delay2;
                 if (methodCall.object instanceof VariableExpression ve
                         && ve.variable() instanceof FieldReference fr
-                        && fr.isStatic) {
+                        && fr.isStatic()) {
                     DV modifying = methodAnalysis.getProperty(MODIFIED_METHOD);
                     if (modifying.valueIsFalse()) {
                         return;
                     }
-                    FieldAnalysis fieldAnalysis = analyserContext.getFieldAnalysis(fr.fieldInfo);
+                    FieldAnalysis fieldAnalysis = analyserContext.getFieldAnalysis(fr.fieldInfo());
                     DV ignoreMods = fieldAnalysis.getProperty(EXTERNAL_IGNORE_MODIFICATIONS);
                     if (MultiLevel.NOT_IGNORE_MODS_DV.equals(ignoreMods)) {
                         return;
@@ -241,8 +242,8 @@ record SAHelper(StatementAnalysis statementAnalysis) {
             }
             if (e instanceof Assignment assignment
                     && assignment.target instanceof VariableExpression ve
-                    && ve.variable() instanceof FieldReference fr && fr.isStatic) {
-                FieldAnalysis fieldAnalysis = analyserContext.getFieldAnalysis(fr.fieldInfo);
+                    && ve.variable() instanceof FieldReference fr && fr.isStatic()) {
+                FieldAnalysis fieldAnalysis = analyserContext.getFieldAnalysis(fr.fieldInfo());
                 DV ignoreMods = fieldAnalysis.getProperty(EXTERNAL_IGNORE_MODIFICATIONS);
                 if (ignoreMods.isDelayed()) {
                     causesOfDelay.set(causesOfDelay.get().merge(ignoreMods.causesOfDelay()));
@@ -341,11 +342,11 @@ record SAHelper(StatementAnalysis statementAnalysis) {
                     // then, other field references
                     for (Map.Entry<Variable, ChangeData> e2 : entriesOfFieldRefs) {
                         FieldReference fr = (FieldReference) e2.getKey();
-                        assert fr.scopeVariable != null && fr.scopeVariable.equals(pv)
+                        assert fr.scopeVariable() != null && fr.scopeVariable().equals(pv)
                                 : "other situations not yet implemented";
 
-                        FieldReference newFr = new FieldReference(evaluationResult2.getAnalyserContext(),
-                                fr.fieldInfo, scope, scopeVariable, fr.getOwningType());
+                        FieldReference newFr = new FieldReferenceImpl(evaluationResult2.getAnalyserContext(),
+                                fr.fieldInfo(), scope, scopeVariable, fr.getOwningType());
                         VariableExpression ve = new VariableExpression(statementIdentifier, newFr,
                                 VariableExpression.NO_SUFFIX, scope, null);
                         builder.addVariableExpression(fr, ve);

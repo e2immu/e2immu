@@ -85,16 +85,16 @@ public class Test_60_StaticSideEffects_AAPI extends CommonTestRunner {
         };
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("StaticSideEffects_1".equals(d.methodInfo().name)) {
-                if (d.variable() instanceof FieldReference fr && "k".equals(fr.fieldInfo.name)) {
+                if (d.variable() instanceof FieldReference fr && "k".equals(fr.fieldInfo().name)) {
                     assertTrue(fr.scopeIsThis());
                     if ("0".equals(d.statementId())) {
                         assertEquals("k", d.currentValue().toString());
 //FIXME                        assertDv(d, MultiLevel.NOT_INVOLVED_DV, Property.EXTERNAL_NOT_NULL);
                     }
                 }
-                if (d.variable() instanceof FieldReference fr && "counter".equals(fr.fieldInfo.name)) {
+                if (d.variable() instanceof FieldReference fr && "counter".equals(fr.fieldInfo().name)) {
                     assertNotEquals("0", d.statementId());
-                    assertEquals("StaticSideEffects_1", fr.scope.toString());
+                    assertEquals("StaticSideEffects_1", fr.scope().toString());
 
                     if ("1.0.0".equals(d.statementId())) {
                         assertEquals("new AtomicInteger()", d.currentValue().toString());
@@ -263,14 +263,14 @@ public class Test_60_StaticSideEffects_AAPI extends CommonTestRunner {
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             int n = d.methodInfo().methodInspection.get().getParameters().size();
             if (d.methodInfo().isConstructor && n == 1) {
-                if (d.variable() instanceof FieldReference fr && "generator".equals(fr.fieldInfo.name)) {
+                if (d.variable() instanceof FieldReference fr && "generator".equals(fr.fieldInfo().name)) {
                     assertDv(d, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.CONTEXT_NOT_NULL);
                     assertDv(d, 1, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
                     assertCurrentValue(d, 1, "instance type AtomicInteger");
                 }
             }
             if (d.methodInfo().isConstructor && n == 0) {
-                if (d.variable() instanceof FieldReference fr && "generator".equals(fr.fieldInfo.name)) {
+                if (d.variable() instanceof FieldReference fr && "generator".equals(fr.fieldInfo().name)) {
                     assertDv(d, MultiLevel.NULLABLE_DV, Property.CONTEXT_NOT_NULL);
                     assertDv(d, 1, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     assertCurrentValue(d, 1, "instance type AtomicInteger");

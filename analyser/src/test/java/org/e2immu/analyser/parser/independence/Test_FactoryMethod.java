@@ -103,7 +103,7 @@ public class Test_FactoryMethod extends CommonTestRunner {
                         assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
                     }
                 }
-                if (d.variable() instanceof FieldReference fr && "list".equals(fr.fieldInfo.name)) {
+                if (d.variable() instanceof FieldReference fr && "list".equals(fr.fieldInfo().name)) {
                     if ("1".equals(d.statementId())) {
                         String linked = d.iteration() == 0 ? "result:-1,this:-1" : "result:4,this:4";
                         assertEquals(linked, d.variableInfo().getLinkedVariables().toString());

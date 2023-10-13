@@ -61,7 +61,7 @@ public class Test_04_NotNull extends CommonTestRunner {
     public void test_1_1() throws IOException {
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("lowerCase".equals(d.methodInfo().name)) {
-                if (d.variable() instanceof FieldReference fr && "s".equals(fr.fieldInfo.name)) {
+                if (d.variable() instanceof FieldReference fr && "s".equals(fr.fieldInfo().name)) {
                     if ("0.0.0".equals(d.statementId())) {
                         assertEquals("", d.variableInfo().getLinkedVariables().toString());
                         assertDv(d, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
@@ -166,7 +166,7 @@ public class Test_04_NotNull extends CommonTestRunner {
             if ("reInitialize".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof DependentVariable dv
                         && dv.arrayVariable() instanceof FieldReference fr
-                        && "strings".equals(fr.fieldInfo.name)) {
+                        && "strings".equals(fr.fieldInfo().name)) {
                     if ("1.0.0.0.1".equals(d.statementId())) {
                         String expected = d.iteration() == 0 ? "<s:String>" : "s";
                         assertEquals(expected, d.currentValue().toString());

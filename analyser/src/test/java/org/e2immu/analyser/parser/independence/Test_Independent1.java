@@ -55,7 +55,7 @@ public class Test_Independent1 extends CommonTestRunner {
                     assertDv(d, 1, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     assertEquals("this:4", d.variableInfo().getLinkedVariables().toString());
                 }
-                if (d.variable() instanceof FieldReference fr && "t".equals(fr.fieldInfo.name)) {
+                if (d.variable() instanceof FieldReference fr && "t".equals(fr.fieldInfo().name)) {
                     assertTrue(fr.scopeIsThis());
                     assertDv(d, 1, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     assertLinked(d,
@@ -93,7 +93,7 @@ public class Test_Independent1 extends CommonTestRunner {
     public void test_1() throws IOException {
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("Independent1_1".equals(d.methodInfo().name)) {
-                if (d.variable() instanceof FieldReference fr && "set".equals(fr.fieldInfo.name)) {
+                if (d.variable() instanceof FieldReference fr && "set".equals(fr.fieldInfo().name)) {
                     assertTrue(fr.scopeIsThis());
                     if ("1".equals(d.statementId())) {
                         assertEquals("this:3,ts:4", d.variableInfo().getLinkedVariables().toString());
@@ -115,7 +115,7 @@ public class Test_Independent1 extends CommonTestRunner {
     public void test_2() throws IOException {
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("Independent1_2".equals(d.methodInfo().name)) {
-                if (d.variable() instanceof FieldReference fr && "ts".equals(fr.fieldInfo.name)) {
+                if (d.variable() instanceof FieldReference fr && "ts".equals(fr.fieldInfo().name)) {
                     if ("1".equals(d.statementId())) {
                         assertLinked(d, it(0, "generator:4,this:3"));
                     }
@@ -182,7 +182,7 @@ public class Test_Independent1 extends CommonTestRunner {
     public void test_3() throws IOException {
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("Independent1_3".equals(d.methodInfo().name)) {
-                if (d.variable() instanceof FieldReference fr && "ts".equals(fr.fieldInfo.name)) {
+                if (d.variable() instanceof FieldReference fr && "ts".equals(fr.fieldInfo().name)) {
                     if ("0".equals(d.statementId())) {
                         assertLinked(d, it(0, ""));
                     }
@@ -241,7 +241,7 @@ public class Test_Independent1 extends CommonTestRunner {
                         assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
                     }
                 }
-                if (d.variable() instanceof FieldReference fr && "ts".equals(fr.fieldInfo.name)) {
+                if (d.variable() instanceof FieldReference fr && "ts".equals(fr.fieldInfo().name)) {
                     assertTrue(fr.scopeIsThis());
                     if ("0".equals(d.statementId())) {
                         String linked = d.iteration() == 0 ? "consumer:-1,this:-1"
@@ -540,7 +540,7 @@ public class Test_Independent1 extends CommonTestRunner {
                         assertEquals(value, d.currentValue().toString());
                     }
                 }
-                if (d.variable() instanceof FieldReference fr && "map".equals(fr.fieldInfo.name)) {
+                if (d.variable() instanceof FieldReference fr && "map".equals(fr.fieldInfo().name)) {
                     if ("0.0.0".equals(d.statementId())) {
                         String linked = d.iteration() < 12 ? "t:-1,this:-1" : "";
                         assertEquals(linked, d.variableInfo().getLinkedVariables().toString());

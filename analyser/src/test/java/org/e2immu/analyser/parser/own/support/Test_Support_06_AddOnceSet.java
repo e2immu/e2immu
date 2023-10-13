@@ -96,7 +96,7 @@ public class Test_Support_06_AddOnceSet extends CommonTestRunner {
                 }
             }
             if ("add".equals(d.methodInfo().name)) {
-                if (d.variable() instanceof FieldReference fr && "frozen".equals(fr.fieldInfo.name)) {
+                if (d.variable() instanceof FieldReference fr && "frozen".equals(fr.fieldInfo().name)) {
                     fail("In statement: " + d.statementId());
                 }
             }

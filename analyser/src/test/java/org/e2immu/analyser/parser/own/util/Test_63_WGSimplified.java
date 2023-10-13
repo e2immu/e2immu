@@ -82,7 +82,7 @@ public class Test_63_WGSimplified extends CommonTestRunner {
                         assertDv(d, 2, MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL_DV, Property.CONTEXT_NOT_NULL);
                     }
                 }
-                if (d.variable() instanceof FieldReference fr && "dependsOn".equals(fr.fieldInfo.name)) {
+                if (d.variable() instanceof FieldReference fr && "dependsOn".equals(fr.fieldInfo().name)) {
                     if ("3.0.0".equals(d.statementId())) {
                         // eval
                         assertTrue(d.variableInfoContainer().hasEvaluation());
@@ -93,7 +93,7 @@ public class Test_63_WGSimplified extends CommonTestRunner {
                         assertEquals(linkedE, eval.getLinkedVariables().toString());
 
                         // merge
-                        assertEquals("node", fr.scope.toString());
+                        assertEquals("node", fr.scope().toString());
                         String linked = d.iteration() == 0 ? "currentDistanceToT:-1,distanceToStartingPoint:-1,node:-1,t:-1,this.nodeMap:-1"
                                 : "node:-1,this.nodeMap:-1";
                         assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
@@ -128,8 +128,8 @@ public class Test_63_WGSimplified extends CommonTestRunner {
                     String linked = d.iteration() <= 1 ? "currentDistanceToT:-1,d:-1,distanceToN:-1,this.neutral:-1" : "";
                     assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
                 }
-                if (d.variable() instanceof FieldReference fr && "dependsOn".equals(fr.fieldInfo.name)) {
-                    assertEquals("node", fr.scope.toString());
+                if (d.variable() instanceof FieldReference fr && "dependsOn".equals(fr.fieldInfo().name)) {
+                    assertEquals("node", fr.scope().toString());
                     String linked = d.iteration() == 0 ? "NOT_YET_SET" : "node:-1,this.nodeMap:-1";
                     assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
                     // THIS will get no value because as of iteration 11, the block is not reachable
@@ -181,14 +181,14 @@ public class Test_63_WGSimplified extends CommonTestRunner {
                         assertDv(d, 2, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     }
                 }
-                if (d.variable() instanceof FieldReference fr && "dependsOn".equals(fr.fieldInfo.name)
-                        && fr.scopeVariable != null
-                        && "node".equals(fr.scopeVariable.toString())) {
+                if (d.variable() instanceof FieldReference fr && "dependsOn".equals(fr.fieldInfo().name)
+                        && fr.scopeVariable() != null
+                        && "node".equals(fr.scopeVariable().toString())) {
                     if ("3.0.0".equals(d.statementId())) {
                         assertDv(d, 2, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     }
                 }
-                if (d.variable() instanceof FieldReference fr && "nodeMap".equals(fr.fieldInfo.name)) {
+                if (d.variable() instanceof FieldReference fr && "nodeMap".equals(fr.fieldInfo().name)) {
                     if ("3".equals(d.statementId())) {
                         assertDv(d, 2, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     }
@@ -200,12 +200,12 @@ public class Test_63_WGSimplified extends CommonTestRunner {
                 }
             }
             if ("accept".equals(d.methodInfo().name) && "$1".equals(d.methodInfo().typeInfo.simpleName)) {
-                if (d.variable() instanceof FieldReference fr && "nodeMap".equals(fr.fieldInfo.name)) {
+                if (d.variable() instanceof FieldReference fr && "nodeMap".equals(fr.fieldInfo().name)) {
                     if ("0".equals(d.statementId())) {
                         assertDv(d, 1, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     }
                 }
-                if (d.variable() instanceof FieldReference fr && "LINK_COMMON_HC".equals(fr.fieldInfo.name)) {
+                if (d.variable() instanceof FieldReference fr && "LINK_COMMON_HC".equals(fr.fieldInfo().name)) {
                     if ("0.0.2.0.0.0.2".equals(d.statementId())) {
                         assertDv(d, 2, MultiLevel.EFFECTIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
                         assertDv(d, 2, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
@@ -244,7 +244,7 @@ public class Test_63_WGSimplified extends CommonTestRunner {
             if ("accept".equals(d.methodInfo().name) && "recursivelyComputeLinks".equals(d.enclosingMethod().name)) {
                 assertEquals("$1", d.methodInfo().typeInfo.simpleName);
 
-                if (d.variable() instanceof FieldReference fr && "LINK_COMMON_HC".equals(fr.fieldInfo.name)) {
+                if (d.variable() instanceof FieldReference fr && "LINK_COMMON_HC".equals(fr.fieldInfo().name)) {
                     if ("0.0.0".equals(d.statementId()) || "0.0.2.0.0".equals(d.statementId())
                             || "0.0.2.1.1".equals(d.statementId())) {
                         fail();
@@ -308,7 +308,7 @@ public class Test_63_WGSimplified extends CommonTestRunner {
             if ("accept".equals(d.methodInfo().name) && "recursivelyComputeLinks".equals(d.enclosingMethod().name)) {
                 assertEquals("$1", d.methodInfo().typeInfo.simpleName);
 
-                if (d.variable() instanceof FieldReference fr && "LINK_COMMON_HC".equals(fr.fieldInfo.name)) {
+                if (d.variable() instanceof FieldReference fr && "LINK_COMMON_HC".equals(fr.fieldInfo().name)) {
                     if ("0.0.0".equals(d.statementId()) || "0.0.2.0.0".equals(d.statementId())
                             || "0.0.2.1.1".equals(d.statementId())) {
                         fail();

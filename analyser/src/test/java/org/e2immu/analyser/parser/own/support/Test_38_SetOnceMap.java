@@ -76,7 +76,7 @@ public class Test_38_SetOnceMap extends CommonTestRunner {
             }
             if ("stream".equals(d.methodInfo().name)) {
                 assertEquals("0", d.statementId());
-                if (d.variable() instanceof FieldReference fr && "map".equals(fr.fieldInfo.name)) {
+                if (d.variable() instanceof FieldReference fr && "map".equals(fr.fieldInfo().name)) {
                     assertTrue(d.variableInfoContainer().isInitial());
                     VariableInfo vi1 = d.variableInfoContainer().getPreviousOrInitial();
                     String value1 = d.iteration() == 0 ? "<f:map>" : "instance type HashMap<K,V>";

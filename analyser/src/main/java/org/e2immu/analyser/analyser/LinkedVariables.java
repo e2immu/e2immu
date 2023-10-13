@@ -327,7 +327,7 @@ public class LinkedVariables implements Comparable<LinkedVariables>, Iterable<Ma
     public Set<Variable> scopesOfStaticallyAssigned() {
         return variables.entrySet().stream()
                 .filter(e -> e.getKey() instanceof FieldReference && e.getValue().equals(LINK_STATICALLY_ASSIGNED))
-                .map(e -> ((FieldReference) e.getKey()).scopeVariable)
+                .map(e -> ((FieldReference) e.getKey()).scopeVariable())
                 .filter(Objects::nonNull)
                 .collect(Collectors.toUnmodifiableSet());
     }

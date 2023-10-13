@@ -307,14 +307,14 @@ public class Test_22_SubTypes extends CommonTestRunner {
             // is analysed before "go", but after $1
             // iteration 2 should see a value
             if ("SubTypes_10".equals(d.methodInfo().name)) {
-                if (d.variable() instanceof FieldReference fr && "external".equals(fr.fieldInfo.name)) {
+                if (d.variable() instanceof FieldReference fr && "external".equals(fr.fieldInfo().name)) {
                     assertEquals("0", d.statementId());
                     String expected = d.iteration() == 0 ? "<new:External>" : "new External(){}";
                     assertEquals(expected, d.currentValue().toString());
                 }
             }
             if ("go".equals(d.methodInfo().name)) {
-                if (d.variable() instanceof FieldReference fr && "external".equals(fr.fieldInfo.name)) {
+                if (d.variable() instanceof FieldReference fr && "external".equals(fr.fieldInfo().name)) {
                     assertEquals("0", d.statementId());
                     assertDv(d, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                 }
@@ -358,7 +358,7 @@ public class Test_22_SubTypes extends CommonTestRunner {
                     assertTrue(d.variable() instanceof ParameterInfo);
                     assertDv(d, 0, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_EXPRESSION);
                 }
-                if (d.variable() instanceof FieldReference fr && "outerField".equals(fr.fieldInfo.name)) {
+                if (d.variable() instanceof FieldReference fr && "outerField".equals(fr.fieldInfo().name)) {
                     assertEquals("outerField", d.currentValue().toString());
                     assertDv(d, 0, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.CONTEXT_NOT_NULL);
                 }

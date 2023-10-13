@@ -113,7 +113,7 @@ public class Test_07_DependentVariables extends CommonTestRunner {
 
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("getI".equals(d.methodInfo().name)) {
-                if (d.variable() instanceof FieldReference fr && "i".equals(fr.fieldInfo.name)) {
+                if (d.variable() instanceof FieldReference fr && "i".equals(fr.fieldInfo().name)) {
                     String expectValue = d.iteration() == 0 ? "<f:i>" : "instance type int";
                     assertEquals(expectValue, d.currentValue().minimalOutput());
                     assertEquals("", d.variableInfo().getLinkedVariables().toString());
@@ -129,7 +129,7 @@ public class Test_07_DependentVariables extends CommonTestRunner {
                 }
             }
             if ("getX".equals(d.methodInfo().name)) {
-                if (d.variable() instanceof FieldReference fr && "xs".equals(fr.fieldInfo.name)) {
+                if (d.variable() instanceof FieldReference fr && "xs".equals(fr.fieldInfo().name)) {
                     String expect = d.iteration() < 2 ? "<f:xs>" : "instance type X[]";
                     assertEquals(expect, d.currentValue().toString());
                     assertDv(d, 2, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_EXPRESSION);
@@ -170,7 +170,7 @@ public class Test_07_DependentVariables extends CommonTestRunner {
                         assertEquals("this.xs:4,this:4", d.variableInfo().getLinkedVariables().toString());
                     }
                 }
-                if (d.variable() instanceof FieldReference fr && "xs".equals(fr.fieldInfo.name)) {
+                if (d.variable() instanceof FieldReference fr && "xs".equals(fr.fieldInfo().name)) {
                     assertTrue(fr.scopeIsThis());
                     if ("0".equals(d.statementId())) {
                         assertTrue(d.currentValue() instanceof ConstructorCall);
@@ -256,7 +256,7 @@ public class Test_07_DependentVariables extends CommonTestRunner {
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("XS".equals(d.methodInfo().name)) {
                 assertTrue(d.methodInfo().isConstructor);
-                if (d.variable() instanceof FieldReference fr && "xs".equals(fr.fieldInfo.name)) {
+                if (d.variable() instanceof FieldReference fr && "xs".equals(fr.fieldInfo().name)) {
                     if ("1".equals(d.statementId())) {
                         assertEquals("this:3,xs:4", d.variableInfo().getLinkedVariables().toString());
                     }

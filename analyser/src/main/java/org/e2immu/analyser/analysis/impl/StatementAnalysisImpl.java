@@ -414,7 +414,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
         return rawVariableStream()
                 .map(e -> e.getValue().current())
                 .filter(v -> v.variable() instanceof FieldReference fieldReference
-                        && fieldReference.fieldInfo == fieldInfo);
+                        && fieldReference.fieldInfo() == fieldInfo);
     }
 
     @Override
@@ -557,7 +557,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
         if (vic.variableNature().doNotCopyToNextStatement(indexOfPrevious, index)) return true;
         // but what if we have a field access on one such variable? check recursively!
         IsVariableExpression ive;
-        if (variable instanceof FieldReference fr && ((ive = fr.scope.asInstanceOf(IsVariableExpression.class)) != null)) {
+        if (variable instanceof FieldReference fr && ((ive = fr.scope().asInstanceOf(IsVariableExpression.class)) != null)) {
             String scopeFqn = ive.variable().fullyQualifiedName();
             if (copyFrom.variableIsSet(scopeFqn)) {
                 VariableInfoContainer scopeVic = copyFrom.getVariable(scopeFqn);
@@ -703,7 +703,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
         if (copyFrom.index().equals(vic.variableNature().getStatementIndexOfBlockVariable())) return false;
 
         IsVariableExpression ive;
-        if (variable instanceof FieldReference fr && ((ive = fr.scope.asInstanceOf(IsVariableExpression.class)) != null)) {
+        if (variable instanceof FieldReference fr && ((ive = fr.scope().asInstanceOf(IsVariableExpression.class)) != null)) {
             String scopeFqn = ive.variable().fullyQualifiedName();
             if (copyFrom.variableIsSet(scopeFqn)) {
                 VariableInfoContainer scopeVic = copyFrom.getVariable(scopeFqn);
@@ -777,9 +777,9 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
                                               FieldReference fieldReference) {
         VariableInfo viInitial = vic.best(INITIAL);
 
-        Properties map = fieldPropertyMap(evaluationContext, fieldReference.fieldInfo);
+        Properties map = fieldPropertyMap(evaluationContext, fieldReference.fieldInfo());
         Expression initialValue;
-        FieldAnalysis fieldAnalysis = evaluationContext.getAnalyserContext().getFieldAnalysis(fieldReference.fieldInfo);
+        FieldAnalysis fieldAnalysis = evaluationContext.getAnalyserContext().getFieldAnalysis(fieldReference.fieldInfo());
 
         boolean myself = evaluationContext.isMyself(fieldReference).toFalse(IMMUTABLE);
         if (!myself && evaluationContext.inConstruction()) {
@@ -1120,24 +1120,24 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
     }
 
     private void initializeFieldReference(VariableInfoContainer vic, EvaluationContext evaluationContext, FieldReference fieldReference) {
-        FieldAnalysis fieldAnalysis = evaluationContext.getAnalyserContext().getFieldAnalysis(fieldReference.fieldInfo);
+        FieldAnalysis fieldAnalysis = evaluationContext.getAnalyserContext().getFieldAnalysis(fieldReference.fieldInfo());
 
         // start with context properties
-        Properties properties = sharedContext(AnalysisProvider.defaultNotNull(fieldReference.fieldInfo.type));
+        Properties properties = sharedContext(AnalysisProvider.defaultNotNull(fieldReference.fieldInfo().type));
         Expression value = fieldAnalysis.getValueForStatementAnalyser(getCurrentType().primaryType(),
                 fieldReference, flowData.getInitialTime());
 
         Properties combined;
         boolean myself = evaluationContext.isMyself(fieldReference).toFalse(IMMUTABLE);
         boolean wroteExtIgnMod;
-        if (myself && !fieldReference.fieldInfo.fieldInspection.get().isStatic()) {
+        if (myself && !fieldReference.fieldInfo().fieldInspection.get().isStatic()) {
             // captures self-referencing instance fields (but not static fields, as in Enum_)
             // a similar check exists in SAApply
             combined = evaluationContext.ensureMyselfValueProperties(properties);
             wroteExtIgnMod = false;
         } else {
             // the value and its properties are taken from the field analyser
-            Properties valueProps = evaluationContext.getValueProperties(fieldReference.parameterizedType, value);
+            Properties valueProps = evaluationContext.getValueProperties(fieldReference.parameterizedType(), value);
             combined = properties.combine(valueProps);
             if (evaluationContext.inConstruction()) {
                 properties.put(EXTERNAL_IGNORE_MODIFICATIONS, EXTERNAL_IGNORE_MODIFICATIONS.valueWhenAbsent());

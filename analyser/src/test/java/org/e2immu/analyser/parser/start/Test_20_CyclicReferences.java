@@ -44,7 +44,7 @@ public class Test_20_CyclicReferences extends CommonTestRunner {
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             int numParameters = d.methodInfo().methodInspection.get().getParameters().size();
             if ("CyclicReferences_0".equals(d.methodInfo().name) && numParameters == 1) {
-                if (d.variable() instanceof FieldReference fr && "field2".equals(fr.fieldInfo.name)) {
+                if (d.variable() instanceof FieldReference fr && "field2".equals(fr.fieldInfo().name)) {
                     if ("0".equals(d.statementId())) {
                         assertEquals("\"cde\"", d.currentValue().toString());
                         assertDv(d, MultiLevel.EFFECTIVELY_IMMUTABLE_DV, Property.IMMUTABLE);

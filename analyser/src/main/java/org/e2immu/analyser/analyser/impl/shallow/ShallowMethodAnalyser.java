@@ -18,6 +18,7 @@ import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.analyser.delay.DelayFactory;
 import org.e2immu.analyser.analyser.impl.MethodAnalyserImpl;
 import org.e2immu.analyser.analyser.impl.util.BreakDelayLevel;
+import org.e2immu.analyser.analyser.nonanalyserimpl.AbstractEvaluationContextImpl;
 import org.e2immu.analyser.analyser.nonanalyserimpl.LocalAnalyserContext;
 import org.e2immu.analyser.analyser.statementanalyser.StatementAnalyserImpl;
 import org.e2immu.analyser.analyser.statementanalyser.StatementSimplifier;
@@ -34,6 +35,7 @@ import org.e2immu.analyser.model.expression.*;
 import org.e2immu.analyser.model.impl.TranslationMapImpl;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.This;
+import org.e2immu.analyser.model.variable.impl.FieldReferenceImpl;
 import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.Messages;
@@ -230,7 +232,7 @@ public class ShallowMethodAnalyser extends MethodAnalyserImpl {
                 boolean negation = pce.expression() instanceof Negation || pce.expression() instanceof UnaryOperator uo && uo.isNegation();
                 Set<FieldInfo> fields = translated.variableStream()
                         .filter(v -> v instanceof FieldReference)
-                        .map(v -> ((FieldReference) v).fieldInfo)
+                        .map(v -> ((FieldReference) v).fieldInfo())
                         .collect(Collectors.toUnmodifiableSet());
                 assert !fields.isEmpty();
                 MethodAnalysis.Eventual eventual = new MethodAnalysis.Eventual(fields, false, !negation, null);
@@ -249,7 +251,7 @@ public class ShallowMethodAnalyser extends MethodAnalyserImpl {
                 MethodAnalysis.Eventual eventual = m.methodAnalysis.get().getEventual();
                 if (eventual != null && eventual.test() == Boolean.TRUE) {
                     FieldInfo fieldInfo = eventual.fields().stream().findFirst().orElseThrow();
-                    FieldReference fieldReference = new FieldReference(analyserContext, fieldInfo);
+                    FieldReference fieldReference = new FieldReferenceImpl(analyserContext, fieldInfo);
                     VariableExpression ve = new VariableExpression(fieldInfo.getIdentifier(), fieldReference);
                     This thisVar = new This(analyserContext, m.typeInfo);
                     Expression thisExpression = new VariableExpression(m.identifier, thisVar);
@@ -649,7 +651,7 @@ public class ShallowMethodAnalyser extends MethodAnalyserImpl {
         throw new UnsupportedOperationException();
     }
 
-    public class LimitedEvaluationContext implements EvaluationContext {
+    public class LimitedEvaluationContext extends AbstractEvaluationContextImpl {
 
         @Override
         public int getDepth() {

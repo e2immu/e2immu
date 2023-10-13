@@ -14,17 +14,11 @@
 
 package org.e2immu.analyser.analyser;
 
-import org.e2immu.analyser.analyser.delay.DelayFactory;
-import org.e2immu.analyser.analyser.delay.SimpleCause;
+
 import org.e2immu.analyser.analyser.impl.util.BreakDelayLevel;
-import org.e2immu.analyser.analysis.FieldAnalysis;
 import org.e2immu.analyser.analysis.MethodAnalysis;
 import org.e2immu.analyser.analysis.ParameterAnalysis;
 import org.e2immu.analyser.model.*;
-import org.e2immu.analyser.model.expression.Instance;
-import org.e2immu.analyser.model.expression.NullConstant;
-import org.e2immu.analyser.model.expression.UnknownExpression;
-import org.e2immu.analyser.model.expression.VariableExpression;
 import org.e2immu.analyser.model.variable.*;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.util.ListUtil;
@@ -34,7 +28,6 @@ import org.e2immu.support.Either;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static org.e2immu.analyser.analyser.Property.*;
@@ -44,120 +37,65 @@ import static org.e2immu.analyser.analyser.Property.*;
  */
 public interface EvaluationContext {
 
-    default int limitOnComplexity() {
-        return Expression.SOFT_LIMIT_ON_COMPLEXITY; // can be overridden for testing
-    }
+    int limitOnComplexity();
 
-    default int getIteration() {
-        return 0;
-    }
+    int getIteration();
 
     @NotNull
-    default TypeInfo getCurrentType() {
-        return null;
-    }
+    TypeInfo getCurrentType();
 
     // convenient in breakpoints while debugging
     @SuppressWarnings("unused")
-    default String safeMethodName() {
-        MethodAnalyser ma = getCurrentMethod();
-        return ma == null ? null : ma.getMethodInfo().name;
-    }
+    String safeMethodName();
 
-    default MethodAnalyser getCurrentMethod() {
-        return null;
-    }
+    MethodAnalyser getCurrentMethod();
 
-    default StatementAnalyser getCurrentStatement() {
-        return null;
-    }
+    StatementAnalyser getCurrentStatement();
 
-    default boolean haveCurrentStatement() {
-        return getCurrentStatement() != null;
-    }
+    boolean haveCurrentStatement();
 
-    default Location getLocation(Stage level) {
-        return null;
-    }
+    Location getLocation(Stage level);
 
-    default Location getEvaluationLocation(Identifier identifier) {
-        return null;
-    }
+    Location getEvaluationLocation(Identifier identifier);
 
-    default Primitives getPrimitives() {
-        return getAnalyserContext().getPrimitives();
-    }
+    Primitives getPrimitives();
 
     // on top of the normal condition and state in the current statement, we can add decisions from the ?: operator
-    default EvaluationContext child(Expression condition, Set<Variable> conditionVariables) {
-        throw new UnsupportedOperationException();
-    }
+    EvaluationContext child(Expression condition, Set<Variable> conditionVariables);
 
-    default EvaluationContext dropConditionManager() {
-        throw new UnsupportedOperationException();
-    }
+    EvaluationContext dropConditionManager();
 
-    default EvaluationContext child(Expression condition, Set<Variable> conditionVariables, boolean disableEvaluationOfMethodCallsUsingCompanionMethods) {
-        return child(condition, conditionVariables);
-    }
+    EvaluationContext child(Expression condition, Set<Variable> conditionVariables, boolean disableEvaluationOfMethodCallsUsingCompanionMethods);
 
-    default EvaluationContext childState(Expression state, Set<Variable> stateVariables) {
-        throw new UnsupportedOperationException();
-    }
+    EvaluationContext childState(Expression state, Set<Variable> stateVariables);
 
-    default EvaluationContext updateStatementTime(int statementTime) {
-        return this;
-    }
+    EvaluationContext updateStatementTime(int statementTime);
 
-    default int getCurrentStatementTime() {
-        return getInitialStatementTime();
-    }
+    int getCurrentStatementTime();
 
     /*
-     This default implementation is the correct one for basic tests and the companion analyser (we cannot use companions in the
+     This  implementation is the correct one for basic tests and the companion analyser (we cannot use companions in the
      companion analyser, that would be chicken-and-egg).
     */
-    default Expression currentValue(Variable variable) {
-        if (variable.parameterizedType().isPrimitiveExcludingVoid()) return null;
-        // a new one with empty state -- we cannot be bothered here.
-        return Instance.forTesting(variable.parameterizedType());
-    }
+    Expression currentValue(Variable variable);
 
-    default Expression currentValue(Variable variable,
-                                    Expression scopeValue,
-                                    Expression indexValue,
-                                    Identifier identifier,
-                                    ForwardEvaluationInfo forwardEvaluationInfo) {
-        throw new UnsupportedOperationException("In " + getClass());
-    }
+    Expression currentValue(Variable variable,
+                            Expression scopeValue,
+                            Expression indexValue,
+                            Identifier identifier,
+                            ForwardEvaluationInfo forwardEvaluationInfo);
 
-    default AnalyserContext getAnalyserContext() {
-        throw new UnsupportedOperationException();
-    }
+    AnalyserContext getAnalyserContext();
 
-    default Stream<ParameterAnalysis> getParameterAnalyses(MethodInfo methodInfo) {
-        MethodAnalyser methodAnalyser = getAnalyserContext().getMethodAnalyser(methodInfo);
-        return methodAnalyser != null ? methodAnalyser.getParameterAnalysers().stream()
-                .map(ParameterAnalyser::getParameterAnalysis)
-                : methodInfo.methodInspection.get(methodInfo.fullyQualifiedName)
-                .getParameters().stream().map(parameterInfo ->
-                        parameterInfo.parameterAnalysis.get(parameterInfo.fullyQualifiedName()));
-    }
+    Stream<ParameterAnalysis> getParameterAnalyses(MethodInfo methodInfo);
 
     // will have a more performant implementation in SAEvaluationContext,
     // because getVariableProperty is pretty expensive
-    default Properties getProperties(Expression value, List<Property> properties, boolean duringEvaluation,
-                                     boolean ignoreStateInConditionManager) {
-        Properties writable = Properties.writable();
-        for (Property property : properties) {
-            DV v = getProperty(value, property, duringEvaluation, ignoreStateInConditionManager);
-            writable.put(property, v);
-        }
-        return writable.immutable();
-    }
+    Properties getProperties(Expression value, List<Property> properties, boolean duringEvaluation,
+                             boolean ignoreStateInConditionManager);
 
     /**
-     * FIXME move to evaluationResult?
+     * IMPROVE move to evaluationResult?
      *
      * @param duringEvaluation true when this method is called during the EVAL process. It then reads variable's properties from the
      *                         INIT side, rather than current. Current may be MERGE, which is definitely wrong during the EVAL process.
@@ -167,33 +105,19 @@ public interface EvaluationContext {
     /*
      assumes that currentValue has been queried before!
      */
-    default DV getProperty(Variable variable, Property property) {
-        throw new UnsupportedOperationException();
-    }
+    DV getProperty(Variable variable, Property property);
 
-    default DV getPropertyFromPreviousOrInitial(Variable variable, Property property) {
-        throw new UnsupportedOperationException("Not implemented in " + getClass());
-    }
+    DV getPropertyFromPreviousOrInitial(Variable variable, Property property);
 
-    default ConditionManager getConditionManager() {
-        return null;
-    }
+    ConditionManager getConditionManager();
 
-    default DV isNotNull0(Expression value, boolean useEnnInsteadOfCnn, ForwardEvaluationInfo forwardEvaluationInfo) {
-        return DV.FALSE_DV;
-    }
+    DV isNotNull0(Expression value, boolean useEnnInsteadOfCnn, ForwardEvaluationInfo forwardEvaluationInfo);
 
-    default DV notNullAccordingToConditionManager(Variable variable) {
-        return DV.FALSE_DV;
-    }
+    DV notNullAccordingToConditionManager(Variable variable);
 
-    default DV notNullAccordingToConditionManager(Expression expression) {
-        return DV.FALSE_DV;
-    }
+    DV notNullAccordingToConditionManager(Expression expression);
 
-    default LinkedVariables linkedVariables(Variable variable) {
-        return LinkedVariables.EMPTY;
-    }
+    LinkedVariables linkedVariables(Variable variable);
 
     // do not change order: compatible with SingleDelay
     List<Property> VALUE_PROPERTIES = List.of(CONTAINER, IDENTITY, IGNORE_MODIFICATIONS, IMMUTABLE, INDEPENDENT, NOT_NULL_EXPRESSION);
@@ -205,249 +129,108 @@ public interface EvaluationContext {
             IDENTITY, IDENTITY.falseDv,
             IGNORE_MODIFICATIONS, IGNORE_MODIFICATIONS.falseDv));
 
-    default Properties getValueProperties(Expression value) {
-        return getValueProperties(null, value, false);
-    }
+    Properties getValueProperties(Expression value);
 
-    default Properties getValueProperties(ParameterizedType formalType, Expression value) {
-        return getValueProperties(formalType, value, false);
-    }
+    Properties getValueProperties(ParameterizedType formalType, Expression value);
 
     // NOTE: when the value is a VariableExpression pointing to a variable field, variable in loop or anything that
     // causes findForReading to generate a new VariableInfoImpl, this loop will cause 5x the same logic to be applied.
     // should be able to do better/faster.
-    default Properties getValueProperties(ParameterizedType formalType, Expression value, boolean ignoreConditionInConditionManager) {
-        if (value.isInstanceOf(NullConstant.class)) {
-            assert formalType != null : "Use other call!";
-            return valuePropertiesOfNullConstant(formalType);
-        }
-        if (value instanceof UnknownExpression ue && UnknownExpression.RETURN_VALUE.equals(ue.msg())) {
-            return valuePropertiesOfFormalType(getCurrentMethod().getMethodInspection().getReturnType());
-        }
-        return getProperties(value, VALUE_PROPERTIES, true, ignoreConditionInConditionManager);
-    }
+    Properties getValueProperties(ParameterizedType formalType, Expression value, boolean ignoreConditionInConditionManager);
 
-    default Properties valuePropertiesOfFormalType(ParameterizedType formalType) {
-        DV nne = AnalysisProvider.defaultNotNull(formalType).maxIgnoreDelay(NOT_NULL_EXPRESSION.falseDv);
-        return valuePropertiesOfFormalType(formalType, nne);
-    }
+    Properties valuePropertiesOfFormalType(ParameterizedType formalType);
 
-    default Properties valuePropertiesOfFormalType(ParameterizedType formalType, DV notNullExpression) {
-        assert notNullExpression.isDone();
-        AnalyserContext analyserContext = getAnalyserContext();
-        Properties properties = Properties.ofWritable(Map.of(
-                IMMUTABLE, analyserContext.typeImmutable(formalType).maxIgnoreDelay(IMMUTABLE.falseDv),
-                INDEPENDENT, analyserContext.typeIndependent(formalType).maxIgnoreDelay(INDEPENDENT.falseDv),
-                NOT_NULL_EXPRESSION, notNullExpression,
-                CONTAINER, analyserContext.typeContainer(formalType).maxIgnoreDelay(CONTAINER.falseDv),
-                IDENTITY, IDENTITY.falseDv,
-                IGNORE_MODIFICATIONS, IGNORE_MODIFICATIONS.falseDv));
-        assert properties.stream().noneMatch(e -> e.getValue().isDelayed());
-        return properties;
-    }
+    Properties valuePropertiesOfFormalType(ParameterizedType formalType, DV notNullExpression);
 
-    default Properties valuePropertiesOfNullConstant(ParameterizedType formalType) {
-        AnalyserContext analyserContext = getAnalyserContext();
-        return Properties.ofWritable(Map.of(
-                IMMUTABLE, analyserContext.typeImmutable(formalType),
-                INDEPENDENT, analyserContext.typeIndependent(formalType),
-                NOT_NULL_EXPRESSION, AnalysisProvider.defaultNotNull(formalType).maxIgnoreDelay(NOT_NULL_EXPRESSION.falseDv),
-                CONTAINER, analyserContext.typeContainer(formalType),
-                IDENTITY, IDENTITY.falseDv,
-                IGNORE_MODIFICATIONS, IGNORE_MODIFICATIONS.falseDv));
-    }
+    Properties valuePropertiesOfNullConstant(ParameterizedType formalType);
 
-    default boolean disableEvaluationOfMethodCallsUsingCompanionMethods() {
-        return getAnalyserContext().inAnnotatedAPIAnalysis();
-    }
+    boolean disableEvaluationOfMethodCallsUsingCompanionMethods();
 
-    default EvaluationContext getClosure() {
-        return null;
-    }
+    EvaluationContext getClosure();
 
-    default int getInitialStatementTime() {
-        return 0;
-    }
+    int getInitialStatementTime();
 
-    default int getFinalStatementTime() {
-        return 0;
-    }
+    int getFinalStatementTime();
 
-    default boolean allowedToIncrementStatementTime() {
-        return true;
-    }
+    boolean allowedToIncrementStatementTime();
 
-    default Expression replaceLocalVariables(Expression expression) {
-        return expression;
-    }
+    Expression replaceLocalVariables(Expression expression);
 
-    default Expression acceptAndTranslatePrecondition(Identifier identifier, Expression rest) {
-        return null;
-    }
+    Expression acceptAndTranslatePrecondition(Identifier identifier, Expression rest);
 
-    default boolean isPresent(Variable variable) {
-        return true;
-    }
+    boolean isPresent(Variable variable);
 
-    default List<PrimaryTypeAnalyser> getLocalPrimaryTypeAnalysers() {
-        return List.of();
-    }
+    List<PrimaryTypeAnalyser> getLocalPrimaryTypeAnalysers();
 
-    default Stream<Map.Entry<String, VariableInfoContainer>> localVariableStream() {
-        return Stream.empty();
-    }
+    Stream<Map.Entry<String, VariableInfoContainer>> localVariableStream();
 
-    default MethodAnalysis findMethodAnalysisOfLambda(MethodInfo methodInfo) {
-        MethodAnalysis inLocalPTAs = getLocalPrimaryTypeAnalysers().stream()
-                .filter(pta -> pta.containsPrimaryType(methodInfo.typeInfo))
-                .map(pta -> pta.getMethodAnalysis(methodInfo))
-                .findFirst().orElse(null);
-        if (inLocalPTAs != null) return inLocalPTAs;
-        return getAnalyserContext().getMethodAnalysis(methodInfo);
-    }
+    MethodAnalysis findMethodAnalysisOfLambda(MethodInfo methodInfo);
 
-    default This currentThis() {
-        return new This(getAnalyserContext(), getCurrentType());
-    }
+    This currentThis();
 
-    default DV cannotBeModified(Expression value) {
-        return DV.FALSE_DV;
-    }
+    DV cannotBeModified(Expression value);
 
-    default MethodInfo concreteMethod(Variable variable, MethodInfo methodInfo) {
-        return null;
-    }
+    MethodInfo concreteMethod(Variable variable, MethodInfo methodInfo);
 
-    default String statementIndex() {
-        return "-";
-    }
+    String statementIndex();
 
-    default boolean firstAssignmentOfFieldInConstructor(Variable variable) {
-        MethodAnalyser cm = getCurrentMethod();
-        if (cm == null) return false;
-        if (!cm.getMethodInfo().isConstructor) return false;
-        if (!(variable instanceof FieldReference)) return false;
-        return !hasBeenAssigned(variable);
-    }
+    boolean firstAssignmentOfFieldInConstructor(Variable variable);
 
-    default boolean hasBeenAssigned(Variable variable) {
-        return false;
-    }
+    boolean hasBeenAssigned(Variable variable);
 
     /*
     should we compute context immutable? not if we're a variable of the type itself
      */
-    default IsMyself isMyself(Variable variable) {
-        if (variable instanceof This) return IsMyself.YES;
-        if (variable instanceof FieldReference fr && fr.isStatic) return IsMyself.NO;
-        return isMyself(variable.parameterizedType());
-    }
+    IsMyself isMyself(Variable variable);
 
-    default IsMyself isMyselfExcludeThis(Variable variable) {
-        if (variable instanceof This) return IsMyself.NO;
-        if (variable instanceof FieldReference fr && fr.isStatic) return IsMyself.NO;
-        return isMyself(variable.parameterizedType());
-    }
+    IsMyself isMyselfExcludeThis(Variable variable);
 
-    default IsMyself isMyself(ParameterizedType type) {
-        return getCurrentType().isMyself(type, getAnalyserContext());
-    }
+    IsMyself isMyself(ParameterizedType type);
 
-    default Properties ensureMyselfValueProperties(Properties existing) {
-        Properties p = Properties.of(Map.of(
-                IMMUTABLE, IMMUTABLE.falseDv,
-                INDEPENDENT, INDEPENDENT.falseDv,
-                CONTAINER, CONTAINER.falseDv,
-                IDENTITY, IDENTITY.falseDv,
-                IGNORE_MODIFICATIONS, IGNORE_MODIFICATIONS.falseDv,
-                NOT_NULL_EXPRESSION, NOT_NULL_EXPRESSION.falseDv));
-        // combine overwrites
-        return existing.combine(p);
-    }
+    Properties ensureMyselfValueProperties(Properties existing);
 
-    default boolean inConstruction() {
-        MethodAnalyser ma = getCurrentMethod();
-        return ma != null && ma.getMethodInfo().inConstruction();
-    }
+    boolean inConstruction();
 
     /*
      Store_0 shows an example of a stack overflow going from the ConditionManager.absoluteState via And, Negation,
      Equals, EvaluationContext.isNotNull0, notNullAccordingToConditionManager, findIndividualNullInState and back to
      absoluteState... This method, only applied in Negation at the moment, prevents this infinite loop from occurring.
      */
-    default boolean preventAbsoluteStateComputation() {
-        return false;
-    }
+    boolean preventAbsoluteStateComputation();
 
-    default EvaluationContext copyToPreventAbsoluteStateComputation() {
-        return this;
-    }
+    EvaluationContext copyToPreventAbsoluteStateComputation();
 
     /**
      * @param variable   the variable in the nested type
      * @param nestedType the nested type, can be null in case of method references
      * @return true when we want to transfer properties from the nested type to the current type
      */
-    default boolean acceptForVariableAccessReport(Variable variable, TypeInfo nestedType) {
-        if (variable instanceof FieldReference fr) {
-            return fr.fieldInfo.owner != nestedType
-                    && (nestedType == null || fr.fieldInfo.owner.primaryType().equals(nestedType.primaryType()))
-                    && fr.scopeVariable != null
-                    && acceptForVariableAccessReport(fr.scopeVariable, nestedType);
-        }
-        return isPresent(variable);
-    }
+    boolean acceptForVariableAccessReport(Variable variable, TypeInfo nestedType);
 
-    default DependentVariable searchInEquivalenceGroupForLatestAssignment(DependentVariable variable,
-                                                                          Expression arrayValue,
-                                                                          Expression indexValue,
-                                                                          ForwardEvaluationInfo forwardEvaluationInfo) {
-        return variable;
-    }
+    DependentVariable searchInEquivalenceGroupForLatestAssignment(DependentVariable variable,
+                                                                  Expression arrayValue,
+                                                                  Expression indexValue,
+                                                                  ForwardEvaluationInfo forwardEvaluationInfo);
 
     // problem: definedInBlock() is only non-null after the first evaluation
-    default boolean isPatternVariableCreatedAt(Variable v, String index) {
-        return v.variableNature() instanceof VariableNature.Pattern pvn && index.equals(pvn.definedInBlock());
-    }
-
+    boolean isPatternVariableCreatedAt(Variable v, String index);
 
     Either<CausesOfDelay, Set<Variable>> NO_LOOP_SOURCE_VARIABLES = Either.right(Set.of());
 
-    default Either<CausesOfDelay, Set<Variable>> loopSourceVariables(Variable variable) {
-        return NO_LOOP_SOURCE_VARIABLES;
-    }
+    Either<CausesOfDelay, Set<Variable>> loopSourceVariables(Variable variable);
 
-    default Stream<Map.Entry<String, VariableInfoContainer>> variablesFromClosure() {
-        return Stream.of();
-    }
+    Stream<Map.Entry<String, VariableInfoContainer>> variablesFromClosure();
 
-    default Properties getExternalProperties(Expression valueToWrite) {
-        return Properties.EMPTY;
-    }
+    Properties getExternalProperties(Expression valueToWrite);
 
-    default BreakDelayLevel breakDelayLevel() {
-        return BreakDelayLevel.NONE;
-    }
+    BreakDelayLevel breakDelayLevel();
 
     /*
     modifications on immutable object...
      */
-    default boolean inConstructionOrInStaticWithRespectTo(TypeInfo typeInfo) {
-        if (inConstruction() || typeInfo == null) return true;
-        MethodAnalyser methodAnalyser = getCurrentMethod();
-        if (methodAnalyser == null) return false; //?
-        /*
-         UpgradableBooleanMap: static factory methods: want to return true
-         ExternalImmutable_0: static, but not part of construction
-         */
-        if (methodAnalyser.getMethodInfo().methodInspection.get().isFactoryMethod()) return true;
-        return typeInfo.primaryType() == getCurrentType().primaryType()
-                && getCurrentType().recursivelyInConstructionOrStaticWithRespectTo(getAnalyserContext(), typeInfo);
-    }
+    boolean inConstructionOrInStaticWithRespectTo(TypeInfo typeInfo);
 
-    default int initialModificationTimeOrZero(Variable variable) {
-        return 0;
-    }
+    int initialModificationTimeOrZero(Variable variable);
 
     /*
     if the formal type is T (hidden content), then the expression is returned is List.of(expression).
@@ -473,95 +256,28 @@ public interface EvaluationContext {
     HiddenContent NO_HIDDEN_CONTENT = new HiddenContent(List.of(), CausesOfDelay.EMPTY);
 
 
-    default HiddenContent extractHiddenContentTypes(ParameterizedType concreteType, SetOfTypes hiddenContentTypes) {
-        if (hiddenContentTypes == null) return new HiddenContent(List.of(),
-                DelayFactory.createDelay(new SimpleCause(getLocation(Stage.EVALUATION), CauseOfDelay.Cause.HIDDEN_CONTENT)));
-        if (hiddenContentTypes.contains(concreteType)) {
-            return new HiddenContent(List.of(concreteType), CausesOfDelay.EMPTY);
-        }
-        TypeInfo bestType = concreteType.bestTypeInfo(getAnalyserContext());
-        if (bestType == null) return NO_HIDDEN_CONTENT; // method type parameter, but not involved in fields of type
-        DV immutable = getAnalyserContext().typeImmutable(concreteType);
-        if (immutable.equals(MultiLevel.INDEPENDENT_DV)) return NO_HIDDEN_CONTENT;
-        if (immutable.isDelayed()) {
-            new HiddenContent(List.of(),
-                    DelayFactory.createDelay(new SimpleCause(bestType.newLocation(), CauseOfDelay.Cause.HIDDEN_CONTENT))
-                            .merge(immutable.causesOfDelay()));
-        }
-
-        // hidden content is more complex
-        TypeInspection bestInspection = getAnalyserContext().getTypeInspection(bestType);
-        if (!bestInspection.typeParameters().isEmpty()) {
-            return concreteType.parameters.stream()
-                    .reduce(NO_HIDDEN_CONTENT, (hc, pt) -> extractHiddenContentTypes(pt, hiddenContentTypes),
-                            HiddenContent::merge);
-        }
-        return NO_HIDDEN_CONTENT;
-    }
+    HiddenContent extractHiddenContentTypes(ParameterizedType concreteType, SetOfTypes hiddenContentTypes);
 
     // meant for computing method analyser, computing field analyser
 
-    default boolean hasState(Expression expression) {
-        if (expression.cannotHaveState()) return false;
-        VariableExpression ve;
-        if ((ve = expression.asInstanceOf(VariableExpression.class)) != null) {
-            if (ve.variable() instanceof FieldReference fr) {
-                FieldAnalysis fa = getAnalyserContext().getFieldAnalysis(fr.fieldInfo);
-                return fa.getValue() != null &&
-                        fa.getValue().hasState();
-            }
-            return false; // no way we have this info here
-        }
-        return expression.hasState();
-    }
+    boolean hasState(Expression expression);
 
-    default Expression state(Expression expression) {
-        VariableExpression ve;
-        if ((ve = expression.asInstanceOf(VariableExpression.class)) != null) {
-            if (ve.variable() instanceof FieldReference fr) {
-                FieldAnalysis fa = getAnalyserContext().getFieldAnalysis(fr.fieldInfo);
-                return fa.getValue().state();
-            }
-            throw new UnsupportedOperationException();
-        }
-        return expression.state();
-    }
+    Expression state(Expression expression);
 
-    default Expression getVariableValue(Variable myself,
-                                        Expression scopeValue,
-                                        Expression indexValue,
-                                        Identifier identifier,
-                                        VariableInfo variableInfo,
-                                        ForwardEvaluationInfo forwardEvaluationInfo) {
-        return variableInfo.getValue();
-    }
+    Expression getVariableValue(Variable myself,
+                                Expression scopeValue,
+                                Expression indexValue,
+                                Identifier identifier,
+                                VariableInfo variableInfo,
+                                ForwardEvaluationInfo forwardEvaluationInfo);
 
-    static Map<Property, DV> delayedValueProperties(CausesOfDelay causes) {
-        return VALUE_PROPERTIES.stream().collect(Collectors.toUnmodifiableMap(p -> p, p -> causes));
-    }
-
-    default boolean delayStatementBecauseOfECI() {
-        return false;
-    }
+    boolean delayStatementBecauseOfECI();
 
     int getDepth();
 
-    default Properties defaultValueProperties(ParameterizedType parameterizedType, DV valueForNotNullExpression) {
-        IsMyself isMyself = isMyself(parameterizedType);
-        return EvaluationContext.VALUE_PROPERTIES.stream()
-                .collect(Properties.collect(p -> p == Property.NOT_NULL_EXPRESSION ? valueForNotNullExpression
-                        : isMyself.toFalse(p) ? p.falseDv
-                        : getAnalyserContext().defaultValueProperty(p, parameterizedType), false));
-    }
+    Properties defaultValueProperties(ParameterizedType parameterizedType, DV valueForNotNullExpression);
 
-    default Properties defaultValueProperties(ParameterizedType parameterizedType) {
-        return defaultValueProperties(parameterizedType, false);
-    }
+    Properties defaultValueProperties(ParameterizedType parameterizedType);
 
-    default Properties defaultValueProperties(ParameterizedType parameterizedType, boolean writable) {
-        IsMyself isMyself = isMyself(parameterizedType);
-        return EvaluationContext.VALUE_PROPERTIES.stream()
-                .collect(Properties.collect(p -> isMyself.toFalse(p) ? p.falseDv
-                        : getAnalyserContext().defaultValueProperty(p, parameterizedType), writable));
-    }
+    Properties defaultValueProperties(ParameterizedType parameterizedType, boolean writable);
 }

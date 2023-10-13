@@ -510,7 +510,7 @@ public record EvaluationResultImpl(EvaluationContext evaluationContext,
             return cmDelays.containsCauseOfDelay(CauseOfDelay.Cause.EXTERNAL_NOT_NULL, c -> c instanceof VariableCause vc &&
                     vc.variable().equals(sourceOfLoop) ||
                     sourceOfLoop instanceof FieldReference fr &&
-                            c instanceof SimpleCause sc && sc.variableIsField(fr.fieldInfo) ||
+                            c instanceof SimpleCause sc && sc.variableIsField(fr.fieldInfo()) ||
                     sourceOfLoop instanceof ParameterInfo pi &&
                             c instanceof SimpleCause scPi && scPi.location().getInfo().equals(pi));
         }
@@ -552,7 +552,7 @@ public record EvaluationResultImpl(EvaluationContext evaluationContext,
 
             // we do this because this. is often implicit (all other scopes will be marked read explicitly!)
             // when explicit, there may be two MarkRead modifications, which will eventually be merged
-            if (variable instanceof FieldReference fr && fr.scope instanceof VariableExpression ve) {
+            if (variable instanceof FieldReference fr && fr.scope() instanceof VariableExpression ve) {
                 markRead(ve.variable());
             }
         }
@@ -661,7 +661,7 @@ public record EvaluationResultImpl(EvaluationContext evaluationContext,
         public void markContextModified(Variable variable, DV modified) {
             assert evaluationContext != null;
             DV ignoreContentModifications = variable instanceof FieldReference fr ? evaluationContext.getAnalyserContext()
-                    .getFieldAnalysis(fr.fieldInfo).getProperty(Property.EXTERNAL_IGNORE_MODIFICATIONS)
+                    .getFieldAnalysis(fr.fieldInfo()).getProperty(Property.EXTERNAL_IGNORE_MODIFICATIONS)
                     : Property.IGNORE_MODIFICATIONS.falseDv;
             if (!ignoreContentModifications.equals(MultiLevel.IGNORE_MODS_DV)) {
                 ChangeData cd = valueChanges.get(variable);
@@ -673,9 +673,9 @@ public record EvaluationResultImpl(EvaluationContext evaluationContext,
                         setProperty(variable, Property.CONTEXT_MODIFIED, modified, incrementModificationTime);
                     }
                 }
-                if (variable instanceof FieldReference fr && fr.scopeVariable != null) {
-                    markRead(fr.scopeVariable);
-                    markContextModified(fr.scopeVariable, modified);
+                if (variable instanceof FieldReference fr && fr.scopeVariable() != null) {
+                    markRead(fr.scopeVariable());
+                    markContextModified(fr.scopeVariable(), modified);
                 } else if (variable instanceof DependentVariable dv && dv.arrayVariable() != null) {
                     markRead(dv.arrayVariable());
                     markContextModified(dv.arrayVariable(), modified);

@@ -283,7 +283,7 @@ public class Test_ParameterizedType extends CommonTestRunner {
                         assertEquals(expected, d.currentValue().toString());
                     }
                 }
-                if (d.variable() instanceof FieldReference fr && "ARRAY_BRACKET".equals(fr.fieldInfo.name)) {
+                if (d.variable() instanceof FieldReference fr && "ARRAY_BRACKET".equals(fr.fieldInfo().name)) {
                     assertNotEquals("0.0.05", d.statementId());
                     if (d.statementId().compareTo("0.0.11") < 0 && d.statementId().compareTo("0.0.") > 0) {
                         String expected = d.iteration() == 0 ? "<f:ARRAY_BRACKET>" : "'['";

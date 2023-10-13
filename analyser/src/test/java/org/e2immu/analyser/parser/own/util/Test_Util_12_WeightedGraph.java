@@ -48,7 +48,7 @@ public class Test_Util_12_WeightedGraph extends CommonTestRunner {
     public void test() throws IOException {
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("compareTo".equals(d.methodInfo().name) && "VariableCause".equals(d.methodInfo().typeInfo.simpleName)) {
-                if (d.variable() instanceof FieldReference fr && "cause".equals(fr.fieldInfo.name)) {
+                if (d.variable() instanceof FieldReference fr && "cause".equals(fr.fieldInfo().name)) {
                     if (fr.scopeIsThis()) {
                         // this.cause
                         String expected = d.iteration() == 0 ? "<f:cause>" : "instance type Cause";
@@ -72,7 +72,7 @@ public class Test_Util_12_WeightedGraph extends CommonTestRunner {
                                     it(2, 21, "o:-1,scope-vc:0.cause:-1,scope-vc:0.location:-1,scope-vc:0.variable:-1,scope-vc:0:-1,this.location:-1,this.variable:-1"),
                                     it(22, ""));
                         }
-                    } else if ("vc".equals(fr.scope.toString())) {
+                    } else if ("vc".equals(fr.scope().toString())) {
                         // vc.cause
                         String expected = d.iteration() == 0 ? "<f:vc.cause>" : "instance type Cause";
                         assertEquals(expected, d.currentValue().toString());
@@ -83,7 +83,7 @@ public class Test_Util_12_WeightedGraph extends CommonTestRunner {
                         if ("0".equals(d.statementId()) || "1".equals(d.statementId())) {
                             fail();
                         }
-                    } else if ("scope-vc:0".equals(fr.scope.toString())) {
+                    } else if ("scope-vc:0".equals(fr.scope().toString())) {
                         if ("0".equals(d.statementId())) {
                             assertDv(d, 2, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.CONTEXT_NOT_NULL);
                             assertLinked(d,
@@ -99,7 +99,7 @@ public class Test_Util_12_WeightedGraph extends CommonTestRunner {
                                     it(2, 21, "o:-1,scope-vc:0.location:-1,scope-vc:0.variable:-1,scope-vc:0:-1,this.cause:-1,this.location:-1,this.variable:-1"),
                                     it(22, "o:2,scope-vc:0:2"));
                         }
-                    } else fail(fr.scope.toString());
+                    } else fail(fr.scope().toString());
                 }
                 if (d.variable() instanceof ReturnVariable) {
                     if ("0.0.1".equals(d.statementId())) {

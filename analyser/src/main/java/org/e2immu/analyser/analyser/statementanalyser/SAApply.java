@@ -637,7 +637,7 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
 
                         // replace the DVE with a DelayedWrappedExpression referring to self
                         Expression instance = Instance.forSelfAssignmentBreakInit(Identifier.generate("dwe break self assignment"),
-                                target.parameterizedType, combinedOrPrimitive);
+                                target.parameterizedType(), combinedOrPrimitive);
                         LOGGER.debug("Return wrapped expression to break value delay on {} in {}", target, index());
                         CausesOfDelay causes = removeBreakButKeepDelayed(valueToWritePossiblyDelayed, breaks);
                         vic.createAndWriteDelayedWrappedExpressionForEval(Identifier.generate("dwe break init delay"),
@@ -684,7 +684,7 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
         return valueToWritePossiblyDelayed.causesStream()
                 .filter(c -> c instanceof VariableCause vc
                         && vc.cause() == CauseOfDelay.Cause.BREAK_INIT_DELAY
-                        && vc.variable() instanceof FieldReference fr && fr.fieldInfo == target.fieldInfo)
+                        && vc.variable() instanceof FieldReference fr && fr.fieldInfo() == target.fieldInfo())
                 .collect(Collectors.toUnmodifiableSet());
     }
 
@@ -715,7 +715,8 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
     private boolean variableUnknown(Variable variable) {
         if (!statementAnalysis.variableIsSet(variable.fullyQualifiedName())) return true;
         IsVariableExpression ive;
-        if (variable instanceof FieldReference fr && ((ive = fr.scope.asInstanceOf(IsVariableExpression.class)) != null)) {
+        if (variable instanceof FieldReference fr
+                && ((ive = fr.scope().asInstanceOf(IsVariableExpression.class)) != null)) {
             return variableUnknown(ive.variable());
         }
         return false;

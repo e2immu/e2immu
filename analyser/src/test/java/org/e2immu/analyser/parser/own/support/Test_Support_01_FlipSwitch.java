@@ -50,7 +50,7 @@ public class Test_Support_01_FlipSwitch extends CommonTestRunner {
 
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("set".equals(d.methodInfo().name)) {
-                if (d.variable() instanceof FieldReference fr && "isSet".equals(fr.fieldInfo.name)) {
+                if (d.variable() instanceof FieldReference fr && "isSet".equals(fr.fieldInfo().name)) {
                     if ("0.0.0".equals(d.statementId())) {
                         assertDv(d, 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.EXTERNAL_NOT_NULL);
                     }

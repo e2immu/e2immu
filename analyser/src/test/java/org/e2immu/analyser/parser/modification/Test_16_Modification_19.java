@@ -71,7 +71,7 @@ public class Test_16_Modification_19 extends CommonTestRunner {
                         assertDv(d, 2, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
                     }
                 }
-                if (d.variable() instanceof FieldReference fr && "s2".equals(fr.fieldInfo.name)) {
+                if (d.variable() instanceof FieldReference fr && "s2".equals(fr.fieldInfo().name)) {
                     if ("0".equals(d.statementId())) {
                         String link = d.iteration() < 2 ? "c:-1,this:-1" : "c:2,this:3";
                         assertEquals(link, d.variableInfo().getLinkedVariables().toString());
@@ -93,8 +93,8 @@ public class Test_16_Modification_19 extends CommonTestRunner {
                         assertDv(d, 2, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
                     }
                 }
-                if (d.variable() instanceof FieldReference fr && "c".equals(fr.scope.toString())) {
-                    assertEquals("set", fr.fieldInfo.name);
+                if (d.variable() instanceof FieldReference fr && "c".equals(fr.scope().toString())) {
+                    assertEquals("set", fr.fieldInfo().name);
                     if ("2".equals(d.statementId())) {
                         String expectValue = switch (d.iteration()) {
                             case 0 -> "<f:c.set>";
@@ -107,8 +107,8 @@ public class Test_16_Modification_19 extends CommonTestRunner {
                                 : "c:2,this.s2:2,this:3";
                         assertEquals(links, d.variableInfo().getLinkedVariables().toString());
 
-                        assertNotNull(fr.scopeVariable);
-                        assertEquals("c", fr.scopeVariable.toString());
+                        assertNotNull(fr.scopeVariable());
+                        assertEquals("c", fr.scopeVariable().toString());
 
                         String cmDelay = "cm@Parameter_c;cm@Parameter_d;cm@Parameter_setC;initial:this.s2@Method_example1_0-C;mom@Parameter_setC";
                         assertDv(d, cmDelay, 1, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
@@ -121,7 +121,7 @@ public class Test_16_Modification_19 extends CommonTestRunner {
                 }
             }
             if ("size".equals(d.methodInfo().name) && "C1".equals(d.methodInfo().typeInfo.simpleName)) {
-                if (d.variable() instanceof FieldReference fr && "set".equals(fr.fieldInfo.name)) {
+                if (d.variable() instanceof FieldReference fr && "set".equals(fr.fieldInfo().name)) {
                     String expectValue = d.iteration() == 0 ? "<f:set>" : "nullable instance type Set<String>";
                     assertEquals(expectValue, d.currentValue().toString());
 

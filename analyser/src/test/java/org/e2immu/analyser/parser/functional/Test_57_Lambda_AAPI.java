@@ -224,7 +224,7 @@ public class Test_57_Lambda_AAPI extends CommonTestRunner {
                     assertEquals(MultiLevel.NOT_INVOLVED_DV, enn1);
                     assertDv(d, MultiLevel.NOT_INVOLVED_DV, Property.EXTERNAL_NOT_NULL);
                 }
-                if (d.variable() instanceof FieldReference fr && "field".equals(fr.fieldInfo.name)) {
+                if (d.variable() instanceof FieldReference fr && "field".equals(fr.fieldInfo().name)) {
                     if ("0".equals(d.statementId())) {
                         VariableInfo vi1 = d.variableInfoContainer().getPreviousOrInitial();
                         assertTrue(d.variableInfoContainer().isInitial());
@@ -253,7 +253,7 @@ public class Test_57_Lambda_AAPI extends CommonTestRunner {
             }
             if ("accept".equals(d.methodInfo().name)) {
                 assertEquals("$1", d.methodInfo().typeInfo.simpleName);
-                if (d.variable() instanceof FieldReference fr && "field".equals(fr.fieldInfo.name)) {
+                if (d.variable() instanceof FieldReference fr && "field".equals(fr.fieldInfo().name)) {
                     if ("0.0.0".equals(d.statementId())) {
                         // the recursive call
                         VariableInfo vi1 = d.variableInfoContainer().getPreviousOrInitial();
@@ -375,7 +375,7 @@ public class Test_57_Lambda_AAPI extends CommonTestRunner {
                         assertDv(d, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.CONTEXT_NOT_NULL);
                     }
                 }
-                if (d.variable() instanceof FieldReference fr && "field".equals(fr.fieldInfo.name)) {
+                if (d.variable() instanceof FieldReference fr && "field".equals(fr.fieldInfo().name)) {
                     if ("0.0.0".equals(d.statementId())) {
                         assertLinked(d, it0("NOT_YET_SET"), it(1, "k:0"));
                         assertEquals(d.iteration() > 0, d.variableInfoContainer().hasEvaluation());

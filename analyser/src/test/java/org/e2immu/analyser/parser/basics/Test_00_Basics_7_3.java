@@ -52,7 +52,7 @@ public class Test_00_Basics_7_3 extends CommonTestRunner {
                 }
                 // "1" is the end of the synchronized block; note the special code in ConditionAndVariableInfo that
                 // avoids making "1.0.3" the statement with the last value for i
-                if (d.variable() instanceof FieldReference fr && "i".equals(fr.fieldInfo.name)) {
+                if (d.variable() instanceof FieldReference fr && "i".equals(fr.fieldInfo().name)) {
                     if ("1.0.2".equals(d.statementId()) || "1.0.3".equals(d.statementId())) {
                         String expect = switch (d.iteration()) {
                             case 0 -> "1+<f:i>";

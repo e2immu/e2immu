@@ -68,7 +68,7 @@ public class Test_Output_02_OutputBuilder extends CommonTestRunner {
                         assertDv(d, 2, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     }
                 }
-                if (d.variable() instanceof FieldReference fr && "NONE".equals(fr.fieldInfo.name)) {
+                if (d.variable() instanceof FieldReference fr && "NONE".equals(fr.fieldInfo().name)) {
                     if ("0".equals(d.statementId())) {
                         assertFalse(d.variableInfoContainer().hasEvaluation());
 

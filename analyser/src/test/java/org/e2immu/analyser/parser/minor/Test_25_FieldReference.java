@@ -53,7 +53,7 @@ public class Test_25_FieldReference extends CommonTestRunner {
                 if ("cd".equals(d.variableName())) {
                     assertTrue(d.statementId().startsWith("0.0"), "Seen in " + d.statementId());
                 }
-                if (d.variable() instanceof FieldReference fr && "changeData".equals(fr.fieldInfo.name)) {
+                if (d.variable() instanceof FieldReference fr && "changeData".equals(fr.fieldInfo().name)) {
                     if ("0.0.0".equals(d.statementId())) {
                         assertDv(d, MultiLevel.NOT_CONTAINER_DV, Property.CONTEXT_CONTAINER);
                         assertCurrentValue(d, 1, "nullable instance type Map<String,ChangeData>");
@@ -124,9 +124,9 @@ public class Test_25_FieldReference extends CommonTestRunner {
     public void test2() throws IOException {
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("method".equals(d.methodInfo().name)) {
-                if (d.variable() instanceof FieldReference fr && "i".equals(fr.fieldInfo.name)) {
+                if (d.variable() instanceof FieldReference fr && "i".equals(fr.fieldInfo().name)) {
                     Set<String> scopes = Set.of("xx", "xx$0", "new X(xx.i)");
-                    assertTrue(scopes.contains(fr.scope.toString()));
+                    assertTrue(scopes.contains(fr.scope().toString()));
                 }
             }
         };
@@ -141,19 +141,19 @@ public class Test_25_FieldReference extends CommonTestRunner {
     public void test3() throws IOException {
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("getProperty".equals(d.methodInfo().name)) {
-                if (d.variable() instanceof FieldReference fr && "setP".equals(fr.fieldInfo.name)) {
+                if (d.variable() instanceof FieldReference fr && "setP".equals(fr.fieldInfo().name)) {
                     assertDv(d, 2, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                 }
             }
             if ("copy".equals(d.methodInfo().name)) {
-                if (d.variable() instanceof FieldReference fr && "setP".equals(fr.fieldInfo.name)) {
+                if (d.variable() instanceof FieldReference fr && "setP".equals(fr.fieldInfo().name)) {
                     if ("0".equals(d.statementId()) || "1".equals(d.statementId()) || "2".equals(d.statementId())) {
                         assertDv(d, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
                     }
                 }
             }
             if ("setP".equals(d.methodInfo().name)) {
-                if (d.variable() instanceof FieldReference fr && "setP".equals(fr.fieldInfo.name)) {
+                if (d.variable() instanceof FieldReference fr && "setP".equals(fr.fieldInfo().name)) {
                     assertDv(d, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                 }
             }

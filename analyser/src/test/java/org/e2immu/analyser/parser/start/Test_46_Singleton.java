@@ -51,7 +51,7 @@ public class Test_46_Singleton extends CommonTestRunner {
     public void test_1() throws IOException {
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("Singleton_1".equals(d.methodInfo().name)) {
-                if (d.variable() instanceof FieldReference fr && "created".equals(fr.fieldInfo.name)) {
+                if (d.variable() instanceof FieldReference fr && "created".equals(fr.fieldInfo().name)) {
                     if ("0".equals(d.statementId())) {
                         assertCurrentValue(d, 2, "instance type boolean");
                     }
@@ -168,7 +168,7 @@ public class Test_46_Singleton extends CommonTestRunner {
     public void test_7() throws IOException {
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("Singleton_7".equals(d.methodInfo().name)) {
-                if (d.variable() instanceof FieldReference fr && "created".equals(fr.fieldInfo.name)) {
+                if (d.variable() instanceof FieldReference fr && "created".equals(fr.fieldInfo().name)) {
                     if ("0".equals(d.statementId())) {
                         assertCurrentValue(d, 2, "instance type boolean");
                     }

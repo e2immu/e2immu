@@ -22,6 +22,7 @@ import org.e2immu.analyser.model.expression.ArrayLength;
 import org.e2immu.analyser.model.expression.TypeExpression;
 import org.e2immu.analyser.model.expression.VariableExpression;
 import org.e2immu.analyser.model.variable.FieldReference;
+import org.e2immu.analyser.model.variable.impl.FieldReferenceImpl;
 import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.resolver.impl.ResolverImpl;
 
@@ -84,7 +85,7 @@ public class ParseFieldAccessExpr {
         if (oFieldInfo.isPresent()) {
             TypeInfo enclosingType = expressionContext.enclosingType();
             expressionContext.fieldAccessStore().add(oFieldInfo.get(), enclosingType);
-            return new VariableExpression(identifier, new FieldReference(expressionContext.typeContext(),
+            return new VariableExpression(identifier, new FieldReferenceImpl(expressionContext.typeContext(),
                     oFieldInfo.get(), object, enclosingType));
         }
         TypeInspection objectTypeInspection = expressionContext.typeContext().getTypeInspection(typeInfo);

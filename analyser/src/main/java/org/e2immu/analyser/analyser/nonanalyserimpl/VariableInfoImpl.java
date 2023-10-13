@@ -94,7 +94,7 @@ public class VariableInfoImpl implements VariableInfo {
         this.readAtStatementTimes = Set.of();
         CausesOfDelay causesOfDelay = initialValue(location, variable);
         int statementTime;
-        if (variable instanceof FieldReference fr && fr.scope instanceof DelayedVariableExpression dve) {
+        if (variable instanceof FieldReference fr && fr.scope() instanceof DelayedVariableExpression dve) {
             statementTime = dve.statementTime;
         } else {
             statementTime = IGNORE_STATEMENT_TIME;
@@ -289,7 +289,7 @@ public class VariableInfoImpl implements VariableInfo {
         }
         // FIXME this second clause was added to prevent Test_Output_03_Formatter from writing a delayed after a real value...
         // this is probably not the solution?
-        if (value.isDelayed() || variable instanceof FieldReference fr && fr.scope.isDelayed()) {
+        if (value.isDelayed() || variable instanceof FieldReference fr && fr.scope().isDelayed()) {
             try {
                 this.value.setVariable(value);
                 return false;

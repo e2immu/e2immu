@@ -193,7 +193,7 @@ public record AnnotationExpressionImpl(TypeInfo typeInfo,
         if ((ve = expression.asInstanceOf(VariableExpression.class)) != null
                 && ve.variable() instanceof FieldReference fieldReference) {
             if (returnType.typeInfo.typeInspection.get().typeNature() == TypeNature.ENUM) {
-                return enumField(returnType, fieldReference.fieldInfo.owner, fieldReference.fieldInfo.name);
+                return enumField(returnType, fieldReference.fieldInfo().owner, fieldReference.fieldInfo().name);
             }
             return inspectFieldValue(returnType, fieldReference);
         }
@@ -209,7 +209,7 @@ public record AnnotationExpressionImpl(TypeInfo typeInfo,
     }
 
     private static Object inspectFieldValue(ParameterizedType parameterizedType, FieldReference fieldReference) {
-        Expression initialiser = fieldReference.fieldInfo.fieldInspection.get().getFieldInitialiser().initialiser();
+        Expression initialiser = fieldReference.fieldInfo().fieldInspection.get().getFieldInitialiser().initialiser();
         return returnValueOfNonArrayExpression(parameterizedType, initialiser);
     }
 

@@ -114,7 +114,7 @@ public class Test_58_GuideSimplified extends CommonTestRunner {
 
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("position".equals(d.methodInfo().name)) {
-                if (d.variable() instanceof FieldReference fr && "position".equals(fr.fieldInfo.name)) {
+                if (d.variable() instanceof FieldReference fr && "position".equals(fr.fieldInfo().name)) {
                     String expectValue = d.iteration() <= 1 ? "<f:position>" : "instance type Position";
                     assertEquals(expectValue, d.currentValue().toString());
                     assertEquals("", d.variableInfo().getLinkedVariables().toString());

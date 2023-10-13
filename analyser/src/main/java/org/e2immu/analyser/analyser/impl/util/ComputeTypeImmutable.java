@@ -25,6 +25,7 @@ import org.e2immu.analyser.model.expression.ConstructorCall;
 import org.e2immu.analyser.model.expression.EmptyExpression;
 import org.e2immu.analyser.model.expression.Lambda;
 import org.e2immu.analyser.model.variable.FieldReference;
+import org.e2immu.analyser.model.variable.impl.FieldReferenceImpl;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -377,7 +378,7 @@ public record ComputeTypeImmutable(AnalyserContext analyserContext,
                 continue;
             }
 
-            FieldReference thisFieldInfo = new FieldReference(analyserContext, fieldInfo);
+            FieldReference thisFieldInfo = new FieldReferenceImpl(analyserContext, fieldInfo);
 
             // RULE 1: ALL FIELDS MUST BE NOT MODIFIED
 
@@ -515,7 +516,8 @@ public record ComputeTypeImmutable(AnalyserContext analyserContext,
             }
             List<FieldReference> nonFinalFields = myFieldAnalysers.stream()
                     .filter(fa -> DV.FALSE_DV.equals(fa.getFieldAnalysis().getProperty(Property.FINAL)))
-                    .map(fa -> new FieldReference(analyserContext, fa.getFieldInfo())).toList();
+                    .map(fa -> (FieldReference) new FieldReferenceImpl(analyserContext, fa.getFieldInfo()))
+                    .toList();
             Set<FieldInfo> fieldsNotE1 = typeAnalysis.nonFinalFieldsNotApprovedOrGuarded(nonFinalFields);
             if (!fieldsNotE1.isEmpty()) {
                 whenImmutableFails = MultiLevel.MUTABLE_DV;

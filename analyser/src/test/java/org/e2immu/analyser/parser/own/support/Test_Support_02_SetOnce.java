@@ -213,7 +213,7 @@ public class Test_Support_02_SetOnce extends CommonTestRunner {
                         assertDv(d, 4, MultiLevel.EFFECTIVELY_NOT_NULL_DV, NOT_NULL_EXPRESSION);
                         assertDv(d, 4, MultiLevel.NOT_INVOLVED_DV, EXTERNAL_NOT_NULL);
                     }
-                    if (d.variable() instanceof FieldReference fr && "t".equals(fr.fieldInfo.name)) {
+                    if (d.variable() instanceof FieldReference fr && "t".equals(fr.fieldInfo().name)) {
                         assertTrue(d.iteration() > 0);
                         assertEquals(MultiLevel.NULLABLE_DV, d.getProperty(EXTERNAL_NOT_NULL));
                         assertEquals(MultiLevel.NULLABLE_DV, d.getProperty(Property.CONTEXT_NOT_NULL));
@@ -281,7 +281,7 @@ public class Test_Support_02_SetOnce extends CommonTestRunner {
                                 it(4, "setOnce:1"));
                     }
                 }
-                if (d.variable() instanceof FieldReference fr && "t".equals(fr.fieldInfo.name)) {
+                if (d.variable() instanceof FieldReference fr && "t".equals(fr.fieldInfo().name)) {
                     assertEquals("3", d.statementId());
                     if (fr.scopeIsThis()) {
                         assertTrue(d.variableInfoContainer().isInitial());
@@ -301,14 +301,14 @@ public class Test_Support_02_SetOnce extends CommonTestRunner {
                         assertLinked(d,
                                 it(0, 3, "o:-1,setOnce.t:-1,setOnce:-1"),
                                 it(4, ""));
-                    } else if (fr.scopeVariable != null && "setOnce".equals(fr.scopeVariable.simpleName())) {
+                    } else if (fr.scopeVariable() != null && "setOnce".equals(fr.scopeVariable().simpleName())) {
                         String expected = d.iteration() < 4 ? "<f:setOnce.t>" : "nullable instance type ?";
                         assertEquals(expected, d.currentValue().toString());
 
                         assertLinked(d,
                                 it(0, 3, "o:-1,setOnce:-1,this.t:-1"),
                                 it(4, "o:2,setOnce:2"));
-                    } else fail("have " + fr.scopeVariable);
+                    } else fail("have " + fr.scopeVariable());
                 }
             }
         };

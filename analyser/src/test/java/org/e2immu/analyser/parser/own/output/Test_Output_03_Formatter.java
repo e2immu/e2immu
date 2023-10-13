@@ -108,7 +108,7 @@ public class Test_Output_03_Formatter extends CommonTestRunner {
                         assertDv(d, 1, MultiLevel.CONTAINER_DV, Property.CONTAINER);
                     }
                 }
-                if (d.variable() instanceof FieldReference fr && "NOT_END".equals(fr.fieldInfo.name)) {
+                if (d.variable() instanceof FieldReference fr && "NOT_END".equals(fr.fieldInfo().name)) {
                     if ("5".equals(d.statementId()) || "6".equals(d.statementId()) || "6.0.0".equals(d.statementId())) {
                         assertDv(d, 7, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     }
@@ -128,8 +128,8 @@ public class Test_Output_03_Formatter extends CommonTestRunner {
                     }
                     assertNotEquals("0", d.statementId());
                 }
-                if (d.variable() instanceof FieldReference fr && "writer".equals(fr.fieldInfo.name)) {
-                    if ("tab".equals(fr.scope.toString())) {
+                if (d.variable() instanceof FieldReference fr && "writer".equals(fr.fieldInfo().name)) {
+                    if ("tab".equals(fr.scope().toString())) {
                         if ("0".equals(d.statementId())) {
                             fail();
                         }
@@ -137,15 +137,15 @@ public class Test_Output_03_Formatter extends CommonTestRunner {
                             String expected = d.iteration() < 3 ? "<f:tab.writer>" : "instance type Writer";
                             assertEquals(expected, d.currentValue().toString());
                         }
-                    } else if ("tabs.peek()".equals(fr.scope.toString())) {
+                    } else if ("tabs.peek()".equals(fr.scope().toString())) {
                         if ("0.0.3".equals(d.statementId())) {
                             assertEquals("nullable instance type Writer", d.currentValue().toString());
                         }
-                    } else if ("nullable instance type Tab".equals(fr.scope.toString())) {
+                    } else if ("nullable instance type Tab".equals(fr.scope().toString())) {
                         if ("0".equals(d.statementId())) {
                             assertEquals("nullable instance type Writer", d.currentValue().toString());
                         }
-                    } else if ("scope-tab:0".equals(fr.scope.toString())) {
+                    } else if ("scope-tab:0".equals(fr.scope().toString())) {
                         if ("0".equals(d.statementId())) {
                             String expected = switch (d.iteration()) {
                                 case 0 -> "tabs.isEmpty()?<f:scope-tab:0.writer>:<dv:scope-tab:0.writer>";
@@ -154,7 +154,7 @@ public class Test_Output_03_Formatter extends CommonTestRunner {
                             };
                             assertEquals(expected, d.currentValue().toString());
                         }
-                    } else fail("scope " + fr.scope);
+                    } else fail("scope " + fr.scope());
                 }
             }
             if ("handleExceeds".equals(d.methodInfo().name)) {

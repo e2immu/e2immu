@@ -76,8 +76,8 @@ public class Test_00_Basics_23 extends CommonTestRunner {
                     String expected = d.iteration() == 0 ? "k<3?<new:A>:<new:A>" : "k<3?new A(1):new A(2)";
                     assertEquals(expected, d.currentValue().toString());
                 }
-                if (d.variable() instanceof FieldReference fr && "i".equals(fr.fieldInfo.name)) {
-                    if (fr.scopeVariable instanceof LocalVariableReference lvr) {
+                if (d.variable() instanceof FieldReference fr && "i".equals(fr.fieldInfo().name)) {
+                    if (fr.scopeVariable() instanceof LocalVariableReference lvr) {
                         String expected = d.iteration() == 0 ? "<f:(k<3?a:b).i>" : "instance type int";
                         if ("a".equals(lvr.simpleName())) {
                             assertEquals(expected, d.currentValue().toString());
@@ -98,13 +98,13 @@ public class Test_00_Basics_23 extends CommonTestRunner {
                     String expected = d.iteration() == 0 ? "<new:A>" : "new A(1)";
                     assertEquals(expected, d.currentValue().toString());
                 }
-                if (d.variable() instanceof FieldReference fr && "i".equals(fr.fieldInfo.name)) {
+                if (d.variable() instanceof FieldReference fr && "i".equals(fr.fieldInfo().name)) {
                     if ("2".equals(d.statementId())) {
                         String expected = d.iteration() <= 1 ? "<f:i>" : "instance type int";
                         assertEquals(expected, d.currentValue().toString());
-                        assertEquals("b", fr.scope.toString());
-                        assertNotNull(fr.scopeVariable);
-                        assertEquals("b", fr.scopeVariable.toString());
+                        assertEquals("b", fr.scope().toString());
+                        assertNotNull(fr.scopeVariable());
+                        assertEquals("b", fr.scopeVariable().toString());
                     }
                 }
                 if ("b".equals(d.variableName())) {
@@ -126,10 +126,10 @@ public class Test_00_Basics_23 extends CommonTestRunner {
                         assertEquals(expected, d.currentValue().toString());
                     }
                 }
-                if (d.variable() instanceof FieldReference fr && "i".equals(fr.fieldInfo.name)) {
+                if (d.variable() instanceof FieldReference fr && "i".equals(fr.fieldInfo().name)) {
                     if ("1.0.0".equals(d.statementId())) {
-                        assertNotNull(fr.scopeVariable);
-                        if ("c".equals(fr.scopeVariable.simpleName())) {
+                        assertNotNull(fr.scopeVariable());
+                        if ("c".equals(fr.scopeVariable().simpleName())) {
                             String expected = d.iteration() == 0 ? "<f:c.i>" : "instance type int";
                             assertEquals(expected, d.currentValue().toString());
                         }

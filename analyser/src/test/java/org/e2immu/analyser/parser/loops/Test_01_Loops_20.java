@@ -64,7 +64,7 @@ public class Test_01_Loops_20 extends CommonTestRunner {
                         assertCurrentValue(d, 1, "nullable instance type String");
                     }
                 }
-                if (d.variable() instanceof FieldReference fr && "out".equals(fr.fieldInfo.name)) {
+                if (d.variable() instanceof FieldReference fr && "out".equals(fr.fieldInfo().name)) {
                     if ("1".equals(d.statementId())) {
                         String expect = d.iteration() == 0
                                 ? "path.split(\"/\").length>=1?<f:out>:instance type PrintStream/*@IgnoreMods*/"

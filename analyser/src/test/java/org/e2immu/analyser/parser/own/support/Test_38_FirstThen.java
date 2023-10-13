@@ -79,7 +79,7 @@ public class Test_38_FirstThen extends CommonTestRunner {
     public void test_1() throws IOException {
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("set".equals(d.methodInfo().name)) {
-                if (d.variable() instanceof FieldReference fr && "first".equals(fr.fieldInfo.name)) {
+                if (d.variable() instanceof FieldReference fr && "first".equals(fr.fieldInfo().name)) {
                     if ("0.0.0".equals(d.statementId())) {
                         String expected = d.iteration() == 0 ? "<f:first>" : "nullable instance type S";
                         assertEquals(expected, d.currentValue().toString());

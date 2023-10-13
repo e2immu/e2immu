@@ -24,6 +24,7 @@ import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.util.ExpressionComparator;
 import org.e2immu.analyser.model.impl.BaseExpression;
 import org.e2immu.analyser.model.variable.*;
+import org.e2immu.analyser.model.variable.impl.FieldReferenceImpl;
 import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.Symbol;
 import org.e2immu.analyser.output.Text;
@@ -117,7 +118,7 @@ public class VariableExpression extends BaseExpression implements IsVariableExpr
     private final Expression indexValue;
 
     public VariableExpression(Identifier identifier, Variable variable) {
-        this(identifier, variable, NO_SUFFIX, variable instanceof FieldReference fr && !fr.isStatic ? fr.scope :
+        this(identifier, variable, NO_SUFFIX, variable instanceof FieldReference fr && !fr.isStatic() ? fr.scope() :
                         variable instanceof DependentVariable dv ? dv.arrayExpression() : null,
                 variable instanceof DependentVariable dv ? dv.indexExpression() : null);
     }
@@ -126,7 +127,7 @@ public class VariableExpression extends BaseExpression implements IsVariableExpr
         super(identifier, variable.getComplexity());
         this.variable = variable;
         this.suffix = Objects.requireNonNull(suffix);
-        if (variable instanceof FieldReference fieldReference && !fieldReference.isStatic ||
+        if (variable instanceof FieldReference fieldReference && !fieldReference.isStatic() ||
                 variable instanceof DependentVariable) {
             this.scopeValue = Objects.requireNonNull(scopeValue);
         } else {
@@ -144,9 +145,9 @@ public class VariableExpression extends BaseExpression implements IsVariableExpr
         if (this == o) return true;
         if (!(o instanceof VariableExpression that)) return false;
         if (variable instanceof FieldReference fr && that.variable instanceof FieldReference thatFr) {
-            if (fr.isStatic) return fr.equals(thatFr);
-            if (thatFr.isStatic) return false;
-            return fr.fieldInfo.equals(thatFr.fieldInfo) && suffix.equals(that.suffix) && scopeValue.equals(that.scopeValue);
+            if (fr.isStatic()) return fr.equals(thatFr);
+            if (thatFr.isStatic()) return false;
+            return fr.fieldInfo().equals(thatFr.fieldInfo()) && suffix.equals(that.suffix) && scopeValue.equals(that.scopeValue);
         }
         if (variable instanceof DependentVariable && that.variable instanceof DependentVariable) {
             return this.scopeValue.equals(that.scopeValue) && indexValue.equals(that.indexValue);
@@ -187,7 +188,7 @@ public class VariableExpression extends BaseExpression implements IsVariableExpr
 
     @Override
     public int hashCode() {
-        int hc = variable instanceof FieldReference fr ? fr.fieldInfo.hashCode() :
+        int hc = variable instanceof FieldReference fr ? fr.fieldInfo().hashCode() :
                 variable instanceof DependentVariable ? 0 : variable.hashCode();
         return hc + (scopeValue == null ? 0 : 37 * scopeValue.hashCode()) + 37 * suffix.hashCode()
                 - 89 * (indexValue == null ? 0 : indexValue.hashCode());
@@ -210,14 +211,14 @@ public class VariableExpression extends BaseExpression implements IsVariableExpr
         }
         if (translationMap.recurseIntoScopeVariables()) {
             if (variable instanceof FieldReference fr) {
-                Expression translated = fr.scope.translate(inspectionProvider, translationMap);
-                if (translated != fr.scope) {
-                    FieldReference newFr = new FieldReference(inspectionProvider, fr.fieldInfo, translated, fr.getOwningType());
+                Expression translated = fr.scope().translate(inspectionProvider, translationMap);
+                if (translated != fr.scope()) {
+                    FieldReference newFr = new FieldReferenceImpl(inspectionProvider, fr.fieldInfo(), translated, fr.getOwningType());
                     if (translated.isDelayed()) {
                         int statementTime = translated instanceof DelayedVariableExpression dve ? dve.statementTime : 0;
                         return DelayedVariableExpression.forField(newFr, statementTime, translated.causesOfDelay());
                     }
-                    return new VariableExpression(fr.scope.getIdentifier(), newFr, suffix, translated, null);
+                    return new VariableExpression(fr.scope().getIdentifier(), newFr, suffix, translated, null);
                 }
             } else if (variable instanceof DependentVariable dv) {
                 Expression translatedScope = dv.arrayExpression().translate(inspectionProvider, translationMap);
@@ -399,12 +400,12 @@ public class VariableExpression extends BaseExpression implements IsVariableExpr
     private EvaluationResult evaluateScope(EvaluationResult context, ForwardEvaluationInfo forwardEvaluationInfo) {
         if (variable instanceof FieldReference fr) {
             ForwardEvaluationInfo.Builder builder = forwardEvaluationInfo.copy();
-            if (fr.isStatic) {
+            if (fr.isStatic()) {
                 // no need to do an assignment
-                return fr.scope.evaluate(context, builder.notNullNotAssignment().build());
+                return fr.scope().evaluate(context, builder.notNullNotAssignment().build());
             }
             // there is a scope variable
-            if (fr.scope instanceof VariableExpression ve) {
+            if (fr.scope() instanceof VariableExpression ve) {
                 // do not continue modification onto This: we want modifications on this only when there's a direct method call
                 ForwardEvaluationInfo forward = fr.scopeIsThis()
                         ? builder.notNullNotAssignment().build()
@@ -413,14 +414,14 @@ public class VariableExpression extends BaseExpression implements IsVariableExpr
             }
             if (forwardEvaluationInfo.isEvaluatingFieldExpression()) {
                 // the field analyser does not know local variables, so no need for assignments
-                return new EvaluationResultImpl.Builder(context).setExpression(fr.scope).build();
+                return new EvaluationResultImpl.Builder(context).setExpression(fr.scope()).build();
             }
-            assert fr.scopeVariable instanceof LocalVariableReference lvr
+            assert fr.scopeVariable() instanceof LocalVariableReference lvr
                     && lvr.variableNature() instanceof VariableNature.ScopeVariable;
-            assert fr.scope != null;
+            assert fr.scope() != null;
             ForwardEvaluationInfo forward = builder.ensureModificationSetNotNull().build();
-            VariableExpression scopeVE = new VariableExpression(fr.scope.getIdentifier(), fr.scopeVariable);
-            Assignment assignment = new Assignment(context.getPrimitives(), scopeVE, fr.scope);
+            VariableExpression scopeVE = new VariableExpression(fr.scope().getIdentifier(), fr.scopeVariable());
+            Assignment assignment = new Assignment(context.getPrimitives(), scopeVE, fr.scope());
             return assignment.evaluate(context, forward);
         }
         if (variable instanceof DependentVariable dv) {
@@ -475,8 +476,8 @@ public class VariableExpression extends BaseExpression implements IsVariableExpr
             LinkedVariables recursive = internalLinkedVariables(dv.arrayVariable(), LinkedVariables.LINK_IS_HC_OF);
             return LinkedVariables.of(variable, linkLevel).merge(recursive);
         }
-        if (variable instanceof FieldReference fr && fr.scopeVariable != null) {
-            LinkedVariables recursive = internalLinkedVariables(fr.scopeVariable, LinkedVariables.LINK_IS_HC_OF);
+        if (variable instanceof FieldReference fr && fr.scopeVariable() != null) {
+            LinkedVariables recursive = internalLinkedVariables(fr.scopeVariable(), LinkedVariables.LINK_IS_HC_OF);
             return LinkedVariables.of(variable, linkLevel).merge(recursive);
         }
         return LinkedVariables.of(variable, linkLevel);
@@ -494,9 +495,9 @@ public class VariableExpression extends BaseExpression implements IsVariableExpr
 
     @Override
     public List<Variable> variables(DescendMode descendIntoFieldReferences) {
-        if (descendIntoFieldReferences != DescendMode.NO && variable instanceof FieldReference fr && !fr.isStatic) {
+        if (descendIntoFieldReferences != DescendMode.NO && variable instanceof FieldReference fr && !fr.isStatic()) {
             if (descendIntoFieldReferences == DescendMode.YES_INCLUDE_THIS || !fr.scopeIsThis()) {
-                Stream<Variable> scopeVarStream = fr.scopeVariable == null ? Stream.of() : Stream.of(fr.scopeVariable);
+                Stream<Variable> scopeVarStream = fr.scopeVariable() == null ? Stream.of() : Stream.of(fr.scopeVariable());
                 Stream<Variable> value = scopeValue.variables(descendIntoFieldReferences).stream();
                 return Stream.concat(Stream.concat(scopeVarStream, value), Stream.of(variable)).toList();
             }
@@ -507,7 +508,7 @@ public class VariableExpression extends BaseExpression implements IsVariableExpr
     @Override
     public List<Variable> variablesWithoutCondition() {
         if (variable instanceof FieldReference fr && !fr.scopeIsThis()) {
-            return ListUtil.concatImmutable(fr.scope.variablesWithoutCondition(), List.of(variable));
+            return ListUtil.concatImmutable(fr.scope().variablesWithoutCondition(), List.of(variable));
         }
         return List.of(variable);
     }
@@ -515,11 +516,11 @@ public class VariableExpression extends BaseExpression implements IsVariableExpr
     @Override
     public OutputBuilder output(Qualification qualification) {
         OutputBuilder outputBuilder = new OutputBuilder();
-        if (variable instanceof FieldReference fr && !fr.isStatic) {
-            if (!fr.isDefaultScope) {
+        if (variable instanceof FieldReference fr && !fr.isStatic()) {
+            if (!fr.isDefaultScope()) {
                 outputBuilder.add(outputInParenthesis(qualification, precedence(), scopeValue)).add(Symbol.DOT);
             }
-            outputBuilder.add(new Text(fr.fieldInfo.name));
+            outputBuilder.add(new Text(fr.fieldInfo().name));
         } else if (variable instanceof DependentVariable) {
             outputBuilder.add(outputInParenthesis(qualification, precedence(), scopeValue))
                     .add(Symbol.LEFT_BRACKET).add(indexValue.output(qualification)).add(Symbol.RIGHT_BRACKET);
@@ -552,7 +553,7 @@ public class VariableExpression extends BaseExpression implements IsVariableExpr
     @Override
     public List<? extends Element> subElements() {
         if (variable instanceof FieldReference fr && !fr.scopeIsThis()) {
-            return List.of(fr.scope);
+            return List.of(fr.scope());
         }
         return List.of();
     }
@@ -560,14 +561,14 @@ public class VariableExpression extends BaseExpression implements IsVariableExpr
     public static Expression tryShortCut(EvaluationResult context, Expression scopeValue, FieldReference fr) {
         ConstructorCall constructorCall;
         if ((constructorCall = scopeValue.asInstanceOf(ConstructorCall.class)) != null && constructorCall.constructor() != null) {
-            return extractNewObject(context, constructorCall, fr.fieldInfo);
+            return extractNewObject(context, constructorCall, fr.fieldInfo());
         }
         if (scopeValue instanceof VariableExpression scopeVe && scopeVe.variable instanceof FieldReference scopeFr) {
-            FieldAnalysis fieldAnalysis = context.getAnalyserContext().getFieldAnalysis(scopeFr.fieldInfo);
+            FieldAnalysis fieldAnalysis = context.getAnalyserContext().getFieldAnalysis(scopeFr.fieldInfo());
             Expression efv = fieldAnalysis.getValue();
             ConstructorCall cc2;
             if (efv != null && (cc2 = efv.asInstanceOf(ConstructorCall.class)) != null && cc2.constructor() != null) {
-                return extractNewObject(context, cc2, fr.fieldInfo);
+                return extractNewObject(context, cc2, fr.fieldInfo());
             }
         }
         return null;
@@ -596,7 +597,7 @@ public class VariableExpression extends BaseExpression implements IsVariableExpr
         }
         if (causes.isDelayed()) {
             // worth waiting
-            return DelayedVariableExpression.forField(new FieldReference(context.getAnalyserContext(), fieldInfo), 0, causes);
+            return DelayedVariableExpression.forField(new FieldReferenceImpl(context.getAnalyserContext(), fieldInfo), 0, causes);
         }
         return null;
     }
@@ -641,7 +642,7 @@ public class VariableExpression extends BaseExpression implements IsVariableExpr
         }
         return EvaluationContext.NO_LOOP_SOURCE_VARIABLES;
     }
-    
+
     private static ParameterizedType typeParameterOfIterable(AnalyserContext analyserContext,
                                                              ParameterizedType concreteType) {
         ParameterizedType iterablePt = analyserContext.importantClasses().iterable();

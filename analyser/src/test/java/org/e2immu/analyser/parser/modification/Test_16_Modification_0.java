@@ -42,7 +42,7 @@ public class Test_16_Modification_0 extends CommonTestRunner {
 
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("add".equals(d.methodInfo().name)) {
-                if (d.variable() instanceof FieldReference fr && "set1".equals(fr.fieldInfo.name)) {
+                if (d.variable() instanceof FieldReference fr && "set1".equals(fr.fieldInfo().name)) {
                     assertTrue(d.variableInfoContainer().hasEvaluation() && !d.variableInfoContainer().hasMerge());
                     assertTrue(d.variableInfo().isRead());
                     String expectValue = d.iteration() == 0 ? "<f:set1>"

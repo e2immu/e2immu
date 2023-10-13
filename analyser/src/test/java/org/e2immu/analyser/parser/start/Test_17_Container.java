@@ -98,7 +98,7 @@ public class Test_17_Container extends CommonTestRunner {
                         String expected = d.iteration() == 0 ? "<p:toAdd>" : "nullable instance type String";
                         assertEquals(expected, d.currentValue().toString());
                     }
-                } else if (d.variable() instanceof FieldReference fr && "s".equals(fr.fieldInfo.name)) {
+                } else if (d.variable() instanceof FieldReference fr && "s".equals(fr.fieldInfo().name)) {
                     assertEquals(S, d.variableName());
 
                     if ("0".equals(d.statementId())) {
@@ -130,7 +130,7 @@ public class Test_17_Container extends CommonTestRunner {
             }
 
             if ("getS".equals(d.methodInfo().name)) {
-                if (d.variable() instanceof FieldReference fr && "s".equals(fr.fieldInfo.name)) {
+                if (d.variable() instanceof FieldReference fr && "s".equals(fr.fieldInfo().name)) {
                     assertEquals(S, d.variableName());
                     assertDv(d, 2, MultiLevel.MUTABLE_DV, Property.EXTERNAL_IMMUTABLE);
                 }
@@ -422,7 +422,7 @@ public class Test_17_Container extends CommonTestRunner {
             }
             int n = d.methodInfo().methodInspection.get().getParameters().size();
             if (CONTAINER_5.equals(d.methodInfo().name) && n == 0) {
-                if (d.variable() instanceof FieldReference fr && "list".equals(fr.fieldInfo.name)) {
+                if (d.variable() instanceof FieldReference fr && "list".equals(fr.fieldInfo().name)) {
                     String expectValue = "new ArrayList<>()";
                     assertEquals(expectValue, d.currentValue().toString());
                 }
@@ -435,7 +435,7 @@ public class Test_17_Container extends CommonTestRunner {
                                 d.currentValue().toString());
                     }
                 }
-                if (d.variable() instanceof FieldReference fr && "list".equals(fr.fieldInfo.name)) {
+                if (d.variable() instanceof FieldReference fr && "list".equals(fr.fieldInfo().name)) {
                     if ("0".equals(d.statementId())) {
                         String expectValue = "new ArrayList<>()";
                         assertEquals(expectValue, d.currentValue().toString());
@@ -523,7 +523,7 @@ public class Test_17_Container extends CommonTestRunner {
     public void test_9() throws IOException {
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("add".equals(d.methodInfo().name) && "ItemsImpl".equals(d.methodInfo().typeInfo.simpleName)) {
-                if (d.variable() instanceof FieldReference fr && "items".equals(fr.fieldInfo.name)) {
+                if (d.variable() instanceof FieldReference fr && "items".equals(fr.fieldInfo().name)) {
                     assertLinked(d, it0("item1:-1,this:-1"), it(1, ""));
                 }
                 if (d.variable() instanceof ParameterInfo pi && "item".equals(pi.name)) {

@@ -105,24 +105,24 @@ public class Test_Util_06_DependencyGraph extends CommonTestRunner {
             }
             if ("sorted".equals(d.methodInfo().name) && 3 == n) {
                 if (d.variable() instanceof FieldReference fr) {
-                    if ("nodeMap".equals(fr.fieldInfo.name)) {
-                        assertEquals("this", fr.scope.toString());
+                    if ("nodeMap".equals(fr.fieldInfo().name)) {
+                        assertEquals("this", fr.scope().toString());
                         if ("4".equals(d.statementId())) {
                             String expected = d.iteration() == 0 ? "<f:nodeMap>" : "instance type HashMap<T,Node<T>>";
                             assertEquals(expected, d.currentValue().toString());
                             assertEquals("", d.variableInfo().getAssignmentIds().toString());
                         }
-                    } else if ("dependsOn".equals(fr.fieldInfo.name)) {
-                        assertNotNull(fr.scopeVariable);
-                        if ("entry.getValue()".equals(fr.scope.toString())) {
+                    } else if ("dependsOn".equals(fr.fieldInfo().name)) {
+                        assertNotNull(fr.scopeVariable());
+                        if ("entry.getValue()".equals(fr.scope().toString())) {
                             assertNotEquals("4", d.statementId());
-                        } else if ("scope-scope-230:40:3.0.1".equals(fr.scope.toString())) {
+                        } else if ("scope-scope-230:40:3.0.1".equals(fr.scope().toString())) {
                             if ("4".equals(d.statementId())) {
                                 // IMPROVE null = correct?
                                 assertCurrentValue(d, 13, "null");
                                 assertEquals("", d.variableInfo().getAssignmentIds().toString());
                             }
-                        } else fail("Scope " + fr.scope);
+                        } else fail("Scope " + fr.scope());
                     } else fail("Field " + fr);
                 }
                 if ("result".equals(d.variableName())) {

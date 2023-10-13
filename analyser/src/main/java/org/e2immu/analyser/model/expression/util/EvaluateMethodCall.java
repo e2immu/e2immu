@@ -342,8 +342,8 @@ public class EvaluateMethodCall {
             VariableExpression ve;
             if ((ve = objectValue.asInstanceOf(VariableExpression.class)) != null
                     && ve.variable() instanceof FieldReference fr
-                    && fr.fieldInfo.owner == methodInfo.typeInfo) {
-                return new StringConstant(primitives, fr.fieldInfo.name);
+                    && fr.fieldInfo().owner == methodInfo.typeInfo) {
+                return new StringConstant(primitives, fr.fieldInfo().name);
             }
             Properties valueProperties = EvaluationContext.PRIMITIVE_VALUE_PROPERTIES;
             return Instance.forGetInstance(identifier, primitives.stringParameterizedType(), valueProperties);

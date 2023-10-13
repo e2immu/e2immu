@@ -60,7 +60,7 @@ public class Test_16_Modification_9 extends CommonTestRunner {
                         assertDv(d, 1, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
                     }
                 }
-                if (d.variable() instanceof FieldReference fr && "s2".equals(fr.fieldInfo.name)) {
+                if (d.variable() instanceof FieldReference fr && "s2".equals(fr.fieldInfo().name)) {
                     String expectLinked;
                     if ("0".equals(d.statementId())) {
                         assertLinked(d, it(0, "theSet:0,this:3"));

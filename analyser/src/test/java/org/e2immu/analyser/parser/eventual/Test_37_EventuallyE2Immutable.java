@@ -160,7 +160,7 @@ public class Test_37_EventuallyE2Immutable extends CommonTestRunner {
 
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("error".equals(d.methodInfo().name)) {
-                if (d.variable() instanceof FieldReference fr && "t".equals(fr.fieldInfo.name)) {
+                if (d.variable() instanceof FieldReference fr && "t".equals(fr.fieldInfo().name)) {
                     assertTrue(d.iteration() > 0);
 
                     String expected = d.iteration() <= 1 ? "<f:t>" : "nullable instance type T";
@@ -400,7 +400,7 @@ public class Test_37_EventuallyE2Immutable extends CommonTestRunner {
     public void test_5B() throws IOException {
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("getT".equals(d.methodInfo().name)) {
-                if (d.variable() instanceof FieldReference fr && "t".equals(fr.fieldInfo.name)) {
+                if (d.variable() instanceof FieldReference fr && "t".equals(fr.fieldInfo().name)) {
                     assertDv(d, 2, MultiLevel.NULLABLE_DV, Property.EXTERNAL_NOT_NULL);
                     if ("0".equals(d.statementId())) {
                         assertDv(d, 4, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.CONTEXT_NOT_NULL);
@@ -481,7 +481,7 @@ public class Test_37_EventuallyE2Immutable extends CommonTestRunner {
     public void test_6() throws IOException {
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("initialize".equals(d.methodInfo().name)) {
-                if (d.variable() instanceof FieldReference fr && "set".equals(fr.fieldInfo.name)) {
+                if (d.variable() instanceof FieldReference fr && "set".equals(fr.fieldInfo().name)) {
                     if ("2".equals(d.statementId())) {
                         // FIXME the not-null info is gone (temporarily disabled, no companion methods)
                         String expectValue = d.iteration() == 0 ? "<f:set>" : "instance type HashSet<T>";
@@ -561,7 +561,7 @@ public class Test_37_EventuallyE2Immutable extends CommonTestRunner {
 
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("initialize".equals(d.methodInfo().name)) {
-                if (d.variable() instanceof FieldReference fr && "set".equals(fr.fieldInfo.name)) {
+                if (d.variable() instanceof FieldReference fr && "set".equals(fr.fieldInfo().name)) {
                     if ("2".equals(d.statementId())) {
                         String expectValue = d.iteration() == 0 ? "<f:set>" :
                                 "instance type HashSet<T>" FIXME missing: this.size()>=data.size()
@@ -610,7 +610,7 @@ public class Test_37_EventuallyE2Immutable extends CommonTestRunner {
 
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("initialize".equals(d.methodInfo().name)) {
-                if (d.variable() instanceof FieldReference fr && "set".equals(fr.fieldInfo.name)) {
+                if (d.variable() instanceof FieldReference fr && "set".equals(fr.fieldInfo().name)) {
                     if ("2".equals(d.statementId())) {
                         String expectValue = d.iteration() == 0 ? "<f:set>" :
                                 "instance type HashSet<T>" FIXME MISSING: /*this.size()>=data.size()

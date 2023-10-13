@@ -294,19 +294,19 @@ public class Test_66_VariableScope extends CommonTestRunner {
                         assertDv(d, 3, DV.FALSE_DV, Property.IDENTITY);
                     }
                 }
-                if (d.variable() instanceof FieldReference fr && "types".equals(fr.fieldInfo.name)) {
-                    if ("<out of scope:perPackage:1>".equals(fr.scope.toString())) {
+                if (d.variable() instanceof FieldReference fr && "types".equals(fr.fieldInfo().name)) {
+                    if ("<out of scope:perPackage:1>".equals(fr.scope().toString())) {
                         if ("2".equals(d.statementId()) || "3".equals(d.statementId())) {
                             String expected = d.iteration() <= 2 ? "<f:types>" : "instance type LinkedList<TypeInfo>";
                             assertEquals(expected, d.currentValue().toString());
                             assertDv(d, 3, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
                             mustSeeIteration(d, 5);
                         }
-                    } else if ("instance type PerPackage".equals(fr.scope.toString())) {
+                    } else if ("instance type PerPackage".equals(fr.scope().toString())) {
                         assertTrue(d.iteration() >= 3);
                         assertDv(d, 3, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
                     } else {
-                        fail("Scope " + fr.scope);
+                        fail("Scope " + fr.scope());
                     }
                 }
             }
@@ -407,7 +407,7 @@ public class Test_66_VariableScope extends CommonTestRunner {
                         assertDv(d, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     }
                 }
-                if (d.variable() instanceof FieldReference fr && "types".equals(fr.fieldInfo.name)) {
+                if (d.variable() instanceof FieldReference fr && "types".equals(fr.fieldInfo().name)) {
                     if ("1.0.2".equals(d.statementId())) {
                         assertDv(d, 1, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
                     }
@@ -481,13 +481,13 @@ public class Test_66_VariableScope extends CommonTestRunner {
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("accept".equals(d.methodInfo().name)) {
                 assertEquals("$1", d.methodInfo().typeInfo.simpleName);
-                if (d.variable() instanceof FieldReference fr && "allowStar".equals(fr.fieldInfo.name)) {
+                if (d.variable() instanceof FieldReference fr && "allowStar".equals(fr.fieldInfo().name)) {
                     if ("1.0.2.1.0".equals(d.statementId())) {
-                        assertEquals("perPackage", fr.scope.toString());
+                        assertEquals("perPackage", fr.scope().toString());
                         assertEquals("false", d.currentValue().toString());
                     }
                     if ("1.0.2".equals(d.statementId())) {
-                        assertEquals("perPackage", fr.scope.toString());
+                        assertEquals("perPackage", fr.scope().toString());
                         String expected = switch (d.iteration()) {
                             case 0 -> "<f:perPackage.allowStar>&&<m:addTypeReturnImport>";
                             case 1, 2 -> "instance type boolean&&<m:addTypeReturnImport>";
@@ -496,10 +496,10 @@ public class Test_66_VariableScope extends CommonTestRunner {
                         assertEquals(expected, d.currentValue().toString());
                     }
                     if ("1".equals(d.statementId())) {
-                        if ("instance type PerPackage".equals(fr.scope.toString())) {
+                        if ("instance type PerPackage".equals(fr.scope().toString())) {
                             String expected = "!myPackage.equals(typeInfo.packageName)&&null!=typeInfo.packageName?instance type boolean&&(new QualificationImpl()).addTypeReturnImport(typeInfo):instance type boolean";
                             assertEquals(expected, d.currentValue().toString());
-                        } else if ("scope-perPackage:1".equals(fr.scope.toString())) {
+                        } else if ("scope-perPackage:1".equals(fr.scope().toString())) {
                             String expected = switch (d.iteration()) {
                                 case 0 ->
                                         "!<null-check>&&!<m:equals>?<dv:scope-perPackage:1.allowStar>&&<m:addTypeReturnImport>:<f:scope-perPackage:1.allowStar>";
@@ -510,7 +510,7 @@ public class Test_66_VariableScope extends CommonTestRunner {
                             };
                             assertEquals(expected, d.currentValue().toString());
                         } else {
-                            fail("No other scope possible: " + fr.scope);
+                            fail("No other scope possible: " + fr.scope());
                         }
                     }
                 }
@@ -561,9 +561,9 @@ public class Test_66_VariableScope extends CommonTestRunner {
                                 it(1, "m.messages:4,other.messages:4,other:4"));
                     }
                 }
-                if (d.variable() instanceof FieldReference fr && "messages".equals(fr.fieldInfo.name)) {
-                    assertTrue(Set.of("this", "other", "m").contains(fr.scope.toString()));
-                    if ("m".equals(fr.scope.toString())) {
+                if (d.variable() instanceof FieldReference fr && "messages".equals(fr.fieldInfo().name)) {
+                    assertTrue(Set.of("this", "other", "m").contains(fr.scope().toString()));
+                    if ("m".equals(fr.scope().toString())) {
                         if ("3".equals(d.statementId())) {
                             String expected = d.iteration() == 0 ? "<f:m.messages>"
                                     : "instance type Set<Message>/*this.size()>=other.messages.size()*/";
@@ -621,8 +621,8 @@ public class Test_66_VariableScope extends CommonTestRunner {
                         assertCurrentValue(d, 3, value);
                     }
                 }
-                if (d.variable() instanceof FieldReference fr && "object".equals(fr.fieldInfo.name)) {
-                    assertEquals("this", fr.scope.toString());
+                if (d.variable() instanceof FieldReference fr && "object".equals(fr.fieldInfo().name)) {
+                    assertEquals("this", fr.scope().toString());
                     if ("2".equals(d.statementId())) {
                         assertDv(d, 1, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     }
@@ -780,8 +780,8 @@ public class Test_66_VariableScope extends CommonTestRunner {
                         assertCurrentValue(d, 3, value);
                     }
                 }
-                if (d.variable() instanceof FieldReference fr && "object".equals(fr.fieldInfo.name)) {
-                    assertEquals("this", fr.scope.toString());
+                if (d.variable() instanceof FieldReference fr && "object".equals(fr.fieldInfo().name)) {
+                    assertEquals("this", fr.scope().toString());
                     if ("2".equals(d.statementId())) {
                         assertDv(d, 1, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     }
@@ -936,35 +936,35 @@ public class Test_66_VariableScope extends CommonTestRunner {
                     // variable should not exist further than 1...
                     assertTrue(d.statementId().compareTo("2") < 0, "Found in " + d.statementId());
                 }
-                if (d.variable() instanceof FieldReference fr && "statementIndex".equals(fr.fieldInfo.name)) {
-                    if ("vdol".equals(fr.scope.toString())) {
+                if (d.variable() instanceof FieldReference fr && "statementIndex".equals(fr.fieldInfo().name)) {
+                    if ("vdol".equals(fr.scope().toString())) {
                         assertTrue(d.statementId().compareTo("2") < 0);
                         String expected = d.iteration() == 0 ? "<f:vdol.statementIndex>" : "nullable instance type String";
                         assertEquals(expected, d.currentValue().toString());
-                    } else if ("scope-vdol:1".equals(fr.scope.toString())) {
-                        assertNotNull(fr.scopeVariable);
-                        if (fr.scopeVariable.variableNature() instanceof VariableNature.ScopeVariable sv) {
+                    } else if ("scope-vdol:1".equals(fr.scope().toString())) {
+                        assertNotNull(fr.scopeVariable());
+                        if (fr.scopeVariable().variableNature() instanceof VariableNature.ScopeVariable sv) {
                             assertEquals("1", sv.getIndexCreatedInMerge());
                             assertEquals("1~", sv.getBeyondIndex());
                         } else fail();
                         assertNotEquals("1.0.0", d.statementId());
                         String expected = d.iteration() == 0 ? "<f:scope-vdol:1.statementIndex>" : "nullable instance type String";
                         assertEquals(expected, d.currentValue().toString());
-                    } else fail("? scope " + fr.scope);
+                    } else fail("? scope " + fr.scope());
                     if ("1".equals(d.statementId())) {
                         assertTrue(d.variableInfoContainer().variableNature() instanceof VariableNature.NormalLocalVariable);
                     }
                 }
-                if (d.variable() instanceof FieldReference fr && "previousVariableNature".equals(fr.fieldInfo.name)) {
+                if (d.variable() instanceof FieldReference fr && "previousVariableNature".equals(fr.fieldInfo().name)) {
                     if ("1".equals(d.statementId())) {
-                        if ("scope-vdol:1".equals(fr.scope.toString())) {
+                        if ("scope-vdol:1".equals(fr.scope().toString())) {
                             assertTrue(d.variableInfoContainer().variableNature() instanceof VariableNature.NormalLocalVariable,
                                     "is " + d.variableInfoContainer().variableNature().getClass());
                             assertDv(d, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.CONTEXT_NOT_NULL);
-                        } else fail("Have scope " + fr.scope);
+                        } else fail("Have scope " + fr.scope());
                     }
                     if ("2".equals(d.statementId())) {
-                        assertEquals("scope-vdol:1", fr.scope.toString());
+                        assertEquals("scope-vdol:1", fr.scope().toString());
                     }
                 }
             }
@@ -1036,8 +1036,8 @@ public class Test_66_VariableScope extends CommonTestRunner {
                         assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
                     }
                 }
-                if (d.variable() instanceof FieldReference fr && "i".equals(fr.fieldInfo.name)) {
-                    if ("x".equals(fr.scope.toString())) {
+                if (d.variable() instanceof FieldReference fr && "i".equals(fr.fieldInfo().name)) {
+                    if ("x".equals(fr.scope().toString())) {
                         if ("0.0.0.0.0".equals(d.statementId())) {
                             String expected = d.iteration() == 0 ? "<f:x.i>" : "instance type int";
                             assertEquals(expected, d.currentValue().toString());
@@ -1052,9 +1052,9 @@ public class Test_66_VariableScope extends CommonTestRunner {
                         if ("0".equals(d.statementId())) {
                             fail("Should not exist here");
                         }
-                    } else if ("scope-x:0".equals(fr.scope.toString())) {
-                        assertNotNull(fr.scopeVariable);
-                        assertEquals("scope-x:0", fr.scopeVariable.fullyQualifiedName());
+                    } else if ("scope-x:0".equals(fr.scope().toString())) {
+                        assertNotNull(fr.scopeVariable());
+                        assertEquals("scope-x:0", fr.scopeVariable().fullyQualifiedName());
                         if ("0".equals(d.statementId())) {
                             String expected = switch (d.iteration()) {
                                 case 0 -> "xs.isEmpty()?<f:scope-x:0.i>:<dv:scope-x:0.i>";
@@ -1062,7 +1062,7 @@ public class Test_66_VariableScope extends CommonTestRunner {
                             };
                             assertEquals(expected, d.currentValue().toString());
                         }
-                    } else fail("Scope " + fr.scope);
+                    } else fail("Scope " + fr.scope());
                 }
             }
         };
@@ -1110,8 +1110,8 @@ public class Test_66_VariableScope extends CommonTestRunner {
                         assertEquals(expected, d.currentValue().toString());
                     }
                 }
-                if (d.variable() instanceof FieldReference fr && "i".equals(fr.fieldInfo.name)) {
-                    if ("x".equals(fr.scope.toString())) {
+                if (d.variable() instanceof FieldReference fr && "i".equals(fr.fieldInfo().name)) {
+                    if ("x".equals(fr.scope().toString())) {
                         if ("0.0.0.0.0".equals(d.statementId())) {
                             String expected = d.iteration() <= 1 ? "<f:x.i>" : "instance type int";
                             assertEquals(expected, d.currentValue().toString());
@@ -1128,9 +1128,9 @@ public class Test_66_VariableScope extends CommonTestRunner {
                         if ("0".equals(d.statementId())) {
                             fail("Should not exist here");
                         }
-                    } else if ("scope-x:0".equals(fr.scope.toString())) {
-                        assertNotNull(fr.scopeVariable);
-                        assertEquals("scope-x:0", fr.scopeVariable.fullyQualifiedName());
+                    } else if ("scope-x:0".equals(fr.scope().toString())) {
+                        assertNotNull(fr.scopeVariable());
+                        assertEquals("scope-x:0", fr.scopeVariable().fullyQualifiedName());
                         if ("0".equals(d.statementId())) {
                             String expected = switch (d.iteration()) {
                                 case 0 -> "y instanceof X?<dv:scope-x:0.i>:<f:scope-x:0.i>";
@@ -1141,7 +1141,7 @@ public class Test_66_VariableScope extends CommonTestRunner {
                             };
                             assertEquals(expected, d.currentValue().toString());
                         }
-                    } else fail("Scope " + fr.scope);
+                    } else fail("Scope " + fr.scope());
                 }
                 if ("scope-x:0".equals(d.variableName())) {
                     if (d.variable() instanceof LocalVariableReference lvr) {
@@ -1213,19 +1213,19 @@ public class Test_66_VariableScope extends CommonTestRunner {
                         assertEquals(expected1, d.currentValue().toString());
                     } else fail("x should only exist in statements 0 and 2");
                 }
-                if (d.variable() instanceof FieldReference fr && "i".equals(fr.fieldInfo.name)) {
-                    if ("x".equals(fr.scope.toString())) {
+                if (d.variable() instanceof FieldReference fr && "i".equals(fr.fieldInfo().name)) {
+                    if ("x".equals(fr.scope().toString())) {
                         if ("0".equals(d.statementId())) {
                             String v = d.iteration() == 0 ? "<f:x.i>" : "instance type int";
                             assertEquals(v, d.currentValue().toString());
                         }
-                    } else if ("scope-x:0".equals(fr.scope.toString())) {
+                    } else if ("scope-x:0".equals(fr.scope().toString())) {
                         String v = d.iteration() == 0 ? "<f:scope-x:0.i>" : "instance type int";
                         assertEquals(v, d.currentValue().toString());
-                    } else if ("scope-x:2".equals(fr.scope.toString())) {
+                    } else if ("scope-x:2".equals(fr.scope().toString())) {
                         String v = d.iteration() == 0 ? "<f:scope-x:2.i>" : "instance type int";
                         assertEquals(v, d.currentValue().toString());
-                    } else fail("Scope " + fr.scope);
+                    } else fail("Scope " + fr.scope());
                 }
             }
         };
@@ -1266,26 +1266,26 @@ public class Test_66_VariableScope extends CommonTestRunner {
                         assertFalse(d.variableInfoContainer().hasMerge());
                     } else fail("z should only exist in statement 2");
                 }
-                if (d.variable() instanceof FieldReference fr && "i".equals(fr.fieldInfo.name)) {
-                    if ("x".equals(fr.scope.toString())) {
+                if (d.variable() instanceof FieldReference fr && "i".equals(fr.fieldInfo().name)) {
+                    if ("x".equals(fr.scope().toString())) {
                         if ("0".equals(d.statementId())) {
                             String v = d.iteration() == 0 ? "<f:x.i>" : "instance type int";
                             assertEquals(v, d.currentValue().toString());
                         } else fail("x.i should only exist in statement 0");
-                    } else if ("scope-x:0".equals(fr.scope.toString())) {
+                    } else if ("scope-x:0".equals(fr.scope().toString())) {
                         String v = d.iteration() == 0 ? "<f:scope-x:0.i>" : "instance type int";
                         assertEquals(v, d.currentValue().toString());
-                    } else if ("z".equals(fr.scope.toString())) {
+                    } else if ("z".equals(fr.scope().toString())) {
                         if ("2".equals(d.statementId())) {
                             String v = d.iteration() == 0 ? "<f:z.i>" : "instance type int";
                             assertEquals(v, d.currentValue().toString());
                         } else fail("z.i should only exist in statement 0");
-                    } else if ("scope-z:2".equals(fr.scope.toString())) {
+                    } else if ("scope-z:2".equals(fr.scope().toString())) {
                         if ("2".equals(d.statementId())) {
                             String v = d.iteration() == 0 ? "<f:scope-z:2.i>" : "instance type int";
                             assertEquals(v, d.currentValue().toString());
                         }
-                    } else fail("Scope " + fr.scope);
+                    } else fail("Scope " + fr.scope());
                 }
             }
         };
