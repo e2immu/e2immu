@@ -17,4 +17,6 @@ allprojects {
         mavenLocal()
         mavenCentral()
     }
+
+    version = "0.6.3"
 }

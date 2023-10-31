@@ -18,8 +18,6 @@ plugins {
     id("maven-publish")
 }
 
-version = "0.6.2"
-
 java {
     sourceCompatibility = JavaVersion.VERSION_17
     targetCompatibility = JavaVersion.VERSION_17
@@ -99,10 +97,6 @@ def annotationXmlArtifact = artifacts.add('archives', annotationXmlJar, {
 publishing {
     publications {
         create<MavenPublication>("mavenJava") {
-            groupId = "org.e2immu"
-            artifactId = "annotatedAPIs"
-            version = "0.6.2"
-
             from(components["java"])
 
             pom {

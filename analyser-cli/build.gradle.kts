@@ -18,8 +18,6 @@ plugins {
     id("maven-publish")
 }
 
-version = "0.6.2"
-
 java {
     sourceCompatibility = JavaVersion.VERSION_17
     targetCompatibility = JavaVersion.VERSION_17
@@ -56,10 +54,6 @@ tasks.jar {
 publishing {
     publications {
         create<MavenPublication>("mavenJava") {
-            groupId = "org.e2immu"
-            artifactId = "analyser-cli"
-            version = "0.6.2"
-
             from(components["java"])
 
             pom {
