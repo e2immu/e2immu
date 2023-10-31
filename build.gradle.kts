@@ -16,9 +16,5 @@ allprojects {
     repositories {
         mavenLocal()
         mavenCentral()
-        maven {
-            name = "GitHubPackages"
-            url = uri("https://maven.pkg.github.com/e2immu/e2immu-support")
-        }
     }
 }

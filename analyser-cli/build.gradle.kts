@@ -19,7 +19,6 @@ plugins {
 }
 
 version = "0.6.2"
-group "org.e2immu"
 
 java {
     sourceCompatibility = JavaVersion.VERSION_17
@@ -28,17 +27,16 @@ java {
 }
 
 dependencies {
-    implementation ("org.e2immu:e2immu-support:0.6.2")      // LGPL 3.0
+    implementation(libs.e2immuSupport)
 
+    implementation(project(":analyser"))
+    implementation(project(":analyser-store-uploader"))
+    implementation(libs.javaParser)
 
-    implementation( project(":analyser"))
-    implementation (project(":analyser-store-uploader"))
-    implementation ("com.github.javaparser:javaparser-core:3.25.5")
-
-    implementation ("commons-cli:commons-cli:1.4") // Apache License 2.0
-    implementation ("org.slf4j:slf4j-api:1.7.36")
-    testImplementation ("org.junit.jupiter:junit-jupiter-api:5.9.3")         // EPL v2 License
-    testRuntimeOnly ("org.junit.jupiter:junit-jupiter-engine:5.9.3")
+    implementation(libs.commonsCli)
+    implementation(libs.slf4jApi)
+    testImplementation(libs.junitJupiterApi)
+    testRuntimeOnly(libs.junitJupiterEngine)
 }
 
 tasks.test {
@@ -51,10 +49,9 @@ application {
 
 tasks.jar {
     manifest {
-        attributes( "Main-Class" to "org.e2immu.analyser.cli.Main")
+        attributes("Main-Class" to "org.e2immu.analyser.cli.Main")
     }
 }
-
 
 publishing {
     publications {

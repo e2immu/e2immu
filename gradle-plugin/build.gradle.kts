@@ -19,7 +19,6 @@ plugins {
 }
 
 version = "0.6.2"
-group "org.e2immu"
 
 java {
     sourceCompatibility = JavaVersion.VERSION_17
@@ -28,7 +27,7 @@ java {
 }
 
 dependencies {
-    implementation ("org.e2immu:e2immu-support:0.6.2")        // LGPL 3.0
+    implementation (libs.e2immuSupport)        // LGPL 3.0
 
     implementation(project(":analyser")) {
         exclude ("ch.qos.logback")

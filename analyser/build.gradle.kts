@@ -18,7 +18,6 @@ plugins {
 }
 
 version = "0.6.2"
-group "org.e2immu"
 
 java {
     sourceCompatibility = JavaVersion.VERSION_17
@@ -41,18 +40,13 @@ tasks.test {
 }
 
 dependencies {
-    implementation ("org.e2immu:e2immu-support:0.6.2")      // LGPL 3.0
+    implementation (libs.e2immuSupport)
+    implementation (libs.logbackClassic)
+    implementation (libs.javaParser)
+    implementation (libs.asm)
 
-    implementation ("ch.qos.logback:logback-classic:1.2.11") // EPL v1.0 and the LGPL 2.1
-
-    implementation ("com.github.javaparser:javaparser-core:3.25.3")
-
-    // LGPL or Apache License 2.0
-    implementation ("org.ow2.asm:asm:9.5")                // 3-clause BSD permissive license
-
-    // TEST
-    testImplementation ("org.junit.jupiter:junit-jupiter-api:5.9.3")                  // EPL v2.0
-    testRuntimeOnly ("org.junit.jupiter:junit-jupiter-engine:5.9.3")
+    testImplementation (libs.junitJupiterApi)
+    testRuntimeOnly (libs.junitJupiterEngine)
 }
 
 publishing {

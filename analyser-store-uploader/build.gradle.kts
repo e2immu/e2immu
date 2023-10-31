@@ -19,7 +19,6 @@ plugins {
 }
 
 version = "0.6.2"
-group "org.e2immu"
 
 java {
     sourceCompatibility = JavaVersion.VERSION_17
@@ -27,28 +26,22 @@ java {
     withSourcesJar()
 }
 
-
 dependencies {
-    implementation ("org.e2immu:e2immu-support:0.6.2")      // LGPL 3.0
-
+    implementation(libs.e2immuSupport)
     implementation(project(":analyser"))
+    implementation(libs.httpClient)
+    implementation(libs.httpCore)
+    implementation(libs.googleGson)
+    implementation(libs.slf4jApi)
+    implementation(libs.logbackClassic)
 
-    implementation ("org.apache.httpcomponents:httpclient:4.5.13") // Apache License 2.0
-    implementation ("org.apache.httpcomponents:httpcore:4.4.13") // Apache License 2.0
-    implementation ("com.google.code.gson:gson:2.8.9")             // Apache License 2.0
-
-    implementation ("org.slf4j:slf4j-api:1.7.36")
-    implementation ("ch.qos.logback:logback-classic:1.2.11")
-    // EPL v1.0 and the LGPL 2.1
-
-    testImplementation ("org.junit.jupiter:junit-jupiter-api:5.9.3")         // EPL v2 License
-    testRuntimeOnly ("org.junit.jupiter:junit-jupiter-engine:5.9.3")
+    testImplementation(libs.junitJupiterApi)
+    testRuntimeOnly(libs.junitJupiterEngine)
 }
 
 tasks.test {
     useJUnitPlatform()
 }
-
 
 publishing {
     publications {

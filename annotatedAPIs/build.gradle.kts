@@ -19,7 +19,6 @@ plugins {
 }
 
 version = "0.6.2"
-group "org.e2immu"
 
 java {
     sourceCompatibility = JavaVersion.VERSION_17
@@ -31,19 +30,17 @@ tasks.jar {
     from(sourceSets.main.get().output)
 }
 
-
 dependencies {
-    implementation("org.e2immu:e2immu-support:0.6.2")
+    implementation(libs.e2immuSupport)
     implementation(project(":analyser"))
     implementation(project(":analyser-store-uploader"))
     implementation(project(":analyser-cli"))
+    implementation(libs.slf4jApi)
+    implementation(libs.logbackClassic)
+    implementation(libs.javaParser)
 
-    implementation("org.slf4j:slf4j-api:1.7.36")
-    implementation("ch.qos.logback:logback-classic:1.2.11")
-
-    implementation("com.github.javaparser:javaparser-core:3.25.3")
-    testImplementation("org.junit.jupiter:junit-jupiter-api:5.9.3")                  // EPL v2.0
-    testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:5.9.3")
+    testImplementation(libs.junitJupiterApi)
+    testRuntimeOnly(libs.junitJupiterEngine)
 }
 
 tasks.test {
