@@ -96,7 +96,7 @@ public class Parser {
         }
 
         public RunResult writeAnalysis() {
-            if(analyserContext instanceof GlobalAnalyserContext globalAnalyserContext) {
+            if (analyserContext instanceof GlobalAnalyserContext globalAnalyserContext) {
                 globalAnalyserContext.writeAll();
             }
             return this;
@@ -242,8 +242,6 @@ public class Parser {
                 LOGGER.debug("Starting Java parser inspection of '{}'", uri);
                 typeInspectionBuilder.setInspectionState(STARTING_JAVA_PARSER);
 
-                TypeContext inspectionTypeContext = new TypeContext(input.globalTypeContext());
-
                 InputStreamReader isr = new InputStreamReader(uri.toURL().openStream(),
                         configuration.inputConfiguration().sourceEncoding());
                 StringWriter sw = new StringWriter();
@@ -252,8 +250,9 @@ public class Parser {
                 ParseAndInspect parseAndInspect = new ParseAndInspect(input.classPath(),
                         input.globalTypeContext().typeMap(), typesForWildcardImport, anonymousTypeCounters,
                         configuration.annotatedAPIConfiguration().disabled());
-                List<TypeInfo> primaryTypes = parseAndInspect.run(resolver, inspectionTypeContext, uri.toString(), source);
-                primaryTypes.forEach(t -> typeContexts.put(t, inspectionTypeContext));
+                ParseAndInspect.RunResult rr = parseAndInspect.run(resolver, input.globalTypeContext(),
+                        uri.toString(), source);
+                rr.primaryTypes().forEach(t -> typeContexts.put(t, rr.typeContextOfFile()));
 
                 typeInspectionBuilder.setInspectionState(FINISHED_JAVA_PARSER);
 

@@ -16,6 +16,7 @@ package org.e2immu.analyser.inspector.expr;
 
 import com.github.javaparser.ast.expr.NameExpr;
 import org.e2immu.analyser.inspector.ExpressionContext;
+import org.e2immu.analyser.inspector.TypeContext;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.TypeExpression;
 import org.e2immu.analyser.model.expression.VariableExpression;

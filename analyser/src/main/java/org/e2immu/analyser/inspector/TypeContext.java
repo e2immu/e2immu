@@ -37,17 +37,14 @@ public class TypeContext implements TypeAndInspectionProvider {
 
     public final TypeMap.Builder typeMap;
     public final String packageName; // this one is filled in UNLESS parentContext == null, because that is the root level
-    private final List<TypeInfo> importStaticAsterisk;
-    private final Map<String, TypeInfo> importStaticMemberToTypeInfo;
+    private final ImportMap importMap;
     private final Map<String, NamedType> map = new HashMap<>();
-
 
     public TypeContext(TypeMap.Builder typeMap) {
         this.typeMap = typeMap;
         parentContext = null;
         packageName = null;
-        importStaticAsterisk = new ArrayList<>();
-        importStaticMemberToTypeInfo = new HashMap<>();
+        importMap = new ImportMap();
     }
 
     public TypeContext(TypeContext parentContext) {
@@ -56,10 +53,9 @@ public class TypeContext implements TypeAndInspectionProvider {
 
     public TypeContext(String packageName, @NotNull TypeContext parentContext) {
         this.parentContext = Objects.requireNonNull(parentContext);
-        typeMap = parentContext.typeMap;
-        importStaticMemberToTypeInfo = new HashMap<>(parentContext.importStaticMemberToTypeInfo);
-        importStaticAsterisk = new ArrayList<>(parentContext.importStaticAsterisk);
         this.packageName = packageName;
+        typeMap = parentContext.typeMap;
+        importMap = parentContext.importMap;
     }
 
     public TypeMap.Builder typeMap() {
@@ -126,6 +122,33 @@ public class TypeContext implements TypeAndInspectionProvider {
         if (parentContext != null) {
             return parentContext.getSimpleName(name);
         }
+        /*
+        On-demand: subtype from import statement (see e.g. Import_2)
+        This is done on-demand to fight cyclic dependencies if we do eager inspection.
+         */
+        TypeInfo parent = importMap.getStaticMemberToTypeInfo(name);
+        if (parent != null) {
+            TypeInspection parentInspection = typeMap.getTypeInspection(parent);
+            TypeInfo subType = parentInspection.subTypes()
+                    .stream().filter(st -> name.equals(st.simpleName)).findFirst().orElse(null);
+            if (subType != null) {
+                importMap.putTypeMap(subType.fullyQualifiedName, subType, false);
+                return subType;
+            }
+        }
+        /*
+        On-demand: try to resolve the * imports registered in this type context
+         */
+        for(TypeInfo wildcard: importMap.importAsterisk()) {
+            // the call to getTypeInspection triggers the JavaParser
+            TypeInspection typeInspection = typeMap.getTypeInspection(wildcard);
+            TypeInfo subType = typeInspection.subTypes()
+                    .stream().filter(st -> name.equals(st.simpleName)).findFirst().orElse(null);
+            if (subType != null) {
+                importMap.putTypeMap(subType.fullyQualifiedName, subType, false);
+                return subType;
+            }
+        }
         return null;
     }
 
@@ -144,6 +167,11 @@ public class TypeContext implements TypeAndInspectionProvider {
     public TypeInfo getFullyQualified(String fullyQualifiedName, boolean complain) {
         TypeInfo typeInfo = typeMap.get(fullyQualifiedName);
         if (typeInfo == null) {
+            // see InspectionGaps_9: we don't have the type, but we do have an import of its enclosing type
+            TypeInfo imported = importMap.isImported(fullyQualifiedName);
+            if (imported != null) {
+                return imported;
+            }
             return typeMap.loadType(fullyQualifiedName, complain);
         }
         return typeInfo;
@@ -199,16 +227,16 @@ public class TypeContext implements TypeAndInspectionProvider {
     }
 
     public void addImportStaticWildcard(TypeInfo typeInfo) {
-        importStaticAsterisk.add(typeInfo);
+        importMap.addStaticAsterisk(typeInfo);
     }
 
     public void addImportStatic(TypeInfo typeInfo, String member) {
-        importStaticMemberToTypeInfo.put(member, typeInfo);
+        importMap.putStaticMemberToTypeInfo(member, typeInfo);
     }
 
     public Map<String, FieldReference> staticFieldImports() {
         Map<String, FieldReference> map = new HashMap<>();
-        for (Map.Entry<String, TypeInfo> entry : importStaticMemberToTypeInfo.entrySet()) {
+        for (Map.Entry<String, TypeInfo> entry : importMap.staticMemberToTypeInfoEntrySet()) {
             TypeInfo typeInfo = entry.getValue();
             String memberName = entry.getKey();
             TypeInspection typeInspection = getTypeInspection(typeInfo);
@@ -218,7 +246,7 @@ public class TypeContext implements TypeAndInspectionProvider {
                     .findFirst()
                     .ifPresent(fieldInfo -> map.put(memberName, new FieldReferenceImpl(this, fieldInfo)));
         }
-        for (TypeInfo typeInfo : importStaticAsterisk) {
+        for (TypeInfo typeInfo : importMap.staticAsterisk()) {
             TypeInspection typeInspection = getTypeInspection(typeInfo);
             typeInspection.fields().stream()
                     .filter(fieldInfo -> getFieldInspection(fieldInfo).isStatic())
@@ -246,6 +274,19 @@ public class TypeContext implements TypeAndInspectionProvider {
         return typeMap.getPrimitives();
     }
 
+    public void addImport(TypeInfo typeInfo, boolean highPriority) {
+        importMap.putTypeMap(typeInfo.fullyQualifiedName, typeInfo, highPriority);
+        addToContext(typeInfo, highPriority);
+    }
+
+    public void addImportWildcard(TypeInfo typeInfo) {
+        importMap.addToSubtypeAsterisk(typeInfo);
+        // not adding the type to the context!!! the subtypes will be added by the inspector
+    }
+
+    public boolean isImportWildcard(TypeInfo typeInfo) {
+        return importMap.isSubtypeAsterisk(typeInfo);
+    }
 
     public record MethodCandidate(MethodTypeParameterMap method, int distance) {
         public MethodCandidate(MethodTypeParameterMap method) {
@@ -313,7 +354,7 @@ public class TypeContext implements TypeAndInspectionProvider {
         }
         // it is possible that we find the method in one of the statically imported types... with * import
         // if the method is static, we must be talking about the same type (See Import_10).
-        for (TypeInfo typeInfo : importStaticAsterisk) {
+        for (TypeInfo typeInfo : importMap.staticAsterisk()) {
             if (!visited.contains(typeInfo) && !visitedStatic.contains(typeInfo)
                     && (scopeNature != Scope.ScopeNature.STATIC || typeInfo == typeOfObject.bestTypeInfo())) {
                 visitedStatic.add(typeInfo);
@@ -323,7 +364,7 @@ public class TypeContext implements TypeAndInspectionProvider {
             }
         }
         // or import by name
-        TypeInfo byName = importStaticMemberToTypeInfo.get(methodName);
+        TypeInfo byName = importMap.getStaticMemberToTypeInfo(methodName);
         if (byName != null && !visited.contains(byName) && !visitedStatic.contains(byName)) {
             visitedStatic.add(byName);
             resolveOverloadedMethodsSingleType(byName, true, scopeNature, methodName,
