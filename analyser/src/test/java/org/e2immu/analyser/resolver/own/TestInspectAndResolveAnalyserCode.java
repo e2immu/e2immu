@@ -51,7 +51,7 @@ public class TestInspectAndResolveAnalyserCode {
                 .setSkipAnalysis(true)
                 .setInputConfiguration(inputConfiguration)
                 .setAnnotatedAPIConfiguration(annotatedAPIConfiguration)
-                .addDebugLogTargets(LogTarget.RESOLVER)
+                .addDebugLogTargets(LogTarget.PARSER)
                 .build();
         configuration.initializeLoggers();
         Parser parser = new Parser(configuration);

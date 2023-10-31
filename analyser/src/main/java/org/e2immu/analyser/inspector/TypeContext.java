@@ -139,14 +139,16 @@ public class TypeContext implements TypeAndInspectionProvider {
         /*
         On-demand: try to resolve the * imports registered in this type context
          */
-        for(TypeInfo wildcard: importMap.importAsterisk()) {
+        for (TypeInfo wildcard : importMap.importAsterisk()) {
             // the call to getTypeInspection triggers the JavaParser
             TypeInspection typeInspection = typeMap.getTypeInspection(wildcard);
-            TypeInfo subType = typeInspection.subTypes()
-                    .stream().filter(st -> name.equals(st.simpleName)).findFirst().orElse(null);
-            if (subType != null) {
-                importMap.putTypeMap(subType.fullyQualifiedName, subType, false);
-                return subType;
+            if (typeInspection != null) {
+                TypeInfo subType = typeInspection.subTypes()
+                        .stream().filter(st -> name.equals(st.simpleName)).findFirst().orElse(null);
+                if (subType != null) {
+                    importMap.putTypeMap(subType.fullyQualifiedName, subType, false);
+                    return subType;
+                }
             }
         }
         return null;

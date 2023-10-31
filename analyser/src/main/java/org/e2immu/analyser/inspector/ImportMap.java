@@ -9,10 +9,11 @@ public class ImportMap {
     private final List<TypeInfo> staticAsterisk = new ArrayList<>();
     private final Map<String, TypeInfo> staticMemberToTypeInfo = new HashMap<>();
     private final Map<String, TypeInfo> typeMap = new HashMap<>();
-    private final Set<TypeInfo> subtypeAsterisk = new HashSet<>();
+    private final Set<TypeInfo> subtypeAsterisk = new LinkedHashSet<>();
 
     public void addStaticAsterisk(TypeInfo typeInfo) {
         staticAsterisk.add(typeInfo);
+        subtypeAsterisk.add(typeInfo); // see InspectionGaps_13: we also add the subtypes
     }
 
     public void putStaticMemberToTypeInfo(String member, TypeInfo typeInfo) {
@@ -58,6 +59,6 @@ public class ImportMap {
     }
 
     public Iterable<? extends TypeInfo> importAsterisk() {
-        return subtypeAsterisk;
+        return new HashSet<>(subtypeAsterisk); // to avoid concurrent modification issues
     }
 }
