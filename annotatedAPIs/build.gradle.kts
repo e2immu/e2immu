@@ -1,4 +1,3 @@
-
 /*
  * e2immu: a static code analyser for effective and eventual immutability
  * Copyright 2020-2021, Bart Naudts, https://www.e2immu.org
@@ -14,45 +13,47 @@
  */
 
 plugins {
-    id 'java'
-    id 'maven-publish'
+    java
+    application
+    id("maven-publish")
 }
 
-version '0.6.2'
-group 'org.e2immu'
+version = "0.6.2"
+group "org.e2immu"
 
 java {
     sourceCompatibility = JavaVersion.VERSION_17
     targetCompatibility = JavaVersion.VERSION_17
+    withSourcesJar()
 }
 
-jar {
-    from sourceSets.main.java
+tasks.jar {
+    from(sourceSets.main.get().output)
 }
 
 
 dependencies {
-    implementation group: 'org.e2immu', name: 'e2immu-support', version: '0.6.2'   // LGPL 3.0
-    implementation project(':analyser')
-    implementation project(':analyser-store-uploader')
-    implementation project(':analyser-cli')
+    implementation("org.e2immu:e2immu-support:0.6.2")
+    implementation(project(":analyser"))
+    implementation(project(":analyser-store-uploader"))
+    implementation(project(":analyser-cli"))
 
-    implementation group: 'org.slf4j', name: 'slf4j-api', version: '1.7.36'        // MIT X-11 License
-    implementation group: 'ch.qos.logback', name: 'logback-classic', version: '1.2.11' // EPL v1.0 and the LGPL 2.1
+    implementation("org.slf4j:slf4j-api:1.7.36")
+    implementation("ch.qos.logback:logback-classic:1.2.11")
 
-    implementation 'com.github.javaparser:javaparser-core:3.25.3'
-    testImplementation 'org.junit.jupiter:junit-jupiter-api:5.9.3'                 // EPL v2
-    testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.9.3'
+    implementation("com.github.javaparser:javaparser-core:3.25.3")
+    testImplementation("org.junit.jupiter:junit-jupiter-api:5.9.3")                  // EPL v2.0
+    testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:5.9.3")
 }
 
-test {
-    exclude '**/testfailing/*.class'
+tasks.test {
+    exclude("**/testfailing/*.class")
 
     useJUnitPlatform()
 }
 
 // ********************************* Generate AnnotationXML from AnnotatedAPI files in annotatedAPIs project
-
+/*
 task generateAnnotationXml(type: JavaExec) {
     group = "Execution"
     description = "Convert all annotations in the annotatedAPIs to annotation.xml files"
@@ -94,31 +95,37 @@ def annotationXmlArtifact = artifacts.add('archives', annotationXmlJar, {
     type ('jar')
     builtBy ('annotationXmlJar')
 })
-
+*/
 // ********************************* Publishing
 
+
 publishing {
-    repositories {
-        mavenLocal()
-        maven {
-            name = "GitHubPackages"
-            url = uri("https://maven.pkg.github.com/bnaudts/e2immu")
-            credentials {
-                username = project.findProperty("gpr.user") ?: System.getenv("USERNAME")
-                password = project.findProperty("gpr.key") ?: System.getenv("GITHUB_TOKEN")
-            }
-        }
-    }
     publications {
-        mavenJava(MavenPublication) {
-            groupId = 'org.2immu'
-            artifactId = 'annotatedAPIs'
-            from components.java
-        }
-        gpr(MavenPublication) {
-            groupId = 'org.e2immu'
-            artifactId = 'annotatedAPIs'
-            from components.java
+        create<MavenPublication>("mavenJava") {
+            groupId = "org.e2immu"
+            artifactId = "annotatedAPIs"
+            version = "0.6.2"
+
+            from(components["java"])
+
+            pom {
+                name = "Annotated APIs for e2immu analyser"
+                description = "Static code analyser focusing on modication and immutability"
+                url = "https://e2immu.org"
+                licenses {
+                    license {
+                        name = "GNU Lesser General Public License, version 3.0"
+                        url = "https://www.gnu.org/licenses/lgpl-3.0.html"
+                    }
+                }
+                developers {
+                    developer {
+                        id = "bnaudts"
+                        name = "Bart Naudts"
+                        email = "bart.naudts@e2immu.org"
+                    }
+                }
+            }
         }
     }
 }

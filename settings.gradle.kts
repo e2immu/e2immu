@@ -13,9 +13,9 @@
  * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-rootProject.name = 'org.e2immu'
-include 'analyser'
-include 'gradle-plugin'
-include 'analyser-cli'
-include 'analyser-store-uploader'
-include 'annotatedAPIs'
+rootProject.name = "org.e2immu"
+include ("analyser")
+include ("gradle-plugin")
+include ("analyser-cli")
+include ("analyser-store-uploader")
+include ("annotatedAPIs")
