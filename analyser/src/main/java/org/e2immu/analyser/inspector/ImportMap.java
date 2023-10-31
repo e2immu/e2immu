@@ -6,7 +6,7 @@ import java.util.*;
 
 public class ImportMap {
 
-    private final List<TypeInfo> staticAsterisk = new ArrayList<>();
+    private final Set<TypeInfo> staticAsterisk = new LinkedHashSet<>();
     private final Map<String, TypeInfo> staticMemberToTypeInfo = new HashMap<>();
     private final Map<String, TypeInfo> typeMap = new HashMap<>();
     private final Set<TypeInfo> subtypeAsterisk = new LinkedHashSet<>();

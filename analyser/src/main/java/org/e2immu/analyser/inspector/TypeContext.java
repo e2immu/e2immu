@@ -48,14 +48,14 @@ public class TypeContext implements TypeAndInspectionProvider {
     }
 
     public TypeContext(TypeContext parentContext) {
-        this(parentContext.packageName, parentContext);
+        this(parentContext.packageName, parentContext, true);
     }
 
-    public TypeContext(String packageName, @NotNull TypeContext parentContext) {
+    public TypeContext(String packageName, @NotNull TypeContext parentContext, boolean copyImportMap) {
         this.parentContext = Objects.requireNonNull(parentContext);
         this.packageName = packageName;
         typeMap = parentContext.typeMap;
-        importMap = parentContext.importMap;
+        importMap = copyImportMap ? parentContext.importMap : new ImportMap();
     }
 
     public TypeMap.Builder typeMap() {
@@ -120,7 +120,10 @@ public class TypeContext implements TypeAndInspectionProvider {
         NamedType namedType = map.get(name);
         if (namedType != null) return namedType;
         if (parentContext != null) {
-            return parentContext.getSimpleName(name);
+            NamedType nt = parentContext.getSimpleName(name);
+            if (nt != null) {
+                return nt;
+            }
         }
         /*
         On-demand: subtype from import statement (see e.g. Import_2)

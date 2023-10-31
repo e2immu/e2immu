@@ -83,7 +83,7 @@ public record ParseAndInspect(Resources classPath,
                 .map(pd -> pd.getName().asString())
                 .orElseThrow(() -> new UnsupportedOperationException("Expect package declaration in file " + fileName));
 
-        TypeContext typeContextOfFile = new TypeContext(globalTypeContext);
+        TypeContext typeContextOfFile = new TypeContext(packageName, globalTypeContext, false);
         addSourceTypesToTypeContext(typeContextOfFile, packageName);
         expandLeavesOfClassPath(typeContextOfFile, packageName);
 
@@ -112,7 +112,7 @@ public record ParseAndInspect(Resources classPath,
         // we first add the types to the type context, so that they're all known
         for (TypeInspectorAndTypeDeclaration tia : typeInspectors) {
             TypeInfo typeInfo = tia.typeInspector.getTypeInfo();
-            TypeContext typeContext = new TypeContext(packageName, typeContextOfFile);
+            TypeContext typeContext = new TypeContext(packageName, typeContextOfFile, true);
             // add the subtypes, because record declarations can have subtype names in their parameter lists
             TypeInspection typeInspection = typeContextOfFile.getTypeInspection(typeInfo);
             typeInspection.subTypes().forEach(typeContext::addToContext);

@@ -218,7 +218,7 @@ public class ResolverImpl implements Resolver {
 
         allBuilders.forEach((typeInfo, builder) -> computeSuperTypes(inspectionProvider, typeInfo, builder, allBuilders));
         allBuilders.forEach((typeInfo, builder) -> computeFieldAccess(inspectionProvider, typeInfo, builder,
-                parent != null ? inspectedTypes.get(typeInfo): inspectedTypes.get(typeInfo.primaryType())));
+                parent != null ? inspectedTypes.get(typeInfo) : inspectedTypes.get(typeInfo.primaryType())));
         allBuilders.forEach((typeInfo, builder) -> typeInfo.typeResolution.set(builder.build()));
 
         List<TypeCycle> typeCycles = groupByCycles(sorted.stream().map(typeInfo -> typeInfo.typeResolution.get().sortedType()).toList());
@@ -361,9 +361,10 @@ public class ResolverImpl implements Resolver {
             List<TypeInfo> typeAndAllSubTypes = typeAndAllSubTypes(typeInfo);
             Set<TypeInfo> restrictToType = new HashSet<>(typeAndAllSubTypes);
 
-            doFields(typeInspection, topType, expressionContextForBody, methodFieldSubTypeGraph);
-            doMethodsAndConstructors(typeInspection, topType, expressionContextForBody, methodFieldSubTypeGraph);
-            doAnnotations(typeInspection.getAnnotations(), expressionContextForBody);
+            ExpressionContext withFields = expressionContextForBody.newVariableContext("fields of " + typeInfo);
+            doFields(typeInspection, topType, withFields, methodFieldSubTypeGraph);
+            doMethodsAndConstructors(typeInspection, topType, withFields, methodFieldSubTypeGraph);
+            doAnnotations(typeInspection.getAnnotations(), withFields);
 
             // dependencies of the type
 
@@ -408,6 +409,7 @@ public class ResolverImpl implements Resolver {
             } else {
                 methodFieldSubTypeGraph.addNode(fieldInfo, List.of());
             }
+            expressionContext.variableContext().add(new FieldReferenceImpl(expressionContext.typeContext(), fieldInfo));
             assert !fieldInfo.fieldInspection.isSet() : "Field inspection for " + fieldInfo.fullyQualifiedName() + " has already been set";
             fieldInfo.fieldInspection.set(fieldInspection.build(expressionContext.typeContext()));
             LOGGER.debug("Set field inspection of " + fieldInfo.fullyQualifiedName());
