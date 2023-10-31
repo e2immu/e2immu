@@ -14,7 +14,7 @@ public @interface Resource {
 
     Class<?> type() default Object.class;
 
-    AuthenticationType authenticationType() default Resource.AuthenticationType.CONTAINER;
+   // AuthenticationType authenticationType() default Resource.AuthenticationType.CONTAINER;
 
     boolean shareable() default true;
 
@@ -22,11 +22,11 @@ public @interface Resource {
 
     String description() default "";
 
-    public static enum AuthenticationType {
+    enum AuthenticationType {
         CONTAINER,
         APPLICATION;
 
-        private AuthenticationType() {
+        AuthenticationType() {
         }
     }
 }

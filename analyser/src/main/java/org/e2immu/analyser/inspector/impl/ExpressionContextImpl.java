@@ -784,7 +784,8 @@ public record ExpressionContextImpl(ExpressionContext.ResolverRecursion resolver
             }
 
             if(expression.isNormalAnnotationExpr()) {
-
+                NormalAnnotationExpr normalAnnotationExpr = expression.asNormalAnnotationExpr();
+                return ParseNormalAnnotation.parse(this, normalAnnotationExpr);
             }
             throw new UnsupportedOperationException("Unknown expression type " + expression +
                     " class " + expression.getClass() + " at " + expression.getBegin());

@@ -27,7 +27,7 @@ import java.util.List;
 import java.util.Set;
 
 @ImmutableContainer
-public interface AnnotationExpression {
+public interface AnnotationExpression extends Expression {
 
     @NotNull
     TypeInfo typeInfo();

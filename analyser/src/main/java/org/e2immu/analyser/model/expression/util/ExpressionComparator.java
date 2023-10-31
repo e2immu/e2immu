@@ -86,6 +86,7 @@ public class ExpressionComparator implements Comparator<Expression> {
 
     // irrelevant, normally
     public static final int ORDER_MVP = 90;
+    public static final int ORDER_ANNOTATION_EXPRESSION = 91;
 
     public static final ExpressionComparator SINGLETON = new ExpressionComparator();
 

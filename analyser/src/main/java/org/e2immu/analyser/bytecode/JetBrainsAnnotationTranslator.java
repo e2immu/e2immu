@@ -58,15 +58,16 @@ public class JetBrainsAnnotationTranslator {
     private AnnotationExpression toAnnotationExpression(Annotation annotation) {
         TypeInfo typeInfo = e2ImmuAnnotationExpressions.get(annotation.name());
         MemberValuePair contractExpression = new MemberValuePair("contract", new BooleanConstant(primitives, true));
+        Identifier id = Identifier.generate("asm convert");
         if (annotation.values().isEmpty()) {
-            return new AnnotationExpressionImpl(typeInfo, List.of(contractExpression));
+            return new AnnotationExpressionImpl(id, typeInfo, List.of(contractExpression));
         }
         List<MemberValuePair> expressions = new ArrayList<>();
         expressions.add(contractExpression);
         for (Value value : annotation.values()) {
             expressions.add(new MemberValuePair(value.name, convert(value.val)));
         }
-        return new AnnotationExpressionImpl(typeInfo, expressions);
+        return new AnnotationExpressionImpl(id, typeInfo, expressions);
     }
 
     private Expression convert(String string) {

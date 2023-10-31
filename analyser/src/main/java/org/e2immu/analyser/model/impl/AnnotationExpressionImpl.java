@@ -15,9 +15,12 @@
 package org.e2immu.analyser.model.impl;
 
 import org.e2immu.analyser.analyser.AnnotationParameters;
+import org.e2immu.analyser.analyser.EvaluationResult;
+import org.e2immu.analyser.analyser.ForwardEvaluationInfo;
 import org.e2immu.analyser.analyser.util.GenerateAnnotationsImmutableAndContainer;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.*;
+import org.e2immu.analyser.model.expression.util.ExpressionComparator;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.Symbol;
@@ -30,21 +33,34 @@ import org.e2immu.annotation.rare.IgnoreModifications;
 
 import java.lang.reflect.Array;
 import java.util.*;
+import java.util.function.Predicate;
 import java.util.stream.Stream;
 
 import static org.e2immu.analyser.parser.E2ImmuAnnotationExpressions.*;
 
+public class AnnotationExpressionImpl extends BaseExpression implements AnnotationExpression {
 
-public record AnnotationExpressionImpl(TypeInfo typeInfo,
-                                       @ImmutableContainer
-                                       List<MemberValuePair> expressions) implements AnnotationExpression {
+    private final TypeInfo typeInfo;
+    private final List<MemberValuePair> expressions;
+    private final ParameterizedType parameterizedType;
+
+    public AnnotationExpressionImpl(TypeInfo typeInfo,
+                                    @ImmutableContainer
+                                    List<MemberValuePair> expressions) {
+        this(Identifier.CONSTANT, typeInfo, expressions);
+    }
+
+    public AnnotationExpressionImpl(Identifier identifier,
+                                    TypeInfo typeInfo,
+                                    @ImmutableContainer
+                                    List<MemberValuePair> expressions) {
+        super(identifier, expressions.stream().mapToInt(Expression::getComplexity).sum());
+        this.typeInfo = Objects.requireNonNull(typeInfo);
+        this.expressions = Objects.requireNonNull(expressions);
+        this.parameterizedType = new ParameterizedType(typeInfo, List.of());
+    }
 
     public static final String ORG_E_2_IMMU_ANNOTATION = "org.e2immu.annotation";
-
-    public AnnotationExpressionImpl {
-        Objects.requireNonNull(typeInfo);
-        Objects.requireNonNull(expressions);
-    }
 
     public static AnnotationExpression from(Primitives primitives, TypeInfo typeInfo, Map<String, Object> map) {
         Stream<MemberValuePair> stream;
@@ -61,6 +77,53 @@ public record AnnotationExpressionImpl(TypeInfo typeInfo,
         if (object instanceof Boolean bool) return new BooleanConstant(primitives, Identifier.CONSTANT, bool);
         if (object instanceof Integer integer) return new IntConstant(primitives, Identifier.CONSTANT, integer);
         throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public TypeInfo typeInfo() {
+        return typeInfo;
+    }
+
+    @Override
+    public List<MemberValuePair> expressions() {
+        return expressions;
+    }
+
+    @Override
+    public ParameterizedType returnType() {
+        return parameterizedType;
+    }
+
+    @Override
+    public Precedence precedence() {
+        return Precedence.BOTTOM;
+    }
+
+    @Override
+    public EvaluationResult evaluate(EvaluationResult context, ForwardEvaluationInfo forwardEvaluationInfo) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public int order() {
+        return ExpressionComparator.ORDER_ANNOTATION_EXPRESSION;
+    }
+
+    @Override
+    public int internalCompareTo(Expression v) throws ExpressionComparator.InternalError {
+        if (v instanceof AnnotationExpression ae) {
+            int c = typeInfo.compareTo(ae.typeInfo());
+            if (c != 0) return c;
+            int pos = 0;
+            for (Expression e : expressions) {
+                if (pos >= ae.expressions().size()) return -1;
+                int d = e.compareTo(ae.expressions().get(pos));
+                if (d != 0) return d;
+                pos++;
+            }
+            if (ae.expressions().size() > expressions.size()) return 1;
+            return 0;
+        } else throw new ExpressionComparator.InternalError();
     }
 
     // used by the byte code inspector, MyAnnotationVisitor
@@ -239,13 +302,27 @@ public record AnnotationExpressionImpl(TypeInfo typeInfo,
     }
 
     @Override
+    public void visit(Predicate<Element> predicate) {
+        if (predicate.test(this)) {
+            for (Expression e : expressions) {
+                e.visit(predicate);
+            }
+        }
+    }
+
+    @Override
     public UpgradableBooleanMap<TypeInfo> typesReferenced() {
-        return UpgradableBooleanMap.of(typeInfo, true);
+        return UpgradableBooleanMap.of(
+                parameterizedType.typesReferenced(true),
+                expressions.stream().flatMap(e -> e.typesReferenced().stream()).collect(UpgradableBooleanMap.collector()));
     }
 
     @Override
     public UpgradableIntMap<TypeInfo> typesReferenced2(int weight) {
-        return UpgradableIntMap.of(typeInfo.primaryType(), weight);
+        return UpgradableIntMap.of(
+                parameterizedType.typesReferenced2(weight),
+                expressions.stream().flatMap(e -> e.typesReferenced2(weight).stream())
+                        .collect(UpgradableIntMap.collector()));
     }
 
     private static final Set<String> FQN_ALWAYS_CONTRACT = Set.of(Finalizer.class.getCanonicalName(),
