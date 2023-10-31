@@ -28,6 +28,7 @@ public class Main {
 
     public static final String PATH_SEPARATOR = System.getProperty("path.separator");
     public static final String COMMA = ",";
+    public static final String COMMA_ALLOW_SPACE = ",\\s*";
 
     public static final String UPLOAD_PROJECT = "upload-project";
     public static final String UPLOAD_PACKAGES = "upload-packages";
@@ -118,11 +119,11 @@ public class Main {
             inputBuilder.setSourceEncoding(sourceEncoding);
 
             String[] restrictSourceToPackages = cmd.getOptionValues(SOURCE_PACKAGES);
-            splitAndAdd(restrictSourceToPackages, COMMA, inputBuilder::addRestrictSourceToPackages);
+            splitAndAdd(restrictSourceToPackages, COMMA_ALLOW_SPACE, inputBuilder::addRestrictSourceToPackages);
             builder.setInputConfiguration(inputBuilder.build());
 
             String[] debugLogTargets = cmd.getOptionValues(DEBUG);
-            splitAndAdd(debugLogTargets, COMMA, builder::addDebugLogTargets);
+            splitAndAdd(debugLogTargets, COMMA_ALLOW_SPACE, builder::addDebugLogTargets);
             boolean ignoreErrors = cmd.hasOption(IGNORE_ERRORS);
             builder.setIgnoreErrors(ignoreErrors);
 
@@ -134,7 +135,7 @@ public class Main {
             String projectName = cmd.getOptionValue(UPLOAD_PROJECT);
             uploadBuilder.setProjectName(projectName);
             String[] uploadPackages = cmd.getOptionValues(UPLOAD_PACKAGES);
-            splitAndAdd(uploadPackages, COMMA, uploadBuilder::addUploadPackage);
+            splitAndAdd(uploadPackages, COMMA_ALLOW_SPACE, uploadBuilder::addUploadPackage);
             builder.setUploadConfiguration(uploadBuilder.build());
 
             AnnotationXmlConfiguration.Builder xmlBuilder = new AnnotationXmlConfiguration.Builder();
@@ -142,9 +143,9 @@ public class Main {
             xmlBuilder.setAnnotationXml(writeAnnotationXml);
             xmlBuilder.setWriteAnnotationXmlDir(cmd.getOptionValue(WRITE_ANNOTATION_XML_DIR));
             String[] annotationXmlWritePackages = cmd.getOptionValues(WRITE_ANNOTATION_XML_PACKAGES);
-            splitAndAdd(annotationXmlWritePackages, COMMA, xmlBuilder::addAnnotationXmlWritePackages);
+            splitAndAdd(annotationXmlWritePackages, COMMA_ALLOW_SPACE, xmlBuilder::addAnnotationXmlWritePackages);
             String[] annotationXmlReadPackages = cmd.getOptionValues(READ_ANNOTATION_XML_PACKAGES);
-            splitAndAdd(annotationXmlReadPackages, COMMA, xmlBuilder::addAnnotationXmlReadPackages);
+            splitAndAdd(annotationXmlReadPackages, COMMA_ALLOW_SPACE, xmlBuilder::addAnnotationXmlReadPackages);
             builder.setAnnotationXmConfiguration(xmlBuilder.build());
 
             AnnotatedAPIConfiguration.Builder apiBuilder = new AnnotatedAPIConfiguration.Builder();
@@ -158,9 +159,9 @@ public class Main {
             apiBuilder.setWriteAnnotatedAPIsDir(cmd.getOptionValue(WRITE_ANNOTATED_API_DIR));
             apiBuilder.setDestinationPackage(cmd.getOptionValue(WRITE_ANNOTATED_API_DESTINATION_PACKAGE));
             String[] writeAnnotatedAPIPackages = cmd.getOptionValues(WRITE_ANNOTATED_API_PACKAGES);
-            splitAndAdd(writeAnnotatedAPIPackages, COMMA, apiBuilder::addWriteAnnotatedAPIPackages);
+            splitAndAdd(writeAnnotatedAPIPackages, COMMA_ALLOW_SPACE, apiBuilder::addWriteAnnotatedAPIPackages);
             String[] readAnnotatedAPIPackages = cmd.getOptionValues(READ_ANNOTATED_API_PACKAGES);
-            splitAndAdd(readAnnotatedAPIPackages, COMMA, apiBuilder::addReadAnnotatedAPIPackages);
+            splitAndAdd(readAnnotatedAPIPackages, COMMA_ALLOW_SPACE, apiBuilder::addReadAnnotatedAPIPackages);
             AnnotatedAPIConfiguration api = apiBuilder.build();
             builder.setAnnotatedAPIConfiguration(api);
 
@@ -314,7 +315,7 @@ public class Main {
         setBooleanProperty(analyserProperties, IGNORE_ERRORS, builder::setIgnoreErrors);
         setBooleanProperty(analyserProperties, SKIP_ANALYSIS, builder::setSkipAnalysis);
 
-        setSplitStringProperty(analyserProperties, COMMA, DEBUG, builder::addDebugLogTargets);
+        setSplitStringProperty(analyserProperties, COMMA_ALLOW_SPACE, DEBUG, builder::addDebugLogTargets);
 
         return builder.build();
     }
@@ -324,7 +325,7 @@ public class Main {
         setBooleanProperty(analyserProperties, UPLOAD, builder::setUpload);
         setStringProperty(analyserProperties, UPLOAD_PROJECT, builder::setProjectName);
         setStringProperty(analyserProperties, UPLOAD_URL, builder::setAnnotationServerUrl);
-        setSplitStringProperty(analyserProperties, COMMA, UPLOAD_PACKAGES, builder::addUploadPackage);
+        setSplitStringProperty(analyserProperties, COMMA_ALLOW_SPACE, UPLOAD_PACKAGES, builder::addUploadPackage);
         return builder.build();
     }
 
@@ -332,7 +333,7 @@ public class Main {
         AnnotationXmlConfiguration.Builder builder = new AnnotationXmlConfiguration.Builder();
         setBooleanProperty(analyserProperties, WRITE_ANNOTATION_XML, builder::setAnnotationXml);
         setStringProperty(analyserProperties, WRITE_ANNOTATION_XML_DIR, builder::setWriteAnnotationXmlDir);
-        setSplitStringProperty(analyserProperties, COMMA, WRITE_ANNOTATION_XML_PACKAGES, builder::addAnnotationXmlWritePackages);
+        setSplitStringProperty(analyserProperties, COMMA_ALLOW_SPACE, WRITE_ANNOTATION_XML_PACKAGES, builder::addAnnotationXmlWritePackages);
         return builder.build();
     }
 
@@ -342,7 +343,7 @@ public class Main {
         setStringProperty(analyserProperties, SOURCE_ENCODING, builder::setSourceEncoding);
         setSplitStringProperty(analyserProperties, PATH_SEPARATOR, SOURCE, builder::addSources);
         setSplitStringProperty(analyserProperties, PATH_SEPARATOR, CLASSPATH, builder::addClassPath);
-        setSplitStringProperty(analyserProperties, COMMA, SOURCE_PACKAGES, builder::addRestrictSourceToPackages);
+        setSplitStringProperty(analyserProperties, COMMA_ALLOW_SPACE, SOURCE_PACKAGES, builder::addRestrictSourceToPackages);
         return builder.build();
     }
 
@@ -351,8 +352,8 @@ public class Main {
         setWriteModeProperty(analyserProperties, builder::setWriteMode);
         setStringProperty(analyserProperties, Main.WRITE_ANNOTATED_API_DESTINATION_PACKAGE, builder::setDestinationPackage);
         setStringProperty(analyserProperties, Main.WRITE_ANNOTATED_API_DIR, builder::setWriteAnnotatedAPIsDir);
-        setSplitStringProperty(analyserProperties, Main.COMMA, Main.WRITE_ANNOTATED_API_PACKAGES, builder::addWriteAnnotatedAPIPackages);
-        setSplitStringProperty(analyserProperties, Main.COMMA, Main.READ_ANNOTATED_API_PACKAGES, builder::addReadAnnotatedAPIPackages);
+        setSplitStringProperty(analyserProperties, Main.COMMA_ALLOW_SPACE, Main.WRITE_ANNOTATED_API_PACKAGES, builder::addWriteAnnotatedAPIPackages);
+        setSplitStringProperty(analyserProperties, Main.COMMA_ALLOW_SPACE, Main.READ_ANNOTATED_API_PACKAGES, builder::addReadAnnotatedAPIPackages);
         setSplitStringProperty(analyserProperties, PATH_SEPARATOR, ANNOTATED_API_SOURCE, builder::addAnnotatedAPISourceDirs);
         return builder.build();
     }

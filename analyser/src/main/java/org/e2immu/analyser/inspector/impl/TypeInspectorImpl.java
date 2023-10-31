@@ -199,7 +199,8 @@ public class TypeInspectorImpl implements TypeInspector {
                 }
                 builder.computeAccess(typeContext);
             } catch (RuntimeException rte) {
-                LOGGER.error("Caught runtime exception while parsing type declaration at line " + typeDeclaration.getBegin());
+                LOGGER.error("Caught runtime exception while parsing type declaration of '{}' at line {}",
+                        typeInfo.fullyQualifiedName, typeDeclaration.getBegin());
                 throw rte;
             }
         } else if (typeDeclaration instanceof ClassOrInterfaceDeclaration cid) {
@@ -334,7 +335,7 @@ public class TypeInspectorImpl implements TypeInspector {
             expressionContext.typeContext().addToContext(tp);
             tp.inspect(expressionContext.typeContext(), typeParameter);
             builder.addTypeParameter(tp);
-            if (tp.isAnnotatedWithIndependent() == null){
+            if (tp.isAnnotatedWithIndependent() == null) {
                 boolean annotatedWithIndependent = isAnnotatedWithIndependent(typeParameter, expressionContext);
                 tp.setAnnotatedWithIndependent(annotatedWithIndependent);
             }

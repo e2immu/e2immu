@@ -51,6 +51,7 @@ public class AnalyserExtension {
     /* from the general Configuration -- Quiet taken from Gradle */
     private String debug;
     private boolean ignoreErrors;
+    private boolean skipAnalysis;
 
     private final ActionBroadcast<AnalyserProperties> propertiesActions;
 
@@ -214,5 +215,13 @@ public class AnalyserExtension {
 
     public void setIgnoreErrors(boolean ignoreErrors) {
         this.ignoreErrors = ignoreErrors;
+    }
+
+    public boolean isSkipAnalysis() {
+        return skipAnalysis;
+    }
+
+    public void setSkipAnalysis(boolean skipAnalysis) {
+        this.skipAnalysis = skipAnalysis;
     }
 }

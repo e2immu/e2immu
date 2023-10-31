@@ -27,7 +27,8 @@ public enum LogTarget {
     INSPECTOR("inspector"),
     BYTECODE("bytecode"),
     ANNOTATION_XML("annotationxml"),
-    ANNOTATED_API("annotatedapi");
+    ANNOTATED_API("annotatedapi"),
+    PARSER("parser");
 
     LogTarget(String... prefixes) {
         this.prefixes = prefixes;

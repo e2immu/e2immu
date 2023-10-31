@@ -99,6 +99,7 @@ public record AnalyserPropertyComputer(
         properties.put(Main.SOURCE_PACKAGES, extension.getSourcePackages());
         properties.put(Main.JRE, extension.getJre());
         properties.put(Main.IGNORE_ERRORS, extension.isIgnoreErrors());
+        properties.put(Main.SKIP_ANALYSIS, extension.isSkipAnalysis());
 
         properties.put(Main.UPLOAD, extension.getUpload() == null || extension.getUpload());
         properties.put(Main.UPLOAD_PROJECT, project.getName());

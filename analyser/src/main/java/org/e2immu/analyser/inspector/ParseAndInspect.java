@@ -177,10 +177,12 @@ public record ParseAndInspect(Resources classPath,
         // higher priority names, allowOverwrite = true
         LOGGER.debug("Import of {}", fullyQualified);
         TypeInfo typeInfo = loadTypeDoNotImport(fullyQualified);
-        // when a type is imported, its sub-types are accessible straight away
+        // when a type is imported, its subtypes are accessible straight away
         // (they might need disambiguation, but that's not the problem here)
         TypeInspection inspection = typeMapBuilder.getTypeInspection(typeInfo);
-        assert inspection != null : "Type inspection of " + typeInfo.fullyQualifiedName + " not found";
+        if (inspection == null) {
+            throw new RuntimeException("Type inspection of " + typeInfo.fullyQualifiedName + " not found");
+        }
         inspection.subTypes().forEach(subType -> loadTypeDoNotImport(subType.fullyQualifiedName));
 
         typeContextOfFile.addToContext(typeInfo, true); // simple name for primary
