@@ -783,6 +783,9 @@ public record ExpressionContextImpl(ExpressionContext.ResolverRecursion resolver
                 return new StringConstant(primitives, textBlock.stripIndent());
             }
 
+            if(expression.isNormalAnnotationExpr()) {
+
+            }
             throw new UnsupportedOperationException("Unknown expression type " + expression +
                     " class " + expression.getClass() + " at " + expression.getBegin());
         } catch (RuntimeException rte) {

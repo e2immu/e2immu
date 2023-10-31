@@ -20,6 +20,7 @@ import org.e2immu.analyser.model.MethodInfo;
 import org.e2immu.analyser.model.TypeInfo;
 import org.e2immu.analyser.parser.TypeMap;
 import org.e2immu.analyser.resolver.testexample.Annotations_0;
+import org.e2immu.analyser.resolver.testexample.Annotations_1;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
@@ -45,5 +46,13 @@ public class TestAnnotations extends CommonTest {
         assertEquals(1, annotations.size());
         AnnotationExpression a0 = annotations.get(0);
         assertEquals("false", a0.extract("value", ""));
+    }
+
+    @Test
+    public void test_1() throws IOException {
+        TypeMap typeMap = inspectAndResolve(Annotations_1.class);
+        TypeInfo typeInfo = typeMap.get(Annotations_1.class);
+        assertNotNull(typeInfo);
+
     }
 }

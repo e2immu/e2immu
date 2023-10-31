@@ -235,9 +235,12 @@ public class Parser {
             if (typeInspectionBuilder.getInspectionState() != TRIGGER_JAVA_PARSER) {
                 return; // already done, or started
             }
-            URI uri = Objects.requireNonNull(urls.get(typeInfo),
-                    "Cannot find URL for " + typeInfo.fullyQualifiedName + "; inspection state " + typeInspectionBuilder.getInspectionState() + "; in\n" +
-                            urls.values().stream().map(Object::toString).collect(Collectors.joining("\n")) + "\n");
+            URI uri = urls.get(typeInfo);
+            if (uri == null) {
+                throw new RuntimeException("Cannot find URL for " + typeInfo.fullyQualifiedName
+                        + "; inspection state " + typeInspectionBuilder.getInspectionState() + "; in\n" +
+                        urls.values().stream().map(Object::toString).collect(Collectors.joining("\n")) + "\n");
+            }
             try {
                 LOGGER.debug("Starting Java parser inspection of '{}'", uri);
                 typeInspectionBuilder.setInspectionState(STARTING_JAVA_PARSER);

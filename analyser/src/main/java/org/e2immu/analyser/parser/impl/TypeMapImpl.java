@@ -384,11 +384,20 @@ public class TypeMapImpl implements TypeMap {
         @Override
         public TypeInspection getTypeInspection(TypeInfo typeInfo) {
             if (typeInfo.typeInspection.isSet()) {
-                // primitives, etc.
                 return typeInfo.typeInspection.get();
             }
             TypeInspection.Builder typeInspection = typeInspections.get(typeInfo);
             if (typeInspection == null) {
+                int dot = typeInfo.fullyQualifiedName.lastIndexOf('.');
+                String fqn = typeInfo.fullyQualifiedName.substring(0, dot);
+                TypeInfo parent = get(fqn);
+                if (parent != null) {
+                    LOGGER.debug("Trigger parent of {}", typeInfo);
+                    getTypeInspection(parent);
+                    // re-try: the inspection of the parent should have caused the inspection of the child
+                    return getTypeInspection(typeInfo);
+                }
+                LOGGER.error("Type {} not in typeInspections map of size {}", typeInfo, typeInspections.size());
                 return null;
             }
             if (typeInspection.getInspectionState() == TRIGGER_BYTECODE_INSPECTION) {
@@ -400,15 +409,17 @@ public class TypeMapImpl implements TypeMap {
                 }
             } else if (typeInspection.getInspectionState() == TRIGGER_JAVA_PARSER) {
                 try {
+                    LOGGER.debug("Triggering Java parser on {}", typeInfo);
                     inspectWithJavaParser.inspect(typeInfo, typeInspection);
                 } catch (ParseException e) {
-                    e.printStackTrace();
-                    throw new UnsupportedOperationException("Caught parse exception inspecting " + typeInfo.fullyQualifiedName + ": " + e);
+                    String message = "Caught parse exception inspecting " + typeInfo.fullyQualifiedName;
+                    throw new UnsupportedOperationException(message, e);
                 }
                 if (typeInspection.getInspectionState().lt(FINISHED_JAVA_PARSER)) {
                     throw new UnsupportedOperationException("? expected the java parser to do its job");
                 }
             }
+            // always not null here
             return typeInspection;
         }
 
