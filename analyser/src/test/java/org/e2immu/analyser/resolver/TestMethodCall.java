@@ -35,7 +35,7 @@ import static org.junit.jupiter.api.Assertions.fail;
 public class TestMethodCall extends CommonTest {
     private static final Logger LOGGER = LoggerFactory.getLogger(TestMethodCall.class);
 
-    private void inspectAndResolve(Class<?> clazz, String formalParameterType) throws IOException {
+    private void localInspectAndResolve(Class<?> clazz, String formalParameterType) throws IOException {
         TypeMap typeMap = inspectAndResolve(clazz);
         TypeInfo typeInfo = typeMap.get(clazz);
         MethodInfo methodInfo = typeInfo.findUniqueMethod("test", 0);
@@ -49,7 +49,7 @@ public class TestMethodCall extends CommonTest {
         } else fail();
     }
 
-    private void inspectAndResolve(Class<?> clazz, String[] expectedMethodFqns, int paramsOfTest) throws IOException {
+    private void localInspectAndResolve(Class<?> clazz, String[] expectedMethodFqns, int paramsOfTest) throws IOException {
         TypeMap typeMap = inspectAndResolve(clazz);
         TypeInfo typeInfo = typeMap.get(clazz);
         MethodInfo methodInfo = typeInfo.findUniqueMethod("test", paramsOfTest);
@@ -68,25 +68,25 @@ public class TestMethodCall extends CommonTest {
 
     @Test
     public void test_0() throws IOException {
-        inspectAndResolve(MethodCall_0.class,
+        localInspectAndResolve(MethodCall_0.class,
                 "Type java.util.List<org.e2immu.analyser.resolver.testexample.MethodCall_0.Get>");
     }
 
     @Test
     public void test_1() throws IOException {
-        inspectAndResolve(MethodCall_1.class,
+        localInspectAndResolve(MethodCall_1.class,
                 "Type java.util.List<org.e2immu.analyser.resolver.testexample.MethodCall_1.Get>");
     }
 
     @Test
     public void test_2() throws IOException {
-        inspectAndResolve(MethodCall_2.class,
+        localInspectAndResolve(MethodCall_2.class,
                 "Type java.util.List<org.e2immu.analyser.resolver.testexample.MethodCall_2.Get>");
     }
 
     @Test
     public void test_3() throws IOException {
-        inspectAndResolve(MethodCall_3.class,
+        localInspectAndResolve(MethodCall_3.class,
                 "Type java.util.List<org.e2immu.analyser.resolver.testexample.MethodCall_3.Get>");
     }
 
@@ -99,7 +99,7 @@ public class TestMethodCall extends CommonTest {
     @Test
     public void test_5() throws IOException {
         // ensure we've got the one with List, and not the one with Collection!
-        inspectAndResolve(MethodCall_5.class,
+        localInspectAndResolve(MethodCall_5.class,
                 "Type java.util.List<org.e2immu.analyser.resolver.testexample.MethodCall_5.Get>");
     }
 
@@ -108,7 +108,7 @@ public class TestMethodCall extends CommonTest {
         String[] methods = {
                 "org.e2immu.analyser.resolver.testexample.MethodCall_6.method(java.util.function.Function<org.e2immu.analyser.resolver.testexample.MethodCall_6.B,org.e2immu.analyser.resolver.testexample.MethodCall_6.A>,org.e2immu.analyser.resolver.testexample.MethodCall_6.B)",
                 "org.e2immu.analyser.resolver.testexample.MethodCall_6.method(java.util.function.Function<org.e2immu.analyser.resolver.testexample.MethodCall_6.A,org.e2immu.analyser.resolver.testexample.MethodCall_6.B>,org.e2immu.analyser.resolver.testexample.MethodCall_6.A)"};
-        inspectAndResolve(MethodCall_6.class, methods, 0);
+        localInspectAndResolve(MethodCall_6.class, methods, 0);
     }
 
     @Test
@@ -117,7 +117,7 @@ public class TestMethodCall extends CommonTest {
                 "org.e2immu.analyser.resolver.testexample.MethodCall_7.method(java.util.List<B>,java.util.function.Consumer<B>)",
                 "org.e2immu.analyser.resolver.testexample.MethodCall_7.method(java.util.List<A>,java.util.function.BiConsumer<A,B>)"
         };
-        inspectAndResolve(MethodCall_7.class, methods, 2);
+        localInspectAndResolve(MethodCall_7.class, methods, 2);
     }
 
     @Test
@@ -126,12 +126,12 @@ public class TestMethodCall extends CommonTest {
                 "org.e2immu.analyser.resolver.testexample.MethodCall_8.method(java.util.List<A>,java.util.List<A>,java.util.List<A>)",
                 "org.e2immu.analyser.resolver.testexample.MethodCall_8.method(java.util.List<B>,java.util.Set<A>,java.util.List<B>)",
                 "org.e2immu.analyser.resolver.testexample.MethodCall_8.method(java.util.Set<A>,java.util.List<B>,java.util.List<B>)"};
-        inspectAndResolve(MethodCall_8.class, methods, 2);
+        localInspectAndResolve(MethodCall_8.class, methods, 2);
     }
 
     @Test
     public void test_9() throws IOException {
-        inspectAndResolve(MethodCall_9.class,
+        localInspectAndResolve(MethodCall_9.class,
                 "Type java.util.Collection<org.e2immu.analyser.resolver.testexample.MethodCall_9.Get>");
     }
 
@@ -163,7 +163,7 @@ public class TestMethodCall extends CommonTest {
 
     @Test
     public void test_15() throws IOException {
-        inspectAndResolve(MethodCall_15.class, "Type String");
+        localInspectAndResolve(MethodCall_15.class, "Type String");
     }
 
     @Test
@@ -266,7 +266,7 @@ public class TestMethodCall extends CommonTest {
                 "org.e2immu.analyser.resolver.testexample.MethodCall_27.method(java.util.List<A>,java.util.function.BiConsumer<A,B>)",
                 "org.e2immu.analyser.resolver.testexample.MethodCall_27.method(java.util.List<B>,java.util.function.Predicate<B>)"
         };
-        inspectAndResolve(MethodCall_27.class, methods, 2);
+        localInspectAndResolve(MethodCall_27.class, methods, 2);
     }
 
     @Test

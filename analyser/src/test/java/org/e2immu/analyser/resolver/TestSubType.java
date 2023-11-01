@@ -78,7 +78,7 @@ public class TestSubType extends CommonTest {
 
     @Test
     public void test2() throws IOException {
-        TypeMap typeMap = inspectAndResolve(SubType_2.class, TestImport.IMPORT_HELPER);
+        TypeMap typeMap = inspectAndResolve(TestImport.IMPORT_HELPER, SubType_2.class);
         TypeInfo typeInfo = typeMap.get(SubType_2.class);
         assertNotNull(typeInfo);
         assertTrue(typeInfo.typeInspection.get().isExtensible());

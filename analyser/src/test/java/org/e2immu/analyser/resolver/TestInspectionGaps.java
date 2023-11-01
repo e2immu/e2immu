@@ -87,7 +87,7 @@ public class TestInspectionGaps extends CommonTest {
 
     @Test
     public void test_9() throws IOException {
-        TypeMap typeMap = inspectAndResolve(InspectionGaps_9.class, A);
+        TypeMap typeMap = inspectAndResolve(A, InspectionGaps_9.class);
         TypeInfo typeInfo = typeMap.get(InspectionGaps_9.class);
         assertNotNull(typeInfo);
     }
@@ -108,14 +108,14 @@ public class TestInspectionGaps extends CommonTest {
 
     @Test
     public void test_12() throws IOException {
-        TypeMap typeMap = inspectAndResolve(InspectionGaps_12.class, A);
+        TypeMap typeMap = inspectAndResolve(A, InspectionGaps_12.class);
         TypeInfo typeInfo = typeMap.get(InspectionGaps_12.class);
         assertNotNull(typeInfo);
     }
 
     @Test
     public void test_13() throws IOException {
-        TypeMap typeMap = inspectAndResolve(InspectionGaps_13.class, A);
+        TypeMap typeMap = inspectAndResolve(A, InspectionGaps_13.class);
         TypeInfo typeInfo = typeMap.get(InspectionGaps_13.class);
         assertNotNull(typeInfo);
     }

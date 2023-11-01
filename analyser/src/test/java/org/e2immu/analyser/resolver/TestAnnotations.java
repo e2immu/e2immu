@@ -49,7 +49,7 @@ public class TestAnnotations extends CommonTest {
 
     @Test
     public void test_1() throws IOException {
-        TypeMap typeMap = inspectAndResolve(Annotations_1.class, TestImport.A);
+        TypeMap typeMap = inspectAndResolve(TestImport.A, Annotations_1.class);
         TypeInfo typeInfo = typeMap.get(Annotations_1.class);
         assertNotNull(typeInfo);
         TypeInspection ti = typeInfo.typeInspection.get();
@@ -79,7 +79,7 @@ public class TestAnnotations extends CommonTest {
     // in the AnnotationInspector
     @Test
     public void test_2() throws IOException {
-        TypeMap typeMap = inspectAndResolve(Annotations_2.class, TestImport.A);
+        TypeMap typeMap = inspectAndResolve(TestImport.A, Annotations_2.class);
         TypeInfo typeInfo = typeMap.get(Annotations_2.class);
         assertNotNull(typeInfo);
         TypeInspection ti = typeInfo.typeInspection.get();
@@ -103,7 +103,7 @@ public class TestAnnotations extends CommonTest {
     // directly resolved by the AnnotationInspector, not via UnevaluatedAnnotationParameterValue
     @Test
     public void test_3() throws IOException {
-        TypeMap typeMap = inspectAndResolve(Annotations_3.class, TestImport.A);
+        TypeMap typeMap = inspectAndResolve(TestImport.A, Annotations_3.class);
         TypeInfo typeInfo = typeMap.get(Annotations_3.class);
         assertNotNull(typeInfo);
         TypeInspection ti = typeInfo.typeInspection.get();
@@ -116,7 +116,7 @@ public class TestAnnotations extends CommonTest {
 
     @Test
     public void test_4() throws IOException {
-        TypeMap typeMap = inspectAndResolve(Annotations_4.class, TestImport.A);
+        TypeMap typeMap = inspectAndResolve(TestImport.A, Annotations_4.class);
         TypeInfo typeInfo = typeMap.get(Annotations_4.class);
         assertNotNull(typeInfo);
         TypeInspection ti = typeInfo.typeInspection.get();

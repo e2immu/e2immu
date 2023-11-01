@@ -48,13 +48,14 @@ public class TestPrimary extends CommonTest {
 
     @Test
     public void test_1() throws IOException {
-        TypeMap typeMap = inspectAndResolve(Primary_1.class);
+        TypeMap typeMap = inspectAndResolve(null, Primary_0.class, Primary_1.class);
         TypeInfo typeInfo = typeMap.get(Primary_1.class);
         TypeInspection ti = typeInfo.typeInspection.get();
-        assertSame(Inspection.Access.PACKAGE, ti.getAccess());
+        assertSame(Inspection.Access.PUBLIC, ti.getAccess());
         FieldInfo x = typeInfo.getFieldByName("x", true);
         assertNotNull(x.type.typeInfo);
-        assertEquals("", x.type.typeInfo.fullyQualifiedName);
+        assertEquals("org.e2immu.analyser.resolver.testexample.X", x.type.typeInfo.fullyQualifiedName);
+        assertSame(Inspection.Access.PACKAGE, x.type.typeInfo.typeInspection.get().getAccess());
     }
 
 }

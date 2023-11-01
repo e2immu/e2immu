@@ -139,7 +139,7 @@ public class InspectAll implements InspectWithJavaParser {
     private Trie<TypeInfo> makeTrie(Iterable<TypeInfo> iterable) {
         Trie<TypeInfo> trie = new Trie<>();
         for (TypeInfo typeInfo : iterable) {
-            String[] split = typeInfo.packageName().split("\\.");
+            String[] split = typeInfo.fullyQualifiedName().split("\\.");
             trie.add(split, typeInfo);
         }
         trie.freeze();

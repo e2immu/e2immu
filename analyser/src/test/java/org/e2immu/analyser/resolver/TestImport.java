@@ -39,38 +39,38 @@ public class TestImport extends CommonTest {
      */
     @Test
     public void test_0() throws IOException {
-        TypeMap typeMap = inspectAndResolve(Import_0.class, IMPORT_HELPER);
+        TypeMap typeMap = inspectAndResolve(IMPORT_HELPER, Import_0.class);
         TypeInfo typeInfo = typeMap.get(Import_0.class);
         assertNotNull(typeInfo);
     }
 
     @Test
     public void test_1() throws IOException {
-        TypeMap typeMap = inspectAndResolve(Import_1.class, IMPORT_HELPER);
+        TypeMap typeMap = inspectAndResolve(IMPORT_HELPER, Import_1.class);
         TypeInfo typeInfo = typeMap.get(Import_1.class);
         assertNotNull(typeInfo);
     }
 
     @Test
     public void test_2() throws IOException {
-        TypeMap typeMap = inspectAndResolve(Import_2.class, IMPORT_HELPER);
+        TypeMap typeMap = inspectAndResolve(IMPORT_HELPER, Import_2.class);
         TypeInfo typeInfo = typeMap.get(Import_2.class);
         assertNotNull(typeInfo);
     }
 
     @Test
     public void test_3() throws IOException {
-        inspectAndResolve(Import_3.class, IMPORT_HELPER);
+        inspectAndResolve(IMPORT_HELPER, Import_3.class);
     }
 
     @Test
     public void test_4() throws IOException {
-        inspectAndResolve(Import_4.class, IMPORT_HELPER);
+        inspectAndResolve(IMPORT_HELPER, Import_4.class);
     }
 
     @Test
     public void test_5() throws IOException {
-        inspectAndResolve(Import_5.class, IMPORT_HELPER);
+        inspectAndResolve(IMPORT_HELPER, Import_5.class);
     }
 
     @Test
@@ -89,7 +89,7 @@ public class TestImport extends CommonTest {
 
     @Test
     public void test_8() throws IOException {
-        inspectAndResolve(Import_8.class, IMPORT_HELPER);
+        inspectAndResolve(IMPORT_HELPER, Import_8.class);
     }
 
     @Test
@@ -99,11 +99,11 @@ public class TestImport extends CommonTest {
 
     @Test
     public void test_10() throws IOException {
-        inspectAndResolve(Import_10.class, IMPORT_HELPER);
+        inspectAndResolve(IMPORT_HELPER, Import_10.class);
     }
 
     @Test
     public void test_11() throws IOException {
-        inspectAndResolve(Import_11.class, A);
+        inspectAndResolve(A, Import_11.class);
     }
 }

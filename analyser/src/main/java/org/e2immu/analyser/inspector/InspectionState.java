@@ -53,4 +53,8 @@ public enum InspectionState {
     public Inspector getInspector() {
         return Objects.requireNonNull(inspector, "Need to query before the type is built!");
     }
+
+    public boolean isDone() {
+        return this == FINISHED_BYTECODE || this == FINISHED_JAVA_PARSER || this == BUILT;
+    }
 }

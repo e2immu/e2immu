@@ -26,7 +26,11 @@ import org.e2immu.analyser.parser.TypeMap;
 import java.io.IOException;
 
 public abstract class CommonTest {
-    protected static TypeMap inspectAndResolve(Class<?> clazz, String... extraSources) throws IOException {
+    protected static TypeMap inspectAndResolve(Class<?> clazz) throws IOException {
+        return inspectAndResolve(null, clazz);
+    }
+
+    protected static TypeMap inspectAndResolve(String extraSources, Class<?>... classes) throws IOException {
         InputConfiguration.Builder inputConfigurationBuilder = new InputConfiguration.Builder()
                 .setAlternativeJREDirectory(CommonTestRunner.CURRENT_JDK)
                 .addSources("src/test/java")
@@ -36,16 +40,18 @@ public abstract class CommonTest {
                 .addClassPath(Input.JAR_WITH_PATH_PREFIX + "org/junit/jupiter/api") // in Constructor_2
                 .addClassPath(Input.JAR_WITH_PATH_PREFIX + "org/slf4j") // in Import_6
                 .addClassPath(Input.JAR_WITH_PATH_PREFIX + "ch/qos/logback/classic") // in Import_6
-                .addClassPath(Input.JAR_WITH_PATH_PREFIX + "ch/qos/logback/core")
-                .addRestrictSourceToPackages(clazz.getCanonicalName());
-        for (String source : extraSources) {
-            inputConfigurationBuilder.addRestrictSourceToPackages(source);
+                .addClassPath(Input.JAR_WITH_PATH_PREFIX + "ch/qos/logback/core");
+        for (Class<?> clazz : classes) {
+            inputConfigurationBuilder.addRestrictSourceToPackages(clazz.getCanonicalName());
+        }
+        if (extraSources != null) {
+            inputConfigurationBuilder.addRestrictSourceToPackages(extraSources);
         }
         Configuration configuration = new Configuration.Builder()
                 .setSkipAnalysis(true)
                 .setInputConfiguration(inputConfigurationBuilder.build())
                 .setInspectorConfiguration(new InspectorConfiguration.Builder().setStoreComments(true).build())
-                .addDebugLogTargets(LogTarget.RESOLVER,LogTarget.INSPECTOR)
+                .addDebugLogTargets(LogTarget.RESOLVER, LogTarget.INSPECTOR)
                 .build();
         configuration.initializeLoggers();
         Parser parser = new Parser(configuration);
