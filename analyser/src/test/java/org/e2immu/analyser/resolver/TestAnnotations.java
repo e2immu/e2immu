@@ -15,16 +15,12 @@
 package org.e2immu.analyser.resolver;
 
 
-import org.e2immu.analyser.model.AnnotationExpression;
-import org.e2immu.analyser.model.MethodInfo;
-import org.e2immu.analyser.model.TypeInfo;
-import org.e2immu.analyser.model.TypeInspection;
+import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.ArrayInitializer;
 import org.e2immu.analyser.model.expression.MemberValuePair;
 import org.e2immu.analyser.parser.TypeMap;
-import org.e2immu.analyser.resolver.testexample.Annotations_0;
-import org.e2immu.analyser.resolver.testexample.Annotations_1;
-import org.e2immu.analyser.resolver.testexample.Annotations_2;
+import org.e2immu.analyser.resolver.testexample.*;
+import org.e2immu.analyser.resolver.testexample.a.Resource;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
@@ -72,9 +68,15 @@ public class TestAnnotations extends CommonTest {
         } else fail();
         assertEquals("@Resources({@Resource(name=\"xx\",lookup=\"yy\",type=TreeMap.class),@Resource(name=\"zz\",type=Integer.class)})",
                 ae.toString());
+
+        TypeInfo resource = typeMap.get(Resource.class);
+        TypeInfo authenticationType = resource.typeInspection.get().subTypes()
+                .stream().filter(st -> "AuthenticationType".equals(st.simpleName)).findFirst().orElseThrow();
+        assertSame(TypeNature.ENUM, authenticationType.typeInspection.get().typeNature());
     }
 
-    // more complicated: imports are involved
+    // more complicated: imports are involved; this causes an UnevaluatedAnnotationParameterValue to be created
+    // in the AnnotationInspector
     @Test
     public void test_2() throws IOException {
         TypeMap typeMap = inspectAndResolve(Annotations_2.class, TestImport.A);
@@ -94,7 +96,34 @@ public class TestAnnotations extends CommonTest {
                         memberValuePair.value().get().returnType().fullyQualifiedName());
             } else fail();
         } else fail();
-        assertEquals("@Resources({@Resource(name=\"xx\",lookup=\"yy\",type=TreeMap.class),@Resource(name=\"zz\",type=Integer.class)})",
+        assertEquals("@Resources({@Resource(name=Annotations_2.XX,lookup=\"yy\",type=TreeMap.class),@Resource(name=Annotations_2.ZZ,type=Integer.class)})",
+                ae.toString());
+    }
+
+    // directly resolved by the AnnotationInspector, not via UnevaluatedAnnotationParameterValue
+    @Test
+    public void test_3() throws IOException {
+        TypeMap typeMap = inspectAndResolve(Annotations_3.class, TestImport.A);
+        TypeInfo typeInfo = typeMap.get(Annotations_3.class);
+        assertNotNull(typeInfo);
+        TypeInspection ti = typeInfo.typeInspection.get();
+        AnnotationExpression ae = ti.getAnnotations().get(0);
+        assertEquals("org.e2immu.analyser.resolver.testexample.a.Resource", ae.typeInfo().fullyQualifiedName);
+        assertEquals(3, ae.expressions().size());
+        assertEquals("@Resource(name=Annotations_3.XX,lookup=Annotations_3.ZZ,type=TreeMap.class)",
+                ae.toString());
+    }
+
+    @Test
+    public void test_4() throws IOException {
+        TypeMap typeMap = inspectAndResolve(Annotations_4.class, TestImport.A);
+        TypeInfo typeInfo = typeMap.get(Annotations_4.class);
+        assertNotNull(typeInfo);
+        TypeInspection ti = typeInfo.typeInspection.get();
+        AnnotationExpression ae = ti.getAnnotations().get(0);
+        assertEquals("org.e2immu.analyser.resolver.testexample.a.Resource", ae.typeInfo().fullyQualifiedName);
+        assertEquals(3, ae.expressions().size());
+        assertEquals("@Resource(name=Annotations_4.XX,lookup=Annotations_4.ZZ,authenticationType=AuthenticationType.CONTAINER)",
                 ae.toString());
     }
 }

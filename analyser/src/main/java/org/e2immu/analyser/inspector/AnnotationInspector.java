@@ -23,6 +23,7 @@ import org.e2immu.analyser.model.impl.AnnotationExpressionImpl;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 public class AnnotationInspector {
 
@@ -54,7 +55,13 @@ public class AnnotationInspector {
                                         String methodName,
                                         TypeInspection typeInspection) {
         ForwardReturnTypeInfo forwardReturnTypeInfo = expectedType(expressionContext.typeContext(), methodName, typeInspection);
-        if (expression.isFieldAccessExpr() || expression.isNameExpr()) {
+        AtomicBoolean containsField = new AtomicBoolean();
+        expression.walk(n -> {
+            if (n instanceof com.github.javaparser.ast.expr.Expression e && (e.isFieldAccessExpr() || e.isNameExpr())) {
+                containsField.set(true);
+            }
+        });
+        if (containsField.get()) {
             return new UnevaluatedAnnotationParameterValue(Identifier.from(expression), forwardReturnTypeInfo,
                     expression);
         }

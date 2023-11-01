@@ -14,7 +14,7 @@ public @interface Resource {
 
     Class<?> type() default Object.class;
 
-   // AuthenticationType authenticationType() default Resource.AuthenticationType.CONTAINER;
+    AuthenticationType authenticationType() default Resource.AuthenticationType.CONTAINER;
 
     boolean shareable() default true;
 

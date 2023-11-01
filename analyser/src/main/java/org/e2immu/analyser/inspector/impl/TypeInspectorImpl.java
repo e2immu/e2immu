@@ -188,8 +188,6 @@ public class TypeInspectorImpl implements TypeInspector {
                     recordFields = doRecordDeclaration(expressionContext, rd);
                 } else if (typeDeclaration instanceof EnumDeclaration ed) {
                     doEnumDeclaration(expressionContext, ed);
-                } else if (typeDeclaration instanceof AnnotationDeclaration ad) {
-                    doAnnotationDeclaration(expressionContext, ad);
                 } else if (typeDeclaration instanceof ClassOrInterfaceDeclaration cid) {
                     doClassOrInterfaceDeclaration(expressionContext, cid);
                 }
@@ -244,23 +242,6 @@ public class TypeInspectorImpl implements TypeInspector {
             dollarResolver = dollarResolverInput;
         }
         return dollarResolver;
-    }
-
-    private void doAnnotationDeclaration(ExpressionContext expressionContext, AnnotationDeclaration annotationDeclaration) {
-        builder.setTypeNature(TypeNature.ANNOTATION);
-        ExpressionContext subContext = expressionContext.newVariableContext("annotation body of " + typeInfo.fullyQualifiedName);
-
-        for (BodyDeclaration<?> bd : annotationDeclaration.getMembers()) {
-            if (bd.isAnnotationMemberDeclaration()) {
-                AnnotationMemberDeclaration amd = bd.asAnnotationMemberDeclaration();
-                LOGGER.debug("Have member {} in {}", amd.getNameAsString(), typeInfo.fullyQualifiedName);
-                TypeMap.Builder typeMapBuilder = expressionContext.typeContext().typeMap;
-                MethodInspector methodInspector = new MethodInspectorImpl(typeMapBuilder, typeInfo, fullInspection,
-                        storeComments);
-                methodInspector.inspect(amd, subContext);
-                builder.addMethod(methodInspector.getBuilder().getMethodInfo());
-            }
-        }
     }
 
     /*
@@ -434,7 +415,7 @@ public class TypeInspectorImpl implements TypeInspector {
             DollarResolver dollarResolver) {
         TypeContext typeContext = expressionContext.typeContext();
 
-        // first, do sub-types
+        // first, do subtypes
         ExpressionContext subContext = expressionContext.newVariableContext("body of " + typeInfo.fullyQualifiedName);
 
         int countCompactConstructors = 0;
@@ -471,7 +452,9 @@ public class TypeInspectorImpl implements TypeInspector {
         AtomicInteger countStaticBlocks = new AtomicInteger();
 
         for (BodyDeclaration<?> bodyDeclaration : members) {
-            if (bodyDeclaration instanceof InitializerDeclaration id) {
+            if (bodyDeclaration instanceof AnnotationMemberDeclaration amd) {
+                annotationMember(expressionContext, subContext, amd);
+            } else if (bodyDeclaration instanceof InitializerDeclaration id) {
                 initializerDeclaration(expressionContext, countStaticBlocks, id);
             } else if (bodyDeclaration instanceof CompactConstructorDeclaration ccd) {
                 compactConstructorDeclaration(expressionContext, recordFields, subContext, companionMethodsWaiting, ccd);
@@ -513,6 +496,17 @@ public class TypeInspectorImpl implements TypeInspector {
         LOGGER.debug("Setting type inspection of {}", typeInfo.fullyQualifiedName);
         typeInfo.typeInspection.set(builder.build(typeContext));
         return dollarTypes;
+    }
+
+    private void annotationMember(ExpressionContext expressionContext,
+                                  ExpressionContext subContext,
+                                  AnnotationMemberDeclaration amd) {
+        LOGGER.debug("Have member {} in {}", amd.getNameAsString(), typeInfo.fullyQualifiedName);
+        TypeMap.Builder typeMapBuilder = expressionContext.typeContext().typeMap;
+        MethodInspector methodInspector = new MethodInspectorImpl(typeMapBuilder, typeInfo, fullInspection,
+                storeComments);
+        methodInspector.inspect(amd, subContext);
+        builder.addMethod(methodInspector.getBuilder().getMethodInfo());
     }
 
     private void initializerDeclaration(ExpressionContext expressionContext,
