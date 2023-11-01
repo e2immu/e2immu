@@ -19,9 +19,9 @@ import org.e2immu.analyser.annotationxml.AnnotationXmlReader;
 import org.e2immu.analyser.bytecode.ByteCodeInspector;
 import org.e2immu.analyser.bytecode.OnDemandInspection;
 import org.e2immu.analyser.config.Configuration;
-import org.e2immu.analyser.inspector.ParseAndInspect;
 import org.e2immu.analyser.inspector.TypeContext;
 import org.e2immu.analyser.model.TypeInfo;
+import org.e2immu.analyser.parser.impl.InspectAll;
 import org.e2immu.analyser.parser.impl.TypeMapImpl;
 import org.e2immu.analyser.util.Resources;
 import org.e2immu.analyser.util.Trie;
@@ -39,6 +39,7 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
+import static org.e2immu.analyser.inspector.InspectionState.INIT_JAVA_PARSER;
 import static org.e2immu.analyser.inspector.InspectionState.TRIGGER_JAVA_PARSER;
 
 public record Input(Configuration configuration,
@@ -128,7 +129,7 @@ public record Input(Configuration configuration,
                     String packageName = Arrays.stream(parts).limit(n).collect(Collectors.joining("."));
                     if (acceptSource(packageName, typeName, restrictions)) {
                         TypeInfo typeInfo = new TypeInfo(packageName, typeName);
-                        globalTypeContext.typeMap.add(typeInfo, TRIGGER_JAVA_PARSER);
+                        globalTypeContext.typeMap.add(typeInfo, INIT_JAVA_PARSER);
                         URI url = list.get(0);
                         sourceURLs.put(typeInfo, url);
                         parts[n] = typeName;
@@ -170,7 +171,7 @@ public record Input(Configuration configuration,
         classPath.expandLeaves(thePackage, ".class", (expansion, list) -> {
             // we'll loop over the primary types only
             if (!expansion[expansion.length - 1].contains("$")) {
-                String fqn = ParseAndInspect.fqnOfClassFile(thePackage, expansion);
+                String fqn = InspectAll.fqnOfClassFile(thePackage, expansion);
                 assert Input.acceptFQN(fqn);
                 TypeInfo typeInfo = globalTypeContext.getFullyQualified(fqn, true);
                 if (!typeInfo.typeInspection.isSet()) {

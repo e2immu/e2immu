@@ -26,6 +26,7 @@ import org.e2immu.analyser.inspector.impl.ExpressionContextImpl;
 import org.e2immu.analyser.model.TypeInfo;
 import org.e2immu.analyser.model.TypeInspection;
 import org.e2immu.analyser.parser.impl.ImportantClassesImpl;
+import org.e2immu.analyser.parser.impl.InspectAll;
 import org.e2immu.analyser.parser.impl.TypeMapImpl;
 import org.e2immu.analyser.resolver.SortedTypes;
 import org.e2immu.analyser.resolver.TypeCycle;
@@ -183,8 +184,17 @@ public class Parser {
                 storeComments);
 
         TypeMap.Builder typeMapBuilder = input.globalTypeContext().typeMap;
-        InspectWithJavaParserImpl onDemandSourceInspection = new InspectWithJavaParserImpl(urls, typesForWildcardImport, resolver);
-        typeMapBuilder.setInspectWithJavaParser(onDemandSourceInspection);
+        InspectAll inspectAll = new InspectAll(configuration, input.globalTypeContext(), input.classPath(), urls,
+                typeMapBuilder, configuration.annotatedAPIConfiguration().disabled(), anonymousTypeCounters, resolver);
+
+        typeMapBuilder.setInspectWithJavaParser(inspectAll);
+        if (inspectAll.doJavaParsing()) {
+            List<InspectAll.ExceptionInFile> exceptions = inspectAll.getExceptions();
+            for (InspectAll.ExceptionInFile exception : exceptions) {
+                LOGGER.error("Caught exception {} in {}", exception.exception(), exception.uri());
+            }
+            throw new RuntimeException("Have " + exceptions.size() + " parse exceptions");
+        }
 
         // trigger the on-demand detection
         urls.entrySet().stream().sorted(Comparator.comparing(e -> e.getValue().toString())).forEach(e ->
@@ -197,7 +207,8 @@ public class Parser {
         // phase 2: resolve methods and fields
         // we're sorting the types for some stability in debugging
         TreeMap<TypeInfo, ExpressionContext> expressionContexts = new TreeMap<>();
-        for (Map.Entry<TypeInfo, TypeContext> e : onDemandSourceInspection.typeContexts.entrySet()) {
+        Map<TypeInfo, TypeContext> typeContextsOfPrimaryTypes = inspectAll.typeContextsOfPrimaryTypes();
+        for (Map.Entry<TypeInfo, TypeContext> e : typeContextsOfPrimaryTypes.entrySet()) {
             ExpressionContext ec = ExpressionContextImpl.forInspectionOfPrimaryType(resolver,
                     e.getKey(), e.getValue(), anonymousTypeCounters);
             expressionContexts.put(e.getKey(), ec);
@@ -211,64 +222,6 @@ public class Parser {
             messages.addAll(messageStream);
         }
         return sortedTypes;
-    }
-
-    private class InspectWithJavaParserImpl implements InspectWithJavaParser {
-        private final Map<TypeInfo, TypeContext> typeContexts = new HashMap<>();
-        private final Map<TypeInfo, URI> urls;
-        private final Trie<TypeInfo> typesForWildcardImport;
-        private final ResolverImpl resolver;
-
-        InspectWithJavaParserImpl(Map<TypeInfo, URI> urls, Trie<TypeInfo> typesForWildcardImport, ResolverImpl resolver) {
-            this.urls = urls;
-            this.resolver = resolver;
-            this.typesForWildcardImport = typesForWildcardImport;
-        }
-
-        @Override
-        public boolean storeComments() {
-            return configuration.inspectorConfiguration().storeComments();
-        }
-
-        @Override
-        public void inspect(TypeInfo typeInfo, TypeInspection.Builder typeInspectionBuilder) throws ParseException {
-            if (typeInspectionBuilder.getInspectionState() != TRIGGER_JAVA_PARSER) {
-                return; // already done, or started
-            }
-            URI uri = urls.get(typeInfo);
-            if (uri == null) {
-                throw new RuntimeException("Cannot find URL for " + typeInfo.fullyQualifiedName
-                        + "; inspection state " + typeInspectionBuilder.getInspectionState() + "; in\n" +
-                        urls.values().stream().map(Object::toString).collect(Collectors.joining("\n")) + "\n");
-            }
-            try {
-                LOGGER.debug("Starting Java parser inspection of '{}'", uri);
-                typeInspectionBuilder.setInspectionState(STARTING_JAVA_PARSER);
-
-                InputStreamReader isr = new InputStreamReader(uri.toURL().openStream(),
-                        configuration.inputConfiguration().sourceEncoding());
-                StringWriter sw = new StringWriter();
-                isr.transferTo(sw);
-                String source = sw.toString();
-                ParseAndInspect parseAndInspect = new ParseAndInspect(input.classPath(),
-                        input.globalTypeContext().typeMap(), typesForWildcardImport, anonymousTypeCounters,
-                        configuration.annotatedAPIConfiguration().disabled());
-                ParseAndInspect.RunResult rr = parseAndInspect.run(resolver, input.globalTypeContext(),
-                        uri.toString(), source);
-                rr.primaryTypes().forEach(t -> typeContexts.put(t, rr.typeContextOfFile()));
-
-                typeInspectionBuilder.setInspectionState(FINISHED_JAVA_PARSER);
-
-            } catch (NotFoundInClassPathException typeNotFoundException) {
-                throw typeNotFoundException;
-            } catch (RuntimeException rte) {
-                LOGGER.error("Caught runtime exception parsing and inspecting URL '{}'", uri);
-                throw rte;
-            } catch (IOException ioe) {
-                LOGGER.error("Stopping runnable because of an IOException parsing URL '{}'", uri);
-                throw new RuntimeException(ioe);
-            }
-        }
     }
 
     private void runAnalyzer(AnalyserContext analyserContext, TypeCycle typeCycle, boolean annotatedAPI) {

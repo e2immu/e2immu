@@ -409,7 +409,7 @@ public class TypeMapImpl implements TypeMap {
                 }
             } else if (typeInspection.getInspectionState() == TRIGGER_JAVA_PARSER) {
                 try {
-                    LOGGER.debug("Triggering Java parser on {}", typeInfo);
+                    LOGGER.debug("Triggering Java parser on {}", typeInfo.fullyQualifiedName);
                     inspectWithJavaParser.inspect(typeInfo, typeInspection);
                 } catch (ParseException e) {
                     String message = "Caught parse exception inspecting " + typeInfo.fullyQualifiedName;

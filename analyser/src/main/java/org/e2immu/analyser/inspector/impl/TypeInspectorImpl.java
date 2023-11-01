@@ -97,7 +97,7 @@ public class TypeInspectorImpl implements TypeInspector {
         }
         this.fullInspection = fullInspection;
         builder = (TypeInspectionImpl.Builder) typeInspection;
-        builder.setInspectionState(STARTING_JAVA_PARSER);
+        builder.setInspectionState(TRIGGER_JAVA_PARSER);
     }
 
     @Override
