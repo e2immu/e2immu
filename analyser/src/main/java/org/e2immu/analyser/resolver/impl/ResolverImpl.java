@@ -34,6 +34,7 @@ import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
 import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.Messages;
+import org.e2immu.analyser.parser.impl.InspectAll;
 import org.e2immu.analyser.resolver.Resolver;
 import org.e2immu.analyser.resolver.ShallowMethodResolver;
 import org.e2immu.analyser.resolver.SortedTypes;
@@ -331,7 +332,9 @@ public class ResolverImpl implements Resolver {
             }
             typeInspection.subTypes().forEach(expressionContextOfType.typeContext()::addToContext);
 
-            LOGGER.debug("Resolving type #{}: {}", typeCounterForDebugging.incrementAndGet(), typeInfo.fullyQualifiedName);
+            int cnt = typeCounterForDebugging.incrementAndGet();
+            LOGGER.info("Resolving type #{}: {}", cnt, typeInfo.fullyQualifiedName);
+
             TypeInfo primaryType = typeInfo.primaryType();
             ExpressionContext expressionContextForBody = ExpressionContextImpl.forTypeBodyParsing(this, typeInfo,
                     primaryType, expressionContextOfType);
@@ -372,6 +375,11 @@ public class ResolverImpl implements Resolver {
                     .map(Map.Entry::getKey).collect(Collectors.toCollection(HashSet::new));
             typeDependencies.retainAll(restrictToType);
             methodFieldSubTypeGraph.addNode(typeInfo, List.copyOf(typeDependencies));
+
+            if(cnt % 100 != 0) {
+                LOGGER.info("Resolved {} types", cnt);
+            }
+
             return typeAndAllSubTypes;
         } catch (Throwable re) {
             LOGGER.error("Caught exception resolving type {}", typeInfo.fullyQualifiedName);

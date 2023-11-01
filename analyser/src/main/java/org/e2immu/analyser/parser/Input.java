@@ -40,7 +40,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
 import static org.e2immu.analyser.inspector.InspectionState.INIT_JAVA_PARSER;
-import static org.e2immu.analyser.inspector.InspectionState.TRIGGER_JAVA_PARSER;
 
 public record Input(Configuration configuration,
                     TypeContext globalTypeContext,
@@ -124,7 +123,7 @@ public record Input(Configuration configuration,
             if (parts.length >= 1) {
                 int n = parts.length - 1;
                 String name = parts[n];
-                if (name.endsWith(".java")) {
+                if (name.endsWith(".java") && !"package-info.java".equals(name)) {
                     String typeName = name.substring(0, name.length() - 5);
                     String packageName = Arrays.stream(parts).limit(n).collect(Collectors.joining("."));
                     if (acceptSource(packageName, typeName, restrictions)) {

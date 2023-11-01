@@ -30,13 +30,18 @@ import java.io.InputStreamReader;
 import java.io.StringWriter;
 import java.net.URI;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static org.e2immu.analyser.inspector.InspectionState.*;
 
 public class InspectAll implements InspectWithJavaParser {
+    private static final int LOG_FREQ = 100;
     private static final Logger LOGGER = LoggerFactory.getLogger(InspectAll.class);
+
+    private final AtomicInteger countParsed = new AtomicInteger();
+    private final AtomicInteger countInspected = new AtomicInteger();
 
     private final Configuration configuration;
     private final TypeContext globalTypeContext;
@@ -84,15 +89,16 @@ public class InspectAll implements InspectWithJavaParser {
     }
 
     public boolean doJavaParsing() {
-        LOGGER.debug("Start parsing on {} source files", sourceFiles.size());
+        LOGGER.info("Start parsing on {} source files", sourceFiles.size());
         Map<TypeInfo, CompilationUnitData> map = sourceFiles.values()
                 .parallelStream()
                 .flatMap(this::doJavaParsingHandleExceptions)
                 .collect(Collectors.toUnmodifiableMap(JavaParsingResult::typeInfo, jpr -> jpr.cud));
         compilationUnits.set(map);
 
-        LOGGER.debug("Post-processing parsed compilation units");
+        LOGGER.info("Post-processing parsed compilation units");
         postProcessParsedCompilationUnits();
+        LOGGER.info("End of parsing phase, {} error(s)", exceptions.size());
 
         return !exceptions.isEmpty();
     }
@@ -195,6 +201,12 @@ public class InspectAll implements InspectWithJavaParser {
             TypeData typeData = new TypeData(td, typeInspector, typeContextOfType);
             typesInUnit.put(typeInfo, typeData);
         }
+
+        int cnt = countParsed.incrementAndGet();
+        if (cnt % LOG_FREQ == 0) {
+            LOGGER.info("Ran JavaParser on {} files", cnt);
+        }
+
         CompilationUnitData cud = new CompilationUnitData(uri, compilationUnit, packageName, typeContextOfFile,
                 Map.copyOf(typesInUnit));
         return typesInUnit.keySet().stream().map(ti -> new JavaParsingResult(ti, cud));
@@ -335,29 +347,27 @@ public class InspectAll implements InspectWithJavaParser {
 
     @Override
     public void inspect(TypeInfo typeInfo, TypeInspection.Builder typeInspectionBuilder) throws ParseException {
-        LOGGER.info("Inspecting {}", typeInfo.fullyQualifiedName);
+        LOGGER.debug("Inspecting type {}", typeInfo.fullyQualifiedName);
 
         CompilationUnitData cud = compilationUnits.get().get(typeInfo);
-        assert cud != null: "Cannot find compilation unit data for "+typeInfo.fullyQualifiedName;
+        assert cud != null : "Cannot find compilation unit data for " + typeInfo.fullyQualifiedName;
 
         TypeData typeData = cud.typeData.get(typeInfo);
         ExpressionContext expressionContext = ExpressionContextImpl.forInspectionOfPrimaryType(resolver, typeInfo,
                 typeData.typeContext, anonymousTypeCounters);
         try {
             typeInspectionBuilder.setInspectionState(STARTING_JAVA_PARSER);
-            List<TypeInfo> primaryTypes = typeData.typeInspector.inspect(false, null,
-                    typeData.typeDeclaration, expressionContext);
-            for (TypeInfo pt : primaryTypes) {
-            //    TypeInspection ti = typeData.typeContext.getTypeInspection(pt);
-            //    if (cud.typeContextOfFile.isImportWildcard(pt)) {
-            //        ti.subTypes().forEach(st -> cud.typeContextOfFile.addImport(st, false));
-            //    }
-            //    ti.subTypes().forEach(typeData.typeContext::addToContext);
-            }
+            typeData.typeInspector.inspect(false, null, typeData.typeDeclaration,
+                    expressionContext);
             typeInspectionBuilder.setInspectionState(FINISHED_JAVA_PARSER);
         } catch (RuntimeException rte) {
             LOGGER.error("Caught runtime exception inspecting type {}", typeInfo.fullyQualifiedName);
             throw rte;
+        } finally {
+            int cnt = countInspected.incrementAndGet();
+            if (cnt % LOG_FREQ == 0) {
+                LOGGER.info("Inspected {} types", cnt);
+            }
         }
     }
 

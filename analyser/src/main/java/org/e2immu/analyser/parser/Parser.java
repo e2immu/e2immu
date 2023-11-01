@@ -213,6 +213,7 @@ public class Parser {
                     e.getKey(), e.getValue(), anonymousTypeCounters);
             expressionContexts.put(e.getKey(), ec);
         }
+        LOGGER.info("Start resolution phase on {} primary types", expressionContexts.size());
         SortedTypes sortedTypes = resolver.resolve(expressionContexts);
         Stream<Message> messageStream = resolver.getMessageStream()
                 .filter(m -> m.message().severity != Message.Severity.WARN || reportWarnings);

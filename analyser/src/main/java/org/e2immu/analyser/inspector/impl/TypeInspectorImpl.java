@@ -29,7 +29,6 @@ import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.impl.CommentFactory;
 import org.e2immu.analyser.model.impl.TypeParameterImpl;
 import org.e2immu.analyser.model.statement.Block;
-import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.impl.FieldReferenceImpl;
 import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.parser.TypeMap;
@@ -149,7 +148,6 @@ public class TypeInspectorImpl implements TypeInspector {
                                    TypeDeclaration<?> typeDeclaration,
                                    ExpressionContext expressionContext,
                                    DollarResolver dollarResolverInput) {
-        LOGGER.info("Inspecting type {}", typeInfo.fullyQualifiedName);
         assert typeDeclaration != null;
         builder.setPositionalIdentifier(Identifier.from(typeDeclaration.getBegin().orElse(null),
                 typeDeclaration.getEnd().orElse(null)));
