@@ -15,13 +15,20 @@
 package org.e2immu.analyser.resolver;
 
 
+import org.e2immu.analyser.model.FieldInfo;
+import org.e2immu.analyser.model.Inspection;
+import org.e2immu.analyser.model.TypeInfo;
+import org.e2immu.analyser.model.TypeInspection;
 import org.e2immu.analyser.parser.TypeMap;
 import org.e2immu.analyser.resolver.testexample.Primary_0;
+import org.e2immu.analyser.resolver.testexample.Primary_1;
 import org.e2immu.analyser.resolver.testexample.Record_0;
 import org.e2immu.analyser.resolver.testexample.Record_1;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
+
+import static org.junit.jupiter.api.Assertions.*;
 
 
 public class TestPrimary extends CommonTest {
@@ -29,6 +36,25 @@ public class TestPrimary extends CommonTest {
     @Test
     public void test_0() throws IOException {
         TypeMap typeMap = inspectAndResolve(Primary_0.class);
+        TypeInfo x = typeMap.get("org.e2immu.analyser.resolver.testexample.X");
+        assertNotNull(x);
+        TypeInfo y = typeMap.get("org.e2immu.analyser.resolver.testexample.Y");
+        assertNotNull(y);
+        TypeInfo z = typeMap.get("org.e2immu.analyser.resolver.testexample.Z");
+        assertNull(z); // does not exist!!
+        TypeInfo typeInfo = typeMap.get(Primary_0.class);
+        assertEquals("org.e2immu.analyser.resolver.testexample.Primary_0", typeInfo.fullyQualifiedName);
+    }
+
+    @Test
+    public void test_1() throws IOException {
+        TypeMap typeMap = inspectAndResolve(Primary_1.class);
+        TypeInfo typeInfo = typeMap.get(Primary_1.class);
+        TypeInspection ti = typeInfo.typeInspection.get();
+        assertSame(Inspection.Access.PACKAGE, ti.getAccess());
+        FieldInfo x = typeInfo.getFieldByName("x", true);
+        assertNotNull(x.type.typeInfo);
+        assertEquals("", x.type.typeInfo.fullyQualifiedName);
     }
 
 }

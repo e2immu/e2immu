@@ -536,7 +536,8 @@ public class TypeInspectionImpl extends InspectionImpl implements TypeInspection
                 if (!res.isDollarType()) {
                     addSubType(subTypeBuilder.typeInfo());
                 }
-                LOGGER.debug("Added {} to type store: {}", cid.getClass().getSimpleName(), res.subType().fullyQualifiedName);
+                LOGGER.debug("Added {} to type store: {}, with state {}", cid.getClass().getSimpleName(),
+                        res.subType().fullyQualifiedName, inspectionState);
 
                 ((TypeInspectionImpl.Builder) subTypeBuilder).recursivelyAddToTypeStore(false,
                         res.isDollarType(), typeStore, cid, dollarTypesAreNormalTypes);
