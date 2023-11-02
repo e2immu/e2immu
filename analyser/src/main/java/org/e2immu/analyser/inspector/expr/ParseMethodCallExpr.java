@@ -458,7 +458,9 @@ public record ParseMethodCallExpr(TypeContext typeContext) {
                         int assignable;
                         if (paramIsErasure && actualTypeReplaced != actualType) {
                             // See 'method' call in MethodCall_32; this feels like a hack
-                            assignable = callIsAssignableFrom(formalTypeReplaced, actualTypeReplaced);
+                            // Map.get(e.getKey()) call in MethodCall_37 shows the opposite direction; so we do Max. Feels even more like a hack.
+                            assignable = Math.max(callIsAssignableFrom(formalTypeReplaced, actualTypeReplaced),
+                                    callIsAssignableFrom(actualTypeReplaced, formalTypeReplaced));
                         } else {
                             assignable = callIsAssignableFrom(actualTypeReplaced, formalTypeReplaced);
                         }

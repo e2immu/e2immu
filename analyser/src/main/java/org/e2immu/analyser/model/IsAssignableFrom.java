@@ -15,6 +15,7 @@
 package org.e2immu.analyser.model;
 
 import org.e2immu.analyser.parser.InspectionProvider;
+import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.util.ListUtil;
 
 import java.util.List;
@@ -82,10 +83,10 @@ public record IsAssignableFrom(InspectionProvider inspectionProvider,
         // Assignment to Object: everything can be assigned to object!
         if (ignoreArrays) {
             if (target.typeInfo != null && target.typeInfo.isJavaLangObject()) {
-                return IN_HIERARCHY;
+                return IN_HIERARCHY * pathToJLO(from);
             }
         } else if (target.isJavaLangObject()) {
-            return IN_HIERARCHY;
+            return IN_HIERARCHY * pathToJLO(from);
         }
 
 
@@ -162,7 +163,9 @@ public record IsAssignableFrom(InspectionProvider inspectionProvider,
 
         List<ParameterizedType> targetTypeBounds = target.typeParameter.getTypeBounds();
         if (targetTypeBounds.isEmpty()) {
-            return TYPE_BOUND;
+            int arrayDiff = from.arrays - target.arrays;
+            assert arrayDiff >= 0;
+            return TYPE_BOUND + IN_HIERARCHY * arrayDiff;
         }
         // other is a type
         if (from.typeInfo != null) {
@@ -240,8 +243,10 @@ public record IsAssignableFrom(InspectionProvider inspectionProvider,
          with the same return type and parameters. But they're not seen as assignable.
          */
         if (!mTarget.getMethodInfo().name.equals(mFrom.getMethodInfo().name)
-                && !"java.util.function".equals(mTarget.getMethodInfo().typeInfo.packageName())
-                && !"java.util.function".equals(mFrom.getMethodInfo().typeInfo.packageName())) return NOT_ASSIGNABLE;
+                && !isSyntheticOrFunctionInterface(mTarget.getMethodInfo())
+                && !isSyntheticOrFunctionInterface(mFrom.getMethodInfo())) {
+            return NOT_ASSIGNABLE;
+        }
         if (mTarget.getParameters().size() != mFrom.getParameters().size()) return NOT_ASSIGNABLE;
         boolean targetIsVoid = mTarget.getReturnType().isVoid();
         boolean fromIsVoid = mFrom.getReturnType().isVoid();
@@ -260,6 +265,11 @@ public record IsAssignableFrom(InspectionProvider inspectionProvider,
         return EQUALS;
     }
 
+    private boolean isSyntheticOrFunctionInterface(MethodInfo methodInfo) {
+        String packageName = methodInfo.typeInfo.packageName();
+        return "java.util.function".equals(packageName) || Primitives.INTERNAL.equals(packageName);
+    }
+
     private int hierarchy(ParameterizedType target, ParameterizedType from, Mode mode) {
         TypeInspection otherTypeInspection = inspectionProvider.getTypeInspection(from.typeInfo);
         for (ParameterizedType interfaceImplemented : otherTypeInspection.interfacesImplemented()) {
@@ -276,6 +286,30 @@ public record IsAssignableFrom(InspectionProvider inspectionProvider,
             if (scoreParent != NOT_ASSIGNABLE) return IN_HIERARCHY + scoreParent;
         }
         return NOT_ASSIGNABLE;
+    }
+
+    private int pathToJLO(ParameterizedType type) {
+        if (type.typeInfo == null) {
+            if (type.typeParameter != null && !type.typeParameter.getTypeBounds().isEmpty()) {
+                return type.typeParameter.getTypeBounds().stream().mapToInt(this::pathToJLO).min()
+                        .orElseThrow();
+            }
+            return 0;
+        }
+        int steps;
+        if (type.typeInfo.isJavaLangObject()) {
+            steps = 0;
+        } else {
+            TypeInspection typeInspection = inspectionProvider.getTypeInspection(type.typeInfo);
+            if (typeInspection.isInterface()) {
+                steps = 1 + typeInspection.interfacesImplemented().stream().mapToInt(this::pathToJLO).min().orElse(0);
+            } else if (typeInspection.parentClass() != null) {
+                steps = 1 + pathToJLO(typeInspection.parentClass());
+            } else {
+                steps = 1;
+            }
+        }
+        return steps + type.arrays;
     }
 
     private boolean compatibleWildcards(Mode mode, ParameterizedType.WildCard w1, ParameterizedType.WildCard w2) {

@@ -319,4 +319,20 @@ public class TestMethodCall extends CommonTest {
     public void test_34() throws IOException {
         inspectAndResolve(MethodCall_34.class);
     }
+
+    // equals() overloads
+    @Test
+    public void test_35() throws IOException {
+        inspectAndResolve(MethodCall_35.class);
+    }
+
+    @Test
+    public void test_36() throws IOException {
+        inspectAndResolve(MethodCall_36.class);
+    }
+
+    @Test
+    public void test_37() throws IOException {
+        inspectAndResolve(MethodCall_37.class);
+    }
 }
