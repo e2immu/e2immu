@@ -156,8 +156,7 @@ public record IsAssignableFrom(InspectionProvider inspectionProvider,
             // T <- T[], T[] <- T, ...
             return NOT_ASSIGNABLE;
         }
-        if (target.arrays > 0 && from.arrays != target.arrays) {
-            // T[] <- X, X[][]
+        if (target.arrays > 0 && from.arrays < target.arrays) {
             return NOT_ASSIGNABLE;
         }
 
@@ -166,6 +165,9 @@ public record IsAssignableFrom(InspectionProvider inspectionProvider,
             int arrayDiff = from.arrays - target.arrays;
             assert arrayDiff >= 0;
             return TYPE_BOUND + IN_HIERARCHY * arrayDiff;
+        }
+        if (target.arrays > 0 && from.arrays != target.arrays) {
+            return NOT_ASSIGNABLE;
         }
         // other is a type
         if (from.typeInfo != null) {

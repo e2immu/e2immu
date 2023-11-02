@@ -29,6 +29,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 
+import static org.e2immu.analyser.resolver.TestImport.A;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.fail;
 
@@ -350,5 +351,22 @@ public class TestMethodCall extends CommonTest {
     @Test
     public void test_40() throws IOException {
         inspectAndResolve(MethodCall_40.class);
+    }
+
+    // double Object[]
+    @Test
+    public void test_41() throws IOException {
+        inspectAndResolve(MethodCall_41.class);
+    }
+
+    // short vs String in erasure mode
+    @Test
+    public void test_42() throws IOException {
+        inspectAndResolve(MethodCall_42.class);
+    }
+
+    @Test
+    public void test_43() throws IOException {
+        inspectAndResolve(A, MethodCall_43.class);
     }
 }

@@ -24,7 +24,7 @@ public class TimedLogger {
     private boolean allow() {
         long now = Instant.now().toEpochMilli();
         boolean ok = now - latest >= delay;
-        if(ok) latest = now;
+        if (ok) latest = now;
         return ok;
     }
 }
