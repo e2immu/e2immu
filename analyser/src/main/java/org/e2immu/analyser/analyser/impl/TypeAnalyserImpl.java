@@ -29,25 +29,6 @@ import java.util.Objects;
 
 import static org.e2immu.analyser.analyser.AnalysisStatus.DONE;
 
-/**
- * In the type analysis record we state whether this type has "free fields" or not.
- * Nested types will be allowed in two forms:
- * (1) non-private nested types, where (a) all non-private fields must be @E1Immutable,
- * and (b) access to private methods and fields from enclosing to nested and nested to enclosing is restricted
- * to reading fields and calling @NotModified methods in a direct hierarchical line
- * (2) private subtypes, which do not need to satisfy (1a), and which have the one additional freedom compared to (1b) that
- * the enclosing type can access private fields and methods at will as long as the types are in hierarchical line
- * <p>
- * The analyse and check methods are called independently for types and nested types, in an order of dependence determined
- * by the resolver, but guaranteed such that a nested type will always come before its enclosing type.
- * <p>
- * Therefore, at the end of an enclosing type's analysis, we should have decisions on @NotModified of the methods of the
- * enclosing type, and it should be possible to establish whether a nested type only reads fields (does NOT assign) and
- * calls @NotModified private methods.
- * <p>
- * Errors related to those constraints are added to the type making the violation.
- */
-
 public abstract class TypeAnalyserImpl extends AbstractAnalyser implements TypeAnalyser {
     public final TypeInfo primaryType;
     public final TypeInfo typeInfo;
@@ -61,7 +42,7 @@ public abstract class TypeAnalyserImpl extends AbstractAnalyser implements TypeA
         super("Type " + typeInfo.simpleName, new LocalAnalyserContext(analyserContextInput));
         this.typeInfo = typeInfo;
         this.primaryType = primaryType;
-        typeInspection = typeInfo.typeInspection.get();
+        typeInspection = typeInfo.typeInspection.get(typeInfo.fullyQualifiedName);
 
         typeAnalysis = new TypeAnalysisImpl.Builder(analysisMode, analyserContext.getPrimitives(), typeInfo,
                 analyserContext);

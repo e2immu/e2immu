@@ -376,7 +376,7 @@ public class ResolverImpl implements Resolver {
             typeDependencies.retainAll(restrictToType);
             methodFieldSubTypeGraph.addNode(typeInfo, List.copyOf(typeDependencies));
 
-            if(cnt % 100 != 0) {
+            if(cnt % 100 == 0) {
                 LOGGER.info("Resolved {} types", cnt);
             }
 

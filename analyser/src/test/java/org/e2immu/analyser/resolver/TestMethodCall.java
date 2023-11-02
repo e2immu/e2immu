@@ -301,4 +301,22 @@ public class TestMethodCall extends CommonTest {
     public void test_31() throws IOException {
         inspectAndResolve(MethodCall_31.class);
     }
+
+    // methods with bounded type parameters
+    @Test
+    public void test_32() throws IOException {
+        inspectAndResolve(MethodCall_32.class);
+    }
+
+    // Arrays.comparable(...)
+    @Test
+    public void test_33() throws IOException {
+        inspectAndResolve(MethodCall_33.class);
+    }
+
+    // String or int??
+    @Test
+    public void test_34() throws IOException {
+        inspectAndResolve(MethodCall_34.class);
+    }
 }

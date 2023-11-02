@@ -408,7 +408,7 @@ public record ParseMethodCallExpr(TypeContext typeContext) {
                         for (ParameterizedType actualType : acceptedErased) {
 
                             int compatible;
-                            if (isFreeTypeParameter(actualType) && actualType.arrays == arrayType.arrays) {
+                            if (isUnboundMethodTypeParameter(actualType) && actualType.arrays == arrayType.arrays) {
                                 compatible = 5;
                             } else {
                                 compatible = callIsAssignableFrom(actualType, arrayType);
@@ -436,7 +436,7 @@ public record ParseMethodCallExpr(TypeContext typeContext) {
                 for (ParameterizedType actualType : acceptedErased) {
                     int penaltyForReturnType = computePenaltyForReturnType(actualType, formalType);
                     int compatible;
-                    if (isFreeTypeParameter(actualType)) {
+                    if (isUnboundMethodTypeParameter(actualType)) {
                         /*
                         See test Lambda_6, and Lambda_7
 
@@ -448,10 +448,12 @@ public record ParseMethodCallExpr(TypeContext typeContext) {
 
                         Overload_7 shows why a formal free type parameter should get priority over a normal formal type
                          */
-                        int typeParameterPenalty = isFreeTypeParameter(formalType) ? 2 : 5;
+                        int typeParameterPenalty = isUnboundMethodTypeParameter(formalType) ? 2 : 5;
                         compatible = typeParameterPenalty + penaltyForReturnType;
                     } else {
-                        compatible = callIsAssignableFrom(actualType, formalType) + penaltyForReturnType;
+                        ParameterizedType actualTypeReplaced = replaceByTypeBound(actualType);
+                        ParameterizedType formalTypeReplaced = replaceByTypeBound(formalType);
+                        compatible = callIsAssignableFrom(actualTypeReplaced, formalTypeReplaced) + penaltyForReturnType;
                     }
                     if (compatible >= 0 && (bestCompatible == Integer.MIN_VALUE || compatible < bestCompatible)) {
                         bestCompatible = compatible;
@@ -504,8 +506,23 @@ public record ParseMethodCallExpr(TypeContext typeContext) {
         return 0;
     }
 
-    private boolean isFreeTypeParameter(ParameterizedType actualType) {
-        return actualType.typeParameter != null && actualType.typeParameter.isMethodTypeParameter();
+    private boolean isUnboundMethodTypeParameter(ParameterizedType actualType) {
+        return actualType.typeParameter != null
+                && actualType.typeParameter.isMethodTypeParameter()
+                && actualType.typeParameter.getTypeBounds().isEmpty();
+    }
+
+    private ParameterizedType replaceByTypeBound(ParameterizedType type) {
+        if (isBoundTypeParameter(type)) {
+            assert type.typeParameter != null;
+            return type.typeParameter.getTypeBounds().get(0).copyWithArrays(type.arrays);
+        }
+        return type;
+    }
+
+    private boolean isBoundTypeParameter(ParameterizedType type) {
+        return type.typeParameter != null && !type.typeParameter.getTypeBounds().isEmpty()
+                && type.typeParameter.getTypeBounds().stream().noneMatch(ParameterizedType::isJavaLangObject);
     }
 
     private FilterResult filterMethodCandidatesInErasureMode(ExpressionContext expressionContext,

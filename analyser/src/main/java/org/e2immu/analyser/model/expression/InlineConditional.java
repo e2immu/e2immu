@@ -314,8 +314,13 @@ public class InlineConditional extends BaseExpression implements Expression {
         if (ifTrue.isNullConstant()) {
             return ifFalse.erasureTypes(typeContext);
         }
-        if (ifFalse.isNullConstant()) return ifTrue.erasureTypes(typeContext);
-        return SetUtil.immutableUnion(ifTrue.erasureTypes(typeContext), ifFalse.erasureTypes(typeContext));
+        if (ifFalse.isNullConstant()) {
+            return ifTrue.erasureTypes(typeContext);
+        }
+        if(ifTrue instanceof ErasureExpression || ifFalse instanceof ErasureExpression) {
+            return SetUtil.immutableUnion(ifTrue.erasureTypes(typeContext), ifFalse.erasureTypes(typeContext));
+        }
+        return Set.of(returnType());
     }
 
     @Override

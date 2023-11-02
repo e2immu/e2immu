@@ -320,7 +320,8 @@ public class TypeMapImpl implements TypeMap {
             synchronized (typeInspections) {
                 TypeInspection.Builder inMap = typeInspections.get(typeInfo);
                 if (inMap != null) {
-                    throw new UnsupportedOperationException();
+                    throw new UnsupportedOperationException("Expected to know type inspection of "
+                            + typeInfo.fullyQualifiedName);
                 }
                 assert !typeInfo.typeInspection.isSet() : "type " + typeInfo.fullyQualifiedName;
                 TypeInspectionImpl.Builder ti = new TypeInspectionImpl.Builder(typeInfo, inspectionState);
