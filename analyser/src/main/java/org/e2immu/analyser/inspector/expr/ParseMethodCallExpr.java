@@ -18,10 +18,7 @@ import com.github.javaparser.Position;
 import com.github.javaparser.ast.expr.MethodCallExpr;
 import org.e2immu.analyser.inspector.*;
 import org.e2immu.analyser.model.*;
-import org.e2immu.analyser.model.expression.EmptyExpression;
-import org.e2immu.analyser.model.expression.MethodCall;
-import org.e2immu.analyser.model.expression.MethodCallErasure;
-import org.e2immu.analyser.model.expression.VariableExpression;
+import org.e2immu.analyser.model.expression.*;
 import org.e2immu.analyser.model.variable.This;
 import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.parser.Primitives;
@@ -95,7 +92,9 @@ public record ParseMethodCallExpr(TypeContext typeContext) {
                     extra,
                     errorInfo);
 
-            assert candidate != null : "Should have found a unique candidate for " + errorInfo.toString(typeContext);
+            if (candidate == null) {
+                throw new RuntimeException("Should have found a unique candidate for " + errorInfo.toString(typeContext));
+            }
             LOGGER.debug("Resulting method is {}", candidate.method.methodInspection.getMethodInfo().fullyQualifiedName);
 
             boolean scopeIsThis = scope.expression() instanceof VariableExpression ve && ve.variable() instanceof This;
@@ -123,8 +122,10 @@ public record ParseMethodCallExpr(TypeContext typeContext) {
         typeContext.recursivelyResolveOverloadedMethods(scope.type(), methodName,
                 numArguments, false, scope.typeParameterMap().map(), methodCandidates,
                 scope.nature());
-        assert !methodCandidates.isEmpty() : "No candidates at all for method name " + methodName + ", "
-                + numArguments + " args in type " + scope.type().detailedString(typeContext);
+        if (methodCandidates.isEmpty()) {
+            throw new RuntimeException("No candidates at all for method name " + methodName + ", "
+                    + numArguments + " args in type " + scope.type().detailedString(typeContext));
+        }
         return methodCandidates;
     }
 
@@ -453,7 +454,15 @@ public record ParseMethodCallExpr(TypeContext typeContext) {
                     } else {
                         ParameterizedType actualTypeReplaced = replaceByTypeBound(actualType);
                         ParameterizedType formalTypeReplaced = replaceByTypeBound(formalType);
-                        compatible = callIsAssignableFrom(actualTypeReplaced, formalTypeReplaced) + penaltyForReturnType;
+                        boolean paramIsErasure = evaluatedExpressions.get(pos) instanceof ErasureExpression;
+                        int assignable;
+                        if (paramIsErasure && actualTypeReplaced != actualType) {
+                            // See 'method' call in MethodCall_32; this feels like a hack
+                            assignable = callIsAssignableFrom(formalTypeReplaced, actualTypeReplaced);
+                        } else {
+                            assignable = callIsAssignableFrom(actualTypeReplaced, formalTypeReplaced);
+                        }
+                        compatible = assignable + penaltyForReturnType;
                     }
                     if (compatible >= 0 && (bestCompatible == Integer.MIN_VALUE || compatible < bestCompatible)) {
                         bestCompatible = compatible;

@@ -130,7 +130,7 @@ public record IsAssignableFrom(InspectionProvider inspectionProvider,
         if (target.typeInfo != null && from.typeParameter != null) {
             List<ParameterizedType> otherTypeBounds = from.typeParameter.getTypeBounds();
             if (otherTypeBounds.isEmpty()) {
-                if(mode == Mode.COVARIANT_ERASURE) {
+                if (mode == Mode.COVARIANT_ERASURE) {
                     return UNBOUND_WILDCARD; // see e.g. Lambda_7, MethodCall_30,_31
                 }
                 return target.typeInfo.isJavaLangObject() ? IN_HIERARCHY : NOT_ASSIGNABLE;
@@ -155,7 +155,7 @@ public record IsAssignableFrom(InspectionProvider inspectionProvider,
             // T <- T[], T[] <- T, ...
             return NOT_ASSIGNABLE;
         }
-        if(target.arrays > 0 && from.arrays != target.arrays) {
+        if (target.arrays > 0 && from.arrays != target.arrays) {
             // T[] <- X, X[][]
             return NOT_ASSIGNABLE;
         }
@@ -234,6 +234,14 @@ public record IsAssignableFrom(InspectionProvider inspectionProvider,
     private int functionalInterface(Mode mode) {
         MethodInspection mTarget = target.findSingleAbstractMethodOfInterface(inspectionProvider).methodInspection;
         MethodInspection mFrom = from.findSingleAbstractMethodOfInterface(inspectionProvider).methodInspection;
+
+        /*
+         See call to 'method' in MethodCall_32 for this "if" statement. Both types I and J are functional interfaces,
+         with the same return type and parameters. But they're not seen as assignable.
+         */
+        if (!mTarget.getMethodInfo().name.equals(mFrom.getMethodInfo().name)
+                && !"java.util.function".equals(mTarget.getMethodInfo().typeInfo.packageName())
+                && !"java.util.function".equals(mFrom.getMethodInfo().typeInfo.packageName())) return NOT_ASSIGNABLE;
         if (mTarget.getParameters().size() != mFrom.getParameters().size()) return NOT_ASSIGNABLE;
         boolean targetIsVoid = mTarget.getReturnType().isVoid();
         boolean fromIsVoid = mFrom.getReturnType().isVoid();

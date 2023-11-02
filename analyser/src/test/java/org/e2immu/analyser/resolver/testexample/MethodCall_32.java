@@ -1,6 +1,11 @@
 package org.e2immu.analyser.resolver.testexample;
 
+import org.junit.jupiter.api.Test;
+
 import java.util.List;
+
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class MethodCall_32 {
 
@@ -55,6 +60,7 @@ public class MethodCall_32 {
         return filterByID(x, id);
     }
 
+    // TODO what if int becomes char?
     record Y(int j) implements J {
     }
 
@@ -64,5 +70,27 @@ public class MethodCall_32 {
 
     Y test4(Y y, long id) {
         return filterByID(y, id);
+    }
+
+    interface II extends I {
+
+    }
+
+    record XX(int i) implements II {
+    }
+
+    void method(XX xx) {
+
+    }
+    void test5(XX xx) {
+        // evaluated expression of filterByID is of type MethodCallErasure
+        method(filterByID(xx, 1));
+    }
+
+    @Test
+    public void test() {
+        assertFalse(J.class.isAssignableFrom(XX.class));
+        assertTrue(I.class.isAssignableFrom(XX.class));
+        assertTrue(II.class.isAssignableFrom(XX.class));
     }
 }
