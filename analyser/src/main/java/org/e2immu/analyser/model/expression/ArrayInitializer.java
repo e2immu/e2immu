@@ -56,7 +56,9 @@ public class ArrayInitializer extends BaseExpression implements Expression {
                             ParameterizedType formalCommonType) {
         super(identifier, values.stream().mapToInt(Expression::getComplexity).sum() + 1);
         this.multiExpression = MultiExpression.create(values);
-        this.commonType = formalCommonType.commonType(inspectionProvider, multiExpression.commonType(inspectionProvider));
+        ParameterizedType multiCommon = multiExpression.commonType(inspectionProvider);
+        this.commonType = formalCommonType == null ? multiCommon
+                : formalCommonType.commonType(inspectionProvider, multiCommon);
     }
 
     private ArrayInitializer(Identifier identifier, MultiExpression multiExpression, ParameterizedType commonType) {
