@@ -191,7 +191,7 @@ public record ParseMethodCallExpr(TypeContext typeContext) {
         }
         boolean twoAccessible = sortRemainingCandidatesByShallowPublic(methodCandidates);
         if (twoAccessible) {
-            multipleCandidatesError(errorInfo, methodCandidates);
+            multipleCandidatesError(errorInfo, methodCandidates, filterResult.evaluatedExpressions);
         }
         MethodTypeParameterMap method = methodCandidates.get(0).method();
         LOGGER.debug("Found method {}", method.methodInspection.getFullyQualifiedName());
@@ -204,9 +204,13 @@ public record ParseMethodCallExpr(TypeContext typeContext) {
         return new Candidate(newParameterExpressions, mapExpansion, method);
     }
 
-    private void multipleCandidatesError(ErrorInfo errorInfo, List<TypeContext.MethodCandidate> methodCandidates) {
+    private void multipleCandidatesError(ErrorInfo errorInfo,
+                                         List<TypeContext.MethodCandidate> methodCandidates,
+                                         Map<Integer, Expression> evaluatedExpressions) {
         LOGGER.error("Multiple candidates for {}", errorInfo);
         methodCandidates.forEach(mc -> LOGGER.error(" -- {}", mc.method().methodInspection.getMethodInfo().fullyQualifiedName));
+        LOGGER.error("{} Evaluated expressions:", evaluatedExpressions.size());
+        evaluatedExpressions.forEach((i, e) -> LOGGER.error(" -- index {}: {}, {}", i, e, e.getClass()));
         throw new UnsupportedOperationException("Multiple candidates");
     }
 

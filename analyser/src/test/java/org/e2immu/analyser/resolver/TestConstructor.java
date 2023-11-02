@@ -189,6 +189,6 @@ public class TestConstructor extends CommonTest {
         assertNotNull(typeInfo);
         MethodInfo methodInfo = typeInfo.findUniqueMethod("method", 0);
         Block getSubBlock = typeMap.getMethodInspection(methodInfo).getMethodBody();
-        assertEquals("{(a.new Inner()).value=3;}", getSubBlock.minimalOutput());
+        assertEquals("{(a.new Inner()).value=3;map.put(\"key\",a.new Inner());}", getSubBlock.minimalOutput());
     }
 }

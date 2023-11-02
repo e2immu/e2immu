@@ -25,18 +25,22 @@ import java.util.*;
 
 public class ParseObjectCreationExpr {
 
+    private record TypeContextAndScope(TypeContext typeContext, Expression scope) {
+    }
+
     public static Expression erasure(ExpressionContext expressionContext,
                                      ObjectCreationExpr objectCreationExpr) {
-        TypeContext typeContext = expressionContext.typeContext();
-        ParameterizedType typeAsIs = ParameterizedTypeFactory.from(typeContext, objectCreationExpr.getType());
-        ParameterizedType formalType = typeAsIs.typeInfo.asParameterizedType(typeContext);
-
+        TypeContextAndScope typeContextAndScope = determineTypeContextAndScope(expressionContext, objectCreationExpr,
+                new ForwardReturnTypeInfo());
+        ParameterizedType typeAsIs = ParameterizedTypeFactory.from(typeContextAndScope.typeContext,
+                objectCreationExpr.getType());
+        ParameterizedType formalType = typeAsIs.typeInfo.asParameterizedType(typeContextAndScope.typeContext);
         return new ConstructorCallErasure(formalType);
     }
 
-    public static Expression parse(ExpressionContext expressionContext,
-                                   ObjectCreationExpr objectCreationExpr,
-                                   ForwardReturnTypeInfo forwardReturnTypeInfo) {
+    private static TypeContextAndScope determineTypeContextAndScope(ExpressionContext expressionContext,
+                                                                    ObjectCreationExpr objectCreationExpr,
+                                                                    ForwardReturnTypeInfo forwardReturnTypeInfo) {
         TypeContext typeContext;
         Expression scope;
         if (objectCreationExpr.getScope().isPresent()) {
@@ -55,6 +59,15 @@ public class ParseObjectCreationExpr {
             typeContext = expressionContext.typeContext();
             scope = null;
         }
+        return new TypeContextAndScope(typeContext, scope);
+    }
+
+    public static Expression parse(ExpressionContext expressionContext,
+                                   ObjectCreationExpr objectCreationExpr,
+                                   ForwardReturnTypeInfo forwardReturnTypeInfo) {
+        TypeContextAndScope tas = determineTypeContextAndScope(expressionContext, objectCreationExpr,
+                forwardReturnTypeInfo);
+        TypeContext typeContext = tas.typeContext;
         ParameterizedType typeAsIs = ParameterizedTypeFactory.from(typeContext, objectCreationExpr.getType());
         ParameterizedType formalType = typeAsIs.typeInfo.asParameterizedType(typeContext);
 
@@ -90,7 +103,7 @@ public class ParseObjectCreationExpr {
                     expressionContext.resolver().storeComments(),
                     Map.of(anonymousType, expressionContext.newVariableContext("Anonymous subtype")));
 
-            return ConstructorCall.withAnonymousClass(id, scope, parameterizedType, anonymousType, diamond);
+            return ConstructorCall.withAnonymousClass(id, tas.scope, parameterizedType, anonymousType, diamond);
         }
 
         Map<NamedType, ParameterizedType> typeMap = parameterizedType == null ? null :
@@ -122,7 +135,7 @@ public class ParseObjectCreationExpr {
         }
         // IMPORTANT: every newly created object is different from each other, UNLESS we're a record, then
         // we can check the constructors... See EqualityMode
-        return ConstructorCall.objectCreation(id, scope, candidate.method().methodInspection.getMethodInfo(),
+        return ConstructorCall.objectCreation(id, tas.scope, candidate.method().methodInspection.getMethodInfo(),
                 finalParameterizedType, diamond, candidate.newParameterExpressions());
     }
 
