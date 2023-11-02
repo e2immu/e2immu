@@ -285,13 +285,15 @@ public class TypeMapImpl implements TypeMap {
 
         public TypeInspection.Builder ensureTypeInspection(TypeInfo typeInfo, InspectionState inspectionState) {
             assert Input.acceptFQN(typeInfo.packageName());
-            TypeInspection.Builder inMap = typeInspections.get(typeInfo);
-            if (inMap == null) {
-                TypeInspection.Builder typeInspection = new TypeInspectionImpl.Builder(typeInfo, inspectionState);
-                typeInspections.put(typeInfo, typeInspection);
-                return typeInspection;
+            synchronized (typeInspections) {
+                TypeInspection.Builder inMap = typeInspections.get(typeInfo);
+                if (inMap == null) {
+                    TypeInspection.Builder typeInspection = new TypeInspectionImpl.Builder(typeInfo, inspectionState);
+                    typeInspections.put(typeInfo, typeInspection);
+                    return typeInspection;
+                }
+                return inMap;
             }
-            return inMap;
         }
 
         private TypeInfo extractPrimaryTypeAndAddToMap(String path, int dollar) {
@@ -315,14 +317,16 @@ public class TypeMapImpl implements TypeMap {
 
         public TypeInspection.Builder add(TypeInfo typeInfo, InspectionState inspectionState) {
             trie.add(typeInfo.fullyQualifiedName.split("\\."), typeInfo);
-            TypeInspection.Builder inMap = typeInspections.get(typeInfo);
-            if (inMap != null) {
-                throw new UnsupportedOperationException();
+            synchronized (typeInspections) {
+                TypeInspection.Builder inMap = typeInspections.get(typeInfo);
+                if (inMap != null) {
+                    throw new UnsupportedOperationException();
+                }
+                assert !typeInfo.typeInspection.isSet() : "type " + typeInfo.fullyQualifiedName;
+                TypeInspectionImpl.Builder ti = new TypeInspectionImpl.Builder(typeInfo, inspectionState);
+                typeInspections.put(typeInfo, ti);
+                return ti;
             }
-            assert !typeInfo.typeInspection.isSet() : "type " + typeInfo.fullyQualifiedName;
-            TypeInspectionImpl.Builder ti = new TypeInspectionImpl.Builder(typeInfo, inspectionState);
-            typeInspections.put(typeInfo, ti);
-            return ti;
         }
 
         public TypeInspection.Builder ensureTypeAndInspection(TypeInfo typeInfo, InspectionState inspectionState) {
@@ -366,12 +370,16 @@ public class TypeMapImpl implements TypeMap {
         }
 
         public InspectionState getInspectionState(TypeInfo typeInfo) {
-            if (typeInfo.typeInspection.isSet()) return typeInfo.typeInspection.get().getInspectionState();
-            TypeInspection.Builder typeInspection = typeInspections.get(typeInfo);
-            if (typeInspection == null) {
-                return null; // not registered
+            if (typeInfo.typeInspection.isSet()) {
+                return typeInfo.typeInspection.get().getInspectionState();
             }
-            return typeInspection.getInspectionState();
+            synchronized (typeInspections) {
+                TypeInspection.Builder typeInspection = typeInspections.get(typeInfo);
+                if (typeInspection == null) {
+                    return null; // not registered
+                }
+                return typeInspection.getInspectionState();
+            }
         }
 
         @Override
@@ -386,7 +394,10 @@ public class TypeMapImpl implements TypeMap {
             if (typeInfo.typeInspection.isSet()) {
                 return typeInfo.typeInspection.get();
             }
-            TypeInspection.Builder typeInspection = typeInspections.get(typeInfo);
+            TypeInspection.Builder typeInspection;
+            synchronized (typeInspections) {
+                typeInspection = typeInspections.get(typeInfo);
+            }
             if (typeInspection == null) {
                 return null;
             }
@@ -438,12 +449,16 @@ public class TypeMapImpl implements TypeMap {
         }
 
         public Stream<Map.Entry<TypeInfo, TypeInspection.Builder>> streamTypes() {
-            return typeInspections.entrySet().stream();
+            synchronized (typeInspections) {
+                return typeInspections.entrySet().stream();
+            }
         }
 
         @Override
         public TypeInspection getTypeInspectionDoNotTrigger(TypeInfo typeInfo) {
-            return typeInspections.get(typeInfo);
+            synchronized (typeInspections) {
+                return typeInspections.get(typeInfo);
+            }
         }
 
         @Override

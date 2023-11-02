@@ -54,7 +54,8 @@ public class InspectAll implements InspectWithJavaParser {
 
     record TypeData(TypeDeclaration<?> typeDeclaration,
                     TypeInspector typeInspector,
-                    TypeContext typeContext) {
+                    TypeContext typeContext,
+                    List<TypeInfo> dollarTypes) {
     }
 
     record CompilationUnitData(URI sourceFile,
@@ -109,7 +110,12 @@ public class InspectAll implements InspectWithJavaParser {
         for (CompilationUnitData cud : compilationUnits.get().values()) {
             if (done.add(cud.sourceFile)) {
                 for (Map.Entry<TypeInfo, TypeData> entry : cud.typeData.entrySet()) {
-                    map.put(entry.getKey(), entry.getValue().typeContext());
+                    TypeData typeData = entry.getValue();
+                    TypeInfo typeInfo = entry.getKey();
+                    map.put(typeInfo, typeData.typeContext);
+                    for(TypeInfo dollarType: typeData.dollarTypes) {
+                        map.put(dollarType, typeData.typeContext);
+                    }
                 }
             }
         }
@@ -198,7 +204,7 @@ public class InspectAll implements InspectWithJavaParser {
                     dollarTypesAreNormalTypes, storeComments());
             typeInspector.recursivelyAddToTypeStore(typeMapBuilder, td, dollarTypesAreNormalTypes);
             TypeContext typeContextOfType = new TypeContext(packageName, typeContextOfFile, true);
-            TypeData typeData = new TypeData(td, typeInspector, typeContextOfType);
+            TypeData typeData = new TypeData(td, typeInspector, typeContextOfType, new ArrayList<>());
             typesInUnit.put(typeInfo, typeData);
         }
 
@@ -357,8 +363,9 @@ public class InspectAll implements InspectWithJavaParser {
                 typeData.typeContext, anonymousTypeCounters);
         try {
             typeInspectionBuilder.setInspectionState(STARTING_JAVA_PARSER);
-            typeData.typeInspector.inspect(false, null, typeData.typeDeclaration,
-                    expressionContext);
+            List<TypeInfo> dollarTypes = typeData.typeInspector.inspect(false, null,
+                    typeData.typeDeclaration, expressionContext);
+            typeData.dollarTypes.addAll(dollarTypes);
             typeInspectionBuilder.setInspectionState(FINISHED_JAVA_PARSER);
         } catch (RuntimeException rte) {
             LOGGER.error("Caught runtime exception inspecting type {}", typeInfo.fullyQualifiedName);

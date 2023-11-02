@@ -96,7 +96,7 @@ public class TypeInspectorImpl implements TypeInspector {
         }
         this.fullInspection = fullInspection;
         builder = (TypeInspectionImpl.Builder) typeInspection;
-        if(builder.getInspectionState() == INIT_JAVA_PARSER) {
+        if (builder.getInspectionState() == INIT_JAVA_PARSER) {
             builder.setInspectionState(TRIGGER_JAVA_PARSER);
         } // else: already in START state, as a subtype
     }
@@ -128,17 +128,15 @@ public class TypeInspectorImpl implements TypeInspector {
      * @param enclosingType            when not null, denotes the parent type; otherwise, this is a primary type
      * @param typeDeclaration          the JavaParser object to inspect
      * @param expressionContext        the context to inspect in
+     * @return the dollar types when inspecting AnnotatedAPI files, they will be added to the list of primary types,
+     * rather than being seen as subtypes.
      */
     @Override
     public List<TypeInfo> inspect(boolean enclosingTypeIsInterface,
                                   TypeInfo enclosingType,
                                   TypeDeclaration<?> typeDeclaration,
                                   ExpressionContext expressionContext) {
-        List<TypeInfo> dollarTypes = inspect(enclosingTypeIsInterface, typeDeclaration, expressionContext, null);
-        if (enclosingType == null) {
-            dollarTypes.add(0, typeInfo);
-        }
-        return dollarTypes;
+        return inspect(enclosingTypeIsInterface, typeDeclaration, expressionContext, null);
     }
 
     /*
