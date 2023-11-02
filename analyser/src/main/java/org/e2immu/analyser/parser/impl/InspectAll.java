@@ -19,6 +19,7 @@ import org.e2immu.analyser.parser.TypeMap;
 import org.e2immu.analyser.resolver.Resolver;
 import org.e2immu.analyser.util.Resources;
 import org.e2immu.analyser.util.StringUtil;
+import org.e2immu.analyser.util.TimedLogger;
 import org.e2immu.analyser.util.Trie;
 import org.e2immu.annotation.Modified;
 import org.e2immu.support.SetOnce;
@@ -37,11 +38,11 @@ import java.util.stream.Stream;
 import static org.e2immu.analyser.inspector.InspectionState.*;
 
 public class InspectAll implements InspectWithJavaParser {
-    private static final int LOG_FREQ = 100;
     private static final Logger LOGGER = LoggerFactory.getLogger(InspectAll.class);
 
     private final AtomicInteger countParsed = new AtomicInteger();
     private final AtomicInteger countInspected = new AtomicInteger();
+    private final TimedLogger timedLogger = new TimedLogger(LOGGER, 1000L);
 
     private final Configuration configuration;
     private final TypeContext globalTypeContext;
@@ -113,7 +114,7 @@ public class InspectAll implements InspectWithJavaParser {
                     TypeData typeData = entry.getValue();
                     TypeInfo typeInfo = entry.getKey();
                     map.put(typeInfo, typeData.typeContext);
-                    for(TypeInfo dollarType: typeData.dollarTypes) {
+                    for (TypeInfo dollarType : typeData.dollarTypes) {
                         map.put(dollarType, typeData.typeContext);
                     }
                 }
@@ -209,9 +210,7 @@ public class InspectAll implements InspectWithJavaParser {
         }
 
         int cnt = countParsed.incrementAndGet();
-        if (cnt % LOG_FREQ == 0) {
-            LOGGER.info("Ran JavaParser on {} files", cnt);
-        }
+        timedLogger.info("Ran JavaParser on {} files", cnt);
 
         CompilationUnitData cud = new CompilationUnitData(uri, compilationUnit, packageName, typeContextOfFile,
                 Map.copyOf(typesInUnit));
@@ -372,9 +371,7 @@ public class InspectAll implements InspectWithJavaParser {
             throw rte;
         } finally {
             int cnt = countInspected.incrementAndGet();
-            if (cnt % LOG_FREQ == 0) {
-                LOGGER.info("Inspected {} types", cnt);
-            }
+            timedLogger.info("Inspected {} types", cnt);
         }
     }
 

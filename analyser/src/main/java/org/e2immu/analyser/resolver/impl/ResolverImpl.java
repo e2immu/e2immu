@@ -40,6 +40,7 @@ import org.e2immu.analyser.resolver.ShallowMethodResolver;
 import org.e2immu.analyser.resolver.SortedTypes;
 import org.e2immu.analyser.resolver.TypeCycle;
 import org.e2immu.analyser.util.DependencyGraph;
+import org.e2immu.analyser.util.TimedLogger;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -73,6 +74,7 @@ public class ResolverImpl implements Resolver {
     private final AtomicInteger typeCounterForDebugging = new AtomicInteger();
     private final DependencyGraph<MethodInfo> methodCallGraph;
     private final boolean storeComments;
+    private final TimedLogger timedLogger;
 
     @Override
     public Stream<Message> getMessageStream() {
@@ -104,6 +106,7 @@ public class ResolverImpl implements Resolver {
         this.anonymousTypeCounters = parent.anonymousTypeCounters;
         methodCallGraph = parent.methodCallGraph;
         this.storeComments = storeComments;
+        this.timedLogger = parent.timedLogger;
     }
 
     public ResolverImpl(AnonymousTypeCounters anonymousTypeCounters,
@@ -118,6 +121,7 @@ public class ResolverImpl implements Resolver {
         this.anonymousTypeCounters = anonymousTypeCounters;
         methodCallGraph = new DependencyGraph<>();
         this.storeComments = storeComments;
+        timedLogger = new TimedLogger(LOGGER, 1000L);
     }
 
     /**
@@ -333,7 +337,7 @@ public class ResolverImpl implements Resolver {
             typeInspection.subTypes().forEach(expressionContextOfType.typeContext()::addToContext);
 
             int cnt = typeCounterForDebugging.incrementAndGet();
-            LOGGER.info("Resolving type #{}: {}", cnt, typeInfo.fullyQualifiedName);
+            LOGGER.debug("Resolving type #{}: {}", cnt, typeInfo.fullyQualifiedName);
 
             TypeInfo primaryType = typeInfo.primaryType();
             ExpressionContext expressionContextForBody = ExpressionContextImpl.forTypeBodyParsing(this, typeInfo,
@@ -376,9 +380,7 @@ public class ResolverImpl implements Resolver {
             typeDependencies.retainAll(restrictToType);
             methodFieldSubTypeGraph.addNode(typeInfo, List.copyOf(typeDependencies));
 
-            if(cnt % 100 == 0) {
-                LOGGER.info("Resolved {} types", cnt);
-            }
+            timedLogger.info("Resolved {} types", cnt);
 
             return typeAndAllSubTypes;
         } catch (Throwable re) {

@@ -181,4 +181,14 @@ public class TestConstructor extends CommonTest {
 
         // TODO
     }
+
+    @Test
+    public void test_13() throws IOException {
+        TypeMap typeMap = inspectAndResolve(null, Constructor_13A.class, Constructor_13B.class);
+        TypeInfo typeInfo = typeMap.get(Constructor_13B.class);
+        assertNotNull(typeInfo);
+        MethodInfo methodInfo = typeInfo.findUniqueMethod("method", 0);
+        Block getSubBlock = typeMap.getMethodInspection(methodInfo).getMethodBody();
+        assertEquals("{(a.new Inner()).value=3;}", getSubBlock.minimalOutput());
+    }
 }
