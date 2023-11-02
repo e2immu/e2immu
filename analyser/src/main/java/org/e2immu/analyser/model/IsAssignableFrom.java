@@ -112,11 +112,11 @@ public record IsAssignableFrom(InspectionProvider inspectionProvider,
                     return inspectionProvider.getPrimitives().isAssignableFromTo(from, target,
                             mode == Mode.COVARIANT || mode == Mode.COVARIANT_ERASURE);
                 }
-                return checkBoxing(target.typeInfo, from.typeInfo) ? BOXING_FROM_PRIMITIVE : NOT_ASSIGNABLE;
+                return checkBoxing(target, from);
             }
             if (target.isPrimitiveExcludingVoid()) {
                 // the other one is not a primitive
-                return checkBoxing(from.typeInfo, target.typeInfo) ? BOXING_TO_PRIMITIVE : NOT_ASSIGNABLE;
+                return checkUnboxing(target, from);
             }
 
             // two different types, so they must be in a hierarchy
@@ -317,8 +317,30 @@ public record IsAssignableFrom(InspectionProvider inspectionProvider,
         return mode != Mode.INVARIANT || w1 != ParameterizedType.WildCard.NONE;
     }
 
-    private boolean checkBoxing(TypeInfo targetInfo, TypeInfo fromPrimitiveType) {
-        TypeInfo boxed = fromPrimitiveType.asParameterizedType(inspectionProvider).toBoxed(inspectionProvider.getPrimitives());
-        return boxed == targetInfo;
+    // int <- Integer, long <- Integer, double <- Long
+    private int checkUnboxing(ParameterizedType primitiveTarget, ParameterizedType from) {
+        if (from.isBoxedExcludingVoid()) {
+            TypeInfo primitiveFrom = inspectionProvider.getPrimitives().unboxed(from.typeInfo);
+            if (primitiveFrom == primitiveTarget.typeInfo) {
+                return BOXING_FROM_PRIMITIVE;
+            }
+            ParameterizedType primitiveFromPt = primitiveFrom.asSimpleParameterizedType();
+            int h = inspectionProvider.getPrimitives().isAssignableFromTo(primitiveFromPt, primitiveTarget, true);
+            if (h != NOT_ASSIGNABLE) {
+                return BOXING_FROM_PRIMITIVE + h;
+            }
+        }
+        return NOT_ASSIGNABLE;
+    }
+
+    private int checkBoxing(ParameterizedType target, ParameterizedType primitiveType) {
+        TypeInfo boxed = primitiveType.toBoxed(inspectionProvider.getPrimitives());
+        if (boxed == target.typeInfo) {
+            return BOXING_TO_PRIMITIVE;
+        }
+        // check the hierarchy of boxed: e.g. Number
+        ParameterizedType boxedPt = boxed.asSimpleParameterizedType();
+        int h = hierarchy(target, boxedPt, Mode.COVARIANT);
+        return h == NOT_ASSIGNABLE ? NOT_ASSIGNABLE : h + BOXING_FROM_PRIMITIVE;
     }
 }

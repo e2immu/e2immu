@@ -85,6 +85,37 @@ public class TestIsAssignableFrom {
         assertFalse(characterPt.isAssignableFrom(typeContext, primitives.intParameterizedType()));
     }
 
+    // Double <- double
+    // Number <- Double
+    // Number <- double
+    @Test
+    public void testBox() {
+        ParameterizedType doublePt = type(Double.class.getName());
+        ParameterizedType numberPt = type(Number.class.getName());
+        assertTrue(doublePt.isAssignableFrom(typeContext, primitives.doubleParameterizedType()));
+        assertTrue(numberPt.isAssignableFrom(typeContext, doublePt));
+        assertTrue(numberPt.isAssignableFrom(typeContext, primitives.doubleParameterizedType()));
+    }
+
+    // int <- Integer
+    // long <- int
+    // long <- Integer
+    // char <-/- Integer
+    @Test
+    public void box2() {
+        ParameterizedType integerPt = type(Integer.class.getName());
+        assertTrue(primitives.intParameterizedType().isAssignableFrom(typeContext, integerPt));
+        assertTrue(primitives.longParameterizedType().isAssignableFrom(typeContext, primitives.intParameterizedType()));
+        assertTrue(primitives.longParameterizedType().isAssignableFrom(typeContext, integerPt));
+        assertFalse(primitives.charParameterizedType().isAssignableFrom(typeContext, integerPt));
+    }
+
+    @Test
+    public void box3() {
+        ParameterizedType booleanPt = type(Boolean.class.getName());
+        assertTrue(primitives.booleanParameterizedType().isAssignableFrom(typeContext, booleanPt));
+    }
+
     // CharSequence[] <- String[] should be allowed
     // Object[] <- CharSequence[], <- String[] should be allowed, not the other way around
     @Test

@@ -53,7 +53,10 @@ public record ParseMethodCallExpr(TypeContext typeContext) {
         }
         sortRemainingCandidatesByShallowPublic(methodCandidates);
 
-        assert !methodCandidates.isEmpty() : "Have no method candidates remaining in erasure mode for " + methodName + ", " + numArguments;
+        if (methodCandidates.isEmpty()) {
+            throw new RuntimeException("Have no method candidates remaining in erasure mode for "
+                    + methodName + ", " + numArguments);
+        }
 
         Set<ParameterizedType> types = methodCandidates.stream()
                 .map(mc -> {

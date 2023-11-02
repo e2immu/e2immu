@@ -340,4 +340,15 @@ public class TestMethodCall extends CommonTest {
     public void test_38() throws IOException {
         inspectAndResolve(MethodCall_38.class);
     }
+
+    @Test
+    public void test_39() throws IOException {
+        inspectAndResolve(MethodCall_39.class);
+    }
+
+    // erasure and boxing
+    @Test
+    public void test_40() throws IOException {
+        inspectAndResolve(MethodCall_40.class);
+    }
 }
