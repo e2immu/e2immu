@@ -76,7 +76,7 @@ public class TestResources {
             }
             LOGGER.info("expand to {}", uri);
         }
-        assertTrue(20 < counter);
+        assertTrue(20 < counter, "Found " + counter);
     }
 
     @Test

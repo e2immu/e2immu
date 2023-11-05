@@ -148,16 +148,15 @@ public class Resources {
         AtomicInteger errors = new AtomicInteger();
         jarFile.stream().forEach(je -> {
             String realName = je.getRealName();
-            if(realName.endsWith(".class")) {
+            // let's exclude XML files, etc., anything not Java-related
+            if (realName.endsWith(".class") || realName.endsWith(".java")) {
                 LOGGER.debug("Adding {}", realName);
                 String[] split = je.getRealName().split("/");
                 try {
                     URI fullUrl = new URL(jarUrl, je.getRealName()).toURI();
                     data.add(split, fullUrl);
                     entries.incrementAndGet();
-                } catch (MalformedURLException e) {
-                    e.printStackTrace();
-                } catch (URISyntaxException e) {
+                } catch (MalformedURLException | URISyntaxException e) {
                     throw new RuntimeException(e);
                 }
             }
