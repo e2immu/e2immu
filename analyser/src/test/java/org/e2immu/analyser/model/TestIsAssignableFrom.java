@@ -151,6 +151,15 @@ public class TestIsAssignableFrom {
         assertFalse(charSeqArrayPt.isAssignableFrom(typeContext, objectArrayPt));
     }
 
+    @Test
+    public void testArray2() {
+        // String[][] --> Object[]
+        ParameterizedType stringArray2Pt = new ParameterizedType(typeContext.typeMap.get(JAVA_LANG_STRING), 2);
+        ParameterizedType objectArrayPt = new ParameterizedType(typeContext.typeMap.get(JAVA_LANG_OBJECT), 1);
+        assertTrue(objectArrayPt.isAssignableFrom(typeContext, stringArray2Pt));
+        assertFalse(stringArray2Pt.isAssignableFrom(typeContext, objectArrayPt));
+    }
+
     // String <- null should be allowed, but int <- null should fail
     @Test
     public void testNull() {

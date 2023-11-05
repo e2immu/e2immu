@@ -365,8 +365,15 @@ public class TestMethodCall extends CommonTest {
         inspectAndResolve(MethodCall_42.class);
     }
 
+    // type bounds chang in hierarchy
     @Test
     public void test_43() throws IOException {
         inspectAndResolve(A, MethodCall_43.class);
+    }
+
+    // String[][] --> Object[], see TestIsAssignableFrom.testArray2()
+    @Test
+    public void test_44() throws IOException {
+        inspectAndResolve(A, MethodCall_44.class);
     }
 }

@@ -97,6 +97,9 @@ public record IsAssignableFrom(InspectionProvider inspectionProvider,
             // arrays?
             if (!ignoreArrays) {
                 if (target.arrays != from.arrays) {
+                    if (target.arrays < from.arrays && target.typeInfo.isJavaLangObject()) {
+                        return pathToJLO(from.copyWithoutArrays()) + IN_HIERARCHY * (from.arrays - target.arrays);
+                    }
                     return NOT_ASSIGNABLE;
                 }
                 if (target.arrays > 0) {
