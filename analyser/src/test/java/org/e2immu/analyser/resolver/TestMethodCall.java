@@ -374,6 +374,18 @@ public class TestMethodCall extends CommonTest {
     // String[][] --> Object[], see TestIsAssignableFrom.testArray2()
     @Test
     public void test_44() throws IOException {
-        inspectAndResolve(A, MethodCall_44.class);
+        inspectAndResolve(MethodCall_44.class);
+    }
+
+    // arrayPenalty in ParseMethodCallExpr.filterCandidatesByParameters
+    @Test
+    public void test_45() throws IOException {
+        inspectAndResolve(MethodCall_45.class);
+    }
+
+    // erasure problem
+    @Test
+    public void test_46() throws IOException {
+        inspectAndResolve(MethodCall_46.class);
     }
 }

@@ -457,7 +457,8 @@ public record ParseMethodCallExpr(TypeContext typeContext) {
                         Overload_7 shows why a formal free type parameter should get priority over a normal formal type
                          */
                         int typeParameterPenalty = isUnboundMethodTypeParameter(formalType) ? 2 : 5;
-                        compatible = typeParameterPenalty + penaltyForReturnType;
+                        int arrayPenalty = 10 * Math.abs(actualType.arrays - formalType.arrays);
+                        compatible = typeParameterPenalty + penaltyForReturnType + arrayPenalty;
                     } else {
                         ParameterizedType actualTypeReplaced = replaceByTypeBound(actualType);
                         ParameterizedType formalTypeReplaced = replaceByTypeBound(formalType);
