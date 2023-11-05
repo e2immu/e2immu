@@ -56,11 +56,13 @@ public interface PrimitivesWithoutParameterizedType {
 
     MethodInfo assignAndOperatorInt();
 
-    MethodInfo assignLeftShiftOperator();
+    MethodInfo assignLeftShiftOperatorInt();
 
-    MethodInfo assignSignedRightShiftOperator();
+    MethodInfo assignSignedRightShiftOperatorInt();
 
-    MethodInfo assignUnsignedRightShiftOperator();
+    MethodInfo assignUnsignedRightShiftOperatorInt();
+
+    MethodInfo assignXorOperatorInt();
 
     MethodInfo plusOperatorInt();
 
@@ -70,9 +72,11 @@ public interface PrimitivesWithoutParameterizedType {
 
     MethodInfo divideOperatorInt();
 
-    MethodInfo bitwiseOrOperatorInt();
+    MethodInfo orOperatorInt();
 
-    MethodInfo bitwiseAndOperatorInt();
+    MethodInfo andOperatorInt();
+
+    MethodInfo xorOperatorInt();
 
     MethodInfo orOperatorBool();
 

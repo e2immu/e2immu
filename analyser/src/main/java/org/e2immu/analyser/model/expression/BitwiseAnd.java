@@ -24,7 +24,7 @@ import org.e2immu.analyser.parser.Primitives;
 public class BitwiseAnd extends BinaryOperator {
 
     private BitwiseAnd(Identifier identifier, Primitives primitives, Expression lhs, Expression rhs) {
-        super(identifier, primitives, lhs, primitives.bitwiseAndOperatorInt(), rhs, Precedence.AND);
+        super(identifier, primitives, lhs, primitives.andOperatorInt(), rhs, Precedence.AND);
     }
 
     // we try to maintain a sum of products

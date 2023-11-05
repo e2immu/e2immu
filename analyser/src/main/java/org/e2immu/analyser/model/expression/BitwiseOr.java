@@ -24,7 +24,7 @@ import org.e2immu.analyser.parser.Primitives;
 public class BitwiseOr extends BinaryOperator {
 
     private BitwiseOr(Identifier identifier, Primitives primitives, Expression lhs, Expression rhs) {
-        super(identifier, primitives, lhs, primitives.bitwiseAndOperatorInt(), rhs, Precedence.OR);
+        super(identifier, primitives, lhs, primitives.orOperatorInt(), rhs, Precedence.OR);
     }
 
     public static Expression bitwiseOr(Identifier identifier, EvaluationResult evaluationContext, Expression l, Expression r) {

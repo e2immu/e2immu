@@ -222,11 +222,13 @@ public class Assignment extends BaseExpression implements Expression {
             case ASSIGN:
                 return primitives.assignOperatorInt();
             case LEFT_SHIFT:
-                return primitives.assignLeftShiftOperator();
+                return primitives.assignLeftShiftOperatorInt();
             case SIGNED_RIGHT_SHIFT:
-                return primitives.assignSignedRightShiftOperator();
+                return primitives.assignSignedRightShiftOperatorInt();
             case UNSIGNED_RIGHT_SHIFT:
-                return primitives.assignUnsignedRightShiftOperator();
+                return primitives.assignUnsignedRightShiftOperatorInt();
+            case XOR:
+                return primitives.assignXorOperatorInt();
         }
         throw new UnsupportedOperationException("Need to add primitive operator " +
                 operator + " on type " + widestType.fullyQualifiedName);

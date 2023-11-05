@@ -23,7 +23,7 @@ import org.e2immu.analyser.parser.Primitives;
 public class BooleanXor extends BinaryOperator {
 
     private BooleanXor(Identifier identifier, Primitives primitives, Expression lhs, Expression rhs) {
-        super(identifier, primitives, lhs, primitives.bitwiseAndOperatorInt(), rhs, Precedence.XOR);
+        super(identifier, primitives, lhs, primitives.xorOperatorBool(), rhs, Precedence.XOR);
     }
 
     public static Expression booleanXor(Identifier identifier, EvaluationResult evaluationContext, Expression l, Expression r) {

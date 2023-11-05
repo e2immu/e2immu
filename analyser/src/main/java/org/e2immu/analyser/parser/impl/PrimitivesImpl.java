@@ -207,6 +207,7 @@ public class PrimitivesImpl implements Primitives {
     public final MethodInfo assignDivideOperatorInt = createOperator(intTypeInfo, "/=", List.of(intParameterizedType), intParameterizedType);
     public final MethodInfo assignOrOperatorInt = createOperator(intTypeInfo, "|=", List.of(intParameterizedType), intParameterizedType);
     public final MethodInfo assignAndOperatorInt = createOperator(intTypeInfo, "&=", List.of(intParameterizedType), intParameterizedType);
+    public final MethodInfo assignXorOperatorInt = createOperator(intTypeInfo, "^=", List.of(intParameterizedType), intParameterizedType);
     public final MethodInfo assignLeftShiftOperator = createOperator(intTypeInfo, "<<=", List.of(intParameterizedType), intParameterizedType);
     public final MethodInfo assignSignedRightShiftOperator = createOperator(intTypeInfo, ">>=", List.of(intParameterizedType), intParameterizedType);
     public final MethodInfo assignUnsignedRightShiftOperator = createOperator(intTypeInfo, ">>>=", List.of(intParameterizedType), intParameterizedType);
@@ -508,18 +509,23 @@ public class PrimitivesImpl implements Primitives {
     }
 
     @Override
-    public MethodInfo assignLeftShiftOperator() {
+    public MethodInfo assignLeftShiftOperatorInt() {
         return assignLeftShiftOperator;
     }
 
     @Override
-    public MethodInfo assignSignedRightShiftOperator() {
+    public MethodInfo assignSignedRightShiftOperatorInt() {
         return assignSignedRightShiftOperator;
     }
 
     @Override
-    public MethodInfo assignUnsignedRightShiftOperator() {
+    public MethodInfo assignUnsignedRightShiftOperatorInt() {
         return assignUnsignedRightShiftOperator;
+    }
+
+    @Override
+    public MethodInfo assignXorOperatorInt() {
+        return assignXorOperatorInt;
     }
 
     @Override
@@ -543,13 +549,18 @@ public class PrimitivesImpl implements Primitives {
     }
 
     @Override
-    public MethodInfo bitwiseOrOperatorInt() {
+    public MethodInfo orOperatorInt() {
         return bitwiseOrOperatorInt;
     }
 
     @Override
-    public MethodInfo bitwiseAndOperatorInt() {
+    public MethodInfo andOperatorInt() {
         return bitwiseAndOperatorInt;
+    }
+
+    @Override
+    public MethodInfo xorOperatorInt() {
+        return bitwiseXorOperatorInt;
     }
 
     @Override

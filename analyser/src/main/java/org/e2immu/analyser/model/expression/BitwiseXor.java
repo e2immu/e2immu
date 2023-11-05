@@ -24,7 +24,7 @@ import org.e2immu.analyser.parser.Primitives;
 public class BitwiseXor extends BinaryOperator {
 
     private BitwiseXor(Identifier identifier, Primitives primitives, Expression lhs, Expression rhs) {
-        super(identifier, primitives, lhs, primitives.bitwiseAndOperatorInt(), rhs, Precedence.OR);
+        super(identifier, primitives, lhs, primitives.xorOperatorInt(), rhs, Precedence.XOR);
     }
 
     public static Expression bitwiseXor(Identifier identifier, EvaluationResult evaluationContext, Expression l, Expression r) {

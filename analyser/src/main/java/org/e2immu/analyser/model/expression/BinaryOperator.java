@@ -306,10 +306,10 @@ public class BinaryOperator extends BaseExpression implements Expression {
         if (operator == primitives.xorOperatorBool()) {
             return BooleanXor.booleanXor(identifier, context, l, r);
         }
-        if (operator == primitives.bitwiseAndOperatorInt()) {
+        if (operator == primitives.andOperatorInt()) {
             return BitwiseAnd.bitwiseAnd(identifier, context, l, r);
         }
-        if (operator == primitives.bitwiseOrOperatorInt()) {
+        if (operator == primitives.orOperatorInt()) {
             return BitwiseOr.bitwiseOr(identifier, context, l, r);
         }
         if (operator == primitives.bitwiseXorOperatorInt()) {
@@ -453,9 +453,9 @@ public class BinaryOperator extends BaseExpression implements Expression {
                 case MINUS:
                     return primitives.minusOperatorInt();
                 case BINARY_OR:
-                    return primitives.bitwiseOrOperatorInt();
+                    return primitives.orOperatorInt();
                 case BINARY_AND:
-                    return primitives.bitwiseAndOperatorInt();
+                    return primitives.andOperatorInt();
                 case XOR:
                     return primitives.bitwiseXorOperatorInt();
                 case UNSIGNED_RIGHT_SHIFT:
@@ -489,12 +489,16 @@ public class BinaryOperator extends BaseExpression implements Expression {
         if (primitives.assignMinusOperatorInt() == methodInfo) return primitives.minusOperatorInt();
         if (primitives.assignMultiplyOperatorInt() == methodInfo) return primitives.multiplyOperatorInt();
         if (primitives.assignDivideOperatorInt() == methodInfo) return primitives.divideOperatorInt();
-        if (primitives.assignOrOperatorInt() == methodInfo) return primitives.bitwiseOrOperatorInt();
-        if (primitives.assignAndOperatorInt() == methodInfo) return primitives.bitwiseAndOperatorInt();
-        if (primitives.assignLeftShiftOperator() == methodInfo) return primitives.leftShiftOperatorInt();
-        if (primitives.assignSignedRightShiftOperator() == methodInfo) return primitives.signedRightShiftOperatorInt();
-        if (primitives.assignUnsignedRightShiftOperator() == methodInfo)
+        if (primitives.assignOrOperatorInt() == methodInfo) return primitives.orOperatorInt();
+        if (primitives.assignAndOperatorInt() == methodInfo) return primitives.andOperatorInt();
+        if (primitives.assignXorOperatorInt() == methodInfo) return primitives.xorOperatorInt();
+        if (primitives.assignLeftShiftOperatorInt() == methodInfo) return primitives.leftShiftOperatorInt();
+        if (primitives.assignSignedRightShiftOperatorInt() == methodInfo) {
+            return primitives.signedRightShiftOperatorInt();
+        }
+        if (primitives.assignUnsignedRightShiftOperatorInt() == methodInfo) {
             return primitives.unsignedRightShiftOperatorInt();
+        }
         throw new UnsupportedOperationException("TODO! " + methodInfo.distinguishingName());
     }
 
@@ -517,13 +521,13 @@ public class BinaryOperator extends BaseExpression implements Expression {
         if (primitives.equalsOperatorInt() == methodInfo || primitives.equalsOperatorObject() == methodInfo || primitives.notEqualsOperatorInt() == methodInfo || primitives.notEqualsOperatorObject() == methodInfo) {
             return EQUALITY;
         }
-        if (primitives.bitwiseAndOperatorInt() == methodInfo) {
+        if (primitives.andOperatorInt() == methodInfo) {
             return AND;
         }
         if (primitives.bitwiseXorOperatorInt() == methodInfo) {
             return XOR;
         }
-        if (primitives.bitwiseOrOperatorInt() == methodInfo) {
+        if (primitives.orOperatorInt() == methodInfo) {
             return OR;
         }
         if (primitives.andOperatorBool() == methodInfo) {
