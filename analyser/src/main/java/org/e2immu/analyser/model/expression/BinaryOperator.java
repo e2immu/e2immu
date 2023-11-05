@@ -327,7 +327,7 @@ public class BinaryOperator extends BaseExpression implements Expression {
         throw new UnsupportedOperationException("Operator " + operator.fullyQualifiedName());
     }
 
-    private  Expression newEquals(Expression l, Expression r) {
+    private Expression newEquals(Expression l, Expression r) {
         return new Equals(identifier, primitives, l, r);
     }
 
@@ -491,7 +491,10 @@ public class BinaryOperator extends BaseExpression implements Expression {
         if (primitives.assignDivideOperatorInt() == methodInfo) return primitives.divideOperatorInt();
         if (primitives.assignOrOperatorInt() == methodInfo) return primitives.bitwiseOrOperatorInt();
         if (primitives.assignAndOperatorInt() == methodInfo) return primitives.bitwiseAndOperatorInt();
-
+        if (primitives.assignLeftShiftOperator() == methodInfo) return primitives.leftShiftOperatorInt();
+        if (primitives.assignSignedRightShiftOperator() == methodInfo) return primitives.signedRightShiftOperatorInt();
+        if (primitives.assignUnsignedRightShiftOperator() == methodInfo)
+            return primitives.unsignedRightShiftOperatorInt();
         throw new UnsupportedOperationException("TODO! " + methodInfo.distinguishingName());
     }
 

@@ -221,6 +221,12 @@ public class Assignment extends BaseExpression implements Expression {
                 return primitives.assignAndOperatorInt();
             case ASSIGN:
                 return primitives.assignOperatorInt();
+            case LEFT_SHIFT:
+                return primitives.assignLeftShiftOperator();
+            case SIGNED_RIGHT_SHIFT:
+                return primitives.assignSignedRightShiftOperator();
+            case UNSIGNED_RIGHT_SHIFT:
+                return primitives.assignUnsignedRightShiftOperator();
         }
         throw new UnsupportedOperationException("Need to add primitive operator " +
                 operator + " on type " + widestType.fullyQualifiedName);
@@ -538,7 +544,7 @@ public class Assignment extends BaseExpression implements Expression {
             additional rule: if we're directly assigned to a field, then the field's scope becomes LINK_IS_HC_OF:3.
              */
             Set<Variable> scopesOfStatically = lv2.scopesOfStaticallyAssigned();
-            if(!scopesOfStatically.isEmpty()) {
+            if (!scopesOfStatically.isEmpty()) {
                 linkedVariables = lv2.ensureDependent(scopesOfStatically);
             } else {
                 linkedVariables = lv2;
