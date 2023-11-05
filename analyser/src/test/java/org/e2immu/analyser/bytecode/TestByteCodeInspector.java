@@ -79,12 +79,12 @@ public class TestByteCodeInspector {
 
     @Test
     public void testSubTypeParser() throws IOException {
-        TypeMap typeMap = parseFromJar("org/e2immu/analyser/parser/Parser$InspectWithJavaParserImpl");
-        TypeInfo subType = typeMap.get("org.e2immu.analyser.parser.Parser.InspectWithJavaParserImpl");
+        TypeMap typeMap = parseFromJar("org/e2immu/analyser/parser/Parser$RunResult");
+        TypeInfo subType = typeMap.get("org.e2immu.analyser.parser.Parser.RunResult");
 
-        assertEquals(TypeNature.CLASS, subType.typeInspection.get().typeNature());
-        assertFalse(subType.typeInspection.get().isStatic());
-        assertTrue(subType.typeInspection.get().modifiers().contains(TypeModifier.PRIVATE));
+        assertEquals(TypeNature.RECORD, subType.typeInspection.get().typeNature());
+        assertTrue(subType.typeInspection.get().isStatic());
+        assertTrue(subType.typeInspection.get().modifiers().contains(TypeModifier.PUBLIC));
     }
 
     @Test
@@ -110,7 +110,7 @@ public class TestByteCodeInspector {
         TypeMap typeMap = parseFromJar("org/e2immu/analyser/model/PackagePrefix");
         TypeInfo typeInfo = typeMap.get("org.e2immu.analyser.model.PackagePrefix");
 
-        assertEquals(TypeNature.CLASS, typeInfo.typeInspection.get().typeNature());
+        assertEquals(TypeNature.RECORD, typeInfo.typeInspection.get().typeNature());
         LOGGER.info("Stream is\n{}", typeInfo.output());
     }
 

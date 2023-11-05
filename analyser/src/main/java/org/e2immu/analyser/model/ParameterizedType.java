@@ -832,6 +832,14 @@ public class ParameterizedType {
         return Set.of();
     }
 
+    public boolean hasTypeParameters() {
+        if (typeParameter != null) return true;
+        if (typeInfo != null) {
+            return parameters.stream().anyMatch(p -> p.hasTypeParameters());
+        }
+        return false;
+    }
+
     /**
      * IMPORTANT: code copied from MethodTypeParameterMap
      *

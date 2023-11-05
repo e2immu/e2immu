@@ -90,6 +90,7 @@ public class MyClassVisitor extends ClassVisitor {
         if ((opCode & Opcodes.ACC_ANNOTATION) != 0) return TypeNature.ANNOTATION;
         if ((opCode & Opcodes.ACC_ENUM) != 0) return TypeNature.ENUM;
         if ((opCode & Opcodes.ACC_INTERFACE) != 0) return TypeNature.INTERFACE;
+        if ((opCode & Opcodes.ACC_RECORD) != 0) return TypeNature.RECORD;
         return TypeNature.CLASS;
     }
 

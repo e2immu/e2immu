@@ -355,7 +355,8 @@ public class ResolverImpl implements Resolver {
             // See e.g. AnonymousType_0
             accessibleFieldsStream(typeContext, typeInfo, primaryType, primaryType.packageName(),
                     false, false).forEach(fieldInfo ->
-                    expressionContextForBody.variableContext().add(new FieldReferenceImpl(typeContext, fieldInfo)));
+                    expressionContextForBody.variableContext()
+                            .add(makeFieldReference(typeContext, typeInspection, fieldInfo)));
 
             // recursion, do subtypes first (no recursion at resolver level!)
             typeInspection.subTypes().forEach(subType -> {
@@ -387,6 +388,34 @@ public class ResolverImpl implements Resolver {
             LOGGER.error("Caught exception resolving type {}", typeInfo.fullyQualifiedName);
             throw re;
         }
+    }
+
+    /*
+       FIXME
+         Parent<E> contains: protected E field;
+         Child<T extends X> extends Parent<T>
+         now means that field is accessible in Child as type T extends X!
+
+       procedure? if the field's type contains a type parameter which hase more concrete values, they'll have
+       to be updated.
+    */
+    private FieldReference makeFieldReference(InspectionProvider inspectionProvider,
+                                              TypeInspection typeInspection,
+                                              FieldInfo fieldInfo) {
+        // field should have a type parameter, and has to belong to a type in the hierarchy
+        if (fieldInfo.type.hasTypeParameters() && !typeInspection.typeInfo().equals(fieldInfo.owner)) {
+            ParameterizedType superType = fieldInfo.owner.asParameterizedType(inspectionProvider);
+            // we need to obtain a translation map to get the concrete types or type bounds
+            Map<NamedType, ParameterizedType> translate = typeInspection.typeInfo()
+                    .mapInTermsOfParametersOfSuperType(inspectionProvider, superType);
+            if (translate != null && !translate.isEmpty()) {
+                ParameterizedType concrete = fieldInfo.type.applyTranslation(inspectionProvider.getPrimitives(),
+                        translate);
+                return new FieldReferenceImpl(inspectionProvider, fieldInfo, null, null,
+                        concrete, typeInspection.typeInfo());
+            }
+        }
+        return new FieldReferenceImpl(inspectionProvider, fieldInfo);
     }
 
     private void doAnnotations(List<AnnotationExpression> annotationExpressions, ExpressionContext expressionContext) {

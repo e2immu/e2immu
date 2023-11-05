@@ -71,11 +71,22 @@ public class FieldReferenceImpl extends VariableWithConcreteReturnType implement
                               Expression scope,
                               Variable overrideScopeVariable, // only provide when you want to override normal computation
                               TypeInfo owningType) {
-        super(scope == null ? fieldInfo.type :
-                // it is possible that the field's type shares a type parameter with the scope
-                // if so, there *may* be a concrete type to fill
-                fieldInfo.type.inferConcreteFieldTypeFromConcreteScope(inspectionProvider,
-                        fieldInfo.owner.asParameterizedType(inspectionProvider), scope.returnType()));
+        this(inspectionProvider, fieldInfo, scope, overrideScopeVariable,
+                scope == null ? fieldInfo.type :
+                        // it is possible that the field's type shares a type parameter with the scope
+                        // if so, there *may* be a concrete type to fill
+                        fieldInfo.type.inferConcreteFieldTypeFromConcreteScope(inspectionProvider,
+                                fieldInfo.owner.asParameterizedType(inspectionProvider), scope.returnType()),
+                owningType);
+    }
+
+    public FieldReferenceImpl(InspectionProvider inspectionProvider,
+                               FieldInfo fieldInfo,
+                               Expression scope,
+                               Variable overrideScopeVariable,
+                               ParameterizedType concreteType,
+                               TypeInfo owningType) {
+        super(concreteType);
         this.fieldInfo = Objects.requireNonNull(fieldInfo);
         this.isStatic = inspectionProvider.getFieldInspection(fieldInfo).isStatic();
         if (this.isStatic) {

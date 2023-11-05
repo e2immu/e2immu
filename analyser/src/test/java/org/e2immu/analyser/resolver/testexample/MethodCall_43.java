@@ -5,6 +5,7 @@ import org.e2immu.analyser.resolver.testexample.a.Serializer;
 
 public class MethodCall_43<E extends CanBeSerialized> extends Serializer<E> {
 
+    // Compare to Serializer: the type E has a type bound!!
     public int method() {
         int sum = 0;
         for (int i = 0; i < element.list().size(); i++) {
