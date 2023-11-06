@@ -399,4 +399,10 @@ public class TestMethodCall extends CommonTest {
     public void test_48() throws IOException {
         inspectAndResolve(MethodCall_48.class);
     }
+
+    // reEvaluateErasedExpression, "cumulative" should help!
+    @Test
+    public void test_49() throws IOException {
+        inspectAndResolve(MethodCall_49.class);
+    }
 }

@@ -313,6 +313,10 @@ public record ParseMethodCallExpr(TypeContext typeContext) {
                 if (!combined.isEmpty()) {
                     cumulative = cumulative.merge(new TypeParameterMap(combined));
                 }
+                if (formal.typeParameter != null) {
+                    Map<NamedType, ParameterizedType> map = Map.of(formal.typeParameter, e.returnType().copyWithoutArrays());
+                    cumulative = cumulative.merge(new TypeParameterMap(map));
+                }
             }
         }
 
