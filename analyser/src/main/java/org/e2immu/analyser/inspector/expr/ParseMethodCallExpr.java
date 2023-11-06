@@ -60,8 +60,8 @@ public record ParseMethodCallExpr(TypeContext typeContext) {
 
         Set<ParameterizedType> types = methodCandidates.stream()
                 .map(mc -> {
-                    TypeParameterMap map0 = filterResult.typeParameterMap(typeContext, mc.method().methodInspection)
-                            .merge(scope.typeParameterMap());
+                    TypeParameterMap map0 = filterResult.typeParameterMap(typeContext, mc.method().methodInspection);
+                    TypeParameterMap map1 = map0.merge(scope.typeParameterMap());
                     TypeInfo methodType = mc.method().methodInspection.getMethodInfo().typeInfo;
                     TypeInfo scopeType = scope.type().bestTypeInfo(typeContext);
                     TypeParameterMap merged;
@@ -69,13 +69,14 @@ public record ParseMethodCallExpr(TypeContext typeContext) {
                         // method is defined in a super-type, so we need an additional translation
                         ParameterizedType superType = methodType.asParameterizedType(typeContext);
                         Map<NamedType, ParameterizedType> sm = scopeType.mapInTermsOfParametersOfSuperType(typeContext, superType);
-                        merged = sm == null ? map0 : map0.merge(new TypeParameterMap(sm));
+                        merged = sm == null ? map1 : map1.merge(new TypeParameterMap(sm));
                     } else {
-                        merged = map0;
+                        merged = map1;
                     }
                     ParameterizedType returnType = mc.method().methodInspection.getReturnType();
-                    Map<NamedType, ParameterizedType> map1 = merged.map();
-                    return returnType.applyTranslation(typeContext().getPrimitives(), map1);
+                    Map<NamedType, ParameterizedType> map2 = merged.map();
+                    // IMPROVE at some point, compare to mc.method().concreteType; redundant code?
+                    return returnType.applyTranslation(typeContext().getPrimitives(), map2);
                 })
                 .collect(Collectors.toUnmodifiableSet());
         LOGGER.debug("Erasure types: {}", types);
@@ -382,6 +383,10 @@ public record ParseMethodCallExpr(TypeContext typeContext) {
                                 .ifPresent(inMap -> result.put(tp.typeParameter, inMap));
                     }
                     j++;
+                }
+                if (parameterInfo.parameterizedType.isTypeParameter() && !(expression instanceof ErasureExpression)) {
+                    // see MethodCall_48; MethodCall_3 shows why we omit ErasureExpression
+                    result.put(parameterInfo.parameterizedType.typeParameter, expression.returnType().copyWithoutArrays());
                 }
                 i++;
             }
