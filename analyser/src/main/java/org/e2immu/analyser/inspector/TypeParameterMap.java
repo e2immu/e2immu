@@ -25,6 +25,10 @@ import java.util.Map;
  */
 public record TypeParameterMap(Map<NamedType, ParameterizedType> map) {
 
+    public TypeParameterMap {
+        assert map != null;
+    }
+
     public static final TypeParameterMap EMPTY = new TypeParameterMap();
 
     private TypeParameterMap() {

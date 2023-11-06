@@ -60,10 +60,22 @@ public record ParseMethodCallExpr(TypeContext typeContext) {
 
         Set<ParameterizedType> types = methodCandidates.stream()
                 .map(mc -> {
-                    TypeParameterMap map = filterResult.typeParameterMap(typeContext, mc.method().methodInspection)
+                    TypeParameterMap map0 = filterResult.typeParameterMap(typeContext, mc.method().methodInspection)
                             .merge(scope.typeParameterMap());
+                    TypeInfo methodType = mc.method().methodInspection.getMethodInfo().typeInfo;
+                    TypeInfo scopeType = scope.type().bestTypeInfo(typeContext);
+                    TypeParameterMap merged;
+                    if (scopeType != null && !methodType.equals(scope.type().typeInfo)) {
+                        // method is defined in a super-type, so we need an additional translation
+                        ParameterizedType superType = methodType.asParameterizedType(typeContext);
+                        Map<NamedType, ParameterizedType> sm = scopeType.mapInTermsOfParametersOfSuperType(typeContext, superType);
+                        merged = sm == null ? map0 : map0.merge(new TypeParameterMap(sm));
+                    } else {
+                        merged = map0;
+                    }
                     ParameterizedType returnType = mc.method().methodInspection.getReturnType();
-                    return returnType.applyTranslation(typeContext().getPrimitives(), map.map());
+                    Map<NamedType, ParameterizedType> map1 = merged.map();
+                    return returnType.applyTranslation(typeContext().getPrimitives(), map1);
                 })
                 .collect(Collectors.toUnmodifiableSet());
         LOGGER.debug("Erasure types: {}", types);
@@ -334,6 +346,7 @@ public record ParseMethodCallExpr(TypeContext typeContext) {
     private record FilterResult(Map<Integer, Expression> evaluatedExpressions,
                                 Map<MethodInfo, Integer> compatibilityScore) {
 
+        // See Lambda_6, Lambda_13: connect type of evaluated argument result to formal parameter type
         public TypeParameterMap typeParameterMap(TypeContext typeContext,
                                                  MethodInspection candidate) {
             Map<NamedType, ParameterizedType> result = new HashMap<>();
