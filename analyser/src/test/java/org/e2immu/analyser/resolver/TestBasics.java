@@ -216,4 +216,11 @@ public class TestBasics extends CommonTest {
             } else fail();
         } else fail();
     }
+
+
+    // variable always takes priority over type!
+    @Test
+    public void test_10() throws IOException {
+        inspectAndResolve(Basics_10.class);
+    }
 }

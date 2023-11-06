@@ -28,6 +28,10 @@ public class ParseNameExpr {
     }
 
     public static Expression parse(ExpressionContext expressionContext, String name, Identifier identifier) {
+        Variable variable = expressionContext.variableContext().get(name, false);
+        if (variable != null) {
+            return new VariableExpression(identifier, variable);
+        }
         NamedType namedType = expressionContext.typeContext().get(name, false);
         if (namedType instanceof TypeInfo) {
             ParameterizedType parameterizedType = new ParameterizedType((TypeInfo) namedType, 0);
@@ -35,10 +39,6 @@ public class ParseNameExpr {
         }
         if (namedType instanceof TypeParameter) {
             throw new UnsupportedOperationException("How is this possible?");
-        }
-        Variable variable = expressionContext.variableContext().get(name, false);
-        if (variable != null) {
-            return new VariableExpression(identifier, variable);
         }
         PackagePrefix packagePrefix = new PackagePrefix(new String[]{name});
         if (expressionContext.typeContext().isPackagePrefix(packagePrefix)) {
