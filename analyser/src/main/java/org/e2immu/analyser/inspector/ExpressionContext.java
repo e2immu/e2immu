@@ -64,6 +64,8 @@ public interface ExpressionContext {
 
     ExpressionContext newTypeContext(FieldInfo fieldInfo);
 
+    ExpressionContext newAnonymousClassBody(TypeInfo baseType);
+
     Block continueParsingBlock(BlockStmt blockStmt,
                                Block.BlockBuilder blockBuilder,
                                Consumer<Block.BlockBuilder> compactConstructorAppender);

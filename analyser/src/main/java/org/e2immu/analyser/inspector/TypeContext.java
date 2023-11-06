@@ -453,4 +453,16 @@ public class TypeContext implements TypeAndInspectionProvider {
         return typeMap.isPackagePrefix(packagePrefix);
     }
 
+    public void recursivelyAddVisibleSubTypes(TypeInfo typeInfo) {
+        TypeInspection typeInspection = getTypeInspection(typeInfo);
+        typeInspection.subTypes()
+                .stream().filter(st -> !getTypeInspection(st).isPrivate())
+                .forEach(this::addToContext);
+        if (!typeInspection.parentClass().isJavaLangObject()) {
+            recursivelyAddVisibleSubTypes(typeInspection.parentClass().typeInfo);
+        }
+        for (ParameterizedType interfaceImplemented : typeInspection.interfacesImplemented()) {
+            recursivelyAddVisibleSubTypes(interfaceImplemented.typeInfo);
+        }
+    }
 }

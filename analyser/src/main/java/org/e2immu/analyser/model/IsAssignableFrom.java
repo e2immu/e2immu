@@ -100,6 +100,11 @@ public record IsAssignableFrom(InspectionProvider inspectionProvider,
                     if (target.arrays < from.arrays && target.typeInfo.isJavaLangObject()) {
                         return pathToJLO(from.copyWithoutArrays()) + IN_HIERARCHY * (from.arrays - target.arrays);
                     }
+                    // all arrays are serializable if there base object is serializable
+                    if (target.arrays == 0 && target.typeInfo.isJavaIoSerializable() && from.arrays > 0) {
+                        // See MethodCall_50: always serializable, even if the base type does not extend Serializable
+                        return IN_HIERARCHY * (from.arrays - target.arrays);
+                    }
                     return NOT_ASSIGNABLE;
                 }
                 if (target.arrays > 0) {
@@ -109,15 +114,15 @@ public record IsAssignableFrom(InspectionProvider inspectionProvider,
             }
 
             // PRIMITIVES
-            if (from.isPrimitiveExcludingVoid()) {
-                if (target.isPrimitiveExcludingVoid()) {
+            if (from.typeInfo.isPrimitiveExcludingVoid()) {
+                if (target.typeInfo.isPrimitiveExcludingVoid()) {
                     // use a dedicated method in Primitives
                     return inspectionProvider.getPrimitives().isAssignableFromTo(from, target,
                             mode == Mode.COVARIANT || mode == Mode.COVARIANT_ERASURE);
                 }
                 return checkBoxing(target, from);
             }
-            if (target.isPrimitiveExcludingVoid()) {
+            if (target.typeInfo.isPrimitiveExcludingVoid()) {
                 // the other one is not a primitive
                 return checkUnboxing(target, from);
             }

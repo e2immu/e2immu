@@ -220,6 +220,10 @@ public final class TypeInfo implements NamedType,
                 this.isChar() || this.isFloat() || this.isDouble() || this.isBoolean();
     }
 
+    public boolean isJavaIoSerializable() {
+        return "java.io.Serializable".equals(fullyQualifiedName);
+    }
+
     @Override
     public void setAnalysis(Analysis analysis) {
         typeAnalysis.set((TypeAnalysis) analysis);

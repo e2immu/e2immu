@@ -95,7 +95,8 @@ public class ParseObjectCreationExpr {
                     expressionContext.anonymousTypeCounters().newIndex(expressionContext.primaryType()));
             typeContext.typeMap.add(anonymousType, InspectionState.STARTING_JAVA_PARSER);
             TypeInspector typeInspector = typeContext.typeMap.newTypeInspector(anonymousType, true, true);
-            typeInspector.inspectAnonymousType(parameterizedType, expressionContext.newVariableContext("anonymous class body"),
+            typeInspector.inspectAnonymousType(parameterizedType,
+                    expressionContext.newAnonymousClassBody(parameterizedType.typeInfo),
                     objectCreationExpr.getAnonymousClassBody().get());
 
             expressionContext.resolver().resolve(typeContext,

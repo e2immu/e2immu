@@ -163,9 +163,23 @@ public record ExpressionContextImpl(ExpressionContext.ResolverRecursion resolver
                 new TypeContext(typeContext), variableContext, anonymousTypeCounters, fieldAccessStore);
     }
 
+    @Override
+    public ExpressionContext newAnonymousClassBody(TypeInfo baseType) {
+        LOGGER.debug("Creating a new type and variable context for an anonymous class body extending {}", baseType);
+        TypeContext extendedTypeContext = new TypeContext(typeContext);
+        extendedTypeContext.recursivelyAddVisibleSubTypes(baseType);
+        VariableContext newVariableContext = VariableContext.dependentVariableContext(variableContext);
+        return new ExpressionContextImpl(resolver, enclosingType, uninspectedEnclosingType,
+                enclosingMethod,
+                enclosingField, typeOfEnclosingSwitchExpression,
+                primaryType, extendedTypeContext, newVariableContext,
+                anonymousTypeCounters,
+                fieldAccessStore);
+    }
+
     /*
-    used for compact constructors: append some synthetic statements
-     */
+        used for compact constructors: append some synthetic statements
+         */
     @Override
     public Block continueParsingBlock(BlockStmt blockStmt,
                                       Block.BlockBuilder blockBuilder,

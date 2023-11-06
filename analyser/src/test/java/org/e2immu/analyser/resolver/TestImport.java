@@ -32,6 +32,7 @@ public class TestImport extends CommonTest {
 
     public static final String IMPORT_HELPER = "org.e2immu.analyser.resolver.testexample.importhelper";
     public static final String A = "org.e2immu.analyser.resolver.testexample.a";
+    public static final String ACCESS = "org.e2immu.analyser.resolver.testexample.access";
 
     /**
      * The point of tests 0 and 1 is that Level. is ALWAYS the one in IMPORT_HELPER, and never the one in MultiLevel,
@@ -105,5 +106,10 @@ public class TestImport extends CommonTest {
     @Test
     public void test_11() throws IOException {
         inspectAndResolve(A, Import_11.class);
+    }
+
+    @Test
+    public void test_12() throws IOException {
+        inspectAndResolve(ACCESS, Import_12.class);
     }
 }
