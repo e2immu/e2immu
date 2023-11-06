@@ -41,7 +41,7 @@ import java.util.stream.Stream;
 import static org.e2immu.analyser.model.expression.Precedence.*;
 
 /**
- * From https://introcs.cs.princeton.edu/java/11precedence/
+ * From <a href="https://introcs.cs.princeton.edu/java/11precedence/">...</a>
  * All associativity is from left to right for binary operators: a+b+c = (a+b)+c
  * <p>
  * precedence 12: * / % multiplicative
@@ -411,34 +411,27 @@ public class BinaryOperator extends BaseExpression implements Expression {
             }
         }
         if (widestType == primitives.booleanTypeInfo() || widestType == primitives.boxedBooleanTypeInfo()) {
-            switch (operator) {
-                case XOR:
-                    return primitives.xorOperatorBool();
-                case BINARY_OR:
-                case OR:
-                    return primitives.orOperatorBool();
-                case BINARY_AND:
-                case AND:
-                    return primitives.andOperatorBool();
-                case EQUALS:
-                    return primitives.equalsOperatorInt(); // TODO should clean up
-                case NOT_EQUALS:
-                    return primitives.notEqualsOperatorInt();
-            }
-            throw new UnsupportedOperationException("Operator " + operator + " on boolean");
+            return switch (operator) {
+                case XOR -> primitives.xorOperatorBool();
+                case BINARY_OR, OR -> primitives.orOperatorBool();
+                case BINARY_AND, AND -> primitives.andOperatorBool();
+                case EQUALS -> primitives.equalsOperatorInt();
+                case NOT_EQUALS -> primitives.notEqualsOperatorInt();
+                default -> throw new UnsupportedOperationException("Operator " + operator + " on boolean");
+            };
         }
         if (widestType == primitives.charTypeInfo() || widestType == primitives.characterTypeInfo()) {
-            switch (operator) {
-                case PLUS:
-                    return primitives.plusOperatorInt();
-                case MINUS:
-                    return primitives.minusOperatorInt();
-                case EQUALS:
-                    return primitives.equalsOperatorInt(); // TODO should clean up
-                case NOT_EQUALS:
-                    return primitives.notEqualsOperatorInt();
-            }
-            throw new UnsupportedOperationException("Operator " + operator + " on char");
+            return switch (operator) {
+                case PLUS -> primitives.plusOperatorInt();
+                case MINUS -> primitives.minusOperatorInt();
+                case EQUALS -> primitives.equalsOperatorInt();
+                case NOT_EQUALS -> primitives.notEqualsOperatorInt();
+                case GREATER -> primitives.greaterOperatorInt();
+                case GREATER_EQUALS -> primitives.greaterEqualsOperatorInt();
+                case LESS -> primitives.lessOperatorInt();
+                case LESS_EQUALS -> primitives.lessEqualsOperatorInt();
+                default -> throw new UnsupportedOperationException("Operator " + operator + " on char");
+            };
         }
         if (widestType.isNumeric()) {
             switch (operator) {

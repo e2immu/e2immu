@@ -223,4 +223,10 @@ public class TestBasics extends CommonTest {
     public void test_10() throws IOException {
         inspectAndResolve(Basics_10.class);
     }
+
+    // weird but legal
+    @Test
+    public void test_11() throws IOException {
+        inspectAndResolve(Basics_11.class);
+    }
 }

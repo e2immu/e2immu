@@ -34,7 +34,6 @@ import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
 import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.Messages;
-import org.e2immu.analyser.parser.impl.InspectAll;
 import org.e2immu.analyser.resolver.Resolver;
 import org.e2immu.analyser.resolver.ShallowMethodResolver;
 import org.e2immu.analyser.resolver.SortedTypes;
@@ -71,7 +70,7 @@ public class ResolverImpl implements Resolver {
     private final InspectionProvider inspectionProvider;
     private final Resolver parent;
     private final AnonymousTypeCounters anonymousTypeCounters;
-    private final AtomicInteger typeCounterForDebugging = new AtomicInteger();
+    private final AtomicInteger typeCounterForDebugging;
     private final DependencyGraph<MethodInfo> methodCallGraph;
     private final boolean storeComments;
     private final TimedLogger timedLogger;
@@ -106,7 +105,8 @@ public class ResolverImpl implements Resolver {
         this.anonymousTypeCounters = parent.anonymousTypeCounters;
         methodCallGraph = parent.methodCallGraph;
         this.storeComments = storeComments;
-        this.timedLogger = parent.timedLogger;
+        timedLogger = parent.timedLogger;
+        typeCounterForDebugging = parent.typeCounterForDebugging;
     }
 
     public ResolverImpl(AnonymousTypeCounters anonymousTypeCounters,
@@ -122,6 +122,7 @@ public class ResolverImpl implements Resolver {
         methodCallGraph = new DependencyGraph<>();
         this.storeComments = storeComments;
         timedLogger = new TimedLogger(LOGGER, 1000L);
+        typeCounterForDebugging = new AtomicInteger();
     }
 
     /**

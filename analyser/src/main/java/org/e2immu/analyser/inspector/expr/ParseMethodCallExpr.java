@@ -364,7 +364,8 @@ public record ParseMethodCallExpr(TypeContext typeContext) {
                 // parameter type: Collector<? super T,A,R>   (T belongs to Stream, A,R to the collect method)
                 // we want to add R --> Set<T> to the type map
                 Map<NamedType, ParameterizedType> map = new HashMap<>();
-                if (expression.containsErasedExpressions()) {
+                boolean containsErasedExpressions = expression.containsErasedExpressions();
+                if (containsErasedExpressions) {
                     for (ParameterizedType pt : expression.erasureTypes(typeContext)) {
                         map.putAll(pt.initialTypeParameterMap(typeContext));
                     }
@@ -388,7 +389,7 @@ public record ParseMethodCallExpr(TypeContext typeContext) {
                     }
                     j++;
                 }
-                if (parameterInfo.parameterizedType.isTypeParameter() && !(expression instanceof ErasureExpression)) {
+                if (parameterInfo.parameterizedType.isTypeParameter() && !containsErasedExpressions) {
                     // see MethodCall_48; MethodCall_3 shows why we omit ErasureExpression
                     result.put(parameterInfo.parameterizedType.typeParameter, expression.returnType().copyWithoutArrays());
                 }

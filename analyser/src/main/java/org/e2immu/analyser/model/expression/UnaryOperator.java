@@ -131,7 +131,7 @@ public class UnaryOperator extends BaseExpression implements Expression {
     public static MethodInfo getOperator(@NotNull @NotModified Primitives primitives,
                                          @NotNull @NotModified UnaryExpr.Operator operator,
                                          @NotNull @NotModified TypeInfo typeInfo) {
-        if (typeInfo.isNumeric()) {
+        if (typeInfo.isNumeric() || typeInfo == primitives.charTypeInfo()) {
             switch (operator) {
                 case MINUS:
                     return primitives.unaryMinusOperatorInt();
@@ -150,7 +150,7 @@ public class UnaryOperator extends BaseExpression implements Expression {
                 default:
             }
         }
-        if (typeInfo == primitives.booleanTypeInfo() || "java.lang.Boolean".equals(typeInfo.fullyQualifiedName)) {
+        if (typeInfo.isBoolean() || typeInfo.isBoxedBoolean()) {
             if (operator == UnaryExpr.Operator.LOGICAL_COMPLEMENT) {
                 return primitives.logicalNotOperatorBool();
             }
