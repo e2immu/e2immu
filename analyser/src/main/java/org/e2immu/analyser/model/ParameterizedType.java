@@ -16,6 +16,7 @@ package org.e2immu.analyser.model;
 
 import org.e2immu.analyser.inspector.MethodTypeParameterMap;
 import org.e2immu.analyser.inspector.TypeContext;
+import org.e2immu.analyser.model.expression.util.TranslationCollectors;
 import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.parser.PrimitivesWithoutParameterizedType;
@@ -945,5 +946,54 @@ public class ParameterizedType {
                         typeInfo.isInt() || typeInfo.isInteger() ||
                         typeInfo.isLong() || typeInfo.isBoxedLong() ||
                         typeInfo.isChar() || typeInfo.isCharacter());
+    }
+
+    /*
+    Let A, B be a type rather than a type parameter.
+    A -> A
+    A<T extends B> -> A<B>
+    T extends A -> return A
+    T extends Comparable<? super T> -> return Comparable, remove the T
+    T === T extends Object -> return JLO
+
+    when there are multiple type bounds,
+     */
+    public List<ParameterizedType> replaceByTypeBounds() {
+        return replaceByTypeBounds(new HashSet<>());
+    }
+
+    /*
+    MethodCall_32,_36,46,_47 show why this method is relatively complicated
+     */
+    private List<ParameterizedType> replaceByTypeBounds(Set<TypeParameter> remove) {
+        if (typeInfo != null) {
+            if (parameters.isEmpty()) {
+                return List.of(this);
+            }
+            // the translation collector detects !=; returns 'parameters 'when there are no differences in the list
+            List<ParameterizedType> updatedParameters = parameters.stream()
+                    .filter(pt -> pt.typeParameter == null || !remove.contains(pt.typeParameter))
+                    .flatMap(p -> p.replaceByTypeBounds(remove).stream())
+                    .collect(TranslationCollectors.toList(parameters));
+            if (updatedParameters == parameters) {
+                return List.of(this);
+            }
+            return List.of(new ParameterizedType(typeInfo, updatedParameters));
+        }
+        if (typeParameter != null) {
+            List<ParameterizedType> typeBounds = typeParameter.getTypeBounds();
+            if (typeBounds.isEmpty()) {
+                // a type parameter without type bounds; we can keep that one; IsAssignableFrom can deal with it
+                return List.of(this);
+            }
+            Set<TypeParameter> newRemove = Stream.concat(remove.stream(), Stream.of(typeParameter))
+                    .collect(Collectors.toUnmodifiableSet());
+            return typeBounds
+                    .stream().filter(pt -> pt.typeParameter == null || !remove.contains(pt.typeParameter))
+                    .flatMap(p -> p.replaceByTypeBounds(newRemove).stream())
+                    .map(p -> p.copyWithArrays(arrays))
+                    .collect(TranslationCollectors.toList(typeBounds));
+        }
+        return List.of(this);
     }
 }

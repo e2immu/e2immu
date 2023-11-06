@@ -388,4 +388,10 @@ public class TestMethodCall extends CommonTest {
     public void test_46() throws IOException {
         inspectAndResolve(MethodCall_46.class);
     }
+
+    // erasure problem, related to IsAssignableFrom.targetIsATypeParameter; typeBound
+    @Test
+    public void test_47() throws IOException {
+        inspectAndResolve(MethodCall_47.class);
+    }
 }

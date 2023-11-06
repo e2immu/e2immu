@@ -49,7 +49,9 @@ public class TranslationCollectors<T> {
 
             @Override
             public Function<List<T>, List<T>> finisher() {
-                return list -> changes ? List.copyOf(list) : original;
+                // we also test for different size: this allows for the removal of objects outside a strict
+                // Translation setting (see ParameterizedType.replaceTypeBounds)
+                return list -> changes || list.size() != original.size() ? List.copyOf(list) : original;
             }
 
             @Override

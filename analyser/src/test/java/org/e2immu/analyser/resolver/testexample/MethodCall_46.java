@@ -2,18 +2,22 @@ package org.e2immu.analyser.resolver.testexample;
 
 import java.io.Serializable;
 
-/*
-Does not yet catch the issue
- */
 public class MethodCall_46 {
     interface I {
+        int method1();
+
+        int method2();
     }
 
     interface L extends Serializable, I {
-        long getId();
+        int method4();
+
+        int method5();
+
+        int getId();
     }
 
-    int method(String s, L l, int k) {
+    int method(L l, String s, int k) {
         return (s + l).length() + k;
     }
 
@@ -21,23 +25,23 @@ public class MethodCall_46 {
         return f(t, new long[]{l}, null);
     }
 
-    static <T extends I> T filterByID(T t, long[] longs) {
-        return f(t, longs, null);
-    }
-
     static <T extends I> T f(T s, long[] l, T t) {
         return t;
     }
 
+    static <T extends I> T filterByID(T t, long[] longs) {
+        return f(t, longs, null);
+    }
+
     int test1(L l) {
-        return method("abc", l, 3);
+        return method(l, "abc", 3);
     }
 
     int test2(L l) {
-        return method("abc", filterByID(l, l.getId()),6);
+        return method(filterByID(l, 9), "abc", 6);
     }
 
     int test3(L l) {
-        return method("abc", filterByID(l, new long[] {l.getId()}),9);
+        return method(filterByID(l, new long[]{l.getId()}), "abc", 9);
     }
 }

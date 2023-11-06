@@ -23,7 +23,7 @@ import java.util.Objects;
 import java.util.function.IntBinaryOperator;
 
 /**
- * The default assignment mode is COVARIANT, in that you can always assign a sub-type to a super-type, as in Number <- Integer,
+ * The default assignment mode is COVARIANT, in that you can always assign a subtype to a super-type, as in Number <- Integer,
  * or Object <- String.
  *
  * @param inspectionProvider to obtain type inspections
@@ -128,7 +128,6 @@ public record IsAssignableFrom(InspectionProvider inspectionProvider,
             }
             // identical base type, so look at type parameters
             return sameNoNullTypeInfo(mode);
-
         }
 
         if (target.typeInfo != null && from.typeParameter != null) {
@@ -174,26 +173,33 @@ public record IsAssignableFrom(InspectionProvider inspectionProvider,
         }
         // other is a type
         if (from.typeInfo != null) {
-            return targetTypeBounds.stream().mapToInt(bound -> new IsAssignableFrom(inspectionProvider, bound, target)
-                            .execute(true, mode))
-                    .min().orElseThrow() + TYPE_BOUND;
+            int best = NOT_ASSIGNABLE;
+            for (ParameterizedType typeBound : targetTypeBounds) {
+                int score = new IsAssignableFrom(inspectionProvider, typeBound, from).execute(true, mode);
+                if (score >= 0 && (best == NOT_ASSIGNABLE || best > score)) {
+                    best = score;
+                }
+            }
+            return best == NOT_ASSIGNABLE ? NOT_ASSIGNABLE : best + TYPE_BOUND;
         }
+        // other is a type parameter
         if (from.typeParameter != null) {
             List<ParameterizedType> fromTypeBounds = from.typeParameter.getTypeBounds();
             if (fromTypeBounds.isEmpty()) {
                 return TYPE_BOUND;
             }
             // we both have type bounds; we go for the best combination
-            int min = Integer.MAX_VALUE;
+            int best = NOT_ASSIGNABLE;
             for (ParameterizedType myBound : targetTypeBounds) {
                 for (ParameterizedType otherBound : fromTypeBounds) {
-                    int value = new IsAssignableFrom(inspectionProvider, myBound, otherBound)
+                    int score = new IsAssignableFrom(inspectionProvider, myBound, otherBound)
                             .execute(true, mode);
-                    if (value < min) min = value;
+                    if (score >= 0 && (best == NOT_ASSIGNABLE || best > score)) {
+                        best = score;
+                    }
                 }
             }
-            return min + TYPE_BOUND;
-
+            return best == NOT_ASSIGNABLE ? NOT_ASSIGNABLE : best + TYPE_BOUND;
         }
         return NOT_ASSIGNABLE;
     }
@@ -248,8 +254,8 @@ public record IsAssignableFrom(InspectionProvider inspectionProvider,
          with the same return type and parameters. But they're not seen as assignable.
          */
         if (!mTarget.getMethodInfo().name.equals(mFrom.getMethodInfo().name)
-                && !isSyntheticOrFunctionInterface(mTarget.getMethodInfo())
-                && !isSyntheticOrFunctionInterface(mFrom.getMethodInfo())) {
+                && isNotSyntheticOrFunctionInterface(mTarget.getMethodInfo())
+                && isNotSyntheticOrFunctionInterface(mFrom.getMethodInfo())) {
             return NOT_ASSIGNABLE;
         }
         if (mTarget.getParameters().size() != mFrom.getParameters().size()) return NOT_ASSIGNABLE;
@@ -270,9 +276,9 @@ public record IsAssignableFrom(InspectionProvider inspectionProvider,
         return EQUALS;
     }
 
-    private boolean isSyntheticOrFunctionInterface(MethodInfo methodInfo) {
+    private boolean isNotSyntheticOrFunctionInterface(MethodInfo methodInfo) {
         String packageName = methodInfo.typeInfo.packageName();
-        return "java.util.function".equals(packageName) || Primitives.INTERNAL.equals(packageName);
+        return !"java.util.function".equals(packageName) && !Primitives.INTERNAL.equals(packageName);
     }
 
     private int hierarchy(ParameterizedType target, ParameterizedType from, Mode mode) {

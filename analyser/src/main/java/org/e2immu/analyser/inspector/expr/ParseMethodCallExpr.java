@@ -473,8 +473,12 @@ public record ParseMethodCallExpr(TypeContext typeContext) {
                         int arrayPenalty = 10 * Math.abs(actualType.arrays - formalType.arrays);
                         compatible = typeParameterPenalty + penaltyForReturnType + arrayPenalty;
                     } else {
-                        ParameterizedType actualTypeReplaced = replaceByTypeBound(actualType);
-                        ParameterizedType formalTypeReplaced = replaceByTypeBound(formalType);
+                        List<ParameterizedType> actualList = actualType.replaceByTypeBounds();
+                        if (actualList.size() != 1) throw new UnsupportedOperationException("NYI");
+                        ParameterizedType actualTypeReplaced = actualList.get(0);
+                        List<ParameterizedType> formalList = formalType.replaceByTypeBounds();
+                        if (formalList.size() != 1) throw new UnsupportedOperationException("NYI");
+                        ParameterizedType formalTypeReplaced = formalList.get(0);
                         boolean paramIsErasure = evaluatedExpressions.get(pos) instanceof ErasureExpression;
                         int assignable;
                         if (paramIsErasure && actualTypeReplaced != actualType) {
@@ -542,19 +546,6 @@ public record ParseMethodCallExpr(TypeContext typeContext) {
         return actualType.typeParameter != null
                 && actualType.typeParameter.isMethodTypeParameter()
                 && actualType.typeParameter.getTypeBounds().isEmpty();
-    }
-
-    private ParameterizedType replaceByTypeBound(ParameterizedType type) {
-        if (isBoundTypeParameter(type)) {
-            assert type.typeParameter != null;
-            return type.typeParameter.getTypeBounds().get(0).copyWithArrays(type.arrays);
-        }
-        return type;
-    }
-
-    private boolean isBoundTypeParameter(ParameterizedType type) {
-        return type.typeParameter != null && !type.typeParameter.getTypeBounds().isEmpty()
-                && type.typeParameter.getTypeBounds().stream().noneMatch(ParameterizedType::isJavaLangObject);
     }
 
     private FilterResult filterMethodCandidatesInErasureMode(ExpressionContext expressionContext,
