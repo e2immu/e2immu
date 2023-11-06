@@ -191,4 +191,10 @@ public class TestConstructor extends CommonTest {
         Block getSubBlock = typeMap.getMethodInspection(methodInfo).getMethodBody();
         assertEquals("{(a.new Inner()).value=3;map.put(\"key\",a.new Inner());}", getSubBlock.minimalOutput());
     }
+
+    @Test
+    public void test_14() throws IOException {
+        inspectAndResolve(Constructor_14.class);
+    }
+
 }

@@ -241,14 +241,22 @@ public record ParseMethodCallExpr(TypeContext typeContext) {
 
         for (Expression expression : newParameterExpressions) {
             LOGGER.debug("Examine parameter {}", i);
-            ParameterizedType concreteParameterType = expression.returnType();
+            ParameterizedType concreteParameterType;
+            ParameterizedType formalParameterType;
             ParameterInfo formalParameter = formalParameters.get(i);
-            ParameterizedType formalParameterType =
-                    formalParameters.size() - 1 == i &&
-                            formalParameter.parameterInspection.get().isVarArgs() ?
-                            formalParameter.parameterizedType.copyWithOneFewerArrays() :
-                            formalParameters.get(i).parameterizedType;
-
+            if (formalParameters.size() - 1 == i && formalParameter.parameterInspection.get().isVarArgs()) {
+                formalParameterType = formalParameter.parameterizedType.copyWithOneFewerArrays();
+                if (newParameterExpressions.size() > formalParameters.size()
+                        || formalParameterType.arrays == expression.returnType().arrays) {
+                    concreteParameterType = expression.returnType();
+                } else {
+                    concreteParameterType = expression.returnType().copyWithOneFewerArrays();
+                    assert formalParameterType.isAssignableFrom(typeContext, concreteParameterType);
+                }
+            } else {
+                formalParameterType = formalParameters.get(i).parameterizedType;
+                concreteParameterType = expression.returnType();
+            }
             Map<NamedType, ParameterizedType> translated = formalParameterType
                     .translateMap(typeContext, concreteParameterType, true);
             ParameterizedType concreteTypeInMethod = method.getConcreteTypeOfParameter(typeContext.getPrimitives(), i);

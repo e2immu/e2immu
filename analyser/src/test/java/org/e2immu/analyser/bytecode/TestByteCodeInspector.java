@@ -16,10 +16,7 @@ package org.e2immu.analyser.bytecode;
 
 import org.e2immu.analyser.annotationxml.AnnotationXmlReader;
 import org.e2immu.analyser.inspector.TypeContext;
-import org.e2immu.analyser.model.MethodInfo;
-import org.e2immu.analyser.model.TypeInfo;
-import org.e2immu.analyser.model.TypeModifier;
-import org.e2immu.analyser.model.TypeNature;
+import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.parser.Input;
 import org.e2immu.analyser.parser.TypeMap;
 import org.e2immu.analyser.parser.impl.TypeMapImpl;
@@ -133,5 +130,18 @@ public class TestByteCodeInspector {
 
         MethodInfo forDebug = typeInfo.findUniqueMethod("length", 1);
         assertTrue(forDebug.methodInspection.get().isDefault());
+    }
+
+    @Test
+    public void testArrays() throws IOException {
+        TypeMap typeMap = parseFromJar("java/util/Arrays");
+        TypeInfo typeInfo = typeMap.get("java.util.Arrays");
+
+        assertEquals(TypeNature.CLASS, typeInfo.typeInspection.get().typeNature());
+        MethodInfo asList = typeInfo.findUniqueMethod("asList", 1);
+        assertEquals("Type java.util.List<T>", asList.returnType().toString());
+        ParameterInfo parameterInfo = asList.methodInspection.get().getParameters().get(0);
+        assertEquals("Type param T[]", parameterInfo.parameterizedType.toString());
+        assertTrue(parameterInfo.parameterInspection.get().isVarArgs());
     }
 }
