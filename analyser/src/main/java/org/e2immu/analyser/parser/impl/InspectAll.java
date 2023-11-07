@@ -270,7 +270,7 @@ public class InspectAll implements InspectWithJavaParser {
                 } else {
                     TypeInfo typeInfo = loadTypeDoNotImport(fullyQualified, trie);
                     LOGGER.debug("Import of {}", fullyQualified);
-                    typeContextOfFile.addImport(typeInfo, true);
+                    typeContextOfFile.addImport(typeInfo, true, true);
                 }
             }
         }
@@ -288,7 +288,7 @@ public class InspectAll implements InspectWithJavaParser {
                 trie.visit(fullyQualified.split("\\."), (expansion, typeInfoList) -> {
                     for (TypeInfo typeInfo : typeInfoList) {
                         if (typeInfo.fullyQualifiedName.equals(fullyQualified + "." + typeInfo.simpleName)) {
-                            typeContextOfFile.addImport(typeInfo, false);
+                            typeContextOfFile.addImport(typeInfo, false, false);
                         }
                     }
                 });
@@ -307,9 +307,9 @@ public class InspectAll implements InspectWithJavaParser {
                         TypeInfo newTypeInfo = typeContextOfFile.typeMap
                                 .getOrCreate(fullyQualified, simpleName, TRIGGER_BYTECODE_INSPECTION);
                         LOGGER.debug("Registering inspection handler for {}", newTypeInfo.fullyQualifiedName);
-                        typeContextOfFile.addImport(newTypeInfo, false);
+                        typeContextOfFile.addImport(newTypeInfo, false, false);
                     } else {
-                        typeContextOfFile.addImport(typeInfo, false);
+                        typeContextOfFile.addImport(typeInfo, false, false);
                     }
                 }
             });

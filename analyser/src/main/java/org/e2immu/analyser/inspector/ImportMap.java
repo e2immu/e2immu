@@ -9,6 +9,7 @@ public class ImportMap {
     private final Set<TypeInfo> staticAsterisk = new LinkedHashSet<>();
     private final Map<String, TypeInfo> staticMemberToTypeInfo = new HashMap<>();
     private final Map<String, TypeInfo> typeMap = new HashMap<>();
+    private final Map<String, TypeInfo> simpleNameTypeMap = new HashMap<>();
     private final Set<TypeInfo> subtypeAsterisk = new LinkedHashSet<>();
 
     public void addStaticAsterisk(TypeInfo typeInfo) {
@@ -33,9 +34,12 @@ public class ImportMap {
     }
 
 
-    public void putTypeMap(String fullyQualifiedName, TypeInfo typeInfo, boolean highPriority) {
+    public void putTypeMap(String fullyQualifiedName, TypeInfo typeInfo, boolean highPriority, boolean isDirectImport) {
         if (highPriority || !typeMap.containsKey(fullyQualifiedName)) {
             typeMap.put(fullyQualifiedName, typeInfo);
+        }
+        if (isDirectImport) {
+            simpleNameTypeMap.put(typeInfo.simpleName, typeInfo);
         }
     }
 
@@ -60,5 +64,9 @@ public class ImportMap {
 
     public Iterable<? extends TypeInfo> importAsterisk() {
         return new HashSet<>(subtypeAsterisk); // to avoid concurrent modification issues
+    }
+
+    public TypeInfo getSimpleName(String name) {
+        return simpleNameTypeMap.get(name);
     }
 }

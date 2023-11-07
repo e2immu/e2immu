@@ -118,13 +118,24 @@ public class TypeContext implements TypeAndInspectionProvider {
 
     private NamedType getSimpleName(String name) {
         NamedType namedType = map.get(name);
-        if (namedType != null) return namedType;
+        if (namedType != null) {
+            return namedType;
+        }
+
+        // explicit imports
+        TypeInfo fromImport = importMap.getSimpleName(name);
+        if (fromImport != null) {
+            return fromImport;
+        }
+
+        // Same package, and * imports (in that order!)
         if (parentContext != null) {
-            NamedType nt = parentContext.getSimpleName(name);
-            if (nt != null) {
-                return nt;
+            NamedType fromParent = parentContext.getSimpleName(name);
+            if(fromParent != null) {
+                return fromParent;
             }
         }
+
         /*
         On-demand: subtype from import statement (see e.g. Import_2)
         This is done on-demand to fight cyclic dependencies if we do eager inspection.
@@ -135,7 +146,7 @@ public class TypeContext implements TypeAndInspectionProvider {
             TypeInfo subType = parentInspection.subTypes()
                     .stream().filter(st -> name.equals(st.simpleName)).findFirst().orElse(null);
             if (subType != null) {
-                importMap.putTypeMap(subType.fullyQualifiedName, subType, false);
+                importMap.putTypeMap(subType.fullyQualifiedName, subType, false, false);
                 return subType;
             }
         }
@@ -149,7 +160,7 @@ public class TypeContext implements TypeAndInspectionProvider {
                 TypeInfo subType = typeInspection.subTypes()
                         .stream().filter(st -> name.equals(st.simpleName)).findFirst().orElse(null);
                 if (subType != null) {
-                    importMap.putTypeMap(subType.fullyQualifiedName, subType, false);
+                    importMap.putTypeMap(subType.fullyQualifiedName, subType, false, false);
                     return subType;
                 }
             }
@@ -279,24 +290,16 @@ public class TypeContext implements TypeAndInspectionProvider {
         return typeMap.getPrimitives();
     }
 
-    public void addImport(TypeInfo typeInfo, boolean highPriority) {
-        importMap.putTypeMap(typeInfo.fullyQualifiedName, typeInfo, highPriority);
-        addToContext(typeInfo, highPriority);
+    public void addImport(TypeInfo typeInfo, boolean highPriority, boolean directImport) {
+        importMap.putTypeMap(typeInfo.fullyQualifiedName, typeInfo, highPriority, directImport);
+        if (!directImport) {
+            addToContext(typeInfo, highPriority);
+        }
     }
 
     public void addImportWildcard(TypeInfo typeInfo) {
         importMap.addToSubtypeAsterisk(typeInfo);
         // not adding the type to the context!!! the subtypes will be added by the inspector
-    }
-
-    public boolean isImportWildcard(TypeInfo typeInfo) {
-        return importMap.isSubtypeAsterisk(typeInfo);
-    }
-
-    public record MethodCandidate(MethodTypeParameterMap method, int distance) {
-        public MethodCandidate(MethodTypeParameterMap method) {
-            this(method, 0);
-        }
     }
 
     public Map<MethodTypeParameterMap, Integer> resolveConstructorInvocation(TypeInfo startingPoint,

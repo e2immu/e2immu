@@ -30,7 +30,8 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 public class TestImport extends CommonTest {
 
-    public static final String IMPORT_HELPER = "org.e2immu.analyser.resolver.testexample.importhelper";
+    // remember: the . at the end means: also include subpackages.
+    public static final String IMPORT_HELPER = "org.e2immu.analyser.resolver.testexample.importhelper.";
     public static final String A = "org.e2immu.analyser.resolver.testexample.a";
     public static final String ACCESS = "org.e2immu.analyser.resolver.testexample.access";
 
@@ -111,5 +112,10 @@ public class TestImport extends CommonTest {
     @Test
     public void test_12() throws IOException {
         inspectAndResolve(ACCESS, Import_12.class);
+    }
+
+    @Test
+    public void test_13() throws IOException {
+        inspectAndResolve(IMPORT_HELPER, Import_13.class);
     }
 }
