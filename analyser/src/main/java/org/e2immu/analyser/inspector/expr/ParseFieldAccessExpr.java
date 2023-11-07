@@ -21,11 +21,10 @@ import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.ArrayLength;
 import org.e2immu.analyser.model.expression.TypeExpression;
 import org.e2immu.analyser.model.expression.VariableExpression;
-import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.impl.FieldReferenceImpl;
-import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.resolver.impl.ResolverImpl;
 
+import java.util.List;
 import java.util.Optional;
 
 public class ParseFieldAccessExpr {
@@ -70,6 +69,17 @@ public class ParseFieldAccessExpr {
                         + objectType.typeInfo.fullyQualifiedName + " at " + identifier);
             }
             return res;
+        }
+        if (objectType.typeParameter != null) {
+            List<ParameterizedType> types = objectType.replaceByTypeBounds();
+            for (ParameterizedType pt : types) {
+                if (pt.typeInfo != null) {
+                    Expression res = findFieldOrSubType(identifier, pt.typeInfo, object, name, expressionContext);
+                    if (res != null) {
+                        return res;
+                    }
+                }
+            }
         }
         throw new UnsupportedOperationException("Object type has no typeInfo? at " + identifier);
     }

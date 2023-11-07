@@ -14,22 +14,20 @@
 
 package org.e2immu.analyser.resolver;
 
-import org.e2immu.analyser.model.MethodInfo;
-import org.e2immu.analyser.model.ParameterInfo;
-import org.e2immu.analyser.model.TypeInfo;
-import org.e2immu.analyser.model.TypeParameter;
+import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.model.expression.Assignment;
 import org.e2immu.analyser.model.expression.LocalVariableCreation;
-import org.e2immu.analyser.model.statement.ForEachStatement;
+import org.e2immu.analyser.model.statement.*;
 import org.e2immu.analyser.parser.TypeMap;
 import org.e2immu.analyser.resolver.testexample.TypeParameter_0;
 import org.e2immu.analyser.resolver.testexample.TypeParameter_1;
+import org.e2immu.analyser.resolver.testexample.TypeParameter_2;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.util.List;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.*;
 
 public class TestTypeParameter extends CommonTest {
 
@@ -103,5 +101,41 @@ public class TestTypeParameter extends CommonTest {
         TypeParameter p1tp = getOrCreate.returnType().parameters.get(0).typeParameter;
         assertNotNull(p1tp);
         assertEquals(TP0_FQN, p1tp.getOwner().getLeft().fullyQualifiedName);
+    }
+
+
+    @Test
+    public void test_2() throws IOException {
+        TypeMap typeMap = inspectAndResolve(TypeParameter_2.class);
+        TypeInfo typeInfo = typeMap.get(TypeParameter_2.class);
+        assertNotNull(typeInfo);
+        MethodInfo methodInfo = typeInfo.findUniqueMethod("method", 1);
+        TypeParameter tp = methodInfo.methodInspection.get().getTypeParameters().get(0);
+        assertEquals("T as #0 in org.e2immu.analyser.resolver.testexample.TypeParameter_2.method(T extends org.e2immu.analyser.resolver.testexample.TypeParameter_2.WithId[])", tp.toString());
+        assertEquals(1, tp.getTypeBounds().size());
+        Block block = methodInfo.methodInspection.get().getMethodBody();
+        if (block.structure.statements().get(0) instanceof ExpressionAsStatement eas
+                && eas.expression instanceof LocalVariableCreation lvc) {
+            assertEquals("result", lvc.localVariableReference.simpleName());
+            ParameterizedType t = lvc.localVariableReference.parameterizedType;
+            assertEquals("Type param T[]", t.toString());
+            assertEquals(1, t.arrays);
+            assertEquals(tp, t.typeParameter);
+            // now we know that the type bound is properly in place
+        } else fail();
+        if (block.structure.statements().get(1) instanceof ForStatement forStatement
+                && forStatement.structure.block().structure.statements().get(0) instanceof IfElseStatement ifElseStatement
+                && ifElseStatement.structure.block().structure.statements().get(0) instanceof ExpressionAsStatement eas
+                && eas.expression instanceof Assignment assignment) {
+            assertEquals("result[i]", assignment.variableTarget.toString());
+            ParameterizedType t = assignment.variableTarget.parameterizedType();
+            assertEquals("Type param T", t.toString());
+            assertEquals(0, t.arrays);
+            assertEquals(tp, t.typeParameter);
+            assertNotNull(t.typeParameter);
+            List<ParameterizedType> typeBounds = t.typeParameter.getTypeBounds();
+            assertEquals(1, typeBounds.size());
+            // result[i] is of type T, with a proper type bound, so we should be able to find .i
+        } else fail();
     }
 }
