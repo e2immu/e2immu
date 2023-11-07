@@ -709,6 +709,7 @@ public class ParameterizedType {
             if (isPrimitive && otherIsBoxed) {
                 TypeInfo otherUnboxed = primitives.unboxed(otherBestType);
                 ParameterizedType otherUnboxedPt = otherUnboxed.asSimpleParameterizedType();
+                if (equals(otherUnboxedPt)) return this;
                 if (primitives.isAssignableFromTo(this, otherUnboxedPt, true) >= 0 ||
                         primitives.isAssignableFromTo(otherUnboxedPt, this, true) >= 0) {
                     return primitives.widestType(this, otherUnboxedPt);
@@ -717,9 +718,10 @@ public class ParameterizedType {
             if (otherIsPrimitive && isBoxed) {
                 TypeInfo unboxed = primitives.unboxed(bestType);
                 ParameterizedType unboxedPt = unboxed.asSimpleParameterizedType();
-                if (primitives.isAssignableFromTo(this, unboxedPt, true) >= 0 ||
-                        primitives.isAssignableFromTo(unboxedPt, this, true) >= 0) {
-                    return primitives.widestType(this, unboxedPt);
+                if (unboxedPt.equals(other)) return other;
+                if (primitives.isAssignableFromTo(other, unboxedPt, true) >= 0 ||
+                        primitives.isAssignableFromTo(unboxedPt, other, true) >= 0) {
+                    return primitives.widestType(other, unboxedPt);
                 }
             }
             return primitives.objectParameterizedType(); // no common type

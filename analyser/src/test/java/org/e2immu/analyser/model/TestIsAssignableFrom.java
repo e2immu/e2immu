@@ -120,7 +120,7 @@ public class TestIsAssignableFrom {
     // double <- Double boxing
     // double <- long
     @Test
-    public void box4() {
+    public void box4AndCommonType() {
         ParameterizedType boxedDouble = type(Double.class.getName());
         ParameterizedType boxedLong = type(Long.class.getName());
         ParameterizedType boxedBoolean = type(Boolean.class.getName());
@@ -134,8 +134,18 @@ public class TestIsAssignableFrom {
 
         assertEquals(primitives.doubleParameterizedType(),
                 primitives.longParameterizedType().commonType(typeContext, boxedDouble));
+        assertEquals(primitives.doubleParameterizedType(),
+                primitives.doubleParameterizedType().commonType(typeContext, boxedDouble));
+        assertEquals(primitives.doubleParameterizedType(),
+                boxedDouble.commonType(typeContext, primitives.doubleParameterizedType()));
         assertEquals(primitives.longParameterizedType(),
                 primitives.longParameterizedType().commonType(typeContext, boxedLong));
+
+        assertEquals(primitives.booleanParameterizedType(),
+                primitives.booleanParameterizedType().commonType(typeContext, boxedBoolean));
+        assertEquals(primitives.booleanParameterizedType(),
+                boxedBoolean.commonType(typeContext, primitives.booleanParameterizedType()));
+
         assertEquals(primitives.objectParameterizedType(),
                 primitives.longParameterizedType().commonType(typeContext, boxedBoolean));
         assertEquals(primitives.objectParameterizedType(),

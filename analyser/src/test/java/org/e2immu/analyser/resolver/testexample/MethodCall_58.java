@@ -33,4 +33,12 @@ public class MethodCall_58 {
         SortedMap<D, Double> map = new TreeMap<>();
         map.compute(new D(date), (k, v) -> add(v == null ? 0L : v, n));
     }
+
+    static double setValue(Double d) {
+        return d;
+    }
+
+    public double method3(String tmp) {
+        return setValue(tmp != null && tmp.length() > 0 ? Double.valueOf(tmp) : 0d);
+    }
 }
