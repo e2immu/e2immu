@@ -25,6 +25,7 @@ import org.e2immu.analyser.parser.TypeMap;
 import org.e2immu.analyser.resolver.testexample.MethodReference_0;
 import org.e2immu.analyser.resolver.testexample.MethodReference_1;
 import org.e2immu.analyser.resolver.testexample.MethodReference_2;
+import org.e2immu.analyser.resolver.testexample.MethodReference_3;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
@@ -68,5 +69,11 @@ public class TestMethodReference extends CommonTest {
             assertEquals(methodFqn, mr.methodInfo.fullyQualifiedName);
         } else fail();
         assertEquals(returnType, expression.returnType().toString());
+    }
+
+
+    @Test
+    public void test_3() throws IOException {
+        inspectAndResolve(MethodReference_3.class);
     }
 }

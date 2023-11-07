@@ -14,6 +14,7 @@
 
 package org.e2immu.analyser.resolver;
 
+import org.e2immu.analyser.inspector.TypeContext;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.Lambda;
 import org.e2immu.analyser.model.expression.LocalVariableCreation;
@@ -30,8 +31,7 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 
 import static org.e2immu.analyser.resolver.TestImport.A;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.fail;
+import static org.junit.jupiter.api.Assertions.*;
 
 public class TestMethodCall extends CommonTest {
     private static final Logger LOGGER = LoggerFactory.getLogger(TestMethodCall.class);
@@ -410,5 +410,24 @@ public class TestMethodCall extends CommonTest {
     @Test
     public void test_50() throws IOException {
         inspectAndResolve(MethodCall_50.class);
+    }
+
+    @Test
+    public void test_51() throws IOException {
+        TypeMap typeMap = inspectAndResolve(MethodCall_51.class);
+        TypeInfo m51 = typeMap.get(MethodCall_51.class);
+        TypeInfo rp = m51.typeInspection.get().subTypes().get(0);
+        TypeInfo pp = rp.typeInspection.get().subTypes().get(0);
+        assertEquals("org.e2immu.analyser.resolver.testexample.MethodCall_51.ResolverPath.PathProcessor",
+                pp.fullyQualifiedName);
+        assertTrue(pp.typeInspection.get().isFunctionalInterface());
+        TypeInfo pp2 = m51.typeInspection.get().subTypes().get(1);
+        assertEquals("org.e2immu.analyser.resolver.testexample.MethodCall_51.PathProcessor", pp2.fullyQualifiedName);
+        assertFalse(pp2.typeInspection.get().isFunctionalInterface());
+    }
+
+    @Test
+    public void test_52() throws IOException {
+        inspectAndResolve(MethodCall_52.class);
     }
 }

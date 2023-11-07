@@ -474,44 +474,29 @@ public record ParseMethodCallExpr(TypeContext typeContext) {
 
                 for (ParameterizedType actualType : acceptedErased) {
                     int penaltyForReturnType = computePenaltyForReturnType(actualType, formalType);
-                    int compatible;
-                    if (isUnboundMethodTypeParameter(actualType)) {
-                        /*
-                        See test Lambda_6, and Lambda_7
+                    for (ParameterizedType actualTypeReplaced : actualType.replaceByTypeBounds()) {
+                        for (ParameterizedType formalTypeReplaced : formalType.replaceByTypeBounds()) {
 
-                        situation: the formal type is a normal TypeInfo, the actual type is a method type parameter
-                        representing the method result; we should add the actual<-formal to the extra when evaluating.
+                            boolean paramIsErasure = evaluatedExpressions.get(pos) instanceof ErasureExpression;
+                            int compatible;
+                            if (paramIsErasure && actualTypeReplaced != actualType) {
+                                /*
+                                 See 'method' call in MethodCall_32; this feels like a hack.
+                                 Map.get(e.getKey()) call in MethodCall_37 shows the opposite direction; so we do Max.
+                                 Feels even more like a hack.
+                                 */
+                                compatible = Math.max(callIsAssignableFrom(formalTypeReplaced, actualTypeReplaced),
+                                        callIsAssignableFrom(actualTypeReplaced, formalTypeReplaced));
+                            } else {
+                                compatible = callIsAssignableFrom(actualTypeReplaced, formalTypeReplaced);
+                            }
 
-                        Lambda_7 shows that we have to be very careful to get rid of type parameters to ensure that
-                        this condition doesn't occur too often
-
-                        Overload_7 shows why a formal free type parameter should get priority over a normal formal type
-                         */
-                        int typeParameterPenalty = isUnboundMethodTypeParameter(formalType) ? 2 : 5;
-                        int arrayPenalty = 10 * Math.abs(actualType.arrays - formalType.arrays);
-                        compatible = typeParameterPenalty + penaltyForReturnType + arrayPenalty;
-                    } else {
-                        List<ParameterizedType> actualList = actualType.replaceByTypeBounds();
-                        if (actualList.size() != 1) throw new UnsupportedOperationException("NYI");
-                        ParameterizedType actualTypeReplaced = actualList.get(0);
-                        List<ParameterizedType> formalList = formalType.replaceByTypeBounds();
-                        if (formalList.size() != 1) throw new UnsupportedOperationException("NYI");
-                        ParameterizedType formalTypeReplaced = formalList.get(0);
-                        boolean paramIsErasure = evaluatedExpressions.get(pos) instanceof ErasureExpression;
-                        int assignable;
-                        if (paramIsErasure && actualTypeReplaced != actualType) {
-                            // See 'method' call in MethodCall_32; this feels like a hack
-                            // Map.get(e.getKey()) call in MethodCall_37 shows the opposite direction; so we do Max. Feels even more like a hack.
-                            assignable = Math.max(callIsAssignableFrom(formalTypeReplaced, actualTypeReplaced),
-                                    callIsAssignableFrom(actualTypeReplaced, formalTypeReplaced));
-                        } else {
-                            assignable = callIsAssignableFrom(actualTypeReplaced, formalTypeReplaced);
+                            if (compatible >= 0 && (bestCompatible == Integer.MIN_VALUE
+                                    || (compatible + penaltyForReturnType) < bestCompatible)) {
+                                bestCompatible = compatible + penaltyForReturnType;
+                                bestAcceptedType = actualType;
+                            }
                         }
-                        compatible = assignable + penaltyForReturnType;
-                    }
-                    if (compatible >= 0 && (bestCompatible == Integer.MIN_VALUE || compatible < bestCompatible)) {
-                        bestCompatible = compatible;
-                        bestAcceptedType = actualType;
                     }
                 }
                 if (bestCompatible < 0) {
