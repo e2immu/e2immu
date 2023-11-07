@@ -59,14 +59,14 @@ public record ParseMethodCallExpr(TypeContext typeContext) {
         }
 
         Set<ParameterizedType> types;
-        if (methodCandidates.size() == 1
-                && scope.expression() instanceof VariableExpression ve
-                && ve.variable().parameterizedType().arrays > 0
+        if (scope.expression() != null
+                && !(scope.expression() instanceof ErasureExpression)
+                && scope.expression().returnType().arrays > 0
                 && "clone".equals(methodName)) {
             /* this condition is hyper-specialized (see MethodCall_54; but the alternative would be to return JLO,
                and that causes problems along the way
              */
-            types = Set.of(ve.variable().parameterizedType());
+            types = Set.of(scope.expression().returnType());
         } else {
             types = methodCandidates.keySet().stream()
                     .map(mc -> {
