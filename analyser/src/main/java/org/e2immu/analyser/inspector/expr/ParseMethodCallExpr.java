@@ -58,27 +58,38 @@ public record ParseMethodCallExpr(TypeContext typeContext) {
                     + methodName + ", " + numArguments);
         }
 
-        Set<ParameterizedType> types = methodCandidates.keySet().stream()
-                .map(mc -> {
-                    TypeParameterMap map0 = filterResult.typeParameterMap(typeContext, mc.methodInspection);
-                    TypeParameterMap map1 = map0.merge(scope.typeParameterMap());
-                    TypeInfo methodType = mc.methodInspection.getMethodInfo().typeInfo;
-                    TypeInfo scopeType = scope.type().bestTypeInfo(typeContext);
-                    TypeParameterMap merged;
-                    if (scopeType != null && !methodType.equals(scope.type().typeInfo)) {
-                        // method is defined in a super-type, so we need an additional translation
-                        ParameterizedType superType = methodType.asParameterizedType(typeContext);
-                        Map<NamedType, ParameterizedType> sm = scopeType.mapInTermsOfParametersOfSuperType(typeContext, superType);
-                        merged = sm == null ? map1 : map1.merge(new TypeParameterMap(sm));
-                    } else {
-                        merged = map1;
-                    }
-                    ParameterizedType returnType = mc.methodInspection.getReturnType();
-                    Map<NamedType, ParameterizedType> map2 = merged.map();
-                    // IMPROVE at some point, compare to mc.method().concreteType; redundant code?
-                    return returnType.applyTranslation(typeContext().getPrimitives(), map2);
-                })
-                .collect(Collectors.toUnmodifiableSet());
+        Set<ParameterizedType> types;
+        if (methodCandidates.size() == 1
+                && scope.expression() instanceof VariableExpression ve
+                && ve.variable().parameterizedType().arrays > 0
+                && "clone".equals(methodName)) {
+            /* this condition is hyper-specialized (see MethodCall_54; but the alternative would be to return JLO,
+               and that causes problems along the way
+             */
+            types = Set.of(ve.variable().parameterizedType());
+        } else {
+            types = methodCandidates.keySet().stream()
+                    .map(mc -> {
+                        TypeParameterMap map0 = filterResult.typeParameterMap(typeContext, mc.methodInspection);
+                        TypeParameterMap map1 = map0.merge(scope.typeParameterMap());
+                        TypeInfo methodType = mc.methodInspection.getMethodInfo().typeInfo;
+                        TypeInfo scopeType = scope.type().bestTypeInfo(typeContext);
+                        TypeParameterMap merged;
+                        if (scopeType != null && !methodType.equals(scope.type().typeInfo)) {
+                            // method is defined in a super-type, so we need an additional translation
+                            ParameterizedType superType = methodType.asParameterizedType(typeContext);
+                            Map<NamedType, ParameterizedType> sm = scopeType.mapInTermsOfParametersOfSuperType(typeContext, superType);
+                            merged = sm == null ? map1 : map1.merge(new TypeParameterMap(sm));
+                        } else {
+                            merged = map1;
+                        }
+                        ParameterizedType returnType = mc.methodInspection.getReturnType();
+                        Map<NamedType, ParameterizedType> map2 = merged.map();
+                        // IMPROVE at some point, compare to mc.method().concreteType; redundant code?
+                        return returnType.applyTranslation(typeContext().getPrimitives(), map2);
+                    })
+                    .collect(Collectors.toUnmodifiableSet());
+        }
         LOGGER.debug("Erasure types: {}", types);
         return new MethodCallErasure(types, methodName);
     }
@@ -656,7 +667,8 @@ public record ParseMethodCallExpr(TypeContext typeContext) {
     }
 
 
-    private TypeParameter tryToFindTypeTypeParameter(MethodTypeParameterMap method, TypeParameter methodTypeParameter) {
+    private TypeParameter tryToFindTypeTypeParameter(MethodTypeParameterMap method,
+                                                     TypeParameter methodTypeParameter) {
         ParameterizedType formalReturnType = method.methodInspection.getReturnType();
         Map<NamedType, ParameterizedType> map = formalReturnType.initialTypeParameterMap(typeContext);
         // map points from E as 0 in List to E as 0 in List.of()
