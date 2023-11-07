@@ -116,6 +116,32 @@ public class TestIsAssignableFrom {
         assertTrue(primitives.booleanParameterizedType().isAssignableFrom(typeContext, booleanPt));
     }
 
+    // common type of long and Double
+    // double <- Double boxing
+    // double <- long
+    @Test
+    public void box4() {
+        ParameterizedType boxedDouble = type(Double.class.getName());
+        ParameterizedType boxedLong = type(Long.class.getName());
+        ParameterizedType boxedBoolean = type(Boolean.class.getName());
+
+        assertTrue(primitives.doubleParameterizedType().isAssignableFrom(typeContext, boxedDouble));
+        assertTrue(primitives.doubleParameterizedType().isAssignableFrom(typeContext, primitives.longParameterizedType()));
+        assertEquals(primitives.doubleParameterizedType(),
+                primitives.doubleParameterizedType().commonType(typeContext, primitives.longParameterizedType()));
+        assertEquals(primitives.doubleParameterizedType(),
+                primitives.longParameterizedType().commonType(typeContext, primitives.doubleParameterizedType()));
+
+        assertEquals(primitives.doubleParameterizedType(),
+                primitives.longParameterizedType().commonType(typeContext, boxedDouble));
+        assertEquals(primitives.longParameterizedType(),
+                primitives.longParameterizedType().commonType(typeContext, boxedLong));
+        assertEquals(primitives.objectParameterizedType(),
+                primitives.longParameterizedType().commonType(typeContext, boxedBoolean));
+        assertEquals(primitives.objectParameterizedType(),
+                primitives.booleanParameterizedType().commonType(typeContext, boxedDouble));
+    }
+
     // CharSequence[] <- String[] should be allowed
     // Object[] <- CharSequence[], <- String[] should be allowed, not the other way around
     @Test

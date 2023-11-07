@@ -19,6 +19,7 @@ import org.e2immu.analyser.inspector.TypeContext;
 import org.e2immu.analyser.model.expression.util.TranslationCollectors;
 import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.parser.InspectionProvider;
+import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.parser.PrimitivesWithoutParameterizedType;
 import org.e2immu.analyser.util.UpgradableBooleanMap;
 import org.e2immu.analyser.util.UpgradableIntMap;
@@ -689,34 +690,45 @@ public class ParameterizedType {
         TypeInfo otherBestType = other.bestTypeInfo(inspectionProvider);
         boolean isPrimitive = isPrimitiveExcludingVoid();
         boolean otherIsPrimitive = other.isPrimitiveExcludingVoid();
+        Primitives primitives = inspectionProvider.getPrimitives();
         if (isPrimitive && otherIsPrimitive) {
-            return inspectionProvider.getPrimitives().widestType(this, other);
+            return primitives.widestType(this, other);
         }
         boolean isBoxed = isBoxedExcludingVoid();
         boolean otherIsBoxed = other.isBoxedExcludingVoid();
 
         if ((isPrimitive || isBoxed) && other == ParameterizedType.NULL_CONSTANT) {
             if (isBoxed) return this;
-            return inspectionProvider.getPrimitives().boxed(bestType).asParameterizedType(inspectionProvider);
+            return primitives.boxed(bestType).asParameterizedType(inspectionProvider);
         }
         if ((otherIsPrimitive || otherIsBoxed) && this == ParameterizedType.NULL_CONSTANT) {
             if (otherIsBoxed) return other;
-            return inspectionProvider.getPrimitives().boxed(otherBestType).asParameterizedType(inspectionProvider);
+            return primitives.boxed(otherBestType).asParameterizedType(inspectionProvider);
         }
         if (isPrimitive || otherIsPrimitive) {
-            if (isPrimitive && otherIsBoxed && inspectionProvider.getPrimitives().boxed(bestType).equals(otherBestType)) {
-                return other;
+            if (isPrimitive && otherIsBoxed) {
+                TypeInfo otherUnboxed = primitives.unboxed(otherBestType);
+                ParameterizedType otherUnboxedPt = otherUnboxed.asSimpleParameterizedType();
+                if (primitives.isAssignableFromTo(this, otherUnboxedPt, true) >= 0 ||
+                        primitives.isAssignableFromTo(otherUnboxedPt, this, true) >= 0) {
+                    return primitives.widestType(this, otherUnboxedPt);
+                }
             }
-            if (otherIsPrimitive && isBoxed && inspectionProvider.getPrimitives().boxed(otherBestType).equals(bestType)) {
-                return this;
+            if (otherIsPrimitive && isBoxed) {
+                TypeInfo unboxed = primitives.unboxed(bestType);
+                ParameterizedType unboxedPt = unboxed.asSimpleParameterizedType();
+                if (primitives.isAssignableFromTo(this, unboxedPt, true) >= 0 ||
+                        primitives.isAssignableFromTo(unboxedPt, this, true) >= 0) {
+                    return primitives.widestType(this, unboxedPt);
+                }
             }
-            return inspectionProvider.getPrimitives().objectParameterizedType(); // no common type
+            return primitives.objectParameterizedType(); // no common type
         }
         if (other == ParameterizedType.NULL_CONSTANT) return this;
         if (this == ParameterizedType.NULL_CONSTANT) return other;
 
         if (bestType == null || otherBestType == null) {
-            return inspectionProvider.getPrimitives().objectParameterizedType(); // no common type
+            return primitives.objectParameterizedType(); // no common type
         }
         if (isAssignableFrom(inspectionProvider, other)) {
             return this;
@@ -730,7 +742,7 @@ public class ParameterizedType {
         List<TypeInfo> common = new ArrayList<>(hierarchy.keySet());
         common.retainAll(otherHierarchy.keySet());
         if (common.isEmpty()) {
-            return inspectionProvider.getPrimitives().objectParameterizedType();
+            return primitives.objectParameterizedType();
         }
         if (common.size() > 1) {
             common.sort(Comparator.comparingInt(hierarchy::get));
@@ -754,7 +766,7 @@ public class ParameterizedType {
                 ParameterizedType commonParameter;
                 if (equals(parameter) && other.equals(otherParameter)) {
                     // common situation when the types implement Comparable; must avoid infinite recursion
-                    commonParameter = inspectionProvider.getPrimitives().objectParameterizedType();
+                    commonParameter = primitives.objectParameterizedType();
                 } else {
                     commonParameter = parameter.commonType(inspectionProvider, otherParameter);
                 }

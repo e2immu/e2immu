@@ -237,7 +237,8 @@ public record ParseMethodCallExpr(TypeContext typeContext) {
         LOGGER.error("Multiple candidates for {}", errorInfo);
         methodCandidates.forEach((m, d) -> LOGGER.error(" -- {}", m.methodInspection.getMethodInfo().fullyQualifiedName));
         LOGGER.error("{} Evaluated expressions:", evaluatedExpressions.size());
-        evaluatedExpressions.forEach((i, e) -> LOGGER.error(" -- index {}: {}, {}", i, e, e.getClass()));
+        evaluatedExpressions.forEach((i, e) -> LOGGER.error(" -- index {}: {}, {}, {}", i, e, e.getClass(),
+                e instanceof ErasureExpression ? "-" : e.returnType().toString()));
         throw new UnsupportedOperationException("Multiple candidates");
     }
 
@@ -522,8 +523,8 @@ public record ParseMethodCallExpr(TypeContext typeContext) {
                 sumScore = -1; // to be removed immediately
             } else {
                 int varargsSkipped = Math.abs(evaluatedExpressions.size() - parameters.size());
-                sumScore += IsAssignableFrom.IN_HIERARCHY * entry.getValue()
-                        + 100 * varargsSkipped;
+                int methodDistance = entry.getValue();
+                sumScore += 100 * methodDistance + 10 * varargsSkipped;
                 if (acceptedErasedTypesCombination == null) {
                     acceptedErasedTypesCombination = thisAcceptedErasedTypesCombination;
                 } else if (!acceptedErasedTypesCombination.equals(thisAcceptedErasedTypesCombination)) {
