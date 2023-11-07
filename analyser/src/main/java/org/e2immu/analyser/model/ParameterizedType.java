@@ -105,6 +105,15 @@ public class ParameterizedType {
         assert checkParametersForPrimitives();
     }
 
+    public ParameterizedType(TypeInfo typeInfo, List<ParameterizedType> parameters, int arrays) {
+        this.typeInfo = Objects.requireNonNull(typeInfo);
+        this.parameters = List.copyOf(Objects.requireNonNull(parameters));
+        this.typeParameter = null;
+        this.arrays = arrays;
+        this.wildCard = WildCard.NONE;
+        assert checkParametersForPrimitives();
+    }
+
     public boolean isPrimitiveExcludingVoid() {
         return arrays == 0 && typeInfo != null && typeInfo.isPrimitiveExcludingVoid();
     }

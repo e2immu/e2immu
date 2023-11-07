@@ -123,7 +123,7 @@ public class ParameterizedTypeFactory {
             }
             return new ParameterizedType(typeParameter, arrays, wildCard);
         }
-        if(complain) {
+        if (complain) {
             throw new UnsupportedOperationException("Unknown type: " + name + " at line "
                     + baseType.getBegin() + " of " + baseType.getClass());
         }
@@ -141,7 +141,7 @@ public class ParameterizedTypeFactory {
         if (scopeInspection != null) {
             Optional<TypeInfo> subType = scopeInspection.subTypes().stream().filter(st -> st.simpleName.equals(name)).findFirst();
             if (subType.isPresent()) {
-                return parameters.isEmpty() ? new ParameterizedType(subType.get(), arrays) : new ParameterizedType(subType.get(), parameters);
+                return new ParameterizedType(subType.get(), parameters, arrays);
             }
 
             ParameterizedType parent = scopeInspection.parentClass();
@@ -160,6 +160,6 @@ public class ParameterizedTypeFactory {
         }
         // we're going to assume that we're creating a subtype
         TypeInfo subType = typeContext.typeMap.getOrCreate(scopePt.typeInfo.fullyQualifiedName, name, TRIGGER_BYTECODE_INSPECTION);
-        return parameters.isEmpty() ? new ParameterizedType(subType, arrays) : new ParameterizedType(subType, parameters);
+        return new ParameterizedType(subType, parameters, arrays);
     }
 }
