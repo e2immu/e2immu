@@ -105,8 +105,10 @@ public class ParseLambdaExpr {
                 expressionContext.primaryType());
         assert singleAbstractMethod != null && singleAbstractMethod.isSingleAbstractMethod()
                 : "No SAM at " + lambdaExpr.getBegin()
-                + "; forward is " + forwardReturnTypeInfo.type().detailedString(inspectionProvider)
-                + "; FI? " + forwardReturnTypeInfo.type().isFunctionalInterface(inspectionProvider);
+                + "; forward is " + (forwardReturnTypeInfo.type() == null
+                ? "NULL" : forwardReturnTypeInfo.type().detailedString(inspectionProvider))
+                + "; FI? " + (forwardReturnTypeInfo.type() == null
+                ? "NULL" : forwardReturnTypeInfo.type().isFunctionalInterface(inspectionProvider));
 
         LOGGER.debug("Start parsing lambda at {}, {}", lambdaExpr.getBegin(), forwardReturnTypeInfo.toString(inspectionProvider));
 

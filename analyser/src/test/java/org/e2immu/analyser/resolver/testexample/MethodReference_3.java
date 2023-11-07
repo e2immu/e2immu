@@ -3,6 +3,7 @@ package org.e2immu.analyser.resolver.testexample;
 import java.util.Arrays;
 import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 // test is here because the crash shows in the method reference "contains"; problem is probably in forwarding of type info
 public class MethodReference_3 {
@@ -13,9 +14,11 @@ public class MethodReference_3 {
     // everything is fine when .parallel is excluded, or the 2nd part of the disjunction is left out
     // k must be a String (T of Stream = String; with parallel in between: = T)
     public Set<String> method(Set<String> keysWithPrefix, String[] pattern) {
-        return keysWithPrefix
+        Stream<String> parallel = keysWithPrefix
                 .stream()
-                .parallel()
+                .parallel();
+        // FIXME
+        return parallel
                 .filter(k -> isEmpty(pattern) || Arrays.stream(pattern).parallel().anyMatch(k::contains))
                 .collect(Collectors.toSet());
     }

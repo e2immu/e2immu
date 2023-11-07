@@ -18,6 +18,7 @@ import com.github.javaparser.Position;
 import com.github.javaparser.ast.NodeList;
 import com.github.javaparser.ast.stmt.ExplicitConstructorInvocationStmt;
 import org.e2immu.analyser.inspector.ExpressionContext;
+import org.e2immu.analyser.inspector.MethodTypeParameterMap;
 import org.e2immu.analyser.inspector.TypeContext;
 import org.e2immu.analyser.inspector.TypeParameterMap;
 import org.e2immu.analyser.model.*;
@@ -26,6 +27,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.List;
+import java.util.Map;
 
 public class ParseExplicitConstructorInvocation {
     private static final Logger LOGGER = LoggerFactory.getLogger(ParseExplicitConstructorInvocation.class);
@@ -58,7 +60,7 @@ public class ParseExplicitConstructorInvocation {
         TypeInfo startingPoint = isThis ? enclosingType
                 : typeContext.getTypeInspection(enclosingType).parentClass().typeInfo;
 
-        List<TypeContext.MethodCandidate> methodCandidates = typeContext.resolveConstructorInvocation(startingPoint,
+        Map<MethodTypeParameterMap, Integer> methodCandidates = typeContext.resolveConstructorInvocation(startingPoint,
                 arguments.size());
 
         ParseMethodCallExpr.ErrorInfo errorInfo = new ParseMethodCallExpr.ErrorInfo(isThis ? "this()" : "super()",

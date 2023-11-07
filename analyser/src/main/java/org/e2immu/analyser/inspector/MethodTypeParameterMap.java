@@ -52,6 +52,19 @@ public class MethodTypeParameterMap {
         this.concreteTypes = Map.copyOf(concreteTypes);
     }
 
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null) return false;
+        return o instanceof MethodTypeParameterMap m
+                && methodInspection.getMethodInfo().equals(m.methodInspection.getMethodInfo());
+    }
+
+    @Override
+    public int hashCode() {
+        return methodInspection.getMethodInfo().hashCode();
+    }
+
     public boolean isSingleAbstractMethod() {
         return methodInspection != null;
     }
@@ -83,7 +96,7 @@ public class MethodTypeParameterMap {
                                          TypeInfo primaryType,
                                          Map<NamedType, ParameterizedType> mapExpansion) {
         Map<NamedType, ParameterizedType> join = new HashMap<>(concreteTypes);
-        mapExpansion.forEach((k, v)-> join.merge(k, v, (v1, v2)-> v1.mostSpecific(inspectionProvider, primaryType, v2)));
+        mapExpansion.forEach((k, v) -> join.merge(k, v, (v1, v2) -> v1.mostSpecific(inspectionProvider, primaryType, v2)));
         return new MethodTypeParameterMap(methodInspection, Map.copyOf(join));
     }
 

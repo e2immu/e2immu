@@ -568,7 +568,9 @@ public record ExpressionContextImpl(ExpressionContext.ResolverRecursion resolver
             if (expression.isCastExpr()) {
                 CastExpr castExpr = (CastExpr) expression;
                 ParameterizedType parameterizedType = ParameterizedTypeFactory.from(typeContext, castExpr.getType());
-                return new Cast(identifier, parseExpressionStartVoid(castExpr.getExpression()), parameterizedType);
+                // See MethodCall_53 for a reason to add the newForward
+                ForwardReturnTypeInfo newForward = new ForwardReturnTypeInfo(parameterizedType);
+                return new Cast(identifier, parseExpression(castExpr.getExpression(), newForward), parameterizedType);
             }
             if (expression.isBinaryExpr()) {
                 BinaryExpr binaryExpr = (BinaryExpr) expression;

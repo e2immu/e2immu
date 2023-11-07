@@ -109,7 +109,7 @@ public class ParseObjectCreationExpr {
 
         Map<NamedType, ParameterizedType> typeMap = parameterizedType == null ? null :
                 parameterizedType.initialTypeParameterMap(typeContext);
-        List<TypeContext.MethodCandidate> methodCandidates = typeContext.resolveConstructor(formalType, parameterizedType,
+        Map<MethodTypeParameterMap, Integer> methodCandidates = typeContext.resolveConstructor(formalType, parameterizedType,
                 objectCreationExpr.getArguments().size(), parameterizedType == null ? Map.of() : typeMap);
 
         ParseMethodCallExpr.ErrorInfo errorInfo = new ParseMethodCallExpr.ErrorInfo("constructor",

@@ -41,7 +41,7 @@ public record ParseMethodCallExpr(TypeContext typeContext) {
                 methodName, numArguments);
 
         Scope scope = Scope.computeScope(expressionContext, typeContext, methodCallExpr, TypeParameterMap.EMPTY);
-        List<TypeContext.MethodCandidate> methodCandidates = initialMethodCandidates(scope, numArguments, methodName);
+        Map<MethodTypeParameterMap, Integer> methodCandidates = initialMethodCandidates(scope, numArguments, methodName);
 
         FilterResult filterResult = filterMethodCandidatesInErasureMode(expressionContext, methodCandidates,
                 methodCallExpr.getArguments());
@@ -58,11 +58,11 @@ public record ParseMethodCallExpr(TypeContext typeContext) {
                     + methodName + ", " + numArguments);
         }
 
-        Set<ParameterizedType> types = methodCandidates.stream()
+        Set<ParameterizedType> types = methodCandidates.keySet().stream()
                 .map(mc -> {
-                    TypeParameterMap map0 = filterResult.typeParameterMap(typeContext, mc.method().methodInspection);
+                    TypeParameterMap map0 = filterResult.typeParameterMap(typeContext, mc.methodInspection);
                     TypeParameterMap map1 = map0.merge(scope.typeParameterMap());
-                    TypeInfo methodType = mc.method().methodInspection.getMethodInfo().typeInfo;
+                    TypeInfo methodType = mc.methodInspection.getMethodInfo().typeInfo;
                     TypeInfo scopeType = scope.type().bestTypeInfo(typeContext);
                     TypeParameterMap merged;
                     if (scopeType != null && !methodType.equals(scope.type().typeInfo)) {
@@ -73,7 +73,7 @@ public record ParseMethodCallExpr(TypeContext typeContext) {
                     } else {
                         merged = map1;
                     }
-                    ParameterizedType returnType = mc.method().methodInspection.getReturnType();
+                    ParameterizedType returnType = mc.methodInspection.getReturnType();
                     Map<NamedType, ParameterizedType> map2 = merged.map();
                     // IMPROVE at some point, compare to mc.method().concreteType; redundant code?
                     return returnType.applyTranslation(typeContext().getPrimitives(), map2);
@@ -97,7 +97,7 @@ public record ParseMethodCallExpr(TypeContext typeContext) {
                 methodCallExpr.getBegin().orElseThrow());
 
         try {
-            List<TypeContext.MethodCandidate> methodCandidates = initialMethodCandidates(scope, numArguments, methodName);
+            Map<MethodTypeParameterMap, Integer> methodCandidates = initialMethodCandidates(scope, numArguments, methodName);
 
             TypeParameterMap extra = forwardReturnTypeInfo.extra().merge(scope.typeParameterMap());
 
@@ -131,10 +131,10 @@ public record ParseMethodCallExpr(TypeContext typeContext) {
         }
     }
 
-    private List<TypeContext.MethodCandidate> initialMethodCandidates(Scope scope,
-                                                                      int numArguments,
-                                                                      String methodName) {
-        List<TypeContext.MethodCandidate> methodCandidates = new ArrayList<>();
+    private Map<MethodTypeParameterMap, Integer> initialMethodCandidates(Scope scope,
+                                                                         int numArguments,
+                                                                         String methodName) {
+        Map<MethodTypeParameterMap, Integer> methodCandidates = new HashMap<>();
         typeContext.recursivelyResolveOverloadedMethods(scope.type(), methodName,
                 numArguments, false, scope.typeParameterMap().map(), methodCandidates,
                 scope.nature());
@@ -177,7 +177,7 @@ public record ParseMethodCallExpr(TypeContext typeContext) {
     }
 
     Candidate chooseCandidateAndEvaluateCall(ExpressionContext expressionContext,
-                                             List<TypeContext.MethodCandidate> methodCandidates,
+                                             Map<MethodTypeParameterMap, Integer> methodCandidates,
                                              List<com.github.javaparser.ast.expr.Expression> expressions,
                                              ParameterizedType returnType,
                                              TypeParameterMap extra,
@@ -205,11 +205,11 @@ public record ParseMethodCallExpr(TypeContext typeContext) {
                 trimVarargsVsMethodsWithFewerParameters(methodCandidates);
             }
         }
-        boolean twoAccessible = sortRemainingCandidatesByShallowPublic(methodCandidates);
-        if (twoAccessible) {
+        List<MethodTypeParameterMap> sorted = sortRemainingCandidatesByShallowPublic(methodCandidates);
+        if (sorted.size() > 1) {
             multipleCandidatesError(errorInfo, methodCandidates, filterResult.evaluatedExpressions);
         }
-        MethodTypeParameterMap method = methodCandidates.get(0).method();
+        MethodTypeParameterMap method = sorted.get(0);
         LOGGER.debug("Found method {}", method.methodInspection.getFullyQualifiedName());
 
 
@@ -221,10 +221,10 @@ public record ParseMethodCallExpr(TypeContext typeContext) {
     }
 
     private void multipleCandidatesError(ErrorInfo errorInfo,
-                                         List<TypeContext.MethodCandidate> methodCandidates,
+                                         Map<MethodTypeParameterMap, Integer> methodCandidates,
                                          Map<Integer, Expression> evaluatedExpressions) {
         LOGGER.error("Multiple candidates for {}", errorInfo);
-        methodCandidates.forEach(mc -> LOGGER.error(" -- {}", mc.method().methodInspection.getMethodInfo().fullyQualifiedName));
+        methodCandidates.forEach((m, d) -> LOGGER.error(" -- {}", m.methodInspection.getMethodInfo().fullyQualifiedName));
         LOGGER.error("{} Evaluated expressions:", evaluatedExpressions.size());
         evaluatedExpressions.forEach((i, e) -> LOGGER.error(" -- index {}: {}, {}", i, e, e.getClass()));
         throw new UnsupportedOperationException("Multiple candidates");
@@ -408,7 +408,7 @@ public record ParseMethodCallExpr(TypeContext typeContext) {
     }
 
 
-    private FilterResult filterCandidatesByParameters(List<TypeContext.MethodCandidate> methodCandidates,
+    private FilterResult filterCandidatesByParameters(Map<MethodTypeParameterMap, Integer> methodCandidates,
                                                       Map<Integer, Expression> evaluatedExpressions,
                                                       TypeParameterMap typeParameterMap) {
         Map<Integer, Set<ParameterizedType>> acceptedErasedTypes =
@@ -420,10 +420,10 @@ public record ParseMethodCallExpr(TypeContext typeContext) {
         Map<Integer, ParameterizedType> acceptedErasedTypesCombination = null;
         Map<MethodInfo, Integer> compatibilityScore = new HashMap<>();
 
-        for (TypeContext.MethodCandidate methodCandidate : methodCandidates) {
+        for (Map.Entry<MethodTypeParameterMap, Integer> entry : methodCandidates.entrySet()) {
             int sumScore = 0;
             boolean foundCombination = true;
-            List<ParameterInfo> parameters = methodCandidate.method().methodInspection.getParameters();
+            List<ParameterInfo> parameters = entry.getKey().methodInspection.getParameters();
             int pos = 0;
             Map<Integer, ParameterizedType> thisAcceptedErasedTypesCombination = new TreeMap<>();
             for (ParameterInfo parameterInfo : parameters) {
@@ -511,7 +511,7 @@ public record ParseMethodCallExpr(TypeContext typeContext) {
                 sumScore = -1; // to be removed immediately
             } else {
                 int varargsSkipped = Math.abs(evaluatedExpressions.size() - parameters.size());
-                sumScore += IsAssignableFrom.IN_HIERARCHY * methodCandidate.distance()
+                sumScore += IsAssignableFrom.IN_HIERARCHY * entry.getValue()
                         + 100 * varargsSkipped;
                 if (acceptedErasedTypesCombination == null) {
                     acceptedErasedTypesCombination = thisAcceptedErasedTypesCombination;
@@ -520,12 +520,12 @@ public record ParseMethodCallExpr(TypeContext typeContext) {
                             thisAcceptedErasedTypesCombination);
                 }
             }
-            compatibilityScore.put(methodCandidate.method().methodInspection.getMethodInfo(), sumScore);
+            compatibilityScore.put(entry.getKey().methodInspection.getMethodInfo(), sumScore);
         }
 
         // remove those with a negative compatibility score
-        methodCandidates.removeIf(mc -> {
-            int score = compatibilityScore.get(mc.method().methodInspection.getMethodInfo());
+        methodCandidates.entrySet().removeIf(e -> {
+            int score = compatibilityScore.get(e.getKey().methodInspection.getMethodInfo());
             return score < 0;
         });
 
@@ -552,7 +552,7 @@ public record ParseMethodCallExpr(TypeContext typeContext) {
     }
 
     private FilterResult filterMethodCandidatesInErasureMode(ExpressionContext expressionContext,
-                                                             List<TypeContext.MethodCandidate> methodCandidates,
+                                                             Map<MethodTypeParameterMap, Integer> methodCandidates,
                                                              List<com.github.javaparser.ast.expr.Expression> expressions) {
         Map<Integer, Expression> evaluatedExpressions = new HashMap<>();
         Map<MethodInfo, Integer> compatibilityScore = new HashMap<>();
@@ -573,24 +573,28 @@ public record ParseMethodCallExpr(TypeContext typeContext) {
      * We prioritise the CharSequence version, because that one can be annotated using annotated APIs.
      *
      * @param methodCandidates the candidates to sort
-     * @return true when also candidate 1 is accessible... this will result in an error?
+     * @return a list of size>1 when also candidate 1 is accessible... this will result in an error?
      */
-    private boolean sortRemainingCandidatesByShallowPublic(List<TypeContext.MethodCandidate> methodCandidates) {
+    private List<MethodTypeParameterMap> sortRemainingCandidatesByShallowPublic(Map<MethodTypeParameterMap, Integer> methodCandidates) {
         if (methodCandidates.size() > 1) {
-            Comparator<TypeContext.MethodCandidate> comparator =
+            Comparator<MethodTypeParameterMap> comparator =
                     (m1, m2) -> {
-                        boolean m1Accessible = m1.method().methodInspection.getMethodInfo().analysisAccessible(typeContext);
-                        boolean m2Accessible = m2.method().methodInspection.getMethodInfo().analysisAccessible(typeContext);
+                        boolean m1Accessible = m1.methodInspection.getMethodInfo().analysisAccessible(typeContext);
+                        boolean m2Accessible = m2.methodInspection.getMethodInfo().analysisAccessible(typeContext);
                         if (m1Accessible && !m2Accessible) return -1;
                         if (m2Accessible && !m1Accessible) return 1;
                         return 0; // don't know what to prioritize
                     };
-            methodCandidates.sort(comparator);
-            TypeContext.MethodCandidate m1 = methodCandidates.get(1);
-            return m1.method().methodInspection.getMethodInfo().analysisAccessible(typeContext);
+            List<MethodTypeParameterMap> sorted = new ArrayList<>(methodCandidates.keySet());
+            sorted.sort(comparator);
+            MethodTypeParameterMap m1 = sorted.get(1);
+            if (m1.methodInspection.getMethodInfo().analysisAccessible(typeContext)) {
+                return sorted;
+            }
+            return List.of(sorted.get(0));
         }
         // not two accessible
-        return false;
+        return List.copyOf(methodCandidates.keySet());
     }
 
     /**
@@ -660,33 +664,37 @@ public record ParseMethodCallExpr(TypeContext typeContext) {
                 .map(e -> (TypeParameter) e.getKey()).findFirst().orElse(null);
     }
 
-    private static void trimMethodsWithBestScore(List<TypeContext.MethodCandidate> methodCandidates, Map<MethodInfo, Integer> compatibilityScore) {
-        int min = methodCandidates.stream().mapToInt(mc -> compatibilityScore.getOrDefault(mc.method().methodInspection.getMethodInfo(), 0)).min().orElseThrow();
+    private static void trimMethodsWithBestScore(Map<MethodTypeParameterMap, Integer> methodCandidates,
+                                                 Map<MethodInfo, Integer> compatibilityScore) {
+        int min = methodCandidates.keySet().stream()
+                .mapToInt(mc -> compatibilityScore.getOrDefault(mc.methodInspection.getMethodInfo(), 0))
+                .min().orElseThrow();
         if (min == NOT_ASSIGNABLE) throw new UnsupportedOperationException();
-        methodCandidates.removeIf(mc -> compatibilityScore.getOrDefault(mc.method().methodInspection.getMethodInfo(), 0) > min);
+        methodCandidates.keySet().removeIf(e ->
+                compatibilityScore.getOrDefault(e.methodInspection.getMethodInfo(), 0) > min);
     }
 
     // remove varargs if there's also non-varargs solutions
     //
     // this step if AFTER the score step, so we've already dealt with type conversions.
     // we still have to deal with overloads in supertypes, methods with the same type signature
-    private static void trimVarargsVsMethodsWithFewerParameters(List<TypeContext.MethodCandidate> methodCandidates) {
-        int countVarargs = (int) methodCandidates.stream().filter(mc -> mc.method().methodInspection.isVarargs()).count();
+    private static void trimVarargsVsMethodsWithFewerParameters(Map<MethodTypeParameterMap, Integer> methodCandidates) {
+        int countVarargs = (int) methodCandidates.keySet().stream().filter(e -> e.methodInspection.isVarargs()).count();
         if (countVarargs > 0 && countVarargs < methodCandidates.size()) {
-            methodCandidates.removeIf(mc -> mc.method().methodInspection.isVarargs());
+            methodCandidates.keySet().removeIf(e -> e.methodInspection.isVarargs());
         }
     }
 
     private void filterCandidatesByParameter(Expression expression,
                                              int pos,
-                                             List<TypeContext.MethodCandidate> methodCandidates,
+                                             Map<MethodTypeParameterMap, Integer> methodCandidates,
                                              Map<MethodInfo, Integer> compatibilityScore) {
-        methodCandidates.removeIf(mc -> {
-            int score = compatibleParameter(expression, pos, mc.method().methodInspection);
+        methodCandidates.keySet().removeIf(mc -> {
+            int score = compatibleParameter(expression, pos, mc.methodInspection);
             if (score >= 0) {
-                Integer inMap = compatibilityScore.get(mc.method().methodInspection.getMethodInfo());
+                Integer inMap = compatibilityScore.get(mc.methodInspection.getMethodInfo());
                 inMap = inMap == null ? score : score + inMap;
-                compatibilityScore.put(mc.method().methodInspection.getMethodInfo(), inMap);
+                compatibilityScore.put(mc.methodInspection.getMethodInfo(), inMap);
             }
             return score < 0;
         });

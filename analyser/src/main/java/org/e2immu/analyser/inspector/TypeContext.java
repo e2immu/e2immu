@@ -299,18 +299,18 @@ public class TypeContext implements TypeAndInspectionProvider {
         }
     }
 
-    public List<MethodCandidate> resolveConstructorInvocation(TypeInfo startingPoint,
-                                                              int parametersPresented) {
+    public Map<MethodTypeParameterMap, Integer> resolveConstructorInvocation(TypeInfo startingPoint,
+                                                                             int parametersPresented) {
         ParameterizedType type = startingPoint.asParameterizedType(this);
         return resolveConstructor(type, type, parametersPresented, Map.of());
     }
 
     public static final int IGNORE_PARAMETER_NUMBERS = -1;
 
-    public List<MethodCandidate> resolveConstructor(ParameterizedType formalType,
-                                                    ParameterizedType concreteType,
-                                                    int parametersPresented,
-                                                    Map<NamedType, ParameterizedType> typeMap) {
+    public Map<MethodTypeParameterMap, Integer> resolveConstructor(ParameterizedType formalType,
+                                                                   ParameterizedType concreteType,
+                                                                   int parametersPresented,
+                                                                   Map<NamedType, ParameterizedType> typeMap) {
         List<TypeInfo> types = extractTypeInfo(concreteType != null ? concreteType : formalType, typeMap);
         // there's only one situation where we can have multiple types; that's multiple type bounds; only the first one can be a class
         TypeInfo typeInfo = types.get(0);
@@ -320,8 +320,8 @@ public class TypeContext implements TypeAndInspectionProvider {
                 .map(this::getMethodInspection)
                 .filter(methodInspection -> parametersPresented == IGNORE_PARAMETER_NUMBERS ||
                         compatibleNumberOfParameters(methodInspection, parametersPresented))
-                .map(methodInspection -> new MethodCandidate(new MethodTypeParameterMap(methodInspection, typeMap)))
-                .collect(Collectors.toList());
+                .map(mi -> new MethodTypeParameterMap(mi, typeMap))
+                .collect(Collectors.toMap(mt -> mt, mt -> 1));
     }
 
     public void recursivelyResolveOverloadedMethods(ParameterizedType typeOfObject,
@@ -329,7 +329,7 @@ public class TypeContext implements TypeAndInspectionProvider {
                                                     int parametersPresented,
                                                     boolean decrementWhenNotStatic,
                                                     Map<NamedType, ParameterizedType> typeMap,
-                                                    List<MethodCandidate> result,
+                                                    Map<MethodTypeParameterMap, Integer> result,
                                                     Scope.ScopeNature scopeNature) {
         recursivelyResolveOverloadedMethods(typeOfObject, methodName, parametersPresented, decrementWhenNotStatic,
                 typeMap, result, new HashSet<>(), new HashSet<>(), false, scopeNature, 0);
@@ -340,7 +340,7 @@ public class TypeContext implements TypeAndInspectionProvider {
                                                      int parametersPresented,
                                                      boolean decrementWhenNotStatic,
                                                      Map<NamedType, ParameterizedType> typeMap,
-                                                     List<MethodCandidate> result,
+                                                     Map<MethodTypeParameterMap, Integer> result,
                                                      Set<TypeInfo> visited,
                                                      Set<TypeInfo> visitedStatic,
                                                      boolean staticOnly,
@@ -384,7 +384,7 @@ public class TypeContext implements TypeAndInspectionProvider {
                                                     int parametersPresented,
                                                     boolean decrementWhenNotStatic,
                                                     Map<NamedType, ParameterizedType> typeMap,
-                                                    List<MethodCandidate> result,
+                                                    Map<MethodTypeParameterMap, Integer> result,
                                                     Set<TypeInfo> visited,
                                                     Set<TypeInfo> visitedStatic,
                                                     int distance) {
@@ -397,11 +397,15 @@ public class TypeContext implements TypeAndInspectionProvider {
                 .filter(m -> parametersPresented == IGNORE_PARAMETER_NUMBERS ||
                         compatibleNumberOfParameters(m, parametersPresented +
                                 (!m.isStatic() && decrementWhenNotStatic ? -1 : 0)))
-                .map(m -> new MethodCandidate(new MethodTypeParameterMap(m, typeMap), distance
-                        // add a penalty for shallowly analysed, non-public methods
-                        // See the java.lang.StringBuilder AbstractStringBuilder CharSequence length() problem
-                        + (shallowAnalysis && !m.isPubliclyAccessible(this) ? 100 : 0)))
-                .forEach(result::add);
+                .forEach(m -> {
+                    MethodTypeParameterMap mt = new MethodTypeParameterMap(m, typeMap);
+                    int score = distance
+                            // add a penalty for shallowly analysed, non-public methods
+                            // See the java.lang.StringBuilder AbstractStringBuilder CharSequence length() problem
+                            + (shallowAnalysis && !m.isPubliclyAccessible(this) ? 100 : 0);
+                    result.merge(mt, score, Integer::min);
+                });
+
 
         ParameterizedType parentClass = typeInspection.parentClass();
         boolean isJLO = typeInfo.isJavaLangObject();
