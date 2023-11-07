@@ -884,6 +884,31 @@ public final class TypeInfo implements NamedType,
         return false;
     }
 
+    public Map<TypeInfo, Integer> makeHierarchy(InspectionProvider inspectionProvider) {
+        Map<TypeInfo, Integer> map = new HashMap<>();
+        makeHierarchy(inspectionProvider, map, this, 0);
+        return Map.copyOf(map);
+    }
+
+    private void makeHierarchy(InspectionProvider inspectionProvider, Map<TypeInfo, Integer> map, TypeInfo start, int distance) {
+        map.merge(start, distance, Integer::min);
+        TypeInspection inspection = inspectionProvider.getTypeInspection(start);
+        if (inspection == null) {
+            throw new UnsupportedOperationException("Cannot find type inspection of " + start.fullyQualifiedName);
+        }
+        if (inspection.parentClass() != null && !inspection.parentClass().isJavaLangObject()) {
+            TypeInfo parent = inspection.parentClass().typeInfo;
+            if (!map.containsKey(parent)) {
+                makeHierarchy(inspectionProvider, map, parent, distance + 1);
+            }
+        }
+        for (ParameterizedType interfaceImplemented : inspection.interfacesImplemented()) {
+            if (!map.containsKey(interfaceImplemented.typeInfo)) {
+                makeHierarchy(inspectionProvider, map, interfaceImplemented.typeInfo, distance + 100);
+            }
+        }
+    }
+
     public enum HardCoded {
         IMMUTABLE(true), IMMUTABLE_HC(true), IMMUTABLE_HC_INDEPENDENT_HC(true),
         MUTABLE_NOT_CONTAINER_DO_NOT_ERASE(false),

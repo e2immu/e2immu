@@ -22,6 +22,7 @@ import org.e2immu.analyser.parser.TypeMap;
 import org.e2immu.analyser.resolver.testexample.TypeParameter_0;
 import org.e2immu.analyser.resolver.testexample.TypeParameter_1;
 import org.e2immu.analyser.resolver.testexample.TypeParameter_2;
+import org.e2immu.analyser.resolver.testexample.ArrayInitializer_1;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
@@ -32,7 +33,7 @@ import static org.junit.jupiter.api.Assertions.*;
 public class TestTypeParameter extends CommonTest {
 
     @Test
-    public void test1() throws IOException {
+    public void test_0() throws IOException {
         TypeMap typeMap = inspectAndResolve(TypeParameter_0.class);
 
         TypeInfo typeParameter = typeMap.get(TypeParameter_0.class);
@@ -59,7 +60,7 @@ public class TestTypeParameter extends CommonTest {
     }
 
     @Test
-    public void test2a() throws IOException {
+    public void test_1a() throws IOException {
         TypeMap typeMap = inspectAndResolve(TypeParameter_1.class);
 
         TypeInfo typeParameter = typeMap.get(TypeParameter_1.class);
@@ -86,7 +87,7 @@ public class TestTypeParameter extends CommonTest {
     }
 
     @Test
-    public void test2b() throws IOException {
+    public void test_1b() throws IOException {
         TypeMap typeMap = inspectAndResolve(TypeParameter_1.class);
 
         TypeInfo typeParameter = typeMap.get(TypeParameter_1.class);

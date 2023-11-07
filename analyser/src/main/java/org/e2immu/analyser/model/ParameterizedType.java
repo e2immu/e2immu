@@ -724,8 +724,45 @@ public class ParameterizedType {
         if (other.isAssignableFrom(inspectionProvider, this)) {
             return other;
         }
-        // FIXME go into hierarchy
-        return inspectionProvider.getPrimitives().objectParameterizedType(); // no common type
+        // go into the hierarchy
+        Map<TypeInfo, Integer> hierarchy = bestType.makeHierarchy(inspectionProvider);
+        Map<TypeInfo, Integer> otherHierarchy = otherBestType.makeHierarchy(inspectionProvider);
+        List<TypeInfo> common = new ArrayList<>(hierarchy.keySet());
+        common.retainAll(otherHierarchy.keySet());
+        if (common.isEmpty()) {
+            return inspectionProvider.getPrimitives().objectParameterizedType();
+        }
+        if (common.size() > 1) {
+            common.sort(Comparator.comparingInt(hierarchy::get));
+        }
+        TypeInfo commonSuperType = common.get(0);
+        if (commonSuperType.equals(bestType)) {
+            return this;
+        }
+        if (commonSuperType.equals(otherBestType)) {
+            return other;
+        }
+        ParameterizedType result = commonSuperType.asParameterizedType(inspectionProvider);
+        TypeInspection commonInspection = inspectionProvider.getTypeInspection(commonSuperType);
+        if (!commonInspection.typeParameters().isEmpty()) {
+            ParameterizedType concrete = concreteSuperType(inspectionProvider, result);
+            ParameterizedType concreteOther = other.concreteSuperType(inspectionProvider, result);
+            List<ParameterizedType> updatedParameters = new ArrayList<>(commonInspection.typeParameters().size());
+            int i = 0;
+            for (ParameterizedType parameter : concrete.parameters) {
+                ParameterizedType otherParameter = concreteOther.parameters.get(i++);
+                ParameterizedType commonParameter;
+                if (equals(parameter) && other.equals(otherParameter)) {
+                    // common situation when the types implement Comparable; must avoid infinite recursion
+                    commonParameter = inspectionProvider.getPrimitives().objectParameterizedType();
+                } else {
+                    commonParameter = parameter.commonType(inspectionProvider, otherParameter);
+                }
+                updatedParameters.add(commonParameter);
+            }
+            return new ParameterizedType(commonSuperType, updatedParameters, result.arrays);
+        }
+        return result;
     }
 
 

@@ -34,6 +34,7 @@ import org.e2immu.support.Either;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
@@ -317,10 +318,16 @@ public class InlineConditional extends BaseExpression implements Expression {
         if (ifFalse.isNullConstant()) {
             return ifTrue.erasureTypes(typeContext);
         }
-        if(ifTrue instanceof ErasureExpression || ifFalse instanceof ErasureExpression) {
-            return SetUtil.immutableUnion(ifTrue.erasureTypes(typeContext), ifFalse.erasureTypes(typeContext));
+        Set<ParameterizedType> pairwise = new HashSet<>();
+        Set<ParameterizedType> ifTrueE = ifTrue.erasureTypes(typeContext);
+        Set<ParameterizedType> ifFalseE = ifFalse.erasureTypes(typeContext);
+        for (ParameterizedType pt1 : ifTrueE) {
+            for (ParameterizedType pt2 : ifFalseE) {
+                ParameterizedType pt = pt1.commonType(inspectionProvider, pt2);
+                pairwise.add(pt);
+            }
         }
-        return Set.of(returnType());
+        return Set.copyOf(pairwise);
     }
 
     @Override

@@ -18,6 +18,7 @@ package org.e2immu.analyser.resolver;
 import org.e2immu.analyser.model.TypeInfo;
 import org.e2immu.analyser.parser.TypeMap;
 import org.e2immu.analyser.resolver.testexample.ArrayInitializer_0;
+import org.e2immu.analyser.resolver.testexample.ArrayInitializer_1;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
@@ -34,4 +35,9 @@ public class TestArrayInitializer extends CommonTest {
         assertNotNull(typeInfo);
     }
 
+    // bug in commonType
+    @Test
+    public void test_1() throws IOException {
+        inspectAndResolve(ArrayInitializer_1.class);
+    }
 }
