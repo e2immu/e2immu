@@ -482,6 +482,7 @@ public class BinaryOperator extends BaseExpression implements Expression {
         if (primitives.assignMinusOperatorInt() == methodInfo) return primitives.minusOperatorInt();
         if (primitives.assignMultiplyOperatorInt() == methodInfo) return primitives.multiplyOperatorInt();
         if (primitives.assignDivideOperatorInt() == methodInfo) return primitives.divideOperatorInt();
+        if (primitives.assignRemainderOperatorInt() == methodInfo) return primitives.remainderOperatorInt();
         if (primitives.assignOrOperatorInt() == methodInfo) return primitives.orOperatorInt();
         if (primitives.assignAndOperatorInt() == methodInfo) return primitives.andOperatorInt();
         if (primitives.assignXorOperatorInt() == methodInfo) return primitives.xorOperatorInt();

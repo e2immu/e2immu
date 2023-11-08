@@ -693,10 +693,10 @@ public record ExpressionContextImpl(ExpressionContext.ResolverRecursion resolver
                         new ForwardReturnTypeInfo(target.returnType()));
                 if (value.returnType().isType() && value.returnType().isPrimitiveExcludingVoid() &&
                         target.returnType().isType() && target.returnType().isPrimitiveExcludingVoid()) {
-                    ParameterizedType widestType = primitives.widestType(value.returnType(), target.returnType());
-                    MethodInfo primitiveOperator = Assignment.operator(primitives, assignExpr.getOperator(), widestType.typeInfo);
+                    MethodInfo primitiveOperator = Assignment.operator(primitives, assignExpr.getOperator());
                     return new Assignment(identifier, primitives, target, value, primitiveOperator,
-                            null, true, true, null, null);
+                            null, true, true,
+                            null, null);
                 }
                 return new Assignment(identifier, primitives, target, value);
             }
@@ -799,7 +799,7 @@ public record ExpressionContextImpl(ExpressionContext.ResolverRecursion resolver
                 return new StringConstant(primitives, textBlock.stripIndent());
             }
 
-            if(expression.isNormalAnnotationExpr()) {
+            if (expression.isNormalAnnotationExpr()) {
                 NormalAnnotationExpr normalAnnotationExpr = expression.asNormalAnnotationExpr();
                 return ParseNormalAnnotation.parse(this, normalAnnotationExpr);
             }

@@ -204,34 +204,21 @@ public class Assignment extends BaseExpression implements Expression {
 
 
     @NotNull
-    public static MethodInfo operator(Primitives primitives, @NotNull AssignExpr.Operator operator,
-                                      @NotNull TypeInfo widestType) {
-        switch (operator) {
-            case PLUS:
-                return primitives.assignPlusOperatorInt();
-            case MINUS:
-                return primitives.assignMinusOperatorInt();
-            case MULTIPLY:
-                return primitives.assignMultiplyOperatorInt();
-            case DIVIDE:
-                return primitives.assignDivideOperatorInt();
-            case BINARY_OR:
-                return primitives.assignOrOperatorInt();
-            case BINARY_AND:
-                return primitives.assignAndOperatorInt();
-            case ASSIGN:
-                return primitives.assignOperatorInt();
-            case LEFT_SHIFT:
-                return primitives.assignLeftShiftOperatorInt();
-            case SIGNED_RIGHT_SHIFT:
-                return primitives.assignSignedRightShiftOperatorInt();
-            case UNSIGNED_RIGHT_SHIFT:
-                return primitives.assignUnsignedRightShiftOperatorInt();
-            case XOR:
-                return primitives.assignXorOperatorInt();
-        }
-        throw new UnsupportedOperationException("Need to add primitive operator " +
-                operator + " on type " + widestType.fullyQualifiedName);
+    public static MethodInfo operator(Primitives primitives, @NotNull AssignExpr.Operator operator) {
+        return switch (operator) {
+            case PLUS -> primitives.assignPlusOperatorInt();
+            case MINUS -> primitives.assignMinusOperatorInt();
+            case MULTIPLY -> primitives.assignMultiplyOperatorInt();
+            case DIVIDE -> primitives.assignDivideOperatorInt();
+            case BINARY_OR -> primitives.assignOrOperatorInt();
+            case BINARY_AND -> primitives.assignAndOperatorInt();
+            case ASSIGN -> primitives.assignOperatorInt();
+            case LEFT_SHIFT -> primitives.assignLeftShiftOperatorInt();
+            case SIGNED_RIGHT_SHIFT -> primitives.assignSignedRightShiftOperatorInt();
+            case UNSIGNED_RIGHT_SHIFT -> primitives.assignUnsignedRightShiftOperatorInt();
+            case XOR -> primitives.assignXorOperatorInt();
+            case REMAINDER -> primitives.assignRemainderOperatorInt();
+        };
     }
 
     @Override

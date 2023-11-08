@@ -211,6 +211,7 @@ public class PrimitivesImpl implements Primitives {
     public final MethodInfo assignLeftShiftOperator = createOperator(intTypeInfo, "<<=", List.of(intParameterizedType), intParameterizedType);
     public final MethodInfo assignSignedRightShiftOperator = createOperator(intTypeInfo, ">>=", List.of(intParameterizedType), intParameterizedType);
     public final MethodInfo assignUnsignedRightShiftOperator = createOperator(intTypeInfo, ">>>=", List.of(intParameterizedType), intParameterizedType);
+    public final MethodInfo assignRemainderOperatorInt = createOperator(intTypeInfo, "%=", List.of(intParameterizedType), intParameterizedType);
 
     // TODO long instead of int to distinguish statically (isPostfix) This is a hack!
     public final MethodInfo postfixIncrementOperatorInt = createOperator(intTypeInfo, "++", List.of(), longParameterizedType);
@@ -526,6 +527,11 @@ public class PrimitivesImpl implements Primitives {
     @Override
     public MethodInfo assignXorOperatorInt() {
         return assignXorOperatorInt;
+    }
+
+    @Override
+    public MethodInfo assignRemainderOperatorInt() {
+        return assignRemainderOperatorInt;
     }
 
     @Override

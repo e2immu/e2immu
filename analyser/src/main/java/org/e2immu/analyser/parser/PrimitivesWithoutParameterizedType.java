@@ -64,6 +64,8 @@ public interface PrimitivesWithoutParameterizedType {
 
     MethodInfo assignXorOperatorInt();
 
+    MethodInfo assignRemainderOperatorInt();
+
     MethodInfo plusOperatorInt();
 
     MethodInfo minusOperatorInt();

@@ -41,14 +41,14 @@ public class ParseFieldAccessExpr {
 
         if (object instanceof PackagePrefixExpression) {
             PackagePrefix packagePrefix = ((PackagePrefixExpression) object).packagePrefix();
-            PackagePrefix combined = packagePrefix.append(name);
-            if (expressionContext.typeContext().isPackagePrefix(combined)) {
-                return new PackagePrefixExpression(combined);
-            }
             String fullyQualifiedName = String.join(".", packagePrefix.prefix()) + "." + name;
-            TypeInfo typeInfo = expressionContext.typeContext().getFullyQualified(fullyQualifiedName, true);
-            ParameterizedType objectType = new ParameterizedType(typeInfo, 0);
-            return new TypeExpression(identifier, objectType, Diamond.NO);
+            TypeInfo typeInfo = expressionContext.typeContext().getFullyQualified(fullyQualifiedName, false);
+            if (typeInfo != null) {
+                ParameterizedType objectType = new ParameterizedType(typeInfo, 0);
+                return new TypeExpression(identifier, objectType, Diamond.NO);
+            }
+            PackagePrefix combined = packagePrefix.append(name);
+            return new PackagePrefixExpression(combined);
         }
 
         return createFieldAccess(expressionContext, object, name, identifier);
