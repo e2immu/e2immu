@@ -22,7 +22,7 @@ import org.e2immu.analyser.parser.TypeMap;
 import org.e2immu.analyser.resolver.testexample.TypeParameter_0;
 import org.e2immu.analyser.resolver.testexample.TypeParameter_1;
 import org.e2immu.analyser.resolver.testexample.TypeParameter_2;
-import org.e2immu.analyser.resolver.testexample.ArrayInitializer_1;
+import org.e2immu.analyser.resolver.testexample.TypeParameter_3;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
@@ -138,5 +138,10 @@ public class TestTypeParameter extends CommonTest {
             assertEquals(1, typeBounds.size());
             // result[i] is of type T, with a proper type bound, so we should be able to find .i
         } else fail();
+    }
+
+    @Test
+    public void test_3() throws IOException {
+        TypeMap typeMap = inspectAndResolve(TypeParameter_3.class);
     }
 }

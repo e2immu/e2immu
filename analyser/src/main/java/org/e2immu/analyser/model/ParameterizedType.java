@@ -333,7 +333,14 @@ public class ParameterizedType {
         for (ParameterizedType parameter : originalType.parameters) {
             ParameterizedType recursive;
             if (parameter.isTypeParameter()) {
-                recursive = parameters.get(i);
+                ParameterizedType pt = parameters.get(i);
+                if (pt != null && pt.isUnboundWildcard() && !parameter.typeParameter.getTypeBounds().isEmpty()) {
+                    // replace '?' by '? extends X', with 'X' the first type bound, see TypeParameter_3
+                    recursive = new ParameterizedType(parameter.typeParameter.getTypeBounds().get(0).typeInfo,
+                            WildCard.EXTENDS);
+                } else {
+                    recursive = pt;
+                }
                 map.put(parameter.typeParameter, recursive);
             } else if (parameter.isType()) {
                 recursive = parameter;
