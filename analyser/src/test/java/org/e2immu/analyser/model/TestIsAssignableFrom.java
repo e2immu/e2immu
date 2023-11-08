@@ -132,18 +132,18 @@ public class TestIsAssignableFrom {
         assertEquals(primitives.doubleParameterizedType(),
                 primitives.longParameterizedType().commonType(typeContext, primitives.doubleParameterizedType()));
 
-        assertEquals(primitives.doubleParameterizedType(),
+        assertEquals(boxedDouble,
                 primitives.longParameterizedType().commonType(typeContext, boxedDouble));
-        assertEquals(primitives.doubleParameterizedType(),
+        assertEquals(boxedDouble,
                 primitives.doubleParameterizedType().commonType(typeContext, boxedDouble));
-        assertEquals(primitives.doubleParameterizedType(),
+        assertEquals(boxedDouble,
                 boxedDouble.commonType(typeContext, primitives.doubleParameterizedType()));
-        assertEquals(primitives.longParameterizedType(),
+        assertEquals(boxedLong,
                 primitives.longParameterizedType().commonType(typeContext, boxedLong));
 
-        assertEquals(primitives.booleanParameterizedType(),
+        assertEquals(boxedBoolean,
                 primitives.booleanParameterizedType().commonType(typeContext, boxedBoolean));
-        assertEquals(primitives.booleanParameterizedType(),
+        assertEquals(boxedBoolean,
                 boxedBoolean.commonType(typeContext, primitives.booleanParameterizedType()));
 
         assertEquals(primitives.objectParameterizedType(),

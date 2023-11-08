@@ -361,6 +361,30 @@ public class PrimitivesImpl implements Primitives {
         return t2;
     }
 
+
+    /*
+    used by binaryOperator, the result cannot be null, so must be the unboxed version (this contrasts with
+    ParameterizedType.commonType)
+     */
+    @Override
+    public ParameterizedType widestTypeUnbox(ParameterizedType t1, ParameterizedType t2) {
+        ParameterizedType u1, u2;
+        if (t1.isBoxedExcludingVoid()) {
+            u1 = unboxed(t1.typeInfo).asSimpleParameterizedType();
+        } else {
+            u1 = t1;
+        }
+        if (t2.isBoxedExcludingVoid()) {
+            u2 = unboxed(t2.typeInfo).asSimpleParameterizedType();
+        } else {
+            u2 = t2;
+        }
+        int o1 = primitiveTypeOrder(u1);
+        int o2 = primitiveTypeOrder(u2);
+        if (o1 >= o2) return u1;
+        return u2;
+    }
+
     @Override
     public int primitiveTypeOrder(ParameterizedType pt) {
         if (pt == null) throw new NullPointerException();

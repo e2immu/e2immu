@@ -51,8 +51,9 @@ public interface Primitives extends PrimitivesWithoutParameterizedType {
 
     MethodInfo createOperator(TypeInfo owner, String name, List<ParameterizedType> parameterizedTypes, ParameterizedType returnType);
 
-
     ParameterizedType widestType(ParameterizedType t1, ParameterizedType t2);
+
+    ParameterizedType widestTypeUnbox(ParameterizedType t1, ParameterizedType t2);
 
     int primitiveTypeOrder(ParameterizedType pt);
 

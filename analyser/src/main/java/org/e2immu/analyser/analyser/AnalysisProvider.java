@@ -172,10 +172,10 @@ public interface AnalysisProvider {
         if (parameterizedType == ParameterizedType.NULL_CONSTANT) {
             return MultiLevel.NOT_INVOLVED_DV;
         }
-        if (parameterizedType.isUnboundTypeParameter()) {
+        TypeInfo bestType = parameterizedType.bestTypeInfo();
+        if (bestType == null) {
             return MultiLevel.EFFECTIVELY_IMMUTABLE_HC_DV;
         }
-        TypeInfo bestType = parameterizedType.bestTypeInfo();
         if (bestType.isPrimitiveExcludingVoid() || bestType.isVoid()) {
             return MultiLevel.EFFECTIVELY_IMMUTABLE_DV;
         }
@@ -232,6 +232,9 @@ public interface AnalysisProvider {
             return MultiLevel.CONTAINER_DV;
         }
         TypeInfo bestType = parameterizedType.bestTypeInfo();
+        if (bestType == null) {
+            return MultiLevel.CONTAINER_DV;
+        }
         TypeAnalysis typeAnalysis = getTypeAnalysisNullWhenAbsent(bestType);
         if (typeAnalysis == null) {
             return typeAnalysisNotAvailable(bestType);

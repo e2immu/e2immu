@@ -582,7 +582,7 @@ public record ExpressionContextImpl(ExpressionContext.ResolverRecursion resolver
                 } else if (rhs instanceof NullConstant) {
                     typeInfo = primitives.ensureBoxed(lhs.returnType().typeInfo);
                 } else if (lhs.returnType().allowsForOperators() || rhs.returnType().allowsForOperators()) {
-                    ParameterizedType widestType = primitives.widestType(lhs.returnType(), rhs.returnType());
+                    ParameterizedType widestType = primitives.widestTypeUnbox(lhs.returnType(), rhs.returnType());
                     if (!widestType.isType())
                         throw new UnsupportedOperationException("? for " + lhs.returnType() + " and " + rhs.returnType());
                     typeInfo = widestType.typeInfo;

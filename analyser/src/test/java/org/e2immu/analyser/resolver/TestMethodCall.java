@@ -465,4 +465,30 @@ public class TestMethodCall extends CommonTest {
     public void test_59() throws IOException {
         inspectAndResolve(MethodCall_59.class);
     }
+
+    // the following 4 tests deal with arrays in the erasure (FilterResult.typeParameterMap)
+    @Test
+    public void test_60() throws IOException {
+        inspectAndResolve(MethodCall_60.class);
+    }
+
+    @Test
+    public void test_61() throws IOException {
+        inspectAndResolve(MethodCall_61.class);
+    }
+
+    @Test
+    public void test_62() throws IOException {
+        inspectAndResolve(MethodCall_62.class);
+    }
+
+    @Test
+    public void test_63() throws IOException {
+        inspectAndResolve(MethodCall_63.class);
+    }
+
+    @Test
+    public void test_64() throws IOException {
+        inspectAndResolve(MethodCall_64.class);
+    }
 }

@@ -543,7 +543,7 @@ public class BinaryOperator extends BaseExpression implements Expression {
         return switch (precedence) {
             case RELATIONAL, LOGICAL_AND, LOGICAL_OR, EQUALITY, INSTANCE_OF -> primitives.booleanParameterizedType();
             case STRING_CONCAT -> primitives.stringParameterizedType();
-            default -> primitives.widestType(lhs.returnType(), rhs.returnType());
+            default -> primitives.widestTypeUnbox(lhs.returnType(), rhs.returnType());
         };
     }
 

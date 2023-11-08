@@ -188,12 +188,15 @@ public class ParameterizedType {
     }
 
     public ParameterizedType copyWithFewerArrays(int arrays) {
+        if (arrays == 0) return this;
         int newArrays = this.arrays - arrays;
         assert newArrays >= 0 : "Trying to remove " + arrays + " arrays from " + this;
         return new ParameterizedType(this.typeInfo, newArrays, wildCard, parameters, typeParameter);
     }
 
     public ParameterizedType copyWithArrays(int arrays) {
+        // the following check is important to maintain object '==' for the static types like NULL_CONSTANT
+        if (arrays == this.arrays) return this;
         assert arrays >= 0;
         return new ParameterizedType(this.typeInfo, arrays, wildCard, parameters, typeParameter);
     }
@@ -710,22 +713,25 @@ public class ParameterizedType {
             return primitives.boxed(otherBestType).asParameterizedType(inspectionProvider);
         }
         if (isPrimitive || otherIsPrimitive) {
+            /* one is boxed, the other is not. The result must be boxed (see e.g.
+            org.e2immu.analyser.model.value.TestEqualsConstantInline.test17)
+             */
             if (isPrimitive && otherIsBoxed) {
                 TypeInfo otherUnboxed = primitives.unboxed(otherBestType);
                 ParameterizedType otherUnboxedPt = otherUnboxed.asSimpleParameterizedType();
-                if (equals(otherUnboxedPt)) return this;
+                if (equals(otherUnboxedPt)) return primitives.boxed(bestType).asParameterizedType(inspectionProvider);
                 if (primitives.isAssignableFromTo(this, otherUnboxedPt, true) >= 0 ||
                         primitives.isAssignableFromTo(otherUnboxedPt, this, true) >= 0) {
-                    return primitives.widestType(this, otherUnboxedPt);
+                    return primitives.boxed(primitives.widestType(this, otherUnboxedPt).typeInfo).asSimpleParameterizedType();
                 }
             }
             if (otherIsPrimitive && isBoxed) {
                 TypeInfo unboxed = primitives.unboxed(bestType);
                 ParameterizedType unboxedPt = unboxed.asSimpleParameterizedType();
-                if (unboxedPt.equals(other)) return other;
+                if (unboxedPt.equals(other)) return this;
                 if (primitives.isAssignableFromTo(other, unboxedPt, true) >= 0 ||
                         primitives.isAssignableFromTo(unboxedPt, other, true) >= 0) {
-                    return primitives.widestType(other, unboxedPt);
+                    return primitives.boxed(primitives.widestType(other, unboxedPt).typeInfo).asSimpleParameterizedType();
                 }
             }
             return primitives.objectParameterizedType(); // no common type
@@ -911,18 +917,24 @@ public class ParameterizedType {
      * @param translate the map to be applied on the type parameters of this
      * @return a newly created ParameterizedType
      */
-    public ParameterizedType applyTranslation(PrimitivesWithoutParameterizedType primitives, Map<NamedType, ParameterizedType> translate) {
+    public ParameterizedType applyTranslation(PrimitivesWithoutParameterizedType primitives,
+                                              Map<NamedType, ParameterizedType> translate) {
         if (translate.isEmpty()) return this;
         ParameterizedType pt = this;
-        while (pt.isTypeParameter() && translate.containsKey(pt.typeParameter)) {
-            ParameterizedType newPt = translate.get(pt.typeParameter);
-            if (newPt.equals(pt) || newPt.isTypeParameter() && pt.typeParameter.equals(newPt.typeParameter)) break;
-            if (pt.arrays > newPt.arrays) {
-                pt = newPt.copyWithArrays(pt.arrays);
-            } else {
+        if (pt.isTypeParameter()) {
+            boolean add = false;
+            while (pt.isTypeParameter() && translate.containsKey(pt.typeParameter)) {
+                ParameterizedType newPt = translate.get(pt.typeParameter);
+                if (newPt.equals(pt) || newPt.isTypeParameter() && pt.typeParameter.equals(newPt.typeParameter)) break;
                 pt = newPt;
+                add = true;
+            }
+            // we want to add this.arrays only once, and only when there was a translation (MethodCall_61)
+            if (add) {
+                pt = pt.copyWithArrays(pt.arrays + arrays);
             }
         }
+        // see MethodCall_60,_61,_62
         final ParameterizedType stablePt = pt;
         if (stablePt.parameters.isEmpty()) return stablePt;
         List<ParameterizedType> recursivelyMappedParameters = stablePt.parameters.stream()

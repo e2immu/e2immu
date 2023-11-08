@@ -142,7 +142,10 @@ public record IsAssignableFrom(InspectionProvider inspectionProvider,
                 if (mode == Mode.COVARIANT_ERASURE) {
                     return UNBOUND_WILDCARD + pathToJLO; // see e.g. Lambda_7, MethodCall_30,_31,_59
                 }
-                return (target.typeInfo.isJavaLangObject() ? IN_HIERARCHY : NOT_ASSIGNABLE) + pathToJLO;
+                if(!target.typeInfo.isJavaLangObject()) {
+                    return NOT_ASSIGNABLE;
+                }
+                return IN_HIERARCHY + pathToJLO;
             }
             return otherTypeBounds.stream().mapToInt(bound -> new IsAssignableFrom(inspectionProvider, target, bound)
                             .execute(true, mode))

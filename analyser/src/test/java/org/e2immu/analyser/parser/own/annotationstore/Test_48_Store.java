@@ -292,15 +292,15 @@ public class Test_48_Store extends CommonTestRunner {
                     }
                     if ("1.0.1".equals(d.statementId())) {
                         String expect = d.iteration() == 0
-                                ? "!projectName.equals(entry.getValue()/*(String)*/)||null==projectName?1+<v:countUpdated>:<vl:countUpdated>"
-                                : "!projectName.equals(entry.getValue()/*(String)*/)||null==projectName?1+countUpdated$1:instance type int";
+                                ? "!projectName.equals(entry.getValue())||null==projectName?1+<v:countUpdated>:<vl:countUpdated>"
+                                : "!projectName.equals(entry.getValue())||null==projectName?1+countUpdated$1:instance type int";
                         assertEquals(expect, d.currentValue().toString());
                         assertEquals(d.iteration() == 0, d.currentValue().isDelayed());
                     }
                     if ("1".equals(d.statementId()) || "2".equals(d.statementId())) {
                         String expect = d.iteration() == 0
-                                ? "body.entrySet().isEmpty()?0:!projectName.equals((nullable instance type Entry<String,Object>).getValue()/*(String)*/)||null==projectName?1+<v:countUpdated>:<vl:countUpdated>"
-                                : "body.entrySet().isEmpty()?0:!projectName.equals((nullable instance type Entry<String,Object>).getValue()/*(String)*/)||null==projectName?1+countUpdated$1:instance type int";
+                                ? "body.entrySet().isEmpty()?0:!projectName.equals((nullable instance type Entry<String,Object>).getValue())||null==projectName?1+<v:countUpdated>:<vl:countUpdated>"
+                                : "body.entrySet().isEmpty()?0:!projectName.equals((nullable instance type Entry<String,Object>).getValue())||null==projectName?1+countUpdated$1:instance type int";
                         assertEquals(expect, d.currentValue().toString());
                     }
                 }

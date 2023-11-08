@@ -185,7 +185,7 @@ public record ParseMethodCallExpr(TypeContext typeContext) {
                     ? method.getConcreteReturnType(primitives)
                     : method.expand(inspectionProvider, primaryType, mapExpansion).getConcreteReturnType(primitives);
             // See TypeParameter_4
-            return pt.isUnboundWildcard() ? inspectionProvider.getPrimitives().objectParameterizedType(): pt;
+            return pt.isUnboundWildcard() ? inspectionProvider.getPrimitives().objectParameterizedType() : pt;
         }
     }
 
@@ -398,6 +398,7 @@ public record ParseMethodCallExpr(TypeContext typeContext) {
                 // actual type parameter of the formal type of parameterInfo
                 //result.putAll( parameterInfo.parameterizedType.translateMap(typeContext, map));
                 int j = 0;
+                boolean isVarargs = parameterInfo.parameterInspection.get().isVarArgs();
                 for (ParameterizedType tp : parameterInfo.parameterizedType.parameters) {
                     if (tp.typeParameter != null) {
                         int index = j;
@@ -407,13 +408,22 @@ public record ParseMethodCallExpr(TypeContext typeContext) {
                                 .filter(e -> e.getValue().bestTypeInfo(typeContext) != null)
                                 .map(Map.Entry::getValue)
                                 .findFirst()
-                                .ifPresent(inMap -> result.put(tp.typeParameter, inMap));
+                                .ifPresent(inMap -> {
+                                    // see MethodCall_60,_61,_62,_63 for the array count computation
+                                    ParameterizedType target = inMap.copyWithArrays(inMap.arrays - tp.arrays);
+                                    result.put(tp.typeParameter, target);
+                                });
                     }
                     j++;
                 }
                 if (parameterInfo.parameterizedType.isTypeParameter() && !containsErasedExpressions) {
                     // see MethodCall_48; MethodCall_3 shows why we omit ErasureExpression
-                    result.put(parameterInfo.parameterizedType.typeParameter, expression.returnType().copyWithoutArrays());
+                    // see MethodCall_60,_61,_62,_63 for the array count computation
+                    boolean oneFewer = expression.returnType().arrays == parameterInfo.parameterizedType.arrays - 1;
+                    int paramArrays = parameterInfo.parameterizedType.arrays - (isVarargs && oneFewer ? 1 : 0);
+                    int arrays = expression.returnType().arrays - paramArrays;
+                    ParameterizedType target = expression.returnType().copyWithArrays(arrays);
+                    result.put(parameterInfo.parameterizedType.typeParameter, target);
                 }
                 i++;
             }
