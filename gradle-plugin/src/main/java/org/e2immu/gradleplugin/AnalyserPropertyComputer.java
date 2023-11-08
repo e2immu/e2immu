@@ -163,7 +163,7 @@ public record AnalyserPropertyComputer(
                     .map(s -> Main.PATH_SEPARATOR + "jmods/" + s)
                     .collect(Collectors.joining());
         }
-        String classPathSeparated = librariesFromSourceSet(main) + jmodsSeparated;
+        String classPathSeparated = jmodsSeparated + Main.PATH_SEPARATOR + librariesFromSourceSet(main);
         properties.put(Main.CLASSPATH, classPathSeparated);
 
         String testClassPathSeparated = librariesFromSourceSet(test);
