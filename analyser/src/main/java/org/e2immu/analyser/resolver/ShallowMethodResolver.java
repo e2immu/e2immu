@@ -184,8 +184,7 @@ public class ShallowMethodResolver {
 
         ParameterizedType translated = translationMap.get(inSuperType.typeParameter);
         if (translated != null && translated.typeParameter == inSubType.typeParameter) return false;
-        if (inSubType.isUnboundTypeParameter(inspectionProvider) &&
-                inSuperType.isUnboundTypeParameter(inspectionProvider)) return false;
+        if (inSubType.isUnboundTypeParameter() && inSuperType.isUnboundTypeParameter()) return false;
         List<ParameterizedType> inSubTypeBounds = inSubType.typeParameter.getTypeBounds();
         List<ParameterizedType> inSuperTypeBounds = inSuperType.typeParameter.getTypeBounds();
         if (inSubTypeBounds.size() != inSuperTypeBounds.size()) return true;

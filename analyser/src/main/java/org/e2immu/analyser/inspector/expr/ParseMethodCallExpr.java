@@ -181,9 +181,11 @@ public record ParseMethodCallExpr(TypeContext typeContext) {
 
         ParameterizedType returnType(InspectionProvider inspectionProvider, TypeInfo primaryType) {
             Primitives primitives = inspectionProvider.getPrimitives();
-            return mapExpansion.isEmpty()
+            ParameterizedType pt = mapExpansion.isEmpty()
                     ? method.getConcreteReturnType(primitives)
                     : method.expand(inspectionProvider, primaryType, mapExpansion).getConcreteReturnType(primitives);
+            // See TypeParameter_4
+            return pt.isUnboundWildcard() ? inspectionProvider.getPrimitives().objectParameterizedType(): pt;
         }
     }
 

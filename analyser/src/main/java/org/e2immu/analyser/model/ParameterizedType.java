@@ -454,7 +454,7 @@ public class ParameterizedType {
                     methodTypeParameterMap.methodInspection.getFullyQualifiedName() + " and " +
                     concreteTypeMap.methodInspection.getFullyQualifiedName());
         }
-        PrimitivesWithoutParameterizedType primitives = inspectionProvider.getPrimitives();
+        Primitives primitives = inspectionProvider.getPrimitives();
         for (int i = 0; i < methodParams.size(); i++) {
             ParameterizedType abstractTypeParameter = methodParams.get(i).parameterizedType;
             ParameterizedType concreteTypeParameter = concreteTypeMap.getConcreteTypeOfParameter(primitives, i);
@@ -612,11 +612,8 @@ public class ParameterizedType {
     }
 
     public boolean isUnboundTypeParameter() {
-        return isUnboundTypeParameter(InspectionProvider.DEFAULT);
-    }
-
-    public boolean isUnboundTypeParameter(InspectionProvider inspectionProvider) {
-        return arrays == 0 && bestTypeInfo(inspectionProvider) == null;
+        return arrays == 0 && typeParameter != null && (typeParameter.getTypeBounds().isEmpty()
+                || typeParameter.getTypeBounds().size() == 1 && typeParameter.getTypeBounds().get(0).isJavaLangObject());
     }
 
     public MethodTypeParameterMap findSingleAbstractMethodOfInterface(InspectionProvider inspectionProvider) {
@@ -903,7 +900,7 @@ public class ParameterizedType {
     public boolean hasTypeParameters() {
         if (typeParameter != null) return true;
         if (typeInfo != null) {
-            return parameters.stream().anyMatch(p -> p.hasTypeParameters());
+            return parameters.stream().anyMatch(ParameterizedType::hasTypeParameters);
         }
         return false;
     }

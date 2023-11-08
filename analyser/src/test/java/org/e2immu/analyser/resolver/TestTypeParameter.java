@@ -19,10 +19,7 @@ import org.e2immu.analyser.model.expression.Assignment;
 import org.e2immu.analyser.model.expression.LocalVariableCreation;
 import org.e2immu.analyser.model.statement.*;
 import org.e2immu.analyser.parser.TypeMap;
-import org.e2immu.analyser.resolver.testexample.TypeParameter_0;
-import org.e2immu.analyser.resolver.testexample.TypeParameter_1;
-import org.e2immu.analyser.resolver.testexample.TypeParameter_2;
-import org.e2immu.analyser.resolver.testexample.TypeParameter_3;
+import org.e2immu.analyser.resolver.testexample.*;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
@@ -142,6 +139,11 @@ public class TestTypeParameter extends CommonTest {
 
     @Test
     public void test_3() throws IOException {
-        TypeMap typeMap = inspectAndResolve(TypeParameter_3.class);
+       inspectAndResolve(TypeParameter_3.class);
+    }
+
+    @Test
+    public void test_4() throws IOException {
+        inspectAndResolve(TypeParameter_4.class);
     }
 }

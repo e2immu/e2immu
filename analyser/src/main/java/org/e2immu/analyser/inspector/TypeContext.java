@@ -217,7 +217,9 @@ public class TypeContext implements TypeAndInspectionProvider {
     private List<TypeInfo> extractTypeInfo(ParameterizedType typeOfObject, Map<NamedType, ParameterizedType> typeMap) {
         TypeInfo typeInfo;
         if (typeOfObject.typeInfo == null) {
-            if (typeOfObject.typeParameter == null) throw new UnsupportedOperationException();
+            if (typeOfObject.typeParameter == null) {
+                throw new UnsupportedOperationException();
+            }
             ParameterizedType pt = typeMap.get(typeOfObject.typeParameter);
             if (pt == null) {
                 // rather than give an exception here, we replace t by the type that it extends, so that we can find those methods
