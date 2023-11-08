@@ -357,6 +357,14 @@ public record ParseMethodCallExpr(TypeContext typeContext) {
             if (!learned.isEmpty()) {
                 cumulative = cumulative.merge(new TypeParameterMap(learned));
             }
+            ParameterInfo pi = method.methodInspection.getParameters().get(Math.min(i, method.methodInspection.getParameters().size() - 1));
+            if (pi.parameterizedType.hasTypeParameters()) {
+                // try to reconcile the type parameters with the ones in reParsed, see Lambda_16
+                Map<NamedType, ParameterizedType> forward = pi.parameterizedType.forwardTypeParameterMap(typeContext);
+                if(!forward.isEmpty()) {
+                    cumulative = cumulative.merge(new TypeParameterMap(forward));
+                }
+            }
         }
         return Arrays.stream(newParameterExpressions).toList();
     }
@@ -411,7 +419,7 @@ public record ParseMethodCallExpr(TypeContext typeContext) {
                                 .ifPresent(inMap -> {
                                     // see MethodCall_60,_61,_62,_63 for the array count computation
                                     ParameterizedType target = inMap.copyWithArrays(inMap.arrays - tp.arrays);
-                                    result.put(tp.typeParameter, target);
+                                    result.merge(tp.typeParameter, target, ParameterizedType::bestDefined);
                                 });
                     }
                     j++;
@@ -423,7 +431,7 @@ public record ParseMethodCallExpr(TypeContext typeContext) {
                     int paramArrays = parameterInfo.parameterizedType.arrays - (isVarargs && oneFewer ? 1 : 0);
                     int arrays = expression.returnType().arrays - paramArrays;
                     ParameterizedType target = expression.returnType().copyWithArrays(arrays);
-                    result.put(parameterInfo.parameterizedType.typeParameter, target);
+                    result.merge(parameterInfo.parameterizedType.typeParameter, target, ParameterizedType::bestDefined);
                 }
                 i++;
             }

@@ -18,7 +18,9 @@ import org.e2immu.analyser.model.NamedType;
 import org.e2immu.analyser.model.ParameterizedType;
 
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * Will have to be merged with MethodTypeParameterMap at some stage
@@ -40,7 +42,32 @@ public record TypeParameterMap(Map<NamedType, ParameterizedType> map) {
         if (isEmpty()) return other;
         Map<NamedType, ParameterizedType> newMap = new HashMap<>(map);
         newMap.putAll(other.map);
+        if (newMap.size() > 1 && containsCycles(newMap)) {
+            return this;
+        }
         return new TypeParameterMap(Map.copyOf(newMap));
+    }
+
+    private boolean containsCycles(Map<NamedType, ParameterizedType> newMap) {
+        for (NamedType start : newMap.keySet()) {
+            if (containsCycles(start, newMap)) return true;
+        }
+        return false;
+    }
+
+    private boolean containsCycles(NamedType start, Map<NamedType, ParameterizedType> newMap) {
+        Set<NamedType> visited = new HashSet<>();
+        NamedType s = start;
+        while (s != null) {
+            if (!visited.add(s)) {
+                return true;
+            }
+            ParameterizedType t = newMap.get(s);
+            if (t != null && t.isTypeParameter()) {
+                s = t.typeParameter;
+            } else break;
+        }
+        return false;
     }
 
     private boolean isEmpty() {

@@ -1072,4 +1072,16 @@ public class ParameterizedType {
         }
         return List.of(this);
     }
+
+    // initially implemented to ensure that a NULL type doesn't overwrite a valid type, see Lambda_17
+    public ParameterizedType bestDefined(ParameterizedType other) {
+        if (typeInfo != null && other.typeInfo == null) return this;
+        if (other.typeInfo != null && typeInfo == null) return other;
+        if (typeInfo != null) {
+            return this; // TODO? should we go recursively?
+        }
+        if (typeParameter != null && other.typeParameter == null) return this;
+        if (typeParameter == null && other.typeParameter != null) return other;
+        return this;// doesn't matter anymore
+    }
 }
