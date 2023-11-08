@@ -138,10 +138,11 @@ public record IsAssignableFrom(InspectionProvider inspectionProvider,
         if (target.typeInfo != null && from.typeParameter != null) {
             List<ParameterizedType> otherTypeBounds = from.typeParameter.getTypeBounds();
             if (otherTypeBounds.isEmpty()) {
+                int pathToJLO = pathToJLO(target);
                 if (mode == Mode.COVARIANT_ERASURE) {
-                    return UNBOUND_WILDCARD; // see e.g. Lambda_7, MethodCall_30,_31
+                    return UNBOUND_WILDCARD + pathToJLO; // see e.g. Lambda_7, MethodCall_30,_31,_59
                 }
-                return target.typeInfo.isJavaLangObject() ? IN_HIERARCHY : NOT_ASSIGNABLE;
+                return (target.typeInfo.isJavaLangObject() ? IN_HIERARCHY : NOT_ASSIGNABLE) + pathToJLO;
             }
             return otherTypeBounds.stream().mapToInt(bound -> new IsAssignableFrom(inspectionProvider, target, bound)
                             .execute(true, mode))
@@ -311,6 +312,9 @@ public record IsAssignableFrom(InspectionProvider inspectionProvider,
                         .orElseThrow();
             }
             return 0;
+        }
+        if (type.isPrimitiveExcludingVoid()) {
+            return inspectionProvider.getPrimitives().reversePrimitiveTypeOrder(target);
         }
         int steps;
         if (type.typeInfo.isJavaLangObject()) {

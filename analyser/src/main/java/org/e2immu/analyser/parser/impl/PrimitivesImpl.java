@@ -380,6 +380,11 @@ public class PrimitivesImpl implements Primitives {
     }
 
     @Override
+    public int reversePrimitiveTypeOrder(ParameterizedType pt) {
+        return 9 - primitiveTypeOrder(pt);
+    }
+
+    @Override
     public TypeInfo primitiveByName(String asString) {
         TypeInfo ti = primitiveByName.get(asString);
         if (ti == null) throw new UnsupportedOperationException("Type " + asString + " not (yet) a primitive");

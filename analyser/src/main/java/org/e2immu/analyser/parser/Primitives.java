@@ -56,6 +56,7 @@ public interface Primitives extends PrimitivesWithoutParameterizedType {
 
     int primitiveTypeOrder(ParameterizedType pt);
 
+    int reversePrimitiveTypeOrder(ParameterizedType pt);
 
     int isAssignableFromTo(ParameterizedType from, ParameterizedType to, boolean covariant);
 
