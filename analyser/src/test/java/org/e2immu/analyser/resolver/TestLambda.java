@@ -199,6 +199,7 @@ public class TestLambda extends CommonTest {
                 && rs.expression instanceof MethodCall mc
                 && mc.parameterExpressions.get(0) instanceof MethodReference mr) {
             // check that the scope is not a ConstructorErasure
+            assertEquals("new HashSet<>()", mr.scope.toString());
         }
     }
 }

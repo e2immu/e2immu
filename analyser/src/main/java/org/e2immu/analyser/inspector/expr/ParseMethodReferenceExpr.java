@@ -43,7 +43,7 @@ public class ParseMethodReferenceExpr {
 
         LOGGER.debug("Start parsing method reference {}", methodReferenceExpr);
 
-        Expression scope = expressionContext.parseExpressionStartVoid(methodReferenceExpr.getScope());
+        Expression scope = expressionContext.parseExpression(methodReferenceExpr.getScope(), forwardReturnTypeInfo);
         boolean scopeIsAType = scopeIsAType(scope);
         Scope.ScopeNature scopeNature = scopeIsAType ? Scope.ScopeNature.STATIC :
                 Scope.ScopeNature.INSTANCE;

@@ -513,7 +513,11 @@ public record ParseMethodCallExpr(TypeContext typeContext) {
 
                             boolean paramIsErasure = evaluatedExpressions.get(pos) instanceof ErasureExpression;
                             int compatible;
-                            if (paramIsErasure && actualTypeReplaced != actualType) {
+                            if (actualTypeReplaced == ParameterizedType.NULL_CONSTANT) {
+                                // compute the distance to Object, so that the nearest one loses. See MethodCall_66
+                                // IMPROVE why 100?
+                                compatible = 100 - callIsAssignableFrom(formalTypeReplaced, typeContext.getPrimitives().objectParameterizedType());
+                            } else if (paramIsErasure && actualTypeReplaced != actualType) {
                                 /*
                                  See 'method' call in MethodCall_32; this feels like a hack.
                                  Map.get(e.getKey()) call in MethodCall_37 shows the opposite direction; so we do Max.

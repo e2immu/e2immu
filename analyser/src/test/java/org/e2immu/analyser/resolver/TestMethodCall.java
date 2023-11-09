@@ -496,4 +496,23 @@ public class TestMethodCall extends CommonTest {
     public void test_65() throws IOException {
         inspectAndResolve(MethodCall_65.class);
     }
+
+    @Test
+    public void test_66() throws IOException {
+        TypeMap typeMap = inspectAndResolve(MethodCall_66.class);
+        TypeInfo typeInfo = typeMap.get(MethodCall_66.class);
+        MethodInfo m1 = typeInfo.findUniqueMethod("method1", 1);
+        MethodCall mc1 = methodCallInFirstStatement(m1);
+        assertEquals("org.e2immu.analyser.resolver.testexample.MethodCall_66.Logger.logError(String,org.e2immu.analyser.resolver.testexample.MethodCall_66.SofBoException)",
+                mc1.methodInfo.fullyQualifiedName);
+
+        MethodInfo m2 = typeInfo.findUniqueMethod("method2", 1);
+        MethodCall mc2 = methodCallInFirstStatement(m2);
+        assertEquals("org.e2immu.analyser.resolver.testexample.MethodCall_66.Logger.logError(String,Throwable)",
+                mc2.methodInfo.fullyQualifiedName);
+    }
+
+    private static MethodCall methodCallInFirstStatement(MethodInfo m1) {
+        return m1.methodInspection.get().getMethodBody().structure.getStatements().get(0).asInstanceOf(ExpressionAsStatement.class).expression.asInstanceOf(MethodCall.class);
+    }
 }
