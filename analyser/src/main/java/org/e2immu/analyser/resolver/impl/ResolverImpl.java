@@ -160,9 +160,18 @@ public class ResolverImpl implements Resolver {
             }
         }
         // only at the top level, because we have only one call graph
-        if (parent == null) methodResolution();
-
+        if (parent == null) {
+            LOGGER.info("At end of main resolution loop, start filling method resolution objects on {} types",
+                    typeCounterForDebugging.get());
+            methodResolution();
+        }
+        if (parent == null) {
+            LOGGER.info("Computing analyser sequence from dependency graph");
+        }
         List<TypeInfo> sorted = sortWarnForCircularDependencies(typeGraph, resolutionBuilders);
+        if (parent == null) {
+            LOGGER.info("Computing type resolution");
+        }
         return computeTypeResolution(sorted, resolutionBuilders, inspectedTypes);
     }
 
@@ -828,10 +837,12 @@ public class ResolverImpl implements Resolver {
         // iterate twice, because we have partial results on all MethodInfo objects for the setCallStatus computation
         Map<MethodInfo, MethodResolution.Builder> builders = new HashMap<>();
         Set<MethodInfo> inCycle = new HashSet<>();
+        AtomicInteger count = new AtomicInteger();
 
         methodCallGraph.visit((methodInfo, toList) -> {
             try {
                 if (!methodInfo.methodResolution.isSet()) {
+                    int cnt = count.incrementAndGet();
                     Set<MethodInfo> methodsReached = methodCallGraph.dependenciesWithoutStartingPoint(methodInfo);
 
                     MethodResolution.Builder methodResolutionBuilder = new MethodResolution.Builder();
@@ -845,6 +856,7 @@ public class ResolverImpl implements Resolver {
                     methodResolutionBuilder.setOverrides(methodInfo, ShallowMethodResolver.overrides(inspectionProvider, methodInfo));
 
                     computeAllowsInterrupt(methodResolutionBuilder, builders, methodInfo, methodsOfOwnClassReached, false);
+                    timedLogger.info("Computed method resolution for {} types", cnt);
                 } // otherwise: already processed during AnnotatedAPI
             } catch (RuntimeException e) {
                 LOGGER.error("Caught runtime exception while filling {} to {} ", methodInfo.fullyQualifiedName, toList);
@@ -852,6 +864,7 @@ public class ResolverImpl implements Resolver {
             }
         });
 
+        LOGGER.info("Sorting method call graph of size {}", methodCallGraph.size());
         methodCallGraph.sorted(cycle -> {
             boolean first = true;
             List<MethodInfo> restrictedList = new LinkedList<>(cycle);
@@ -891,7 +904,6 @@ public class ResolverImpl implements Resolver {
                 }
             } // otherwise: already processed during AnnotatedAPI
         });
-
     }
 
     /*
@@ -938,7 +950,7 @@ public class ResolverImpl implements Resolver {
                             !builders.get(reached).allowsInterruptsIsSet());
             if (!allowsInterrupt) {
                 Block body = inspectionProvider.getMethodInspection(methodInfo).getMethodBody();
-                allowsInterrupt = AllowInterruptVisitor.allowInterrupts(body, builders.keySet());
+                allowsInterrupt = body != null && AllowInterruptVisitor.allowInterrupts(body, builders.keySet());
             }
         } else {
             allowsInterrupt = !shallowResolver;
