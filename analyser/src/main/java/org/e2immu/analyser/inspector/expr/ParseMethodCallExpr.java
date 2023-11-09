@@ -69,29 +69,31 @@ public record ParseMethodCallExpr(TypeContext typeContext) {
             types = Set.of(scope.expression().returnType());
         } else {
             types = methodCandidates.keySet().stream()
-                    .map(mc -> {
-                        TypeParameterMap map0 = filterResult.typeParameterMap(typeContext, mc.methodInspection);
-                        TypeParameterMap map1 = map0.merge(scope.typeParameterMap());
-                        TypeInfo methodType = mc.methodInspection.getMethodInfo().typeInfo;
-                        TypeInfo scopeType = scope.type().bestTypeInfo(typeContext);
-                        TypeParameterMap merged;
-                        if (scopeType != null && !methodType.equals(scope.type().typeInfo)) {
-                            // method is defined in a super-type, so we need an additional translation
-                            ParameterizedType superType = methodType.asParameterizedType(typeContext);
-                            Map<NamedType, ParameterizedType> sm = scopeType.mapInTermsOfParametersOfSuperType(typeContext, superType);
-                            merged = sm == null ? map1 : map1.merge(new TypeParameterMap(sm));
-                        } else {
-                            merged = map1;
-                        }
-                        ParameterizedType returnType = mc.methodInspection.getReturnType();
-                        Map<NamedType, ParameterizedType> map2 = merged.map();
-                        // IMPROVE at some point, compare to mc.method().concreteType; redundant code?
-                        return returnType.applyTranslation(typeContext().getPrimitives(), map2);
-                    })
+                    .map(mc -> erasureReturnType(mc, filterResult, scope))
                     .collect(Collectors.toUnmodifiableSet());
         }
         LOGGER.debug("Erasure types: {}", types);
         return new MethodCallErasure(types, methodName);
+    }
+
+    private ParameterizedType erasureReturnType(MethodTypeParameterMap mc, FilterResult filterResult, Scope scope) {
+        TypeParameterMap map0 = filterResult.typeParameterMap(typeContext, mc.methodInspection);
+        TypeParameterMap map1 = map0.merge(scope.typeParameterMap());
+        TypeInfo methodType = mc.methodInspection.getMethodInfo().typeInfo;
+        TypeInfo scopeType = scope.type().bestTypeInfo(typeContext);
+        TypeParameterMap merged;
+        if (scopeType != null && !methodType.equals(scope.type().typeInfo)) {
+            // method is defined in a super-type, so we need an additional translation
+            ParameterizedType superType = methodType.asParameterizedType(typeContext);
+            Map<NamedType, ParameterizedType> sm = scopeType.mapInTermsOfParametersOfSuperType(typeContext, superType);
+            merged = sm == null ? map1 : map1.merge(new TypeParameterMap(sm));
+        } else {
+            merged = map1;
+        }
+        ParameterizedType returnType = mc.methodInspection.getReturnType();
+        Map<NamedType, ParameterizedType> map2 = merged.map();
+        // IMPROVE at some point, compare to mc.method().concreteType; redundant code?
+        return returnType.applyTranslation(typeContext().getPrimitives(), map2);
     }
 
     public Expression parse(ExpressionContext expressionContext,
@@ -361,7 +363,7 @@ public record ParseMethodCallExpr(TypeContext typeContext) {
             if (pi.parameterizedType.hasTypeParameters()) {
                 // try to reconcile the type parameters with the ones in reParsed, see Lambda_16
                 Map<NamedType, ParameterizedType> forward = pi.parameterizedType.forwardTypeParameterMap(typeContext);
-                if(!forward.isEmpty()) {
+                if (!forward.isEmpty()) {
                     cumulative = cumulative.merge(new TypeParameterMap(forward));
                 }
             }

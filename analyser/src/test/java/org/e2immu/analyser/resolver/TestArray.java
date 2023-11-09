@@ -24,6 +24,7 @@ import org.e2immu.analyser.model.statement.Block;
 import org.e2immu.analyser.model.statement.ExpressionAsStatement;
 import org.e2immu.analyser.parser.TypeMap;
 import org.e2immu.analyser.resolver.testexample.Array_0;
+import org.e2immu.analyser.resolver.testexample.Array_1;
 import org.e2immu.analyser.resolver.testexample.Varargs_0;
 import org.junit.jupiter.api.Test;
 
@@ -50,4 +51,8 @@ public class TestArray extends CommonTest {
         } else fail();
     }
 
+    @Test
+    public void test_1() throws IOException {
+        inspectAndResolve(Array_1.class);
+    }
 }

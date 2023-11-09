@@ -18,8 +18,10 @@ package org.e2immu.analyser.resolver;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.Lambda;
 import org.e2immu.analyser.model.expression.MethodCall;
+import org.e2immu.analyser.model.expression.MethodReference;
 import org.e2immu.analyser.model.statement.Block;
 import org.e2immu.analyser.model.statement.ExpressionAsStatement;
+import org.e2immu.analyser.model.statement.ReturnStatement;
 import org.e2immu.analyser.parser.TypeMap;
 import org.e2immu.analyser.resolver.testexample.*;
 import org.junit.jupiter.api.Test;
@@ -180,5 +182,23 @@ public class TestLambda extends CommonTest {
     @Test
     public void test_17() throws IOException {
         inspectAndResolve(Lambda_17.class);
+    }
+
+    @Test
+    public void test_18() throws IOException {
+        inspectAndResolve(Lambda_18.class);
+    }
+
+    @Test
+    public void test_19() throws IOException {
+        TypeMap typeMap = inspectAndResolve(Lambda_19.class);
+        TypeInfo typeInfo = typeMap.get(Lambda_19.class);
+        MethodInfo method = typeInfo.findUniqueMethod("method", 1);
+        Block body = method.methodInspection.get().getMethodBody();
+        if (body.structure.statements().get(0) instanceof ReturnStatement rs
+                && rs.expression instanceof MethodCall mc
+                && mc.parameterExpressions.get(0) instanceof MethodReference mr) {
+            // check that the scope is not a ConstructorErasure
+        }
     }
 }
