@@ -586,7 +586,7 @@ public class Test_15_InlinedMethod_AAPI extends CommonTestRunner {
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("findTypeName".equals(d.methodInfo().name)) {
                 String expected = d.iteration() < 2 ? "<m:findTypeName>"
-                        : "expressions.stream().filter(/*inline test*/e instanceof TypeName).findFirst().orElseThrow()/*(TypeName)*/";
+                        : "expressions.stream().filter(/*inline test*/e instanceof TypeName).findFirst().orElseThrow()";
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
             }
             if ("test".equals(d.methodInfo().name)) {
