@@ -42,6 +42,8 @@ dependencies {
     implementation (libs.logbackClassic)
     implementation (libs.javaParser)
     implementation (libs.asm)
+    implementation (libs.jgraphtCore)
+    implementation (libs.jgraphtIO)
 
     testImplementation (libs.junitJupiterApi)
     testRuntimeOnly (libs.junitJupiterEngine)

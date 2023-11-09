@@ -22,12 +22,20 @@ import java.util.function.Consumer;
 
 public class TypeGraph {
 
-    static class Dependencies {
-        Map<TypeInfo, Integer> weights;
-        int sumIncoming;
+    public static class Dependencies {
+        private Map<TypeInfo, Integer> weights;
+        private int sumIncoming;
 
         public Dependencies(Map<TypeInfo, Integer> weights) {
             this.weights = weights;
+        }
+
+        public Map<TypeInfo, Integer> getWeights() {
+            return weights;
+        }
+
+        public int getSumIncoming() {
+            return sumIncoming;
         }
     }
 
@@ -35,6 +43,10 @@ public class TypeGraph {
 
     public void addNode(TypeInfo v, Map<TypeInfo, Integer> dependsOn) {
         nodeMap.put(v, new Dependencies(dependsOn));
+    }
+
+    public Map<TypeInfo, Dependencies> getNodeMap() {
+        return nodeMap;
     }
 
     public List<TypeInfo> sorted(Consumer<List<TypeInfo>> cycleConsumer,

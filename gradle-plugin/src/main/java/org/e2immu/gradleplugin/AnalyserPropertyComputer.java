@@ -20,7 +20,7 @@ import org.gradle.api.internal.plugins.DslObject;
 import org.gradle.api.logging.Logger;
 import org.gradle.api.logging.Logging;
 import org.gradle.api.plugins.JavaPlugin;
-import org.gradle.api.plugins.JavaPluginConvention;
+import org.gradle.api.plugins.JavaPluginExtension;
 import org.gradle.api.tasks.SourceSet;
 import org.gradle.api.tasks.compile.JavaCompile;
 
@@ -68,18 +68,18 @@ public record AnalyserPropertyComputer(
         if (project.equals(targetProject)) {
             addSystemProperties(rawProperties);
         }
-        // convert all the properties from sub-projects into dot-notated properties
+        // convert all the properties from subprojects into dot-notated properties
         flattenProperties(rawProperties, prefix, properties);
 
         LOGGER.debug("Resulting map is " + properties);
 
         List<Project> enabledChildProjects = project.getChildProjects().values().stream()
                 .filter(p -> !p.getExtensions().getByType(AnalyserExtension.class).isSkipProject())
-                .collect(Collectors.toList());
+                .toList();
 
         List<Project> skippedChildProjects = project.getChildProjects().values().stream()
                 .filter(p -> p.getExtensions().getByType(AnalyserExtension.class).isSkipProject())
-                .collect(Collectors.toList());
+                .toList();
 
         if (!skippedChildProjects.isEmpty()) {
             LOGGER.debug("Skipping collecting Analyser properties on: " +
@@ -89,7 +89,7 @@ public record AnalyserPropertyComputer(
         // recurse
         for (Project childProject : enabledChildProjects) {
             String moduleId = childProject.getPath();
-            String modulePrefix = (prefix.length() > 0) ? (prefix + "." + moduleId) : moduleId;
+            String modulePrefix = !prefix.isEmpty() ? (prefix + "." + moduleId) : moduleId;
             computeProperties(childProject, properties, modulePrefix);
         }
     }
@@ -101,13 +101,14 @@ public record AnalyserPropertyComputer(
         properties.put(Main.IGNORE_ERRORS, extension.isIgnoreErrors());
         properties.put(Main.SKIP_ANALYSIS, extension.isSkipAnalysis());
 
+        properties.put(Main.GRAPH_DIRECTORY, extension.getGraphDirectory());
+
         properties.put(Main.UPLOAD, extension.getUpload() == null || extension.getUpload());
         properties.put(Main.UPLOAD_PROJECT, project.getName());
         properties.put(Main.UPLOAD_URL, extension.getUploadUrl());
         properties.put(Main.UPLOAD_PACKAGES, extension.getUploadPackages());
 
-        String workDir = project.getProjectDir().getAbsolutePath();
-        File buildDir = project.getBuildDir();
+        File buildDir = project.getLayout().getBuildDirectory().get().getAsFile();
         properties.put(Main.READ_ANNOTATED_API_PACKAGES, getOrDefault(extension.getReadAnnotatedAPIPackages(),
                 AnnotatedAPIConfiguration.DO_NOT_READ_ANNOTATED_API));
         properties.put(Main.ANNOTATED_API_WRITE_MODE, getOrDefault(extension.getAnnotatedAPIWriteMode(),
@@ -145,14 +146,14 @@ public record AnalyserPropertyComputer(
     }
 
     private static boolean detectSourceDirsAndJavaClasspath(Project project, Map<String, Object> properties, String jmods) {
-        JavaPluginConvention javaPluginConvention = new DslObject(project).getConvention().getPlugin(JavaPluginConvention.class);
+        JavaPluginExtension javaPluginExtension = new DslObject(project).getExtensions().getByType(JavaPluginExtension.class);
 
-        SourceSet main = javaPluginConvention.getSourceSets().getAt("main");
+        SourceSet main = javaPluginExtension.getSourceSets().getAt("main");
         String sourceDirectoriesPathSeparated = sourcePathFromSourceSet(main);
         properties.put(Main.SOURCE, sourceDirectoriesPathSeparated);
         properties.put(Main.ANNOTATED_API_SOURCE, sourceDirectoriesPathSeparated);
 
-        SourceSet test = javaPluginConvention.getSourceSets().getAt("test");
+        SourceSet test = javaPluginExtension.getSourceSets().getAt("test");
         String testDirectoriesPathSeparated = sourcePathFromSourceSet(test);
         properties.put(Main.TEST_SOURCE, testDirectoriesPathSeparated);
 

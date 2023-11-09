@@ -17,25 +17,36 @@ package org.e2immu.analyser.config;
 import org.e2immu.annotation.Container;
 import org.e2immu.annotation.Fluent;
 
-public record InspectorConfiguration(boolean storeComments) {
+import java.io.File;
+
+public record InspectorConfiguration(boolean storeComments,
+                                     String graphDirectory) {
 
     @Override
     public String toString() {
         return "InspectionConfiguration:" +
-                "\n    storeComments=" + storeComments;
+                "\n    storeComments=" + storeComments +
+                "\n   graphDirectory='" + graphDirectory + "'";
     }
 
     @Container
     public static class Builder {
         private boolean storeComments;
+        private String graphDirectory;
 
         public InspectorConfiguration build() {
-            return new InspectorConfiguration(storeComments);
+            return new InspectorConfiguration(storeComments, graphDirectory);
         }
 
         @Fluent
         public Builder setStoreComments(boolean storeComments) {
             this.storeComments = storeComments;
+            return this;
+        }
+
+        @Fluent
+        public Builder setGraphDirectory(String graphDirectory) {
+            this.graphDirectory = graphDirectory;
             return this;
         }
     }

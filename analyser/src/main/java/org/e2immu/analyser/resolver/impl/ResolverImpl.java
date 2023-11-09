@@ -40,16 +40,25 @@ import org.e2immu.analyser.resolver.SortedTypes;
 import org.e2immu.analyser.resolver.TypeCycle;
 import org.e2immu.analyser.util.DependencyGraph;
 import org.e2immu.analyser.util.TimedLogger;
+import org.jgrapht.Graph;
+import org.jgrapht.graph.DefaultEdge;
+import org.jgrapht.graph.DefaultWeightedEdge;
+import org.jgrapht.graph.builder.GraphTypeBuilder;
+import org.jgrapht.nio.Attribute;
+import org.jgrapht.nio.DefaultAttribute;
+import org.jgrapht.nio.gml.GmlExporter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.annotation.processing.Generated;
+import java.io.*;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import java.util.zip.GZIPOutputStream;
 
 import static org.e2immu.analyser.model.util.ConvertExpressionWithTypeCreations.convertExpressionIntoSupplier;
 import static org.e2immu.analyser.model.util.ConvertMethodReference.convertMethodReferenceIntoAnonymous;
@@ -74,6 +83,7 @@ public class ResolverImpl implements Resolver {
     private final DependencyGraph<MethodInfo> methodCallGraph;
     private final boolean storeComments;
     private final TimedLogger timedLogger;
+    private final TypeGraph typeGraph = new TypeGraph();
 
     @Override
     public Stream<Message> getMessageStream() {
@@ -135,7 +145,6 @@ public class ResolverImpl implements Resolver {
 
     @Override
     public SortedTypes resolve(Map<TypeInfo, ExpressionContext> inspectedTypes) {
-        TypeGraph typeGraph = new TypeGraph();
         Map<TypeInfo, TypeResolution.Builder> resolutionBuilders = new HashMap<>();
         Set<TypeInfo> stayWithin = inspectedTypes.keySet().stream()
                 .flatMap(typeInfo -> typeAndAllSubTypes(typeInfo).stream())
@@ -152,7 +161,7 @@ public class ResolverImpl implements Resolver {
                     assert !typeInfo.isPrimaryType() :
                             "?? in recursive situation we do not expect a primary type" + typeInfo.fullyQualifiedName;
                 }
-                SortedType sortedType = addToTypeGraph(typeGraph, stayWithin, typeInfo, expressionContext);
+                SortedType sortedType = addToTypeGraph(stayWithin, typeInfo, expressionContext);
                 resolutionBuilders.put(typeInfo, new TypeResolution.Builder().setSortedType(sortedType));
             } catch (RuntimeException rte) {
                 LOGGER.warn("Caught runtime exception while resolving type {}", entry.getKey().fullyQualifiedName);
@@ -168,7 +177,7 @@ public class ResolverImpl implements Resolver {
         if (parent == null) {
             LOGGER.info("Computing analyser sequence from dependency graph");
         }
-        List<TypeInfo> sorted = sortWarnForCircularDependencies(typeGraph, resolutionBuilders);
+        List<TypeInfo> sorted = sortWarnForCircularDependencies(resolutionBuilders);
         if (parent == null) {
             LOGGER.info("Computing type resolution");
         }
@@ -189,8 +198,7 @@ public class ResolverImpl implements Resolver {
         }
     }
 
-    private List<TypeInfo> sortWarnForCircularDependencies(TypeGraph typeGraph,
-                                                           Map<TypeInfo, TypeResolution.Builder> resolutionBuilders) {
+    private List<TypeInfo> sortWarnForCircularDependencies(Map<TypeInfo, TypeResolution.Builder> resolutionBuilders) {
         Set<TypeInfo> inCycle = new HashSet<>();
 
         LOGGER.debug("\n\n******* start sorting *********\n");
@@ -289,8 +297,7 @@ public class ResolverImpl implements Resolver {
         builder.setSuperTypesExcludingJavaLangObject(superTypes);
     }
 
-    private SortedType addToTypeGraph(TypeGraph typeGraph,
-                                      Set<TypeInfo> stayWithin,
+    private SortedType addToTypeGraph(Set<TypeInfo> stayWithin,
                                       TypeInfo typeInfo,
                                       ExpressionContext expressionContextOfFile) {
 
@@ -856,7 +863,7 @@ public class ResolverImpl implements Resolver {
                     methodResolutionBuilder.setOverrides(methodInfo, ShallowMethodResolver.overrides(inspectionProvider, methodInfo));
 
                     computeAllowsInterrupt(methodResolutionBuilder, builders, methodInfo, methodsOfOwnClassReached, false);
-                    timedLogger.info("Computed method resolution for {} types", cnt);
+                    timedLogger.info("Computed method resolution for {} methods", cnt);
                 } // otherwise: already processed during AnnotatedAPI
             } catch (RuntimeException e) {
                 LOGGER.error("Caught runtime exception while filling {} to {} ", methodInfo.fullyQualifiedName, toList);
@@ -1224,5 +1231,81 @@ public class ResolverImpl implements Resolver {
                 inSamePackage && !inspection.isPrivate() ||
                 !inSamePackage && inspection.isProtected() ||
                 inspection.isPackagePrivate();
+    }
+
+    public void dumpGraphs(File directory) {
+        try {
+            if (directory.mkdirs()) {
+                LOGGER.info("Created directory {}", directory);
+            }
+            dumpTypeGraph(new File(directory, "typeDependencies.gml.gz"));
+            dumpMethodCallGraph(new File(directory, "methodCalls.gml.gz"));
+        } catch (IOException ioe) {
+            throw new RuntimeException(ioe);
+        }
+    }
+
+    private void dumpTypeGraph(File file) throws IOException {
+        Graph<TypeInfo, DefaultWeightedEdge> graph =
+                GraphTypeBuilder.<TypeInfo, DefaultWeightedEdge>directed()
+                        .allowingMultipleEdges(false)
+                        .allowingSelfLoops(true)
+                        .edgeClass(DefaultWeightedEdge.class)
+                        .weighted(true)
+                        .buildGraph();
+        for (Map.Entry<TypeInfo, TypeGraph.Dependencies> entry : typeGraph.getNodeMap().entrySet()) {
+            TypeInfo typeInfo = entry.getKey();
+            if (!graph.containsVertex(typeInfo)) graph.addVertex(typeInfo);
+            for (Map.Entry<TypeInfo, Integer> e2 : entry.getValue().getWeights().entrySet()) {
+                TypeInfo target = e2.getKey();
+                if (!graph.containsVertex(target)) graph.addVertex(target);
+                DefaultWeightedEdge e = graph.addEdge(typeInfo, target);
+                graph.setEdgeWeight(e, e2.getValue());
+            }
+        }
+
+        GmlExporter<TypeInfo, DefaultWeightedEdge> exporter = new GmlExporter<>();
+        exporter.setParameter(GmlExporter.Parameter.EXPORT_VERTEX_LABELS, true);
+        exporter.setVertexAttributeProvider((v) -> {
+            Map<String, Attribute> map = new LinkedHashMap<>();
+            map.put("label", DefaultAttribute.createAttribute(v.fullyQualifiedName));
+            TypeGraph.Dependencies dependencies = typeGraph.getNodeMap().get(v);
+            map.put("weight", DefaultAttribute.createAttribute(dependencies.getSumIncoming()));
+            return map;
+        });
+        try (GZIPOutputStream gzipOutputStream = new GZIPOutputStream(new FileOutputStream(file))) {
+            exporter.exportGraph(graph, gzipOutputStream);
+        }
+    }
+
+    private void dumpMethodCallGraph(File file) throws IOException {
+        Graph<MethodInfo, DefaultEdge> graph =
+                GraphTypeBuilder.<MethodInfo, DefaultEdge>directed()
+                        .allowingMultipleEdges(false)
+                        .allowingSelfLoops(true)
+                        .edgeClass(DefaultEdge.class)
+                        .weighted(false)
+                        .buildGraph();
+        for (MethodInfo methodInfo : methodCallGraph.nodes()) {
+            graph.addVertex(methodInfo);
+        }
+        methodCallGraph.visit((from, list) -> {
+            if (list != null) {
+                list.forEach(to -> {
+                    graph.addEdge(from, to);
+                });
+            }
+        });
+
+        GmlExporter<MethodInfo, DefaultEdge> exporter = new GmlExporter<>();
+        exporter.setParameter(GmlExporter.Parameter.EXPORT_VERTEX_LABELS, true);
+        exporter.setVertexAttributeProvider((v) -> {
+            Map<String, Attribute> map = new LinkedHashMap<>();
+            map.put("label", DefaultAttribute.createAttribute(v.fullyQualifiedName));
+            return map;
+        });
+        try (GZIPOutputStream gzipOutputStream = new GZIPOutputStream(new FileOutputStream(file))) {
+            exporter.exportGraph(graph, gzipOutputStream);
+        }
     }
 }

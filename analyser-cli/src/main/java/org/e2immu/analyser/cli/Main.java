@@ -19,6 +19,7 @@ import org.e2immu.analyser.config.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.File;
 import java.util.Arrays;
 import java.util.Map;
 import java.util.function.Consumer;
@@ -29,6 +30,8 @@ public class Main {
     public static final String PATH_SEPARATOR = System.getProperty("path.separator");
     public static final String COMMA = ",";
     public static final String COMMA_ALLOW_SPACE = ",\\s*";
+
+    public static final String GRAPH_DIRECTORY = "graph-directory";
 
     public static final String UPLOAD_PROJECT = "upload-project";
     public static final String UPLOAD_PACKAGES = "upload-packages";
@@ -121,6 +124,11 @@ public class Main {
             String[] restrictSourceToPackages = cmd.getOptionValues(SOURCE_PACKAGES);
             splitAndAdd(restrictSourceToPackages, COMMA_ALLOW_SPACE, inputBuilder::addRestrictSourceToPackages);
             builder.setInputConfiguration(inputBuilder.build());
+
+            InspectorConfiguration.Builder inspectorBuilder = new InspectorConfiguration.Builder();
+            String graphDirectory = cmd.getOptionValue(GRAPH_DIRECTORY);
+            inspectorBuilder.setGraphDirectory(graphDirectory);
+            builder.setInspectorConfiguration(inspectorBuilder.build());
 
             String[] debugLogTargets = cmd.getOptionValues(DEBUG);
             splitAndAdd(debugLogTargets, COMMA_ALLOW_SPACE, builder::addDebugLogTargets);
@@ -217,6 +225,9 @@ public class Main {
                         " specified in the argument. Use ',' to separate paths, or use this option multiple times." +
                         " Use a dot at the end of a package name to accept sub-packages.").build());
 
+        options.addOption(Option.builder().longOpt(GRAPH_DIRECTORY).hasArg().argName("GRAPH_DIRECTORY")
+                .desc("Directory to write the type graph and method call graphs").build());
+
         // common options
 
         options.addOption(Option.builder("d").longOpt(DEBUG).hasArg().argName("LOG TARGETS").desc(
@@ -307,6 +318,7 @@ public class Main {
     public static Configuration fromProperties(Map<String, String> analyserProperties) {
         Configuration.Builder builder = new Configuration.Builder();
         builder.setInputConfiguration(inputConfigurationFromProperties(analyserProperties));
+        builder.setInspectorConfiguration(inspectorConfigurationPromProperties(analyserProperties));
         builder.setUploadConfiguration(uploadConfigurationFromProperties(analyserProperties));
         builder.setAnnotatedAPIConfiguration(annotatedAPIConfigurationFromProperties(analyserProperties));
         builder.setAnnotationXmConfiguration(annotationXmlConfigurationFromProperties(analyserProperties));
@@ -317,6 +329,12 @@ public class Main {
 
         setSplitStringProperty(analyserProperties, COMMA_ALLOW_SPACE, DEBUG, builder::addDebugLogTargets);
 
+        return builder.build();
+    }
+
+    public static InspectorConfiguration inspectorConfigurationPromProperties(Map<String, String> map) {
+        InspectorConfiguration.Builder builder = new InspectorConfiguration.Builder();
+        setStringProperty(map, GRAPH_DIRECTORY, builder::setGraphDirectory);
         return builder.build();
     }
 

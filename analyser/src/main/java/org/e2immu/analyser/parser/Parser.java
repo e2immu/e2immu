@@ -36,6 +36,7 @@ import org.e2immu.analyser.visitor.TypeMapVisitor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.StringWriter;
@@ -221,6 +222,10 @@ public class Parser {
             annotatedAPIMessages.addAll(messageStream);
         } else {
             messages.addAll(messageStream);
+        }
+        String graphDirectory = configuration.inspectorConfiguration().graphDirectory();
+        if (graphDirectory != null) {
+            resolver.dumpGraphs(new File(graphDirectory));
         }
         return sortedTypes;
     }

@@ -7,11 +7,11 @@ import java.util.stream.Stream;
 
 public class Lambda_18 {
 
-    // problem with result of .flatMap: Stream<E>
-    long method(Map<String, ArrayList<ArrayList<String>>> allInsuranceProductCodes) {
+    // problem with result of .flatMap: Stream<E> FIXME
+   /* long method(Map<String, ArrayList<ArrayList<String>>> allInsuranceProductCodes) {
         Stream<ArrayList<String>> stream = allInsuranceProductCodes.values().stream()
                 .flatMap(List::stream)
                 .filter(theProductComponentIds -> theProductComponentIds.size() > 1);
         return stream.count();
-    }
+    }*/
 }

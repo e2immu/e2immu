@@ -350,4 +350,8 @@ public class DependencyGraph<T> extends Freezable {
         }
         return result;
     }
+
+    public Iterable<T> nodes() {
+        return nodeMap.keySet();
+    }
 }

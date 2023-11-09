@@ -29,6 +29,9 @@ public class AnalyserExtension {
     private String jre;
     private String sourcePackages;
 
+    /* from InspectorConfiguration */
+    private String graphDirectory;
+
     /* from AnnotatedAPIConfiguration -- sources taken from Gradle */
     private String readAnnotatedAPIPackages;
     private String annotatedAPIWriteMode;
@@ -223,5 +226,13 @@ public class AnalyserExtension {
 
     public void setSkipAnalysis(boolean skipAnalysis) {
         this.skipAnalysis = skipAnalysis;
+    }
+
+    public String getGraphDirectory() {
+        return graphDirectory;
+    }
+
+    public void setGraphDirectory(String graphDirectory) {
+        this.graphDirectory = graphDirectory;
     }
 }

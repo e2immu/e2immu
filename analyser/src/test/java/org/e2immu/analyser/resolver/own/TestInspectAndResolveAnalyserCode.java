@@ -17,12 +17,14 @@ package org.e2immu.analyser.resolver.own;
 import org.e2immu.analyser.config.AnnotatedAPIConfiguration;
 import org.e2immu.analyser.config.Configuration;
 import org.e2immu.analyser.config.InputConfiguration;
+import org.e2immu.analyser.config.InspectorConfiguration;
 import org.e2immu.analyser.log.LogTarget;
 import org.e2immu.analyser.parser.CommonTestRunner;
 import org.e2immu.analyser.parser.Input;
 import org.e2immu.analyser.parser.Parser;
 import org.junit.jupiter.api.Test;
 
+import java.io.File;
 import java.io.IOException;
 
 public class TestInspectAndResolveAnalyserCode {
@@ -42,17 +44,22 @@ public class TestInspectAndResolveAnalyserCode {
                 .addClassPath(Input.JAR_WITH_PATH_PREFIX + "ch/qos/logback/classic")
                 .addClassPath(Input.JAR_WITH_PATH_PREFIX + "ch/qos/logback/core")
                 .addClassPath(Input.JAR_WITH_PATH_PREFIX + "org/junit/jupiter/api")
+                .addClassPath(Input.JAR_WITH_PATH_PREFIX + "org/jgrapht")
                 .build();
 
         // we'll encounter some tests with dollar types. For our current purpose, they're simply Java POJOs, we don't
         // want to see them as AnnotatedAPI
         AnnotatedAPIConfiguration annotatedAPIConfiguration = new AnnotatedAPIConfiguration.Builder().setDisabled(true).build();
+        InspectorConfiguration inspectorConfiguration = new InspectorConfiguration.Builder()
+                .setGraphDirectory("build/e2immuGraph").build();
         Configuration configuration = new Configuration.Builder()
                 .setSkipAnalysis(true)
                 .setInputConfiguration(inputConfiguration)
                 .setAnnotatedAPIConfiguration(annotatedAPIConfiguration)
+                .setInspectorConfiguration(inspectorConfiguration)
                 .addDebugLogTargets(LogTarget.PARSER, LogTarget.RESOLVER)
                 .build();
+
         configuration.initializeLoggers();
         Parser parser = new Parser(configuration);
         parser.run();

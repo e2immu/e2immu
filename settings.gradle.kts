@@ -34,6 +34,8 @@ dependencyResolutionManagement {
             library("junitJupiterEngine", "org.junit.jupiter:junit-jupiter-engine:5.9.3") // EPL v2 License
             library("logbackClassic", "ch.qos.logback:logback-classic:1.2.11") // EPL v1.0 and the LGPL 2.1
             library("slf4jApi", "org.slf4j:slf4j-api:1.7.36")
+            library("jgraphtCore", "org.jgrapht:jgrapht-core:1.5.2")
+            library("jgraphtIO", "org.jgrapht:jgrapht-io:1.5.2")
         }
     }
 }
