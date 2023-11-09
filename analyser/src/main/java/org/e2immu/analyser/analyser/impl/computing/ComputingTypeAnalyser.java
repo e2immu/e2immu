@@ -198,7 +198,7 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
 
         analyserContext.methodAnalyserStream().sorted().forEach(methodAnalyser -> {
             if (methodAnalyser.getMethodInfo().typeInfo == typeInfo) {
-                if (methodAnalyser.getMethodInfo().isConstructor) {
+                if (methodAnalyser.getMethodInfo().isConstructor()) {
                     myConstructors.add(methodAnalyser);
                 } else {
                     myMethodAnalysers.add(methodAnalyser);
@@ -442,11 +442,11 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
                 .collect(Collectors.toUnmodifiableSet());
     }
 
-    private boolean acceptForPrecondition(MethodInspection methodInspection) {
-        if (methodInspection.isAbstract()) return false;
-        if (methodInspection.getMethodInfo().inConstruction()) return false;
-        if (methodInspection.isStatic()) return false;
-        return !methodInspection.getMethodInfo().typeInfo
+    private boolean acceptForPrecondition(MethodInfo methodInfo) {
+        if (methodInfo.isAbstract()) return false;
+        if (methodInfo.getMethodInfo().inConstruction()) return false;
+        if (methodInfo.isStatic()) return false;
+        return !methodInfo.getMethodInfo().typeInfo
                 .recursivelyInConstructionOrStaticWithRespectTo(analyserContext, typeInfo);
     }
 
@@ -461,7 +461,7 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
             return DONE;
         }
         List<MethodAnalyser> methodList = myMethodAnalysersExcludingSAMs.stream()
-                .filter(methodAnalyser -> acceptForPrecondition(methodAnalyser.getMethodInfo().methodInspection.get()))
+                .filter(methodAnalyser -> acceptForPrecondition(methodAnalyser.getMethodInfo()))
                 .toList();
         CausesOfDelay modificationDelays = methodList.stream()
                 .map(methodAnalyser -> methodAnalyser.getMethodAnalysis()
@@ -1159,7 +1159,7 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
         boolean haveFirstParameter = false;
         ParameterizedType commonTypeOfFirstParameter = null;
         for (MethodInfo methodInfo : typeInspection.methods()) {
-            if (methodInfo.methodInspection.get().isStatic() && !methodInfo.methodInspection.get().isPrivate()) {
+            if (methodInfo.isStatic() && !methodInfo.methodInspection.get().isPrivate()) {
                 List<ParameterInfo> parameters = methodInfo.methodInspection.get().getParameters();
                 ParameterizedType typeOfFirstParameter;
                 if (parameters.isEmpty()) {
@@ -1245,7 +1245,7 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
         // and there should be no means of generating an object: these private constructors are never called!
         for (MethodAnalyser methodAnalyser : myMethodAnalysersExcludingSAMs) {
             if (methodAnalyser.getMethodInfo().methodResolution.get()
-                    .methodsOfOwnClassReached().stream().anyMatch(m -> m.isConstructor && m.typeInfo == typeInfo)) {
+                    .methodsOfOwnClassReached().stream().anyMatch(m -> m.isConstructor() && m.typeInfo == typeInfo)) {
                 LOGGER.debug("Type {} looks like a @UtilityClass, but an object of the class is created in method {}",
                         typeInfo, methodAnalyser);
                 typeAnalysis.setProperty(Property.UTILITY_CLASS, DV.FALSE_DV);

@@ -387,7 +387,7 @@ public class TypeMapImpl implements TypeMap {
         public MethodInspection.Builder newMethodInspectionBuilder(Identifier identifier,
                                                                    TypeInfo typeInfo,
                                                                    String methodName) {
-            return new MethodInspectionImpl.Builder(identifier, typeInfo, methodName);
+            return new MethodInspectionImpl.Builder(identifier, typeInfo, methodName, MethodInfo.MethodType.METHOD);
         }
 
         @Override
@@ -527,7 +527,7 @@ public class TypeMapImpl implements TypeMap {
                     new ParameterizedType(tps.get(numberOfParameters), 0, NONE);
             String methodName = methodNameOfFunctionalInterface(isVoid, numberOfParameters,
                     returnType.isBooleanOrBoxedBoolean());
-            MethodInspection.Builder m = new MethodInspectionImpl.Builder(typeInfo, methodName);
+            MethodInspection.Builder m = new MethodInspectionImpl.Builder(typeInfo, methodName, MethodInfo.MethodType.METHOD);
             m.addAnnotation(e2ImmuAnnotationExpressions.modified);
             m.setReturnType(returnType);
             for (int i = 0; i < numberOfParameters; i++) {

@@ -180,7 +180,7 @@ public class Test_60_StaticSideEffects_AAPI extends CommonTestRunner {
     public void test_2() throws IOException {
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("StaticSideEffects_2".equals(d.methodInfo().name)) {
-                assert d.methodInfo().isConstructor;
+                assert d.methodInfo().isConstructor();
                 assertDv(d, DV.TRUE_DV, Property.STATIC_SIDE_EFFECTS);
             }
         };
@@ -262,14 +262,14 @@ public class Test_60_StaticSideEffects_AAPI extends CommonTestRunner {
     public void test_6() throws IOException {
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             int n = d.methodInfo().methodInspection.get().getParameters().size();
-            if (d.methodInfo().isConstructor && n == 1) {
+            if (d.methodInfo().isConstructor() && n == 1) {
                 if (d.variable() instanceof FieldReference fr && "generator".equals(fr.fieldInfo().name)) {
                     assertDv(d, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.CONTEXT_NOT_NULL);
                     assertDv(d, 1, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
                     assertCurrentValue(d, 1, "instance type AtomicInteger");
                 }
             }
-            if (d.methodInfo().isConstructor && n == 0) {
+            if (d.methodInfo().isConstructor() && n == 0) {
                 if (d.variable() instanceof FieldReference fr && "generator".equals(fr.fieldInfo().name)) {
                     assertDv(d, MultiLevel.NULLABLE_DV, Property.CONTEXT_NOT_NULL);
                     assertDv(d, 1, DV.FALSE_DV, Property.CONTEXT_MODIFIED);

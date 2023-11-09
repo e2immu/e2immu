@@ -197,13 +197,14 @@ public class TypeInspectionImpl extends InspectionImpl implements TypeInspection
         int sum = 0;
         for (MethodInfo methodInfo : typeInspection.methods()) {
             MethodInspection inspection = inspectionProvider.getMethodInspection(methodInfo);
-            boolean nonStaticNonDefault = !inspection.isPrivate() && !inspection.isStatic() && !inspection.isDefault() && !inspection.isOverloadOfJLOMethod();
+            boolean nonStaticNonDefault = !inspection.isPrivate() && !methodInfo.isStatic()
+                    && !methodInfo.isDefault() && !inspection.isOverloadOfJLOMethod();
             if (nonStaticNonDefault) {
                 if (overridden.stream().noneMatch(override -> isOverrideOf(inspectionProvider, inspection, override, translationMap))) {
                     sum++;
                     overridden.add(inspection);
                 }
-            } else if (inspection.isDefault()) {
+            } else if (methodInfo.isDefault()) {
                 // can cancel out a method in one of the super types
                 overridden.add(inspection);
             }

@@ -248,7 +248,7 @@ public class ShallowTypeAnalyser extends TypeAnalyserImpl {
                     builder.getTypeInfo().typeInspection.get()
                             .methodsAndConstructors(TypeInspection.Methods.THIS_TYPE_ONLY)
                             .filter(isAccessible)
-                            .allMatch(m -> (m.isConstructor || m.isVoid() || m.returnType().isPrimitiveStringClass())
+                            .allMatch(m -> (m.isConstructor() || m.isVoid() || m.returnType().isPrimitiveStringClass())
                                     && m.methodInspection.get().getParameters().stream()
                                     .allMatch(p -> p.parameterizedType.isPrimitiveStringClass()));
             if (allMethodsOnlyPrimitives) {

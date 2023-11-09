@@ -382,7 +382,7 @@ public class Test_AnalysisProvider extends CommonTestRunner {
         };
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("DV".equals(d.methodInfo().name)) {
-                assertTrue(d.methodInfo().isConstructor);
+                assertTrue(d.methodInfo().isConstructor());
                 assertDv(d.p(1), 1, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
             }
             if ("apply".equals(d.methodInfo().name)) {

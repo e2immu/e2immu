@@ -477,7 +477,7 @@ public final class TypeInfo implements NamedType,
         MethodInfo foundHere = typeInspection.get().methodStream(TypeInspection.Methods.THIS_TYPE_ONLY)
                 .filter(m -> m.methodResolution.get().overrides().contains(abstractMethodInfo))
                 .findFirst().orElse(null);
-        if (foundHere != null && !foundHere.methodInspection.get().isAbstract()
+        if (foundHere != null && !foundHere.isAbstract()
                 && (foundHere.computedAnalysis() || foundHere.methodInspection.get().isPubliclyAccessible())) {
             return foundHere;
         }
@@ -503,9 +503,8 @@ public final class TypeInfo implements NamedType,
 
     public MethodInfo findOverriddenSingleAbstractMethod(InspectionProvider inspectionProvider) {
         return typeInspection.get().methodStream(TypeInspection.Methods.THIS_TYPE_ONLY_EXCLUDE_FIELD_SAM)
-                .map(inspectionProvider::getMethodInspection)
                 .filter(mi -> !mi.isDefault() && !mi.isStatic())
-                .findFirst().orElseThrow().getMethodInfo();
+                .findFirst().orElseThrow();
     }
 
     public MethodInfo findConstructor(int parameters) {
@@ -874,8 +873,7 @@ public final class TypeInfo implements NamedType,
         MethodInfo enclosingMethod = inspectionProvider.getTypeInspection(this).enclosingMethod();
         if (enclosingMethod != null) {
             if (enclosingMethod.inConstruction()) return true;
-            MethodInspection enclosingInspection = inspectionProvider.getMethodInspection(enclosingMethod);
-            if (enclosingMethod.typeInfo == enclosingType && enclosingInspection.isStatic()) {
+            if (enclosingMethod.typeInfo == enclosingType && enclosingMethod.isStatic()) {
                 return true;
             }
             return enclosingMethod.typeInfo

@@ -94,7 +94,7 @@ public class MethodReference extends ExpressionWithMethodReferenceResolution {
 
     @Override
     public OutputBuilder output(Qualification qualification) {
-        String methodName = methodInfo.isConstructor ? "new" : methodInfo.name;
+        String methodName = methodInfo.isConstructor() ? "new" : methodInfo.name;
         return new OutputBuilder().add(scope.output(qualification)).add(Symbol.DOUBLE_COLON).add(new Text(methodName));
     }
 
@@ -135,7 +135,7 @@ public class MethodReference extends ExpressionWithMethodReferenceResolution {
                     .build();
 
             // as in MethodCall, we transfer modification of static methods onto 'this'
-            if (methodInfo.methodInspection.get().isStatic()) {
+            if (methodInfo.isStatic()) {
                 This thisType = new This(context.getAnalyserContext(), context.getCurrentType());
                 builder.setProperty(thisType, Property.CONTEXT_MODIFIED, modified); // without being "read"
             }
@@ -193,12 +193,11 @@ public class MethodReference extends ExpressionWithMethodReferenceResolution {
         return List.of(scope);
     }
 
-    public boolean objectIsThisOrSuper(InspectionProvider inspectionProvider) {
+    public boolean objectIsThisOrSuper() {
         VariableExpression ve;
         if ((ve = scope.asInstanceOf(VariableExpression.class)) != null && ve.variable() instanceof This) return true;
         if (scope instanceof TypeExpression) {
-            MethodInspection methodInspection = inspectionProvider.getMethodInspection(methodInfo);
-            return !methodInspection.isStatic();
+            return !methodInfo.isStatic();
         }
         return false;
     }

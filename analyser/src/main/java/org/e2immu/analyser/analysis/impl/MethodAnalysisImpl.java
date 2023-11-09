@@ -480,7 +480,7 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
             MethodInspection methodInspection = inspectionProvider.getMethodInspection(methodInfo);
             assert !getSetEquivalent.isSet();
             assert !getSet.isSet();
-            if (methodInfo.isConstructor || methodInspection.isFactoryMethod()) {
+            if (methodInfo.isConstructor() || methodInspection.isFactoryMethod()) {
                 /*
                  @GetSet on a constructor or factory method has a well-defined meaning.
                  We search for the smallest constructor or factory method with the same name which
@@ -489,7 +489,7 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
                  */
                 TypeInspection typeInspection = inspectionProvider.getTypeInspection(methodInfo.typeInfo);
                 Stream<MethodInfo> candidateStream;
-                if (methodInfo.isConstructor) {
+                if (methodInfo.isConstructor()) {
                     candidateStream = typeInspection.constructorStream(TypeInspection.Methods.THIS_TYPE_ONLY);
                 } else {
                     candidateStream = typeInspection.methodStream(TypeInspection.Methods.THIS_TYPE_ONLY)
@@ -642,7 +642,7 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
                 addAnnotation(e2.staticSideEffects);
             }
 
-            if (methodInfo.isConstructor) return;
+            if (methodInfo.isConstructor()) return;
 
             // @NotModified, @Modified
             DV ownerImmutable = typeAnalysisOfOwner == null ? MultiLevel.MUTABLE_INCONCLUSIVE

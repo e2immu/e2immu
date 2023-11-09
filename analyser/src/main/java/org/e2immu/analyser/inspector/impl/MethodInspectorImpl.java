@@ -72,7 +72,8 @@ public class MethodInspectorImpl implements MethodInspector {
     public void inspect(AnnotationMemberDeclaration amd, ExpressionContext expressionContext) {
         String name = amd.getNameAsString();
         LOGGER.debug("Inspecting annotation member {} in {}", name, typeInfo.fullyQualifiedName);
-        MethodInspection.Builder tempBuilder = new MethodInspectionImpl.Builder(Identifier.from(amd), typeInfo, name);
+        MethodInspection.Builder tempBuilder = new MethodInspectionImpl.Builder(Identifier.from(amd), typeInfo, name,
+                MethodInfo.MethodType.METHOD);
         MethodInspection.Builder builder = fqnIsKnown(expressionContext.typeContext(), tempBuilder, false);
         assert builder != null;
 
@@ -216,7 +217,7 @@ public class MethodInspectorImpl implements MethodInspector {
         if (ccd != null) {
             builder.addCompanionMethods(companionMethods);
             checkCompanionMethods(companionMethods, typeInfo.simpleName);
-            if(storeComments) builder.setComment(CommentFactory.from(ccd));
+            if (storeComments) builder.setComment(CommentFactory.from(ccd));
             addAnnotations(builder, ccd.getAnnotations(), expressionContext);
             if (fullInspection) {
                 addModifiers(builder, ccd.getModifiers());
@@ -244,7 +245,7 @@ public class MethodInspectorImpl implements MethodInspector {
         assert fullInspection : "? otherwise we would not see them";
         assert builder != null;
         typeMapBuilder.registerMethodInspection(builder);
-        if(storeComments) builder.setComment(CommentFactory.from(id));
+        if (storeComments) builder.setComment(CommentFactory.from(id));
         builder.setBlock(id.getBody());
     }
 
@@ -258,7 +259,8 @@ public class MethodInspectorImpl implements MethodInspector {
                         Map<CompanionMethodName, MethodInspection.Builder> companionMethods,
                         DollarResolver dollarResolver,
                         boolean makePrivate) {
-        MethodInspection.Builder tempBuilder = new MethodInspectionImpl.Builder(Identifier.from(cd), typeInfo);
+        MethodInspection.Builder tempBuilder = new MethodInspectionImpl.Builder(Identifier.from(cd), typeInfo,
+                MethodInfo.MethodType.CONSTRUCTOR);
         ExpressionContext newContext = addTypeParameters(cd, expressionContext, tempBuilder);
 
         addParameters(tempBuilder, cd.getParameters(), newContext, dollarResolver);
@@ -270,7 +272,7 @@ public class MethodInspectorImpl implements MethodInspector {
         }
         builder.addCompanionMethods(companionMethods);
         checkCompanionMethods(companionMethods, typeInfo.simpleName);
-        if(storeComments) builder.setComment(CommentFactory.from(cd));
+        if (storeComments) builder.setComment(CommentFactory.from(cd));
         addAnnotations(builder, cd.getAnnotations(), newContext);
         if (fullInspection) {
             addModifiers(builder, cd.getModifiers());
@@ -295,8 +297,9 @@ public class MethodInspectorImpl implements MethodInspector {
                         Map<CompanionMethodName, MethodInspection.Builder> companionMethods,
                         DollarResolver dollarResolver) {
         try {
+            MethodInfo.MethodType methodType = methodTypeFromModifiers(isInterface, md);
             MethodInspectionImpl.Builder tempBuilder = new MethodInspectionImpl
-                    .Builder(Identifier.from(md), typeInfo, methodName);
+                    .Builder(Identifier.from(md), typeInfo, methodName, methodType);
 
             ExpressionContext newContext = addTypeParameters(md, expressionContext, tempBuilder);
 
@@ -308,17 +311,10 @@ public class MethodInspectorImpl implements MethodInspector {
 
             builder.addCompanionMethods(companionMethods);
             checkCompanionMethods(companionMethods, methodName);
-            if(storeComments) builder.setComment(CommentFactory.from(md));
+            if (storeComments) builder.setComment(CommentFactory.from(md));
             addAnnotations(builder, md.getAnnotations(), newContext);
             if (fullInspection) {
                 addModifiers(builder, md.getModifiers());
-                boolean haveBody = md.getBody().isPresent();
-                if (!haveBody) {
-                    assert isInterface && !builder.isDefault() && !builder.isStatic()
-                            || !isInterface && builder.getParsedModifiers().contains(MethodModifier.ABSTRACT);
-                    builder.setAbstractMethod();
-                }
-
                 addExceptionTypes(builder, md.getThrownExceptions(), newContext.typeContext());
                 ParameterizedType pt = ParameterizedTypeFactory.from(newContext.typeContext(), md.getType());
                 builder.setReturnType(pt);
@@ -335,6 +331,28 @@ public class MethodInspectorImpl implements MethodInspector {
             LOGGER.error("Caught exception while inspecting method {} in {}", methodName, typeInfo.fullyQualifiedName());
             throw e;
         }
+    }
+
+    private MethodInfo.MethodType methodTypeFromModifiers(boolean isInterface, MethodDeclaration md) {
+        MethodInfo.MethodType methodType = MethodInfo.MethodType.METHOD;
+        for (Modifier modifier : md.getModifiers()) {
+            MethodModifier from = MethodModifier.from(modifier);
+            switch (from) {
+                case DEFAULT -> methodType = MethodInfo.MethodType.DEFAULT_METHOD;
+                case ABSTRACT -> methodType = MethodInfo.MethodType.ABSTRACT_METHOD;
+                case STATIC -> methodType = MethodInfo.MethodType.STATIC_METHOD;
+                default -> {
+                }
+            }
+        }
+        boolean haveBody = md.getBody().isPresent();
+        if (!haveBody) {
+            if (isInterface) {
+                assert methodType != MethodInfo.MethodType.DEFAULT_METHOD && methodType != MethodInfo.MethodType.STATIC_METHOD;
+                methodType = MethodInfo.MethodType.ABSTRACT_METHOD;
+            } // else: assert methodType == MethodInfo.MethodType.ABSTRACT_METHOD; if it were not for Annotated APIs
+        }
+        return methodType;
     }
 
     private ExpressionContext addTypeParameters(CallableDeclaration<?> md,
@@ -371,14 +389,17 @@ public class MethodInspectorImpl implements MethodInspector {
 
     private static void addModifiers(MethodInspection.Builder builder, NodeList<Modifier> modifiers) {
         for (Modifier modifier : modifiers) {
-            builder.addModifier(MethodModifier.from(modifier));
+            MethodModifier from = MethodModifier.from(modifier);
+            if (from != MethodModifier.ABSTRACT && from != MethodModifier.DEFAULT && from != MethodModifier.STATIC) {
+                builder.addModifier(from);
+            } // else: these 3 are part of the method type
         }
     }
 
     private void addParameters(MethodInspection.Builder builder,
-                                      NodeList<Parameter> parameters,
-                                      ExpressionContext expressionContext,
-                                      DollarResolver dollarResolver) {
+                               NodeList<Parameter> parameters,
+                               ExpressionContext expressionContext,
+                               DollarResolver dollarResolver) {
         int i = 0;
         for (Parameter parameter : parameters) {
             ParameterizedType pt = ParameterizedTypeFactory.from(expressionContext.typeContext(), parameter.getType(),
@@ -387,7 +408,7 @@ public class MethodInspectorImpl implements MethodInspector {
                     pt, parameter.getNameAsString(), i++);
             pib.setVarArgs(parameter.isVarArgs());
             // we do not copy annotations yet, that happens after readFQN
-            if(storeComments) builder.setComment(CommentFactory.from(parameter));
+            if (storeComments) builder.setComment(CommentFactory.from(parameter));
             builder.addParameter(pib);
         }
     }

@@ -113,9 +113,10 @@ public class MethodAnalyserFactory {
         if (inAnnotatedAPI && !helper) {
             return Analysis.AnalysisMode.CONTRACTED;
         }
+        MethodInfo methodInfo = methodInspection.getMethodInfo();
         boolean isAbstract = (typeInspection.isInterface() || typeInspection.isAnnotation()) &&
-                !methodInspection.isDefault() && !methodInspection.isStatic() ||
-                methodInspection.isAbstract();
+                !methodInfo.isDefault() && !methodInfo.isStatic() ||
+                methodInfo.isAbstract();
         if (isAbstract) {
             if (typeInspection.isSealed() || typeResolution.hasOneKnownGeneratedImplementation()) {
                 return Analysis.AnalysisMode.AGGREGATED;

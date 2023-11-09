@@ -110,7 +110,7 @@ public class Test_38_FirstThen extends CommonTestRunner {
                 assertEquals("Precondition[expression=true, causes=[]]", d.methodAnalysis().getPrecondition().toString());
             }
             if ("FirstThen_1".equals(d.methodInfo().name)) {
-                assertTrue(d.methodInfo().isConstructor);
+                assertTrue(d.methodInfo().isConstructor());
                 assertEquals("Precondition[expression=true, causes=[]]", d.methodAnalysis().getPrecondition().toString());
             }
         };

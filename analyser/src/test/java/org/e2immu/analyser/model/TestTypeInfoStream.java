@@ -77,16 +77,19 @@ public class TestTypeInfoStream {
 
         ParameterizedType typeT = new ParameterizedType(typeParameterT, 0, ParameterizedType.WildCard.NONE);
 
-        MethodInfo emptyTestConstructor = new MethodInspectionImpl.Builder(testTypeInfo)
+        MethodInfo emptyTestConstructor = new MethodInspectionImpl.Builder(testTypeInfo,
+                MethodInfo.MethodType.CONSTRUCTOR)
                 .setAccess(Inspection.Access.PUBLIC)
                 .build(IP).getMethodInfo();
 
-        MethodInfo emptyContainerConstructor = new MethodInspectionImpl.Builder(containerTypeInfo)
+        MethodInfo emptyContainerConstructor = new MethodInspectionImpl.Builder(containerTypeInfo,
+                MethodInfo.MethodType.CONSTRUCTOR)
                 .setAccess(Inspection.Access.PACKAGE)
                 .build(IP).getMethodInfo();
         emptyContainerConstructor.methodResolution.set(new MethodResolution.Builder().build());
 
-        MethodInfo toStringMethodInfo = new MethodInspectionImpl.Builder(testTypeInfo, "toString")
+        MethodInfo toStringMethodInfo = new MethodInspectionImpl.Builder(testTypeInfo, "toString",
+                MethodInfo.MethodType.METHOD)
                 .setAccess(Inspection.Access.PUBLIC)
                 .setReturnType(primitives.stringParameterizedType()).build(IP).getMethodInfo();
         toStringMethodInfo.methodResolution.set(new MethodResolution.Builder().build());
@@ -148,7 +151,7 @@ public class TestTypeInfoStream {
                 .setName("map")
                 .setParameterizedType(new ParameterizedType(map, List.of(primitives.stringParameterizedType(), typeT)))
                 .build();
-        MethodInfo hashMapConstructor = new MethodInspectionImpl.Builder(hashMap)
+        MethodInfo hashMapConstructor = new MethodInspectionImpl.Builder(hashMap, MethodInfo.MethodType.CONSTRUCTOR)
                 .setAccess(Inspection.Access.PUBLIC)
                 .build(IP).getMethodInfo();
         Expression creationExpression = ConstructorCall.objectCreation(newId(), null, hashMapConstructor,
@@ -161,7 +164,7 @@ public class TestTypeInfoStream {
                 .setName("entry")
                 .setParameterizedType(new ParameterizedType(mapEntry, List.of(primitives.stringParameterizedType(), typeT)))
                 .build();
-        MethodInfo put = new MethodInspectionImpl.Builder(testTypeInfo, "put")
+        MethodInfo put = new MethodInspectionImpl.Builder(testTypeInfo, "put", MethodInfo.MethodType.METHOD)
                 .setReturnType(typeT)
                 .addParameter(p0)
                 .setAccess(Inspection.Access.PUBLIC)
@@ -233,7 +236,8 @@ public class TestTypeInfoStream {
 
         TypeInfo commutative = new TypeInfo(GENERATED_PACKAGE, "Commutative");
         TypeInfo testEquivalent = new TypeInfo(TEST_PACKAGE, "TestEquivalent");
-        MethodInfo referenceMethodInfo = new MethodInspectionImpl.Builder(testEquivalent, "reference")
+        MethodInfo referenceMethodInfo = new MethodInspectionImpl.Builder(testEquivalent, "reference",
+                MethodInfo.MethodType.METHOD)
                 .setReturnType(primitives.stringParameterizedType())
                 .setInspectedBlock(new Block.BlockBuilder(newId()).build())
                 .setAccess(Inspection.Access.PACKAGE)
@@ -245,8 +249,9 @@ public class TestTypeInfoStream {
                 .setAccess(Inspection.Access.PUBLIC)
                 .build(null));
 
-        MethodInspection.Builder intSumBuilder = new MethodInspectionImpl.Builder(testTypeInfo, "sum")
-                .setReturnType(primitives.intParameterizedType()).setStatic(true);
+        MethodInspection.Builder intSumBuilder = new MethodInspectionImpl.Builder(testTypeInfo, "sum",
+                MethodInfo.MethodType.STATIC_METHOD)
+                .setReturnType(primitives.intParameterizedType());
 
         ParameterInspectionImpl.Builder xb = new ParameterInspectionImpl.Builder(newId(),
                 primitives.intParameterizedType(), "x", 0);

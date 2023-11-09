@@ -22,7 +22,6 @@ import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.*;
 import org.e2immu.analyser.model.statement.Block;
 import org.e2immu.analyser.model.statement.ReturnStatement;
-import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.impl.FieldReferenceImpl;
 import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
 import org.e2immu.analyser.resolver.impl.SortedType;
@@ -70,11 +69,10 @@ public class EnumMethods {
 
         // name()
 
-        var nameBuilder = new MethodInspectionImpl.Builder(enumType, "name")
+        var nameBuilder = new MethodInspectionImpl.Builder(enumType, "name", MethodInfo.MethodType.ABSTRACT_METHOD)
                 .setSynthetic(true)
                 .setReturnType(primitives.stringParameterizedType())
                 .setAccess(Inspection.Access.PUBLIC)
-                .setAbstractMethod()
                 .addAnnotation(notNullContract)
                 .addAnnotation(immContainer)
                 .addAnnotation(notModifiedContract);
@@ -95,10 +93,9 @@ public class EnumMethods {
                 ConstructorCall.withArrayInitialiser(null, valuesReturnType, List.of(), arrayInitializer,
                         arrayInitializer.identifier));
         var valuesBlock = new Block.BlockBuilder(Identifier.generate("enum values block")).addStatement(returnNewArray).build();
-        var valuesBuilder = new MethodInspectionImpl.Builder(enumType, "values")
+        var valuesBuilder = new MethodInspectionImpl.Builder(enumType, "values", MethodInfo.MethodType.STATIC_METHOD)
                 .setSynthetic(true)
                 .setReturnType(valuesReturnType)
-                .setStatic(true)
                 .setAccess(Inspection.Access.PUBLIC)
                 .setInspectedBlock(valuesBlock);
         valuesBuilder.readyToComputeFQN(typeContext);
@@ -107,10 +104,9 @@ public class EnumMethods {
 
         // valueOf() returns E
 
-        var valueOfBuilder = new MethodInspectionImpl.Builder(enumType, "valueOf")
+        var valueOfBuilder = new MethodInspectionImpl.Builder(enumType, "valueOf", MethodInfo.MethodType.STATIC_METHOD)
                 .setSynthetic(true)
                 .setReturnType(enumType.asParameterizedType(typeContext))
-                .setStatic(true)
                 .setAccess(Inspection.Access.PUBLIC)
                 .addAnnotation(notNullContract)
                 .addAnnotation(notModifiedContract);
@@ -224,7 +220,7 @@ public class EnumMethods {
                 .addInterfaceImplemented(functionalInterfaceType)
                 .noParent(primitives);
 
-        var predicate = new MethodInspectionImpl.Builder(lambdaType, "test")
+        var predicate = new MethodInspectionImpl.Builder(lambdaType, "test", MethodInfo.MethodType.METHOD)
                 .setSynthetic(true)
                 .setReturnType(primitives.booleanParameterizedType())
                 .setAccess(Inspection.Access.PUBLIC)

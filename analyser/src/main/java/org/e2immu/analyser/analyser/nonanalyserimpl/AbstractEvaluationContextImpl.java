@@ -294,7 +294,7 @@ public abstract class AbstractEvaluationContextImpl implements EvaluationContext
     public boolean firstAssignmentOfFieldInConstructor(Variable variable) {
         MethodAnalyser cm = getCurrentMethod();
         if (cm == null) return false;
-        if (!cm.getMethodInfo().isConstructor) return false;
+        if (!cm.getMethodInfo().isConstructor()) return false;
         if (!(variable instanceof FieldReference)) return false;
         return !hasBeenAssigned(variable);
     }

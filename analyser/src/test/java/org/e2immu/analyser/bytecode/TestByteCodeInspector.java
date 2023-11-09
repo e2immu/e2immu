@@ -129,7 +129,7 @@ public class TestByteCodeInspector {
         LOGGER.info("Stream is\n{}", typeInfo.output());
 
         MethodInfo forDebug = typeInfo.findUniqueMethod("length", 1);
-        assertTrue(forDebug.methodInspection.get().isDefault());
+        assertTrue(forDebug.isDefault());
     }
 
     @Test

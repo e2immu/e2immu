@@ -293,10 +293,10 @@ public class Test_00_Basics_7 extends CommonTestRunner {
                 assertTrue(methodInspection.isSynchronized());
                 assertTrue(methodInspection.isPackagePrivate());
                 assertFalse(methodInspection.isFinal());
-                assertFalse(methodInspection.isDefault());
-                assertFalse(methodInspection.isAbstract());
-                assertFalse(methodInspection.isStatic());
-                assertFalse(methodInspection.isStaticBlock());
+                assertFalse(d.methodInfo().isDefault());
+                assertFalse(d.methodInfo().isAbstract());
+                assertFalse(d.methodInfo().isStatic());
+                assertFalse(d.methodInfo().isStaticBlock());
             }
             if ("increment3".equals(d.methodInfo().name)) {
                 String expect = switch (d.iteration()) {

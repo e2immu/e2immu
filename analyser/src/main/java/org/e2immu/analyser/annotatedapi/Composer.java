@@ -158,10 +158,13 @@ public record Composer(TypeMap typeMap, String destinationPackage, Predicate<Wit
     private MethodInfo createMethod(MethodInfo methodInfo, TypeInfo owner) {
         MethodInspection methodInspection = methodInfo.methodInspection.get();
         MethodInspectionImpl.Builder builder;
-        if (methodInfo.isConstructor) builder = new MethodInspectionImpl.Builder(owner);
-        else builder = new MethodInspectionImpl.Builder(owner, methodInfo.name);
+        if (methodInfo.isConstructor()) {
+            builder = new MethodInspectionImpl.Builder(owner, MethodInfo.MethodType.CONSTRUCTOR);
+        } else {
+            builder = new MethodInspectionImpl.Builder(owner, methodInfo.name, MethodInfo.MethodType.METHOD);
+        }
 
-        if (methodInspection.isStatic()) builder.addModifier(MethodModifier.STATIC);
+        if (methodInfo.isStatic()) builder.addModifier(MethodModifier.STATIC);
 
         ParameterizedType returnType = methodInspection.getReturnType();
         builder.setReturnType(returnType);

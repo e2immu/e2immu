@@ -233,8 +233,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
                 we may or may not need to write the type here.
                 (we check methodInspection is set, because of debugOutput)
                  */
-                assert !methodInfo.methodInspection.isSet()
-                        || methodInfo.methodInspection.get().isStatic();
+                assert methodInfo.isStatic();
                 TypeInfo typeInfo = typeExpression.parameterizedType.typeInfo;
                 TypeName typeName = typeInfo.typeName(qualification.qualifierRequired(typeInfo));
                 outputBuilder.add(new QualifiedName(methodInfo.name, typeName,
@@ -243,8 +242,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
             } else if ((ve = object.asInstanceOf(VariableExpression.class)) != null &&
                     ve.variable() instanceof This thisVar) {
                 //     (we check methodInspection is set, because of debugOutput)
-                assert !methodInfo.methodInspection.isSet() ||
-                        !methodInfo.methodInspection.get().isStatic() : "Have a static method with scope 'this'? "
+                assert !methodInfo.isStatic() : "Have a static method with scope 'this'? "
                         + methodInfo.fullyQualifiedName + "; this " + thisVar.typeInfo.fullyQualifiedName;
                 TypeName typeName = thisVar.typeInfo.typeName(qualification.qualifierRequired(thisVar.typeInfo));
                 ThisName thisName = new ThisName(thisVar.writeSuper, typeName, qualification.qualifierRequired(thisVar));
@@ -509,7 +507,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
            being introduced, or context properties to change (Symbol for CNN, InlinedMethod_10 for new variables)
 
          */
-        if (methodInfo.methodInspection.get().isAbstract() && forwardEvaluationInfo.allowSwitchingToConcreteMethod()) {
+        if (methodInfo.isAbstract() && forwardEvaluationInfo.allowSwitchingToConcreteMethod()) {
             EvaluationResult objProbe = object.evaluate(context, ForwardEvaluationInfo.DEFAULT);
             Expression expression = objProbe.value();
             TypeInfo typeInfo;
@@ -765,7 +763,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
 
     private boolean raiseErrorForFinalizer(EvaluationResult context,
                                            EvaluationResultImpl.Builder builder, Variable variable) {
-        if(variable.parameterizedType().bestTypeInfo().equals(methodInfo.typeInfo)) {
+        if (variable.parameterizedType().bestTypeInfo().equals(methodInfo.typeInfo)) {
             if (variable instanceof FieldReference && (context.getCurrentMethod() == null ||
                     !context.getCurrentMethod().getMethodAnalysis().getProperty(Property.FINALIZER).valueIsTrue())) {
                 // ensure that the current method has been marked @Finalizer
@@ -791,7 +789,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
     public MethodCall withObject(Expression newObject) {
         return new MethodCall(identifier, false, newObject, methodInfo, returnType(), parameterExpressions, modificationTimes);
     }
-    
+
     /*
     next => after the call; required => before the call.
     @Mark goes from BEFORE to AFTER
@@ -925,12 +923,13 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         Expression createInstanceBasedOn;
         Expression newInstance;
         if (objectValue.isInstanceOf(Instance.class) ||
-                objectValue.isInstanceOf(ConstructorCall.class) && methodInfo.isConstructor) {
+                objectValue.isInstanceOf(ConstructorCall.class) && methodInfo.isConstructor()) {
             newInstance = unwrap(objectValue);
             createInstanceBasedOn = null;
         } else if (ive != null) {
             Expression current = context.currentValue(ive.variable());
-            if (current.isInstanceOf(Instance.class) || current.isInstanceOf(ConstructorCall.class) && methodInfo.isConstructor) {
+            if (current.isInstanceOf(Instance.class) || current.isInstanceOf(ConstructorCall.class)
+                    && methodInfo.isConstructor()) {
                 newInstance = unwrap(current);
                 createInstanceBasedOn = null;
             } else {
@@ -1033,7 +1032,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
             // pre is the "old" value, which has to be obtained. If that's impossible, we bail out.
             // the parameters are available
 
-            if (aspectMethod != null && !methodInfo.isConstructor) {
+            if (aspectMethod != null && !methodInfo.isConstructor()) {
                 // first: pre (POST CONDITION, MODIFICATION)
                 filterResult = EvaluateMethodCall.filter(context, aspectMethod, newState.get(), List.of());
             } else {
@@ -1401,11 +1400,10 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
                 .toList();
     }
 
-    public boolean objectIsThisOrSuper(InspectionProvider inspectionProvider) {
+    public boolean objectIsThisOrSuper() {
         VariableExpression ve;
         if ((ve = object.asInstanceOf(VariableExpression.class)) != null && ve.variable() instanceof This) return true;
-        MethodInspection methodInspection = inspectionProvider.getMethodInspection(methodInfo);
-        return !methodInspection.isStatic() && objectIsImplicit;
+        return !methodInfo.isStatic() && objectIsImplicit;
     }
 
     @Override

@@ -633,8 +633,9 @@ public class ParameterizedType {
         if (complain && !isFunctionalInterface(inspectionProvider)) return null;
         TypeInspection typeInspection = inspectionProvider.getTypeInspection(typeInfo);
         Optional<MethodInspection> theMethod = typeInspection.methodStream(TypeInspection.Methods.THIS_TYPE_ONLY_EXCLUDE_FIELD_SAM)
+                .filter(m -> !m.isStatic() && !m.isDefault())
                 .map(inspectionProvider::getMethodInspection)
-                .filter(m -> !m.isStatic() && !m.isDefault()).findFirst();
+                .findFirst();
         if (theMethod.isPresent()) {
             return new MethodTypeParameterMap(theMethod.get(), initialTypeParameterMap(inspectionProvider));
         }

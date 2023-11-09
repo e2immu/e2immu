@@ -57,7 +57,7 @@ public class Test_18_E2Immutable extends CommonTestRunner {
                 assertEquals(MultiLevel.INDEPENDENT_DV, d.methodAnalysis().getProperty(INDEPENDENT));
             }
             if ("E2Immutable_0".equals(d.methodInfo().name)) {
-                assertTrue(d.methodInfo().isConstructor);
+                assertTrue(d.methodInfo().isConstructor());
                 assertDv(d.p(0), MultiLevel.INDEPENDENT_DV, INDEPENDENT);
                 assertDv(d.p(1), MultiLevel.INDEPENDENT_DV, INDEPENDENT);
             }
@@ -102,7 +102,7 @@ public class Test_18_E2Immutable extends CommonTestRunner {
             // the constructor with 2 parameters
             if ("E2Immutable_1".equals(d.methodInfo().name) &&
                     d.methodInfo().methodInspection.get().getParameters().size() == 2) {
-                assertTrue(d.methodInfo().isConstructor);
+                assertTrue(d.methodInfo().isConstructor());
 
                 // parent2Param.level2
                 if (d.variable() instanceof FieldReference fr && "level2".equals(fr.fieldInfo().name) &&
@@ -206,7 +206,7 @@ public class Test_18_E2Immutable extends CommonTestRunner {
 
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("E2Immutable_2".equals(d.methodInfo().name)) {
-                assertTrue(d.methodInfo().isConstructor);
+                assertTrue(d.methodInfo().isConstructor());
                 if (d.variable() instanceof FieldReference fr && "set3".equals(fr.fieldInfo().name)) {
                     assertEquals("new HashSet<>(set3Param)/*this.size()==set3Param.size()*/", d.currentValue().toString());
                     assertEquals("set3Param:4", d.variableInfo().getLinkedVariables().toString());
@@ -366,7 +366,7 @@ public class Test_18_E2Immutable extends CommonTestRunner {
 
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("E2Immutable_5".equals(d.methodInfo().name)) {
-                assertTrue(d.methodInfo().isConstructor);
+                assertTrue(d.methodInfo().isConstructor());
                 if (d.variable() instanceof FieldReference fr && "map5".equals(fr.fieldInfo().name)) {
                     assertEquals("new HashMap<>(map5Param)/*this.size()==map5Param.size()*/", d.currentValue().toString());
                     assertEquals("map5Param:4", d.variableInfo().getLinkedVariables().toString());

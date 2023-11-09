@@ -398,10 +398,10 @@ public class TypeContext implements TypeAndInspectionProvider {
         typeInspection.methodStream(TypeInspection.Methods.THIS_TYPE_ONLY_EXCLUDE_FIELD_SAM)
                 .filter(m -> m.name.equals(methodName))
                 .map(this::getMethodInspection)
-                .filter(m -> !staticOnly || m.isStatic())
+                .filter(m -> !staticOnly || m.getMethodInfo().isStatic())
                 .filter(m -> parametersPresented == IGNORE_PARAMETER_NUMBERS ||
                         compatibleNumberOfParameters(m, parametersPresented +
-                                (!m.isStatic() && decrementWhenNotStatic ? -1 : 0)))
+                                (!m.getMethodInfo().isStatic() && decrementWhenNotStatic ? -1 : 0)))
                 .forEach(m -> {
                     MethodTypeParameterMap mt = new MethodTypeParameterMap(m, typeMap);
                     int score = distance

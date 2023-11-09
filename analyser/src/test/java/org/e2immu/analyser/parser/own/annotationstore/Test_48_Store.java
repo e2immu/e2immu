@@ -59,7 +59,7 @@ public class Test_48_Store extends CommonTestRunner {
             TypeInfo mapEntry = d.typeMap().get(Map.Entry.class);
             MethodInfo getValue = mapEntry.findUniqueMethod("getValue", 0);
             assertFalse(d.getMethodAnalysis(getValue).getProperty(Property.MODIFIED_METHOD).isDelayed());
-            assertTrue(getValue.methodInspection.get().isAbstract());
+            assertTrue(getValue.isAbstract());
         };
 
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {

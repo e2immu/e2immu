@@ -73,10 +73,10 @@ public class TestCommonJavaIO extends CommonAnnotatedAPI {
         MethodInfo methodInfo = typeInfo.findUniqueMethod("println", objectTypeInfo);
         MethodInspection methodInspection = methodInfo.methodInspection.get();
         assertTrue(methodInspection.isPublic());
-        assertFalse(methodInspection.isAbstract());
-        assertFalse(methodInspection.isDefault());
+        assertFalse(methodInfo.isAbstract());
+        assertFalse(methodInfo.isDefault());
         assertTrue(methodInspection.isPubliclyAccessible());
-        assertFalse(methodInspection.isStatic());
+        assertFalse(methodInfo.isStatic());
 
         MethodResolution methodResolution = methodInfo.methodResolution.get();
         assertTrue(methodResolution.allowsInterrupts()); // statement time will increase

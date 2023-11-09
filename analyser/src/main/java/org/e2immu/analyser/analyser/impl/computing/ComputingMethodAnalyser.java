@@ -111,7 +111,7 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
             MethodInspection methodInspection = methodInfo.methodInspection.get();
             boolean inSyncBlock = methodInspection.isSynchronized()
                     || methodInfo.inConstruction()
-                    || methodInspection.isStaticBlock();
+                    || methodInfo.isStaticBlock();
             firstStatementAnalyser = StatementAnalyserImpl.recursivelyCreateAnalysisObjects(analyserContext,
                     this, null, block.structure.statements(), "", true, inSyncBlock);
             methodAnalysis.setFirstStatement(firstStatementAnalyser.statementAnalysis);
@@ -153,7 +153,7 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
 
         builder.add(STATEMENT_ANALYSER, statementAnalyser)
                 .add(COMPUTE_MODIFIED, this::computeModified)
-                .add(COMPUTE_MODIFIED_CYCLES, (sharedState -> methodInfo.isConstructor ? DONE : computeModifiedInternalCycles()))
+                .add(COMPUTE_MODIFIED_CYCLES, (sharedState -> methodInfo.isConstructor() ? DONE : computeModifiedInternalCycles()))
                 .add(OBTAIN_MOST_COMPLETE_PRECONDITION, (sharedState) -> obtainMostCompletePrecondition())
                 .add(SET_POST_CONDITION, (sharedState -> setPostCondition()))
                 .add(COMPUTE_RETURN_VALUE, (sharedState) -> methodInfo.noReturnValue()
@@ -161,7 +161,7 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
                 .add(COMPUTE_IMMUTABLE, sharedState -> methodInfo.noReturnValue() ? DONE : computeImmutable(sharedState))
                 .add(COMPUTE_CONTAINER, sharedState -> methodInfo.noReturnValue() ? DONE : computeContainer(sharedState))
                 .add(COMPUTE_SSE, this::computeStaticSideEffects)
-                .add(DETECT_MISSING_STATIC_MODIFIER, (iteration) -> methodInfo.isConstructor ? DONE : detectMissingStaticModifier())
+                .add(DETECT_MISSING_STATIC_MODIFIER, (iteration) -> methodInfo.isConstructor() ? DONE : detectMissingStaticModifier())
                 .add(EVENTUAL_PREP_WORK, this::eventualPrepWork)
                 .add(ANNOTATE_EVENTUAL, this::annotateEventual)
                 .add(COMPUTE_INDEPENDENT, this::analyseIndependent)
@@ -298,7 +298,7 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
     private static final String NOT_RAISING = "Not raising the 'method should be marked static' error ";
 
     private AnalysisStatus detectMissingStaticModifier() {
-        if (!methodInfo.methodInspection.get().isStatic()
+        if (!methodInfo.isStatic()
                 && !methodInfo.typeInfo.isInterface()
                 && methodInfo.isNotATestMethod()) {
             // we need to check if there's fields being read/assigned/
@@ -306,7 +306,7 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
                     && absentUnlessStatic(VariableInfo::isAssigned)
                     && !getThisAsVariable().isRead()
                     && methodInfo.isNotOverridingAnyOtherMethod()
-                    && !methodInfo.methodInspection.get().isDefault()) {
+                    && !methodInfo.isDefault()) {
                 analyserResultBuilder.add(Message.newMessage(methodInfo.newLocation(),
                         Message.Label.METHOD_SHOULD_BE_MARKED_STATIC));
                 LOGGER.info("Method should be marked 'static': {}", methodInfo);
@@ -343,7 +343,7 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
 
     private AnalysisStatus annotateEventual(SharedState sharedState) {
         if (methodAnalysis.eventualIsSet()) return DONE;
-        if (methodInfo.isConstructor) {
+        if (methodInfo.isConstructor()) {
             // don't write to annotations
             methodAnalysis.setEventual(MethodAnalysis.NOT_EVENTUAL);
             return DONE;
@@ -370,7 +370,7 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
         if (!methodAnalysis.getPreconditionForEventual().isDelayed()) {
             return DONE;
         }
-        if (methodInfo.isConstructor) {
+        if (methodInfo.isConstructor()) {
             methodAnalysis.setPreconditionForEventual(Precondition.empty(methodAnalysis.primitives));
             return DONE;
         }
@@ -575,7 +575,7 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
         // if we cannot cast 'this' to the current type or the other way round, the method cannot be fluent
         // see Fluent_0 for one way, and Store_7 for the other direction
         ParameterizedType myType = methodInfo.typeInfo.asParameterizedType(analyserContext);
-        if (myType.isNotAssignableFromTo(analyserContext, methodInspection.getReturnType()) || methodInspection.isStatic()) {
+        if (myType.isNotAssignableFromTo(analyserContext, methodInspection.getReturnType()) || methodInfo.isStatic()) {
             methodAnalysis.setProperty(Property.FLUENT, DV.FALSE_DV);
         }
 
@@ -1009,7 +1009,7 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
         Property property = isCycle ? Property.TEMP_MODIFIED_METHOD : Property.MODIFIED_METHOD;
 
         if (methodAnalysis.getProperty(property).isDone()) return DONE;
-        if (methodInfo.isConstructor) {
+        if (methodInfo.isConstructor()) {
             methodAnalysis.setProperty(MODIFIED_METHOD, DV.TRUE_DV);
             return DONE;
         }

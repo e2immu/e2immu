@@ -314,7 +314,7 @@ public class InlinedMethod extends BaseExpression implements Expression {
             }
             return expandedVariable(evaluationResult, identifierOfMethodCall, null, variable, linkedVariables);
         }
-        if (variable instanceof This && !methodInfo.methodInspection.get().isStatic()) {
+        if (variable instanceof This && !methodInfo.isStatic()) {
             return scope;
         }
         if (variable instanceof FieldReference fieldReference) {

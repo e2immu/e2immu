@@ -80,7 +80,7 @@ public class Test_03_CompanionMethods extends CommonTestRunner {
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("test".equals(d.methodInfo().name)) {
                 assertEquals("4", d.methodAnalysis().getSingleReturnValue().toString());
-                assertTrue(d.methodInfo().methodInspection.get().isStatic());
+                assertTrue(d.methodInfo().isStatic());
             }
         };
 
@@ -384,7 +384,7 @@ public class Test_03_CompanionMethods extends CommonTestRunner {
             TypeInfo annotatedAPI = d.typeMap().get("org.e2immu.annotatedapi.AnnotatedAPI");
             assertNotNull(annotatedAPI);
             MethodInfo isKnown = annotatedAPI.findUniqueMethod("isKnown", 1);
-            assertTrue(isKnown.methodInspection.get().isStatic());
+            assertTrue(isKnown.isStatic());
         };
 
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {

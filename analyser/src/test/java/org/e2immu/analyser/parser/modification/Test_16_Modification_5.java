@@ -55,7 +55,7 @@ public class Test_16_Modification_5 extends CommonTestRunner {
         };
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("Modification_5".equals(d.methodInfo().name)) {
-                assertTrue(d.methodInfo().isConstructor);
+                assertTrue(d.methodInfo().isConstructor());
                 assertEquals(DV.TRUE_DV, d.methodAnalysis().getProperty(Property.MODIFIED_METHOD));
                 assertDv(d.p(0), 2, DV.FALSE_DV, Property.MODIFIED_OUTSIDE_METHOD);
                 assertDv(d.p(0), 2, MultiLevel.INDEPENDENT_DV, Property.INDEPENDENT);

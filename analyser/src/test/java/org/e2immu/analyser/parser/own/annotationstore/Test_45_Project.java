@@ -254,7 +254,7 @@ public class Test_45_Project extends CommonTestRunner {
 
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("Container".equals(d.methodInfo().name)) {
-                assertTrue(d.methodInfo().isConstructor);
+                assertTrue(d.methodInfo().isConstructor());
                 assertDv(d.p(0), 2, DV.TRUE_DV, Property.MODIFIED_VARIABLE);
                 assertDv(d.p(0), 2, DV.TRUE_DV, Property.MODIFIED_OUTSIDE_METHOD);
                 assertDv(d.p(0), 1, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
@@ -322,7 +322,7 @@ public class Test_45_Project extends CommonTestRunner {
             assertEquals(MultiLevel.EFFECTIVELY_IMMUTABLE_DV, stringAnalysis.getProperty(Property.IMMUTABLE));
         };
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
-            if ("Container".equals(d.methodInfo().name) && d.methodInfo().isConstructor) {
+            if ("Container".equals(d.methodInfo().name) && d.methodInfo().isConstructor()) {
                 assertDv(d.p(0), 1, DV.FALSE_DV, Property.MODIFIED_OUTSIDE_METHOD);
                 assertDv(d.p(0), 1, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
                 assertDv(d.p(0), 1, DV.FALSE_DV, Property.CONTEXT_MODIFIED);

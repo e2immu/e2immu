@@ -253,7 +253,7 @@ public class Test_26_Enum extends CommonTestRunner {
 
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("values".equals(d.methodInfo().name)) {
-                assertTrue(d.methodInfo().methodInspection.get().isStatic());
+                assertTrue(d.methodInfo().isStatic());
                 String expected = d.iteration() < 9 ? "<m:values>" : "{Enum_1.ONE,Enum_1.TWO,Enum_1.THREE}";
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
                 assertDv(d, DV.FALSE_DV, Property.MODIFIED_METHOD);

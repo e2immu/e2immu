@@ -633,7 +633,7 @@ public class ResolverImpl implements Resolver {
             BlockStmt block = methodInspection.getBlock();
             Block.BlockBuilder blockBuilder = new Block.BlockBuilder(block == null ?
                     Identifier.generate("resolved empty block") : Identifier.from(block));
-            Consumer<Block.BlockBuilder> compactConstructorAppender = methodInspection.compactConstructor
+            Consumer<Block.BlockBuilder> compactConstructorAppender = methodInfo.isCompactConstructor()
                     ? addCompactConstructorSyntheticAssignments(expressionContext.typeContext(), typeInspection, methodInspection)
                     : NOT_A_COMPACT_CONSTRUCTOR;
             if (block != null && !block.getStatements().isEmpty()) {
@@ -761,7 +761,8 @@ public class ResolverImpl implements Resolver {
                 } else {
                     methodInfo = null;
                 }
-                if (methodInfo != null) {
+                // avoid synthetic constructors: they have no method inspection
+                if (methodInfo != null && !methodInfo.isSyntheticConstructor()) {
                     if (caller != null) {
                         methodCallGraph.addNode(caller, List.of(methodInfo));
                         created.set(true);
@@ -950,7 +951,7 @@ public class ResolverImpl implements Resolver {
 
     private boolean notPartOfConstruction(MethodInfo methodInfo, MethodInspection methodInspection) {
         return !methodInspection.isPrivate() &&
-                !methodInspection.isStatic() &&
+                !methodInspection.getMethodInfo().isStatic() &&
                 !methodInspection.getMethodInfo().typeInfo
                         .recursivelyInConstructionOrStaticWithRespectTo(inspectionProvider, methodInfo.typeInfo);
     }
@@ -1038,7 +1039,7 @@ public class ResolverImpl implements Resolver {
 
     private MethodResolution.CallStatus computeCallStatus(Map<MethodInfo, MethodResolution.Builder> builders,
                                                           MethodInfo methodInfo) {
-        if (methodInfo.isConstructor) {
+        if (methodInfo.isConstructor()) {
             return MethodResolution.CallStatus.PART_OF_CONSTRUCTION;
         }
         if (!inspectionProvider.getMethodInspection(methodInfo).isPrivate()) {

@@ -119,7 +119,7 @@ public class Test_00_Basics_24 extends CommonTestRunner {
 
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("X".equals(d.methodInfo().name)) {
-                assertTrue(d.methodInfo().isConstructor);
+                assertTrue(d.methodInfo().isConstructor());
                 assertEquals(d.iteration() == 3, d.allowBreakDelay());
                 String delay = d.iteration() == 0 ? "cm@Parameter_s;mom@Parameter_s" : "mom@Parameter_s";
                 assertDv(d.p(0), delay, 2, DV.FALSE_DV, Property.MODIFIED_VARIABLE);

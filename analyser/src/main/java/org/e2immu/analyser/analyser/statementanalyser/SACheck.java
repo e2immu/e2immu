@@ -187,16 +187,16 @@ public record SACheck(StatementAnalysis statementAnalysis) {
             }
             if (fluent.valueIsTrue()) return DONE;
             DV modified = methodAnalysis.getProperty(MODIFIED_METHOD);
-            if (modified.isDelayed() && !methodCall.methodInfo.methodInspection.get().isAbstract()) {
+            if (modified.isDelayed() && !methodCall.methodInfo.isAbstract()) {
                 LOGGER.debug("Delaying unused return value in {} {}, waiting for @Modified of {}",
                         index(), methodInfo().fullyQualifiedName, methodCall.methodInfo.fullyQualifiedName);
                 return modified.causesOfDelay();
             }
             if (modified.valueIsFalse()) {
-                MethodInspection methodCallInspection = analyserContext.getMethodInspection(methodCall.methodInfo);
-                if (methodCallInspection.isStatic()) {
+                if (methodCall.methodInfo.isStatic()) {
                     // for static methods, we verify if one of the parameters is modifying
                     CausesOfDelay delays = CausesOfDelay.EMPTY;
+                    MethodInspection methodCallInspection = analyserContext.getMethodInspection(methodCall.methodInfo);
                     for (ParameterInfo parameterInfo : methodCallInspection.getParameters()) {
                         ParameterAnalysis parameterAnalysis = analyserContext.getParameterAnalysis(parameterInfo);
                         DV mv = parameterAnalysis.getProperty(MODIFIED_VARIABLE);

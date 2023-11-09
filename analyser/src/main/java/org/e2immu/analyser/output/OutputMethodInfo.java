@@ -34,7 +34,7 @@ public class OutputMethodInfo {
 
     public static OutputBuilder output(MethodInfo methodInfo, Qualification qualification, AnalysisProvider analysisProvider) {
         MethodInspection inspection = methodInfo.methodInspection.get();
-        if (inspection.isStaticBlock()) {
+        if (methodInfo.isStaticBlock()) {
             OutputBuilder result = new OutputBuilder().add(Keyword.STATIC);
             Qualification bodyQualification = makeBodyQualification(qualification, inspection);
             MethodAnalysis methodAnalysisOrNull = analysisProvider.getMethodAnalysis(methodInfo);
@@ -58,11 +58,11 @@ public class OutputMethodInfo {
             afterAnnotations.add(Symbol.RIGHT_ANGLE_BRACKET).add(Space.ONE);
         }
 
-        if (!methodInfo.isConstructor) {
+        if (!methodInfo.isConstructor()) {
             afterAnnotations.add(inspection.getReturnType().output(qualification)).add(Space.ONE);
         }
         afterAnnotations.add(new Text(methodInfo.name));
-        if (!inspection.isCompactConstructor()) {
+        if (!methodInfo.isCompactConstructor()) {
             if (inspection.getParameters().isEmpty()) {
                 afterAnnotations.add(Symbol.OPEN_CLOSE_PARENTHESIS);
             } else {
@@ -78,7 +78,7 @@ public class OutputMethodInfo {
                             .map(pi -> pi.output(qualification)).collect(OutputBuilder.joining(Symbol.COMMA)));
         }
         MethodAnalysis methodAnalysisOrNull = analysisProvider.getMethodAnalysis(methodInfo);
-        if (inspection.isAbstract()) {
+        if (methodInfo.isAbstract()) {
             afterAnnotations.add(Symbol.SEMICOLON);
         } else {
             Qualification bodyQualification = makeBodyQualification(qualification, inspection);

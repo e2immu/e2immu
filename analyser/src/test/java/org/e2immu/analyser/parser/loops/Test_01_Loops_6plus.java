@@ -317,11 +317,11 @@ public class Test_01_Loops_6plus extends CommonTestRunner {
         TypeMapVisitor typeMapVisitor = d -> {
             TypeInfo typeInfo = d.typeMap().get(LocalDateTime.class);
             MethodInfo now = typeInfo.findUniqueMethod("now", 0);
-            assertTrue(now.methodInspection.get().isStatic());
+            assertTrue(now.isStatic());
             assertEquals(DV.FALSE_DV, d.getMethodAnalysis(now).getProperty(MODIFIED_METHOD));
             TypeInfo chrono = d.typeMap().get(ChronoLocalDateTime.class);
             MethodInfo toInstant = chrono.findUniqueMethod("toInstant", 1);
-            assertFalse(toInstant.methodInspection.get().isStatic());
+            assertFalse(toInstant.isStatic());
             assertEquals(DV.FALSE_DV, d.getMethodAnalysis(toInstant).getProperty(MODIFIED_METHOD));
             ParameterAnalysis utc = toInstant.parameterAnalysis(0);
             assertEquals(DV.TRUE_DV, utc.getProperty(MODIFIED_VARIABLE));

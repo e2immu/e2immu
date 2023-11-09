@@ -87,7 +87,7 @@ public class ConvertMethodReference {
         MethodInspection methodReferenceInspection = expressionContext.typeContext()
                 .getMethodInspection(methodReference.methodInfo);
         Expression newReturnExpression;
-        if (methodReferenceInspection.isStatic() || !(methodReference.scope instanceof TypeExpression)) {
+        if (methodReference.methodInfo.isStatic() || !(methodReference.scope instanceof TypeExpression)) {
             newReturnExpression = methodCallCopyAllParameters(methodReference.scope, methodReferenceInspection, methodBuilder);
         } else {
             if (methodBuilder.getParameters().size() != 1)

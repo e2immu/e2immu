@@ -130,7 +130,7 @@ public class MyMethodVisitor extends MethodVisitor {
             }
         }
         MethodInfo methodInfo = methodInspectionBuilder.getMethodInfo();
-        if (methodInfo.isConstructor) {
+        if (methodInfo.isConstructor()) {
             typeInspectionBuilder.addConstructor(methodInfo);
         } else {
             typeInspectionBuilder.addMethod(methodInfo);

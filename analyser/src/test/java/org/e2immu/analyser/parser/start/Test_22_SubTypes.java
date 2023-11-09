@@ -65,7 +65,7 @@ public class Test_22_SubTypes extends CommonTestRunner {
 
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if (SUBTYPE_CONSTRUCTOR.equals(d.methodInfo().name)) {
-                assertTrue(d.methodInfo().isConstructor);
+                assertTrue(d.methodInfo().isConstructor());
             }
         };
 
@@ -78,7 +78,7 @@ public class Test_22_SubTypes extends CommonTestRunner {
 
         StatementAnalyserVisitor statementAnalyserVisitor = d -> {
             if (SUBTYPE_CONSTRUCTOR.equals(d.methodInfo().name)) {
-                assertTrue(d.methodInfo().isConstructor);
+                assertTrue(d.methodInfo().isConstructor());
                 if ("1".equals(d.statementId())) {
                     String report = d.iteration() == 0
                             ? "s={context-modified=link@NOT_YET_SET, context-not-null=nullable:1, read=true:1}, this={context-modified=false:0}"

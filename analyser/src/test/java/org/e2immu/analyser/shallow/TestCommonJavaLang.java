@@ -76,9 +76,9 @@ public class TestCommonJavaLang extends CommonAnnotatedAPI {
 
         MethodInspection methodInspection = toLowerCase.methodInspection.get();
         assertTrue(methodInspection.isPublic());
-        assertFalse(methodInspection.isAbstract());
-        assertFalse(methodInspection.isDefault());
-        assertFalse(methodInspection.isStatic());
+        assertFalse(toLowerCase.isAbstract());
+        assertFalse(toLowerCase.isDefault());
+        assertFalse(toLowerCase.isStatic());
 
         assertEquals(MethodInfo.COMPLEXITY_METHOD_WITHOUT_CODE, toLowerCase.getComplexity());
     }
@@ -257,8 +257,8 @@ public class TestCommonJavaLang extends CommonAnnotatedAPI {
 
         MethodInspection methodInspection = methodInfo.methodInspection.get();
         assertTrue(methodInspection.isPublic());
-        assertFalse(methodInspection.isAbstract());
-        assertTrue(methodInspection.isDefault());
+        assertFalse(methodInfo.isAbstract());
+        assertTrue(methodInfo.isDefault());
 
         MethodAnalysis methodAnalysis = methodInfo.methodAnalysis.get();
         assertEquals(DV.FALSE_DV, methodAnalysis.getProperty(Property.MODIFIED_METHOD));

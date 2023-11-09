@@ -40,12 +40,27 @@ public class MethodInfo implements InfoObject, WithInspectionAndAnalysis {
     public static final String UNARY_MINUS_OPERATOR_INT = "int.-(int)";
     public static final int COMPLEXITY_METHOD_WITHOUT_CODE = 10;
 
+    public enum MethodType {
+        CONSTRUCTOR(true), COMPACT_CONSTRUCTOR(true), SYNTHETIC_CONSTRUCTOR(true),
+        STATIC_BLOCK(false), DEFAULT_METHOD(false), STATIC_METHOD(false),
+        ABSTRACT_METHOD(false), METHOD(false);
+        final boolean constructor;
+
+        MethodType(boolean constructor) {
+            this.constructor = constructor;
+        }
+
+        public boolean isConstructor() {
+            return constructor;
+        }
+    }
+
     public final Identifier identifier;
     public final TypeInfo typeInfo; // back reference, only @ContextClass after...
     public final String name;
     public final String fullyQualifiedName;
     public final String distinguishingName;
-    public final boolean isConstructor;
+    public final MethodType methodType;
 
     public final SetOnce<MethodInspection> methodInspection = new SetOnce<>();
     public final SetOnce<MethodAnalysis> methodAnalysis = new SetOnce<>();
@@ -89,13 +104,13 @@ public class MethodInfo implements InfoObject, WithInspectionAndAnalysis {
      */
     public MethodInfo(Identifier identifier,
                       @NotNull TypeInfo typeInfo, @NotNull String name, String fullyQualifiedName,
-                      String distinguishingName, boolean isConstructor) {
+                      String distinguishingName, MethodType methodType) {
         this.identifier = Objects.requireNonNull(identifier);
         this.typeInfo = Objects.requireNonNull(typeInfo);
         this.name = Objects.requireNonNull(name);
         this.fullyQualifiedName = Objects.requireNonNull(fullyQualifiedName);
         this.distinguishingName = Objects.requireNonNull(distinguishingName);
-        this.isConstructor = isConstructor;
+        this.methodType = methodType;
     }
 
     @Override
@@ -123,6 +138,34 @@ public class MethodInfo implements InfoObject, WithInspectionAndAnalysis {
     @Override
     public Inspection getInspection() {
         return methodInspection.get();
+    }
+
+    public boolean isConstructor() {
+        return methodType.constructor;
+    }
+
+    public boolean isDefault() {
+        return methodType == MethodType.DEFAULT_METHOD;
+    }
+
+    public boolean isCompactConstructor() {
+        return methodType == MethodType.COMPACT_CONSTRUCTOR;
+    }
+
+    public boolean isSyntheticConstructor() {
+        return methodType == MethodType.SYNTHETIC_CONSTRUCTOR;
+    }
+
+    public boolean isStaticBlock() {
+        return methodType == MethodType.STATIC_BLOCK;
+    }
+
+    public boolean isStatic() {
+        return methodType == MethodType.STATIC_METHOD || methodType == MethodType.STATIC_BLOCK;
+    }
+
+    public boolean isAbstract() {
+        return methodType == MethodType.ABSTRACT_METHOD;
     }
 
     @Override
@@ -153,7 +196,7 @@ public class MethodInfo implements InfoObject, WithInspectionAndAnalysis {
         if (!hasBeenInspected()) return UpgradableBooleanMap.of();
         MethodInspection inspection = methodInspection.get();
 
-        UpgradableBooleanMap<TypeInfo> constructorTypes = isConstructor ? UpgradableBooleanMap.of() :
+        UpgradableBooleanMap<TypeInfo> constructorTypes = isConstructor() ? UpgradableBooleanMap.of() :
                 inspection.getReturnType().typesReferenced(true);
 
         UpgradableBooleanMap<TypeInfo> parameterTypes =
@@ -190,7 +233,7 @@ public class MethodInfo implements InfoObject, WithInspectionAndAnalysis {
         if (!hasBeenInspected()) return UpgradableIntMap.of();
         MethodInspection inspection = methodInspection.get();
 
-        UpgradableIntMap<TypeInfo> constructorTypes = isConstructor ? UpgradableIntMap.of() :
+        UpgradableIntMap<TypeInfo> constructorTypes = isConstructor() ? UpgradableIntMap.of() :
                 inspection.getReturnType().typesReferenced2(METHOD_WEIGHT);
 
         UpgradableIntMap<TypeInfo> parameterTypes =
@@ -277,7 +320,7 @@ public class MethodInfo implements InfoObject, WithInspectionAndAnalysis {
     }
 
     public boolean noReturnValue() {
-        return isVoid() || isConstructor;
+        return isVoid() || isConstructor();
     }
 
     public boolean hasReturnValue() {
@@ -294,8 +337,8 @@ public class MethodInfo implements InfoObject, WithInspectionAndAnalysis {
     certain types (see EnumMethods). It is, however, never semantically "explicitlyEmpty".
      */
     public boolean explicitlyEmptyMethod() {
-        if (hasStatements() || methodInspection.get().isStatic() && methodInspection.get().isSynthetic()) return false;
-        boolean empty = !typeInfo.shallowAnalysis() && !methodInspection.get().isAbstract();
+        if (hasStatements() || isStatic() && methodInspection.get().isSynthetic()) return false;
+        boolean empty = !typeInfo.shallowAnalysis() && !isAbstract();
         assert !empty || noReturnValue();
         return empty;
     }
@@ -391,11 +434,11 @@ public class MethodInfo implements InfoObject, WithInspectionAndAnalysis {
     }
 
     public boolean inConstruction() {
-        return isConstructor || methodResolution.get().callStatus() == MethodResolution.CallStatus.PART_OF_CONSTRUCTION;
+        return isConstructor() || methodResolution.get().callStatus() == MethodResolution.CallStatus.PART_OF_CONSTRUCTION;
     }
 
     public MethodInfo implementationIn(TypeInfo typeInfo) {
-        if (methodInspection.get().isAbstract()) {
+        if (isAbstract()) {
             return implementations.getOrDefaultNull(typeInfo);
         }
         return this;
@@ -472,7 +515,7 @@ public class MethodInfo implements InfoObject, WithInspectionAndAnalysis {
 
     // as in "boolean x() { return true };
     public boolean singleStatementReturnConstant() {
-        if (methodInspection.get().isAbstract() || noReturnValue()) return false;
+        if (isAbstract() || noReturnValue()) return false;
         Block block = methodInspection.get().getMethodBody();
         assert block != null;
         return block.structure.statements().size() == 1

@@ -162,7 +162,7 @@ public class Test_07_DependentVariables extends CommonTestRunner {
                 }
             }
             if ("XS".equals(d.methodInfo().name)) {
-                assertTrue(d.methodInfo().isConstructor);
+                assertTrue(d.methodInfo().isConstructor());
                 if (d.variable() instanceof ParameterInfo p && "p".equals(p.name)) {
                     if ("1".equals(d.statementId())) {
                         String expected = "nullable instance type X[]/*@Identity*/";
@@ -190,7 +190,7 @@ public class Test_07_DependentVariables extends CommonTestRunner {
                 assertDv(d, 2, MultiLevel.DEPENDENT_DV, Property.INDEPENDENT);
             }
             if ("XS".equals(d.methodInfo().name)) {
-                assertTrue(d.methodInfo().isConstructor);
+                assertTrue(d.methodInfo().isConstructor());
                 assertDv(d.p(0), 2, MultiLevel.DEPENDENT_DV, Property.INDEPENDENT);
             }
         };
@@ -234,7 +234,7 @@ public class Test_07_DependentVariables extends CommonTestRunner {
     public void test_1_1() throws IOException {
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("XS".equals(d.methodInfo().name)) {
-                assertTrue(d.methodInfo().isConstructor);
+                assertTrue(d.methodInfo().isConstructor());
                 if (d.variable() instanceof ParameterInfo p && "p".equals(p.name)) {
                     if ("1".equals(d.statementId())) {
                         String expected = "nullable instance type X[]/*@Identity*/";
@@ -255,7 +255,7 @@ public class Test_07_DependentVariables extends CommonTestRunner {
 
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("XS".equals(d.methodInfo().name)) {
-                assertTrue(d.methodInfo().isConstructor);
+                assertTrue(d.methodInfo().isConstructor());
                 if (d.variable() instanceof FieldReference fr && "xs".equals(fr.fieldInfo().name)) {
                     if ("1".equals(d.statementId())) {
                         assertEquals("this:3,xs:4", d.variableInfo().getLinkedVariables().toString());
@@ -296,7 +296,7 @@ public class Test_07_DependentVariables extends CommonTestRunner {
                 assertDv(d, 2, MultiLevel.DEPENDENT_DV, Property.INDEPENDENT);
             }
             if ("XS".equals(d.methodInfo().name)) {
-                assertTrue(d.methodInfo().isConstructor);
+                assertTrue(d.methodInfo().isConstructor());
             }
         };
 

@@ -101,10 +101,10 @@ public class TestOverload extends CommonTest {
 
         MethodInfo methodInfo = typeInfo.findUniqueMethod(typeMap, "length", 0);
         MethodInspection methodInspection = typeMap.getMethodInspection(methodInfo);
-        assertTrue(methodInspection.isAbstract());
+        assertTrue(methodInfo.isAbstract());
         assertTrue(methodInspection.isPublic());
-        assertFalse(methodInspection.isDefault());
-        assertFalse(methodInspection.isStatic());
+        assertFalse(methodInfo.isDefault());
+        assertFalse(methodInfo.isStatic());
     }
 
     @Test
@@ -120,10 +120,10 @@ public class TestOverload extends CommonTest {
 
         MethodInfo methodInfo = typeInfo.findUniqueMethod(typeMap, "length", 0);
         MethodInspection methodInspection = typeMap.getMethodInspection(methodInfo);
-        assertFalse(methodInspection.isAbstract());
+        assertFalse(methodInfo.isAbstract());
         assertTrue(methodInspection.isPublic()); // FIXME but is not accessible...
-        assertFalse(methodInspection.isDefault());
-        assertFalse(methodInspection.isStatic());
+        assertFalse(methodInfo.isDefault());
+        assertFalse(methodInfo.isStatic());
     }
 
     @Test

@@ -341,13 +341,12 @@ public class MyClassVisitor extends ClassVisitor {
                 descriptor, signature, Arrays.toString(exceptions), synthetic);
         if (synthetic) return null;
 
-        boolean isStatic = (access & Opcodes.ACC_STATIC) != 0;
         MethodInspectionImpl.Builder methodInspectionBuilder;
         if ("<init>".equals(name)) {
-            methodInspectionBuilder = new MethodInspectionImpl.Builder(currentType);
+            methodInspectionBuilder = new MethodInspectionImpl.Builder(currentType, MethodInfo.MethodType.CONSTRUCTOR);
         } else {
-            methodInspectionBuilder = new MethodInspectionImpl.Builder(currentType, name);
-            methodInspectionBuilder.setStatic(isStatic);
+            MethodInfo.MethodType methodType = extractMethodType(access);
+            methodInspectionBuilder = new MethodInspectionImpl.Builder(currentType, name, methodType);
         }
         if ((access & Opcodes.ACC_PUBLIC) != 0 && !currentTypeIsInterface) {
             methodInspectionBuilder.addModifier(MethodModifier.PUBLIC);
@@ -355,12 +354,6 @@ public class MyClassVisitor extends ClassVisitor {
         if ((access & Opcodes.ACC_PRIVATE) != 0) methodInspectionBuilder.addModifier(MethodModifier.PRIVATE);
         if ((access & Opcodes.ACC_PROTECTED) != 0) methodInspectionBuilder.addModifier(MethodModifier.PROTECTED);
         if ((access & Opcodes.ACC_FINAL) != 0) methodInspectionBuilder.addModifier(MethodModifier.FINAL);
-        boolean isAbstract = (access & Opcodes.ACC_ABSTRACT) != 0;
-        if (isAbstract) {
-            methodInspectionBuilder.setAbstractMethod();
-        } else if (currentTypeIsInterface) {
-            methodInspectionBuilder.addModifier(isStatic ? MethodModifier.STATIC : MethodModifier.DEFAULT);
-        }
 
         boolean lastParameterIsVarargs = (access & Opcodes.ACC_VARARGS) != 0;
 
@@ -400,6 +393,21 @@ public class MyClassVisitor extends ClassVisitor {
 
         return new MyMethodVisitor(methodContext, methodInspectionBuilder, typeInspectionBuilder, types,
                 lastParameterIsVarargs, methodItem, jetBrainsAnnotationTranslator);
+    }
+
+    private MethodInfo.MethodType extractMethodType(int access) {
+        boolean isStatic = (access & Opcodes.ACC_STATIC) != 0;
+        if (isStatic) {
+            return MethodInfo.MethodType.STATIC_METHOD;
+        }
+        boolean isAbstract = (access & Opcodes.ACC_ABSTRACT) != 0;
+        if (isAbstract) {
+            return MethodInfo.MethodType.ABSTRACT_METHOD;
+        }
+        if (currentTypeIsInterface) {
+            return MethodInfo.MethodType.DEFAULT_METHOD;
+        }
+        return MethodInfo.MethodType.METHOD;
     }
 
     @Override

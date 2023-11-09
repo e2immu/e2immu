@@ -207,19 +207,19 @@ public class Test_Output_03_Formatter extends CommonTestRunner {
 
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("pop".equals(d.methodInfo().name) && "Formatter".equals(d.methodInfo().typeInfo.simpleName)) {
-                assertTrue(d.methodInfo().methodInspection.get().isStatic());
+                assertTrue(d.methodInfo().isStatic());
                 assertDv(d, DV.FALSE_DV, Property.MODIFIED_METHOD);
                 assertDv(d.p(0), 1, DV.TRUE_DV, Property.MODIFIED_VARIABLE);
                 assertDv(d.p(2), 3, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
             }
             if ("swap".equals(d.methodInfo().name) && "Formatter".equals(d.methodInfo().typeInfo.simpleName)) {
-                assertTrue(d.methodInfo().methodInspection.get().isStatic());
+                assertTrue(d.methodInfo().isStatic());
                 assertDv(d, DV.FALSE_DV, Property.MODIFIED_METHOD);
                 assertDv(d.p(0), 3, DV.TRUE_DV, Property.MODIFIED_VARIABLE);
                 assertDv(d.p(2), 3, DV.TRUE_DV, Property.MODIFIED_VARIABLE);
             }
             if ("writer".equals(d.methodInfo().name)) {
-                assertTrue(d.methodInfo().methodInspection.get().isStatic());
+                assertTrue(d.methodInfo().isStatic());
                 assertDv(d, DV.FALSE_DV, Property.MODIFIED_METHOD);
                 assertDv(d.p(0), 1, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
                 assertDv(d.p(1), 3, DV.FALSE_DV, Property.MODIFIED_VARIABLE);

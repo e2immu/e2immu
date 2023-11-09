@@ -25,18 +25,13 @@ import java.util.Set;
 
 public class CallsToOwnMethods {
 
-    private final InspectionProvider inspectionProvider;
     private final Set<MethodInfo> methods = new HashSet<>();
-
-    public CallsToOwnMethods(InspectionProvider inspectionProvider) {
-        this.inspectionProvider = inspectionProvider;
-    }
 
     public CallsToOwnMethods visit(Element element) {
         element.visit(e -> {
-            if (e instanceof MethodCall methodCall && methodCall.objectIsThisOrSuper(inspectionProvider)) {
+            if (e instanceof MethodCall methodCall && methodCall.objectIsThisOrSuper()) {
                 methods.add(methodCall.methodInfo);
-            } else if (e instanceof MethodReference methodReference && methodReference.objectIsThisOrSuper(inspectionProvider)) {
+            } else if (e instanceof MethodReference methodReference && methodReference.objectIsThisOrSuper()) {
                 methods.add(methodReference.methodInfo);
             }
         });

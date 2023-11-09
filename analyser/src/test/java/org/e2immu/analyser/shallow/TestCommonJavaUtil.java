@@ -239,7 +239,7 @@ public class TestCommonJavaUtil extends CommonAnnotatedAPI {
         MethodInfo methodInfo = typeInfo.typeInspection.get().methodStream(TypeInspection.Methods.THIS_TYPE_ONLY)
                 .filter(m -> m.methodInspection.get().getParameters().size() == 1 &&
                         m.name.equals("of") &&
-                        m.methodInspection.get().isStatic() &&
+                        m.isStatic() &&
                         m.methodInspection.get().getParameters().get(0).parameterizedType.arrays > 0)
                 .findFirst().orElseThrow();
         assertEquals("java.util.Set.of(E...)", methodInfo.fullyQualifiedName);
@@ -422,7 +422,7 @@ public class TestCommonJavaUtil extends CommonAnnotatedAPI {
     public void testMapOf() {
         TypeInfo typeInfo = typeContext.getFullyQualified(Map.class);
         MethodInfo methodInfo = typeInfo.findUniqueMethod("of", 2);
-        assertTrue(methodInfo.methodInspection.get().isStatic());
+        assertTrue(methodInfo.isStatic());
         MethodAnalysis methodAnalysis = methodInfo.methodAnalysis.get();
         assertEquals(DV.FALSE_DV, methodAnalysis.getProperty(Property.MODIFIED_METHOD));
         assertEquals(MultiLevel.CONTAINER_DV, methodAnalysis.getProperty(Property.CONTAINER));

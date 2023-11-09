@@ -33,10 +33,6 @@ import java.util.stream.Collectors;
 public class MethodInspectionImpl extends InspectionImpl implements MethodInspection {
     private static final Logger LOGGER = LoggerFactory.getLogger(MethodInspectionImpl.class);
 
-    enum MethodType {
-        CONSTRUCTOR, COMPACT_CONSTRUCTOR, STATIC_BLOCK, DEFAULT_METHOD, STATIC_METHOD, ABSTRACT_METHOD, METHOD,
-    }
-
     private final String fullyQualifiedName;
     private final String distinguishingName;
 
@@ -56,7 +52,6 @@ public class MethodInspectionImpl extends InspectionImpl implements MethodInspec
     private final List<ParameterizedType> exceptionTypes;
 
     private final Map<CompanionMethodName, MethodInfo> companionMethods;
-    private final MethodType methodType;
 
     private MethodInspectionImpl(MethodInfo methodInfo,
                                  String fullyQualifiedName,
@@ -66,7 +61,6 @@ public class MethodInspectionImpl extends InspectionImpl implements MethodInspec
                                  boolean finalMethod,
                                  Access access,
                                  Comment comment,
-                                 MethodType methodType,
                                  Set<MethodModifier> parsedModifiers,
                                  List<ParameterInfo> parameters,
                                  ParameterizedType returnType,
@@ -86,34 +80,8 @@ public class MethodInspectionImpl extends InspectionImpl implements MethodInspec
         this.typeParameters = typeParameters;
         this.methodBody = methodBody;
         this.exceptionTypes = exceptionTypes;
-        this.methodType = methodType;
         this.isFinal = finalMethod;
         this.isSynchronized = synchronizedMethod;
-    }
-
-    @Override
-    public boolean isCompactConstructor() {
-        return methodType == MethodType.COMPACT_CONSTRUCTOR;
-    }
-
-    @Override
-    public boolean isDefault() {
-        return methodType == MethodType.DEFAULT_METHOD;
-    }
-
-    @Override
-    public boolean isAbstract() {
-        return methodType == MethodType.ABSTRACT_METHOD;
-    }
-
-    @Override
-    public boolean isStatic() {
-        return methodType == MethodType.STATIC_METHOD || methodType == MethodType.STATIC_BLOCK;
-    }
-
-    @Override
-    public boolean isStaticBlock() {
-        return methodType == MethodType.STATIC_BLOCK;
     }
 
     @Override
@@ -181,9 +149,9 @@ public class MethodInspectionImpl extends InspectionImpl implements MethodInspec
     public List<MethodModifier> minimalModifiers() {
         List<MethodModifier> result = new ArrayList<>();
         Access access = getAccess();
-        boolean inInterface = getMethodInfo().typeInfo.isInterface();
-        boolean isAbstract = isAbstract();
-        boolean isDefault = isDefault();
+        boolean inInterface = methodInfo.typeInfo.isInterface();
+        boolean isAbstract = methodInfo.isAbstract();
+        boolean isDefault = methodInfo.isDefault();
         if (access != Access.PACKAGE && !(inInterface && (isAbstract || isDefault))) {
             MethodModifier accessModifier = switch (access) {
                 case PRIVATE -> MethodModifier.PRIVATE;
@@ -198,7 +166,7 @@ public class MethodInspectionImpl extends InspectionImpl implements MethodInspec
         } else {
             if (isAbstract) result.add(MethodModifier.ABSTRACT);
         }
-        if (isStatic()) result.add(MethodModifier.STATIC);
+        if (methodInfo.isStatic()) result.add(MethodModifier.STATIC);
         if (isFinal) result.add(MethodModifier.FINAL);
         if (isSynchronized) result.add(MethodModifier.SYNCHRONIZED);
         return result;
@@ -225,8 +193,7 @@ public class MethodInspectionImpl extends InspectionImpl implements MethodInspec
         private final List<TypeParameter> typeParameters = new ArrayList<>();
         public final TypeInfo owner;
         public final String name;
-        public final boolean isConstructor;
-        public final boolean compactConstructor;
+        public final MethodInfo.MethodType methodType;
         public final int staticBlockIdentifier;
         private final Identifier identifier;
 
@@ -240,53 +207,71 @@ public class MethodInspectionImpl extends InspectionImpl implements MethodInspec
         private MethodInfo methodInfo;
         private List<ParameterInfo> immutableParameters;
         private List<ParameterInfo> mutableParameters;
-        private boolean isAbstract;
 
         /* constructor */
 
-        public Builder(TypeInfo owner) {
-            this(owner.identifier, owner, owner.simpleName, true, false, NOT_A_STATIC_BLOCK);
+        public Builder(TypeInfo owner, MethodInfo.MethodType methodType) {
+            this(owner.identifier, owner, owner.simpleName, methodType, NOT_A_STATIC_BLOCK);
+            assert methodType.isConstructor();
         }
 
-        public Builder(Identifier identifier, TypeInfo owner) {
-            this(identifier, owner, owner.simpleName, true, false, NOT_A_STATIC_BLOCK);
+        public Builder(Identifier identifier, TypeInfo owner, MethodInfo.MethodType methodType) {
+            this(identifier, owner, owner.simpleName, methodType, NOT_A_STATIC_BLOCK);
+            assert methodType.isConstructor();
         }
+
         /* method */
 
-        public Builder(TypeInfo owner, String name) {
-            this(Identifier.generate("method without id"), owner, name, false, false, NOT_A_STATIC_BLOCK);
+        public Builder(TypeInfo owner, String name, MethodInfo.MethodType methodType) {
+            this(Identifier.generate("method without id"), owner, name, methodType, NOT_A_STATIC_BLOCK);
+            assert !methodType.isConstructor();
         }
 
-        public Builder(Identifier identifier, TypeInfo owner, String name) {
-            this(identifier, owner, name, false, false, NOT_A_STATIC_BLOCK);
+        public Builder(Identifier identifier, TypeInfo owner, String name, MethodInfo.MethodType methodType) {
+            this(identifier, owner, name, methodType, NOT_A_STATIC_BLOCK);
+            assert !methodType.isConstructor();
         }
 
         /* compact constructor */
 
         public static Builder compactConstructor(Identifier identifier, TypeInfo owner) {
-            return new MethodInspectionImpl.Builder(identifier, owner, owner.simpleName, true, true, NOT_A_STATIC_BLOCK);
+            return new MethodInspectionImpl.Builder(identifier, owner, owner.simpleName,
+                    MethodInfo.MethodType.COMPACT_CONSTRUCTOR, NOT_A_STATIC_BLOCK);
+        }
+
+        public static Builder syntheticConstructor(TypeInfo owner) {
+            return new MethodInspectionImpl.Builder(Identifier.generate("synthetic array constructor"),
+                    owner, owner.simpleName, MethodInfo.MethodType.SYNTHETIC_CONSTRUCTOR, NOT_A_STATIC_BLOCK);
         }
 
         /* static block */
 
         public static Builder createStaticBlock(Identifier identifier, TypeInfo owner, int staticBlockIdentifier) {
             String name = TypeInspection.createStaticBlockMethodName(staticBlockIdentifier);
-            return new MethodInspectionImpl.Builder(identifier, owner, name, false, false, staticBlockIdentifier);
+            return new MethodInspectionImpl.Builder(identifier, owner, name, MethodInfo.MethodType.STATIC_BLOCK,
+                    staticBlockIdentifier);
         }
 
         private Builder(Identifier identifier,
                         TypeInfo owner,
                         String name,
-                        boolean isConstructor,
-                        boolean isCompact,
+                        MethodInfo.MethodType methodType,
                         int staticBlockIdentifier) {
             this.identifier = identifier;
             this.owner = owner;
             this.name = name;
-            this.isConstructor = isConstructor;
-            this.compactConstructor = isCompact;
+            this.methodType = methodType;
             this.staticBlockIdentifier = staticBlockIdentifier;
-            if (isConstructor || isStaticBlock()) returnType = ParameterizedType.RETURN_TYPE_OF_CONSTRUCTOR;
+            if (methodType.isConstructor() || methodType == MethodInfo.MethodType.STATIC_BLOCK) {
+                returnType = ParameterizedType.RETURN_TYPE_OF_CONSTRUCTOR;
+            }
+            if (methodType == MethodInfo.MethodType.DEFAULT_METHOD) {
+                modifiers.add(MethodModifier.DEFAULT);
+            } else if (methodType == MethodInfo.MethodType.ABSTRACT_METHOD) {
+                modifiers.add(MethodModifier.ABSTRACT);
+            } else if (methodType == MethodInfo.MethodType.STATIC_METHOD) {
+                modifiers.add(MethodModifier.STATIC);
+            }
         }
 
         @Override
@@ -294,39 +279,8 @@ public class MethodInspectionImpl extends InspectionImpl implements MethodInspec
             return new ParameterInspectionImpl.Builder(generate, concreteTypeOfParameter, name, index);
         }
 
-        @Override
-        public boolean isCompactConstructor() {
-            return compactConstructor;
-        }
-
-        @Override
-        public boolean isStaticBlock() {
-            return staticBlockIdentifier > NOT_A_STATIC_BLOCK;
-        }
-
-        @Override
-        public boolean isAbstract() {
-            return isAbstract;
-        }
-
-        @Override
-        public Builder setAbstractMethod() {
-            this.isAbstract = true;
-            return this;
-        }
-
-        @Fluent
-        public Builder setStatic(boolean isStatic) {
-            if (isStatic) this.modifiers.add(MethodModifier.STATIC);
-            else if (this.modifiers.contains(MethodModifier.STATIC)) throw new UnsupportedOperationException();
-            return this;
-        }
-
-        @Fluent
-        public Builder setDefault(boolean isDefault) {
-            if (isDefault) this.modifiers.add(MethodModifier.DEFAULT);
-            else if (this.modifiers.contains(MethodModifier.DEFAULT)) throw new UnsupportedOperationException();
-            return this;
+        public MethodInfo.MethodType getMethodType() {
+            return methodType;
         }
 
         @Fluent
@@ -432,7 +386,6 @@ public class MethodInspectionImpl extends InspectionImpl implements MethodInspec
                     isFinal(),
                     getAccess(),
                     getComment(),
-                    methodType(),
                     Set.copyOf(modifiers),
                     List.copyOf(immutableParameters),
                     returnType,
@@ -445,28 +398,6 @@ public class MethodInspectionImpl extends InspectionImpl implements MethodInspec
             methodInfo.methodInspection.set(methodInspection);
             LOGGER.debug("Setting inspection of {}", methodInfo.fullyQualifiedName);
             return methodInspection;
-        }
-
-        private MethodType methodType() {
-            if (isDefault()) {
-                return MethodType.DEFAULT_METHOD;
-            }
-            if (isStaticBlock()) {
-                return MethodType.STATIC_BLOCK;
-            }
-            if (compactConstructor) {
-                return MethodType.COMPACT_CONSTRUCTOR;
-            }
-            if (isStatic()) {
-                return MethodType.STATIC_METHOD;
-            }
-            if (isAbstract()) {
-                return MethodType.ABSTRACT_METHOD;
-            }
-            if (isConstructor) {
-                return MethodType.CONSTRUCTOR;
-            }
-            return MethodType.METHOD;
         }
 
         @Override
@@ -486,7 +417,7 @@ public class MethodInspectionImpl extends InspectionImpl implements MethodInspec
 
         @Override
         public boolean isConstructor() {
-            return isConstructor;
+            return methodType.isConstructor();
         }
 
         public void readyToComputeFQN(InspectionProvider inspectionProvider) {
@@ -496,7 +427,7 @@ public class MethodInspectionImpl extends InspectionImpl implements MethodInspec
             distinguishingName = owner.fullyQualifiedName + "." + name + "(" + parameters.stream()
                     .map(p -> p.getParameterizedType().distinguishingName(inspectionProvider, p.isVarArgs()))
                     .collect(Collectors.joining(",")) + ")";
-            this.methodInfo = new MethodInfo(identifier, owner, name, fullyQualifiedName, distinguishingName, isConstructor);
+            this.methodInfo = new MethodInfo(identifier, owner, name, fullyQualifiedName, distinguishingName, methodType);
             typeParameters.forEach(tp -> ((TypeParameterImpl) tp).setMethodInfo(methodInfo));
         }
 
@@ -575,9 +506,8 @@ public class MethodInspectionImpl extends InspectionImpl implements MethodInspec
             return inspectedBlock != null;
         }
 
-        @Override
         public boolean isDefault() {
-            return modifiers.contains(MethodModifier.DEFAULT);
+            return methodType == MethodInfo.MethodType.DEFAULT_METHOD;
         }
 
         @Override
@@ -588,7 +518,7 @@ public class MethodInspectionImpl extends InspectionImpl implements MethodInspec
 
         @Override
         public boolean isStatic() {
-            return modifiers.contains(MethodModifier.STATIC) || isStaticBlock();
+            return methodType == MethodInfo.MethodType.STATIC_METHOD || methodType == MethodInfo.MethodType.STATIC_BLOCK;
         }
 
         public List<ParameterInspection.Builder> getParameterBuilders() {
@@ -619,19 +549,23 @@ public class MethodInspectionImpl extends InspectionImpl implements MethodInspec
             return modifiers.contains(MethodModifier.FINAL);
         }
 
+        public boolean isAbstract() {
+            return methodType == MethodInfo.MethodType.ABSTRACT_METHOD;
+        }
+
         /*
         can only be done successfully when the access of the enclosing type(s) has been determined!
          */
         @Override
         public Builder computeAccess(InspectionProvider inspectionProvider) {
-            if (isCompactConstructor()) {
+            if (methodType == MethodInfo.MethodType.COMPACT_CONSTRUCTOR) {
                 setAccess(Access.PUBLIC);
             } else if (modifiers.contains(MethodModifier.PRIVATE)) {
                 setAccess(Access.PRIVATE);
             } else {
                 TypeInspection typeInspection = inspectionProvider.getTypeInspection(methodInfo.typeInfo);
                 boolean isInterface = typeInspection.isInterface();
-                if (isInterface && (isAbstract || isDefault() || isStatic())) {
+                if (isInterface && (isAbstract() || isDefault() || isStatic())) {
                     setAccess(Access.PUBLIC);
                 } else {
                     Access fromModifier = accessFromMethodModifier();

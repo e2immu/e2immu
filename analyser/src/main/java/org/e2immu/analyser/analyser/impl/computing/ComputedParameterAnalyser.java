@@ -627,10 +627,10 @@ public class ComputedParameterAnalyser extends ParameterAnalyserImpl {
     }
 
     private boolean isNoFieldsInvolved() {
-        boolean methodIsStatic = parameterInfo.owner.methodInspection.get().isStatic();
+        boolean methodIsStatic = parameterInfo.owner.isStatic();
         return parameterInfo.owner.typeInfo.typeInspection.get().fields().stream()
                 .filter(fieldInfo -> !methodIsStatic || fieldInfo.fieldInspection.get().isStatic())
-                .allMatch(fieldInfo -> fieldInfo.isExplicitlyFinal() && !parameterInfo.owner.isConstructor);
+                .allMatch(fieldInfo -> fieldInfo.isExplicitlyFinal() && !parameterInfo.owner.isConstructor());
     }
 
     private void noFieldsInvolved() {

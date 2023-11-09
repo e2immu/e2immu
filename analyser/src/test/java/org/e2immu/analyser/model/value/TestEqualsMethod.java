@@ -40,7 +40,7 @@ public class TestEqualsMethod extends CommonAbstractValue {
         ParameterInspection.Builder other = new ParameterInspectionImpl.Builder(Identifier.generate("test"))
                 .setParameterizedType(PRIMITIVES.objectParameterizedType())
                 .setIndex(0).setVarArgs(false).setName("other");
-        equalsMethodInfo = new MethodInspectionImpl.Builder(typeInfo, "equals")
+        equalsMethodInfo = new MethodInspectionImpl.Builder(typeInfo, "equals", MethodInfo.MethodType.METHOD)
                 .setReturnType(PRIMITIVES.booleanParameterizedType())
                 .addParameter(other).build(InspectionProvider.DEFAULT).getMethodInfo();
         assert equalsMethodInfo != null : "Cannot find equals method in type " + typeInfo;

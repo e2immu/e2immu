@@ -184,7 +184,7 @@ public class ComputingFieldAnalyser extends FieldAnalyserImpl implements FieldAn
                         fieldInfo.fieldInspection.get().getAnnotations(), analyserContext.getE2ImmuAnnotationExpressions()));
 
         analyserContext.methodAnalyserStream().forEach(analyser -> {
-            if (analyser.getMethodInspection().isStaticBlock()) {
+            if (analyser.getMethodInfo().isStaticBlock()) {
                 myStaticBlocks.add(analyser);
             } else if (analyser.getMethodInfo().typeInfo == fieldInfo.owner) {
                 myMethodsAndConstructors.add(analyser);
@@ -221,10 +221,10 @@ public class ComputingFieldAnalyser extends FieldAnalyserImpl implements FieldAn
 
     private Stream<MethodAnalyser> allMethodsAndConstructors(TypeInfo enclosedIn, boolean alsoMyOwnConstructors) {
         return analyserContext.methodAnalyserStream()
-                .filter(ma -> !ma.getMethodInspection().isStaticBlock())
+                .filter(ma -> !ma.getMethodInfo().isStaticBlock())
                 .filter(ma -> enclosedIn == null || ma.getMethodInfo().typeInfo.isEnclosedIn(enclosedIn))
                 .filter(ma -> alsoMyOwnConstructors ||
-                        !(ma.getMethodInfo().typeInfo == fieldInfo.owner && ma.getMethodInfo().isConstructor))
+                        !(ma.getMethodInfo().typeInfo == fieldInfo.owner && ma.getMethodInfo().isConstructor()))
                 .flatMap(ma -> Stream.concat(Stream.of(ma),
                         ma.getLocallyCreatedPrimaryTypeAnalysers().flatMap(PrimaryTypeAnalyser::methodAnalyserStream)));
     }
@@ -698,7 +698,7 @@ public class ComputingFieldAnalyser extends FieldAnalyserImpl implements FieldAn
                     Stream<MethodAnalyser> allMethodsInPrimaryType = typeAnalyser.allMethodAnalysersIncludingSubTypes();
                     boolean readAcrossPrimaryType = allMethodsInPrimaryType
                             // filter out my own constructors
-                            .filter(ma -> !(ma.getMethodInfo().isConstructor && ma.getMethodInfo().typeInfo == fieldInfo.owner))
+                            .filter(ma -> !(ma.getMethodInfo().isConstructor() && ma.getMethodInfo().typeInfo == fieldInfo.owner))
                             .anyMatch(this::isReadInMethod);
                     if (!readAcrossPrimaryType) {
                         analyserResultBuilder.add(Message.newMessage(fieldInfo.newLocation(),
@@ -974,7 +974,7 @@ public class ComputingFieldAnalyser extends FieldAnalyserImpl implements FieldAn
             assert finalizer.isDone();
             MethodInfo methodInfo = methodAnalyser.getMethodInfo();
             if (finalizer.valueIsFalse() && (!methodAnalyser.getMethodInspection().isPrivate() ||
-                    methodInfo.isConstructor && !ignorePrivateConstructors)) {
+                    methodInfo.isConstructor() && !ignorePrivateConstructors)) {
                 boolean added = false;
                 for (VariableInfo vii : methodAnalyser.getMethodAnalysis().getFieldAsVariableAssigned(fieldInfo)) {
                     Properties properties;
@@ -1001,7 +1001,7 @@ public class ComputingFieldAnalyser extends FieldAnalyserImpl implements FieldAn
 
                     boolean viIsDelayed;
                     if (expressionWithoutLocalVars instanceof DelayedVariableExpression dve && dve.variable instanceof FieldReference fr &&
-                            methodInfo.isConstructor && fr.fieldInfo().owner == methodInfo.typeInfo && !fr.isDefaultScope() && !fr.isStatic()) {
+                            methodInfo.isConstructor() && fr.fieldInfo().owner == methodInfo.typeInfo && !fr.isDefaultScope() && !fr.isStatic()) {
                         // ExplicitConstructorInvocation_5, but be careful with the restrictions, e.g. ExternalNotNull_1 for the scope,
                         // as well as ExplicitConstructorInvocation_4
                         // captures: this.field = someParameterOfMySelf.field;
@@ -1017,7 +1017,7 @@ public class ComputingFieldAnalyser extends FieldAnalyserImpl implements FieldAn
                         viIsDelayed = causesOfDelay.isDelayed();
 
                         values.add(proxy);
-                        if (!fieldInspection.isStatic() && methodInfo.isConstructor) {
+                        if (!fieldInspection.isStatic() && methodInfo.isConstructor()) {
                             // we'll warn for the combination of field initializer, and occurrence in at least one constructor
                             occurrenceCountForError++;
                         }
@@ -1029,7 +1029,7 @@ public class ComputingFieldAnalyser extends FieldAnalyserImpl implements FieldAn
                         }
                     }
                 }
-                if (!added && methodInfo.isConstructor) {
+                if (!added && methodInfo.isConstructor()) {
                     occurs = false;
                 }
             }

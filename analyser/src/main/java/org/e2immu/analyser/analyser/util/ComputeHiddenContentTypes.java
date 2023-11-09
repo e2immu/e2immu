@@ -73,7 +73,7 @@ public class ComputeHiddenContentTypes {
             for (MethodInfo methodInfo : typeInspection.methods()) {
                 MethodInspection methodInspection = analyserContext.getMethodInspection(methodInfo);
                 if (methodInspection.isPubliclyAccessible()) {
-                    if (!methodInfo.isConstructor && !methodInspection.isVoid())
+                    if (!methodInfo.isConstructor() && !methodInspection.isVoid())
                         addType(methodInspection.getReturnType(), currentType);
                     for (ParameterInfo pi : methodInspection.getParameters()) {
                         addType(pi.parameterizedType, currentType);

@@ -63,20 +63,12 @@ public interface MethodInspection extends Inspection {
     @NotNull
     Map<CompanionMethodName, MethodInfo> getCompanionMethods();
 
-    boolean isStatic();
-
-    boolean isDefault();
-
     boolean isVarargs();
 
     /**
      * Returns the minimally required modifiers needed in the output for this method. Avoids being verbose!!
      */
     List<MethodModifier> minimalModifiers();
-
-    boolean isCompactConstructor();
-
-    boolean isStaticBlock();
 
     default ParameterizedType formalParameterType(int index) {
         int formalParams = getParameters().size();
@@ -95,10 +87,8 @@ public interface MethodInspection extends Inspection {
                 .anyMatch(ae -> ae.typeInfo().fullyQualifiedName.equals(Finalizer.class.getCanonicalName()));
     }
 
-    boolean isAbstract();
-
     default boolean isFactoryMethod() {
-        return isStatic() && getReturnType().typeInfo != null
+        return getMethodInfo().isStatic() && getReturnType().typeInfo != null
                 && getReturnType().typeInfo.isEnclosedIn(getMethodInfo().typeInfo);
     }
 
@@ -114,8 +104,8 @@ public interface MethodInspection extends Inspection {
      */
     default boolean isOverloadOfJLOMethod() {
         if (isEquals()) return true;
-        if ("hashCode".equals(getMethodInfo().name) && getParameters().size() == 0) return true;
-        return "toString".equals(getMethodInfo().name) && getParameters().size() == 0;
+        if ("hashCode".equals(getMethodInfo().name) && getParameters().isEmpty()) return true;
+        return "toString".equals(getMethodInfo().name) && getParameters().isEmpty();
     }
 
     default boolean isEquals() {
@@ -194,13 +184,12 @@ public interface MethodInspection extends Inspection {
 
         boolean isConstructor();
 
+        MethodInfo.MethodType getMethodType();
+
         void copyFrom(MethodInspection parent);
 
         @Fluent
         Builder setInspectedBlock(Block body);
-
-        @Fluent
-        Builder setStatic(boolean b);
 
         ParameterInspection.Builder newParameterInspectionBuilder(Identifier generate, int i);
 
@@ -209,12 +198,11 @@ public interface MethodInspection extends Inspection {
                                                                   String name, int index);
 
         @Fluent
-        Builder setAbstractMethod();
-
-        @Fluent
         Builder computeAccess(InspectionProvider inspectionProvider);
 
         @Fluent
         Builder setAccess(Access access);
+
+        boolean isStatic();
     }
 }

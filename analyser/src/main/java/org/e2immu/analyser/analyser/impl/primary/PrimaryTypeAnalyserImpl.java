@@ -293,7 +293,7 @@ public class PrimaryTypeAnalyserImpl implements PrimaryTypeAnalyser {
 
     @Override
     public MethodInspection.Builder newMethodInspectionBuilder(Identifier identifier, TypeInfo typeInfo, String methodName) {
-        return new MethodInspectionImpl.Builder(identifier, typeInfo, methodName);
+        return new MethodInspectionImpl.Builder(identifier, typeInfo, methodName, MethodInfo.MethodType.METHOD);
     }
 
     @Override

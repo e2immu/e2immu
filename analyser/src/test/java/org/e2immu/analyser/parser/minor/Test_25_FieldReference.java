@@ -170,7 +170,7 @@ public class Test_25_FieldReference extends CommonTestRunner {
         };
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("ParameterAnalysis".equals(d.methodInfo().name)) {
-                assertTrue(d.methodInfo().isConstructor);
+                assertTrue(d.methodInfo().isConstructor());
                 assertDv(d.p(0), 1, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                 assertDv(d.p(0), 1, DV.TRUE_DV, Property.MODIFIED_OUTSIDE_METHOD);
             }

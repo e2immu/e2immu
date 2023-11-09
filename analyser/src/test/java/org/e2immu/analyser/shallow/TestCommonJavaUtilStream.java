@@ -78,7 +78,7 @@ public class TestCommonJavaUtilStream extends CommonAnnotatedAPI {
     public void testStreamOf() {
         TypeInfo typeInfo = typeContext.getFullyQualified(Stream.class);
         MethodInfo methodInfo = typeInfo.findUniqueMethod("of", 1);
-        assertTrue(methodInfo.methodInspection.get().isStatic());
+        assertTrue(methodInfo.isStatic());
         assertTrue(methodInfo.methodInspection.get().isFactoryMethod());
 
         MethodAnalysis methodAnalysis = methodInfo.methodAnalysis.get();
@@ -98,7 +98,7 @@ public class TestCommonJavaUtilStream extends CommonAnnotatedAPI {
     public void testStreamEmpty() {
         TypeInfo typeInfo = typeContext.getFullyQualified(Stream.class);
         MethodInfo methodInfo = typeInfo.findUniqueMethod("empty", 0);
-        assertTrue(methodInfo.methodInspection.get().isStatic());
+        assertTrue(methodInfo.isStatic());
         assertTrue(methodInfo.methodInspection.get().isFactoryMethod());
 
         MethodAnalysis methodAnalysis = methodInfo.methodAnalysis.get();
@@ -111,7 +111,7 @@ public class TestCommonJavaUtilStream extends CommonAnnotatedAPI {
     public void testStreamFilter() {
         TypeInfo typeInfo = typeContext.getFullyQualified(Stream.class);
         MethodInfo methodInfo = typeInfo.findUniqueMethod("filter", 1);
-        assertFalse(methodInfo.methodInspection.get().isStatic());
+        assertFalse(methodInfo.isStatic());
 
         MethodAnalysis methodAnalysis = methodInfo.methodAnalysis.get();
         assertEquals(DV.FALSE_DV, methodAnalysis.getProperty(Property.MODIFIED_METHOD));
@@ -123,7 +123,7 @@ public class TestCommonJavaUtilStream extends CommonAnnotatedAPI {
     public void testStreamFindFirst() {
         TypeInfo typeInfo = typeContext.getFullyQualified(Stream.class);
         MethodInfo methodInfo = typeInfo.findUniqueMethod("findFirst", 0);
-        assertFalse(methodInfo.methodInspection.get().isStatic());
+        assertFalse(methodInfo.isStatic());
 
         MethodAnalysis methodAnalysis = methodInfo.methodAnalysis.get();
         assertEquals(DV.TRUE_DV, methodAnalysis.getProperty(Property.MODIFIED_METHOD));

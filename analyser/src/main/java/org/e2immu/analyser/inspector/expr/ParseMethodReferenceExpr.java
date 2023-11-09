@@ -178,7 +178,7 @@ public class ParseMethodReferenceExpr {
                                                            boolean scopeIsAType,
                                                            boolean constructor) {
         MethodInfo methodInfo = mt.methodInspection.getMethodInfo();
-        int param = scopeIsAType && !constructor && !mt.methodInspection.isStatic() ? index - 1 : index;
+        int param = scopeIsAType && !constructor && !methodInfo.isStatic() ? index - 1 : index;
         if (param == -1) {
             return methodInfo.typeInfo.asParameterizedType(inspectionProvider);
         }
@@ -190,9 +190,9 @@ public class ParseMethodReferenceExpr {
         Set<TypeInfo> haveInstance = new HashSet<>();
 
         methodCandidates.stream()
-                .filter(mt -> !mt.methodInspection.isStatic())
+                .filter(mt -> !mt.methodInspection.getMethodInfo().isStatic())
                 .forEach(mt -> haveInstance.add(mt.methodInspection.getMethodInfo().typeInfo));
-        methodCandidates.removeIf(mt -> mt.methodInspection.isStatic() &&
+        methodCandidates.removeIf(mt -> mt.methodInspection.getMethodInfo().isStatic() &&
                 haveInstance.contains(mt.methodInspection.getMethodInfo().typeInfo));
     }
 
@@ -225,8 +225,9 @@ public class ParseMethodReferenceExpr {
         for (MethodTypeParameterMap mt : methodCandidates.keySet()) {
             LOGGER.debug("Found method reference candidate, this can work: {}", mt.methodInspection);
             MethodInspection methodInspection = mt.methodInspection;
+            MethodInfo methodInfo = methodInspection.getMethodInfo();
             boolean scopeIsType = scopeIsAType(scope);
-            boolean addOne = scopeIsType && !methodInspection.getMethodInfo().isConstructor && !methodInspection.isStatic();
+            boolean addOne = scopeIsType && !methodInfo.isConstructor() && !methodInfo.isStatic();
             int n = methodInspection.getParameters().size() + (addOne ? 1 : 0);
             boolean isVoid = !constructor && methodInspection.isVoid();
             erasures.add(new LambdaExpressionErasures.Count(n, isVoid));

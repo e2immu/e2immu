@@ -51,9 +51,9 @@ public class ConvertExpressionWithTypeCreations {
         builder.noParent(typeContext.getPrimitives());
 
         // there are no extra type parameters; only those of the enclosing type(s) can be in 'type'
-        MethodInspection.Builder methodBuilder = new MethodInspectionImpl.Builder(typeInfo, "get");
+        MethodInspection.Builder methodBuilder = new MethodInspectionImpl.Builder(typeInfo, "get",
+                fieldIsStatic ? MethodInfo.MethodType.STATIC_BLOCK: MethodInfo.MethodType.METHOD);
         methodBuilder.setReturnType(supplierReturnType);
-        methodBuilder.setStatic(fieldIsStatic);
         methodBuilder.setSynthetic(true);
         methodBuilder.setAccess(Inspection.Access.PUBLIC); // implements supplier
         methodBuilder.readyToComputeFQN(typeContext);

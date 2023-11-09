@@ -69,7 +69,7 @@ public record CreatePreconditionCompanion(InspectionProvider inspectionProvider,
                 .addStatement(new ReturnStatement(Identifier.generate("create companion return"), expression)).build();
         builder.setInspectedBlock(block);
         builder.addModifier(MethodModifier.PRIVATE);
-        if (mainInspection.isStatic()) builder.addModifier(MethodModifier.STATIC);
+        if (mainMethod.isStatic()) builder.addModifier(MethodModifier.STATIC);
         builder.build(inspectionProvider);
         return builder.getMethodInfo();
     }

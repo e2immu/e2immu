@@ -149,9 +149,9 @@ public class TestBasics extends CommonTest {
         assertTrue(typeInfo.typeInspection.get().isPublic());
 
         MethodInspection nameInspection = name.methodInspection.get();
-        assertTrue(nameInspection.isAbstract());
+        assertTrue(name.isAbstract());
         assertTrue(nameInspection.isPublic()); // computed, on type
-        assertFalse(nameInspection.isDefault()); // modifier
+        assertFalse(name.isDefault()); // modifier
     }
 
     @Test

@@ -648,7 +648,8 @@ public class TypeInspectorImpl implements TypeInspector {
     }
 
     private MethodInfo createEmptyConstructor(TypeContext typeContext, boolean makePrivate) {
-        MethodInspectionImpl.Builder builder = new MethodInspectionImpl.Builder(typeInfo);
+        MethodInspectionImpl.Builder builder = new MethodInspectionImpl.Builder(typeInfo,
+                MethodInfo.MethodType.SYNTHETIC_CONSTRUCTOR);
         builder.setInspectedBlock(Block.emptyBlock(Identifier.generate("empty constructor block")))
                 .setSynthetic(true)
                 .addModifier(makePrivate ? MethodModifier.PRIVATE : MethodModifier.PUBLIC)

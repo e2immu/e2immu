@@ -131,7 +131,7 @@ public class Test_16_Modification_19 extends CommonTestRunner {
         };
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("C1".equals(d.methodInfo().name)) {
-                assertTrue(d.methodInfo().isConstructor);
+                assertTrue(d.methodInfo().isConstructor());
                 assertDv(d.p(0), 2, DV.TRUE_DV, Property.MODIFIED_VARIABLE);
 
                 ParameterAnalysis p0 = d.parameterAnalyses().get(0);

@@ -84,11 +84,11 @@ public class TestIsAssignableFromGenerics {
             TypeInspection.Builder myComparableInspection = new TypeInspectionImpl.Builder(myComparable, BY_HAND)
                     .noParent(primitives)
                     .addTypeParameter(myComparableT);
-            MethodInspectionImpl.Builder compareToBuilder = new MethodInspectionImpl.Builder(myComparable, "compareTo");
+            MethodInspectionImpl.Builder compareToBuilder = new MethodInspectionImpl.Builder(myComparable, "compareTo",
+                    MethodInfo.MethodType.ABSTRACT_METHOD);
             MethodInfo compareTo = compareToBuilder
                     .setReturnType(primitives.intParameterizedType())
                     .setAccess(Inspection.Access.PUBLIC)
-                    .setAbstractMethod()
                     .addParameter(new ParameterInspectionImpl.Builder(Identifier.generate("compareTo"),
                             new ParameterizedType(myComparableT, 0, NONE), "t", 0))
                     .build(IP).getMethodInfo();
@@ -136,11 +136,11 @@ public class TestIsAssignableFromGenerics {
             TypeInspection.Builder builder = new TypeInspectionImpl.Builder(myList1, BY_HAND)
                     .noParent(primitives)
                     .addTypeParameter(t);
-            MethodInspectionImpl.Builder addBuilder = new MethodInspectionImpl.Builder(myList1, "add");
+            MethodInspectionImpl.Builder addBuilder = new MethodInspectionImpl.Builder(myList1, "add",
+                    MethodInfo.MethodType.ABSTRACT_METHOD);
             add = addBuilder
                     .setReturnType(primitives.voidParameterizedType())
                     .setAccess(Inspection.Access.PUBLIC)
-                    .setAbstractMethod()
                     .addParameter(new ParameterInspectionImpl.Builder(Identifier.generate("add"),
                             new ParameterizedType(t, 0, NONE), "t", 0))
                     .build(IP).getMethodInfo();

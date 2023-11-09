@@ -64,9 +64,10 @@ public record Scope(Expression expression,
          See e.g. Lambda_15.
          IMPROVE! https://github.com/e2immu/e2immu/issues/60
          */
-        if (objectIsImplicit() || methodInspection.isStatic() || scopeIsThis) {
-            TypeInfo exact = methodInspection.getMethodInfo().typeInfo;
-            if (methodInspection.isStatic()) {
+        MethodInfo methodInfo = methodInspection.getMethodInfo();
+        if (objectIsImplicit() || methodInfo.isStatic() || scopeIsThis) {
+            TypeInfo exact = methodInfo.typeInfo;
+            if (methodInfo.isStatic()) {
                 return new TypeExpression(identifier, exact.asParameterizedType(inspectionProvider), Diamond.NO);
             }
             TypeInfo current = expressionContext.enclosingType();

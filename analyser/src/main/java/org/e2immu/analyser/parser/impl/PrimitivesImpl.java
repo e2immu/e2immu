@@ -139,7 +139,8 @@ public class PrimitivesImpl implements Primitives {
                                      List<ParameterizedType> parameterizedTypes,
                                      ParameterizedType returnType) {
         int i = 0;
-        MethodInspection.Builder builder = new MethodInspectionImpl.Builder(owner, name).setStatic(true);
+        MethodInspection.Builder builder = new MethodInspectionImpl.Builder(owner, name,
+                MethodInfo.MethodType.STATIC_METHOD);
         for (ParameterizedType parameterizedType : parameterizedTypes) {
             ParameterInspectionImpl.Builder pb = new ParameterInspectionImpl.Builder(Identifier.generate("operator param"),
                     parameterizedType, "p" + i, i++);
@@ -320,7 +321,7 @@ public class PrimitivesImpl implements Primitives {
 
     @Override
     public void processEnum(TypeInfo typeInfo, List<FieldInfo> fields) {
-        MethodInspection.Builder valueOfBuilder = new MethodInspectionImpl.Builder(typeInfo, "valueOf").setStatic(true);
+        MethodInspection.Builder valueOfBuilder = new MethodInspectionImpl.Builder(typeInfo, "valueOf", MethodInfo.MethodType.STATIC_METHOD);
         ParameterInspectionImpl.Builder valueOf0Builder =
                 new ParameterInspectionImpl.Builder(Identifier.generate("param valueOf enum"), stringParameterizedType, "s", 0);
         ParameterizedType typeInfoAsPt = typeInfo.asSimpleParameterizedType();
@@ -330,7 +331,7 @@ public class PrimitivesImpl implements Primitives {
                 .setAccess(Inspection.Access.PUBLIC)
                 .build(InspectionProvider.DEFAULT).getMethodInfo();
 
-        MethodInspectionImpl.Builder nameBuilder = new MethodInspectionImpl.Builder(typeInfo, "name");
+        MethodInspectionImpl.Builder nameBuilder = new MethodInspectionImpl.Builder(typeInfo, "name", MethodInfo.MethodType.METHOD);
         MethodInfo name = nameBuilder.setReturnType(stringParameterizedType)
                 .addModifier(MethodModifier.PUBLIC)
                 .setAccess(Inspection.Access.PUBLIC)

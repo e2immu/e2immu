@@ -69,7 +69,7 @@ public class Test_45_Project_AAPI extends CommonTestRunner {
         };
 
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
-            if ("Container".equals(d.methodInfo().name) && d.methodInfo().isConstructor) {
+            if ("Container".equals(d.methodInfo().name) && d.methodInfo().isConstructor()) {
                 assertDv(d.p(0), 1, DV.FALSE_DV, Property.MODIFIED_OUTSIDE_METHOD);
                 assertDv(d.p(0), 1, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                 assertDv(d.p(0), 1, DV.FALSE_DV, Property.MODIFIED_VARIABLE);

@@ -158,7 +158,7 @@ public abstract class MethodAnalyserImpl extends AbstractAnalyser implements Met
 
         LOGGER.debug("Checking method {}", methodInfo.fullyQualifiedName());
 
-        if (!methodInfo.isConstructor) {
+        if (!methodInfo.isConstructor()) {
             if (!methodInfo.isVoid()) {
                 internalCheckImmutableIndependent();
 

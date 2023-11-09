@@ -117,7 +117,8 @@ public class TestParameterizedType {
             TypeParameter functionT = new TypeParameterImpl(function, "T", 0).noTypeBounds();
             TypeParameter functionR = new TypeParameterImpl(function, "R", 1).noTypeBounds();
 
-            MethodInspectionImpl.Builder applyBuilder = new MethodInspectionImpl.Builder(function, "apply");
+            MethodInspectionImpl.Builder applyBuilder = new MethodInspectionImpl.Builder(function, "apply",
+                    MethodInfo.MethodType.METHOD);
             MethodInfo apply = applyBuilder
                     .setReturnType(new ParameterizedType(functionR, 0, NONE))
                     .addParameter(new ParameterInspectionImpl.Builder(Identifier.generate("apply"),

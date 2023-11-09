@@ -57,7 +57,7 @@ public class MethodItem extends HasAnnotations implements Comparable<MethodItem>
     }
 
     public MethodItem(MethodInfo methodInfo, Expression companionExpression) {
-        returnType = methodInfo.isConstructor ? null :
+        returnType = methodInfo.isConstructor() ? null :
                 methodInfo.hasReturnValue() ? checkReturnType(methodInfo.returnType().print()) : "void";
         String parameters;
         if (methodInfo.methodInspection.isSet()) {
@@ -80,7 +80,7 @@ public class MethodItem extends HasAnnotations implements Comparable<MethodItem>
                     companionMethods.put(companionItem.name, companionItem);
                 }
             }
-            isStatic = inspection.isStatic();
+            isStatic = methodInfo.isStatic();
             typeParametersCsv = inspection.getTypeParameters().stream()
                     .map(tp -> tp.output(InspectionProvider.DEFAULT,
                             Qualification.FULLY_QUALIFIED_NAME, new HashSet<>()).toString())

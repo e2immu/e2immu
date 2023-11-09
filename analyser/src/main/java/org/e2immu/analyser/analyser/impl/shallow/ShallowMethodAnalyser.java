@@ -142,7 +142,7 @@ public class ShallowMethodAnalyser extends MethodAnalyserImpl {
 
         CausesOfDelay causes;
         if (explicitlyEmpty) {
-            DV modified = methodInfo.isConstructor ? DV.TRUE_DV : DV.FALSE_DV;
+            DV modified = methodInfo.isConstructor() ? DV.TRUE_DV : DV.FALSE_DV;
             methodAnalysis.setProperty(Property.MODIFIED_METHOD, modified);
             methodAnalysis.setProperty(Property.FLUENT, DV.FALSE_DV);  // no return statement...
             methodAnalysis.setProperty(Property.STATIC_SIDE_EFFECTS, DV.FALSE_DV);
@@ -380,7 +380,7 @@ public class ShallowMethodAnalyser extends MethodAnalyserImpl {
 
     // in a @Container type, @Fluent or void ==> @Modified, unless otherwise specified
     private DV computeMethodModified() {
-        if (methodInfo.isConstructor) return DV.TRUE_DV;
+        if (methodInfo.isConstructor()) return DV.TRUE_DV;
         DV fluent = methodAnalysis.getPropertyFromMapDelayWhenAbsent(Property.FLUENT);
         DV typeContainer = analyserContext.getTypeAnalysis(methodInfo.typeInfo)
                 .getPropertyFromMapDelayWhenAbsent(Property.CONTAINER);
@@ -455,7 +455,7 @@ public class ShallowMethodAnalyser extends MethodAnalyserImpl {
         } else {
             // @Modified needs to be marked explicitly
             DV modifiedMethod = methodAnalysis.getPropertyFromMapDelayWhenAbsent(Property.MODIFIED_METHOD);
-            if (modifiedMethod.valueIsTrue() || methodInspection.isStatic() && methodInspection.isFactoryMethod()) {
+            if (modifiedMethod.valueIsTrue() || methodInfo.isStatic() && methodInspection.isFactoryMethod()) {
                 // note that an unbound type parameter is by default @Dependent, not @Independent1!!
                 if (immutable.isDelayed()) return immutable;
                 int immutableLevel = MultiLevel.level(immutable);
@@ -525,10 +525,10 @@ public class ShallowMethodAnalyser extends MethodAnalyserImpl {
     }
 
     private DV computeMethodIndependentReturnValue() {
-        if (methodInfo.isConstructor || methodInfo.isVoid()) {
+        if (methodInfo.isConstructor() || methodInfo.isVoid()) {
             return MultiLevel.INDEPENDENT_DV;
         }
-        if (methodInfo.methodInspection.get().isStatic() && !methodInspection.isFactoryMethod()) {
+        if (methodInfo.isStatic() && !methodInspection.isFactoryMethod()) {
             // if factory method, we link return value to parameters, otherwise independent by default
             return MultiLevel.INDEPENDENT_DV;
         }
@@ -564,7 +564,7 @@ public class ShallowMethodAnalyser extends MethodAnalyserImpl {
     }
 
     private DV computeMethodNotNull() {
-        if (methodInfo.isConstructor || methodInfo.isVoid()) return MultiLevel.NOT_INVOLVED_DV; // no decision!
+        if (methodInfo.isConstructor() || methodInfo.isVoid()) return MultiLevel.NOT_INVOLVED_DV; // no decision!
         if (methodInfo.returnType().isPrimitiveExcludingVoid()) {
             return MultiLevel.EFFECTIVELY_NOT_NULL_DV;
         }

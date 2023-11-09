@@ -96,7 +96,7 @@ public class Test_34_ExplicitConstructorInvocation extends CommonTestRunner {
 
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             List<ParameterInfo> parameters = d.methodInfo().methodInspection.get().getParameters();
-            if (d.methodInfo().isConstructor && parameters.size() == 1
+            if (d.methodInfo().isConstructor() && parameters.size() == 1
                     && "ExplicitConstructorInvocation_5".equals(parameters.get(0).parameterizedType.typeInfo.simpleName)) {
                 if (d.variable() instanceof FieldReference fr && "parent".equals(fr.fieldInfo().name)) {
                     String linked = switch (d.iteration()) {
@@ -141,7 +141,7 @@ public class Test_34_ExplicitConstructorInvocation extends CommonTestRunner {
     @Test
     public void test_6() throws IOException {
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
-            if (d.methodInfo().isConstructor && d.methodInfo().methodInspection.get().getParameters().size() == 2
+            if (d.methodInfo().isConstructor() && d.methodInfo().methodInspection.get().getParameters().size() == 2
                     && "ExplicitConstructorInvocation_6".equals(d.methodInfo().methodInspection.get().getParameters().get(0).parameterizedType.typeInfo.simpleName)) {
                 if (d.variable() instanceof FieldReference fr && "fullyQualifiedName".equals(fr.fieldInfo().name)) {
                     if (fr.scopeIsThis()) {
@@ -299,7 +299,7 @@ public class Test_34_ExplicitConstructorInvocation extends CommonTestRunner {
     public void test_7_1() throws IOException {
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             List<ParameterInfo> parameters = d.methodInfo().methodInspection.get().getParameters();
-            if (d.methodInfo().isConstructor && !parameters.isEmpty()
+            if (d.methodInfo().isConstructor() && !parameters.isEmpty()
                     && "Primitives".equals(parameters.get(0).parameterizedType.typeInfo.simpleName)) {
                 assertEquals("0", d.statementId());
 
@@ -308,7 +308,7 @@ public class Test_34_ExplicitConstructorInvocation extends CommonTestRunner {
                     assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
                 }
             }
-            if (d.methodInfo().isConstructor && parameters.size() == 3) {
+            if (d.methodInfo().isConstructor() && parameters.size() == 3) {
                 if (d.variable() instanceof FieldReference fr && "primitives".equals(fr.fieldInfo().name)) {
                     if ("1".equals(d.statementId())) {
                         String expected = d.iteration() == 0 ? "<m:requireNonNull>" : "primitives2/*@NotNull*/";
@@ -330,7 +330,7 @@ public class Test_34_ExplicitConstructorInvocation extends CommonTestRunner {
         };
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             List<ParameterInfo> parameters = d.methodInfo().methodInspection.get().getParameters();
-            if (d.methodInfo().isConstructor && 3 == parameters.size()) {
+            if (d.methodInfo().isConstructor() && 3 == parameters.size()) {
                 assertDv(d.p(1), 2, MultiLevel.NOT_CONTAINER_DV, Property.CONTAINER_RESTRICTION);
                 assertDv(d.p(1), 2, MultiLevel.NOT_CONTAINER_DV, Property.CONTAINER);
             }
@@ -669,7 +669,7 @@ public class Test_34_ExplicitConstructorInvocation extends CommonTestRunner {
     public void test_12_1() throws IOException {
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("X3_BinaryOperator".equals(d.methodInfo().name)) {
-                assertTrue(d.methodInfo().isConstructor);
+                assertTrue(d.methodInfo().isConstructor());
                 assertEquals("0", d.statementId());
                 if (d.variable() instanceof FieldReference fr && "identifier".equals(fr.fieldInfo().name)) {
                     assertEquals("this", fr.scope().toString());
@@ -715,7 +715,7 @@ public class Test_34_ExplicitConstructorInvocation extends CommonTestRunner {
     public void test_13() throws IOException {
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             int n = d.methodInfo().methodInspection.get().getParameters().size();
-            if (d.methodInfo().isConstructor && d.methodInfo().methodInspection.get().isPrivate()) {
+            if (d.methodInfo().isConstructor() && d.methodInfo().methodInspection.get().isPrivate()) {
                 assertEquals(10, n);
 
                 if (d.variable() instanceof ParameterInfo pi && "identifier".equals(pi.name)) {
@@ -728,7 +728,7 @@ public class Test_34_ExplicitConstructorInvocation extends CommonTestRunner {
                     assertEquals(expected, d.currentValue().toString());
                 }
             }
-            if (d.methodInfo().isConstructor && 4 == n) {
+            if (d.methodInfo().isConstructor() && 4 == n) {
                 if (d.variable() instanceof FieldReference fr && "value".equals(fr.fieldInfo().name)) {
                     String expected = d.iteration() == 0 ? "<eci>" : "value/*@NotNull*/";
                     assertEquals(expected, d.currentValue().toString());
@@ -744,7 +744,7 @@ public class Test_34_ExplicitConstructorInvocation extends CommonTestRunner {
             }
         };
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
-            if (d.methodInfo().isConstructor && d.methodInfo().methodInspection.get().isPrivate()) {
+            if (d.methodInfo().isConstructor() && d.methodInfo().methodInspection.get().isPrivate()) {
                 assertDv(d, DV.TRUE_DV, Property.MODIFIED_METHOD);
             }
         };

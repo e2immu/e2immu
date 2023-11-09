@@ -115,7 +115,7 @@ public class AnnotationUploader {
                         String parameterQn = fqn(parameterInfo);
                         map.putAll(annotations(parameterInfo, parameterQn, PARAMETER_SUFFIX));
                     }
-                    if (!methodInfo.isConstructor && !methodInfo.isVoid()) {
+                    if (!methodInfo.isConstructor() && !methodInfo.isVoid()) {
                         TypeInfo bestType = methodInfo.returnType().bestTypeInfo();
                         if (bestType != null) {
                             map.putAll(annotations(bestType, bestType.fullyQualifiedName, TYPE_OF_METHOD_SUFFIX));

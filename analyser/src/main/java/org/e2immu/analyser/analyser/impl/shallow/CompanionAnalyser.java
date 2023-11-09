@@ -82,14 +82,14 @@ public class CompanionAnalyser {
                 return DONE;
             }
             DV modifyingMainMethod = analyserContext.getMethodAnalysis(mainMethod).getProperty(Property.MODIFIED_METHOD);
-            if (modifyingMainMethod.isDelayed() && !mainMethod.isConstructor) {
+            if (modifyingMainMethod.isDelayed() && !mainMethod.isConstructor()) {
                 // even though the method itself is annotated by contract (it has no code), method analysis may be delayed because
                 // its companion methods need processing
                 CausesOfDelay delay = modifyingMainMethod.causesOfDelay();
                 companionAnalysis.setCausesOfDelay(delay);
                 return delay;
             }
-            computeRemapParameters(!mainMethod.isConstructor && modifyingMainMethod.valueIsTrue());
+            computeRemapParameters(!mainMethod.isConstructor() && modifyingMainMethod.valueIsTrue());
 
             ReturnStatement returnStatement = (ReturnStatement) companionMethod.methodInspection.get()
                     .getMethodBody().structure.statements().get(0);

@@ -55,7 +55,8 @@ public class RecordSynthetics {
                                              AnnotationExpression notModifiedContract) {
         var fieldInfo = recordField.fieldInfo();
         // the accessor's identifier is that of the record type
-        var accessor = new MethodInspectionImpl.Builder(typeInfo.identifier, typeInfo, fieldInfo.name)
+        var accessor = new MethodInspectionImpl.Builder(typeInfo.identifier, typeInfo, fieldInfo.name,
+                MethodInfo.MethodType.METHOD)
                 .setSynthetic(true)
                 .setReturnType(fieldInfo.type)
                 .addModifier(MethodModifier.PUBLIC)

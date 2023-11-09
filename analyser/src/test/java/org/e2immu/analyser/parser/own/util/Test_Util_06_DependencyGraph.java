@@ -406,7 +406,7 @@ public class Test_Util_06_DependencyGraph extends CommonTestRunner {
                 assertEquals("recursivelyAddToSubGraph", methodResolution.methodsOfOwnClassReachedSorted());
             }
             if ("comparator".equals(methodName)) {
-                assertTrue(d.methodInfo().methodInspection.get().isStatic());
+                assertTrue(d.methodInfo().isStatic());
                 assertDv(d, 2, DV.FALSE_DV, Property.MODIFIED_METHOD);
                 MethodResolution methodResolution = d.methodInfo().methodResolution.get();
                 assertFalse(methodResolution.ignoreMeBecauseOfPartOfCallCycle());

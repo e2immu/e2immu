@@ -207,7 +207,7 @@ public interface TypeInspection extends Inspection {
     default SetOfTypes typesOfMethodsAndConstructors(InspectionProvider inspectionProvider) {
         Set<ParameterizedType> result = new HashSet<>();
         for (MethodInfo methodInfo : methodsAndConstructors()) {
-            if (!methodInfo.isConstructor && !methodInfo.isVoid()) {
+            if (!methodInfo.isConstructor() && !methodInfo.isVoid()) {
                 result.add(methodInfo.returnType());
             }
             for (ParameterInfo parameterInfo : inspectionProvider.getMethodInspection(methodInfo).getParameters()) {
@@ -227,14 +227,14 @@ public interface TypeInspection extends Inspection {
     }
 
     default Stream<MethodInfo> staticBlocksRecursively(InspectionProvider inspectionProvider) {
-        Stream<MethodInfo> mine = methods().stream().filter(m -> inspectionProvider.getMethodInspection(m).isStaticBlock());
+        Stream<MethodInfo> mine = methods().stream().filter(MethodInfo::isStaticBlock);
         Stream<MethodInfo> subTypes = subTypes().stream()
                 .flatMap(st -> inspectionProvider.getTypeInspection(st).staticBlocksRecursively(inspectionProvider));
         return Stream.concat(mine, subTypes);
     }
 
     default Stream<List<MethodInfo>> staticBlocksPerType(InspectionProvider inspectionProvider) {
-        List<MethodInfo> mine = methods().stream().filter(m -> inspectionProvider.getMethodInspection(m).isStaticBlock()).toList();
+        List<MethodInfo> mine = methods().stream().filter(MethodInfo::isStaticBlock).toList();
         Stream<List<MethodInfo>> subTypes = subTypes().stream()
                 .flatMap(st -> inspectionProvider.getTypeInspection(st).staticBlocksPerType(inspectionProvider));
         return Stream.concat(Stream.of(mine), subTypes);
