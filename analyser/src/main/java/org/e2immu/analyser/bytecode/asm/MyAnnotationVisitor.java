@@ -53,6 +53,10 @@ public class MyAnnotationVisitor<T> extends AnnotationVisitor {
         FindType findType = (fqn, path) -> {
             if (!Input.acceptPath(path)) return null;
             Source newPath = onDemandInspection.fqnToPath(fqn);
+            if (newPath == null) {
+                LOGGER.debug("Ignoring annotation of type {}", fqn);
+                return null;
+            }
             return typeContext.typeMap.getOrCreateFromPath(newPath, TRIGGER_BYTECODE_INSPECTION);
         };
         ParameterizedTypeFactory.Result from = ParameterizedTypeFactory.from(typeContext, findType, descriptor);

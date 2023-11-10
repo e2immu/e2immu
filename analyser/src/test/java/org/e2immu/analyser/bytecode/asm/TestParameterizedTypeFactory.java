@@ -15,6 +15,7 @@
 package org.e2immu.analyser.bytecode.asm;
 
 import org.e2immu.analyser.inspector.TypeContext;
+import org.e2immu.analyser.model.Identifier;
 import org.e2immu.analyser.model.ParameterizedType;
 import org.e2immu.analyser.parser.impl.TypeMapImpl;
 import org.e2immu.analyser.util.Resources;
@@ -26,15 +27,14 @@ import java.net.URISyntaxException;
 import java.util.Objects;
 
 import static org.e2immu.analyser.inspector.InspectionState.TRIGGER_BYTECODE_INSPECTION;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.*;
 
 public class TestParameterizedTypeFactory {
     private final TypeContext typeContext = new TypeContext(new TypeMapImpl.Builder(new Resources()));
     private final FindType findType = (fqn, path) -> {
         URI jar;
         try {
-            jar = new URI("jar://");
+            jar = new URI(TestParseGenerics.SOME_JAR);
         } catch (URISyntaxException e) {
             throw new RuntimeException(e);
         }
@@ -58,6 +58,7 @@ public class TestParameterizedTypeFactory {
         assertEquals(typeContext.getPrimitives().stringTypeInfo(),
                 pt.typeInfo);
         assertEquals(1, pt.arrays);
+        assertTrue(pt.typeInfo != null && pt.typeInfo.identifier == Identifier.INTERNAL_TYPE);
     }
 
     @Test

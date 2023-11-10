@@ -12,6 +12,7 @@ import org.e2immu.analyser.config.Configuration;
 import org.e2immu.analyser.inspector.*;
 import org.e2immu.analyser.inspector.impl.ExpressionContextImpl;
 import org.e2immu.analyser.inspector.impl.TypeInspectorImpl;
+import org.e2immu.analyser.model.Identifier;
 import org.e2immu.analyser.model.TypeInfo;
 import org.e2immu.analyser.model.TypeInspection;
 import org.e2immu.analyser.parser.InspectWithJavaParser;
@@ -196,7 +197,8 @@ public class InspectAll implements InspectWithJavaParser {
         Map<TypeInfo, TypeData> typesInUnit = new HashMap<>();
         for (TypeDeclaration<?> td : compilationUnit.getTypes()) {
             String name = td.getNameAsString();
-            TypeInfo typeInfo = typeContextOfFile.typeMap.getOrCreate(packageName, name, INIT_JAVA_PARSER);
+            Identifier id = Identifier.from(compilationUnit);
+            TypeInfo typeInfo = typeContextOfFile.typeMap.getOrCreate(packageName, name, id, INIT_JAVA_PARSER);
             typeContextOfFile.addToContext(typeInfo);
             TypeInspector typeInspector = new TypeInspectorImpl(typeMapBuilder, typeInfo, true,
                     dollarTypesAreNormalTypes, storeComments());
@@ -301,8 +303,9 @@ public class InspectAll implements InspectWithJavaParser {
                     String fqn = fullyQualified + "." + simpleName;
                     TypeInfo typeInfo = typeContextOfFile.typeMap.get(fqn);
                     if (typeInfo == null) {
+                        Identifier id = Identifier.from(urls.get(0));
                         TypeInfo newTypeInfo = typeContextOfFile.typeMap
-                                .getOrCreate(fullyQualified, simpleName, TRIGGER_BYTECODE_INSPECTION);
+                                .getOrCreate(fullyQualified, simpleName, id, TRIGGER_BYTECODE_INSPECTION);
                         LOGGER.debug("Registering inspection handler for {}", newTypeInfo.fullyQualifiedName);
                         typeContextOfFile.addImport(newTypeInfo, false, false);
                     } else {

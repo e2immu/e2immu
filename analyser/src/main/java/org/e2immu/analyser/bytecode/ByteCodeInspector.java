@@ -91,12 +91,13 @@ public class ByteCodeInspector implements OnDemandInspection {
     public TypeInfo inspectFromPath(Source path,
                                     Stack<TypeInfo> enclosingTypes,
                                     TypeContext parentTypeContext) {
+        assert path != null && path.path().endsWith(".class");
         if (LOGGER.isDebugEnabled()) {
             logTypesInProcess(path.path());
             LOGGER.debug(enclosingTypes.stream().map(ti -> ti.fullyQualifiedName)
                     .collect(Collectors.joining(" -> ")));
         }
-        byte[] classBytes = classPath.loadBytes(path + ".class");
+        byte[] classBytes = classPath.loadBytes(path.path());
         if (classBytes == null) return null;
         List<TypeInfo> result = inspectByteArray(path, classBytes, enclosingTypes, parentTypeContext);
         if (result.isEmpty()) return null;

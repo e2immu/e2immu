@@ -242,14 +242,23 @@ public class TypeMapImpl implements TypeMap {
             return TypeMapImpl.get(trie, fullyQualifiedName);
         }
 
-        public TypeInfo getOrCreate(String packageName, String simpleName, InspectionState inspectionState) {
+        @Override
+        public TypeInfo getOrCreateTriggerByteCode(String packageName, String simpleName) {
+            Source source = classPath.fqnToPath(packageName + "." + simpleName, ".class");
+            // example of not-accessible type: java.lang.Compiler
+            Identifier id = source == null ? Identifier.NOT_ACCESSIBLE : Identifier.from(source.uri());
+            return getOrCreate(packageName, simpleName, id, TRIGGER_BYTECODE_INSPECTION);
+        }
+
+        @Override
+        public TypeInfo getOrCreate(String packageName, String simpleName, Identifier identifier, InspectionState inspectionState) {
             assert simpleName.indexOf('.') < 0; // no dots!
             TypeInfo typeInfo = get(packageName + "." + simpleName);
             if (typeInfo != null) {
                 ensureTypeInspection(typeInfo, inspectionState);
                 return typeInfo;
             }
-            TypeInfo newType = new TypeInfo(packageName, simpleName);
+            TypeInfo newType = new TypeInfo(identifier, packageName, simpleName);
             add(newType, inspectionState);
             return newType;
         }
@@ -260,10 +269,11 @@ public class TypeMapImpl implements TypeMap {
 
         public TypeInspection.Builder getOrCreateFromPathReturnInspection(Source source,
                                                                           InspectionState inspectionState) {
+            assert source != null;
             String path = source.stripDotClass();
             assert path.indexOf('.') < 0 : "Path is " + path; // no dots! uses / and $; the . is for the .class which should have been stripped
             int dollar = path.indexOf('$');
-            TypeInfo primaryType = extractPrimaryTypeAndAddToMap(path, dollar);
+            TypeInfo primaryType = extractPrimaryTypeAndAddToMap(source, dollar);
             if (dollar < 0) return ensureTypeInspection(primaryType, inspectionState);
             TypeInfo enclosingType = primaryType;
             TypeInspection.Builder typeInspection = null;
@@ -300,7 +310,8 @@ public class TypeMapImpl implements TypeMap {
             }
         }
 
-        private TypeInfo extractPrimaryTypeAndAddToMap(String path, int dollar) {
+        private TypeInfo extractPrimaryTypeAndAddToMap(Source source, int dollar) {
+            String path = source.stripDotClass();
             String pathOfPrimaryType = dollar >= 0 ? path.substring(0, dollar) : path;
             String fqnOfPrimaryType = pathOfPrimaryType.replace('/', '.');
             TypeInfo primaryTypeInMap = get(fqnOfPrimaryType);
@@ -308,7 +319,8 @@ public class TypeMapImpl implements TypeMap {
                 int lastDot = fqnOfPrimaryType.lastIndexOf('.');
                 String packageName = fqnOfPrimaryType.substring(0, lastDot);
                 String simpleName = fqnOfPrimaryType.substring(lastDot + 1);
-                TypeInfo primaryType = new TypeInfo(packageName, simpleName);
+                Identifier identifier = Identifier.from(source.uri());
+                TypeInfo primaryType = new TypeInfo(identifier, packageName, simpleName);
                 trie.add(primaryType.fullyQualifiedName.split("\\."), primaryType);
                 return primaryType;
             }

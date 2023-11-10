@@ -26,8 +26,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
-import static org.e2immu.analyser.inspector.InspectionState.TRIGGER_BYTECODE_INSPECTION;
-
 public class ParameterizedTypeFactory {
     @Nullable
     public static ParameterizedType fromDoNotComplain(TypeContext context, Type type) {
@@ -159,7 +157,7 @@ public class ParameterizedTypeFactory {
             return null;
         }
         // we're going to assume that we're creating a subtype
-        TypeInfo subType = typeContext.typeMap.getOrCreate(scopePt.typeInfo.fullyQualifiedName, name, TRIGGER_BYTECODE_INSPECTION);
+        TypeInfo subType = typeContext.typeMap.getOrCreateTriggerByteCode(scopePt.typeInfo.fullyQualifiedName, name);
         return new ParameterizedType(subType, parameters, arrays);
     }
 }

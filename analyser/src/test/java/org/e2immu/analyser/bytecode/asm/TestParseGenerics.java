@@ -41,6 +41,7 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 
 public class TestParseGenerics {
 
+    public static final String SOME_JAR = "jar:file:build/libs/my.jar";
     private static TypeContext typeContext;
 
     @BeforeAll
@@ -95,7 +96,7 @@ public class TestParseGenerics {
         TypeInspectionImpl.Builder typeInspectionBuilder = (TypeInspectionImpl.Builder)
                 typeContext.getTypeInspection(typeInfo);
         TypeContext newTypeContext = new TypeContext(typeContext);
-        URI jar = new URI("jar://");
+        URI jar = new URI(SOME_JAR);
         FindType findType = (fqn, path) -> newTypeContext.typeMap.getOrCreateFromPath(new Source(path, jar),
                 TRIGGER_BYTECODE_INSPECTION);
 
@@ -160,7 +161,7 @@ public class TestParseGenerics {
         TypeContext newTypeContext = new TypeContext(typeContext);
         newTypeContext.addToContext(new TypeParameterImpl("V", 0).noTypeBounds());
         newTypeContext.addToContext(new TypeParameterImpl("CLV", 1).noTypeBounds());
-        URI jar = new URI("jar://");
+        URI jar = new URI(SOME_JAR);
         FindType findType = (fqn, path) -> newTypeContext.typeMap.getOrCreateFromPath(new Source(path, jar),
                 TRIGGER_BYTECODE_INSPECTION);
         TypeInfo typeInfo = new TypeInfo("jdk.internal.loader", "AbstractClassLoaderValue");

@@ -138,7 +138,10 @@ public class TestByteCodeInspector {
     public void testArrays() throws IOException, URISyntaxException {
         TypeMap typeMap = parseFromJar("java/util/Arrays");
         TypeInfo typeInfo = typeMap.get("java.util.Arrays");
-
+        assertTrue(typeInfo != null && typeInfo.identifier instanceof Identifier.JarIdentifier);
+        String jarName = determineAnalyserJarName();
+        String identifier = "JarIdentifier[uri=jar:file:build/libs/" + jarName + "!/]";
+        assertEquals(identifier, typeInfo.identifier.toString());
         assertEquals(TypeNature.CLASS, typeInfo.typeInspection.get().typeNature());
         MethodInfo asList = typeInfo.findUniqueMethod("asList", 1);
         assertEquals("Type java.util.List<T>", asList.returnType().toString());

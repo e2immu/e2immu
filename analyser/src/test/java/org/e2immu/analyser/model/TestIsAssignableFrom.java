@@ -14,6 +14,7 @@
 
 package org.e2immu.analyser.model;
 
+import org.e2immu.analyser.bytecode.asm.TestParseGenerics;
 import org.e2immu.analyser.config.Configuration;
 import org.e2immu.analyser.config.InputConfiguration;
 import org.e2immu.analyser.inspector.TypeContext;
@@ -55,7 +56,7 @@ public class TestIsAssignableFrom {
         Parser parser = new Parser(configuration);
         typeContext = parser.getTypeContext();
         primitives = typeContext.getPrimitives();
-        URI jar = new URI("jar://");
+        URI jar = new URI(TestParseGenerics.SOME_JAR);
         parser.getByteCodeInspector().inspectFromPath(new Source("java/util/List", jar));
         parser.getByteCodeInspector().inspectFromPath(new Source("java/util/LinkedList", jar));
     }

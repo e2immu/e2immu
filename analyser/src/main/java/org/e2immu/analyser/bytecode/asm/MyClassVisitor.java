@@ -258,7 +258,7 @@ public class MyClassVisitor extends ClassVisitor {
             if (inHierarchy != null) return inHierarchy;
         }
         if (parentType != null && isDirectChildOf(fqn, parentType.fullyQualifiedName)) {
-            Source newPath = onDemandInspection.fqnToPath(path);
+            Source newPath = onDemandInspection.fqnToPath(fqn);
             onDemandInspection.inspectFromPath(newPath, enclosingTypes, typeContext);
         } else {
             Source newPath = onDemandInspection.fqnToPath(fqn);
@@ -274,6 +274,10 @@ public class MyClassVisitor extends ClassVisitor {
         if (m.find()) throw new UnsupportedOperationException("Illegal FQN: " + fqn + "; path is " + path);
         // this causes really heavy recursions: return mustFindTypeInfo(fqn, path);
         Source newPath = onDemandInspection.fqnToPath(fqn);
+        if (newPath == null) {
+            LOGGER.debug("Ignoring type {}", fqn);
+            return null;
+        }
         return typeContext.typeMap.getOrCreateFromPath(newPath, TRIGGER_BYTECODE_INSPECTION);
     }
 
@@ -450,7 +454,7 @@ public class MyClassVisitor extends ClassVisitor {
                     if (stepDown) {
                         enclosingTypes.push(currentType);
                     }
-                    Source newPath = new Source(name, pathAndURI.uri());
+                    Source newPath = new Source(name + ".class", pathAndURI.uri());
                     TypeInfo subType = onDemandInspection.inspectFromPath(newPath, enclosingTypes, typeContext);
                     if (stepDown) {
                         enclosingTypes.pop();

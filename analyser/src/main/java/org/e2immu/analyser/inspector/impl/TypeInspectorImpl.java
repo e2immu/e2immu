@@ -220,7 +220,9 @@ public class TypeInspectorImpl implements TypeInspector {
                 builder.typeNature() == TypeNature.INTERFACE, recordFields, dollarResolver);
     }
 
-    private DollarResolver getDollarResolver(TypeDeclaration<?> typeDeclaration, DollarResolver dollarResolverInput, TypeContext typeContext) {
+    private DollarResolver getDollarResolver(TypeDeclaration<?> typeDeclaration,
+                                             DollarResolver dollarResolverInput,
+                                             TypeContext typeContext) {
         DollarResolver dollarResolver;
         if (typeInfo.isPrimaryType()) {
             if (dollarTypesAreNormalTypes) {
@@ -230,8 +232,8 @@ public class TypeInspectorImpl implements TypeInspector {
                 String dollarPackageName = TypeInspectionImpl.packageName(packageNameField);
                 dollarResolver = name -> {
                     if (name.endsWith("$") && dollarPackageName != null) {
-                        return typeContext.typeMap
-                                .getOrCreate(dollarPackageName, name.substring(0, name.length() - 1), TRIGGER_BYTECODE_INSPECTION);
+                        String substring = name.substring(0, name.length() - 1);
+                        return typeContext.typeMap.getOrCreateTriggerByteCode(dollarPackageName, substring);
                     }
                     return null;
                 };

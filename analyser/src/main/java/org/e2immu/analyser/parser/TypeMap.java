@@ -61,7 +61,7 @@ public interface TypeMap extends InspectionProvider {
 
         @Modified
         @NotNull
-        TypeInfo getOrCreate(String packageName, String name, InspectionState triggerJavaParser);
+        TypeInfo getOrCreate(String packageName, String name, Identifier identifier, InspectionState triggerJavaParser);
 
         @Modified
         void registerFieldInspection(FieldInfo fieldInfo, FieldInspection.Builder fieldBuilder);
@@ -100,5 +100,7 @@ public interface TypeMap extends InspectionProvider {
         TypeInspector newTypeInspector(TypeInfo typeInfo, boolean b, boolean b1);
 
         TypeInspection getTypeInspectionDoNotTrigger(TypeInfo currentType);
+
+        TypeInfo getOrCreateTriggerByteCode(String packageName, String simpleName);
     }
 }

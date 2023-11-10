@@ -56,11 +56,12 @@ StatementTime 8
  */
 public interface Identifier extends Comparable<Identifier> {
     Logger LOGGER = LoggerFactory.getLogger(Identifier.class);
-
     int identifierOrder();
+
 
     Identifier CONSTANT = new IncrementalIdentifier("constant");
     Identifier INTERNAL_TYPE = new IncrementalIdentifier("internal type");
+    Identifier NOT_ACCESSIBLE = new IncrementalIdentifier("type not accessible");
 
     default boolean isInternalType() {
         return INTERNAL_TYPE == this;
