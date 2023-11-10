@@ -197,4 +197,8 @@ public class TestConstructor extends CommonTest {
         inspectAndResolve(Constructor_14.class);
     }
 
+    @Test
+    public void test_15() throws IOException {
+        inspectAndResolve(Constructor_15.class);
+    }
 }

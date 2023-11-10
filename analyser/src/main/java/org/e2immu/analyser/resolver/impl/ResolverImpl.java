@@ -145,29 +145,13 @@ public class ResolverImpl implements Resolver {
 
     @Override
     public SortedTypes resolve(Map<TypeInfo, ExpressionContext> inspectedTypes) {
-        Map<TypeInfo, TypeResolution.Builder> resolutionBuilders = new HashMap<>();
         Set<TypeInfo> stayWithin = inspectedTypes.keySet().stream()
                 .flatMap(typeInfo -> typeAndAllSubTypes(typeInfo).stream())
                 .collect(Collectors.toUnmodifiableSet());
 
-        for (Map.Entry<TypeInfo, ExpressionContext> entry : inspectedTypes.entrySet()) {
-            try {
-                TypeInfo typeInfo = entry.getKey();
-                ExpressionContext expressionContext = entry.getValue();
-
-                if (parent == null) {
-                    assert typeInfo.isPrimaryType() : "Not a primary type: " + typeInfo.fullyQualifiedName;
-                } else {
-                    assert !typeInfo.isPrimaryType() :
-                            "?? in recursive situation we do not expect a primary type" + typeInfo.fullyQualifiedName;
-                }
-                SortedType sortedType = addToTypeGraph(stayWithin, typeInfo, expressionContext);
-                resolutionBuilders.put(typeInfo, new TypeResolution.Builder().setSortedType(sortedType));
-            } catch (RuntimeException rte) {
-                LOGGER.warn("Caught runtime exception while resolving type {}", entry.getKey().fullyQualifiedName);
-                throw rte;
-            }
-        }
+        Map<TypeInfo, TypeResolution.Builder> resolutionBuilders = inspectedTypes.entrySet().stream()
+                .collect(Collectors.toUnmodifiableMap(Map.Entry::getKey,
+                        entry -> resolveTypeAndCreateBuilder(entry, stayWithin)));
         // only at the top level, because we have only one call graph
         if (parent == null) {
             LOGGER.info("At end of main resolution loop, start filling method resolution objects on {} types",
@@ -182,6 +166,25 @@ public class ResolverImpl implements Resolver {
             LOGGER.info("Computing type resolution");
         }
         return computeTypeResolution(sorted, resolutionBuilders, inspectedTypes);
+    }
+
+    private TypeResolution.Builder resolveTypeAndCreateBuilder(Map.Entry<TypeInfo, ExpressionContext> entry, Set<TypeInfo> stayWithin) {
+        try {
+            TypeInfo typeInfo = entry.getKey();
+            ExpressionContext expressionContext = entry.getValue();
+
+            if (parent == null) {
+                assert typeInfo.isPrimaryType() : "Not a primary type: " + typeInfo.fullyQualifiedName;
+            } else {
+                assert !typeInfo.isPrimaryType() :
+                        "?? in recursive situation we do not expect a primary type" + typeInfo.fullyQualifiedName;
+            }
+            SortedType sortedType = addToTypeGraph(stayWithin, typeInfo, expressionContext);
+            return new TypeResolution.Builder().setSortedType(sortedType);
+        } catch (RuntimeException rte) {
+            LOGGER.warn("Caught runtime exception while resolving type {}", entry.getKey().fullyQualifiedName);
+            throw rte;
+        }
     }
 
     private List<TypeInfo> typeAndAllSubTypes(TypeInfo typeInfo) {
@@ -202,30 +205,34 @@ public class ResolverImpl implements Resolver {
         Set<TypeInfo> inCycle = new HashSet<>();
 
         LOGGER.debug("\n\n******* start sorting *********\n");
-        return typeGraph.sorted(cycle -> {
-                    List<TypeInfo> restrictedCycle = new LinkedList<>(cycle);
-                    restrictedCycle.removeAll(inCycle);
-                    if (LOGGER.isDebugEnabled()) {
-                        LOGGER.debug("Cycle of size {} cycle reduced to {}", cycle.size(), restrictedCycle.size());
-                        restrictedCycle.forEach(ti -> LOGGER.debug("\t" + ti.fullyQualifiedName));
-                    }
-                    boolean addMessage = true;
-                    Set<TypeInfo> cycleAsSet = restrictedCycle.stream().collect(Collectors.toUnmodifiableSet());
-                    for (TypeInfo typeInfo : restrictedCycle) {
-                        TypeResolution.Builder otherBuilder = resolutionBuilders.get(typeInfo);
-                        otherBuilder.addCircularDependencies(cycleAsSet);
-
-                        if (addMessage) {
-                            messages.add(Message.newMessage(typeInfo.newLocation(), Message.Label.CIRCULAR_TYPE_DEPENDENCY,
-                                    restrictedCycle.stream().map(t -> t.fullyQualifiedName).collect(Collectors.joining(", "))));
-                            addMessage = false;
-                        }
-                    }
-                    inCycle.addAll(restrictedCycle);
-                },
+        return typeGraph.sorted(cycle -> foundCycle(resolutionBuilders, cycle, inCycle),
                 typeInfo -> LOGGER.debug("Adding {}", typeInfo.fullyQualifiedName),
                 Comparator.comparing(typeInfo -> typeInfo.fullyQualifiedName),
                 shallowResolver);
+    }
+
+    private void foundCycle(Map<TypeInfo, TypeResolution.Builder> resolutionBuilders,
+                            List<TypeInfo> cycle,
+                            Set<TypeInfo> inCycle) {
+        List<TypeInfo> restrictedCycle = new LinkedList<>(cycle);
+        restrictedCycle.removeAll(inCycle);
+        if (LOGGER.isDebugEnabled()) {
+            LOGGER.debug("Cycle of size {} cycle reduced to {}", cycle.size(), restrictedCycle.size());
+            restrictedCycle.forEach(ti -> LOGGER.debug("\t" + ti.fullyQualifiedName));
+        }
+        boolean addMessage = true;
+        Set<TypeInfo> cycleAsSet = restrictedCycle.stream().collect(Collectors.toUnmodifiableSet());
+        for (TypeInfo typeInfo : restrictedCycle) {
+            TypeResolution.Builder otherBuilder = resolutionBuilders.get(typeInfo);
+            otherBuilder.addCircularDependencies(cycleAsSet);
+
+            if (addMessage) {
+                messages.add(Message.newMessage(typeInfo.newLocation(), Message.Label.CIRCULAR_TYPE_DEPENDENCY,
+                        restrictedCycle.stream().map(t -> t.fullyQualifiedName).collect(Collectors.joining(", "))));
+                addMessage = false;
+            }
+        }
+        inCycle.addAll(restrictedCycle);
     }
 
     private SortedTypes computeTypeResolution(List<TypeInfo> sorted,
@@ -236,15 +243,18 @@ public class ResolverImpl implements Resolver {
         out of the standard sorting order, exactly because of circular dependencies.
          */
         Map<TypeInfo, TypeResolution.Builder> allBuilders = new HashMap<>(resolutionBuilders);
-        resolutionBuilders.forEach((typeInfo, builder) ->
-                addSubtypeResolutionBuilders(inspectionProvider, typeInfo, builder, allBuilders));
+        resolutionBuilders.entrySet().parallelStream().forEach(e ->
+                addSubtypeResolutionBuilders(inspectionProvider, e.getKey(), e.getValue(), allBuilders));
 
-        allBuilders.forEach((typeInfo, builder) -> computeSuperTypes(inspectionProvider, typeInfo, builder, allBuilders));
-        allBuilders.forEach((typeInfo, builder) -> computeFieldAccess(inspectionProvider, typeInfo, builder,
-                parent != null ? inspectedTypes.get(typeInfo) : inspectedTypes.get(typeInfo.primaryType())));
-        allBuilders.forEach((typeInfo, builder) -> typeInfo.typeResolution.set(builder.build()));
+        allBuilders.entrySet().parallelStream()
+                .forEach(e -> computeSuperTypes(inspectionProvider, e.getKey(), e.getValue(), allBuilders));
+        allBuilders.entrySet().parallelStream()
+                .forEach(e -> computeFieldAccess(inspectionProvider, e.getKey(), e.getValue(),
+                        parent != null ? inspectedTypes.get(e.getKey()) : inspectedTypes.get(e.getKey().primaryType())));
+        allBuilders.entrySet().parallelStream().forEach(e -> e.getKey().typeResolution.set(e.getValue().build()));
 
-        List<TypeCycle> typeCycles = groupByCycles(sorted.stream().map(typeInfo -> typeInfo.typeResolution.get().sortedType()).toList());
+        List<TypeCycle> typeCycles = groupByCycles(sorted.stream()
+                .map(typeInfo -> typeInfo.typeResolution.get().sortedType()).toList());
         return new SortedTypes(typeCycles);
     }
 
@@ -408,7 +418,7 @@ public class ResolverImpl implements Resolver {
     }
 
     /*
-       FIXME
+       Note:
          Parent<E> contains: protected E field;
          Child<T extends X> extends Parent<T>
          now means that field is accessible in Child as type T extends X!

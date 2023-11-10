@@ -23,7 +23,7 @@ import java.util.function.Consumer;
 public class TypeGraph {
 
     public static class Dependencies {
-        private Map<TypeInfo, Integer> weights;
+        private final Map<TypeInfo, Integer> weights;
         private int sumIncoming;
 
         public Dependencies(Map<TypeInfo, Integer> weights) {
@@ -67,23 +67,21 @@ public class TypeGraph {
                 e -> toDo.put(e.getKey(), e.getValue()));
         List<TypeInfo> result = new ArrayList<>(nodeMap.size());
         while (!toDo.isEmpty()) {
-            List<TypeInfo> doneInThisIteration = new LinkedList<>();
-            for (Map.Entry<TypeInfo, Dependencies> entry : toDo.entrySet()) {
-                Dependencies dependencies = entry.getValue();
-                boolean safe;
-                if (dependencies == null || dependencies.weights.isEmpty()) {
-                    safe = true;
-                } else {
-                    Map<TypeInfo, Integer> copy = new HashMap<>(dependencies.weights);
-                    result.forEach(copy.keySet()::remove);
-                    copy.remove(entry.getKey());
-                    safe = copy.isEmpty();
-                }
-                if (safe) {
-                    doneInThisIteration.add(entry.getKey());
-                    if (independentConsumer != null) independentConsumer.accept(entry.getKey());
-                }
-            }
+            List<TypeInfo> doneInThisIteration = toDo.entrySet()
+                    .parallelStream().filter(entry -> {
+                        Dependencies dependencies = entry.getValue();
+                        boolean safe;
+                        if (dependencies == null || dependencies.weights.isEmpty()) {
+                            safe = true;
+                        } else {
+                            Map<TypeInfo, Integer> copy = new HashMap<>(dependencies.weights);
+                            result.forEach(copy.keySet()::remove);
+                            copy.remove(entry.getKey());
+                            safe = copy.isEmpty();
+                        }
+                        if (safe && independentConsumer != null) independentConsumer.accept(entry.getKey());
+                        return safe;
+                    }).map(Map.Entry::getKey).toList();
             // there are no types without dependencies at the moment -- we must have a cycle
             if (doneInThisIteration.isEmpty()) {
                 assert toDo.size() > 1 : "The last one should always be safe";

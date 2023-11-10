@@ -239,7 +239,13 @@ public record ExpressionContextImpl(ExpressionContext.ResolverRecursion resolver
                         Objects.requireNonNull(typeOfEnclosingSwitchExpression));
                 newStatement = new YieldStatement(identifier, expr, comment);
             } else if (statement.isExpressionStmt()) {
-                Expression expression = parseExpressionStartVoid(statement.asExpressionStmt().getExpression());
+                /*
+                 see Constructor_15 for why we don't start off with a VOID context; see also MethodCall_14: sometimes
+                 a void context is required!
+                 */
+                ParameterizedType jlo = typeContext.getPrimitives().objectParameterizedType();
+                ForwardReturnTypeInfo fwd = new ForwardReturnTypeInfo(jlo, false, TypeParameterMap.EMPTY);
+                Expression expression = parseExpression(statement.asExpressionStmt().getExpression(), fwd);
                 newStatement = new ExpressionAsStatement(identifier, expression, comment, false);
                 variableContext.addAll(expression.newLocalVariables());
             } else if (statement.isForEachStmt()) {
