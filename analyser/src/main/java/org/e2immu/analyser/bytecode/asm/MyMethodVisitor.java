@@ -17,6 +17,7 @@ package org.e2immu.analyser.bytecode.asm;
 import org.e2immu.analyser.annotationxml.model.MethodItem;
 import org.e2immu.analyser.annotationxml.model.ParameterItem;
 import org.e2immu.analyser.bytecode.JetBrainsAnnotationTranslator;
+import org.e2immu.analyser.bytecode.OnDemandInspection;
 import org.e2immu.analyser.inspector.TypeContext;
 import org.e2immu.analyser.model.*;
 import org.objectweb.asm.AnnotationVisitor;
@@ -42,8 +43,10 @@ public class MyMethodVisitor extends MethodVisitor {
     private final MethodItem methodItem;
     private final boolean[] hasNameFromLocalVar;
     private final boolean lastParameterIsVarargs;
+    private final OnDemandInspection onDemandInspection;
 
     public MyMethodVisitor(TypeContext typeContext,
+                           OnDemandInspection onDemandInspection,
                            MethodInspection.Builder methodInspectionBuilder,
                            TypeInspection.Builder typeInspectionBuilder,
                            List<ParameterizedType> types,
@@ -57,11 +60,13 @@ public class MyMethodVisitor extends MethodVisitor {
         this.types = types;
         this.jetBrainsAnnotationTranslator = jetBrainsAnnotationTranslator;
         this.methodItem = methodItem;
+        this.onDemandInspection = onDemandInspection;
         numberOfParameters = types.size() - 1;
         hasNameFromLocalVar = new boolean[numberOfParameters];
         parameterInspectionBuilders = new ParameterInspection.Builder[numberOfParameters];
         for (int i = 0; i < numberOfParameters; i++) {
-            parameterInspectionBuilders[i] = methodInspectionBuilder.newParameterInspectionBuilder(Identifier.generate("asm param"), i);
+            Identifier id = Identifier.generate("asm param");
+            parameterInspectionBuilders[i] = methodInspectionBuilder.newParameterInspectionBuilder(id, i);
         }
         this.lastParameterIsVarargs = lastParameterIsVarargs;
     }
@@ -69,13 +74,14 @@ public class MyMethodVisitor extends MethodVisitor {
     @Override
     public AnnotationVisitor visitAnnotation(String descriptor, boolean visible) {
         LOGGER.debug("Have method annotation {} {}", descriptor, visible);
-        return new MyAnnotationVisitor<>(typeContext, descriptor, methodInspectionBuilder);
+        return new MyAnnotationVisitor<>(typeContext, onDemandInspection, descriptor, methodInspectionBuilder);
     }
 
     @Override
     public AnnotationVisitor visitParameterAnnotation(int parameter, String descriptor, boolean visible) {
         LOGGER.debug("Have parameter annotation {} on parameter {}", descriptor, parameter);
-        return new MyAnnotationVisitor<>(typeContext, descriptor, parameterInspectionBuilders[parameter]);
+        return new MyAnnotationVisitor<>(typeContext, onDemandInspection, descriptor,
+                parameterInspectionBuilders[parameter]);
     }
 
     /*

@@ -20,10 +20,12 @@ import org.e2immu.analyser.bytecode.ByteCodeInspector;
 import org.e2immu.analyser.bytecode.OnDemandInspection;
 import org.e2immu.analyser.config.Configuration;
 import org.e2immu.analyser.inspector.TypeContext;
+import org.e2immu.analyser.model.Identifier;
 import org.e2immu.analyser.model.TypeInfo;
 import org.e2immu.analyser.parser.impl.InspectAll;
 import org.e2immu.analyser.parser.impl.TypeMapImpl;
 import org.e2immu.analyser.util.Resources;
+import org.e2immu.analyser.util.Source;
 import org.e2immu.analyser.util.Trie;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -127,10 +129,10 @@ public record Input(Configuration configuration,
                     String typeName = name.substring(0, name.length() - 5);
                     String packageName = Arrays.stream(parts).limit(n).collect(Collectors.joining("."));
                     if (acceptSource(packageName, typeName, restrictions)) {
-                        TypeInfo typeInfo = new TypeInfo(packageName, typeName);
+                        URI uri = list.get(0);
+                        TypeInfo typeInfo = new TypeInfo(Identifier.from(uri), packageName, typeName);
                         globalTypeContext.typeMap.add(typeInfo, INIT_JAVA_PARSER);
-                        URI url = list.get(0);
-                        sourceURLs.put(typeInfo, url);
+                        sourceURLs.put(typeInfo, uri);
                         parts[n] = typeName;
                         trie.add(parts, typeInfo);
                     } else {
@@ -175,7 +177,7 @@ public record Input(Configuration configuration,
                 TypeInfo typeInfo = globalTypeContext.getFullyQualified(fqn, true);
                 if (!typeInfo.typeInspection.isSet()) {
                     String path = fqn.replace(".", "/"); // this is correct!
-                    byteCodeInspector.inspectFromPath(path);
+                    byteCodeInspector.inspectFromPath(new Source(path, list.get(0)));
                     inspected.incrementAndGet();
                 }
             }

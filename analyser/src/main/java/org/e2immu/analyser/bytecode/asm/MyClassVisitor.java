@@ -28,6 +28,7 @@ import org.e2immu.analyser.inspector.impl.TypeInspectionImpl;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.EmptyExpression;
 import org.e2immu.analyser.parser.Input;
+import org.e2immu.analyser.util.Source;
 import org.e2immu.analyser.util.StringUtil;
 import org.objectweb.asm.*;
 import org.slf4j.Logger;
@@ -53,6 +54,7 @@ public class MyClassVisitor extends ClassVisitor {
     private final AnnotationStore annotationStore;
     private final JetBrainsAnnotationTranslator jetBrainsAnnotationTranslator;
     private final Stack<TypeInfo> enclosingTypes;
+    private final Source pathAndURI;
     private TypeInfo currentType;
     private String currentTypePath;
     private boolean currentTypeIsInterface;
@@ -61,6 +63,7 @@ public class MyClassVisitor extends ClassVisitor {
     public MyClassVisitor(OnDemandInspection onDemandInspection,
                           AnnotationStore annotationStore,
                           TypeContext typeContext,
+                          Source pathAndURI,
                           List<TypeInfo> types,
                           Stack<TypeInfo> enclosingTypes) {
         super(ASM9);
@@ -68,6 +71,7 @@ public class MyClassVisitor extends ClassVisitor {
         this.enclosingTypes = enclosingTypes;
         this.typeContext = typeContext;
         this.onDemandInspection = onDemandInspection;
+        this.pathAndURI = pathAndURI;
         this.annotationStore = annotationStore;
         jetBrainsAnnotationTranslator = annotationStore != null ? new JetBrainsAnnotationTranslator(typeContext.getPrimitives(),
                 typeContext.typeMap.getE2ImmuAnnotationExpressions()) : null;
@@ -114,7 +118,7 @@ public class MyClassVisitor extends ClassVisitor {
         assert Input.acceptFQN(fqName);
         currentType = typeContext.typeMap.get(fqName);
         if (currentType == null) {
-            typeInspectionBuilder = typeContext.typeMap.getOrCreateFromPathReturnInspection(name, STARTING_BYTECODE);
+            typeInspectionBuilder = typeContext.typeMap.getOrCreateFromPathReturnInspection(pathAndURI, STARTING_BYTECODE);
             currentType = typeInspectionBuilder.typeInfo();
         } else {
             TypeInspection typeInspection = typeContext.typeMap.getTypeInspectionDoNotTrigger(currentType);
@@ -254,9 +258,11 @@ public class MyClassVisitor extends ClassVisitor {
             if (inHierarchy != null) return inHierarchy;
         }
         if (parentType != null && isDirectChildOf(fqn, parentType.fullyQualifiedName)) {
-            onDemandInspection.inspectFromPath(path, enclosingTypes, typeContext);
+            Source newPath = onDemandInspection.fqnToPath(path);
+            onDemandInspection.inspectFromPath(newPath, enclosingTypes, typeContext);
         } else {
-            onDemandInspection.inspectFromPath(path);
+            Source newPath = onDemandInspection.fqnToPath(fqn);
+            onDemandInspection.inspectFromPath(newPath);
         }
         // try again... result can be null or not inspected, in case the path is not on the classpath
         return typeContext.typeMap.get(fqn);
@@ -267,7 +273,8 @@ public class MyClassVisitor extends ClassVisitor {
         Matcher m = ILLEGAL_IN_FQN.matcher(fqn);
         if (m.find()) throw new UnsupportedOperationException("Illegal FQN: " + fqn + "; path is " + path);
         // this causes really heavy recursions: return mustFindTypeInfo(fqn, path);
-        return typeContext.typeMap.getOrCreateFromPath(path, TRIGGER_BYTECODE_INSPECTION);
+        Source newPath = onDemandInspection.fqnToPath(fqn);
+        return typeContext.typeMap.getOrCreateFromPath(newPath, TRIGGER_BYTECODE_INSPECTION);
     }
 
     private TypeInfo inEnclosingTypes(String parentFqName) {
@@ -325,7 +332,8 @@ public class MyClassVisitor extends ClassVisitor {
             }
         }
 
-        return new MyFieldVisitor(typeContext, fieldInfo, fieldInspectionBuilder, typeInspectionBuilder);
+        return new MyFieldVisitor(typeContext, fieldInfo, onDemandInspection, fieldInspectionBuilder,
+                typeInspectionBuilder);
     }
 
     @Override
@@ -391,8 +399,8 @@ public class MyClassVisitor extends ClassVisitor {
             }
         }
 
-        return new MyMethodVisitor(methodContext, methodInspectionBuilder, typeInspectionBuilder, types,
-                lastParameterIsVarargs, methodItem, jetBrainsAnnotationTranslator);
+        return new MyMethodVisitor(methodContext, onDemandInspection, methodInspectionBuilder, typeInspectionBuilder,
+                types, lastParameterIsVarargs, methodItem, jetBrainsAnnotationTranslator);
     }
 
     private MethodInfo.MethodType extractMethodType(int access) {
@@ -442,7 +450,8 @@ public class MyClassVisitor extends ClassVisitor {
                     if (stepDown) {
                         enclosingTypes.push(currentType);
                     }
-                    TypeInfo subType = onDemandInspection.inspectFromPath(name, enclosingTypes, typeContext);
+                    Source newPath = new Source(name, pathAndURI.uri());
+                    TypeInfo subType = onDemandInspection.inspectFromPath(newPath, enclosingTypes, typeContext);
                     if (stepDown) {
                         enclosingTypes.pop();
                     }
@@ -475,7 +484,7 @@ public class MyClassVisitor extends ClassVisitor {
         if (currentType == null) return null;
 
         LOGGER.debug("Have class annotation {} {}", descriptor, visible);
-        return new MyAnnotationVisitor<>(typeContext, descriptor, typeInspectionBuilder);
+        return new MyAnnotationVisitor<>(typeContext, onDemandInspection, descriptor, typeInspectionBuilder);
     }
 
     // not overriding visitOuterClass

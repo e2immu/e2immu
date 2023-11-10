@@ -250,7 +250,7 @@ public final class TypeInfo implements NamedType,
     }
 
     public TypeInfo(String packageName, String simpleName) {
-        this(Identifier.generate("type"), packageName, simpleName);
+        this(Identifier.INTERNAL_TYPE, packageName, simpleName);
     }
 
     public TypeInfo(Identifier identifier, String packageName, String simpleName) {

@@ -19,10 +19,13 @@ import org.e2immu.analyser.config.InputConfiguration;
 import org.e2immu.analyser.inspector.TypeContext;
 import org.e2immu.analyser.parser.Parser;
 import org.e2immu.analyser.parser.Primitives;
+import org.e2immu.analyser.util.Source;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Objects;
@@ -42,7 +45,7 @@ public class TestIsAssignableFrom {
     private static Primitives primitives;
 
     @BeforeAll
-    public static void beforeClass() throws IOException {
+    public static void beforeClass() throws IOException, URISyntaxException {
         InputConfiguration inputConfiguration = new InputConfiguration.Builder()
                 .addClassPath(InputConfiguration.DEFAULT_CLASSPATH)
                 .build();
@@ -52,8 +55,9 @@ public class TestIsAssignableFrom {
         Parser parser = new Parser(configuration);
         typeContext = parser.getTypeContext();
         primitives = typeContext.getPrimitives();
-        parser.getByteCodeInspector().inspectFromPath("java/util/List");
-        parser.getByteCodeInspector().inspectFromPath("java/util/LinkedList");
+        URI jar = new URI("jar://");
+        parser.getByteCodeInspector().inspectFromPath(new Source("java/util/List", jar));
+        parser.getByteCodeInspector().inspectFromPath(new Source("java/util/LinkedList", jar));
     }
 
     // int <- String should fail, int <- Integer should not

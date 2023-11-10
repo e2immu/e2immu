@@ -22,12 +22,14 @@ import org.e2immu.analyser.parser.TypeMap;
 import org.e2immu.analyser.parser.impl.TypeMapImpl;
 import org.e2immu.analyser.util.Resources;
 import org.e2immu.analyser.util.SMapList;
+import org.e2immu.analyser.util.Source;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.IOException;
+import java.net.URISyntaxException;
 import java.net.URL;
 import java.util.Arrays;
 import java.util.List;
@@ -37,10 +39,11 @@ import static org.junit.jupiter.api.Assertions.*;
 public class TestByteCodeInspector {
     private static final Logger LOGGER = LoggerFactory.getLogger(TestByteCodeInspector.class);
 
-    private TypeMap parseFromJar(String path) throws IOException {
+    private TypeMap parseFromJar(String path) throws IOException, URISyntaxException {
         String analyserJar = determineAnalyserJarName();
         Resources resources = new Resources();
-        resources.addJar(new URL("jar:file:build/libs/" + analyserJar + "!/"));
+        URL jarUrl = new URL("jar:file:build/libs/" + analyserJar + "!/");
+        resources.addJar(jarUrl);
         resources.addJmod(new URL("jar:file:" + System.getProperty("java.home") + "/jmods/java.base.jmod!/"));
         Resources annotationResources = new Resources();
         AnnotationXmlReader annotationParser = new AnnotationXmlReader(annotationResources);
@@ -49,8 +52,7 @@ public class TestByteCodeInspector {
         typeContext.typeMap.setByteCodeInspector(byteCodeInspector);
         typeContext.loadPrimitives();
         Input.preload(typeContext, byteCodeInspector, resources, "java.lang");
-
-        List<TypeInfo> types = byteCodeInspector.inspectFromPath(path);
+        List<TypeInfo> types = byteCodeInspector.inspectFromPath(new Source(path, jarUrl.toURI()));
         // in case the path is a subType, we need to inspect it explicitly
         types.forEach(typeContext.typeMap::getTypeInspection);
         return typeContext.typeMap.build();
@@ -67,7 +69,7 @@ public class TestByteCodeInspector {
     }
 
     @Test
-    public void test() throws IOException {
+    public void test() throws IOException, URISyntaxException {
         TypeMap typeMap = parseFromJar("org/e2immu/analyser/parser/Parser");
         TypeInfo parser = typeMap.get("org.e2immu.analyser.parser.Parser");
         assertEquals(TypeNature.CLASS, parser.typeInspection.get().typeNature());
@@ -75,7 +77,7 @@ public class TestByteCodeInspector {
     }
 
     @Test
-    public void testSubTypeParser() throws IOException {
+    public void testSubTypeParser() throws IOException, URISyntaxException {
         TypeMap typeMap = parseFromJar("org/e2immu/analyser/parser/Parser$RunResult");
         TypeInfo subType = typeMap.get("org.e2immu.analyser.parser.Parser.RunResult");
 
@@ -85,7 +87,7 @@ public class TestByteCodeInspector {
     }
 
     @Test
-    public void testInterface() throws IOException {
+    public void testInterface() throws IOException, URISyntaxException {
         TypeMap typeMap = parseFromJar("org/e2immu/analyser/analyser/EvaluationContext");
         TypeInfo typeInfo = typeMap.get("org.e2immu.analyser.analyser.EvaluationContext");
 
@@ -94,7 +96,7 @@ public class TestByteCodeInspector {
     }
 
     @Test
-    public void testGenerics() throws IOException {
+    public void testGenerics() throws IOException, URISyntaxException {
         TypeMap typeMap = parseFromJar("org/e2immu/analyser/util/SMapList.class");
         TypeInfo typeInfo = typeMap.get(SMapList.class);
 
@@ -103,7 +105,7 @@ public class TestByteCodeInspector {
     }
 
     @Test
-    public void testStringArray() throws IOException {
+    public void testStringArray() throws IOException, URISyntaxException {
         TypeMap typeMap = parseFromJar("org/e2immu/analyser/model/PackagePrefix");
         TypeInfo typeInfo = typeMap.get("org.e2immu.analyser.model.PackagePrefix");
 
@@ -112,7 +114,7 @@ public class TestByteCodeInspector {
     }
 
     @Test
-    public void testEnum() throws IOException {
+    public void testEnum() throws IOException, URISyntaxException {
         TypeMap typeMap = parseFromJar("org/e2immu/analyser/model/Diamond.class");
         TypeInfo typeInfo = typeMap.get("org.e2immu.analyser.model.Diamond");
 
@@ -121,7 +123,7 @@ public class TestByteCodeInspector {
     }
 
     @Test
-    public void testDefaultMethod() throws IOException {
+    public void testDefaultMethod() throws IOException, URISyntaxException {
         TypeMap typeMap = parseFromJar("org/e2immu/analyser/output/OutputElement.class");
         TypeInfo typeInfo = typeMap.get("org.e2immu.analyser.output.OutputElement");
 
@@ -133,7 +135,7 @@ public class TestByteCodeInspector {
     }
 
     @Test
-    public void testArrays() throws IOException {
+    public void testArrays() throws IOException, URISyntaxException {
         TypeMap typeMap = parseFromJar("java/util/Arrays");
         TypeInfo typeInfo = typeMap.get("java.util.Arrays");
 

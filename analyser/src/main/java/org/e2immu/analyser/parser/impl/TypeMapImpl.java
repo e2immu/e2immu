@@ -32,7 +32,7 @@ import org.e2immu.analyser.parser.*;
 import org.e2immu.analyser.resolver.ShallowMethodResolver;
 import org.e2immu.analyser.resolver.impl.ResolverImpl;
 import org.e2immu.analyser.util.Resources;
-import org.e2immu.analyser.util.StringUtil;
+import org.e2immu.analyser.util.Source;
 import org.e2immu.analyser.util.Trie;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -177,7 +177,7 @@ public class TypeMapImpl implements TypeMap {
             // we don't know it... so we don't know the boundary between primary and sub-type
             // we can either search in the class path, or in the source path
 
-            String path = classPath.fqnToPath(fqn, ".class");
+            Source path = classPath.fqnToPath(fqn, ".class");
             if (path == null) {
                 if (complain) {
                     LOGGER.error("ERROR: Cannot find type '{}'", fqn);
@@ -185,7 +185,7 @@ public class TypeMapImpl implements TypeMap {
                 }
                 return null;
             }
-            return getOrCreateFromPath(StringUtil.stripDotClass(path), TRIGGER_BYTECODE_INSPECTION);
+            return getOrCreateFromPathReturnInspection(path, TRIGGER_BYTECODE_INSPECTION).typeInfo();
         }
 
         public TypeMapImpl build() {
@@ -253,11 +253,14 @@ public class TypeMapImpl implements TypeMap {
             add(newType, inspectionState);
             return newType;
         }
+
         /*
         Creates types all the way up to the primary type if necessary
          */
 
-        public TypeInspection.Builder getOrCreateFromPathReturnInspection(String path, InspectionState inspectionState) {
+        public TypeInspection.Builder getOrCreateFromPathReturnInspection(Source source,
+                                                                          InspectionState inspectionState) {
+            String path = source.stripDotClass();
             assert path.indexOf('.') < 0 : "Path is " + path; // no dots! uses / and $; the . is for the .class which should have been stripped
             int dollar = path.indexOf('$');
             TypeInfo primaryType = extractPrimaryTypeAndAddToMap(path, dollar);
@@ -266,7 +269,8 @@ public class TypeMapImpl implements TypeMap {
             TypeInspection.Builder typeInspection = null;
             while (dollar >= 0) {
                 int nextDollar = path.indexOf('$', dollar + 1);
-                String simpleName = nextDollar < 0 ? path.substring(dollar + 1) : path.substring(dollar + 1, nextDollar);
+                String simpleName = nextDollar < 0 ? path.substring(dollar + 1)
+                        : path.substring(dollar + 1, nextDollar);
                 String fqn = enclosingType.fullyQualifiedName + "." + simpleName;
                 TypeInfo subTypeInMap = get(fqn);
                 TypeInfo subType;
@@ -274,7 +278,7 @@ public class TypeMapImpl implements TypeMap {
                     subType = subTypeInMap;
                     typeInspection = ensureTypeInspection(subType, inspectionState);
                 } else {
-                    subType = new TypeInfo(enclosingType, simpleName);
+                    subType = new TypeInfo(Identifier.from(source.uri()), enclosingType, simpleName);
                     typeInspection = add(subType, inspectionState);
                 }
                 enclosingType = subType;
@@ -311,7 +315,7 @@ public class TypeMapImpl implements TypeMap {
             return primaryTypeInMap;
         }
 
-        public TypeInfo getOrCreateFromPath(String path, InspectionState inspectionState) {
+        public TypeInfo getOrCreateFromPath(Source path, InspectionState inspectionState) {
             return getOrCreateFromPathReturnInspection(path, inspectionState).typeInfo();
         }
 
@@ -470,9 +474,9 @@ public class TypeMapImpl implements TypeMap {
 
         // inspect from class path
         private void inspectWithByteCodeInspector(TypeInfo typeInfo) {
-            String pathInClassPath = byteCodeInspector.fqnToPath(typeInfo.fullyQualifiedName);
-            if (pathInClassPath != null) {
-                byteCodeInspector.inspectFromPath(pathInClassPath);
+            Source source = byteCodeInspector.fqnToPath(typeInfo.fullyQualifiedName);
+            if (source != null) {
+                byteCodeInspector.inspectFromPath(source);
             } // else ignore
         }
 
@@ -495,7 +499,7 @@ public class TypeMapImpl implements TypeMap {
             TypeInfo existing = get(fqn);
             if (existing != null) return existing;
 
-            TypeInfo typeInfo = new TypeInfo(Primitives.INTERNAL, name);
+            TypeInfo typeInfo = new TypeInfo(Identifier.INTERNAL_TYPE, Primitives.INTERNAL, name);
             TypeInspection.Builder builder = add(typeInfo, BY_HAND_WITHOUT_STATEMENTS);
 
             boolean isIndependent = isVoid && numberOfParameters == 0;

@@ -15,6 +15,7 @@
 package org.e2immu.analyser.bytecode.asm;
 
 import org.e2immu.analyser.bytecode.ExpressionFactory;
+import org.e2immu.analyser.bytecode.OnDemandInspection;
 import org.e2immu.analyser.inspector.TypeContext;
 import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.Identifier;
@@ -23,6 +24,7 @@ import org.e2immu.analyser.model.ParameterizedType;
 import org.e2immu.analyser.model.expression.MemberValuePair;
 import org.e2immu.analyser.model.impl.AnnotationExpressionImpl;
 import org.e2immu.analyser.parser.Input;
+import org.e2immu.analyser.util.Source;
 import org.objectweb.asm.AnnotationVisitor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -40,14 +42,18 @@ public class MyAnnotationVisitor<T> extends AnnotationVisitor {
     private final Inspection.InspectionBuilder<T> inspectionBuilder;
     private final AnnotationExpressionImpl.Builder expressionBuilder;
 
-    public MyAnnotationVisitor(TypeContext typeContext, String descriptor, Inspection.InspectionBuilder<T> inspectionBuilder) {
+    public MyAnnotationVisitor(TypeContext typeContext,
+                               OnDemandInspection onDemandInspection,
+                               String descriptor,
+                               Inspection.InspectionBuilder<T> inspectionBuilder) {
         super(ASM9);
         this.typeContext = typeContext;
         this.inspectionBuilder = Objects.requireNonNull(inspectionBuilder);
         LOGGER.debug("My annotation visitor: {}", descriptor);
         FindType findType = (fqn, path) -> {
             if (!Input.acceptPath(path)) return null;
-            return typeContext.typeMap.getOrCreateFromPath(path, TRIGGER_BYTECODE_INSPECTION);
+            Source newPath = onDemandInspection.fqnToPath(fqn);
+            return typeContext.typeMap.getOrCreateFromPath(newPath, TRIGGER_BYTECODE_INSPECTION);
         };
         ParameterizedTypeFactory.Result from = ParameterizedTypeFactory.from(typeContext, findType, descriptor);
         if (from == null) {

@@ -18,6 +18,7 @@ import org.e2immu.analyser.bytecode.OnDemandInspection;
 import org.e2immu.analyser.inspector.InspectionState;
 import org.e2immu.analyser.inspector.TypeInspector;
 import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.util.Source;
 import org.e2immu.annotation.Modified;
 import org.e2immu.annotation.NotNull;
 
@@ -77,7 +78,7 @@ public interface TypeMap extends InspectionProvider {
 
         @Modified
         @NotNull
-        TypeInfo getOrCreateFromPath(String stripDotClass, InspectionState triggerBytecodeInspection);
+        TypeInfo getOrCreateFromPath(Source source, InspectionState triggerBytecodeInspection);
 
         @Modified
         @NotNull
@@ -89,7 +90,8 @@ public interface TypeMap extends InspectionProvider {
 
         @Modified
         @NotNull
-        TypeInspection.Builder getOrCreateFromPathReturnInspection(String name, InspectionState startingBytecode);
+        TypeInspection.Builder getOrCreateFromPathReturnInspection(Source source,
+                                                                   InspectionState startingBytecode);
 
         @NotNull
         Stream<Map.Entry<TypeInfo, TypeInspection.Builder>> streamTypes();

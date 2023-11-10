@@ -20,7 +20,7 @@ import org.e2immu.analyser.inspector.TypeContext;
 import org.e2immu.analyser.model.TypeInfo;
 import org.e2immu.analyser.model.TypeInspection;
 import org.e2immu.analyser.util.Resources;
-import org.e2immu.analyser.util.StringUtil;
+import org.e2immu.analyser.util.Source;
 import org.objectweb.asm.ClassReader;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -50,11 +50,12 @@ public class ByteCodeInspector implements OnDemandInspection {
     /**
      * Given a path pointing to a .class file, load the bytes, and inspect the byte code
      *
-     * @param path important: path must be split by /, not by .  It may or may not end in .class.
+     * @param source important: path must be split by /, not by .  It may or may not end in .class.
      * @return one or more types; the first one is the main type of the .class file
      */
     @Override
-    public List<TypeInfo> inspectFromPath(String path) {
+    public List<TypeInfo> inspectFromPath(Source source) {
+        String path = source.path();
         int dollar = path.indexOf('$');
         if (dollar > 0) {
             String pathOfPrimaryType = path.substring(0, dollar);
@@ -64,10 +65,9 @@ public class ByteCodeInspector implements OnDemandInspection {
                     // this will trigger the inspection of the primary type, if it hasn't been inspected yet
                     : typeContext.getTypeInspection(primaryType);
             if (primaryTypeInspection == null || primaryTypeInspection.getInspectionState().lt(STARTING_BYTECODE)) {
-                inspectFromPath(pathOfPrimaryType);
+                inspectFromPath(new Source(pathOfPrimaryType, source.uri()));
             }
-            String pathWithoutClass = StringUtil.stripDotClass(path);
-            return List.of(typeContext.typeMap.getOrCreateFromPath(pathWithoutClass, TRIGGER_BYTECODE_INSPECTION));
+            return List.of(typeContext.typeMap.getOrCreateFromPath(source, TRIGGER_BYTECODE_INSPECTION));
             // NOTE that it is quite possible that even after the inspectFromPath, the type has not been created
             // yet... cycles are allowed in the use of subtypes as interface or parent
         }
@@ -77,7 +77,7 @@ public class ByteCodeInspector implements OnDemandInspection {
         String pathWithDotClass = path.endsWith(".class") ? path : path + ".class";
         byte[] classBytes = classPath.loadBytes(pathWithDotClass);
         if (classBytes == null) return List.of();
-        return inspectByteArray(classBytes, new Stack<>(), typeContext);
+        return inspectByteArray(source, classBytes, new Stack<>(), typeContext);
     }
 
     private void logTypesInProcess(String path) {
@@ -88,22 +88,23 @@ public class ByteCodeInspector implements OnDemandInspection {
     }
 
     @Override
-    public TypeInfo inspectFromPath(String path,
+    public TypeInfo inspectFromPath(Source path,
                                     Stack<TypeInfo> enclosingTypes,
                                     TypeContext parentTypeContext) {
         if (LOGGER.isDebugEnabled()) {
-            logTypesInProcess(path);
+            logTypesInProcess(path.path());
             LOGGER.debug(enclosingTypes.stream().map(ti -> ti.fullyQualifiedName)
                     .collect(Collectors.joining(" -> ")));
         }
         byte[] classBytes = classPath.loadBytes(path + ".class");
         if (classBytes == null) return null;
-        List<TypeInfo> result = inspectByteArray(classBytes, enclosingTypes, parentTypeContext);
+        List<TypeInfo> result = inspectByteArray(path, classBytes, enclosingTypes, parentTypeContext);
         if (result.isEmpty()) return null;
         return result.get(0);
     }
 
-    public List<TypeInfo> inspectByteArray(byte[] classBytes,
+    public List<TypeInfo> inspectByteArray(Source pathAndURI,
+                                           byte[] classBytes,
                                            Stack<TypeInfo> enclosingTypes,
                                            TypeContext parentTypeContext) {
         ClassReader classReader = new ClassReader(classBytes);
@@ -113,6 +114,7 @@ public class ByteCodeInspector implements OnDemandInspection {
         MyClassVisitor myClassVisitor = new MyClassVisitor(this,
                 annotationStore,
                 new TypeContext(parentTypeContext),
+                pathAndURI,
                 types,
                 enclosingTypes);
         classReader.accept(myClassVisitor, 0);
@@ -120,7 +122,7 @@ public class ByteCodeInspector implements OnDemandInspection {
     }
 
     @Override
-    public String fqnToPath(String fullyQualifiedName) {
+    public Source fqnToPath(String fullyQualifiedName) {
         return classPath.fqnToPath(fullyQualifiedName, ".class");
     }
 }

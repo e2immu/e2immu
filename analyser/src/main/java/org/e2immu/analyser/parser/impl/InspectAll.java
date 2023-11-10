@@ -17,10 +17,7 @@ import org.e2immu.analyser.model.TypeInspection;
 import org.e2immu.analyser.parser.InspectWithJavaParser;
 import org.e2immu.analyser.parser.TypeMap;
 import org.e2immu.analyser.resolver.Resolver;
-import org.e2immu.analyser.util.Resources;
-import org.e2immu.analyser.util.StringUtil;
-import org.e2immu.analyser.util.TimedLogger;
-import org.e2immu.analyser.util.Trie;
+import org.e2immu.analyser.util.*;
 import org.e2immu.annotation.Modified;
 import org.e2immu.support.SetOnce;
 import org.slf4j.Logger;
@@ -334,12 +331,12 @@ public class InspectAll implements InspectWithJavaParser {
             return inSourceTypes;
         }
 
-        String path = classPath.fqnToPath(fqn, ".class");
+        Source path = classPath.fqnToPath(fqn, ".class");
         if (path == null) {
             LOGGER.error("ERROR: Cannot find type '{}'", fqn);
             throw new NotFoundInClassPathException(fqn);
         }
-        return typeMapBuilder.getOrCreateFromPath(StringUtil.stripDotClass(path), TRIGGER_BYTECODE_INSPECTION);
+        return typeMapBuilder.getOrCreateFromPath(path, TRIGGER_BYTECODE_INSPECTION);
     }
 
     public static String fqnOfClassFile(String prefix, String[] suffixes) {

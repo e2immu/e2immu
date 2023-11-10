@@ -249,7 +249,8 @@ public class Resources {
      * @param extension to be added to the final part
      * @return the correct path name
      */
-    public String fqnToPath(String fqn, String extension) {
+
+    public Source fqnToPath(String fqn, String extension) {
         String[] splitDot = fqn.split("\\.");
         for (int i = 1; i < splitDot.length; i++) {
             String[] parts = new String[i + 1];
@@ -260,7 +261,9 @@ public class Resources {
             }
             parts[i] += extension;
             List<URI> uris = data.get(parts);
-            if (uris != null) return String.join("/", parts);
+            if (uris != null && !uris.isEmpty()) {
+                return new Source(String.join("/", parts), uris.get(0));
+            }
         }
         LOGGER.debug("Cannot find {} with extension {} in classpath", fqn, extension);
         return null;

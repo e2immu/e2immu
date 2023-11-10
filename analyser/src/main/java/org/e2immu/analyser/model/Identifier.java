@@ -27,6 +27,7 @@ import org.e2immu.annotation.rare.IgnoreModifications;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.net.URI;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -40,6 +41,18 @@ At the same time, we may need location information (line, pos) to report errors.
 
 We'll allow for multiple types of identifiers, because we also generate code (a lot of it for internal purposes,
 never seen by the user); in this situation, it's easier to work with unique integers.
+
+Identifier orders:
+
+Positional (JavaParser) 0
+Jar (ByteCodeInspector) 1
+Incremental 2
+ListOf 3
+LoopCondition 4
+State 5
+Constant 6
+StatementTime 8
+
  */
 public interface Identifier extends Comparable<Identifier> {
     Logger LOGGER = LoggerFactory.getLogger(Identifier.class);
@@ -47,6 +60,11 @@ public interface Identifier extends Comparable<Identifier> {
     int identifierOrder();
 
     Identifier CONSTANT = new IncrementalIdentifier("constant");
+    Identifier INTERNAL_TYPE = new IncrementalIdentifier("internal type");
+
+    default boolean isInternalType() {
+        return INTERNAL_TYPE == this;
+    }
 
     @Independent
     static Identifier constant(@NotNull Object object) {
@@ -60,6 +78,13 @@ public interface Identifier extends Comparable<Identifier> {
         if (begin.isEmpty()) return new IncrementalIdentifier("null begin");
         Optional<Position> end = node.getEnd();
         return from(begin.get(), end.orElseThrow());
+    }
+
+    // FIXME make a distinction between .java and .class URIs?
+    //  or only store the JAR part? see ByteCodeInspector.inspectFromPath
+    @Independent
+    static Identifier from(URI uri) {
+        return new JarIdentifier(uri);
     }
 
     @Independent
@@ -157,27 +182,6 @@ public interface Identifier extends Comparable<Identifier> {
     }
 
     @ImmutableContainer
-    record TestIdentifier(int i) implements Identifier {
-        @Override
-        public int compareTo(Identifier o) {
-            if (o instanceof TestIdentifier ti) {
-                return i - ti.i;
-            }
-            return identifierOrder() - o.identifierOrder();
-        }
-
-        @Override
-        public int identifierOrder() {
-            return 0;
-        }
-
-        @Override
-        public String compact() {
-            return "I:" + i;
-        }
-    }
-
-    @ImmutableContainer
     class IncrementalIdentifier implements Identifier {
         @IgnoreModifications
         private static final AtomicInteger generator = new AtomicInteger();
@@ -213,7 +217,7 @@ public interface Identifier extends Comparable<Identifier> {
 
         @Override
         public int identifierOrder() {
-            return 1;
+            return 2;
         }
 
         @Override
@@ -237,7 +241,7 @@ public interface Identifier extends Comparable<Identifier> {
 
         @Override
         public int identifierOrder() {
-            return 2;
+            return 3;
         }
 
         @Override
@@ -255,7 +259,7 @@ public interface Identifier extends Comparable<Identifier> {
 
         @Override
         public int identifierOrder() {
-            return 3;
+            return 4;
         }
 
         @Override
@@ -273,7 +277,7 @@ public interface Identifier extends Comparable<Identifier> {
 
         @Override
         public int identifierOrder() {
-            return 3;
+            return 5;
         }
 
         @Override
@@ -316,6 +320,27 @@ public interface Identifier extends Comparable<Identifier> {
         @Override
         public String compact() {
             return "T:" + statementTime;
+        }
+    }
+
+    record JarIdentifier(URI uri) implements Identifier {
+
+        @Override
+        public int compareTo(Identifier o) {
+            if (o instanceof JarIdentifier ji) {
+                return uri.compareTo(ji.uri);
+            }
+            return identifierOrder() - o.identifierOrder();
+        }
+
+        @Override
+        public int identifierOrder() {
+            return 0;
+        }
+
+        @Override
+        public String compact() {
+            return uri.toString();
         }
     }
 
