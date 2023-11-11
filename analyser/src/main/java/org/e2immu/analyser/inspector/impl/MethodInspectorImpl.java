@@ -97,7 +97,7 @@ public class MethodInspectorImpl implements MethodInspector {
                                                 boolean returnNullWhenExistsAndFullInspection) {
         builder.readyToComputeFQN(inspectionProvider);
         String distinguishingName = builder.getDistinguishingName();
-        MethodInspection methodInspection = typeMapBuilder.getMethodInspectionDoNotTrigger(distinguishingName);
+        MethodInspection methodInspection = typeMapBuilder.getMethodInspectionDoNotTrigger(builder.methodInfo().typeInfo, distinguishingName);
         if (methodInspection instanceof MethodInspection.Builder existing) {
             if (fullInspection && returnNullWhenExistsAndFullInspection) return null;
             assert !fullInspection;

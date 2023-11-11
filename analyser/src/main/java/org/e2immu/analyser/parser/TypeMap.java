@@ -43,7 +43,7 @@ public interface TypeMap extends InspectionProvider {
         @Modified
         TypeInfo loadType(String fullyQualifiedName, boolean complain);
 
-        MethodInspection getMethodInspectionDoNotTrigger(String distinguishingName);
+        MethodInspection getMethodInspectionDoNotTrigger(TypeInfo typeInfo, String distinguishingName);
 
         @Modified
         void setByteCodeInspector(OnDemandInspection byteCodeInspector);
@@ -94,7 +94,7 @@ public interface TypeMap extends InspectionProvider {
                                                                    InspectionState startingBytecode);
 
         @NotNull
-        Stream<Map.Entry<TypeInfo, TypeInspection.Builder>> streamTypes();
+        Stream<TypeInfo> streamTypesStartingByteCode();
 
         @NotNull
         TypeInspector newTypeInspector(TypeInfo typeInfo, boolean b, boolean b1);

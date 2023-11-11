@@ -38,6 +38,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
+import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.BiConsumer;
 import java.util.stream.Stream;
 
@@ -129,14 +130,26 @@ public class TypeMapImpl implements TypeMap {
 
     public static class Builder implements TypeMap.Builder {
 
+        private static class TypeData {
+            final TypeInspection.Builder typeInspectionBuilder;
+            Map<String, MethodInspection.Builder> methodInspections;
+            Map<FieldInfo, FieldInspection.Builder> fieldInspections;
+            InspectionState inspectionState;
+            ReentrantLock lock;
+
+            TypeData(TypeInspection.Builder typeInspectionBuilder) {
+                this.typeInspectionBuilder = typeInspectionBuilder;
+                methodInspections = new HashMap<>();
+                fieldInspections = new HashMap<>();
+            }
+        }
+
         private final Trie<TypeInfo> trie;
         private final PrimitivesImpl primitives;
         private final E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions;
         private final Resources classPath;
 
-        private final Map<TypeInfo, TypeInspection.Builder> typeInspections;
-        private final Map<FieldInfo, FieldInspection.Builder> fieldInspections;
-        private final Map<String, MethodInspection.Builder> methodInspections;
+        private final Map<TypeInfo, TypeData> typeInspections;
 
         private OnDemandInspection byteCodeInspector;
         private InspectWithJavaParser inspectWithJavaParser;
@@ -147,8 +160,6 @@ public class TypeMapImpl implements TypeMap {
             classPath = resources;
             e2ImmuAnnotationExpressions = new E2ImmuAnnotationExpressions();
             typeInspections = new HashMap<>();
-            fieldInspections = new HashMap<>();
-            methodInspections = new HashMap<>();
 
             for (TypeInfo typeInfo : getPrimitives().getTypeByName().values()) {
                 if (!typeInfo.typeInspection.isSet())
@@ -167,8 +178,6 @@ public class TypeMapImpl implements TypeMap {
             primitives = source.primitives;
             e2ImmuAnnotationExpressions = source.e2ImmuAnnotationExpressions;
             typeInspections = source.typeInspections;
-            fieldInspections = source.fieldInspections;
-            methodInspections = source.methodInspections;
         }
 
         public TypeInfo loadType(String fqn, boolean complain) {
@@ -191,24 +200,24 @@ public class TypeMapImpl implements TypeMap {
         public TypeMapImpl build() {
             trie.freeze();
 
-            typeInspections.forEach((typeInfo, typeInspectionBuilder) -> {
+            typeInspections.forEach((typeInfo, typeData) -> {
                 assert Input.acceptFQN(typeInfo.packageName());
-                if (typeInspectionBuilder.finishedInspection() && !typeInfo.typeInspection.isSet()) {
-                    typeInfo.typeInspection.set(typeInspectionBuilder.build(this));
+                if (typeData.typeInspectionBuilder.finishedInspection() && !typeInfo.typeInspection.isSet()) {
+                    typeInfo.typeInspection.set(typeData.typeInspectionBuilder.build(this));
                 }
+                typeData.methodInspections.values().forEach(methodInspectionBuilder -> {
+                    MethodInfo methodInfo = methodInspectionBuilder.getMethodInfo();
+                    if (!methodInfo.methodInspection.isSet() && methodInfo.typeInfo.typeInspection.isSet()) {
+                        methodInspectionBuilder.build(this); // will set the inspection itself
+                    }
+                });
+                typeData.fieldInspections.forEach((fieldInfo, fieldInspectionBuilder) -> {
+                    if (!fieldInfo.fieldInspection.isSet() && fieldInfo.owner.typeInspection.isSet()) {
+                        fieldInfo.fieldInspection.set(fieldInspectionBuilder.build(this));
+                    }
+                });
             });
 
-            methodInspections.values().forEach(methodInspectionBuilder -> {
-                MethodInfo methodInfo = methodInspectionBuilder.getMethodInfo();
-                if (!methodInfo.methodInspection.isSet() && methodInfo.typeInfo.typeInspection.isSet()) {
-                    methodInspectionBuilder.build(this); // will set the inspection itself
-                }
-            });
-            fieldInspections.forEach((fieldInfo, fieldInspectionBuilder) -> {
-                if (!fieldInfo.fieldInspection.isSet() && fieldInfo.owner.typeInspection.isSet()) {
-                    fieldInfo.fieldInspection.set(fieldInspectionBuilder.build(this));
-                }
-            });
 
             // we make a new map, because the resolver will encounter new types (which we will ignore)
             // all methods not yet resolved, will be resolved here.
@@ -300,13 +309,13 @@ public class TypeMapImpl implements TypeMap {
         public TypeInspection.Builder ensureTypeInspection(TypeInfo typeInfo, InspectionState inspectionState) {
             assert Input.acceptFQN(typeInfo.packageName());
             synchronized (typeInspections) {
-                TypeInspection.Builder inMap = typeInspections.get(typeInfo);
-                if (inMap == null) {
+                TypeData typeData = typeInspections.get(typeInfo);
+                if (typeData == null) {
                     TypeInspection.Builder typeInspection = new TypeInspectionImpl.Builder(typeInfo, inspectionState);
-                    typeInspections.put(typeInfo, typeInspection);
+                    typeInspections.put(typeInfo, new TypeData(typeInspection));
                     return typeInspection;
                 }
-                return inMap;
+                return typeData.typeInspectionBuilder;
             }
         }
 
@@ -334,14 +343,14 @@ public class TypeMapImpl implements TypeMap {
         public TypeInspection.Builder add(TypeInfo typeInfo, InspectionState inspectionState) {
             trie.add(typeInfo.fullyQualifiedName.split("\\."), typeInfo);
             synchronized (typeInspections) {
-                TypeInspection.Builder inMap = typeInspections.get(typeInfo);
+                TypeData inMap = typeInspections.get(typeInfo);
                 if (inMap != null) {
                     throw new UnsupportedOperationException("Expected to know type inspection of "
                             + typeInfo.fullyQualifiedName);
                 }
                 assert !typeInfo.typeInspection.isSet() : "type " + typeInfo.fullyQualifiedName;
                 TypeInspectionImpl.Builder ti = new TypeInspectionImpl.Builder(typeInfo, inspectionState);
-                typeInspections.put(typeInfo, ti);
+                typeInspections.put(typeInfo, new TypeData(ti));
                 return ti;
             }
         }
@@ -355,13 +364,24 @@ public class TypeMapImpl implements TypeMap {
         }
 
         public void registerFieldInspection(FieldInfo fieldInfo, FieldInspection.Builder builder) {
-            if (fieldInspections.put(fieldInfo, builder) != null) {
+            TypeData typeData = typeInspections.get(fieldInfo.owner);
+            if(typeData == null) {
+                add(fieldInfo.owner, TRIGGER_BYTECODE_INSPECTION);
+                typeData = typeInspections.get(fieldInfo.owner);
+            }
+            if (typeData.fieldInspections.put(fieldInfo, builder) != null) {
                 throw new IllegalArgumentException("Re-registering field " + fieldInfo.fullyQualifiedName());
             }
         }
 
         public void registerMethodInspection(MethodInspection.Builder builder) {
-            if (methodInspections.put(builder.getDistinguishingName(), builder) != null) {
+            TypeInfo typeInfo = builder.methodInfo().typeInfo;
+            TypeData typeData = typeInspections.get(typeInfo);
+            if(typeData == null) {
+                add(typeInfo, TRIGGER_BYTECODE_INSPECTION);
+                typeData = typeInspections.get(typeInfo);
+           }
+            if (typeData.methodInspections.put(builder.getDistinguishingName(), builder) != null) {
                 throw new IllegalArgumentException("Re-registering method " + builder.getDistinguishingName());
             }
         }
@@ -383,7 +403,8 @@ public class TypeMapImpl implements TypeMap {
 
         @Override
         public FieldInspection getFieldInspection(FieldInfo fieldInfo) {
-            return fieldInspections.get(fieldInfo);
+            TypeData typeData = typeInspections.get(fieldInfo.owner);
+            return typeData.fieldInspections.get(fieldInfo);
         }
 
         public InspectionState getInspectionState(TypeInfo typeInfo) {
@@ -391,11 +412,11 @@ public class TypeMapImpl implements TypeMap {
                 return typeInfo.typeInspection.get().getInspectionState();
             }
             synchronized (typeInspections) {
-                TypeInspection.Builder typeInspection = typeInspections.get(typeInfo);
-                if (typeInspection == null) {
+                TypeData typeData = typeInspections.get(typeInfo);
+                if (typeData == null) {
                     return null; // not registered
                 }
-                return typeInspection.getInspectionState();
+                return typeData.typeInspectionBuilder.getInspectionState();
             }
         }
 
@@ -411,13 +432,12 @@ public class TypeMapImpl implements TypeMap {
             if (typeInfo.typeInspection.isSet()) {
                 return typeInfo.typeInspection.get();
             }
-            TypeInspection.Builder typeInspection;
-            synchronized (typeInspections) {
-                typeInspection = typeInspections.get(typeInfo);
-            }
-            if (typeInspection == null) {
+            TypeData typeData = typeInspections.get(typeInfo);
+
+            if (typeData == null) {
                 return null;
             }
+            TypeInspection.Builder typeInspection = typeData.typeInspectionBuilder;
             if (typeInspection.getInspectionState() == TRIGGER_BYTECODE_INSPECTION) {
                 // inspection state will be set to START_BYTECODE_INSPECTION when the class visitor starts
                 inspectWithByteCodeInspector(typeInfo);
@@ -443,21 +463,24 @@ public class TypeMapImpl implements TypeMap {
 
         @Override
         public MethodInspection getMethodInspection(MethodInfo methodInfo) {
-            String dn = methodInfo.distinguishingName();
-            MethodInspection methodInspection = methodInspections.get(dn);
-            if (methodInspection != null) return methodInspection;
-            // see if we can trigger an inspection
-            getTypeInspection(methodInfo.typeInfo);
-            // try again
-            MethodInspection take2 = methodInspections.get(dn);
-            if (take2 == null) {
-                throw new UnsupportedOperationException("No inspection for " + dn);
+            TypeData typeData1 = typeInspections.get(methodInfo.typeInfo);
+            TypeData typeData2;
+            if (typeData1 == null) {
+                // see if we can trigger an inspection
+                getTypeInspection(methodInfo.typeInfo);
+                typeData2 = typeInspections.get(methodInfo.typeInfo);
+            } else {
+                typeData2 = typeData1;
             }
-            return take2;
+            String dn = methodInfo.distinguishingName();
+            MethodInspection methodInspection = typeData2.methodInspections.get(dn);
+            if (methodInspection != null) return methodInspection;
+            throw new UnsupportedOperationException("No inspection for " + dn);
         }
 
-        public MethodInspection getMethodInspectionDoNotTrigger(String distinguishingName) {
-            return methodInspections.get(distinguishingName);
+        public MethodInspection getMethodInspectionDoNotTrigger(TypeInfo typeInfo, String distinguishingName) {
+            TypeData typeData = typeInspections.get(typeInfo);
+            return typeData.methodInspections.get(distinguishingName);
         }
 
         @Override
@@ -465,16 +488,19 @@ public class TypeMapImpl implements TypeMap {
             return primitives;
         }
 
-        public Stream<Map.Entry<TypeInfo, TypeInspection.Builder>> streamTypes() {
+        public Stream<TypeInfo> streamTypesStartingByteCode() {
             synchronized (typeInspections) {
-                return typeInspections.entrySet().stream();
+                return typeInspections.entrySet().stream()
+                        .filter(e -> e.getValue().inspectionState == STARTING_BYTECODE)
+                        .map(Map.Entry::getKey);
             }
         }
 
         @Override
         public TypeInspection getTypeInspectionDoNotTrigger(TypeInfo typeInfo) {
             synchronized (typeInspections) {
-                return typeInspections.get(typeInfo);
+                TypeData typeData = typeInspections.get(typeInfo);
+                return typeData == null ? null : typeData.typeInspectionBuilder;
             }
         }
 
@@ -502,7 +528,8 @@ public class TypeMapImpl implements TypeMap {
 
         // we can probably do without this method; then the mutable versions will be used more
         public void makeParametersImmutable() {
-            methodInspections.values().forEach(MethodInspection.Builder::makeParametersImmutable);
+            typeInspections.values().forEach(td ->
+                    td.methodInspections.values().forEach(MethodInspection.Builder::makeParametersImmutable));
         }
 
         public TypeInfo syntheticFunction(int numberOfParameters, boolean isVoid) {

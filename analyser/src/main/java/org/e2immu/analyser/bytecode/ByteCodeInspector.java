@@ -82,9 +82,9 @@ public class ByteCodeInspector implements OnDemandInspection {
 
     private void logTypesInProcess(String path) {
         LOGGER.debug("Parsing {}, in process [{}]", path,
-                typeContext.typeMap.streamTypes()
-                        .filter(e -> e.getValue().getInspectionState() == STARTING_BYTECODE)
-                        .map(e -> e.getKey().fullyQualifiedName).collect(Collectors.joining(", ")));
+                typeContext.typeMap.streamTypesStartingByteCode()
+                        .map(typeInfo -> typeInfo.fullyQualifiedName)
+                        .collect(Collectors.joining(", ")));
     }
 
     @Override
