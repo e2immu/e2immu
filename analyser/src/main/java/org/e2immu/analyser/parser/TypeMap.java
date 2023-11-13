@@ -117,5 +117,8 @@ public interface TypeMap extends InspectionProvider {
         TypeInspector newTypeInspector(TypeInfo typeInfo, boolean b, boolean b1);
 
         TypeInspection getTypeInspectionToStartResolving(TypeInfo typeInfo);
+
+        // from byteCodeInspection into my typeMap
+        void copyIntoTypeMap(ByteCodeInspector.Data data);
     }
 }

@@ -252,6 +252,11 @@ public class TypeInspectionImpl extends InspectionImpl implements TypeInspection
             this.inspector = inspector;
         }
 
+        @Override
+        public String toString() {
+            return "TypeInspection.Builder of "+typeInfo.fullyQualifiedName;
+        }
+
         public Builder setFunctionalInterface(boolean functionalInterface) {
             this.functionalInterface = functionalInterface;
             return this;

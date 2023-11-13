@@ -164,7 +164,7 @@ public class ParameterizedTypeFactory {
         }
         String fqn = path.toString().replaceAll("[/$]", ".");
 
-        TypeInspection typeInspection = findType.getOrCreate(fqn);
+        TypeInspection typeInspection = findType.getOrCreate(fqn, false);
 
         boolean unableToLoadTypeError = typeInspection == null;
         if (unableToLoadTypeError) {

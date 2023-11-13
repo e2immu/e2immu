@@ -142,7 +142,7 @@ public class MyMethodVisitor extends MethodVisitor {
         // note that we do NOT YET execute methodInfo.methodInspection.set(methodInspectionBuilder.build())
         // this will take place after potential AnnotatedAPI inspection.
         // can't do this too early: we need all parameters parsed properly
-        typeContext.typeMap.registerMethodInspection(methodInspectionBuilder);
+        localTypeMap.registerMethodInspection(methodInspectionBuilder);
 
     }
 }

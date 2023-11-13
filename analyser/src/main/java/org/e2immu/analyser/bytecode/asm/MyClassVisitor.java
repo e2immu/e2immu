@@ -20,8 +20,6 @@ import org.e2immu.analyser.annotationxml.model.MethodItem;
 import org.e2immu.analyser.annotationxml.model.TypeItem;
 import org.e2immu.analyser.bytecode.ExpressionFactory;
 import org.e2immu.analyser.bytecode.JetBrainsAnnotationTranslator;
-import org.e2immu.analyser.bytecode.ByteCodeInspector;
-import org.e2immu.analyser.inspector.InspectionState;
 import org.e2immu.analyser.inspector.TypeContext;
 import org.e2immu.analyser.inspector.impl.FieldInspectionImpl;
 import org.e2immu.analyser.inspector.impl.MethodInspectionImpl;
@@ -104,7 +102,7 @@ public class MyClassVisitor extends ClassVisitor {
         LOGGER.debug("Visit {} {} {} {} {} {}", version, access, name, signature, superName, interfaces);
         String fqName = pathToFqn(name);
         assert Input.acceptFQN(fqName);
-        TypeMap.InspectionAndState situation = localTypeMap.get(fqName);
+        TypeMap.InspectionAndState situation = localTypeMap.typeInspectionSituation(fqName);
         assert situation != null && situation.state() == STARTING_BYTECODE;
 
         typeInspectionBuilder = (TypeInspectionImpl.Builder) situation.typeInspection();
@@ -219,7 +217,7 @@ public class MyClassVisitor extends ClassVisitor {
      */
     private TypeInfo mustFindTypeInfo(String fqn, String path) {
         if (path.equals(currentTypePath)) return currentType;
-        return localTypeMap.getOrCreate(fqn).typeInfo();
+        return localTypeMap.getOrCreate(fqn, true).typeInfo();
     }
 
     private TypeInfo getOrCreateTypeInfo(String fqn, String path) {
@@ -251,7 +249,7 @@ public class MyClassVisitor extends ClassVisitor {
 
         FieldInfo fieldInfo = new FieldInfo(Identifier.generate("asm field"), type, name, currentType);
         FieldInspection.Builder fieldInspectionBuilder = new FieldInspectionImpl.Builder(fieldInfo);
-        typeContext.typeMap.registerFieldInspection(fieldInfo, fieldInspectionBuilder);
+        localTypeMap.registerFieldInspection(fieldInfo, fieldInspectionBuilder);
 
         if ((access & Opcodes.ACC_STATIC) != 0) fieldInspectionBuilder.addModifier(FieldModifier.STATIC);
         if ((access & Opcodes.ACC_PUBLIC) != 0) fieldInspectionBuilder.addModifier(FieldModifier.PUBLIC);
@@ -381,7 +379,7 @@ public class MyClassVisitor extends ClassVisitor {
 
                 LOGGER.debug("Processing sub-type {} of/in {}", fqn, currentType.fullyQualifiedName);
 
-                TypeMap.InspectionAndState situation = localTypeMap.get(fqn);
+                TypeMap.InspectionAndState situation = localTypeMap.typeInspectionSituation(fqn);
                 TypeInspection subTypeInspection;
                 TypeInfo subTypeInMap;
                 boolean byteCodeInspectionStarted;

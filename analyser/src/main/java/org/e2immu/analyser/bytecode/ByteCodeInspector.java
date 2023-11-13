@@ -15,14 +15,22 @@
 package org.e2immu.analyser.bytecode;
 
 
+import org.e2immu.analyser.model.FieldInfo;
+import org.e2immu.analyser.model.FieldInspection;
+import org.e2immu.analyser.model.MethodInspection;
 import org.e2immu.analyser.parser.TypeMap;
 import org.e2immu.analyser.util.Source;
 import org.e2immu.annotation.Modified;
 
+import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 
 public interface ByteCodeInspector {
 
+    record Data(List<TypeMap.InspectionAndState> types,
+                Collection<MethodInspection.Builder> methodInspections,
+                Map<FieldInfo, FieldInspection.Builder> fieldInspections) {}
     /*
      To be called  from TypeMap only.
      The implementation will load as many types as necessary to load this source properly.
@@ -33,6 +41,6 @@ public interface ByteCodeInspector {
      the sources they load share a parent, enclosing type, or interface implemented.
      */
     @Modified
-    List<TypeMap.InspectionAndState> inspectFromPath(Source source); // org/junit/Assert
+    Data inspectFromPath(Source source); // org/junit/Assert
 
 }

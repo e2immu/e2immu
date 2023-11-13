@@ -479,23 +479,10 @@ public class TypeMapImpl implements TypeMap {
         private boolean inspectWithByteCodeInspector(TypeInfo typeInfo) {
             Source source = classPath.fqnToPath(typeInfo.fullyQualifiedName, ".class");
             if (source != null) {
-                List<InspectionAndState> typesInspected = byteCodeInspector.inspectFromPath(source);
-                boolean found = false;
-                for (InspectionAndState ias : typesInspected) {
-                    if (ias.typeInspection().typeInfo().equals(typeInfo)) found = true;
-                    String fullyQualifiedName = ias.typeInspection().typeInfo().fullyQualifiedName;
-                    trie.add(fullyQualifiedName.split("\\."), ias.typeInspection().typeInfo());
-                    if (ias.typeInspection() instanceof TypeInspection.Builder builder) {
-                        TypeData typeData = typeInspections.get(fullyQualifiedName);
-                        if (typeData == null) {
-                            typeInspections.put(fullyQualifiedName, new TypeData(builder, ias.state()));
-                        }
-                    } else {
-                        assert ias.state().isDone();
-                        // no point
-                    }
-                }
-                return found;
+                ByteCodeInspector.Data data = byteCodeInspector.inspectFromPath(source);
+                copyIntoTypeMap(data);
+                TypeData ti = typeInspections.get(typeInfo.fullyQualifiedName);
+                return ti.inspectionState.isDone();
             } // else ignore
             return false;
         }
@@ -643,6 +630,38 @@ public class TypeMapImpl implements TypeMap {
             if (numberOfParameters == 0) return "get";
             if (isPredicate) return "test";
             return "apply";
+        }
+
+        // byte code inspection only!!!
+        @Override
+        public void copyIntoTypeMap(ByteCodeInspector.Data data) {
+            for (InspectionAndState ias : data.types()) {
+                String fullyQualifiedName = ias.typeInspection().typeInfo().fullyQualifiedName;
+                trie.add(fullyQualifiedName.split("\\."), ias.typeInspection().typeInfo());
+                if (ias.typeInspection() instanceof TypeInspection.Builder builder) {
+                    TypeData typeData = typeInspections.get(fullyQualifiedName);
+                    if (typeData == null) {
+                        typeInspections.put(fullyQualifiedName, new TypeData(builder, ias.state()));
+                    } else {
+                        typeData.inspectionState = ias.state();
+                    }
+                } else {
+                    assert ias.state().isDone();
+                    // no point
+                }
+            }
+            for (MethodInspection.Builder builder : data.methodInspections()) {
+                TypeData typeData = typeInspections.get(builder.methodInfo().typeInfo.fullyQualifiedName);
+                if (typeData != null) {
+                    typeData.methodInspections.put(builder.methodInfo().distinguishingName, builder);
+                }
+            }
+            data.fieldInspections().forEach((fi, builder) -> {
+                TypeData typeData = typeInspections.get(fi.owner.fullyQualifiedName);
+                if (typeData != null) {
+                    typeData.fieldInspections.put(fi, builder);
+                }
+            });
         }
     }
 }
