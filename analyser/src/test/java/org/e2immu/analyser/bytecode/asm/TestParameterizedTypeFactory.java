@@ -19,16 +19,27 @@ import org.e2immu.analyser.model.Identifier;
 import org.e2immu.analyser.model.ParameterizedType;
 import org.e2immu.analyser.parser.impl.TypeMapImpl;
 import org.e2immu.analyser.util.Resources;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
+import java.io.IOException;
+import java.net.URL;
 import java.util.Objects;
 
 import static org.junit.jupiter.api.Assertions.*;
 
 public class TestParameterizedTypeFactory {
-    private final Resources classPath = new Resources();
-    private final TypeContext typeContext = new TypeContext(new TypeMapImpl.Builder(classPath));
-    private final ByteCodeInspectorImpl byteCodeInspector = new ByteCodeInspectorImpl(classPath, null, typeContext);
+    private static Resources classPath = new Resources();
+    private static TypeContext typeContext;
+    private static ByteCodeInspectorImpl byteCodeInspector;
+
+    @BeforeAll
+    public static void beforeAll() throws IOException {
+        classPath = new Resources();
+        classPath.addJmod(new URL("jar:file:" + System.getProperty("java.home") + "/jmods/java.base.jmod!/"));
+        typeContext = new TypeContext(new TypeMapImpl.Builder(classPath));
+        byteCodeInspector = new ByteCodeInspectorImpl(classPath, null, typeContext);
+    }
 
     @Test
     public void testInt() {

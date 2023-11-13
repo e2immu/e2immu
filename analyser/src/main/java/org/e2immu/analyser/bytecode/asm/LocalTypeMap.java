@@ -4,6 +4,7 @@ import org.e2immu.analyser.inspector.InspectionState;
 import org.e2immu.analyser.inspector.TypeContext;
 import org.e2immu.analyser.model.TypeInfo;
 import org.e2immu.analyser.model.TypeInspection;
+import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.parser.TypeMap;
 import org.e2immu.analyser.util.Source;
 import org.e2immu.annotation.Modified;
@@ -15,7 +16,7 @@ import java.util.Stack;
 /*
 In the local type map, types are either
  */
-public interface LocalTypeMap {
+public interface LocalTypeMap extends InspectionProvider {
 
     // null if not present
     TypeMap.InspectionAndState get(String fqn);

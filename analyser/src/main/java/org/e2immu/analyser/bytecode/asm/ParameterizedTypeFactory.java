@@ -15,10 +15,7 @@
 package org.e2immu.analyser.bytecode.asm;
 
 import org.e2immu.analyser.inspector.TypeContext;
-import org.e2immu.analyser.model.NamedType;
-import org.e2immu.analyser.model.ParameterizedType;
-import org.e2immu.analyser.model.TypeInfo;
-import org.e2immu.analyser.model.TypeParameter;
+import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.parser.Primitives;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -167,13 +164,14 @@ public class ParameterizedTypeFactory {
         }
         String fqn = path.toString().replaceAll("[/$]", ".");
 
-        TypeInfo typeInfo = findType.getOrCreate(fqn).typeInfo();
+        TypeInspection typeInspection = findType.getOrCreate(fqn);
 
-        boolean unableToLoadTypeError = typeInfo == null;
+        boolean unableToLoadTypeError = typeInspection == null;
         if (unableToLoadTypeError) {
             return null;
         }
-        ParameterizedType parameterizedType = new ParameterizedType(typeInfo, arrays, wildCard, typeParameters);
+        ParameterizedType parameterizedType = new ParameterizedType(typeInspection.typeInfo(), arrays, wildCard,
+                typeParameters);
         return new Result(parameterizedType, semiColon + 1, typeNotFoundError);
     }
 

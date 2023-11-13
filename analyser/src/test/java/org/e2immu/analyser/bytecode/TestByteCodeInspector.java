@@ -53,7 +53,8 @@ public class TestByteCodeInspector {
         typeContext.typeMap.setByteCodeInspector(byteCodeInspector);
         typeContext.loadPrimitives();
         Input.preload(typeContext, byteCodeInspector, resources, "java.lang");
-        List<TypeMap.InspectionAndState> types = byteCodeInspector.inspectFromPath(new Source(path, jarUrl.toURI()));
+        String pathWithClass = Source.ensureDotClass(path);
+        List<TypeMap.InspectionAndState> types = byteCodeInspector.inspectFromPath(new Source(pathWithClass, jarUrl.toURI()));
         // in case the path is a subType, we need to inspect it explicitly
         types.forEach(ias -> typeContext.typeMap.getTypeInspection(ias.typeInspection().typeInfo()));
         return typeContext.typeMap.build();

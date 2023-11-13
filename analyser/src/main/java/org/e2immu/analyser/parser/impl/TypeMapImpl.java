@@ -132,7 +132,6 @@ public class TypeMapImpl implements TypeMap {
 
         private static class TypeData {
             final TypeInspection.Builder typeInspectionBuilder;
-            final ReentrantLock lock = new ReentrantLock();
             final Map<String, MethodInspection.Builder> methodInspections = new HashMap<>();
             final Map<FieldInfo, FieldInspection.Builder> fieldInspections = new HashMap<>();
             InspectionState inspectionState;
@@ -265,14 +264,23 @@ public class TypeMapImpl implements TypeMap {
         @Override
         public TypeInfo getOrCreateByteCode(String packageName, String simpleName) {
             Source source = classPath.fqnToPath(packageName + "." + simpleName, ".class");
+            if (source == null) return null;
             // example of not-accessible type: java.lang.Compiler
-            Identifier id = source == null ? Identifier.NOT_ACCESSIBLE : Identifier.from(source.uri());
+            Identifier id = Identifier.from(source.uri());
             return getOrCreate(packageName, simpleName, id, TRIGGER_BYTECODE_INSPECTION).typeInfo();
         }
 
         @Override
         public TypeInfo getOrCreate(String fqn, boolean complain) {
-            throw new UnsupportedOperationException("TODO"); // FIXME
+            int lastDot = fqn.lastIndexOf('.');
+            String packageName = lastDot < 0 ? "" : fqn.substring(0, lastDot);
+            String simpleName = lastDot < 0 ? fqn : fqn.substring(lastDot + 1);
+            TypeInfo typeInfo = getOrCreateByteCode(packageName, simpleName);
+            if (typeInfo == null) {
+                if (complain) throw new UnsupportedOperationException("Cannot find " + fqn);
+                return null;
+            }
+            return typeInfo;
         }
 
         /*
@@ -280,7 +288,10 @@ public class TypeMapImpl implements TypeMap {
                  If in trie, but not yet in typeInspections, it will be added to both.
                  */
         @Override
-        public TypeInspection.Builder getOrCreate(String packageName, String simpleName, Identifier identifier, InspectionState inspectionState) {
+        public TypeInspection.Builder getOrCreate(String packageName,
+                                                  String simpleName,
+                                                  Identifier identifier,
+                                                  InspectionState inspectionState) {
             assert simpleName.indexOf('.') < 0; // no dots!
             TypeInfo typeInfo = get(packageName + "." + simpleName);
             if (typeInfo != null) {

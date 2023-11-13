@@ -150,7 +150,7 @@ public class Resources {
             String realName = je.getRealName();
             // let's exclude XML files, etc., anything not Java-related
             if (realName.endsWith(".class") || realName.endsWith(".java")) {
-                LOGGER.debug("Adding {}", realName);
+                LOGGER.trace("Adding {}", realName);
                 String[] split = je.getRealName().split("/");
                 try {
                     URI fullUrl = new URL(jarUrl, je.getRealName()).toURI();
@@ -184,7 +184,7 @@ public class Resources {
                 .filter(je -> je.getRealName().startsWith("classes/"))
                 .forEach(je -> {
                     String realName = je.getRealName().substring("classes/".length());
-                    LOGGER.debug("Adding {}", realName);
+                    LOGGER.trace("Adding {}", realName);
                     String[] split = realName.split("/");
                     try {
                         URL fullUrl = new URL(jmodUrl, je.getRealName());

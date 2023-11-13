@@ -19,6 +19,7 @@ import org.e2immu.analyser.bytecode.ByteCodeInspector;
 import org.e2immu.analyser.config.Configuration;
 import org.e2immu.analyser.inspector.TypeContext;
 import org.e2immu.analyser.inspector.impl.TypeInspectionImpl;
+import org.e2immu.analyser.log.LogTarget;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.impl.TypeParameterImpl;
 import org.e2immu.analyser.parser.Input;
@@ -48,7 +49,9 @@ public class TestParseGenerics {
 
     @BeforeAll
     public static void beforeClass() throws IOException {
-        Configuration configuration = new Configuration.Builder().build();
+        Configuration configuration = new Configuration.Builder()
+                .addDebugLogTargets(LogTarget.BYTECODE)
+                .build();
         configuration.initializeLoggers();
 
         classPath = new Resources();

@@ -95,7 +95,7 @@ public class MyClassVisitor extends ClassVisitor {
     private String makeMethodSignature(String name, TypeInfo typeInfo, List<ParameterizedType> types) {
         String methodName = "<init>".equals(name) ? typeInfo.simpleName : name;
         return methodName + "(" +
-                types.stream().map(pt -> pt.detailedString(typeContext)).collect(Collectors.joining(", ")) +
+                types.stream().map(pt -> pt.detailedString(localTypeMap)).collect(Collectors.joining(", ")) +
                 ")";
     }
 
@@ -126,7 +126,7 @@ public class MyClassVisitor extends ClassVisitor {
             if ((access & Opcodes.ACC_ABSTRACT) != 0) typeInspectionBuilder.addTypeModifier(TypeModifier.ABSTRACT);
             if ((access & Opcodes.ACC_FINAL) != 0) typeInspectionBuilder.addTypeModifier(TypeModifier.FINAL);
         }
-        typeInspectionBuilder.computeAccess(typeContext);
+        typeInspectionBuilder.computeAccess(localTypeMap);
 
         String parentFqName = superName == null ? null : pathToFqn(superName);
         if (parentFqName != null && !Input.acceptFQN(parentFqName)) {
@@ -141,7 +141,7 @@ public class MyClassVisitor extends ClassVisitor {
                     errorStateForType(parentFqName);
                     return;
                 }
-                typeInspectionBuilder.setParentClass(typeInfo.asParameterizedType(typeContext));
+                typeInspectionBuilder.setParentClass(typeInfo.asParameterizedType(localTypeMap));
             } else {
                 LOGGER.debug("No parent name for {}", fqName);
             }
@@ -156,7 +156,7 @@ public class MyClassVisitor extends ClassVisitor {
                             errorStateForType(fqn);
                             return;
                         }
-                        typeInspectionBuilder.addInterfaceImplemented(typeInfo.asParameterizedType(typeContext));
+                        typeInspectionBuilder.addInterfaceImplemented(typeInfo.asParameterizedType(localTypeMap));
                     } // else: ignore!
                 }
             }
@@ -461,7 +461,7 @@ public class MyClassVisitor extends ClassVisitor {
 
     private boolean functionalInterface() {
         return typeInspectionBuilder.typeNature() == TypeNature.INTERFACE &&
-                typeInspectionBuilder.computeIsFunctionalInterface(typeContext);
+                typeInspectionBuilder.computeIsFunctionalInterface(localTypeMap);
     }
 
     private void errorStateForType(String pathCausingFailure) {

@@ -117,8 +117,8 @@ public class MyMethodVisitor extends MethodVisitor {
             }
         }
 
-        methodInspectionBuilder.readyToComputeFQN(typeContext);
-        methodInspectionBuilder.computeAccess(typeContext);
+        methodInspectionBuilder.readyToComputeFQN(localTypeMap);
+        methodInspectionBuilder.computeAccess(localTypeMap);
 
         if (methodItem != null) {
             for (ParameterItem parameterItem : methodItem.getParameterItems()) {
