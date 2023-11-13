@@ -14,19 +14,18 @@
 
 package org.e2immu.analyser.bytecode;
 
+import org.e2immu.analyser.bytecode.asm.LocalTypeMap;
 import org.e2immu.analyser.inspector.TypeContext;
-import org.e2immu.analyser.model.Diamond;
-import org.e2immu.analyser.model.Expression;
-import org.e2immu.analyser.model.Identifier;
+import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.*;
 import org.e2immu.analyser.parser.Primitives;
 import org.objectweb.asm.Type;
 
 public class ExpressionFactory {
 
-    public static Expression from(TypeContext typeContext, Identifier identifier, Object value) {
-        Primitives primitives = typeContext.getPrimitives();
+    public static Expression from(LocalTypeMap localTypeMap, Identifier identifier, Object value) {
         if (value == null) return new NullConstant(identifier);
+        Primitives primitives = localTypeMap.getPrimitives();
         if (value instanceof String s) return new StringConstant(primitives, identifier, s);
         if (value instanceof Integer i) return new IntConstant(primitives, identifier, i);
         if (value instanceof Short s) return new ShortConstant(primitives, identifier, s);
@@ -36,9 +35,11 @@ public class ExpressionFactory {
         if (value instanceof Float f) return new FloatConstant(primitives, identifier, f);
         if (value instanceof Character c) return new CharConstant(primitives, identifier, c);
         if (value instanceof Boolean b) return new BooleanConstant(primitives, identifier, b);
-        if (value instanceof Type t)
-            return new TypeExpression(identifier, typeContext.getFullyQualified(t.getClassName(), true)
-                    .asParameterizedType(typeContext), Diamond.SHOW_ALL);
+        if (value instanceof Type t) {
+            TypeInspection ti = localTypeMap.getOrCreate(t.getClassName(), false);
+            ParameterizedType parameterizedType = ti.typeInfo().asParameterizedType(localTypeMap);
+            return new TypeExpression(identifier, parameterizedType, Diamond.SHOW_ALL);
+        }
         throw new UnsupportedOperationException("Value " + value + " is of " + value.getClass());
     }
 }

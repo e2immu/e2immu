@@ -56,6 +56,6 @@ public abstract class CommonTest {
         configuration.initializeLoggers();
         Parser parser = new Parser(configuration);
         Parser.RunResult runResult = parser.run();
-        return runResult.typeMap();
+        return runResult.buildTypeMap().typeMap();
     }
 }

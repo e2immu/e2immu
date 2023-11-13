@@ -18,7 +18,6 @@ import com.github.javaparser.ast.body.FieldDeclaration;
 import com.github.javaparser.ast.body.TypeDeclaration;
 import com.github.javaparser.ast.expr.Expression;
 import org.e2immu.analyser.inspector.AbstractInspectionBuilder;
-import org.e2immu.analyser.inspector.DollarResolverResult;
 import org.e2immu.analyser.inspector.InspectionState;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.parser.Input;
@@ -532,6 +531,8 @@ public class TypeInspectionImpl extends InspectionImpl implements TypeInspection
         }
     }
 
+    public record DollarResolverResult(TypeInfo subType, boolean isDollarType) {
+    }
 
     /* the following three methods are part of the annotated API system.
     Briefly, if a first-level subtype's name ends with a $, its FQN is composed by the PACKAGE_NAME field in the primary type

@@ -105,7 +105,7 @@ public class TestParseGenerics {
 
         String signature = "<K:Ljava/lang/Enum<TK;>;V:Ljava/lang/Object;>Ljava/util/AbstractMap<TK;TV;>;Ljava/io/Serializable;Ljava/lang/Cloneable;";
         ParseGenerics parseGenerics = new ParseGenerics(newTypeContext, typeInfo, typeInspectionBuilder,
-                byteCodeInspector.localTypeMap());
+                byteCodeInspector.localTypeMap(), true);
         int expected = "<K:Ljava/lang/Enum<TK;>;V:Ljava/lang/Object;>".length();
         int pos = parseGenerics.parseTypeGenerics(signature) + 1;
         assertEquals(expected, pos);
@@ -169,7 +169,7 @@ public class TestParseGenerics {
         TypeInspection.Builder typeInspectionBuilder = typeContext.typeMap.add(typeInfo, STARTING_BYTECODE);
 
         ParseGenerics parseGenerics = new ParseGenerics(newTypeContext, typeInfo, typeInspectionBuilder,
-                byteCodeInspector.localTypeMap());
+                byteCodeInspector.localTypeMap(), true);
         String signature = "<K:Ljava/lang/Object;>Ljdk/internal/loader/AbstractClassLoaderValue<Ljdk/internal/loader/AbstractClassLoaderValue<TCLV;TV;>.Sub<TK;>;TV;>;";
 
         int expected = "<K:Ljava/lang/Object;>".length();

@@ -648,6 +648,9 @@ public class TypeInspectorImpl implements TypeInspector {
         return builder.getMethodInfo();
     }
 
+    private record DollarResolverResult(TypeInfo subType, boolean isDollarType) {
+    }
+
     private void prepareSubType(TypeContext typeContext, DollarResolver dollarResolver, String
             nameAsString) {
         DollarResolverResult res = subType(typeContext.typeMap(), dollarResolver, nameAsString);

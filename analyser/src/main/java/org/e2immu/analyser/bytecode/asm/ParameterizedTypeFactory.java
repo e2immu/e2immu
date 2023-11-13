@@ -51,7 +51,7 @@ public class ParameterizedTypeFactory {
         }
     }
 
-    static Result from(TypeContext typeContext, LocalTypeMap findType, String signature) {
+    static Result from(TypeContext typeContext, LocalTypeMap findType, boolean mustLoad, String signature) {
         try {
             int firstCharPos = 0;
             char firstChar = signature.charAt(0);
@@ -83,7 +83,7 @@ public class ParameterizedTypeFactory {
 
             // normal class or interface type
             if (CHAR_L == firstChar) {
-                return normalType(typeContext, findType, signature, arrays, wildCard, firstCharPos);
+                return normalType(typeContext, findType, mustLoad, signature, arrays, wildCard, firstCharPos);
             }
 
             // type parameter
@@ -122,7 +122,8 @@ public class ParameterizedTypeFactory {
     // shows that we need to make this recursive or get the generics in a while loop
 
     private static Result normalType(TypeContext typeContext,
-                                     LocalTypeMap findType,
+                                     LocalTypeMap localTypeMap,
+                                     boolean mustLoad,
                                      String signature,
                                      int arrays,
                                      ParameterizedType.WildCard wildCard,
@@ -145,7 +146,8 @@ public class ParameterizedTypeFactory {
                 IterativeParsing iterativeParsing = new IterativeParsing();
                 iterativeParsing.startPos = openGenerics + 1;
                 do {
-                    iterativeParsing = iterativelyParseTypes(typeContext, findType, signature, iterativeParsing);
+                    iterativeParsing = iterativelyParseTypes(typeContext, localTypeMap, mustLoad, signature,
+                            iterativeParsing);
                     if (iterativeParsing == null) return null;
                     typeParameters.add(iterativeParsing.result);
                     typeNotFoundError = typeNotFoundError || iterativeParsing.typeNotFoundError;
@@ -164,7 +166,7 @@ public class ParameterizedTypeFactory {
         }
         String fqn = path.toString().replaceAll("[/$]", ".");
 
-        TypeInspection typeInspection = findType.getOrCreate(fqn, false);
+        TypeInspection typeInspection = localTypeMap.getOrCreate(fqn, mustLoad);
 
         boolean unableToLoadTypeError = typeInspection == null;
         if (unableToLoadTypeError) {
@@ -200,9 +202,10 @@ public class ParameterizedTypeFactory {
 
     private static IterativeParsing iterativelyParseTypes(TypeContext typeContext,
                                                           LocalTypeMap findType,
+                                                          boolean mustLoad,
                                                           String signature,
                                                           IterativeParsing iterativeParsing) {
-        ParameterizedTypeFactory.Result result = ParameterizedTypeFactory.from(typeContext, findType,
+        ParameterizedTypeFactory.Result result = ParameterizedTypeFactory.from(typeContext, findType, mustLoad,
                 signature.substring(iterativeParsing.startPos));
         if (result == null) return null;
         int end = iterativeParsing.startPos + result.nextPos;

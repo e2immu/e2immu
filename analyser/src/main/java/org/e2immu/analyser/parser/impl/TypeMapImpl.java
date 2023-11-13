@@ -502,7 +502,7 @@ public class TypeMapImpl implements TypeMap {
                 boolean success = inspectWithByteCodeInspector(typeInfo);
                 // we may have to try later, because of cyclic dependencies
                 typeData.inspectionState = success ? FINISHED_BYTECODE : TRIGGER_BYTECODE_INSPECTION;
-            } else if (typeData.inspectionState == TRIGGER_JAVA_PARSER) {
+            } else if (typeData.inspectionState == TRIGGER_JAVA_PARSER||typeData.inspectionState == INIT_JAVA_PARSER) {
                 try {
                     LOGGER.debug("Triggering Java parser on {}", typeInfo.fullyQualifiedName);
                     typeData.inspectionState = STARTING_JAVA_PARSER;

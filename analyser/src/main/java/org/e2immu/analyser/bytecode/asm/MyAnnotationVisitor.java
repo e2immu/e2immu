@@ -34,7 +34,7 @@ import static org.objectweb.asm.Opcodes.ASM9;
 public class MyAnnotationVisitor<T> extends AnnotationVisitor {
     private static final Logger LOGGER = LoggerFactory.getLogger(MyAnnotationVisitor.class);
 
-    private final TypeContext typeContext;
+    private final LocalTypeMap localTypeMap;
     private final Inspection.InspectionBuilder<T> inspectionBuilder;
     private final AnnotationExpressionImpl.Builder expressionBuilder;
 
@@ -43,11 +43,12 @@ public class MyAnnotationVisitor<T> extends AnnotationVisitor {
                                String descriptor,
                                Inspection.InspectionBuilder<T> inspectionBuilder) {
         super(ASM9);
-        this.typeContext = typeContext;
+        this.localTypeMap = localTypeMap;
         this.inspectionBuilder = Objects.requireNonNull(inspectionBuilder);
         LOGGER.debug("My annotation visitor: {}", descriptor);
 
-        ParameterizedTypeFactory.Result from = ParameterizedTypeFactory.from(typeContext, localTypeMap, descriptor);
+        ParameterizedTypeFactory.Result from = ParameterizedTypeFactory.from(typeContext, localTypeMap, false,
+                descriptor);
         if (from == null) {
             expressionBuilder = null;
         } else {
@@ -66,7 +67,7 @@ public class MyAnnotationVisitor<T> extends AnnotationVisitor {
     public void visit(String name, Object value) {
         if (expressionBuilder != null) {
             LOGGER.debug("Assignment: {} to {}", name, value);
-            Expression expression = ExpressionFactory.from(typeContext, Identifier.constant(value), value);
+            Expression expression = ExpressionFactory.from(localTypeMap, Identifier.constant(value), value);
             MemberValuePair mvp = new MemberValuePair(name, expression);
             expressionBuilder.addExpression(mvp);
         }// else: jdk/ annotation

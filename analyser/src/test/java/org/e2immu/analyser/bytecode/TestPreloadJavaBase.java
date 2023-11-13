@@ -25,8 +25,7 @@ import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.*;
 
 public class TestPreloadJavaBase {
 
@@ -47,13 +46,17 @@ public class TestPreloadJavaBase {
         // because it has not yet appeared in a type hierarchy (but it has appeared as a field type
         // in some private field of java.lang.Throwable)
         TypeInfo list = typeContext.typeMap.get("java.util.List");
-        assertNotNull(list);
-        assertEquals(InspectionState.TRIGGER_BYTECODE_INSPECTION, typeContext.typeMap.getInspectionState(list));
+        assertNull(list);
+        TypeInfo classLoader = typeContext.typeMap.get("java.lang.ClassLoader");
+        assertNotNull(classLoader);
+        assertEquals(InspectionState.TRIGGER_BYTECODE_INSPECTION, typeContext.typeMap.getInspectionState(classLoader));
 
+        TypeInfo list2 = typeContext.typeMap.getOrCreate("java.util.List", true);
+        assertNotNull(list2);
+        assertEquals(InspectionState.TRIGGER_BYTECODE_INSPECTION, typeContext.typeMap.getInspectionState(list2));
         // the next call will trigger the byte code inspection of "list":
-        TypeInspection listInspection = typeContext.getTypeInspection(list);
+        TypeInspection listInspection = typeContext.getTypeInspection(list2);
         assertNotNull(listInspection);
-        assertEquals(InspectionState.FINISHED_BYTECODE, typeContext.typeMap.getInspectionState(list));
-
+        assertEquals(InspectionState.FINISHED_BYTECODE, typeContext.typeMap.getInspectionState(list2));
     }
 }

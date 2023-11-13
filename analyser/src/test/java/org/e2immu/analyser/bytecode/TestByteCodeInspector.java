@@ -34,13 +34,14 @@ import java.net.URISyntaxException;
 import java.net.URL;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.*;
 
 public class TestByteCodeInspector {
     private static final Logger LOGGER = LoggerFactory.getLogger(TestByteCodeInspector.class);
 
-    private TypeMap parseFromJar(String path) throws IOException, URISyntaxException {
+    private TypeMap parseFromJar(String path,Class<?>... classes) throws IOException, URISyntaxException {
         String analyserJar = determineAnalyserJarName();
         Resources resources = new Resources();
         URL jarUrl = new URL("jar:file:build/libs/" + analyserJar + "!/");
@@ -93,7 +94,7 @@ public class TestByteCodeInspector {
         TypeMap typeMap = parseFromJar("org/e2immu/analyser/analyser/EvaluationContext");
         TypeInfo typeInfo = typeMap.get("org.e2immu.analyser.analyser.EvaluationContext");
 
-        LOGGER.info("Stream is\n{}", typeInfo.output());
+        //LOGGER.info("Stream is\n{}", typeInfo.output()); commented out because not all types loaded to print out
         assertEquals(TypeNature.INTERFACE, typeInfo.typeInspection.get().typeNature());
     }
 

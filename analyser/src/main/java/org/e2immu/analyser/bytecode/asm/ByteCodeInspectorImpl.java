@@ -122,21 +122,26 @@ public class ByteCodeInspectorImpl implements ByteCodeInspector {
 
         @Override
         public TypeInspection getOrCreate(String fqn, boolean start) {
-            if (!Input.acceptFQN(fqn)) return null;
+            if (!Input.acceptFQN(fqn)) {
+                return null;
+            }
             TypeData typeData = localTypeMap.get(fqn);
             if (typeData != null) {
-                if (!start || typeData.inspectionState.isDone()) return typeData.typeInspection;
+                if (!start || typeData.inspectionState.ge(STARTING_BYTECODE)) return typeData.typeInspection;
                 // START!
             }
             TypeMap.InspectionAndState remote = typeContext.typeMap.typeInspectionSituation(fqn);
             if (remote != null) {
-                if (!start || remote.state().isDone()) return remote.typeInspection();
+                if (!start || remote.state().ge(STARTING_BYTECODE)) return remote.typeInspection();
                 if (typeData == null) {
-                    localTypeMap.put(fqn, new TypeData((TypeInspection.Builder) remote.typeInspection()));
+                    TypeInspection.Builder typeInspection = (TypeInspection.Builder) remote.typeInspection();
+                    localTypeMapPut(fqn, new TypeData(typeInspection));
                 }
             }
             Source source = classPath.fqnToPath(fqn, ".class");
-            if (source == null) return null;
+            if (source == null) {
+                return null;
+            }
             return inspectFromPath(source, typeContext, start);
         }
 
@@ -152,8 +157,13 @@ public class ByteCodeInspectorImpl implements ByteCodeInspector {
             }
             TypeInspection.Builder typeInspection = new TypeInspectionImpl.Builder(subType, Inspector.BYTE_CODE_INSPECTION);
             TypeData newTypeData = new TypeData(typeInspection);
-            localTypeMap.put(subType.fullyQualifiedName, newTypeData);
+            localTypeMapPut(subType.fullyQualifiedName, newTypeData);
             return typeInspection;
+        }
+
+        private void localTypeMapPut(String fullyQualifiedName, TypeData newTypeData) {
+            assert fullyQualifiedName.equals(newTypeData.typeInspection.typeInfo().fullyQualifiedName);
+            localTypeMap.put(fullyQualifiedName, newTypeData);
         }
 
         @Override
@@ -178,8 +188,13 @@ public class ByteCodeInspectorImpl implements ByteCodeInspector {
                 } else {
                     builder = (TypeInspection.Builder) situation.typeInspection();
                 }
-                typeData = new TypeData(builder);
-                localTypeMap.put(fqn, typeData);
+                TypeData typeDataAgain = localTypeMap.get(fqn);
+                if (typeDataAgain == null) {
+                    typeData = new TypeData(builder);
+                    localTypeMapPut(fqn, typeData);
+                } else {
+                    typeData = typeDataAgain;
+                }
             } else {
                 typeData = typeDataInMap;
             }
@@ -212,7 +227,7 @@ public class ByteCodeInspectorImpl implements ByteCodeInspector {
                 }
                 assert typeData.inspectionState == InspectionState.STARTING_BYTECODE
                         || typeData.inspectionState.isDone();
-                return typeData.typeInspection.typeInfo();
+                return new TypeInfo(typeData.typeInspection.typeInfo(), simpleName);
             }
             int lastDot = fqn.lastIndexOf(".");
             String packageName = fqn.substring(0, lastDot);
@@ -224,6 +239,7 @@ public class ByteCodeInspectorImpl implements ByteCodeInspector {
                                                                        TypeContext parentTypeContext,
                                                                        String fqn,
                                                                        TypeData typeData) {
+            assert typeData.inspectionState == TRIGGER_BYTECODE_INSPECTION;
             typeData.inspectionState = InspectionState.STARTING_BYTECODE;
             byte[] classBytes = classPath.loadBytes(path.path());
             if (classBytes == null) {

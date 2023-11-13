@@ -163,12 +163,12 @@ public class MyClassVisitor extends ClassVisitor {
                 int pos = 0;
                 if (signature.charAt(0) == '<') {
                     ParseGenerics parseGenerics = new ParseGenerics(typeContext, currentType, typeInspectionBuilder,
-                            localTypeMap);
+                            localTypeMap, true);
                     pos = parseGenerics.parseTypeGenerics(signature) + 1;
                 }
                 {
                     ParameterizedTypeFactory.Result res = ParameterizedTypeFactory.from(typeContext,
-                            localTypeMap, signature.substring(pos));
+                            localTypeMap, true, signature.substring(pos));
                     if (res == null) {
                         LOGGER.debug("Stop inspection of {}, parent type unknown",
                                 currentType.fullyQualifiedName);
@@ -181,7 +181,7 @@ public class MyClassVisitor extends ClassVisitor {
                 if (interfaces != null) {
                     for (int i = 0; i < interfaces.length; i++) {
                         ParameterizedTypeFactory.Result interFaceRes = ParameterizedTypeFactory.from(typeContext,
-                                localTypeMap, signature.substring(pos));
+                                localTypeMap, true, signature.substring(pos));
                         if (interFaceRes == null) {
                             LOGGER.debug("Stop inspection of {}, interface type unknown",
                                     currentType.fullyQualifiedName);
@@ -216,7 +216,9 @@ public class MyClassVisitor extends ClassVisitor {
      * @return the type
      */
     private TypeInfo mustFindTypeInfo(String fqn, String path) {
-        if (path.equals(currentTypePath)) return currentType;
+        if (path.equals(currentTypePath)) {
+            return currentType;
+        }
         return localTypeMap.getOrCreate(fqn, true).typeInfo();
     }
 
@@ -242,7 +244,7 @@ public class MyClassVisitor extends ClassVisitor {
                 name, descriptor, signature, value, synthetic);
         if (synthetic) return null;
 
-        ParameterizedTypeFactory.Result from = ParameterizedTypeFactory.from(typeContext, localTypeMap,
+        ParameterizedTypeFactory.Result from = ParameterizedTypeFactory.from(typeContext, localTypeMap, false,
                 signature != null ? signature : descriptor);
         if (from == null) return null; // jdk
         ParameterizedType type = from.parameterizedType;
@@ -260,7 +262,7 @@ public class MyClassVisitor extends ClassVisitor {
         if ((access & Opcodes.ACC_ENUM) != 0) fieldInspectionBuilder.setSynthetic(true); // what we use synthetic for
 
         if (value != null) {
-            Expression expression = ExpressionFactory.from(typeContext, Identifier.constant(value), value);
+            Expression expression = ExpressionFactory.from(localTypeMap, Identifier.constant(value), value);
             if (expression != EmptyExpression.EMPTY_EXPRESSION) {
                 fieldInspectionBuilder.setInspectedInitialiserExpression(expression);
             }
@@ -309,7 +311,8 @@ public class MyClassVisitor extends ClassVisitor {
         boolean lastParameterIsVarargs = (access & Opcodes.ACC_VARARGS) != 0;
 
         TypeContext methodContext = new TypeContext(typeContext);
-        ParseGenerics parseGenerics = new ParseGenerics(methodContext, currentType, typeInspectionBuilder, localTypeMap);
+        ParseGenerics parseGenerics = new ParseGenerics(methodContext, currentType, typeInspectionBuilder, localTypeMap,
+                false);
 
         String signatureOrDescription = signature != null ? signature : descriptor;
         if (signatureOrDescription.startsWith("<")) {
@@ -377,7 +380,8 @@ public class MyClassVisitor extends ClassVisitor {
             if (stepSide || stepDown) {
                 String fqn = fqnOuter + "." + innerName;
 
-                LOGGER.debug("Processing sub-type {} of/in {}", fqn, currentType.fullyQualifiedName);
+                LOGGER.debug("Processing sub-type {} of/in {}, step side? {} step down? {}", fqn,
+                        currentType.fullyQualifiedName, stepSide, stepDown);
 
                 TypeMap.InspectionAndState situation = localTypeMap.typeInspectionSituation(fqn);
                 TypeInspection subTypeInspection;
@@ -411,7 +415,7 @@ public class MyClassVisitor extends ClassVisitor {
                     }
                 }
 
-            }
+            } //else? potentially add: String fqn = pathToFqn(name); localTypeMap.getOrCreate(fqn, true);
         }
     }
 
