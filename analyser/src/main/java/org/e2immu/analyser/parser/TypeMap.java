@@ -14,7 +14,7 @@
 
 package org.e2immu.analyser.parser;
 
-import org.e2immu.analyser.bytecode.OnDemandInspection;
+import org.e2immu.analyser.bytecode.ByteCodeInspector;
 import org.e2immu.analyser.inspector.InspectionState;
 import org.e2immu.analyser.inspector.TypeInspector;
 import org.e2immu.analyser.model.*;
@@ -23,7 +23,6 @@ import org.e2immu.annotation.Modified;
 import org.e2immu.annotation.NotNull;
 
 import java.util.List;
-import java.util.Map;
 import java.util.function.BiConsumer;
 import java.util.stream.Stream;
 
@@ -39,17 +38,51 @@ public interface TypeMap extends InspectionProvider {
 
     E2ImmuAnnotationExpressions getE2ImmuAnnotationExpressions();
 
+    record InspectionAndState(TypeInspection typeInspection, InspectionState state) {
+    }
+
     interface Builder extends TypeMap {
+        // generic, could be from source, could be from byte code; used in direct type access in source code
+        TypeInfo getOrCreate(String fqn, boolean complain);
+
+        /*
+        main entry point to start building types
+         */
         @Modified
-        TypeInfo loadType(String fullyQualifiedName, boolean complain);
+        @NotNull
+        TypeInspection.Builder getOrCreate(String packageName, String name, Identifier identifier, InspectionState triggerJavaParser);
+
+        /*
+        convenience method for getOrCreate, first calling the classPath to obtain the identifier from the source
+         */
+        @Modified
+        @NotNull
+        TypeInfo getOrCreateByteCode(String packageName, String simpleName);
+
+        /*
+        NOTE: this method should not be used by the ASM visitors or bytecode inspection implementation!!!
+         */
+        @Modified
+        @NotNull
+        TypeInspection.Builder getOrCreateFromClassPathEnsureEnclosing(Source source,
+                                                                       InspectionState startingBytecode);
+
+        /*
+        lowest level: a call on get() will return null, called by getOrCreate
+         */
+        @Modified
+        @NotNull
+        TypeInspection.Builder add(TypeInfo typeInfo, InspectionState triggerJavaParser);
+
+        /*
+        for use inside byte code inspection
+         */
+        InspectionAndState typeInspectionSituation(String fqName);
 
         MethodInspection getMethodInspectionDoNotTrigger(TypeInfo typeInfo, String distinguishingName);
 
         @Modified
-        void setByteCodeInspector(OnDemandInspection byteCodeInspector);
-
-        @Modified
-        TypeInspection.Builder add(TypeInfo typeInfo, InspectionState triggerJavaParser);
+        void setByteCodeInspector(ByteCodeInspector byteCodeInspector);
 
         @Modified
         void setInspectWithJavaParser(InspectWithJavaParser onDemandSourceInspection);
@@ -57,11 +90,9 @@ public interface TypeMap extends InspectionProvider {
         @Modified
         void makeParametersImmutable();
 
-        TypeMap build();
-
+        // can be called only one, freezes
         @Modified
-        @NotNull
-        TypeInfo getOrCreate(String packageName, String name, Identifier identifier, InspectionState triggerJavaParser);
+        TypeMap build();
 
         @Modified
         void registerFieldInspection(FieldInfo fieldInfo, FieldInspection.Builder fieldBuilder);
@@ -69,38 +100,22 @@ public interface TypeMap extends InspectionProvider {
         @Modified
         void registerMethodInspection(MethodInspection.Builder builder);
 
-        @Modified
-        @NotNull
-        TypeInspection.Builder ensureTypeAndInspection(TypeInfo subType, InspectionState inspectionState);
-
         @NotNull
         InspectionState getInspectionState(TypeInfo inMap);
 
         @Modified
         @NotNull
-        TypeInfo getOrCreateFromPath(Source source, InspectionState triggerBytecodeInspection);
-
-        @Modified
-        @NotNull
-        TypeInspection.Builder ensureTypeInspection(TypeInfo typeInfo, InspectionState byHand);
-
-        @Modified
-        @NotNull
         TypeInfo syntheticFunction(int parameters, boolean isVoid);
-
-        @Modified
-        @NotNull
-        TypeInspection.Builder getOrCreateFromPathReturnInspection(Source source,
-                                                                   InspectionState startingBytecode);
 
         @NotNull
         Stream<TypeInfo> streamTypesStartingByteCode();
 
+        /*
+        Convenience method for local class declarations and anonymous types; calls `add` to add them
+         */
         @NotNull
         TypeInspector newTypeInspector(TypeInfo typeInfo, boolean b, boolean b1);
 
-        TypeInspection getTypeInspectionDoNotTrigger(TypeInfo currentType);
-
-        TypeInfo getOrCreateTriggerByteCode(String packageName, String simpleName);
+        TypeInspection getTypeInspectionToStartResolving(TypeInfo typeInfo);
     }
 }

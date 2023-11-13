@@ -14,17 +14,15 @@
 
 package org.e2immu.analyser.parser;
 
-import com.github.javaparser.ParseException;
 import org.e2immu.analyser.analyser.AnalyserContext;
 import org.e2immu.analyser.analyser.PrimaryTypeAnalyser;
 import org.e2immu.analyser.analyser.impl.primary.PrimaryTypeAnalyserImpl;
 import org.e2immu.analyser.analyser.nonanalyserimpl.GlobalAnalyserContext;
-import org.e2immu.analyser.bytecode.OnDemandInspection;
+import org.e2immu.analyser.bytecode.ByteCodeInspector;
 import org.e2immu.analyser.config.Configuration;
 import org.e2immu.analyser.inspector.*;
 import org.e2immu.analyser.inspector.impl.ExpressionContextImpl;
 import org.e2immu.analyser.model.TypeInfo;
-import org.e2immu.analyser.model.TypeInspection;
 import org.e2immu.analyser.parser.impl.ImportantClassesImpl;
 import org.e2immu.analyser.parser.impl.InspectAll;
 import org.e2immu.analyser.parser.impl.TypeMapImpl;
@@ -38,14 +36,10 @@ import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.StringWriter;
 import java.net.URI;
 import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-
-import static org.e2immu.analyser.inspector.InspectionState.*;
 
 public class Parser {
     private static final Logger LOGGER = LoggerFactory.getLogger(Parser.class);
@@ -295,7 +289,7 @@ public class Parser {
     }
 
     // only meant to be used in tests!
-    public OnDemandInspection getByteCodeInspector() {
+    public ByteCodeInspector getByteCodeInspector() {
         return input.byteCodeInspector();
     }
 

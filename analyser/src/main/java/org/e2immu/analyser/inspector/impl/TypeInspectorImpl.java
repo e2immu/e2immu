@@ -78,27 +78,15 @@ public class TypeInspectorImpl implements TypeInspector {
     private final boolean dollarTypesAreNormalTypes;
     private final boolean storeComments;
 
-    public TypeInspectorImpl(TypeMap.Builder typeMapBuilder,
-                             TypeInfo typeInfo,
+    public TypeInspectorImpl(TypeInspection.Builder typeInspection,
                              boolean fullInspection,
                              boolean dollarTypesAreNormalTypes,
                              boolean storeComments) {
-        this.typeInfo = typeInfo;
+        builder = (TypeInspectionImpl.Builder) typeInspection;
+        this.typeInfo = typeInspection.typeInfo();
         this.dollarTypesAreNormalTypes = dollarTypesAreNormalTypes;
         this.storeComments = storeComments;
-
-        TypeInspection typeInspection = typeMapBuilder.getTypeInspection(typeInfo);
-        if (typeInspection == null) {
-            throw new UnsupportedOperationException("No typeInspection for " + typeInfo);
-        }
-        if (typeInspection.getInspectionState().ge(FINISHED_JAVA_PARSER)) {
-            throw new UnsupportedOperationException("Already finished inspection for " + typeInfo);
-        }
         this.fullInspection = fullInspection;
-        builder = (TypeInspectionImpl.Builder) typeInspection;
-        if (builder.getInspectionState() == INIT_JAVA_PARSER) {
-            builder.setInspectionState(TRIGGER_JAVA_PARSER);
-        } // else: already in START state, as a subtype
     }
 
     @Override
@@ -233,7 +221,7 @@ public class TypeInspectorImpl implements TypeInspector {
                 dollarResolver = name -> {
                     if (name.endsWith("$") && dollarPackageName != null) {
                         String substring = name.substring(0, name.length() - 1);
-                        return typeContext.typeMap.getOrCreateTriggerByteCode(dollarPackageName, substring);
+                        return typeContext.typeMap.getOrCreateByteCode(dollarPackageName, substring);
                     }
                     return null;
                 };
@@ -680,7 +668,8 @@ public class TypeInspectorImpl implements TypeInspector {
         TypeInfo subType = res.subType();
         ExpressionContext newExpressionContext = expressionContext.newSubType(subType);
         boolean typeFullInspection = fullInspection && !res.isDollarType();
-        TypeInspectorImpl subTypeInspector = new TypeInspectorImpl(typeMapBuilder, subType, typeFullInspection,
+        TypeInspection.Builder subTypeInspection = typeMapBuilder.add(subType, STARTING_JAVA_PARSER);
+        TypeInspectorImpl subTypeInspector = new TypeInspectorImpl(subTypeInspection, typeFullInspection,
                 dollarTypesAreNormalTypes, storeComments);
         subTypeInspector.inspect(isInterface, asTypeDeclaration, newExpressionContext, dollarResolver);
         if (res.isDollarType()) {

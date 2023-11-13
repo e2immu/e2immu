@@ -17,7 +17,6 @@ package org.e2immu.analyser.bytecode.asm;
 import org.e2immu.analyser.annotationxml.model.MethodItem;
 import org.e2immu.analyser.annotationxml.model.ParameterItem;
 import org.e2immu.analyser.bytecode.JetBrainsAnnotationTranslator;
-import org.e2immu.analyser.bytecode.OnDemandInspection;
 import org.e2immu.analyser.inspector.TypeContext;
 import org.e2immu.analyser.model.*;
 import org.objectweb.asm.AnnotationVisitor;
@@ -35,6 +34,7 @@ public class MyMethodVisitor extends MethodVisitor {
 
     private final TypeInspection.Builder typeInspectionBuilder;
     private final TypeContext typeContext;
+    private final LocalTypeMap localTypeMap;
     private final MethodInspection.Builder methodInspectionBuilder;
     private final List<ParameterizedType> types;
     private final ParameterInspection.Builder[] parameterInspectionBuilders;
@@ -43,10 +43,9 @@ public class MyMethodVisitor extends MethodVisitor {
     private final MethodItem methodItem;
     private final boolean[] hasNameFromLocalVar;
     private final boolean lastParameterIsVarargs;
-    private final OnDemandInspection onDemandInspection;
 
     public MyMethodVisitor(TypeContext typeContext,
-                           OnDemandInspection onDemandInspection,
+                           LocalTypeMap localTypeMap,
                            MethodInspection.Builder methodInspectionBuilder,
                            TypeInspection.Builder typeInspectionBuilder,
                            List<ParameterizedType> types,
@@ -55,12 +54,12 @@ public class MyMethodVisitor extends MethodVisitor {
                            JetBrainsAnnotationTranslator jetBrainsAnnotationTranslator) {
         super(ASM9);
         this.typeContext = typeContext;
+        this.localTypeMap = localTypeMap;
         this.methodInspectionBuilder = methodInspectionBuilder;
         this.typeInspectionBuilder = typeInspectionBuilder;
         this.types = types;
         this.jetBrainsAnnotationTranslator = jetBrainsAnnotationTranslator;
         this.methodItem = methodItem;
-        this.onDemandInspection = onDemandInspection;
         numberOfParameters = types.size() - 1;
         hasNameFromLocalVar = new boolean[numberOfParameters];
         parameterInspectionBuilders = new ParameterInspection.Builder[numberOfParameters];
@@ -74,14 +73,13 @@ public class MyMethodVisitor extends MethodVisitor {
     @Override
     public AnnotationVisitor visitAnnotation(String descriptor, boolean visible) {
         LOGGER.debug("Have method annotation {} {}", descriptor, visible);
-        return new MyAnnotationVisitor<>(typeContext, onDemandInspection, descriptor, methodInspectionBuilder);
+        return new MyAnnotationVisitor<>(typeContext, localTypeMap, descriptor, methodInspectionBuilder);
     }
 
     @Override
     public AnnotationVisitor visitParameterAnnotation(int parameter, String descriptor, boolean visible) {
         LOGGER.debug("Have parameter annotation {} on parameter {}", descriptor, parameter);
-        return new MyAnnotationVisitor<>(typeContext, onDemandInspection, descriptor,
-                parameterInspectionBuilders[parameter]);
+        return new MyAnnotationVisitor<>(typeContext, localTypeMap, descriptor, parameterInspectionBuilders[parameter]);
     }
 
     /*

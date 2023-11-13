@@ -30,7 +30,7 @@ import org.junit.jupiter.api.Test;
 import java.util.HashSet;
 import java.util.List;
 
-import static org.e2immu.analyser.inspector.InspectionState.BY_HAND;
+import static org.e2immu.analyser.model.Inspector.BY_HAND;
 import static org.e2immu.analyser.model.ParameterizedType.WildCard.*;
 import static org.junit.jupiter.api.Assertions.*;
 

@@ -36,7 +36,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 import static org.e2immu.analyser.analysis.Analysis.AnalysisMode.CONTRACTED;
-import static org.e2immu.analyser.inspector.InspectionState.BY_HAND_WITHOUT_STATEMENTS;
+import static org.e2immu.analyser.model.Inspector.BY_HAND_WITHOUT_STATEMENTS;
 import static org.e2immu.analyser.model.IsAssignableFrom.NOT_ASSIGNABLE;
 
 public class PrimitivesImpl implements Primitives {

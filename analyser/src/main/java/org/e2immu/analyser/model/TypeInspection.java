@@ -15,7 +15,6 @@
 package org.e2immu.analyser.model;
 
 import org.e2immu.analyser.analyser.SetOfTypes;
-import org.e2immu.analyser.inspector.InspectionState;
 import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.util.ListUtil;
@@ -161,9 +160,6 @@ public interface TypeInspection extends Inspection {
                 .map(FieldInspection.FieldInitialiser::implementationOfSingleAbstractMethod);
     }
 
-    @NotNull
-    InspectionState getInspectionState();
-
     /**
      * @param inspectionProvider to be able to inspect super-types
      * @return true when a functional interface
@@ -242,13 +238,9 @@ public interface TypeInspection extends Inspection {
 
     interface Builder extends InspectionBuilder<Builder>, TypeInspection {
 
-        boolean finishedInspection();
-
         void computeAccess(InspectionProvider inspectionProvider);
 
         TypeInspection build(InspectionProvider inspectionProvider);
-
-        void setInspectionState(InspectionState startingBytecode);
 
         @Fluent
         Builder setParentClass(ParameterizedType objectParameterizedType);

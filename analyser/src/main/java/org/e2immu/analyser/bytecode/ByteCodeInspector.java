@@ -14,116 +14,25 @@
 
 package org.e2immu.analyser.bytecode;
 
-import org.e2immu.analyser.annotationxml.AnnotationStore;
-import org.e2immu.analyser.bytecode.asm.MyClassVisitor;
-import org.e2immu.analyser.inspector.TypeContext;
-import org.e2immu.analyser.model.TypeInfo;
-import org.e2immu.analyser.model.TypeInspection;
-import org.e2immu.analyser.util.Resources;
+
+import org.e2immu.analyser.parser.TypeMap;
 import org.e2immu.analyser.util.Source;
-import org.objectweb.asm.ClassReader;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.e2immu.annotation.Modified;
 
-import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
-import java.util.Stack;
-import java.util.stream.Collectors;
 
-import static org.e2immu.analyser.inspector.InspectionState.STARTING_BYTECODE;
-import static org.e2immu.analyser.inspector.InspectionState.TRIGGER_BYTECODE_INSPECTION;
+public interface ByteCodeInspector {
 
-public class ByteCodeInspector implements OnDemandInspection {
-    private static final Logger LOGGER = LoggerFactory.getLogger(ByteCodeInspector.class);
+    /*
+     To be called  from TypeMap only.
+     The implementation will load as many types as necessary to load this source properly.
+     It will only check with the type map for availability of types already loaded; it will NOT recursively start a
+     loading process. Only at the end will the TypeMap store the loaded types.
 
-    private final Resources classPath;
-    private final TypeContext typeContext;
-    private final AnnotationStore annotationStore;
-
-    public ByteCodeInspector(Resources classPath, AnnotationStore annotationStore, TypeContext typeContext) {
-        this.classPath = Objects.requireNonNull(classPath);
-        this.typeContext = Objects.requireNonNull(typeContext);
-        this.annotationStore = annotationStore;
-    }
-
-    /**
-     * Given a path pointing to a .class file, load the bytes, and inspect the byte code
-     *
-     * @param source important: path must be split by /, not by .  It may or may not end in .class.
-     * @return one or more types; the first one is the main type of the .class file
+     As a consequence, two parallel calls to inspectFromPath may be doing a bit of duplicate work, e.g. because
+     the sources they load share a parent, enclosing type, or interface implemented.
      */
-    @Override
-    public List<TypeInfo> inspectFromPath(Source source) {
-        String path = source.path();
-        int dollar = path.indexOf('$');
-        if (dollar > 0) {
-            String pathOfPrimaryType = path.substring(0, dollar);
-            String fqnPrimaryType = pathOfPrimaryType.replace('/', '.');
-            TypeInfo primaryType = typeContext.typeMap.get(fqnPrimaryType);
-            TypeInspection primaryTypeInspection = primaryType == null ? null
-                    // this will trigger the inspection of the primary type, if it hasn't been inspected yet
-                    : typeContext.getTypeInspection(primaryType);
-            if (primaryTypeInspection == null || primaryTypeInspection.getInspectionState().lt(STARTING_BYTECODE)) {
-                inspectFromPath(new Source(pathOfPrimaryType, source.uri()));
-            }
-            return List.of(typeContext.typeMap.getOrCreateFromPath(source, TRIGGER_BYTECODE_INSPECTION));
-            // NOTE that it is quite possible that even after the inspectFromPath, the type has not been created
-            // yet... cycles are allowed in the use of subtypes as interface or parent
-        }
-        if (LOGGER.isDebugEnabled()) {
-            logTypesInProcess(path);
-        }
-        String pathWithDotClass = path.endsWith(".class") ? path : path + ".class";
-        byte[] classBytes = classPath.loadBytes(pathWithDotClass);
-        if (classBytes == null) return List.of();
-        return inspectByteArray(source, classBytes, new Stack<>(), typeContext);
-    }
+    @Modified
+    List<TypeMap.InspectionAndState> inspectFromPath(Source source); // org/junit/Assert
 
-    private void logTypesInProcess(String path) {
-        LOGGER.debug("Parsing {}, in process [{}]", path,
-                typeContext.typeMap.streamTypesStartingByteCode()
-                        .map(typeInfo -> typeInfo.fullyQualifiedName)
-                        .collect(Collectors.joining(", ")));
-    }
-
-    @Override
-    public TypeInfo inspectFromPath(Source path,
-                                    Stack<TypeInfo> enclosingTypes,
-                                    TypeContext parentTypeContext) {
-        assert path != null && path.path().endsWith(".class");
-        if (LOGGER.isDebugEnabled()) {
-            logTypesInProcess(path.path());
-            LOGGER.debug(enclosingTypes.stream().map(ti -> ti.fullyQualifiedName)
-                    .collect(Collectors.joining(" -> ")));
-        }
-        byte[] classBytes = classPath.loadBytes(path.path());
-        if (classBytes == null) return null;
-        List<TypeInfo> result = inspectByteArray(path, classBytes, enclosingTypes, parentTypeContext);
-        if (result.isEmpty()) return null;
-        return result.get(0);
-    }
-
-    public List<TypeInfo> inspectByteArray(Source pathAndURI,
-                                           byte[] classBytes,
-                                           Stack<TypeInfo> enclosingTypes,
-                                           TypeContext parentTypeContext) {
-        ClassReader classReader = new ClassReader(classBytes);
-        LOGGER.debug("Constructed class reader with {} bytes", classBytes.length);
-
-        List<TypeInfo> types = new ArrayList<>();
-        MyClassVisitor myClassVisitor = new MyClassVisitor(this,
-                annotationStore,
-                new TypeContext(parentTypeContext),
-                pathAndURI,
-                types,
-                enclosingTypes);
-        classReader.accept(myClassVisitor, 0);
-        return types;
-    }
-
-    @Override
-    public Source fqnToPath(String fullyQualifiedName) {
-        return classPath.fqnToPath(fullyQualifiedName, ".class");
-    }
 }

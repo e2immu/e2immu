@@ -16,8 +16,8 @@ package org.e2immu.analyser.parser;
 
 import org.e2immu.analyser.annotationxml.AnnotationStore;
 import org.e2immu.analyser.annotationxml.AnnotationXmlReader;
+import org.e2immu.analyser.bytecode.asm.ByteCodeInspectorImpl;
 import org.e2immu.analyser.bytecode.ByteCodeInspector;
-import org.e2immu.analyser.bytecode.OnDemandInspection;
 import org.e2immu.analyser.config.Configuration;
 import org.e2immu.analyser.inspector.TypeContext;
 import org.e2immu.analyser.model.Identifier;
@@ -25,7 +25,6 @@ import org.e2immu.analyser.model.TypeInfo;
 import org.e2immu.analyser.parser.impl.InspectAll;
 import org.e2immu.analyser.parser.impl.TypeMapImpl;
 import org.e2immu.analyser.util.Resources;
-import org.e2immu.analyser.util.Source;
 import org.e2immu.analyser.util.Trie;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -45,7 +44,7 @@ import static org.e2immu.analyser.inspector.InspectionState.INIT_JAVA_PARSER;
 
 public record Input(Configuration configuration,
                     TypeContext globalTypeContext,
-                    OnDemandInspection byteCodeInspector,
+                    ByteCodeInspector byteCodeInspector,
                     Map<TypeInfo, URI> annotatedAPIs,
                     Map<TypeInfo, URI> sourceURLs,
                     Trie<TypeInfo> sourceTypes,
@@ -72,7 +71,7 @@ public record Input(Configuration configuration,
         AnnotationStore annotationStore = new AnnotationXmlReader(classPath, configuration.annotationXmlConfiguration());
         LOGGER.info("Read {} annotations from 'annotation.xml' files in classpath", annotationStore.getNumberOfAnnotations());
         TypeContext globalTypeContext = new TypeContext(new TypeMapImpl.Builder(classPath));
-        OnDemandInspection byteCodeInspector = new ByteCodeInspector(classPath, annotationStore, globalTypeContext);
+        ByteCodeInspector byteCodeInspector = new ByteCodeInspectorImpl(classPath, annotationStore, globalTypeContext);
         globalTypeContext.typeMap.setByteCodeInspector(byteCodeInspector);
         globalTypeContext.loadPrimitives();
         for (String packageName : new String[]{"org.e2immu.annotation", "java.lang", "java.util.function"}) {
@@ -85,7 +84,7 @@ public record Input(Configuration configuration,
     public static Input createNext(Configuration configuration,
                                    Resources classPath,
                                    TypeContext globalTypeContext,
-                                   OnDemandInspection byteCodeInspector) throws IOException {
+                                   ByteCodeInspector byteCodeInspector) throws IOException {
         Resources sourcePath = assemblePath(configuration, false, "Source path",
                 configuration.inputConfiguration().sources());
         Trie<TypeInfo> sourceTypes = new Trie<>();
@@ -110,7 +109,7 @@ public record Input(Configuration configuration,
         Resources classPath = assemblePath(configuration, true, "Classpath",
                 configuration.inputConfiguration().classPathParts());
         AnnotationStore annotationStore = new AnnotationXmlReader(classPath, configuration.annotationXmlConfiguration());
-        OnDemandInspection byteCodeInspector = new ByteCodeInspector(classPath, annotationStore, globalTypeContext);
+        ByteCodeInspector byteCodeInspector = new ByteCodeInspectorImpl(classPath, annotationStore, globalTypeContext);
         return createNext(configuration, classPath, globalTypeContext, byteCodeInspector);
     }
 
@@ -164,7 +163,7 @@ public record Input(Configuration configuration,
      * <code>initializeClassPath</code> will be present
      */
     public static void preload(TypeContext globalTypeContext,
-                               OnDemandInspection byteCodeInspector,
+                               ByteCodeInspector byteCodeInspector,
                                Resources classPath,
                                String thePackage) {
         LOGGER.info("Start pre-loading {}", thePackage);
@@ -174,10 +173,10 @@ public record Input(Configuration configuration,
             if (!expansion[expansion.length - 1].contains("$")) {
                 String fqn = InspectAll.fqnOfClassFile(thePackage, expansion);
                 assert Input.acceptFQN(fqn);
+                // test against hard-coded types
                 TypeInfo typeInfo = globalTypeContext.getFullyQualified(fqn, true);
                 if (!typeInfo.typeInspection.isSet()) {
-                    String path = fqn.replace(".", "/"); // this is correct!
-                    byteCodeInspector.inspectFromPath(new Source(path, list.get(0)));
+                    globalTypeContext.typeMap.getOrCreateByteCode(typeInfo.packageName(), typeInfo.simpleName);
                     inspected.incrementAndGet();
                 }
             }

@@ -33,7 +33,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.List;
 
-import static org.e2immu.analyser.inspector.InspectionState.BY_HAND;
+import static org.e2immu.analyser.model.Inspector.BY_HAND;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 

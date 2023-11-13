@@ -14,7 +14,6 @@
 
 package org.e2immu.analyser.bytecode.asm;
 
-import org.e2immu.analyser.bytecode.OnDemandInspection;
 import org.e2immu.analyser.inspector.TypeContext;
 import org.e2immu.analyser.model.FieldInfo;
 import org.e2immu.analyser.model.FieldInspection;
@@ -33,11 +32,11 @@ public class MyFieldVisitor extends FieldVisitor {
     private final TypeContext typeContext;
     private final FieldInspection.Builder fieldInspectionBuilder;
     private final TypeInspection.Builder typeInspectionBuilder;
-    private final OnDemandInspection onDemandInspection;
+    private final LocalTypeMap localTypeMap;
 
     public MyFieldVisitor(TypeContext typeContext,
                           FieldInfo fieldInfo,
-                          OnDemandInspection onDemandInspection,
+                          LocalTypeMap localTypeMap,
                           FieldInspection.Builder fieldInspectionBuilder,
                           TypeInspection.Builder typeInspectionBuilder) {
         super(ASM9);
@@ -45,13 +44,13 @@ public class MyFieldVisitor extends FieldVisitor {
         this.fieldInfo = fieldInfo;
         this.fieldInspectionBuilder = fieldInspectionBuilder;
         this.typeInspectionBuilder = typeInspectionBuilder;
-        this.onDemandInspection = onDemandInspection;
+        this.localTypeMap = localTypeMap;
     }
 
     @Override
     public AnnotationVisitor visitAnnotation(String descriptor, boolean visible) {
         LOGGER.debug("Have field annotation {} {}", descriptor, visible);
-        return new MyAnnotationVisitor<>(typeContext, onDemandInspection, descriptor, fieldInspectionBuilder);
+        return new MyAnnotationVisitor<>(typeContext, localTypeMap, descriptor, fieldInspectionBuilder);
     }
 
     @Override

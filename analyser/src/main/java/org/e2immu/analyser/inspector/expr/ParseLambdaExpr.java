@@ -265,8 +265,7 @@ public class ParseLambdaExpr {
         typeMapBuilder.registerMethodInspection(builder);
 
         TypeInfo typeInfo = methodInfo.typeInfo;
-        TypeInspection.Builder typeInspectionBuilder = typeMapBuilder.ensureTypeInspection(typeInfo,
-                        InspectionState.BY_HAND)
+        TypeInspection.Builder typeInspectionBuilder = typeMapBuilder.add(typeInfo, InspectionState.BY_HAND)
                 .noParent(typeMapBuilder.getPrimitives())
                 .setEnclosingMethod(enclosingMethod)
                 .setTypeNature(TypeNature.CLASS)

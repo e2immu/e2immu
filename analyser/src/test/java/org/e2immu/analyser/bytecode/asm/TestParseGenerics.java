@@ -43,21 +43,23 @@ public class TestParseGenerics {
 
     public static final String SOME_JAR = "jar:file:build/libs/my.jar";
     private static TypeContext typeContext;
+    private static Resources classPath;
+    private static ByteCodeInspectorImpl byteCodeInspector;
 
     @BeforeAll
     public static void beforeClass() throws IOException {
         Configuration configuration = new Configuration.Builder().build();
         configuration.initializeLoggers();
 
-        Resources resources = new Resources();
-        resources.addJmod(new URL("jar:file:" + System.getProperty("java.home") + "/jmods/java.base.jmod!/"));
+        classPath = new Resources();
+        classPath.addJmod(new URL("jar:file:" + System.getProperty("java.home") + "/jmods/java.base.jmod!/"));
         Resources annotationResources = new Resources();
         AnnotationXmlReader annotationParser = new AnnotationXmlReader(annotationResources);
-        typeContext = new TypeContext(new TypeMapImpl.Builder(resources));
-        ByteCodeInspector byteCodeInspector = new ByteCodeInspector(resources, annotationParser, typeContext);
+        typeContext = new TypeContext(new TypeMapImpl.Builder(classPath));
+        byteCodeInspector = new ByteCodeInspectorImpl(classPath, annotationParser, typeContext);
         typeContext.typeMap.setByteCodeInspector(byteCodeInspector);
         typeContext.loadPrimitives();
-        Input.preload(typeContext, byteCodeInspector, resources, "java.util");
+        Input.preload(typeContext, byteCodeInspector, classPath, "java.util");
     }
 
     @Test
@@ -96,13 +98,11 @@ public class TestParseGenerics {
         TypeInspectionImpl.Builder typeInspectionBuilder = (TypeInspectionImpl.Builder)
                 typeContext.getTypeInspection(typeInfo);
         TypeContext newTypeContext = new TypeContext(typeContext);
-        URI jar = new URI(SOME_JAR);
-        FindType findType = (fqn, path) -> newTypeContext.typeMap.getOrCreateFromPath(new Source(path, jar),
-                TRIGGER_BYTECODE_INSPECTION);
+
 
         String signature = "<K:Ljava/lang/Enum<TK;>;V:Ljava/lang/Object;>Ljava/util/AbstractMap<TK;TV;>;Ljava/io/Serializable;Ljava/lang/Cloneable;";
         ParseGenerics parseGenerics = new ParseGenerics(newTypeContext, typeInfo, typeInspectionBuilder,
-                findType);
+                byteCodeInspector.localTypeMap());
         int expected = "<K:Ljava/lang/Enum<TK;>;V:Ljava/lang/Object;>".length();
         int pos = parseGenerics.parseTypeGenerics(signature) + 1;
         assertEquals(expected, pos);
@@ -161,14 +161,12 @@ public class TestParseGenerics {
         TypeContext newTypeContext = new TypeContext(typeContext);
         newTypeContext.addToContext(new TypeParameterImpl("V", 0).noTypeBounds());
         newTypeContext.addToContext(new TypeParameterImpl("CLV", 1).noTypeBounds());
-        URI jar = new URI(SOME_JAR);
-        FindType findType = (fqn, path) -> newTypeContext.typeMap.getOrCreateFromPath(new Source(path, jar),
-                TRIGGER_BYTECODE_INSPECTION);
+        ByteCodeInspectorImpl byteCodeInspector = new ByteCodeInspectorImpl(classPath, null, newTypeContext);
         TypeInfo typeInfo = new TypeInfo("jdk.internal.loader", "AbstractClassLoaderValue");
         TypeInspection.Builder typeInspectionBuilder = typeContext.typeMap.add(typeInfo, STARTING_BYTECODE);
 
         ParseGenerics parseGenerics = new ParseGenerics(newTypeContext, typeInfo, typeInspectionBuilder,
-                findType);
+                byteCodeInspector.localTypeMap());
         String signature = "<K:Ljava/lang/Object;>Ljdk/internal/loader/AbstractClassLoaderValue<Ljdk/internal/loader/AbstractClassLoaderValue<TCLV;TV;>.Sub<TK;>;TV;>;";
 
         int expected = "<K:Ljava/lang/Object;>".length();

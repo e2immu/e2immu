@@ -163,11 +163,6 @@ public class TypeInspectionImpl extends InspectionImpl implements TypeInspection
     }
 
     @Override
-    public InspectionState getInspectionState() {
-        return BUILT;
-    }
-
-    @Override
     public List<TypeInfo> permittedWhenSealed() {
         return permittedWhenSealed;
     }
@@ -249,14 +244,12 @@ public class TypeInspectionImpl extends InspectionImpl implements TypeInspection
         private final List<ParameterizedType> interfacesImplemented = new ArrayList<>();
         private final TypeInfo typeInfo;
         private final Inspector inspector;
-        private InspectionState inspectionState;
         private boolean functionalInterface;
         private Identifier.PositionalIdentifier positionalIdentifier;
 
-        public Builder(TypeInfo typeInfo, InspectionState inspectionState) {
+        public Builder(TypeInfo typeInfo, Inspector inspector) {
             this.typeInfo = typeInfo;
-            this.inspectionState = inspectionState;
-            this.inspector = inspectionState.getInspector();
+            this.inspector = inspector;
         }
 
         public Builder setFunctionalInterface(boolean functionalInterface) {
@@ -296,18 +289,6 @@ public class TypeInspectionImpl extends InspectionImpl implements TypeInspection
         @Override
         public List<TypeInfo> permittedWhenSealed() {
             return List.copyOf(permittedWhenSealed);
-        }
-
-        public boolean finishedInspection() {
-            return inspectionState == FINISHED_BYTECODE || inspectionState.ge(FINISHED_JAVA_PARSER);
-        }
-
-        public InspectionState getInspectionState() {
-            return inspectionState;
-        }
-
-        public void setInspectionState(InspectionState inspectionState) {
-            this.inspectionState = inspectionState;
         }
 
         public Builder setTypeNature(TypeNature typeNature) {
@@ -533,7 +514,7 @@ public class TypeInspectionImpl extends InspectionImpl implements TypeInspection
 
                 InspectionState inspectionState = res.isDollarType() ? TRIGGER_BYTECODE_INSPECTION :
                         STARTING_JAVA_PARSER;
-                TypeInspection.Builder subTypeBuilder = typeStore.ensureTypeAndInspection(res.subType(), inspectionState);
+                TypeInspection.Builder subTypeBuilder = typeStore.add(res.subType(), inspectionState);
                 if (!res.isDollarType()) {
                     addSubType(subTypeBuilder.typeInfo());
                 }

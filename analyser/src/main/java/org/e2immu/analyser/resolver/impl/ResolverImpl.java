@@ -356,9 +356,10 @@ public class ResolverImpl implements Resolver {
                                   ExpressionContext expressionContextOfType,
                                   DependencyGraph<WithInspectionAndAnalysis> methodFieldSubTypeGraph) {
         try {
-            TypeInspection typeInspection = expressionContextOfType.typeContext().getTypeInspection(typeInfo);
-            if (typeInspection.getInspectionState().le(InspectionState.TRIGGER_BYTECODE_INSPECTION)) {
-                // no need to inspect this method, we'll never use it
+            TypeInspection typeInspection = expressionContextOfType.typeContext()
+                    .typeMap().getTypeInspectionToStartResolving(typeInfo);
+            if (typeInspection == null) {
+                // no need to resolve this type, we'll never use it (state is still TRIGGER_BYTECODE_INSPECTION)
                 return List.of(typeInfo);
             }
             typeInspection.subTypes().forEach(expressionContextOfType.typeContext()::addToContext);

@@ -23,8 +23,10 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 
-record ParseGenerics(TypeContext typeContext, TypeInfo typeInfo, TypeInspection.Builder typeInspectionBuilder,
-                     FindType findType) {
+record ParseGenerics(TypeContext typeContext,
+                     TypeInfo typeInfo,
+                     TypeInspection.Builder typeInspectionBuilder,
+                     LocalTypeMap findType) {
     public static final char COLON = ':';
     public static final char GT_END_TYPE_PARAMS = '>';
     public static final char CARET_THROWS = '^';
@@ -69,7 +71,7 @@ record ParseGenerics(TypeContext typeContext, TypeInfo typeInfo, TypeInspection.
                                                                      IterativeParsing<TypeParameter> iterativeParsing,
                                                                      Function<String, TypeParameterImpl> createTypeParameterAndAddToContext,
                                                                      TypeContext typeContext,
-                                                                     FindType findType) {
+                                                                     LocalTypeMap findType) {
         int end = signature.indexOf(COLON, iterativeParsing.startPos);
         char atEnd = COLON;
 

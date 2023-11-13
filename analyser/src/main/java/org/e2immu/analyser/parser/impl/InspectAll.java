@@ -198,9 +198,11 @@ public class InspectAll implements InspectWithJavaParser {
         for (TypeDeclaration<?> td : compilationUnit.getTypes()) {
             String name = td.getNameAsString();
             Identifier id = Identifier.from(compilationUnit);
-            TypeInfo typeInfo = typeContextOfFile.typeMap.getOrCreate(packageName, name, id, INIT_JAVA_PARSER);
+            TypeInspection.Builder typeInspection = typeContextOfFile.typeMap.getOrCreate(packageName, name, id,
+                    INIT_JAVA_PARSER);
+            TypeInfo typeInfo = typeInspection.typeInfo();
             typeContextOfFile.addToContext(typeInfo);
-            TypeInspector typeInspector = new TypeInspectorImpl(typeMapBuilder, typeInfo, true,
+            TypeInspector typeInspector = new TypeInspectorImpl(typeInspection, true,
                     dollarTypesAreNormalTypes, storeComments());
             typeInspector.recursivelyAddToTypeStore(typeMapBuilder, td, dollarTypesAreNormalTypes);
             TypeContext typeContextOfType = new TypeContext(packageName, typeContextOfFile, true);
@@ -300,17 +302,12 @@ public class InspectAll implements InspectWithJavaParser {
                 if (!leaf.contains("$")) {
                     // primary type
                     String simpleName = StringUtil.stripDotClass(leaf);
-                    String fqn = fullyQualified + "." + simpleName;
-                    TypeInfo typeInfo = typeContextOfFile.typeMap.get(fqn);
-                    if (typeInfo == null) {
-                        Identifier id = Identifier.from(urls.get(0));
-                        TypeInfo newTypeInfo = typeContextOfFile.typeMap
-                                .getOrCreate(fullyQualified, simpleName, id, TRIGGER_BYTECODE_INSPECTION);
-                        LOGGER.debug("Registering inspection handler for {}", newTypeInfo.fullyQualifiedName);
-                        typeContextOfFile.addImport(newTypeInfo, false, false);
-                    } else {
-                        typeContextOfFile.addImport(typeInfo, false, false);
-                    }
+                    Identifier id = Identifier.from(urls.get(0));
+                    TypeInfo newTypeInfo = typeContextOfFile.typeMap
+                            .getOrCreate(fullyQualified, simpleName, id, TRIGGER_BYTECODE_INSPECTION)
+                            .typeInfo();
+                    LOGGER.debug("Registering inspection handler for {}", newTypeInfo.fullyQualifiedName);
+                    typeContextOfFile.addImport(newTypeInfo, false, false);
                 }
             });
         }
@@ -339,7 +336,7 @@ public class InspectAll implements InspectWithJavaParser {
             LOGGER.error("ERROR: Cannot find type '{}'", fqn);
             throw new NotFoundInClassPathException(fqn);
         }
-        return typeMapBuilder.getOrCreateFromPath(path, TRIGGER_BYTECODE_INSPECTION);
+        return typeMapBuilder.getOrCreateFromClassPathEnsureEnclosing(path, TRIGGER_BYTECODE_INSPECTION).typeInfo();
     }
 
     public static String fqnOfClassFile(String prefix, String[] suffixes) {
@@ -351,7 +348,8 @@ public class InspectAll implements InspectWithJavaParser {
     }
 
     @Override
-    public void inspect(TypeInfo typeInfo, TypeInspection.Builder typeInspectionBuilder) throws ParseException {
+    public void inspect(TypeInspection.Builder typeInspectionBuilder) throws ParseException {
+        TypeInfo typeInfo = typeInspectionBuilder.typeInfo();
         LOGGER.debug("Inspecting type {}", typeInfo.fullyQualifiedName);
 
         CompilationUnitData cud = compilationUnits.get().get(typeInfo);
@@ -361,11 +359,9 @@ public class InspectAll implements InspectWithJavaParser {
         ExpressionContext expressionContext = ExpressionContextImpl.forInspectionOfPrimaryType(resolver, typeInfo,
                 typeData.typeContext, anonymousTypeCounters);
         try {
-            typeInspectionBuilder.setInspectionState(STARTING_JAVA_PARSER);
             List<TypeInfo> dollarTypes = typeData.typeInspector.inspect(false, null,
                     typeData.typeDeclaration, expressionContext);
             typeData.dollarTypes.addAll(dollarTypes);
-            typeInspectionBuilder.setInspectionState(FINISHED_JAVA_PARSER);
         } catch (RuntimeException rte) {
             LOGGER.error("Caught runtime exception inspecting type {}", typeInfo.fullyQualifiedName);
             throw rte;

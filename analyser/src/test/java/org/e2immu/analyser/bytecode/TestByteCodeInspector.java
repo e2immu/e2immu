@@ -15,6 +15,7 @@
 package org.e2immu.analyser.bytecode;
 
 import org.e2immu.analyser.annotationxml.AnnotationXmlReader;
+import org.e2immu.analyser.bytecode.asm.ByteCodeInspectorImpl;
 import org.e2immu.analyser.inspector.TypeContext;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.parser.Input;
@@ -48,13 +49,13 @@ public class TestByteCodeInspector {
         Resources annotationResources = new Resources();
         AnnotationXmlReader annotationParser = new AnnotationXmlReader(annotationResources);
         TypeContext typeContext = new TypeContext(new TypeMapImpl.Builder(resources));
-        ByteCodeInspector byteCodeInspector = new ByteCodeInspector(resources, annotationParser, typeContext);
+        ByteCodeInspectorImpl byteCodeInspector = new ByteCodeInspectorImpl(resources, annotationParser, typeContext);
         typeContext.typeMap.setByteCodeInspector(byteCodeInspector);
         typeContext.loadPrimitives();
         Input.preload(typeContext, byteCodeInspector, resources, "java.lang");
-        List<TypeInfo> types = byteCodeInspector.inspectFromPath(new Source(path, jarUrl.toURI()));
+        List<TypeMap.InspectionAndState> types = byteCodeInspector.inspectFromPath(new Source(path, jarUrl.toURI()));
         // in case the path is a subType, we need to inspect it explicitly
-        types.forEach(typeContext.typeMap::getTypeInspection);
+        types.forEach(ias -> typeContext.typeMap.getTypeInspection(ias.typeInspection().typeInfo()));
         return typeContext.typeMap.build();
     }
 

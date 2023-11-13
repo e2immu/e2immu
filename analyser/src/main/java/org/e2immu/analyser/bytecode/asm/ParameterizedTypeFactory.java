@@ -54,7 +54,7 @@ public class ParameterizedTypeFactory {
         }
     }
 
-    static Result from(TypeContext typeContext, FindType findType, String signature) {
+    static Result from(TypeContext typeContext, LocalTypeMap findType, String signature) {
         try {
             int firstCharPos = 0;
             char firstChar = signature.charAt(0);
@@ -125,7 +125,7 @@ public class ParameterizedTypeFactory {
     // shows that we need to make this recursive or get the generics in a while loop
 
     private static Result normalType(TypeContext typeContext,
-                                     FindType findType,
+                                     LocalTypeMap findType,
                                      String signature,
                                      int arrays,
                                      ParameterizedType.WildCard wildCard,
@@ -162,12 +162,12 @@ public class ParameterizedTypeFactory {
                 if (haveDot) start = dot + 1;
                 endOfTypeInfo = haveDot ? dot : semiColon;
             }
-            if (path.length() > 0) path.append(DOLLAR_SEPARATE_SUBTYPE);
+            if (!path.isEmpty()) path.append(DOLLAR_SEPARATE_SUBTYPE);
             path.append(signature, unmodifiedStart, endOfTypeInfo);
         }
         String fqn = path.toString().replaceAll("[/$]", ".");
 
-        TypeInfo typeInfo = findType.find(fqn, path.toString());
+        TypeInfo typeInfo = findType.getOrCreate(fqn).typeInfo();
 
         boolean unableToLoadTypeError = typeInfo == null;
         if (unableToLoadTypeError) {
@@ -201,7 +201,7 @@ public class ParameterizedTypeFactory {
     }
 
     private static IterativeParsing iterativelyParseTypes(TypeContext typeContext,
-                                                          FindType findType,
+                                                          LocalTypeMap findType,
                                                           String signature,
                                                           IterativeParsing iterativeParsing) {
         ParameterizedTypeFactory.Result result = ParameterizedTypeFactory.from(typeContext, findType,

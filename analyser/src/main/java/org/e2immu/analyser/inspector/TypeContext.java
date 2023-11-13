@@ -188,7 +188,7 @@ public class TypeContext implements TypeAndInspectionProvider {
             if (imported != null) {
                 return imported;
             }
-            return typeMap.loadType(fullyQualifiedName, complain);
+            return typeMap.getOrCreate(fullyQualifiedName, complain);
         }
         return typeInfo;
     }

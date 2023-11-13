@@ -19,28 +19,16 @@ import org.e2immu.analyser.model.Identifier;
 import org.e2immu.analyser.model.ParameterizedType;
 import org.e2immu.analyser.parser.impl.TypeMapImpl;
 import org.e2immu.analyser.util.Resources;
-import org.e2immu.analyser.util.Source;
 import org.junit.jupiter.api.Test;
 
-import java.net.URI;
-import java.net.URISyntaxException;
 import java.util.Objects;
 
-import static org.e2immu.analyser.inspector.InspectionState.TRIGGER_BYTECODE_INSPECTION;
 import static org.junit.jupiter.api.Assertions.*;
 
 public class TestParameterizedTypeFactory {
-    private final TypeContext typeContext = new TypeContext(new TypeMapImpl.Builder(new Resources()));
-    private final FindType findType = (fqn, path) -> {
-        URI jar;
-        try {
-            jar = new URI(TestParseGenerics.SOME_JAR);
-        } catch (URISyntaxException e) {
-            throw new RuntimeException(e);
-        }
-        return typeContext.typeMap.getOrCreateFromPath(new Source(path, jar),
-                TRIGGER_BYTECODE_INSPECTION);
-    };
+    private final Resources classPath = new Resources();
+    private final TypeContext typeContext = new TypeContext(new TypeMapImpl.Builder(classPath));
+    private final ByteCodeInspectorImpl byteCodeInspector = new ByteCodeInspectorImpl(classPath, null, typeContext);
 
     @Test
     public void testInt() {
@@ -49,7 +37,7 @@ public class TestParameterizedTypeFactory {
     }
 
     private ParameterizedTypeFactory.Result create(String signature) {
-        return ParameterizedTypeFactory.from(typeContext, findType, signature);
+        return ParameterizedTypeFactory.from(typeContext, byteCodeInspector.localTypeMap(), signature);
     }
 
     @Test
