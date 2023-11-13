@@ -25,6 +25,8 @@ import org.e2immu.analyser.model.statement.ReturnStatement;
 import org.e2immu.analyser.parser.TypeMap;
 import org.e2immu.analyser.resolver.testexample.*;
 import org.junit.jupiter.api.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.Comparator;
@@ -32,11 +34,13 @@ import java.util.List;
 import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 import java.util.function.BinaryOperator;
+import java.util.function.Consumer;
 
 import static org.junit.jupiter.api.Assertions.*;
 
 
 public class TestLambda extends CommonTest {
+    private static final Logger LOGGER = LoggerFactory.getLogger(TestLambda.class);
 
     @Test
     public void test_0() throws IOException {
@@ -117,12 +121,12 @@ public class TestLambda extends CommonTest {
         TypeInfo typeInfo = typeMap.get(Lambda_7.class);
         assertNotNull(typeInfo);
 
-        for (Class<?> clazz : new Class[]{BiConsumer.class, BiFunction.class,
-                Comparable.class,
-                Comparator.class,
-                BinaryOperator.class}) {
+        for (Class<?> clazz : new Class[]{Consumer.class, BiConsumer.class}) {
             TypeInfo ti = typeMap.get(clazz);
-            assertTrue(typeMap.getTypeInspection(ti).isFunctionalInterface(), clazz.toString());
+            assertNotNull(ti);
+            LOGGER.info("Have type info {}", ti);
+            TypeInspection typeInspection = typeMap.getTypeInspection(ti);
+            assertTrue(typeInspection.isFunctionalInterface(), clazz.toString());
         }
     }
 

@@ -353,8 +353,10 @@ public class InspectAll implements InspectWithJavaParser {
         LOGGER.debug("Inspecting type {}", typeInfo.fullyQualifiedName);
 
         CompilationUnitData cud = compilationUnits.get().get(typeInfo);
-        assert cud != null : "Cannot find compilation unit data for " + typeInfo.fullyQualifiedName;
-
+        if (cud == null) {
+            LOGGER.debug("Skipping type {}, no compilation unit", typeInfo);
+            return;
+        }
         TypeData typeData = cud.typeData.get(typeInfo);
         ExpressionContext expressionContext = ExpressionContextImpl.forInspectionOfPrimaryType(resolver, typeInfo,
                 typeData.typeContext, anonymousTypeCounters);
@@ -363,7 +365,7 @@ public class InspectAll implements InspectWithJavaParser {
                     typeData.typeDeclaration, expressionContext);
             typeData.dollarTypes.addAll(dollarTypes);
         } catch (RuntimeException rte) {
-            LOGGER.error("Caught runtime exception inspecting type {}", typeInfo.fullyQualifiedName);
+            LOGGER.error("Caught runtime exception inspecting type {}", typeInfo);
             throw rte;
         } finally {
             int cnt = countInspected.incrementAndGet();

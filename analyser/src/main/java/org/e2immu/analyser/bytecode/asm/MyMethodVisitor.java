@@ -116,10 +116,15 @@ public class MyMethodVisitor extends MethodVisitor {
                 LOGGER.debug("Set parameterInspection {}", i);
             }
         }
-
-        methodInspectionBuilder.readyToComputeFQN(localTypeMap);
-        methodInspectionBuilder.computeAccess(localTypeMap);
-
+        try {
+            methodInspectionBuilder.readyToComputeFQN(localTypeMap);
+            methodInspectionBuilder.computeAccess(localTypeMap);
+        } catch (RuntimeException e) {
+            LOGGER.error("Caught exception while parsing {}, method {}",
+                    typeInspectionBuilder.typeInfo().fullyQualifiedName,
+                    methodInspectionBuilder.name());
+            throw e;
+        }
         if (methodItem != null) {
             for (ParameterItem parameterItem : methodItem.getParameterItems()) {
                 if (parameterItem.index < parameterInspectionBuilders.length) {

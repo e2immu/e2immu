@@ -421,9 +421,15 @@ public class MethodInspectionImpl extends InspectionImpl implements MethodInspec
         }
 
         public void readyToComputeFQN(InspectionProvider inspectionProvider) {
-            fullyQualifiedName = owner.fullyQualifiedName + "." + name + "(" + parameters.stream()
-                    .map(p -> p.getParameterizedType().printForMethodFQN(inspectionProvider, p.isVarArgs(), Diamond.SHOW_ALL))
-                    .collect(Collectors.joining(",")) + ")";
+            try {
+                fullyQualifiedName = owner.fullyQualifiedName + "." + name + "(" + parameters.stream()
+                        .map(p -> p.getParameterizedType().printForMethodFQN(inspectionProvider, p.isVarArgs(), Diamond.SHOW_ALL))
+                        .collect(Collectors.joining(",")) + ")";
+            } catch (RuntimeException re) {
+                LOGGER.error("Cannot compute fully qualified method name, type {}, method {}, {} params",
+                        owner.fullyQualifiedName, name, parameters.size());
+                throw re;
+            }
             distinguishingName = owner.fullyQualifiedName + "." + name + "(" + parameters.stream()
                     .map(p -> p.getParameterizedType().distinguishingName(inspectionProvider, p.isVarArgs()))
                     .collect(Collectors.joining(",")) + ")";

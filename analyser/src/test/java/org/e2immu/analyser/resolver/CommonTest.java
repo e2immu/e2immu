@@ -51,7 +51,7 @@ public abstract class CommonTest {
                 .setSkipAnalysis(true)
                 .setInputConfiguration(inputConfigurationBuilder.build())
                 .setInspectorConfiguration(new InspectorConfiguration.Builder().setStoreComments(true).build())
-                .addDebugLogTargets(LogTarget.RESOLVER, LogTarget.INSPECTOR, LogTarget.BYTECODE)
+                .addDebugLogTargets(LogTarget.RESOLVER, LogTarget.INSPECTOR)
                 .build();
         configuration.initializeLoggers();
         Parser parser = new Parser(configuration);

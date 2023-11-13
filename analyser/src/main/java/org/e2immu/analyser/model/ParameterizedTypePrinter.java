@@ -107,7 +107,7 @@ public class ParameterizedTypePrinter {
         return outputBuilder;
     }
 
-    // if a type is a sub-type, the type parameters may belong to any of the intermediate types
+    // if a type is a subtype, the type parameters may belong to any of the intermediate types
     // we should write them there
     private static OutputBuilder distributeTypeParameters(InspectionProvider inspectionProvider,
                                                           Qualification qualification,
@@ -143,7 +143,7 @@ public class ParameterizedTypePrinter {
                 .collect(OutputBuilder.joining(Symbol.DOT));
     }
 
-    static record TypeAndParameters(TypeInfo typeInfo, boolean isPrimaryType, List<ParameterizedType> typeParameters) {
+    record TypeAndParameters(TypeInfo typeInfo, boolean isPrimaryType, List<ParameterizedType> typeParameters) {
     }
 
     private static OutputBuilder singleType(InspectionProvider inspectionProvider,

@@ -368,8 +368,7 @@ public class TypeMapImpl implements TypeMap {
             trie.add(typeInfo.fullyQualifiedName.split("\\."), typeInfo);
             TypeData inMap = typeInspections.get(typeInfo.fullyQualifiedName);
             if (inMap != null) {
-                throw new UnsupportedOperationException("Expected to know type inspection of "
-                        + typeInfo.fullyQualifiedName);
+                return inMap.typeInspectionBuilder;
             }
             assert !typeInfo.typeInspection.isSet() : "type " + typeInfo.fullyQualifiedName;
             TypeInspectionImpl.Builder ti = new TypeInspectionImpl.Builder(typeInfo, inspectionState.getInspector());
@@ -502,7 +501,7 @@ public class TypeMapImpl implements TypeMap {
                 boolean success = inspectWithByteCodeInspector(typeInfo);
                 // we may have to try later, because of cyclic dependencies
                 typeData.inspectionState = success ? FINISHED_BYTECODE : TRIGGER_BYTECODE_INSPECTION;
-            } else if (typeData.inspectionState == TRIGGER_JAVA_PARSER||typeData.inspectionState == INIT_JAVA_PARSER) {
+            } else if (typeData.inspectionState == TRIGGER_JAVA_PARSER || typeData.inspectionState == INIT_JAVA_PARSER) {
                 try {
                     LOGGER.debug("Triggering Java parser on {}", typeInfo.fullyQualifiedName);
                     typeData.inspectionState = STARTING_JAVA_PARSER;
@@ -536,6 +535,9 @@ public class TypeMapImpl implements TypeMap {
 
         public MethodInspection getMethodInspectionDoNotTrigger(TypeInfo typeInfo, String distinguishingName) {
             TypeData typeData = typeInspections.get(typeInfo.fullyQualifiedName);
+            if (!typeData.inspectionState.isDone()) {
+                getTypeInspection(typeInfo);
+            }
             return typeData.methodInspections.get(distinguishingName);
         }
 

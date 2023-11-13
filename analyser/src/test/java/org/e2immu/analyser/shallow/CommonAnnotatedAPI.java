@@ -65,6 +65,7 @@ public abstract class CommonAnnotatedAPI {
                 .addClassPath("jmods/java.base.jmod")
                 .addClassPath("jmods/java.xml.jmod")
                 .addClassPath("jmods/java.net.http.jmod")
+                .addClassPath(Input.JAR_WITH_PATH_PREFIX + "org/e2immu/support")
                 .addClassPath(Input.JAR_WITH_PATH_PREFIX + "org/slf4j")
                 .addClassPath(Input.JAR_WITH_PATH_PREFIX + "org/junit/jupiter/api")
                 .addClassPath(Input.JAR_WITH_PATH_PREFIX + "ch/qos/logback/core/spi")

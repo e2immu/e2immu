@@ -262,7 +262,6 @@ public class ParseLambdaExpr {
         builder.setInspectedBlock(block);
 
         MethodInfo methodInfo = builder.getMethodInfo(); // don't build yet!
-        typeMapBuilder.registerMethodInspection(builder);
 
         TypeInfo typeInfo = methodInfo.typeInfo;
         TypeInspection.Builder typeInspectionBuilder = typeMapBuilder.add(typeInfo, InspectionState.BY_HAND)
@@ -273,5 +272,6 @@ public class ParseLambdaExpr {
                 .addMethod(methodInfo).setFunctionalInterface(true);
         TypeInspection builtTypeInspection = typeInspectionBuilder.build(typeMapBuilder);
         typeInfo.typeInspection.set(builtTypeInspection);
+        typeMapBuilder.registerMethodInspection(builder);
     }
 }
