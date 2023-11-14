@@ -46,6 +46,8 @@ public interface Inspection {
 
     Access getAccess();
 
+    boolean accessNotYetComputed();
+
     Comment getComment();
 
     boolean isSynthetic();

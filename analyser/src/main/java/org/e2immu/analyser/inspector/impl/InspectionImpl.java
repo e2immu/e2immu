@@ -54,6 +54,11 @@ public abstract class InspectionImpl implements Inspection {
     }
 
     @Override
+    public boolean accessNotYetComputed() {
+        return false;
+    }
+
+    @Override
     public Comment getComment() {
         return comment;
     }

@@ -15,6 +15,8 @@
 package org.e2immu.analyser.parser;
 
 import org.e2immu.analyser.bytecode.ByteCodeInspector;
+import org.e2immu.analyser.bytecode.TypeData;
+import org.e2immu.analyser.bytecode.asm.LocalTypeMap;
 import org.e2immu.analyser.inspector.InspectionState;
 import org.e2immu.analyser.inspector.TypeInspector;
 import org.e2immu.analyser.model.*;
@@ -119,6 +121,6 @@ public interface TypeMap extends InspectionProvider {
         TypeInspection getTypeInspectionToStartResolving(TypeInfo typeInfo);
 
         // from byteCodeInspection into my typeMap
-        void copyIntoTypeMap(ByteCodeInspector.Data data);
+        void copyIntoTypeMap(List<TypeData> localTypeData);
     }
 }

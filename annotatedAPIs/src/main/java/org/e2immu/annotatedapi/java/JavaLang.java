@@ -685,11 +685,6 @@ class JavaLang {
 
     }
 
-    @UtilityClass
-    interface Compiler$ {
-
-    }
-
     interface Thread$ {
 
         interface UncaughtExceptionHandler {

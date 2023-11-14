@@ -643,8 +643,9 @@ public class ResolverImpl implements Resolver {
             typeParameters.forEach(subContext.typeContext()::addToContext);
         }
 
-        // "touch" the type inspection of the method'sr eturn type -- it may not explicitly appear in the import list
-        // see NotNull_4_1
+        /* "touch" the type inspection of the method's return type -- it may not explicitly appear in the import list
+           see NotNull_4_1
+         */
         if (methodInspection.getReturnType() != null) {
             TypeInfo returnType = methodInspection.getReturnType().typeInfo;
             if (returnType != null) {

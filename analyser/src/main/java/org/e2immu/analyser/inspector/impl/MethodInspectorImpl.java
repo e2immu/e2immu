@@ -325,6 +325,8 @@ public class MethodInspectorImpl implements MethodInspector {
                     builder.setBlock(md.getBody().get());
                 }
                 builder.computeAccess(newContext.typeContext());
+            } else {
+                assert !builder.accessNotYetComputed() : "In " + builder.methodInfo().fullyQualifiedName;
             }
 
         } catch (RuntimeException e) {

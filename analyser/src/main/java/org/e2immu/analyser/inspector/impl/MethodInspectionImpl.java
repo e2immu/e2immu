@@ -543,6 +543,7 @@ public class MethodInspectionImpl extends InspectionImpl implements MethodInspec
             returnType = parent.getReturnType();
             modifiers.addAll(parent.getParsedModifiers());
             exceptionTypes.addAll(parent.getExceptionTypes());
+            setAccess(parent.getAccess());
         }
 
         @Override

@@ -16,6 +16,9 @@ package org.e2immu.analyser.parser.impl;
 
 import com.github.javaparser.ParseException;
 import org.e2immu.analyser.bytecode.ByteCodeInspector;
+import org.e2immu.analyser.bytecode.TypeData;
+import org.e2immu.analyser.bytecode.TypeDataImpl;
+import org.e2immu.analyser.bytecode.asm.LocalTypeMap;
 import org.e2immu.analyser.inspector.InspectionState;
 import org.e2immu.analyser.inspector.NotFoundInClassPathException;
 import org.e2immu.analyser.inspector.TypeInspector;
@@ -39,6 +42,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.*;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.function.BiConsumer;
 import java.util.stream.Stream;
 
@@ -87,7 +91,7 @@ public class TypeMapImpl implements TypeMap {
         return get(trie, fullyQualifiedName);
     }
 
-    public static TypeInfo get(Trie<TypeInfo> trie, String fullyQualifiedName) {
+    private static TypeInfo get(Trie<TypeInfo> trie, String fullyQualifiedName) {
         String[] split = fullyQualifiedName.split("\\.");
         List<TypeInfo> typeInfoList = trie.get(split);
         return typeInfoList == null || typeInfoList.isEmpty() ? null : typeInfoList.get(0);
@@ -130,34 +134,17 @@ public class TypeMapImpl implements TypeMap {
 
     public static class Builder implements TypeMap.Builder {
 
-        private static class TypeData {
-            final TypeInspection.Builder typeInspectionBuilder;
-            final Map<String, MethodInspection.Builder> methodInspections = new HashMap<>();
-            final Map<FieldInfo, FieldInspection.Builder> fieldInspections = new HashMap<>();
-            InspectionState inspectionState;
-
-            TypeData(TypeInspection.Builder typeInspectionBuilder, InspectionState inspectionState) {
-                this.typeInspectionBuilder = typeInspectionBuilder;
-                this.inspectionState = inspectionState;
-            }
-
-            @Override
-            public boolean equals(Object o) {
-                return o instanceof TypeData td && td.typeInspectionBuilder.typeInfo().equals(typeInspectionBuilder.typeInfo());
-            }
-
-            @Override
-            public int hashCode() {
-                return typeInspectionBuilder.typeInfo().fullyQualifiedName.hashCode();
-            }
-        }
-
         private final Trie<TypeInfo> trie;
+        private final ReentrantReadWriteLock trieLock = new ReentrantReadWriteLock();
+        private final ReentrantReadWriteLock.ReadLock trieReadLock = trieLock.readLock();
+
         private final PrimitivesImpl primitives;
         private final E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions;
         private final Resources classPath;
 
         private final Map<String, TypeData> typeInspections;
+        private final ReentrantReadWriteLock tiLock = new ReentrantReadWriteLock();
+        private final ReentrantReadWriteLock.ReadLock tiReadLock = tiLock.readLock();
 
         private ByteCodeInspector byteCodeInspector;
         private InspectWithJavaParser inspectWithJavaParser;
@@ -188,67 +175,60 @@ public class TypeMapImpl implements TypeMap {
             typeInspections = source.typeInspections;
         }
 
-        public TypeInfo loadType(String fqn, boolean complain) {
-            TypeInfo inMap = get(fqn);
-            if (inMap != null) return inMap;
-            // we don't know it... so we don't know the boundary between primary and sub-type
-            // we can either search in the class path, or in the source path
-
-            Source path = classPath.fqnToPath(fqn, ".class");
-            if (path == null) {
-                if (complain) {
-                    LOGGER.error("ERROR: Cannot find type '{}'", fqn);
-                    throw new NotFoundInClassPathException(fqn);
-                }
-                return null;
-            }
-            return getOrCreateFromClassPathEnsureEnclosing(path, TRIGGER_BYTECODE_INSPECTION).typeInfo();
-        }
-
         public TypeMapImpl build() {
-            trie.freeze();
-
-            typeInspections.values().forEach(typeData -> {
-                TypeInfo typeInfo = typeData.typeInspectionBuilder.typeInfo();
-                assert Input.acceptFQN(typeInfo.packageName());
-                if (typeData.inspectionState.isDone() && !typeInfo.typeInspection.isSet()) {
-                    typeInfo.typeInspection.set(typeData.typeInspectionBuilder.build(this));
-                }
-                typeData.methodInspections.values().forEach(methodInspectionBuilder -> {
-                    MethodInfo methodInfo = methodInspectionBuilder.getMethodInfo();
-                    if (!methodInfo.methodInspection.isSet() && methodInfo.typeInfo.typeInspection.isSet()) {
-                        methodInspectionBuilder.build(this); // will set the inspection itself
+            trieLock.writeLock().lock();
+            try {
+                trie.freeze();
+            } finally {
+                trieLock.writeLock().unlock();
+            }
+            tiLock.writeLock().lock();
+            try {
+                typeInspections.values().forEach(typeData -> {
+                    TypeInfo typeInfo = typeData.getTypeInspectionBuilder().typeInfo();
+                    assert Input.acceptFQN(typeInfo.packageName());
+                    if (typeData.getInspectionState().isDone() && !typeInfo.typeInspection.isSet()) {
+                        typeInfo.typeInspection.set(typeData.getTypeInspectionBuilder().build(this));
                     }
+                    typeData.methodInspectionBuilders().forEach(e -> {
+                        MethodInfo methodInfo = e.getValue().getMethodInfo();
+                        if (!methodInfo.methodInspection.isSet() && methodInfo.typeInfo.typeInspection.isSet()) {
+                            e.getValue().build(this); // will set the inspection itself
+                        }
+                    });
+                    typeData.fieldInspectionBuilders().forEach(e -> {
+                        FieldInfo fieldInfo = e.getKey();
+                        if (!fieldInfo.fieldInspection.isSet() && fieldInfo.owner.typeInspection.isSet()) {
+                            fieldInfo.fieldInspection.set(e.getValue().build(this));
+                        }
+                    });
                 });
-                typeData.fieldInspections.forEach((fieldInfo, fieldInspectionBuilder) -> {
-                    if (!fieldInfo.fieldInspection.isSet() && fieldInfo.owner.typeInspection.isSet()) {
-                        fieldInfo.fieldInspection.set(fieldInspectionBuilder.build(this));
-                    }
-                });
-            });
 
 
-            // we make a new map, because the resolver will encounter new types (which we will ignore)
-            // all methods not yet resolved, will be resolved here.
-            new HashSet<>(typeInspections.values()).forEach(typeData -> {
-                TypeInfo typeInfo = typeData.typeInspectionBuilder.typeInfo();
-                if (typeInfo.typeInspection.isSet()) {
-                    if (!typeInfo.typeResolution.isSet()) {
-                        Set<TypeInfo> superTypes = ResolverImpl.superTypesExcludingJavaLangObject(InspectionProvider.DEFAULT, typeInfo, null);
-                        TypeResolution typeResolution = new TypeResolution.Builder()
-                                .setSuperTypesExcludingJavaLangObject(superTypes)
-                                .build();
-                        typeInfo.typeResolution.set(typeResolution);
-                    }
-                    for (MethodInfo methodInfo : typeInfo.typeInspection.get().methodsAndConstructors()) {
-                        if (!methodInfo.methodResolution.isSet()) {
-                            methodInfo.methodResolution.set(ShallowMethodResolver.onlyOverrides(InspectionProvider.DEFAULT, methodInfo));
+                // we make a new map, because the resolver will encounter new types (which we will ignore)
+                // all methods not yet resolved, will be resolved here.
+                new HashSet<>(typeInspections.values()).forEach(typeData -> {
+                    TypeInfo typeInfo = typeData.getTypeInspectionBuilder().typeInfo();
+                    if (typeInfo.typeInspection.isSet()) {
+                        if (!typeInfo.typeResolution.isSet()) {
+                            Set<TypeInfo> superTypes = ResolverImpl.superTypesExcludingJavaLangObject(InspectionProvider.DEFAULT, typeInfo, null);
+                            TypeResolution typeResolution = new TypeResolution.Builder()
+                                    .setSuperTypesExcludingJavaLangObject(superTypes)
+                                    .build();
+                            typeInfo.typeResolution.set(typeResolution);
+                        }
+                        for (MethodInfo methodInfo : typeInfo.typeInspection.get().methodsAndConstructors()) {
+                            if (!methodInfo.methodResolution.isSet()) {
+                                methodInfo.methodResolution.set(ShallowMethodResolver.onlyOverrides(InspectionProvider.DEFAULT, methodInfo));
+                            }
                         }
                     }
-                }
-            });
+                });
 
-            return new TypeMapImpl(trie, primitives, e2ImmuAnnotationExpressions);
+                return new TypeMapImpl(trie, primitives, e2ImmuAnnotationExpressions);
+            } finally {
+                tiLock.writeLock().unlock();
+            }
         }
 
         @Override
@@ -258,7 +238,12 @@ public class TypeMapImpl implements TypeMap {
 
         @Override
         public TypeInfo get(String fullyQualifiedName) {
-            return TypeMapImpl.get(trie, fullyQualifiedName);
+            trieReadLock.lock();
+            try {
+                return TypeMapImpl.get(trie, fullyQualifiedName);
+            } finally {
+                trieReadLock.unlock();
+            }
         }
 
         @Override
@@ -284,9 +269,9 @@ public class TypeMapImpl implements TypeMap {
         }
 
         /*
-                 Entry point of InspectAll, with state INIT_JAVA.
-                 If in trie, but not yet in typeInspections, it will be added to both.
-                 */
+         Entry point of InspectAll, with state INIT_JAVA.
+         If in trie, but not yet in typeInspections, it will be added to both.
+         */
         @Override
         public TypeInspection.Builder getOrCreate(String packageName,
                                                   String simpleName,
@@ -337,14 +322,29 @@ public class TypeMapImpl implements TypeMap {
 
         public TypeInspection.Builder ensureTypeInspection(TypeInfo typeInfo, InspectionState inspectionState) {
             assert Input.acceptFQN(typeInfo.packageName());
-            TypeData typeData = typeInspections.get(typeInfo.fullyQualifiedName);
-            if (typeData == null) {
+            tiReadLock.lock();
+            try {
+                TypeData typeData = typeInspections.get(typeInfo.fullyQualifiedName);
+                if (typeData != null) {
+                    return typeData.getTypeInspectionBuilder();
+                }
+            } finally {
+                tiReadLock.unlock();
+            }
+            tiLock.writeLock().lock();
+            try {
+                // check again, we could have been in a queue with multiple waiting to write this
+                TypeData typeData2 = typeInspections.get(typeInfo.fullyQualifiedName);
+                if (typeData2 != null) {
+                    return typeData2.getTypeInspectionBuilder();
+                }
                 TypeInspection.Builder typeInspection = new TypeInspectionImpl.Builder(typeInfo,
                         inspectionState.getInspector());
-                typeInspections.put(typeInfo.fullyQualifiedName, new TypeData(typeInspection, inspectionState));
+                typeInspections.put(typeInfo.fullyQualifiedName, new TypeDataImpl(typeInspection, inspectionState));
                 return typeInspection;
+            } finally {
+                tiLock.writeLock().unlock();
             }
-            return typeData.typeInspectionBuilder;
         }
 
         private TypeInfo extractPrimaryTypeAndAddToMap(Source source, int dollar) {
@@ -358,79 +358,103 @@ public class TypeMapImpl implements TypeMap {
                 String simpleName = fqnOfPrimaryType.substring(lastDot + 1);
                 Identifier identifier = Identifier.from(source.uri());
                 TypeInfo primaryType = new TypeInfo(identifier, packageName, simpleName);
-                trie.add(primaryType.fullyQualifiedName.split("\\."), primaryType);
+                addToTrie(primaryType);
                 return primaryType;
             }
             return primaryTypeInMap;
         }
 
-        public TypeInspection.Builder add(TypeInfo typeInfo, InspectionState inspectionState) {
-            trie.add(typeInfo.fullyQualifiedName.split("\\."), typeInfo);
-            TypeData inMap = typeInspections.get(typeInfo.fullyQualifiedName);
-            if (inMap != null) {
-                return inMap.typeInspectionBuilder;
+        private void addToTrie(TypeInfo typeInfo) {
+            trieLock.writeLock().lock();
+            try {
+                trie.add(typeInfo.fullyQualifiedName.split("\\."), typeInfo);
+            } finally {
+                trieLock.writeLock().unlock();
             }
-            assert !typeInfo.typeInspection.isSet() : "type " + typeInfo.fullyQualifiedName;
-            TypeInspectionImpl.Builder ti = new TypeInspectionImpl.Builder(typeInfo, inspectionState.getInspector());
-            typeInspections.put(typeInfo.fullyQualifiedName, new TypeData(ti, inspectionState));
-            return ti;
         }
 
-        private void add(TypeInspection.Builder typeInspection, InspectionState inspectionState) {
-            String fqn = typeInspection.typeInfo().fullyQualifiedName;
-            trie.add(fqn.split("\\."), typeInspection.typeInfo());
-            TypeData inMap = typeInspections.get(fqn);
-            if (inMap != null) {
-                inMap.inspectionState = inspectionState;
-            } else {
-                TypeData typeData = new TypeData(typeInspection, inspectionState);
-                typeInspections.put(fqn, typeData);
+        public TypeInspection.Builder add(TypeInfo typeInfo, InspectionState inspectionState) {
+            addToTrie(typeInfo);
+            tiReadLock.lock();
+            try {
+                TypeData inMap = typeInspections.get(typeInfo.fullyQualifiedName);
+                if (inMap != null) {
+                    return inMap.getTypeInspectionBuilder();
+                }
+            } finally {
+                tiReadLock.unlock();
+            }
+            tiLock.writeLock().lock();
+            try {
+                // check again, we could have been in a queue
+                TypeData inMap = typeInspections.get(typeInfo.fullyQualifiedName);
+                if (inMap != null) {
+                    return inMap.getTypeInspectionBuilder();
+                }
+                assert !typeInfo.typeInspection.isSet() : "type " + typeInfo.fullyQualifiedName;
+                TypeInspectionImpl.Builder ti = new TypeInspectionImpl.Builder(typeInfo, inspectionState.getInspector());
+                typeInspections.put(typeInfo.fullyQualifiedName, new TypeDataImpl(ti, inspectionState));
+                return ti;
+            } finally {
+                tiLock.writeLock().unlock();
             }
         }
 
         // return type inspection, but null when still TRIGGER_BYTECODE
         @Override
         public TypeInspection getTypeInspectionToStartResolving(TypeInfo typeInfo) {
-            TypeData typeData = typeInspections.get(typeInfo.fullyQualifiedName);
-            if (typeData == null || typeData.inspectionState == TRIGGER_BYTECODE_INSPECTION) return null;
-            return typeData.typeInspectionBuilder;
+            tiReadLock.lock();
+            try {
+                TypeData typeData = typeInspections.get(typeInfo.fullyQualifiedName);
+                if (typeData == null || typeData.getInspectionState() == TRIGGER_BYTECODE_INSPECTION) return null;
+                return typeData.getTypeInspectionBuilder();
+            } finally {
+                tiReadLock.unlock();
+            }
         }
 
         @Override
         public InspectionAndState typeInspectionSituation(String fqn) {
-            TypeData typeData = typeInspections.get(fqn);
-            if (typeData == null) return null; // not known
-            return new InspectionAndState(typeData.typeInspectionBuilder, typeData.inspectionState);
-        }
-
-        public TypeInspection.Builder ensureTypeAndInspection(TypeInfo typeInfo, InspectionState inspectionState) {
-            TypeInfo inMap = get(typeInfo.fullyQualifiedName);
-            if (inMap == null) {
-                return add(typeInfo, inspectionState);
+            tiReadLock.lock();
+            try {
+                TypeData typeData = typeInspections.get(fqn);
+                if (typeData == null) return null; // not known
+                return new InspectionAndState(typeData.getTypeInspectionBuilder(), typeData.getInspectionState());
+            } finally {
+                tiReadLock.unlock();
             }
-            return ensureTypeInspection(inMap, inspectionState);
         }
 
         public void registerFieldInspection(FieldInfo fieldInfo, FieldInspection.Builder builder) {
-            TypeData typeData = typeInspections.get(fieldInfo.owner.fullyQualifiedName);
-            if (typeData == null) {
-                add(fieldInfo.owner, TRIGGER_BYTECODE_INSPECTION);
-                typeData = typeInspections.get(fieldInfo.owner.fullyQualifiedName);
-            }
-            if (typeData.fieldInspections.put(fieldInfo, builder) != null) {
-                throw new IllegalArgumentException("Re-registering field " + fieldInfo.fullyQualifiedName());
+            trieReadLock.lock();
+            try {
+                TypeData typeData = typeInspections.get(fieldInfo.owner.fullyQualifiedName);
+                if (typeData == null) {
+                    add(fieldInfo.owner, TRIGGER_BYTECODE_INSPECTION);
+                    typeData = typeInspections.get(fieldInfo.owner.fullyQualifiedName);
+                }
+                if (typeData.fieldInspectionsPut(fieldInfo, builder) != null) {
+                    throw new IllegalArgumentException("Re-registering field " + fieldInfo.fullyQualifiedName());
+                }
+            } finally {
+                trieReadLock.unlock();
             }
         }
 
         public void registerMethodInspection(MethodInspection.Builder builder) {
             TypeInfo typeInfo = builder.methodInfo().typeInfo;
-            TypeData typeData = typeInspections.get(typeInfo.fullyQualifiedName);
-            if (typeData == null) {
-                add(typeInfo, TRIGGER_BYTECODE_INSPECTION);
-                typeData = typeInspections.get(typeInfo.fullyQualifiedName);
-            }
-            if (typeData.methodInspections.put(builder.getDistinguishingName(), builder) != null) {
-                throw new IllegalArgumentException("Re-registering method " + builder.getDistinguishingName());
+            trieReadLock.lock();
+            try {
+                TypeData typeData = typeInspections.get(typeInfo.fullyQualifiedName);
+                if (typeData == null) {
+                    add(typeInfo, TRIGGER_BYTECODE_INSPECTION);
+                    typeData = typeInspections.get(typeInfo.fullyQualifiedName);
+                }
+                if (typeData.methodInspectionsPut(builder.getDistinguishingName(), builder) != null) {
+                    throw new IllegalArgumentException("Re-registering method " + builder.getDistinguishingName());
+                }
+            } finally {
+                trieReadLock.unlock();
             }
         }
 
@@ -441,29 +465,49 @@ public class TypeMapImpl implements TypeMap {
 
         @Override
         public boolean isPackagePrefix(PackagePrefix packagePrefix) {
-            return trie.isStrictPrefix(packagePrefix.prefix());
+            trieReadLock.lock();
+            try {
+                return trie.isStrictPrefix(packagePrefix.prefix());
+            } finally {
+                trieReadLock.unlock();
+            }
         }
 
         @Override
         public void visit(String[] prefix, BiConsumer<String[], List<TypeInfo>> consumer) {
-            trie.visit(prefix, consumer);
+            trieReadLock.lock();
+            try {
+                trie.visit(prefix, consumer);
+            } finally {
+                trieReadLock.unlock();
+            }
         }
 
         @Override
         public FieldInspection getFieldInspection(FieldInfo fieldInfo) {
-            TypeData typeData = typeInspections.get(fieldInfo.owner.fullyQualifiedName);
-            return typeData.fieldInspections.get(fieldInfo);
+            tiReadLock.lock();
+            try {
+                TypeData typeData = typeInspections.get(fieldInfo.owner.fullyQualifiedName);
+                return typeData.fieldInspectionsGet(fieldInfo);
+            } finally {
+                tiReadLock.unlock();
+            }
         }
 
         public InspectionState getInspectionState(TypeInfo typeInfo) {
             if (typeInfo.typeInspection.isSet()) {
                 return BUILT;
             }
-            TypeData typeData = typeInspections.get(typeInfo.fullyQualifiedName);
-            if (typeData == null) {
-                return null; // not registered
+            tiReadLock.lock();
+            try {
+                TypeData typeData = typeInspections.get(typeInfo.fullyQualifiedName);
+                if (typeData == null) {
+                    return null; // not registered
+                }
+                return typeData.getInspectionState();
+            } finally {
+                tiReadLock.unlock();
             }
-            return typeData.inspectionState;
         }
 
         @Override
@@ -478,10 +522,10 @@ public class TypeMapImpl implements TypeMap {
         private boolean inspectWithByteCodeInspector(TypeInfo typeInfo) {
             Source source = classPath.fqnToPath(typeInfo.fullyQualifiedName, ".class");
             if (source != null) {
-                ByteCodeInspector.Data data = byteCodeInspector.inspectFromPath(source);
+                List<TypeData> data = byteCodeInspector.inspectFromPath(source);
                 copyIntoTypeMap(data);
                 TypeData ti = typeInspections.get(typeInfo.fullyQualifiedName);
-                return ti.inspectionState.isDone();
+                return ti.getInspectionState().isDone();
             } // else ignore
             return false;
         }
@@ -491,22 +535,33 @@ public class TypeMapImpl implements TypeMap {
             if (typeInfo.typeInspection.isSet()) {
                 return typeInfo.typeInspection.get();
             }
-            TypeData typeData = typeInspections.get(typeInfo.fullyQualifiedName);
-            if (typeData == null) {
-                return null;
+            TypeData typeData;
+            tiReadLock.lock();
+            TypeInspection.Builder typeInspection;
+            try {
+                typeData = typeInspections.get(typeInfo.fullyQualifiedName);
+                if (typeData == null) {
+                    return null;
+                }
+                typeInspection = typeData.getTypeInspectionBuilder();
+                if (typeData.getInspectionState().isDone()) {
+                    return typeInspection;
+                }
+            } finally {
+                tiReadLock.unlock();
             }
-            TypeInspection.Builder typeInspection = typeData.typeInspectionBuilder;
-            if (typeData.inspectionState == TRIGGER_BYTECODE_INSPECTION) {
-                typeData.inspectionState = STARTING_BYTECODE;
+            // here we could arrive two threads at the same time; we'll not block that
+            if (Inspector.BYTE_CODE_INSPECTION.equals(typeData.getInspectionState().getInspector())) {
+                typeData.setInspectionState(STARTING_BYTECODE);
                 boolean success = inspectWithByteCodeInspector(typeInfo);
                 // we may have to try later, because of cyclic dependencies
-                typeData.inspectionState = success ? FINISHED_BYTECODE : TRIGGER_BYTECODE_INSPECTION;
-            } else if (typeData.inspectionState == TRIGGER_JAVA_PARSER || typeData.inspectionState == INIT_JAVA_PARSER) {
+                typeData.setInspectionState(success ? FINISHED_BYTECODE : TRIGGER_BYTECODE_INSPECTION);
+            } else if (typeData.getInspectionState() == TRIGGER_JAVA_PARSER || typeData.getInspectionState() == INIT_JAVA_PARSER) {
                 try {
+                    typeData.setInspectionState(STARTING_JAVA_PARSER);
                     LOGGER.debug("Triggering Java parser on {}", typeInfo.fullyQualifiedName);
-                    typeData.inspectionState = STARTING_JAVA_PARSER;
                     inspectWithJavaParser.inspect(typeInspection);
-                    typeData.inspectionState = FINISHED_JAVA_PARSER;
+                    typeData.setInspectionState(FINISHED_JAVA_PARSER);
                 } catch (ParseException e) {
                     String message = "Caught parse exception inspecting " + typeInfo.fullyQualifiedName;
                     throw new UnsupportedOperationException(message, e);
@@ -518,27 +573,37 @@ public class TypeMapImpl implements TypeMap {
 
         @Override
         public MethodInspection getMethodInspection(MethodInfo methodInfo) {
-            TypeData typeData1 = typeInspections.get(methodInfo.typeInfo.fullyQualifiedName);
-            TypeData typeData2;
-            if (typeData1 == null) {
-                // see if we can trigger an inspection
-                getTypeInspection(methodInfo.typeInfo);
-                typeData2 = typeInspections.get(methodInfo.typeInfo.fullyQualifiedName);
-            } else {
-                typeData2 = typeData1;
+            tiReadLock.lock();
+            try {
+                TypeData typeData1 = typeInspections.get(methodInfo.typeInfo.fullyQualifiedName);
+                TypeData typeData2;
+                if (typeData1 == null) {
+                    // see if we can trigger an inspection
+                    getTypeInspection(methodInfo.typeInfo);
+                    typeData2 = typeInspections.get(methodInfo.typeInfo.fullyQualifiedName);
+                } else {
+                    typeData2 = typeData1;
+                }
+                String dn = methodInfo.distinguishingName();
+                MethodInspection methodInspection = typeData2.methodInspectionsGet(dn);
+                if (methodInspection != null) return methodInspection;
+                throw new UnsupportedOperationException("No inspection for " + dn);
+            } finally {
+                tiReadLock.unlock();
             }
-            String dn = methodInfo.distinguishingName();
-            MethodInspection methodInspection = typeData2.methodInspections.get(dn);
-            if (methodInspection != null) return methodInspection;
-            throw new UnsupportedOperationException("No inspection for " + dn);
         }
 
         public MethodInspection getMethodInspectionDoNotTrigger(TypeInfo typeInfo, String distinguishingName) {
-            TypeData typeData = typeInspections.get(typeInfo.fullyQualifiedName);
-            if (!typeData.inspectionState.isDone()) {
-                getTypeInspection(typeInfo);
+            tiReadLock.lock();
+            try {
+                TypeData typeData = typeInspections.get(typeInfo.fullyQualifiedName);
+                if (!typeData.getInspectionState().isDone()) {
+                    getTypeInspection(typeInfo);
+                }
+                return typeData.methodInspectionsGet(distinguishingName);
+            } finally {
+                tiReadLock.unlock();
             }
-            return typeData.methodInspections.get(distinguishingName);
         }
 
         @Override
@@ -547,9 +612,14 @@ public class TypeMapImpl implements TypeMap {
         }
 
         public Stream<TypeInfo> streamTypesStartingByteCode() {
-            return typeInspections.values().stream()
-                    .filter(typeData -> typeData.inspectionState == STARTING_BYTECODE)
-                    .map(typeData -> typeData.typeInspectionBuilder.typeInfo());
+            tiReadLock.lock();
+            try {
+                return typeInspections.values().stream()
+                        .filter(typeData -> typeData.getInspectionState() == STARTING_BYTECODE)
+                        .map(typeData -> typeData.getTypeInspectionBuilder().typeInfo());
+            } finally {
+                tiReadLock.unlock();
+            }
         }
 
         @Override
@@ -569,8 +639,13 @@ public class TypeMapImpl implements TypeMap {
 
         // we can probably do without this method; then the mutable versions will be used more
         public void makeParametersImmutable() {
-            typeInspections.values().forEach(td ->
-                    td.methodInspections.values().forEach(MethodInspection.Builder::makeParametersImmutable));
+            tiLock.writeLock().lock();
+            try {
+                typeInspections.values().forEach(td ->
+                        td.methodInspectionBuilders().forEach(e -> e.getValue().makeParametersImmutable()));
+            } finally {
+                tiLock.writeLock().unlock();
+            }
         }
 
         public TypeInfo syntheticFunction(int numberOfParameters, boolean isVoid) {
@@ -636,34 +711,25 @@ public class TypeMapImpl implements TypeMap {
 
         // byte code inspection only!!!
         @Override
-        public void copyIntoTypeMap(ByteCodeInspector.Data data) {
-            for (InspectionAndState ias : data.types()) {
-                String fullyQualifiedName = ias.typeInspection().typeInfo().fullyQualifiedName;
-                trie.add(fullyQualifiedName.split("\\."), ias.typeInspection().typeInfo());
-                if (ias.typeInspection() instanceof TypeInspection.Builder builder) {
-                    TypeData typeData = typeInspections.get(fullyQualifiedName);
-                    if (typeData == null) {
-                        typeInspections.put(fullyQualifiedName, new TypeData(builder, ias.state()));
-                    } else {
-                        typeData.inspectionState = ias.state();
-                    }
-                } else {
-                    assert ias.state().isDone();
-                    // no point
+        public void copyIntoTypeMap(List<TypeData> data) {
+            trieLock.writeLock().lock();
+            try {
+                for (TypeData typeData : data) {
+                    TypeInfo typeInfo = typeData.getTypeInspectionBuilder().typeInfo();
+                    trie.add(typeInfo.fullyQualifiedName.split("\\."), typeInfo);
                 }
+            } finally {
+                trieLock.writeLock().unlock();
             }
-            for (MethodInspection.Builder builder : data.methodInspections()) {
-                TypeData typeData = typeInspections.get(builder.methodInfo().typeInfo.fullyQualifiedName);
-                if (typeData != null) {
-                    typeData.methodInspections.put(builder.methodInfo().distinguishingName, builder);
+            tiLock.writeLock().lock();
+            try {
+                // just overwrite
+                for (TypeData ias : data) {
+                    typeInspections.put(ias.getTypeInspectionBuilder().typeInfo().fullyQualifiedName, ias);
                 }
+            } finally {
+                tiLock.writeLock().unlock();
             }
-            data.fieldInspections().forEach((fi, builder) -> {
-                TypeData typeData = typeInspections.get(fi.owner.fullyQualifiedName);
-                if (typeData != null) {
-                    typeData.fieldInspections.put(fi, builder);
-                }
-            });
         }
     }
 }

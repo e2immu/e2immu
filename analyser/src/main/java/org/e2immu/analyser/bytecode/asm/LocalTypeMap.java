@@ -1,5 +1,7 @@
 package org.e2immu.analyser.bytecode.asm;
 
+import org.e2immu.analyser.bytecode.TypeData;
+import org.e2immu.analyser.inspector.InspectionState;
 import org.e2immu.analyser.inspector.TypeContext;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.parser.InspectionProvider;
@@ -8,6 +10,7 @@ import org.e2immu.analyser.util.Source;
 import org.e2immu.annotation.Modified;
 
 import java.util.List;
+import java.util.Map;
 
 /*
 In the local type map, types are either
@@ -30,7 +33,7 @@ public interface LocalTypeMap extends InspectionProvider {
     @Modified
     TypeInspection getOrCreate(TypeInfo subType);
 
-    List<TypeMap.InspectionAndState> loaded();
+    List<TypeData> loaded();
     /*
      Call from My*Visitor back to ByteCodeInspector, as part of a `inspectFromPath(Source)` call.
      */

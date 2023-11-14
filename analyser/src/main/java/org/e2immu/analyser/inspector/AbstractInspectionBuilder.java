@@ -67,7 +67,8 @@ public abstract class AbstractInspectionBuilder<B> implements Inspection, Inspec
         return access;
     }
 
-    protected boolean accessNotYetComputed() {
+    @Override
+    public boolean accessNotYetComputed() {
         return access == null;
     }
 

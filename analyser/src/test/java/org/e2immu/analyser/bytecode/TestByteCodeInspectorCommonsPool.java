@@ -33,6 +33,7 @@ import java.io.File;
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.net.URL;
+import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -56,7 +57,7 @@ public class TestByteCodeInspectorCommonsPool {
         String analyserJar = TestByteCodeInspector.determineAnalyserJarName();
         URL jarUrl = new URL("jar:file:build/libs/" + analyserJar + "!/");
 
-        ByteCodeInspector.Data data = byteCodeInspector.inspectFromPath(new Source(pathWithClass, jarUrl.toURI()));
+        List<TypeData> data = byteCodeInspector.inspectFromPath(new Source(pathWithClass, jarUrl.toURI()));
         // in case the path is a subType, we need to inspect it explicitly
         typeContext.typeMap.copyIntoTypeMap(data);
         return typeContext.typeMap.build();

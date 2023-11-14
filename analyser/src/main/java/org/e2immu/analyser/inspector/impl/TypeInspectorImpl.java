@@ -671,7 +671,13 @@ public class TypeInspectorImpl implements TypeInspector {
         TypeInfo subType = res.subType();
         ExpressionContext newExpressionContext = expressionContext.newSubType(subType);
         boolean typeFullInspection = fullInspection && !res.isDollarType();
-        TypeInspection.Builder subTypeInspection = typeMapBuilder.add(subType, STARTING_JAVA_PARSER);
+        TypeInspection.Builder subTypeInspection;
+        if (res.isDollarType) {
+            // must be already present on classpath; typically in TRIGGER_BYTE_CODE stage... first, get the builder
+            subTypeInspection = (TypeInspection.Builder) typeMapBuilder.getTypeInspection(subType);
+        } else {
+            subTypeInspection = typeMapBuilder.add(subType, STARTING_JAVA_PARSER);
+        }
         TypeInspectorImpl subTypeInspector = new TypeInspectorImpl(subTypeInspection, typeFullInspection,
                 dollarTypesAreNormalTypes, storeComments);
         subTypeInspector.inspect(isInterface, asTypeDeclaration, newExpressionContext, dollarResolver);

@@ -35,8 +35,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import static org.e2immu.analyser.inspector.InspectionState.*;
@@ -44,7 +42,6 @@ import static org.objectweb.asm.Opcodes.ASM9;
 
 public class MyClassVisitor extends ClassVisitor {
     private static final Logger LOGGER = LoggerFactory.getLogger(MyClassVisitor.class);
-    private static final Pattern ILLEGAL_IN_FQN = Pattern.compile("[/;$]");
     private final TypeContext typeContext;
     private final LocalTypeMap localTypeMap;
     private final AnnotationStore annotationStore;
@@ -198,7 +195,7 @@ public class MyClassVisitor extends ClassVisitor {
                 throw e;
             }
         }
-
+        // FIXME or earlier?
         // do this as late as possible, because it goes into other subtypes (TestByteCodeInspectorCommonPool)
         typeInspectionBuilder.computeAccess(localTypeMap);
 
@@ -223,20 +220,6 @@ public class MyClassVisitor extends ClassVisitor {
         }
         return localTypeMap.getOrCreate(fqn, true).typeInfo();
     }
-
-    private TypeInfo getOrCreateTypeInfo(String fqn, String path) {
-        if (!Input.acceptFQN(fqn)) return null;
-        Matcher m = ILLEGAL_IN_FQN.matcher(fqn);
-        if (m.find()) throw new UnsupportedOperationException("Illegal FQN: " + fqn + "; path is " + path);
-        // this causes really heavy recursions: return mustFindTypeInfo(fqn, path);
-        Source newPath = localTypeMap.fqnToPath(fqn);
-        if (newPath == null) {
-            LOGGER.debug("Ignoring type {}", fqn);
-            return null;
-        }
-        return localTypeMap.inspectFromPath(newPath, typeContext, false).typeInfo();
-    }
-
 
     @Override
     public FieldVisitor visitField(int access, String name, String descriptor, String signature, Object value) {
@@ -314,7 +297,7 @@ public class MyClassVisitor extends ClassVisitor {
 
         TypeContext methodContext = new TypeContext(typeContext);
         ParseGenerics parseGenerics = new ParseGenerics(methodContext, currentType, typeInspectionBuilder, localTypeMap,
-                false);
+                false); // FIXME true or false?
 
         String signatureOrDescription = signature != null ? signature : descriptor;
         if (signatureOrDescription.startsWith("<")) {
