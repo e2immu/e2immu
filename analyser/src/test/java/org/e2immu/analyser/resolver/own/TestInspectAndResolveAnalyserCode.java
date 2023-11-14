@@ -58,7 +58,7 @@ public class TestInspectAndResolveAnalyserCode {
                 .setInputConfiguration(inputConfiguration)
                 .setAnnotatedAPIConfiguration(annotatedAPIConfiguration)
                 .setInspectorConfiguration(inspectorConfiguration)
-                .addDebugLogTargets(LogTarget.PARSER, LogTarget.RESOLVER, LogTarget.BYTECODE)
+                .addDebugLogTargets()//LogTarget.PARSER, LogTarget.RESOLVER, LogTarget.BYTECODE)
                 .build();
 
         configuration.initializeLoggers();

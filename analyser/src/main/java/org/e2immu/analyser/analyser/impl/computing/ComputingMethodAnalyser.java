@@ -242,7 +242,7 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
             }
             return analyserResultBuilder.build();
         } catch (RuntimeException rte) {
-            LOGGER.warn("Caught exception in method analyser: {}", methodInfo);
+            LOGGER.error("Caught exception in method analyser: {}", methodInfo);
             throw rte;
         }
     }

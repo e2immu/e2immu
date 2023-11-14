@@ -66,7 +66,7 @@ public class ShallowFieldAnalyser extends FieldAnalyserImpl implements FieldAnal
             analyserResultBuilder.setAnalysisStatus(AnalysisStatus.DONE);
             return analyserResultBuilder.build();
         } catch (RuntimeException rte) {
-            LOGGER.warn("Caught exception in field analyser: {}", fieldInfo.fullyQualifiedName);
+            LOGGER.error("Caught exception in field analyser: {}", fieldInfo.fullyQualifiedName);
             throw rte;
         }
     }

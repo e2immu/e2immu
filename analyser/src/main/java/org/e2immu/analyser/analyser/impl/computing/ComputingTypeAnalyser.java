@@ -265,7 +265,7 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
 
             return analyserResultBuilder.build();
         } catch (RuntimeException rte) {
-            LOGGER.warn("Caught exception in type analyser: {}", typeInfo);
+            LOGGER.error("Caught exception in type analyser: {}", typeInfo);
             throw rte;
         }
     }

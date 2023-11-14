@@ -109,7 +109,7 @@ public class CompanionAnalyser {
             companionAnalysis.setCausesOfDelay(CausesOfDelay.EMPTY);
             return DONE;
         } catch (RuntimeException e) {
-            LOGGER.error("Caught runtime exception in companion analyser of {} of {}", companionMethodName, mainMethod.fullyQualifiedName());
+            LOGGER.error("Caught exception in companion analyser of {} of {}", companionMethodName, mainMethod.fullyQualifiedName());
             throw e;
         }
     }

@@ -265,7 +265,7 @@ public class StatementAnalyserImpl implements StatementAnalyser {
             } while (statementAnalyser != null);
             return builder.build();
         } catch (Throwable rte) {
-            LOGGER.warn("Caught exception while analysing block {} of: {}, position {}", index(), myMethodAnalyser.getMethodInfo().fullyQualifiedName(),
+            LOGGER.error("Caught exception analysing block {} of: {}, position {}", index(), myMethodAnalyser.getMethodInfo().fullyQualifiedName(),
                     statementAnalysis.location(Stage.INITIAL));
             throw rte;
         }
@@ -492,7 +492,7 @@ public class StatementAnalyserImpl implements StatementAnalyser {
                     myMethodAnalyser.getMethodInfo().name, result.analysisStatus());
             return result;
         } catch (Throwable rte) {
-            LOGGER.warn("Caught exception while analysing statement {} of {}", index(), myMethodAnalyser.getMethodInfo().fullyQualifiedName());
+            LOGGER.error("Caught exception analysing statement {} of {}", index(), myMethodAnalyser.getMethodInfo().fullyQualifiedName());
             throw rte;
         }
     }

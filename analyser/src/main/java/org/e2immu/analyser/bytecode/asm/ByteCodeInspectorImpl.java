@@ -251,12 +251,6 @@ public class ByteCodeInspectorImpl implements ByteCodeInspector {
             return typeData.getTypeInspectionBuilder();
         }
 
-
-        @Override
-        public Source fqnToPath(String fullyQualifiedName) {
-            return classPath.fqnToPath(fullyQualifiedName, ".class");
-        }
-
         @Override
         public void registerFieldInspection(FieldInfo fieldInfo, FieldInspection.Builder fieldInspectionBuilder) {
             TypeData td = localTypeMap.get(fieldInfo.owner.fullyQualifiedName);

@@ -229,26 +229,26 @@ public class Parser {
         try {
             primaryTypeAnalyser.analyse();
         } catch (RuntimeException rte) {
-            LOGGER.warn("Caught runtime exception while analysing type {}", primaryTypeAnalyser.getName());
+            LOGGER.error("Caught exception analysing type {}", primaryTypeAnalyser.getName());
             throw rte;
         }
         try {
             primaryTypeAnalyser.write();
         } catch (RuntimeException rte) {
-            LOGGER.warn("Caught runtime exception while writing out annotations for type {}",
+            LOGGER.error("Caught exception writing out annotations for type {}",
                     primaryTypeAnalyser.getName());
             throw rte;
         }
         try {
             primaryTypeAnalyser.check();
         } catch (RuntimeException rte) {
-            LOGGER.warn("Caught runtime exception while checking type {}", primaryTypeAnalyser.getName());
+            LOGGER.error("Caught exception checking type {}", primaryTypeAnalyser.getName());
             throw rte;
         }
         try {
             primaryTypeAnalyser.makeImmutable();
         } catch (RuntimeException rte) {
-            LOGGER.warn("Caught runtime exception while making analysis of type {} immutable",
+            LOGGER.error("Caught exception making analysis of type {} immutable",
                     primaryTypeAnalyser.getName());
             throw rte;
         }

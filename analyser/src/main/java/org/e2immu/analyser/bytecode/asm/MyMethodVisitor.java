@@ -120,7 +120,7 @@ public class MyMethodVisitor extends MethodVisitor {
             methodInspectionBuilder.readyToComputeFQN(localTypeMap);
             methodInspectionBuilder.computeAccess(localTypeMap);
         } catch (RuntimeException e) {
-            LOGGER.error("Caught exception while parsing {}, method {}",
+            LOGGER.error("Caught exception parsing {}, method {}",
                     typeInspectionBuilder.typeInfo().fullyQualifiedName,
                     methodInspectionBuilder.name());
             throw e;

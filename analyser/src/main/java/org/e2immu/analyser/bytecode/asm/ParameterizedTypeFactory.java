@@ -109,7 +109,7 @@ public class ParameterizedTypeFactory {
             }
             return new Result(primitivePt, 1, false);
         } catch (RuntimeException e) {
-            LOGGER.error("Caught exception while parsing type from " + signature);
+            LOGGER.error("Caught exception parsing type from " + signature);
             throw e;
         }
     }

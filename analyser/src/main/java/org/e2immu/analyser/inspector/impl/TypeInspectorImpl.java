@@ -183,7 +183,7 @@ public class TypeInspectorImpl implements TypeInspector {
                 }
                 builder.computeAccess(typeContext);
             } catch (RuntimeException rte) {
-                LOGGER.error("Caught runtime exception while parsing type declaration of '{}' at line {}",
+                LOGGER.error("Caught exception parsing type declaration of '{}' at line {}",
                         typeInfo.fullyQualifiedName, typeDeclaration.getBegin());
                 throw rte;
             }

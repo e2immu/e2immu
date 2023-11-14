@@ -149,7 +149,7 @@ public class ResolverImpl implements Resolver {
                 .flatMap(typeInfo -> typeAndAllSubTypes(typeInfo).stream())
                 .collect(Collectors.toUnmodifiableSet());
 
-        Map<TypeInfo, TypeResolution.Builder> resolutionBuilders = inspectedTypes.entrySet().stream()
+        Map<TypeInfo, TypeResolution.Builder> resolutionBuilders = inspectedTypes.entrySet().parallelStream()
                 .collect(Collectors.toUnmodifiableMap(Map.Entry::getKey,
                         entry -> resolveTypeAndCreateBuilder(entry, stayWithin)));
         // only at the top level, because we have only one call graph
@@ -182,7 +182,7 @@ public class ResolverImpl implements Resolver {
             SortedType sortedType = addToTypeGraph(stayWithin, typeInfo, expressionContext);
             return new TypeResolution.Builder().setSortedType(sortedType);
         } catch (RuntimeException rte) {
-            LOGGER.warn("Caught runtime exception while resolving type {}", entry.getKey().fullyQualifiedName);
+            LOGGER.error("Caught exception resolving type {}", entry.getKey().fullyQualifiedName);
             throw rte;
         }
     }
@@ -601,7 +601,7 @@ public class ResolverImpl implements Resolver {
                         doMethodOrConstructor(typeInspection, companionMethod, (MethodInspectionImpl.Builder)
                                 companionMethodInspection, topType, expressionContext, methodFieldSubTypeGraph);
                     } catch (RuntimeException rte) {
-                        LOGGER.warn("Caught runtime exception while resolving companion method {} in {}", companionMethod.name,
+                        LOGGER.error("Caught exception resolving companion method {} in {}", companionMethod.name,
                                 methodInfo.typeInfo.fullyQualifiedName);
                         throw rte;
                     }
@@ -613,7 +613,7 @@ public class ResolverImpl implements Resolver {
                 doMethodOrConstructor(typeInspection, methodInfo, (MethodInspectionImpl.Builder) methodInspection,
                         topType, expressionContext, methodFieldSubTypeGraph);
             } catch (RuntimeException rte) {
-                LOGGER.warn("Caught runtime exception while resolving method {} in {}", methodInfo.name,
+                LOGGER.error("Caught exception resolving method {} in {}", methodInfo.name,
                         methodInfo.typeInfo.fullyQualifiedName);
                 throw rte;
             }
@@ -840,7 +840,7 @@ public class ResolverImpl implements Resolver {
             Block parsedBlock = newContext.continueParsingBlock(block, blockBuilder, compactConstructorAppender);
             methodInspection.setInspectedBlock(parsedBlock);
         } catch (RuntimeException rte) {
-            LOGGER.warn("Caught runtime exception while resolving block starting at line {}", block.getBegin().orElse(null));
+            LOGGER.error("Caught exception resolving block starting at line {}", block.getBegin().orElse(null));
             throw rte;
         }
     }
@@ -878,7 +878,7 @@ public class ResolverImpl implements Resolver {
                     timedLogger.info("Computed method resolution for {} methods", cnt);
                 } // otherwise: already processed during AnnotatedAPI
             } catch (RuntimeException e) {
-                LOGGER.error("Caught runtime exception while filling {} to {} ", methodInfo.fullyQualifiedName, toList);
+                LOGGER.error("Caught exception filling {} to {} ", methodInfo.fullyQualifiedName, toList);
                 throw e;
             }
         });

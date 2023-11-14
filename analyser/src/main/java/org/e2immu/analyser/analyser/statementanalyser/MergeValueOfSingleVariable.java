@@ -151,7 +151,7 @@ class MergeValueOfSingleVariable {
                 int maxMod = modificationTimeOfSubs.reduce(0, (t1, t2) -> t1 < 0 || t2 < 0 ? -1 : Math.max(t1, t2));
                 modificationTimes.put(variable, maxMod);
             } catch (Throwable throwable) {
-                LOGGER.warn("Caught exception while merging variable {} (rename to {}} in {}, {}", variable, renamed,
+                LOGGER.error("Caught exception merging variable {} (rename to {}} in {}, {}", variable, renamed,
                         statementAnalysis.methodAnalysis().getMethodInfo().fullyQualifiedName, index);
                 throw throwable;
             }

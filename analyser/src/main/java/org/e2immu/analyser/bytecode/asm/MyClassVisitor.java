@@ -191,14 +191,18 @@ public class MyClassVisitor extends ClassVisitor {
                     }
                 }
             } catch (RuntimeException e) {
-                LOGGER.error("Caught exception while parsing signature " + signature);
+                LOGGER.error("Caught exception parsing signature " + signature);
                 throw e;
             }
         }
         // FIXME or earlier?
-        // do this as late as possible, because it goes into other subtypes (TestByteCodeInspectorCommonPool)
-        typeInspectionBuilder.computeAccess(localTypeMap);
-
+        try {
+            // do this as late as possible, because it goes into other subtypes (TestByteCodeInspectorCommonPool)
+            typeInspectionBuilder.computeAccess(localTypeMap);
+        } catch (RuntimeException re) {
+            LOGGER.error("Caught exception in class visitor of {}", currentType);
+            throw re;
+        }
         if (annotationStore != null) {
             TypeItem typeItem = annotationStore.typeItemsByFQName(fqName);
             if (typeItem != null && !typeItem.getAnnotations().isEmpty()) {
@@ -440,7 +444,7 @@ public class MyClassVisitor extends ClassVisitor {
                 currentType = null;
                 typeInspectionBuilder = null;
             } catch (RuntimeException rte) {
-                LOGGER.warn("Caught runtime exception bytecode inspecting type {}", currentType.fullyQualifiedName);
+                LOGGER.error("Caught exception bytecode inspecting type {}", currentType.fullyQualifiedName);
                 throw rte;
             }
         }
@@ -455,9 +459,5 @@ public class MyClassVisitor extends ClassVisitor {
         if (currentType == null || currentType.typeInspection.isSet()) throw new UnsupportedOperationException();
         String message = "Unable to inspect " + currentType.fullyQualifiedName + ": Cannot load " + pathCausingFailure;
         throw new RuntimeException(message);
-    }
-
-    public TypeInspection.Builder getInspectedType() {
-        return typeInspectionBuilder;
     }
 }

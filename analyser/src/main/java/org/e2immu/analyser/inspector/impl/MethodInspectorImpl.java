@@ -330,7 +330,7 @@ public class MethodInspectorImpl implements MethodInspector {
             }
 
         } catch (RuntimeException e) {
-            LOGGER.error("Caught exception while inspecting method {} in {}", methodName, typeInfo.fullyQualifiedName());
+            LOGGER.error("Caught exception inspecting method {} in {}", methodName, typeInfo.fullyQualifiedName());
             throw e;
         }
     }

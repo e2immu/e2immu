@@ -18,9 +18,7 @@ import com.github.javaparser.ParseException;
 import org.e2immu.analyser.bytecode.ByteCodeInspector;
 import org.e2immu.analyser.bytecode.TypeData;
 import org.e2immu.analyser.bytecode.TypeDataImpl;
-import org.e2immu.analyser.bytecode.asm.LocalTypeMap;
 import org.e2immu.analyser.inspector.InspectionState;
-import org.e2immu.analyser.inspector.NotFoundInClassPathException;
 import org.e2immu.analyser.inspector.TypeInspector;
 import org.e2immu.analyser.inspector.impl.MethodInspectionImpl;
 import org.e2immu.analyser.inspector.impl.ParameterInspectionImpl;
@@ -41,7 +39,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
-import java.util.concurrent.locks.ReentrantLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.function.BiConsumer;
 import java.util.stream.Stream;
@@ -723,9 +720,16 @@ public class TypeMapImpl implements TypeMap {
             }
             tiLock.writeLock().lock();
             try {
-                // just overwrite
+                // overwrite, unless done
                 for (TypeData ias : data) {
-                    typeInspections.put(ias.getTypeInspectionBuilder().typeInfo().fullyQualifiedName, ias);
+                    String fullyQualifiedName = ias.getTypeInspectionBuilder().typeInfo().fullyQualifiedName;
+                    TypeData inMap = typeInspections.get(fullyQualifiedName);
+                    if (inMap == null || !inMap.getInspectionState().isDone() && ias.getInspectionState().isDone()) {
+                        LOGGER.info("Writing type inspection of {}", fullyQualifiedName);
+                        typeInspections.put(fullyQualifiedName, ias);
+                    } else {
+                        LOGGER.info("*** not writing inspection of {}, state {}", fullyQualifiedName, ias.getInspectionState());
+                    }
                 }
             } finally {
                 tiLock.writeLock().unlock();

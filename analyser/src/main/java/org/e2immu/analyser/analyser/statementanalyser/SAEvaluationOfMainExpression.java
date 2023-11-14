@@ -71,7 +71,7 @@ record SAEvaluationOfMainExpression(StatementAnalysis statementAnalysis,
         try {
             return evaluationOfMainExpression0(sharedState);
         } catch (Throwable rte) {
-            LOGGER.warn("Failed to evaluate main expression in statement {}", statementAnalysis.index());
+            LOGGER.error("Failed to evaluate main expression in statement {}", statementAnalysis.index());
             throw rte;
         }
 

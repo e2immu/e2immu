@@ -365,7 +365,7 @@ public class InspectAll implements InspectWithJavaParser {
                     typeData.typeDeclaration, expressionContext);
             typeData.dollarTypes.addAll(dollarTypes);
         } catch (RuntimeException rte) {
-            LOGGER.error("Caught runtime exception inspecting type {}", typeInfo);
+            LOGGER.error("Caught exception inspecting type {}", typeInfo);
             throw rte;
         } finally {
             int cnt = countInspected.incrementAndGet();

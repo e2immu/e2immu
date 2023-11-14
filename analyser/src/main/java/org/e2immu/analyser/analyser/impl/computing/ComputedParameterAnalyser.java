@@ -411,7 +411,7 @@ public class ComputedParameterAnalyser extends ParameterAnalyserImpl {
             analyserResultBuilder.setAnalysisStatus(analysisStatus);
             return analyserResultBuilder.build();
         } catch (RuntimeException rte) {
-            LOGGER.warn("Caught exception in parameter analyser, {}", parameterInfo.newLocation());
+            LOGGER.error("Caught exception in parameter analyser, {}", parameterInfo.newLocation());
             throw rte;
         }
     }

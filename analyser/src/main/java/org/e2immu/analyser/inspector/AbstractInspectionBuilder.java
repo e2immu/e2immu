@@ -56,7 +56,9 @@ public abstract class AbstractInspectionBuilder<B> implements Inspection, Inspec
 
     @SuppressWarnings("unchecked")
     public B setAccess(Access access) {
-        assert accessNotYetComputed() : "Access already set!";
+        if (this.access != null) {
+            throw new UnsupportedOperationException("Access already set!");
+        }
         this.access = Objects.requireNonNull(access);
         return (B) this;
     }

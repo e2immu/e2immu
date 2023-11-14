@@ -141,7 +141,7 @@ public class MethodLevelDataImpl implements MethodLevelData {
                     logLocation, previous, previousIndex, stateData);
             return analyserComponents.run(localSharedState);
         } catch (RuntimeException rte) {
-            LOGGER.warn("Caught exception in linking computation, {}", logLocation);
+            LOGGER.error("Caught exception in linking computation, {}", logLocation);
             throw rte;
         }
     }

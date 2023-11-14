@@ -62,7 +62,7 @@ public class ShallowTypeAnalyser extends TypeAnalyserImpl {
                 analyserResultBuilder.addMessages(computed.messages.stream());
             } // else: we're at the edge of the known/analysed types, we're not exploring further and rely on the value
         } catch (IllegalStateException ise) {
-            LOGGER.error("Caught exception while validating independence of {}", typeInfo);
+            LOGGER.error("Caught exception validating independence of {}", typeInfo);
             throw ise;
         }
     }

@@ -185,7 +185,7 @@ public class AnnotationUploader {
                 LOGGER.warn("PUT on {} returned response code {}", url, statusCode);
             }
         } catch (IOException e) {
-            LOGGER.warn("IOException when calling PUT on {}: {}", url, e.getMessage());
+            LOGGER.error("IOException when calling PUT on {}: {}", url, e.getMessage());
         }
     }
 }

@@ -252,7 +252,7 @@ public class ComputingFieldAnalyser extends FieldAnalyserImpl implements FieldAn
             }
             return analyserResultBuilder.build();
         } catch (RuntimeException rte) {
-            LOGGER.warn("Caught exception in field analyser: {}", fqn);
+            LOGGER.error("Caught exception in field analyser: {}", fqn);
             throw rte;
         }
     }
@@ -1766,7 +1766,7 @@ public class ComputingFieldAnalyser extends FieldAnalyserImpl implements FieldAn
             try {
                 return value.getProperty(EvaluationResultImpl.from(this), property, true);
             } catch (RuntimeException re) {
-                LOGGER.error("Caught exception while evaluating expression '{}'", value);
+                LOGGER.error("Caught exception evaluating expression '{}'", value);
                 throw re;
             }
         }

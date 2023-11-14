@@ -296,7 +296,7 @@ public record ExpressionContextImpl(ExpressionContext.ResolverRecursion resolver
                 blockBuilder.addStatement(newStatement);
             }
         } catch (RuntimeException rte) {
-            LOGGER.warn("Caught runtime exception while parsing statement at line {}", statement.getBegin().orElse(null));
+            LOGGER.error("Caught exception parsing statement at line {}", statement.getBegin().orElse(null));
             throw rte;
         }
     }
@@ -811,7 +811,7 @@ public record ExpressionContextImpl(ExpressionContext.ResolverRecursion resolver
             throw new UnsupportedOperationException("Unknown expression type " + expression +
                     " class " + expression.getClass() + " at " + expression.getBegin());
         } catch (RuntimeException rte) {
-            LOGGER.warn("Caught runtime exception while parsing expression of {} from {} to {}",
+            LOGGER.error("Caught exception parsing expression of {} from {} to {}",
                     expression.getClass(),
                     expression.getBegin().orElse(null), expression.getEnd().orElse(null));
             throw rte;
