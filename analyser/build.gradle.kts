@@ -47,6 +47,9 @@ dependencies {
 
     testImplementation (libs.junitJupiterApi)
     testRuntimeOnly (libs.junitJupiterEngine)
+
+    // present for TestByteCodeInspectorCommonsPool
+    testImplementation("commons-pool:commons-pool:1.6")
 }
 
 publishing {

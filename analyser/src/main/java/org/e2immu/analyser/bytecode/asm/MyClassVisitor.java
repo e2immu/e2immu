@@ -124,7 +124,6 @@ public class MyClassVisitor extends ClassVisitor {
             if ((access & Opcodes.ACC_ABSTRACT) != 0) typeInspectionBuilder.addTypeModifier(TypeModifier.ABSTRACT);
             if ((access & Opcodes.ACC_FINAL) != 0) typeInspectionBuilder.addTypeModifier(TypeModifier.FINAL);
         }
-        typeInspectionBuilder.computeAccess(localTypeMap);
 
         String parentFqName = superName == null ? null : pathToFqn(superName);
         if (parentFqName != null && !Input.acceptFQN(parentFqName)) {
@@ -199,6 +198,9 @@ public class MyClassVisitor extends ClassVisitor {
                 throw e;
             }
         }
+
+        // do this as late as possible, because it goes into other subtypes (TestByteCodeInspectorCommonPool)
+        typeInspectionBuilder.computeAccess(localTypeMap);
 
         if (annotationStore != null) {
             TypeItem typeItem = annotationStore.typeItemsByFQName(fqName);

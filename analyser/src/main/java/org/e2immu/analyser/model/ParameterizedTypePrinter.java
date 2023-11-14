@@ -118,7 +118,8 @@ public class ParameterizedTypePrinter {
         assert typeInfo != null;
         List<TypeAndParameters> taps = new LinkedList<>();
         int offset = parameterizedType.parameters.size();
-        while (typeInfo != null) {
+        // see TestByteCodeInspectorCommonPool for the offset>0 test
+        while (typeInfo != null && offset > 0) {
             TypeInspection typeInspection = inspectionProvider.getTypeInspection(typeInfo);
             List<ParameterizedType> typesForTypeInfo = new ArrayList<>();
             int numTypeParameters = typeInspection.typeParameters().size();
