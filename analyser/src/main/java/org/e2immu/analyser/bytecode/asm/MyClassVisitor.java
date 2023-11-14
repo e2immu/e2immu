@@ -200,7 +200,8 @@ public class MyClassVisitor extends ClassVisitor {
             // do this as late as possible, because it goes into other subtypes (TestByteCodeInspectorCommonPool)
             typeInspectionBuilder.computeAccess(localTypeMap);
         } catch (RuntimeException re) {
-            LOGGER.error("Caught exception in class visitor of {}", currentType);
+            LOGGER.error("Caught exception in class visitor of {}, typeInspectionBuilder id is {}", currentType,
+                    System.identityHashCode(typeInspectionBuilder));
             throw re;
         }
         if (annotationStore != null) {

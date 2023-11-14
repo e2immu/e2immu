@@ -128,7 +128,9 @@ public class ByteCodeInspectorImpl implements ByteCodeInspector {
                 if (!start || remote.state().ge(STARTING_BYTECODE)) return remote.typeInspection();
                 if (typeData == null) {
                     TypeInspection.Builder typeInspection = (TypeInspection.Builder) remote.typeInspection();
-                    localTypeMapPut(fqn, new TypeDataImpl(typeInspection, TRIGGER_BYTECODE_INSPECTION));
+                    TypeInspection.Builder copy = new TypeInspectionImpl.Builder(typeInspection.typeInfo(),
+                            Inspector.BYTE_CODE_INSPECTION);
+                    localTypeMapPut(fqn, new TypeDataImpl(copy, TRIGGER_BYTECODE_INSPECTION));
                 }
             }
             Source source = classPath.fqnToPath(fqn, ".class");
@@ -170,19 +172,22 @@ public class ByteCodeInspectorImpl implements ByteCodeInspector {
 
             String fqn = MyClassVisitor.pathToFqn(path.stripDotClass());
             TypeData typeDataInMap = localTypeMap.get(fqn);
+            if (typeDataInMap != null && typeDataInMap.getInspectionState().ge(STARTING_BYTECODE)) {
+                return typeDataInMap.getTypeInspectionBuilder();
+            }
+            TypeMap.InspectionAndState inspectionAndState = typeContext.typeMap.typeInspectionSituation(fqn);
+            if (inspectionAndState != null && inspectionAndState.state().isDone()) {
+                return (TypeInspection.Builder) inspectionAndState.typeInspection();
+            }
+
             TypeData typeData;
             if (typeDataInMap == null) {
                 // create, but ensure that all enclosing are present FIRST: potential recursion
                 TypeInfo typeInfo = createTypeInfo(path, fqn, start);
-                TypeMap.InspectionAndState situation = typeInspectionSituation(fqn);
-                TypeInspection.Builder builder;
-                if (situation == null) {
-                    builder = new TypeInspectionImpl.Builder(typeInfo, Inspector.BYTE_CODE_INSPECTION);
-                } else {
-                    builder = (TypeInspection.Builder) situation.typeInspection();
-                }
                 TypeData typeDataAgain = localTypeMap.get(fqn);
                 if (typeDataAgain == null) {
+                    TypeInspection.Builder builder = new TypeInspectionImpl.Builder(typeInfo,
+                            Inspector.BYTE_CODE_INSPECTION);
                     typeData = new TypeDataImpl(builder, TRIGGER_BYTECODE_INSPECTION);
                     localTypeMapPut(fqn, typeData);
                 } else {
@@ -208,20 +213,9 @@ public class ByteCodeInspectorImpl implements ByteCodeInspector {
                 String simpleName = path.substring(dollar + 1);
                 String newPath = Source.ensureDotClass(path.substring(0, dollar));
                 Source newSource = new Source(newPath, source.uri());
-                // before we do the recursion, we must check!
-                String fqnOfEnclosing = MyClassVisitor.pathToFqn(newSource.path());
-                TypeData typeData = localTypeMap.get(fqnOfEnclosing);
-                if (typeData == null || typeData.getInspectionState() == InspectionState.TRIGGER_BYTECODE_INSPECTION) {
-                    TypeInspection.Builder enclosedInspection = inspectFromPath(newSource,
-                            new TypeContext(typeContext), start);
-                    if (enclosedInspection == null) {
-                        throw new UnsupportedOperationException("Cannot load enclosed type " + fqnOfEnclosing);
-                    }
-                    return new TypeInfo(enclosedInspection.typeInfo(), simpleName);
-                }
-                assert typeData.getInspectionState() == InspectionState.STARTING_BYTECODE
-                        || typeData.getInspectionState().isDone();
-                return new TypeInfo(typeData.getTypeInspectionBuilder().typeInfo(), simpleName);
+                TypeInspection.Builder enclosedInspection = inspectFromPath(newSource,
+                        new TypeContext(typeContext), start);
+                return new TypeInfo(enclosedInspection.typeInfo(), simpleName);
             }
             int lastDot = fqn.lastIndexOf(".");
             String packageName = fqn.substring(0, lastDot);

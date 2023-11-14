@@ -105,8 +105,22 @@ public class Trie<T> extends Freezable {
     }
 
     @Modified
-    public TrieNode<T> add(String[] strings,
-                           T data) {
+    public T addIfNodeDataEmpty(String[] strings, T data) {
+        TrieNode<T> node = ensureTrieNode(strings);
+        if (node.data.isEmpty()) {
+            node.data.add(data);
+            return data;
+        }
+        return node.data.get(0);
+    }
+
+    @Modified
+    public void add(String[] strings, T data) {
+        TrieNode<T> node = ensureTrieNode(strings);
+        node.data.add(Objects.requireNonNull(data));
+    }
+
+    private TrieNode<T> ensureTrieNode(String[] strings) {
         ensureNotFrozen();
         TrieNode<T> node = root;
         for (String s : strings) {
@@ -125,7 +139,6 @@ public class Trie<T> extends Freezable {
             node = newTrieNode;
         }
         if (node.data == null) node.data = new LinkedList<>();
-        node.data.add(Objects.requireNonNull(data));
         return node;
     }
 }

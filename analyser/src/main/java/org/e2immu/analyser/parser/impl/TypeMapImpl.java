@@ -182,7 +182,8 @@ public class TypeMapImpl implements TypeMap {
             tiLock.writeLock().lock();
             try {
                 typeInspections.values().forEach(typeData -> {
-                    TypeInfo typeInfo = typeData.getTypeInspectionBuilder().typeInfo();
+                    String fqn = typeData.getTypeInspectionBuilder().typeInfo().fullyQualifiedName;
+                    TypeInfo typeInfo = trie.get(fqn.split("\\.")).get(0);
                     assert Input.acceptFQN(typeInfo.packageName());
                     if (typeData.getInspectionState().isDone() && !typeInfo.typeInspection.isSet()) {
                         typeInfo.typeInspection.set(typeData.getTypeInspectionBuilder().build(this));
@@ -311,7 +312,8 @@ public class TypeMapImpl implements TypeMap {
                     subType = new TypeInfo(Identifier.from(source.uri()), enclosingType, simpleName);
                     typeInspection = add(subType, inspectionState);
                 }
-                enclosingType = subType;
+                // rather than subType, because 'add' can replace the typeInfo object
+                enclosingType = typeInspection.typeInfo();
                 dollar = nextDollar;
             }
             return typeInspection;
@@ -355,23 +357,22 @@ public class TypeMapImpl implements TypeMap {
                 String simpleName = fqnOfPrimaryType.substring(lastDot + 1);
                 Identifier identifier = Identifier.from(source.uri());
                 TypeInfo primaryType = new TypeInfo(identifier, packageName, simpleName);
-                addToTrie(primaryType);
-                return primaryType;
+                return addToTrie(primaryType);
             }
             return primaryTypeInMap;
         }
 
-        private void addToTrie(TypeInfo typeInfo) {
+        private TypeInfo addToTrie(TypeInfo typeInfo) {
             trieLock.writeLock().lock();
             try {
-                trie.add(typeInfo.fullyQualifiedName.split("\\."), typeInfo);
+                return trie.addIfNodeDataEmpty(typeInfo.fullyQualifiedName.split("\\."), typeInfo);
             } finally {
                 trieLock.writeLock().unlock();
             }
         }
 
-        public TypeInspection.Builder add(TypeInfo typeInfo, InspectionState inspectionState) {
-            addToTrie(typeInfo);
+        public TypeInspection.Builder add(TypeInfo typeInfoIn, InspectionState inspectionState) {
+            TypeInfo typeInfo = addToTrie(typeInfoIn);
             tiReadLock.lock();
             try {
                 TypeData inMap = typeInspections.get(typeInfo.fullyQualifiedName);
@@ -427,7 +428,8 @@ public class TypeMapImpl implements TypeMap {
             try {
                 TypeData typeData = typeInspections.get(fieldInfo.owner.fullyQualifiedName);
                 if (typeData == null) {
-                    add(fieldInfo.owner, TRIGGER_BYTECODE_INSPECTION);
+                    TypeInfo typeInfo = add(fieldInfo.owner, TRIGGER_BYTECODE_INSPECTION).typeInfo();
+                    assert typeInfo == fieldInfo.owner; // we're in a read-lock on the trie
                     typeData = typeInspections.get(fieldInfo.owner.fullyQualifiedName);
                 }
                 if (typeData.fieldInspectionsPut(fieldInfo, builder) != null) {
@@ -444,7 +446,8 @@ public class TypeMapImpl implements TypeMap {
             try {
                 TypeData typeData = typeInspections.get(typeInfo.fullyQualifiedName);
                 if (typeData == null) {
-                    add(typeInfo, TRIGGER_BYTECODE_INSPECTION);
+                    TypeInfo ti = add(typeInfo, TRIGGER_BYTECODE_INSPECTION).typeInfo();
+                    assert ti == typeInfo; // we're in a read-lock on the trie
                     typeData = typeInspections.get(typeInfo.fullyQualifiedName);
                 }
                 if (typeData.methodInspectionsPut(builder.getDistinguishingName(), builder) != null) {
@@ -551,8 +554,11 @@ public class TypeMapImpl implements TypeMap {
             if (Inspector.BYTE_CODE_INSPECTION.equals(typeData.getInspectionState().getInspector())) {
                 typeData.setInspectionState(STARTING_BYTECODE);
                 boolean success = inspectWithByteCodeInspector(typeInfo);
+                if (success) {
+                    // we'll have overwritten the typeData
+                    return typeInspections.get(typeInfo.fullyQualifiedName).getTypeInspectionBuilder();
+                }
                 // we may have to try later, because of cyclic dependencies
-                typeData.setInspectionState(success ? FINISHED_BYTECODE : TRIGGER_BYTECODE_INSPECTION);
             } else if (typeData.getInspectionState() == TRIGGER_JAVA_PARSER || typeData.getInspectionState() == INIT_JAVA_PARSER) {
                 try {
                     typeData.setInspectionState(STARTING_JAVA_PARSER);
@@ -651,9 +657,9 @@ public class TypeMapImpl implements TypeMap {
             TypeInfo existing = get(fqn);
             if (existing != null) return existing;
 
-            TypeInfo typeInfo = new TypeInfo(Identifier.INTERNAL_TYPE, Primitives.INTERNAL, name);
-            TypeInspection.Builder builder = add(typeInfo, BY_HAND_WITHOUT_STATEMENTS);
-
+            TypeInfo typeInfoOrig = new TypeInfo(Identifier.INTERNAL_TYPE, Primitives.INTERNAL, name);
+            TypeInspection.Builder builder = add(typeInfoOrig, BY_HAND_WITHOUT_STATEMENTS);
+            TypeInfo typeInfo = builder.typeInfo(); // in case there were two calls at the same time
             boolean isIndependent = isVoid && numberOfParameters == 0;
             if (isIndependent) {
                 // this is the equivalent of interface Runnable { void run(); }
@@ -713,7 +719,7 @@ public class TypeMapImpl implements TypeMap {
             try {
                 for (TypeData typeData : data) {
                     TypeInfo typeInfo = typeData.getTypeInspectionBuilder().typeInfo();
-                    trie.add(typeInfo.fullyQualifiedName.split("\\."), typeInfo);
+                    trie.addIfNodeDataEmpty(typeInfo.fullyQualifiedName.split("\\."), typeInfo);
                 }
             } finally {
                 trieLock.writeLock().unlock();

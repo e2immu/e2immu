@@ -15,7 +15,6 @@
 package org.e2immu.analyser.bytecode.asm;
 
 import org.e2immu.analyser.annotationxml.AnnotationXmlReader;
-import org.e2immu.analyser.bytecode.ByteCodeInspector;
 import org.e2immu.analyser.config.Configuration;
 import org.e2immu.analyser.inspector.TypeContext;
 import org.e2immu.analyser.inspector.impl.TypeInspectionImpl;
@@ -25,18 +24,15 @@ import org.e2immu.analyser.model.impl.TypeParameterImpl;
 import org.e2immu.analyser.parser.Input;
 import org.e2immu.analyser.parser.impl.TypeMapImpl;
 import org.e2immu.analyser.util.Resources;
-import org.e2immu.analyser.util.Source;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
-import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.util.*;
 
 import static org.e2immu.analyser.inspector.InspectionState.STARTING_BYTECODE;
-import static org.e2immu.analyser.inspector.InspectionState.TRIGGER_BYTECODE_INSPECTION;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
 
@@ -50,7 +46,7 @@ public class TestParseGenerics {
     @BeforeAll
     public static void beforeClass() throws IOException {
         Configuration configuration = new Configuration.Builder()
-                .addDebugLogTargets(LogTarget.BYTECODE)
+                .addDebugLogTargets(LogTarget.BYTECODE, LogTarget.PARSER)
                 .build();
         configuration.initializeLoggers();
 
