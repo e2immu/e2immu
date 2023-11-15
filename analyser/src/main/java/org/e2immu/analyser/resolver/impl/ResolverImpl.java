@@ -140,7 +140,7 @@ public class ResolverImpl implements Resolver {
      *
      * @param inspectedTypes when a subResolver, the map contains only one type, and it will not be a primary type.
      *                       When not a subResolver, it only contains primary types.
-     * @return A list of sorted primary types, each with their sub-elements (sub-types, fields, methods) sorted.
+     * @return A list of sorted primary types, each with their sub-elements (subtypes, fields, methods) sorted.
      */
 
     @Override
@@ -149,7 +149,7 @@ public class ResolverImpl implements Resolver {
                 .flatMap(typeInfo -> typeAndAllSubTypes(typeInfo).stream())
                 .collect(Collectors.toUnmodifiableSet());
 
-        Map<TypeInfo, TypeResolution.Builder> resolutionBuilders = inspectedTypes.entrySet().stream()
+        Map<TypeInfo, TypeResolution.Builder> resolutionBuilders = inspectedTypes.entrySet().parallelStream()
                 .collect(Collectors.toUnmodifiableMap(Map.Entry::getKey,
                         entry -> resolveTypeAndCreateBuilder(entry, stayWithin)));
         // only at the top level, because we have only one call graph
@@ -1355,6 +1355,10 @@ public class ResolverImpl implements Resolver {
         methodCallGraph.visit((from, list) -> {
             if (list != null) {
                 list.forEach(to -> {
+                    if(!graph.containsVertex(to)) {
+                        LOGGER.info("Adding vertex {}", to);
+                        graph.addVertex(to);
+                    }
                     graph.addEdge(from, to);
                 });
             }

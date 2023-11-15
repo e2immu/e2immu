@@ -69,9 +69,11 @@ public interface TypeMap extends InspectionProvider {
         TypeInspection.Builder getOrCreateFromClassPathEnsureEnclosing(Source source,
                                                                        InspectionState startingBytecode);
 
+        TypeInfo addToTrie(TypeInfo typeInfo);
+
         /*
-        lowest level: a call on get() will return null, called by getOrCreate
-         */
+                lowest level: a call on get() will return null, called by getOrCreate
+                 */
         @Modified
         @NotNull
         TypeInspection.Builder add(TypeInfo typeInfo, InspectionState triggerJavaParser);

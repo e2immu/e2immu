@@ -150,9 +150,10 @@ public class ByteCodeInspectorImpl implements ByteCodeInspector {
             if (remote != null) {
                 return remote.typeInspection();
             }
-            TypeInspection.Builder typeInspection = new TypeInspectionImpl.Builder(subType, Inspector.BYTE_CODE_INSPECTION);
+            TypeInfo typeInfoInMap = typeContext.typeMap.addToTrie(subType);
+            TypeInspection.Builder typeInspection = new TypeInspectionImpl.Builder(typeInfoInMap, Inspector.BYTE_CODE_INSPECTION);
             TypeData newTypeData = new TypeDataImpl(typeInspection, TRIGGER_BYTECODE_INSPECTION);
-            localTypeMapPut(subType.fullyQualifiedName, newTypeData);
+            localTypeMapPut(typeInfoInMap.fullyQualifiedName, newTypeData);
             return typeInspection;
         }
 
@@ -209,18 +210,21 @@ public class ByteCodeInspectorImpl implements ByteCodeInspector {
         private TypeInfo createTypeInfo(Source source, String fqn, boolean start) {
             String path = source.stripDotClass();
             int dollar = path.lastIndexOf('$');
+            TypeInfo typeInfo;
             if (dollar >= 0) {
                 String simpleName = path.substring(dollar + 1);
                 String newPath = Source.ensureDotClass(path.substring(0, dollar));
                 Source newSource = new Source(newPath, source.uri());
                 TypeInspection.Builder enclosedInspection = inspectFromPath(newSource,
                         new TypeContext(typeContext), start);
-                return new TypeInfo(enclosedInspection.typeInfo(), simpleName);
+                typeInfo = new TypeInfo(enclosedInspection.typeInfo(), simpleName);
+            } else {
+                int lastDot = fqn.lastIndexOf(".");
+                String packageName = fqn.substring(0, lastDot);
+                String simpleName = fqn.substring(lastDot + 1);
+                typeInfo = new TypeInfo(Identifier.from(source.uri()), packageName, simpleName);
             }
-            int lastDot = fqn.lastIndexOf(".");
-            String packageName = fqn.substring(0, lastDot);
-            String simpleName = fqn.substring(lastDot + 1);
-            return new TypeInfo(Identifier.from(source.uri()), packageName, simpleName);
+            return typeContext.typeMap.addToTrie(typeInfo);
         }
 
         private TypeInspection.Builder continueLoadByteCodeAndStartASM(Source path,

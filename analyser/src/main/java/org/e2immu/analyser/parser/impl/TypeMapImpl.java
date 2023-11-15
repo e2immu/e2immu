@@ -187,6 +187,7 @@ public class TypeMapImpl implements TypeMap {
                     assert Input.acceptFQN(typeInfo.packageName());
                     if (typeData.getInspectionState().isDone() && !typeInfo.typeInspection.isSet()) {
                         typeInfo.typeInspection.set(typeData.getTypeInspectionBuilder().build(this));
+                        assert typeInfo == typeInfo.typeInspection.get().typeInfo();
                     }
                     typeData.methodInspectionBuilders().forEach(e -> {
                         MethodInfo methodInfo = e.getValue().getMethodInfo();
@@ -362,7 +363,8 @@ public class TypeMapImpl implements TypeMap {
             return primaryTypeInMap;
         }
 
-        private TypeInfo addToTrie(TypeInfo typeInfo) {
+        @Override
+        public TypeInfo addToTrie(TypeInfo typeInfo) {
             trieLock.writeLock().lock();
             try {
                 return trie.addIfNodeDataEmpty(typeInfo.fullyQualifiedName.split("\\."), typeInfo);
@@ -731,10 +733,11 @@ public class TypeMapImpl implements TypeMap {
                     String fullyQualifiedName = ias.getTypeInspectionBuilder().typeInfo().fullyQualifiedName;
                     TypeData inMap = typeInspections.get(fullyQualifiedName);
                     if (inMap == null || !inMap.getInspectionState().isDone() && ias.getInspectionState().isDone()) {
-                        LOGGER.info("Writing type inspection of {}", fullyQualifiedName);
+                        LOGGER.debug("Writing type inspection of {}", fullyQualifiedName);
                         typeInspections.put(fullyQualifiedName, ias);
                     } else {
-                        LOGGER.info("*** not writing inspection of {}, state {}", fullyQualifiedName, ias.getInspectionState());
+                        // overhead; is pretty low
+                        LOGGER.debug("Not writing inspection of {}, state {}", fullyQualifiedName, ias.getInspectionState());
                     }
                 }
             } finally {

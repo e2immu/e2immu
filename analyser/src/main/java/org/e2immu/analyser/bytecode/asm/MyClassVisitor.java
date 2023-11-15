@@ -378,10 +378,11 @@ public class MyClassVisitor extends ClassVisitor {
                 TypeInfo subTypeInMap;
                 boolean byteCodeInspectionStarted;
                 if (situation == null) {
-                    subTypeInMap = new TypeInfo(stepDown ? currentType
+                    TypeInfo subTypeInMapIn = new TypeInfo(stepDown ? currentType
                             : currentType.packageNameOrEnclosingType.getRight(), innerName);
-                    subTypeInspection = localTypeMap.getOrCreate(subTypeInMap);
+                    subTypeInspection = localTypeMap.getOrCreate(subTypeInMapIn);
                     byteCodeInspectionStarted = false;
+                    subTypeInMap = subTypeInspection.typeInfo(); // prefer the existing one
                 } else {
                     subTypeInspection = situation.typeInspection();
                     subTypeInMap = subTypeInspection.typeInfo();

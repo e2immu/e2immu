@@ -90,9 +90,11 @@ public class InspectAll implements InspectWithJavaParser {
 
     public boolean doJavaParsing() {
         LOGGER.info("Start parsing on {} source files", sourceFiles.size());
+        ParserConfiguration parserConfiguration = new ParserConfiguration()
+                .setLanguageLevel(ParserConfiguration.LanguageLevel.JAVA_17);
         Map<TypeInfo, CompilationUnitData> map = sourceFiles.values()
                 .parallelStream()
-                .flatMap(this::doJavaParsingHandleExceptions)
+                .flatMap(uri -> doJavaParsingHandleExceptions(uri, parserConfiguration))
                 .collect(Collectors.toUnmodifiableMap(JavaParsingResult::typeInfo, jpr -> jpr.cud));
         compilationUnits.set(map);
 
@@ -160,16 +162,17 @@ public class InspectAll implements InspectWithJavaParser {
     record JavaParsingResult(TypeInfo typeInfo, CompilationUnitData cud) {
     }
 
-    private Stream<JavaParsingResult> doJavaParsingHandleExceptions(URI uri) {
+    private Stream<JavaParsingResult> doJavaParsingHandleExceptions(URI uri, ParserConfiguration parserConfiguration) {
         try {
-            return doJavaParsing(uri);
+            return doJavaParsing(uri, parserConfiguration);
         } catch (ParseException | IOException e) {
             exceptions.add(new ExceptionInFile(e, uri));
             return Stream.of();
         }
     }
 
-    private Stream<JavaParsingResult> doJavaParsing(URI uri) throws ParseException, IOException {
+    private Stream<JavaParsingResult> doJavaParsing(URI uri, ParserConfiguration parserConfiguration)
+            throws ParseException, IOException {
         LOGGER.debug("Running JavaParser on source file '{}'", uri);
 
         InputStreamReader isr = new InputStreamReader(uri.toURL().openStream(),
@@ -178,8 +181,7 @@ public class InspectAll implements InspectWithJavaParser {
         isr.transferTo(sw);
         String sourceCode = sw.toString();
 
-        JavaParser javaParser = new JavaParser(new ParserConfiguration()
-                .setLanguageLevel(ParserConfiguration.LanguageLevel.JAVA_17));
+        JavaParser javaParser = new JavaParser(parserConfiguration);
         ParseResult<CompilationUnit> parseResult = javaParser.parse(sourceCode);
         if (!parseResult.isSuccessful() || parseResult.getResult().isEmpty()) {
             parseResult.getProblems().forEach(problem -> LOGGER.error("Parsing problem: {}", problem));
