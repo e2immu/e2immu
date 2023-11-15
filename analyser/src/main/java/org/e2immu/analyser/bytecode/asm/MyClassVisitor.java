@@ -452,9 +452,11 @@ public class MyClassVisitor extends ClassVisitor {
         }
     }
 
-    private boolean functionalInterface() {
-        return typeInspectionBuilder.typeNature() == TypeNature.INTERFACE &&
-                typeInspectionBuilder.computeIsFunctionalInterface(localTypeMap);
+    private MethodInspection functionalInterface() {
+        if (typeInspectionBuilder.typeNature() == TypeNature.INTERFACE) {
+            return typeInspectionBuilder.computeIsFunctionalInterface(localTypeMap);
+        }
+        return null;
     }
 
     private void errorStateForType(String pathCausingFailure) {

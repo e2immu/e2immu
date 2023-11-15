@@ -20,6 +20,7 @@ import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.util.ListUtil;
 import org.e2immu.annotation.Fluent;
 import org.e2immu.annotation.NotNull;
+import org.e2immu.annotation.Nullable;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -61,6 +62,9 @@ public interface TypeInspection extends Inspection {
 
     @NotNull(content = true)
     List<ParameterizedType> interfacesImplemented();
+
+    @Nullable // when isFunctionalInterface is false
+    MethodInspection getSingleAbstractMethod();
 
     @NotNull
     Inspector inspector();
@@ -162,9 +166,9 @@ public interface TypeInspection extends Inspection {
 
     /**
      * @param inspectionProvider to be able to inspect super-types
-     * @return true when a functional interface
+     * @return not null when a functional interface
      */
-    boolean computeIsFunctionalInterface(InspectionProvider inspectionProvider);
+    MethodInspection computeIsFunctionalInterface(InspectionProvider inspectionProvider);
 
     default boolean isStatic() {
         if (typeInfo().packageNameOrEnclosingType.isLeft()) return true; // independent type
@@ -258,7 +262,7 @@ public interface TypeInspection extends Inspection {
         Builder addMethod(MethodInfo methodInfo);
 
         @Fluent
-        Builder setFunctionalInterface(boolean b);
+        Builder setFunctionalInterface(MethodInspection methodInspection);
 
         @Fluent
         Builder addInterfaceImplemented(ParameterizedType functionalInterfaceType);

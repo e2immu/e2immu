@@ -630,25 +630,56 @@ public class ParameterizedType {
      * @return the combination of method and initial type parameter map
      */
     public MethodTypeParameterMap findSingleAbstractMethodOfInterface(InspectionProvider inspectionProvider, boolean complain) {
-        if (complain && !isFunctionalInterface(inspectionProvider)) return null;
+        if (typeInfo == null) return null;
         TypeInspection typeInspection = inspectionProvider.getTypeInspection(typeInfo);
-        Optional<MethodInspection> theMethod = typeInspection.methodStream(TypeInspection.Methods.THIS_TYPE_ONLY_EXCLUDE_FIELD_SAM)
-                .filter(m -> !m.isStatic() && !m.isDefault())
-                .map(inspectionProvider::getMethodInspection)
-                .findFirst();
-        if (theMethod.isPresent()) {
-            return new MethodTypeParameterMap(theMethod.get(), initialTypeParameterMap(inspectionProvider));
+        MethodInspection theMethod = typeInspection.getSingleAbstractMethod();
+        if (theMethod == null) {
+            if (complain) {
+                throw new UnsupportedOperationException("Cannot find a single abstract method in the interface " + detailedString());
+            }
+            return null;
         }
-        for (ParameterizedType extension : typeInspection.interfacesImplemented()) {
-            MethodTypeParameterMap ofExtension = extension.findSingleAbstractMethodOfInterface(inspectionProvider, false);
-            if (ofExtension != null) {
-                return ofExtension;
+        /* if theMethod comes from a superType, we need a full type parameter map,
+           e.g., BinaryOperator -> BiFunction.apply, we need concrete values for T, U, V of BiFunction
+         */
+        Map<NamedType, ParameterizedType> map;
+        if (theMethod.getMethodInfo().typeInfo.equals(typeInfo)) {
+            map = initialTypeParameterMap(inspectionProvider);
+        } else {
+            map = makeTypeParameterMap(inspectionProvider, theMethod.getMethodInfo(), this, new HashSet<>());
+            assert map != null; // the method must be somewhere in the hierarchy
+        }
+        return new MethodTypeParameterMap(theMethod, map);
+    }
+
+    private static Map<NamedType, ParameterizedType> makeTypeParameterMap(InspectionProvider inspectionProvider,
+                                                                          MethodInfo methodInfo,
+                                                                          ParameterizedType here,
+                                                                          Set<TypeInfo> visited) {
+        if (visited.add(here.typeInfo)) {
+            if (here.typeInfo.equals(methodInfo.typeInfo)) {
+                return here.initialTypeParameterMap(inspectionProvider);
+            }
+            TypeInspection typeInspection = inspectionProvider.getTypeInspection(here.typeInfo);
+            for (ParameterizedType superType : typeInspection.interfacesImplemented()) {
+                Map<NamedType, ParameterizedType> map = makeTypeParameterMap(inspectionProvider, methodInfo, superType, visited);
+                if (map != null) {
+                    Map<NamedType, ParameterizedType> concreteHere = here.initialTypeParameterMap(inspectionProvider);
+                    Map<NamedType, ParameterizedType> newMap = new HashMap<>();
+                    for (Map.Entry<NamedType, ParameterizedType> e : map.entrySet()) {
+                        ParameterizedType newValue;
+                        if (e.getValue().isTypeParameter()) {
+                            newValue = concreteHere.get(e.getValue().typeParameter);
+                        } else {
+                            newValue = e.getValue();
+                        }
+                        newMap.put(e.getKey(), newValue);
+                    }
+                    return newMap;
+                }
             }
         }
-        if (complain) {
-            throw new UnsupportedOperationException("Cannot find a single abstract method in the interface " + detailedString());
-        }
-        return null;
+        return null; // not here
     }
 
     public boolean betterDefinedThan(ParameterizedType v) {
@@ -859,30 +890,6 @@ public class ParameterizedType {
 
     public static boolean isUnboundTypeParameterOrJLO(TypeInfo bestType) {
         return bestType == null || bestType.isJavaLangObject();
-    }
-
-    // if we arrive here with Set<String>, we need Collection<String>, Iterable<String>, JLO in the result
-    public Stream<ParameterizedType> concreteSuperTypes(InspectionProvider inspectionProvider) {
-        TypeInfo bestType = bestTypeInfo(inspectionProvider);
-        if (bestType == null || bestType.isJavaLangObject()) return Stream.of();
-        TypeInspection typeInspection = inspectionProvider.getTypeInspection(bestType);
-        Stream<ParameterizedType> recursiveFromParent;
-        ParameterizedType parentClass = typeInspection.parentClass();
-        if (parentClass != null && !parentClass.isJavaLangObject()) {
-            ParameterizedType concreteParentType = concreteSuperType(inspectionProvider, parentClass);
-            recursiveFromParent = Stream.concat(Stream.of(concreteParentType),
-                    concreteParentType.concreteSuperTypes(inspectionProvider));
-        } else {
-            ParameterizedType concreteParentType = inspectionProvider.getPrimitives().objectParameterizedType();
-            recursiveFromParent = Stream.of(concreteParentType);
-        }
-        Stream<ParameterizedType> concreteInterfaceTypes = Stream.of();
-        for (ParameterizedType interfaceType : typeInspection.interfacesImplemented()) {
-            ParameterizedType concreteInterfaceType = concreteSuperType(inspectionProvider, interfaceType);
-            concreteInterfaceTypes = Stream.concat(Stream.of(concreteInterfaceType),
-                    concreteInterfaceType.concreteSuperTypes(inspectionProvider));
-        }
-        return Stream.concat(recursiveFromParent, concreteInterfaceTypes);
     }
 
     public boolean isUnboundWildcard() {

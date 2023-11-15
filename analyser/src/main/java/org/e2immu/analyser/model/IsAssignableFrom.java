@@ -142,7 +142,7 @@ public record IsAssignableFrom(InspectionProvider inspectionProvider,
                 if (mode == Mode.COVARIANT_ERASURE) {
                     return UNBOUND_WILDCARD + pathToJLO; // see e.g. Lambda_7, MethodCall_30,_31,_59
                 }
-                if(!target.typeInfo.isJavaLangObject()) {
+                if (!target.typeInfo.isJavaLangObject()) {
                     return NOT_ASSIGNABLE;
                 }
                 return IN_HIERARCHY + pathToJLO;
@@ -255,8 +255,10 @@ public record IsAssignableFrom(InspectionProvider inspectionProvider,
     or INVARIANT... all type parameters identical
      */
     private int functionalInterface(Mode mode) {
-        MethodInspection mTarget = target.findSingleAbstractMethodOfInterface(inspectionProvider).methodInspection;
-        MethodInspection mFrom = from.findSingleAbstractMethodOfInterface(inspectionProvider).methodInspection;
+        TypeInspection targetInspection = inspectionProvider.getTypeInspection(target.typeInfo);
+        MethodInspection mTarget = targetInspection.getSingleAbstractMethod();
+        TypeInspection fromInspection = inspectionProvider.getTypeInspection(from.typeInfo);
+        MethodInspection mFrom = fromInspection.getSingleAbstractMethod();
 
         /*
          See call to 'method' in MethodCall_32 for this "if" statement. Both types I and J are functional interfaces,

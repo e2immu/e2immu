@@ -84,9 +84,6 @@ public class LinkParameters {
     private static List<LinkedVariables> additionalLinkingFunctionalInterface2(EvaluationResult context,
                                                                                Expression parameterExpression,
                                                                                Expression parameterValue) {
-        MethodTypeParameterMap sam = parameterExpression.returnType()
-                .findSingleAbstractMethodOfInterface(context.getAnalyserContext());
-        assert sam != null;
         MethodInfo methodInfo;
         TypeInfo nestedType;
         if (parameterExpression instanceof Lambda lambda) {
@@ -135,9 +132,15 @@ public class LinkParameters {
             methodInfo = null;
             nestedType = null;
         }
-        if (methodInfo != null && sam.methodInspection.getMethodInfo().isVoid()) {
-            assert nestedType != null;
-            return additionalLinkingConsumer(context.evaluationContext(), methodInfo, nestedType);
+        if (methodInfo != null) {
+            TypeInspection returnTypeInspection = context.getAnalyserContext()
+                    .getTypeInspection(parameterExpression.returnType().typeInfo);
+            MethodInspection sam = returnTypeInspection.getSingleAbstractMethod();
+            assert sam != null;
+            if (sam.getMethodInfo().isVoid()) {
+                assert nestedType != null;
+                return additionalLinkingConsumer(context.evaluationContext(), methodInfo, nestedType);
+            }
         }
         // not yet implemented
         return List.of();

@@ -149,7 +149,7 @@ public class ResolverImpl implements Resolver {
                 .flatMap(typeInfo -> typeAndAllSubTypes(typeInfo).stream())
                 .collect(Collectors.toUnmodifiableSet());
 
-        Map<TypeInfo, TypeResolution.Builder> resolutionBuilders = inspectedTypes.entrySet().parallelStream()
+        Map<TypeInfo, TypeResolution.Builder> resolutionBuilders = inspectedTypes.entrySet().stream()
                 .collect(Collectors.toUnmodifiableMap(Map.Entry::getKey,
                         entry -> resolveTypeAndCreateBuilder(entry, stayWithin)));
         // only at the top level, because we have only one call graph

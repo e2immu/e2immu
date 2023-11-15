@@ -14,8 +14,10 @@
 
 package org.e2immu.analyser.inspector;
 
+import org.e2immu.analyser.model.MethodInspection;
 import org.e2immu.analyser.model.ParameterizedType;
 import org.e2immu.analyser.model.TypeInfo;
+import org.e2immu.analyser.model.TypeInspection;
 import org.e2immu.analyser.parser.InspectionProvider;
 
 /**
@@ -64,13 +66,9 @@ public record ForwardReturnTypeInfo(ParameterizedType type, boolean erasure, Typ
                 .boxedBooleanTypeInfo().asSimpleParameterizedType(), false);
     }
 
-    public static ForwardReturnTypeInfo expectVoid(TypeContext typeContext) {
-        return new ForwardReturnTypeInfo(typeContext.getPrimitives().voidParameterizedType(), false);
-    }
-
     public MethodTypeParameterMap computeSAM(InspectionProvider inspectionProvider, TypeInfo primaryType) {
         if (type == null || type.isVoid()) return null;
-        MethodTypeParameterMap sam = type.findSingleAbstractMethodOfInterface(inspectionProvider);
+        MethodTypeParameterMap sam = type.findSingleAbstractMethodOfInterface(inspectionProvider, false);
         if (sam != null) {
             return sam.expand(inspectionProvider, primaryType, type.initialTypeParameterMap(inspectionProvider));
         }
@@ -78,11 +76,13 @@ public record ForwardReturnTypeInfo(ParameterizedType type, boolean erasure, Typ
     }
 
     public boolean isVoid(TypeContext typeContext) {
-        if (type == null) return false;
+        if (type == null || type.typeInfo == null) return false;
         if (type.isVoid()) return true;
-        MethodTypeParameterMap sam = type.findSingleAbstractMethodOfInterface(typeContext);
-        return sam != null && sam.methodInspection != null
-                && sam.getConcreteReturnType(typeContext.getPrimitives()).isVoid();
+        TypeInspection typeInspection = typeContext.getTypeInspection(type.typeInfo);
+        MethodInspection sam = typeInspection.getSingleAbstractMethod();
+        if (sam == null) return false;
+        MethodTypeParameterMap samMap = type.findSingleAbstractMethodOfInterface(typeContext, true);
+        return samMap.getConcreteReturnType(typeContext.getPrimitives()).isVoid();
     }
 
     public String toString(InspectionProvider inspectionProvider) {

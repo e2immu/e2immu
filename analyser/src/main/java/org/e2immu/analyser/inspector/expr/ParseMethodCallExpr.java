@@ -32,6 +32,11 @@ import static org.e2immu.analyser.model.IsAssignableFrom.Mode.COVARIANT_ERASURE;
 import static org.e2immu.analyser.model.IsAssignableFrom.NOT_ASSIGNABLE;
 
 public record ParseMethodCallExpr(TypeContext typeContext) {
+
+    public ParseMethodCallExpr {
+        Objects.requireNonNull(typeContext);
+    }
+
     private static final Logger LOGGER = LoggerFactory.getLogger(ParseMethodCallExpr.class);
 
     public Expression erasure(ExpressionContext expressionContext, MethodCallExpr methodCallExpr) {
@@ -573,13 +578,15 @@ public record ParseMethodCallExpr(TypeContext typeContext) {
     private int computePenaltyForReturnType(ParameterizedType actualType,
                                             ParameterizedType formalType) {
         if (actualType.typeInfo == null || formalType.typeInfo == null) return 0;
-        MethodTypeParameterMap actual = actualType.findSingleAbstractMethodOfInterface(typeContext, false);
+        TypeInspection actualTypeInspection = typeContext.getTypeInspection(actualType.typeInfo);
+        MethodInspection actual = actualTypeInspection.getSingleAbstractMethod();
         if (actual == null) return 0; // not worth the effort
-        MethodTypeParameterMap formal = formalType.findSingleAbstractMethodOfInterface(typeContext, false);
+        TypeInspection formalTypeInspection = typeContext.getTypeInspection(formalType.typeInfo);
+        MethodInspection formal = formalTypeInspection.getSingleAbstractMethod();
         if (formal == null) return 0;
-        if (actual.methodInspection.isVoid() && !formal.methodInspection.isVoid()) return NOT_ASSIGNABLE;
+        if (actual.isVoid() && !formal.isVoid()) return NOT_ASSIGNABLE;
         // we have to have a small penalty in the other direction, to give preference to a Consumer when a Function is competing
-        if (!actual.methodInspection.isVoid() && formal.methodInspection.isVoid()) return 5;
+        if (!actual.isVoid() && formal.isVoid()) return 5;
         return 0;
     }
 

@@ -51,7 +51,7 @@ public class TypeInspectionImpl extends InspectionImpl implements TypeInspection
     public final List<TypeParameter> typeParameters;
     public final List<ParameterizedType> interfacesImplemented;
     public final Inspector inspector;
-    public final boolean functionalInterface;
+    public final MethodInspection functionalInterface;
     public final Identifier.PositionalIdentifier positionalIdentifier;
 
     private TypeInspectionImpl(TypeInfo typeInfo,
@@ -71,7 +71,7 @@ public class TypeInspectionImpl extends InspectionImpl implements TypeInspection
                                List<AnnotationExpression> annotations,
                                Inspector inspector,
                                boolean synthetic,
-                               boolean functionalInterface,
+                               MethodInspection functionalInterface,
                                Identifier.PositionalIdentifier positionalIdentifier) {
         super(annotations, access, comment, synthetic);
         this.enclosingMethod = enclosingMethod;
@@ -93,6 +93,11 @@ public class TypeInspectionImpl extends InspectionImpl implements TypeInspection
 
     @Override
     public boolean isFunctionalInterface() {
+        return functionalInterface != null;
+    }
+
+    @Override
+    public MethodInspection getSingleAbstractMethod() {
         return functionalInterface;
     }
 
@@ -180,41 +185,45 @@ public class TypeInspectionImpl extends InspectionImpl implements TypeInspection
     }
 
     @Override
-    public boolean computeIsFunctionalInterface(InspectionProvider inspectionProvider) {
-        return computeIsFunctionalInterface(inspectionProvider, this, new HashSet<>(), new HashMap<>()) == 1;
+    public MethodInspection computeIsFunctionalInterface(InspectionProvider inspectionProvider) {
+        List<MethodInspection> abstractMethods = computeIsFunctionalInterface(inspectionProvider,
+                this, new HashSet<>(), new HashMap<>());
+        return abstractMethods.size() == 1 ? abstractMethods.get(0) : null;
     }
 
-    private static int computeIsFunctionalInterface(InspectionProvider inspectionProvider,
-                                                    TypeInspection typeInspection,
-                                                    Set<MethodInspection> overridden,
-                                                    Map<NamedType, ParameterizedType> translationMap) {
-        int sum = 0;
+    private static List<MethodInspection> computeIsFunctionalInterface(InspectionProvider inspectionProvider,
+                                                                       TypeInspection typeInspection,
+                                                                       Set<MethodInspection> overriddenByDefault,
+                                                                       Map<NamedType, ParameterizedType> translationMap) {
+        if(!typeInspection.isInterface()) {
+            return List.of(); // inspection is still going on, which means recursion... ignore!
+        }
+        List<MethodInspection> abstractMethods = new ArrayList<>();
+
         for (MethodInfo methodInfo : typeInspection.methods()) {
             MethodInspection inspection = inspectionProvider.getMethodInspection(methodInfo);
             boolean nonStaticNonDefault = !inspection.isPrivate() && !methodInfo.isStatic()
                     && !methodInfo.isDefault() && !inspection.isOverloadOfJLOMethod();
             if (nonStaticNonDefault) {
-                if (overridden.stream().noneMatch(override -> isOverrideOf(inspectionProvider, inspection, override, translationMap))) {
-                    sum++;
-                    overridden.add(inspection);
-                }
+                if (overriddenByDefault.stream().noneMatch(override -> isOverrideOf(inspectionProvider, inspection, override, translationMap))) {
+                    abstractMethods.add(inspection);
+                    overriddenByDefault.add(inspection);
+                } // is cancelled out, we have a default implementation for this method
             } else if (methodInfo.isDefault()) {
-                // can cancel out a method in one of the super types
-                overridden.add(inspection);
+                overriddenByDefault.add(inspection);
             }
         }
         // overridden needs to cancel out all of them, individually!
-        if (sum <= 1) {
-            for (ParameterizedType superInterface : typeInspection.interfacesImplemented()) {
-                TypeInspection typeInspectionOfSuperType = inspectionProvider.getTypeInspection(superInterface.typeInfo);
-                Map<NamedType, ParameterizedType> map = ShallowMethodResolver.mapOfSuperType(superInterface,
-                        inspectionProvider);
-                Map<NamedType, ParameterizedType> superMap = new HashMap<>(translationMap);
-                superMap.putAll(map);
-                sum += computeIsFunctionalInterface(inspectionProvider, typeInspectionOfSuperType, overridden, superMap);
-            }
+        for (ParameterizedType superInterface : typeInspection.interfacesImplemented()) {
+            TypeInspection typeInspectionOfSuperType = inspectionProvider.getTypeInspection(superInterface.typeInfo);
+            Map<NamedType, ParameterizedType> map = ShallowMethodResolver.mapOfSuperType(superInterface,
+                    inspectionProvider);
+            Map<NamedType, ParameterizedType> superMap = new HashMap<>(translationMap);
+            superMap.putAll(map);
+            abstractMethods.addAll(computeIsFunctionalInterface(inspectionProvider,
+                    typeInspectionOfSuperType, overriddenByDefault, superMap));
         }
-        return sum;
+        return abstractMethods;
     }
 
     private static boolean isOverrideOf(InspectionProvider inspectionProvider,
@@ -243,7 +252,7 @@ public class TypeInspectionImpl extends InspectionImpl implements TypeInspection
         private final List<ParameterizedType> interfacesImplemented = new ArrayList<>();
         private final TypeInfo typeInfo;
         private final Inspector inspector;
-        private boolean functionalInterface;
+        private MethodInspection functionalInterface;
         private Identifier.PositionalIdentifier positionalIdentifier;
 
         public Builder(TypeInfo typeInfo, Inspector inspector) {
@@ -256,7 +265,7 @@ public class TypeInspectionImpl extends InspectionImpl implements TypeInspection
             return "TypeInspection.Builder of " + typeInfo.fullyQualifiedName;
         }
 
-        public Builder setFunctionalInterface(boolean functionalInterface) {
+        public Builder setFunctionalInterface(MethodInspection functionalInterface) {
             this.functionalInterface = functionalInterface;
             return this;
         }
@@ -277,6 +286,11 @@ public class TypeInspectionImpl extends InspectionImpl implements TypeInspection
 
         @Override
         public boolean isFunctionalInterface() {
+            return functionalInterface != null;
+        }
+
+        @Override
+        public MethodInspection getSingleAbstractMethod() {
             return functionalInterface;
         }
 
@@ -423,7 +437,7 @@ public class TypeInspectionImpl extends InspectionImpl implements TypeInspection
                     getAnnotations(),
                     inspector,
                     isSynthetic(),
-                    isFunctionalInterface(),
+                    functionalInterface,
                     positionalIdentifier);
         }
 
@@ -478,9 +492,10 @@ public class TypeInspectionImpl extends InspectionImpl implements TypeInspection
         }
 
         @Override
-        public boolean computeIsFunctionalInterface(InspectionProvider inspectionProvider) {
-            return TypeInspectionImpl.computeIsFunctionalInterface(inspectionProvider,
-                    this, new HashSet<>(), new HashMap<>()) == 1;
+        public MethodInspection computeIsFunctionalInterface(InspectionProvider inspectionProvider) {
+            List<MethodInspection> abstractMethods = TypeInspectionImpl.computeIsFunctionalInterface(inspectionProvider,
+                    this, new HashSet<>(), new HashMap<>());
+            return abstractMethods.size() == 1 ? abstractMethods.get(0) : null;
         }
 
         /*

@@ -515,4 +515,11 @@ public class TestMethodCall extends CommonTest {
     private static MethodCall methodCallInFirstStatement(MethodInfo m1) {
         return m1.methodInspection.get().getMethodBody().structure.getStatements().get(0).asInstanceOf(ExpressionAsStatement.class).expression.asInstanceOf(MethodCall.class);
     }
+
+    // this test essentially checks that the private JDK type SequencedCollection, squeezed between Collection and List,
+    // is not a functional interface
+    @Test
+    public void test_67() throws IOException {
+        inspectAndResolve(MethodCall_67.class);
+    }
 }

@@ -702,7 +702,7 @@ public class TypeMapImpl implements TypeMap {
             m.setAccess(Inspection.Access.PUBLIC);
             MethodInspection mi = m.build(this);
             registerMethodInspection(m);
-            builder.addMethod(mi.getMethodInfo()).setFunctionalInterface(true);
+            builder.addMethod(mi.getMethodInfo()).setFunctionalInterface(mi);
             typeInfo.typeInspection.set(builder.build(null));
             return typeInfo;
         }

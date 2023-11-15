@@ -260,7 +260,7 @@ public class PrimitivesImpl implements Primitives {
         for (TypeInfo ti : boxed) {
             ti.typeInspection.set(new TypeInspectionImpl.Builder(ti, BY_HAND_WITHOUT_STATEMENTS)
                     .setTypeNature(TypeNature.CLASS)
-                    .setFunctionalInterface(false)
+                    .setFunctionalInterface(null)
                     .noParent(this)
                     .setAccess(Inspection.Access.PUBLIC)
                     .build(null));
@@ -281,7 +281,7 @@ public class PrimitivesImpl implements Primitives {
             ti.typeInspection.set(new TypeInspectionImpl.Builder(ti, BY_HAND_WITHOUT_STATEMENTS)
                     .setTypeNature(TypeNature.PRIMITIVE)
                     .setAccess(Inspection.Access.PUBLIC)
-                    .setFunctionalInterface(false)
+                    .setFunctionalInterface(null)
                     .noParent(this)
                     .build(null));
             primitiveByName.put(ti.simpleName, ti);
@@ -311,7 +311,7 @@ public class PrimitivesImpl implements Primitives {
         functionalInterface.typeInspection.set(new TypeInspectionImpl.Builder(functionalInterface, BY_HAND_WITHOUT_STATEMENTS)
                 .setTypeNature(TypeNature.ANNOTATION)
                 .setAccess(Inspection.Access.PUBLIC)
-                .setFunctionalInterface(false)
+                .setFunctionalInterface(null)
                 .noParent(this)
                 .build(null));
 
@@ -340,7 +340,7 @@ public class PrimitivesImpl implements Primitives {
                 .setTypeNature(TypeNature.ENUM)
                 .setAccess(Inspection.Access.PUBLIC)
                 .addTypeModifier(TypeModifier.PUBLIC)
-                .setFunctionalInterface(false)
+                .setFunctionalInterface(null)
                 .noParent(this)
                 .addMethod(valueOf)
                 .addMethod(name);

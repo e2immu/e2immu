@@ -254,8 +254,9 @@ public class ParseLambdaExpr {
                                                 Block block,
                                                 ParameterizedType returnType,
                                                 MethodInfo enclosingMethod) {
-        MethodTypeParameterMap sam = functionalInterfaceType.findSingleAbstractMethodOfInterface(typeMapBuilder);
-        MethodInspection methodInspectionOfSAMsMethod = typeMapBuilder.getMethodInspection(sam.methodInspection.getMethodInfo());
+        TypeInspection typeInspection = typeMapBuilder.getTypeInspection(functionalInterfaceType.typeInfo);
+        MethodInspection sam = typeInspection.getSingleAbstractMethod();
+        MethodInspection methodInspectionOfSAMsMethod = typeMapBuilder.getMethodInspection(sam.getMethodInfo());
         ParameterizedType bestReturnType = returnType.mostSpecific(typeMapBuilder, builder.owner().primaryType(),
                 methodInspectionOfSAMsMethod.getReturnType());
         builder.setReturnType(Objects.requireNonNull(bestReturnType));
@@ -269,7 +270,7 @@ public class ParseLambdaExpr {
                 .setEnclosingMethod(enclosingMethod)
                 .setTypeNature(TypeNature.CLASS)
                 .addInterfaceImplemented(functionalInterfaceType)
-                .addMethod(methodInfo).setFunctionalInterface(true);
+                .addMethod(methodInfo).setFunctionalInterface(builder);
         TypeInspection builtTypeInspection = typeInspectionBuilder.build(typeMapBuilder);
         typeInfo.typeInspection.set(builtTypeInspection);
         typeMapBuilder.registerMethodInspection(builder);

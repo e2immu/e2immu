@@ -629,11 +629,14 @@ public class TypeInspectorImpl implements TypeInspector {
 
     private void ensureFunctionalInterfaceAnnotation(TypeContext typeContext,
                                                      TypeInspectionImpl.Builder builder) {
-        if (builder.typeNature() == TypeNature.INTERFACE && builder.computeIsFunctionalInterface(typeContext)) {
-            builder.addAnnotation(typeContext.getPrimitives().functionalInterfaceAnnotationExpression());
-            builder.setFunctionalInterface(true);
+        if (builder.typeNature() == TypeNature.INTERFACE) {
+            MethodInspection sam = builder.computeIsFunctionalInterface(typeContext);
+            if (sam != null) {
+                builder.addAnnotation(typeContext.getPrimitives().functionalInterfaceAnnotationExpression());
+            }
+            builder.setFunctionalInterface(sam);
         } else {
-            builder.setFunctionalInterface(false);
+            builder.setFunctionalInterface(null);
         }
     }
 
