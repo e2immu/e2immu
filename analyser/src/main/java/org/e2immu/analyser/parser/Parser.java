@@ -37,6 +37,7 @@ import org.slf4j.LoggerFactory;
 import java.io.File;
 import java.io.IOException;
 import java.net.URI;
+import java.time.Instant;
 import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -208,7 +209,6 @@ public class Parser {
                     e.getKey(), e.getValue(), anonymousTypeCounters);
             expressionContexts.put(e.getKey(), ec);
         }
-        LOGGER.info("Start resolution phase on {} primary types", expressionContexts.size());
         SortedTypes sortedTypes = resolver.resolve(expressionContexts);
         Stream<Message> messageStream = resolver.getMessageStream()
                 .filter(m -> m.message().severity != Message.Severity.WARN || reportWarnings);

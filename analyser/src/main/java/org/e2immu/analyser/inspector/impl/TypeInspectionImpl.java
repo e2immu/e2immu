@@ -191,11 +191,15 @@ public class TypeInspectionImpl extends InspectionImpl implements TypeInspection
         return abstractMethods.size() == 1 ? abstractMethods.get(0) : null;
     }
 
+    /*
+    See Overload_3 for the necessity of the translationMap. Overload_4 and MethodCall_67 are good tests for this
+    method.
+     */
     private static List<MethodInspection> computeIsFunctionalInterface(InspectionProvider inspectionProvider,
                                                                        TypeInspection typeInspection,
                                                                        Set<MethodInspection> overriddenByDefault,
                                                                        Map<NamedType, ParameterizedType> translationMap) {
-        if(!typeInspection.isInterface()) {
+        if (!typeInspection.isInterface()) {
             return List.of(); // inspection is still going on, which means recursion... ignore!
         }
         List<MethodInspection> abstractMethods = new ArrayList<>();
@@ -205,7 +209,8 @@ public class TypeInspectionImpl extends InspectionImpl implements TypeInspection
             boolean nonStaticNonDefault = !inspection.isPrivate() && !methodInfo.isStatic()
                     && !methodInfo.isDefault() && !inspection.isOverloadOfJLOMethod();
             if (nonStaticNonDefault) {
-                if (overriddenByDefault.stream().noneMatch(override -> isOverrideOf(inspectionProvider, inspection, override, translationMap))) {
+                if (overriddenByDefault.stream().noneMatch(override ->
+                        isOverrideOf(inspectionProvider, inspection, override, translationMap))) {
                     abstractMethods.add(inspection);
                     overriddenByDefault.add(inspection);
                 } // is cancelled out, we have a default implementation for this method

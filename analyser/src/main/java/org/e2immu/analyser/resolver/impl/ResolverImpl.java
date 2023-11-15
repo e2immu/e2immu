@@ -52,6 +52,8 @@ import org.slf4j.LoggerFactory;
 
 import javax.annotation.processing.Generated;
 import java.io.*;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -145,20 +147,29 @@ public class ResolverImpl implements Resolver {
 
     @Override
     public SortedTypes resolve(Map<TypeInfo, ExpressionContext> inspectedTypes) {
+        Instant startTime;
+        if (parent == null) {
+            LOGGER.info("Start resolution phase on {} primary types", inspectedTypes.size());
+            startTime = Instant.now();
+        } else {
+            startTime = null;
+        }
         Set<TypeInfo> stayWithin = inspectedTypes.keySet().stream()
                 .flatMap(typeInfo -> typeAndAllSubTypes(typeInfo).stream())
                 .collect(Collectors.toUnmodifiableSet());
 
-        Map<TypeInfo, TypeResolution.Builder> resolutionBuilders = inspectedTypes.entrySet().stream()
+        Map<TypeInfo, TypeResolution.Builder> resolutionBuilders = inspectedTypes.entrySet().parallelStream()
                 .collect(Collectors.toUnmodifiableMap(Map.Entry::getKey,
                         entry -> resolveTypeAndCreateBuilder(entry, stayWithin)));
         // only at the top level, because we have only one call graph
         if (parent == null) {
-            LOGGER.info("At end of main resolution loop, start filling method resolution objects on {} types",
-                    typeCounterForDebugging.get());
-            methodResolution();
-        }
-        if (parent == null) {
+            Instant endTime = Instant.now();
+            long seconds = ChronoUnit.SECONDS.between(startTime, endTime);
+            LOGGER.info("At end of main resolution loop, took {} seconds", seconds);
+            LOGGER.info("Start filling method resolution objects on {} types", typeCounterForDebugging.get());
+            synchronized (methodCallGraph) {
+                methodResolution();
+            }
             LOGGER.info("Computing analyser sequence from dependency graph");
         }
         List<TypeInfo> sorted = sortWarnForCircularDependencies(resolutionBuilders);
@@ -205,10 +216,12 @@ public class ResolverImpl implements Resolver {
         Set<TypeInfo> inCycle = new HashSet<>();
 
         LOGGER.debug("\n\n******* start sorting *********\n");
-        return typeGraph.sorted(cycle -> foundCycle(resolutionBuilders, cycle, inCycle),
-                typeInfo -> LOGGER.debug("Adding {}", typeInfo.fullyQualifiedName),
-                Comparator.comparing(typeInfo -> typeInfo.fullyQualifiedName),
-                shallowResolver);
+        synchronized (typeGraph) {
+            return typeGraph.sorted(cycle -> foundCycle(resolutionBuilders, cycle, inCycle),
+                    typeInfo -> LOGGER.debug("Adding {}", typeInfo.fullyQualifiedName),
+                    Comparator.comparing(typeInfo -> typeInfo.fullyQualifiedName),
+                    shallowResolver);
+        }
     }
 
     private void foundCycle(Map<TypeInfo, TypeResolution.Builder> resolutionBuilders,
@@ -227,8 +240,13 @@ public class ResolverImpl implements Resolver {
             otherBuilder.addCircularDependencies(cycleAsSet);
 
             if (addMessage) {
-                messages.add(Message.newMessage(typeInfo.newLocation(), Message.Label.CIRCULAR_TYPE_DEPENDENCY,
-                        restrictedCycle.stream().map(t -> t.fullyQualifiedName).collect(Collectors.joining(", "))));
+                String cycleString = restrictedCycle.stream().map(t -> t.fullyQualifiedName)
+                        .collect(Collectors.joining(", "));
+                Message message = Message.newMessage(typeInfo.newLocation(), Message.Label.CIRCULAR_TYPE_DEPENDENCY,
+                        cycleString);
+                synchronized (messages) {
+                    messages.add(message);
+                }
                 addMessage = false;
             }
         }
@@ -336,7 +354,9 @@ public class ResolverImpl implements Resolver {
         TypeInfo.HardCoded hardCoded = TypeInfo.HARDCODED_TYPES.get(typeInfo.fullyQualifiedName);
         Map<TypeInfo, Integer> dependsOn = hardCoded != null && hardCoded.eraseDependencies ? Map.of()
                 : Map.copyOf(typeDependencies);
-        typeGraph.addNode(typeInfo, dependsOn);
+        synchronized (typeGraph) {
+            typeGraph.addNode(typeInfo, dependsOn);
+        }
         List<WithInspectionAndAnalysis> sorted = methodFieldSubTypeGraph.sorted(null, null,
                 Comparator.comparing(WithInspectionAndAnalysis::fullyQualifiedName));
         List<WithInspectionAndAnalysis> methodFieldSubTypeOrder = List.copyOf(sorted);
@@ -792,7 +812,9 @@ public class ResolverImpl implements Resolver {
                 // avoid synthetic constructors: they have no method inspection
                 if (methodInfo != null && !methodInfo.isSyntheticConstructor()) {
                     if (caller != null) {
-                        methodCallGraph.addNode(caller, List.of(methodInfo));
+                        synchronized (methodCallGraph) {
+                            methodCallGraph.addNode(caller, List.of(methodInfo));
+                        }
                         created.set(true);
                     }
                 }
@@ -812,7 +834,9 @@ public class ResolverImpl implements Resolver {
                 return drillDeeper;
             });
             if (caller != null && !created.get()) {
-                methodCallGraph.addNode(caller, List.of());
+                synchronized (methodCallGraph) {
+                    methodCallGraph.addNode(caller, List.of());
+                }
             }
         }
 
@@ -1250,9 +1274,13 @@ public class ResolverImpl implements Resolver {
             if (directory.mkdirs()) {
                 LOGGER.info("Created directory {}", directory);
             }
-            dumpTypeGraph(new File(directory, "typeDependencies.gml.gz"));
-            dumpPackageGraphBasedOnTypeGraph(new File(directory, "packageDependenciesBasedOnTypeGraph.gml.gz"));
-            dumpMethodCallGraph(new File(directory, "methodCalls.gml.gz"));
+            synchronized (typeGraph) {
+                dumpTypeGraph(new File(directory, "typeDependencies.gml.gz"));
+                dumpPackageGraphBasedOnTypeGraph(new File(directory, "packageDependenciesBasedOnTypeGraph.gml.gz"));
+            }
+            synchronized (methodCallGraph) {
+                dumpMethodCallGraph(new File(directory, "methodCalls.gml.gz"));
+            }
         } catch (IOException ioe) {
             throw new RuntimeException(ioe);
         }
@@ -1354,13 +1382,7 @@ public class ResolverImpl implements Resolver {
         }
         methodCallGraph.visit((from, list) -> {
             if (list != null) {
-                list.forEach(to -> {
-                    if(!graph.containsVertex(to)) {
-                        LOGGER.info("Adding vertex {}", to);
-                        graph.addVertex(to);
-                    }
-                    graph.addEdge(from, to);
-                });
+                list.forEach(to -> graph.addEdge(from, to));
             }
         });
 

@@ -116,7 +116,9 @@ public record ParseMethodCallExpr(TypeContext typeContext) {
 
         try {
             Map<MethodTypeParameterMap, Integer> methodCandidates = initialMethodCandidates(scope, numArguments, methodName);
-
+            if (methodCandidates.isEmpty()) {
+                throw new RuntimeException("Method candidates are empty for " + errorInfo.toString(typeContext));
+            }
             TypeParameterMap extra = forwardReturnTypeInfo.extra().merge(scope.typeParameterMap());
 
             Candidate candidate = chooseCandidateAndEvaluateCall(expressionContext,

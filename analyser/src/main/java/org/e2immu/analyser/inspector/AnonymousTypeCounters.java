@@ -23,7 +23,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 public class AnonymousTypeCounters {
     final Map<TypeInfo, AtomicInteger> anonymousClassCounter = new HashMap<>();
 
-    public int newIndex(TypeInfo primaryType) {
+    public synchronized int newIndex(TypeInfo primaryType) {
         return anonymousClassCounter.computeIfAbsent(primaryType, t -> new AtomicInteger()).incrementAndGet();
     }
 }
