@@ -270,7 +270,8 @@ public class ParseLambdaExpr {
                 .setEnclosingMethod(enclosingMethod)
                 .setTypeNature(TypeNature.CLASS)
                 .addInterfaceImplemented(functionalInterfaceType)
-                .addMethod(methodInfo).setFunctionalInterface(builder);
+                .addMethod(methodInfo)
+                .setFunctionalInterface(builder);
         TypeInspection builtTypeInspection = typeInspectionBuilder.build(typeMapBuilder);
         typeInfo.typeInspection.set(builtTypeInspection);
         typeMapBuilder.registerMethodInspection(builder);

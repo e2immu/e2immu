@@ -74,7 +74,8 @@ public class ParseExplicitConstructorInvocation {
                 arguments,
                 typeContext.getPrimitives().voidParameterizedType(),
                 extra,
-                errorInfo);
+                errorInfo,
+                false);
 
         assert candidate != null : "Should have found a unique candidate for " + errorInfo;
         LOGGER.debug("Resulting constructor is {}", candidate.method().methodInspection.getMethodInfo().fullyQualifiedName);

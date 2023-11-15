@@ -611,6 +611,9 @@ public class ParameterizedType {
     public boolean isFunctionalInterface(InspectionProvider inspectionProvider) {
         if (typeInfo == null || arrays > 0) return false;
         TypeInspection typeInspection = inspectionProvider.getTypeInspection(typeInfo);
+        if (typeInspection == null) {
+            throw new UnsupportedOperationException("No type inspection for " + this);
+        }
         return typeInspection.isFunctionalInterface();
     }
 

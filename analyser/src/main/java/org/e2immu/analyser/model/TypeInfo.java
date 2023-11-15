@@ -450,7 +450,7 @@ public final class TypeInfo implements NamedType,
 
     public MethodInfo findUniqueMethod(String methodName, TypeInfo typeOfFirstParameter) {
         return typeInspection.get().methodStream(TypeInspection.Methods.THIS_TYPE_ONLY_EXCLUDE_FIELD_SAM)
-                .filter(m -> m.name.equals(methodName) && m.methodInspection.get().getParameters().size() > 0)
+                .filter(m -> m.name.equals(methodName) && !m.methodInspection.get().getParameters().isEmpty())
                 .filter(m -> typeOfFirstParameter.equals(m.methodInspection.get().getParameters().get(0)
                         .parameterizedType.typeInfo))
                 .findAny().orElseThrow(() -> new IllegalArgumentException(
@@ -499,23 +499,16 @@ public final class TypeInfo implements NamedType,
             return packageNameOrEnclosingType.getLeft();
         return packageNameOrEnclosingType.getRight().packageName();
     }
-    // this type implements a functional interface, and we need to find the single abstract method
-
-    public MethodInfo findOverriddenSingleAbstractMethod(InspectionProvider inspectionProvider) {
-        return typeInspection.get().methodStream(TypeInspection.Methods.THIS_TYPE_ONLY_EXCLUDE_FIELD_SAM)
-                .filter(mi -> !mi.isDefault() && !mi.isStatic())
-                .findFirst().orElseThrow();
-    }
 
     public MethodInfo findConstructor(int parameters) {
-        return typeInspection.get().constructors().stream()
+        return typeInspection.get(fullyQualifiedName).constructors().stream()
                 .filter(c -> c.methodInspection.get().getParameters().size() == parameters)
                 .findFirst().orElseThrow();
     }
 
     public MethodInfo findConstructor(TypeInfo typeOfFirstParameter) {
         return typeInspection.get().constructors().stream()
-                .filter(c -> c.methodInspection.get().getParameters().size() > 0)
+                .filter(c -> !c.methodInspection.get().getParameters().isEmpty())
                 .filter(c -> typeOfFirstParameter.equals(c.methodInspection.get()
                         .getParameters().get(0).parameterizedType.bestTypeInfo()))
                 .findFirst().orElseThrow();
@@ -581,7 +574,6 @@ public final class TypeInfo implements NamedType,
 
     public static final int PARENT_WEIGHT = 100_000;
     public static final int INTERFACE_WEIGHT = 10_000;
-    public static final int ENCLOSING_WEIGHT = 10_000;
     public static final int ANNOTATION_WEIGHT = 10;
 
     @Override

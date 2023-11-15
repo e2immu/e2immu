@@ -123,6 +123,6 @@ public interface TypeMap extends InspectionProvider {
         TypeInspection getTypeInspectionToStartResolving(TypeInfo typeInfo);
 
         // from byteCodeInspection into my typeMap
-        void copyIntoTypeMap(List<TypeData> localTypeData);
+        TypeInspection.Builder copyIntoTypeMap(TypeInfo start, List<TypeData> localTypeData);
     }
 }

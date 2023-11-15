@@ -59,7 +59,7 @@ public class TestByteCodeInspectorCommonsPool {
 
         List<TypeData> data = byteCodeInspector.inspectFromPath(new Source(pathWithClass, jarUrl.toURI()));
         // in case the path is a subType, we need to inspect it explicitly
-        typeContext.typeMap.copyIntoTypeMap(data);
+        typeContext.typeMap.copyIntoTypeMap(data.get(0).getTypeInspectionBuilder().typeInfo(), data);
         return typeContext.typeMap.build();
     }
 

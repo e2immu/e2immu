@@ -90,7 +90,8 @@ public class LinkParameters {
             methodInfo = lambda.methodInfo;
             nestedType = lambda.methodInfo.typeInfo;
         } else if (parameterExpression instanceof ConstructorCall cc && cc.anonymousClass() != null) {
-            methodInfo = cc.anonymousClass().findOverriddenSingleAbstractMethod(context.getAnalyserContext());
+            methodInfo = context.getAnalyserContext().getTypeInspection(cc.anonymousClass())
+                    .getSingleAbstractMethod().getMethodInfo();
             nestedType = cc.anonymousClass();
         } else if (parameterExpression instanceof MethodReference methodReference) {
             if (parameterValue instanceof MethodReference mr) {

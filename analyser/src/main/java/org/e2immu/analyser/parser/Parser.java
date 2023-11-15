@@ -29,7 +29,6 @@ import org.e2immu.analyser.parser.impl.TypeMapImpl;
 import org.e2immu.analyser.resolver.SortedTypes;
 import org.e2immu.analyser.resolver.TypeCycle;
 import org.e2immu.analyser.resolver.impl.ResolverImpl;
-import org.e2immu.analyser.util.Trie;
 import org.e2immu.analyser.visitor.TypeMapVisitor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -37,7 +36,6 @@ import org.slf4j.LoggerFactory;
 import java.io.File;
 import java.io.IOException;
 import java.net.URI;
-import java.time.Instant;
 import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -92,6 +90,7 @@ public class Parser {
             return this;
         }
 
+        @SuppressWarnings("unused")
         public RunResult writeAnalysis() {
             if (analyserContext instanceof GlobalAnalyserContext globalAnalyserContext) {
                 globalAnalyserContext.writeAll();
@@ -113,13 +112,13 @@ public class Parser {
         if (annotatedAPIs.isEmpty()) {
             sortedAnnotatedAPITypes = SortedTypes.EMPTY;
         } else {
-            sortedAnnotatedAPITypes = inspectAndResolve(input.annotatedAPIs(), input.annotatedAPITypes(),
+            sortedAnnotatedAPITypes = inspectAndResolve(input.annotatedAPIs(),
                     configuration.annotatedAPIConfiguration().reportWarnings(), true,
                     configuration.inspectorConfiguration().storeComments());
         }
 
         // and the inspection and resolution of Java sources (Java parser)
-        SortedTypes resolvedSourceTypes = inspectAndResolve(input.sourceURLs(), input.sourceTypes(), true,
+        SortedTypes resolvedSourceTypes = inspectAndResolve(input.sourceURLs(), true,
                 false, configuration.inspectorConfiguration().storeComments());
 
         TypeMap typeMap;
@@ -164,14 +163,13 @@ public class Parser {
     }
 
     public TypeMap.Builder inspectOnlyForTesting() {
-        inspectAndResolve(input.annotatedAPIs(), input.annotatedAPITypes(),
+        inspectAndResolve(input.annotatedAPIs(),
                 configuration.annotatedAPIConfiguration().reportWarnings(), true,
                 configuration.inspectorConfiguration().storeComments());
         return input.globalTypeContext().typeMap;
     }
 
     public SortedTypes inspectAndResolve(Map<TypeInfo, URI> urls,
-                                         Trie<TypeInfo> typesForWildcardImport,
                                          boolean reportWarnings,
                                          boolean shallowResolver,
                                          boolean storeComments) {

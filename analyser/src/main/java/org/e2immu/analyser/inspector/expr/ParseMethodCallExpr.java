@@ -126,9 +126,11 @@ public record ParseMethodCallExpr(TypeContext typeContext) {
                     methodCallExpr.getArguments(),
                     forwardReturnTypeInfo.type(),
                     extra,
-                    errorInfo);
+                    errorInfo,
+                    false);
 
             if (candidate == null) {
+                tryToExplain(scope, numArguments, methodName, forwardReturnTypeInfo, expressionContext, methodCallExpr);
                 throw new RuntimeException("Should have found a unique candidate for " + errorInfo.toString(typeContext));
             }
             LOGGER.debug("Resulting method is {}", candidate.method.methodInspection.getMethodInfo().fullyQualifiedName);
@@ -149,6 +151,23 @@ public record ParseMethodCallExpr(TypeContext typeContext) {
             LOGGER.error("Exception at {}, at {}", errorInfo.methodName, errorInfo.position);
             throw rte;
         }
+    }
+
+    private void tryToExplain(Scope scope, int numArguments, String methodName, ForwardReturnTypeInfo forwardReturnTypeInfo,
+                              ExpressionContext expressionContext, MethodCallExpr methodCallExpr) {
+        LOGGER.error("******** Try to explain");
+        Map<MethodTypeParameterMap, Integer> methodCandidates = initialMethodCandidates(scope, numArguments, methodName);
+        LOGGER.error("Have {} candidates", methodCandidates.size());
+        TypeParameterMap extra = forwardReturnTypeInfo.extra().merge(scope.typeParameterMap());
+        ErrorInfo errorInfo = new ErrorInfo(methodName, scope.type(), methodCallExpr.getBegin().orElseThrow());
+        chooseCandidateAndEvaluateCall(expressionContext,
+                methodCandidates,
+                methodCallExpr.getArguments(),
+                forwardReturnTypeInfo.type(),
+                extra,
+                errorInfo,
+                true);
+        LOGGER.error("********* End of try to explain");
     }
 
     private Map<MethodTypeParameterMap, Integer> initialMethodCandidates(Scope scope,
@@ -203,7 +222,8 @@ public record ParseMethodCallExpr(TypeContext typeContext) {
                                              List<com.github.javaparser.ast.expr.Expression> expressions,
                                              ParameterizedType returnType,
                                              TypeParameterMap extra,
-                                             ErrorInfo errorInfo) {
+                                             ErrorInfo errorInfo,
+                                             boolean explain) {
 
         Map<Integer, Expression> evaluatedExpressions = new TreeMap<>();
         int i = 0;
@@ -213,7 +233,7 @@ public record ParseMethodCallExpr(TypeContext typeContext) {
             evaluatedExpressions.put(i++, evaluated);
         }
 
-        FilterResult filterResult = filterCandidatesByParameters(methodCandidates, evaluatedExpressions, extra);
+        FilterResult filterResult = filterCandidatesByParameters(methodCandidates, evaluatedExpressions, extra, explain);
 
         // now we need to ensure that there is only 1 method left, but, there can be overloads and
         // methods with implicit type conversions, varargs, etc. etc.
@@ -451,7 +471,8 @@ public record ParseMethodCallExpr(TypeContext typeContext) {
 
     private FilterResult filterCandidatesByParameters(Map<MethodTypeParameterMap, Integer> methodCandidates,
                                                       Map<Integer, Expression> evaluatedExpressions,
-                                                      TypeParameterMap typeParameterMap) {
+                                                      TypeParameterMap typeParameterMap,
+                                                      boolean explain) {
         Map<Integer, Set<ParameterizedType>> acceptedErasedTypes =
                 evaluatedExpressions.entrySet().stream().collect(Collectors.toUnmodifiableMap(Map.Entry::getKey, e ->
                         e.getValue().erasureTypes(typeContext).stream()
@@ -491,7 +512,7 @@ public record ParseMethodCallExpr(TypeContext typeContext) {
                             if (isUnboundMethodTypeParameter(actualType) && actualType.arrays == arrayType.arrays) {
                                 compatible = 5;
                             } else {
-                                compatible = callIsAssignableFrom(actualType, arrayType);
+                                compatible = callIsAssignableFrom(actualType, arrayType, explain);
                             }
                             if (compatible >= 0 && (bestCompatible == Integer.MIN_VALUE || compatible < bestCompatible)) {
                                 bestCompatible = compatible;
@@ -523,17 +544,17 @@ public record ParseMethodCallExpr(TypeContext typeContext) {
                             if (actualTypeReplaced == ParameterizedType.NULL_CONSTANT) {
                                 // compute the distance to Object, so that the nearest one loses. See MethodCall_66
                                 // IMPROVE why 100?
-                                compatible = 100 - callIsAssignableFrom(formalTypeReplaced, typeContext.getPrimitives().objectParameterizedType());
+                                compatible = 100 - callIsAssignableFrom(formalTypeReplaced, typeContext.getPrimitives().objectParameterizedType(), explain);
                             } else if (paramIsErasure && actualTypeReplaced != actualType) {
                                 /*
                                  See 'method' call in MethodCall_32; this feels like a hack.
                                  Map.get(e.getKey()) call in MethodCall_37 shows the opposite direction; so we do Max.
                                  Feels even more like a hack.
                                  */
-                                compatible = Math.max(callIsAssignableFrom(formalTypeReplaced, actualTypeReplaced),
-                                        callIsAssignableFrom(actualTypeReplaced, formalTypeReplaced));
+                                compatible = Math.max(callIsAssignableFrom(formalTypeReplaced, actualTypeReplaced, explain),
+                                        callIsAssignableFrom(actualTypeReplaced, formalTypeReplaced, explain));
                             } else {
-                                compatible = callIsAssignableFrom(actualTypeReplaced, formalTypeReplaced);
+                                compatible = callIsAssignableFrom(actualTypeReplaced, formalTypeReplaced, explain);
                             }
 
                             if (compatible >= 0 && (bestCompatible == Integer.MIN_VALUE
@@ -778,7 +799,7 @@ public record ParseMethodCallExpr(TypeContext typeContext) {
     private int compatibleParameter(Expression evaluatedExpression, ParameterizedType typeOfParameter) {
         if (evaluatedExpression.containsErasedExpressions()) {
             Set<ParameterizedType> types = evaluatedExpression.erasureTypes(typeContext);
-            return types.stream().mapToInt(type -> callIsAssignableFrom(type, typeOfParameter))
+            return types.stream().mapToInt(type -> callIsAssignableFrom(type, typeOfParameter, false))
                     .reduce(NOT_ASSIGNABLE, (v0, v1) -> {
                         if (v0 < 0) return v1;
                         if (v1 < 0) return v0;
@@ -790,10 +811,14 @@ public record ParseMethodCallExpr(TypeContext typeContext) {
          are allowed in a reverse way (expect List<String>, accept List<T> with T a type parameter of the method,
          as long as T <- String).
         */
-        return callIsAssignableFrom(evaluatedExpression.returnType(), typeOfParameter);
+        return callIsAssignableFrom(evaluatedExpression.returnType(), typeOfParameter, false);
     }
 
-    private int callIsAssignableFrom(ParameterizedType actualType, ParameterizedType typeOfParameter) {
-        return new IsAssignableFrom(typeContext, typeOfParameter, actualType).execute(false, COVARIANT_ERASURE);
+    private int callIsAssignableFrom(ParameterizedType actualType, ParameterizedType typeOfParameter, boolean explain) {
+        int value = new IsAssignableFrom(typeContext, typeOfParameter, actualType).execute(false, COVARIANT_ERASURE);
+        if (explain) {
+            LOGGER.error("{} <- {} = {}", typeOfParameter, actualType, value);
+        }
+        return value;
     }
 }

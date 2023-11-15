@@ -260,17 +260,21 @@ public class ResolverImpl implements Resolver {
         The code that computes supertypes and counts implementations runs over all known types and subtypes,
         out of the standard sorting order, exactly because of circular dependencies.
          */
+        if (parent == null) LOGGER.info("Prepare type resolution");
         Map<TypeInfo, TypeResolution.Builder> allBuilders = new HashMap<>(resolutionBuilders);
         resolutionBuilders.entrySet().parallelStream().forEach(e ->
                 addSubtypeResolutionBuilders(inspectionProvider, e.getKey(), e.getValue(), allBuilders));
 
+        if (parent == null) LOGGER.info("Computing supertypes");
         allBuilders.entrySet().parallelStream()
                 .forEach(e -> computeSuperTypes(inspectionProvider, e.getKey(), e.getValue(), allBuilders));
+        if (parent == null) LOGGER.info("Computing field access");
         allBuilders.entrySet().parallelStream()
                 .forEach(e -> computeFieldAccess(inspectionProvider, e.getKey(), e.getValue(),
                         parent != null ? inspectedTypes.get(e.getKey()) : inspectedTypes.get(e.getKey().primaryType())));
+        if (parent == null) LOGGER.info("Post-process type resolution");
         allBuilders.entrySet().parallelStream().forEach(e -> e.getKey().typeResolution.set(e.getValue().build()));
-
+        if (parent == null) LOGGER.info("Group by cycles");
         List<TypeCycle> typeCycles = groupByCycles(sorted.stream()
                 .map(typeInfo -> typeInfo.typeResolution.get().sortedType()).toList());
         return new SortedTypes(typeCycles);
@@ -537,7 +541,7 @@ public class ResolverImpl implements Resolver {
             if (parsedExpression instanceof Lambda lambda) {
                 anonymousType = lambda.implementation.typeInfo;
                 assert anonymousType != null;
-                sam = anonymousType.findOverriddenSingleAbstractMethod(inspectionProvider);
+                sam = anonymousType.typeInspection.get().getSingleAbstractMethod().getMethodInfo();
                 assert sam != null;
                 callGetOnSam = false;
             } else if (parsedExpression instanceof MethodReference) {
@@ -552,7 +556,7 @@ public class ResolverImpl implements Resolver {
                 if (parsedExpression instanceof ConstructorCall cc && cc.anonymousClass() != null) {
                     anonymousType = cc.anonymousClass();
                     if (fieldInfo.type.isFunctionalInterface(inspectionProvider)) {
-                        sam = anonymousType.findOverriddenSingleAbstractMethod(inspectionProvider);
+                        sam = findOverriddenSingleAbstractMethodInAnonymousType(anonymousType.typeInspection.get());
                     } else {
                         sam = null;
                     }
@@ -589,6 +593,16 @@ public class ResolverImpl implements Resolver {
         }
         methodFieldSubTypeGraph.addNode(fieldInfo, dependencies);
         fieldInspectionBuilder.setFieldInitializer(fieldInitialiser);
+    }
+
+    /*
+    typeInspection, as an anonymous class, is NOT a functional interface, so we'll have to actively look
+    for the method
+     */
+    private MethodInfo findOverriddenSingleAbstractMethodInAnonymousType(TypeInspection typeInspection) {
+        return typeInspection.methodStream(TypeInspection.Methods.THIS_TYPE_ONLY_EXCLUDE_FIELD_SAM)
+                .filter(mi -> !mi.isDefault() && !mi.isStatic())
+                .findFirst().orElseThrow();
     }
 
     private boolean hasTypesDefined(org.e2immu.analyser.model.Expression parsedExpression) {

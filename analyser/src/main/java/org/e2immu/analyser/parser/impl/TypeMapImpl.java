@@ -172,6 +172,7 @@ public class TypeMapImpl implements TypeMap {
             typeInspections = source.typeInspections;
         }
 
+        @Override
         public TypeMapImpl build() {
             trieLock.writeLock().lock();
             try {
@@ -320,7 +321,7 @@ public class TypeMapImpl implements TypeMap {
             return typeInspection;
         }
 
-        public TypeInspection.Builder ensureTypeInspection(TypeInfo typeInfo, InspectionState inspectionState) {
+        private TypeInspection.Builder ensureTypeInspection(TypeInfo typeInfo, InspectionState inspectionState) {
             assert Input.acceptFQN(typeInfo.packageName());
             tiReadLock.lock();
             try {
@@ -373,6 +374,7 @@ public class TypeMapImpl implements TypeMap {
             }
         }
 
+        @Override
         public TypeInspection.Builder add(TypeInfo typeInfoIn, InspectionState inspectionState) {
             TypeInfo typeInfo = addToTrie(typeInfoIn);
             tiReadLock.lock();
@@ -425,6 +427,7 @@ public class TypeMapImpl implements TypeMap {
             }
         }
 
+        @Override
         public void registerFieldInspection(FieldInfo fieldInfo, FieldInspection.Builder builder) {
             trieReadLock.lock();
             try {
@@ -442,6 +445,7 @@ public class TypeMapImpl implements TypeMap {
             }
         }
 
+        @Override
         public void registerMethodInspection(MethodInspection.Builder builder) {
             TypeInfo typeInfo = builder.methodInfo().typeInfo;
             trieReadLock.lock();
@@ -496,6 +500,7 @@ public class TypeMapImpl implements TypeMap {
             }
         }
 
+        @Override
         public InspectionState getInspectionState(TypeInfo typeInfo) {
             if (typeInfo.typeInspection.isSet()) {
                 return BUILT;
@@ -521,15 +526,19 @@ public class TypeMapImpl implements TypeMap {
 
 
         // return false in case of cyclic dependencies
-        private boolean inspectWithByteCodeInspector(TypeInfo typeInfo) {
+        private TypeInspection inspectWithByteCodeInspector(TypeInfo typeInfo) {
             Source source = classPath.fqnToPath(typeInfo.fullyQualifiedName, ".class");
-            if (source != null) {
-                List<TypeData> data = byteCodeInspector.inspectFromPath(source);
-                copyIntoTypeMap(data);
-                TypeData ti = typeInspections.get(typeInfo.fullyQualifiedName);
-                return ti.getInspectionState().isDone();
-            } // else ignore
-            return false;
+            List<TypeData> data = byteCodeInspector.inspectFromPath(source);
+            if (data.isEmpty()) {
+                // was already present
+                tiReadLock.lock();
+                try {
+                    return typeInspections.get(typeInfo.fullyQualifiedName).getTypeInspectionBuilder();
+                } finally {
+                    tiReadLock.unlock();
+                }
+            }
+            return copyIntoTypeMap(typeInfo, data);
         }
 
         @Override
@@ -552,15 +561,10 @@ public class TypeMapImpl implements TypeMap {
             } finally {
                 tiReadLock.unlock();
             }
-            // here we could arrive two threads at the same time; we'll not block that
+            // here, two threads can arrive at the same time; we'll not block that
             if (Inspector.BYTE_CODE_INSPECTION.equals(typeData.getInspectionState().getInspector())) {
                 typeData.setInspectionState(STARTING_BYTECODE);
-                boolean success = inspectWithByteCodeInspector(typeInfo);
-                if (success) {
-                    // we'll have overwritten the typeData
-                    return typeInspections.get(typeInfo.fullyQualifiedName).getTypeInspectionBuilder();
-                }
-                // we may have to try later, because of cyclic dependencies
+                return inspectWithByteCodeInspector(typeInfo);
             } else if (typeData.getInspectionState() == TRIGGER_JAVA_PARSER || typeData.getInspectionState() == INIT_JAVA_PARSER) {
                 try {
                     typeData.setInspectionState(STARTING_JAVA_PARSER);
@@ -598,6 +602,7 @@ public class TypeMapImpl implements TypeMap {
             }
         }
 
+        @Override
         public MethodInspection getMethodInspectionDoNotTrigger(TypeInfo typeInfo, String distinguishingName) {
             tiReadLock.lock();
             try {
@@ -616,6 +621,7 @@ public class TypeMapImpl implements TypeMap {
             return primitives;
         }
 
+        @Override
         public Stream<TypeInfo> streamTypesStartingByteCode() {
             tiReadLock.lock();
             try {
@@ -634,15 +640,18 @@ public class TypeMapImpl implements TypeMap {
                     inspectWithJavaParser.storeComments());
         }
 
+        @Override
         public void setByteCodeInspector(ByteCodeInspector byteCodeInspector) {
             this.byteCodeInspector = byteCodeInspector;
         }
 
+        @Override
         public void setInspectWithJavaParser(InspectWithJavaParser inspectWithJavaParser) {
             this.inspectWithJavaParser = inspectWithJavaParser;
         }
 
         // we can probably do without this method; then the mutable versions will be used more
+        @Override
         public void makeParametersImmutable() {
             tiLock.writeLock().lock();
             try {
@@ -653,14 +662,20 @@ public class TypeMapImpl implements TypeMap {
             }
         }
 
+        @Override
         public TypeInfo syntheticFunction(int numberOfParameters, boolean isVoid) {
             String name = (isVoid ? Primitives.SYNTHETIC_CONSUMER : Primitives.SYNTHETIC_FUNCTION) + numberOfParameters;
             String fqn = "_internal_." + name;
-            TypeInfo existing = get(fqn);
-            if (existing != null) return existing;
+            trieReadLock.lock();
+            try {
+                TypeInfo existing = get(fqn);
+                if (existing != null) return existing;
+            } finally {
+                trieReadLock.unlock();
+            }
 
             TypeInfo typeInfoOrig = new TypeInfo(Identifier.INTERNAL_TYPE, Primitives.INTERNAL, name);
-            TypeInspection.Builder builder = add(typeInfoOrig, BY_HAND_WITHOUT_STATEMENTS);
+            TypeInspection.Builder builder = new TypeInspectionImpl.Builder(typeInfoOrig, Inspector.BY_HAND_WITHOUT_STATEMENTS);
             TypeInfo typeInfo = builder.typeInfo(); // in case there were two calls at the same time
             boolean isIndependent = isVoid && numberOfParameters == 0;
             if (isIndependent) {
@@ -701,9 +716,24 @@ public class TypeMapImpl implements TypeMap {
             m.readyToComputeFQN(this);
             m.setAccess(Inspection.Access.PUBLIC);
             MethodInspection mi = m.build(this);
-            registerMethodInspection(m);
             builder.addMethod(mi.getMethodInfo()).setFunctionalInterface(mi);
             typeInfo.typeInspection.set(builder.build(null));
+            trieLock.writeLock().lock();
+            try {
+                TypeInfo inMap = get(fqn);
+                if (inMap != null) return inMap; // already done!
+                addToTrie(typeInfo);
+            } finally {
+                trieLock.writeLock().unlock();
+            }
+            tiLock.writeLock().lock();
+            try {
+                TypeDataImpl typeData = new TypeDataImpl(builder, BY_HAND);
+                typeData.methodInspectionsPut(m.getDistinguishingName(), m);
+                typeInspections.put(fqn, typeData);
+            } finally {
+                tiLock.writeLock().unlock();
+            }
             return typeInfo;
         }
 
@@ -716,7 +746,7 @@ public class TypeMapImpl implements TypeMap {
 
         // byte code inspection only!!!
         @Override
-        public void copyIntoTypeMap(List<TypeData> data) {
+        public TypeInspection.Builder copyIntoTypeMap(TypeInfo start, List<TypeData> data) {
             trieLock.writeLock().lock();
             try {
                 for (TypeData typeData : data) {
@@ -729,17 +759,26 @@ public class TypeMapImpl implements TypeMap {
             tiLock.writeLock().lock();
             try {
                 // overwrite, unless done
+                TypeInspection.Builder startBuilder = null;
                 for (TypeData ias : data) {
                     String fullyQualifiedName = ias.getTypeInspectionBuilder().typeInfo().fullyQualifiedName;
                     TypeData inMap = typeInspections.get(fullyQualifiedName);
+                    TypeData theTypeData;
                     if (inMap == null || !inMap.getInspectionState().isDone() && ias.getInspectionState().isDone()) {
                         LOGGER.debug("Writing type inspection of {}", fullyQualifiedName);
                         typeInspections.put(fullyQualifiedName, ias);
+                        theTypeData = ias;
                     } else {
                         // overhead; is pretty low
                         LOGGER.debug("Not writing inspection of {}, state {}", fullyQualifiedName, ias.getInspectionState());
+                        theTypeData = inMap;
+                    }
+                    if (start.equals(theTypeData.getTypeInspectionBuilder().typeInfo())) {
+                        startBuilder = theTypeData.getTypeInspectionBuilder();
                     }
                 }
+                assert startBuilder != null;
+                return startBuilder;
             } finally {
                 tiLock.writeLock().unlock();
             }
