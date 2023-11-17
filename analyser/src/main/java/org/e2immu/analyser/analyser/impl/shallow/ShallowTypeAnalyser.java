@@ -113,9 +113,11 @@ public class ShallowTypeAnalyser extends TypeAnalyserImpl {
                 analyserContext.getE2ImmuAnnotationExpressions()));
 
         ComputingTypeAnalyser.findAspects(typeAnalysis, typeInfo);
-        LOGGER.debug("Found aspects {}",
-                typeAnalysis.aspects.stream().map(e -> e.getKey() + ": " + e.getValue().fullyQualifiedName)
-                        .collect(Collectors.joining(", ")));
+        if (!typeAnalysis.aspects.isEmpty()) {
+            LOGGER.debug("Found aspects {}",
+                    typeAnalysis.aspects.stream().map(e -> e.getKey() + ": " + e.getValue().fullyQualifiedName)
+                            .collect(Collectors.joining(", ")));
+        }
         typeAnalysis.freezeApprovedPreconditionsFinalFields();
         typeAnalysis.freezeApprovedPreconditionsImmutable();
 

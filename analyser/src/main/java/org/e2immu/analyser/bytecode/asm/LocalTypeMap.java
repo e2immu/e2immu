@@ -15,6 +15,13 @@ In the local type map, types are either
  */
 public interface LocalTypeMap extends InspectionProvider {
 
+    /*
+    now = directly
+    trigger = leave in TRIGGER_BYTE_CODE state; if never visited, it'll not be loaded
+    queue = ensure that it gets loaded before building the type map
+     */
+    enum LoadMode {NOW, TRIGGER, QUEUE}
+
     // null if not present
     TypeMap.InspectionAndState typeInspectionSituation(String fqn);
 
@@ -23,7 +30,7 @@ public interface LocalTypeMap extends InspectionProvider {
     actual loading
      */
     @Modified
-    TypeInspection getOrCreate(String fqn, boolean start);
+    TypeInspection getOrCreate(String fqn, LoadMode loadMode);
 
     /*
     same as the string version, but here we already know the enclosure relation
@@ -38,7 +45,7 @@ public interface LocalTypeMap extends InspectionProvider {
 
     // do actual byte code inspection
     @Modified
-    TypeInspection inspectFromPath(Source name, TypeContext typeContext, boolean start);
+    TypeInspection inspectFromPath(Source name, TypeContext typeContext, LoadMode loadMode);
 
     void registerFieldInspection(FieldInfo fieldInfo, FieldInspection.Builder fieldInspectionBuilder);
 

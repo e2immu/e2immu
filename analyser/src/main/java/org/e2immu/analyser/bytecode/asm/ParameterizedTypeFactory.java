@@ -51,7 +51,7 @@ public class ParameterizedTypeFactory {
         }
     }
 
-    static Result from(TypeContext typeContext, LocalTypeMap findType, boolean mustLoad, String signature) {
+    static Result from(TypeContext typeContext, LocalTypeMap findType, LocalTypeMap.LoadMode loadMode, String signature) {
         try {
             int firstCharPos = 0;
             char firstChar = signature.charAt(0);
@@ -83,7 +83,7 @@ public class ParameterizedTypeFactory {
 
             // normal class or interface type
             if (CHAR_L == firstChar) {
-                return normalType(typeContext, findType, mustLoad, signature, arrays, wildCard, firstCharPos);
+                return normalType(typeContext, findType, loadMode, signature, arrays, wildCard, firstCharPos);
             }
 
             // type parameter
@@ -123,7 +123,7 @@ public class ParameterizedTypeFactory {
 
     private static Result normalType(TypeContext typeContext,
                                      LocalTypeMap localTypeMap,
-                                     boolean mustLoad,
+                                     LocalTypeMap.LoadMode loadMode,
                                      String signature,
                                      int arrays,
                                      ParameterizedType.WildCard wildCard,
@@ -146,7 +146,7 @@ public class ParameterizedTypeFactory {
                 IterativeParsing iterativeParsing = new IterativeParsing();
                 iterativeParsing.startPos = openGenerics + 1;
                 do {
-                    iterativeParsing = iterativelyParseTypes(typeContext, localTypeMap, mustLoad, signature,
+                    iterativeParsing = iterativelyParseTypes(typeContext, localTypeMap, loadMode, signature,
                             iterativeParsing);
                     if (iterativeParsing == null) return null;
                     typeParameters.add(iterativeParsing.result);
@@ -166,7 +166,7 @@ public class ParameterizedTypeFactory {
         }
         String fqn = path.toString().replaceAll("[/$]", ".");
 
-        TypeInspection typeInspection = localTypeMap.getOrCreate(fqn, mustLoad);
+        TypeInspection typeInspection = localTypeMap.getOrCreate(fqn, loadMode);
 
         boolean unableToLoadTypeError = typeInspection == null;
         if (unableToLoadTypeError) {
@@ -202,10 +202,10 @@ public class ParameterizedTypeFactory {
 
     private static IterativeParsing iterativelyParseTypes(TypeContext typeContext,
                                                           LocalTypeMap findType,
-                                                          boolean mustLoad,
+                                                          LocalTypeMap.LoadMode loadMode,
                                                           String signature,
                                                           IterativeParsing iterativeParsing) {
-        ParameterizedTypeFactory.Result result = ParameterizedTypeFactory.from(typeContext, findType, mustLoad,
+        ParameterizedTypeFactory.Result result = ParameterizedTypeFactory.from(typeContext, findType, loadMode,
                 signature.substring(iterativeParsing.startPos));
         if (result == null) return null;
         int end = iterativeParsing.startPos + result.nextPos;

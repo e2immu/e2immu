@@ -36,7 +36,7 @@ public class ExpressionFactory {
         if (value instanceof Character c) return new CharConstant(primitives, identifier, c);
         if (value instanceof Boolean b) return new BooleanConstant(primitives, identifier, b);
         if (value instanceof Type t) {
-            TypeInspection ti = localTypeMap.getOrCreate(t.getClassName(), false);
+            TypeInspection ti = localTypeMap.getOrCreate(t.getClassName(), LocalTypeMap.LoadMode.TRIGGER);
             ParameterizedType parameterizedType = ti.typeInfo().asParameterizedType(localTypeMap);
             return new TypeExpression(identifier, parameterizedType, Diamond.SHOW_ALL);
         }

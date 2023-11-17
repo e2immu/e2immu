@@ -27,7 +27,7 @@ record ParseGenerics(TypeContext typeContext,
                      TypeInfo typeInfo,
                      TypeInspection.Builder typeInspectionBuilder,
                      LocalTypeMap findType,
-                     boolean mustLoad) {
+                     LocalTypeMap.LoadMode loadMode) {
     public static final char COLON = ':';
     public static final char GT_END_TYPE_PARAMS = '>';
     public static final char CARET_THROWS = '^';
@@ -58,7 +58,7 @@ record ParseGenerics(TypeContext typeContext,
                         },
                         typeContext,
                         findType,
-                        mustLoad);
+                        loadMode);
                 if (iterativeParsing == null) {
                     return -1; // error state
                 }
@@ -74,7 +74,7 @@ record ParseGenerics(TypeContext typeContext,
                                                                      Function<String, TypeParameterImpl> createTypeParameterAndAddToContext,
                                                                      TypeContext typeContext,
                                                                      LocalTypeMap localTypeMap,
-                                                                     boolean mustLoad) {
+                                                                     LocalTypeMap.LoadMode loadMode) {
         int end = signature.indexOf(COLON, iterativeParsing.startPos);
         char atEnd = COLON;
 
@@ -94,7 +94,7 @@ record ParseGenerics(TypeContext typeContext,
             if (charAfterColon == COLON) { // this can happen max. once, when there is no class extension, but there are interface extensions
                 end++;
             }
-            ParameterizedTypeFactory.Result result = ParameterizedTypeFactory.from(typeContext, localTypeMap, mustLoad,
+            ParameterizedTypeFactory.Result result = ParameterizedTypeFactory.from(typeContext, localTypeMap, loadMode,
                     signature.substring(end + 1));
             if (result == null) return null; // unable to load type
             if (result.parameterizedType.typeInfo != null
@@ -147,7 +147,7 @@ record ParseGenerics(TypeContext typeContext,
                         },
                         methodContext,
                         findType,
-                        mustLoad);
+                        loadMode);
                 if (iterativeParsing == null) {
                     return -1; // error state
                 }
@@ -161,7 +161,7 @@ record ParseGenerics(TypeContext typeContext,
     List<ParameterizedType> parseParameterTypesOfMethod(TypeContext typeContext, String signature) {
         if (signature.startsWith("()")) {
             ParameterizedTypeFactory.Result from = ParameterizedTypeFactory.from(typeContext,
-                    findType, mustLoad, signature.substring(2));
+                    findType, loadMode, signature.substring(2));
             if (from == null) return null;
             return List.of(from.parameterizedType);
         }
@@ -181,7 +181,7 @@ record ParseGenerics(TypeContext typeContext,
                                                                             String signature,
                                                                             IterativeParsing<ParameterizedType> iterativeParsing) {
         ParameterizedTypeFactory.Result result = ParameterizedTypeFactory.from(typeContext,
-                findType, mustLoad, signature.substring(iterativeParsing.startPos));
+                findType, loadMode, signature.substring(iterativeParsing.startPos));
         if (result == null) return null;
         int end = iterativeParsing.startPos + result.nextPos;
         IterativeParsing<ParameterizedType> next = new IterativeParsing<>();

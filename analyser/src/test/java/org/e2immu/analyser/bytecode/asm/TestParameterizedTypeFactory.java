@@ -47,7 +47,7 @@ public class TestParameterizedTypeFactory {
     }
 
     private ParameterizedTypeFactory.Result create(String signature) {
-        return ParameterizedTypeFactory.from(typeContext, byteCodeInspector.localTypeMap(), true, signature);
+        return ParameterizedTypeFactory.from(typeContext, byteCodeInspector.localTypeMap(), LocalTypeMap.LoadMode.NOW, signature);
     }
 
     @Test

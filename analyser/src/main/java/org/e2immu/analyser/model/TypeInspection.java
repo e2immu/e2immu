@@ -19,6 +19,7 @@ import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.util.ListUtil;
 import org.e2immu.annotation.Fluent;
+import org.e2immu.annotation.Modified;
 import org.e2immu.annotation.NotNull;
 import org.e2immu.annotation.Nullable;
 
@@ -281,5 +282,8 @@ public interface TypeInspection extends Inspection {
 
         @Fluent
         Builder setEnclosingMethod(MethodInfo enclosingMethod);
+
+        @Modified
+        void setAccessFromModifiers();
     }
 }

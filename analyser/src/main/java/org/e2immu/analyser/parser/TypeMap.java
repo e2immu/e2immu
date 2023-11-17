@@ -124,5 +124,7 @@ public interface TypeMap extends InspectionProvider {
 
         // from byteCodeInspection into my typeMap
         TypeInspection.Builder copyIntoTypeMap(TypeInfo start, List<TypeData> localTypeData);
+
+        void addToByteCodeQueue(String fqn);
     }
 }

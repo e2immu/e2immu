@@ -520,6 +520,11 @@ public class TypeInspectionImpl extends InspectionImpl implements TypeInspection
             }
         }
 
+        public void setAccessFromModifiers() {
+            Access fromModifiers = accessFromModifiers();
+            setAccess(fromModifiers);
+        }
+
         private Access accessFromModifiers() {
             if (modifiers.contains(TypeModifier.PUBLIC)) return Access.PUBLIC;
             if (modifiers.contains(TypeModifier.PROTECTED)) return Access.PROTECTED;

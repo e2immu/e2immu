@@ -18,6 +18,7 @@ import com.github.javaparser.ParseException;
 import org.e2immu.analyser.bytecode.ByteCodeInspector;
 import org.e2immu.analyser.bytecode.TypeData;
 import org.e2immu.analyser.bytecode.TypeDataImpl;
+import org.e2immu.analyser.bytecode.asm.LocalTypeMap;
 import org.e2immu.analyser.inspector.InspectionState;
 import org.e2immu.analyser.inspector.TypeInspector;
 import org.e2immu.analyser.inspector.impl.MethodInspectionImpl;
@@ -143,6 +144,8 @@ public class TypeMapImpl implements TypeMap {
         private final ReentrantReadWriteLock tiLock = new ReentrantReadWriteLock();
         private final ReentrantReadWriteLock.ReadLock tiReadLock = tiLock.readLock();
 
+        private final Set<String> byteCodeQueue = new HashSet<>();
+
         private ByteCodeInspector byteCodeInspector;
         private InspectWithJavaParser inspectWithJavaParser;
 
@@ -174,6 +177,21 @@ public class TypeMapImpl implements TypeMap {
 
         @Override
         public TypeMapImpl build() {
+            /*
+            The queue is there to ensure that the analysers can work on a type map that has been built/frozen.
+            Type parameters and types of parameters of methods are loaded in LoadMode.QUEUE; they're not immediately
+            needed, but will be needed later.
+             */
+            LOGGER.info("Starting byte code queue of size {}", byteCodeQueue.size());
+            new HashSet<>(byteCodeQueue).parallelStream().forEach(fqn -> {
+                Source source = classPath.fqnToPath(fqn, ".class");
+                List<TypeData> loaded = byteCodeInspector.inspectFromPath(source);
+                if (!loaded.isEmpty()) {
+                    TypeInfo start = loaded.get(0).getTypeInspectionBuilder().typeInfo();
+                    copyIntoTypeMap(start, loaded);
+                }
+            });
+
             trieLock.writeLock().lock();
             try {
                 trie.freeze();
@@ -369,6 +387,9 @@ public class TypeMapImpl implements TypeMap {
             trieLock.writeLock().lock();
             try {
                 return trie.addIfNodeDataEmpty(typeInfo.fullyQualifiedName.split("\\."), typeInfo);
+            } catch (IllegalStateException ise) {
+                LOGGER.error("Caught exception adding {} to the trie", typeInfo);
+                throw ise;
             } finally {
                 trieLock.writeLock().unlock();
             }
@@ -781,6 +802,13 @@ public class TypeMapImpl implements TypeMap {
                 return startBuilder;
             } finally {
                 tiLock.writeLock().unlock();
+            }
+        }
+
+        @Override
+        public void addToByteCodeQueue(String fqn) {
+            synchronized (byteCodeQueue) {
+                byteCodeQueue.add(fqn);
             }
         }
     }

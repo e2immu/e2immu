@@ -47,8 +47,8 @@ public class MyAnnotationVisitor<T> extends AnnotationVisitor {
         this.inspectionBuilder = Objects.requireNonNull(inspectionBuilder);
         LOGGER.debug("My annotation visitor: {}", descriptor);
 
-        ParameterizedTypeFactory.Result from = ParameterizedTypeFactory.from(typeContext, localTypeMap, false,
-                descriptor);
+        ParameterizedTypeFactory.Result from = ParameterizedTypeFactory.from(typeContext, localTypeMap,
+                LocalTypeMap.LoadMode.TRIGGER, descriptor);
         if (from == null) {
             expressionBuilder = null;
         } else {

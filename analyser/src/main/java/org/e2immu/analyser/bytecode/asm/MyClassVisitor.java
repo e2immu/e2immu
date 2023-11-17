@@ -121,7 +121,9 @@ public class MyClassVisitor extends ClassVisitor {
             if ((access & Opcodes.ACC_ABSTRACT) != 0) typeInspectionBuilder.addTypeModifier(TypeModifier.ABSTRACT);
             if ((access & Opcodes.ACC_FINAL) != 0) typeInspectionBuilder.addTypeModifier(TypeModifier.FINAL);
         }
-
+        if (currentType.packageNameOrEnclosingType.isLeft()) {
+            typeInspectionBuilder.setAccessFromModifiers();
+        }
         String parentFqName = superName == null ? null : pathToFqn(superName);
         if (parentFqName != null && !Input.acceptFQN(parentFqName)) {
             return;
@@ -159,12 +161,12 @@ public class MyClassVisitor extends ClassVisitor {
                 int pos = 0;
                 if (signature.charAt(0) == '<') {
                     ParseGenerics parseGenerics = new ParseGenerics(typeContext, currentType, typeInspectionBuilder,
-                            localTypeMap, true);
+                            localTypeMap, LocalTypeMap.LoadMode.NOW);
                     pos = parseGenerics.parseTypeGenerics(signature) + 1;
                 }
                 {
                     ParameterizedTypeFactory.Result res = ParameterizedTypeFactory.from(typeContext,
-                            localTypeMap, true, signature.substring(pos));
+                            localTypeMap, LocalTypeMap.LoadMode.NOW, signature.substring(pos));
                     if (res == null) {
                         LOGGER.debug("Stop inspection of {}, parent type unknown",
                                 currentType.fullyQualifiedName);
@@ -177,7 +179,7 @@ public class MyClassVisitor extends ClassVisitor {
                 if (interfaces != null) {
                     for (int i = 0; i < interfaces.length; i++) {
                         ParameterizedTypeFactory.Result interFaceRes = ParameterizedTypeFactory.from(typeContext,
-                                localTypeMap, true, signature.substring(pos));
+                                localTypeMap, LocalTypeMap.LoadMode.NOW, signature.substring(pos));
                         if (interFaceRes == null) {
                             LOGGER.debug("Stop inspection of {}, interface type unknown",
                                     currentType.fullyQualifiedName);
@@ -195,14 +197,15 @@ public class MyClassVisitor extends ClassVisitor {
                 throw e;
             }
         }
-        // FIXME or earlier?
-        try {
-            // do this as late as possible, because it goes into other subtypes (TestByteCodeInspectorCommonPool)
-            typeInspectionBuilder.computeAccess(localTypeMap);
-        } catch (RuntimeException re) {
-            LOGGER.error("Caught exception in class visitor of {}, typeInspectionBuilder id is {}", currentType,
-                    System.identityHashCode(typeInspectionBuilder));
-            throw re;
+        if (currentType.packageNameOrEnclosingType.isRight()) {
+            try {
+                // do this as late as possible, because it goes into other subtypes (TestByteCodeInspectorCommonPool)
+                typeInspectionBuilder.computeAccess(localTypeMap);
+            } catch (RuntimeException re) {
+                LOGGER.error("Caught exception in class visitor of {}, typeInspectionBuilder id is {}", currentType,
+                        System.identityHashCode(typeInspectionBuilder));
+                throw re;
+            }
         }
         if (annotationStore != null) {
             TypeItem typeItem = annotationStore.typeItemsByFQName(fqName);
@@ -223,7 +226,7 @@ public class MyClassVisitor extends ClassVisitor {
         if (path.equals(currentTypePath)) {
             return currentType;
         }
-        return localTypeMap.getOrCreate(fqn, true).typeInfo();
+        return localTypeMap.getOrCreate(fqn, LocalTypeMap.LoadMode.NOW).typeInfo();
     }
 
     @Override
@@ -234,7 +237,8 @@ public class MyClassVisitor extends ClassVisitor {
                 name, descriptor, signature, value, synthetic);
         if (synthetic) return null;
 
-        ParameterizedTypeFactory.Result from = ParameterizedTypeFactory.from(typeContext, localTypeMap, false,
+        ParameterizedTypeFactory.Result from = ParameterizedTypeFactory.from(typeContext, localTypeMap,
+                LocalTypeMap.LoadMode.QUEUE,
                 signature != null ? signature : descriptor);
         if (from == null) return null; // jdk
         ParameterizedType type = from.parameterizedType;
@@ -302,7 +306,7 @@ public class MyClassVisitor extends ClassVisitor {
 
         TypeContext methodContext = new TypeContext(typeContext);
         ParseGenerics parseGenerics = new ParseGenerics(methodContext, currentType, typeInspectionBuilder, localTypeMap,
-                false); // FIXME true or false?
+                LocalTypeMap.LoadMode.QUEUE);
 
         String signatureOrDescription = signature != null ? signature : descriptor;
         if (signatureOrDescription.startsWith("<")) {
@@ -391,7 +395,7 @@ public class MyClassVisitor extends ClassVisitor {
                 if (!byteCodeInspectionStarted) {
                     checkTypeFlags(access, (TypeInspection.Builder) subTypeInspection);
                     Source newPath = new Source(name + ".class", pathAndURI.uri());
-                    TypeInfo subType = localTypeMap.inspectFromPath(newPath, typeContext, true).typeInfo();
+                    TypeInfo subType = localTypeMap.inspectFromPath(newPath, typeContext, LocalTypeMap.LoadMode.NOW).typeInfo();
 
                     if (subType != null) {
                         if (stepDown) {

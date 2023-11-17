@@ -58,7 +58,7 @@ public class ByteCodeInspectorImpl implements ByteCodeInspector {
     @Override
     public List<TypeData> inspectFromPath(Source source) {
         LocalTypeMapImpl localTypeMap = new LocalTypeMapImpl();
-        localTypeMap.inspectFromPath(source, typeContext, true);
+        localTypeMap.inspectFromPath(source, typeContext, LocalTypeMap.LoadMode.NOW);
         return localTypeMap.loaded();
     }
 
@@ -82,7 +82,7 @@ public class ByteCodeInspectorImpl implements ByteCodeInspector {
         @Override
         public TypeInspection getTypeInspection(TypeInfo typeInfo) {
             // avoid going outside!!
-            return getOrCreate(typeInfo.fullyQualifiedName, true);
+            return getOrCreate(typeInfo.fullyQualifiedName, LoadMode.NOW);
         }
 
         @Override
@@ -112,20 +112,28 @@ public class ByteCodeInspectorImpl implements ByteCodeInspector {
         }
 
         @Override
-        public TypeInspection getOrCreate(String fqn, boolean start) {
+        public TypeInspection getOrCreate(String fqn, LoadMode loadMode) {
             if (!Input.acceptFQN(fqn)) {
                 return null;
             }
             TypeData typeData = localTypeMap.get(fqn);
             if (typeData != null) {
-                if (!start || typeData.getInspectionState().ge(STARTING_BYTECODE)) {
+                if (LoadMode.NOW != loadMode || typeData.getInspectionState().ge(STARTING_BYTECODE)) {
+                    if (loadMode == LoadMode.QUEUE) {
+                        typeContext.typeMap.addToByteCodeQueue(fqn);
+                    }
                     return typeData.getTypeInspectionBuilder();
                 }
                 // START!
             }
             TypeMap.InspectionAndState remote = typeContext.typeMap.typeInspectionSituation(fqn);
             if (remote != null) {
-                if (!start || remote.state().ge(STARTING_BYTECODE)) return remote.typeInspection();
+                if (LoadMode.NOW != loadMode || remote.state().ge(STARTING_BYTECODE)) {
+                    if (loadMode == LoadMode.QUEUE) {
+                        typeContext.typeMap.addToByteCodeQueue(fqn);
+                    }
+                    return remote.typeInspection();
+                }
                 if (typeData == null) {
                     TypeInspection.Builder typeInspection = (TypeInspection.Builder) remote.typeInspection();
                     TypeInspection.Builder copy = new TypeInspectionImpl.Builder(typeInspection.typeInfo(),
@@ -137,7 +145,7 @@ public class ByteCodeInspectorImpl implements ByteCodeInspector {
             if (source == null) {
                 return null;
             }
-            return inspectFromPath(source, typeContext, start);
+            return inspectFromPath(source, typeContext, loadMode);
         }
 
         @Override
@@ -168,7 +176,7 @@ public class ByteCodeInspectorImpl implements ByteCodeInspector {
         }
 
         @Override
-        public TypeInspection.Builder inspectFromPath(Source path, TypeContext parentTypeContext, boolean start) {
+        public TypeInspection.Builder inspectFromPath(Source path, TypeContext parentTypeContext, LoadMode loadMode) {
             assert path != null && path.path().endsWith(".class");
 
             String fqn = MyClassVisitor.pathToFqn(path.stripDotClass());
@@ -184,7 +192,7 @@ public class ByteCodeInspectorImpl implements ByteCodeInspector {
             TypeData typeData;
             if (typeDataInMap == null) {
                 // create, but ensure that all enclosing are present FIRST: potential recursion
-                TypeInfo typeInfo = createTypeInfo(path, fqn, start);
+                TypeInfo typeInfo = createTypeInfo(path, fqn, loadMode);
                 TypeData typeDataAgain = localTypeMap.get(fqn);
                 if (typeDataAgain == null) {
                     TypeInspection.Builder builder = new TypeInspectionImpl.Builder(typeInfo,
@@ -200,14 +208,14 @@ public class ByteCodeInspectorImpl implements ByteCodeInspector {
             if (typeData.getInspectionState().ge(STARTING_BYTECODE)) {
                 return typeData.getTypeInspectionBuilder();
             }
-            if (start) {
+            if (loadMode == LoadMode.NOW) {
                 return continueLoadByteCodeAndStartASM(path, parentTypeContext, fqn, typeData);
             }
             LOGGER.debug("Stored type data for {}, state {}", fqn, typeData.getInspectionState());
             return typeData.getTypeInspectionBuilder();
         }
 
-        private TypeInfo createTypeInfo(Source source, String fqn, boolean start) {
+        private TypeInfo createTypeInfo(Source source, String fqn, LoadMode loadMode) {
             String path = source.stripDotClass();
             int dollar = path.lastIndexOf('$');
             TypeInfo typeInfo;
@@ -216,7 +224,7 @@ public class ByteCodeInspectorImpl implements ByteCodeInspector {
                 String newPath = Source.ensureDotClass(path.substring(0, dollar));
                 Source newSource = new Source(newPath, source.uri());
                 TypeInspection.Builder enclosedInspection = inspectFromPath(newSource,
-                        new TypeContext(typeContext), start);
+                        new TypeContext(typeContext), loadMode);
                 typeInfo = new TypeInfo(enclosedInspection.typeInfo(), simpleName);
             } else {
                 int lastDot = fqn.lastIndexOf(".");
