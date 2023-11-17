@@ -40,16 +40,16 @@ public class TestPreloadJavaBase {
         Parser parser = new Parser(configuration);
         TypeContext typeContext = parser.getTypeContext();
 
-        // NOTE: this may be very dependent on JDK 16
+        // NOTE: this may be very dependent on the current JDK and pre-loading settings.
 
         // interestingly, java.util.List has been referred to, but it has not been loaded
         // because it has not yet appeared in a type hierarchy (but it has appeared as a field type
         // in some private field of java.lang.Throwable)
         TypeInfo list = typeContext.typeMap.get("java.util.List");
-        assertNull(list);
+        assertNotNull(list);
         TypeInfo classLoader = typeContext.typeMap.get("java.lang.ClassLoader");
         assertNotNull(classLoader);
-        assertEquals(InspectionState.TRIGGER_BYTECODE_INSPECTION, typeContext.typeMap.getInspectionState(classLoader));
+        assertEquals(InspectionState.FINISHED_BYTECODE, typeContext.typeMap.getInspectionState(classLoader));
 
         TypeInfo list2 = typeContext.typeMap.getOrCreate("java.util.List", true);
         assertNotNull(list2);

@@ -29,7 +29,6 @@ import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.File;
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.net.URL;
@@ -51,7 +50,7 @@ public class TestByteCodeInspectorCommonsPool {
         ByteCodeInspectorImpl byteCodeInspector = new ByteCodeInspectorImpl(resources, annotationParser, typeContext);
         typeContext.typeMap.setByteCodeInspector(byteCodeInspector);
         typeContext.loadPrimitives();
-        Input.preload(typeContext, byteCodeInspector, resources, "java.lang");
+        Input.preload(typeContext, resources, "java.lang");
         String pathWithClass = Source.ensureDotClass(path);
         // we'll take some random jar
         String analyserJar = TestByteCodeInspector.determineAnalyserJarName();

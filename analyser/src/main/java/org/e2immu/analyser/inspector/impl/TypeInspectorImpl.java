@@ -181,7 +181,7 @@ public class TypeInspectorImpl implements TypeInspector {
                 for (Modifier modifier : typeDeclaration.getModifiers()) {
                     builder.addTypeModifier(TypeModifier.from(modifier));
                 }
-                builder.computeAccess(typeContext);
+                builder.computeAccess(typeContext, true);
             } catch (RuntimeException rte) {
                 LOGGER.error("Caught exception parsing type declaration of '{}' at line {}",
                         typeInfo.fullyQualifiedName, typeDeclaration.getBegin());

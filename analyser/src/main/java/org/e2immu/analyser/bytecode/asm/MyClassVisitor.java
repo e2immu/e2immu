@@ -121,8 +121,12 @@ public class MyClassVisitor extends ClassVisitor {
             if ((access & Opcodes.ACC_ABSTRACT) != 0) typeInspectionBuilder.addTypeModifier(TypeModifier.ABSTRACT);
             if ((access & Opcodes.ACC_FINAL) != 0) typeInspectionBuilder.addTypeModifier(TypeModifier.FINAL);
         }
+        boolean tryAgain;
         if (currentType.packageNameOrEnclosingType.isLeft()) {
             typeInspectionBuilder.setAccessFromModifiers();
+            tryAgain = false;
+        } else {
+            tryAgain = typeInspectionBuilder.computeAccess(localTypeMap, false);
         }
         String parentFqName = superName == null ? null : pathToFqn(superName);
         if (parentFqName != null && !Input.acceptFQN(parentFqName)) {
@@ -197,15 +201,9 @@ public class MyClassVisitor extends ClassVisitor {
                 throw e;
             }
         }
-        if (currentType.packageNameOrEnclosingType.isRight()) {
-            try {
-                // do this as late as possible, because it goes into other subtypes (TestByteCodeInspectorCommonPool)
-                typeInspectionBuilder.computeAccess(localTypeMap);
-            } catch (RuntimeException re) {
-                LOGGER.error("Caught exception in class visitor of {}, typeInspectionBuilder id is {}", currentType,
-                        System.identityHashCode(typeInspectionBuilder));
-                throw re;
-            }
+        if (tryAgain) {
+            // try again, if it failed the first time (TestByteCodeInspectorCommonPool)
+            typeInspectionBuilder.computeAccess(localTypeMap, true);
         }
         if (annotationStore != null) {
             TypeItem typeItem = annotationStore.typeItemsByFQName(fqName);

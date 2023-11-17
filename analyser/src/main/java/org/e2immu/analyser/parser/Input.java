@@ -75,7 +75,7 @@ public record Input(Configuration configuration,
         globalTypeContext.typeMap.setByteCodeInspector(byteCodeInspector);
         globalTypeContext.loadPrimitives();
         for (String packageName : new String[]{"org.e2immu.annotation", "java.lang", "java.util.function"}) {
-            preload(globalTypeContext, byteCodeInspector, classPath, packageName); // needed for our own stuff
+            preload(globalTypeContext, classPath, packageName); // needed for our own stuff
         }
 
         return createNext(configuration, classPath, globalTypeContext, byteCodeInspector);
@@ -163,7 +163,6 @@ public record Input(Configuration configuration,
      * <code>initializeClassPath</code> will be present
      */
     public static void preload(TypeContext globalTypeContext,
-                               ByteCodeInspector byteCodeInspector,
                                Resources classPath,
                                String thePackage) {
         LOGGER.info("Start pre-loading {}", thePackage);
@@ -176,7 +175,7 @@ public record Input(Configuration configuration,
                 // test against hard-coded types
                 TypeInfo typeInfo = globalTypeContext.getFullyQualified(fqn, true);
                 if (!typeInfo.typeInspection.isSet()) {
-                    globalTypeContext.typeMap.getOrCreateByteCode(typeInfo.packageName(), typeInfo.simpleName);
+                    globalTypeContext.typeMap.getTypeInspection(typeInfo);
                     inspected.incrementAndGet();
                 }
             }
@@ -240,9 +239,4 @@ public record Input(Configuration configuration,
     public static boolean acceptFQN(String fqn) {
         return !fqn.startsWith("jdk.internal.");
     }
-
-    public static boolean acceptPath(String path) {
-        return !path.startsWith("jdk/internal/");
-    }
-
 }

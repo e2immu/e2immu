@@ -243,7 +243,7 @@ public interface TypeInspection extends Inspection {
 
     interface Builder extends InspectionBuilder<Builder>, TypeInspection {
 
-        void computeAccess(InspectionProvider inspectionProvider);
+        boolean computeAccess(InspectionProvider inspectionProvider, boolean complain);
 
         TypeInspection build(InspectionProvider inspectionProvider);
 

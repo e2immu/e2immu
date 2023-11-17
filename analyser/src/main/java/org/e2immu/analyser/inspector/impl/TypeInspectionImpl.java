@@ -199,36 +199,45 @@ public class TypeInspectionImpl extends InspectionImpl implements TypeInspection
                                                                        TypeInspection typeInspection,
                                                                        Set<MethodInspection> overriddenByDefault,
                                                                        Map<NamedType, ParameterizedType> translationMap) {
-        if (!typeInspection.isInterface()) {
-            return List.of(); // inspection is still going on, which means recursion... ignore!
-        }
-        List<MethodInspection> abstractMethods = new ArrayList<>();
-
-        for (MethodInfo methodInfo : typeInspection.methods()) {
-            MethodInspection inspection = inspectionProvider.getMethodInspection(methodInfo);
-            boolean nonStaticNonDefault = !inspection.isPrivate() && !methodInfo.isStatic()
-                    && !methodInfo.isDefault() && !inspection.isOverloadOfJLOMethod();
-            if (nonStaticNonDefault) {
-                if (overriddenByDefault.stream().noneMatch(override ->
-                        isOverrideOf(inspectionProvider, inspection, override, translationMap))) {
-                    abstractMethods.add(inspection);
-                    overriddenByDefault.add(inspection);
-                } // is cancelled out, we have a default implementation for this method
-            } else if (methodInfo.isDefault()) {
-                overriddenByDefault.add(inspection);
+        try {
+            if (!typeInspection.isInterface()) {
+                return List.of(); // inspection is still going on, which means recursion... ignore!
             }
+            List<MethodInspection> abstractMethods = new ArrayList<>();
+
+            for (MethodInfo methodInfo : typeInspection.methods()) {
+                MethodInspection inspection = inspectionProvider.getMethodInspection(methodInfo);
+                if (inspection == null) {
+                    throw new RuntimeException("Cannot find type inspection of " + methodInfo.fullyQualifiedName);
+                }
+                boolean nonStaticNonDefault = !inspection.isPrivate() && !methodInfo.isStatic()
+                        && !methodInfo.isDefault() && !inspection.isOverloadOfJLOMethod();
+                if (nonStaticNonDefault) {
+                    if (overriddenByDefault.stream().noneMatch(override ->
+                            isOverrideOf(inspectionProvider, inspection, override, translationMap))) {
+                        abstractMethods.add(inspection);
+                        overriddenByDefault.add(inspection);
+                    } // is cancelled out, we have a default implementation for this method
+                } else if (methodInfo.isDefault()) {
+                    overriddenByDefault.add(inspection);
+                }
+            }
+            // overridden needs to cancel out all of them, individually!
+            for (ParameterizedType superInterface : typeInspection.interfacesImplemented()) {
+                TypeInspection typeInspectionOfSuperType = inspectionProvider.getTypeInspection(superInterface.typeInfo);
+                Map<NamedType, ParameterizedType> map = ShallowMethodResolver.mapOfSuperType(superInterface,
+                        inspectionProvider);
+                Map<NamedType, ParameterizedType> superMap = new HashMap<>(translationMap);
+                superMap.putAll(map);
+                abstractMethods.addAll(computeIsFunctionalInterface(inspectionProvider,
+                        typeInspectionOfSuperType, overriddenByDefault, superMap));
+            }
+            return abstractMethods;
+        } catch (RuntimeException re) {
+            LOGGER.error("Caught exception computing isFunctionalInterface, type {}",
+                    typeInspection.typeInfo().fullyQualifiedName);
+            throw re;
         }
-        // overridden needs to cancel out all of them, individually!
-        for (ParameterizedType superInterface : typeInspection.interfacesImplemented()) {
-            TypeInspection typeInspectionOfSuperType = inspectionProvider.getTypeInspection(superInterface.typeInfo);
-            Map<NamedType, ParameterizedType> map = ShallowMethodResolver.mapOfSuperType(superInterface,
-                    inspectionProvider);
-            Map<NamedType, ParameterizedType> superMap = new HashMap<>(translationMap);
-            superMap.putAll(map);
-            abstractMethods.addAll(computeIsFunctionalInterface(inspectionProvider,
-                    typeInspectionOfSuperType, overriddenByDefault, superMap));
-        }
-        return abstractMethods;
     }
 
     private static boolean isOverrideOf(InspectionProvider inspectionProvider,
@@ -421,7 +430,7 @@ public class TypeInspectionImpl extends InspectionImpl implements TypeInspection
 
             if (accessNotYetComputed()) {
                 assert inspectionProvider != null : "Need an inspection provider when access not yet computed";
-                computeAccess(inspectionProvider);
+                computeAccess(inspectionProvider, true);
             }
 
             return new TypeInspectionImpl(
@@ -507,17 +516,22 @@ public class TypeInspectionImpl extends InspectionImpl implements TypeInspection
         If the enclosing type is private, then this type must be private too... can't go up in the visibility
         hierarchy.
          */
-        public void computeAccess(InspectionProvider inspectionProvider) {
+        public boolean computeAccess(InspectionProvider inspectionProvider, boolean complain) {
             Access fromModifiers = accessFromModifiers();
             if (typeInfo.packageNameOrEnclosingType.isLeft()) {
                 setAccess(fromModifiers);
             } else {
                 TypeInspection typeInspection = inspectionProvider
                         .getTypeInspection(typeInfo.packageNameOrEnclosingType.getRight());
+                if (typeInspection.accessNotYetComputed()) {
+                    if (complain) throw new UnsupportedOperationException();
+                    return true; // we'll have to try later
+                }
                 Access fromEnclosing = typeInspection.getAccess();
                 Access combined = fromEnclosing.combine(fromModifiers);
                 setAccess(combined);
             }
+            return false; // don't have to try again
         }
 
         public void setAccessFromModifiers() {

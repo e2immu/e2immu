@@ -58,7 +58,7 @@ public class TestParseGenerics {
         byteCodeInspector = new ByteCodeInspectorImpl(classPath, annotationParser, typeContext);
         typeContext.typeMap.setByteCodeInspector(byteCodeInspector);
         typeContext.loadPrimitives();
-        Input.preload(typeContext, byteCodeInspector, classPath, "java.util");
+        Input.preload(typeContext, classPath, "java.util");
     }
 
     @Test

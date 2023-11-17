@@ -67,7 +67,7 @@ public class Parser {
 
     // meant for tests only!
     public void preload(String packageName) {
-        Input.preload(input.globalTypeContext(), getByteCodeInspector(), input.classPath(), packageName);
+        Input.preload(input.globalTypeContext(), input.classPath(), packageName);
     }
 
     public record RunResult(SortedTypes annotatedAPISortedTypes,
@@ -262,7 +262,7 @@ public class Parser {
 
     public ComposerData primaryTypesForAnnotatedAPIComposing() {
         for (String packagePrefix : configuration.annotatedAPIConfiguration().writeAnnotatedAPIPackages()) {
-            Input.preload(input.globalTypeContext(), input.byteCodeInspector(), input.classPath(), packagePrefix);
+            Input.preload(input.globalTypeContext(), input.classPath(), packagePrefix);
         }
         LOGGER.info("Building TypeMap, fixing inspections");
         TypeMap typeMap = input.globalTypeContext().typeMap.build();

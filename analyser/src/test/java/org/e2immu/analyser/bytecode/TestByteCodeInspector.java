@@ -34,7 +34,6 @@ import java.net.URISyntaxException;
 import java.net.URL;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -53,7 +52,7 @@ public class TestByteCodeInspector {
         ByteCodeInspectorImpl byteCodeInspector = new ByteCodeInspectorImpl(resources, annotationParser, typeContext);
         typeContext.typeMap.setByteCodeInspector(byteCodeInspector);
         typeContext.loadPrimitives();
-        Input.preload(typeContext, byteCodeInspector, resources, "java.lang");
+        Input.preload(typeContext, resources, "java.lang");
         String pathWithClass = Source.ensureDotClass(path);
         List<TypeData> data = byteCodeInspector.inspectFromPath(new Source(pathWithClass, jarUrl.toURI()));
         // in case the path is a subType, we need to inspect it explicitly

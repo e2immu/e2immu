@@ -170,11 +170,12 @@ public class ResolverImpl implements Resolver {
             synchronized (methodCallGraph) {
                 methodResolution();
             }
-            LOGGER.info("Computing analyser sequence from dependency graph");
+            LOGGER.info("Computing analyser sequence from dependency graph, have {} builders",
+                    resolutionBuilders.size());
         }
         List<TypeInfo> sorted = sortWarnForCircularDependencies(resolutionBuilders);
         if (parent == null) {
-            LOGGER.info("Computing type resolution");
+            LOGGER.info("Computing type resolution, sorted {} types", sorted.size());
         }
         return computeTypeResolution(sorted, resolutionBuilders, inspectedTypes);
     }
@@ -256,16 +257,18 @@ public class ResolverImpl implements Resolver {
     private SortedTypes computeTypeResolution(List<TypeInfo> sorted,
                                               Map<TypeInfo, TypeResolution.Builder> resolutionBuilders,
                                               Map<TypeInfo, ExpressionContext> inspectedTypes) {
+        assert new HashSet<>(sorted).equals(resolutionBuilders.keySet());
         /*
         The code that computes supertypes and counts implementations runs over all known types and subtypes,
         out of the standard sorting order, exactly because of circular dependencies.
          */
         if (parent == null) LOGGER.info("Prepare type resolution");
-        Map<TypeInfo, TypeResolution.Builder> allBuilders = new HashMap<>(resolutionBuilders);
-        resolutionBuilders.entrySet().parallelStream().forEach(e ->
-                addSubtypeResolutionBuilders(inspectionProvider, e.getKey(), e.getValue(), allBuilders));
+        Stream<Map.Entry<TypeInfo, TypeResolution.Builder>> subTypeStream = resolutionBuilders.entrySet().stream()
+                .flatMap(e -> addSubtypeResolutionBuilders(inspectionProvider, e.getKey(), e.getValue()));
+        Map<TypeInfo, TypeResolution.Builder> allBuilders = Stream.concat(resolutionBuilders.entrySet().stream(),
+                subTypeStream).collect(Collectors.toUnmodifiableMap(Map.Entry::getKey, Map.Entry::getValue));
 
-        if (parent == null) LOGGER.info("Computing supertypes");
+        if (parent == null) LOGGER.info("Computing supertypes, have {} builders", allBuilders.size());
         allBuilders.entrySet().parallelStream()
                 .forEach(e -> computeSuperTypes(inspectionProvider, e.getKey(), e.getValue(), allBuilders));
         if (parent == null) LOGGER.info("Computing field access");
@@ -309,16 +312,31 @@ public class ResolverImpl implements Resolver {
     }
 
 
-    private void addSubtypeResolutionBuilders(InspectionProvider inspectionProvider,
-                                              TypeInfo typeInfo,
-                                              TypeResolution.Builder resolutionBuilder,
-                                              Map<TypeInfo, TypeResolution.Builder> allBuilders) {
+    private Stream<Map.Entry<TypeInfo, TypeResolution.Builder>> addSubtypeResolutionBuilders(InspectionProvider inspectionProvider,
+                                                                                             TypeInfo typeInfo,
+                                                                                             TypeResolution.Builder resolutionBuilder) {
         Set<TypeInfo> circularDependencies = resolutionBuilder.getCircularDependencies();
-        for (TypeInfo subType : inspectionProvider.getTypeInspection(typeInfo).subTypes()) {
-            // IMPROVE circularDependencies is at the level of primary types, can be better
-            TypeResolution.Builder builder = new TypeResolution.Builder().setCircularDependencies(circularDependencies);
-            allBuilders.put(subType, builder);
-        }
+        return inspectionProvider.getTypeInspection(typeInfo).subTypes().stream()
+                .map(subType -> {
+                    // IMPROVE circularDependencies is at the level of primary types, can be better
+                    TypeResolution.Builder builder = new TypeResolution.Builder().setCircularDependencies(circularDependencies);
+                    return new Map.Entry<TypeInfo, TypeResolution.Builder>() {
+                        @Override
+                        public TypeInfo getKey() {
+                            return subType;
+                        }
+
+                        @Override
+                        public TypeResolution.Builder getValue() {
+                            return builder;
+                        }
+
+                        @Override
+                        public TypeResolution.Builder setValue(TypeResolution.Builder value) {
+                            throw new UnsupportedOperationException();
+                        }
+                    };
+                });
     }
 
     private static void computeSuperTypes(InspectionProvider inspectionProvider,
@@ -862,6 +880,7 @@ public class ResolverImpl implements Resolver {
                 }
             }
         }
+
     }
 
     private void doBlock(ExpressionContext expressionContext,
