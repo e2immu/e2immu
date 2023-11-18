@@ -64,6 +64,7 @@ public class ConvertExpressionWithTypeCreations {
         MethodInfo methodInfo = methodBuilder.getMethodInfo();
 
         builder.addMethod(methodInfo);
+        typeInfo.typeInspection.set(builder.build(typeContext));
         return methodInfo;
     }
 

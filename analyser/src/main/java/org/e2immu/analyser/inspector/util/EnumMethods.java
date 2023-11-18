@@ -172,11 +172,11 @@ public class EnumMethods {
         var functionalInterfaceType = enumPredicate(typeContext, enumType);
         var predicateBuilder = predicate(functionalInterfaceType,
                 expressionContext, enumType, notModifiedContract, nameMethod, nameParameter);
-        var implementationMethod = predicateBuilder.getMethodInfo()
+        var lambdaType = predicateBuilder.getMethodInfo()
                 .typeInfo.asParameterizedType(typeContext);
         var lambda = new Lambda(Identifier.generate("enum lambda"),
                 typeContext, functionalInterfaceType,
-                implementationMethod,
+                lambdaType,
                 typeContext.getPrimitives().booleanParameterizedType(),  // return type of the lambda
                 List.of(Lambda.OutputVariant.EMPTY));
         var stream = typeContext.getFullyQualified(Stream.class);
@@ -213,8 +213,8 @@ public class EnumMethods {
 
         var lambdaType = new TypeInfo(enumType,
                 expressionContext.anonymousTypeCounters().newIndex(expressionContext.primaryType()));
-        var builder = typeContext.typeMap.add(lambdaType, BY_HAND);
-        builder.setTypeNature(TypeNature.CLASS)
+        var typeBuilder = typeContext.typeMap.add(lambdaType, BY_HAND);
+        typeBuilder.setTypeNature(TypeNature.CLASS)
                 .setSynthetic(true)
                 .setAccess(Inspection.Access.PRIVATE)
                 .addInterfaceImplemented(functionalInterfaceType)
@@ -236,12 +236,14 @@ public class EnumMethods {
         predicate.setInspectedBlock(codeBlock);
 
         typeContext.typeMap.registerMethodInspection(predicate);
-        builder.addMethod(predicate.getMethodInfo());
+        typeBuilder.addMethod(predicate.getMethodInfo());
 
         var lambdaTypeResolution = new TypeResolution.Builder()
                 .setSortedType(new SortedType(lambdaType, List.of(lambdaType, predicate.getMethodInfo())))
                 .build();
         lambdaType.typeResolution.set(lambdaTypeResolution);
+        lambdaType.typeInspection.set(typeBuilder.build(typeContext));
+
         return predicate;
     }
 
