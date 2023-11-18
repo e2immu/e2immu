@@ -14,6 +14,8 @@
 
 package org.e2immu.annotatedapi.test;
 
+import ch.qos.logback.classic.Level;
+import ch.qos.logback.classic.Logger;
 import org.e2immu.analyser.config.*;
 import org.e2immu.analyser.log.LogTarget;
 import org.e2immu.analyser.output.Formatter;
@@ -21,6 +23,7 @@ import org.e2immu.analyser.output.FormattingOptions;
 import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.Parser;
+import org.e2immu.analyser.parser.TypeMap;
 import org.e2immu.analyser.resolver.SortedTypes;
 import org.slf4j.LoggerFactory;
 
@@ -35,7 +38,7 @@ public abstract class CommonTestRunner {
 
     public static final String TESTS = "org.e2immu.annotatedapi.testexample";
 
-    public void test(List<String> testClasses, int errorsToExpect, int warningsToExpect) throws IOException {
+    public TypeMap test(List<String> testClasses, int errorsToExpect, int warningsToExpect) throws IOException {
         InputConfiguration.Builder inputConfigurationBuilder = new InputConfiguration.Builder()
                 .addSources("src/test/java")
                 .addClassPath("build/annotations")
@@ -51,12 +54,15 @@ public abstract class CommonTestRunner {
                 .setAnnotationXmConfiguration(axc)
                 .setUploadConfiguration(new UploadConfiguration.Builder()
                         .setUpload(true).build())
-                .addDebugLogTargets(LogTarget.ANNOTATED_API, LogTarget.INSPECTOR)
+                .addDebugLogTargets(LogTarget.ANNOTATION_XML)
                 .build();
 
         configuration.initializeLoggers();
+        ((Logger) LoggerFactory.getLogger("org.e2immu.annotatedapi")).setLevel(Level.INFO);
+
         Parser parser = new Parser(configuration);
-        SortedTypes types = parser.run().sourceSortedTypes();
+        Parser.RunResult run = parser.run();
+        SortedTypes types = run.sourceSortedTypes();
         types.primaryTypeStream().forEach(primaryType -> {
             OutputBuilder outputBuilder = primaryType.output();
             Formatter formatter = new Formatter(FormattingOptions.DEFAULT);
@@ -69,5 +75,6 @@ public abstract class CommonTestRunner {
                 .filter(m -> m.message().severity == Message.Severity.ERROR).count(), "ERRORS: ");
         assertEquals(warningsToExpect, (int) parser.getMessages()
                 .filter(m -> m.message().severity == Message.Severity.WARN).count(), "WARNINGS: ");
+       return run.typeMap();
     }
 }

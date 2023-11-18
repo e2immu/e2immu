@@ -1,3 +1,5 @@
+import java.util.stream.Collectors
+
 /*
  * e2immu: a static code analyser for effective and eventual immutability
  * Copyright 2020-2021, Bart Naudts, https://www.e2immu.org
@@ -48,29 +50,30 @@ tasks.test {
 }
 
 // ********************************* Generate AnnotationXML from AnnotatedAPI files in annotatedAPIs project
-/*
-task generateAnnotationXml(type: JavaExec) {
+// execute with "gradle generateAnnotationXml"
+
+tasks.register<JavaExec>("generateAnnotationXml") {
     group = "Execution"
     description = "Convert all annotations in the annotatedAPIs to annotation.xml files"
-    classpath = sourceSets.main.runtimeClasspath
-    main = 'org.e2immu.analyser.cli.Main'
-    Set<File> reducedClassPath = sourceSets.main.runtimeClasspath.toList()
-    reducedClassPath += sourceSets.test.runtimeClasspath
-    reducedClassPath.removeIf({ f -> f.path.contains("build/classes") || f.path.contains("build/resources") })
-    args('--classpath=' + reducedClassPath.join(":") + ":jmods/java.base.jmod:jmods/java.xml.jmod",
+    classpath = sourceSets.main.get().runtimeClasspath
+    mainClass = "org.e2immu.analyser.cli.Main"
+    val reducedClassPath = sourceSets.main.get().runtimeClasspath.toMutableList()
+    reducedClassPath += sourceSets.test.get().runtimeClasspath
+    reducedClassPath.removeIf { f -> f.path.contains("build/classes") || f.path.contains("build/resources") }
+    args("--classpath=" + reducedClassPath.stream().map { f -> f.path }.collect(Collectors.joining(":"))
+            + ":jmods/java.base.jmod:jmods/java.xml.jmod:jmods/java.net.http.jmod",
 
-            '--jre=/Library/Java/JavaVirtualMachines/adoptopenjdk-16.jdk/Contents/Home',
-            '--source=non_existing_dir',
-            '--annotated-api-source=src/main/java',
+            "--source=non_existing_dir",
+            "--annotated-api-source=src/main/java",
 
-            '-w',
-            '--write-annotation-xml-dir=build/annotations',
-            '--write-annotation-xml-packages=java.,org.slf4j.',
-            '--read-annotation-xml-packages=none',
-            '--debug=ANNOTATION_XML_WRITER,ANNOTATION_XML_READER,CONFIGURATION'
+            "-w",
+            "--write-annotation-xml-dir=build/annotations",
+            "--write-annotation-xml-packages=java.,org.slf4j.",
+            "--read-annotation-xml-packages=none",
+            "--debug=ANNOTATION_XML_WRITER,ANNOTATION_XML_READER,CONFIGURATION"
     )
 }
-
+/*
 
 // TODO no idea how to make the same file, but then with a .jar extension
 // the Jar task 'hijacks' the Zip, and adds other content :-(

@@ -110,8 +110,8 @@ public record CheckHelper(InspectionProvider inspectionProvider, E2ImmuAnnotatio
                     kv.computedValue != null && !kv.computedValue.equals(requiredValue)) {
                 analysis.putAnnotationCheck(inAnalysis, WRONG);
                 return Message.newMessage(where, Message.Label.WRONG_ANNOTATION_PARAMETER,
-                        "Annotation " + annotationSimpleName + ", parameter " + kv.parameterName + ", required "
-                                + requiredValue + ", found " + kv.computedValue);
+                        "Annotation " + annotationSimpleName + ", parameter " + kv.parameterName + ", required '"
+                                + requiredValue + "', found '" + kv.computedValue + "'");
             }
         }
         analysis.putAnnotationCheck(inAnalysis, implied ? IMPLIED : OK);

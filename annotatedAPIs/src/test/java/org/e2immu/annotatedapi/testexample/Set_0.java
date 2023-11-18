@@ -14,8 +14,7 @@
 
 package org.e2immu.annotatedapi.testexample;
 
-import org.e2immu.annotation.Independent;
-import org.e2immu.annotation.NotModified;
+import org.e2immu.annotation.*;
 
 import java.util.Collection;
 import java.util.HashSet;
@@ -24,6 +23,8 @@ import java.util.Set;
 /*
 test example which renders no errors/warnings IF used correctly with AnnotatedAPIs converted into AnnotatedXML
  */
+@Container
+@FinalFields
 public class Set_0 {
 
     private final Set<String> set;
@@ -36,5 +37,10 @@ public class Set_0 {
     @NotModified
     public int size() {
         return set.size();
+    }
+
+    @Modified
+    public boolean add(String s) {
+        return set.add(s);
     }
 }
