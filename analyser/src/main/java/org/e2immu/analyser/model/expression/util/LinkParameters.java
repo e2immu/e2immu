@@ -90,8 +90,9 @@ public class LinkParameters {
             methodInfo = lambda.methodInfo;
             nestedType = lambda.methodInfo.typeInfo;
         } else if (parameterExpression instanceof ConstructorCall cc && cc.anonymousClass() != null) {
-            methodInfo = context.getAnalyserContext().getTypeInspection(cc.anonymousClass())
-                    .getSingleAbstractMethod().getMethodInfo();
+            TypeInspection anonymousClassInspection = context.getAnalyserContext().getTypeInspection(cc.anonymousClass());
+            assert anonymousClassInspection.isFunctionalInterface();
+            methodInfo = anonymousClassInspection.getSingleAbstractMethod().getMethodInfo();
             nestedType = cc.anonymousClass();
         } else if (parameterExpression instanceof MethodReference methodReference) {
             if (parameterValue instanceof MethodReference mr) {

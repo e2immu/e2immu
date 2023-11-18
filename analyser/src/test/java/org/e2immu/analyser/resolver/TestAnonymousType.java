@@ -15,12 +15,10 @@
 package org.e2immu.analyser.resolver;
 
 
-import org.e2immu.analyser.model.DescendMode;
-import org.e2immu.analyser.model.MethodInfo;
-import org.e2immu.analyser.model.Statement;
-import org.e2immu.analyser.model.TypeInfo;
+import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.ConstructorCall;
 import org.e2immu.analyser.model.expression.LocalVariableCreation;
+import org.e2immu.analyser.model.expression.MethodCall;
 import org.e2immu.analyser.model.statement.Block;
 import org.e2immu.analyser.model.statement.ExpressionAsStatement;
 import org.e2immu.analyser.model.statement.ReturnStatement;
@@ -28,6 +26,7 @@ import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.parser.TypeMap;
 import org.e2immu.analyser.resolver.testexample.AnonymousType_0;
+import org.e2immu.analyser.resolver.testexample.AnonymousType_1;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
@@ -61,6 +60,26 @@ public class TestAnonymousType extends CommonTest {
                 // we should NOT be referring to 'mask' as a field
                 assertNull(field, "Have " + field);
             } else fail(t0.getClass().toString());
+        } else fail();
+    }
+
+    @Test
+    public void test_1() throws IOException {
+        TypeMap typeMap = inspectAndResolve(AnonymousType_1.class);
+        TypeInfo typeInfo = typeMap.get(AnonymousType_1.class);
+        assertNotNull(typeInfo);
+        MethodInfo of = typeInfo.findUniqueMethod("of", 1);
+        Block ofBlock = of.methodInspection.get().getMethodBody();
+        Statement s1 = ofBlock.structure.statements().get(1);
+        if (s1 instanceof ExpressionAsStatement eas) {
+            TypeInfo dollarOne = eas.expression.asInstanceOf(MethodCall.class)
+                    .parameterExpressions.get(0).asInstanceOf(ConstructorCall.class).anonymousClass();
+            MethodInfo test = dollarOne.findUniqueMethod("get", 0);
+            TypeInfo anonymous = test.typeInfo;
+            assertEquals("org.e2immu.analyser.resolver.testexample.AnonymousType_1.$1",
+                    anonymous.fullyQualifiedName);
+            MethodInspection sam = anonymous.typeInspection.get().getSingleAbstractMethod();
+            assertNotNull(sam);
         } else fail();
     }
 }
