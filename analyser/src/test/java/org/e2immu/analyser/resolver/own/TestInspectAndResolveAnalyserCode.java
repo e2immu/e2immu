@@ -55,6 +55,7 @@ public class TestInspectAndResolveAnalyserCode {
                 .setGraphDirectory("build/e2immuGraph").build();
         Configuration configuration = new Configuration.Builder()
                 .setSkipAnalysis(true)
+                .setParallel(true)
                 .setInputConfiguration(inputConfiguration)
                 .setAnnotatedAPIConfiguration(annotatedAPIConfiguration)
                 .setInspectorConfiguration(inspectorConfiguration)

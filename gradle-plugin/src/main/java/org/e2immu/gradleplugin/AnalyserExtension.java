@@ -55,6 +55,7 @@ public class AnalyserExtension {
     private String debug;
     private boolean ignoreErrors;
     private boolean skipAnalysis;
+    private boolean parallel;
 
     private final ActionBroadcast<AnalyserProperties> propertiesActions;
 
@@ -234,5 +235,13 @@ public class AnalyserExtension {
 
     public void setGraphDirectory(String graphDirectory) {
         this.graphDirectory = graphDirectory;
+    }
+
+    public boolean isParallel() {
+        return parallel;
+    }
+
+    public void setParallel(boolean parallel) {
+        this.parallel = parallel;
     }
 }

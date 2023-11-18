@@ -92,8 +92,9 @@ public class InspectAll implements InspectWithJavaParser {
         LOGGER.info("Start parsing on {} source files", sourceFiles.size());
         ParserConfiguration parserConfiguration = new ParserConfiguration()
                 .setLanguageLevel(ParserConfiguration.LanguageLevel.JAVA_17);
-        Map<TypeInfo, CompilationUnitData> map = sourceFiles.values()
-                .parallelStream()
+        Collection<URI> uris = sourceFiles.values();
+        Stream<URI> uriStream = configuration.parallel() ? uris.parallelStream() : uris.stream();
+        Map<TypeInfo, CompilationUnitData> map = uriStream
                 .flatMap(uri -> doJavaParsingHandleExceptions(uri, parserConfiguration))
                 .collect(Collectors.toUnmodifiableMap(JavaParsingResult::typeInfo, jpr -> jpr.cud));
         compilationUnits.set(map);

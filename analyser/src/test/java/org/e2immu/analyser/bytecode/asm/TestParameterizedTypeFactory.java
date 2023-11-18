@@ -36,7 +36,7 @@ public class TestParameterizedTypeFactory {
     public void beforeAll() throws IOException {
         Resources classPath = new Resources();
         classPath.addJmod(new URL("jar:file:" + System.getProperty("java.home") + "/jmods/java.base.jmod!/"));
-        typeContext = new TypeContext(new TypeMapImpl.Builder(classPath));
+        typeContext = new TypeContext(new TypeMapImpl.Builder(classPath, false));
         byteCodeInspector = new ByteCodeInspectorImpl(classPath, null, typeContext);
     }
 

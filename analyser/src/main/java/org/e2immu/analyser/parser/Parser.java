@@ -113,13 +113,11 @@ public class Parser {
             sortedAnnotatedAPITypes = SortedTypes.EMPTY;
         } else {
             sortedAnnotatedAPITypes = inspectAndResolve(input.annotatedAPIs(),
-                    configuration.annotatedAPIConfiguration().reportWarnings(), true,
-                    configuration.inspectorConfiguration().storeComments());
+                    configuration.annotatedAPIConfiguration().reportWarnings(), true);
         }
 
         // and the inspection and resolution of Java sources (Java parser)
-        SortedTypes resolvedSourceTypes = inspectAndResolve(input.sourceURLs(), true,
-                false, configuration.inspectorConfiguration().storeComments());
+        SortedTypes resolvedSourceTypes = inspectAndResolve(input.sourceURLs(), true, false);
 
         TypeMap typeMap;
 
@@ -164,18 +162,19 @@ public class Parser {
 
     public TypeMap.Builder inspectOnlyForTesting() {
         inspectAndResolve(input.annotatedAPIs(),
-                configuration.annotatedAPIConfiguration().reportWarnings(), true,
-                configuration.inspectorConfiguration().storeComments());
+                configuration.annotatedAPIConfiguration().reportWarnings(), true);
         return input.globalTypeContext().typeMap;
     }
 
     public SortedTypes inspectAndResolve(Map<TypeInfo, URI> urls,
                                          boolean reportWarnings,
-                                         boolean shallowResolver,
-                                         boolean storeComments) {
-        ResolverImpl resolver = new ResolverImpl(anonymousTypeCounters, input.globalTypeContext(),
-                input.globalTypeContext().typeMap.getE2ImmuAnnotationExpressions(), shallowResolver,
-                storeComments);
+                                         boolean shallowResolver) {
+        ResolverImpl resolver = new ResolverImpl(anonymousTypeCounters,
+                input.globalTypeContext(),
+                input.globalTypeContext().typeMap.getE2ImmuAnnotationExpressions(),
+                shallowResolver,
+                configuration.inspectorConfiguration().storeComments(),
+                input.configuration().parallel());
 
         TypeMap.Builder typeMapBuilder = input.globalTypeContext().typeMap;
         InspectAll inspectAll = new InspectAll(configuration, input.globalTypeContext(), input.classPath(), urls,

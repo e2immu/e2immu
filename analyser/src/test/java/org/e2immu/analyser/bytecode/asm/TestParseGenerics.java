@@ -54,7 +54,7 @@ public class TestParseGenerics {
         classPath.addJmod(new URL("jar:file:" + System.getProperty("java.home") + "/jmods/java.base.jmod!/"));
         Resources annotationResources = new Resources();
         AnnotationXmlReader annotationParser = new AnnotationXmlReader(annotationResources);
-        typeContext = new TypeContext(new TypeMapImpl.Builder(classPath));
+        typeContext = new TypeContext(new TypeMapImpl.Builder(classPath, false));
         byteCodeInspector = new ByteCodeInspectorImpl(classPath, annotationParser, typeContext);
         typeContext.typeMap.setByteCodeInspector(byteCodeInspector);
         typeContext.loadPrimitives();

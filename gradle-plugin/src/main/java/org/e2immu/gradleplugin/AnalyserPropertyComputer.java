@@ -100,6 +100,7 @@ public record AnalyserPropertyComputer(
         properties.put(Main.JRE, extension.getJre());
         properties.put(Main.IGNORE_ERRORS, extension.isIgnoreErrors());
         properties.put(Main.SKIP_ANALYSIS, extension.isSkipAnalysis());
+        properties.put(Main.PARALLEL, extension.isParallel());
 
         properties.put(Main.GRAPH_DIRECTORY, extension.getGraphDirectory());
 

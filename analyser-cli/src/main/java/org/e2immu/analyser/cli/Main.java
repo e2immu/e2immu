@@ -64,6 +64,7 @@ public class Main {
     public static final String IGNORE_ERRORS = "ignore-errors";
     public static final String QUIET = "quiet";
     public static final String SKIP_ANALYSIS = "skip-analysis"; // not available on CMD line
+    public static final String PARALLEL = "parallel";
 
     public static final int EXIT_OK = 0;
     public static final int EXIT_INTERNAL_EXCEPTION = 1;
@@ -134,6 +135,9 @@ public class Main {
             splitAndAdd(debugLogTargets, COMMA_ALLOW_SPACE, builder::addDebugLogTargets);
             boolean ignoreErrors = cmd.hasOption(IGNORE_ERRORS);
             builder.setIgnoreErrors(ignoreErrors);
+
+            boolean parallel = cmd.hasOption(PARALLEL);
+            builder.setParallel(parallel);
 
             UploadConfiguration.Builder uploadBuilder = new UploadConfiguration.Builder();
             boolean upload = cmd.hasOption(UPLOAD);
@@ -236,6 +240,7 @@ public class Main {
         options.addOption("h", HELP, false, "Print help.");
         options.addOption("i", IGNORE_ERRORS, false,
                 "Return exit code 0, even if the analyser raises errors.");
+        options.addOption("p", PARALLEL, false, "Parallelize as much as possible.");
         options.addOption("q", QUIET, false,
                 "Silent mode. Do not write warnings, errors, etc. to stdout. " +
                         "They are still uploaded when the --upload option is activated.");
@@ -325,6 +330,7 @@ public class Main {
 
         setBooleanProperty(analyserProperties, QUIET, builder::setQuiet);
         setBooleanProperty(analyserProperties, IGNORE_ERRORS, builder::setIgnoreErrors);
+        setBooleanProperty(analyserProperties, PARALLEL, builder::setParallel);
         setBooleanProperty(analyserProperties, SKIP_ANALYSIS, builder::setSkipAnalysis);
 
         setSplitStringProperty(analyserProperties, COMMA_ALLOW_SPACE, DEBUG, builder::addDebugLogTargets);

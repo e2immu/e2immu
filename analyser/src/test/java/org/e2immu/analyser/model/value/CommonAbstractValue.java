@@ -90,7 +90,7 @@ public abstract class CommonAbstractValue {
 
     @BeforeAll
     public static void beforeClass() {
-        TYPE_MAP_BUILDER = new TypeMapImpl.Builder(new Resources());
+        TYPE_MAP_BUILDER = new TypeMapImpl.Builder(new Resources(), false);
         PRIMITIVES = TYPE_MAP_BUILDER.getPrimitives();
         PRIMITIVES.setInspectionOfBoxedTypesForTesting();
 

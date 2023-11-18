@@ -46,7 +46,7 @@ public class TestByteCodeInspectorCommonsPool {
         resources.addJmod(new URL("jar:file:" + System.getProperty("java.home") + "/jmods/java.base.jmod!/"));
         Resources annotationResources = new Resources();
         AnnotationXmlReader annotationParser = new AnnotationXmlReader(annotationResources);
-        TypeContext typeContext = new TypeContext(new TypeMapImpl.Builder(resources));
+        TypeContext typeContext = new TypeContext(new TypeMapImpl.Builder(resources, false));
         ByteCodeInspectorImpl byteCodeInspector = new ByteCodeInspectorImpl(resources, annotationParser, typeContext);
         typeContext.typeMap.setByteCodeInspector(byteCodeInspector);
         typeContext.loadPrimitives();

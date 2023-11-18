@@ -36,6 +36,7 @@ public record Configuration(InputConfiguration inputConfiguration,
                             boolean quiet,
                             boolean ignoreErrors,
                             boolean skipAnalysis,
+                            boolean parallel,
                             InspectorConfiguration inspectorConfiguration,
                             AnalyserConfiguration analyserConfiguration,
                             UploadConfiguration uploadConfiguration,
@@ -51,6 +52,7 @@ public record Configuration(InputConfiguration inputConfiguration,
                 "\n    logTargets: " + logTargets.stream().map(Object::toString).collect(Collectors.joining(",")) +
                 "\n    quiet: " + quiet +
                 "\n    ignoreErrors: " + ignoreErrors +
+                "\n    parallel: " + parallel +
                 "\n" +
                 inputConfiguration + "\n" +
                 inspectorConfiguration + "\n" +
@@ -98,6 +100,7 @@ public record Configuration(InputConfiguration inputConfiguration,
         private boolean quiet;
         private boolean ignoreErrors;
         private boolean skipAnalysis;
+        private boolean parallel;
         private final Set<LogTarget> logTargets = new HashSet<>();
 
         private InputConfiguration inputConfiguration;
@@ -114,6 +117,7 @@ public record Configuration(InputConfiguration inputConfiguration,
                     quiet,
                     ignoreErrors,
                     skipAnalysis,
+                    parallel,
                     inspectorConfiguration != null ? inspectorConfiguration : new InspectorConfiguration.Builder().build(),
                     analyserConfiguration != null ? analyserConfiguration : new AnalyserConfiguration.Builder().build(),
                     uploadConfiguration != null ? uploadConfiguration : new UploadConfiguration.Builder().build(),
@@ -157,6 +161,12 @@ public record Configuration(InputConfiguration inputConfiguration,
         @Fluent
         public Builder setSkipAnalysis(boolean skipAnalysis) {
             this.skipAnalysis = skipAnalysis;
+            return this;
+        }
+
+        @Fluent
+        public Builder setParallel(boolean parallel) {
+            this.parallel = parallel;
             return this;
         }
 

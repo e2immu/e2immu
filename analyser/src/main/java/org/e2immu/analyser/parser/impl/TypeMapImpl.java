@@ -131,7 +131,7 @@ public class TypeMapImpl implements TypeMap {
     }
 
     public static class Builder implements TypeMap.Builder {
-
+        private final boolean parallel;
         private final Trie<TypeInfo> trie;
         private final ReentrantReadWriteLock trieLock = new ReentrantReadWriteLock();
         private final ReentrantReadWriteLock.ReadLock trieReadLock = trieLock.readLock();
@@ -149,8 +149,9 @@ public class TypeMapImpl implements TypeMap {
         private ByteCodeInspector byteCodeInspector;
         private InspectWithJavaParser inspectWithJavaParser;
 
-        public Builder(Resources resources) {
+        public Builder(Resources resources, boolean parallel) {
             trie = new Trie<>();
+            this.parallel = parallel;
             primitives = new PrimitivesImpl();
             classPath = resources;
             e2ImmuAnnotationExpressions = new E2ImmuAnnotationExpressions();
@@ -167,7 +168,8 @@ public class TypeMapImpl implements TypeMap {
             e2ImmuAnnotationExpressions.streamTypes().forEach(typeInfo -> add(typeInfo, TRIGGER_BYTECODE_INSPECTION));
         }
 
-        public Builder(TypeMapImpl.Builder source, Resources newClassPath) {
+        public Builder(TypeMapImpl.Builder source, Resources newClassPath, boolean parallel) {
+            this.parallel = parallel;
             classPath = newClassPath;
             trie = source.trie;
             primitives = source.primitives;
@@ -183,7 +185,9 @@ public class TypeMapImpl implements TypeMap {
             needed, but will be needed later.
              */
             LOGGER.info("Starting byte code queue of size {}", byteCodeQueue.size());
-            new HashSet<>(byteCodeQueue).parallelStream().forEach(fqn -> {
+            HashSet<String> toDo = new HashSet<>(byteCodeQueue);
+            Stream<String> stringStream = parallel ? toDo.parallelStream() : toDo.stream();
+            stringStream.forEach(fqn -> {
                 Source source = classPath.fqnToPath(fqn, ".class");
                 List<TypeData> loaded = byteCodeInspector.inspectFromPath(source);
                 if (!loaded.isEmpty()) {

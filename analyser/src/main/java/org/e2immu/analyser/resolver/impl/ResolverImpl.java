@@ -86,6 +86,7 @@ public class ResolverImpl implements Resolver {
     private final boolean storeComments;
     private final TimedLogger timedLogger;
     private final TypeGraph typeGraph = new TypeGraph();
+    private final boolean parallel;
 
     @Override
     public Stream<Message> getMessageStream() {
@@ -119,13 +120,15 @@ public class ResolverImpl implements Resolver {
         this.storeComments = storeComments;
         timedLogger = parent.timedLogger;
         typeCounterForDebugging = parent.typeCounterForDebugging;
+        this.parallel = parent.parallel;
     }
 
     public ResolverImpl(AnonymousTypeCounters anonymousTypeCounters,
                         InspectionProvider inspectionProvider,
                         E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions,
                         boolean shallowResolver,
-                        boolean storeComments) {
+                        boolean storeComments,
+                        boolean parallel) {
         this.shallowResolver = shallowResolver;
         this.e2ImmuAnnotationExpressions = e2ImmuAnnotationExpressions;
         this.inspectionProvider = inspectionProvider;
@@ -135,6 +138,7 @@ public class ResolverImpl implements Resolver {
         this.storeComments = storeComments;
         timedLogger = new TimedLogger(LOGGER, 1000L);
         typeCounterForDebugging = new AtomicInteger();
+        this.parallel = parallel;
     }
 
     /**
@@ -158,7 +162,10 @@ public class ResolverImpl implements Resolver {
                 .flatMap(typeInfo -> typeAndAllSubTypes(typeInfo).stream())
                 .collect(Collectors.toUnmodifiableSet());
 
-        Map<TypeInfo, TypeResolution.Builder> resolutionBuilders = inspectedTypes.entrySet().parallelStream()
+        Set<Map.Entry<TypeInfo, ExpressionContext>> entries = inspectedTypes.entrySet();
+        Stream<Map.Entry<TypeInfo, ExpressionContext>> entryStream = parallel ? entries.parallelStream()
+                : entries.stream();
+        Map<TypeInfo, TypeResolution.Builder> resolutionBuilders = entryStream
                 .collect(Collectors.toUnmodifiableMap(Map.Entry::getKey,
                         entry -> resolveTypeAndCreateBuilder(entry, stayWithin)));
         // only at the top level, because we have only one call graph
@@ -221,7 +228,7 @@ public class ResolverImpl implements Resolver {
             return typeGraph.sorted(cycle -> foundCycle(resolutionBuilders, cycle, inCycle),
                     typeInfo -> LOGGER.debug("Adding {}", typeInfo.fullyQualifiedName),
                     Comparator.comparing(typeInfo -> typeInfo.fullyQualifiedName),
-                    shallowResolver);
+                    shallowResolver, parallel);
         }
     }
 
@@ -269,18 +276,23 @@ public class ResolverImpl implements Resolver {
                 subTypeStream).collect(Collectors.toUnmodifiableMap(Map.Entry::getKey, Map.Entry::getValue));
 
         if (parent == null) LOGGER.info("Computing supertypes, have {} builders", allBuilders.size());
-        allBuilders.entrySet().parallelStream()
+        Set<Map.Entry<TypeInfo, TypeResolution.Builder>> entries = allBuilders.entrySet();
+        makeStream(entries)
                 .forEach(e -> computeSuperTypes(inspectionProvider, e.getKey(), e.getValue(), allBuilders));
         if (parent == null) LOGGER.info("Computing field access");
-        allBuilders.entrySet().parallelStream()
-                .forEach(e -> computeFieldAccess(inspectionProvider, e.getKey(), e.getValue(),
-                        parent != null ? inspectedTypes.get(e.getKey()) : inspectedTypes.get(e.getKey().primaryType())));
+        makeStream(entries).forEach(e -> computeFieldAccess(inspectionProvider, e.getKey(), e.getValue(),
+                parent != null ? inspectedTypes.get(e.getKey()) : inspectedTypes.get(e.getKey().primaryType())));
         if (parent == null) LOGGER.info("Post-process type resolution");
-        allBuilders.entrySet().parallelStream().forEach(e -> e.getKey().typeResolution.set(e.getValue().build()));
+        makeStream(entries).forEach(e -> e.getKey().typeResolution.set(e.getValue().build()));
         if (parent == null) LOGGER.info("Group by cycles");
         List<TypeCycle> typeCycles = groupByCycles(sorted.stream()
                 .map(typeInfo -> typeInfo.typeResolution.get().sortedType()).toList());
         return new SortedTypes(typeCycles);
+    }
+
+    private Stream<Map.Entry<TypeInfo, TypeResolution.Builder>> makeStream
+            (Set<Map.Entry<TypeInfo, TypeResolution.Builder>> entries) {
+        return parallel ? entries.parallelStream() : entries.stream();
     }
 
     private void computeFieldAccess(InspectionProvider inspectionProvider,

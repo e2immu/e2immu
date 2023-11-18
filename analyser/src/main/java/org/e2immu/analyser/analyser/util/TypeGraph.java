@@ -18,6 +18,7 @@ import org.e2immu.analyser.model.TypeInfo;
 
 import java.util.*;
 import java.util.function.Consumer;
+import java.util.stream.Stream;
 
 
 public class TypeGraph {
@@ -52,7 +53,8 @@ public class TypeGraph {
     public List<TypeInfo> sorted(Consumer<List<TypeInfo>> cycleConsumer,
                                  Consumer<TypeInfo> independentConsumer,
                                  Comparator<TypeInfo> comparing,
-                                 boolean breakCycle) {
+                                 boolean breakCycle,
+                                 boolean parallel) {
         for (Dependencies dependencies : nodeMap.values()) {
             for (Map.Entry<TypeInfo, Integer> dep : dependencies.weights.entrySet()) {
                 Dependencies d = nodeMap.get(dep.getKey());
@@ -67,26 +69,28 @@ public class TypeGraph {
                 e -> toDo.put(e.getKey(), e.getValue()));
         List<TypeInfo> result = new ArrayList<>(nodeMap.size());
         while (!toDo.isEmpty()) {
-            List<TypeInfo> doneInThisIteration = toDo.entrySet()
-                    .parallelStream().filter(entry -> {
-                        Dependencies dependencies = entry.getValue();
-                        boolean safe;
-                        if (dependencies == null || dependencies.weights.isEmpty()) {
-                            safe = true;
-                        } else {
-                            Map<TypeInfo, Integer> copy = new HashMap<>(dependencies.weights);
-                            result.forEach(copy.keySet()::remove);
-                            copy.remove(entry.getKey());
-                            safe = copy.isEmpty();
-                        }
-                        if (safe && independentConsumer != null) independentConsumer.accept(entry.getKey());
-                        return safe;
-                    }).map(Map.Entry::getKey).toList();
+            Set<Map.Entry<TypeInfo, Dependencies>> entries = toDo.entrySet();
+            Stream<Map.Entry<TypeInfo, Dependencies>> entryStream = parallel ? entries.parallelStream()
+                    : entries.stream();
+            List<TypeInfo> doneInThisIteration = entryStream.filter(entry -> {
+                Dependencies dependencies = entry.getValue();
+                boolean safe;
+                if (dependencies == null || dependencies.weights.isEmpty()) {
+                    safe = true;
+                } else {
+                    Map<TypeInfo, Integer> copy = new HashMap<>(dependencies.weights);
+                    result.forEach(copy.keySet()::remove);
+                    copy.remove(entry.getKey());
+                    safe = copy.isEmpty();
+                }
+                if (safe && independentConsumer != null) independentConsumer.accept(entry.getKey());
+                return safe;
+            }).map(Map.Entry::getKey).toList();
             // there are no types without dependencies at the moment -- we must have a cycle
             if (doneInThisIteration.isEmpty()) {
                 assert toDo.size() > 1 : "The last one should always be safe";
-                int first = toDo.entrySet().stream().findFirst().orElseThrow().getValue().sumIncoming;
-                List<TypeInfo> sortedCycle = toDo.entrySet().stream()
+                int first = entries.stream().findFirst().orElseThrow().getValue().sumIncoming;
+                List<TypeInfo> sortedCycle = entries.stream()
                         .takeWhile(e -> e.getValue().sumIncoming == first || !breakCycle)
                         .map(Map.Entry::getKey)
                         .sorted(comparing).toList();
