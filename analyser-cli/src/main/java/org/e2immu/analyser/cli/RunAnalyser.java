@@ -109,9 +109,8 @@ public class RunAnalyser implements Runnable {
                 if (api.writeMode() == AnnotatedAPIConfiguration.WriteMode.USAGE) {
                     Set<TypeInfo> sourceTypes = runResult.sourceSortedTypes()
                             .primaryTypeStream().collect(Collectors.toSet());
-                    LOGGER.info("Writing annotated API files for usage of {} Java sources",
-                            sourceTypes.size());
-                    CollectUsages collectUsages = new CollectUsages(api.writeAnnotatedAPIPackages());
+                    LOGGER.info("Writing annotated API files for usage of {} Java sources", sourceTypes.size());
+                    CollectUsages collectUsages = new CollectUsages(api.writeAnnotatedAPIPackages(), sourceTypes);
                     Set<WithInspectionAndAnalysis> usage = collectUsages.collect(sourceTypes);
                     LOGGER.info("Found {} objects in usage set", usage.size());
                     Set<TypeInfo> types = usage.stream().filter(w -> w instanceof TypeInfo)

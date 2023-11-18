@@ -101,7 +101,11 @@ public record Composer(TypeMap typeMap, String destinationPackage, Predicate<Wit
 
     private void appendType(TypeInfo primaryType, TypeInspectionImpl.Builder packageBuilder, boolean topLevel) {
         if (!acceptTypeOrAnySubType(primaryType)) return;
-        TypeInspection typeInspection = primaryType.typeInspection.get();
+        if (!primaryType.typeInspection.isSet()) {
+            LOGGER.warn("Ignoring {} in composer, no type inspection", primaryType.fullyQualifiedName);
+            return;
+        }
+        TypeInspection typeInspection = primaryType.typeInspection.get(primaryType.fullyQualifiedName);
         TypeInspectionImpl.Builder typeBuilder = newTypeBuilder(packageBuilder.typeInfo(), typeInspection, topLevel);
 
         for (TypeInfo subType : typeInspection.subTypes()) {
@@ -133,8 +137,12 @@ public record Composer(TypeMap typeMap, String destinationPackage, Predicate<Wit
 
     private boolean acceptTypeOrAnySubType(TypeInfo typeInfo) {
         if (predicate().test(typeInfo)) return true;
-        TypeInspection inspection = typeInfo.typeInspection.get(typeInfo.fullyQualifiedName);
-        return inspection.subTypes().stream().anyMatch(this::acceptTypeOrAnySubType);
+        if (typeInfo.typeInspection.isSet()) {
+            TypeInspection inspection = typeInfo.typeInspection.get(typeInfo.fullyQualifiedName);
+            return inspection.subTypes().stream().anyMatch(this::acceptTypeOrAnySubType);
+        }
+        LOGGER.warn("Ignoring type {} in composer", typeInfo.fullyQualifiedName);
+        return false;
     }
 
     private FieldInfo createField(FieldInfo fieldInfo, TypeInfo owner) {

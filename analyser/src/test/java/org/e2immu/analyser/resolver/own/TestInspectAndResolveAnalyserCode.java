@@ -64,6 +64,7 @@ public class TestInspectAndResolveAnalyserCode {
 
         configuration.initializeLoggers();
         Parser parser = new Parser(configuration);
-        parser.run();
+        Parser.RunResult rr =parser.run();
+        rr.buildTypeMap();
     }
 }

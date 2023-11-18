@@ -124,6 +124,10 @@ public class InspectAll implements InspectWithJavaParser {
         return Map.copyOf(map);
     }
 
+    public Set<TypeInfo> nonEmptyCompilationUnits() {
+        return compilationUnits.get().keySet();
+    }
+
     /*
     Loop over all distinct compilation units.
 

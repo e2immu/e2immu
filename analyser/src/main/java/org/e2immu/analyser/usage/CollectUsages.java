@@ -30,12 +30,19 @@ import java.util.stream.Collectors;
  * <p>
  * At some point we'll need to make a generic search/iterate system that can be reused more.
  */
-public record CollectUsages(List<String> packagePrefixes, Set<String> packagesAccepted) {
+public class CollectUsages {
+    private final boolean acceptAllPackages;
+    private final List<String> packagePrefixes;
+    private final Set<String> packagesAccepted;
+    private final Set<TypeInfo> exclude;
 
-    public CollectUsages(List<String> packagePrefixes) {
-        this(packagePrefixes.stream().filter(pp -> pp.endsWith(".")).toList(),
-                packagePrefixes.stream().map(pp -> pp.endsWith(".") ? pp.substring(0, pp.length() - 1) : pp)
-                        .collect(Collectors.toUnmodifiableSet()));
+    public CollectUsages(List<String> packagePrefixInputs, Set<TypeInfo> exclude) {
+        packagePrefixes = packagePrefixInputs.stream().filter(pp -> pp.endsWith(".")).toList();
+        acceptAllPackages = packagePrefixes.equals(List.of("."));
+        this.packagesAccepted = acceptAllPackages ? Set.of()
+                : packagePrefixInputs.stream().map(pp -> pp.endsWith(".") ? pp.substring(0, pp.length() - 1) : pp)
+                .collect(Collectors.toUnmodifiableSet());
+        this.exclude = exclude;
     }
 
     public Set<WithInspectionAndAnalysis> collect(Collection<TypeInfo> types) {
@@ -74,14 +81,14 @@ public record CollectUsages(List<String> packagePrefixes, Set<String> packagesAc
                 collect(result, fieldInitialiser.initialiser());
             }
         }
-        if (accept(fieldInfo.owner.packageName())) {
+        if (accept(fieldInfo.owner)) {
             result.add(fieldInfo);
         }
     }
 
     private void collect(Set<WithInspectionAndAnalysis> result, TypeParameter typeParameter) {
         typeParameter.getTypeBounds().forEach(typeBound -> {
-            if (typeBound.typeInfo != null && accept(typeBound.typeInfo.packageName())) {
+            if (typeBound.typeInfo != null && accept(typeBound.typeInfo)) {
                 result.add(typeBound.typeInfo);
             }
             typeBound.parameters.forEach(pt -> collect(result, pt));
@@ -90,7 +97,7 @@ public record CollectUsages(List<String> packagePrefixes, Set<String> packagesAc
 
     private void collect(Set<WithInspectionAndAnalysis> result, ParameterizedType type) {
         TypeInfo bestType = type.bestTypeInfo();
-        if (bestType != null && accept(bestType.packageName())) {
+        if (bestType != null && accept(bestType)) {
             result.add(bestType);
         }
         type.parameters.forEach(parameter -> collect(result, parameter));
@@ -102,14 +109,14 @@ public record CollectUsages(List<String> packagePrefixes, Set<String> packagesAc
             MethodReference mr;
             MethodCall mc;
             ConstructorCall cc;
-            if ((mc = e.asInstanceOf(MethodCall.class)) != null && accept(mc.methodInfo.typeInfo.packageName())) {
+            if ((mc = e.asInstanceOf(MethodCall.class)) != null && accept(mc.methodInfo.typeInfo)) {
                 result.add(mc.methodInfo);
                 result.add(mc.methodInfo.typeInfo);
-            } else if ((mr = e.asInstanceOf(MethodReference.class)) != null && accept(mr.methodInfo.typeInfo.packageName())) {
+            } else if ((mr = e.asInstanceOf(MethodReference.class)) != null && accept(mr.methodInfo.typeInfo)) {
                 result.add(mr.methodInfo);
                 result.add(mr.methodInfo.typeInfo);
             } else if ((cc = e.asInstanceOf(ConstructorCall.class)) != null && cc.constructor() != null &&
-                    accept(cc.constructor().typeInfo.packageName())) {
+                    accept(cc.constructor().typeInfo)) {
                 result.add(cc.constructor());
                 result.add(cc.constructor().typeInfo);
             } else if ((ve = e.asInstanceOf(VariableExpression.class)) != null) {
@@ -124,7 +131,10 @@ public record CollectUsages(List<String> packagePrefixes, Set<String> packagesAc
         });
     }
 
-    private boolean accept(String packageName) {
-        return packagesAccepted.contains(packageName) || packagePrefixes.stream().anyMatch(packageName::startsWith);
+    private boolean accept(TypeInfo typeInfo) {
+        if (typeInfo.isPrimitiveExcludingVoid() || exclude.contains(typeInfo.primaryType())) return false;
+        return acceptAllPackages
+                || packagesAccepted.contains(typeInfo.packageName())
+                || packagePrefixes.stream().anyMatch(typeInfo.packageName()::startsWith);
     }
 }

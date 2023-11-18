@@ -24,6 +24,7 @@ import org.e2immu.analyser.output.Formatter;
 import org.e2immu.analyser.output.FormattingOptions;
 import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.parser.TypeMap;
+import org.e2immu.analyser.parser.basics.testexample.Basics_12;
 import org.e2immu.analyser.resolver.testexample.*;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
@@ -228,5 +229,11 @@ public class TestBasics extends CommonTest {
     @Test
     public void test_11() throws IOException {
         inspectAndResolve(Basics_11.class);
+    }
+
+    // empty file
+    @Test
+    public void test_12() throws IOException {
+        inspectAndResolve(Basics_12.class);
     }
 }

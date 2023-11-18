@@ -188,10 +188,13 @@ public class Parser {
             }
             throw new RuntimeException("Have " + exceptions.size() + " parse exceptions");
         }
+        Set<TypeInfo> nonEmptyCompilationUnits = inspectAll.nonEmptyCompilationUnits();
 
         // trigger the on-demand detection
-        urls.entrySet().stream().sorted(Comparator.comparing(e -> e.getValue().toString())).forEach(e ->
-                input.globalTypeContext().getTypeInspection(e.getKey()));
+        urls.entrySet().stream()
+                .filter(e -> nonEmptyCompilationUnits.contains(e.getKey()))
+                .sorted(Map.Entry.comparingByKey())
+                .forEach(e -> input.globalTypeContext().getTypeInspection(e.getKey()));
 
         if (!shallowResolver) {
             typeMapBuilder.makeParametersImmutable();
