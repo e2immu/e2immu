@@ -430,7 +430,7 @@ public class TypeInspectionImpl extends InspectionImpl implements TypeInspection
 
             if (accessNotYetComputed()) {
                 assert inspectionProvider != null : "Need an inspection provider when access not yet computed";
-                computeAccess(inspectionProvider, true);
+                computeAccess(inspectionProvider);
             }
 
             return new TypeInspectionImpl(
@@ -516,7 +516,7 @@ public class TypeInspectionImpl extends InspectionImpl implements TypeInspection
         If the enclosing type is private, then this type must be private too... can't go up in the visibility
         hierarchy.
          */
-        public boolean computeAccess(InspectionProvider inspectionProvider, boolean complain) {
+        public void computeAccess(InspectionProvider inspectionProvider) {
             Access fromModifiers = accessFromModifiers();
             if (typeInfo.packageNameOrEnclosingType.isLeft()) {
                 setAccess(fromModifiers);
@@ -524,19 +524,13 @@ public class TypeInspectionImpl extends InspectionImpl implements TypeInspection
                 TypeInspection typeInspection = inspectionProvider
                         .getTypeInspection(typeInfo.packageNameOrEnclosingType.getRight());
                 if (typeInspection.accessNotYetComputed()) {
-                    if (complain) throw new UnsupportedOperationException();
-                    return true; // we'll have to try later
+                    throw new UnsupportedOperationException("Access of type " +
+                            typeInspection.typeInfo().fullyQualifiedName + " has not yet been computed");
                 }
                 Access fromEnclosing = typeInspection.getAccess();
                 Access combined = fromEnclosing.combine(fromModifiers);
                 setAccess(combined);
             }
-            return false; // don't have to try again
-        }
-
-        public void setAccessFromModifiers() {
-            Access fromModifiers = accessFromModifiers();
-            setAccess(fromModifiers);
         }
 
         private Access accessFromModifiers() {

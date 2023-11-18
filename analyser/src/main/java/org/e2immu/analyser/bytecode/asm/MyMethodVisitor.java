@@ -117,6 +117,7 @@ public class MyMethodVisitor extends MethodVisitor {
             }
         }
         try {
+            // this call triggers type inspections of all the parameter's types via PT.printForMethodFQN
             methodInspectionBuilder.readyToComputeFQN(localTypeMap);
             methodInspectionBuilder.computeAccess(localTypeMap);
         } catch (RuntimeException e) {

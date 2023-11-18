@@ -243,7 +243,7 @@ public interface TypeInspection extends Inspection {
 
     interface Builder extends InspectionBuilder<Builder>, TypeInspection {
 
-        boolean computeAccess(InspectionProvider inspectionProvider, boolean complain);
+        void computeAccess(InspectionProvider inspectionProvider);
 
         TypeInspection build(InspectionProvider inspectionProvider);
 
@@ -282,8 +282,5 @@ public interface TypeInspection extends Inspection {
 
         @Fluent
         Builder setEnclosingMethod(MethodInfo enclosingMethod);
-
-        @Modified
-        void setAccessFromModifiers();
     }
 }

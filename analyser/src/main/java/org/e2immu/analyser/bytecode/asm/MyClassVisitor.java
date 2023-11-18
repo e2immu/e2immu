@@ -121,13 +121,8 @@ public class MyClassVisitor extends ClassVisitor {
             if ((access & Opcodes.ACC_ABSTRACT) != 0) typeInspectionBuilder.addTypeModifier(TypeModifier.ABSTRACT);
             if ((access & Opcodes.ACC_FINAL) != 0) typeInspectionBuilder.addTypeModifier(TypeModifier.FINAL);
         }
-        boolean tryAgain;
-        if (currentType.packageNameOrEnclosingType.isLeft()) {
-            typeInspectionBuilder.setAccessFromModifiers();
-            tryAgain = false;
-        } else {
-            tryAgain = typeInspectionBuilder.computeAccess(localTypeMap, false);
-        }
+        typeInspectionBuilder.computeAccess(localTypeMap);
+
         String parentFqName = superName == null ? null : pathToFqn(superName);
         if (parentFqName != null && !Input.acceptFQN(parentFqName)) {
             return;
@@ -200,10 +195,6 @@ public class MyClassVisitor extends ClassVisitor {
                 LOGGER.error("Caught exception parsing signature " + signature);
                 throw e;
             }
-        }
-        if (tryAgain) {
-            // try again, if it failed the first time (TestByteCodeInspectorCommonPool)
-            typeInspectionBuilder.computeAccess(localTypeMap, true);
         }
         if (annotationStore != null) {
             TypeItem typeItem = annotationStore.typeItemsByFQName(fqName);

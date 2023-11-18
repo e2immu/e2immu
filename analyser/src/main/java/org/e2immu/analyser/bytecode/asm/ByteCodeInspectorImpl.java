@@ -203,6 +203,11 @@ public class ByteCodeInspectorImpl implements ByteCodeInspector {
                     typeData = typeDataAgain;
                 }
             } else {
+                TypeInfo typeInfo = typeDataInMap.getTypeInspectionBuilder().typeInfo();
+                if(typeInfo.packageNameOrEnclosingType.isRight()) {
+                    // ensure that the enclosing type is inspected first! (TestByteCodeInspectorCommonsPool)
+                    getTypeInspection(typeInfo.primaryType());
+                }
                 typeData = typeDataInMap;
             }
             if (typeData.getInspectionState().ge(STARTING_BYTECODE)) {
