@@ -19,7 +19,6 @@ import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.util.ListUtil;
 import org.e2immu.annotation.Fluent;
-import org.e2immu.annotation.Modified;
 import org.e2immu.annotation.NotNull;
 import org.e2immu.annotation.Nullable;
 
@@ -64,7 +63,11 @@ public interface TypeInspection extends Inspection {
     @NotNull(content = true)
     List<ParameterizedType> interfacesImplemented();
 
-    @Nullable // when isFunctionalInterface is false
+    /**
+     *
+     * @return null when the type is not a functional interface
+     */
+    @Nullable
     MethodInspection getSingleAbstractMethod();
 
     @NotNull
@@ -239,6 +242,14 @@ public interface TypeInspection extends Inspection {
         Stream<List<MethodInfo>> subTypes = subTypes().stream()
                 .flatMap(st -> inspectionProvider.getTypeInspection(st).staticBlocksPerType(inspectionProvider));
         return Stream.concat(Stream.of(mine), subTypes);
+    }
+
+    // NOTE: to be used in analysis phase, uses MethodResolution
+    default MethodInfo findMethodOverridingSAMOf(TypeInfo functionalInterfaceType) {
+        MethodInfo sam = functionalInterfaceType.typeInspection.get().getSingleAbstractMethod().getMethodInfo();
+        return methodStream(Methods.THIS_TYPE_ONLY_EXCLUDE_FIELD_SAM)
+                .filter(m -> m.methodResolution.get().overrides().contains(sam))
+                .findFirst().orElseThrow();
     }
 
     interface Builder extends InspectionBuilder<Builder>, TypeInspection {

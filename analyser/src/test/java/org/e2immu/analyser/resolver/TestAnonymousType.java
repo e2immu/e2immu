@@ -76,10 +76,13 @@ public class TestAnonymousType extends CommonTest {
                     .parameterExpressions.get(0).asInstanceOf(ConstructorCall.class).anonymousClass();
             MethodInfo test = dollarOne.findUniqueMethod("get", 0);
             TypeInfo anonymous = test.typeInfo;
-            assertEquals("org.e2immu.analyser.resolver.testexample.AnonymousType_1.$1",
-                    anonymous.fullyQualifiedName);
-            MethodInspection sam = anonymous.typeInspection.get().getSingleAbstractMethod();
-            assertNotNull(sam);
+            String DOLLAR_ONE = "org.e2immu.analyser.resolver.testexample.AnonymousType_1.$1";
+            assertEquals(DOLLAR_ONE, anonymous.fullyQualifiedName);
+            TypeInspection anonymousInspection = anonymous.typeInspection.get();
+            assertNull(anonymousInspection.getSingleAbstractMethod());
+            TypeInfo functionalInterface = anonymousInspection.interfacesImplemented().get(0).typeInfo;
+            MethodInfo methodInfo = anonymousInspection.findMethodOverridingSAMOf(functionalInterface);
+            assertEquals(DOLLAR_ONE + ".get()", methodInfo.fullyQualifiedName);
         } else fail();
     }
 }

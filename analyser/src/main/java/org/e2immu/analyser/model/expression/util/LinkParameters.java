@@ -19,7 +19,6 @@ import org.e2immu.analyser.analyser.util.ComputeIndependent;
 import org.e2immu.analyser.analysis.MethodAnalysis;
 import org.e2immu.analyser.analysis.ParameterAnalysis;
 import org.e2immu.analyser.analysis.StatementAnalysis;
-import org.e2immu.analyser.inspector.MethodTypeParameterMap;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.*;
 import org.e2immu.analyser.model.impl.TranslationMapImpl;
@@ -91,8 +90,8 @@ public class LinkParameters {
             nestedType = lambda.methodInfo.typeInfo;
         } else if (parameterExpression instanceof ConstructorCall cc && cc.anonymousClass() != null) {
             TypeInspection anonymousClassInspection = context.getAnalyserContext().getTypeInspection(cc.anonymousClass());
-            assert anonymousClassInspection.isFunctionalInterface();
-            methodInfo = anonymousClassInspection.getSingleAbstractMethod().getMethodInfo();
+            assert parameterExpression.returnType().isFunctionalInterface();
+            methodInfo = anonymousClassInspection.findMethodOverridingSAMOf(parameterExpression.returnType().typeInfo);
             nestedType = cc.anonymousClass();
         } else if (parameterExpression instanceof MethodReference methodReference) {
             if (parameterValue instanceof MethodReference mr) {
