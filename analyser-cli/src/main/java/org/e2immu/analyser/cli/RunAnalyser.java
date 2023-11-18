@@ -75,6 +75,7 @@ public class RunAnalyser implements Runnable {
                 Parser.RunResult runResult;
                 try {
                     runResult = parser.run();
+                    runResult.buildTypeMap();
                 } catch (NotFoundInClassPathException typeNotFoundException) {
                     exitValue = Main.EXIT_INSPECTION_ERROR;
                     return;
@@ -108,17 +109,17 @@ public class RunAnalyser implements Runnable {
                 if (api.writeMode() == AnnotatedAPIConfiguration.WriteMode.USAGE) {
                     Set<TypeInfo> sourceTypes = runResult.sourceSortedTypes()
                             .primaryTypeStream().collect(Collectors.toSet());
-                    LOGGER.debug("Writing annotated API files for usage of {} Java sources",
+                    LOGGER.info("Writing annotated API files for usage of {} Java sources",
                             sourceTypes.size());
                     CollectUsages collectUsages = new CollectUsages(api.writeAnnotatedAPIPackages());
                     Set<WithInspectionAndAnalysis> usage = collectUsages.collect(sourceTypes);
-                    LOGGER.debug("Found {} objects in usage set", usage.size());
+                    LOGGER.info("Found {} objects in usage set", usage.size());
                     Set<TypeInfo> types = usage.stream().filter(w -> w instanceof TypeInfo)
                             .map(WithInspectionAndAnalysis::primaryType).collect(Collectors.toSet());
-                    LOGGER.debug("Found {} primary types in usage set", types.size());
+                    LOGGER.info("Found {} primary types in usage set", types.size());
                     Composer composer = new Composer(runResult.typeMap(), api.destinationPackage(), usage::contains);
                     Collection<TypeInfo> apiTypes = composer.compose(types);
-                    LOGGER.debug("Created {} java types, one for each package", apiTypes.size());
+                    LOGGER.info("Created {} java types, one for each package", apiTypes.size());
                     composer.write(apiTypes, api.writeAnnotatedAPIsDir());
                 }
                 if (!configuration.ignoreErrors()

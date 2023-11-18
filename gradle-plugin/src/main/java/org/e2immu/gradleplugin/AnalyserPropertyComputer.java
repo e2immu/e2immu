@@ -52,7 +52,7 @@ public record AnalyserPropertyComputer(
 
     private void computeProperties(Project project, Map<String, Object> properties, String prefix) {
         AnalyserExtension extension = project.getExtensions().getByType(AnalyserExtension.class);
-        if (extension.isSkipProject()) {
+        if (extension.skipProject) {
             return;
         }
         Map<String, Object> rawProperties = new LinkedHashMap<>();
@@ -74,11 +74,11 @@ public record AnalyserPropertyComputer(
         LOGGER.debug("Resulting map is " + properties);
 
         List<Project> enabledChildProjects = project.getChildProjects().values().stream()
-                .filter(p -> !p.getExtensions().getByType(AnalyserExtension.class).isSkipProject())
+                .filter(p -> !p.getExtensions().getByType(AnalyserExtension.class).skipProject)
                 .toList();
 
         List<Project> skippedChildProjects = project.getChildProjects().values().stream()
-                .filter(p -> p.getExtensions().getByType(AnalyserExtension.class).isSkipProject())
+                .filter(p -> p.getExtensions().getByType(AnalyserExtension.class).skipProject)
                 .toList();
 
         if (!skippedChildProjects.isEmpty()) {
@@ -98,13 +98,13 @@ public record AnalyserPropertyComputer(
         properties.put(Main.DEBUG, extension.getDebug());
         properties.put(Main.SOURCE_PACKAGES, extension.getSourcePackages());
         properties.put(Main.JRE, extension.getJre());
-        properties.put(Main.IGNORE_ERRORS, extension.isIgnoreErrors());
-        properties.put(Main.SKIP_ANALYSIS, extension.isSkipAnalysis());
-        properties.put(Main.PARALLEL, extension.isParallel());
+        properties.put(Main.IGNORE_ERRORS, extension.ignoreErrors);
+        properties.put(Main.SKIP_ANALYSIS, extension.skipAnalysis);
+        properties.put(Main.PARALLEL, extension.parallel);
 
         properties.put(Main.GRAPH_DIRECTORY, extension.getGraphDirectory());
 
-        properties.put(Main.UPLOAD, extension.getUpload() == null || extension.getUpload());
+        properties.put(Main.UPLOAD, extension.upload == null || extension.upload);
         properties.put(Main.UPLOAD_PROJECT, project.getName());
         properties.put(Main.UPLOAD_URL, extension.getUploadUrl());
         properties.put(Main.UPLOAD_PACKAGES, extension.getUploadPackages());
@@ -120,7 +120,7 @@ public record AnalyserPropertyComputer(
         properties.put(Main.WRITE_ANNOTATED_API_DESTINATION_PACKAGE, extension.getWriteAnnotatedAPIDestinationPackage());
 
         properties.put(Main.READ_ANNOTATION_XML_PACKAGES, extension.getReadAnnotationXMLPackages());
-        properties.put(Main.WRITE_ANNOTATION_XML, extension.isWriteAnnotationXML());
+        properties.put(Main.WRITE_ANNOTATION_XML, extension.writeAnnotationXML);
         properties.put(Main.WRITE_ANNOTATION_XML_DIR, getOrDefault(extension.getWriteAnnotationXMLDir(),
                 new File(buildDir, "annotationXml").getAbsolutePath()));
         properties.put(Main.WRITE_ANNOTATION_XML_PACKAGES, extension.getWriteAnnotationXMLPackages());

@@ -133,7 +133,7 @@ public record Composer(TypeMap typeMap, String destinationPackage, Predicate<Wit
 
     private boolean acceptTypeOrAnySubType(TypeInfo typeInfo) {
         if (predicate().test(typeInfo)) return true;
-        TypeInspection inspection = typeInfo.typeInspection.get();
+        TypeInspection inspection = typeInfo.typeInspection.get(typeInfo.fullyQualifiedName);
         return inspection.subTypes().stream().anyMatch(this::acceptTypeOrAnySubType);
     }
 

@@ -22,7 +22,7 @@ public class AnalyserExtension {
 
     /* local to the plugin */
     /* for Gradle multi-project builds; allows a project to be skipped. */
-    private boolean skipProject;
+    public boolean skipProject;
 
     /* from InputConfiguration -- sources taken from Gradle */
     private String jmods; // part of the class path
@@ -41,21 +41,21 @@ public class AnalyserExtension {
 
     /* from AnnotationXMLConfiguration */
     private String readAnnotationXMLPackages;
-    private boolean writeAnnotationXML;
+    public boolean writeAnnotationXML;
     private String writeAnnotationXMLPackages;
     private String writeAnnotationXMLDir;
 
     /* from UploadConfiguration */
-    private Boolean upload;
+    public Boolean upload;
     private String uploadUrl;
     private String uploadPackages;
     private String uploadProject;
 
     /* from the general Configuration -- Quiet taken from Gradle */
     private String debug;
-    private boolean ignoreErrors;
-    private boolean skipAnalysis;
-    private boolean parallel;
+    public boolean ignoreErrors;
+    public boolean skipAnalysis;
+    public boolean parallel;
 
     private final ActionBroadcast<AnalyserProperties> propertiesActions;
 
@@ -68,14 +68,6 @@ public class AnalyserExtension {
     }
 
     /* ********* getters and setters ************* */
-
-    public boolean isSkipProject() {
-        return skipProject;
-    }
-
-    public void setSkipProject(boolean skipProject) {
-        this.skipProject = skipProject;
-    }
 
     public String getJmods() {
         return jmods;
@@ -117,14 +109,6 @@ public class AnalyserExtension {
         this.writeAnnotationXMLPackages = writeAnnotationXMLPackages;
     }
 
-    public Boolean getUpload() {
-        return upload;
-    }
-
-    public void setUpload(Boolean upload) {
-        this.upload = upload;
-    }
-
     public String getUploadPackages() {
         return uploadPackages;
     }
@@ -155,10 +139,6 @@ public class AnalyserExtension {
 
     public void setReadAnnotationXMLPackages(String readAnnotationXMLPackages) {
         this.readAnnotationXMLPackages = readAnnotationXMLPackages;
-    }
-
-    public boolean isWriteAnnotationXML() {
-        return writeAnnotationXML;
     }
 
     public void setWriteAnnotationXML(boolean writeAnnotationXML) {
@@ -213,35 +193,11 @@ public class AnalyserExtension {
         this.uploadProject = uploadProject;
     }
 
-    public boolean isIgnoreErrors() {
-        return ignoreErrors;
-    }
-
-    public void setIgnoreErrors(boolean ignoreErrors) {
-        this.ignoreErrors = ignoreErrors;
-    }
-
-    public boolean isSkipAnalysis() {
-        return skipAnalysis;
-    }
-
-    public void setSkipAnalysis(boolean skipAnalysis) {
-        this.skipAnalysis = skipAnalysis;
-    }
-
     public String getGraphDirectory() {
         return graphDirectory;
     }
 
     public void setGraphDirectory(String graphDirectory) {
         this.graphDirectory = graphDirectory;
-    }
-
-    public boolean isParallel() {
-        return parallel;
-    }
-
-    public void setParallel(boolean parallel) {
-        this.parallel = parallel;
     }
 }

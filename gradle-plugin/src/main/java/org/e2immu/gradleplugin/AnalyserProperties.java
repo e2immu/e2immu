@@ -18,7 +18,7 @@ import java.util.Map;
 
 public class AnalyserProperties {
 
-    private Map<String, Object> properties;
+    private final Map<String, Object> properties;
 
     public AnalyserProperties(Map<String, Object> properties) {
         this.properties = properties;

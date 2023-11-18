@@ -57,7 +57,7 @@ public class AnalyserPlugin implements Plugin<Project> {
         conventionMapping.map("properties", () -> new AnalyserPropertyComputer(actionBroadcastMap, project).computeProperties());
 
         Callable<Iterable<? extends Task>> compileTasks = () -> project.getAllprojects().stream()
-                .filter(p -> p.getPlugins().hasPlugin(JavaPlugin.class) && !p.getExtensions().getByType(AnalyserExtension.class).isSkipProject())
+                .filter(p -> p.getPlugins().hasPlugin(JavaPlugin.class) && !p.getExtensions().getByType(AnalyserExtension.class).skipProject)
                 .map(p -> p.getTasks().getByName(JavaPlugin.COMPILE_JAVA_TASK_NAME))
                 .collect(Collectors.toList());
         analyserTask.dependsOn(compileTasks);

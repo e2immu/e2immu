@@ -430,7 +430,9 @@ public class MethodInspectionImpl extends InspectionImpl implements MethodInspec
                         owner.fullyQualifiedName, name, parameters.size());
                 throw re;
             }
-            distinguishingName = owner.fullyQualifiedName + "." + name + "(" + parameters.stream()
+            // see Constructor_16, we must change the name
+            String methodName = methodType.isConstructor() ? "<init>" : name;
+            distinguishingName = owner.fullyQualifiedName + "." + methodName + "(" + parameters.stream()
                     .map(p -> p.getParameterizedType().distinguishingName(inspectionProvider, p.isVarArgs()))
                     .collect(Collectors.joining(",")) + ")";
             this.methodInfo = new MethodInfo(identifier, owner, name, fullyQualifiedName, distinguishingName, methodType);

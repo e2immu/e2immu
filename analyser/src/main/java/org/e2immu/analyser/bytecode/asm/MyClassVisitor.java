@@ -215,7 +215,13 @@ public class MyClassVisitor extends ClassVisitor {
         if (path.equals(currentTypePath)) {
             return currentType;
         }
-        return localTypeMap.getOrCreate(fqn, LocalTypeMap.LoadMode.NOW).typeInfo();
+        TypeInspection typeInspection = localTypeMap.getOrCreate(fqn, LocalTypeMap.LoadMode.NOW);
+        if (typeInspection == null) {
+            LOGGER.error("Type inspection of {} is null", fqn);
+            LOGGER.error("Current type is {}, identifier: {}", currentType.fullyQualifiedName, currentType.identifier);
+            throw new UnsupportedOperationException("Cannot load type '" + fqn + "'");
+        }
+        return typeInspection.typeInfo();
     }
 
     @Override
