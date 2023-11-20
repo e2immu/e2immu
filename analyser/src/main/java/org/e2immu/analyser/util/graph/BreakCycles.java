@@ -13,15 +13,20 @@ Combination of grouping and breaking cycles.
 public class BreakCycles<T> {
     private static final Logger LOGGER = LoggerFactory.getLogger(BreakCycles.class);
 
-    public record Linearization<T>(List<Set<Set<T>>> list) {
+    public record Linearization<T>(List<Set<Set<T>>> list, List<ActionInfo<T>> actionLog) {
         @Override
         public String toString() {
             return list.stream().map(s -> "["
-                            + s.stream().map(set -> set.stream().map(Object::toString).sorted().collect(Collectors.joining(", ")))
+                            + s.stream().map(set -> set.stream().map(Object::toString).sorted()
+                                    .collect(Collectors.joining(", ")))
                             .sorted().collect(Collectors.joining(", "))
                             + "]")
                     .collect(Collectors.joining("; "));
         }
+    }
+
+    private record InternalLinearization<T>(List<Set<V<T>>> list, List<ActionInfo<T>> actionLog) {
+
     }
 
     public interface ActionComputer<T> {
@@ -30,6 +35,12 @@ public class BreakCycles<T> {
 
     public interface Action<T> {
         G<T> apply();
+
+        ActionInfo<T> info();
+    }
+
+    public interface ActionInfo<T> {
+
     }
 
     private final ActionComputer<T> actionComputer;
@@ -42,28 +53,29 @@ public class BreakCycles<T> {
     // set: parallel, these elements are independent (have no edges between them), can be "processed" in parallel
     // set: grouped, cycles cannot be broken here, must be processed together
     public Linearization<T> go(G<T> g) {
-        List<Set<V<T>>> list = go2(g);
+        InternalLinearization<T> linearization = go2(g);
         // unpack the vertices
-        List<Set<Set<T>>> unpacked = list.stream()
+        List<Set<Set<T>>> unpacked = linearization.list.stream()
                 .map(s -> s.stream().map(V::ts).collect(Collectors.toUnmodifiableSet())).toList();
-        return new Linearization<>(unpacked);
+        return new Linearization<>(unpacked, linearization.actionLog);
     }
 
     // list: sequential
     // set: parallel
     // the vertex contains multiple Ts that are in a cycle which cannot or will not be broken
-    private List<Set<V<T>>> go2(G<T> g) {
+    private InternalLinearization<T> go2(G<T> g) {
         GraphOperations.LinearizationResult<T> r = GraphOperations.linearize(g);
         if (r.quality() == 0) {
-            return r.linearized();
+            return new InternalLinearization<>(r.linearized(), List.of());
         }
         List<Set<V<T>>> result = new ArrayList<>(r.linearized());
-            /*
-             we have at least one cycle, and some non-problematic nodes that can be added once the cycle has been linearized
-             this must proceed recursively
-             */
+        /*
+         we have at least one cycle, and some non-problematic nodes that can be added once the cycle has been linearized
+         this must proceed recursively
+         */
         assert !r.remainingCycles().isEmpty();
         List<List<Set<V<T>>>> newLinearizations = new ArrayList<>();
+        List<ActionInfo<T>> actionLog = new ArrayList<>();
         for (Set<V<T>> cycle : r.remainingCycles()) {
             Action<T> action = actionComputer.compute(g, cycle);
             if (action == null) {
@@ -73,15 +85,18 @@ public class BreakCycles<T> {
                 // apply the action
                 G<T> newG = action.apply();
                 assert !newG.equals(g);
-                List<Set<V<T>>> newLinearization = go2(newG);
-                newLinearizations.add(newLinearization);
+                InternalLinearization<T> internalLinearization = go2(newG);
+                newLinearizations.add(internalLinearization.list);
+                actionLog.add(action.info());
+                actionLog.addAll(internalLinearization.actionLog);
             }
         }
         appendLinearizations(newLinearizations, result);
+        List<ActionInfo<T>> immutableActionLog = List.copyOf(actionLog);
         if (r.nonProblematic().isEmpty()) {
-            return List.copyOf(result);
+            return new InternalLinearization<>(List.copyOf(result), immutableActionLog);
         }
-        return attachNonProblematicNodes(g, r.nonProblematic(), result);
+        return new InternalLinearization<>(attachNonProblematicNodes(g, r.nonProblematic(), result), immutableActionLog);
     }
 
     private List<Set<V<T>>> attachNonProblematicNodes(G<T> g, List<V<T>> vs, List<Set<V<T>>> input) {
@@ -143,6 +158,9 @@ public class BreakCycles<T> {
         }
     }
 
+    public record EdgeRemoval<T>(Map<V<T>, Map<V<T>, Long>> edges) implements ActionInfo<T> {
+    }
+
     public static class GreedyEdgeRemoval<T> implements ActionComputer<T> {
 
         @Override
@@ -175,14 +193,20 @@ public class BreakCycles<T> {
             LOGGER.debug("Best choice for greedy edge removal is {}, quality now {}", bestEdgesToRemove, bestQuality);
             if (bestQuality < cycle.size()) {
                 G<T> finalGraph = bestSubGraph;
+                EdgeRemoval<T> info = new EdgeRemoval<>(bestEdgesToRemove);
                 return new Action<T>() {
                     @Override
                     public G<T> apply() {
-                        // FIXME and now the recursion
                         return finalGraph;
+                    }
+
+                    @Override
+                    public ActionInfo<T> info() {
+                        return info;
                     }
                 };
             }
+            LOGGER.debug("No edge found that improves quality; keeping cycle of size {}", cycle.size());
             return null; // must be a group, we cannot break the cycle
         }
     }
