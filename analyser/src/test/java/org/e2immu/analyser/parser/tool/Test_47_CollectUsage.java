@@ -48,7 +48,7 @@ public class Test_47_CollectUsage extends CommonTestRunner {
     public void test_0() throws IOException {
         TypeContext typeContext = testClass("CollectUsage_0", 0, 0,
                 new DebugConfiguration.Builder().build());
-        CollectUsages collectUsages = new CollectUsages(List.of("java.lang"), Set.of("java.util"));
+        CollectUsages collectUsages = new CollectUsages(List.of("java.lang", "java.util"), Set.of());
         List<TypeInfo> types = List.of(typeContext.getFullyQualified(CollectUsage_0.class));
         Set<WithInspectionAndAnalysis> set = collectUsages.collect(types);
         Set<TypeInfo> typesInSet = set.stream().filter(w -> w instanceof TypeInfo)

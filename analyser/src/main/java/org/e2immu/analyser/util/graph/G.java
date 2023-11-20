@@ -1,6 +1,7 @@
 package org.e2immu.analyser.util.graph;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 public class G<T> {
 
@@ -35,6 +36,13 @@ public class G<T> {
         return new G<>(Set.copyOf(vertices), Map.copyOf(elements), Map.copyOf(edges));
     }
 
+    @Override
+    public String toString() {
+        return edges.entrySet().stream()
+                .flatMap(e -> e.getValue().entrySet().stream().map(e2 -> new E<>(e.getKey(), e2.getKey(), e2.getValue())))
+                .map(Record::toString).sorted().collect(Collectors.joining(", "));
+    }
+
     public G<T> withFewerEdges(Map<V<T>, Set<V<T>>> edgesToRemove) {
         Map<V<T>, Map<V<T>, Long>> newEdges = new HashMap<>();
         for (Map.Entry<V<T>, Map<V<T>, Long>> entry : edges.entrySet()) {
@@ -55,6 +63,31 @@ public class G<T> {
 
     public G<T> withGroupedVertices(Set<V<T>> grouping) {
         throw new UnsupportedOperationException("NYI");
+    }
+
+
+    public G<T> subGraph(Set<V<T>> subSet) {
+        Map<T, V<T>> newElements = new HashMap<>();
+        Map<V<T>, Map<V<T>, Long>> newEdges = new HashMap<>();
+        for (V<T> v : subSet) {
+            for (T t : v.ts()) {
+                newElements.put(t, v);
+            }
+            Map<V<T>, Long> localEdges = edges.get(v);
+            if (localEdges != null) {
+                Map<V<T>, Long> newLocal = new HashMap<>();
+                for (Map.Entry<V<T>, Long> entry : localEdges.entrySet()) {
+                    V<T> to = entry.getKey();
+                    if (subSet.contains(to)) {
+                        newLocal.put(to, entry.getValue());
+                    }
+                }
+                if (!newLocal.isEmpty()) {
+                    newEdges.put(v, Map.copyOf(newLocal));
+                }
+            }
+        }
+        return new G<T>(Set.copyOf(subSet), Map.copyOf(newElements), Map.copyOf(newEdges));
     }
 
     public G<T> reverseSubGraph(Set<V<T>> subSet) {

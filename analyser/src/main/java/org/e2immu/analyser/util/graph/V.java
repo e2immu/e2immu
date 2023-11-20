@@ -14,6 +14,18 @@ public class V<T> {
         this.grouping = grouping;
     }
 
+    // for testing
+    public V(T t) {
+        this(Set.of(t), 0, Set.of());
+    }
+
+    @Override
+    public String toString() {
+        return ts.toString()
+                + (internalEdgeWeight == 0 ? "" : (":" + internalEdgeWeight))
+                + (grouping.isEmpty() ? "" : (":" + grouping));
+    }
+
     @Override
     public boolean equals(Object obj) {
         if (this == obj) return true;
