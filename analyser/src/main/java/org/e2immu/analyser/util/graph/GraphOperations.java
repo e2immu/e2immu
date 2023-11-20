@@ -15,7 +15,9 @@ public class GraphOperations {
                     .map(s -> "[" + s.stream().map(V::toString).sorted().collect(Collectors.joining(", ")) + "]")
                     .collect(Collectors.joining("; "))
                     + " P=" + notProblematic.stream().map(V::toString).sorted().collect(Collectors.joining(", "))
-                    + " R=" + remainingCycles.stream().map(Object::toString).collect(Collectors.joining(", "));
+                    + " R=" + remainingCycles.stream().map(s -> "[" +
+                            s.stream().map(V::toString).sorted().collect(Collectors.joining(", ")) + "]")
+                    .collect(Collectors.joining("; "));
         }
     }
 
@@ -57,7 +59,8 @@ public class GraphOperations {
                         done.add(t);
                     });
                     // find the connected cycles in the remaining vertices
-                    cycles.addAll(findConnectedSubSets(g, toDo));
+                    G<T> subGraph = g.subGraph(toDo);
+                    cycles.addAll(findConnectedSubSets(subGraph, toDo));
                 }
                 break;
             } else {
