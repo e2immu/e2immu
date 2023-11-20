@@ -58,18 +58,20 @@ public class TestLinearize {
     public void test2() {
         Map<String, Map<String, Long>> initialGraph = Map.of(
                 "v1", Map.of("v3", 1L),
-                "v2", Map.of("v3", 1L),
-                "v3", Map.of("v4", 1L),
-                "v4", Map.of("v7", 1L),
-                "v5", Map.of("v4", 1L),
-                "v6", Map.of("v5", 1L),
-                "v7", Map.of("v6", 1L, "v8", 1L),
+                "v2", Map.of("v3", 2L),
+                "v3", Map.of("v4", 3L),
+                "v4", Map.of("v7", 4L),
+                "v5", Map.of("v4", 5L),
+                "v6", Map.of("v5", 6L),
+                "v7", Map.of("v6", 7L, "v8", 8L),
                 "v8", Map.of(),
-                "v9", Map.of("v10", 1L),
-                "v10", Map.of("v9", 1L));
+                "v9", Map.of("v10", 9L),
+                "v10", Map.of("v9", 10L));
         G<String> g = G.create(initialGraph);
-        assertEquals("[v10]->1->[v9], [v1]->1->[v3], [v2]->1->[v3], [v3]->1->[v4], [v4]->1->[v7], " +
-                "[v5]->1->[v4], [v6]->1->[v5], [v7]->1->[v6], [v7]->1->[v8], [v9]->1->[v10]", g.toString());
+        assertEquals("""
+                [v10]->10->[v9], [v1]->1->[v3], [v2]->2->[v3], [v3]->3->[v4], [v4]->4->[v7], [v5]->5->[v4], \
+                [v6]->6->[v5], [v7]->7->[v6], [v7]->8->[v8], [v9]->9->[v10]\
+                """, g.toString());
         GraphOperations.LinearizationResult<String> r = GraphOperations.linearize(g);
         assertEquals("L=[[v8]] P=[v1], [v2], [v3] R=[[v4], [v5], [v6], [v7]]; [[v10], [v9]]", r.toString());
         assertEquals(4, r.quality());
@@ -77,6 +79,7 @@ public class TestLinearize {
         V<String> v6 = g.vertex("v6");
         V<String> v9 = g.vertex("v9");
         V<String> v10 = g.vertex("v10");
+
         BreakCycles<String> bc = new BreakCycles<>((g1, cycle) -> () -> {
             if (cycle.contains(v6)) {
                 return g1.subGraph(cycle).withFewerEdges(Map.of(v6, Set.of(v5)));
@@ -88,5 +91,22 @@ public class TestLinearize {
         });
         BreakCycles.Linearization<String> linearization = bc.go(g);
         assertEquals("[v8]; [v6, v9]; [v10, v7]; [v4]; [v3, v5]; [v1]; [v2]", linearization.toString());
+
+        BreakCycles<String> bc2 = new BreakCycles<>((g1, cycle) -> {
+            if (cycle.contains(v6)) {
+                return () -> g1.subGraph(cycle).withFewerEdges(Map.of(v6, Set.of(v5)));
+            }
+            if (cycle.contains(v9)) {
+                return null; // we cannot break it
+            }
+            throw new UnsupportedOperationException();
+        });
+        BreakCycles.Linearization<String> linearization2 = bc2.go(g);
+        assertEquals("[v8]; [v10, v9]; [v6]; [v7]; [v4]; [v3, v5]; [v1]; [v2]", linearization2.toString());
+
+        BreakCycles<String> bc3 = new BreakCycles<>(new BreakCycles.GreedyEdgeRemoval<>());
+        BreakCycles.Linearization<String> linearization3 = bc3.go(g);
+        // because all the edges have a different weight, we'll always get the same result!
+        assertEquals("[v8]; [v4, v9]; [v10, v3, v5]; [v1, v2, v6]; [v7]", linearization3.toString());
     }
 }

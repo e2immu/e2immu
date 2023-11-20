@@ -1,5 +1,8 @@
 package org.e2immu.analyser.util.graph;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -8,6 +11,7 @@ Combination of grouping and breaking cycles.
 
  */
 public class BreakCycles<T> {
+    private static final Logger LOGGER = LoggerFactory.getLogger(BreakCycles.class);
 
     public record Linearization<T>(List<Set<Set<T>>> list) {
         @Override
@@ -136,6 +140,50 @@ public class BreakCycles<T> {
                 }
             }
             result.add(Set.copyOf(set));
+        }
+    }
+
+    public static class GreedyEdgeRemoval<T> implements ActionComputer<T> {
+
+        @Override
+        public Action<T> compute(G<T> inputGraph, Set<V<T>> cycle) {
+            G<T> g = inputGraph.subGraph(cycle);
+            int n = 1;
+            int bestQuality = cycle.size();
+            assert bestQuality > 0;
+            G<T> bestSubGraph = null;
+            Map<V<T>, Map<V<T>, Long>> bestEdgesToRemove = null;
+            boolean found = false;
+            while (n < cycle.size() && !found) {
+                Iterator<Map<V<T>, Map<V<T>, Long>>> iterator = g.edgeIterator(n, Long::compareTo);
+                while (iterator.hasNext() && bestQuality > 0) {
+                    Map<V<T>, Map<V<T>, Long>> edgesToRemove = iterator.next();
+                    G<T> withoutEdges = g.withFewerEdgesMap(edgesToRemove);
+                    int quality = GraphOperations.linearize(withoutEdges).quality();
+                    if (quality < bestQuality) {
+                        bestSubGraph = withoutEdges;
+                        bestQuality = quality;
+                        bestEdgesToRemove = edgesToRemove;
+                        found = true; // don't go to n+1
+                    }
+                    if (bestQuality == 0) {
+                        break; // stop, optimal solution
+                    }
+                }
+                ++n;
+            }
+            LOGGER.debug("Best choice for greedy edge removal is {}, quality now {}", bestEdgesToRemove, bestQuality);
+            if (bestQuality < cycle.size()) {
+                G<T> finalGraph = bestSubGraph;
+                return new Action<T>() {
+                    @Override
+                    public G<T> apply() {
+                        // FIXME and now the recursion
+                        return finalGraph;
+                    }
+                };
+            }
+            return null; // must be a group, we cannot break the cycle
         }
     }
 }

@@ -1,7 +1,9 @@
 package org.e2immu.analyser.util.graph;
 
 import java.util.*;
+import java.util.function.Function;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public class G<T> {
 
@@ -50,9 +52,17 @@ public class G<T> {
     }
 
     public G<T> withFewerEdges(Map<V<T>, Set<V<T>>> edgesToRemove) {
+        return internalWithFewerEdges(edgesToRemove::get);
+    }
+
+    public G<T> withFewerEdgesMap(Map<V<T>, Map<V<T>, Long>> edgesToRemove) {
+        return internalWithFewerEdges(v -> edgesToRemove.getOrDefault(v, Map.of()).keySet());
+    }
+
+    private G<T> internalWithFewerEdges(Function<V<T>, Set<V<T>>> edgesToRemove) {
         Map<V<T>, Map<V<T>, Long>> newEdges = new HashMap<>();
         for (Map.Entry<V<T>, Map<V<T>, Long>> entry : edges.entrySet()) {
-            Set<V<T>> toRemove = edgesToRemove.get(entry.getKey());
+            Set<V<T>> toRemove = edgesToRemove.apply(entry.getKey());
             Map<V<T>, Long> newEdgesOfV;
             if (toRemove != null && !toRemove.isEmpty()) {
                 Map<V<T>, Long> map = new HashMap<>(entry.getValue());
@@ -129,8 +139,18 @@ public class G<T> {
         return edges.get(v);
     }
 
+    public Stream<E<T>> edgeStream() {
+        return edges.entrySet().stream()
+                .flatMap(e -> e.getValue().entrySet().stream()
+                        .map(e2 -> new E<>(e.getKey(), e2.getKey(), e2.getValue())));
+    }
 
     public V<T> vertex(T t) {
         return elements.get(t);
+    }
+
+    public Iterator<Map<V<T>, Map<V<T>, Long>>> edgeIterator(int n, Comparator<Long> comparator) {
+        List<E<T>> edges = edgeStream().sorted((e1, e2) -> comparator.compare(e1.weight(), e2.weight())).toList();
+        return edges.stream().map(e -> Map.of(e.from(), Map.of(e.to(), e.weight()))).iterator();
     }
 }
