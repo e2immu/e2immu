@@ -14,9 +14,20 @@
 
 package org.e2immu.analyser.model.expression;
 
+import org.e2immu.analyser.util.IntUtil;
 import org.e2immu.annotation.NotNull;
 
 public interface Numeric extends Negatable {
+    static String formatNumber(double d, Class<? extends Numeric> clazz) {
+        if (IntUtil.isMathematicalInteger(d)) {
+            return Long.toString((long) d);
+        }
+        if (clazz.equals(FloatConstant.class)) {
+            return d + "f";
+        }
+        return Double.toString(d);
+    }
+
     @NotNull
     Number getNumber();
 

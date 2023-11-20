@@ -22,7 +22,6 @@ import org.e2immu.analyser.config.Configuration;
 import org.e2immu.analyser.inspector.TypeContext;
 import org.e2immu.analyser.model.Identifier;
 import org.e2immu.analyser.model.TypeInfo;
-import org.e2immu.analyser.parser.impl.InspectAll;
 import org.e2immu.analyser.parser.impl.TypeMapImpl;
 import org.e2immu.analyser.util.Resources;
 import org.e2immu.analyser.util.Trie;
@@ -170,7 +169,7 @@ public record Input(Configuration configuration,
         classPath.expandLeaves(thePackage, ".class", (expansion, list) -> {
             // we'll loop over the primary types only
             if (!expansion[expansion.length - 1].contains("$")) {
-                String fqn = InspectAll.fqnOfClassFile(thePackage, expansion);
+                String fqn = fqnOfClassFile(thePackage, expansion);
                 assert Input.acceptFQN(fqn);
                 // test against hard-coded types
                 TypeInfo typeInfo = globalTypeContext.getFullyQualified(fqn, true);
@@ -181,6 +180,14 @@ public record Input(Configuration configuration,
             }
         });
         LOGGER.info("... inspected {} paths", inspected);
+    }
+
+    public static String fqnOfClassFile(String prefix, String[] suffixes) {
+        String combined = prefix + "." + String.join(".", suffixes).replaceAll("\\$", ".");
+        if (combined.endsWith(".class")) {
+            return combined.substring(0, combined.length() - 6);
+        }
+        throw new UnsupportedOperationException("Expected .class or .java file, but got " + combined);
     }
 
     private static Resources assemblePath(Configuration configuration,

@@ -315,7 +315,7 @@ public class GreaterThanZero extends BaseExpression implements Expression {
                                 .add(lt).add(sum.lhs.output(qualification));
                     }
                     // -1 + a >= 0 will be written as a >= 1
-                    Text negNumber = new Text(Text.formatNumber(-ln.doubleValue(), ln.getClass()));
+                    Text negNumber = new Text(Numeric.formatNumber(-ln.doubleValue(), ln.getClass()));
                     return new OutputBuilder().add(outputInParenthesis(qualification, precedence(), sum.rhs))
                             .add(gt).add(negNumber);
                 } else if (sum.rhs instanceof Negation neg) {

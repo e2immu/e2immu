@@ -14,25 +14,12 @@
 
 package org.e2immu.analyser.output;
 
-import org.e2immu.analyser.model.expression.FloatConstant;
-import org.e2immu.analyser.model.expression.Numeric;
-import org.e2immu.analyser.util.IntUtil;
 import org.e2immu.analyser.util.StringUtil;
 
 public record Text(String text) implements OutputElement {
 
     public Text {
         assert text != null && !text.isBlank();
-    }
-
-    public static String formatNumber(double d, Class<? extends Numeric> clazz) {
-        if (IntUtil.isMathematicalInteger(d)) {
-            return Long.toString((long) d);
-        }
-        if (clazz.equals(FloatConstant.class)) {
-            return d + "f";
-        }
-        return Double.toString(d);
     }
 
     @Override

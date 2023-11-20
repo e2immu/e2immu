@@ -15,6 +15,7 @@ import org.e2immu.analyser.inspector.impl.TypeInspectorImpl;
 import org.e2immu.analyser.model.Identifier;
 import org.e2immu.analyser.model.TypeInfo;
 import org.e2immu.analyser.model.TypeInspection;
+import org.e2immu.analyser.parser.Input;
 import org.e2immu.analyser.parser.InspectWithJavaParser;
 import org.e2immu.analyser.parser.TypeMap;
 import org.e2immu.analyser.resolver.Resolver;
@@ -232,7 +233,7 @@ public class InspectAll implements InspectWithJavaParser {
 
         classPath.expandLeaves(packageName, ".class", (expansion, urls) -> {
             if (!expansion[expansion.length - 1].contains("$")) {
-                String fqn = fqnOfClassFile(packageName, expansion);
+                String fqn = Input.fqnOfClassFile(packageName, expansion);
                 TypeInfo typeInfo = loadTypeDoNotImport(fqn, trie); // no subtypes, they appear individually in the classPath
                 typeContextOfFile.addToContext(typeInfo, false);
             }
@@ -344,14 +345,6 @@ public class InspectAll implements InspectWithJavaParser {
             throw new NotFoundInClassPathException(fqn);
         }
         return typeMapBuilder.getOrCreateFromClassPathEnsureEnclosing(path, TRIGGER_BYTECODE_INSPECTION).typeInfo();
-    }
-
-    public static String fqnOfClassFile(String prefix, String[] suffixes) {
-        String combined = prefix + "." + String.join(".", suffixes).replaceAll("\\$", ".");
-        if (combined.endsWith(".class")) {
-            return combined.substring(0, combined.length() - 6);
-        }
-        throw new UnsupportedOperationException("Expected .class or .java file, but got " + combined);
     }
 
     @Override
