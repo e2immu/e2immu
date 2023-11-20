@@ -91,9 +91,33 @@ public class GraphOperations {
         while (!toDo.isEmpty()) {
             V<T> v = toDo.stream().findFirst().orElseThrow();
             Set<V<T>> connected = follow(g, v);
-            result.add(Set.copyOf(connected));
             toDo.removeAll(connected);
+            result.add(connected);
+            boolean changed = true;
+            while (changed) {
+                changed = false;
+                Integer mergeI = null;
+                Integer mergeJ = null;
+                for (int i = 0; i < result.size() - 1; i++) {
+                    Set<V<T>> set1 = result.get(i);
+                    for (int j = i + 1; j < result.size(); j++) {
+                        Set<V<T>> set2 = result.get(j);
+                        if (!Collections.disjoint(set1, set2)) {
+                            mergeI = i;
+                            mergeJ = j;
+                            break;
+                        }
+                    }
+                    if (mergeI != null) break;
+                }
+                if (mergeI != null) {
+                    changed = true;
+                    result.get(mergeI).addAll(result.get(mergeJ));
+                    result.remove((int) mergeJ);
+                }
+            }
         }
+        result.replaceAll(Set::copyOf);
         return List.copyOf(result);
     }
 
@@ -101,6 +125,7 @@ public class GraphOperations {
         List<V<T>> toDo = new LinkedList<>();
         Set<V<T>> connected = new HashSet<>();
         toDo.add(startingPoint);
+        connected.add(startingPoint);
         while (!toDo.isEmpty()) {
             V<T> v = toDo.remove(0);
             Map<V<T>, Long> edges = g.edges(v);

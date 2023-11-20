@@ -16,17 +16,49 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 public class TestTypeDependencies {
     private static final Logger LOGGER = LoggerFactory.getLogger(TestTypeDependencies.class);
 
     @Test
     public void test() throws IOException {
+        test("org/e2immu/analyser/util/graph/typeDependencies.gml");
+    }
+
+    @Test
+    public void test2() throws IOException {
+        test("org/e2immu/analyser/util/graph/packageDependenciesBasedOnTypeGraph.gml");
+    }
+
+    private void test(String resourceName) throws IOException {
         Graph<Node, DefaultWeightedEdge> graph = createPackageGraph();
+        importGraph(resourceName, graph);
+        Map<Node, Map<Node, Long>> map = convertGraphToMap(graph);
+        G<Node> g = G.create(map);
+        LOGGER.info("Have graph of {} nodes, {} edges", g.vertices().size(), g.edgeStream().count());
+        BreakCycles<Node> bc = new BreakCycles<>(new BreakCycles.GreedyEdgeRemoval<>());
+        BreakCycles.Linearization<Node> lin = bc.go(g);
+    }
+
+    private static Map<Node, Map<Node, Long>> convertGraphToMap(Graph<Node, DefaultWeightedEdge> graph) {
+        Map<Node, Map<Node, Long>> map = new HashMap<>();
+        for (Node node : graph.vertexSet()) {
+            Set<DefaultWeightedEdge> edges = graph.edgesOf(node);
+            Map<Node, Long> edgeMap = new HashMap<>();
+            for (DefaultWeightedEdge d : edges) {
+                Node to = graph.getEdgeTarget(d);
+                long weight = (long) graph.getEdgeWeight(d);
+                edgeMap.merge(to, weight, Long::sum);
+            }
+            map.put(node, edgeMap);
+        }
+        return map;
+    }
+
+    private void importGraph(String resourceName, Graph<Node, DefaultWeightedEdge> graph) throws IOException {
         GmlImporter<Node, DefaultWeightedEdge> importer = new GmlImporter<>();
         try (InputStream inputStream = getClass().getClassLoader()
-                .getResourceAsStream("org/e2immu/analyser/util/graph/typeDependencies.gml");
+                .getResourceAsStream(resourceName);
              InputStreamReader reader = new InputStreamReader(Objects.requireNonNull(inputStream),
                      StandardCharsets.UTF_8)) {
             importer.setVertexFactory(Node::new);
@@ -40,20 +72,6 @@ public class TestTypeDependencies {
             });
             importer.importGraph(graph, reader);
         }
-        Map<Node, Map<Node, Long>> map = new HashMap<>();
-        for (Node node : graph.vertexSet()) {
-            Set<DefaultWeightedEdge> edges = graph.edgesOf(node);
-            Map<Node, Long> edgeMap = new HashMap<>();
-            for (DefaultWeightedEdge d : edges) {
-                Node to = graph.getEdgeTarget(d);
-                long weight = (long) graph.getEdgeWeight(d);
-                edgeMap.merge(to, weight, Long::sum);
-            }
-            map.put(node, edgeMap);
-        }
-        G<Node> g = G.create(map);
-        BreakCycles<Node> bc = new BreakCycles<>(new BreakCycles.GreedyEdgeRemoval<>());
-        BreakCycles.Linearization<Node> lin = bc.go(g);
     }
 
     private static class Node {

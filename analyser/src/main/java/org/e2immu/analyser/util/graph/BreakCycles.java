@@ -53,7 +53,7 @@ public class BreakCycles<T> {
     // set: parallel, these elements are independent (have no edges between them), can be "processed" in parallel
     // set: grouped, cycles cannot be broken here, must be processed together
     public Linearization<T> go(G<T> g) {
-        InternalLinearization<T> linearization = go2(g);
+        InternalLinearization<T> linearization = go2(g, true);
         // unpack the vertices
         List<Set<Set<T>>> unpacked = linearization.list.stream()
                 .map(s -> s.stream().map(V::ts).collect(Collectors.toUnmodifiableSet())).toList();
@@ -63,7 +63,7 @@ public class BreakCycles<T> {
     // list: sequential
     // set: parallel
     // the vertex contains multiple Ts that are in a cycle which cannot or will not be broken
-    private InternalLinearization<T> go2(G<T> g) {
+    private InternalLinearization<T> go2(G<T> g, boolean first) {
         GraphOperations.LinearizationResult<T> r = GraphOperations.linearize(g);
         if (r.quality() == 0) {
             return new InternalLinearization<>(r.linearized(), List.of());
@@ -76,6 +76,10 @@ public class BreakCycles<T> {
         assert !r.remainingCycles().isEmpty();
         List<List<Set<V<T>>>> newLinearizations = new ArrayList<>();
         List<ActionInfo<T>> actionLog = new ArrayList<>();
+        if (first) {
+            LOGGER.debug("Have {} remaining cycles: {}", r.remainingCycles().size(),
+                    r.remainingCycles().stream().map(c -> Integer.toString(c.size())).collect(Collectors.joining(",")));
+        }
         for (Set<V<T>> cycle : r.remainingCycles()) {
             Action<T> action = actionComputer.compute(g, cycle);
             if (action == null) {
@@ -85,13 +89,13 @@ public class BreakCycles<T> {
                 // apply the action
                 G<T> newG = action.apply();
                 assert !newG.equals(g);
-                InternalLinearization<T> internalLinearization = go2(newG);
+                InternalLinearization<T> internalLinearization = go2(newG, false);
                 newLinearizations.add(internalLinearization.list);
                 actionLog.add(action.info());
                 actionLog.addAll(internalLinearization.actionLog);
             }
         }
-        if(newLinearizations.isEmpty()) {
+        if (newLinearizations.isEmpty()) {
             // TODO there is nothing we can do using the current action: return as a cycle
         }
         appendLinearizations(newLinearizations, result);
