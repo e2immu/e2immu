@@ -91,6 +91,9 @@ public class BreakCycles<T> {
                 actionLog.addAll(internalLinearization.actionLog);
             }
         }
+        if(newLinearizations.isEmpty()) {
+            // TODO there is nothing we can do using the current action: return as a cycle
+        }
         appendLinearizations(newLinearizations, result);
         List<ActionInfo<T>> immutableActionLog = List.copyOf(actionLog);
         if (r.nonProblematic().isEmpty()) {

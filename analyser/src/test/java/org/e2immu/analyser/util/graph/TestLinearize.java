@@ -106,9 +106,9 @@ public class TestLinearize {
         BreakCycles.Linearization<String> linearization = bc.go(g);
         assertEquals("[v8]; [v6, v9]; [v10, v7]; [v4]; [v3, v5]; [v1]; [v2]", linearization.toString());
 
-        BreakCycles<String> bc2 = new BreakCycles<String>((g1, cycle) -> {
+        BreakCycles<String> bc2 = new BreakCycles<>((g1, cycle) -> {
             if (cycle.contains(v6)) {
-                return new BreakCycles.Action<>() {
+                return new BreakCycles.Action<String>() {
                     @Override
                     public G<String> apply() {
                         return g1.subGraph(cycle).withFewerEdges(Map.of(v6, Set.of(v5)));
