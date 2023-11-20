@@ -6,15 +6,22 @@ import java.util.stream.Collectors;
 public class GraphOperations {
 
     public record LinearizationResult<T>(List<Set<V<T>>> linearized,
-                                         List<V<T>> notProblematic,
+                                         List<V<T>> nonProblematic,
                                          List<Set<V<T>>> remainingCycles) {
+
+        /*
+        The quality of an operation is measured by the size of the largest cycle after linearization.
+         */
+        public int quality() {
+            return remainingCycles.stream().mapToInt(Set::size).max().orElse(0);
+        }
 
         @Override
         public String toString() {
             return "L=" + linearized.stream()
                     .map(s -> "[" + s.stream().map(V::toString).sorted().collect(Collectors.joining(", ")) + "]")
                     .collect(Collectors.joining("; "))
-                    + " P=" + notProblematic.stream().map(V::toString).sorted().collect(Collectors.joining(", "))
+                    + " P=" + nonProblematic.stream().map(V::toString).sorted().collect(Collectors.joining(", "))
                     + " R=" + remainingCycles.stream().map(s -> "[" +
                             s.stream().map(V::toString).sorted().collect(Collectors.joining(", ")) + "]")
                     .collect(Collectors.joining("; "));
@@ -30,7 +37,7 @@ public class GraphOperations {
         Set<V<T>> done = new HashSet<>();
         List<Set<V<T>>> linearResult = new ArrayList<>();
         List<Set<V<T>>> cycles = new ArrayList<>();
-        List<V<T>> notEssentialForCycle = new ArrayList<>();
+        List<V<T>> attachedToCycle = new ArrayList<>();
         while (!toDo.isEmpty()) {
             Set<V<T>> localLinear = new HashSet<>();
             for (V<T> v : toDo) {
@@ -47,14 +54,13 @@ public class GraphOperations {
                 }
                 if (safe) {
                     localLinear.add(v);
-                    done.add(v);
                 }
             }
             if (localLinear.isEmpty()) {
                 if (!onlyLinear) {
                     // the remaining vertices form one or more cycles; but they can still be pruned a bit
-                    notEssentialForCycle.addAll(removeAsManyAsPossible(g, toDo));
-                    notEssentialForCycle.forEach(t -> {
+                    attachedToCycle.addAll(removeAsManyAsPossible(g, toDo));
+                    attachedToCycle.forEach(t -> {
                         toDo.remove(t);
                         done.add(t);
                     });
@@ -64,11 +70,12 @@ public class GraphOperations {
                 }
                 break;
             } else {
+                done.addAll(localLinear);
                 localLinear.forEach(toDo::remove);
                 linearResult.add(Set.copyOf(localLinear));
             }
         }
-        return new LinearizationResult<>(List.copyOf(linearResult), List.copyOf(notEssentialForCycle),
+        return new LinearizationResult<>(List.copyOf(linearResult), List.copyOf(attachedToCycle),
                 List.copyOf(cycles));
     }
 

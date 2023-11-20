@@ -3,6 +3,7 @@ package org.e2immu.analyser.util.graph;
 import org.junit.jupiter.api.Test;
 
 import java.util.Map;
+import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -19,6 +20,38 @@ public class TestLinearize {
         assertEquals("[v1]->1->[v2], [v1]->1->[v3], [v3]->1->[v4]", g.toString());
         GraphOperations.LinearizationResult<String> r = GraphOperations.linearize(g);
         assertEquals("L=[[v2], [v4]]; [[v3]]; [[v1]] P= R=", r.toString());
+        assertEquals(3, r.linearized().size());
+        assertEquals(0, r.quality());
+    }
+
+    @Test
+    public void test1b() {
+        Map<String, Map<String, Long>> initialGraph = Map.of(
+                "v1", Map.of("v2", 1L),
+                "v2", Map.of("v3", 1L),
+                "v3", Map.of("v4", 1L),
+                "v4", Map.of());
+        G<String> g = G.create(initialGraph);
+        assertEquals("[v1]->1->[v2], [v2]->1->[v3], [v3]->1->[v4]", g.toString());
+        GraphOperations.LinearizationResult<String> r = GraphOperations.linearize(g);
+        assertEquals("L=[[v4]]; [[v3]]; [[v2]]; [[v1]] P= R=", r.toString());
+        assertEquals(4, r.linearized().size());
+        assertEquals(0, r.quality());
+    }
+
+    @Test
+    public void test1c() {
+        Map<String, Map<String, Long>> initialGraph = Map.of(
+                "v4", Map.of(),
+                "v3", Map.of("v4", 1L),
+                "v2", Map.of("v3", 1L),
+                "v1", Map.of("v2", 1L));
+        G<String> g = G.create(initialGraph);
+        assertEquals("[v1]->1->[v2], [v2]->1->[v3], [v3]->1->[v4]", g.toString());
+        GraphOperations.LinearizationResult<String> r = GraphOperations.linearize(g);
+        assertEquals("L=[[v4]]; [[v3]]; [[v2]]; [[v1]] P= R=", r.toString());
+        assertEquals(4, r.linearized().size());
+        assertEquals(0, r.quality());
     }
 
     @Test
@@ -35,8 +68,25 @@ public class TestLinearize {
                 "v9", Map.of("v10", 1L),
                 "v10", Map.of("v9", 1L));
         G<String> g = G.create(initialGraph);
-        assertEquals("[v10]->1->[v9], [v1]->1->[v3], [v2]->1->[v3], [v3]->1->[v4], [v4]->1->[v7], [v5]->1->[v4], [v6]->1->[v5], [v7]->1->[v6], [v7]->1->[v8], [v9]->1->[v10]", g.toString());
+        assertEquals("[v10]->1->[v9], [v1]->1->[v3], [v2]->1->[v3], [v3]->1->[v4], [v4]->1->[v7], " +
+                "[v5]->1->[v4], [v6]->1->[v5], [v7]->1->[v6], [v7]->1->[v8], [v9]->1->[v10]", g.toString());
         GraphOperations.LinearizationResult<String> r = GraphOperations.linearize(g);
         assertEquals("L=[[v8]] P=[v1], [v2], [v3] R=[[v4], [v5], [v6], [v7]]; [[v10], [v9]]", r.toString());
+        assertEquals(4, r.quality());
+        V<String> v5 = g.vertex("v5");
+        V<String> v6 = g.vertex("v6");
+        V<String> v9 = g.vertex("v9");
+        V<String> v10 = g.vertex("v10");
+        BreakCycles<String> bc = new BreakCycles<>((g1, cycle) -> () -> {
+            if (cycle.contains(v6)) {
+                return g1.subGraph(cycle).withFewerEdges(Map.of(v6, Set.of(v5)));
+            }
+            if (cycle.contains(v9)) {
+                return g1.subGraph(cycle).withFewerEdges(Map.of(v9, Set.of(v10)));
+            }
+            throw new UnsupportedOperationException();
+        });
+        BreakCycles.Linearization<String> linearization = bc.go(g);
+        assertEquals("[v8]; [v6, v9]; [v10, v7]; [v4]; [v3, v5]; [v1]; [v2]", linearization.toString());
     }
 }

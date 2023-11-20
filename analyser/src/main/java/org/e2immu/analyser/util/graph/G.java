@@ -17,6 +17,12 @@ public class G<T> {
         this.elements = elements;
     }
 
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        return o instanceof G<?> g && vertices.equals(g.vertices) && edges.equals(g.edges);
+    }
+
     public static <T> G<T> create(Map<T, Map<T, Long>> initialGraph) {
         Set<V<T>> vertices = new HashSet<>();
         Map<V<T>, Map<V<T>, Long>> edges = new HashMap<>();
@@ -55,7 +61,11 @@ public class G<T> {
             } else {
                 newEdgesOfV = entry.getValue();
             }
-            newEdges.put(entry.getKey(), newEdgesOfV);
+            if (newEdgesOfV.isEmpty()) {
+                newEdges.remove(entry.getKey());
+            } else {
+                newEdges.put(entry.getKey(), newEdgesOfV);
+            }
         }
         return new G<T>(vertices, elements, Map.copyOf(newEdges));
     }
@@ -120,4 +130,7 @@ public class G<T> {
     }
 
 
+    public V<T> vertex(T t) {
+        return elements.get(t);
+    }
 }
