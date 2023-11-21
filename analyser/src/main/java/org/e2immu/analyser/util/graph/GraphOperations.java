@@ -28,16 +28,25 @@ public class GraphOperations {
         }
     }
 
-    public static <T> LinearizationResult<T> linearize(G<T> g) {
-        return linearize(g, false);
+    public static <T> int qualityBasedOnTotalCluster(G<T> g) {
+        return linearize(g, LinearizationMode.ONLY_REVERSE_GRAPH).quality();
     }
 
-    public static <T> LinearizationResult<T> linearize(G<T> g, boolean onlyLinear) {
+    public static <T> LinearizationResult<T> linearize(G<T> g) {
+        return linearize(g, LinearizationMode.ALL);
+    }
+
+    public enum LinearizationMode {
+        ONLY_LINEAR, ONLY_REVERSE_GRAPH, ALL
+    }
+
+    public static <T> LinearizationResult<T> linearize(G<T> g, LinearizationMode mode) {
         Set<V<T>> toDo = new HashSet<>(g.vertices());
         Set<V<T>> done = new HashSet<>();
         List<Set<V<T>>> linearResult = new ArrayList<>();
         List<Set<V<T>>> cycles = new ArrayList<>();
         List<V<T>> attachedToCycle = new ArrayList<>();
+        int n = toDo.size();
         while (!toDo.isEmpty()) {
             Set<V<T>> localLinear = new HashSet<>();
             for (V<T> v : toDo) {
@@ -57,7 +66,7 @@ public class GraphOperations {
                 }
             }
             if (localLinear.isEmpty()) {
-                if (!onlyLinear) {
+                if (mode == LinearizationMode.ONLY_REVERSE_GRAPH || mode == LinearizationMode.ALL) {
                     // the remaining vertices form one or more cycles; but they can still be pruned a bit
                     attachedToCycle.addAll(removeAsManyAsPossible(g, toDo));
                     attachedToCycle.forEach(t -> {
@@ -65,23 +74,26 @@ public class GraphOperations {
                         done.add(t);
                     });
                     // find the connected cycles in the remaining vertices
-                    G<T> subGraph = g.subGraph(toDo);
-                    cycles.addAll(findConnectedSubSets(subGraph, toDo));
+                    if (mode == LinearizationMode.ONLY_REVERSE_GRAPH) {
+                        cycles.add(toDo);
+                    } else {
+                        G<T> subGraph = g.subGraph(toDo);
+                        cycles.addAll(findConnectedSubSets(subGraph, toDo));
+                    }
                 }
                 break;
             } else {
                 done.addAll(localLinear);
                 localLinear.forEach(toDo::remove);
-                linearResult.add(Set.copyOf(localLinear));
+                linearResult.add(localLinear);
             }
         }
-        return new LinearizationResult<>(List.copyOf(linearResult), List.copyOf(attachedToCycle),
-                List.copyOf(cycles));
+        return new LinearizationResult<>(linearResult, attachedToCycle, cycles);
     }
 
     private static <T> List<V<T>> removeAsManyAsPossible(G<T> g, Set<V<T>> toDo) {
-        G<T> reverseSub = g.reverseSubGraph(toDo);
-        LinearizationResult<T> r = linearize(reverseSub, true);
+        G<T> reverseSub = g.mutableReverseSubGraph(toDo);
+        LinearizationResult<T> r = linearize(reverseSub, LinearizationMode.ONLY_LINEAR);
         return r.linearized.stream().flatMap(Collection::stream).toList();
     }
 
@@ -93,32 +105,35 @@ public class GraphOperations {
             Set<V<T>> connected = follow(g, v);
             toDo.removeAll(connected);
             result.add(connected);
-            boolean changed = true;
-            while (changed) {
-                changed = false;
-                Integer mergeI = null;
-                Integer mergeJ = null;
-                for (int i = 0; i < result.size() - 1; i++) {
-                    Set<V<T>> set1 = result.get(i);
-                    for (int j = i + 1; j < result.size(); j++) {
-                        Set<V<T>> set2 = result.get(j);
-                        if (!Collections.disjoint(set1, set2)) {
-                            mergeI = i;
-                            mergeJ = j;
-                            break;
-                        }
+            tryToMergeResultSets(result);
+        }
+        return result;
+    }
+
+    private static <T> void tryToMergeResultSets(List<Set<V<T>>> result) {
+        boolean changed = true;
+        while (changed) {
+            changed = false;
+            Integer mergeI = null;
+            Integer mergeJ = null;
+            for (int i = 0; i < result.size() - 1; i++) {
+                Set<V<T>> set1 = result.get(i);
+                for (int j = i + 1; j < result.size(); j++) {
+                    Set<V<T>> set2 = result.get(j);
+                    if (!Collections.disjoint(set1, set2)) {
+                        mergeI = i;
+                        mergeJ = j;
+                        break;
                     }
-                    if (mergeI != null) break;
                 }
-                if (mergeI != null) {
-                    changed = true;
-                    result.get(mergeI).addAll(result.get(mergeJ));
-                    result.remove((int) mergeJ);
-                }
+                if (mergeI != null) break;
+            }
+            if (mergeI != null) {
+                changed = true;
+                result.get(mergeI).addAll(result.get(mergeJ));
+                result.remove((int) mergeJ);
             }
         }
-        result.replaceAll(Set::copyOf);
-        return List.copyOf(result);
     }
 
     private static <T> Set<V<T>> follow(G<T> g, V<T> startingPoint) {

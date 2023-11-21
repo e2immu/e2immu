@@ -7,11 +7,13 @@ public class V<T> {
     private final Set<T> ts;
     private final long internalEdgeWeight;
     private final Set<V<T>> grouping;
+    private final int hashCode;
 
     public V(Set<T> ts, long internalEdgeWeight, Set<V<T>> grouping) {
         this.ts = ts;
         this.internalEdgeWeight = internalEdgeWeight;
         this.grouping = grouping;
+        hashCode = ts.hashCode();
     }
 
     // for testing
@@ -34,7 +36,7 @@ public class V<T> {
 
     @Override
     public int hashCode() {
-        return ts.hashCode();
+        return hashCode;
     }
 
     public Set<T> ts() {

@@ -110,7 +110,7 @@ public class G<T> {
         return new G<T>(Set.copyOf(subSet), Map.copyOf(newElements), Map.copyOf(newEdges));
     }
 
-    public G<T> reverseSubGraph(Set<V<T>> subSet) {
+    public G<T> mutableReverseSubGraph(Set<V<T>> subSet) {
         Map<T, V<T>> newElements = new HashMap<>();
         Map<V<T>, Map<V<T>, Long>> newEdges = new HashMap<>();
         for (V<T> v : subSet) {
@@ -127,8 +127,7 @@ public class G<T> {
             }
         }
         // freeze edge maps
-        newEdges.replaceAll((v, map) -> Map.copyOf(map));
-        return new G<T>(Set.copyOf(subSet), Map.copyOf(newElements), Map.copyOf(newEdges));
+        return new G<T>(subSet, newElements, newEdges);
     }
 
     public Set<V<T>> vertices() {
@@ -149,8 +148,11 @@ public class G<T> {
         return elements.get(t);
     }
 
-    public Iterator<Map<V<T>, Map<V<T>, Long>>> edgeIterator(int n, Comparator<Long> comparator) {
-        List<E<T>> edges = edgeStream().sorted((e1, e2) -> comparator.compare(e1.weight(), e2.weight())).toList();
+    public Iterator<Map<V<T>, Map<V<T>, Long>>> edgeIterator(Comparator<Long> comparator, Long limit) {
+        List<E<T>> edges = edgeStream()
+                .filter(e -> limit == null || e.weight() < limit)
+                .sorted((e1, e2) -> comparator.compare(e1.weight(), e2.weight()))
+                .toList();
         return edges.stream().map(e -> Map.of(e.from(), Map.of(e.to(), e.weight()))).iterator();
     }
 }

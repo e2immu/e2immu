@@ -95,10 +95,9 @@ public class BreakCycles<T> {
                 actionLog.addAll(internalLinearization.actionLog);
             }
         }
-        if (newLinearizations.isEmpty()) {
-            // TODO there is nothing we can do using the current action: return as a cycle
+        if(!newLinearizations.isEmpty()) {
+            appendLinearizations(newLinearizations, result);
         }
-        appendLinearizations(newLinearizations, result);
         List<ActionInfo<T>> immutableActionLog = List.copyOf(actionLog);
         if (r.nonProblematic().isEmpty()) {
             return new InternalLinearization<>(List.copyOf(result), immutableActionLog);
@@ -170,41 +169,36 @@ public class BreakCycles<T> {
 
     public static class GreedyEdgeRemoval<T> implements ActionComputer<T> {
         private final EdgePrinter<T> edgePrinter;
+        private final Long limit;
 
         public GreedyEdgeRemoval() {
-            this(Object::toString);
+            this(Object::toString, null);
         }
 
-        public GreedyEdgeRemoval(EdgePrinter<T> edgePrinter) {
+        public GreedyEdgeRemoval(EdgePrinter<T> edgePrinter, Long limit) {
             this.edgePrinter = edgePrinter;
+            this.limit = limit;
         }
 
         @Override
         public Action<T> compute(G<T> inputGraph, Set<V<T>> cycle) {
             G<T> g = inputGraph.subGraph(cycle);
-            int n = 1;
+
             int bestQuality = cycle.size();
             assert bestQuality > 0;
             G<T> bestSubGraph = null;
             Map<V<T>, Map<V<T>, Long>> bestEdgesToRemove = null;
-            boolean found = false;
-            while (n < cycle.size() && !found) {
-                Iterator<Map<V<T>, Map<V<T>, Long>>> iterator = g.edgeIterator(n, Long::compareTo);
-                while (iterator.hasNext() && bestQuality > 0) {
-                    Map<V<T>, Map<V<T>, Long>> edgesToRemove = iterator.next();
-                    G<T> withoutEdges = g.withFewerEdgesMap(edgesToRemove);
-                    int quality = GraphOperations.linearize(withoutEdges).quality();
-                    if (quality < bestQuality) {
-                        bestSubGraph = withoutEdges;
-                        bestQuality = quality;
-                        bestEdgesToRemove = edgesToRemove;
-                        found = true; // don't go to n+1
-                    }
-                    if (bestQuality == 0) {
-                        break; // stop, optimal solution
-                    }
+
+            Iterator<Map<V<T>, Map<V<T>, Long>>> iterator = g.edgeIterator(Long::compareTo, limit);
+            while (iterator.hasNext() && bestQuality > 0) {
+                Map<V<T>, Map<V<T>, Long>> edgesToRemove = iterator.next();
+                G<T> withoutEdges = g.withFewerEdgesMap(edgesToRemove);
+                int quality = GraphOperations.qualityBasedOnTotalCluster(withoutEdges);
+                if (quality < bestQuality) {
+                    bestSubGraph = withoutEdges;
+                    bestQuality = quality;
+                    bestEdgesToRemove = edgesToRemove;
                 }
-                ++n;
             }
             if (LOGGER.isDebugEnabled()) {
                 LOGGER.debug("Best choice for greedy edge removal is {}, quality now {}",

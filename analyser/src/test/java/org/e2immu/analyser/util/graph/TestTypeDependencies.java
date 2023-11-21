@@ -43,7 +43,8 @@ public class TestTypeDependencies {
                         e.getValue().entrySet().stream().map(e2 -> e2.getKey() + ":"
                                 + PackedInt.nice((int) (long) e2.getValue())).collect(Collectors.joining(",")))
                 .collect(Collectors.joining(";"));
-        BreakCycles<Node> bc = new BreakCycles<>(new BreakCycles.GreedyEdgeRemoval<>(edgePrinter));
+        long limit = PackedInt.HIERARCHY.of(1);
+        BreakCycles<Node> bc = new BreakCycles<>(new BreakCycles.GreedyEdgeRemoval<>(edgePrinter, limit));
         BreakCycles.Linearization<Node> lin = bc.go(g);
     }
 
